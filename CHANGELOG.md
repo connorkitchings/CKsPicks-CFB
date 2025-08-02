@@ -1,28 +1,13 @@
----
-title: Documentation Changelog
-created: 2025-07-20
----
+# Changelog
 
-## Documentation Changelog
+All notable changes to this project will be documented in this file.
 
-This changelog tracks significant changes to the documentation set, templates, and automation
-scripts for the Vibe Coding System. For codebase changes, see the project repository commit history.
+## [0.1.0] - 2025-08-02
 
-### [2025-07-20]
+### Added
 
-- Major documentation consolidation: merged, renamed, and condensed core docs.
-
-- Sidebar navigation added via docs_sidebar.json; README navigation updated.
-
-- AI flows and prompt templates consolidated in .windsurf.
-
-- Automation scripts enhanced: session_setup.py (YAML output), template_init.py (--clean flag),
-  validate_links.py (anchor type filtering).
-
-- Removed legacy/duplicate files, including Executive Summary.md.
-
-- Markdown lint and cross-linking improved across all docs.
-
-## [Earlier]
-
-- Initial documentation structure and templates established.
+- Initialized `cfb_model` project from a template.
+- Created `docs/initial_prompt.md` with detailed project specifications.
+- Updated all documentation in `README.md` and the `docs/` directory to remove template references
+  and align with the `cfb_model` project.
+- Configured `prefect.yaml` with project-specific data pipelines.

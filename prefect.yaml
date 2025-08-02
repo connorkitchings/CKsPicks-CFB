@@ -5,17 +5,21 @@
 # For more information, see the Prefect documentation: https://docs.prefect.io/latest/concepts/projects/
 
 # The name of your project
-name: vibe-coding-template
+name: cfb_model
 
 # A list of Prefect deployments for this project
 deployments:
-  - name: example-data-deployment
-    # A description for this deployment
-    description: A deployment for the example data processing flow.
-    # The entrypoint to your flow, in the format `path/to/file.py:flow_function_name`
-    entrypoint: src/flows/example_flow.py:example_data_flow
-    # The work pool specifies where this flow will run. The 'default-agent-pool'
-    # is a default local pool that works out of the box.
+  - name: data-ingestion-deployment
+    description: "A weekly pipeline to ingest play-by-play data from the CollegeFootballData.com API."
+    entrypoint: src/cfb_model/pipelines/data_ingestion.py:run_data_ingestion_flow
+    work_pool:
+      name: default-agent-pool
+      work_queue_name: default
+      job_variables: {}
+
+  - name: prediction-generation-deployment
+    description: "A weekly pipeline to retrain the model and generate new predictions."
+    entrypoint: src/cfb_model/pipelines/prediction.py:run_prediction_flow
     work_pool:
       name: default-agent-pool
       work_queue_name: default

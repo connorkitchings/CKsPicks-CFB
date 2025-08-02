@@ -1,8 +1,8 @@
 # AI Development Session Templates
 
 This document provides **copy-paste templates** for starting and ending an AI-assisted development
-session inside the Vibe Coding System.  Each template ensures the assistant gathers the right
-context, operates within project standards, and records its work correctly.
+session. Each template ensures the assistant gathers the right context, operates within project
+standards, and records its work correctly.
 
 ---
 
@@ -13,11 +13,11 @@ context, operates within project standards, and records its work correctly.
 
 1. **Load Core Context**
    - Open and skim `README.md` for high-level purpose.
-   - Review `docs/project_charter.md` for goals & stakeholders.
+   - Review `../reference/project_charter.md` for goals & stakeholders.
      *(link in log as `[PRD-feat:X]` where appropriate)*
    - Check the latest session log (`session_logs/`) to understand recent activity.
      Use syntax `[LOG:YYYY-MM-DD]` when referencing it.
-   - Read any task-specific docs (e.g., `docs/implementation_schedule.md`).
+   - Read any task-specific docs (e.g., `../roadmap.md`).
 
 2. **Identify the User Request**
    - Summarize the user’s objective in 1–2 sentences (write this in the log).
@@ -44,8 +44,8 @@ context, operates within project standards, and records its work correctly.
    - State whether acceptance criteria were met.
 
 2. **Update Documentation**
-   - If a new decision was made, add an entry to `prd.md` under **DECISION LOG**.
-   - If new knowledge was discovered, add or update `docs/knowledge_base.md`.
+   - If a new decision was made, add an entry to `../reference/project_charter.md` under **DECISION LOG**.
+   - If new knowledge was discovered, add or update `../kb_overview.md`.
 
 3. **Create/Append Session Log**
    - Write `session_logs/YYYY-MM-DD.md` with:

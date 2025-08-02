@@ -1,16 +1,16 @@
-# Vibe Coding Documentation
+# cfb_model Documentation
 
-For project overview, setup instructions, and getting started, see the [main README.md](../README.md).
+[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This documentation site contains the detailed guides and templates for project development:
+Welcome to the central documentation hub for the **cfb_model** project. This site provides in-depth
+information on the project's architecture, development standards, and usage guides.
 
 ## Navigation
 
-- **[Project Charter](./project_charter.md)** - Project goals, scope, and technical context
-- **[Implementation Schedule](./implementation_schedule.md)** - Current project timeline and milestones
-- **[Development Standards & Workflow](./development_standards.md)** - Coding standards,
-  review process, and workflow
-- **[Checklists](./checklists.md)** - Quality gates and review checklists
-- **[Knowledge Base](./knowledge_base.md)** - Project decisions and accumulated knowledge
-- **[AI Session Templates](./ai_session_templates.md)** - Templates for starting and ending AI
-  development sessions
+- **[Guides](./guides/getting_started.md):** "How-to" documents for setting up and using the project.
+- **[Reference](./reference/project_charter.md):** Static documents like the project charter and
+  development standards.
+- **[Decisions](./decisions/README.md):** A log of architectural decisions made throughout the project.
+- **[Roadmap](./roadmap.md):** The implementation schedule and future plans for the project.
+- **[Knowledge Base](./kb_overview.md):** A collection of useful information and resources.

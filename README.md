@@ -1,34 +1,57 @@
-# Vibe Coding Data Science Template
+# cfb_model – College Football Betting System
 
-Welcome to the Vibe Coding Data Science Template! This repository provides a
-production-ready, highly automated foundation for data science and machine
-learning projects. It is built on the principles of the Vibe Coding System,
-emphasizing observability, reproducibility, and efficient AI-assisted
-collaboration.
+[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This template is not just another collection of files; it's a **system** designed to accelerate
-data science projects by solving common pain points out-of-the-box. It enforces best practices
-in a lightweight, automated way so you can focus on building, not boilerplate.
+An end-to-end pipeline for ingesting college-football data, engineering predictive features,
+training a betting model, and publishing weekly ATS recommendations. The project follows the Vibe
+Coding System for observability, reproducibility, and AI-assisted collaboration.
 
-For a deep dive into the methodology and guides, please see our
-[full documentation site](./docs/index.md).
+For a deep dive into the methodology and guides, please see our [full documentation site](./docs/index.md).
 
 ---
 
 ## 🚀 Getting Started
 
-For a complete guide on setting up your local development environment, please see the
-[Getting Started Guide](./docs/getting_started.md).
+### Prerequisites
 
-For detailed usage guides (running tests, docs, pipelines), please see our
+- Python 3.9+
+- [uv](https://github.com/astral-sh/uv)
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/connorkitchings/cfb_model.git
+   cd cfb_model
+   ```
+
+2. **Create and activate a virtual environment:**
+
+   ```bash
+   uv venv
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+
+   ```bash
+   uv sync
+   ```
+
+For detailed usage guides (running tests, pipelines, and docs), see the
 [full documentation site](./docs/index.md).
 
 ---
 
 ## 📂 Project Structure
 
+<details>
+<summary>Click to expand</summary>
+
 ```text
-.vibe-coding-template/
+cfb_model/
 ├── .github/              # GitHub Actions workflows and templates
 ├── data/                 # Raw and processed data (not committed)
 ├── docs/                 # Simplified project documentation
@@ -38,8 +61,11 @@ For detailed usage guides (running tests, docs, pipelines), please see our
 ├── scripts/              # Utility and automation scripts
 ├── session_logs/         # Chronological development session logs
 ├── src/                  # Project source code
-│   ├── flows/            # Prefect orchestration flows
-│   └── utils/            # Shared utility modules
+│   ├── cfb_model/        # Project source code
+│       ├── data/         # Raw and processed data scripts
+│       ├── flows/        # Prefect orchestration flows
+│       ├── models/       # Trained model artifacts (not committed)
+│       ├── utils/        # Shared utility modules
 ├── .dockerignore         # Files to ignore in Docker builds
 ├── .gitignore            # Files to ignore in Git
 ├── .pre-commit-config.yaml # Configuration for pre-commit hooks
@@ -50,6 +76,8 @@ For detailed usage guides (running tests, docs, pipelines), please see our
 └── README.md             # This file
 ```
 
+</details>
+
 ---
 
 ## 🤝 Contributing
@@ -58,7 +86,14 @@ Contributions are welcome! Please follow the guidelines below:
 
 - All contributions must be submitted via a pull request.
 - Please use the [pull request template](./.github/pull_request_template.md).
-- For a detailed guide on our review standards, see the [Development Standards & Workflow](./docs/development_standards.md).
+- For a detailed guide on our review standards, see the [Development Standards & Workflow]
+  (./docs/reference/development_standards.md).
+
+---
+
+## 📞 Contact
+
+Have a question or a suggestion? Please [open an issue](https://github.com/connorkitchings/cfb_model/issues).
 
 ---
 

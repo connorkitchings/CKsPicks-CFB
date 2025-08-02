@@ -1,229 +1,56 @@
-Implementation Schedule
-Instructions: This document is the tactical plan for the project. Use it to plan sprints,
-track tasks, and manage risks. It answers the questions "Who, when, and on what?"
+# Implementation Schedule
 
-Sprint Overview
-Current Sprint: Sprint 1 (MVP)
+This document is the tactical plan for the **cfb_model** project. It translates the goals from the
+[Project Charter](./reference/project_charter.md) into a high-level schedule of epics and tasks.
 
-Sprint Goal: {{ sprint_goal }}
+## Sprint Overview
 
-Dates: {{ start_date }} to {{ end_date }}
+**Current Sprint:** Sprint 1 (MVP)
 
-Velocity: {{ completed_story_points }} / {{ planned_story_points }}
+**Sprint Goal:** Build an end-to-end pipeline that ingests data, trains a baseline model,
+generates weekly predictions, and displays them in a simple web interface.
 
-Task Board
-Active Sprint
-ID
+**Dates:** TBD
 
-Epic
+### Task Board (Sprint 1)
 
-Deliverable
+| ID  | Epic                  | Deliverable                                           | Owner | Status  |
+|:----|:----------------------|:------------------------------------------------------|:------|:--------|
+| 1   | Data Pipeline         | Set up Supabase schema for games, plays, predictions. | @dev  | ⬜ Todo |
+| 2   | Data Pipeline         | Build script to ingest historical PBP data via API.   | @dev  | ⬜ Todo |
+| 3   | Feature Engineering   | Develop initial feature engineering logic from PBP.   | @dev  | ⬜ Todo |
+| 4   | Modeling              | Train and serialize a baseline linear regression model. | @dev  | ⬜ Todo |
+| 5   | Modeling              | Create script to generate/store weekly predictions.   | @dev  | ⬜ Todo |
+| 6   | Web Interface         | Build a basic Streamlit app to display predictions.   | @dev  | ⬜ Todo |
 
-PRD Link
+### Backlog (Future Sprints)
 
-SP
+| ID  | Epic                  | Deliverable                                           | Priority |
+|:----|:----------------------|:------------------------------------------------------|:---------|
+| 7   | Data Pipeline         | Implement automated weekly data ingestion with Prefect. | High     |
+| 8   | Modeling              | Implement automated weekly model retraining/prediction. | High     |
+| 9   | Performance Tracking  | Create a dashboard to track model performance vs lines. | High     |
+| 10  | Modeling              | Integrate SHAP for model explainability.              | Medium   |
+| 11  | Feature Engineering   | Add opponent-adjustment logic to features.            | Medium   |
+| 12  | Web Interface         | Add historical performance charts and SHAP to UI.     | Medium   |
+| 13  | Modeling              | Experiment with alternative models (e.g., XGBoost).   | Low      |
 
-Owner
+---
 
-Dependencies
+## Risk Management
 
-Risk
+| Risk                                      | Probability | Impact | Mitigation Strategy                                     |
+|:------------------------------------------|:------------|:-------|:--------------------------------------------------------|
+| CollegeFootballData.com API is unreliable | Medium      | High   | Implement robust error handling, caching, & monitoring. |
+| Model performance is below 52.4% win rate | Medium      | High   | Focus on feature engineering and model tuning.          |
+| Feature engineering is overly complex     | Low         | Medium | Start simple and add complexity incrementally.          |
 
-Status
+---
 
-1
+## Sprint Retrospective
 
-User Authentication
+*To be filled out at the end of each sprint.*
 
-Setup database schema
-
-[PRD-feat:A]
-
-3
-
-@dev
-
--
-
-H
-
-✅ Done
-
-2
-
-User Authentication
-
-Create POST /users endpoint
-
-[PRD-feat:A]
-
-5
-
-@dev
-
-ID:1
-
-M
-
-🔄 In-Progress
-
-3
-
-User Authentication
-
-Build signup UI form
-
-[PRD-feat:A]
-
-3
-
-@dev
-
-ID:2
-
-L
-
-⬜ Todo
-
-4
-
-User Testing
-
-Conduct first usability test
-
-[PRD-task:UT1]
-
-2
-
-@dev
-
-ID:3
-
-L
-
-⬜ Todo
-
-Backlog (Future Sprints)
-ID
-
-Epic
-
-Deliverable
-
-PRD Link
-
-SP
-
-Priority
-
-5
-
-User Profiles
-
-Create user profile pages
-
-[PRD-feat:C]
-
-8
-
-High
-
-6
-
-Notifications
-
-Add email notification service
-
-[PRD-feat:D]
-
-5
-
-Medium
-
-Legend:
-
-Status: ⬜ Todo · 🔄 In-Progress · ✅ Done · ⏸ Blocked
-
-Risk: H(igh) · M(edium) · L(ow)
-
-SP: Story Points (Fibonacci: 1, 2, 3, 5, 8, 13) - measures complexity.
-
-User Testing Schedule
-Test ID
-
-Test Type
-
-Participants
-
-Success Criteria
-
-Scheduled For
-
-Status
-
-UT1
-
-Core flow usability
-
-3 users
-
-Users finish signup flow in under 2 min
-
-Sprint 1
-
-⬜ Todo
-
-UT2
-
-Feature validation
-
-5 users
-
-80% of users prefer the new UI layout
-
-Sprint 2
-
-⬜ Todo
-
-Risk Management
-Risk
-
-Probability
-
-Impact
-
-Mitigation Strategy
-
-Owner
-
-Third-party API changes
-
-Medium
-
-High
-
-Implement fallback, monitor changelog
-
-@dev
-
-User adoption lower than expected
-
-High
-
-Medium
-
-Pivot to a simpler use case, gather more feedback
-
-@dev
-
-Sprint Retrospective
-To be filled out at the end of each sprint.
-
-What Went Well
-TBD
-
-What Didn't Go Well
-TBD
-
-Action Items for Next Sprint
-TBD
+| What Went Well | What Didn't Go Well | Action Items for Next Sprint |
+|:---------------|:--------------------|:-----------------------------|
+| TBD            | TBD                 | TBD                          |

@@ -1,10 +1,49 @@
 {
     "makefile.configureOnOpen": false,
+    "python.defaultInterpreterPath": ".venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.envFile": "${workspaceFolder}/.env",
+    "python.analysis.extraPaths": ["./src"],
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/.mypy_cache": true,
+        "**/.ruff_cache": true,
+        "**/.env": true,
+        "**/data/raw/**": true,
+        "**/data/processed/**": true
+    },
+    "files.associations": {
+        "*.env.example": "properties"
+    },
+    "jupyter.askForKernelRestart": false,
+    "jupyter.interactiveWindow.collapseCellInputCode": false,
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
     "cSpell.words": [
+        "Connelly",
         "edium",
+        "Explainability",
+        "Fremeau",
+        "Hapley",
         "mypy",
         "nbstripout",
         "openlineage",
-        "Runbooks"
-    ]
+        "Runbooks",
+        "SHAP",
+        "sportsbook",
+        "streamlit",
+        "supabase",
+        "unders",
+        "XGBoost",
+        "cfbd",
+        "datetime",
+        "pandas",
+        "numpy",
+        "sklearn"
+    ],
+    "search.exclude": {
+        "**/data/raw/**": true,
+        "**/data/processed/**": true,
+        "**/.venv/**": true
+    }
 }
