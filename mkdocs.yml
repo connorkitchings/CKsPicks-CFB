@@ -1,0 +1,33 @@
+site_name: Vibe Coding Template
+site_description: A template for Vibe Coding data science projects.
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotation
+    - content.code.copy
+
+nav:
+  - 'Home': 'index.md'
+  - 'Project Charter': 'project_charter.md'
+  - 'Implementation Schedule': 'implementation_schedule.md'
+  - 'Development Standards': 'development_standards.md'
+  - 'Checklists': 'checklists.md'
+  - 'Knowledge Base': 'knowledge_base.md'
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_root_heading: true
+            show_source: true
