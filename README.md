@@ -15,7 +15,7 @@ For a deep dive into the methodology and guides, please see our [full documentat
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.12+
 - [uv](https://github.com/astral-sh/uv)
 
 ### Installation
@@ -68,7 +68,6 @@ cfb_model/
 │       ├── utils/        # Shared utility modules
 ├── .dockerignore         # Files to ignore in Docker builds
 ├── .gitignore            # Files to ignore in Git
-├── .pre-commit-config.yaml # Configuration for pre-commit hooks
 ├── Dockerfile            # Multi-stage Dockerfile for containerization
 ├── mkdocs.yml            # Configuration for MkDocs
 ├── prefect.yaml          # Configuration for Prefect deployments
@@ -88,6 +87,14 @@ Contributions are welcome! Please follow the guidelines below:
 - Please use the [pull request template](./.github/pull_request_template.md).
 - For a detailed guide on our review standards, see the [Development Standards & Workflow]
   (./docs/reference/development_standards.md).
+
+---
+
+## 🗄️ Storage Backend
+
+The project uses a local, partitioned Parquet dataset (via `pyarrow`) instead of a cloud database.
+Ingestion scripts write idempotently per `entity/year` and generate `manifest.json` files for
+validation. See `docs/cfbd/data_ingestion.md` and `docs/reference/project_charter.md` for details.
 
 ---
 
