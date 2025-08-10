@@ -48,9 +48,10 @@ confidence.
 
 ## Features & Scope
 
-**Core Features:** Automated data ingestion from CollegeFootballData.com, play-by-play feature
-engineering, opponent-adjusted metrics, a linear regression model for spread prediction, weekly
-model retraining, and a password-protected Streamlit web interface to display picks.
+**Core Features:** An automated data pipeline to ingest raw play-by-play data from the
+CollegeFootballData.com API for the 2014-2024 seasons (excluding 2020). The system will then use
+that raw data to engineer features, train a linear regression model for spread prediction, and
+perform weekly model retraining. A password-protected Streamlit web interface will display the picks.
 
 ### Must-Have (MVP)
 
@@ -72,6 +73,8 @@ model retraining, and a password-protected Streamlit web interface to display pi
 
 ### Out of Scope
 
+- **Initial Feature Scope:** The MVP will focus on basic, foundational statistics. More advanced
+  features like opponent-adjustments are deferred post-MVP.
 - Advanced ML models (e.g., XGBoost, RandomForest) are deferred post-MVP.
 - Real-time line movement analysis.
 - Integration of non-play-by-play data (e.g., weather, injuries).
@@ -82,20 +85,21 @@ model retraining, and a password-protected Streamlit web interface to display pi
 
 The system is an automated weekly pipeline orchestrated by GitHub Actions and Prefect. On a
 weekly schedule, a flow ingests play-by-play data from the CollegeFootballData.com API, processes
-it, and stores it in a Supabase Postgres database. A linear regression model is then retrained on
-the latest data. Predictions for the upcoming week are generated and saved to the database. A
-Streamlit web application provides a password-protected interface to display these recommendations.
+it, and writes a partitioned local Parquet dataset (via `pyarrow`) using a storage backend
+abstraction. A linear regression model is then retrained on the latest data. Predictions for the
+upcoming week are generated and saved alongside the dataset. A Streamlit web application provides a
+password-protected interface to display these recommendations.
 
 ### System Diagram
 
 ```mermaid
 graph TD
-    A[GitHub Actions] -- Triggers Weekly --> B(Prefect Cloud);
-    B -- Runs Flow --> C{CollegeFootballData API};
-    C -- Play-by-Play Data --> D[Supabase DB];
-    B -- Stores Predictions --> D;
-    E[Streamlit App] -- Reads Picks --> D;
-    F[User] -- Views Picks --> E;
+    A[GitHub Actions] -- Triggers Weekly --> B(Prefect Cloud)
+    B -- Runs Flow --> C{CollegeFootballData API}
+    C -- Play-by-Play Data --> D[Local Parquet Storage]
+    B -- Stores Predictions --> D
+    E[Streamlit App] -- Reads Picks --> D
+    F[User] -- Views Picks --> E
 ```
 
 ### Folder Structure
@@ -111,10 +115,10 @@ graph TD
 | Category | Technology | Version | Notes |
 |----------|------------|---------|-------|
 | Package Management | uv | latest | High-performance Python package manager and resolver |
-| Core Language | Python | 3.11+ | Primary programming language |
+| Core Language | Python | 3.12+ | Primary programming language |
 | Linting & Formatting | Ruff | latest | Combines linting, formatting, and import sorting |
 | Web Interface | Streamlit | latest | For building and deploying the user-facing application |
-| Database | Supabase (Postgres) | latest | Managed PostgreSQL database for all project data |
+| Storage | Local Parquet (pyarrow) | latest | Partitioned dataset with per-partition manifests |
 | Testing | Pytest | latest | Framework for writing and running tests |
 | Documentation | MkDocs | latest | Static site generator for project documentation |
 | Orchestration | Prefect | latest | Workflow orchestration and scheduling |
@@ -133,8 +137,8 @@ contain enough signal to build a predictive model with a win rate >52.4%.
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| CFB Data API Failure | Low | High | Implement robust error handling, data validation, and
-logging. If the API is down, the pipeline should fail gracefully and notify administrators. |
+| CFB Data API Failure | Low | High | Implement robust error handling, data validation, and logging.
+If the API is down, the pipeline should fail gracefully and notify administrators. |
 
 ## Decision Log
 

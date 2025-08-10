@@ -2,16 +2,18 @@
 name = "cfb_model"
 version = "0.1.0"
 description = "An end-to-end college football betting model that predicts point spreads and over/unders."
+requires-python = "~=3.12"
 authors = [{ name = "Connor Kitchings", email = "connor.kitchings@gmail.com" }]
 dependencies = [
     "pandas>=2.0",
     "scikit-learn>=1.4",
     "streamlit>=1.30",
     "requests>=2.30",
-    "supabase>=2.0",
     "python-dotenv>=1.0",
     "prefect>=2.19.0",
-    "shap>=0.45.0"
+    "shap>=0.45.0",
+    "cfbd>=5.9.1",  # CollegeFootballData API access
+    "pyarrow>=15.0"  # Parquet IO
 ]
 
 [project.optional-dependencies]
@@ -36,8 +38,7 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 
-[project.scripts]
-docs = "mkdocs serve"
+
 
 [build-system]
 requires = ["setuptools>=61.0"]

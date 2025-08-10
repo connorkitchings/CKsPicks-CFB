@@ -37,7 +37,7 @@ workflows into a single reference.
 
 ### Python Standards
 
-- **Version:** Python 3.11+
+- **Version:** Python 3.12+
 - **Formatting:** Use `ruff` for linting, formatting, and import sorting
 - **Type Hints:** All function signatures must include type hints
 - **Docstrings:** Use Google-style docstrings for all public modules, classes, and functions
@@ -103,15 +103,14 @@ Python files should follow this order:
 
 ## Quality Gates & Automation
 
-### Pre-Commit Hooks
+### Local Quality Checks
 
-Automated checks run before each commit:
+Run these locally before opening a PR:
 
-- Code formatting (ruff)
-- Linting (ruff)
-- Type checking (mypy)
-- Security scanning (bandit)
-- Dependency scanning (safety)
+- Format code: `uv run ruff format .`
+- Lint: `uv run ruff check .`
+- Security scan: `uv run bandit -r src`
+- Dependency scan: `uv run safety check`
 
 ### Continuous Integration
 

@@ -6,64 +6,83 @@ standards, and records its work correctly.
 
 ---
 
-## 🟢 Session Start Template
+## 🟢 Session Kickoff Prompt
 
-```markdown
-### Session Start
+This is a template prompt to start a new AI session for the cfb_model project. Copy, paste, and fill
+in the bracketed information to bring the AI up to speed quickly.
 
-1. **Load Core Context**
-   - Open and skim `README.md` for high-level purpose.
-   - Review `../reference/project_charter.md` for goals & stakeholders.
-     *(link in log as `[PRD-feat:X]` where appropriate)*
-   - Check the latest session log (`session_logs/`) to understand recent activity.
-     Use syntax `[LOG:YYYY-MM-DD]` when referencing it.
-   - Read any task-specific docs (e.g., `../roadmap.md`).
+Hello. We are continuing our work on the 'cfb_model' project. Your role is my AI co-pilot, and we
+will be following the Vibe Coding System.
 
-2. **Identify the User Request**
-   - Summarize the user’s objective in 1–2 sentences (write this in the log).
-   - Clarify ambiguities with questions before coding.
+To get up to speed, please perform the following steps:
 
-3. **Update the Plan**
-   - Call `update_plan` to reflect new tasks or changes.
+1. **Review the Project Foundation:**
+    - `README.md`: For a high-level overview of the project purpose and structure.
+    - `docs/reference/project_charter.md`: To understand the project charter and its purpose.
+    - `docs/index.md`: For a high-level overview of the project purpose and structure.
+    - `pyproject.toml`: To understand the project dependencies and configuration.
 
-4. **Declare Next Steps**
-   - Briefly outline the immediate actions (research, code edits, etc.).
+2. **Review the Current Sprint Status:**
+    - `documents/roadmap.md`: To see the current sprint goal and all open tasks.
 
-> *You are now ready to begin executing steps.*
-```
+3. **Review the Last Session's Handoff:**
+    - Search `/session_logs/` for all `.md` files matching today's date (e.g., `2025-08-03.md`,
+      `2025-08-03_02.md`, etc.).
+    - Review the most recent session log entry to understand exactly where we left off, focusing on
+      the 'Session Handoff' section.
+    - If there are multiple logs for today, always use the highest-numbered log (e.g., `_02`, `_03`
+      etc.) as the most recent handoff.
+    - If no log exists for today, check the latest `.md` file with the most recent date.
 
----
+4. **Prepare for Today's Task:**
+    - **Our focus today is:** Review `documents/roadmap.md` to see the current sprint goal and all
+      open tasks.
 
-## 🔴 Session End Template
+Once you have completed this review, please confirm you are ready, and we will begin.
 
-```markdown
-### Session End
+## 🔴 Session Closing Prompt
 
-1. **Summarize Work Performed**
-   - Bullet the major actions (files created/edited, commands run).
-   - State whether acceptance criteria were met.
+This is a template prompt to end a development session cleanly. Copy, paste, and fill in the
+bracketed information.
 
-2. **Update Documentation**
-   - If a new decision was made, add an entry to `../reference/project_charter.md` under **DECISION LOG**.
-   - If new knowledge was discovered, add or update `../kb_overview.md`.
+We are now ending our development session for today. To ensure we maintain our project context and
+prepare for a smooth handoff, please perform the following wrap-up tasks:
 
-3. **Create/Append Session Log**
-   - Write `session_logs/YYYY-MM-DD.md` with:
-     * Context-links (`[PRD-feat:X]`, `[LOG:...]`).
-     * Actions taken.
-     * Next-step recommendations.
+1. **Summarize Session Accomplishments:**
+    - **Task Completed:** `[IMPL-task:ID] - [Brief description of the task]`
+    - **Key Outcomes:** `[List the 1-3 main achievements of the session, e.g., 'Successfully
+      connected to the CollegeFootballData API to ingest play-by-play data.']`
 
-4. **Commit & Push**
-   - Stage relevant files.
-   - Use a descriptive commit message (e.g., `feat: implement data ingestion flow [PRD-feat:B]`).
+2. **Identify Blockers and Learnings:**
+    - **Blockers Encountered:** `[Describe any issues that are preventing progress, e.g., 'The API
+      is rate-limiting our requests.']`
+    - **New Learnings/Patterns:** `[Mention any new solutions or patterns discovered that should be
+      added to the knowledge_base.md, e.g., 'Found a more efficient way to parse JSON responses.']`
 
-5. **Close the Plan**
-   - Call `update_plan` marking completed items.
+3. **Define Next Steps:**
+    - **Immediate Next Task:** `[What is the very next thing to do? e.g., 'Refactor the data
+      ingestion pipeline to handle rate-limiting.']`
 
-> *Session closed. Awaiting next user input.*
-```
+4. **Generate the Dev Log:**
+    - Based on the information above, please generate a complete dev log entry for today, `[YYYY-MM-DD]`.
+    - Use the template from `session_logs/_template.md`.
+    - **Important:** Check if a dev log already exists for today's date in the
+      `/session_logs/` directory. If it does, create the new log with sequential
+      numbering:
+      - First log of the day: `[YYYY-MM-DD].md`
+      - Second log of the day: `[YYYY-MM-DD]_02.md`
+      - Third log of the day: `[YYYY-MM-DD]_03.md`
+      - And so on...
+    - Create this log as a new file inside the `/session_logs/` directory with the
+      appropriate filename based on existing logs for that date.
 
----
+5. **Update Documentation:**
+    - Review `README.md`,`docs/index.md`, `pyproject.toml`, `docs/decisions/README.md`,
+      `mkdocs.yml`, `docs/reference/project_charter.md`, and `docs/kb_overview.md`.
+    - Update any relevant documentation based on the changes made during the session.
+
+After you have generated the dev log, I will review it and make any final edits. All version control
+(committing, pushing, etc.) is handled manually and outside the AI workflow.
 
 ### Usage Tips
 
@@ -71,6 +90,9 @@ standards, and records its work correctly.
 - **Enforce Links**: Always use the linking syntax to keep logs and docs interconnected.
 - **Be Concise**: Logs should capture *decisions and results*, not every keystroke.
 - **Review Checklist**: Before ending, run `pre-commit run --all-files` to catch linting issues.
+- **Manual Version Control**: All actions related to git (committing, pushing, branching, etc.)
+  must be performed manually by the user. The AI will never perform these actions or prompt you to
+  do so automatically.
 
 ---
 

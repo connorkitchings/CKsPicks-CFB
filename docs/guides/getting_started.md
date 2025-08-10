@@ -5,11 +5,10 @@ This guide provides instructions for setting up your local development environme
 
 ## Prerequisites
 
-- **Python 3.11+**: Ensure you have a compatible Python version installed.
+- **Python 3.12+**: Ensure you have a compatible Python version installed.
 - **Git**: For version control.
 - **`uv`**: The project's package manager. If you don't have it, install it with `pip install uv`.
 - **CollegeFootballData.com API Key**: You will need an API key to access the data source.
-- **Supabase Account**: For database access.
 
 ## 1. Clone the Repository
 
@@ -27,9 +26,7 @@ your secret credentials. Add the following keys to it:
 
 ```bash
 # .env
-CFB_API_KEY="your_api_key_here"
-SUPABASE_URL="your_supabase_project_url_here"
-SUPABASE_ANON_KEY="your_supabase_anon_key_here"
+CFBD_API_KEY="your_api_key_here"
 ```
 
 Replace the placeholder values with your actual credentials.
@@ -55,15 +52,16 @@ source .venv/bin/activate
 Install all required project dependencies using `uv`:
 
 ```bash
-uv pip install -r requirements.txt
+uv sync
 ```
 
-## 5. Set Up Pre-Commit Hooks
+## 5. Code Quality
 
-Install the pre-commit hooks to ensure your contributions adhere to the project's quality standards:
+Run formatting and lint checks before committing changes:
 
 ```bash
-pre-commit install
+uv run ruff format .
+uv run ruff check .
 ```
 
 ## 6. Run the Tests

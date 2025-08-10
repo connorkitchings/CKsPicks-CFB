@@ -23,8 +23,8 @@ nav:
     - 'Project Charter': 'reference/project_charter.md'
     - 'Development Standards': 'reference/development_standards.md'
     - 'Checklists': 'reference/checklists.md'
-  - 'Roadmap': 'roadmap.md'
-  - 'Knowledge Base': 'kb_overview.md'
+  - 'Roadmap': 'planning/roadmap.md'
+  - 'Knowledge Base': 'reference/kb_overview.md'
   - 'Decisions': 'decisions/README.md'
 
 plugins:
