@@ -55,15 +55,6 @@ shared base class for common functionality.
 - **Module**: `GamesIngester`
 - **Dependencies**: Requires venues table to be populated first
 
-### Drives (`src/cfb_model/data/ingestion/drives.py`)
-
-- **Status**: ✅ Complete
-- **Records**: Drive-level data for FBS games
-- **Key fields**: offense, defense, scoring, field position, time
-- **Usage**: `python scripts/ingest_cli.py drives --year 2024 --limit-games 10`
-- **Module**: `DrivesIngester`
-- **Dependencies**: Requires games table to be populated first
-
 ### Plays (`src/cfb_model/data/ingestion/plays.py`)
 
 - **Status**: ✅ Complete (Rewritten)

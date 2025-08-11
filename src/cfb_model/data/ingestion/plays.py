@@ -20,6 +20,7 @@ class PlaysIngester(BaseIngester):
         season_type: str = "regular",
         data_root: str | None = None,
         limit_games: int = None,
+        storage=None,
     ):
         """Initialize the plays ingester.
 
@@ -30,7 +31,7 @@ class PlaysIngester(BaseIngester):
             data_root: Root path for local data storage (optional)
             limit_games: Limit number of games for testing (default: None)
         """
-        super().__init__(year, classification, data_root=data_root)
+        super().__init__(year, classification, data_root=data_root, storage=storage)
         self.season_type = season_type
         self.limit_games = limit_games
 
@@ -40,28 +41,12 @@ class PlaysIngester(BaseIngester):
         return "plays"
 
     def get_fbs_game_ids(self) -> list[tuple[int, int]]:
-        """Get list of FBS game IDs and weeks from local games index or CFBD if missing."""
-        from .games import (
-            GamesIngester,  # local import to avoid circular at module import time
-        )
-
+        """Get list of FBS game IDs and weeks from local games index."""
         idx = self.storage.read_index(
             "games", {"year": self.year, "season_type": self.season_type}, columns=["id", "week"]
         )
         if not idx:
-            print(
-                "Games index not found locally. Fetching games and writing local index first..."
-            )
-            GamesIngester(
-                year=self.year,
-                classification=self.classification,
-                season_type=self.season_type,
-                data_root=self.storage.root(),
-                storage=self.storage,
-            ).run()
-            idx = self.storage.read_index(
-                "games", {"year": self.year, "season_type": self.season_type}, columns=["id", "week"]
-            )
+            raise RuntimeError(f"Games index not found for year {self.year} and season_type {self.season_type}. Please run the games ingester first.")
 
         games_data = [(g["id"], g.get("week")) for g in idx]
         if self.limit_games:
@@ -164,7 +149,6 @@ class PlaysIngester(BaseIngester):
                 {
                     "id": self.safe_getattr(play, "id", None),
                     "game_id": self.safe_getattr(play, "game_id", None),
-                    "drive_id": self.safe_getattr(play, "drive_id", None),
                     "play_number": self.safe_getattr(play, "play_number", None),
                     "period": self.safe_getattr(play, "period", None),
                     "clock_minutes": clock_minutes,

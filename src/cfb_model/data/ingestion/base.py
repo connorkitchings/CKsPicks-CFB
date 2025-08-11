@@ -147,15 +147,28 @@ class BaseIngester(ABC):
 
         partition_values = {key: str(getattr(self, key)) for key in self.partition_keys}
         partition = Partition(partition_values)
-        written = self.storage.write(self.entity_name, data, partition, overwrite=True)
+        written = self.storage.write(
+            self.entity_name, data, partition, partition_cols=self.partition_keys, overwrite=True
+        )
         print(
             f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
         )
+
+        # --- DEBUGGING TEST: Read back immediately ---
+        try:
+            read_back_data = self.storage.read_index(
+                self.entity_name, {key: getattr(self, key) for key in self.partition_keys}
+            )
+            print(f"DEBUG: Successfully read back {len(read_back_data)} records immediately after writing.")
+        except Exception as e:
+            print(f"DEBUG: FAILED to read back data immediately after writing: {e}")
+        # --- END DEBUGGING TEST ---
 
     def run(self) -> None:
         """Execute the complete ingestion process using local storage."""
         try:
             print(f"Starting {self.__class__.__name__} for {self.year}...")
+            print(f"  - Using data root: {self.storage.root()}")
 
             # Fetch data from CFBD API
             raw_data = self.fetch_data()

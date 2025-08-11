@@ -5,7 +5,6 @@ from typing import Any
 import cfbd
 
 from .base import BaseIngester
-from .games import GamesIngester
 
 
 class BettingLinesIngester(BaseIngester):
@@ -18,6 +17,7 @@ class BettingLinesIngester(BaseIngester):
         season_type: str = "regular",
         limit_games: int = None,
         data_root: str | None = None,
+        storage=None,
     ):
         """Initialize the betting lines ingester.
 
@@ -27,7 +27,7 @@ class BettingLinesIngester(BaseIngester):
             season_type: Season type to ingest (default: "regular")
             limit_games: Limit number of games for testing (default: None)
         """
-        super().__init__(year, classification, data_root=data_root)
+        super().__init__(year, classification, data_root=data_root, storage=storage)
         self.season_type = season_type
         self.limit_games = limit_games
 
@@ -42,24 +42,13 @@ class BettingLinesIngester(BaseIngester):
 
     def get_fbs_game_ids(self) -> list[int]:
         """Get list of FBS game IDs from local games index."""
-        index_filters = {"season": str(self.year), "season_type": self.season_type}
+        index_filters = {"year": str(self.year), "season_type": self.season_type}
         games_index = self.storage.read_index(
             "games", filters=index_filters, columns=["id"]
         )
 
         if not games_index:
-            print(
-                "Games index not found locally. Fetching games and writing local index first..."
-            )
-            GamesIngester(
-                year=self.year,
-                classification=self.classification,
-                season_type=self.season_type,
-                storage=self.storage,
-            ).run()
-            games_index = self.storage.read_index(
-                "games", filters=index_filters, columns=["id"]
-            )
+            raise RuntimeError(f"Games index not found for year {self.year} and season_type {self.season_type}. Please run the games ingester first.")
 
         game_ids = [game["id"] for game in games_index]
 
@@ -90,9 +79,10 @@ class BettingLinesIngester(BaseIngester):
         for game_line in year_lines:
             if self.safe_getattr(game_line, "id") in fbs_game_ids_set:
                 for sportsbook_line in self.safe_getattr(game_line, "lines", []):
-                    # Attach game_id to each individual line for easier transformation
-                    sportsbook_line.game_id = self.safe_getattr(game_line, "id")
-                    all_lines.append(sportsbook_line)
+                    all_lines.append({
+                        "game_id": self.safe_getattr(game_line, "id"),
+                        "line_data": sportsbook_line,
+                    })
 
         print(f"Filtered to {len(all_lines)} betting lines from FBS games.")
         return all_lines
@@ -100,10 +90,17 @@ class BettingLinesIngester(BaseIngester):
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
         """Transform betting lines data into storage format."""
         lines_to_insert = []
-        for line in data:
+        for item in data:
+            game_id = item.get("game_id")
+            line = item.get("line_data")
+            if not line:
+                continue
+
             lines_to_insert.append(
                 {
-                    "game_id": self.safe_getattr(line, "game_id"),
+                    "year": self.year,
+                    "season_type": self.season_type,
+                    "game_id": game_id,
                     "provider": self.safe_getattr(line, "provider"),
                     "spread": self.safe_getattr(line, "spread"),
                     "formatted_spread": self.safe_getattr(line, "formatted_spread"),

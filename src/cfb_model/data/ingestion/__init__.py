@@ -8,8 +8,6 @@ data ingestion patterns.
 from .base import BaseIngester
 from .betting_lines import BettingLinesIngester
 from .coaches import CoachesIngester
-
-# from .drives import DrivesIngester
 from .games import GamesIngester
 from .plays import PlaysIngester
 from .rosters import RostersIngester
@@ -21,7 +19,6 @@ __all__ = [
     "TeamsIngester",
     "VenuesIngester",
     "GamesIngester",
-    # "DrivesIngester",
     "BettingLinesIngester",
     "RostersIngester",
     "CoachesIngester",

@@ -57,8 +57,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
     'defenseTimeouts': int,
     'distance': int,
     'down': int,
-    'driveId': str,
-    'driveNumber': int,
+
     'gameId': int,
     'home': str,
     'id': str,
@@ -84,33 +83,6 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 ```python
 {
     'defense': str,
-    'defenseConference': str,
-    'driveNumber': int,
-    'driveResult': str,
-    'endDefenseScore': int,
-    'endOffenseScore': int,
-    'endPeriod': int,
-    'endTime': {'minutes': int, 'seconds': int},
-    'endYardline': int,
-    'endYardsToGoal': int,
-    'gameId': int,
-    'id': str,
-    'isHomeOffense': bool,
-    'offense': str,
-    'offenseConference': str,
-    'plays': int,
-    'scoring': bool,
-    'startDefenseScore': int,
-    'startOffenseScore': int,
-    'startPeriod': int,
-    'startTime': {'minutes': int, 'seconds': int},
-    'startYardline': int,
-    'startYardsToGoal': int,
-    'yards': int
-}
-```
-
-## 4. BettingLine (Game) Schema
 
 ```python
 {

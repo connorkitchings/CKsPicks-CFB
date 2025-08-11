@@ -10,16 +10,16 @@ import sys
 from pathlib import Path
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from cfb_model.data.ingestion import (
+    BettingLinesIngester,
+    CoachesIngester,
+    GamesIngester,
+    PlaysIngester,
+    RostersIngester,
     TeamsIngester,
     VenuesIngester,
-    GamesIngester,
-    BettingLinesIngester,
-    RostersIngester,
-    CoachesIngester,
-    PlaysIngester,
 )
 
 
@@ -28,20 +28,18 @@ def main():
     parser = argparse.ArgumentParser(
         description="CFBD Data Ingestion CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
+        epilog="""Examples:
   python scripts/ingest_cli.py teams --year 2024
   python scripts/ingest_cli.py games --year 2024 --season-type regular
-  python scripts/ingest_cli.py drives --year 2024 --limit-games 10
   python scripts/ingest_cli.py plays --year 2024 --limit-games 5
-        """,
+""",
     )
 
     parser.add_argument(
         "entity",
         choices=[
             "teams",
-            "venues", 
+            "venues",
             "games",
             "betting_lines",
             "rosters",
@@ -67,13 +65,13 @@ Examples:
     parser.add_argument(
         "--season-type",
         default="regular",
-        help="Season type for games/drives/plays (default: regular)",
+        help="Season type for games/plays (default: regular)",
     )
 
     parser.add_argument(
         "--limit-games",
         type=int,
-        help="Limit number of games for testing (drives, betting_lines, plays)",
+        help="Limit number of games for testing (betting_lines, plays)",
     )
 
     parser.add_argument(

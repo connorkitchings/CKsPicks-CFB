@@ -44,11 +44,6 @@ def fetch_and_print_schemas():
             if plays:
                 print_schema("Play", plays[0])
 
-            # 3. Drives
-            drives_api = cfbd.DrivesApi(api_client)
-            drives = drives_api.get_drives(year=2023, week=1, season_type="regular")
-            if drives:
-                print_schema("Drive", drives[0])
 
             # 4. Betting Lines
             betting_api = cfbd.BettingApi(api_client)

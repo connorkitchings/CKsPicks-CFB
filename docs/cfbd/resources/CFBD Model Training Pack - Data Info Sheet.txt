@@ -87,7 +87,7 @@ FieldDescription
 
 Points Per Opportunity
 
-Field	Description*_points_per_opportunity_offenseAvg points per drive inside opponent 40
+
 *_points_per_opportunity_defenseAvg points allowed per opponent scoring opportunity
 
 Field Position

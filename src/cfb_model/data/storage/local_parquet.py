@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -27,20 +28,21 @@ class LocalParquetStorage(StorageBackend):
         The data root path is determined with the following priority:
         1. The `data_root` argument provided to the constructor.
         2. The `CFB_MODEL_DATA_ROOT` environment variable.
-        3. A default `data/raw` directory inside the current working directory.
+        3. A default `data` directory inside the current working directory.
 
         Args:
             data_root: An optional, explicit path to the data storage root.
         """
         # Determine the root path from argument, environment variable, or default
-        root_path = data_root or os.getenv("CFB_MODEL_DATA_ROOT") or Path.cwd() / "data" / "raw"
-        root = Path(root_path).resolve()
+        base_root = data_root or os.getenv("CFB_MODEL_DATA_ROOT") or Path.cwd() / "data"
+        root_path = Path(base_root) / "raw_data"
+        root = root_path.resolve()
 
         # Create the directory if it doesn't exist to ensure it's available for writing
         try:
             root.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            raise StorageError(f"Failed to create data root directory at {root}: {e}")
+            raise StorageError(f"Failed to create data root directory at {root}: {e}") from e
 
         if not root.is_dir():
             raise StorageError(
@@ -60,21 +62,15 @@ class LocalParquetStorage(StorageBackend):
         records: Sequence[Mapping[str, Any]],
         partition: Partition,
         *,
+        partition_cols: list[str] | None = None,
         overwrite: bool = True,
     ) -> int:
         part_dir = self._entity_partition_dir(entity, partition)
         if overwrite and part_dir.exists():
-            # remove existing partition directory contents
-            for p in sorted(part_dir.glob("**/*"), reverse=True):
-                if p.is_file():
-                    p.unlink(missing_ok=True)  # type: ignore[arg-type]
-            # remove empty dirs from bottom up
-            for p in sorted(part_dir.glob("**/*"), reverse=True):
-                if p.is_dir():
-                    try:
-                        p.rmdir()
-                    except OSError:
-                        pass
+            try:
+                shutil.rmtree(part_dir, ignore_errors=True)
+            except OSError as e:
+                raise StorageError(f"Failed to remove existing partition directory {part_dir}: {e}") from e
         part_dir.mkdir(parents=True, exist_ok=True)
 
         if not records:
@@ -86,11 +82,16 @@ class LocalParquetStorage(StorageBackend):
             # Convert sequence of mappings to Arrow Table
             batch = pa.Table.from_pylist(list(records))
         except Exception as e:
-            raise StorageError(f"Failed to create pyarrow Table from records: {e}")
+            raise StorageError(f"Failed to create pyarrow Table from records: {e}") from e
 
-        # Write a single parquet file per call (can be split by caller per partition)
-        file_path = part_dir / "part-0001.parquet"
-        pq.write_table(batch, file_path, compression="snappy")
+        # Use write_to_dataset to handle partitioning and file naming
+        pq.write_to_dataset(
+            batch,
+            root_path=part_dir,
+            partition_cols=partition_cols,
+            compression="snappy",
+            basename_template="part-{i}.parquet",
+        )
 
         # Write manifest for validation
         self._write_manifest(part_dir, rows=batch.num_rows, schema=batch.schema)
@@ -138,32 +139,27 @@ class LocalParquetStorage(StorageBackend):
         partition = Partition(partition_values)
         base_dir = self._root / entity / partition.path_suffix()
 
-        if not base_dir.exists():
+        print(f"    [read_index] Checking for index at: {base_dir}")
+        dir_exists = base_dir.exists()
+        print(f"    [read_index] Directory exists: {dir_exists}")
+
+        if not dir_exists:
+            print(f"    [read_index] Directory does not exist: {base_dir}")
             return []
 
-        files = sorted(base_dir.rglob("*.parquet"))
+        files = sorted([p for p in base_dir.rglob("*.parquet") if not p.name.startswith("._")])
+        print(f"    [read_index] Found {len(files)} parquet files in {base_dir}")
         if not files:
+            print(f"    [read_index] No parquet files found in {base_dir}")
             return []
 
-        # Determine the actual columns to read from the first file's schema
-        # to avoid errors if a column doesn't exist.
+        # Read all parquet files within this partition, letting pyarrow handle schema
         try:
-            schema = pq.read_schema(files[0])
-            if columns:
-                read_columns = [col for col in columns if col in schema.names]
-            else:
-                read_columns = schema.names
-        except Exception:
-            # If schema reading fails, the directory might be empty or contain no valid files
-            return []
-
-        if not read_columns:
-            # If no desired columns are in the schema, we can't return anything useful.
-            return []
-
-        # Read all parquet files within this partition
-        try:
-            table = pq.read_table(files, columns=read_columns)
+            dataset = pq.ParquetDataset(files)
+            table = dataset.read(columns=columns)
             return table.to_pylist()
         except Exception as e:
-            raise StorageError(f"Failed to read Parquet files from {base_dir}: {e}")
+            # Gracefully handle empty directories or non-parquet files
+            if "No files found" in str(e) or "is not a Parquet file" in str(e):
+                return []
+            raise StorageError(f"Failed to read Parquet files from {base_dir}: {e}") from e

@@ -158,6 +158,7 @@ class GamesIngester(BaseIngester):
                         game, "away_postgame_win_probability", None
                     ),
                     "completed": self.safe_getattr(game, "completed", None),
+                    "year": self.year,
                 }
             )
 

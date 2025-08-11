@@ -28,9 +28,9 @@ a web interface.
 Transform play-by-play data into multiple analytical levels:
 
 1. **Play-level**: Individual play metrics and outcomes
-2. **Drive-level**: Drive efficiency, scoring rates, field position
-3. **Game-level**: Team performance aggregations
-4. **Season-level**: Cumulative team statistics and trends
+
+2. **Game-level**: Team performance aggregations
+3. **Season-level**: Cumulative team statistics and trends
 
 ### Feature Engineering
 

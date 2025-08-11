@@ -19,6 +19,7 @@ class CoachesIngester(BaseIngester):
         max_year: int = None,
         limit_teams: int = None,
         data_root: str | None = None,
+        storage=None,
     ):
         """Initialize the coaches ingester.
 
@@ -29,7 +30,7 @@ class CoachesIngester(BaseIngester):
             max_year: Maximum year for coach history (default: None)
             limit_teams: Limit number of teams for testing (default: None)
         """
-        super().__init__(year, classification, data_root=data_root)
+        super().__init__(year, classification, data_root=data_root, storage=storage)
         self.min_year = min_year
         self.max_year = max_year
         self.limit_teams = limit_teams
@@ -47,17 +48,7 @@ class CoachesIngester(BaseIngester):
             columns=["school"],
         )
         if not teams_index:
-            print("Teams index not found locally. Running teams ingester first...")
-            TeamsIngester(
-                year=self.year,
-                classification=self.classification,
-                storage=self.storage,
-            ).run()
-            teams_index = self.storage.read_index(
-                "teams",
-                filters={"year": str(self.year)},
-                columns=["school"],
-            )
+            raise RuntimeError(f"Teams index not found for year {self.year}. Please run the teams ingester first.")
         return [team["school"] for team in teams_index]
 
     def fetch_data(self) -> list[Any]:

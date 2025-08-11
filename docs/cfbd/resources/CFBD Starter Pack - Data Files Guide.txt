@@ -18,9 +18,9 @@ Metadata Files
 
 conferences.csv
 
-• name: Full name of the conference
-• abbreviation: Short label (e.g., SEC, Big Ten)
-• division: NCAA division (typically "fbs")
+â€¢ name: Full name of the conference
+â€¢ abbreviation: Short label (e.g., SEC, Big Ten)
+â€¢ division: NCAA division (typically "fbs")
 
 teams.csv
 
@@ -53,12 +53,10 @@ advanced_game_stats/YYYY.csv
 
 Per-team, per-game advanced stats derived from play-by-play. Includes explosiveness, success rate, EPA, line yards, opportunity stats.
 
-Play & Drive Data
+Play Data
 
 
-drives/drives_YYYY.csv
 
-One row per drive. Periods, starting/ending yard lines, score changes, result types.
 
 plays/YYYY/SEASONTYPE_WEEK_plays.csv
 
@@ -67,9 +65,9 @@ Play-by-play data. Down, distance, yardage, play type, and a custom PPA value fo
 Relationships & Integration Tips
 
 
-• Use gameId to join plays ? drives ? games ? advanced stats
-• Use team_id or school to join team stats with teams.csv
-• Normalize time columns like possessionTime to seconds for analysis
+â€¢ Use gameId to join plays ? games ? advanced stats
+â€¢ Use team_id or school to join team stats with teams.csv
+â€¢ Normalize time columns like possessionTime to seconds for analysis
 
 
 

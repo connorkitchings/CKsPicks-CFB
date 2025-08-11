@@ -10,6 +10,9 @@ from .base import BaseIngester
 class VenuesIngester(BaseIngester):
     """Ingester for college football venues data."""
 
+    def __init__(self, year: int = 2024, classification: str = "fbs", data_root: str | None = None, storage=None):
+        super().__init__(year, classification, data_root=data_root, storage=storage)
+
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
@@ -114,8 +117,9 @@ class VenuesIngester(BaseIngester):
                     "grass": self.safe_getattr(venue, "grass", None),
                     "dome": self.safe_getattr(venue, "dome", None),
                     "construction_year": self.safe_getattr(
-                        venue, "construction_year", None
+                        venue, "year_constructed", None
                     ),
+                    "year": self.year,
                 }
             )
 

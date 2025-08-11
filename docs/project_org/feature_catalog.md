@@ -21,7 +21,7 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 | off_sr       | team-season | float  | Offensive success rate                             | plays.parquet                            | mean(success_bool)                         | by CFBD defn |
 | def_sr       | team-season | float  | Defensive success rate allowed                     | plays.parquet                            | mean(success_bool_allowed)                 | by CFBD defn |
 
-Add additional per-play and per-possession metrics (yards/play, explosiveness, drives, etc.).
+Add additional per-play and per-possession metrics (yards/play, explosiveness, etc.).
 
 ## 2) Opponent-adjusted features (iterative averaging)
 
@@ -33,14 +33,13 @@ Add additional per-play and per-possession metrics (yards/play, explosiveness, d
 | adj_off_epa_pp| off_epa_pp   | team-season | float| Opponent-adjusted offensive EPA/play     | 4-iter opponent matrix; weighted last-3 games  |
 | adj_def_epa_pp| def_epa_pp   | team-season | float| Opponent-adjusted defensive EPA/play     | same as above                                   |
 
-Document any additional adjusted stats (success rate, explosiveness, drives/play, etc.).
+Document any additional adjusted stats (success rate, explosiveness, etc.).
 
 ## 3) Pace and possession-aware features
 
 | feature_name     | level       | dtype | definition                                  | inputs                 | transform |
 |------------------|-------------|------|---------------------------------------------|------------------------|-----------|
-| off_plays_per_drive | team-season | float| Offensive plays per drive                    | drives, plays          | n_plays/n_drives |
-| def_plays_per_drive | team-season | float| Defensive plays per drive                    | drives, plays          | n_plays_def/n_drives_def |
+
 <!-- markdownlint-enable MD013 -->
 
 Include additional per-possession rates as needed.

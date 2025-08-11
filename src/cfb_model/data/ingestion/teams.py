@@ -10,8 +10,8 @@ from .base import BaseIngester
 class TeamsIngester(BaseIngester):
     """Ingester for college football teams data."""
 
-    def __init__(self, year: int = 2024, classification: str = "fbs", data_root: str | None = None):
-        super().__init__(year, classification, data_root=data_root)
+    def __init__(self, year: int = 2024, classification: str = "fbs", data_root: str | None = None, storage=None):
+        super().__init__(year, classification, data_root=data_root, storage=storage)
 
 
     @property
