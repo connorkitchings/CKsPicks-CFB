@@ -1,14 +1,15 @@
 """Data ingestion modules for CFBD API data.
 
 This package contains modules for ingesting data from the CollegeFootballData API
-into the Supabase database. All modules follow FBS-only filtering and year-specific
+into a local Parquet storage backend. All modules follow FBS-only filtering and year-specific
 data ingestion patterns.
 """
 
 from .base import BaseIngester
 from .betting_lines import BettingLinesIngester
 from .coaches import CoachesIngester
-from .drives import DrivesIngester
+
+# from .drives import DrivesIngester
 from .games import GamesIngester
 from .plays import PlaysIngester
 from .rosters import RostersIngester
@@ -20,7 +21,7 @@ __all__ = [
     "TeamsIngester",
     "VenuesIngester",
     "GamesIngester",
-    "DrivesIngester",
+    # "DrivesIngester",
     "BettingLinesIngester",
     "RostersIngester",
     "CoachesIngester",

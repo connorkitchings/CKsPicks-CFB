@@ -19,13 +19,23 @@ nav:
   - 'Guides':
     - 'Getting Started': 'guides/getting_started.md'
     - 'AI Session Templates': 'guides/ai_session_templates.md'
-  - 'Reference':
-    - 'Project Charter': 'reference/project_charter.md'
-    - 'Development Standards': 'reference/development_standards.md'
-    - 'Checklists': 'reference/checklists.md'
+  - 'Project Org':
+    - 'Project Charter': 'project_org/project_charter.md'
+    - 'Modeling Baseline': 'project_org/modeling_baseline.md'
+    - 'Feature Catalog': 'project_org/feature_catalog.md'
+    - 'Development Standards': 'project_org/development_standards.md'
+    - 'Checklists': 'project_org/checklists.md'
+    - 'Knowledge Base': 'project_org/kb_overview.md'
+  - 'CFBD':
+    - 'Data Ingestion': 'cfbd/data_ingestion.md'
+    - 'Schemas': 'cfbd/schemas.md'
+    - 'Quickstart': 'cfbd/quickstart.md'
+  - 'Operations':
+    - 'Weekly Pipeline': 'operations/weekly_pipeline.md'
   - 'Roadmap': 'planning/roadmap.md'
-  - 'Knowledge Base': 'reference/kb_overview.md'
-  - 'Decisions': 'decisions/README.md'
+  - 'Decisions':
+    - 'Decision Log': 'decisions/decision_log.md'
+    - 'About Decisions': 'decisions/README.md'
 
 plugins:
   - search

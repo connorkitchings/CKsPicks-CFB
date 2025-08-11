@@ -35,6 +35,10 @@ class GamesIngester(BaseIngester):
         """The logical entity name for storage."""
         return "games"
 
+    @property
+    def partition_keys(self) -> list[str]:
+        return ["year", "season_type"]
+
     def get_fbs_team_names(self) -> set[str]:
         """Get list of FBS team names for filtering games.
 

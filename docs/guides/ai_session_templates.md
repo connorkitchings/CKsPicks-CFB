@@ -16,14 +16,18 @@ will be following the Vibe Coding System.
 
 To get up to speed, please perform the following steps:
 
-1. **Review the Project Foundation:**
-    - `README.md`: For a high-level overview of the project purpose and structure.
-    - `docs/reference/project_charter.md`: To understand the project charter and its purpose.
-    - `docs/index.md`: For a high-level overview of the project purpose and structure.
-    - `pyproject.toml`: To understand the project dependencies and configuration.
+1. **Load the Minimal Context Pack (token-efficient):**
+    - `docs/project_org/project_charter.md` — Charter, scope, and standards.
+    - `docs/planning/roadmap.md` — Current sprint goal, tasks, and acceptance criteria.
+    - `docs/decisions/decision_log.md` — Planning-level decisions made so far.
+    - `docs/project_org/modeling_baseline.md` — MVP modeling approach and betting policy.
+    - `docs/operations/weekly_pipeline.md` — Manual weekly runbook and outputs.
+    - Optional quick refs: `docs/index.md`, `README.md`, `pyproject.toml` (only if needed).
+    - Keep context small: skim headings and bullet summaries; capture 6–10 concise bullets.
 
-2. **Review the Current Sprint Status:**
-    - `documents/roadmap.md`: To see the current sprint goal and all open tasks.
+2. **Confirm the Sprint Focus:**
+    - From `docs/planning/roadmap.md`, extract the sprint goal and top 3 active tasks.
+    - Note acceptance criteria relevant to today's objective.
 
 3. **Review the Last Session's Handoff:**
     - Search `/session_logs/` for all `.md` files matching today's date (e.g., `2025-08-03.md`,
@@ -35,8 +39,7 @@ To get up to speed, please perform the following steps:
     - If no log exists for today, check the latest `.md` file with the most recent date.
 
 4. **Prepare for Today's Task:**
-    - **Our focus today is:** Review `documents/roadmap.md` to see the current sprint goal and all
-      open tasks.
+    - **Our focus today is:** `[Describe the concrete task to execute this session]`
 
 Once you have completed this review, please confirm you are ready, and we will begin.
 
@@ -78,7 +81,7 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
 
 5. **Update Documentation:**
     - Review `README.md`,`docs/index.md`, `pyproject.toml`, `docs/decisions/README.md`,
-      `mkdocs.yml`, `docs/reference/project_charter.md`, and `docs/kb_overview.md`.
+      `mkdocs.yml`, `docs/project_org/project_charter.md`, and `docs/project_org/kb_overview.md`.
     - Update any relevant documentation based on the changes made during the session.
 
 After you have generated the dev log, I will review it and make any final edits. All version control

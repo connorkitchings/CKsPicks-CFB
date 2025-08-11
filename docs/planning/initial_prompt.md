@@ -117,7 +117,7 @@ Derive opponent-adjusted betting indicators from play-by-play data:
 
 > Note: The project has pivoted from Supabase to a local Parquet storage backend with per-partition
 > manifests and validation utilities. This section remains for historical context. See
-> `docs/cfbd/data_ingestion.md` and `docs/reference/project_charter.md` for the current storage
+> `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for the current storage
 > architecture and validation workflow.
 
 ### Core Tables

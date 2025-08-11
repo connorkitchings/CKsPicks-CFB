@@ -10,9 +10,13 @@ from .base import BaseIngester
 class TeamsIngester(BaseIngester):
     """Ingester for college football teams data."""
 
+    def __init__(self, year: int = 2024, classification: str = "fbs", data_root: str | None = None):
+        super().__init__(year, classification, data_root=data_root)
+
+
     @property
-    def table_name(self) -> str:
-        """The name of the Supabase table to ingest data into."""
+    def entity_name(self) -> str:
+        """The logical entity name for storage."""
         return "teams"
 
     def fetch_data(self) -> list[Any]:
@@ -33,13 +37,13 @@ class TeamsIngester(BaseIngester):
         return fbs_teams
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
-        """Transform teams data into Supabase table format.
+        """Transform teams data into storage format.
 
         Args:
             data: List of team objects from CFBD API
 
         Returns:
-            List of dictionaries ready for Supabase insertion
+            List of dictionaries ready for storage
         """
         teams_to_insert = []
 

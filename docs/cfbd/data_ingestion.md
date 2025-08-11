@@ -14,9 +14,8 @@ local Parquet storage (partitioned by entity/year) using the project's storage b
 
 ### Historical Data Scope
 
-- **Time Period**: The project will ingest data for all seasons from 2014 through 2024.
-- **2020 Season**: The 2020 season will be skipped during ingestion due to significant data
-  inconsistencies caused by the pandemic.
+- **Time Period**: The project ingests data for seasons from 2015 through 2024 (inclusive).
+- **2020 Season**: Included; note reduced games and potential sparsity due to the pandemic.
 
 ### Year-Specific Data
 
@@ -110,6 +109,21 @@ All scripts use the CFBD API with Bearer token authentication:
 - API key stored in `.env` file as `CFBD_API_KEY`
 - Uses official `cfbd` Python library with `access_token` parameter
 
+## CFBD 101 (Endpoints and Formats)
+
+- Endpoints used (typical): teams, venues, games, plays, lines (betting lines), rosters, coaches
+- Key parameters: `year`, `seasonType` (regular/postseason), `week`, `team`, `gameId`
+- Pagination/limits: library handles paging; respect provider limits; batch per-week when possible
+- Common fields:
+  - Teams: `school`, `conference`, `classification`
+  - Games: `id`, `season`, `week`, `home_team`, `away_team`, scores, `venue`
+  - Plays: `game_id`, `offense`, `defense`, `down`, `distance`, `yards_gained`, `play_type`
+  - Lines: `game_id`, provider, `spread`, `over_under`, timestamps
+- Quick checks (recommended):
+  - Pull a few games for a known week and print keys per record
+  - Verify FBS-only filtering by `classification`
+  - Validate row counts vs manifests after write
+
 ## Data Quality Notes
 
 - All optional fields handled with `getattr()` for safety
@@ -126,4 +140,4 @@ All ingestion commands support a common set of flags:
 - `--data-root`: Base directory for the Parquet dataset (default: `./data/raw`)
 - `--season_type`: Season type (`regular`, `postseason`) when applicable
 - `--workers`: Parallel worker count for API calls
-- `--exclude-seasons`: Comma-separated years to skip (default includes `2020`)
+- `--exclude-seasons`: Comma-separated years to skip (optional; default: none)

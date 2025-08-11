@@ -8,6 +8,7 @@ expected to already be timezone-normalized by the caller.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
@@ -18,15 +19,32 @@ import pyarrow.parquet as pq
 
 from .base import Partition, StorageBackend, StorageError
 
-DEFAULT_DATA_ROOT = "/path/to/external/drive"  # Placeholder, replace on your machine
-
 
 class LocalParquetStorage(StorageBackend):
     def __init__(self, data_root: str | Path | None = None) -> None:
-        root = Path(data_root or DEFAULT_DATA_ROOT)
-        if not root.exists() or not root.is_dir():
+        """Initializes the local Parquet storage backend.
+
+        The data root path is determined with the following priority:
+        1. The `data_root` argument provided to the constructor.
+        2. The `CFB_MODEL_DATA_ROOT` environment variable.
+        3. A default `data/raw` directory inside the current working directory.
+
+        Args:
+            data_root: An optional, explicit path to the data storage root.
+        """
+        # Determine the root path from argument, environment variable, or default
+        root_path = data_root or os.getenv("CFB_MODEL_DATA_ROOT") or Path.cwd() / "data" / "raw"
+        root = Path(root_path).resolve()
+
+        # Create the directory if it doesn't exist to ensure it's available for writing
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            raise StorageError(f"Failed to create data root directory at {root}: {e}")
+
+        if not root.is_dir():
             raise StorageError(
-                f"Data root is not accessible: {root}. Ensure your external SSD is mounted."
+                f"Data root path is not a directory: {root}. Please check the path."
             )
         self._root = root
 
@@ -64,10 +82,11 @@ class LocalParquetStorage(StorageBackend):
             self._write_manifest(part_dir, rows=0, schema=None)
             return 0
 
-        # Convert sequence of mappings to Arrow Table
-        batch = pa.table(
-            records
-        )  # Arrow infers schema; timestamps should be pa.timestamp with tz if provided
+        try:
+            # Convert sequence of mappings to Arrow Table
+            batch = pa.Table.from_pylist(list(records))
+        except Exception as e:
+            raise StorageError(f"Failed to create pyarrow Table from records: {e}")
 
         # Write a single parquet file per call (can be split by caller per partition)
         file_path = part_dir / "part-0001.parquet"
@@ -100,41 +119,51 @@ class LocalParquetStorage(StorageBackend):
             json.dump(manifest, f, indent=2)
 
     def read_index(
-        self, entity: str, filters: Mapping[str, Any]
+        self,
+        entity: str,
+        filters: Mapping[str, Any],
+        columns: list[str] | None = None,
     ) -> list[dict[str, Any]]:
-        """Simple index reader for small lookups.
+        """Reads a lightweight index for an entity, filtered by partition values.
 
-        Currently supports games index by season and season_type, returning id and week.
+        Args:
+            entity: The entity name (e.g., "games", "teams").
+            filters: A mapping of partition keys to values (e.g., {"season": "2024"}).
+            columns: Optional list of columns to read. If None, reads all.
+
+        Returns:
+            A list of dictionaries representing the read data.
         """
-        if entity != "games":
-            raise StorageError("read_index currently supports only 'games'.")
+        partition_values = {k: str(v) for k, v in filters.items() if v is not None}
+        partition = Partition(partition_values)
+        base_dir = self._root / entity / partition.path_suffix()
 
-        season = filters.get("season")
-        season_type = filters.get("season_type")
-        if season is None:
-            raise StorageError("'season' filter is required for games index.")
-
-        base = self._root / "games" / f"season={season}"
-        if season_type is not None:
-            base = base / f"season_type={season_type}"
-
-        # If no data exists yet, return empty to signal caller to fetch from API
-        if not base.exists():
+        if not base_dir.exists():
             return []
 
-        # Read all parquet files within this partition and return minimal columns
-        files = sorted(base.rglob("*.parquet"))
-        out: list[dict[str, Any]] = []
+        files = sorted(base_dir.rglob("*.parquet"))
         if not files:
-            return out
+            return []
 
-        cols = {"id", "week"}
-        for fp in files:
-            table = pq.read_table(
-                fp, columns=list(cols & set(pq.read_schema(fp).names))
-            )
-            for row in table.to_pylist():
-                d = {k: row.get(k) for k in cols if k in row}
-                if "id" in d:
-                    out.append({"id": d.get("id"), "week": d.get("week")})
-        return out
+        # Determine the actual columns to read from the first file's schema
+        # to avoid errors if a column doesn't exist.
+        try:
+            schema = pq.read_schema(files[0])
+            if columns:
+                read_columns = [col for col in columns if col in schema.names]
+            else:
+                read_columns = schema.names
+        except Exception:
+            # If schema reading fails, the directory might be empty or contain no valid files
+            return []
+
+        if not read_columns:
+            # If no desired columns are in the schema, we can't return anything useful.
+            return []
+
+        # Read all parquet files within this partition
+        try:
+            table = pq.read_table(files, columns=read_columns)
+            return table.to_pylist()
+        except Exception as e:
+            raise StorageError(f"Failed to read Parquet files from {base_dir}: {e}")

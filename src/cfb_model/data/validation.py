@@ -91,7 +91,9 @@ def validate_plays_referential(
     issues: list[ValidationIssue] = []
 
     # Build games index set
-    games = storage.read_index("games", {"season": season, "season_type": season_type})
+    games = storage.read_index(
+        "games", {"season": season, "season_type": season_type}, columns=["id"]
+    )
     game_ids = {g["id"] for g in games if "id" in g and g["id"] is not None}
 
     plays_root = storage.root() / "plays" / f"season={season}"

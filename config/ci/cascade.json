@@ -1,7 +1,0 @@
-{
-  "context_rules": [
-    "Always reference the README.md for documentation entry.",
-    "Use S.C.A.F.F. prompts for all major AI-driven tasks.",
-    "Maintain cross-document links for all requirements, decisions, and tasks."
-  ]
-}

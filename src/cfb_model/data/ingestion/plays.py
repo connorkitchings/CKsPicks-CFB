@@ -18,6 +18,7 @@ class PlaysIngester(BaseIngester):
         year: int = 2024,
         classification: str = "fbs",
         season_type: str = "regular",
+        data_root: str | None = None,
         limit_games: int = None,
     ):
         """Initialize the plays ingester.
@@ -26,9 +27,10 @@ class PlaysIngester(BaseIngester):
             year: The year to ingest data for (default: 2024)
             classification: Team classification filter (default: "fbs")
             season_type: Season type to ingest (default: "regular")
+            data_root: Root path for local data storage (optional)
             limit_games: Limit number of games for testing (default: None)
         """
-        super().__init__(year, classification)
+        super().__init__(year, classification, data_root=data_root)
         self.season_type = season_type
         self.limit_games = limit_games
 
@@ -44,7 +46,7 @@ class PlaysIngester(BaseIngester):
         )
 
         idx = self.storage.read_index(
-            "games", {"season": self.year, "season_type": self.season_type}
+            "games", {"year": self.year, "season_type": self.season_type}, columns=["id", "week"]
         )
         if not idx:
             print(
@@ -58,7 +60,7 @@ class PlaysIngester(BaseIngester):
                 storage=self.storage,
             ).run()
             idx = self.storage.read_index(
-                "games", {"season": self.year, "season_type": self.season_type}
+                "games", {"year": self.year, "season_type": self.season_type}, columns=["id", "week"]
             )
 
         games_data = [(g["id"], g.get("week")) for g in idx]
@@ -211,7 +213,7 @@ class PlaysIngester(BaseIngester):
 
         # Build game_id -> week map from games index to ensure correct partitioning
         idx = self.storage.read_index(
-            "games", {"season": self.year, "season_type": self.season_type}
+            "games", {"year": self.year, "season_type": self.season_type}
         )
         game_week_map: dict[int, int] = {
             int(row["id"]): int(row.get("week"))

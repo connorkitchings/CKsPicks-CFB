@@ -16,7 +16,6 @@ from cfb_model.data.ingestion import (
     TeamsIngester,
     VenuesIngester,
     GamesIngester,
-    DrivesIngester,
     BettingLinesIngester,
     RostersIngester,
     CoachesIngester,
@@ -44,7 +43,6 @@ Examples:
             "teams",
             "venues", 
             "games",
-            "drives",
             "betting_lines",
             "rosters",
             "coaches",
@@ -96,25 +94,30 @@ Examples:
         help="Maximum year for coach history",
     )
 
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default=None,
+        help="Absolute path to the root directory for data storage.",
+    )
+
     args = parser.parse_args()
 
     # Create appropriate ingester based on entity type
     if args.entity == "teams":
-        ingester = TeamsIngester(year=args.year, classification=args.classification)
+        ingester = TeamsIngester(
+            year=args.year, classification=args.classification, data_root=args.data_root
+        )
     elif args.entity == "venues":
-        ingester = VenuesIngester(year=args.year, classification=args.classification)
+        ingester = VenuesIngester(
+            year=args.year, classification=args.classification, data_root=args.data_root
+        )
     elif args.entity == "games":
         ingester = GamesIngester(
             year=args.year,
             classification=args.classification,
             season_type=args.season_type,
-        )
-    elif args.entity == "drives":
-        ingester = DrivesIngester(
-            year=args.year,
-            classification=args.classification,
-            season_type=args.season_type,
-            limit_games=args.limit_games,
+            data_root=args.data_root,
         )
     elif args.entity == "betting_lines":
         ingester = BettingLinesIngester(
@@ -122,12 +125,14 @@ Examples:
             classification=args.classification,
             season_type=args.season_type,
             limit_games=args.limit_games,
+            data_root=args.data_root,
         )
     elif args.entity == "rosters":
         ingester = RostersIngester(
             year=args.year,
             classification=args.classification,
             limit_teams=args.limit_teams,
+            data_root=args.data_root,
         )
     elif args.entity == "coaches":
         ingester = CoachesIngester(
@@ -136,6 +141,7 @@ Examples:
             min_year=args.min_year,
             max_year=args.max_year,
             limit_teams=args.limit_teams,
+            data_root=args.data_root,
         )
     elif args.entity == "plays":
         ingester = PlaysIngester(
@@ -143,6 +149,7 @@ Examples:
             classification=args.classification,
             season_type=args.season_type,
             limit_games=args.limit_games,
+            data_root=args.data_root,
         )
 
     # Run the ingestion

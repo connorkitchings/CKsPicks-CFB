@@ -9,8 +9,8 @@ information on the project's architecture, development standards, and usage guid
 ## Navigation
 
 - **[Guides](./guides/getting_started.md):** "How-to" documents for setting up and using the project.
-- **[Reference](./reference/project_charter.md):** Project charter, development standards, and checklists.
-- **[Knowledge Base](./reference/kb_overview.md):** Useful information and resources.
+- **[Project Org](./project_org/project_charter.md):** Project charter, development standards, and checklists.
+- **[Knowledge Base](./project_org/kb_overview.md):** Useful information and resources.
 - **[Decisions](./decisions/README.md):** Log of architectural decisions.
 - **[Roadmap](./planning/roadmap.md):** Implementation schedule and future plans.
 - **[CFBD Data Docs](./cfbd/data_ingestion.md):** Data ingestion, schemas, and FBS filtering.

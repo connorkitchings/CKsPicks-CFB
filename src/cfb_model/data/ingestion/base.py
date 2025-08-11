@@ -131,8 +131,13 @@ class BaseIngester(ABC):
             parsed = parsed.replace(tzinfo=ZoneInfo("UTC"))
         return parsed.astimezone(self._eastern)
 
+    @property
+    def partition_keys(self) -> list[str]:
+        """The keys to use for partitioning the data."""
+        return ["year"]
+
     def ingest_data(self, data: list[dict[str, Any]]) -> None:
-        """Default ingestion: write all rows into a year/season_type partition.
+        """Default ingestion: write all rows into a partition based on partition_keys.
 
         Subclasses with finer-grained partitioning (e.g., plays) should override.
         """
@@ -140,8 +145,8 @@ class BaseIngester(ABC):
             print("No data to ingest.")
             return
 
-        season_type = getattr(self, "season_type", "regular")
-        partition = Partition({"season": str(self.year), "season_type": season_type})
+        partition_values = {key: str(getattr(self, key)) for key in self.partition_keys}
+        partition = Partition(partition_values)
         written = self.storage.write(self.entity_name, data, partition, overwrite=True)
         print(
             f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
@@ -159,6 +164,10 @@ class BaseIngester(ABC):
             # Transform data for storage
             transformed_data = self.transform_data(raw_data)
             print(f"Transformed {len(transformed_data)} records for ingestion.")
+
+            # Diagnostic check
+            if transformed_data:
+                print(f"First transformed record: {transformed_data[0]}")
 
             # Persist locally
             self.ingest_data(transformed_data)

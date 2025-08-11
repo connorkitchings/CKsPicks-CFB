@@ -86,7 +86,7 @@ Contributions are welcome! Please follow the guidelines below:
 - All contributions must be submitted via a pull request.
 - Please use the [pull request template](./.github/pull_request_template.md).
 - For a detailed guide on our review standards, see the [Development Standards & Workflow]
-  (./docs/reference/development_standards.md).
+  (./docs/project_org/development_standards.md).
 
 ---
 
@@ -94,7 +94,7 @@ Contributions are welcome! Please follow the guidelines below:
 
 The project uses a local, partitioned Parquet dataset (via `pyarrow`) instead of a cloud database.
 Ingestion scripts write idempotently per `entity/year` and generate `manifest.json` files for
-validation. See `docs/cfbd/data_ingestion.md` and `docs/reference/project_charter.md` for details.
+validation. See `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for details.
 
 ---
 

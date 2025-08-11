@@ -11,8 +11,8 @@ class VenuesIngester(BaseIngester):
     """Ingester for college football venues data."""
 
     @property
-    def table_name(self) -> str:
-        """The name of the Supabase table to ingest data into."""
+    def entity_name(self) -> str:
+        """The logical entity name for storage."""
         return "venues"
 
     def get_fbs_team_names(self) -> set[str]:
@@ -87,13 +87,13 @@ class VenuesIngester(BaseIngester):
         return fbs_venues
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
-        """Transform venues data into Supabase table format.
+        """Transform venues data into storage format.
 
         Args:
             data: List of venue objects from CFBD API
 
         Returns:
-            List of dictionaries ready for Supabase insertion
+            List of dictionaries ready for storage
         """
         venues_to_insert = []
 
