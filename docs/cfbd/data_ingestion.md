@@ -14,8 +14,10 @@ local Parquet storage (partitioned by entity/year) using the project's storage b
 
 ### Historical Data Scope
 
-- **Time Period**: The project ingests data for seasons from 2015 through 2024 (inclusive).
+- **Time Period (ingested today)**: Seasons 2015 through 2024 (inclusive).
 - **2020 Season**: Included; note reduced games and potential sparsity due to the pandemic.
+- **Modeling training window**: 2014–2024, excluding 2020. 2014 ingestion backfill is tracked in
+  `docs/planning/roadmap.md` backlog (ID 18) and will be added in a future sprint.
 
 ### Year-Specific Data
 
@@ -90,8 +92,6 @@ shared base class for common functionality.
 - **Usage**: `python scripts/ingest_cli.py coaches --year 2024 --limit-teams 3`
 - **Module**: `CoachesIngester`
 - **Dependencies**: Requires teams table to be populated first
-- Betting Lines: Sportsbook data for FBS games
-- Rosters: Player information for FBS teams
 
 ## API Authentication
 

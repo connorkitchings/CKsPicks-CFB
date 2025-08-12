@@ -78,11 +78,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 }
 ```
 
-## 3. Drive Schema
-
-```python
-{
-    'defense': str,
+## 3. BettingGame Schema
 
 ```python
 {
@@ -103,7 +99,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 }
 ```
 
-## 5. BettingLine (Line) Schema
+## 4. BettingLine (Line) Schema
 
 ```python
 {
@@ -118,7 +114,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 }
 ```
 
-## 6. TeamInfo Schema
+## 5. TeamInfo Schema
 
 ```python
 {
@@ -153,7 +149,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 }
 ```
 
-## 7. RosterInfo Schema
+## 6. RosterInfo Schema
 
 ```python
 {
@@ -176,7 +172,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 }
 ```
 
-## 8. AdvancedGameStat Schema
+## 7. AdvancedGameStat Schema
 
 ```python
 {
@@ -192,7 +188,7 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
 
 ---
 
-## 9. Coach Schema
+## 8. Coach Schema
 
 ```python
 {
@@ -215,6 +211,49 @@ Use these as the reference for structuring the local Parquet dataset and ingesti
             'year': int
         }
     ]
+}
+```
+
+## 9. Enhanced Play Schema (Unadjusted)
+
+```python
+{
+    # Raw identifiers
+    'gameId': int,
+    'period': int,
+
+    # Teams (canonicalized)
+    'offense_team': str,
+    'defense_team': str,
+
+    # Raw situation
+    'down': int,
+    'distance': int,
+    'yardline': int,
+    'yardsToGoal': int,
+    'yardsGained': int,
+    'playType': str,
+    'playText': str,
+    'ppa': Optional[float],
+    'scoring': bool,
+
+    # Normalized time
+    'clock_seconds_period': int,  # seconds remaining in current period [0, 900]
+
+    # Derived flags (unadjusted, per-play)
+    'is_pass': bool,
+    'is_rush': bool,
+    'is_penalty': bool,
+    'is_sack': bool,
+    'is_turnover': bool,
+    'is_score': bool,
+    'is_garbage_time': bool,
+
+    # Derived quality metrics (definitions documented in feature plan)
+    'success': bool,
+    'explosive': bool,
+    'field_pos_100': float,  # normalized field position [0, 100]
+    'epa': Optional[float],  # proxy: use PPA initially if EPA not available
 }
 ```
 

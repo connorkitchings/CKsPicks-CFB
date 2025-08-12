@@ -23,9 +23,9 @@ Pipeline runbook; code work begins next sprint.
 | 4  | Docs          | Update `mkdocs.yml` + `docs/index.md` nav         | @dev  | ✅ Done |
 | 5  | CFBD Data     | Update ingestion: FBS-only, 2015–2024 (incl. 2020)| @dev  | ✅ Done |
 | 6  | Operations    | Weekly pipeline (Wed 12 ET) + CSV spec            | @dev  | ✅ Done |
-| 7  | Planning      | Refresh roadmap + acceptance criteria              | @dev  | 🔄 Doing |
-| 8  | Feature Eng.  | Plan opponent-adj features (iter. avg, last-3)    | @dev  | ⬜ Todo |
-| 9  | Modeling      | Outline training (season silo; Ridge)             | @dev  | ⬜ Todo |
+| 7  | Planning      | Refresh roadmap + acceptance criteria              | @dev  | ✅ Done |
+| 8  | Feature Eng.  | Plan opponent-adj features (iter. avg, last-3)    | @dev  | ✅ Done |
+| 9  | Modeling      | Outline training (season silo; Ridge)             | @dev  | ✅ Done |
 | 10 | Operations    | Document bet thresholds and constraints            | @dev  | ✅ Done |
 
 ### Acceptance Criteria (Sprint 1)
@@ -34,7 +34,17 @@ Pipeline runbook; code work begins next sprint.
 - `docs/project_org/modeling_baseline.md` defines MVP model + betting policy.
 - `docs/operations/weekly_pipeline.md` defines schedule, steps, and CSV output schema.
 - CFBD resources moved to `docs/cfbd/resources/`.
-- `docs/cfbd/data_ingestion.md` reflects FBS-only scope and 2015–2024 coverage (incl. 2020).
+- `docs/cfbd/data_ingestion.md` reflects FBS-only scope and clarifies ingestion coverage (2015–2024
+  complete today) vs. modeling training window (2014–2024, excluding 2020). 2014 backfill is tracked
+  as a backlog item.
+- `docs/project_org/feature_catalog.md` expanded with:
+  - Play filters (CFBD success rate thresholds; scrimmage-only), explosive definitions (rush ≥10,
+    pass ≥15; overall 10+/20+/30+ buckets), possession metrics (Eckel rate; finishing points per opp).
+  - Opponent-adjustment algorithm: additive offset, 4 iterations, linear last-3 game weights (3/2/1).
+  - Validation ranges and reproducibility requirements.
+- MVP feature artifacts specification documented: `features/<year>/*.parquet` (team-season,
+  team-week, team-game), `features/<year>/manifest.json`, and a seasonal summary CSV at
+  `reports/metrics/features_<year>_summary.csv`.
 - Markdownlint: MD029 fixed in weekly pipeline; no critical new warnings introduced.
 
 ### Backlog (Future Sprints)
@@ -48,6 +58,7 @@ Pipeline runbook; code work begins next sprint.
 | 15 | Explainability       | SHAP summaries for model insights                         | Medium   |
 | 16 | Web Interface        | Minimal Streamlit view of weekly CSV                      | Medium   |
 | 17 | Performance Tracking | ROI/win rate tracking dashboards                           | Medium   |
+| 18 | CFBD Data            | Backfill 2014 season across entities to match training scope | Medium |
 
 ## Execution Checklist
 

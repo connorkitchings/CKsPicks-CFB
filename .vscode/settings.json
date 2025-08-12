@@ -27,6 +27,7 @@
         "datetimes",
         "defn",
         "edium",
+        "expl",
         "Explainability",
         "EXTDRV",
         "FIPS",
@@ -42,6 +43,7 @@
         "nbstripout",
         "numpy",
         "openlineage",
+        "opps",
         "pandas",
         "passwordless",
         "pathing",
@@ -66,5 +68,8 @@
         "**/data/raw/**": true,
         "**/data/processed/**": true,
         "**/.venv/**": true
-    }
+    },
+    "cursorpyright.analysis.extraPaths": [
+        "./src"
+    ]
 }

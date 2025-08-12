@@ -1,134 +1,108 @@
-import os
-from pprint import pprint
+import pandas as pd
+import numpy as np
+import time
+import requests
+from tqdm import tqdm as tqdm_
+from typing import Dict, List
 
-import cfbd
-from cfbd.rest import ApiException
-from dotenv import load_dotenv
+FBS_list = ['SEC','American Athletic','FBS Independents','Big Ten','Conference USA','Big 12','Mid-American','ACC','Sun Belt','Pac-12','Mountain West']
 
-# Load environment variables from .env file
-load_dotenv()
-
-
-def print_schema(label, obj):
-    print(f"\n{'='*60}\n{label} Schema\n{'='*60}")
-    if hasattr(obj, 'to_dict'):
-        pprint(obj.to_dict())
-    else:
-        pprint(obj)
-
-
-def fetch_and_print_schemas():
-    """
-    Fetch and print schemas for all relevant CFBD data types.
-    """
-    api_key = os.getenv("CFBD_API_KEY")
-    if not api_key:
-        print("Error: CFBD_API_KEY not found in environment variables.")
-        print("Please add it to your .env file.")
-        return
-
-    configuration = cfbd.Configuration(access_token=api_key)
-    print("Fetching data from CFBD API...")
+def fetch_calendar(year: int, headers: Dict[str, str]) -> List[Dict]:
+    url = "https://api.collegefootballdata.com/calendar"
+    params = {"year": year}
 
     try:
-        with cfbd.ApiClient(configuration) as api_client:
-            # 1. Games
-            games_api = cfbd.GamesApi(api_client)
-            games = games_api.get_games(year=2023, season_type="regular", week=1)
-            if games:
-                print_schema("Game", games[0])
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching calendar data for year {year}: {e}")
+        return []
 
-            # 2. Plays
-            plays_api = cfbd.PlaysApi(api_client)
-            plays = plays_api.get_plays(year=2023, week=1, season_type="regular")
-            if plays:
-                print_schema("Play", plays[0])
+def fetch_plays(year: int, week: int, headers: Dict[str, str]) -> List[Dict]:
+    url = "https://api.collegefootballdata.com/plays"
+    params = {"year": year, "week": week}
 
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching plays data for year {year}, week {week}: {e}")
+        return []
 
-            # 4. Betting Lines
-            betting_api = cfbd.BettingApi(api_client)
-            lines = betting_api.get_lines(year=2023, week=1, season_type="regular")
-            if lines and hasattr(lines[0], 'lines') and lines[0].lines:
-                print_schema("BettingLine (Game)", lines[0])
-                print_schema("BettingLine (Line)", lines[0].lines[0])
+def call_api_plays(first_year: int, last_year: int, api_key: str) -> pd.DataFrame:
+    start = time.time()
 
-            # 5. Team Info by Season
-            teams_api = cfbd.TeamsApi(api_client)
-            teams = teams_api.get_teams(year=2023)
-            if teams:
-                print_schema("TeamInfo", teams[0])
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    all_plays = []
 
-            # 6. Roster Info by Season
-            try:
-                roster = teams_api.get_roster(year=2023, team=teams[0].school if teams else None)
-                if roster:
-                    print_schema("RosterInfo", roster[0])
-            except AttributeError:
-                print("TeamsApi.get_roster not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching roster info: {e}")
+    for year in range(first_year, last_year + 1):
+        calendar = fetch_calendar(year, headers)
+        regular_season_weeks = [week['week'] for week in calendar if week['seasonType'] == 'regular']
 
-            # 7. Advanced Game Stats
-            stats_api = cfbd.StatsApi(api_client)
-            adv_stats = stats_api.get_advanced_game_stats(year=2023, week=1)
-            if adv_stats:
-                print_schema("AdvancedGameStat", adv_stats[0])
+        for week in tqdm_(regular_season_weeks, desc=f"Fetching {year} plays", unit="week"):
+            plays = fetch_plays(year, week, headers)
+            for play in plays:
+                play['season'] = year  # Add the year to each play
+                play['week'] = week  # Add the week to each play
+            all_plays.extend(plays)
 
-            # 8. Coaches
-            try:
-                coaches_api = cfbd.CoachesApi(api_client)
-                coaches = coaches_api.get_coaches(year=2023)
-                if coaches:
-                    print_schema("Coach", coaches[0])
-            except AttributeError:
-                print("CoachesApi or get_coaches not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching coaches: {e}")
+    plays_df = pd.DataFrame(all_plays)
 
-            # 9. Metrics (Team/Advanced)
-            try:
-                metrics = stats_api.get_metrics(year=2023, week=1)
-                if metrics:
-                    print_schema("Metrics", metrics[0])
-            except AttributeError:
-                print("get_metrics not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching metrics: {e}")
-            try:
-                adv_team_metrics = stats_api.get_advanced_team_metrics(year=2023, week=1)
-                if adv_team_metrics:
-                    print_schema("AdvancedTeamMetrics", adv_team_metrics[0])
-            except AttributeError:
-                print("get_advanced_team_metrics not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching advanced team metrics: {e}")
+    # Filter for FBS games
+    cfpera_plays = plays_df[
+        (plays_df['offense_conference'].isin(FBS_list)) &
+        (plays_df['defense_conference'].isin(FBS_list))
+    ].reset_index(drop=True)
 
-            # 10. Ratings
-            try:
-                ratings = stats_api.get_ratings(year=2023, week=1)
-                if ratings:
-                    print_schema("Ratings", ratings[0])
-            except AttributeError:
-                print("get_ratings not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching ratings: {e}")
+    # Rename and adjust columns
+    cfpera_plays = cfpera_plays.rename(columns={'distance': 'yards_to_first', 'period': 'quarter'})
 
-            # 11. Recruiting
-            try:
-                recruiting_api = cfbd.RecruitingApi(api_client)
-                recruits = recruiting_api.get_recruiting_players(year=2023)
-                if recruits:
-                    print_schema("RecruitingPlayer", recruits[0])
-            except AttributeError:
-                print("RecruitingApi or get_recruiting_players not available in this cfbd-python version.")
-            except Exception as e:
-                print(f"Error fetching recruiting data: {e}")
+    # Calculate adj_yd_line
+    cfpera_plays['adj_yd_line'] = cfpera_plays.apply(
+        lambda row: row['yard_line'] if row['offense'] == row['home'] else 100 - row['yard_line'],
+        axis=1
+    )
 
-    except ApiException as e:
-        print(f"Exception when calling CFBD API: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    # Fix turnover yards
+    interception_conditions = (
+        (cfpera_plays['play_type'] == 'Interception') |
+        (cfpera_plays['play_type'] == 'Interception Return Touchdown') |
+        (cfpera_plays['play_type'] == 'Pass Interception Return')
+    )
+    cfpera_plays.loc[interception_conditions, 'yards_gained'] = 0
+    
+    # Extract minutes and seconds into separate columns
+    cfpera_plays['clock_minutes'] = cfpera_plays['clock'].apply(lambda x: x['minutes'])
+    cfpera_plays['clock_seconds'] = cfpera_plays['clock'].apply(lambda x: x['seconds'])
+    cfpera_plays = cfpera_plays.drop(columns=['clock','wallclock'])
+    
+    # Standardize team names
+    cfpera_plays.loc[cfpera_plays['offense'] == "Hawai'i", 'offense'] = 'Hawaii'
+    cfpera_plays.loc[cfpera_plays['offense'] == "San José State", 'offense'] = 'San Jose State' 
+    cfpera_plays.loc[cfpera_plays['defense'] == "Hawai'i", 'defense'] = 'Hawaii'
+    cfpera_plays.loc[cfpera_plays['defense'] == "San José State", 'defense'] = 'San Jose State' 
+    
+    # Reorder columns
+    columns = cfpera_plays.columns.tolist()
+    columns.remove('season')
+    columns.insert(0, 'season')
+    columns.remove('week')
+    columns.insert(1, 'week')
+    cfpera_plays = cfpera_plays[columns]
+    
+    cfpera_plays = cfpera_plays.sort_values(by=['season','game_id', 'drive_number','play_number'], ascending=[False, True, True, True]).reset_index(drop=True)
 
+    end = time.time()
+    total_time = end - start
+    total_time_per = total_time / (last_year - first_year + 1)
 
-if __name__ == "__main__":
-    fetch_and_print_schemas()
+    minutes, seconds = divmod(int(total_time), 60)
+    minutes_per, seconds_per = divmod(int(total_time_per), 60)
+
+    print(f"call_api_plays took {minutes} minutes and {seconds} seconds to complete.")
+    print(f"It took {minutes_per} minutes and {seconds_per} seconds to complete per season.")
+
+    return cfpera_plays

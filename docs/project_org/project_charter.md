@@ -1,7 +1,7 @@
 # Project Charter
 
 This document defines the project goals, scope, and technical context for the **cfb_model** project.
-It is derived from the [Initial Project Prompt](./initial_prompt.md) and will be updated as the
+It is derived from the [Initial Project Prompt](../planning/initial_prompt.md) and will be updated as the
 project evolves.
 
 > 📚 For a high-level entry point and links to all documentation, see [README.md](../README.md).
@@ -73,8 +73,8 @@ perform weekly model retraining. A password-protected Streamlit web interface wi
 
 ### Out of Scope
 
-- **Initial Feature Scope:** The MVP will focus on basic, foundational statistics. More advanced
-  features like opponent-adjustments are deferred post-MVP.
+- **Feature Scope (MVP):** Includes opponent-adjusted features per [LOG:2025-08-12]; see
+  `docs/project_org/feature_catalog.md` and `docs/decisions/decision_log.md`.
 - Advanced ML models (e.g., XGBoost, RandomForest) are deferred post-MVP.
 - Real-time line movement analysis.
 - Integration of non-play-by-play data (e.g., weather, injuries).
