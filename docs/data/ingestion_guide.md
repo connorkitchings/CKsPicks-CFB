@@ -1,7 +1,7 @@
 # CFBD Data Ingestion Guide
 
 This document outlines the approach for ingesting data from the CollegeFootballData API into our
-local Parquet storage (partitioned by entity/year) using the project's storage backend abstraction.
+local CSV storage for both raw and processed data using the project's storage backend abstraction.
 
 ## Data Filtering Strategy
 
@@ -14,8 +14,8 @@ local Parquet storage (partitioned by entity/year) using the project's storage b
 
 ### Historical Data Scope
 
-- **Time Period (ingested today)**: Seasons 2015 through 2024 (inclusive).
-- **2020 Season**: Included; note reduced games and potential sparsity due to the pandemic.
+- **Time Period (ingested today)**: Seasons 2014 through 2024 (inclusive, excluding 2020).
+- **2020 Season**: Excluded due to data sparsity and pandemic-related inconsistencies.
 - **Modeling training window**: 2014–2024, excluding 2020. 2014 ingestion backfill is tracked in
   `docs/planning/roadmap.md` backlog (ID 18) and will be added in a future sprint.
 
@@ -118,17 +118,30 @@ All scripts use the CFBD API with Bearer token authentication:
 ## Data Quality Notes
 
 - All optional fields handled with `getattr()` for safety
-- Dataset is partitioned by `entity` and `year` for efficient access (e.g., `data/raw/games/year=2024/`)
+- Raw dataset is partitioned by `entity/year/week/game_id` for plays and `entity/year` for other
+  entities. Processed aggregations (CSV) layout:
+  - byplay: `processed/byplay/year/<YYYY>/week/<WW>/game/<GAME_ID>/`
+  - drives: `processed/drives/year/<YYYY>/week/<WW>/game/<GAME_ID>/` (rows are per drive)
+  - team_game: `processed/team_game/year/<YYYY>/week/<WW>/team/<TEAM>/`
+  - team_season: `processed/team_season/year/<YYYY>/team/<TEAM>/side/<offense|defense>/`
+  - team_season_adj: `processed/team_season_adj/year/<YYYY>/team/<TEAM>/side/<offense|defense>/`
 - Each partition includes a `manifest.json` with row counts and metadata to enable validation
 - Referential integrity between entities is validated using utilities in `src/cfb_model/data/validation.py`
 - Idempotent writes: partitions are atomically overwritten to avoid partial writes and duplicates
-- Duplicates are detected and removed prior to write when applicable
+
+### Validation gates (ingestion)
+
+- Schema checks: required columns present; dtypes are consistent with `docs/cfbd/schemas.md`
+- Nulls/ranges: no nulls in key fields; basic range checks on week, period, scores, yard lines
+- Referential integrity: `plays.gameId` present in `games`; team names/IDs resolve against `teams`
+- Manifests: row counts recorded per partition; totals reconciled against expected per season/week
 
 ## CLI Flags
 
 All ingestion commands support a common set of flags:
 
-- `--data-root`: Base directory for the Parquet dataset (default: `./data/raw`)
+- `--data-root`: Base directory for the data (default: `./data/raw` for raw data, `./data/processed`
+  for processed data)
 - `--season_type`: Season type (`regular`, `postseason`) when applicable
 - `--workers`: Parallel worker count for API calls
 - `--exclude-seasons`: Comma-separated years to skip (optional; default: none)

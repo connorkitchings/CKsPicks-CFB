@@ -11,7 +11,7 @@ a web interface.
 - **Base Template**: <https://github.com/connorkitchings/cfb_model.git>
 - **Language**: Python
 - **Data Source**: CollegeFootballData.com API (API key available)
-- **Storage**: Local Parquet (pyarrow) via a storage backend abstraction (Supabase deprecated; see Decisions)
+- **Storage**: Local CSV via a storage backend abstraction (Supabase deprecated; see Decisions)
 - **Interface**: Web application for displaying weekly picks
 
 ## Data Specifications
@@ -115,7 +115,7 @@ Derive opponent-adjusted betting indicators from play-by-play data:
 
 ## Database Schema (Supabase) [Deprecated]
 
-> Note: The project has pivoted from Supabase to a local Parquet storage backend with per-partition
+> Note: The project has pivoted from Supabase to a local CSV storage backend with per-partition
 > manifests and validation utilities. This section remains for historical context. See
 > `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for the current storage
 > architecture and validation workflow.

@@ -66,9 +66,9 @@ class RostersIngester(BaseIngester):
         for player in all_rosters:
             player_team = self.safe_getattr(player, "team", None)
             if player_team in fbs_teams_dict:
-                # Add team_id to the player object for use in transform_data
-                player.team_id = fbs_teams_dict[player_team]
-                fbs_players.append(player)
+                player_dict = player.to_dict()
+                player_dict["team_id"] = fbs_teams_dict[player_team]
+                fbs_players.append(player_dict)
 
         print(f"Filtered to {len(fbs_players)} FBS players.")
         return fbs_players
@@ -87,24 +87,24 @@ class RostersIngester(BaseIngester):
         for player in data:
             players_to_insert.append(
                 {
-                    "id": self.safe_getattr(player, "id", None),
-                    "team_id": self.safe_getattr(player, "team_id", None),
-                    "first_name": self.safe_getattr(player, "first_name", None),
-                    "last_name": self.safe_getattr(player, "last_name", None),
-                    "jersey": self.safe_getattr(player, "jersey", None),
+                    "id": player.get("id"),
+                    "team_id": player.get("team_id"),
+                    "first_name": player.get("first_name"),
+                    "last_name": player.get("last_name"),
+                    "jersey": player.get("jersey"),
                     "year": self.year,
-                    "position": self.safe_getattr(player, "position", None),
-                    "height": self.safe_getattr(player, "height", None),
-                    "weight": self.safe_getattr(player, "weight", None),
-                    "home_city": self.safe_getattr(player, "home_city", None),
-                    "home_state": self.safe_getattr(player, "home_state", None),
-                    "home_country": self.safe_getattr(player, "home_country", None),
-                    "home_latitude": self.safe_getattr(player, "home_latitude", None),
-                    "home_longitude": self.safe_getattr(player, "home_longitude", None),
-                    "home_county_fips": self.safe_getattr(
-                        player, "home_county_fips", None
+                    "position": player.get("position"),
+                    "height": player.get("height"),
+                    "weight": player.get("weight"),
+                    "home_city": player.get("home_city"),
+                    "home_state": player.get("home_state"),
+                    "home_country": player.get("home_country"),
+                    "home_latitude": player.get("home_latitude"),
+                    "home_longitude": player.get("home_longitude"),
+                    "home_county_fips": player.get(
+                        "home_county_fips"
                     ),
-                    "recruit_ids": self.safe_getattr(player, "recruit_ids", None),
+                    "recruit_ids": player.get("recruit_ids"),
                 }
             )
 

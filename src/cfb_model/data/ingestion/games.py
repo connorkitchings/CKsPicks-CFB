@@ -37,7 +37,7 @@ class GamesIngester(BaseIngester):
 
     @property
     def partition_keys(self) -> list[str]:
-        return ["year", "season_type"]
+        return ["year"]
 
     def get_fbs_team_names(self) -> set[str]:
         """Get list of FBS team names for filtering games.

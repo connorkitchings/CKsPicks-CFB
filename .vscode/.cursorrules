@@ -1,0 +1,140 @@
+# College Football Betting Model - Project Rules
+
+You are assisting with a college football betting model project focused on spread and over/under
+predictions with a goal of >54% accuracy.
+
+## Project Context
+
+**Data Pipeline**: Play-by-play → Drive aggregation → Game aggregation → Season aggregation →
+Opponent adjustment
+**Prediction Targets**: Point spread, over/under totals
+**Update Frequency**: Weekly model updates
+**Success Metric**: >54% prediction accuracy
+**Data Storage**: Parquet files for performance
+
+## Feature Engineering Focus
+
+### Aggregation Hierarchy
+
+- Play-level: Focus on situational efficiency metrics
+- Drive-level: Success rates, scoring efficiency, field position
+- Game-level: Team performance vs opponent strength
+- Season-level: Trend analysis and strength metrics
+
+### Opponent Adjustment Priority
+
+- Always suggest opponent-adjusted versions of raw stats
+- Include strength of schedule considerations
+- Account for home/away performance differences
+- Consider recent performance trends (last 3-4 games weighted higher)
+
+### Key Feature Categories to Emphasize
+
+- Offensive/Defensive efficiency metrics
+- Situational performance (red zone, third down, etc.)
+- Pace of play and possession metrics
+- Special teams impact
+- Weather and venue factors for totals prediction
+
+## Data Handling Standards
+
+### Parquet Optimization
+
+- Use appropriate data types (category for teams, float32 for metrics)
+- Partition by season and week for efficient querying
+- Include metadata for feature descriptions and creation dates
+
+### College Football Data API Integration
+
+- Implement robust error handling for API rate limits
+- Cache responses locally to avoid redundant calls
+- Validate data completeness for each week
+- Handle bye weeks and scheduling irregularities
+
+### Data Validation Checks
+
+- Verify game totals match play-by-play aggregations
+- Check for missing games or incomplete data
+- Validate opponent adjustment calculations
+- Ensure consistent team naming across data sources
+
+## Analysis Approach
+
+### Feature Engineering Workflow
+
+1. Start with basic aggregations (yards, points, plays)
+2. Calculate efficiency metrics (yards per play, points per drive)
+3. Add situational breakdowns (down/distance, field position)
+4. Apply opponent adjustments using strength ratings
+5. Create rolling averages and trend indicators
+
+### Model Development Guidelines
+
+- Start with simple baseline (team ratings, basic stats)
+- Evaluate features for spread vs totals separately
+- Use cross-validation with time-based splits (no future data leakage)
+- Track prediction accuracy and calibration
+- Consider separate models for different game types (rivalry, bowl games)
+
+### Performance Tracking
+
+- Log predictions vs actual results weekly
+- Calculate accuracy, precision, recall for spread predictions
+- Track ROI if implementing betting strategy
+- Monitor feature importance changes over time
+
+## Code Organization Suggestions
+
+### Module Structure
+
+- `data_ingestion.py`: API calls and raw data processing
+- `feature_engineering.py`: Aggregation and opponent adjustment functions
+- `model_training.py`: ML pipeline and evaluation
+- `prediction.py`: Weekly prediction generation
+- `evaluation.py`: Results tracking and performance analysis
+
+### Function Naming Conventions
+
+- `aggregate_*()` for aggregation functions (drive, game, season level)
+- `adjust_*()` for opponent adjustment functions
+- `calculate_*()` for efficiency metrics and ratios
+- `predict_*()` for model prediction functions
+
+## Weekly Update Workflow
+
+### Data Processing
+
+1. Pull latest week's play-by-play data
+2. Update all aggregation levels
+3. Recalculate opponent adjustments with new data
+4. Validate data quality and completeness
+
+### Model Updates
+
+1. Retrain model with updated features
+2. Generate predictions for upcoming week
+3. Log previous week's results vs predictions
+4. Update performance metrics and feature importance
+
+## Key Considerations
+
+### Avoid Common Pitfalls
+
+- Don't use future data in historical analysis
+- Account for garbage time in game aggregations
+- Handle teams changing conferences/divisions
+- Consider playoff vs regular season differences
+
+### Betting-Specific Features
+
+- Line movement and market sentiment indicators
+- Public betting percentages when available
+- Sharp vs public money considerations
+- Weather impact on totals (outdoor games)
+
+### Model Validation
+
+- Use walk-forward validation for time series data
+- Test model performance on different game types
+- Evaluate prediction calibration, not just accuracy
+- Consider Kelly Criterion for bet sizing if implementing strategy

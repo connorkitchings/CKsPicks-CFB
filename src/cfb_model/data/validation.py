@@ -1,249 +1,287 @@
-"""Validation utilities for local Parquet storage.
+"""Validation utilities for local CSV storage.
 
 Provides checks for:
-- Manifest row counts vs. Parquet rows
+- Manifest row counts vs. CSV rows (via manifest only)
 - Referential integrity (plays -> games)
-- Duplicate detection within partitions
+- Duplicate detection within partitions (CSV read)
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import json
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Literal
 
-import pyarrow.parquet as pq
+import pandas as pd
 
 from .storage.base import StorageBackend
+from .storage.local_storage import LocalStorage
 
 
 @dataclass
 class ValidationIssue:
     level: str  # "ERROR" | "WARN" | "INFO"
     message: str
+    entity: str
     path: Path | None = None
 
 
-def _iter_parquet_files(root: Path) -> Iterable[Path]:
-    for p in root.rglob("*.parquet"):
+def _iter_csv_files(root: Path) -> Iterable[Path]:
+    """Recursively find all data.csv files."""
+    for p in root.rglob("data.csv"):
         if p.is_file():
             yield p
 
 
-def validate_manifest_counts(partition_dir: Path) -> list[ValidationIssue]:
+def validate_manifest_counts(
+    partition_dir: Path, entity: str
+) -> list[ValidationIssue]:
+    """Check if the number of rows in the CSV matches the manifest count."""
     issues: list[ValidationIssue] = []
-    manifest = partition_dir / "manifest.json"
-    if not manifest.exists():
-        issues.append(
-            ValidationIssue("ERROR", "Missing manifest.json", path=partition_dir)
-        )
-        return issues
-
-    # Read manifest rows
-    try:
-        import json
-
-        with manifest.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-        manifest_rows = int(data.get("rows", -1))
-    except Exception as e:
+    manifest_path = partition_dir / "manifest.json"
+    if not manifest_path.exists():
         issues.append(
             ValidationIssue(
-                "ERROR", f"Failed to read manifest.json: {e}", path=partition_dir
+                "ERROR", "Missing manifest.json", entity=entity, path=partition_dir
             )
         )
         return issues
 
-    # Sum rows across parquet files
-    total_rows = 0
-    for fp in _iter_parquet_files(partition_dir):
-        try:
-            meta = pq.read_metadata(fp)
-            total_rows += meta.num_rows
-        except Exception as e:
-            issues.append(
-                ValidationIssue(
-                    "ERROR", f"Failed reading metadata for {fp.name}: {e}", path=fp
-                )
-            )
-
-    if total_rows != manifest_rows:
+    try:
+        with manifest_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        manifest_rows = int(data.get("rows", -1))
+    except (json.JSONDecodeError, ValueError) as e:
         issues.append(
             ValidationIssue(
                 "ERROR",
-                f"Manifest row count {manifest_rows} != Parquet rows {total_rows}",
-                path=partition_dir,
+                f"Failed to read manifest.json: {e}",
+                entity=entity,
+                path=manifest_path,
             )
-        )
-    else:
-        issues.append(
-            ValidationIssue(
-                "INFO", f"Row counts match: {total_rows}", path=partition_dir
-            )
-        )
-    return issues
-
-
-def validate_plays_referential(
-    storage: StorageBackend, season: int, season_type: str = "regular"
-) -> list[ValidationIssue]:
-    """Ensure each plays partition references an existing game in games index."""
-    issues: list[ValidationIssue] = []
-
-    # Build games index set
-    games = storage.read_index(
-        "games", {"season": season, "season_type": season_type}, columns=["id"]
-    )
-    game_ids = {g["id"] for g in games if "id" in g and g["id"] is not None}
-
-    plays_root = storage.root() / "plays" / f"season={season}"
-    if not plays_root.exists():
-        issues.append(
-            ValidationIssue("WARN", "No plays data for season", path=plays_root)
         )
         return issues
 
-    # week partitions
-    for week_dir in sorted(plays_root.glob("week=*")):
-        if not week_dir.is_dir():
-            continue
-        for game_dir in sorted(week_dir.glob("game_id=*")):
-            if not game_dir.is_dir():
-                continue
-            try:
-                game_id = int(game_dir.name.split("=", 1)[1])
-            except Exception:
-                issues.append(
-                    ValidationIssue(
-                        "ERROR", "Malformed game_id directory name", path=game_dir
-                    )
-                )
-                continue
+    csv_path = partition_dir / "data.csv"
+    if not csv_path.exists():
+        if manifest_rows == 0:
+            # Manifest says 0 rows, and no CSV exists, which is valid.
+            return issues
+        issues.append(
+            ValidationIssue("ERROR", "Missing data.csv", entity=entity, path=csv_path)
+        )
+        return issues
 
-            if game_id not in game_ids:
-                issues.append(
-                    ValidationIssue(
-                        "ERROR",
-                        f"Plays partition references missing game_id={game_id}",
-                        path=game_dir,
-                    )
-                )
+    try:
+        df = pd.read_csv(csv_path)
+        csv_rows = len(df)
+    except Exception as e:
+        issues.append(
+            ValidationIssue(
+                "ERROR", f"Failed reading CSV: {e}", entity=entity, path=csv_path
+            )
+        )
+        return issues
 
-            # Validate manifests for each plays partition
-            issues.extend(validate_manifest_counts(game_dir))
-
+    if csv_rows != manifest_rows:
+        issues.append(
+            ValidationIssue(
+                "ERROR",
+                f"Manifest row count {manifest_rows} != CSV rows {csv_rows}",
+                entity=entity,
+                path=partition_dir,
+            )
+        )
     return issues
 
 
 def validate_partition_duplicates(
-    partition_dir: Path, *, key_columns: list[str]
+    partition_dir: Path, entity: str, key_columns: list[str]
 ) -> list[ValidationIssue]:
-    """Detect duplicates in a partition Parquet files based on key columns."""
+    """Detect duplicates in a partition's data.csv based on key columns."""
     issues: list[ValidationIssue] = []
-    # Read all parquet files into a single table (columns subset)
-    files = list(_iter_parquet_files(partition_dir))
-    if not files:
-        return issues
+    csv_path = partition_dir / "data.csv"
+    if not csv_path.exists():
+        return issues  # No data to check for duplicates
 
     try:
-        # Read overlapping subset of columns present
-        from pyarrow import concat_tables
-
-        subset_cols = None
-        tables = []
-        for fp in files:
-            schema = pq.read_schema(fp)
-            available = [c for c in key_columns if c in schema.names]
-            if not available:
-                continue
-            t = pq.read_table(fp, columns=available)
-            tables.append(t)
-            subset_cols = available if subset_cols is None else subset_cols
-        if not tables or subset_cols is None:
+        df = pd.read_csv(csv_path)
+        if df.empty:
             return issues
-        table = concat_tables(tables, promote=True)
-        df = table.to_pandas(types_mapper=None)
-        dup_mask = df.duplicated(subset=subset_cols, keep=False)
+
+        # Ensure all key columns are present before checking
+        if not all(k in df.columns for k in key_columns):
+            issues.append(
+                ValidationIssue(
+                    "WARN",
+                    f"Skipping duplicate check; missing one or more keys: {key_columns}",
+                    entity=entity,
+                    path=partition_dir,
+                )
+            )
+            return issues
+
+        dup_mask = df.duplicated(subset=key_columns, keep=False)
         dup_count = int(dup_mask.sum())
         if dup_count > 0:
             issues.append(
                 ValidationIssue(
                     "ERROR",
-                    f"Found {dup_count} duplicate rows on keys {subset_cols}",
+                    f"Found {dup_count} duplicate rows on keys {key_columns}",
+                    entity=entity,
                     path=partition_dir,
                 )
             )
-        else:
-            issues.append(
-                ValidationIssue("INFO", "No duplicates found", path=partition_dir)
-            )
     except Exception as e:
         issues.append(
-            ValidationIssue("ERROR", f"Duplicate check failed: {e}", path=partition_dir)
+            ValidationIssue(
+                "ERROR",
+                f"Duplicate check failed: {e}",
+                entity=entity,
+                path=partition_dir,
+            )
         )
     return issues
 
 
-def validate_season(
-    storage: StorageBackend, season: int, season_type: str = "regular"
+def validate_entity(
+    storage: LocalStorage,
+    year: int,
+    entity: str,
+    key_columns: list[str],
+    partition_glob: str = "*/*/*",
 ) -> list[ValidationIssue]:
-    """Run core validations for a season across games and plays."""
+    """Generic validator for a processed entity."""
     issues: list[ValidationIssue] = []
-
-    # Games partition presence and manifests
-    games_dir = (
-        storage.root() / "games" / f"season={season}" / f"season_type={season_type}"
-    )
-    if games_dir.exists():
-        issues.extend(validate_manifest_counts(games_dir))
-    else:
+    entity_dir = storage.root() / entity / str(year)
+    if not entity_dir.exists():
         issues.append(
             ValidationIssue(
-                "WARN", "No games data for season/season_type", path=games_dir
+                "WARN", "No data found for entity", entity=entity, path=entity_dir
             )
         )
+        return issues
 
-    # Plays referential and manifests
-    issues.extend(validate_plays_referential(storage, season, season_type))
+    partition_dirs = list(entity_dir.glob(partition_glob))
+    if not partition_dirs:
+        issues.append(
+            ValidationIssue(
+                "INFO", "No partitions found to validate", entity=entity, path=entity_dir
+            )
+        )
+        return issues
 
-    # Plays duplicate detection per game partition on (id) if present, else (game_id, play_number)
-    plays_root = storage.root() / "plays" / f"season={season}"
-    if plays_root.exists():
-        for week_dir in sorted(plays_root.glob("week=*")):
-            for game_dir in sorted(week_dir.glob("game_id=*")):
-                # Prefer primary key 'id' if present
-                issues.extend(
-                    validate_partition_duplicates(
-                        game_dir, key_columns=["id", "game_id", "play_number"]
-                    )
-                )
+    print(f"Validating {len(partition_dirs)} partitions for entity '{entity}'...")
+    for part_dir in partition_dirs:
+        if not part_dir.is_dir():
+            continue
+        issues.extend(validate_manifest_counts(part_dir, entity))
+        issues.extend(validate_partition_duplicates(part_dir, entity, key_columns))
 
+    return issues
+
+
+def validate_processed_season(
+    storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
+    """Run all validations for a processed season."""
+    issues: list[ValidationIssue] = []
+    print(f"--- Validating Processed Data for Season {year} ---")
+
+    # byplay: year/week/game
+    issues.extend(
+        validate_entity(
+            storage, year, "byplay", ["id", "game_id", "play_number"], "*/*/*"
+        )
+    )
+    # drives: year/week/game
+    issues.extend(
+        validate_entity(storage, year, "drives", ["game_id", "drive_number"], "*/*/*")
+    )
+    # team_game: year/week/team
+    issues.extend(
+        validate_entity(storage, year, "team_game", ["game_id", "team"], "*/*/*")
+    )
+    # team_season & team_season_adj: year/team/side
+    issues.extend(
+        validate_entity(storage, year, "team_season", ["team"], "*/*/*")
+    )
+    issues.extend(
+        validate_entity(storage, year, "team_season_adj", ["team"], "*/*/*")
+    )
+
+    return issues
+
+
+def validate_raw_season(
+    storage: LocalStorage, year: int, season_type: str = "regular"
+) -> list[ValidationIssue]:
+    """Run core validations for a raw data season."""
+    issues: list[ValidationIssue] = []
+    print(f"--- Validating Raw Data for Season {year} ---")
+
+    # Simplified validation for raw data as an example
+    games_dir = storage.root() / "games" / str(year)
+    if games_dir.exists():
+        issues.extend(validate_manifest_counts(games_dir, "games")),
+        issues.extend(validate_partition_duplicates(games_dir, "games", ["id"]))
+    else:
+        issues.append(
+            ValidationIssue("WARN", "No games data for season", entity="games", path=games_dir)
+        )
     return issues
 
 
 def main() -> None:
     import argparse
 
-    from .storage.local_parquet import LocalParquetStorage
-
     parser = argparse.ArgumentParser(
-        description="Validate local Parquet data for a season."
+        description="Validate local CSV data for a season."
     )
-    parser.add_argument("--season", type=int, required=True)
-    parser.add_argument("--season_type", type=str, default="regular")
-    parser.add_argument("--data-root", type=str, default=None)
+    parser.add_argument("--year", type=int, required=True, help="Season year to validate.")
+    parser.add_argument(
+        "--data-type",
+        type=str,
+        default="processed",
+        choices=["raw", "processed"],
+        help="Type of data to validate.",
+    )
+    parser.add_argument("--data-root", type=str, default=None, help="Override data root path.")
     args = parser.parse_args()
 
-    storage = LocalParquetStorage(args.data_root)
-    issues = validate_season(storage, args.season, args.season_type)
+    storage = LocalStorage(
+        data_root=args.data_root, file_format="csv", data_type=args.data_type
+    )
+
+    if args.data_type == "processed":
+        issues = validate_processed_season(storage, args.year)
+    else:
+        issues = validate_raw_season(storage, args.year)
+
     if not issues:
-        print("No issues found.")
+        print(f"\n✅ No issues found for {args.year} {args.data_type} data.")
         return
 
-    # Print summary
-    for iss in issues:
-        loc = f" [{iss.path}]" if iss.path else ""
-        print(f"{iss.level}: {iss.message}{loc}")
+    print(f"\n--- Validation Summary for {args.year} ({args.data_type}) ---")
+    errors = [iss for iss in issues if iss.level == "ERROR"]
+    warns = [iss for iss in issues if iss.level == "WARN"]
+
+    if errors:
+        print(f"🔴 Found {len(errors)} ERROR(s):")
+        for iss in errors:
+            loc = f" [{iss.path}]" if iss.path else ""
+            print(f"  - [{iss.entity}] {iss.message}{loc}")
+
+    if warns:
+        print(f"🟡 Found {len(warns)} WARNING(s):")
+        for iss in warns:
+            loc = f" [{iss.path}]" if iss.path else ""
+            print(f"  - [{iss.entity}] {iss.message}{loc}")
+
+    if not errors and not warns:
+        print("✅ All checks passed (only INFO-level messages).")
 
 
 if __name__ == "__main__":

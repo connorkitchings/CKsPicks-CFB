@@ -1,10 +1,11 @@
 # Project Charter
 
 This document defines the project goals, scope, and technical context for the **cfb_model** project.
-It is derived from the [Initial Project Prompt](../planning/initial_prompt.md) and will be updated as the
-project evolves.
+It is derived from the [Initial Project Prompt](../planning/initial_prompt.md) and will be updated
+as the project evolves.
 
-> 📚 For a high-level entry point and links to all documentation, see [README.md](../README.md).
+> 📚 For a high-level entry point and links to all documentation, see the project README on GitHub
+or the docs home page.
 
 ## Project Overview
 
@@ -73,7 +74,9 @@ perform weekly model retraining. A password-protected Streamlit web interface wi
 
 ### Out of Scope
 
-- **Feature Scope (MVP):** Includes opponent-adjusted features per [LOG:2025-08-12]; see
+- **Feature Scope (MVP):** Both raw and processed data are stored in CSV format with a simplified
+  partitioning scheme (year/week/game_id for plays, year for other entities).
+  Includes opponent-adjusted features per [LOG:2025-08-12]; see
   `docs/project_org/feature_catalog.md` and `docs/decisions/decision_log.md`.
 - Advanced ML models (e.g., XGBoost, RandomForest) are deferred post-MVP.
 - Real-time line movement analysis.
@@ -83,20 +86,19 @@ perform weekly model retraining. A password-protected Streamlit web interface wi
 
 ### High-Level Summary
 
-The system is an automated weekly pipeline orchestrated by GitHub Actions and Prefect. On a
-weekly schedule, a flow ingests play-by-play data from the CollegeFootballData.com API, processes
-it, and writes a partitioned local Parquet dataset (via `pyarrow`) using a storage backend
-abstraction. A linear regression model is then retrained on the latest data. Predictions for the
-upcoming week are generated and saved alongside the dataset. A Streamlit web application provides a
-password-protected interface to display these recommendations.
+The MVP uses a manual weekly pipeline executed mid-week. A flow ingests play-by-play data from the
+CollegeFootballData.com API, processes it, and writes partitioned local CSV datasets for both raw
+and processed layers (via a storage backend abstraction). A linear regression model is then retrained
+on the latest data. Predictions for the upcoming week are generated and saved alongside the dataset.
+A Streamlit web application provides a password-protected interface to display these recommendations.
 
 ### System Diagram
 
 ```mermaid
 graph TD
-    A[GitHub Actions] -- Triggers Weekly --> B(Prefect Cloud)
-    B -- Runs Flow --> C{CollegeFootballData API}
-    C -- Play-by-Play Data --> D[Local Parquet Storage]
+    A[Manual Trigger (Wed 12 ET)] -- Runs --> B(Prefect Flow)
+    B -- Fetches --> C{CollegeFootballData API}
+    C -- Play-by-Play Data --> D[Local CSV Storage]
     B -- Stores Predictions --> D
     E[Streamlit App] -- Reads Picks --> D
     F[User] -- Views Picks --> E
@@ -118,7 +120,7 @@ graph TD
 | Core Language | Python | 3.12+ | Primary programming language |
 | Linting & Formatting | Ruff | latest | Combines linting, formatting, and import sorting |
 | Web Interface | Streamlit | latest | For building and deploying the user-facing application |
-| Storage | Local Parquet (pyarrow) | latest | Partitioned dataset with per-partition manifests |
+| Storage | Local CSV (raw and processed) | latest | Partitioned dataset with per-partition manifests |
 | Testing | Pytest | latest | Framework for writing and running tests |
 | Documentation | MkDocs | latest | Static site generator for project documentation |
 | Orchestration | Prefect | latest | Workflow orchestration and scheduling |
@@ -128,7 +130,7 @@ graph TD
 ### Key Assumptions
 
 **Data Availability:** We assume the CollegeFootballData.com API will remain available, reliable,
-and up-and consistent throughout the season.
+and consistent throughout the season.
 
 **Model Viability:** We assume that opponent-adjusted features derived from play-by-play data
 contain enough signal to build a predictive model with a win rate >52.4%.
@@ -137,8 +139,8 @@ contain enough signal to build a predictive model with a win rate >52.4%.
 
 | Risk | Probability | Impact | Mitigation |
 |------|-------------|--------|------------|
-| CFB Data API Failure | Low | High | Implement robust error handling, data validation, and logging.
-If the API is down, the pipeline should fail gracefully and notify administrators. |
+<!-- markdownlint-disable-next-line MD013 -->
+| CFB Data API Failure | Low | High | Implement robust error handling, data validation, and logging. If the API is down, the pipeline should fail gracefully and notify administrators. |
 
 ## Decision Log
 

@@ -67,19 +67,15 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
       ingestion pipeline to handle rate-limiting.']`
 
 4. **Generate the Dev Log:**
-    - Based on the information above, please generate a complete dev log entry for today, `[YYYY-MM-DD]`.
+    - Based on the information above, please generate a complete dev log entry for today.
     - Use the template from `session_logs/_template.md`.
-    - **Important:** Check if a dev log already exists for today's date in the
-      `/session_logs/` directory. If it does, create the new log with sequential
-      numbering:
-      - First log of the day: `[YYYY-MM-DD].md`
-      - Second log of the day: `[YYYY-MM-DD]_02.md`
-      - Third log of the day: `[YYYY-MM-DD]_03.md`
-      - And so on...
-    - Create this log as a new file inside the `/session_logs/` directory with the
-      appropriate filename based on existing logs for that date.
+    - **Important:** Create a new directory for today's date `[YYYY-MM-DD]` inside `/session_logs/`
+      if it doesn't exist.
 
-5. **Update Documentation:**
+- Create the new log with a sequential, zero-padded filename (e.g., `01.md`, `02.md`) inside the
+    date directory.
+
+1. **Update Documentation:**
     - Review `README.md`,`docs/index.md`, `pyproject.toml`, `docs/decisions/README.md`,
       `mkdocs.yml`, `docs/project_org/project_charter.md`, and `docs/project_org/kb_overview.md`.
     - Update any relevant documentation based on the changes made during the session.

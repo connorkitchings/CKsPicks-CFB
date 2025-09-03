@@ -15,40 +15,40 @@ season-to-date features ready for opponent adjustment.
 
 ## Staged Aggregation
 
-1) Plays → Enhanced Plays
+1. Plays → Enhanced Plays
 
 - Input: Raw plays for a season.
 - Transformations: normalize fields (clock → seconds, yardline/possession fields), create boolean
   indicators (rush/pass, success, explosiveness, penalty, sack, turnover, garbage_time flag),
   standardize team columns (`offense`, `defense`).
-- Output: `features/<year>/plays_enhanced.parquet`
+- Output: CSV partitions under `processed/byplay/year/<YYYY>/...`
 - Schema basis: see `docs/cfbd/schemas.md` ("Play Schema").
 
-2) Enhanced Plays → Drives
+1. Enhanced Plays → Drives
 
 - Group by continuous possessions to summarize per-drive metrics (plays, yards, points, success
   rate, EPA/PPA totals/means, time of possession, result).
 - If a canonical drive table is available, align to that; otherwise reconstruct via possession
   changes and scoring events.
-- Output: `features/<year>/drives.parquet`
+- Output: CSV partitions under `processed/drives/year/<YYYY>/...`
 
-3) Drives → Team-Game
+1. Drives → Team-Game
 
 - Aggregate by game and team: tempo, success rates, explosiveness, early/late down splits,
   red zone, penalties, turnovers, special teams, field position, finishing drives.
-- Output: `features/<year>/team_game.parquet`
+- Output: CSV partitions under `processed/team_game/year/<YYYY>/...`
 
-4) Team-Game → Team-Season-to-Date
+1. Team-Game → Team-Season-to-Date
 
 - Cumulative and rolling aggregates through each week (exclude current game when training/predicting).
 - Apply recency weights (3/2/1) per `docs/project_org/feature_catalog.md`.
-- Output: `features/<year>/team_season_s2d.parquet`
+- Output: CSV partitions under `processed/team_season/year/<YYYY>/...`
 
-5) Opponent Adjustment (next phase)
+1. Opponent Adjustment (next phase)
 
 - Iterative opponent adjustment per feature catalog (4 passes, league-mean centering), producing
    opponent-adjusted season features.
-- Output: `features/<year>/team_season_adj.parquet`
+- Output: CSV partitions under `processed/team_season_adj/year/<YYYY>/...`
 
 ---
 
@@ -64,11 +64,11 @@ we rely on, plus derived columns.
   - `clock_seconds` (int): period-adjusted seconds remaining in game or per-period (TBD; choose one
   and document)
   - `is_pass`, `is_rush`, `is_penalty`, `is_sack`, `is_turnover`, `is_score`, `is_garbage_time`
-  - `success` (bool): define via standard success formula (1st: ≥50% to go; 2nd: ≥70%; 3rd/4th: 100%)
-  - `explosive` (bool): yardage threshold by play type (e.g., rush ≥12, pass ≥16)
+- `success` (bool): define via standard success formula (1st: ≥50% to go; 2nd: ≥70%; 3rd/4th: 100%)
+- `explosive` (bool): yardage threshold by play type (rush ≥15, pass ≥20) to match implementation
   - `field_pos_100` (float): normalized field position [0,100]
   - `epa` (float): use `ppa` if available; otherwise placeholder for later EPA calc
-  - `offense_team`, `defense_team` (string): canonicalized names/ids
+- `offense`, `defense` (string): canonicalized names/ids
 
 Once agreed, we will codify this as a Pydantic model and write a transform to produce
 `plays_enhanced.parquet` per season.
@@ -77,8 +77,8 @@ Once agreed, we will codify this as a Pydantic model and write a transform to pr
 
 ## Validation & Manifests
 
-- Each output emits a manifest with row counts and feature coverage stats: `features/<year>/manifest.json`.
-- Add summary CSVs under `reports/metrics/` (e.g., `features_<year>_summary.csv`).
+- Each processed partition includes a `manifest.json` with row counts and metadata.
+- Add a season summary CSV under `reports/metrics/` (e.g., `features_<year>_summary.csv`).
 
 ---
 

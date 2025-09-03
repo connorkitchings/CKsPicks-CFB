@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-DOCS = ROOT / "documents"
+DOCS = ROOT / "docs"
 
 parser = argparse.ArgumentParser(description="Validate specific anchor types.")
 parser.add_argument(

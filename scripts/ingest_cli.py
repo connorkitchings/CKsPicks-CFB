@@ -9,6 +9,11 @@ import argparse
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env (supports CFB_MODEL_DATA_ROOT with spaces)
+load_dotenv()
+
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 

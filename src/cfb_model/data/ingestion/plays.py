@@ -43,10 +43,10 @@ class PlaysIngester(BaseIngester):
     def get_fbs_game_ids(self) -> list[tuple[int, int]]:
         """Get list of FBS game IDs and weeks from local games index."""
         idx = self.storage.read_index(
-            "games", {"year": self.year, "season_type": self.season_type}, columns=["id", "week"]
+            "games", {"year": self.year}, columns=["id", "week"]
         )
         if not idx:
-            raise RuntimeError(f"Games index not found for year {self.year} and season_type {self.season_type}. Please run the games ingester first.")
+            raise RuntimeError(f"Games index not found for year {self.year}. Please run the games ingester first.")
 
         games_data = [(g["id"], g.get("week")) for g in idx]
         if self.limit_games:
@@ -145,59 +145,64 @@ class PlaysIngester(BaseIngester):
                 self.safe_getattr(play, "wallclock", None)
             )
 
-            plays_to_insert.append(
-                {
-                    "id": self.safe_getattr(play, "id", None),
-                    "game_id": self.safe_getattr(play, "game_id", None),
-                    "play_number": self.safe_getattr(play, "play_number", None),
-                    "period": self.safe_getattr(play, "period", None),
-                    "clock_minutes": clock_minutes,
-                    "clock_seconds": clock_seconds,
-                    "wallclock": wallclock,
-                    "offense": self.safe_getattr(play, "offense", None),
-                    "offense_conference": self.safe_getattr(
-                        play, "offense_conference", None
-                    ),
-                    "offense_score": self.safe_getattr(play, "offense_score", None),
-                    "offense_timeouts": self.safe_getattr(
-                        play, "offense_timeouts", None
-                    ),
-                    "defense": self.safe_getattr(play, "defense", None),
-                    "defense_conference": self.safe_getattr(
-                        play, "defense_conference", None
-                    ),
-                    "defense_score": self.safe_getattr(play, "defense_score", None),
-                    "defense_timeouts": self.safe_getattr(
-                        play, "defense_timeouts", None
-                    ),
-                    "home": self.safe_getattr(play, "home", None),
-                    "away": self.safe_getattr(play, "away", None),
-                    "down": self.safe_getattr(play, "down", None),
-                    "distance": self.safe_getattr(play, "distance", None),
-                    "yardline": self.safe_getattr(play, "yard_line", None),
-                    "yards_to_goal": self.safe_getattr(play, "yards_to_goal", None),
-                    "yards_gained": self.safe_getattr(play, "yards_gained", None),
-                    "play_type": self.safe_getattr(play, "play_type", None),
-                    "play_text": self.safe_getattr(play, "play_text", None),
-                    "ppa": self.safe_getattr(play, "ppa", None),
-                    "scoring": self.safe_getattr(play, "scoring", None),
-                }
-            )
+            # Add season and week to the record
+            record = {
+                "season": self.year,
+                "week": self.safe_getattr(play, "week", None),  # Get week from play object if available
+                "id": self.safe_getattr(play, "id", None),
+                "game_id": self.safe_getattr(play, "game_id", None),
+                "play_number": self.safe_getattr(play, "play_number", None),
+                "period": self.safe_getattr(play, "period", None),
+                "clock_minutes": clock_minutes,
+                "clock_seconds": clock_seconds,
+                "wallclock": wallclock,
+                "offense": self.safe_getattr(play, "offense", None),
+                "offense_conference": self.safe_getattr(
+                    play, "offense_conference", None
+                ),
+                "offense_score": self.safe_getattr(play, "offense_score", None),
+                "offense_timeouts": self.safe_getattr(
+                    play, "offense_timeouts", None
+                ),
+                "defense": self.safe_getattr(play, "defense", None),
+                "defense_conference": self.safe_getattr(
+                    play, "defense_conference", None
+                ),
+                "defense_score": self.safe_getattr(play, "defense_score", None),
+                "defense_timeouts": self.safe_getattr(
+                    play, "defense_timeouts", None
+                ),
+                "home": self.safe_getattr(play, "home", None),
+                "away": self.safe_getattr(play, "away", None),
+                "down": self.safe_getattr(play, "down", None),
+                "distance": self.safe_getattr(play, "distance", None),
+                "yardline": self.safe_getattr(play, "yard_line", None),
+                "yards_to_goal": self.safe_getattr(play, "yards_to_goal", None),
+                "yards_gained": self.safe_getattr(play, "yards_gained", None),
+                "play_type": self.safe_getattr(play, "play_type", None),
+                "play_text": self.safe_getattr(play, "play_text", None),
+                "ppa": self.safe_getattr(play, "ppa", None),
+                "scoring": self.safe_getattr(play, "scoring", None),
+            }
+            plays_to_insert.append(record)
 
         return plays_to_insert
 
+    @property
+    def partition_keys(self) -> list[str]:
+        return ["year", "week", "game_id"]
+
     def ingest_data(self, data: list[dict[str, Any]]) -> None:
-        """Write plays data partitioned by season/week/game_id to Parquet."""
+        """Write plays data partitioned by season/week/game_id to CSV."""
         if not data:
             print("No data to ingest.")
             return
 
-        # Group plays by (week, game_id)
         from collections import defaultdict
 
         # Build game_id -> week map from games index to ensure correct partitioning
         idx = self.storage.read_index(
-            "games", {"year": self.year, "season_type": self.season_type}
+            "games", {"year": self.year}, columns=["id", "week"]
         )
         game_week_map: dict[int, int] = {
             int(row["id"]): int(row.get("week"))
@@ -224,15 +229,11 @@ class PlaysIngester(BaseIngester):
         total_written = 0
         for (week, game_id), rows in sorted(by_key.items()):
             partition = Partition(
-                {"season": str(self.year), "week": str(week), "game_id": str(game_id)}
+                {"year": str(self.year), "week": str(week), "game_id": str(game_id)}
             )
-            written = self.storage.write(
-                self.entity_name, rows, partition, overwrite=True
-            )
+            written = self.storage.write(self.entity_name, rows, partition, overwrite=True)
             total_written += written
-            print(
-                f"  Wrote {written} plays to {self.entity_name}/{partition.path_suffix()}"
-            )
+            print(f"  Wrote {written} plays to {self.entity_name}/{self.year}/{week}/{game_id}")
         print(f"Total plays written: {total_written}")
 
 

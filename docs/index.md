@@ -14,5 +14,5 @@ information on the project's architecture, development standards, and usage guid
 - **[Decisions](./decisions/README.md):** Log of architectural decisions.
 - **[Roadmap](./planning/roadmap.md):** Implementation schedule and future plans.
 - **[CFBD Data Docs](./cfbd/data_ingestion.md):** Data ingestion, schemas, and FBS filtering.
-- **[Session Logs](../session_logs/):** Daily logs and session templates.
+- **Session Logs:** See the `session_logs/` folder in the repository for daily, chronological logs.
 - **[AI Session Templates](./guides/ai_session_templates.md):** Templates for AI-assisted sessions.

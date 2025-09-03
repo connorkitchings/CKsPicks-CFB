@@ -38,17 +38,17 @@ class BettingLinesIngester(BaseIngester):
 
     @property
     def partition_keys(self) -> list[str]:
-        return ["year", "season_type"]
+        return ["year"]
 
     def get_fbs_game_ids(self) -> list[int]:
         """Get list of FBS game IDs from local games index."""
-        index_filters = {"year": str(self.year), "season_type": self.season_type}
+        index_filters = {"year": str(self.year)}
         games_index = self.storage.read_index(
             "games", filters=index_filters, columns=["id"]
         )
 
         if not games_index:
-            raise RuntimeError(f"Games index not found for year {self.year} and season_type {self.season_type}. Please run the games ingester first.")
+            raise RuntimeError(f"Games index not found for year {self.year}. Please run the games ingester first.")
 
         game_ids = [game["id"] for game in games_index]
 

@@ -19,6 +19,27 @@ nav:
   - 'Guides':
     - 'Getting Started': 'guides/getting_started.md'
     - 'AI Session Templates': 'guides/ai_session_templates.md'
+    - 'Feature Engineering Plan': 'guides/feature_engineering_plan.md'
+    - 'Aggregation Validation': 'notebooks/03_aggregation_validation.ipynb'
+  - 'Data':
+    - 'Overview': 'data/README.md'
+    - 'Ingestion Guide': 'data/ingestion_guide.md'
+    - 'Raw API Schemas':
+      - 'Overview': 'data/raw_api/README.md'
+      - 'Games': 'data/raw_api/games.md'
+      - 'Plays': 'data/raw_api/plays.md'
+      - 'Betting': 'data/raw_api/betting.md'
+      - 'Teams': 'data/raw_api/teams.md'
+      - 'Venues': 'data/raw_api/venues.md'
+      - 'Rosters': 'data/raw_api/rosters.md'
+      - 'Coaches': 'data/raw_api/coaches.md'
+    - 'Transformed Schemas':
+      - 'Overview': 'data/transformed/README.md'
+      - 'Plays': 'data/transformed/plays.md'
+      - 'Drives': 'data/transformed/drives.md'
+      - 'Team Game': 'data/transformed/team_game.md'
+      - 'Team Season': 'data/transformed/team_season.md'
+      - 'Opponent Adjusted': 'data/transformed/opponent_adjusted.md'
   - 'Project Org':
     - 'Project Charter': 'project_org/project_charter.md'
     - 'Modeling Baseline': 'project_org/modeling_baseline.md'
@@ -26,12 +47,11 @@ nav:
     - 'Development Standards': 'project_org/development_standards.md'
     - 'Checklists': 'project_org/checklists.md'
     - 'Knowledge Base': 'project_org/kb_overview.md'
-  - 'CFBD':
-    - 'Data Ingestion': 'cfbd/data_ingestion.md'
-    - 'Schemas': 'cfbd/schemas.md'
-    - 'Quickstart': 'cfbd/quickstart.md'
   - 'Operations':
     - 'Weekly Pipeline': 'operations/weekly_pipeline.md'
+  - 'Models':
+    - 'Ridge Baseline': 'models/ridge_baseline.md'
+  - 'API Reference': 'api_reference.md'
   - 'Roadmap': 'planning/roadmap.md'
   - 'Decisions':
     - 'Decision Log': 'decisions/decision_log.md'

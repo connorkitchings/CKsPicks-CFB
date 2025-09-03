@@ -17,6 +17,7 @@ For a deep dive into the methodology and guides, please see our [full documentat
 
 - Python 3.12+
 - [uv](https://github.com/astral-sh/uv)
+  - macOS (Homebrew): `brew install uv`
 
 ### Installation
 
@@ -36,9 +37,9 @@ For a deep dive into the methodology and guides, please see our [full documentat
 
 3. **Install dependencies:**
 
-   ```bash
-   uv sync
-   ```
+```bash
+uv sync --extra dev
+```
 
 For detailed usage guides (running tests, pipelines, and docs), see the
 [full documentation site](./docs/index.md).
@@ -47,35 +48,25 @@ For detailed usage guides (running tests, pipelines, and docs), see the
 
 ## 📂 Project Structure
 
-<details>
-<summary>Click to expand</summary>
-
 ```text
 cfb_model/
-├── .github/              # GitHub Actions workflows and templates
-├── data/                 # Raw and processed data (not committed)
-├── docs/                 # Simplified project documentation
-├── models/               # Trained model artifacts (not committed)
+├── docs/                 # Project documentation (MkDocs)
 ├── notebooks/            # Jupyter notebooks for exploration and analysis
-├── reports/              # Generated reports and figures
-├── scripts/              # Utility and automation scripts
 ├── session_logs/         # Chronological development session logs
-├── src/                  # Project source code
-│   ├── cfb_model/        # Project source code
-│       ├── data/         # Raw and processed data scripts
+├── scripts/              # Utility and automation scripts
+├── src/
+│   └── cfb_model/
+│       ├── data/         # Ingestion, storage, aggregations
 │       ├── flows/        # Prefect orchestration flows
-│       ├── models/       # Trained model artifacts (not committed)
-│       ├── utils/        # Shared utility modules
-├── .dockerignore         # Files to ignore in Docker builds
-├── .gitignore            # Files to ignore in Git
-├── Dockerfile            # Multi-stage Dockerfile for containerization
-├── mkdocs.yml            # Configuration for MkDocs
-├── prefect.yaml          # Configuration for Prefect deployments
+│       ├── models/       # Modeling code
+│       └── utils/        # Shared utilities
+├── mkdocs.yml            # Documentation site config
+├── prefect.yaml          # Prefect deployments/config
 ├── pyproject.toml        # Project metadata and dependencies
+├── uv.lock               # Resolved dependency lockfile
+├── LICENSE
 └── README.md             # This file
 ```
-
-</details>
 
 ---
 
@@ -92,9 +83,25 @@ Contributions are welcome! Please follow the guidelines below:
 
 ## 🗄️ Storage Backend
 
-The project uses a local, partitioned Parquet dataset (via `pyarrow`) instead of a cloud database.
-Ingestion scripts write idempotently per `entity/year` and generate `manifest.json` files for
-validation. See `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for details.
+The project uses a local, partitioned dataset. Both raw and processed data are stored in CSV format
+(via `pandas`; `pyarrow` is retained for schema/interop utilities).
+Ingestion scripts write idempotently per `entity/year/week/game_id` (for plays) or `entity/year`
+(for other entities) and generate `manifest.json` files for validation.
+See `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for details.
+
+### Aggregations CLI
+
+Run pre-aggregations (reads `CFB_MODEL_DATA_ROOT` from your environment or `.env`):
+
+```bash
+python scripts/aggregations_cli.py preagg --year 2024
+```
+
+Byplay-only:
+
+```bash
+python scripts/aggregations_cli.py byplay --year 2024
+```
 
 ---
 

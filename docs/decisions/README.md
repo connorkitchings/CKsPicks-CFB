@@ -13,6 +13,9 @@ Link decisions from other docs using the Vibe Coding System syntax:
 
 Latest highlights:
 
+- 2025-08-14: Storage format standardized to CSV for both raw and processed datasets for easier
+  inspection and portability. Partitioning scheme: `data/<raw|processed>/<entity>/<year>/<week>/<game_id>`
+  for plays-derived entities as applicable, and `data/<raw|processed>/<entity>/<year>` for others.
 - 2025-08-12: Training window set to 2014–2024 (excluding 2020); opponent adjustment method
   finalized (additive, 4 iterations, league-mean centering, 3/2/1 recency); feature catalog
   updated accordingly.

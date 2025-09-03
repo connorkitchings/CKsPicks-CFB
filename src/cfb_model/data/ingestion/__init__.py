@@ -1,7 +1,7 @@
 """Data ingestion modules for CFBD API data.
 
 This package contains modules for ingesting data from the CollegeFootballData API
-into a local Parquet storage backend. All modules follow FBS-only filtering and year-specific
+into a local CSV storage backend. All modules follow FBS-only filtering and year-specific
 data ingestion patterns.
 """
 

@@ -7,7 +7,7 @@ This guide provides instructions for setting up your local development environme
 
 - **Python 3.12+**: Ensure you have a compatible Python version installed.
 - **Git**: For version control.
-- **`uv`**: The project's package manager. If you don't have it, install it with `pip install uv`.
+- **`uv`**: The project's package manager. On macOS with Homebrew: `brew install uv`.
 - **CollegeFootballData.com API Key**: You will need an API key to access the data source.
 
 ## 1. Clone the Repository
@@ -49,10 +49,10 @@ source .venv/bin/activate
 
 ## 4. Install Dependencies
 
-Install all required project dependencies using `uv`:
+Install all required project dependencies using `uv` (include dev tools like pytest, ruff, mkdocs):
 
 ```bash
-uv sync
+uv sync --extra dev
 ```
 
 ## 5. Code Quality
@@ -77,7 +77,7 @@ uv run pytest
 To serve the documentation site locally, run the following command:
 
 ```bash
-mkdocs serve
+uv run mkdocs serve
 ```
 
 Then, open your browser to `http://127.0.0.1:8000` to view the documentation.
@@ -102,7 +102,7 @@ Then:
 
 ## 9. Configure External Data Root (optional)
 
-If you store Parquet data on an external drive, set a consistent data root and pass it to CLI tools:
+If you store data on an external drive, set a consistent data root and pass it to CLI tools:
 
 - Example path (macOS): `/Volumes/EXTDRV/cfb_model_data`
 - Example usage: `--data-root /Volumes/EXTDRV/cfb_model_data`

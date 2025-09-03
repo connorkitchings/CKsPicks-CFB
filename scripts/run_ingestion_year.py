@@ -9,15 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from cfb_model.data.ingestion import (
+    BettingLinesIngester,
+    CoachesIngester,
+    GamesIngester,
+    PlaysIngester,
+    RostersIngester,
     TeamsIngester,
     VenuesIngester,
-    GamesIngester,
-    BettingLinesIngester,
-    RostersIngester,
-    CoachesIngester,
-    PlaysIngester,
 )
-from cfb_model.data.storage.local_parquet import LocalParquetStorage
+from cfb_model.data.storage.local_storage import LocalStorage
 
 
 def run_pipeline_for_year(year: int, data_root: str | None):
@@ -25,7 +25,7 @@ def run_pipeline_for_year(year: int, data_root: str | None):
     print(f"--- Starting full data ingestion for year {year} ---")
 
     # 1. Initialize a single, shared storage backend
-    storage = LocalParquetStorage(data_root=data_root)
+    storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     print(f"Using data root: {storage.root()}")
 
     # 2. Define the ingestion sequence

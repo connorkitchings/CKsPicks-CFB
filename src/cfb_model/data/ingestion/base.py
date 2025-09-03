@@ -10,7 +10,7 @@ import cfbd
 from dotenv import load_dotenv
 
 from ..storage.base import Partition, StorageBackend
-from ..storage.local_parquet import LocalParquetStorage
+from ..storage.local_storage import LocalStorage
 
 load_dotenv()
 
@@ -50,7 +50,9 @@ class BaseIngester(ABC):
         self.cfbd_config = cfbd.Configuration(access_token=self.cfbd_api_key)
 
         # Initialize storage backend (hard-fail if path inaccessible)
-        self.storage: StorageBackend = storage or LocalParquetStorage(data_root)
+        self.storage: StorageBackend = storage or LocalStorage(
+            data_root=data_root, file_format="csv", data_type="raw"
+        )
 
         # Timezone for normalization (US/Eastern)
         self._eastern = ZoneInfo("America/New_York")
@@ -148,7 +150,7 @@ class BaseIngester(ABC):
         partition_values = {key: str(getattr(self, key)) for key in self.partition_keys}
         partition = Partition(partition_values)
         written = self.storage.write(
-            self.entity_name, data, partition, partition_cols=self.partition_keys, overwrite=True
+            self.entity_name, data, partition, overwrite=True
         )
         print(
             f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
@@ -156,8 +158,9 @@ class BaseIngester(ABC):
 
         # --- DEBUGGING TEST: Read back immediately ---
         try:
+            filters = {key: str(getattr(self, key)) for key in self.partition_keys}
             read_back_data = self.storage.read_index(
-                self.entity_name, {key: getattr(self, key) for key in self.partition_keys}
+                self.entity_name, filters
             )
             print(f"DEBUG: Successfully read back {len(read_back_data)} records immediately after writing.")
         except Exception as e:

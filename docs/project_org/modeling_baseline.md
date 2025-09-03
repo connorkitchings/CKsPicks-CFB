@@ -24,14 +24,39 @@ This document defines the initial, minimal modeling approach to generate weekly 
 ## Training Strategy
 
 - Treat each season as a silo for feature generation and training
-- Train on 2014–2024 (except 2020), apply to 2025 in-season
-- Use Ridge Regression as the baseline estimator for both targets
+- Train on 2014–2023 (exclude 2020); use 2024 as the final historical holdout for
+  measurement; apply to 2025 in-season
+- Estimators: Ridge Regression is the default baseline, but the framework is
+  model-agnostic and supports swapping estimators (e.g., Linear/ElasticNet/XGB)
+  without changing the data contracts
+
+## Validation Strategy
+
+- Historical testing: fit on the designated training window and report RMSE/MAE on holdout seasons
+- Final test: report RMSE/MAE on 2024 as the last pre-deployment measurement
+- Anti-leakage: all season-to-date features are computed up to (but not including)
+  the current game; enforce via unit tests
+- Optional (advanced): walk-forward validation = train on weeks ≤ k and test on
+  week k+1 within a season, rolling forward; use only if/when needed for tuning
+- Policy: betting lines are not model features; home-field is excluded from raw
+  stats and may be added as a model feature
+
+## Feature Selection (MVP Plan)
+
+- Start broad with the documented feature set; prune based on holdout performance
+  to avoid multicollinearity and heteroskedasticity
+- Avoid target leakage and preserve interpretability; defer SHAP/explainability to post-MVP
+
+## Configuration
+
+- Centralize defaults for data roots, season ranges, and seeds via CLI args or a
+  small config file; all scripts must be deterministic for a given config
 
 ## Artifacts and Metrics (Plan)
 
 - Artifacts
   - Models per season: `models/<year>/ridge_spread.joblib`, `models/<year>/ridge_total.joblib`
-  - Feature extracts (optional cache): `features/<year>/*.parquet`
+  - Feature extracts (optional cache): `features/<year>/*` (CSV)
 - Metrics
   - Training metrics table per season (RMSE/MAE vs baselines): `reports/metrics/training_<year>.csv`
   - Backtest outputs (edges, ROI, hit rate): `reports/backtests/backtest_weekly.csv`, `backtest_summary.csv`
