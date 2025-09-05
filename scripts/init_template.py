@@ -21,7 +21,6 @@ def relabel_project(root, old, new):
                     f.write(content)
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Relabel all occurrences of the default project name in .md, .py, and .json files. Optionally clean up example/template files."

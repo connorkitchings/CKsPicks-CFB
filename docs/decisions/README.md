@@ -13,6 +13,8 @@ Link decisions from other docs using the Vibe Coding System syntax:
 
 Latest highlights:
 
+- 2025-09-05: Ruff lint policy updated — notebooks excluded; E501 ignored to reduce noise.
+- 2025-09-05: Deep validation thresholds adopted for box score vs team_game comparison (plays/ypp/sr).
 - 2025-08-14: Storage format standardized to CSV for both raw and processed datasets for easier
   inspection and portability. Partitioning scheme: `data/<raw|processed>/<entity>/<year>/<week>/<game_id>`
   for plays-derived entities as applicable, and `data/<raw|processed>/<entity>/<year>` for others.

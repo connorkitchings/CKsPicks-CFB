@@ -48,7 +48,9 @@ class BettingLinesIngester(BaseIngester):
         )
 
         if not games_index:
-            raise RuntimeError(f"Games index not found for year {self.year}. Please run the games ingester first.")
+            raise RuntimeError(
+                f"Games index not found for year {self.year}. Please run the games ingester first."
+            )
 
         game_ids = [game["id"] for game in games_index]
 
@@ -68,9 +70,7 @@ class BettingLinesIngester(BaseIngester):
         fbs_game_ids = self.get_fbs_game_ids()
         print(f"Found {len(fbs_game_ids)} FBS games to process.")
 
-        year_lines = betting_api.get_lines(
-            year=self.year, season_type=self.season_type
-        )
+        year_lines = betting_api.get_lines(year=self.year, season_type=self.season_type)
         print(f"Fetched {len(year_lines)} total games with betting lines from API.")
 
         # Filter lines for our specific FBS games and flatten the structure
@@ -79,10 +79,12 @@ class BettingLinesIngester(BaseIngester):
         for game_line in year_lines:
             if self.safe_getattr(game_line, "id") in fbs_game_ids_set:
                 for sportsbook_line in self.safe_getattr(game_line, "lines", []):
-                    all_lines.append({
-                        "game_id": self.safe_getattr(game_line, "id"),
-                        "line_data": sportsbook_line,
-                    })
+                    all_lines.append(
+                        {
+                            "game_id": self.safe_getattr(game_line, "id"),
+                            "line_data": sportsbook_line,
+                        }
+                    )
 
         print(f"Filtered to {len(all_lines)} betting lines from FBS games.")
         return all_lines

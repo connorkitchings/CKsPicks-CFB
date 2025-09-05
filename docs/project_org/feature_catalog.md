@@ -107,7 +107,7 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 | off_expl_rate_overall_10 | team-season | float | % plays gaining ≥10 yards (any type)     | plays.parquet                            | mean(yards_gained >= 10)                   | explosive bucket |
 | off_expl_rate_overall_20 | team-season | float | % plays gaining ≥20 yards (any type)     | plays.parquet                            | mean(yards_gained >= 20)                   | explosive bucket |
 | off_expl_rate_overall_30 | team-season | float | % plays gaining ≥30 yards (any type)     | plays.parquet                            | mean(yards_gained >= 30)                   | explosive bucket |
-| off_expl_rate_rush       | team-season | float | % rush plays gaining ≥15 yards           | plays.parquet (rush only)                | mean(yards_gained >= 15)                   | split threshold |
+| off_expl_rate_rush       | team-season | float | % rush plays gaining ≥15 yards           | plays.parquet (rush only)                | mean(yards_gained >= 15)                   |             |
 | off_expl_rate_pass       | team-season | float | % pass plays gaining ≥20 yards           | plays.parquet (pass only)                | mean(yards_gained >= 20)                   | split threshold |
 | off_eckel_rate | team-season | float | % of drives that either gain ≥2 first downs or reach opp 40 | drives.parquet | mean(is_eckel_drive) | possession metric |
 | off_finish_pts_per_opp | team-season | float | Points per scoring opportunity (first down at or inside opp 40) | drives.parquet, scoring | sum(points_on_opps)/n_opportunities | finishing drives |

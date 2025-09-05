@@ -5,14 +5,18 @@ from typing import Any
 import cfbd
 
 from .base import BaseIngester
-from .teams import TeamsIngester
 
 
 class RostersIngester(BaseIngester):
     """Ingester for college football rosters data."""
 
     def __init__(
-        self, year: int = 2024, classification: str = "fbs", limit_teams: int = None, data_root: str | None = None, storage=None
+        self,
+        year: int = 2024,
+        classification: str = "fbs",
+        limit_teams: int = None,
+        data_root: str | None = None,
+        storage=None,
     ):
         """Initialize the rosters ingester.
 
@@ -37,7 +41,9 @@ class RostersIngester(BaseIngester):
             columns=["id", "school"],
         )
         if not teams_index:
-            raise RuntimeError(f"Teams index not found for year {self.year}. Please run the teams ingester first.")
+            raise RuntimeError(
+                f"Teams index not found for year {self.year}. Please run the teams ingester first."
+            )
         return {team["school"]: team["id"] for team in teams_index}
 
     def fetch_data(self) -> list[Any]:
@@ -101,9 +107,7 @@ class RostersIngester(BaseIngester):
                     "home_country": player.get("home_country"),
                     "home_latitude": player.get("home_latitude"),
                     "home_longitude": player.get("home_longitude"),
-                    "home_county_fips": player.get(
-                        "home_county_fips"
-                    ),
+                    "home_county_fips": player.get("home_county_fips"),
                     "recruit_ids": player.get("recruit_ids"),
                 }
             )

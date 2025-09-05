@@ -7,7 +7,7 @@ from .pipeline import build_preaggregation_pipeline
 
 
 def persist_preaggregations(
-    *, year: int, data_root: str | None = None
+    *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> dict[str, int]:
     """Build and persist pre-aggregations derived from raw plays into the processed store.
 
@@ -72,12 +72,13 @@ def persist_preaggregations(
 
     # By-play: partition by year/week/game (one folder per game)
     for (week, game_id), group in byplay_df.groupby(["week", "game_id"], dropna=False):
-        game_meta = game_to_teams_map.get(game_id, {})
-        home_team = game_meta.get("home", "?")
-        away_team = game_meta.get("away", "?")
-        print(
-            f"Processing season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
-        )
+        if verbose:
+            game_meta = game_to_teams_map.get(game_id, {})
+            home_team = game_meta.get("home", "?")
+            away_team = game_meta.get("away", "?")
+            print(
+                f"Processing season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
+            )
         part = Partition(
             {"year": str(year), "week": str(int(week)), "game": str(int(game_id))}
         )
@@ -88,12 +89,13 @@ def persist_preaggregations(
 
     # Drives: partition by year/week/game (one folder per game, rows are per drive)
     for (week, game_id), group in drives_df.groupby(["week", "game_id"], dropna=False):
-        game_meta = game_to_teams_map.get(game_id, {})
-        home_team = game_meta.get("home", "?")
-        away_team = game_meta.get("away", "?")
-        print(
-            f"Processing DRIVES season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
-        )
+        if verbose:
+            game_meta = game_to_teams_map.get(game_id, {})
+            home_team = game_meta.get("home", "?")
+            away_team = game_meta.get("away", "?")
+            print(
+                f"Processing DRIVES season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
+            )
         part = Partition(
             {"year": str(year), "week": str(int(week)), "game": str(int(game_id))}
         )
@@ -114,7 +116,7 @@ def persist_preaggregations(
         )
 
     # Team-season: partition by year/team, write offense and defense CSVs in side-specific subfolders
-    for team, group in team_season_df.groupby(["team"], dropna=False):
+    for team, group in team_season_df.groupby("team", dropna=False):
         offense_cols = [
             c
             for c in group.columns
@@ -137,7 +139,7 @@ def persist_preaggregations(
         )
 
     # Team-season-adjusted: partition by year/team, write offense and defense CSVs in side-specific subfolders
-    for team, group in team_season_adj_df.groupby(["team"], dropna=False):
+    for team, group in team_season_adj_df.groupby("team", dropna=False):
         offense_cols = [
             c
             for c in group.columns
@@ -166,16 +168,17 @@ def persist_preaggregations(
         )
 
     root = processed_storage.root()
-    print(
-        f"Pre-aggregations written under {root} for season {year}: "
-        f"byplay={totals['byplay']}, drives={totals['drives']}, "
-        f"team_game={totals['team_game']}, team_season={totals['team_season']}, "
-        f"team_season_adj={totals['team_season_adj']}"
-    )
+    if verbose:
+        print(
+            f"Pre-aggregations written under {root} for season {year}: "
+            f"byplay={totals['byplay']}, drives={totals['drives']}, "
+            f"team_game={totals['team_game']}, team_season={totals['team_season']}, "
+            f"team_season_adj={totals['team_season_adj']}"
+        )
     return totals
 
 
-def persist_byplay_only(*, year: int, data_root: str | None = None) -> int:
+def persist_byplay_only(*, year: int, data_root: str | None = None, verbose: bool = True) -> int:
     """Build and persist only the byplay dataset from raw plays."""
     try:
         from cfb_model.data.storage.base import Partition
@@ -207,7 +210,9 @@ def persist_byplay_only(*, year: int, data_root: str | None = None) -> int:
         rows = group.to_dict(orient="records")
         total_written += processed_storage.write("byplay", rows, part, overwrite=True)
 
-    print(
-        f"Byplay written under {processed_storage.root()} for season {year}: rows={total_written}"
-    )
+    if verbose:
+        print(
+            f"Byplay written under {processed_storage.root()} for season {year}: rows={total_written}"
+        )
     return total_written
+#

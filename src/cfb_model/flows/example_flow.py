@@ -21,7 +21,9 @@ def fetch_data():
 def process_data(data: list[dict]) -> list[dict]:
     """A task to simulate processing raw data."""
     logger.info("Processing raw data...")
-    processed_data = [{"id": item["id"], "processed_value": item["value"] * 2} for item in data]
+    processed_data = [
+        {"id": item["id"], "processed_value": item["value"] * 2} for item in data
+    ]
     logger.info("Successfully processed %d records.", len(processed_data))
     return processed_data
 

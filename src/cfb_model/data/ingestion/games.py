@@ -40,19 +40,21 @@ class GamesIngester(BaseIngester):
         return ["year"]
 
     def get_fbs_team_names(self) -> set[str]:
-        """Get list of FBS team names for filtering games.
+        """Deprecated: prefer filtering games by classification fields from get_games.
 
-        Returns:
-            Set of FBS team names
+        This method is kept for backward compatibility but is no longer used by default.
         """
-        teams_api = cfbd.TeamsApi(cfbd.ApiClient(self.cfbd_config))
-        teams = teams_api.get_teams(year=self.year)
-        fbs_teams = [
-            team.school
-            for team in teams
-            if getattr(team, "classification", "").lower() == self.classification
-        ]
-        return set(fbs_teams)
+        try:
+            teams_api = cfbd.TeamsApi(cfbd.ApiClient(self.cfbd_config))
+            teams = teams_api.get_teams(year=self.year)
+            fbs_teams = [
+                team.school
+                for team in teams
+                if getattr(team, "classification", "").lower() == self.classification
+            ]
+            return set(fbs_teams)
+        except Exception:
+            return set()
 
     def fetch_data(self) -> list[Any]:
         """Fetch games data from the CFBD API.
@@ -62,22 +64,30 @@ class GamesIngester(BaseIngester):
         """
         games_api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
 
-        # Get FBS team names for filtering
-        fbs_team_names = self.get_fbs_team_names()
-        print(f"Found {len(fbs_team_names)} FBS teams for filtering.")
-
-        # Fetch all games for the year and season type
+        # Fetch all games for the year and season type (single API call)
         all_games = games_api.get_games(year=self.year, season_type=self.season_type)
 
-        # Filter for FBS games only (games where both teams are FBS)
-        fbs_games = [
-            game
-            for game in all_games
-            if (
-                self.safe_getattr(game, "home_team", "") in fbs_team_names
-                and self.safe_getattr(game, "away_team", "") in fbs_team_names
+        # Prefer filtering by classification fields on the game records directly to avoid extra API calls
+        fbs_games = []
+        for game in all_games:
+            home_cls = str(self.safe_getattr(game, "home_classification", "")).lower()
+            away_cls = str(self.safe_getattr(game, "away_classification", "")).lower()
+            if home_cls == self.classification and away_cls == self.classification:
+                fbs_games.append(game)
+
+        # Fallback: if classification fields missing/empty, use local teams index for FBS membership
+        if not fbs_games:
+            teams_index = self.storage.read_index(
+                "teams", filters={"year": str(self.year)}, columns=["school"]
             )
-        ]
+            fbs_names = {row["school"] for row in teams_index} if teams_index else set()
+            if fbs_names:
+                for game in all_games:
+                    if (
+                        self.safe_getattr(game, "home_team", "") in fbs_names
+                        and self.safe_getattr(game, "away_team", "") in fbs_names
+                    ):
+                        fbs_games.append(game)
 
         print(f"Found {len(fbs_games)} FBS games out of {len(all_games)} total games.")
         return fbs_games
@@ -168,12 +178,20 @@ class GamesIngester(BaseIngester):
 def main() -> None:
     """CLI entry point for games ingestion."""
     parser = argparse.ArgumentParser(description="Ingest games data from CFBD API.")
-    parser.add_argument("--year", type=int, default=2024, help="The year to ingest data for.")
     parser.add_argument(
-        "--season_type", type=str, default="regular", help="Season type (regular/postseason)."
+        "--year", type=int, default=2024, help="The year to ingest data for."
     )
     parser.add_argument(
-        "--data-root", type=str, default=None, help="Local data root path (defaults to placeholder)."
+        "--season_type",
+        type=str,
+        default="regular",
+        help="Season type (regular/postseason).",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default=None,
+        help="Local data root path (defaults to placeholder).",
     )
     parser.add_argument(
         "--exclude-seasons",

@@ -46,7 +46,9 @@ class PlaysIngester(BaseIngester):
             "games", {"year": self.year}, columns=["id", "week"]
         )
         if not idx:
-            raise RuntimeError(f"Games index not found for year {self.year}. Please run the games ingester first.")
+            raise RuntimeError(
+                f"Games index not found for year {self.year}. Please run the games ingester first."
+            )
 
         games_data = [(g["id"], g.get("week")) for g in idx]
         if self.limit_games:
@@ -148,9 +150,13 @@ class PlaysIngester(BaseIngester):
             # Add season and week to the record
             record = {
                 "season": self.year,
-                "week": self.safe_getattr(play, "week", None),  # Get week from play object if available
+                "week": self.safe_getattr(
+                    play, "week", None
+                ),  # Get week from play object if available
                 "id": self.safe_getattr(play, "id", None),
                 "game_id": self.safe_getattr(play, "game_id", None),
+                "drive_id": self.safe_getattr(play, "drive_id", None),
+                "drive_number": self.safe_getattr(play, "drive_number", None),
                 "play_number": self.safe_getattr(play, "play_number", None),
                 "period": self.safe_getattr(play, "period", None),
                 "clock_minutes": clock_minutes,
@@ -161,17 +167,13 @@ class PlaysIngester(BaseIngester):
                     play, "offense_conference", None
                 ),
                 "offense_score": self.safe_getattr(play, "offense_score", None),
-                "offense_timeouts": self.safe_getattr(
-                    play, "offense_timeouts", None
-                ),
+                "offense_timeouts": self.safe_getattr(play, "offense_timeouts", None),
                 "defense": self.safe_getattr(play, "defense", None),
                 "defense_conference": self.safe_getattr(
                     play, "defense_conference", None
                 ),
                 "defense_score": self.safe_getattr(play, "defense_score", None),
-                "defense_timeouts": self.safe_getattr(
-                    play, "defense_timeouts", None
-                ),
+                "defense_timeouts": self.safe_getattr(play, "defense_timeouts", None),
                 "home": self.safe_getattr(play, "home", None),
                 "away": self.safe_getattr(play, "away", None),
                 "down": self.safe_getattr(play, "down", None),
@@ -231,9 +233,13 @@ class PlaysIngester(BaseIngester):
             partition = Partition(
                 {"year": str(self.year), "week": str(week), "game_id": str(game_id)}
             )
-            written = self.storage.write(self.entity_name, rows, partition, overwrite=True)
+            written = self.storage.write(
+                self.entity_name, rows, partition, overwrite=True
+            )
             total_written += written
-            print(f"  Wrote {written} plays to {self.entity_name}/{self.year}/{week}/{game_id}")
+            print(
+                f"  Wrote {written} plays to {self.entity_name}/{self.year}/{week}/{game_id}"
+            )
         print(f"Total plays written: {total_written}")
 
 

@@ -130,7 +130,7 @@ def _build_feature_list(df: pd.DataFrame) -> list[str]:
     return features
 
 
-def _train_and_save(X: pd.DataFrame, y: pd.Series, out_dir: str, name: str) -> None:
+def _train_and_save(X: pd.DataFrame, y: pd.Series, out_dir: str, name: str) -> None:  # noqa: N803
     os.makedirs(out_dir, exist_ok=True)
     model = Ridge(alpha=1.0)
     model.fit(X, y)
@@ -202,11 +202,11 @@ def main() -> None:
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
 
-    X_train = train_df[feature_list]
+    X_train = train_df[feature_list]  # noqa: N806
     y_spread_train = train_df["spread_target"].astype(float)
     y_total_train = train_df["total_target"].astype(float)
 
-    X_test = test_df[feature_list]
+    X_test = test_df[feature_list]  # noqa: N806
     y_spread_test = test_df["spread_target"].astype(float)
     y_total_test = test_df["total_target"].astype(float)
 

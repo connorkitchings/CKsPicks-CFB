@@ -27,7 +27,7 @@ weekly prediction generation. Establish MVP betting recommendation system with b
 | 2  | Docs          | Add `modeling_baseline.md`, `weekly_pipeline.md`  | @dev  | ✅ Done |
 | 3  | Docs          | Add `decisions/README.md`, `decision_log.md`      | @dev  | ✅ Done |
 | 4  | Docs          | Update `mkdocs.yml` + `docs/index.md` nav         | @dev  | ✅ Done |
-| 5  | CFBD Data     | Update ingestion: FBS-only, 2015–2024 (incl. 2020)| @dev  | ✅ Done |
+| 5  | CFBD Data     | Update ingestion: FBS-only, 2014–2024 (exclude 2020)| @dev  | ✅ Done |
 | 6  | Operations    | Weekly pipeline (Wed 12 ET) + CSV spec            | @dev  | ✅ Done |
 | 7  | Planning      | Refresh roadmap + acceptance criteria              | @dev  | ✅ Done |
 | 8  | Feature Eng.  | Plan opponent-adj features (iter. avg, last-3)    | @dev  | ✅ Done |
@@ -40,12 +40,12 @@ weekly prediction generation. Establish MVP betting recommendation system with b
 - `docs/project_org/modeling_baseline.md` defines MVP model + betting policy.
 - `docs/operations/weekly_pipeline.md` defines schedule, steps, and CSV output schema.
 - CFBD resources moved to `docs/cfbd/resources/`.
-- `docs/cfbd/data_ingestion.md` reflects FBS-only scope and clarifies ingestion coverage (2015–2024
-  complete today) vs. modeling training window (2014–2024, excluding 2020). 2014 backfill is tracked
-  as a backlog item.
+- `docs/cfbd/data_ingestion.md` reflects FBS-only scope and clarifies ingestion coverage (2014–2024,
+  excluding 2020) vs. modeling training window (2018–2023, excluding 2020) with 2024 as holdout/test.
+  2014 backfill is no longer required.
 - `docs/project_org/feature_catalog.md` expanded with:
-  - Play filters (CFBD success rate thresholds; scrimmage-only), explosive definitions (rush ≥10,
-    pass ≥15; overall 10+/20+/30+ buckets), possession metrics (Eckel rate; finishing points per opp).
+- Play filters (CFBD success rate thresholds; scrimmage-only), explosive definitions (rush ≥15,
+    pass ≥20; overall 10+/20+/30+ buckets), possession metrics (Eckel rate; finishing points per opp).
   - Opponent-adjustment algorithm: additive offset, 4 iterations, linear last-3 game weights (3/2/1).
   - Validation ranges and reproducibility requirements.
 - MVP feature artifacts specification documented: `features/<year>/*` (CSV; team-season,
@@ -87,7 +87,7 @@ weekly prediction generation. Establish MVP betting recommendation system with b
 | ID | Epic | Deliverable | Effort | Dependencies | Priority |
 |:--:|:-----|:-----------|:------:|:-------------|:--------:|
 | 14 | Modeling | Try alternative models (XGBoost, RF) after MVP | 6d | Task 20, OPEN-002 | Medium |
-| 18 | CFBD Data | Backfill 2014 season across entities | 3d | None | Low |
+| 18 | CFBD Data | Validate 2014 ingestion across entities | 2d | None | Low |
 | 23 | Advanced Features | Weather/injury data integration | 8d | OPEN-006 | Low |
 | 24 | Risk Management | Kelly criterion unit sizing | 4d | Task 20, OPEN-005 | Medium |
 | 25 | Monitoring | Performance monitoring & alerting | 5d | Task 21, OPEN-007 | Low |

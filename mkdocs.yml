@@ -11,7 +11,7 @@ theme:
     - search.suggest
     - search.highlight
     - content.tabs.link
-    - content.code.annotation
+    - content.code.annotate
     - content.code.copy
 
 nav:
@@ -20,7 +20,6 @@ nav:
     - 'Getting Started': 'guides/getting_started.md'
     - 'AI Session Templates': 'guides/ai_session_templates.md'
     - 'Feature Engineering Plan': 'guides/feature_engineering_plan.md'
-    - 'Aggregation Validation': 'notebooks/03_aggregation_validation.ipynb'
   - 'Data':
     - 'Overview': 'data/README.md'
     - 'Ingestion Guide': 'data/ingestion_guide.md'

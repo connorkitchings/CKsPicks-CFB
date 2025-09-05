@@ -4,7 +4,7 @@ This document provides comprehensive standards, workflows, and best practices fo
 on the cfb_model project. It consolidates coding standards, review processes, and operational
 workflows into a single reference.
 
-> 📚 For a high-level overview and entry point to all documentation, see [README.md](../README.md).
+> 📚 For a high-level overview and entry point to all documentation, see [Docs Home](../index.md).
 
 ## Core Principles
 

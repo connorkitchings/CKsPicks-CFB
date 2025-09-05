@@ -58,13 +58,14 @@ class LocalStorage(StorageBackend):
             )
         self._root = root
         self.file_format = file_format
+        self._data_type: Literal["raw", "processed"] = data_type
 
     def root(self) -> Path:
         return self._root
 
     def _entity_partition_dir(self, entity: str, partition: Partition) -> Path:
-        parts = [str(v) for v in partition.values.values()]
-        return self._root / entity / Path(*parts)
+        # Use explicit key=value directory segments for clarity and stability
+        return self._root / entity / partition.path_suffix()
 
     def write(
         self,
@@ -85,7 +86,7 @@ class LocalStorage(StorageBackend):
         part_dir.mkdir(parents=True, exist_ok=True)
 
         if not records:
-            self._write_manifest(part_dir, rows=0, schema=None)
+            self._write_manifest(part_dir, entity=entity, rows=0, schema=None)
             return 0
 
         if self.file_format == "parquet":
@@ -112,15 +113,19 @@ class LocalStorage(StorageBackend):
         else:
             raise ValueError(f"Unsupported file format: {self.file_format}")
 
-        self._write_manifest(part_dir, rows=num_rows, schema=schema)
+        self._write_manifest(part_dir, entity=entity, rows=num_rows, schema=schema)
         return num_rows
 
     def _write_manifest(
-        self, part_dir: Path, *, rows: int, schema: pa.Schema | None
+        self, part_dir: Path, *, entity: str, rows: int, schema: pa.Schema | None
     ) -> None:
         manifest = {
             "rows": rows,
             "write_time": datetime.now().isoformat(timespec="seconds"),
+            "data_type": self._data_type,
+            "file_format": self.file_format,
+            "entity": entity,
+            "schema_version": ("processed_v1" if self._data_type == "processed" else "raw_v1"),
             "schema": None,
         }
         if schema is not None:

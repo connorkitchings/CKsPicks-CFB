@@ -36,9 +36,27 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 ## `[KB:DataframeColumnTrace]`
 
 - **Context**: Debugging a pandas pipeline where necessary columns (e.g., for logging) are missing
-  in later stages.
+in later stages.
 - **Pattern**: Instead of passing columns through every transformation step (where they might be
   dropped), create a lookup map (e.g., a dictionary) from the initial, raw DataFrame. Use this map
   in later stages to retrieve the necessary data via a common key like `game_id`.
 - **Usage**: `game_to_teams_map = raw_df[['game_id', 'home', 'away']].drop_duplicates().set_index('game_id').to_dict('index')`
 - **Discovered In**: `[LOG:2025-08-15]`
+
+---
+
+## `[KB:RuffLintConfigPolicy]`
+
+- **Context**: Notebook code churn and long CLI/docstrings generate noisy lint failures.
+- **Pattern**: Exclude notebooks from lint (extend-exclude + force-exclude) and ignore E501 globally.
+- **Usage**: Configure in `pyproject.toml` under `[tool.ruff]` and `[tool.ruff.lint]`.
+- **Discovered In**: `[LOG:2025-09-05]`
+
+---
+
+## `[KB:DeepValidationThresholds]`
+
+- **Context**: Comparing processed team_game metrics to CFBD advanced box score data.
+- **Pattern**: Adopt absolute thresholds: plays WARN>3/ERROR>8; ypp WARN>0.20/ERROR>0.50; sr WARN>0.02/ERROR>0.05.
+- **Usage**: See `validate_team_game_vs_boxscore` in `src/cfb_model/data/validation.py`.
+- **Discovered In**: `[LOG:2025-09-05]`

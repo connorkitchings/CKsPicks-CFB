@@ -93,6 +93,15 @@ shared base class for common functionality.
 - **Module**: `CoachesIngester`
 - **Dependencies**: Requires teams table to be populated first
 
+### Game Stats (Raw) (`src/cfb_model/data/ingestion/game_stats.py`)
+
+- **Status**: 🟡 In Progress
+- **Records**: Raw advanced box score JSON objects for each FBS game.
+- **Purpose**: Used for validating the play-by-play aggregation pipeline against an official source.
+- **Usage**: `uv run python scripts/ingest_cli.py game_stats_raw --year 2023`
+- **Module**: `GameStatsIngester`
+- **Dependencies**: Requires games table to be populated first
+
 ## API Authentication
 
 All scripts use the CFBD API with Bearer token authentication:

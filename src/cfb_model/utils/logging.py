@@ -1,11 +1,12 @@
-from datetime import datetime
 import json
 import logging
+from datetime import datetime
+
 
 class DataLogger:
     """A structured JSON logger for data projects."""
 
-    def __init__(self, name: str, log_file: str = 'data_pipeline.log'):
+    def __init__(self, name: str, log_file: str = "data_pipeline.log"):
         """
         Initializes the logger.
 
@@ -19,7 +20,7 @@ class DataLogger:
         # Avoid adding duplicate handlers
         if not self.logger.handlers:
             handler = logging.FileHandler(log_file)
-            formatter = logging.Formatter('%(message)s')
+            formatter = logging.Formatter("%(message)s")
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
@@ -32,10 +33,10 @@ class DataLogger:
             metadata (dict): A dictionary of relevant metadata to log.
         """
         log_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'level': 'INFO',
-            'event_type': event_type,
-            'metadata': metadata
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": "INFO",
+            "event_type": event_type,
+            "metadata": metadata,
         }
         self.logger.info(json.dumps(log_entry))
 
@@ -49,10 +50,10 @@ class DataLogger:
             metadata (dict): A dictionary of relevant context.
         """
         log_entry = {
-            'timestamp': datetime.utcnow().isoformat(),
-            'level': 'ERROR',
-            'event_type': event_type,
-            'error': error_message,
-            'metadata': metadata
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": "ERROR",
+            "event_type": event_type,
+            "error": error_message,
+            "metadata": metadata,
         }
         self.logger.error(json.dumps(log_entry))

@@ -103,7 +103,7 @@ def load_current_week_data(year: int, week: int, data_root: str) -> pd.DataFrame
     return merged_df
 
 
-def generate_predictions(model, X: pd.DataFrame) -> pd.Series:
+def generate_predictions(model, X: pd.DataFrame) -> pd.Series:  # noqa: N803
     """
     Generates predictions using the loaded model.
     """
@@ -115,9 +115,9 @@ def apply_betting_policy(predictions_df: pd.DataFrame) -> pd.DataFrame:
     Applies the betting policy to the predictions.
     """
     # Betting policy thresholds
-    SPREAD_EDGE_THRESHOLD = 3.5
-    TOTAL_EDGE_THRESHOLD = 7.5
-    MIN_GAMES_PLAYED = 4
+    spread_edge_threshold = 3.5
+    total_edge_threshold = 7.5
+    min_games_played = 4
 
     # Calculate edges
     predictions_df["edge_spread"] = abs(
@@ -130,9 +130,9 @@ def apply_betting_policy(predictions_df: pd.DataFrame) -> pd.DataFrame:
     # Apply betting policy
     predictions_df["bet_spread"] = "none"
     predictions_df.loc[
-        (predictions_df["edge_spread"] >= SPREAD_EDGE_THRESHOLD)
-        & (predictions_df["home_games_played"] >= MIN_GAMES_PLAYED)
-        & (predictions_df["away_games_played"] >= MIN_GAMES_PLAYED),
+        (predictions_df["edge_spread"] >= spread_edge_threshold)
+        & (predictions_df["home_games_played"] >= min_games_played)
+        & (predictions_df["away_games_played"] >= min_games_played),
         "bet_spread",
     ] = np.where(
         predictions_df["predicted_spread"] > predictions_df["spread_line"],
@@ -142,9 +142,9 @@ def apply_betting_policy(predictions_df: pd.DataFrame) -> pd.DataFrame:
 
     predictions_df["bet_total"] = "none"
     predictions_df.loc[
-        (predictions_df["edge_total"] >= TOTAL_EDGE_THRESHOLD)
-        & (predictions_df["home_games_played"] >= MIN_GAMES_PLAYED)
-        & (predictions_df["away_games_played"] >= MIN_GAMES_PLAYED),
+        (predictions_df["edge_total"] >= total_edge_threshold)
+        & (predictions_df["home_games_played"] >= min_games_played)
+        & (predictions_df["away_games_played"] >= min_games_played),
         "bet_total",
     ] = np.where(
         predictions_df["predicted_total"] > predictions_df["total_line"],

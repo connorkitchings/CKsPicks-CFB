@@ -76,8 +76,7 @@ Contributions are welcome! Please follow the guidelines below:
 
 - All contributions must be submitted via a pull request.
 - Please use the [pull request template](./.github/pull_request_template.md).
-- For a detailed guide on our review standards, see the [Development Standards & Workflow]
-  (./docs/project_org/development_standards.md).
+- For a detailed guide on our review standards, see the [Development Standards & Workflow](./docs/project_org/development_standards.md).
 
 ---
 

@@ -111,4 +111,21 @@ If you store data on an external drive, set a consistent data root and pass it t
 You may also set a local config (e.g., `config/local.toml`) and have scripts read the default
 `data_root` from it; keep local config out of version control.
 
+## 10. Seasonal Recollection & Aggregation (optional)
+
+To fully regenerate plays and processed features across multiple seasons (e.g., after schema changes), use the driver:
+
+```bash
+./.venv/bin/python scripts/recollect_plays_and_aggregate.py \
+  --years 2014-2019,2021-2024 \
+  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
+  --quiet
+```
+
+After aggregation, run deep validations on processed data (replace YEAR as needed):
+
+```bash
+./.venv/bin/python -m cfb_model.data.validation --year YEAR --data-type processed --deep
+```
+
 You are now ready to start developing!

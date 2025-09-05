@@ -5,7 +5,6 @@ from typing import Any
 import cfbd
 
 from .base import BaseIngester
-from .teams import TeamsIngester
 
 
 class CoachesIngester(BaseIngester):
@@ -48,7 +47,9 @@ class CoachesIngester(BaseIngester):
             columns=["school"],
         )
         if not teams_index:
-            raise RuntimeError(f"Teams index not found for year {self.year}. Please run the teams ingester first.")
+            raise RuntimeError(
+                f"Teams index not found for year {self.year}. Please run the teams ingester first."
+            )
         return [team["school"] for team in teams_index]
 
     def fetch_data(self) -> list[Any]:

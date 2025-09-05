@@ -18,8 +18,8 @@ This runbook defines the end-to-end weekly process for producing betting recomme
 ## Preconditions
 
 - Teams must have played ≥ 4 games this season; otherwise, do not bet those games
-- Training coverage for model: 2014–2024 excluding 2020 (COVID), FBS regular season only,
-  include Week 0
+- Training coverage for model: Train on 2019–2023 excluding 2020 (COVID); use 2024 as holdout/test.
+  FBS regular season only, include Week 0
 
 ## Steps
 
@@ -34,6 +34,7 @@ This runbook defines the end-to-end weekly process for producing betting recomme
 - Opponent adjustment via iterative averaging (4 iterations), with extra weight on last 3 games
 - Include per-play and per-possession features (pace-aware)
 - Add home/away control to the model (not to the stats directly)
+- Tip: Use `--quiet` with the pre-aggregation CLI to suppress per-game logs on long runs
 
 1. Modeling and predictions
 
@@ -47,6 +48,14 @@ This runbook defines the end-to-end weekly process for producing betting recomme
 - Spreads: bet if edge ≥ 3.5
 - Totals: bet if edge ≥ 7.5
 - Only include games where both teams have ≥ 4 games played
+
+1. Validation (post-aggregation)
+
+- Run deep semantic validation for the current season (processed data):
+
+```bash
+./.venv/bin/python -m cfb_model.data.validation --year <YEAR> --data-type processed --deep
+```
 
 1. Outputs
 

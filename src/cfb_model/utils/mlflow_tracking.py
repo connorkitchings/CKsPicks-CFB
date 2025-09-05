@@ -5,6 +5,7 @@ import mlflow
 # Default local tracking URI. For a remote server, use a different URI.
 TRACKING_URI = "file:./mlruns"
 
+
 def setup_mlflow(tracking_uri: str = TRACKING_URI) -> None:
     """
     Sets the MLflow tracking URI.
@@ -14,6 +15,7 @@ def setup_mlflow(tracking_uri: str = TRACKING_URI) -> None:
                             Defaults to a local './mlruns' directory.
     """
     mlflow.set_tracking_uri(tracking_uri)
+
 
 def get_or_create_experiment(experiment_name: str) -> str:
     """
@@ -32,11 +34,14 @@ def get_or_create_experiment(experiment_name: str) -> str:
         print(f"Created new experiment: {experiment_name} (ID: {experiment_id})")
         return experiment_id
     else:
-        print(f"Using existing experiment: {experiment_name} (ID: {experiment.experiment_id})")
+        print(
+            f"Using existing experiment: {experiment_name} (ID: {experiment.experiment_id})"
+        )
         return experiment.experiment_id
 
+
 # Example usage:
-if __name__ == '__main__':
+if __name__ == "__main__":
     experiment_id = get_or_create_experiment("Default Experiment")
 
     with mlflow.start_run(experiment_id=experiment_id) as run:

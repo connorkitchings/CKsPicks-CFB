@@ -6,7 +6,7 @@ This document defines the initial, minimal modeling approach to generate weekly 
 
 - Hit rate target: ≥ 53%
 - Scope: FBS regular season only, include Week 0
-- Training window: 2014–2024 seasons, exclude 2020 (COVID)
+- Training window: 2019–2023 seasons (exclude 2020 COVID); 2024 as holdout/test
 - In-season predictions begin once both teams have ≥ 4 games played
 
 ## Targets
@@ -24,7 +24,7 @@ This document defines the initial, minimal modeling approach to generate weekly 
 ## Training Strategy
 
 - Treat each season as a silo for feature generation and training
-- Train on 2014–2023 (exclude 2020); use 2024 as the final historical holdout for
+- Train on 2019–2023 (exclude 2020); use 2024 as the final historical holdout for
   measurement; apply to 2025 in-season
 - Estimators: Ridge Regression is the default baseline, but the framework is
   model-agnostic and supports swapping estimators (e.g., Linear/ElasticNet/XGB)

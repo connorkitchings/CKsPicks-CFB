@@ -10,7 +10,13 @@ from .base import BaseIngester
 class VenuesIngester(BaseIngester):
     """Ingester for college football venues data."""
 
-    def __init__(self, year: int = 2024, classification: str = "fbs", data_root: str | None = None, storage=None):
+    def __init__(
+        self,
+        year: int = 2024,
+        classification: str = "fbs",
+        data_root: str | None = None,
+        storage=None,
+    ):
         super().__init__(year, classification, data_root=data_root, storage=storage)
 
     @property
@@ -19,52 +25,22 @@ class VenuesIngester(BaseIngester):
         return "venues"
 
     def get_fbs_team_names(self) -> set[str]:
-        """Get list of FBS team names for filtering games.
-
-        Returns:
-            Set of FBS team names
-        """
-        teams_api = cfbd.TeamsApi(cfbd.ApiClient(self.cfbd_config))
-        teams = teams_api.get_teams(year=self.year)
-        fbs_teams = [
-            team.school
-            for team in teams
-            if getattr(team, "classification", "").lower() == self.classification
-        ]
-        return set(fbs_teams)
+        """Deprecated: no longer used; venues derive from local games index to avoid extra calls."""
+        return set()
 
     def get_fbs_venue_ids(self) -> set[int]:
-        """Get venue IDs used by FBS games.
-
-        Returns:
-            Set of venue IDs from FBS games
-        """
-        games_api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
-        fbs_team_names = self.get_fbs_team_names()
-
-        print(f"Fetching FBS games for {self.year} to identify venues...")
-        all_games = games_api.get_games(year=self.year, season_type="regular")
-
-        # Filter for FBS games and collect venue IDs
-        fbs_games = [
-            game
-            for game in all_games
-            if (
-                self.safe_getattr(game, "home_team", "") in fbs_team_names
-                and self.safe_getattr(game, "away_team", "") in fbs_team_names
-            )
-        ]
-
-        game_venue_ids = set()
-        for game in fbs_games:
-            venue_id = self.safe_getattr(game, "venue_id", None)
-            if venue_id:
-                game_venue_ids.add(venue_id)
-
-        print(
-            f"Found {len(game_venue_ids)} unique venue IDs from {len(fbs_games)} FBS games."
-        )
-        return game_venue_ids
+        """Get venue IDs used by FBS games using local games index to minimize API calls."""
+        games_index = self.storage.read_index("games", {"year": self.year}, columns=["venue_id"])
+        ids: set[int] = set()
+        for row in games_index:
+            vid = row.get("venue_id")
+            if vid is not None:
+                try:
+                    ids.add(int(vid))
+                except Exception:
+                    continue
+        print(f"Derived {len(ids)} unique venue IDs from local games index for {self.year}.")
+        return ids
 
     def fetch_data(self) -> list[Any]:
         """Fetch venues data from the CFBD API.
@@ -76,7 +52,7 @@ class VenuesIngester(BaseIngester):
         all_venues = venues_api.get_venues()
         print(f"Found {len(all_venues)} total venues from venues API.")
 
-        # Get venue IDs used by FBS games
+        # Get venue IDs used by FBS games from local index
         fbs_venue_ids = self.get_fbs_venue_ids()
 
         # Filter venues to only those used by FBS games

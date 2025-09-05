@@ -43,6 +43,11 @@ def main() -> None:
         help="Aggregation command to run",
     )
     parser.add_argument("--year", type=int, required=True, help="Season year")
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Reduce per-game logging during pre-aggregations",
+    )
 
     args = parser.parse_args()
 
@@ -63,7 +68,7 @@ def main() -> None:
             print(
                 f"Running preagg for year {args.year} using data_root={data_root or '(cwd)'} ..."
             )
-            totals = persist_preaggregations(year=args.year, data_root=data_root)
+            totals = persist_preaggregations(year=args.year, data_root=data_root, verbose=not args.quiet)
             print(
                 f"\n✅ Pre-aggregations complete: byplay={totals['byplay']}, drives={totals['drives']}, "
                 f"team_game={totals['team_game']}, team_season={totals['team_season']}, "
@@ -79,7 +84,7 @@ def main() -> None:
             print(
                 f"Running byplay-only for year {args.year} using data_root={data_root or '(cwd)'} ..."
             )
-            count = persist_byplay_only(year=args.year, data_root=data_root)
+            count = persist_byplay_only(year=args.year, data_root=data_root, verbose=not args.quiet)
             print(f"\n✅ Byplay-only complete: rows={count}")
         except Exception as e:
             print(f"\n❌ Error during byplay-only: {e}")

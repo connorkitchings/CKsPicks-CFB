@@ -54,18 +54,10 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
             start_yards_to_goal=("yards_to_goal", "first"),
             end_yards_to_goal=("yards_to_goal", "last"),
             is_eckel_drive=("eckel", "max"),
-            # Use a column to anchor the custom function; reference other columns by index
+# Use a column to anchor the custom function; reference other columns by index
             had_scoring_opportunity=(
                 "yards_to_goal",
-                lambda s: 1
-                if (
-                    (
-                        plays_df.loc[s.index, "eckel"]
-                        & (plays_df.loc[s.index, "down"] == 1)
-                        & (plays_df.loc[s.index, "yards_to_goal"] <= 40)
-                    ).any()
-                )
-                else 0,
+                lambda s: 1 if (plays_df.loc[s.index, "eckel"] == 1).any() else 0,
             ),
             points=("scoring", "sum"),
             turnovers=("turnover", "sum"),
@@ -75,9 +67,11 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
     # Define drive outcomes based on aggregated stats
     agg["is_successful_drive"] = (agg["points"] > 0).astype(int)
     agg["is_busted_drive"] = (agg["turnovers"] > 0).astype(int)
-    
+
     # For explosive drive, calculate YPP and set a threshold (e.g., 10 YPP)
-    drive_ypp = agg["drive_yards"] / agg["drive_plays"].replace(0, 1) # Avoid division by zero
+    drive_ypp = agg["drive_yards"] / agg["drive_plays"].replace(
+        0, 1
+    )  # Avoid division by zero
     agg["is_explosive_drive"] = (drive_ypp > 10).astype(int)
 
     agg["points_on_opps"] = np.where(
@@ -86,35 +80,77 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
     return agg
 
 
-def calculate_st_analytics_agg(plays_df: pd.DataFrame, drives_df: pd.DataFrame) -> pd.DataFrame:
+def calculate_st_analytics_agg(
+    plays_df: pd.DataFrame, drives_df: pd.DataFrame
+) -> pd.DataFrame:
     """Aggregates special teams analytics to the game level."""
-    st_plays = plays_df[plays_df['st'] == 1].copy()
+    st_plays = plays_df[plays_df["st"] == 1].copy()
     if st_plays.empty:
         return pd.DataFrame()
 
     # Calculate Net Punt Yards
-    punts = st_plays[st_plays['st_punt'] == 1].copy()
+    punts = st_plays[st_plays["st_punt"] == 1].copy()
     if not punts.empty:
-        drive_starts = drives_df.groupby(['game_id', 'drive_number'])['start_yards_to_goal'].first().reset_index()
-        drive_starts['next_drive_start_ytg'] = drive_starts.groupby('game_id')['start_yards_to_goal'].shift(-1)
-        punts = punts.merge(drive_starts, on=['game_id', 'drive_number'], how='left')
-        punts['net_punt_yards'] = punts['yards_to_goal'] - (100 - punts['next_drive_start_ytg'])
-        punt_agg = punts.groupby(['game_id', 'offense']).agg(off_avg_net_punt_yards=('net_punt_yards', 'mean')).reset_index()
+        drive_starts = (
+            drives_df.groupby(["game_id", "drive_number"])["start_yards_to_goal"]
+            .first()
+            .reset_index()
+        )
+        drive_starts["next_drive_start_ytg"] = drive_starts.groupby("game_id")[
+            "start_yards_to_goal"
+        ].shift(-1)
+        punts = punts.merge(drive_starts, on=["game_id", "drive_number"], how="left")
+        punts["net_punt_yards"] = punts["yards_to_goal"] - (
+            100 - punts["next_drive_start_ytg"]
+        )
+        punt_agg = (
+            punts.groupby(["game_id", "offense"])
+            .agg(off_avg_net_punt_yards=("net_punt_yards", "mean"))
+            .reset_index()
+        )
     else:
-        punt_agg = pd.DataFrame(columns=['game_id', 'offense', 'off_avg_net_punt_yards'])
+        punt_agg = pd.DataFrame(
+            columns=["game_id", "offense", "off_avg_net_punt_yards"]
+        )
 
     # Calculate Field Goal stats
-    fg_plays = st_plays[st_plays['st_fg'] == 1].copy()
+    fg_plays = st_plays[st_plays["st_fg"] == 1].copy()
     if not fg_plays.empty:
-        fg_plays['fg_bucket'] = pd.cut(fg_plays['kick_distance'], bins=[0, 39, 49, 100], labels=['short', 'mid', 'long'])
-        fg_agg = fg_plays.groupby(['game_id', 'offense', 'fg_bucket']).agg(fg_attempts=('st_fg', 'count'), fg_made=('is_fg_made', 'sum')).reset_index()
-        fg_agg = fg_agg.pivot_table(index=['game_id', 'offense'], columns='fg_bucket', values=['fg_attempts', 'fg_made'], fill_value=0).reset_index()
-        fg_agg.columns = [f'off_{col[0]}_{col[1]}' if col[1] else col[0] for col in fg_agg.columns]
+        fg_plays["fg_bucket"] = pd.cut(
+            fg_plays["kick_distance"],
+            bins=[0, 39, 49, 100],
+            labels=["short", "mid", "long"],
+        )
+        fg_agg = (
+            fg_plays.groupby(["game_id", "offense", "fg_bucket"], observed=True)
+            .agg(fg_attempts=("st_fg", "count"), fg_made=("is_fg_made", "sum"))
+            .reset_index()
+        )
+        fg_agg = fg_agg.pivot_table(
+            index=["game_id", "offense"],
+            columns="fg_bucket",
+            values=["fg_attempts", "fg_made"],
+            fill_value=0,
+            observed=True,
+        ).reset_index()
+        fg_agg.columns = [
+            f"off_{col[0]}_{col[1]}" if col[1] else col[0] for col in fg_agg.columns
+        ]
+        # Compute FG success rates by distance buckets
+        for bucket in ["short", "mid", "long"]:
+            att_col = f"off_fg_attempts_{bucket}"
+            made_col = f"off_fg_made_{bucket}"
+            rate_col = f"off_fg_rate_{bucket}"
+            if att_col in fg_agg.columns and made_col in fg_agg.columns:
+                denom = fg_agg[att_col].where(fg_agg[att_col] > 0, 1)
+                fg_agg[rate_col] = fg_agg[made_col].astype(float) / denom
     else:
-        fg_agg = pd.DataFrame(columns=['game_id', 'offense'])
+        fg_agg = pd.DataFrame(columns=["game_id", "offense"])
 
     # Merge ST stats
-    st_agg = punt_agg.merge(fg_agg, on=['game_id', 'offense'], how='outer').rename(columns={"offense": "team"})
+    st_agg = punt_agg.merge(fg_agg, on=["game_id", "offense"], how="outer").rename(
+        columns={"offense": "team"}
+    )
     return st_agg
 
 
@@ -125,6 +161,34 @@ def aggregate_team_game(
 
     Returns one row per (game_id, team), with `home/away` available from plays_df.
     """
+    # Ensure season/week are present on plays_df; if missing, derive from drives_df mapping
+    if ("season" not in plays_df.columns) or ("week" not in plays_df.columns):
+        season_week_map = (
+            drives_df[["game_id", "season", "week"]].drop_duplicates()
+            if ("season" in drives_df.columns and "week" in drives_df.columns)
+            else pd.DataFrame(columns=["game_id", "season", "week"])
+        )
+        if not season_week_map.empty:
+            plays_df = plays_df.merge(season_week_map, on="game_id", how="left")
+        else:
+            raise ValueError(
+                "aggregate_team_game requires 'season' and 'week' columns on plays_df or drives_df"
+            )
+
+    # Ensure season/week also present on drives_df
+    if ("season" not in drives_df.columns) or ("week" not in drives_df.columns):
+        season_week_map = (
+            plays_df[["game_id", "season", "week"]].drop_duplicates()
+            if ("season" in plays_df.columns and "week" in plays_df.columns)
+            else pd.DataFrame(columns=["game_id", "season", "week"])
+        )
+        if not season_week_map.empty:
+            drives_df = drives_df.merge(season_week_map, on="game_id", how="left")
+        else:
+            raise ValueError(
+                "aggregate_team_game requires 'season' and 'week' columns on drives_df or plays_df"
+            )
+
     off_grp = plays_df.groupby(["season", "week", "game_id", "offense"], as_index=False)
     off_agg = off_grp.agg(
         n_off_plays=("play_number", "count"),
@@ -133,6 +197,22 @@ def aggregate_team_game(
         off_sr=("success", "mean"),
         off_ypp=("yards_gained", "mean"),
         off_epa_pp=("ppa", "mean"),
+        _off_rush_yards=(
+            "yards_gained",
+            lambda s: (
+                plays_df.loc[s.index, "yards_gained"].where(
+                    plays_df.loc[s.index, "rush_attempt"] == 1, 0
+                ).sum()
+            ),
+        ),
+        _off_pass_yards=(
+            "yards_gained",
+            lambda s: (
+                plays_df.loc[s.index, "yards_gained"].where(
+                    plays_df.loc[s.index, "pass_attempt"] == 1, 0
+                ).sum()
+            ),
+        ),
         off_expl_rate_overall_10=(
             "yards_gained",
             lambda s: (plays_df.loc[s.index, "yards_gained"] >= 10).mean(),
@@ -149,14 +229,14 @@ def aggregate_team_game(
             "rush_attempt",
             lambda s: (
                 (plays_df.loc[s.index, "rush_attempt"] == 1)
-                & (plays_df.loc[s.index, "yards_gained"] >= 10)
+                & (plays_df.loc[s.index, "yards_gained"] >= 15)
             ).mean(),
         ),
         off_expl_rate_pass=(
             "pass_attempt",
             lambda s: (
                 (plays_df.loc[s.index, "pass_attempt"] == 1)
-                & (plays_df.loc[s.index, "yards_gained"] >= 15)
+                & (plays_df.loc[s.index, "yards_gained"] >= 20)
             ).mean(),
         ),
         stuff_rate=(
@@ -173,7 +253,12 @@ def aggregate_team_game(
         _power_success_situations=("is_power_situation", "sum"),
         _power_success_conversions=("power_success_converted", "sum"),
     )
-    off_agg = off_agg.rename(columns={"offense": "team"})
+# Compute split YPP safely
+    off_denom_rush = off_agg["n_rush_plays"].where(off_agg["n_rush_plays"] > 0, 1)
+    off_denom_pass = off_agg["n_pass_plays"].where(off_agg["n_pass_plays"] > 0, 1)
+    off_agg["off_rush_ypp"] = off_agg["_off_rush_yards"].astype(float) / off_denom_rush
+    off_agg["off_pass_ypp"] = off_agg["_off_pass_yards"].astype(float) / off_denom_pass
+    off_agg = off_agg.drop(columns=["_off_rush_yards", "_off_pass_yards"]).rename(columns={"offense": "team"})
 
     def_grp = plays_df.groupby(["season", "week", "game_id", "defense"], as_index=False)
     def_agg = def_grp.agg(
@@ -192,18 +277,18 @@ def aggregate_team_game(
             "yards_gained",
             lambda s: (plays_df.loc[s.index, "yards_gained"] >= 30).mean(),
         ),
-        def_expl_rate_rush=(
+def_expl_rate_rush=(
             "rush_attempt",
             lambda s: (
                 (plays_df.loc[s.index, "rush_attempt"] == 1)
-                & (plays_df.loc[s.index, "yards_gained"] >= 10)
+                & (plays_df.loc[s.index, "yards_gained"] >= 15)
             ).mean(),
         ),
         def_expl_rate_pass=(
             "pass_attempt",
             lambda s: (
                 (plays_df.loc[s.index, "pass_attempt"] == 1)
-                & (plays_df.loc[s.index, "yards_gained"] >= 15)
+                & (plays_df.loc[s.index, "yards_gained"] >= 20)
             ).mean(),
         ),
         def_avg_line_yards_allowed=("line_yards", "mean"),
@@ -232,15 +317,27 @@ def aggregate_team_game(
     drv_agg = drv_agg.drop(columns=["_sum_pts_on_opps", "_sum_opp"])
 
     # Calculate Power Success Rate safely
-    off_denom = off_agg["_power_success_situations"].where(off_agg["_power_success_situations"] > 0, 1)
-    off_agg["off_power_success_rate"] = off_agg["_power_success_conversions"] / off_denom
-    off_agg = off_agg.drop(columns=["_power_success_situations", "_power_success_conversions"])
+    off_denom = off_agg["_power_success_situations"].where(
+        off_agg["_power_success_situations"] > 0, 1
+    )
+    off_agg["off_power_success_rate"] = (
+        off_agg["_power_success_conversions"] / off_denom
+    )
+    off_agg = off_agg.drop(
+        columns=["_power_success_situations", "_power_success_conversions"]
+    )
 
-    def_denom = def_agg["_def_power_success_situations"].where(def_agg["_def_power_success_situations"] > 0, 1)
-    def_agg["def_power_success_rate_allowed"] = def_agg["_def_power_success_conversions"] / def_denom
-    def_agg = def_agg.drop(columns=["_def_power_success_situations", "_def_power_success_conversions"])
+    def_denom = def_agg["_def_power_success_situations"].where(
+        def_agg["_def_power_success_situations"] > 0, 1
+    )
+    def_agg["def_power_success_rate_allowed"] = (
+        def_agg["_def_power_success_conversions"] / def_denom
+    )
+    def_agg = def_agg.drop(
+        columns=["_def_power_success_situations", "_def_power_success_conversions"]
+    )
 
-    # Create defensive drives aggregation  
+    # Create defensive drives aggregation
     def_drv_grp = drives_df.groupby(
         ["season", "week", "game_id", "defense"], as_index=False
     )
@@ -253,22 +350,46 @@ def aggregate_team_game(
         _def_sum_pts_on_opps_allowed=("points_on_opps", "sum"),
         _def_sum_opp_allowed=("had_scoring_opportunity", "sum"),
     ).rename(columns={"defense": "team"})
-    
+
     # Compute defensive finish points per scoring opportunity safely
-    def_denom = def_drv_agg["_def_sum_opp_allowed"].where(def_drv_agg["_def_sum_opp_allowed"] > 0, 1)
-    def_drv_agg["def_finish_pts_per_opp_allowed"] = def_drv_agg["_def_sum_pts_on_opps_allowed"] / def_denom
-    def_drv_agg = def_drv_agg.drop(columns=["_def_sum_pts_on_opps_allowed", "_def_sum_opp_allowed"])
+    def_denom = def_drv_agg["_def_sum_opp_allowed"].where(
+        def_drv_agg["_def_sum_opp_allowed"] > 0, 1
+    )
+    def_drv_agg["def_finish_pts_per_opp_allowed"] = (
+        def_drv_agg["_def_sum_pts_on_opps_allowed"] / def_denom
+    )
+    def_drv_agg = def_drv_agg.drop(
+        columns=["_def_sum_pts_on_opps_allowed", "_def_sum_opp_allowed"]
+    )
 
     # Merge all team-game aggregations
-    team_game = off_agg.merge(def_agg, on=["season", "week", "game_id", "team"], how="outer")
-    team_game = team_game.merge(drv_agg, on=["season", "week", "game_id", "team"], how="left")
-    team_game = team_game.merge(def_drv_agg, on=["season", "week", "game_id", "team"], how="left")
-    
+    team_game = off_agg.merge(
+        def_agg, on=["season", "week", "game_id", "team"], how="outer"
+    )
+    team_game = team_game.merge(
+        drv_agg, on=["season", "week", "game_id", "team"], how="left"
+    )
+    team_game = team_game.merge(
+        def_drv_agg, on=["season", "week", "game_id", "team"], how="left"
+    )
+
     # Add special teams if available
     st_agg = calculate_st_analytics_agg(plays_df, drives_df)
     if not st_agg.empty:
         team_game = team_game.merge(st_agg, on=["game_id", "team"], how="left")
 
+# Merge defensive split YPP computed from plays
+    def_denom_rush = plays_df.groupby(["season", "week", "game_id", "defense"], as_index=False)["rush_attempt"].sum()
+    def_denom_pass = plays_df.groupby(["season", "week", "game_id", "defense"], as_index=False)["pass_attempt"].sum()
+    def_yards_rush = plays_df.assign(rush_yards=plays_df["yards_gained"].where(plays_df["rush_attempt"] == 1, 0)).groupby(["season", "week", "game_id", "defense"], as_index=False)["rush_yards"].sum()
+    def_yards_pass = plays_df.assign(pass_yards=plays_df["yards_gained"].where(plays_df["pass_attempt"] == 1, 0)).groupby(["season", "week", "game_id", "defense"], as_index=False)["pass_yards"].sum()
+    def_split = def_denom_rush.merge(def_denom_pass, on=["season", "week", "game_id", "defense"], how="outer", suffixes=("_rush", "_pass"))
+    def_split = def_split.merge(def_yards_rush, on=["season", "week", "game_id", "defense"], how="left")
+    def_split = def_split.merge(def_yards_pass, on=["season", "week", "game_id", "defense"], how="left")
+    def_split = def_split.rename(columns={"defense": "team"})
+    def_split["def_rush_ypp"] = def_split["rush_yards"].astype(float) / def_split["rush_attempt"].where(def_split["rush_attempt"] > 0, 1)
+    def_split["def_pass_ypp"] = def_split["pass_yards"].astype(float) / def_split["pass_attempt"].where(def_split["pass_attempt"] > 0, 1)
+    team_game = team_game.merge(def_split[["season", "week", "game_id", "team", "def_rush_ypp", "def_pass_ypp"]], on=["season", "week", "game_id", "team"], how="left")
     return team_game
 
 
@@ -289,13 +410,18 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         g["recency_weight"] = weights
         return g
 
-    weighted = team_game_df.groupby(
-        ["season", "team"], as_index=False, group_keys=False
-    ).apply(_apply_weights)
+    # Process each season/team separately to avoid groupby.apply column loss issues
+    all_weighted = []
+    for (season, team), group in team_game_df.groupby(["season", "team"]):
+        weighted_group = _apply_weights(group)
+        all_weighted.append(weighted_group)
+    weighted = pd.concat(all_weighted, ignore_index=True)
 
     metric_cols = [
         "off_sr",
-        "off_ypp",
+"off_ypp",
+        "off_rush_ypp",
+        "off_pass_ypp",
         "off_epa_pp",
         "off_expl_rate_overall_10",
         "off_expl_rate_overall_20",
@@ -305,7 +431,9 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         "stuff_rate",
         "havoc_rate",
         "def_sr",
-        "def_ypp",
+"def_ypp",
+        "def_rush_ypp",
+        "def_pass_ypp",
         "def_epa_pp",
         "def_expl_rate_overall_10",
         "def_expl_rate_overall_20",
@@ -348,7 +476,7 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
 
     season_agg = (
         weighted.groupby(["season", "team"], as_index=False)
-        .apply(_agg_group)
+        .apply(_agg_group, include_groups=False)
         .reset_index(drop=True)
     )
     return season_agg
@@ -385,7 +513,7 @@ def apply_iterative_opponent_adjustment(
     # Define defensive metrics that use '_allowed' suffix
     defensive_allowed_metrics = {
         "power_success_rate",
-        "avg_line_yards", 
+        "avg_line_yards",
         "avg_second_level_yards",
         "avg_open_field_yards",
         "successful_drive_rate",
@@ -393,34 +521,38 @@ def apply_iterative_opponent_adjustment(
         "explosive_drive_rate",
         "avg_net_punt_yards",
     }
-    
+
     for metric in metrics_to_adjust:
         # Offensive metric - only add if column exists
         off_col = f"off_{metric}"
         if off_col in adjusted_df.columns:
             adjusted_df[f"adj_off_{metric}"] = adjusted_df[off_col]
-        
+
         # Defensive metric - handle metrics that use '_allowed' suffix, only add if column exists
         if metric in defensive_allowed_metrics:
             def_col = f"def_{metric}_allowed"
         else:
             def_col = f"def_{metric}"
-            
+
         if def_col in adjusted_df.columns:
             adjusted_df[f"adj_def_{metric}"] = adjusted_df[def_col]
 
-    def _apply_weights_to_games(g: pd.DataFrame) -> pd.DataFrame:
-        g = g.sort_values("week").copy()
-        weights = np.ones(len(g), dtype=float)
-        for i, w in enumerate([1.0, 2.0, 3.0], start=1):
-            if len(g) - i >= 0:
-                weights[-i] = w
-        g["recency_weight"] = weights
-        return g
+    # Build recency weights (3 for most recent game, then 2, then 1; earlier = 1)
+    # Avoid groupby.apply to ensure grouping columns remain intact across pandas versions
+    team_game_sorted = team_game_df.sort_values(["season", "team", "week"]).copy()
+    g = team_game_sorted.groupby(["season", "team"], as_index=False)
+    team_game_sorted["_gsize"] = g["week"].transform("size")
+    team_game_sorted["_ord"] = g["week"].cumcount()
+    team_game_sorted["recency_weight"] = 1.0
+    team_game_sorted.loc[
+        team_game_sorted["_ord"] == team_game_sorted["_gsize"] - 1, "recency_weight"
+    ] = 3.0
+    team_game_sorted.loc[
+        team_game_sorted["_ord"] == team_game_sorted["_gsize"] - 2, "recency_weight"
+    ] = 2.0
+    # third most recent remains 1.0 by default; earlier already 1.0
+    team_game_weighted = team_game_sorted.drop(columns=["_gsize", "_ord"]).reset_index(drop=True)
 
-    team_game_weighted = team_game_df.groupby(
-        ["season", "team"], as_index=False, group_keys=False
-    ).apply(_apply_weights_to_games)
     games_with_opponents = team_game_weighted.merge(
         team_game_weighted,
         left_on=["season", "week", "game_id"],
@@ -439,7 +571,7 @@ def apply_iterative_opponent_adjustment(
                 adj_cols.append(f"adj_off_{m}")
             if f"adj_def_{m}" in adjusted_df.columns:
                 adj_cols.append(f"adj_def_{m}")
-        
+
         current_adjusted_metrics = adjusted_df[adj_cols].copy()
         current_adjusted_metrics = current_adjusted_metrics.set_index(
             ["season", "team"]
@@ -469,9 +601,13 @@ def apply_iterative_opponent_adjustment(
             league_means = {}
             for metric in metrics_to_adjust:
                 if f"adj_off_{metric}" in adjusted_df.columns:
-                    league_means[f"off_{metric}"] = adjusted_df[f"adj_off_{metric}"].mean()
+                    league_means[f"off_{metric}"] = adjusted_df[
+                        f"adj_off_{metric}"
+                    ].mean()
                 if f"adj_def_{metric}" in adjusted_df.columns:
-                    league_means[f"def_{metric}"] = adjusted_df[f"adj_def_{metric}"].mean()
+                    league_means[f"def_{metric}"] = adjusted_df[
+                        f"adj_def_{metric}"
+                    ].mean()
 
             for metric in metrics_to_adjust:
                 # Skip metrics that don't have both offensive and required columns
@@ -480,14 +616,16 @@ def apply_iterative_opponent_adjustment(
                     def_col_name = f"def_{metric}_allowed"
                 else:
                     def_col_name = f"def_{metric}"
-                
+
                 # Skip if required columns don't exist
-                if (off_col_name not in row.index or 
-                    def_col_name not in row.index or
-                    f"off_{metric}" not in league_means or
-                    f"def_{metric}" not in league_means):
+                if (
+                    off_col_name not in row.index
+                    or def_col_name not in row.index
+                    or f"off_{metric}" not in league_means
+                    or f"def_{metric}" not in league_means
+                ):
                     continue
-                
+
                 off_base_metric = row[off_col_name]
                 def_base_metric = row[def_col_name]
 
@@ -502,10 +640,12 @@ def apply_iterative_opponent_adjustment(
                     if f"adj_off_{metric}_opp_adj" in team_games_with_opp_adj.columns
                     else f"adj_off_{metric}"
                 )
-                
+
                 # Skip if required adjusted columns don't exist
-                if (def_col not in team_games_with_opp_adj.columns or
-                    off_col not in team_games_with_opp_adj.columns):
+                if (
+                    def_col not in team_games_with_opp_adj.columns
+                    or off_col not in team_games_with_opp_adj.columns
+                ):
                     continue
 
                 opp_def_metrics = team_games_with_opp_adj[def_col]
