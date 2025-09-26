@@ -1,3 +1,5 @@
+"""Structured logging utilities for data pipelines and model training."""
+
 import json
 import logging
 from datetime import datetime

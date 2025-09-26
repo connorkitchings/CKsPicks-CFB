@@ -1,0 +1,2 @@
+season,week,game_id,away_team,home_team,home_team_spread_line,model_spread,bet_spread,model_pick_team,model_pick_str,home_points,away_points,home_team_result,cover_side,cover_team,cover_str,pick_win
+2024,16,401645383,Navy,Army,-6.5,6.431559660830532,home,Army,Home -6.5,13.0,31.0,-18.0,away,Navy,Away +6.5,0

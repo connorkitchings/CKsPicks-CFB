@@ -1,3 +1,10 @@
+"""Persistence layer for pre-aggregations.
+
+Reads raw plays for a season, builds byplay/drives/team-game/team-season
+artifacts, applies opponent adjustment, and writes partitioned CSV outputs to
+processed storage.
+"""
+
 from __future__ import annotations
 
 import pandas as pd

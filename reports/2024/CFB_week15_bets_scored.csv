@@ -1,0 +1,4 @@
+season,week,game_id,game_date,home_team,away_team,neutral_site,sportsbook,home_team_spread_line,total_line,model_spread,model_total,edge_spread,edge_total,bet_spread,bet_total,home_games_played,away_games_played,bet_units,pick_win
+2024,15,401673465,2024-12-07 12:00:00-05:00,Arizona State,Iowa State,True,DraftKings,1.5,51.0,5.545337281009621,57.85107761200281,7.045337281009621,6.851077612002811,home,none,12.0,11.0,1,1
+2024,15,401673469,2024-12-07 16:00:00-05:00,Texas,Georgia,True,DraftKings,-3.0,51.0,7.941090204631514,56.48832874511988,4.941090204631514,5.48832874511988,home,none,12.0,11.0,1,0
+2024,15,401673463,2024-12-07 20:00:00-05:00,SMU,Clemson,True,DraftKings,-2.5,56.5,7.977493385040416,56.46239400424692,5.477493385040416,0.0376059957530827,home,none,11.0,11.0,1,0

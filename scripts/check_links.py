@@ -41,12 +41,15 @@ for file in files:
 
 # Build anchor index for each file (headings + explicit {#id})
 
+
 def slugify(text: str) -> str:
     import re as _re
+
     t = text.strip().lower()
     t = _re.sub(r"[\s]+", "-", t)
     t = _re.sub(r"[^a-z0-9\-_]", "", t)
     return t
+
 
 file_to_anchors: dict[Path, set[str]] = {}
 for file in files:
@@ -72,7 +75,11 @@ for file in files:
     for m in link_pat.finditer(content):
         url = m.group(2)
         # Skip external and mail
-        if url.startswith("http://") or url.startswith("https://") or url.startswith("mailto:"):
+        if (
+            url.startswith("http://")
+            or url.startswith("https://")
+            or url.startswith("mailto:")
+        ):
             continue
         # Handle same-file anchors
         if url.startswith("#"):

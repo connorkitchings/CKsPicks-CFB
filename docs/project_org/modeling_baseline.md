@@ -6,7 +6,7 @@ This document defines the initial, minimal modeling approach to generate weekly 
 
 - Hit rate target: ≥ 53%
 - Scope: FBS regular season only, include Week 0
-- Training window: 2019–2023 seasons (exclude 2020 COVID); 2024 as holdout/test
+- Training window: 2017–2022 seasons; 2023 as holdout/test
 - In-season predictions begin once both teams have ≥ 4 games played
 
 ## Targets

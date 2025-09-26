@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 
-# --- Configuration ---
-# TODO: Make this configurable via environment or a config file.
-LOGO_PATH = "data/logos/"
+from cfb_model.config import get_logo_path
+
+LOGO_PATH = get_logo_path()
 
 # --- Data Dictionaries ---
 P5_SCHOOLS_AND_CONFERENCES = {
@@ -122,6 +122,17 @@ def get_image(team_name: str, zoom: float = 1.0):
         return OffsetImage(np.zeros((1, 1, 4)))  # Transparent placeholder
 
 
+def get_gray_image(team_name: str, zoom: float = 1.0):
+    """Load the team logo and convert it to grayscale."""
+    try:
+        img = plt.imread(f"{LOGO_PATH}{team_name}.png")
+        gray_img = np.dot(img[..., :3], [0.2989, 0.5870, 0.1140])
+        return OffsetImage(gray_img, cmap="gray", zoom=zoom)
+    except FileNotFoundError:
+        print(f"Logo for {team_name} not found at {LOGO_PATH}{team_name}.png")
+        return OffsetImage(np.zeros((1, 1, 4)))
+
+
 # --- Main Visualization Function ---
 def create_graph_comparison(
     data: pd.DataFrame,
@@ -165,8 +176,14 @@ def create_graph_comparison(
         x_range = x_axis.max() - x_axis.min()
         y_range = y_axis.max() - y_axis.min()
         padding = 0.1
-        x_min, x_max = (x_axis.min() - x_range * padding, x_axis.max() + x_range * padding)
-        y_min, y_max = (y_axis.min() - y_range * padding, y_axis.max() + y_range * padding)
+        x_min, x_max = (
+            x_axis.min() - x_range * padding,
+            x_axis.max() + x_range * padding,
+        )
+        y_min, y_max = (
+            y_axis.min() - y_range * padding,
+            y_axis.max() + y_range * padding,
+        )
 
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
@@ -196,7 +213,9 @@ def create_graph_comparison(
             ax.invert_yaxis()
 
         if add_diagonal_line:
-            ax.plot([x_min, x_max], [y_min, y_max], color="black", linestyle="-", alpha=0.5)
+            ax.plot(
+                [x_min, x_max], [y_min, y_max], color="black", linestyle="-", alpha=0.5
+            )
 
         # --- Add Logos ---
         for x0, y0, team in zip(x_axis, y_axis, final_dataset["team"]):
@@ -209,3 +228,170 @@ def create_graph_comparison(
 
     except Exception as e:
         print(f"An error occurred: {e}")
+
+
+def create_weekly_performance_graph(
+    data: pd.DataFrame,
+    season: int,
+    statx: str,
+    staty: str,
+    comparison: str,
+    highlight_team: str = None,
+    adjusted: bool = False,
+):
+    """
+    Create a scatter plot showing weekly performance for two statistics with team logos and week numbers.
+
+    Parameters:
+    data (pd.DataFrame): The dataset containing weekly statistics
+    season (int): The season year to filter data on
+    statx (str): The x-axis statistic column name
+    staty (str): The y-axis statistic column name
+    comparison (str): 'offense' or 'defense' to adjust the titles
+    highlight_team (str): Optional team name to highlight (others will be grayed out)
+    adjusted (bool): Whether to use adjusted statistics
+    """
+    try:
+        # Offense or defense handling
+        suffix = "_o" if comparison == "offense" else "_d"
+        suffix_to_drop = "_d" if comparison == "offense" else "_o"
+        cols_to_drop = data.filter(like=suffix_to_drop, axis=1).columns
+
+        # Filter data for the specific season
+        season_data = data[data["season"] == season].copy()
+        season_data = season_data.drop(columns=cols_to_drop)
+        season_data = season_data.rename(
+            columns=lambda col: col[: -len(suffix)] if col.endswith(suffix) else col
+        )
+
+        # Create the plot
+        fig, ax = plt.subplots(figsize=(15, 10))
+
+        # Calculate overall ranges for axis limits
+        x_range = season_data[statx].max() - season_data[statx].min()
+        y_range = season_data[staty].max() - season_data[staty].min()
+        padding = 0.1
+        x_min = season_data[statx].min() - (x_range * padding)
+        x_max = season_data[statx].max() + (x_range * padding)
+        y_min = season_data[staty].min() - (y_range * padding)
+        y_max = season_data[staty].max() + (y_range * padding)
+
+        # Set axis limits
+        ax.set_xlim(x_min, x_max)
+        ax.set_ylim(y_min, y_max)
+
+        # Sort teams so highlighted team is plotted last
+        teams = list(season_data["team"].unique())
+        if highlight_team and highlight_team in teams:
+            teams.remove(highlight_team)
+            teams.append(highlight_team)
+
+        # Plot team data
+        for team in teams:
+            team_data = season_data[season_data["team"] == team].sort_values("week")
+
+            # Determine style based on highlight_team
+            is_highlighted = team == highlight_team or highlight_team is None
+            line_alpha = 1.0 if is_highlighted else 0.15
+            logo_alpha = 1.0 if is_highlighted else 0.15
+            text_alpha = 1.0 if is_highlighted else 0.15
+            line_color = "red" if team == highlight_team else "gray"
+            zorder = 2 if is_highlighted else 1
+
+            # Connect points with lines if they're consecutive weeks
+            if len(team_data) > 1:
+                ax.plot(
+                    team_data[statx],
+                    team_data[staty],
+                    alpha=line_alpha,
+                    linestyle="--",
+                    color=line_color,
+                    linewidth=2 if is_highlighted else 1,
+                    zorder=zorder,
+                )
+
+            # Add logos with week numbers
+            for _, row in team_data.iterrows():
+                try:
+                    # print(f"Loading logo for team: {team}")
+                    logo = (
+                        get_image(team)
+                        if team == highlight_team
+                        else get_gray_image(team, 0.75)
+                    )
+
+                    ab = AnnotationBbox(
+                        logo,
+                        (row[statx], row[staty]),
+                        frameon=False,
+                        zorder=zorder + 1,
+                        alpha=logo_alpha,
+                        box_alignment=(0.5, 0.5),
+                    )
+                    ax.add_artist(ab)
+
+                    ax.annotate(
+                        f"G{int(row['games'])}",
+                        xy=(row[statx], row[staty]),
+                        xytext=(0, -14),
+                        textcoords="offset points",
+                        ha="center",
+                        va="top",
+                        alpha=text_alpha,
+                        fontsize=8,
+                        color=line_color if is_highlighted else "gray",
+                        weight="bold" if is_highlighted else "normal",
+                        zorder=zorder + 1,
+                    )
+
+                except Exception as e:
+                    print(f"An error occurred while processing {team}: {str(e)}")
+                except FileNotFoundError:
+                    print(f"Logo for {team} not found")
+                    # Fallback to a simple scatter point if logo isn't found
+                    ax.scatter(
+                        row[statx],
+                        row[staty],
+                        alpha=logo_alpha,
+                        color=line_color,
+                        zorder=zorder,
+                    )
+
+        # Calculate and plot the median lines
+        median_x = season_data[statx].median()
+        median_y = season_data[staty].median()
+        ax.axvline(median_x, color="grey", linestyle="--", alpha=0.7, zorder=0)
+        ax.axhline(median_y, color="grey", linestyle="--", alpha=0.7, zorder=0)
+
+        # Set plot titles and labels
+        x_axis_title = f"{comparison.capitalize()}ive {STATS_DICTIONARY.get(statx, 'Unknown Statistic')}"
+        y_axis_title = f"{comparison.capitalize()}ive {STATS_DICTIONARY.get(staty, 'Unknown Statistic')}"
+        if adjusted:
+            x_axis_title = f"Adjusted {x_axis_title}"
+            y_axis_title = f"Adjusted {y_axis_title}"
+
+        ax.set_title(f"{x_axis_title} vs. {y_axis_title} by Week - {season} Season")
+        ax.set_xlabel(x_axis_title)
+        ax.set_ylabel(y_axis_title)
+
+        # Optional inversion of axes for defense comparison
+        if comparison == "defense":
+            ax.invert_xaxis()
+            ax.invert_yaxis()
+
+        # Add gridlines
+        ax.grid(True, linestyle=":", alpha=0.6, zorder=0)
+
+        # Adjust layout
+        plt.tight_layout()
+
+        # Display the plot
+        plt.show()
+
+    except ValueError as ve:
+        print(f"ValueError: {str(ve)}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+
+# end of module

@@ -3,17 +3,18 @@
 This document is the tactical plan for the **cfb_model** project. It translates the goals from the
 [Project Charter](../project_org/project_charter.md) into a high-level schedule of epics and tasks.
 
-> 📋 **Last Updated**: 2025-01-13 | **Next Review**: Weekly Wednesday sprint planning
+> 📋 **Last Updated**: 2025-09-25 | **Next Review**: Weekly Wednesday sprint planning
 > 🔗 **Related**: [Open Decisions](../project_org/open_decisions.md) | [Decision Log](../decisions/decision_log.md)
 
 ## Sprint Overview
 
-**Current Sprint:** Sprint 2 (Core Implementation)  
+**Current Sprint:** Sprint 2 → 3 Transition (Model Validation Complete)  
 **Sprint Duration:** 3 weeks  
-**Target Completion:** Week 4 of CFB season (mid-September 2025)
+**Target Completion:** COMPLETED - September 2025
 
-**Sprint Goal:** Implement core feature engineering pipeline, Ridge baseline model training, and
-weekly prediction generation. Establish MVP betting recommendation system with basic evaluation.
+**Sprint Goal:** ✅ COMPLETED - Core implementation finished with critical bug fixes and full season validation.
+
+**Key Achievement:** Fixed critical spread betting logic bug and validated true model performance at 51.7% hit rate across full 2024 season (261 total bets).
 
 **Key Dependencies**:  
 - Decision OPEN-001 (Production Deployment) needed before live operation  
@@ -58,17 +59,21 @@ weekly prediction generation. Establish MVP betting recommendation system with b
 | ID | Epic | Deliverable | Effort | Dependencies | Owner | Status |
 |:--:|:-----|:-----------|:------:|:-------------|:-----:|:------:|
 | 11 | Feature Eng. | Implement iterative averaging (4 iters) + feature catalog | 8d | Task 5 ✅ | @dev | ✅ Complete |
-| 12 | Modeling | Ridge training + weekly prediction scripts | 5d | Task 11 | @dev | 📋 Ready |
-| 13 | Operations | Generate weekly CSV at `reports/YYYY/CFB_weekWW_bets.csv` | 3d | Task 12 | @dev | 📋 Ready |
-| 19 | Testing | Historical backtesting framework (2019-2024) | 6d | Task 12 | @dev | 📋 Ready |
+| 12 | Modeling | Ridge training + weekly prediction scripts | 5d | Task 11 | @dev | ✅ Complete |
+| 13 | Operations | Generate weekly CSV at `reports/YYYY/CFB_weekWW_bets.csv` | 3d | Task 12 | @dev | ✅ Complete |
+| 19 | Testing | Historical backtesting framework (2019-2024) | 6d | Task 12 | @dev | ✅ Complete |
+|| 26 | Data Quality | Implement point-in-time feature generation to prevent data leakage | 5d | Task 11 | @dev | ✅ Complete |
+|| 27 | Critical Fix | Fix spread betting logic bug and validate full season performance | 3d | Task 13 | @dev | ✅ Complete |
 
-**Sprint 2 Risks**:  
-- ✅ **Opponent adjustment complexity**: ~~May take longer than estimated (8d → 12d)~~ RESOLVED - Task 11 completed on schedule  
-- ⚠️ **Data quality issues**: Historical data inconsistencies could delay validation  
-- 🔍 **Mitigation**: Start with simpler averaging, expand iteratively
+**Sprint 2 Final Status**: ✅ **COMPLETED** - All core implementation tasks finished with critical bug fixes. True model performance baseline established at 51.7% hit rate (135/261 bets) across full 2024 season.
+
+**Sprint 2 Risks - RESOLVED**:
+- ✅ **Opponent adjustment complexity**: RESOLVED - Task 11 completed on schedule
+- ✅ **Spread logic bug**: RESOLVED - Critical betting logic fixed (Task 27)
+- ✅ **Model performance validation**: RESOLVED - Full season testing completed
+- ⚠️ **Model below breakeven**: IDENTIFIED - 51.7% vs 52.4% needed, now priority for next sprint
 
 ### Sprint 3 Tasks (Production Readiness) - Planned
-
 | ID | Epic | Deliverable | Effort | Dependencies | Owner | Status |
 |:--:|:-----|:-----------|:------:|:-------------|:-----:|:------:|
 | 16 | Web Interface | Minimal Streamlit view of weekly CSV | 4d | Task 13, OPEN-003 | @dev | 🚫 Blocked |
@@ -179,8 +184,8 @@ gantt
 
 ## Sprint Retrospective
 
-*To be filled out at the end of each sprint.*
+### Sprint 2 Retrospective (September 2025)
 
 | What Went Well | What Didn't Go Well | Action Items for Next Sprint |
 |:---------------|:--------------------|:-----------------------------|
-| TBD            | TBD                 | TBD                          |
+| • Fixed critical spread logic bug through careful code review<br>• Established honest performance baseline (51.7%)<br>• Validated full pipeline across 261 bets<br>• Excellent data organization maintained | • Model performance below breakeven by 0.7pp<br>• High weekly variance (0% to 100% hit rates)<br>• Initial performance assessment was misleading due to bug | • Focus on model improvement techniques<br>• Investigate feature engineering enhancements<br>• Consider alternative modeling approaches<br>• Implement variance reduction strategies |

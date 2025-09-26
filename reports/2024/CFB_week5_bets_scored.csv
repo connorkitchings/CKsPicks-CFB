@@ -1,0 +1,54 @@
+season,week,game_id,away_team,home_team,home_team_spread_line,model_spread,bet_spread,model_pick_team,model_pick_str,home_points,away_points,home_team_result,cover_side,cover_team,cover_str,pick_win
+2024,5,401645331,Army,Temple,11.0,-3.024817735424602,none,none,none,14.0,42.0,-28.0,away,Army,Away -11.0,0
+2024,5,401634767,Virginia Tech,Miami,-17.5,10.820667363737828,none,none,none,38.0,34.0,4.0,home,Miami,Home -17.5,0
+2024,5,401628501,Washington,Rutgers,-1.5,0.6056645630059931,none,none,none,21.0,18.0,3.0,home,Rutgers,Home -1.5,0
+2024,5,401628499,Nebraska,Purdue,10.0,-20.6161704874747,none,none,none,10.0,28.0,-18.0,away,Nebraska,Away -10.0,0
+2024,5,401645332,Navy,UAB,4.5,-4.067474932912743,none,none,none,18.0,41.0,-23.0,away,Navy,Away -4.5,0
+2024,5,401628377,Kentucky,Ole Miss,-15.0,28.410606456561787,none,none,none,17.0,20.0,-3.0,home,Ole Miss,Home -15.0,0
+2024,5,401629032,Buffalo,UConn,-6.0,0.0497130969718639,none,none,none,47.0,3.0,44.0,home,UConn,Home -6.0,0
+2024,5,401645337,South Florida,Tulane,-4.0,15.792252426842223,none,none,none,45.0,10.0,35.0,home,Tulane,Home -4.0,0
+2024,5,401635564,Northern Illinois,NC State,-7.0,-6.800832039582945,none,none,none,24.0,17.0,7.0,home,NC State,Home -7.0,0
+2024,5,401628497,Minnesota,Michigan,-10.5,3.08731160217153,none,none,none,27.0,24.0,3.0,home,Michigan,Home -10.5,0
+2024,5,401628496,Maryland,Indiana,-7.5,10.858293822675485,none,none,none,42.0,28.0,14.0,home,Indiana,Home -7.5,0
+2024,5,401635560,Western Kentucky,Boston College,-7.5,29.74616850511768,none,none,none,21.0,20.0,1.0,home,Boston College,Home -7.5,0
+2024,5,401636883,Oklahoma State,Kansas State,-6.0,13.399397003630652,none,none,none,42.0,20.0,22.0,home,Kansas State,Home -6.0,0
+2024,5,401636880,BYU,Baylor,-3.0,-0.616221382410046,none,none,none,28.0,34.0,-6.0,away,BYU,Away +3.0,0
+2024,5,401643793,Ball State,James Madison,-22.0,42.71468239606688,none,none,none,63.0,7.0,56.0,home,James Madison,Home -22.0,0
+2024,5,401641041,Texas State,Sam Houston,11.0,-10.976753404225043,none,none,none,40.0,39.0,1.0,away,Texas State,Away -11.0,0
+2024,5,401628373,Arkansas,Texas A&M,-6.5,2.7381399859056,none,none,none,21.0,17.0,4.0,home,Texas A&M,Home -6.5,0
+2024,5,401628375,Oklahoma,Auburn,-2.0,1.0794845345449482,none,none,none,21.0,27.0,-6.0,away,Oklahoma,Away +2.0,0
+2024,5,401643794,Western Michigan,Marshall,-3.5,1.513303676119374,none,none,none,27.0,20.0,7.0,home,Marshall,Home -3.5,0
+2024,5,401644739,Eastern Michigan,Kent State,14.0,-7.592788084906454,none,none,none,33.0,52.0,-19.0,away,Eastern Michigan,Away -14.0,0
+2024,5,401644738,Akron,Ohio,-8.5,11.54121975305532,none,none,none,30.0,10.0,20.0,home,Ohio,Home -8.5,0
+2024,5,401635659,Louisiana,Wake Forest,-3.0,0.1082822192879429,none,none,none,38.0,41.0,-3.0,push,push,push,0
+2024,5,401643720,Fresno State,UNLV,-2.5,7.961913465102494,none,none,none,59.0,14.0,45.0,home,UNLV,Home -2.5,0
+2024,5,401628502,Wisconsin,USC,-14.0,3.499676600550561,none,none,none,38.0,21.0,17.0,home,USC,Home -14.0,0
+2024,5,401636882,TCU,Kansas,-1.5,-1.5112688389526936,none,none,none,27.0,38.0,-11.0,away,TCU,Away +1.5,0
+2024,5,401640992,Liberty,App State,,-13.386140502344343,none,none,none,,,,unknown,unknown,unknown,0
+2024,5,401628980,Louisville,Notre Dame,-6.5,-3.5763250368805584,none,none,none,31.0,24.0,7.0,home,Notre Dame,Home -6.5,0
+2024,5,401643792,Georgia Southern,Georgia State,-3.5,10.710193860024658,none,none,none,21.0,38.0,-17.0,away,Georgia Southern,Away +3.5,0
+2024,5,401636885,Colorado,UCF,-12.5,24.054893158169456,none,none,none,21.0,48.0,-27.0,away,Colorado,Away +12.5,0
+2024,5,401643721,San Diego State,Central Michigan,-2.5,3.698259927225194,none,none,none,22.0,21.0,1.0,home,Central Michigan,Home -2.5,0
+2024,5,401629043,Massachusetts,Miami (OH),-15.5,8.052385201901302,none,none,none,23.0,20.0,3.0,home,Miami (OH),Home -15.5,0
+2024,5,401645334,UTSA,East Carolina,-2.0,-3.795206913659576,none,none,none,30.0,20.0,10.0,home,East Carolina,Home -2.0,0
+2024,5,401635562,North Carolina,Duke,1.0,-3.4056799630394536,none,none,none,21.0,20.0,1.0,push,push,push,0
+2024,5,401628378,Mississippi State,Texas,-37.0,26.53765134906605,none,none,none,35.0,13.0,22.0,home,Texas,Home -37.0,0
+2024,5,401643795,Old Dominion,Bowling Green,-11.0,6.059036029680534,none,none,none,27.0,30.0,-3.0,home,Bowling Green,Home -11.0,0
+2024,5,401640981,Louisiana Tech,Florida International,2.0,2.636796455826252,none,none,none,17.0,10.0,7.0,home,Florida International,Home +2.0,0
+2024,5,401643796,UL Monroe,Troy,-6.0,0.604838142074152,none,none,none,9.0,13.0,-4.0,home,Troy,Home -6.0,0
+2024,5,401645336,Tulsa,North Texas,-7.0,5.25241276925113,none,none,none,52.0,20.0,32.0,home,North Texas,Home -7.0,0
+2024,5,401636881,Iowa State,Houston,16.0,-5.9905066710670205,none,none,none,0.0,20.0,-20.0,away,Iowa State,Away -16.0,0
+2024,5,401645333,Charlotte,Rice,-4.0,-2.1636612340089005,none,none,none,20.0,21.0,-1.0,home,Rice,Home -4.0,0
+2024,5,401635561,Stanford,Clemson,-24.0,-4.817924771074736,none,none,none,40.0,14.0,26.0,home,Clemson,Home -24.0,0
+2024,5,401628374,Georgia,Alabama,2.0,16.247905659753513,none,none,none,41.0,34.0,7.0,home,Alabama,Home +2.0,0
+2024,5,401628495,Illinois,Penn State,-19.5,17.162256916342457,none,none,none,21.0,7.0,14.0,home,Penn State,Home -19.5,0
+2024,5,401641025,Middle Tennessee,Memphis,-27.0,27.386607302992964,none,none,none,24.0,7.0,17.0,home,Memphis,Home -27.0,0
+2024,5,401628498,Ohio State,Michigan State,23.5,-9.5813060109828,none,none,none,7.0,38.0,-31.0,away,Ohio State,Away -23.5,0
+2024,5,401628376,South Alabama,LSU,-21.0,11.793697748188544,none,none,none,42.0,10.0,32.0,home,LSU,Home -21.0,0
+2024,5,401641035,New Mexico,New Mexico State,9.5,-5.35666850217412,none,none,none,40.0,50.0,-10.0,away,New Mexico,Away -9.5,0
+2024,5,401635563,Florida State,SMU,-6.0,14.574296226578952,none,none,none,42.0,16.0,26.0,home,SMU,Home -6.0,0
+2024,5,401636884,Cincinnati,Texas Tech,-3.0,6.854735526696501,none,none,none,44.0,41.0,3.0,home,Texas Tech,Home -3.0,0
+2024,5,401643718,Air Force,Wyoming,4.0,-9.724840110637224,none,none,none,31.0,19.0,12.0,home,Wyoming,Home +4.0,0
+2024,5,401643719,Washington State,Boise State,-6.5,9.018953620175289,none,none,none,45.0,24.0,21.0,home,Boise State,Home -6.5,0
+2024,5,401636886,Arizona,Utah,-7.5,2.044868330237347,none,none,none,10.0,23.0,-13.0,away,Arizona,Away +7.5,0
+2024,5,401628500,Oregon,UCLA,23.5,2.2936745232301834,none,none,none,13.0,34.0,-21.0,away,Oregon,Away -23.5,0

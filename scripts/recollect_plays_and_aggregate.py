@@ -13,6 +13,7 @@ Notes:
 - This script ensures teams, venues, and games are present before collecting plays.
 - Aggregations are run per-season after plays ingest.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -52,11 +53,31 @@ def _run(cmd: list[str]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Recollect plays and run pre-aggregations per season")
-    parser.add_argument("--years", type=str, default=None, help="Comma list and/or ranges, e.g. 2014-2019,2021-2024")
-    parser.add_argument("--data-root", type=str, default=None, help="Absolute data root path (external drive)")
-    parser.add_argument("--season-type", type=str, default="regular", choices=["regular", "postseason"], help="Season type")
-    parser.add_argument("--quiet", action="store_true", help="Suppress per-game aggregation logs")
+    parser = argparse.ArgumentParser(
+        description="Recollect plays and run pre-aggregations per season"
+    )
+    parser.add_argument(
+        "--years",
+        type=str,
+        default=None,
+        help="Comma list and/or ranges, e.g. 2014-2019,2021-2024",
+    )
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default=None,
+        help="Absolute data root path (external drive)",
+    )
+    parser.add_argument(
+        "--season-type",
+        type=str,
+        default="regular",
+        choices=["regular", "postseason"],
+        help="Season type",
+    )
+    parser.add_argument(
+        "--quiet", action="store_true", help="Suppress per-game aggregation logs"
+    )
     args = parser.parse_args()
 
     years = _parse_years(args.years)
@@ -65,11 +86,39 @@ def main() -> None:
     for year in years:
         print(f"\n=== Year {year} ===")
         # Ensure dependencies
-        _run([py, "scripts/ingest_cli.py", "teams", "--year", str(year)] + (["--data-root", args.data_root] if args.data_root else []))
-        _run([py, "scripts/ingest_cli.py", "venues", "--year", str(year)] + (["--data-root", args.data_root] if args.data_root else []))
-        _run([py, "scripts/ingest_cli.py", "games", "--year", str(year), "--season-type", args.season_type] + (["--data-root", args.data_root] if args.data_root else []))
+        _run(
+            [py, "scripts/ingest_cli.py", "teams", "--year", str(year)]
+            + (["--data-root", args.data_root] if args.data_root else [])
+        )
+        _run(
+            [py, "scripts/ingest_cli.py", "venues", "--year", str(year)]
+            + (["--data-root", args.data_root] if args.data_root else [])
+        )
+        _run(
+            [
+                py,
+                "scripts/ingest_cli.py",
+                "games",
+                "--year",
+                str(year),
+                "--season-type",
+                args.season_type,
+            ]
+            + (["--data-root", args.data_root] if args.data_root else [])
+        )
         # Plays re-collection (full season)
-        _run([py, "scripts/ingest_cli.py", "plays", "--year", str(year), "--season-type", args.season_type] + (["--data-root", args.data_root] if args.data_root else []))
+        _run(
+            [
+                py,
+                "scripts/ingest_cli.py",
+                "plays",
+                "--year",
+                str(year),
+                "--season-type",
+                args.season_type,
+            ]
+            + (["--data-root", args.data_root] if args.data_root else [])
+        )
         # Aggregations
         agg_cmd = [py, "scripts/aggregations_cli.py", "preagg", "--year", str(year)]
         if args.quiet:
@@ -81,4 +130,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

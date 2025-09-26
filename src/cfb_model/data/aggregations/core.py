@@ -1,3 +1,9 @@
+"""Core aggregation functions for plays → drives → team-game → team-season.
+
+These utilities aggregate enriched play data to higher-level representations and
+compute derived metrics (e.g., scoring opportunity indicators, explosive drives).
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -5,9 +11,27 @@ import pandas as pd
 
 
 def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
-    """Aggregates play-level data to drive-level metrics.
+    """Aggregate play-level rows into drive-level metrics.
 
-    Returns a DataFrame with one row per (game_id, drive_number, offense, defense).
+    Args:
+        plays_df: Enriched play-level DataFrame. Must include columns:
+            - game_id, drive_number, offense, defense
+            - yards_gained, play_duration, quarter
+            - time_remaining_before, time_remaining_after
+            - eckel (indicator for scoring opp window), yards_to_goal, scoring, turnover
+            - play_type (string), is_drive_play (optional; inferred if missing)
+
+    Returns:
+        DataFrame with one row per (game_id, drive_number, offense, defense) and columns:
+            - drive_plays, drive_yards, drive_time
+            - drive_start_period, drive_end_period
+            - start_time_remain, end_time_remain
+            - start_yards_to_goal, end_yards_to_goal
+            - is_eckel_drive, had_scoring_opportunity, points, turnovers
+            - is_successful_drive, is_busted_drive, is_explosive_drive
+
+    Raises:
+        ValueError: If required columns are missing from plays_df.
     """
     required = [
         "game_id",
@@ -83,7 +107,17 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
 def calculate_st_analytics_agg(
     plays_df: pd.DataFrame, drives_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Aggregates special teams analytics to the game level."""
+    """Aggregate special-teams play signals to game-level metrics.
+
+    Args:
+        plays_df: Play-level DataFrame containing special-teams indicators such as
+            st (1 if special teams), st_punt, st_fg, kick_distance, is_fg_made.
+        drives_df: Drive-level DataFrame to derive next-drive context for net punt yards.
+
+    Returns:
+        DataFrame with columns keyed by (game_id, team) for special-teams metrics.
+        May be empty if no special-teams plays exist.
+    """
     st_plays = plays_df[plays_df["st"] == 1].copy()
     if st_plays.empty:
         return pd.DataFrame()
@@ -157,9 +191,29 @@ def calculate_st_analytics_agg(
 def aggregate_team_game(
     plays_df: pd.DataFrame, drives_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Aggregates to team-game features combining play- and drive-level signals.
+    """Aggregate play- and drive-level signals into team-game metrics.
 
-    Returns one row per (game_id, team), with `home/away` available from plays_df.
+    Ensures season/week presence on both inputs (deriving from the other if needed)
+    and computes offense/defense rate statistics, explosive/play splits, line yards,
+    power success, and drive-level finishing efficiency.
+
+    Args:
+        plays_df: Enriched play-level DataFrame. Required columns include at least
+            season, week, game_id, offense, defense, play_number, rush_attempt,
+            pass_attempt, success, yards_gained, ppa. Optional columns used when present:
+            havoc, line_yards, second_level_yards, open_field_yards,
+            is_power_situation, power_success_converted.
+        drives_df: Drive-level DataFrame with at minimum game_id, drive_number and
+            (season, week) either present or derivable; plus indicators used for
+            eckel, successful/explosive/busted drive rates.
+
+    Returns:
+        DataFrame with one row per (season, week, game_id, team) containing offense
+        and defense rate stats, split YPP, explosive rates, power success, and various
+        drive-level rates. Includes special-teams aggregates when available.
+
+    Raises:
+        ValueError: If neither plays_df nor drives_df provide season/week to derive mapping.
     """
     # Ensure season/week are present on plays_df; if missing, derive from drives_df mapping
     if ("season" not in plays_df.columns) or ("week" not in plays_df.columns):
@@ -394,11 +448,30 @@ def_expl_rate_rush=(
 
 
 def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
-    """Season-to-date team aggregates using recency weights (3/2/1; earlier=1)."""
+    """Aggregate team-game metrics to season-to-date with recency weighting.
+
+    Uses weights 3, 2, 1 for the last three games (most recent highest), and 1 for
+    all earlier games. Aggregates a curated list of offense/defense and drive-level
+    metrics when present.
+
+    Args:
+        team_game_df: Team-game DataFrame with at least season, week, team columns and
+            metric columns output by aggregate_team_game.
+
+    Returns:
+        DataFrame with one row per (season, team) containing weighted averages and
+        games_played. Includes cumulative_luck_factor when present.
+
+    Raises:
+        ValueError: If required identity columns are missing.
+    """
     required = ["season", "week", "team"]
     for c in required:
         if c not in team_game_df.columns:
             raise ValueError(f"aggregate_team_season requires column '{c}'")
+
+    if team_game_df.empty:
+        return pd.DataFrame()
 
     def _apply_weights(g: pd.DataFrame) -> pd.DataFrame:
         g = g.sort_values("week").copy()
@@ -485,7 +558,20 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
 def apply_iterative_opponent_adjustment(
     team_season_df: pd.DataFrame, team_game_df: pd.DataFrame, iterations: int = 4
 ) -> pd.DataFrame:
-    """Applies iterative opponent adjustment to season-to-date team aggregates."""
+    """Apply iterative opponent adjustment to season-to-date metrics.
+
+    For each iteration, adjusts team season metrics by subtracting opponent average
+    strengths (centered by league means) weighted by game recency.
+
+    Args:
+        team_season_df: Season-to-date per-team metrics (output of aggregate_team_season).
+        team_game_df: Team-game metrics with recency_weight and per-game opponents.
+        iterations: Number of adjustment passes (default 4 as per MVP spec).
+
+    Returns:
+        DataFrame with added adj_off_* and adj_def_* columns for metrics present in
+        the inputs, leaving original off_/def_ metrics unchanged.
+    """
     adjusted_df = team_season_df.copy()
 
     metrics_to_adjust = [

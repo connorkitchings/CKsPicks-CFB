@@ -100,10 +100,11 @@ class GameStatsIngester(BaseIngester):
 
         print(f"Total raw team stats objects collected: {len(all_stats)}")
 
-        # Fallback: if weekly team stats returned nothing, fetch per-game advanced box scores for a small sample
+        # Fallback: if weekly team stats returned nothing, fetch per-game advanced box scores
         if not all_stats:
-            sample_n = self.limit_games or 20
-            sample = games_info[:sample_n]
+            # The games_info list is already limited by get_fbs_games_info if --limit-games was passed.
+            # We use the full list here.
+            sample = games_info
             print(f"Weekly team stats empty. Falling back to per-game advanced box scores for {len(sample)} games...")
 
             def fetch_box(gid: int, wk: int):

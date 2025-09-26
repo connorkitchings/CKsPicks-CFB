@@ -1,3 +1,10 @@
+"""Minimal CFBD API ingestion helpers used for raw data collection.
+
+Note: Primary ingestion is handled elsewhere; this module provides
+lightweight wrappers and cleaning for calendar/plays endpoints used in
+notebooks or ad-hoc backfills.
+"""
+
 import time
 from typing import Dict, List
 

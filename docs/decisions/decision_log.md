@@ -4,6 +4,21 @@ Log of planning-level decisions. Use one entry per decision.
 
 ---
 
+## 2025-09-25 — Critical Spread Betting Logic Bug Fix
+
+- Category: Modeling / Betting Logic
+- Decision: Fixed fundamental flaw in spread betting logic where model predictions were compared directly to raw spread lines instead of expected home margins. Changed comparison from `predicted_spread > spread_line` to `predicted_spread > (-spread_line)`.
+- Rationale: Original logic caused artificially inflated performance (72.5% hit rate) because positive predictions always beat negative spread lines. Corrected logic provides realistic assessment of model performance (51.7% hit rate).
+- Impact: Revealed true model performance is below breakeven by 0.7 percentage points, enabling honest evaluation and targeted improvements.
+- References: `src/cfb_model/scripts/generate_weekly_bets_clean.py`, `scripts/score_weekly_picks.py`, [LOG:2025-09-25]
+
+## 2025-09-24 — Data Leakage Fix & Point-in-Time Feature Generation
+
+- Category: Modeling / Features
+- Decision: Implemented strict point-in-time feature generation for model training and prediction to eliminate data leakage. Features for any given game are now calculated using only data from prior weeks.
+- Rationale: Previous approach used full-season aggregated features, leading to inflated performance metrics. This change ensures realistic model evaluation and prediction.
+- References: `src/cfb_model/models/features.py`, `src/cfb_model/models/ridge_baseline/train.py`, `src/cfb_model/scripts/generate_weekly_bets_clean.py`, [LOG:2025-09-24]
+
 ## 2025-09-04 — Processed Schema Versioning in Manifests
 
 - Category: Data / Storage

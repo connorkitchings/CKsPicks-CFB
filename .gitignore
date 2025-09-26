@@ -216,3 +216,6 @@ __marimo__/
 # CLIs
 .geminiignore
 
+
+# Local data directory (actual data is on external drive)
+data/

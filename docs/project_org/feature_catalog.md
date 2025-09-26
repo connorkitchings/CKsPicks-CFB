@@ -202,10 +202,13 @@ Definitions:
 - Join rules documented in feature build script (home/away control
   added at modeling stage).
 
-## 6) Targets (reference)
+## 6) Targets & Evaluation (Reference)
 
-- Spread target: `home_final_points - away_final_points` (final margin).
-- Total target: `home_final_points + away_final_points` (total points).
+- **`home_team_result`**: The final score margin from the home team's perspective. Calculated as `home_points - away_points`.
+- **`home_team_spread_line`**: The betting point spread from the home team's perspective. A negative value indicates the home team is favored; a positive value indicates they are the underdog.
+- **Spread Cover Logic**: A bet on the **home** team wins if `home_team_result > home_team_spread_line`. A bet on the **away** team wins if `home_team_result < home_team_spread_line`.
+- **Model Target**: The spread prediction model is trained to predict the `home_team_result`.
+
 - See `docs/project_org/modeling_baseline.md` → Targets.
 
 ## 7) Validation checks

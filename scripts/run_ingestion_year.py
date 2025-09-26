@@ -21,7 +21,12 @@ from cfb_model.data.ingestion import (  # isort: skip
 from cfb_model.data.storage.local_storage import LocalStorage  # isort: skip
 
 
-def run_pipeline_for_year(year: int, data_root: str | None, limit_games: int | None = None, season_type: str = "regular"):
+def run_pipeline_for_year(
+    year: int,
+    data_root: str | None,
+    limit_games: int | None = None,
+    season_type: str = "regular",
+):
     """Executes the full data ingestion pipeline for a single year.
 
     limit_games: if provided, passes a limit to ingesters that support it (plays, betting_lines, game_stats).
@@ -40,7 +45,10 @@ def run_pipeline_for_year(year: int, data_root: str | None, limit_games: int | N
         (GamesIngester, {"season_type": season_type}),
         (RostersIngester, {}),
         (CoachesIngester, {}),
-        (BettingLinesIngester, {"season_type": season_type, "limit_games": limit_games}),
+        (
+            BettingLinesIngester,
+            {"season_type": season_type, "limit_games": limit_games},
+        ),
         (PlaysIngester, {"season_type": season_type, "limit_games": limit_games}),
         # Advanced box scores for validation purposes
         (GameStatsIngester, {"limit_games": limit_games, "season_type": season_type}),
@@ -103,7 +111,12 @@ def main():
     )
     args = parser.parse_args()
 
-    run_pipeline_for_year(args.year, args.data_root, limit_games=args.limit_games, season_type=args.season_type)
+    run_pipeline_for_year(
+        args.year,
+        args.data_root,
+        limit_games=args.limit_games,
+        season_type=args.season_type,
+    )
 
 
 if __name__ == "__main__":

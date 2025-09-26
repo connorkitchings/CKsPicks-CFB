@@ -60,3 +60,39 @@ in later stages.
 - **Pattern**: Adopt absolute thresholds: plays WARN>3/ERROR>8; ypp WARN>0.20/ERROR>0.50; sr WARN>0.02/ERROR>0.05.
 - **Usage**: See `validate_team_game_vs_boxscore` in `src/cfb_model/data/validation.py`.
 - **Discovered In**: `[LOG:2025-09-05]`
+
+---
+
+## `[KB:TestWithSyntheticData]`
+
+- **Context**: Writing unit tests for data transformation pipelines without requiring access to a full dataset.
+- **Pattern**: Use small, synthetic `pandas` DataFrames to create targeted test cases that verify specific logic and edge cases (e.g., empty inputs, specific value calculations).
+- **Usage**: See `tests/test_aggregations_core.py` for examples.
+- **Discovered In**: `[LOG:2025-09-22]`
+
+---
+
+## `[KB:DirectScriptImports]`
+
+- **Context**: A script in a subdirectory (e.g., `scripts/`) fails with `ModuleNotFoundError` when trying to import from a sibling directory (e.g., `src/`).
+- **Pattern**: To make the script runnable directly, insert the path to the parent of the source directory (e.g., `src/`) at the beginning of `sys.path`.
+- **Usage**: `sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))`
+- **Discovered In**: `[LOG:2025-09-22]`
+
+---
+
+## `[KB:ScopedDataLoading]`
+
+- **Context**: A script that reads partitioned data is unexpectedly slow, taking several minutes to load data for even a small query.
+- **Pattern**: The root cause is often an inefficient data loading function that scans a large number of directories and files. Instead of loading data for a whole year when only a week is needed, ensure the read function is filtered as specifically as possible (e.g., by both `year` and `week`). This drastically reduces I/O and improves performance.
+- **Usage**: Modify `read_index("games", {"year": Y})` to `read_index("games", {"year": Y, "week": W})` to limit the file system scan to the relevant partition.
+- **Discovered In**: `[LOG:2025-09-25]`
+
+---
+
+## `[KB:DebugByAddition]`
+
+- **Context**: A data processing pipeline is filtering out all data, but the reason is not obvious from the final output.
+- **Pattern**: Modify the script that generates the intermediate data file to include the columns that are being used in the filtering logic. By inspecting the intermediate file with these diagnostic columns, you can quickly identify why rows are being excluded.
+- **Usage**: To debug a betting policy that filters based on `games_played`, modify the prediction script to include the `home_games_played` and `away_games_played` columns in the output CSV.
+- **Discovered In**: `[LOG:2025-09-25]`

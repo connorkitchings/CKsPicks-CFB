@@ -29,6 +29,11 @@ To get up to speed, please perform the following steps:
     - From `docs/planning/roadmap.md`, extract the sprint goal and top 3 active tasks.
     - Note acceptance criteria relevant to today's objective.
 
+3. **Quick Health Check (fast, optional):**
+    - `uv run ruff check .` — ensure linter is clean or note issues to fix.
+    - `uv run pytest -q` — run unit tests (synthetic tests exist; no external data needed).
+    - `uv run mkdocs build --strict` — catch doc reference issues if docs are in scope.
+
 3. **Review the Last Session's Handoff:**
     - Search `/session_logs/` for all `.md` files matching today's date (e.g., `2025-08-03.md`,
       `2025-08-03_02.md`, etc.).
@@ -40,6 +45,8 @@ To get up to speed, please perform the following steps:
 
 4. **Prepare for Today's Task:**
     - **Our focus today is:** `[Describe the concrete task to execute this session]`
+    - Note: Data paths resolve via `CFB_MODEL_DATA_ROOT` or default `./data` (see `src/cfb_model/config.py`).
+    - Prefect flows available: `preaggregations_flow(year, data_root=None, verbose=True)` in `cfb_model.flows.preaggregations`.
 
 Once you have completed this review, please confirm you are ready, and we will begin.
 
@@ -66,7 +73,13 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
     - **Immediate Next Task:** `[What is the very next thing to do? e.g., 'Refactor the data
       ingestion pipeline to handle rate-limiting.']`
 
-4. **Generate the Dev Log:**
+4. **Final Health Check:**
+    - Run `uv run ruff check .` and `uv run ruff format .` to ensure code quality
+    - Run `uv run pytest tests/ -v --tb=short` to verify all tests pass
+    - Run `uv run mkdocs build --quiet` to verify documentation builds correctly
+    - Include health check results in the dev log
+
+5. **Generate the Dev Log:**
     - Based on the information above, please generate a complete dev log entry for today.
     - Use the template from `session_logs/_template.md`.
     - **Important:** Create a new directory for today's date `[YYYY-MM-DD]` inside `/session_logs/`
@@ -75,9 +88,10 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
 - Create the new log with a sequential, zero-padded filename (e.g., `01.md`, `02.md`) inside the
     date directory.
 
-1. **Update Documentation:**
+6. **Update Documentation:**
     - Review `README.md`,`docs/index.md`, `pyproject.toml`, `docs/decisions/README.md`,
       `mkdocs.yml`, `docs/project_org/project_charter.md`, and `docs/project_org/kb_overview.md`.
+    - Also review `docs/guides/ai_session_templates.md` if workflow guidance changed (e.g., new flows, health checks).
     - Update any relevant documentation based on the changes made during the session.
 
 After you have generated the dev log, I will review it and make any final edits. All version control

@@ -93,13 +93,13 @@ See `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for 
 Run pre-aggregations (reads `CFB_MODEL_DATA_ROOT` from your environment or `.env`):
 
 ```bash
-python scripts/aggregations_cli.py preagg --year 2024
+python3 scripts/cli.py aggregate preagg --year 2024
 ```
 
 Byplay-only:
 
 ```bash
-python scripts/aggregations_cli.py byplay --year 2024
+python3 scripts/cli.py aggregate byplay --year 2024
 ```
 
 ---

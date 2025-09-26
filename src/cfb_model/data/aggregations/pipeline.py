@@ -1,3 +1,9 @@
+"""Pre-aggregation pipeline orchestration.
+
+Runs the full chain: plays → byplay → drives → team-game → team-season and
+adds simple derived signals used in modeling/reporting.
+"""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -18,9 +24,18 @@ def calculate_luck_factor(team_game_df: pd.DataFrame, byplay_df: pd.DataFrame) -
 def build_preaggregation_pipeline(
     plays_raw_df: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Runs plays → byplay → drives → team-game → team-season.
+    """Run plays → byplay → drives → team-game → team-season pipeline.
 
-    Returns (byplay_df, drives_df, team_game_df, team_season_df).
+    Args:
+        plays_raw_df: Raw plays DataFrame containing at minimum season and week.
+            If season is missing but a constant year column exists, season is derived.
+
+    Returns:
+        Tuple of (byplay_df, drives_df, team_game_df, team_season_df), suitable for
+        persistence or downstream modeling features.
+
+    Raises:
+        ValueError: If season/week cannot be determined on inputs.
     """
     if "season" not in plays_raw_df.columns:
         if "year" in plays_raw_df.columns and plays_raw_df["year"].nunique() == 1:

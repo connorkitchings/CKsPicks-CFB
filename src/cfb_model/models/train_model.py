@@ -1,3 +1,9 @@
+"""Training helpers for baseline models.
+
+Provides utilities to load/merge features and targets and to train and persist
+ridge models for spread and total tasks.
+"""
+
 import os
 
 import joblib
@@ -5,9 +11,12 @@ import pandas as pd
 from sklearn.linear_model import Ridge
 
 from cfb_model.data.storage.local_storage import LocalStorage
+from cfb_model.models.features import load_merged_dataset, prepare_team_features
 
 
 def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
+    # Backward-compat shim: delegate to shared helper
+    return prepare_team_features(team_season_adj_df)
     """Prepare one-row-per-team features combining offense and defense.
 
     Keeps adjusted offense/defense metrics and selected unadjusted offense rates.
@@ -70,6 +79,8 @@ def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_features_and_targets(year: int, data_root: str | None) -> pd.DataFrame:
+    # Delegate to shared loader to avoid drift
+    return load_merged_dataset(year, data_root)
     """Load adjusted team-season features and compute training targets for a season.
 
     Args:

@@ -1,3 +1,10 @@
+"""By-play feature engineering helpers.
+
+Transforms raw CFBD plays into enriched row-level features used downstream
+(drives, team-game, team-season). Also includes targeted data fixes for known
+CFBD inconsistencies.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -404,7 +411,6 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
 def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
     """Transform raw plays into enriched by-play dataset."""
     df = data.copy()
-    df = apply_manual_data_fixes(df)
 
     # --- Normalize column names first ---
     if "yards_to_first" not in df.columns and "distance" in df.columns:
@@ -549,6 +555,7 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         df = assign_drive_numbers(
             df, kickoff_types=st_kickoffs, end_of_drive_types=endofdrive
         )
+    df = apply_manual_data_fixes(df)
     if "drive_id" not in df.columns:
         df["drive_id"] = (
             df["game_id"].astype(str) + "-" + df["drive_number"].astype(int).astype(str)

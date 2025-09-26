@@ -1,79 +1,118 @@
 # Gemini Rules for `cfb_model`
 
-This file defines project rules and conventions for developing and maintaining the College Football
-Betting Model. It should be kept in sync with the broader documentation, especially the
-[Project Charter](docs/project_org/project_charter.md) and [Development Standards](docs/project_org/development_standards.md).
+This file provides guidance to Gemini when working with code in this repository. It is based on the best practices outlined in `WARP.md`.
 
 ---
 
-## 1. Data Handling
+## 1. Essential Development Commands
 
-- **Data Storage:**
-  - Data is stored locally, separate from the repository. The root path is defined by the
-    `CFB_MODEL_DATA_ROOT` environment variable, typically set in a `.env` file.
-  - Raw data is stored in `/data/raw/` and is considered immutable.
-  - Processed datasets are stored in `/data/processed/`.
-- **Schemas and Transformations:**
-  - All data schemas are documented in the [Data Dictionary](docs/guides/data_dictionary.md).
-  - All transformations must be documented within the source code and be reproducible. Any
-    significant changes to the aggregation logic should be noted in the [Decision Log](docs/decisions/decision_log.md).
-- **Column Naming Convention:**
-  - Offensive stats: `off_*` (e.g., `off_epa_pp`)
-  - Defensive stats: `def_*` (e.g., `def_sr`)
-  - Opponent-adjusted stats: `adj_*` (e.g., `adj_off_epa_pp`)
-- **Time-based Data:**
-  - Always include `season`, `week`, and `game_id` for traceability.
-  - Aggregations should include counts of the underlying data (plays, drives, games) for validation.
+### Environment Setup
 
----
+```bash
+# Install dependencies (include dev tools)
+uv sync --extra dev
 
-## 2. Modeling Rules
+# Activate virtual environment
+source .venv/bin/activate
+```
 
-- **No Data Leakage:**
-  - Training data must strictly precede prediction data. All season-to-date features are computed up
-    to (but not including) the current game.
-  - Betting lines must **not** be used as features in the model. They are used only for calculating
-    the betting edge.
-- **Training Window:**
-  - The primary training window is 2014–2023 (excluding 2020). The final holdout test year is 2024.
-  - In-season predictions begin after a team has played a minimum of 4 games.
-- **Validation:**
-  - The primary validation strategy is a train/test split by year.
-  - Walk-forward validation may be used for hyperparameter tuning if necessary.
-- **Baseline Models:**
-  - All new models must be compared against the `Ridge` regression baseline.
-- **Model Artifacts:**
-  - Trained models are saved to `models/<model_name>/<test_year>/` (e.g., `models/ridge_baseline/2024/`).
-  - Evaluation metrics are saved to `reports/metrics/`.
+### Code Quality & Testing
 
----
+```bash
+# Format and lint (run before commits)
+uv run ruff format .
+uv run ruff check .
 
-## 3. Code Style & Quality
+# Run tests
+uv run pytest
 
-- **Version:** Python 3.12+
-- **Tooling:**
-  - Use `uv` for environment and package management.
-  - Use `ruff` for all formatting and linting. Run `uv run ruff format .` and `uv run ruff check .`
-    before committing.
-- **Standards:**
-  - All new functions must include Google-style docstrings and type hints.
-  - Use the `logging` module for output; avoid `print()` in application code.
-  - Follow the quality gates defined in the [Checklists](docs/project_org/checklists.md).
+# Security scanning
+uv run bandit -r src/
+uv run safety check
 
----
+# Data validation and quality checks
+python scripts/check_links.py
+python -m src.cfb_model.data.validation --year 2024 --data-type processed --deep
+```
 
-## 4. AI-Assisted Development
+### Data Pipeline Operations
 
-- **Session Start:** Begin each session by providing the minimal context pack as defined in the
-  [AI Session Templates](docs/guides/ai_session_templates.md).
-- **Clarity:** Be explicit in your requests. Reference specific files and functions.
-- **Verification:** Always review and validate AI-generated code. You are ultimately responsible
-  for the quality of the output.
+```bash
+# Complete ingestion pipeline for a full year
+python scripts/run_ingestion_year.py --year 2024 --data-root /path/to/external/drive
+
+# Individual entity ingestion (for testing or updates)
+python scripts/ingest_cli.py teams --year 2024
+python scripts/ingest_cli.py games --year 2024 --season-type regular
+
+# Run aggregations pipeline (requires CFB_MODEL_DATA_ROOT in .env)
+python scripts/aggregations_cli.py preagg --year 2024
+
+# Train Ridge baseline models
+python src/cfb_model/models/ridge_baseline/train.py --train-years 2019,2021,2022,2023 --test-year 2024
+```
+
+### Documentation
+
+```bash
+# Serve documentation locally
+uv run mkdocs serve
+# Access at http://127.0.0.1:8000
+```
 
 ---
 
-## 5. Documentation
+## 2. Project Architecture
 
-- All changes to code, data, or workflow must be reflected in the documentation.
-- Key documents to keep updated: `README.md`, `docs/project_org/project_charter.md`,
-  `docs/project_org/feature_catalog.md`, and the `docs/decisions/decision_log.md`.
+- **`src/cfb_model/data/`**: Data ingestion, storage abstraction, and feature engineering pipeline.
+  - `ingestion/`: API clients for CollegeFootballData.com.
+  - `storage/`: Local CSV storage backend.
+  - `aggregations/`: Plays → drives → games → season aggregates.
+- **`src/cfb_model/models/`**: ML modeling components, including the Ridge baseline.
+- **`scripts/`**: CLI entry points for data operations.
+
+**Data Flow:**
+1.  **Ingestion**: Raw data from CFBD API → local partitioned CSVs.
+2.  **Feature Engineering**: Multi-stage pipeline with opponent adjustment.
+3.  **Modeling**: Ridge regression on engineered features.
+4.  **Betting Logic**: Edge calculation with thresholds.
+5.  **Output**: Weekly CSV reports.
+
+---
+
+## 3. Development Standards
+
+### Data & Modeling Rules
+- **No Data Leakage**: Training data must strictly precede prediction data.
+- **Betting Lines**: Never use as model features, only for edge calculation.
+- **Minimum Games**: Teams need ≥4 games played before betting eligibility.
+- **Training Window**: 2014–2023 (excluding 2020). Holdout test year is 2024.
+- **Storage**: Raw data in `/data/raw/` (immutable), processed in `/data/processed/`. `CFB_MODEL_DATA_ROOT` env var defines the root.
+- **Column Naming**: `off_*` (offense), `def_*` (defense), `adj_*` (opponent-adjusted).
+- **Traceability**: Always include `season`, `week`, and `game_id` in time-based data.
+
+### Code Style & Quality
+- **Version**: Python 3.12+
+- **Tooling**: Use `uv` for environment/package management and `ruff` for formatting/linting.
+- **Standards**: All new functions must include Google-style docstrings and type hints.
+- **Logging**: Use the `logging` module; avoid `print()` in application code.
+
+---
+
+## 4. Session Context Requirements
+
+To get up to speed, review this minimal context pack:
+1.  `docs/project_org/project_charter.md` - Project scope and goals.
+2.  `docs/project_org/feature_catalog.md` - Feature definitions.
+3.  `docs/operations/weekly_pipeline.md` - Production runbook.
+4.  `docs/project_org/modeling_baseline.md` - MVP model specs.
+5.  `docs/decisions/decision_log.md` - Architectural decisions.
+
+---
+
+## 5. AI Development Guidelines
+
+- **Be Explicit**: Reference specific files and functions in your requests.
+- **Verify Output**: Always review and validate AI-generated code. You are responsible for its quality.
+- **Update Documentation**: All changes to code, data, or workflow must be reflected in the documentation.
+- **Track Decisions**: Record material changes in `docs/decisions/decision_log.md`.

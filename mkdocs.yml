@@ -22,6 +22,7 @@ nav:
     - 'Feature Engineering Plan': 'guides/feature_engineering_plan.md'
   - 'Data':
     - 'Overview': 'data/README.md'
+    - 'Data Contracts': 'data/data_contracts.md'
     - 'Ingestion Guide': 'data/ingestion_guide.md'
     - 'Raw API Schemas':
       - 'Overview': 'data/raw_api/README.md'
@@ -48,6 +49,7 @@ nav:
     - 'Knowledge Base': 'project_org/kb_overview.md'
   - 'Operations':
     - 'Weekly Pipeline': 'operations/weekly_pipeline.md'
+    - 'Data Partition Cleanup': 'operations/data_partition_cleanup_summary.md'
   - 'Models':
     - 'Ridge Baseline': 'models/ridge_baseline.md'
   - 'API Reference': 'api_reference.md'

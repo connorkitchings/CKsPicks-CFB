@@ -1,3 +1,10 @@
+"""Ridge regression baseline training CLI.
+
+Loads opponent-adjusted team-season features, merges with games, builds
+feature matrices for spread and total targets, trains ridge models, and
+emits metrics/artifacts.
+"""
+
 from __future__ import annotations
 
 import os
@@ -10,7 +17,10 @@ import pandas as pd
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-from cfb_model.data.storage.local_storage import LocalStorage
+from cfb_model.models.features import (
+    build_feature_list,
+    generate_point_in_time_features,
+)
 
 
 def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
@@ -50,84 +60,8 @@ def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
     return combined
 
 
-def _load_merged_dataset(year: int, data_root: str | None) -> pd.DataFrame:
-    processed_storage = LocalStorage(
-        data_root=data_root, file_format="csv", data_type="processed"
-    )
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-
-    team_season_adj_records = processed_storage.read_index(
-        "team_season_adj", {"year": year}
-    )
-    if not team_season_adj_records:
-        raise ValueError(f"No adjusted team season data found for year {year}")
-    team_season_adj_df = pd.DataFrame.from_records(team_season_adj_records)
-    team_features = _prepare_team_features(team_season_adj_df)
-
-    game_records = raw_storage.read_index("games", {"year": year})
-    if not game_records:
-        raise ValueError(f"No raw game data found for year {year}")
-    games_df = pd.DataFrame.from_records(game_records)
-
-    home_features = team_features.add_prefix("home_")
-    away_features = team_features.add_prefix("away_")
-    merged_df = games_df.merge(
-        home_features,
-        left_on=["season", "home_team"],
-        right_on=["home_season", "home_team"],
-        how="left",
-    )
-    merged_df = merged_df.merge(
-        away_features,
-        left_on=["season", "away_team"],
-        right_on=["away_season", "away_team"],
-        how="left",
-    )
-
-    required_scores = {"home_points", "away_points"}
-    if not required_scores.issubset(merged_df.columns):
-        raise ValueError(
-            "Games data missing required score columns: home_points, away_points"
-        )
-
-    merged_df["spread_target"] = merged_df["home_points"].astype(float) - merged_df[
-        "away_points"
-    ].astype(float)
-    merged_df["total_target"] = merged_df["home_points"].astype(float) + merged_df[
-        "away_points"
-    ].astype(float)
-    merged_df = merged_df.drop(columns=["home_season", "away_season"], errors="ignore")
-    return merged_df
-
-
 def _build_feature_list(df: pd.DataFrame) -> list[str]:
-    adjusted_metrics = [
-        "epa_pp",
-        "sr",
-        "ypp",
-        "expl_rate_overall_10",
-        "expl_rate_overall_20",
-        "expl_rate_overall_30",
-        "expl_rate_rush",
-        "expl_rate_pass",
-    ]
-    features: list[str] = []
-    for side in ["home", "away"]:
-        for prefix in ["adj_off_", "adj_def_"]:
-            for metric in adjusted_metrics:
-                col = f"{side}_{prefix}{metric}"
-                if col in df.columns:
-                    features.append(col)
-        for extra in [
-            "off_eckel_rate",
-            "off_finish_pts_per_opp",
-            "stuff_rate",
-            "havoc_rate",
-        ]:
-            col = f"{side}_{extra}"
-            if col in df.columns:
-                features.append(col)
-    return features
+    return build_feature_list(df)
 
 
 def _train_and_save(X: pd.DataFrame, y: pd.Series, out_dir: str, name: str) -> None:  # noqa: N803
@@ -156,6 +90,7 @@ def _concat_years(dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
 
 
 def main() -> None:
+    """CLI entrypoint for training ridge baseline models."""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -186,12 +121,35 @@ def main() -> None:
     train_years = [int(y.strip()) for y in args.train_years.split(",") if y.strip()]
     test_year = int(args.test_year)
 
-    print(f"Loading training years: {train_years}")
-    train_dfs = [_load_merged_dataset(y, args.data_root) for y in train_years]
-    train_df = _concat_years(train_dfs)
+    # Generate point-in-time features for all weeks in all training years
+    all_training_games = []
+    for year in train_years:
+        print(f"Generating features for training year: {year}")
+        # Assuming weeks 1 through 15 for a typical season
+        for week in range(1, 16):
+            try:
+                weekly_features = generate_point_in_time_features(
+                    year, week, args.data_root
+                )
+                all_training_games.append(weekly_features)
+            except ValueError as e:
+                print(f"  Skipping week {week} for year {year}: {e}")
+                continue
+    train_df = _concat_years(all_training_games)
 
-    print(f"Loading test year: {test_year}")
-    test_df = _load_merged_dataset(test_year, args.data_root)
+    # Generate point-in-time features for all weeks in the test year
+    all_test_games = []
+    print(f"Generating features for test year: {test_year}")
+    for week in range(1, 16):
+        try:
+            weekly_features = generate_point_in_time_features(
+                test_year, week, args.data_root
+            )
+            all_test_games.append(weekly_features)
+        except ValueError as e:
+            print(f"  Skipping week {week} for year {test_year}: {e}")
+            continue
+    test_df = _concat_years(all_test_games)
 
     # Build feature list present in both train and test
     feature_list = _build_feature_list(train_df)
@@ -201,6 +159,9 @@ def main() -> None:
     target_cols = ["spread_target", "total_target"]
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
+
+    print("Training data sample:")
+    print(train_df.head().to_string())
 
     X_train = train_df[feature_list]  # noqa: N806
     y_spread_train = train_df["spread_target"].astype(float)
