@@ -5,6 +5,10 @@ from __future__ import annotations
 import pandas as pd
 
 from cfb_model.config import get_data_root
+from cfb_model.data.aggregations.core import (
+    aggregate_team_season,
+    apply_iterative_opponent_adjustment,
+)
 from cfb_model.data.storage.local_storage import LocalStorage
 
 
@@ -21,19 +25,14 @@ def prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
     base_cols = ["season", "team", "games_played"]
 
     off_metric_cols = [
-        c for c in team_season_adj_df.columns if c.startswith("adj_off_")
+        c
+        for c in team_season_adj_df.columns
+        if c.startswith("adj_off_") or c.startswith("off_")
     ]
-    for extra in [
-        "off_eckel_rate",
-        "off_finish_pts_per_opp",
-        "stuff_rate",
-        "havoc_rate",
-    ]:
-        if extra in team_season_adj_df.columns:
-            off_metric_cols.append(extra)
-
     def_metric_cols = [
-        c for c in team_season_adj_df.columns if c.startswith("adj_def_")
+        c
+        for c in team_season_adj_df.columns
+        if c.startswith("adj_def_") or c.startswith("def_")
     ]
 
     off_df = team_season_adj_df[base_cols + off_metric_cols].copy()
@@ -58,6 +57,21 @@ def prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
             ]
         )
 
+    # Include pace and opportunity metrics if present (excluding timing metrics like sec_per_play)
+    pace_cols = [
+        "plays_per_game",
+        "drives_per_game",
+        "avg_scoring_opps_per_game",
+    ]
+    present_pace = [c for c in pace_cols if c in team_season_adj_df.columns]
+    if present_pace:
+        pace_df = (
+            team_season_adj_df[["season", "team"] + present_pace].drop_duplicates(
+                subset=["season", "team"]
+            )  # safety
+        )
+        combined = combined.merge(pace_df, on=["season", "team"], how="left")
+
     return combined
 
 
@@ -81,12 +95,17 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
         "expl_rate_pass",
     ]
     features: list[str] = []
+    momentum_suffixes = ["_last_3", "_last_1"]
     for side in ["home", "away"]:
-        for prefix in ["adj_off_", "adj_def_"]:
+        for prefix in ["adj_off_", "adj_def_", "off_", "def_"]:
             for metric in adjusted_metrics:
                 col = f"{side}_{prefix}{metric}"
                 if col in df.columns:
                     features.append(col)
+                for suffix in momentum_suffixes:
+                    col_momentum = f"{col}{suffix}"
+                    if col_momentum in df.columns:
+                        features.append(col_momentum)
         for extra in [
             "off_eckel_rate",
             "off_finish_pts_per_opp",
@@ -96,13 +115,22 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
             col = f"{side}_{extra}"
             if col in df.columns:
                 features.append(col)
+        # Pace/opportunity features (exclude sec_per_play as requested)
+        for pace in [
+            "plays_per_game",
+            "drives_per_game",
+            "avg_scoring_opps_per_game",
+        ]:
+            col = f"{side}_{pace}"
+            if col in df.columns:
+                features.append(col)
+
+    # Global game context features
+    for global_feat in ["neutral_site", "same_conference"]:
+        if global_feat in df.columns:
+            features.append(global_feat)
+
     return features
-
-
-from cfb_model.data.aggregations.core import (
-    aggregate_team_season,
-    apply_iterative_opponent_adjustment,
-)
 
 
 def generate_point_in_time_features(
@@ -172,6 +200,25 @@ def generate_point_in_time_features(
         merged_df["total_target"] = merged_df["home_points"].astype(float) + merged_df[
             "away_points"
         ].astype(float)
+
+    # Derive conference indicator with fallbacks
+    if (
+        "home_conference" in merged_df.columns
+        and "away_conference" in merged_df.columns
+    ):
+        merged_df["same_conference"] = (
+            merged_df["home_conference"].astype(str)
+            == merged_df["away_conference"].astype(str)
+        ).astype(int)
+    elif "conference_game" in merged_df.columns:
+        # CFBD provides conference_game boolean for many records
+        try:
+            merged_df["same_conference"] = merged_df["conference_game"].astype(int)
+        except Exception:
+            merged_df["same_conference"] = 0
+    else:
+        # Last-resort default (no leakage, conservative)
+        merged_df["same_conference"] = 0
 
     merged_df = merged_df.drop(columns=["home_season", "away_season"], errors="ignore")
     return merged_df

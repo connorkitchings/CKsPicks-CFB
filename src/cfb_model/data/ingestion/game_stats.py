@@ -3,6 +3,7 @@
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
+from pathlib import Path
 
 import cfbd
 
@@ -51,14 +52,10 @@ class GameStatsIngester(BaseIngester):
         return games_info
 
     def fetch_data(self) -> list[Any]:
-        """Fetch game team stats (bulk by week) from the CFBD API for FBS games.
-
-        This reduces API calls from per-game to per-week.
-        """
+        """Fetch game team stats (bulk by week) from the CFBD API for FBS games."""
         games_info = self.get_fbs_games_info()
         print(f"Found {len(games_info)} FBS games to process for team stats.")
 
-        # Build mapping week -> set(game_ids)
         games_by_week: dict[int, set[int]] = {}
         for gid, week in games_info:
             if week is None:
@@ -68,7 +65,6 @@ class GameStatsIngester(BaseIngester):
         def fetch_week_stats(week: int) -> list[Any]:
             try:
                 api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
-                # Use team stats endpoint (bulk) to avoid per-game calls
                 return api.get_game_team_stats(year=self.year, week=week, season_type=self.season_type)
             except Exception as e:
                 print(f"    Error fetching team stats for week {week}: {e}")
@@ -76,55 +72,40 @@ class GameStatsIngester(BaseIngester):
 
         all_stats: list[Any] = []
         weeks = sorted(games_by_week.keys())
+
+        # Minimize API calls: skip weeks that are already present in raw storage
+        base_week_dir = self.storage.root() / "game_stats_raw" / f"year={self.year}"
+        weeks_to_fetch: list[int] = []
+        for w in weeks:
+            week_dir = base_week_dir / f"week={int(w)}"
+            expected_games = len(games_by_week.get(w, set()))
+            existing = 0
+            if week_dir.exists():
+                try:
+                    existing = len(
+                        [d for d in week_dir.iterdir() if d.is_dir() and d.name.startswith("game_id=")]
+                    )
+                except FileNotFoundError:
+                    existing = 0
+            if existing >= expected_games and expected_games > 0:
+                print(f"  Skipping team stats for week {w}: already ingested ({existing}/{expected_games} games).")
+                continue
+            weeks_to_fetch.append(w)
+
         workers = max(1, getattr(self, "workers", 4))
-        if workers > 1:
+        if weeks_to_fetch:
             with ThreadPoolExecutor(max_workers=workers) as ex:
-                futures = {ex.submit(fetch_week_stats, w): w for w in weeks}
+                futures = {ex.submit(fetch_week_stats, w): w for w in weeks_to_fetch}
                 for fut in as_completed(futures):
                     w = futures[fut]
                     week_stats = fut.result() or []
                     wanted_gids = games_by_week[w]
-                    # Filter to our FBS game ids for this week
                     for s in week_stats:
                         gid = self.safe_getattr(s, "game_id", None)
                         if gid in wanted_gids:
                             all_stats.append((w, s))
-        else:
-            for w in weeks:
-                week_stats = fetch_week_stats(w)
-                wanted_gids = games_by_week[w]
-                for s in week_stats:
-                    gid = self.safe_getattr(s, "game_id", None)
-                    if gid in wanted_gids:
-                        all_stats.append((w, s))
 
         print(f"Total raw team stats objects collected: {len(all_stats)}")
-
-        # Fallback: if weekly team stats returned nothing, fetch per-game advanced box scores
-        if not all_stats:
-            # The games_info list is already limited by get_fbs_games_info if --limit-games was passed.
-            # We use the full list here.
-            sample = games_info
-            print(f"Weekly team stats empty. Falling back to per-game advanced box scores for {len(sample)} games...")
-
-            def fetch_box(gid: int, wk: int):
-                try:
-                    api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
-                    box = api.get_advanced_box_score(id=gid)
-                    # include gid so we can persist even if box dict lacks id path
-                    return wk, gid, box
-                except Exception as e:
-                    print(f"    Error fetching advanced box score for game {gid}: {e}")
-                    return None
-
-            with ThreadPoolExecutor(max_workers=max(1, getattr(self, "workers", 8))) as ex:
-                futures = {ex.submit(fetch_box, gid, wk): gid for gid, wk in sample}
-                for fut in as_completed(futures):
-                    res = fut.result()
-                    if res:
-                        all_stats.append(res)
-            print(f"Collected {len(all_stats)} advanced box scores in fallback mode.")
-
         return all_stats
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:

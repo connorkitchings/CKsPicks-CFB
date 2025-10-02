@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import pytest
 
 from cfb_model.data.aggregations.core import (
     aggregate_team_season,

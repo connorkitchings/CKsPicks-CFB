@@ -16,6 +16,7 @@ class GamesIngester(BaseIngester):
         year: int = 2024,
         classification: str = "fbs",
         season_type: str = "regular",
+        week: int | None = None,  # Add week parameter
         *,
         data_root: str | None = None,
         storage=None,
@@ -26,9 +27,11 @@ class GamesIngester(BaseIngester):
             year: The year to ingest data for (default: 2024)
             classification: Team classification filter (default: "fbs")
             season_type: Season type to ingest (default: "regular")
+            week: Optional specific week to ingest data for.
         """
         super().__init__(year, classification, data_root=data_root, storage=storage)
         self.season_type = season_type
+        self.week = week
 
     @property
     def entity_name(self) -> str:
@@ -37,6 +40,9 @@ class GamesIngester(BaseIngester):
 
     @property
     def partition_keys(self) -> list[str]:
+        # If fetching for a specific week, partition by week as well
+        if self.week is not None:
+            return ["year", "week"]
         return ["year"]
 
     def get_fbs_team_names(self) -> set[str]:
@@ -64,33 +70,22 @@ class GamesIngester(BaseIngester):
         """
         games_api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
 
-        # Fetch all games for the year and season type (single API call)
-        all_games = games_api.get_games(year=self.year, season_type=self.season_type)
+        # Prepare arguments for the API call
+        api_kwargs = {
+            "year": self.year,
+            "season_type": self.season_type,
+            "classification": self.classification,
+        }
+        if self.week is not None:
+            api_kwargs["week"] = self.week
 
-        # Prefer filtering by classification fields on the game records directly to avoid extra API calls
-        fbs_games = []
-        for game in all_games:
-            home_cls = str(self.safe_getattr(game, "home_classification", "")).lower()
-            away_cls = str(self.safe_getattr(game, "away_classification", "")).lower()
-            if home_cls == self.classification and away_cls == self.classification:
-                fbs_games.append(game)
+        # Fetch games using the specified parameters
+        all_games = games_api.get_games(**api_kwargs)
 
-        # Fallback: if classification fields missing/empty, use local teams index for FBS membership
-        if not fbs_games:
-            teams_index = self.storage.read_index(
-                "teams", filters={"year": str(self.year)}, columns=["school"]
-            )
-            fbs_names = {row["school"] for row in teams_index} if teams_index else set()
-            if fbs_names:
-                for game in all_games:
-                    if (
-                        self.safe_getattr(game, "home_team", "") in fbs_names
-                        and self.safe_getattr(game, "away_team", "") in fbs_names
-                    ):
-                        fbs_games.append(game)
-
-        print(f"Found {len(fbs_games)} FBS games out of {len(all_games)} total games.")
-        return fbs_games
+        # The API call with classification="fbs" should already filter the games,
+        # so the manual filtering below is a fallback/verification step.
+        print(f"Found {len(all_games)} FBS games.")
+        return all_games
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
         """Transform games data into storage format.

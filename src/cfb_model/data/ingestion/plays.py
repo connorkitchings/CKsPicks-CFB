@@ -3,6 +3,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
+from pathlib import Path
 
 import cfbd
 
@@ -21,6 +22,7 @@ class PlaysIngester(BaseIngester):
         data_root: str | None = None,
         limit_games: int = None,
         storage=None,
+        only_week: int | None = None,
     ):
         """Initialize the plays ingester.
 
@@ -34,6 +36,7 @@ class PlaysIngester(BaseIngester):
         super().__init__(year, classification, data_root=data_root, storage=storage)
         self.season_type = season_type
         self.limit_games = limit_games
+        self.only_week = only_week
 
     @property
     def entity_name(self) -> str:
@@ -84,16 +87,39 @@ class PlaysIngester(BaseIngester):
                 return []
 
         all_plays: list[Any] = []
+        # Optionally narrow to a single week
         weeks = sorted(games_by_week.keys())
+        if self.only_week is not None:
+            weeks = [w for w in weeks if int(w) == int(self.only_week)]
+
+        # Minimize API calls: skip weeks that are already present in raw storage
+        base_week_dir = self.storage.root() / "plays" / f"year={self.year}"
+        weeks_to_fetch: list[int] = []
+        for w in weeks:
+            week_dir = base_week_dir / f"week={int(w)}"
+            if week_dir.exists():
+                # Count existing game_id partitions under this week
+                try:
+                    existing_game_dirs = [
+                        d for d in week_dir.iterdir() if d.is_dir() and d.name.startswith("game_id=")
+                    ]
+                except FileNotFoundError:
+                    existing_game_dirs = []
+                expected_games = len(games_by_week.get(w, set()))
+                if existing_game_dirs and len(existing_game_dirs) >= expected_games:
+                    print(f"  Skipping week {w}: already ingested ({len(existing_game_dirs)}/{expected_games} games).")
+                    continue
+            weeks_to_fetch.append(w)
+
         workers = getattr(self, "workers", 1)
-        if workers and workers > 1:
+        if workers and workers > 1 and weeks_to_fetch:
             print(
-                f"Fetching plays concurrently with {workers} workers across {len(weeks)} weeks..."
+                f"Fetching plays concurrently with {workers} workers across {len(weeks_to_fetch)} weeks..."
             )
             with ThreadPoolExecutor(max_workers=workers) as ex:
                 futures = {
                     ex.submit(fetch_week, self.year, self.season_type, w): w
-                    for w in weeks
+                    for w in weeks_to_fetch
                 }
                 for fut in as_completed(futures):
                     w = futures[fut]
@@ -107,7 +133,7 @@ class PlaysIngester(BaseIngester):
                     all_plays.extend(fbs_plays)
                     print(f"  Week {w}: {len(fbs_plays)} FBS plays")
         else:
-            for w in weeks:
+            for w in weeks_to_fetch:
                 print(f"  Fetching plays for week {w}...")
                 week_plays = fetch_week(self.year, self.season_type, w)
                 game_ids_in_week = games_by_week[w]
@@ -285,6 +311,7 @@ def main() -> None:
         season_type=args.season_type,
         data_root=args.data_root,
         classification="fbs",
+        only_week=None,  # set via CLI in scripts/cli.py ingest if provided
     )
     ingester.workers = max(1, int(args.workers))
     ingester.run()

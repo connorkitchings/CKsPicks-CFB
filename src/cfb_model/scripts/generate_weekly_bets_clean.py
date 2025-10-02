@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Tuple
 
 import joblib
 import numpy as np
@@ -14,24 +13,35 @@ import pandas as pd
 from cfb_model.config import get_data_root
 from cfb_model.data.storage.local_storage import LocalStorage
 from cfb_model.models.features import (
-    prepare_team_features,
     build_feature_list,
-    generate_point_in_time_features,
 )
 
 
-def load_models(model_year: int, model_dir: str) -> Tuple[object, object]:
-    """Load trained spread/total Ridge models for a given season (saved under model_dir/<year>/).
+def load_ensemble_models(model_year: int, model_dir: str) -> dict[str, list]:
+    """Load all models for a given year, grouped by target."""
+    ensemble_dir = os.path.join(model_dir, str(model_year))
+    if not os.path.isdir(ensemble_dir):
+        raise FileNotFoundError(f"Model directory not found: {ensemble_dir}")
 
-    Raises FileNotFoundError if artifacts are missing.
-    """
-    spread_path = os.path.join(model_dir, str(model_year), "ridge_spread.joblib")
-    total_path = os.path.join(model_dir, str(model_year), "ridge_total.joblib")
-    if not os.path.exists(spread_path):
-        raise FileNotFoundError(f"Spread model not found at {spread_path}")
-    if not os.path.exists(total_path):
-        raise FileNotFoundError(f"Total model not found at {total_path}")
-    return joblib.load(spread_path), joblib.load(total_path)
+    models = {"spread": [], "total": []}
+    for file_name in os.listdir(ensemble_dir):
+        if file_name.endswith(".joblib"):
+            model_path = os.path.join(ensemble_dir, file_name)
+            model = joblib.load(model_path)
+            if file_name.startswith("spread_"):
+                models["spread"].append(model)
+            elif file_name.startswith("total_"):
+                models["total"].append(model)
+
+    if not models["spread"]:
+        raise FileNotFoundError(f"No spread models found in {ensemble_dir}")
+    if not models["total"]:
+        raise FileNotFoundError(f"No total models found in {ensemble_dir}")
+
+    print(
+        f"Loaded {len(models['spread'])} spread models and {len(models['total'])} total models."
+    )
+    return models
 
 
 def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
@@ -54,52 +64,104 @@ def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
 def load_week_dataset(
     year: int, week: int, data_root: str | None = None
 ) -> pd.DataFrame:
-    """Load per-game features for a specific week using point-in-time generation and merge betting lines."""
-    # 1. Generate leakage-free features for the target week
-    week_features_df = generate_point_in_time_features(year, week, data_root)
-
-    # 2. Load and merge betting lines for the week
+    """Load per-game features for a specific week from the cache and merge betting lines."""
     resolved_root = data_root or get_data_root()
+    processed = LocalStorage(
+        data_root=resolved_root, file_format="csv", data_type="processed"
+    )
     raw = LocalStorage(data_root=resolved_root, file_format="csv", data_type="raw")
+
+    # 1. Load pre-calculated features from the cache
+    team_feature_records = processed.read_index(
+        "team_week_adj", {"year": year, "week": week}
+    )
+    if not team_feature_records:
+        raise ValueError(
+            f"No cached weekly adjusted stats found for year {year}, week {week}"
+        )
+
+    team_features_df = pd.DataFrame.from_records(team_feature_records)
+
+    # 2. Load raw games for the entire year and then filter by week
+    all_game_records = raw.read_index("games", {"year": year})
+    if not all_game_records:
+        raise ValueError(f"No raw games found for year {year}")
+
+    all_games_df = pd.DataFrame.from_records(all_game_records)
+    week_games_df = all_games_df[all_games_df["week"] == week].copy()
+    if week_games_df.empty:
+        raise ValueError(
+            f"No raw games found for year {year}, week {week} after filtering"
+        )
+
+    # 3. Merge features into the games DataFrame for home and away teams
+    home_features = team_features_df.add_prefix("home_")
+    away_features = team_features_df.add_prefix("away_")
+
+    merged_df = week_games_df.merge(
+        home_features,
+        left_on=["season", "home_team"],
+        right_on=["home_season", "home_team"],
+        how="left",
+    )
+    merged_df = merged_df.merge(
+        away_features,
+        left_on=["season", "away_team"],
+        right_on=["away_season", "away_team"],
+        how="left",
+    )
+    merged_df = merged_df.drop(columns=["home_season", "away_season"], errors="ignore")
+
+    # 4. Load and merge betting lines for the week
     lines_records = raw.read_index("betting_lines", {"year": year})
     lines_df = (
         pd.DataFrame.from_records(lines_records) if lines_records else pd.DataFrame()
     )
     if not lines_df.empty:
         lines_df = _reduce_betting_lines(lines_df)
-        # Filter lines to only games in the current week to avoid unnecessary data
-        week_game_ids = week_features_df["id"].unique()
+        week_game_ids = merged_df["id"].unique()
         lines_for_week = lines_df[lines_df["game_id"].isin(week_game_ids)]
-        week_features_df = week_features_df.merge(
+        merged_df = merged_df.merge(
             lines_for_week, left_on=["id"], right_on=["game_id"], how="left"
         )
 
-    return week_features_df
+    # Derive same_conference for spread feature parity with training
+    if (
+        "home_conference" in merged_df.columns
+        and "away_conference" in merged_df.columns
+    ):
+        merged_df["same_conference"] = (
+            merged_df["home_conference"].astype(str)
+            == merged_df["away_conference"].astype(str)
+        ).astype(int)
+    elif "conference_game" in merged_df.columns:
+        try:
+            merged_df["same_conference"] = merged_df["conference_game"].astype(int)
+        except Exception:
+            merged_df["same_conference"] = 0
+    else:
+        merged_df["same_conference"] = 0
+
+    return merged_df
 
 
 def generate_predictions(model, X: pd.DataFrame) -> pd.Series:  # noqa: N803
     return pd.Series(model.predict(X), index=X.index)
 
 
-def apply_betting_policy(predictions_df: pd.DataFrame) -> pd.DataFrame:
-    """Apply MVP betting policy to predictions and lines.
-
-    Requires columns:
-    - predicted_spread, predicted_total
-    - spread_line, total_line
-    - home_games_played, away_games_played
-
-    Spread convention: negative spread means home team is favored
-    e.g., -7.0 means home favored by 7 points
-    """
-    spread_edge_threshold = 3.5
-    total_edge_threshold = 7.5
-    min_games_played = 4
-
+def apply_betting_policy(
+    predictions_df: pd.DataFrame,
+    *,
+    spread_edge_threshold: float = 5.0,
+    total_edge_threshold: float = 5.5,
+    spread_std_dev_threshold: float | None = None,
+    total_std_dev_threshold: float | None = None,
+    min_games_played: int = 4,
+) -> pd.DataFrame:
+    """Apply MVP betting policy to predictions and lines."""
     df = predictions_df.copy()
 
     # Convert spread line to expected home margin for proper comparison
-    # If spread is -7.0 (home favored by 7), expected margin is +7.0
     df["expected_home_margin"] = -df["home_team_spread_line"]
 
     # Calculate edge as difference between model prediction and expected margin
@@ -110,9 +172,14 @@ def apply_betting_policy(predictions_df: pd.DataFrame) -> pd.DataFrame:
         df.get("away_games_played", 0) >= min_games_played
     )
 
+    # Confidence filter (low standard deviation among models)
+    if spread_std_dev_threshold is not None:
+        eligible &= df["predicted_spread_std_dev"] <= spread_std_dev_threshold
+    if total_std_dev_threshold is not None:
+        eligible &= df["predicted_total_std_dev"] <= total_std_dev_threshold
+
     df["bet_spread"] = "none"
     mask_spread = eligible & (df["edge_spread"] >= spread_edge_threshold)
-    # Bet home if model predicts higher margin than expected, away if lower
     df.loc[mask_spread, "bet_spread"] = np.where(
         df.loc[mask_spread, "predicted_spread"]
         > df.loc[mask_spread, "expected_home_margin"],
@@ -152,6 +219,14 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
         "bet_total",
         "home_games_played",
         "away_games_played",
+        "spread_reason_1",
+        "spread_reason_2",
+        "spread_reason_3",
+        "total_reason_1",
+        "total_reason_2",
+        "total_reason_3",
+        "predicted_spread_std_dev",
+        "predicted_total_std_dev",
     ]
     report_df = predictions_df.loc[
         :, [c for c in cols if c in predictions_df.columns]
@@ -193,7 +268,7 @@ def main() -> None:
     parser.add_argument(
         "--model-dir",
         type=str,
-        default="./models/ridge_baseline",
+        default="./models",
         help="Directory with trained models",
     )
     parser.add_argument(
@@ -202,11 +277,35 @@ def main() -> None:
         default="./reports",
         help="Directory to save the weekly report",
     )
+    parser.add_argument(
+        "--spread-threshold",
+        type=float,
+        default=6.0,
+        help="Edge threshold (in points) for spread bets (default: 6.0)",
+    )
+    parser.add_argument(
+        "--total-threshold",
+        type=float,
+        default=6.0,
+        help="Edge threshold (in points) for totals bets (default: 6.0)",
+    )
+    parser.add_argument(
+        "--spread-std-dev-threshold",
+        type=float,
+        default=None,
+        help="Standard deviation threshold for spread bets",
+    )
+    parser.add_argument(
+        "--total-std-dev-threshold",
+        type=float,
+        default=None,
+        help="Standard deviation threshold for total bets",
+    )
     args = parser.parse_args()
 
     try:
-        print(f"Loading models for year {args.year}...")
-        spread_model, total_model = load_models(args.year, args.model_dir)
+        print(f"Loading ensemble models for year {args.year}...")
+        models = load_ensemble_models(args.year, args.model_dir)
 
         print(f"Loading dataset for year {args.year}, week {args.week}...")
         df = load_week_dataset(args.year, args.week, args.data_root)
@@ -227,14 +326,73 @@ def main() -> None:
             print("No games with complete feature data this week.")
             sys.exit(0)
 
-        X = df_clean[feature_list]
-        print("Generating spread predictions...")
-        df_clean["predicted_spread"] = generate_predictions(spread_model, X)
-        print("Generating total predictions...")
-        df_clean["predicted_total"] = generate_predictions(total_model, X)
+        x = df_clean[feature_list].astype("float64")
+
+        # --- Ensemble Prediction ---
+        print("Generating ensemble predictions...")
+        spread_predictions = [generate_predictions(m, x) for m in models["spread"]]
+        df_clean["predicted_spread"] = np.mean(spread_predictions, axis=0)
+        df_clean["predicted_spread_std_dev"] = np.std(spread_predictions, axis=0)
+
+        total_predictions = [generate_predictions(m, x) for m in models["total"]]
+        df_clean["predicted_total"] = np.mean(total_predictions, axis=0)
+        df_clean["predicted_total_std_dev"] = np.std(total_predictions, axis=0)
+
+        print("Generating SHAP explanations...")
+        import shap
+
+        # Use the first model in each ensemble for SHAP explanations as a representative
+        spread_explainer = shap.Explainer(models["spread"][0], x)
+        spread_shap_values = spread_explainer(x).values
+        spread_shap_df = (
+            pd.DataFrame(spread_shap_values, columns=x.columns, index=x.index)
+            .apply(pd.to_numeric, errors="coerce")
+            .fillna(0.0)
+        )
+
+        top_spread_features = []
+        for index, row in spread_shap_df.iterrows():
+            top_features = row.abs().nlargest(3).index
+            reasons = [f"{feat}: {row[feat]:+.2f}" for feat in top_features]
+            top_spread_features.append(reasons)
+
+        spread_reasons_df = pd.DataFrame(
+            top_spread_features,
+            index=df_clean.index,
+            columns=["spread_reason_1", "spread_reason_2", "spread_reason_3"],
+        )
+        df_clean = df_clean.join(spread_reasons_df)
+
+        total_explainer = shap.Explainer(models["total"][0], x)
+        total_shap_values = total_explainer(x).values
+        total_shap_df = (
+            pd.DataFrame(total_shap_values, columns=x.columns, index=x.index)
+            .apply(pd.to_numeric, errors="coerce")
+            .fillna(0.0)
+        )
+
+        top_total_features = []
+        for index, row in total_shap_df.iterrows():
+            top_features = row.abs().nlargest(3).index
+            reasons = [f"{feat}: {row[feat]:+.2f}" for feat in top_features]
+            top_total_features.append(reasons)
+
+        total_reasons_df = pd.DataFrame(
+            top_total_features,
+            index=df_clean.index,
+            columns=["total_reason_1", "total_reason_2", "total_reason_3"],
+        )
+        df_clean = df_clean.join(total_reasons_df)
 
         print("Applying betting policy...")
-        final_df = apply_betting_policy(df_clean)
+        final_df = apply_betting_policy(
+            df_clean,
+            spread_edge_threshold=args.spread_threshold,
+            total_edge_threshold=args.total_threshold,
+            spread_std_dev_threshold=args.spread_std_dev_threshold,
+            total_std_dev_threshold=args.total_std_dev_threshold,
+            min_games_played=4,
+        )
 
         output_path = os.path.join(
             args.output_dir, str(args.year), f"CFB_week{args.week}_bets.csv"

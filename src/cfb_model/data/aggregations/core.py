@@ -542,6 +542,16 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         for col in present_metric_cols:
             vals = g[col].astype(float)
             out[col] = float((vals * w).sum() / wsum)
+
+        # Add momentum features
+        last_3 = g.tail(3)
+        for col in present_metric_cols:
+            out[f"{col}_last_3"] = last_3[col].mean()
+
+        last_1 = g.tail(1)
+        for col in present_metric_cols:
+            out[f"{col}_last_1"] = last_1[col].mean()
+
         out["games_played"] = float(len(g))
         if "luck_factor" in g.columns:
             out["cumulative_luck_factor"] = g["luck_factor"].sum()

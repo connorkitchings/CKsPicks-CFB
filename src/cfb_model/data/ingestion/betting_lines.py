@@ -70,6 +70,14 @@ class BettingLinesIngester(BaseIngester):
         fbs_game_ids = self.get_fbs_game_ids()
         print(f"Found {len(fbs_game_ids)} FBS games to process.")
 
+        # Minimize API calls: if lines already exist for all FBS games, skip
+        existing = self.storage.read_index("betting_lines", {"year": self.year}, columns=["game_id"]) or []
+        if existing:
+            have = {row.get("game_id") for row in existing if row.get("game_id") is not None}
+            if len(have) >= len(set(fbs_game_ids)) and len(have) > 0:
+                print(f"Skipping betting lines fetch: already have lines for {len(have)}/{len(fbs_game_ids)} games.")
+                return []
+
         year_lines = betting_api.get_lines(year=self.year, season_type=self.season_type)
         print(f"Fetched {len(year_lines)} total games with betting lines from API.")
 
