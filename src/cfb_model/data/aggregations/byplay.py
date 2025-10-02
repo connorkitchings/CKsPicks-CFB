@@ -7,6 +7,7 @@ CFBD inconsistencies.
 
 from __future__ import annotations
 
+import logging
 import numpy as np
 import pandas as pd
 
@@ -206,7 +207,7 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
         df.get("clock_minutes", pd.Series([0])).max() > 15
         or df.get("clock_seconds", pd.Series([0])).max() >= 60
     ):
-        print("Warning: Some clock values seem to be out of range.")
+        logging.warning("Some clock values seem to be out of range.")
 
     # Calculate total time remaining in the game after this play
     # Time = (quarters remaining after this one) * 15 minutes + current quarter time remaining
@@ -268,10 +269,12 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
         for game_id, game_group in df.groupby("game_id"):
             game_df = game_group.sort_values(["quarter", "play_number"]).reset_index(drop=True)
             quarter_changes += (game_df["quarter"].diff() > 0).sum()
-        print(
-            f"Warning: {neg_count} play durations are negative (min: {min_dur:.1f}s). "
-            f"This includes {quarter_changes} quarter transitions and clock management inconsistencies "
-            "in the raw CFB data. Negative durations will be set to NaN."
+        logging.warning(
+            (
+                f"{neg_count} play durations are negative (min: {min_dur:.1f}s). "
+                f"Includes {quarter_changes} quarter transitions and clock inconsistencies. "
+                "Negative durations will be set to NaN."
+            )
         )
 
     # Create masks for invalid contexts - only mask if columns exist and values are 1

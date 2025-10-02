@@ -6,6 +6,7 @@ notebooks or ad-hoc backfills.
 """
 
 import time
+import logging
 from typing import Dict, List
 
 import pandas as pd
@@ -36,7 +37,7 @@ def fetch_calendar(year: int, headers: Dict[str, str]) -> List[Dict]:
         response.raise_for_status()  # Raises an HTTPError for bad responses
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching calendar data for year {year}: {e}")
+        logging.warning(f"Error fetching calendar data for year {year}: {e}")
         return []
 
 
@@ -49,7 +50,7 @@ def fetch_plays(year: int, week: int, headers: Dict[str, str]) -> List[Dict]:
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching plays data for year {year}, week {week}: {e}")
+        logging.warning(f"Error fetching plays data for year {year}, week {week}: {e}")
         return []
 
 
@@ -139,8 +140,10 @@ def call_api_plays(first_year: int, last_year: int, api_key: str) -> pd.DataFram
     minutes, seconds = divmod(int(total_time), 60)
     minutes_per, seconds_per = divmod(int(total_time_per), 60)
 
-    print(f"call_api_plays took {minutes} minutes and {seconds} seconds to complete.")
-    print(
+    logging.info(
+        f"call_api_plays took {minutes} minutes and {seconds} seconds to complete."
+    )
+    logging.info(
         f"It took {minutes_per} minutes and {seconds_per} seconds to complete per season."
     )
 
