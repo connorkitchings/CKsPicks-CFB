@@ -80,7 +80,7 @@ Edge Multiplier: 1 + (7.5 - 3.5) / 10 = 1.4
 Bet Size: $200 × 1.4 = $280
 ```
 
-### Option B: Kelly Criterion (Future Enhancement)
+### Option B: Kelly Criterion (Implemented)
 
 **Formula**: Bet Size = Bankroll × Kelly Fraction
 
@@ -119,11 +119,13 @@ def calculate_kelly_fraction(
     return max(0, kelly_fraction * fractional_kelly)
 ```
 
-**Configuration**:
-- **Fractional Kelly**: 25% of full Kelly recommendation
-- **Maximum Bet**: 5% of bankroll (safety cap)
-- **Win Probability**: Derived from model calibration
-- **Minimum Kelly**: 1% threshold to make bet
+**Configuration (Current Defaults)**:
+- **Fractional Kelly**: 25% of full Kelly recommendation (`--kelly-fraction 0.25`)
+- **Kelly Cap**: 25% cap before applying fractional Kelly (`--kelly-cap 0.25`)
+- **Base Unit**: 2% of bankroll (`--base-unit-fraction 0.02`) for unit reporting
+- **Win Probability**: Derived from a normal CDF using ensemble std-dev as sigma
+- **ATS/OU Pricing**: Uses provider odds when present; falls back to -110
+- **Confidence Filters**: Spread std-dev ≤ 3.0, Total std-dev ≤ 1.5 by default
 
 ### Option C: Confidence-Based Sizing (Advanced)
 
@@ -147,6 +149,12 @@ def calculate_confidence_based_size(
 ```
 
 ---
+
+### Report Fields (ATS/OU)
+
+- Decision fields: `bet_spread`, `bet_total`, `edge_spread`, `edge_total`
+- Uncertainty fields: `predicted_spread_std_dev`, `predicted_total_std_dev`
+- Kelly sizing: `kelly_fraction_spread`, `kelly_fraction_total`, `bet_units_spread`, `bet_units_total`, `bet_units`
 
 ## Bankroll Management
 
@@ -565,6 +573,6 @@ def daily_risk_check() -> Dict[str, Any]:
 
 ---
 
-*Last Updated: 2025-01-03*  
+*Last Updated: 2025-10-02*
 *Next Review: After 4 weeks of live implementation*  
 *Policy Version: 1.0 (MVP)*

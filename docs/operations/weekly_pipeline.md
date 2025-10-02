@@ -11,126 +11,119 @@ This runbook defines the end-to-end weekly process for producing betting recomme
 
 - Collect last week’s play-by-play (PBP)
 - Collect current week’s betting lines (spreads + totals) from CFBD
-- Transform features (season-to-date, opponent-adjusted via iterative averaging)
+- **Load pre-cached, point-in-time opponent-adjusted features**
 - Train/apply model (Ridge Regression baseline)
 - Generate predictions and filter to bets using thresholds
 
 ## Preconditions
 
-- Teams must have played ≥ 4 games this season; otherwise, do not bet those games
-- Training coverage for model: Train on 2019–2023 excluding 2020 (COVID); use 2024 as holdout/test.
-  FBS regular season only, include Week 0
+- Teams must have played ≥ 4 games this season; otherwise, do not bet those games.
+- The weekly adjusted stats cache should be populated for the target season. If not, the prediction script will fail.
 
 ## Steps
 
-1. Data collection
+### Step 0: Caching (Optional, One-Time)
 
-- Pull last week’s plays (FBS, regular season, include Week 0)
-- Pull current week’s betting lines (spreads and totals)
-
-1. Feature transformation
-
-- Season-to-date aggregates per team
-- Opponent adjustment via iterative averaging (4 iterations), with extra weight on last 3 games
-- Include per-play and per-possession features (pace-aware)
-- Add home/away control to the model (not to the stats directly)
-- Tip: Use `--quiet` with the pre-aggregation CLI to suppress per-game logs on long runs
-
-1. Modeling and predictions
-
-- Ridge Regression baseline
-- Targets: final margin (spread) and total points
-- Use season-silo training; apply to current season weekly
-
-1. Bet selection
-
-- Compute edges: |model − line|
-- Spreads: bet if edge ≥ 3.5
-- Totals: bet if edge ≥ 7.5
-- Only include games where both teams have ≥ 4 games played
-
-1. Validation (post-aggregation)
-
-- Run deep semantic validation for the current season (processed data):
+If you have not already generated the weekly adjusted stats cache for the season, run this command once. This process can take a significant amount of time.
 
 ```bash
-./.venv/bin/python -m cfb_model.data.validation --year <YEAR> --data-type processed --deep
+uv run python scripts/cache_weekly_stats.py --year 2024 --data-root "/path/to/root"
 ```
 
-1. Outputs
+### Step 1: Data Collection (API-Minimizing)
 
-- CSV report at: `reports/YYYY/CFB_weekWW_bets.csv`
-- Columns (suggested):
-  - season, week, game_id, game_date
-  - home_team, away_team, neutral_site
-  - sportsbook
-  - spread_line, total_line
-  - model_spread, model_total
-  - edge_spread, edge_total
-  - bet_spread (home/away/none), bet_total (over/under/none)
-  - bet_units (e.g., 1u flat for MVP)
+- Pull last week’s plays (FBS, regular season, include Week 0). Prefer targeting the week:
 
-- Backtesting/scoring (planned):
-  - Weekly and cumulative metrics written to `reports/backtests/backtest_weekly.csv` and `reports/backtests/backtest_summary.csv`
+```bash
+python scripts/cli.py ingest games --year 2024 --season-type regular --week 5 --data-root "/path/to/root"
+python scripts/cli.py ingest plays --year 2024 --season-type regular --week 5 --data-root "/path/to/root"
+```
 
-## Acceptance criteria
+- Pull current week’s betting lines (skipped automatically if already present for the season):
 
-- Report contains only games passing the thresholds and ≥ 4 games constraint
-- Reproducible with a single manual run mid-week
-- Links to upstream docs:
-  - Project Org → Modeling Baseline (`docs/project_org/modeling_baseline.md`)
-  - CFBD Data Ingestion (`docs/cfbd/data_ingestion.md`)
+```bash
+python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --data-root "/path/to/root"
+```
+
+### Step 2: Feature Transformation
+
+- This step is now handled by the caching process. The prediction script will load pre-computed, point-in-time features from the `processed/team_week_adj/` directory.
+
+### Step 3: Modeling and Predictions
+
+- The prediction script now reads directly from the cache, making this step much faster.
+- It applies the trained Ridge Regression baseline to the pre-calculated features.
+
+### Step 4: Bet Selection
+
+- The script computes edges (`|model − line|`) and applies the betting policy.
+- Spreads: configurable threshold (default 6.0 via `--spread-threshold`)
+- Totals: configurable threshold (default 6.0 via `--total-threshold`)
+- Confidence filter (ensemble std dev): defaults set from sweep analysis
+  - Spreads: `--spread-std-dev-threshold 3.0`
+  - Totals: `--total-std-dev-threshold 1.5`
+- Only include games where both teams have ≥ 4 games played.
+
+### Step 5: Outputs
+
+- A CSV report is generated at: `reports/YYYY/CFB_weekWW_bets.csv`
+- Columns include (subset):
+  - Identity/context: `season`, `week`, `game_id`, `game_date`, `home_team`, `away_team`, `neutral_site`, `sportsbook`
+  - Lines and predictions: `home_team_spread_line`, `total_line`, `model_spread`, `model_total`, `predicted_spread_std_dev`, `predicted_total_std_dev`
+  - Edge and decisions: `edge_spread`, `edge_total`, `bet_spread`, `bet_total`
+  - Kelly sizing: `kelly_fraction_spread`, `kelly_fraction_total`, `bet_units_spread`, `bet_units_total`, and aggregate `bet_units`
+- Pricing retention: the pipeline retains provider row fields (e.g., odds columns) when present; when pricing is missing, the weekly generator assumes -110 for ATS/OU sizing.
 
 ---
 
 ## Prediction & Scoring (MVP commands)
 
+### Pre-aggregations (if needed)
+
+If raw plays and processed features need to be rebuilt:
+
+```bash
+uv run python scripts/preaggregations_cli.py --year 2024 --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
+```
+
 Prereqs:
 - Trained models at `models/ridge_baseline/<year>/ridge_*.joblib`
-- Processed features present at your data root (see `CFB_MODEL_DATA_ROOT`)
-- Raw games and betting_lines present for the target year
+- **Cached weekly adjusted stats** present at `processed/team_week_adj/`.
+- Raw games and betting_lines present for the target year.
 
 Generate weekly picks (no API usage; reads from data root):
 
 ```bash
-PYTHONPATH=./src \
-python3 src/cfb_model/scripts/generate_weekly_bets_clean.py \
+uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --model-dir ./models/ridge_baseline \
-  --output-dir ./reports
+  --model-dir ./models \
+  --output-dir ./reports \
+  --spread-threshold 6.0 \
+  --total-threshold 6.0 \
+  --spread-std-dev-threshold 3.0 \
+  --total-std-dev-threshold 1.5 \
+  --kelly-fraction 0.25 \
+  --kelly-cap 0.25 \
+  --base-unit-fraction 0.02
 ```
 
 Score the week against final outcomes:
 
 ```bash
-PYTHONPATH=./src \
-python3 scripts/score_weekly_picks.py \
+uv run python scripts/score_weekly_picks.py \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --report-dir ./reports
 ```
 
-Run remainder of season (weeks discovered from raw games) and combine results:
+Run remainder of season using the unified CLI:
 
 ```bash
-PYTHONPATH=./src python3 - << 'PY'
-import os, subprocess, pandas as pd
-from cfb_model.data.storage.local_storage import LocalStorage
-DATA_ROOT="/Volumes/CK SSD/Coding Projects/cfb_model"; REPORT_DIR="./reports"; MODEL_DIR="./models/ridge_baseline"; YEAR=2024
-raw=LocalStorage(data_root=DATA_ROOT,file_format='csv',data_type='raw')
-weeks=sorted(int(w) for w in pd.DataFrame.from_records(raw.read_index('games',{'year':YEAR}))['week'].dropna().unique() if int(w)>=6)
-combined=[]
-for wk in weeks:
-  out=os.path.join(REPORT_DIR,str(YEAR),f"CFB_week{wk}_bets.csv")
-  if not os.path.exists(out):
-    subprocess.run(['python3','src/cfb_model/scripts/generate_weekly_bets_clean.py','--year',str(YEAR),'--week',str(wk),'--data-root',DATA_ROOT,'--model-dir',MODEL_DIR,'--output-dir',REPORT_DIR],check=True)
-  subprocess.run(['python3','scripts/score_weekly_picks.py','--year',str(YEAR),'--week',str(wk),'--data-root',DATA_ROOT,'--report-dir',REPORT_DIR],check=True)
-  combined.append(pd.read_csv(os.path.join(REPORT_DIR,str(YEAR),f"CFB_week{wk}_bets_scored.csv")))
-all_scored=pd.concat(combined,ignore_index=True)
-out_comb=os.path.join(REPORT_DIR,str(YEAR),f"CFB_weeks{weeks[0]}-{weeks[-1]}_bets_scored_combined.csv")
-all_scored.to_csv(out_comb,index=False)
-mask=all_scored['bet_spread'].isin(['home','away'])
-print({'combined_csv':out_comb,'picks':int(mask.sum()),'wins':int(all_scored.loc[mask,'pick_win'].sum()),'hit_rate':round(float(all_scored.loc[mask,'pick_win'].mean()),3)})
-PY
+python scripts/cli.py run-season \
+  --year 2024 \
+  --start-week 5 \
+  --end-week 16 \
+  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
+```
 ```

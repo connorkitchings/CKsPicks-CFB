@@ -88,18 +88,18 @@ Ingestion scripts write idempotently per `entity/year/week/game_id` (for plays) 
 (for other entities) and generate `manifest.json` files for validation.
 See `docs/cfbd/data_ingestion.md` and `docs/project_org/project_charter.md` for details.
 
-### Aggregations CLI
+### Aggregations
 
-Run pre-aggregations (reads `CFB_MODEL_DATA_ROOT` from your environment or `.env`):
+Run pre-aggregations with the Prefect flow (reads `CFB_MODEL_DATA_ROOT` from your environment or `.env`):
 
 ```bash
-python3 scripts/cli.py aggregate preagg --year 2024
+python -c 'from cfb_model.flows.preaggregations import preaggregations_flow as f; f(year=2024)'
 ```
 
-Byplay-only:
+Byplay-only (developer utility):
 
 ```bash
-python3 scripts/cli.py aggregate byplay --year 2024
+python -c 'from cfb_model.data.aggregations.persist import persist_byplay_only as f; f(year=2024)'
 ```
 
 ---

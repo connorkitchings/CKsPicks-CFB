@@ -36,21 +36,22 @@ python scripts/check_links.py  # Verify documentation links
 ### Data Pipeline Operations
 
 ```bash
-# Complete ingestion pipeline for a full year
-python scripts/run_ingestion_year.py --year 2024 --data-root /path/to/external/drive
+# Complete ingestion pipeline for a full year (placeholder; wire your ingestion CLI here)
+# python scripts/run_ingestion_year.py --year 2024 --data-root /path/to/external/drive
 
 # Individual entity ingestion (for testing or updates)
-python scripts/ingest_cli.py teams --year 2024
-python scripts/ingest_cli.py games --year 2024 --season-type regular
-python scripts/ingest_cli.py plays --year 2024 --limit-games 5
-python scripts/ingest_cli.py betting_lines --year 2024 --limit-games 10
+# python scripts/ingest_cli.py teams --year 2024
+# python scripts/ingest_cli.py games --year 2024 --season-type regular
+# python scripts/ingest_cli.py plays --year 2024 --limit-games 5
+# python scripts/ingest_cli.py betting_lines --year 2024 --limit-games 10
 
 # Run aggregations pipeline (requires CFB_MODEL_DATA_ROOT in .env)
-python scripts/aggregations_cli.py preagg --year 2024
-python scripts/aggregations_cli.py byplay --year 2024
+python -c 'from cfb_model.flows.preaggregations import preaggregations_flow as f; f(year=2024)'
+# Byplay-only utility
+python -c 'from cfb_model.data.aggregations.persist import persist_byplay_only as f; f(year=2024)'
 
-# Train Ridge baseline models
-python src/cfb_model/models/ridge_baseline/train.py --train-years 2019,2021,2022,2023 --test-year 2024
+# Train models (baseline and ensemble)
+python src/cfb_model/models/train_model.py --train-years 2019,2021,2022,2023 --test-year 2024
 
 ```
 
@@ -86,7 +87,7 @@ The project follows a clear separation between data ingestion, processing, model
 1. **Ingestion**: Raw data from CollegeFootballData.com API → local CSV storage (partitioned by year/week/game_id)
 2. **Feature Engineering**: Multi-stage pipeline with opponent adjustment via iterative averaging
 3. **Modeling**: Ridge regression on engineered features with season-silo training
-4. **Betting Logic**: Edge calculation (|model - line|) with thresholds (spreads ≥3.5, totals ≥7.5)
+- **Betting Logic**: Edge calculation (|model - line|) with thresholds (spreads ≥6.0, totals ≥6.0)
 5. **Output**: Weekly CSV reports with betting recommendations
 
 ### Key Data Transformations
@@ -173,7 +174,7 @@ Essential documents to review before making changes:
 
 ### Core Betting Rules
 
-- **Edge Thresholds**: Spreads ≥3.5 points, totals ≥7.5 points
+- **Edge Thresholds**: Spreads ≥6.0 points, totals ≥6.0 points (configurable via CLI)
 - **Team Requirements**: Both teams must have ≥4 games played
 - **Unit Sizing**: 2% base unit with edge-based scaling (MVP approach)
 - **Portfolio Limits**: Maximum 15% bankroll exposure, 12 bets per week

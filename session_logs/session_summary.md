@@ -1,8 +1,16 @@
-# Session Log Summary
+## Session Log Summary
 
 This document provides a high-level, chronological summary of the key development activities for the `cfb_model` project, compiled from individual session logs.
 
 ---
+
+### October 2025: Kelly Sizing, Risk Caps, and Ops Utilities
+
+- Kelly-based bet sizing implemented (fractional 25%) with a 5% single-bet cap; confidence filters defaulted to spreads ≤ 3.0 and totals ≤ 1.5 using ensemble std-dev.
+- Weekly generator updated with per-model feature alignment and report columns for Kelly and unit sizing; docs updated.
+- Added bankroll simulation script and weekly report driver with spread vs total hit/bet breakdown.
+- Storage fixes: LocalStorage path composition corrected; persist partition standardized to `game_id`.
+- Health: Lint clean; tests (15) passing; docs build clean.
 
 ### January - August 2025: Project Setup, Data Ingestion & Architecture Pivot
 
