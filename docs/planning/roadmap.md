@@ -3,7 +3,7 @@
 This document is the tactical plan for the **cfb_model** project. It translates the goals from the
 [Project Charter](../project_org/project_charter.md) into a high-level schedule of epics and tasks.
 
-> 📋 **Last Updated**: 2025-09-25 | **Next Review**: Weekly Wednesday sprint planning
+> 📋 **Last Updated**: 2025-09-30 | **Next Review**: Weekly Wednesday sprint planning
 > 🔗 **Related**: [Open Decisions](../project_org/open_decisions.md) | [Decision Log](../decisions/decision_log.md)
 
 ## Sprint Overview
@@ -12,9 +12,9 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 **Sprint Duration:** 3 weeks  
 **Target Completion:** COMPLETED - September 2025
 
-**Sprint Goal:** ✅ COMPLETED - Core implementation finished with critical bug fixes and full season validation.
+**Sprint Goal:** ✅ COMPLETED - Core implementation, optimization, and performance validation complete.
 
-**Key Achievement:** Fixed critical spread betting logic bug and validated true model performance at 51.7% hit rate across full 2024 season (261 total bets).
+**Key Achievement:** Achieved profitable model (54.6% hit rate) through RandomForest totals, calibrated thresholds, and systematic hyperparameter optimization. Confirmed current parameters are well-tuned with comprehensive GridSearchCV validation.
 
 **Key Dependencies**:  
 - Decision OPEN-001 (Production Deployment) needed before live operation  
@@ -79,23 +79,40 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 | 16 | Web Interface | Minimal Streamlit view of weekly CSV | 4d | Task 13, OPEN-003 | @dev | 🚫 Blocked |
 | 21 | Production | Production deployment setup | 5d | OPEN-001 | @dev | 🚫 Blocked |
 | 22 | Operations | Weekly pipeline automation | 3d | Task 21 | @dev | 🚫 Blocked |
-| 20 | Validation | Model evaluation metrics and validation reports | 4d | Task 19 | @dev | 📋 Ready |
-| 15 | Explainability | SHAP summaries for model insights | 4d | Task 12 | @dev | 📋 Ready |
+| 20 | Validation | Model evaluation metrics and validation reports | 4d | Task 19 | @dev | ✅ Complete |
+| 15 | Explainability | SHAP summaries for model insights | 4d | Task 12 | @dev | ✅ Complete |
 | 17 | Performance | ROI/win rate tracking dashboards | 3d | Task 16 | @dev | 📋 Ready |
 
 **Sprint 3 Risks**:  
 - 🚫 **Deployment decision**: Blocked on OPEN-001, affects all production tasks  
 - ⚠️ **Streamlit complexity**: Authentication may add complexity  
 
+### Recently Completed (2025-09-30)
+
+|| ID | Epic | Deliverable | Effort | Owner | Status |
+||:--:|:-----|:-----------|:------:|:-----:|:------:|
+|| 28 | Code Quality | Clean up codebase, fix linting, update documentation | 1d | @dev | ✅ Complete |
+|| 29 | Modeling | Hyperparameter optimization (Ridge + RandomForest) | 2d | @dev | ✅ Complete |
+
+**Key Findings (Task 29)**:
+- RandomForest optimization tested 108 parameter combinations
+- Results: ~0% improvement over baseline (already well-tuned)
+- Best params: n_estimators=250, max_depth=None, min_samples_leaf=5, min_samples_split=5, max_features='log2'
+- **Strategic insight**: Current parameters optimal; further gains require feature engineering or ensemble methods
+
 ### Backlog (Future Sprints)
 
-| ID | Epic | Deliverable | Effort | Dependencies | Priority |
-|:--:|:-----|:-----------|:------:|:-------------|:--------:|
-| 14 | Modeling | Try alternative models (XGBoost, RF) after MVP | 6d | Task 20, OPEN-002 | Medium |
-| 18 | CFBD Data | Validate 2014 ingestion across entities | 2d | None | Low |
-| 23 | Advanced Features | Weather/injury data integration | 8d | OPEN-006 | Low |
-| 24 | Risk Management | Kelly criterion unit sizing | 4d | Task 20, OPEN-005 | Medium |
-| 25 | Monitoring | Performance monitoring & alerting | 5d | Task 21, OPEN-007 | Low |
+|| ID | Epic | Deliverable | Effort | Dependencies | Priority |
+||:--:|:-----|:-----------|:------:|:-------------|:--------:|
+|| 30 | Modeling | Variance reduction via ensemble methods | 4d | Task 29 | High |
+|| 31 | Modeling | Confidence-based bet filtering | 3d | Task 29 | High |
+|| 14 | Modeling | Try alternative models (XGBoost) for comparison | 6d | Task 20, OPEN-002 | Medium |
+|| 32 | Advanced Features | Rushing analytics (line yards, second-level, open-field) | 5d | None | Medium |
+|| 33 | Advanced Features | Situational efficiency (red zone, third down) | 4d | None | Medium |
+|| 18 | CFBD Data | Validate 2014 ingestion across entities | 2d | None | Low |
+|| 23 | Advanced Features | Weather/injury data integration | 8d | OPEN-006 | Low |
+|| 24 | Risk Management | Kelly criterion unit sizing | 4d | Task 20, OPEN-005 | Medium |
+|| 25 | Monitoring | Performance monitoring & alerting | 5d | Task 21, OPEN-007 | Low |
 
 ## Execution Checklist
 

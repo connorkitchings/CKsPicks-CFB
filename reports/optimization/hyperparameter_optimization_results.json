@@ -1,0 +1,20 @@
+[
+  {
+    "model_name": "RandomForest",
+    "target": "total",
+    "best_params": {
+      "max_depth": null,
+      "max_features": "log2",
+      "min_samples_leaf": 5,
+      "min_samples_split": 5,
+      "n_estimators": 250,
+      "random_state": 42
+    },
+    "best_cv_score": 16.778761372118844,
+    "cv_std": 0.15450516602417977,
+    "train_rmse": 11.107479077096738,
+    "test_rmse": 16.694708480132554,
+    "test_mae": 13.315437144844648,
+    "improvement_vs_baseline": -0.00023647656954283805
+  }
+]

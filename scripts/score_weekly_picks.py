@@ -1,7 +1,8 @@
-import pandas as pd
-import os
 import argparse
+import os
+
 import numpy as np
+import pandas as pd
 
 
 def main():
@@ -101,25 +102,70 @@ def main():
             results.append(np.nan)  # Game not finished or data missing
 
     # 5. Add results and save scored output
-    bets_to_score["pick_win"] = results
+    bets_df["pick_win"] = np.nan
+    bets_df.loc[bets_to_score.index, "pick_win"] = results
+
+    # --- Score Totals Bets ---
+    totals_to_score = bets_df[bets_df["bet_total"].isin(["over", "under"])].copy()
+    if not totals_to_score.empty:
+        print(f"Found {len(totals_to_score)} totals bets to score...")
+        total_results = []
+        for index, bet in totals_to_score.iterrows():
+            game_id = bet["game_id"]
+            game_matches = week_games_df[week_games_df["id"] == game_id]
+            if game_matches.empty:
+                total_results.append(np.nan)
+                continue
+
+            game = game_matches.iloc[0]
+            home_pts = game.get("home_points")
+            away_pts = game.get("away_points")
+
+            if pd.notna(home_pts) and pd.notna(away_pts):
+                actual_total = home_pts + away_pts
+                total_line = bet["total_line"]
+                bet_side = bet["bet_total"]
+
+                if bet_side == "over" and actual_total > total_line:
+                    win = 1
+                elif bet_side == "under" and actual_total < total_line:
+                    win = 1
+                elif actual_total == total_line:
+                    win = 0  # Push
+                else:
+                    win = 0  # Loss
+                total_results.append(win)
+            else:
+                total_results.append(np.nan)
+
+        bets_df.loc[totals_to_score.index, "total_pick_win"] = total_results
 
     # Save the scored bets to a new file
     output_path = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets_scored.csv"
     )
-    bets_to_score.to_csv(output_path, index=False)
+    bets_df.to_csv(output_path, index=False)
     print(f"Scored results saved to {output_path}")
 
     # 6. Calculate and print summary
-    bets_to_score["win"] = results
-    valid_results = bets_to_score["win"].dropna()
-
-    total_bets = len(valid_results)
-    wins = int(valid_results.sum())
-    hit_rate = (wins / total_bets) if total_bets > 0 else 0.0
+    spread_valid_results = bets_df["pick_win"].dropna()
+    spread_total_bets = len(spread_valid_results)
+    spread_wins = int(spread_valid_results.sum())
+    spread_hit_rate = (
+        (spread_wins / spread_total_bets) if spread_total_bets > 0 else 0.0
+    )
 
     print("\n--- Scoring Summary ---")
-    print(f"Spread picks: {wins}/{total_bets} = {hit_rate:.3f}")
+    print(f"Spread picks: {spread_wins}/{spread_total_bets} = {spread_hit_rate:.3f}")
+
+    if "total_pick_win" in bets_df:
+        total_valid_results = bets_df["total_pick_win"].dropna()
+        total_total_bets = len(total_valid_results)
+        total_wins = int(total_valid_results.sum())
+        total_hit_rate = (
+            (total_wins / total_total_bets) if total_total_bets > 0 else 0.0
+        )
+        print(f"Total picks:  {total_wins}/{total_total_bets} = {total_hit_rate:.3f}")
 
 
 if __name__ == "__main__":

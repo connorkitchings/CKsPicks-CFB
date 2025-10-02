@@ -96,3 +96,55 @@ in later stages.
 - **Pattern**: Modify the script that generates the intermediate data file to include the columns that are being used in the filtering logic. By inspecting the intermediate file with these diagnostic columns, you can quickly identify why rows are being excluded.
 - **Usage**: To debug a betting policy that filters based on `games_played`, modify the prediction script to include the `home_games_played` and `away_games_played` columns in the output CSV.
 - **Discovered In**: `[LOG:2025-09-25]`
+
+---
+
+## `[KB:LocalStorageWriteSignature]`
+
+- **Context**: Writing data to a partitioned directory using the `LocalStorage` backend fails with a `TypeError` for an unexpected keyword argument.
+- **Pattern**: The `LocalStorage.write()` method expects the data as a list of records (`df.to_dict(orient="records")`) and the partitioning scheme as a `Partition` object (from `cfb_model.data.storage.base`), not as a dictionary passed to a `partition_cols` argument.
+- **Usage**: `from cfb_model.data.storage.base import Partition; partition = Partition({"year": Y, "week": W}); records = df.to_dict('records'); storage.write("entity", records, partition=partition)`
+- **Discovered In**: `[LOG:2025-09-29]`
+
+---
+
+## `[KB:EntityPartitioningSpecificity]`
+
+- **Context**: A data loading operation using `LocalStorage.read_index` fails with a "No data found" error, even though the data exists.
+- **Pattern**: This often happens when the read filter is more specific than the actual directory structure. For example, the `games` entity is partitioned only by `year`, not by `week`. Attempting to read with a filter of `{"year": Y, "week": W}` will fail. The correct approach is to read with the broader, correct partition filter (`{"year": Y}`) and then filter the resulting DataFrame in memory.
+- **Usage**: Instead of `storage.read_index("games", {"year": Y, "week": W})`, use `df = pd.DataFrame.from_records(storage.read_index("games", {"year": Y})); weekly_df = df[df["week"] == W]`.
+- **Discovered In**: `[LOG:2025-09-29]`
+
+---
+
+## `[KB:PYTHONPATH-ISSUES]`
+
+- **Context**: When running scripts from the command line that are part of a package, `ModuleNotFoundError` can occur.
+- **Pattern**: It's crucial to ensure that the package's root directory is in the `PYTHONPATH`. This can be done by running the script as a module (`-m`), setting the `PYTHONPATH` environment variable, or by adding the path to `sys.path` within the script itself.
+- **Usage**: `python3 -m src.cfb_model.scripts.generate_weekly_bets_clean` or `sys.path.insert(0, './src')`
+- **Discovered In**: `[LOG:2025-09-30]`
+
+---
+
+## `[KB:ScalingForConvergence]`
+
+- **Context**: An iterative model like `HuberRegressor` fails to converge, even after increasing `max_iter`.
+- **Pattern**: The issue can often be resolved by scaling the input data. Wrapping the model in a `sklearn.pipeline.Pipeline` with a `StandardScaler` is a robust way to ensure data is scaled before fitting the model, which can significantly improve convergence.
+- **Usage**: `pipeline = Pipeline([('scaler', StandardScaler()), ('model', HuberRegressor())])`
+- **Discovered In**: `[LOG:2025-10-01]`
+
+---
+
+## `[KB:LargePrintsAndStreams]`
+
+- **Context**: An automated script fails with a non-standard error like "invalid chunk" or "missing finish reason".
+- **Pattern**: This can be caused by printing an extremely large, wide DataFrame or other large string to standard output. The process running the script may not be able to handle the large, uninterrupted block of text in the output stream, leading to corruption. Removing or modifying the large print statement can resolve the issue.
+- **Usage**: Avoid `print(df.to_string())` on very wide DataFrames in automated scripts. If you need to inspect data, print a subset of columns or use a logger.
+- **Discovered In**: `[LOG:2025-10-01]` 
+
+## `[KB:EnsembleConfidenceFilter]`
+
+- **Context**: A simple ensemble of models did not significantly improve performance or reduce variance. A method was needed to leverage the ensemble to improve bet selection.
+- **Pattern**: Calculate the standard deviation of the predictions across all models in the ensemble for a given game. Use this standard deviation as a measure of the ensemble's "confidence" or agreement. Filter out bets where the standard deviation exceeds a specified threshold.
+- **Usage**: Add a `--spread-std-dev-threshold` and `--total-std-dev-threshold` to the prediction script. In the betting policy, only consider bets where `prediction_std_dev <= threshold`.
+- **Discovered In**: `[LOG:2025-10-01]`

@@ -13,11 +13,9 @@ Usage:
 import argparse
 import os
 import shutil
-import sys
-from pathlib import Path
-from typing import List, Tuple
-import json
 import subprocess
+from pathlib import Path
+from typing import List
 
 
 class TeamPartitionCleanup:
@@ -150,7 +148,7 @@ class TeamPartitionCleanup:
                     )
                     return False
 
-            print(f"  ✅ Data consistency validated")
+            print("  ✅ Data consistency validated")
             return True
 
         except Exception as e:
@@ -177,7 +175,7 @@ class TeamPartitionCleanup:
             has_enhanced_schema = self.check_enhanced_schema(target_dir)
 
             if has_enhanced_schema:
-                print(f"  📈 Standardized format has enhanced schema - prioritizing it")
+                print("  📈 Standardized format has enhanced schema - prioritizing it")
                 if not dry_run:
                     print(f"  🗑️  Removing older tuple directory: {tuple_dir}")
                     if self._remove_tuple_directory(tuple_dir):
@@ -186,7 +184,7 @@ class TeamPartitionCleanup:
                         return False
                 else:
                     print(
-                        f"  🧪 DRY RUN: Would remove older tuple format (enhanced schema detected)"
+                        "  🧪 DRY RUN: Would remove older tuple format (enhanced schema detected)"
                     )
                     return True
             else:
@@ -199,7 +197,7 @@ class TeamPartitionCleanup:
                         else:
                             return False
                     else:
-                        print(f"  ⚠️  Data inconsistency detected - skipping removal")
+                        print("  ⚠️  Data inconsistency detected - skipping removal")
                         return False
                 else:
                     print(f"  🧪 DRY RUN: Would validate and remove {tuple_dir}")
@@ -234,13 +232,13 @@ class TeamPartitionCleanup:
                         # Rollback on validation failure
                         shutil.rmtree(target_dir)
                         print(
-                            f"  ❌ Failed to remove tuple directory - rolled back conversion"
+                            "  ❌ Failed to remove tuple directory - rolled back conversion"
                         )
                         return False
                 else:
                     # Rollback on validation failure
                     shutil.rmtree(target_dir)
-                    print(f"  ❌ Validation failed - rolled back conversion")
+                    print("  ❌ Validation failed - rolled back conversion")
                     return False
 
             except Exception as e:
@@ -368,7 +366,7 @@ def main():
         print(f"  Failed: {entity_results['failed']}")
 
     print(f"\n{'=' * 60}")
-    print(f"🎯 FINAL SUMMARY")
+    print("🎯 FINAL SUMMARY")
     print(f"{'=' * 60}")
     print(f"Total Processed: {total_results['processed']}")
     print(f"Total Successful: {total_results['successful']}")

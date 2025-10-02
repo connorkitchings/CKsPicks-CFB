@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import os
 import sys
+
 import pandas as pd
+
 from cfb_model.data.storage.local_storage import LocalStorage
 
 DATA_ROOT = "/Volumes/CK SSD/Coding Projects/cfb_model"

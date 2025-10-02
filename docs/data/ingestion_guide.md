@@ -145,6 +145,22 @@ All scripts use the CFBD API with Bearer token authentication:
 - Referential integrity: `plays.gameId` present in `games`; team names/IDs resolve against `teams`
 - Manifests: row counts recorded per partition; totals reconciled against expected per season/week
 
+## Minimizing API Usage
+
+We treat API calls as a constrained resource. The ingestion layer includes safeguards to avoid
+redundant fetches and to scope pulls tightly:
+
+- Week targeting for games/plays: pass `--week` to ingest a single week instead of the full season.
+- Skip-if-present logic:
+  - Plays: if raw partitions already exist for `plays/year=<YYYY>/week=<WW>/game_id=*` covering all
+    FBS games in that week (based on the local games index), the week is skipped with a log message.
+  - Game stats: if `game_stats_raw/year=<YYYY>/week=<WW>/game_id=*` is complete, the week is skipped.
+  - Betting lines: if local storage already has lines for all FBS games in the year, the yearly API
+    call is skipped entirely.
+
+These checks ensure you can re-run ingestion safely without re-hitting the API when the local cache is
+complete.
+
 ## CLI Flags
 
 All ingestion commands support a common set of flags:
@@ -152,5 +168,21 @@ All ingestion commands support a common set of flags:
 - `--data-root`: Base directory for the data (default: `./data/raw` for raw data, `./data/processed`
   for processed data)
 - `--season_type`: Season type (`regular`, `postseason`) when applicable
+- `--week`: Optional specific week to ingest (supported for `games` and `plays`)
 - `--workers`: Parallel worker count for API calls
 - `--exclude-seasons`: Comma-separated years to skip (optional; default: none)
+
+### Examples
+
+- Single week of games and plays (development-friendly):
+
+```bash
+python scripts/cli.py ingest games --year 2024 --season-type regular --week 5 --data-root "/path/to/root"
+python scripts/cli.py ingest plays --year 2024 --season-type regular --week 5 --data-root "/path/to/root"
+```
+
+- Betting lines (will be skipped if already complete for the year):
+
+```bash
+python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --data-root "/path/to/root"
+```

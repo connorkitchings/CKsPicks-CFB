@@ -1,2 +1,2 @@
-season,week,game_id,game_date,home_team,away_team,neutral_site,sportsbook,home_team_spread_line,total_line,model_spread,model_total,edge_spread,edge_total,bet_spread,bet_total,home_games_played,away_games_played,bet_units
-2024,16,401645383,2024-12-14 15:00:00-05:00,Army,Navy,True,DraftKings,-6.5,39.0,3.2592723657024147,52.897361988817835,3.2407276342975853,13.897361988817835,none,over,11.0,10.0,1
+season,week,game_id,game_date,home_team,away_team,neutral_site,sportsbook,home_team_spread_line,total_line,model_spread,model_total,edge_spread,edge_total,bet_spread,bet_total,home_games_played,away_games_played,predicted_spread_std_dev,predicted_total_std_dev,kelly_fraction_spread,kelly_fraction_total,bet_units_spread,bet_units_total,bet_units
+2024,16,401645383,2024-12-14 15:00:00-05:00,Army,Navy,True,DraftKings,-6.5,39.0,0.03665088861094956,49.31626294642975,6.46334911138905,10.316262946429752,away,over,11.0,10.0,0.0,0.0,0.05,0.05,2.5,2.5,5.0

@@ -46,7 +46,7 @@ python scripts/ingest_cli.py teams --year 2024
 python scripts/ingest_cli.py games --year 2024 --season-type regular
 
 # Run aggregations pipeline (requires CFB_MODEL_DATA_ROOT in .env)
-python scripts/aggregations_cli.py preagg --year 2024
+python scripts/cli.py aggregate preagg --year 2024
 
 # Train Ridge baseline models
 python src/cfb_model/models/ridge_baseline/train.py --train-years 2019,2021,2022,2023 --test-year 2024

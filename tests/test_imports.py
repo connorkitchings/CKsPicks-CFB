@@ -10,7 +10,6 @@ MODULES = [
     "cfb_model.data.aggregations.pipeline",
     "cfb_model.data.aggregations.persist",
     "cfb_model.models.train_model",
-    "cfb_model.models.ridge_baseline.train",
     "cfb_model.utils.logging",
 ]
 

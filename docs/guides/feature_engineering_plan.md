@@ -52,21 +52,11 @@ season-to-date features ready for opponent adjustment.
 
 ---
 
-## Next Steps: Implementing Point-in-Time Feature Generation
+## Feature Engineering Source of Truth
 
-To prevent data leakage during model training, it is critical that features for any given game are calculated using only data from preceding weeks. The current aggregation pipeline creates end-of-season summaries, which are not suitable for direct use in training.
+The definitive and canonical implementation of all feature engineering logic resides in the Python modules within the `src/cfb_model/data/aggregations/` directory. This includes play-level transformations, aggregations to drives and games, and the point-in-time feature generation required to prevent data leakage.
 
-The immediate next step is to implement a weekly, point-in-time feature generation process.
-
-### Plan:
-
-1.  **Adapt Existing Logic**: The logic for this weekly calculation has been located in the `CFB_Functions.ipynb` notebook, specifically within the `calculate_stats_rolling` and `calculate_adjstats_rolling` functions. This code provides a proven template for the required process.
-
-2.  **Integrate into Pipeline**: This logic will be adapted and integrated into the main data pipeline in `src/cfb_model/data/aggregations/`. The goal is to create a new function or modify the existing pipeline to generate a training dataset where each row (a game) is associated with features calculated from the season-to-date data *up to the week of that game*.
-
-3.  **Generate Training Data**: The updated pipeline will be used to generate the complete, leakage-free training dataset, which will then be used for model development.
-
-This replaces the previous next step of defining a play feature schema, as that work has largely been completed in `src/cfb_model/data/aggregations/byplay.py`.
+The `CFB_Functions.ipynb` notebook, which previously contained exploratory work, is now considered deprecated. It should only be used as a historical or conceptual reference. For any development or validation work, the code in the `src` directory is the single source of truth.
 
 ---
 

@@ -211,7 +211,14 @@ Definitions:
 
 - See `docs/project_org/modeling_baseline.md` → Targets.
 
-## 7) Validation checks
+## 7) Momentum and Trending Features
+
+| feature_name | level | dtype | definition | inputs | transform | notes |
+|---|---|---|---|---|---|---|
+| metric_last_3 | team-season | float | Average of the metric over the last 3 games | team_game | `mean(last(3))` | Captures recent form |
+| metric_last_1 | team-season | float | The metric's value from the most recent game | team_game | `last(1)` | Captures most recent performance |
+
+## 8) Validation checks
 
 - Row counts per season and per team within expected ranges; manifest.json
   present per partition.
