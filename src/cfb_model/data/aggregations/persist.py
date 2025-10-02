@@ -7,6 +7,7 @@ processed storage.
 
 from __future__ import annotations
 
+import logging
 import pandas as pd
 
 from .core import apply_iterative_opponent_adjustment
@@ -32,7 +33,7 @@ def persist_preaggregations(
     raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     records = raw_storage.read_index("plays", {"year": year})
     if not records:
-        print(f"No raw plays found for season {year} under {raw_storage.root()}")
+        logging.info(f"No raw plays found for season {year} under {raw_storage.root()}")
         return {
             "byplay": 0,
             "drives": 0,
@@ -77,34 +78,34 @@ def persist_preaggregations(
             .to_dict("index")
         )
 
-    # By-play: partition by year/week/game (one folder per game)
+    # By-play: partition by year/week/game_id (one folder per game)
     for (week, game_id), group in byplay_df.groupby(["week", "game_id"], dropna=False):
         if verbose:
             game_meta = game_to_teams_map.get(game_id, {})
             home_team = game_meta.get("home", "?")
             away_team = game_meta.get("away", "?")
-            print(
+            logging.info(
                 f"Processing season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
             )
         part = Partition(
-            {"year": str(year), "week": str(int(week)), "game": str(int(game_id))}
+            {"year": str(year), "week": str(int(week)), "game_id": str(int(game_id))}
         )
         rows = group.to_dict(orient="records")
         totals["byplay"] += processed_storage.write(
             "byplay", rows, part, overwrite=True
         )
 
-    # Drives: partition by year/week/game (one folder per game, rows are per drive)
+    # Drives: partition by year/week/game_id (one folder per game, rows are per drive)
     for (week, game_id), group in drives_df.groupby(["week", "game_id"], dropna=False):
         if verbose:
             game_meta = game_to_teams_map.get(game_id, {})
             home_team = game_meta.get("home", "?")
             away_team = game_meta.get("away", "?")
-            print(
+            logging.info(
                 f"Processing DRIVES season={year}, week={int(week)}, game_id={int(game_id)}: {home_team} vs {away_team}"
             )
         part = Partition(
-            {"year": str(year), "week": str(int(week)), "game": str(int(game_id))}
+            {"year": str(year), "week": str(int(week)), "game_id": str(int(game_id))}
         )
         rows = group.to_dict(orient="records")
         totals["drives"] += processed_storage.write(
@@ -176,7 +177,7 @@ def persist_preaggregations(
 
     root = processed_storage.root()
     if verbose:
-        print(
+        logging.info(
             f"Pre-aggregations written under {root} for season {year}: "
             f"byplay={totals['byplay']}, drives={totals['drives']}, "
             f"team_game={totals['team_game']}, team_season={totals['team_season']}, "

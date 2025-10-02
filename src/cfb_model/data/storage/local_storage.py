@@ -36,13 +36,22 @@ class LocalStorage(StorageBackend):
         2. The `CFB_MODEL_DATA_ROOT` environment variable.
         3. A default `data` directory inside the current working directory.
 
+        Note: This class expects `data_root` to point to the parent "data" directory
+        (e.g., "/path/to/repo/data" or a mounted drive's data root). Subdirectories
+        "raw" or "processed" are appended automatically via `data_type`.
+
         Args:
             data_root: An optional, explicit path to the data storage root.
             file_format: The file format to use for storage ('parquet' or 'csv').
             data_type: The type of data being stored ('raw' or 'processed').
         """
-        base_root = data_root or os.getenv("CFB_MODEL_DATA_ROOT") or Path.cwd()
-        root_path = Path(base_root) / "data" / f"{data_type}"
+        # If not provided, prefer CFB_MODEL_DATA_ROOT; otherwise default to CWD/data
+        base_root = (
+            Path(data_root)
+            if data_root is not None
+            else Path(os.getenv("CFB_MODEL_DATA_ROOT")) if os.getenv("CFB_MODEL_DATA_ROOT") else (Path.cwd() / "data")
+        )
+        root_path = Path(base_root) / f"{data_type}"
         root = root_path.resolve()
 
         try:
