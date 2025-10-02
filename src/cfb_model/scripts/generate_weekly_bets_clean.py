@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from math import erf
 
 import joblib
 import numpy as np
@@ -28,9 +29,10 @@ def load_ensemble_models(model_year: int, model_dir: str) -> dict[str, list]:
         if file_name.endswith(".joblib"):
             model_path = os.path.join(ensemble_dir, file_name)
             model = joblib.load(model_path)
-            if file_name.startswith("spread_"):
+            name_lower = file_name.lower()
+            if name_lower.startswith("spread_") or ("spread" in name_lower and "total" not in name_lower):
                 models["spread"].append(model)
-            elif file_name.startswith("total_"):
+            elif name_lower.startswith("total_") or name_lower.startswith("ridge_total") or ("total" in name_lower and "spread" not in name_lower):
                 models["total"].append(model)
 
     if not models["spread"]:
@@ -45,19 +47,30 @@ def load_ensemble_models(model_year: int, model_dir: str) -> dict[str, list]:
 
 
 def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
-    """Reduce betting_lines to one row per game, preferring provider == 'consensus'."""
+    """Reduce betting_lines to one row per game, preferring provider == 'consensus'.
+
+    Unlike the previous implementation, this retains all columns provided by the
+    selected provider row (e.g., potential moneyline or odds fields) so that
+    downstream sizing logic (Kelly) has access to prices when available.
+    """
     if lines_df.empty:
         return lines_df
     df = lines_df.copy()
-    df["provider_rank"] = np.where(df["provider"].str.lower() == "consensus", 0, 1)
+    # Prefer provider == 'consensus' when available
+    if "provider" in df.columns:
+        df["provider_rank"] = np.where(df["provider"].astype(str).str.lower() == "consensus", 0, 1)
+    else:
+        df["provider_rank"] = 1
     df = (
         df.sort_values(["game_id", "provider_rank"])  # consensus first
         .groupby("game_id", as_index=False)
         .first()
     )
-    df = df.rename(
-        columns={"over_under": "total_line", "spread": "home_team_spread_line"}
-    )[["game_id", "home_team_spread_line", "total_line", "provider"]]
+    # Normalize a couple of critical column names but retain the rest
+    rename_map = {"over_under": "total_line", "spread": "home_team_spread_line"}
+    for old, new in rename_map.items():
+        if old in df.columns and new not in df.columns:
+            df = df.rename(columns={old: new})
     return df
 
 
@@ -149,6 +162,29 @@ def generate_predictions(model, X: pd.DataFrame) -> pd.Series:  # noqa: N803
     return pd.Series(model.predict(X), index=X.index)
 
 
+
+
+def _norm_cdf(x):  # accepts scalar or array-like
+    arr = np.asarray(x, dtype=float)
+    erf_vec = np.vectorize(erf)
+    return 0.5 * (1.0 + erf_vec(arr / np.sqrt(2.0)))
+
+
+def _american_to_b(odds: float | int | None) -> float | None:
+    """Convert American odds to 'b' (profit per unit) for Kelly. Returns None if not usable."""
+    try:
+        if odds is None or (isinstance(odds, float) and np.isnan(odds)):
+            return None
+        odds = float(odds)
+        if odds > 0:
+            return odds / 100.0
+        if odds < 0:
+            return 100.0 / abs(odds)
+        return None
+    except Exception:
+        return None
+
+
 def apply_betting_policy(
     predictions_df: pd.DataFrame,
     *,
@@ -157,8 +193,18 @@ def apply_betting_policy(
     spread_std_dev_threshold: float | None = None,
     total_std_dev_threshold: float | None = None,
     min_games_played: int = 4,
+    fractional_kelly: float = 0.25,
+    kelly_cap: float = 0.25,
+    base_unit_fraction: float = 0.02,
+    default_american_price: int = -110,
+    single_bet_cap: float = 0.05,
 ) -> pd.DataFrame:
-    """Apply MVP betting policy to predictions and lines."""
+    """Apply MVP betting policy to predictions and lines, with Kelly-based sizing.
+
+    Kelly fraction is computed using a normal-CDF mapping from model edge to win
+    probability, using ensemble std-dev as a proxy for uncertainty. If explicit
+    odds are not present for ATS/OU, defaults of -110 are used.
+    """
     df = predictions_df.copy()
 
     # Convert spread line to expected home margin for proper comparison
@@ -195,6 +241,105 @@ def apply_betting_policy(
         "under",
     )
 
+    # --- Kelly sizing ---
+    # Spread win probability from normal CDF using ensemble std dev as sigma
+    spread_sigma = df.get("predicted_spread_std_dev")
+    if spread_sigma is None or (isinstance(spread_sigma, pd.Series) and (spread_sigma.fillna(0) <= 0).all()):
+        spread_sigma = pd.Series(7.0, index=df.index)
+    z_spread = (df["predicted_spread"] - df["expected_home_margin"]) / spread_sigma.replace(0, np.nan)
+    p_cover_home = _norm_cdf(z_spread)
+    p_cover_away = 1.0 - p_cover_home
+
+    # Total win probability
+    total_sigma = df.get("predicted_total_std_dev")
+    if total_sigma is None or (isinstance(total_sigma, pd.Series) and (total_sigma.fillna(0) <= 0).all()):
+        total_sigma = pd.Series(10.0, index=df.index)
+    z_total = (df["predicted_total"] - df["total_line"]) / total_sigma.replace(0, np.nan)
+    p_over = _norm_cdf(z_total)
+    p_under = 1.0 - p_over
+
+    # Odds (ATS/OU): use explicit price columns when present, else default -110
+    # Try a set of likely column names for ATS/OU pricing; otherwise use default
+    def _pick_price(row, side: str) -> float:
+        candidates: list[str] = []
+        if side == "home":
+            candidates = [
+                "home_spread_odds",
+                "spread_odds_home",
+                "home_spread_price",
+            ]
+        elif side == "away":
+            candidates = [
+                "away_spread_odds",
+                "spread_odds_away",
+                "away_spread_price",
+            ]
+        elif side == "over":
+            candidates = ["over_odds", "total_over_odds", "overPrice"]
+        elif side == "under":
+            candidates = ["under_odds", "total_under_odds", "underPrice"]
+        for c in candidates:
+            if c in row and pd.notna(row[c]):
+                return float(row[c])
+        return float(default_american_price)
+
+    # Compute Kelly fractions for chosen sides
+    k_spread = []
+    k_total = []
+    units_spread = []
+    units_total = []
+    # Ensure probabilities are numpy arrays for positional indexing
+    ph = np.asarray(p_cover_home)
+    pa = np.asarray(p_cover_away)
+    po = np.asarray(p_over)
+    pu = np.asarray(p_under)
+
+    for j, (idx, row) in enumerate(df.iterrows()):
+        # Spread
+        side = row["bet_spread"]
+        f_spread = 0.0
+        if side in ("home", "away"):
+            p = float(ph if np.ndim(ph) == 0 else (ph[j] if side == "home" else pa[j])) if side == "home" else float(pa if np.ndim(pa) == 0 else pa[j])
+            if side == "home" and np.ndim(ph) != 0:
+                p = float(ph[j])
+            elif side == "away" and np.ndim(pa) != 0:
+                p = float(pa[j])
+            american = _pick_price(row, side)
+            b = _american_to_b(american) or _american_to_b(default_american_price)
+            if b is not None:
+                # Clip probabilities to avoid extremes (0 or 1)
+                p = float(np.clip(p, 1e-6, 1 - 1e-6))
+                f_uncapped = max((b * p - (1.0 - p)) / b, 0.0)
+                f_capped = min(f_uncapped, float(kelly_cap))
+                f_spread = float(fractional_kelly) * f_capped
+                # Enforce absolute single-bet cap post-fractional Kelly
+                f_spread = float(min(f_spread, single_bet_cap))
+        k_spread.append(f_spread)
+        units_spread.append(round(f_spread / base_unit_fraction, 2) if base_unit_fraction > 0 else 0.0)
+        # Total
+        side_t = row["bet_total"]
+        f_total = 0.0
+        if side_t in ("over", "under"):
+            if side_t == "over":
+                p = float(po if np.ndim(po) == 0 else po[j])
+            else:
+                p = float(pu if np.ndim(pu) == 0 else pu[j])
+            american_t = _pick_price(row, side_t)
+            b_t = _american_to_b(american_t) or _american_to_b(default_american_price)
+            if b_t is not None:
+                p = float(np.clip(p, 1e-6, 1 - 1e-6))
+                f_uncapped_t = max((b_t * p - (1.0 - p)) / b_t, 0.0)
+                f_capped_t = min(f_uncapped_t, float(kelly_cap))
+                f_total = float(fractional_kelly) * f_capped_t
+                f_total = float(min(f_total, single_bet_cap))
+        k_total.append(f_total)
+        units_total.append(round(f_total / base_unit_fraction, 2) if base_unit_fraction > 0 else 0.0)
+
+    df["kelly_fraction_spread"] = k_spread
+    df["kelly_fraction_total"] = k_total
+    df["bet_units_spread"] = units_spread
+    df["bet_units_total"] = units_total
+
     return df
 
 
@@ -227,6 +372,11 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
         "total_reason_3",
         "predicted_spread_std_dev",
         "predicted_total_std_dev",
+        # New sizing fields
+        "kelly_fraction_spread",
+        "kelly_fraction_total",
+        "bet_units_spread",
+        "bet_units_total",
     ]
     report_df = predictions_df.loc[
         :, [c for c in cols if c in predictions_df.columns]
@@ -242,7 +392,15 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
     )
     if "sportsbook" not in report_df.columns:
         report_df["sportsbook"] = "consensus"
-    report_df["bet_units"] = 1
+
+    # Backward-compat single-unit column: sum the two bet unit types when present
+    if "bet_units_spread" in report_df.columns or "bet_units_total" in report_df.columns:
+        report_df["bet_units"] = (
+            report_df.get("bet_units_spread", 0).fillna(0)
+            + report_df.get("bet_units_total", 0).fillna(0)
+        )
+    else:
+        report_df["bet_units"] = 1
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     report_df.to_csv(output_path, index=False)
@@ -292,14 +450,32 @@ def main() -> None:
     parser.add_argument(
         "--spread-std-dev-threshold",
         type=float,
-        default=None,
-        help="Standard deviation threshold for spread bets",
+        default=3.0,
+        help="Standard deviation threshold for spread bets (default: 3.0)",
     )
     parser.add_argument(
         "--total-std-dev-threshold",
         type=float,
-        default=None,
-        help="Standard deviation threshold for total bets",
+        default=1.5,
+        help="Standard deviation threshold for total bets (default: 1.5)",
+    )
+    parser.add_argument(
+        "--kelly-fraction",
+        type=float,
+        default=0.25,
+        help="Fractional Kelly to apply (default: 0.25)",
+    )
+    parser.add_argument(
+        "--kelly-cap",
+        type=float,
+        default=0.25,
+        help="Cap on raw Kelly fraction before applying fractional Kelly (default: 0.25)",
+    )
+    parser.add_argument(
+        "--base-unit-fraction",
+        type=float,
+        default=0.02,
+        help="Bankroll fraction that defines 1 unit (default: 0.02 = 2%)",
     )
     args = parser.parse_args()
 
@@ -330,11 +506,27 @@ def main() -> None:
 
         # --- Ensemble Prediction ---
         print("Generating ensemble predictions...")
-        spread_predictions = [generate_predictions(m, x) for m in models["spread"]]
+        # Align features to each model's training features when available
+        spread_predictions = []
+        for m in models["spread"]:
+            req = list(getattr(m, "feature_names_in_", [])) or feature_list
+            # Ensure all required columns exist; fill missing with 0.0
+            x_m = df_clean.reindex(columns=req, fill_value=0.0).astype("float64")
+            spread_predictions.append(pd.Series(m.predict(x_m), index=df_clean.index))
+        if not spread_predictions:
+            print("No valid spread predictions due to feature mismatch. Exiting.")
+            sys.exit(0)
         df_clean["predicted_spread"] = np.mean(spread_predictions, axis=0)
         df_clean["predicted_spread_std_dev"] = np.std(spread_predictions, axis=0)
 
-        total_predictions = [generate_predictions(m, x) for m in models["total"]]
+        total_predictions = []
+        for m in models["total"]:
+            req = list(getattr(m, "feature_names_in_", [])) or feature_list
+            x_m = df_clean.reindex(columns=req, fill_value=0.0).astype("float64")
+            total_predictions.append(pd.Series(m.predict(x_m), index=df_clean.index))
+        if not total_predictions:
+            print("No valid total predictions due to feature mismatch. Exiting.")
+            sys.exit(0)
         df_clean["predicted_total"] = np.mean(total_predictions, axis=0)
         df_clean["predicted_total_std_dev"] = np.std(total_predictions, axis=0)
 
@@ -392,6 +584,10 @@ def main() -> None:
             spread_std_dev_threshold=args.spread_std_dev_threshold,
             total_std_dev_threshold=args.total_std_dev_threshold,
             min_games_played=4,
+            fractional_kelly=args.kelly_fraction,
+            kelly_cap=args.kelly_cap,
+            base_unit_fraction=args.base_unit_fraction,
+            single_bet_cap=0.05,
         )
 
         output_path = os.path.join(
