@@ -20,6 +20,7 @@ nav:
     - 'Getting Started': 'guides/getting_started.md'
     - 'AI Session Templates': 'guides/ai_session_templates.md'
     - 'Feature Engineering Plan': 'guides/feature_engineering_plan.md'
+    - 'Advanced Feature Engineering Overview': 'guides/advanced_feature_engineering_overview.md'
   - 'Data':
     - 'Overview': 'data/README.md'
     - 'Data Contracts': 'data/data_contracts.md'

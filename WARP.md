@@ -144,6 +144,18 @@ Essential documents to review before making changes:
 4. `docs/project_org/modeling_baseline.md` - MVP model specifications
 5. `docs/decisions/decision_log.md` - Architectural decisions to date
 
+### Full Context Pack
+
+For a comprehensive understanding of the project, review the following:
+
+* `README.md`
+* `mkdocs.yml`
+* `pyproject.toml`
+* `docs/**`
+* `src/**`
+* `scripts/**`
+* `tests/**`
+
 ### Current Status Check
 
 - Review latest session log in `session_logs/` for recent work

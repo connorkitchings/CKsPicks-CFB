@@ -116,3 +116,7 @@ To get up to speed, review this minimal context pack:
 - **Verify Output**: Always review and validate AI-generated code. You are responsible for its quality.
 - **Update Documentation**: All changes to code, data, or workflow must be reflected in the documentation.
 - **Track Decisions**: Record material changes in `docs/decisions/decision_log.md`.
+
+---
+## Gemini Added Memories
+- When a new session starts in the `/Users/connorkitchings/Desktop/Repositories/cfb_model` directory, please read the following files to get context: `README.md`, `mkdocs.yml`, `pyproject.toml`, `docs/**`, `src/**`, `scripts/**`, and `tests/**`.

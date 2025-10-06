@@ -13,7 +13,8 @@ dependencies = [
     "prefect>=2.19.0",
     "shap>=0.45.0",
     "cfbd>=5.9.1",  # CollegeFootballData API access
-    "pyarrow>=15.0"  # Parquet IO
+    "pyarrow>=15.0",  # Parquet IO
+    "jinja2>=3.1"     # Email template rendering
 ]
 
 [project.optional-dependencies]
