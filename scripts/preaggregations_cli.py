@@ -11,7 +11,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Run pre-aggregations (plays → byplay → drives → team_game → team_season → adjusted)"
     )
-    parser.add_argument("--year", type=int, required=True, help="Season year to process")
+    parser.add_argument(
+        "--year", type=int, required=True, help="Season year to process"
+    )
     parser.add_argument(
         "--data-root",
         type=str,
@@ -27,10 +29,10 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    totals = preaggregations_flow(year=args.year, data_root=args.data_root, verbose=(not args.quiet))
-    logging.info(
-        "Completed pre-aggregations for %s: %s", args.year, totals
+    totals = preaggregations_flow(
+        year=args.year, data_root=args.data_root, verbose=(not args.quiet)
     )
+    logging.info("Completed pre-aggregations for %s: %s", args.year, totals)
 
 
 if __name__ == "__main__":

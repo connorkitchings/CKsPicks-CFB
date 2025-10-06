@@ -24,6 +24,7 @@ import pandas as pd
 import typer
 from typing_extensions import Annotated
 
+from cfb_model.config import get_data_root
 from cfb_model.data.aggregations.persist import (
     persist_byplay_only,
     persist_preaggregations,
@@ -48,15 +49,19 @@ def ingest(
     entity: Annotated[
         str, typer.Argument(help="Entity type to ingest", case_sensitive=False)
     ],
+    data_root: Annotated[
+        str,
+        typer.Option(
+            help="Absolute path to the root directory for data storage.",
+            default_factory=get_data_root,
+        ),
+    ],
     year: Annotated[int, typer.Option(help="Year to ingest data for")] = 2024,
     season_type: Annotated[
         str, typer.Option(help="Season type for games/plays")
     ] = "regular",
     week: Annotated[
         int | None, typer.Option(help="Optional specific week to ingest (games/plays)")
-    ] = None,
-    data_root: Annotated[
-        str, typer.Option(help="Absolute path to the root directory for data storage.")
     ] = None,
     limit_games: Annotated[
         int, typer.Option(help="Limit number of games for testing")
@@ -102,10 +107,14 @@ def aggregate(
     command: Annotated[
         str, typer.Argument(help="Aggregation command to run", case_sensitive=False)
     ],
-    year: Annotated[int, typer.Option(help="Season year")] = 2024,
     data_root: Annotated[
-        str, typer.Option(help="Absolute path to the root directory for data storage.")
-    ] = None,
+        str,
+        typer.Option(
+            help="Absolute path to the root directory for data storage.",
+            default_factory=get_data_root,
+        ),
+    ],
+    year: Annotated[int, typer.Option(help="Season year")] = 2024,
     quiet: Annotated[bool, typer.Option(help="Reduce per-game logging")] = False,
 ):
     """Run data aggregation pipelines."""
@@ -122,8 +131,12 @@ def aggregate(
 def ingest_year(
     year: Annotated[int, typer.Argument(help="The year to ingest data for.")],
     data_root: Annotated[
-        str, typer.Option(help="Absolute path to the root directory for data storage.")
-    ] = None,
+        str,
+        typer.Option(
+            help="Absolute path to the root directory for data storage.",
+            default_factory=get_data_root,
+        ),
+    ],
     limit_games: Annotated[
         int,
         typer.Option(
@@ -175,10 +188,11 @@ def ingest_year(
 
 @app.command()
 def run_season(
-    year: Annotated[int, typer.Option(help="Season year to process")] = 2024,
     data_root: Annotated[
-        str, typer.Option(help="Path to data root directory")
-    ] = "/Volumes/CK SSD/Coding Projects/cfb_model",
+        str,
+        typer.Option(help="Path to data root directory", default_factory=get_data_root),
+    ],
+    year: Annotated[int, typer.Option(help="Season year to process")] = 2024,
     model_dir: Annotated[
         str, typer.Option(help="Path to model directory")
     ] = "./models/ridge_baseline",
@@ -281,26 +295,60 @@ def run_season(
         if os.path.exists(scored_path):
             try:
                 scored_df = pd.read_csv(scored_path)
-                spread_bets = scored_df[scored_df["bet_spread"].isin(["home", "away"])]
-                if len(spread_bets) > 0:
-                    wins = spread_bets["pick_win"].sum()
-                    total = len(spread_bets)
-                    hit_rate = wins / total
+                wins = 0
+                total = 0
+                hit_rate = None
+
+                # Schema variant 1: legacy internal columns
+                if {"bet_spread", "pick_win"}.issubset(scored_df.columns):
+                    placed = scored_df[
+                        scored_df["bet_spread"]
+                        .astype(str)
+                        .str.lower()
+                        .isin(["home", "away"])
+                    ]
+                    decided = placed[placed["pick_win"].isin([0, 1])]
+                    total = len(decided)
+                    if total > 0:
+                        wins = int(decided["pick_win"].sum())
+                        hit_rate = wins / total
+
+                # Schema variant 2: report columns
+                elif {"Spread Bet", "Spread Bet Result"}.issubset(scored_df.columns):
+                    placed = scored_df[
+                        scored_df["Spread Bet"]
+                        .astype(str)
+                        .str.lower()
+                        .isin(["home", "away"])
+                    ]
+                    decided = placed[placed["Spread Bet Result"].isin(["Win", "Loss"])]
+                    total = len(decided)
+                    if total > 0:
+                        wins = int((decided["Spread Bet Result"] == "Win").sum())
+                        hit_rate = wins / total
+
+                else:
+                    print(
+                        f"Week {week}: Unknown scored schema; columns: {list(scored_df.columns)[:8]}..."
+                    )
+
+                if total > 0:
                     print(f"Week {week}: {wins}/{total} = {hit_rate:.3f}")
                     bet_summary.append(
                         {
                             "week": week,
-                            "wins": int(wins),
+                            "wins": wins,
                             "total_bets": total,
                             "hit_rate": hit_rate,
                         }
                     )
-                    all_results.append(scored_df)
                 else:
                     print(f"Week {week}: No bets generated")
                     bet_summary.append(
                         {"week": week, "wins": 0, "total_bets": 0, "hit_rate": None}
                     )
+
+                all_results.append(scored_df)
             except Exception as e:
                 print(f"ERROR analyzing week {week}: {e}")
         else:

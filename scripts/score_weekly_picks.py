@@ -1,171 +1,118 @@
+"""
+Scores the formatted weekly betting report against historical game data.
+
+This script merges the weekly bets CSV with the actual game results and uses
+the centralized scoring utilities to determine the outcome of each bet.
+"""
+
 import argparse
 import os
+import sys
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
+# Add src to path for local imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-def main():
+from cfb_model.analysis.scoring import settle_spread_bets, settle_total_bets
+from cfb_model.config import get_data_root
+from cfb_model.data.storage.local_storage import LocalStorage
+
+
+def main() -> None:
+    """Load bets, merge with game results, score, and save the output."""
     parser = argparse.ArgumentParser(
-        description="A fast, simple script to score weekly bets against historical data."
+        description="Scores the formatted weekly betting report against historical data."
     )
-    parser.add_argument("--year", type=int, required=True)
-    parser.add_argument("--week", type=int, required=True)
-    parser.add_argument("--data-root", type=str, required=True)
-    parser.add_argument("--report-dir", type=str, default="./reports")
+    parser.add_argument("--year", type=int, required=True, help="The season year.")
+    parser.add_argument("--week", type=int, required=True, help="The week to score.")
+    parser.add_argument(
+        "--data-root",
+        type=str,
+        default=None,
+        help="Absolute path to the data root directory. Defaults to env var or ./data.",
+    )
+    parser.add_argument(
+        "--report-dir",
+        type=str,
+        default="./reports",
+        help="Directory where weekly reports are located.",
+    )
     args = parser.parse_args()
 
+    # Resolve data root using the centralized config helper
+    data_root = args.data_root or get_data_root()
+
+    # --- Load Input Files ---
     bets_file = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
     )
-
     if not os.path.exists(bets_file):
         print(f"Error: Bets file not found at {bets_file}")
         return
 
-    # 1. Load the bets
     bets_df = pd.read_csv(bets_file)
-
-    # Diagnostic: Print games played for all potential bets
-    print("--- Diagnostic: Games Played Analysis ---")
-    diag_cols = [
-        "game_id",
-        "home_team",
-        "away_team",
-        "home_games_played",
-        "away_games_played",
-        "edge_spread",
-    ]
-    print(bets_df[diag_cols].to_string())
-
-    bets_to_score = bets_df[bets_df["bet_spread"].isin(["home", "away"])].copy()
-
-    if bets_to_score.empty:
-        print("No spread bets to score in the report.")
-        return
-
-    print(f"Found {len(bets_to_score)} spread bets to score for Week {args.week}...")
-
-    results = []
-    # 2. Load all games data for the year (games are stored in simple year partitions)
-    games_path = os.path.join(
-        args.data_root, f"data/raw/games/year={args.year}/data.csv"
+    # Rename columns to match the internal logic expected by scoring functions
+    bets_df = bets_df.rename(
+        columns={"Spread Bet": "bet_spread", "Total Bet": "bet_total"}
     )
 
     try:
-        games_df = pd.read_csv(games_path)
-        print(f"Loaded {len(games_df)} games for year {args.year}")
+        storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
+        game_records = storage.read_index("games", {"year": args.year})
+        if not game_records:
+            print(f"Error: No game data found for year {args.year} in {data_root}")
+            return
+        games_df = pd.DataFrame.from_records(game_records)
     except FileNotFoundError:
-        print(f"Error: Could not find games data at {games_path}")
+        print(f"Error: Could not find games data for year {args.year} in {data_root}")
         return
 
-    # Filter to just the target week
+    # --- Merge and Score ---
     week_games_df = games_df[games_df["week"] == args.week].copy()
-    print(f"Found {len(week_games_df)} games for week {args.week}")
 
-    # 3. Loop through bets and lookup game results
-    for index, bet in bets_to_score.iterrows():
-        game_id = bet["game_id"]
+    # Merge using the reliable game_id
+    merged_df = pd.merge(
+        bets_df,
+        week_games_df[["id", "home_points", "away_points"]],
+        left_on="game_id",
+        right_on="id",
+        how="left",
+    )
 
-        # Look up the game in the week's games
-        game_matches = week_games_df[week_games_df["id"] == game_id]
+    # Apply centralized scoring logic
+    scored_df = settle_spread_bets(merged_df)
+    scored_df = settle_total_bets(scored_df)
 
-        if game_matches.empty:
-            print(f"Warning: Could not find game_id {game_id} in week {args.week} data")
-            results.append(np.nan)
-            continue
+    # --- Format for Output ---
+    # Rename columns back to the report format
+    final_df = scored_df.rename(
+        columns={
+            "bet_spread": "Spread Bet",
+            "bet_total": "Total Bet",
+            "spread_bet_result": "Spread Bet Result",
+            "total_bet_result": "Total Bet Result",
+        }
+    )
+    # Add legacy result columns for compatibility if needed
+    final_df["Spread Result"] = final_df["home_points"] - final_df["away_points"]
+    final_df["Total Result"] = final_df["home_points"] + final_df["away_points"]
 
-        game = game_matches.iloc[0]
-        home_pts = game.get("home_points")
-        away_pts = game.get("away_points")
-
-        if pd.notna(home_pts) and pd.notna(away_pts):
-            actual_margin = home_pts - away_pts
-            spread_line = bet["home_team_spread_line"]
-            bet_side = bet["bet_spread"]
-
-            # Convert spread line to expected margin
-            # If spread is -7.0 (home favored by 7), expected margin is +7.0
-            expected_margin = -spread_line
-
-            # 4. Determine winner based on actual vs expected margin
-            if bet_side == "home" and actual_margin > expected_margin:
-                win = 1  # Home bet wins if actual margin > expected margin
-            elif bet_side == "away" and actual_margin < expected_margin:
-                win = 1  # Away bet wins if actual margin < expected margin
-            elif actual_margin == expected_margin:
-                win = 0  # Push
-            else:
-                win = 0  # Loss
-            results.append(win)
-        else:
-            results.append(np.nan)  # Game not finished or data missing
-
-    # 5. Add results and save scored output
-    bets_df["pick_win"] = np.nan
-    bets_df.loc[bets_to_score.index, "pick_win"] = results
-
-    # --- Score Totals Bets ---
-    totals_to_score = bets_df[bets_df["bet_total"].isin(["over", "under"])].copy()
-    if not totals_to_score.empty:
-        print(f"Found {len(totals_to_score)} totals bets to score...")
-        total_results = []
-        for index, bet in totals_to_score.iterrows():
-            game_id = bet["game_id"]
-            game_matches = week_games_df[week_games_df["id"] == game_id]
-            if game_matches.empty:
-                total_results.append(np.nan)
-                continue
-
-            game = game_matches.iloc[0]
-            home_pts = game.get("home_points")
-            away_pts = game.get("away_points")
-
-            if pd.notna(home_pts) and pd.notna(away_pts):
-                actual_total = home_pts + away_pts
-                total_line = bet["total_line"]
-                bet_side = bet["bet_total"]
-
-                if bet_side == "over" and actual_total > total_line:
-                    win = 1
-                elif bet_side == "under" and actual_total < total_line:
-                    win = 1
-                elif actual_total == total_line:
-                    win = 0  # Push
-                else:
-                    win = 0  # Loss
-                total_results.append(win)
-            else:
-                total_results.append(np.nan)
-
-        bets_df.loc[totals_to_score.index, "total_pick_win"] = total_results
-
-    # Save the scored bets to a new file
+    # --- Save and Summarize ---
     output_path = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets_scored.csv"
     )
-    bets_df.to_csv(output_path, index=False)
+    final_df.to_csv(output_path, index=False)
     print(f"Scored results saved to {output_path}")
 
-    # 6. Calculate and print summary
-    spread_valid_results = bets_df["pick_win"].dropna()
-    spread_total_bets = len(spread_valid_results)
-    spread_wins = int(spread_valid_results.sum())
-    spread_hit_rate = (
-        (spread_wins / spread_total_bets) if spread_total_bets > 0 else 0.0
-    )
-
     print("\n--- Scoring Summary ---")
-    print(f"Spread picks: {spread_wins}/{spread_total_bets} = {spread_hit_rate:.3f}")
-
-    if "total_pick_win" in bets_df:
-        total_valid_results = bets_df["total_pick_win"].dropna()
-        total_total_bets = len(total_valid_results)
-        total_wins = int(total_valid_results.sum())
-        total_hit_rate = (
-            (total_wins / total_total_bets) if total_total_bets > 0 else 0.0
-        )
-        print(f"Total picks:  {total_wins}/{total_total_bets} = {total_hit_rate:.3f}")
+    spread_summary = final_df["Spread Bet Result"].value_counts()
+    total_summary = final_df["Total Bet Result"].value_counts()
+    print("Spread Bets:")
+    print(spread_summary)
+    print("\nTotal Bets:")
+    print(total_summary)
 
 
 if __name__ == "__main__":

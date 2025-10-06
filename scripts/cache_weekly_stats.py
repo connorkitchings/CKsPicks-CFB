@@ -13,6 +13,7 @@ from tqdm import tqdm
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from cfb_model.config import get_data_root
 from cfb_model.data.aggregations.core import (
     aggregate_team_season,
     apply_iterative_opponent_adjustment,
@@ -29,6 +30,7 @@ def cache_season_stats(year: int, data_root: str | None):
     adjusts them for opponent strength, and saves the result to a dedicated
     partition in `processed/team_week_adj/`.
     """
+    # If data_root is None, LocalStorage will resolve it via get_data_root()
     print(f"--- Starting weekly adjusted stats caching for year {year} ---")
 
     # Initialize storage readers and writers
@@ -107,11 +109,13 @@ def main():
         "--data-root",
         type=str,
         default=None,
-        help="Absolute path to the root directory for data storage.",
+        help="Absolute path to the root directory for data storage. Defaults to env var or ./data.",
     )
     args = parser.parse_args()
 
-    cache_season_stats(args.year, args.data_root)
+    # Resolve data_root using the centralized config helper if not provided
+    data_root = args.data_root or get_data_root()
+    cache_season_stats(args.year, data_root)
 
 
 if __name__ == "__main__":
