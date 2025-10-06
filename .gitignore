@@ -222,3 +222,6 @@ data/
 
 # Generated reports
 reports/
+
+# Trained models
+models/
