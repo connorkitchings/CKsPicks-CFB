@@ -219,3 +219,6 @@ __marimo__/
 
 # Local data directory (actual data is on external drive)
 data/
+
+# Generated reports
+reports/
