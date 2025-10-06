@@ -148,3 +148,39 @@ in later stages.
 - **Pattern**: Calculate the standard deviation of the predictions across all models in the ensemble for a given game. Use this standard deviation as a measure of the ensemble's "confidence" or agreement. Filter out bets where the standard deviation exceeds a specified threshold.
 - **Usage**: Add a `--spread-std-dev-threshold` and `--total-std-dev-threshold` to the prediction script. In the betting policy, only consider bets where `prediction_std_dev <= threshold`.
 - **Discovered In**: `[LOG:2025-10-01]`
+
+---
+
+## `[KB:UpstreamDependencyOrder]`
+
+- **Context**: A script that consumes the output of another script fails with a key error, indicating a missing column.
+- **Pattern**: This occurs when an upstream (producer) script is modified to change its output format, but is not re-run before executing the downstream (consumer) script. The consumer script fails because it receives an input file in the old, unexpected format. Always ensure the full pipeline is run in order after modifying the output of any script.
+- **Usage**: After changing the output format of `generate_weekly_bets_clean.py`, it must be run again before `score_weekly_picks.py` is run.
+- **Discovered In**: `[LOG:2025-10-03]`
+
+---
+
+## `[KB:IsolateWithDiagnosticScript]`
+
+- **Context**: A process is hanging or failing due to an issue with an external service (e.g., SMTP, API) or complex configuration (e.g., credentials in a .env file), making it difficult to debug within the main application.
+- **Pattern**: Create a small, temporary, self-contained script that does nothing but connect to the external service or load the specific configuration in question. This isolates the problem from the main application's logic, allowing for quick and focused debugging.
+- **Usage**: To debug a hanging SMTP login, create a `check_login.py` script that only loads credentials from the `.env` file and attempts to authenticate with the SMTP server, printing clear success or failure messages.
+- **Discovered In**: `[LOG:2025-10-03]`
+
+---
+
+## `[KB:SchemaAwareParsing]`
+
+- **Context**: A script processing generated reports fails due to schema changes between different years of data.
+- **Pattern**: When reading generated files like `_scored.csv`, do not assume a fixed schema. Instead, programmatically check for the presence of expected columns and handle different versions of the schema gracefully. For example, if `home_points` is missing, try to derive it from other columns like `Spread Result` and `Total Result`.
+- **Usage**: Before accessing a column, check if it exists in the DataFrame's columns. If not, try to derive it from other available columns.
+- **Discovered In**: `[LOG:2025-10-04]`
+
+---
+
+## `[KB:ToolingIndentationIssues]`
+
+- **Context**: A script fails with an `IndentationError` after being modified by a file writing tool.
+- **Pattern**: Some file writing tools might introduce incorrect indentation, especially when replacing blocks of code. It is important to carefully review the indentation of the modified code and the surrounding lines. If the error persists, it might be necessary to reconstruct the file from a known good version and re-apply the changes with correct indentation.
+- **Usage**: After using a file writing tool, visually inspect the indentation of the modified file or run a linter to catch any indentation errors.
+- **Discovered In**: `[LOG:2025-10-04]`

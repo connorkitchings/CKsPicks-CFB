@@ -13,6 +13,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Owner**: @dev
 - **Target Date**: Before Week 4 of CFB season
 - **Context**: Currently using local CSV storage with manual weekly pipeline. Need to decide hosting strategy for live operation.
+- **Update (2025-10-03)**: The **Publisher Model** (local execution + email push) has been selected. This approach is secure, reliable, and respects the constraint of data being on a local external drive. This decision is ready to be moved to the decision log.
 - **Options**:
   1. **Local + Streamlit Cloud**: Keep data local, deploy Streamlit app to cloud with manual data sync
   2. **Full Cloud Migration**: Move entire pipeline to cloud (AWS/GCP) with automated scheduling
@@ -37,6 +38,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Owner**: @dev
 - **Target Date**: Before live deployment
 - **Context**: MVP uses single shared password. Need to decide on user management strategy.
+- **Update (2025-10-03)**: This is no longer a required decision. The selected "Publisher Model" pushes reports via email and does not have a user-facing web interface, so application-level authentication is not needed.
 - **Options**:
   1. **Single Password**: Keep simple, shared access
   2. **Multi-User with Individual Logins**: Separate accounts with usage tracking

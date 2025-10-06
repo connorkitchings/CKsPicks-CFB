@@ -4,6 +4,20 @@ Log of planning-level decisions. Use one entry per decision.
 
 ---
 
+## 2025-10-03 — Email Template Spread Display Convention
+
+- Category: Reporting / User Experience
+- Decision: Display model spread predictions using betting line convention (negated home team margin) rather than raw home team margin. E.g., if model predicts home team wins by 10.46 points, display as "Home Team -10.46" instead of "Home Team +10.46".
+- Rationale: Raw home team margin (positive = home wins) was confusing when displayed alongside betting lines where negative indicates favorite. Negating the margin makes the model prediction directly comparable to the Vegas line in the same format, improving user comprehension.
+- Impact:
+  - Updated `templates/email_weekly_picks.html` to negate spread predictions in display (using `-r.predicted_spread` in Jinja2 templates)
+  - Applied to Best Bet box, Spread Bets table, and Full Schedule table
+  - Total predictions remain unchanged (no team perspective, just point total)
+  - Added "Line:" prefix to Best Bet box for additional clarity
+- References: `templates/email_weekly_picks.html`, `scripts/publish_picks.py`, session log `[LOG:2025-10-03/02]`
+
+---
+
 ## 2025-10-02 — Kelly Sizing With 5% Single-Bet Cap and Confidence Filters
 
 - Category: Betting Policy / Risk Management
@@ -14,6 +28,24 @@ Log of planning-level decisions. Use one entry per decision.
     - Added CLI options for Kelly parameters and confidence thresholds; docs updated.
     - New scripts for bankroll simulation and weekly hit-vs-bet summaries support operational analysis.
 - References: `src/cfb_model/scripts/generate_weekly_bets_clean.py`, `scripts/simulate_bankroll_2024.py`, `scripts/run_weekly_reports_2024.py`, `[LOG:2025-10-02]`
+
+## 2025-10-02 — 2025 Season Predictions Using 2024 Models (No 2025 Training)
+
+- Category: Modeling / Operations
+- Decision: For the 2025 season, do not train on 2025 data. Generate 2025 predictions using the previously trained 2024 ensemble models. To accommodate the current script interface (which loads models from `models/<year>/`), create a symlink `models/2025 -> models/2024`.
+- Rationale: Preserve an honest out-of-sample evaluation for 2025 by avoiding in-season training. Using the 2024-trained models maintains continuity while new 2025 data accrues.
+- Impact:
+    - Operational step added to weekly runbook to ensure `models/2025` resolves to 2024 artifacts when predicting 2025.
+    - All 2025 weekly reports use the 2024-trained ensemble without code changes.
+- References: `src/cfb_model/scripts/generate_weekly_bets_clean.py`, `reports/2025/CFB_week{WW}_bets.csv`, session log `[LOG:2025-10-02]`
+
+## 2025-10-02 — SHAP Fallback for Non-callable Pipelines
+
+- Category: Explainability / Tooling
+- Decision: Add a robust fallback in the weekly generator so that if SHAP cannot wrap a model (e.g., sklearn Pipeline not directly callable or feature name mismatch), the script proceeds without explanations rather than failing.
+- Rationale: Some ensemble members (e.g., Huber inside a Pipeline) are not directly supported by SHAP’s default explainer. Failing fast blocked report generation.
+- Impact: Weekly report generation is resilient; explanation columns are left blank when SHAP fails. No change to model predictions.
+- References: `src/cfb_model/scripts/generate_weekly_bets_clean.py` (try/except around SHAP with predict fallback), `[LOG:2025-10-02]`
 
 ## 2025-10-02 — Storage Path & Partition Consistency Fixes
 

@@ -76,16 +76,16 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 ### Sprint 3 Tasks (Production Readiness) - Planned
 | ID | Epic | Deliverable | Effort | Dependencies | Owner | Status |
 |:--:|:-----|:-----------|:------:|:-------------|:-----:|:------:|
-| 16 | Web Interface | Minimal Streamlit view of weekly CSV | 4d | Task 13, OPEN-003 | @dev | 🚫 Blocked |
-| 21 | Production | Production deployment setup | 5d | OPEN-001 | @dev | 🚫 Blocked |
+| 16 | Publishing | Implement Publisher Script (Email) | 2d | Task 13 | @dev | 📋 Ready |
+| 21 | Operations | Setup Local Automation (cron job) | 1d | Task 16 | @dev | 📋 Ready |
 | 22 | Operations | Weekly pipeline automation | 3d | Task 21 | @dev | 🚫 Blocked |
 | 20 | Validation | Model evaluation metrics and validation reports | 4d | Task 19 | @dev | ✅ Complete |
 | 15 | Explainability | SHAP summaries for model insights | 4d | Task 12 | @dev | ✅ Complete |
-| 17 | Performance | ROI/win rate tracking dashboards | 3d | Task 16 | @dev | 📋 Ready |
+| 17 | Performance | Add ROI/Win-Rate to Email Report | 1d | Task 16 | @dev | 📋 Ready |
 
 **Sprint 3 Risks**:  
-- 🚫 **Deployment decision**: Blocked on OPEN-001, affects all production tasks  
-- ⚠️ **Streamlit complexity**: Authentication may add complexity  
+- ✅ **Deployment decision**: RESOLVED - Publisher model adopted.  
+- ⚠️ **Email Formatting**: HTML email formatting can be tricky across different clients.  
 
 ### Recently Completed (2025-09-30)
 

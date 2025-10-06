@@ -72,3 +72,51 @@ The `CFB_Functions.ipynb` notebook, which previously contained exploratory work,
 - Modeling baseline: `docs/project_org/modeling_baseline.md`
 - Feature catalog: `docs/project_org/feature_catalog.md`
 - CFBD schemas: `docs/cfbd/schemas.md`
+
+---
+
+## Advanced Feature Engineering (Planned)
+
+This section details the next set of high-value features to be implemented. These features require more complex calculations and are designed to provide a deeper, more nuanced view of team performance.
+
+### 1. Advanced Rushing Analytics
+
+These metrics go beyond simple yards-per-carry to evaluate the quality of a team's rushing attack and run defense by attributing credit to the offensive line and the runner.
+
+*   **Source Data**: `processed/byplay/` (Enhanced Plays)
+*   **Aggregation Level**: Plays -> Team-Game -> Team-Season-to-Date
+
+**Feature Definitions:**
+
+*   **`off_line_yards` / `def_line_yards`**:
+    *   **Definition**: The portion of a rush credited to the offensive line. It's calculated based on the yards gained on the play, capped at a certain threshold (e.g., 0-3 yards: 100% of yards, 4-8 yards: 50%, 9+ yards: 0%).
+    *   **Logic**: For each rushing play, calculate `line_yards`. Then, aggregate the average `line_yards_per_rush` at the team-game level for both offense and defense.
+
+*   **`off_second_level_yards` / `def_second_level_yards`**:
+    *   **Definition**: Yards gained between 5-10 yards past the line of scrimmage, credited to the runner for breaking past the front seven.
+    *   **Logic**: For each rushing play, calculate yards gained in this zone. Aggregate the average `second_level_yards_per_rush` at the team-game level.
+
+*   **`off_open_field_yards` / `def_open_field_yards`**:
+    *   **Definition**: Yards gained 10+ yards past the line of scrimmage, representing explosive, breakaway runs.
+    *   **Logic**: For each rushing play, calculate yards gained beyond 10 yards. Aggregate the average `open_field_yards_per_rush` at the team-game level.
+
+*   **`off_power_success_rate` / `def_power_success_rate`**:
+    *   **Definition**: The percentage of runs on 3rd or 4th down with 2 or fewer yards to go that result in a first down or touchdown.
+    *   **Logic**: Filter plays based on down and distance. Calculate the success rate at the team-game level.
+
+### 2. Situational Efficiency
+
+These features measure a team's performance in high-leverage situations, which can often be the difference in close games.
+
+*   **Source Data**: `processed/byplay/` (Enhanced Plays)
+*   **Aggregation Level**: Plays -> Team-Game -> Team-Season-to-Date
+
+**Feature Definitions:**
+
+*   **`off_red_zone_efficiency` / `def_red_zone_efficiency`**:
+    *   **Definition**: Average points scored per trip inside the opponent's 20-yard line.
+    *   **Logic**: Identify all drives that enter the red zone. For each of those drives, find the total points scored on that possession (touchdown, field goal, or zero). Calculate the average `points_per_red_zone_trip` at the team-game level.
+
+*   **`off_third_down_conversion_rate` / `def_third_down_conversion_rate`**:
+    *   **Definition**: The percentage of third downs that are successfully converted into a first down or touchdown.
+    *   **Logic**: Filter for all 3rd down plays. Calculate the conversion rate at the team-game level. This can be further broken down by distance (e.g., 3rd & short, 3rd & medium, 3rd & long).

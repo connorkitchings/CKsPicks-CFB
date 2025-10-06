@@ -64,19 +64,67 @@ python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --d
   - Totals: `--total-std-dev-threshold 1.5`
 - Only include games where both teams have ≥ 4 games played.
 
-### Step 5: Outputs
+### Step 5: Publish Picks
+
+- After the report is generated, a publisher script is run to format the picks into a clean HTML table and email them to a pre-configured address.
+
+```bash
+# Example (script to be created)
+python scripts/publish_picks.py --year 2024 --week 5
+```
+
+### Step 7: Publish Weekly Review
+
+- After the previous week's games have been scored, a review email can be sent out summarizing the model's performance.
+
+```bash
+python scripts/publish_review.py --year 2024 --week 5
+```
+
+### Step 6: Outputs
 
 - A CSV report is generated at: `reports/YYYY/CFB_weekWW_bets.csv`
-- Columns include (subset):
-  - Identity/context: `season`, `week`, `game_id`, `game_date`, `home_team`, `away_team`, `neutral_site`, `sportsbook`
-  - Lines and predictions: `home_team_spread_line`, `total_line`, `model_spread`, `model_total`, `predicted_spread_std_dev`, `predicted_total_std_dev`
-  - Edge and decisions: `edge_spread`, `edge_total`, `bet_spread`, `bet_total`
-  - Kelly sizing: `kelly_fraction_spread`, `kelly_fraction_total`, `bet_units_spread`, `bet_units_total`, and aggregate `bet_units`
-- Pricing retention: the pipeline retains provider row fields (e.g., odds columns) when present; when pricing is missing, the weekly generator assumes -110 for ATS/OU sizing.
+- The pre-scored report columns are: `Year`, `Week`, `Date`, `Time`, `Game`, `Spread`, `Over/Under`, `Spread Prediction`, `Total Prediction`, `Spread Bet`, `Total Bet`.
+- The scored report (`_scored.csv`) contains the same columns plus: `Spread Result`, `Total Result`, `Spread Bet Result`, `Total Bet Result`.
 
 ---
 
 ## Prediction & Scoring (MVP commands)
+
+### Current Season (2025) — Prediction Only with Prior-Year Models
+
+To produce 2025 picks without training on 2025 data, reuse the 2024-trained ensemble models. The weekly generator loads models from `models/<year>/`, so create a symlink first:
+
+```bash
+# One-time: point models/2025 to the 2024 artifact directory
+ln -s 2024 models/2025
+```
+
+Then cache weekly stats and generate picks (examples shown for weeks already played):
+
+```bash
+# Cache point-in-time adjusted stats for 2025 (reads processed team_game)
+uv run python scripts/cache_weekly_stats.py --year 2025 --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
+
+# Generate a weekly report (uses models/2025 → 2024)
+uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
+  --year 2025 --week 6 \
+  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
+  --model-dir ./models \
+  --output-dir ./reports \
+  --spread-threshold 6.0 \
+  --total-threshold 6.0
+
+# Score once games are final
+uv run python scripts/score_weekly_picks.py \
+  --year 2025 --week 6 \
+  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
+  --report-dir ./reports
+```
+
+Notes:
+- Do not train on 2025 data.
+- If SHAP explanations error due to model wrapper incompatibility, the generator will continue without explanations (columns left blank).
 
 ### Pre-aggregations (if needed)
 
