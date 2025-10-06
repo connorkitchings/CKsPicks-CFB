@@ -20,7 +20,7 @@ def test_apply_betting_policy_kelly_basic():
                 "total_line": 50.0,
                 # Predictions
                 "predicted_spread": 10.0,  # strong lean to home
-                "predicted_total": 60.0,   # strong lean to over
+                "predicted_total": 60.0,  # strong lean to over
                 # Ensemble uncertainty
                 "predicted_spread_std_dev": 2.0,
                 "predicted_total_std_dev": 1.0,

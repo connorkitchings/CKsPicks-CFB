@@ -17,7 +17,9 @@ from cfb_model.scripts.generate_weekly_bets_clean import (
 )
 
 
-def _settle_spread(home_points: float, away_points: float, home_line: float, side: str) -> int:
+def _settle_spread(
+    home_points: float, away_points: float, home_line: float, side: str
+) -> int:
     margin = float(home_points) - float(away_points)
     val = margin + float(home_line)
     if side == "home":
@@ -27,7 +29,9 @@ def _settle_spread(home_points: float, away_points: float, home_line: float, sid
     return 0
 
 
-def _settle_total(home_points: float, away_points: float, total_line: float, side: str) -> int:
+def _settle_total(
+    home_points: float, away_points: float, total_line: float, side: str
+) -> int:
     total = float(home_points) + float(away_points)
     val = total - float(total_line)
     if side == "over":
@@ -107,7 +111,10 @@ def process_week(
                 and not pd.isna(row.get("home_team_spread_line"))
             ):
                 spread_hits += _settle_spread(
-                    row["home_points"], row["away_points"], row["home_team_spread_line"], row["bet_spread"]
+                    row["home_points"],
+                    row["away_points"],
+                    row["home_team_spread_line"],
+                    row["bet_spread"],
                 )
         if row.get("bet_total") in ("over", "under"):
             total_bets += 1
@@ -117,18 +124,32 @@ def process_week(
                 and not pd.isna(row.get("total_line"))
             ):
                 total_hits += _settle_total(
-                    row["home_points"], row["away_points"], row["total_line"], row["bet_total"]
+                    row["home_points"],
+                    row["away_points"],
+                    row["total_line"],
+                    row["bet_total"],
                 )
 
-    return {"spread_bets": spread_bets, "spread_hits": spread_hits, "total_bets": total_bets, "total_hits": total_hits}
+    return {
+        "spread_bets": spread_bets,
+        "spread_hits": spread_hits,
+        "total_bets": total_bets,
+        "total_hits": total_hits,
+    }
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Generate weekly reports and summary for 2024 with ensemble+Kelly")
+    ap = argparse.ArgumentParser(
+        description="Generate weekly reports and summary for 2024 with ensemble+Kelly"
+    )
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--start-week", type=int, default=2)
     ap.add_argument("--end-week", type=int, default=17)
-    ap.add_argument("--data-root", type=str, default="/Volumes/CK SSD/Coding Projects/cfb_model/data")
+    ap.add_argument(
+        "--data-root",
+        type=str,
+        default="/Volumes/CK SSD/Coding Projects/cfb_model/data",
+    )
     ap.add_argument("--model-dir", type=str, default="./models/ridge_baseline")
     ap.add_argument("--output-dir", type=str, default="./reports")
     ap.add_argument("--spread-threshold", type=float, default=6.0)
@@ -156,10 +177,21 @@ def main() -> None:
             )
             rows.append({"week": w, **stats})
         except Exception as e:
-            rows.append({"week": w, "spread_bets": 0, "spread_hits": 0, "total_bets": 0, "total_hits": 0, "error": str(e)})
+            rows.append(
+                {
+                    "week": w,
+                    "spread_bets": 0,
+                    "spread_hits": 0,
+                    "total_bets": 0,
+                    "total_hits": 0,
+                    "error": str(e),
+                }
+            )
 
     summary = pd.DataFrame(rows)
-    out_path = os.path.join(args.output_dir, str(args.year), f"weekly_hit_summary_{args.year}.csv")
+    out_path = os.path.join(
+        args.output_dir, str(args.year), f"weekly_hit_summary_{args.year}.csv"
+    )
     summary.to_csv(out_path, index=False)
     print(summary)
     print(f"Saved weekly summary to {out_path}")

@@ -25,7 +25,9 @@ def _american_to_b(odds: float | int) -> float:
     return 0.0
 
 
-def _settle_spread(home_points: float, away_points: float, home_line: float, side: str) -> float:
+def _settle_spread(
+    home_points: float, away_points: float, home_line: float, side: str
+) -> float:
     # Returns +1 for win, 0 for push, -1 for loss (unit outcome)
     margin = float(home_points) - float(away_points)
     val = margin + float(home_line)
@@ -36,7 +38,9 @@ def _settle_spread(home_points: float, away_points: float, home_line: float, sid
     return 0.0
 
 
-def _settle_total(home_points: float, away_points: float, total_line: float, side: str) -> float:
+def _settle_total(
+    home_points: float, away_points: float, total_line: float, side: str
+) -> float:
     # Returns +1 for win, 0 for push, -1 for loss (unit outcome)
     total_points = float(home_points) + float(away_points)
     val = total_points - float(total_line)
@@ -113,14 +117,20 @@ def simulate_week(
     pnl = 0.0
     for _, row in df.iterrows():
         # Spread
-        if row.get("bet_spread") in ("home", "away") and not pd.isna(row.get("home_points")) and not pd.isna(
-            row.get("away_points")
-        ) and not pd.isna(row.get("home_team_spread_line")):
+        if (
+            row.get("bet_spread") in ("home", "away")
+            and not pd.isna(row.get("home_points"))
+            and not pd.isna(row.get("away_points"))
+            and not pd.isna(row.get("home_team_spread_line"))
+        ):
             f = float(row.get("kelly_fraction_spread", 0.0))
             stake = min(bankroll * f, bankroll * single_bet_cap)
             b = _american_to_b(default_price)
             outcome = _settle_spread(
-                row["home_points"], row["away_points"], row["home_team_spread_line"], row["bet_spread"]
+                row["home_points"],
+                row["away_points"],
+                row["home_team_spread_line"],
+                row["bet_spread"],
             )
             if outcome > 0:
                 pnl += stake * b
@@ -129,14 +139,20 @@ def simulate_week(
             total_stake += stake
             n_bets += 1
         # Total
-        if row.get("bet_total") in ("over", "under") and not pd.isna(row.get("home_points")) and not pd.isna(
-            row.get("away_points")
-        ) and not pd.isna(row.get("total_line")):
+        if (
+            row.get("bet_total") in ("over", "under")
+            and not pd.isna(row.get("home_points"))
+            and not pd.isna(row.get("away_points"))
+            and not pd.isna(row.get("total_line"))
+        ):
             f = float(row.get("kelly_fraction_total", 0.0))
             stake = min(bankroll * f, bankroll * single_bet_cap)
             b = _american_to_b(default_price)
             outcome = _settle_total(
-                row["home_points"], row["away_points"], row["total_line"], row["bet_total"]
+                row["home_points"],
+                row["away_points"],
+                row["total_line"],
+                row["bet_total"],
             )
             if outcome > 0:
                 pnl += stake * b
@@ -151,11 +167,15 @@ def simulate_week(
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Simulate 2024 season bankroll week-by-week using Kelly sizing.")
+    ap = argparse.ArgumentParser(
+        description="Simulate 2024 season bankroll week-by-week using Kelly sizing."
+    )
     ap.add_argument("--year", type=int, default=2024)
     ap.add_argument("--start-week", type=int, default=2)
     ap.add_argument("--end-week", type=int, default=17)
-    ap.add_argument("--data-root", type=str, default="/Volumes/CK SSD/Coding Projects/cfb_model")
+    ap.add_argument(
+        "--data-root", type=str, default="/Volumes/CK SSD/Coding Projects/cfb_model"
+    )
     ap.add_argument("--model-dir", type=str, default="./models")
     ap.add_argument("--start-bankroll", type=float, default=100.0)
     ap.add_argument("--report-dir", type=str, default="./reports")
@@ -206,12 +226,21 @@ def main() -> None:
             )
         except Exception as e:
             summary_rows.append(
-                {"week": week, "bets": 0, "stake": 0.0, "pnl": 0.0, "bankroll": round(bankroll, 2), "error": str(e)}
+                {
+                    "week": week,
+                    "bets": 0,
+                    "stake": 0.0,
+                    "pnl": 0.0,
+                    "bankroll": round(bankroll, 2),
+                    "error": str(e),
+                }
             )
             continue
 
     summary = pd.DataFrame(summary_rows)
-    out_path = os.path.join(args.report_dir, str(args.year), f"bankroll_sim_{args.year}.csv")
+    out_path = os.path.join(
+        args.report_dir, str(args.year), f"bankroll_sim_{args.year}.csv"
+    )
     summary.to_csv(out_path, index=False)
     print(summary)
     print(f"Saved bankroll simulation to {out_path}")
