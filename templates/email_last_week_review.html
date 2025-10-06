@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CK's CFB Picks — {{ year }} Week {{ week }} Review</title>
+  <style>
+    /* Improved readability: subtle borders, zebra rows, clear headers */
+    .hdr { background: #f6f8fa; }
+    .th { font-size: 12px; color: #222; padding: 8px; border-bottom: 1px solid #ddd; }
+    .td { font-size: 13px; color: #111; padding: 8px; border-bottom: 1px solid #eee; }
+    .zebra { background: #fafafa; }
+    .win { color: #28a745; font-weight: bold; }
+    .loss { color: #dc3545; font-weight: bold; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111 !important; color: #eee !important; }
+      .card, .table { background: #1a1a1a !important; }
+      .muted { color: #bbb !important; }
+      .border { border-color: #333 !important; }
+      .hdr { background: #16181a !important; }
+      .th { color: #e6e6e6 !important; border-bottom-color: #333 !important; }
+      .td { color: #f0f0f0 !important; border-bottom-color: #2a2a2a !important; }
+      .zebra { background: #151515 !important; }
+      .win { color: #28a745 !important; }
+      .loss { color: #dc3545 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background:#ffffff; color:#111111;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="640" class="card" style="border:1px solid #e6e6e6; border-radius:8px; background:#ffffff;">
+          <tr>
+            <td style="padding:20px 24px; border-bottom:1px solid #eaeaea;">
+<div style="font-size:20px; font-weight:700; text-align:center;">CK's CFB Picks — {{ year }} Week {{ week }} Review</div>
+              <div class="muted" style="font-size:12px; color:#666; margin-top:6px; text-align:center;">
+                Generated {{ generated_at }}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Performance Summary -->
+          <tr>
+            <td style="padding:16px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+<td style="padding:14px; background:#ffffff; border:1px solid #dcdcdc; border-radius:6px; color:#111;">
+                    <div style="font-weight:700; font-size:14px; margin-bottom:6px; text-align:center;">Last Week's Performance</div>
+<div style="font-size:13px; color:#111; text-align:center;">
+                      Spread Bets: {{ summary.spread_wins }} - {{ summary.spread_losses }} ({{ "%.1f" | format(summary.spread_hit_rate * 100) }}%)
+                    </div>
+<div style="font-size:13px; margin-top:6px; color:#111; text-align:center;">
+                      Total Bets: {{ summary.total_wins }} - {{ summary.total_losses }} ({{ "%.1f" | format(summary.total_hit_rate * 100) }}%)
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          {% if bets|length > 0 %}
+          <!-- Scored Bets -->
+          <tr>
+            <td style="padding:8px 24px 4px;">
+              <div style="font-weight:700; font-size:16px; margin-bottom:8px; text-align:center;">Scored Bets</div>
+              <table class="table" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; width:100%; background:#fff;">
+                <thead class="hdr">
+                  <tr>
+                    <th align="left" class="th">Date</th>
+                    <th align="left" class="th">Time</th>
+                    <th align="left" class="th">Game</th>
+                    <th align="left" class="th">Bet</th>
+                    <th align="left" class="th">Model Prediction</th>
+                    <th align="left" class="th">Result</th>
+                    <th align="left" class="th">Final Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in bets %}
+                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %} {% if r.result == 'Win' %}win{% elif r.result == 'Loss' %}loss{% endif %}">
+                    <td class="td">{{ r.date }}</td>
+                    <td class="td">{{ r.time }}</td>
+                    <td class="td">{{ r.game }}</td>
+                    <td class="td">{{ r.bet }}</td>
+                    <td class="td">{{ "%.2f" | format(r.prediction) }}</td>
+                    <td class="td">{{ r.result }}</td>
+                    <td class="td" style="white-space: nowrap;">{{ r.final_score }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 24px; border-top:1px solid #eaeaea;">
+              <div class="muted" style="font-size:12px; color:#666;">
+                Lines reflect the 'consensus' provider where available. Bets are omitted when teams have fewer than 2 FBS games or when confidence thresholds are not met.
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="muted" style="font-size:11px; color:#888; margin-top:16px;">
+          © {{ year }} cfb_model • Documentation: <a style="color:#666;" href="{{ docs_url }}">docs</a>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

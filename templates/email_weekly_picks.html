@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CK's CFB Picks — {{ year }} Week {{ week }}</title>
+  <style>
+    /* Improved readability: subtle borders, zebra rows, clear headers */
+    .hdr { background: #f6f8fa; }
+    .th { font-size: 12px; color: #222; padding: 8px; border-bottom: 1px solid #ddd; }
+    .td { font-size: 13px; color: #111; padding: 8px; border-bottom: 1px solid #eee; }
+    .zebra { background: #fafafa; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #111 !important; color: #eee !important; }
+      .card, .table { background: #1a1a1a !important; }
+      .muted { color: #bbb !important; }
+      .border { border-color: #333 !important; }
+      .hdr { background: #16181a !important; }
+      .th { color: #e6e6e6 !important; border-bottom-color: #333 !important; }
+      .td { color: #f0f0f0 !important; border-bottom-color: #2a2a2a !important; }
+      .zebra { background: #151515 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background:#ffffff; color:#111111;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="640" class="card" style="border:1px solid #e6e6e6; border-radius:8px; background:#ffffff;">
+          <tr>
+            <td style="padding:20px 24px; border-bottom:1px solid #eaeaea;">
+<div style="font-size:20px; font-weight:700; text-align:center;">CK's CFB Picks — {{ year }} Week {{ week }}</div>
+              <div class="muted" style="font-size:12px; color:#666; margin-top:6px;">
+                Generated {{ generated_at }} • Spread ≥ {{ spread_threshold }} • Total ≥ {{ total_threshold }}
+              </div>
+              <!-- Model Context moved to top -->
+              <div class="muted" style="font-size:12px; margin-top:6px;">
+                Last Season ({{ model_context.prev_year }}):
+                Spread {{ (model_context.prev_spread * 100) | round(1) if model_context.prev_spread is not none else 'n/a' }}%{% if model_context.prev_spread_count %} ({{ model_context.prev_spread_count }}){% endif %} / ROI: {{ (model_context.prev_spread_roi * 100) | round(1) if model_context.prev_spread_roi is not none else 'n/a' }}%,
+                Total {{ (model_context.prev_total * 100) | round(1) if model_context.prev_total is not none else 'n/a' }}%{% if model_context.prev_total_count %} ({{ model_context.prev_total_count }}){% endif %} / ROI: {{ (model_context.prev_total_roi * 100) | round(1) if model_context.prev_total_roi is not none else 'n/a' }}%
+                <br/>
+                Current Season ({{ model_context.curr_year }}) through Week {{ model_context.curr_through_week }}:
+                Spread {{ (model_context.curr_spread * 100) | round(1) if model_context.curr_spread is not none else 'n/a' }}%{% if model_context.curr_spread_count is not none %} ({{ model_context.curr_spread_count }}){% endif %} / ROI: {{ (model_context.curr_spread_roi * 100) | round(1) if model_context.curr_spread_roi is not none else 'n/a' }}%,
+                Total {{ (model_context.curr_total * 100) | round(1) if model_context.curr_total is not none else 'n/a' }}%{% if model_context.curr_total_count is not none %} ({{ model_context.curr_total_count }}){% endif %} / ROI: {{ (model_context.curr_total_roi * 100) | round(1) if model_context.curr_total_roi is not none else 'n/a' }}%
+                <br/>
+                This week last year (Week {{ week }}, {{ model_context.prev_year }}):
+                Spread {{ (model_context.last_year_week_spread * 100) | round(1) if model_context.last_year_week_spread is not none else 'n/a' }}%{% if model_context.last_year_week_spread_count is not none %} ({{ model_context.last_year_week_spread_count }}){% endif %} / ROI: {{ (model_context.last_year_week_spread_roi * 100) | round(1) if model_context.last_year_week_spread_roi is not none else 'n/a' }}%,
+                Total {{ (model_context.last_year_week_total * 100) | round(1) if model_context.last_year_week_total is not none else 'n/a' }}%{% if model_context.last_year_week_total_count is not none %} ({{ model_context.last_year_week_total_count }}){% endif %} / ROI: {{ (model_context.last_year_week_total_roi * 100) | round(1) if model_context.last_year_week_total_roi is not none else 'n/a' }}%
+              </div>
+              <div style="margin:10px 0; border-top:1px solid #eaeaea;"></div>
+              <!-- Quick Reference Guide -->
+              <div style="margin-top:10px; font-size:13px;">
+                <div style="font-weight:600; margin-bottom:4px; text-align:center;">Quick Reference</div>
+                <div style="line-height:1.6;">
+                  <strong>Edge:</strong> Difference between our model's prediction and the Vegas line. Higher numbers = stronger plays.<br/>
+                  <strong>Line:</strong> The point spread. Negative means that team is favored.<br/>
+                  <strong>O/U:</strong> Over/Under total points line for the game.
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          {% if best_bet %}
+          <!-- Best Bet -->
+          <tr>
+            <td style="padding:16px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+<td style="padding:14px; background:#ffffff; border:1px solid #dcdcdc; border-radius:6px; color:#111;">
+                    <div style="font-weight:700; font-size:14px; margin-bottom:6px; text-align:center;">Best Bet</div>
+<div style="font-size:13px; color:#111; text-align:center;">
+                      {{ best_bet.game }}
+                    </div>
+<div style="font-size:12px; margin-top:2px; color:#666; text-align:center;">
+                      {{ best_bet.date_display }} • {{ best_bet.time_display }} • {{ best_bet.category }}
+                    </div>
+                   <div style="font-size:13px; margin-top:6px; color:#111; text-align:center;">
+Line: {{ best_bet.line_display }} • Model: {% if best_bet.category == 'Spread' %}{{ best_bet.home_team }} {{ "%+.2f" | format(-best_bet.prediction) if best_bet.prediction is not none else '' }}{% else %}{{ "%.2f" | format(best_bet.prediction) if best_bet.prediction is not none else '' }}{% endif %} • Edge: {{ best_bet.edge | round(2) if best_bet.edge is not none else '' }} • Bet: {{ best_bet.bet }}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          {% if spreads|length > 0 %}
+          <!-- Spread Bets -->
+          <tr>
+            <td style="padding:8px 24px 4px;">
+              <div style="font-weight:700; font-size:16px; margin-bottom:8px; text-align:center;">Spread Bets - {{ spreads|length }} Total Bets</div>
+              <table class="table" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; width:100%; background:#fff;">
+                <thead class="hdr">
+                  <tr>
+                    <th align="left" class="th">Date</th>
+                    <th align="left" class="th">Time</th>
+                    <th align="left" class="th">Game</th>
+                    <th align="left" class="th">Line</th>
+                    <th align="left" class="th">Model</th>
+                    <th align="left" class="th">Edge</th>
+                    <th align="left" class="th">Bet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in spreads %}
+                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %}">
+                    <td class="td">{{ r.date_display }}</td>
+                    <td class="td">{{ r.time_display }}</td>
+                    <td class="td">{{ r.game }}</td>
+                    <td class="td">{{ r.spread_line_display }}</td>
+                    <td class="td">{{ r.home_team }} {{ "%+.2f" | format(-r.predicted_spread) if r.predicted_spread is not none else '' }}</td>
+<td class="td">{{ r.edge_spread | round(2) if r.edge_spread is not none else '' }}</td>
+                    <td class="td">{{ r.bet_spread_team }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          {% if totals|length > 0 %}
+          <!-- Total Bets -->
+          <tr>
+            <td style="padding:16px 24px 4px;">
+              <div style="font-weight:700; font-size:16px; margin-bottom:8px; text-align:center;">Total Bets - {{ totals|length }} Total Bets</div>
+              <table class="table" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; width:100%; background:#fff;">
+                <thead class="hdr">
+                  <tr>
+                    <th align="left" class="th">Date</th>
+                    <th align="left" class="th">Time</th>
+                    <th align="left" class="th">Game</th>
+                    <th align="left" class="th">O/U</th>
+                    <th align="left" class="th">Model</th>
+                    <th align="left" class="th">Edge</th>
+                    <th align="left" class="th">Bet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in totals %}
+                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %}">
+                    <td class="td">{{ r.date_display }}</td>
+                    <td class="td">{{ r.time_display }}</td>
+                    <td class="td">{{ r.game }}</td>
+<td class="td">{{ r.total_line | round(1) if r.total_line is not none else '' }}</td>
+                    <td class="td">{{ "%.2f" | format(r.predicted_total) if r.predicted_total is not none else '' }}</td>
+<td class="td">{{ r.edge_total | round(2) if r.edge_total is not none else '' }}</td>
+                    <td class="td">{{ r.bet_total }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- Full Schedule -->
+          <tr>
+            <td style="padding:16px 24px;">
+              <div style="font-weight:700; font-size:16px; margin-bottom:8px; text-align:center;">Full Schedule - {{ all_games|length }} games</div>
+              <table class="table" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; width:100%; background:#fff;">
+                <thead class="hdr">
+                  <tr>
+                    <th align="left" class="th">Date</th>
+                    <th align="left" class="th">Time</th>
+                    <th align="left" class="th">Game</th>
+                    <th align="left" class="th">Line</th>
+                    <th align="left" class="th">O/U</th>
+                    <th align="left" class="th">Model Spread</th>
+                    <th align="left" class="th">Model Total</th>
+                    <th align="left" class="th">Edge Spread</th>
+                    <th align="left" class="th">Edge Total</th>
+                    <th align="left" class="th">Spread Bet</th>
+                    <th align="left" class="th">Total Bet</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in all_games %}
+                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %}">
+                    <td class="td">{{ r.date_display }}</td>
+                    <td class="td">{{ r.time_display }}</td>
+                    <td class="td">{{ r.game }}</td>
+                    <td class="td">{{ r.spread_line_display }}</td>
+                    <td class="td">{{ r.total_line | round(1) if r.total_line is not none else '' }}</td>
+                    <td class="td">{{ r.home_team }} {{ "%+.2f" | format(-r.predicted_spread) if r.predicted_spread is not none else '' }}</td>
+                    <td class="td">{{ "%.2f" | format(r.predicted_total) if r.predicted_total is not none else '' }}</td>
+<td class="td">{{ r.edge_spread | round(2) if r.edge_spread is not none else '' }}</td>
+<td class="td">{{ r.edge_total | round(2) if r.edge_total is not none else '' }}</td>
+                    <td class="td">{{ r.spread_bet_display }}</td>
+                    <td class="td">{{ r.total_bet_display }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 24px; border-top:1px solid #eaeaea;">
+              <div class="muted" style="font-size:12px; color:#666;">
+                Lines reflect the 'consensus' provider where available. Bets are omitted when teams have fewer than 2 FBS games or when confidence thresholds are not met.
+              </div>
+            </td>
+          </tr>
+        </table>
+
+        <div class="muted" style="font-size:11px; color:#888; margin-top:16px;">
+          © {{ year }} cfb_model • Documentation: <a style="color:#666;" href="{{ docs_url }}">docs</a>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
