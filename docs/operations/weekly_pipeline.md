@@ -85,7 +85,9 @@ python scripts/publish_review.py --year 2024 --week 5
 
 - A CSV report is generated at: `reports/YYYY/CFB_weekWW_bets.csv`
 - The pre-scored report columns are: `Year`, `Week`, `Date`, `Time`, `Game`, `Spread`, `Over/Under`, `Spread Prediction`, `Total Prediction`, `Spread Bet`, `Total Bet`.
-- The scored report (`_scored.csv`) contains the same columns plus: `Spread Result`, `Total Result`, `Spread Bet Result`, `Total Bet Result`.
+- The scored report (`_scored.csv`) now feeds the weekly review email, which renders rows with the following columns:
+  - Date, Time (explicitly in ET), Game, Line (spread text or `O/U <total>`), Model Prediction (per bet type), Bet, Final Score, Final Result (spread margin or total points), Bet Result
+- Note: Report Date/Time are authored in Eastern Time (ET). The email localizes by treating Date/Time as ET (no UTC conversion).
 
 ---
 
@@ -159,11 +161,20 @@ uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
 Score the week against final outcomes:
 
 ```bash
+# Option A (standard):
 uv run python scripts/score_weekly_picks.py \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --report-dir ./reports
+
+# Option B (fresh scoring utility used during 2025 Wk6 incident):
+# Ensures game_id mapping, parses lines, validates 7/3 bet counts, and reads week-partitioned raw data.
+uv run python score_fresh.py
 ```
+
+Important:
+- When reading game results, ensure the storage root points to the project root (e.g., `/Volumes/CK SSD/Coding Projects/cfb_model`) with `data_type=raw`. Weekly game results are written under `raw/games/year=<YYYY>/week=<WW>/data.csv`.
+- If you accidentally point to `/data/raw/games/year=<YYYY>/data.csv`, you may read stale or aggregated rows. Use the week-partitioned file for authoritative scored results.
 
 Run remainder of season using the unified CLI:
 

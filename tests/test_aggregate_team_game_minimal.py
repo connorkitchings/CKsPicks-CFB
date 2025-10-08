@@ -88,6 +88,7 @@ def test_aggregate_team_game_minimal():
                 "is_explosive_drive": 0,
                 "points_on_opps": 7,
                 "had_scoring_opportunity": 1,
+                "start_yards_to_goal": 75,
             }
         ]
     )

@@ -4,6 +4,51 @@ Log of planning-level decisions. Use one entry per decision.
 
 ---
 
+## 2025-10-07 — Betting Line Ingestion Fix & Email Safety Check
+
+- Category: Data / Operations / Reporting
+- Decision: Removed faulty skipping logic from `BettingLinesIngester` to ensure fresh betting lines are always fetched. Implemented a safety check in `publish_picks.py` to prevent sending emails if recommended bets are missing line data.
+- Rationale: The previous logic in `BettingLinesIngester` incorrectly skipped fetching new betting lines once a season was partially ingested, leading to stale data. The email safety check prevents publishing incomplete or misleading recommendations.
+- Impact: `src/cfb_model/data/ingestion/betting_lines.py` modified. `scripts/publish_picks.py` modified.
+- References: `[LOG:2025-10-07/03]`
+
+## 2025-10-07 — Email Content Refinements (Hit Rate Only, Moneyline Consideration, Logos)
+
+- Category: Reporting / User Experience
+- Decision: Removed ROI calculation from weekly picks email, displaying only hit rates and counts. Added a `consider_moneyline` column to the spreads table for specific "wrong team favored" scenarios. Integrated team logos into the "Game" column of email tables.
+- Rationale: ROI was confusing and prone to misinterpretation. Focusing on hit rate simplifies the message. The moneyline consideration highlights specific high-value opportunities. Logos improve visual appeal and readability.
+- Impact: `scripts/publish_picks.py` modified. `templates/email_weekly_picks.html` modified. `generate_weekly_bets_clean.py` modified to include moneyline columns.
+- References: `[LOG:2025-10-07/03]`
+
+---
+
+## 2025-10-07 — Weekly Scoring & Reporting Corrections (2025 Wk6)
+
+- Category: Operations / Reporting / Logic
+- Decisions:
+  1) Correct scoring data source to use week-partitioned raw games at `raw/games/year=<YYYY>/week=<WW>/data.csv` (project-root `data_type=raw`) instead of aggregated `data/raw/games/year=<YYYY>/data.csv`.
+  2) Fix spread scoring logic so away bets win when the home favorite fails to cover (and vice versa). Example: USF -28.5 vs Charlotte, final margin 28 → away bet wins.
+  3) Update weekly review email to render times in ET by localizing report Date/Time as ET (no UTC conversion).
+  4) Update email columns to: Date, Time, Game, Line, Model Prediction, Bet, Final Score, Final Result, Bet Result.
+- Rationale: During Wk6 scoring, duplicates and incomplete results stemmed from merging against stale/aggregated games. Adjusting the data root and week-partition ensured accuracy. Spread grading was corrected to match sportsbook conventions. Email display improved clarity and time correctness.
+- Impact:
+  - Scripts: `score_fresh.py` (new), `validate_scoring.py` (new), `scripts/score_weekly_picks.py` (merge behavior clarified), `scripts/publish_review.py` (ET localization, columns), `templates/email_last_week_review.html` (columns).
+  - Docs: `docs/operations/weekly_pipeline.md` updated for outputs, ET handling, and data source note.
+- References: session log `[LOG:2025-10-07/01]`, `raw/games/year=2025/week=6/data.csv`, `reports/2025/CFB_week6_bets_scored.csv`.
+
+## 2025-10-07 — Revert Systematic Feature Selection Experiment
+
+- Category: Modeling / Feature Engineering
+- Decision: The systematic feature selection experiment, which reduced the feature set to 16 for spreads and 25 for totals, was reverted. The project will continue using the full feature set for modeling.
+- Rationale: A full 2024 season backtest using the selected features resulted in a combined hit rate of 52.3%. This was a decline from the 54.6% hit rate achieved with the full feature set. To maintain the highest performing model, the decision was made to revert the code to its pre-experiment state.
+- Impact:
+  - `src/cfb_model/models/train_model.py` was reverted to use `build_feature_list` for all models.
+  - The experimental script `scripts/run_feature_selection.py` and its output in `reports/feature_selection/` will be kept for reference, but not used in the production pipeline.
+  - This outcome serves as a key learning: feature reduction does not always yield better performance, and the full feature set, despite potential noise, contains more predictive power for the current ensemble models.
+- References: `scripts/run_feature_selection.py`, `src/cfb_model/models/train_model.py`, `[LOG:2025-10-07/01]`
+
+---
+
 ## 2025-10-03 — Email Template Spread Display Convention
 
 - Category: Reporting / User Experience

@@ -45,11 +45,21 @@ def main() -> None:
     data_root = args.data_root or get_data_root()
 
     # --- Load Input Files ---
+    # Try the file with game IDs first, then fallback to regular file
+    bets_file_with_ids = os.path.join(
+        args.report_dir, str(args.year), f"CFB_week{args.week}_bets_with_ids.csv"
+    )
     bets_file = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
     )
-    if not os.path.exists(bets_file):
-        print(f"Error: Bets file not found at {bets_file}")
+
+    if os.path.exists(bets_file_with_ids):
+        bets_file = bets_file_with_ids
+        print(f"Using file with game IDs: {bets_file}")
+    elif os.path.exists(bets_file):
+        print(f"Using regular bets file: {bets_file}")
+    else:
+        print(f"Error: No bets file found at {bets_file} or {bets_file_with_ids}")
         return
 
     bets_df = pd.read_csv(bets_file)
@@ -71,6 +81,8 @@ def main() -> None:
 
     # --- Merge and Score ---
     week_games_df = games_df[games_df["week"] == args.week].copy()
+    # Remove duplicate games to prevent merge duplicates (preserves legitimate spread+total combinations)
+    week_games_df = week_games_df.drop_duplicates(subset=["id"])
 
     # Merge using the reliable game_id
     merged_df = pd.merge(

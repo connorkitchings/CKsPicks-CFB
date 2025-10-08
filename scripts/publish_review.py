@@ -207,11 +207,13 @@ def main() -> None:
     all_games_df["away_points"] = (
         all_games_df["Total Result"] - all_games_df["Spread Result"]
     ) / 2
-    all_games_df["game_datetime_utc"] = pd.to_datetime(
-        all_games_df["Date"] + " " + all_games_df["Time"], utc=True
+    # Interpret the report's Date/Time as Eastern Time (not UTC)
+    # The report times are already in ET; localize instead of converting from UTC
+    dt_naive = pd.to_datetime(
+        all_games_df["Date"] + " " + all_games_df["Time"], errors="coerce"
     )
-    all_games_df["game_datetime_et"] = all_games_df["game_datetime_utc"].dt.tz_convert(
-        "US/Eastern"
+    all_games_df["game_datetime_et"] = dt_naive.dt.tz_localize(
+        "US/Eastern", ambiguous="infer"
     )
     all_games_df["date_display"] = all_games_df["game_datetime_et"].dt.strftime(
         "%m/%d/%Y"
@@ -250,44 +252,82 @@ def main() -> None:
         "total_hit_rate": total_hit_rate,
     }
 
+    # Remove only full row duplicates (same game with identical bet types)
+    all_games_df = all_games_df.drop_duplicates()
+
     bets = []
     for _, row in all_games_df.iterrows():
-        if (
-            row["Spread Bet"] in ["home", "away"]
-            and row["Spread Bet Result"] != "Pending"
-        ):
+        # Spread bet row (if present)
+        if row["Spread Bet"] in ["home", "away"]:
+            # Line column (spread text from report)
+            line_text = (
+                row.get("Spread") if isinstance(row.get("Spread"), str) else None
+            )
+            # Bet text (team + signed number)
             if row["Spread Bet"] == "home":
                 bet_team = row["home_team"]
-                line = row["home_team_spread_line"]
-                bet_string = f"{bet_team} {line:+.1f}"
+                line_val = row["home_team_spread_line"]
+                bet_text = f"{bet_team} {line_val:+.1f}"
             else:
                 bet_team = row["away_team"]
-                line = -row["home_team_spread_line"]
-                bet_string = f"{bet_team} {line:+.1f}"
+                line_val = -row["home_team_spread_line"]
+                bet_text = f"{bet_team} {line_val:+.1f}"
+            # Final score and final result (spread margin)
+            final_score = (
+                f"{int(row['away_points'])} - {int(row['home_points'])}"
+                if pd.notna(row["home_points"]) and pd.notna(row["away_points"])
+                else "Data Issue"
+            )
+            final_result = (
+                float(row["Spread Result"])
+                if pd.notna(row.get("Spread Result"))
+                else None
+            )
             bets.append(
                 {
-                    "game": row["Game"],
-                    "bet": bet_string,
-                    "result": row["Spread Bet Result"],
-                    "final_score": f"{row['away_points']} - {row['home_points']}",
                     "date": row["date_display"],
                     "time": row["time_display"],
-                    "prediction": row["Spread Prediction"],
+                    "game": row["Game"],
+                    "line": line_text
+                    if line_text
+                    else f"{row['home_team']} {row['home_team_spread_line']:+.1f}",
+                    "prediction": float(row["Spread Prediction"])
+                    if pd.notna(row.get("Spread Prediction"))
+                    else None,
+                    "bet": bet_text,
+                    "final_score": final_score,
+                    "final_result": final_result,
+                    "bet_result": row["Spread Bet Result"],
                 }
             )
-        if (
-            row["Total Bet"] in ["over", "under"]
-            and row["Total Bet Result"] != "Pending"
-        ):
+
+        # Total bet row (if present)
+        if row["Total Bet"] in ["over", "under"]:
+            line_text = row.get("Over/Under")
+            bet_text = f"{row['Total Bet'].capitalize()} {row['Over/Under']}"
+            final_score = (
+                f"{int(row['away_points'])} - {int(row['home_points'])}"
+                if pd.notna(row["home_points"]) and pd.notna(row["away_points"])
+                else "Data Issue"
+            )
+            final_result = (
+                float(row["Total Result"])
+                if pd.notna(row.get("Total Result"))
+                else None
+            )
             bets.append(
                 {
-                    "game": row["Game"],
-                    "bet": f"{row['Total Bet'].capitalize()} {row['Over/Under']}",
-                    "result": row["Total Bet Result"],
-                    "final_score": f"{row['away_points']} - {row['home_points']}",
                     "date": row["date_display"],
                     "time": row["time_display"],
-                    "prediction": row["Total Prediction"],
+                    "game": row["Game"],
+                    "line": f"O/U {line_text}",
+                    "prediction": float(row["Total Prediction"])
+                    if pd.notna(row.get("Total Prediction"))
+                    else None,
+                    "bet": bet_text,
+                    "final_score": final_score,
+                    "final_result": final_result,
+                    "bet_result": row["Total Bet Result"],
                 }
             )
 

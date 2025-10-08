@@ -70,22 +70,26 @@
                     <th align="left" class="th">Date</th>
                     <th align="left" class="th">Time</th>
                     <th align="left" class="th">Game</th>
-                    <th align="left" class="th">Bet</th>
+                    <th align="left" class="th">Line</th>
                     <th align="left" class="th">Model Prediction</th>
-                    <th align="left" class="th">Result</th>
+                    <th align="left" class="th">Bet</th>
                     <th align="left" class="th">Final Score</th>
+                    <th align="left" class="th">Final Result</th>
+                    <th align="left" class="th">Bet Result</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for r in bets %}
-                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %} {% if r.result == 'Win' %}win{% elif r.result == 'Loss' %}loss{% endif %}">
+                  <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %} {% if r.bet_result == 'Win' %}win{% elif r.bet_result == 'Loss' %}loss{% endif %}">
                     <td class="td">{{ r.date }}</td>
                     <td class="td">{{ r.time }}</td>
                     <td class="td">{{ r.game }}</td>
+                    <td class="td">{{ r.line }}</td>
+                    <td class="td">{{ "%.2f" | format(r.prediction) if r.prediction is not none else '' }}</td>
                     <td class="td">{{ r.bet }}</td>
-                    <td class="td">{{ "%.2f" | format(r.prediction) }}</td>
-                    <td class="td">{{ r.result }}</td>
                     <td class="td" style="white-space: nowrap;">{{ r.final_score }}</td>
+                    <td class="td">{{ r.final_result if r.final_result is not none else '' }}</td>
+                    <td class="td">{{ r.bet_result }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>

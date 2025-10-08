@@ -363,6 +363,7 @@ def_expl_rate_rush=(
         off_explosive_drive_rate=("is_explosive_drive", "mean"),
         _sum_pts_on_opps=("points_on_opps", "sum"),
         _sum_opp=("had_scoring_opportunity", "sum"),
+        off_avg_start_position=("start_yards_to_goal", "mean"),
     ).rename(columns={"offense": "team"})
 
     # Compute finish points per scoring opportunity safely
@@ -403,6 +404,7 @@ def_expl_rate_rush=(
         def_explosive_drive_rate_allowed=("is_explosive_drive", "mean"),
         _def_sum_pts_on_opps_allowed=("points_on_opps", "sum"),
         _def_sum_opp_allowed=("had_scoring_opportunity", "sum"),
+        def_avg_start_position_allowed=("start_yards_to_goal", "mean"),
     ).rename(columns={"defense": "team"})
 
     # Compute defensive finish points per scoring opportunity safely
@@ -446,6 +448,122 @@ def_expl_rate_rush=(
     team_game = team_game.merge(def_split[["season", "week", "game_id", "team", "def_rush_ypp", "def_pass_ypp"]], on=["season", "week", "game_id", "team"], how="left")
     return team_game
 
+def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
+    """Aggregate team-game metrics to season-to-date with recency weighting.
+
+    Uses weights 3, 2, 1 for the last three games (most recent highest), and 1 for
+    all earlier games. Aggregates a curated list of offense/defense and drive-level
+    metrics when present.
+
+    Args:
+        team_game_df: Team-game DataFrame with at least season, week, team columns and
+            metric columns output by aggregate_team_game.
+
+    Returns:
+        DataFrame with one row per (season, team) containing weighted averages and
+        games_played. Includes cumulative_luck_factor when present.
+
+    Raises:
+        ValueError: If required identity columns are missing.
+    """
+    required = ["season", "week", "team"]
+    for c in required:
+        if c not in team_game_df.columns:
+            raise ValueError(f"aggregate_team_season requires column '{c}'")
+
+    if team_game_df.empty:
+        return pd.DataFrame()
+
+    def _apply_weights(g: pd.DataFrame) -> pd.DataFrame:
+        g = g.sort_values("week").copy()
+        weights = np.ones(len(g), dtype=float)
+        # Assign 3,2,1 to last three games (most recent highest), earlier = 1
+        for i, w in enumerate([1.0, 2.0, 3.0], start=1):
+            if len(g) - i >= 0:
+                weights[-i] = w
+        g["recency_weight"] = weights
+        return g
+
+    # Process each season/team separately to avoid groupby.apply column loss issues
+    all_weighted = []
+    for (season, team), group in team_game_df.groupby(["season", "team"]):
+        weighted_group = _apply_weights(group)
+        all_weighted.append(weighted_group)
+    weighted = pd.concat(all_weighted, ignore_index=True)
+
+    metric_cols = [
+        "off_sr",
+"off_ypp",
+        "off_rush_ypp",
+        "off_pass_ypp",
+        "off_epa_pp",
+        "off_expl_rate_overall_10",
+        "off_expl_rate_overall_20",
+        "off_expl_rate_overall_30",
+        "off_expl_rate_rush",
+        "off_expl_rate_pass",
+        "stuff_rate",
+        "havoc_rate",
+        "def_sr",
+"def_ypp",
+        "def_rush_ypp",
+        "def_pass_ypp",
+        "def_epa_pp",
+        "def_expl_rate_overall_10",
+        "def_expl_rate_overall_20",
+        "def_expl_rate_overall_30",
+        "def_expl_rate_rush",
+        "def_expl_rate_pass",
+        "off_eckel_rate",
+        "off_finish_pts_per_opp",
+        "off_power_success_rate",
+        "off_avg_line_yards",
+        "off_avg_second_level_yards",
+        "off_avg_open_field_yards",
+        "def_power_success_rate_allowed",
+        "def_avg_line_yards_allowed",
+        "def_avg_second_level_yards_allowed",
+        "def_avg_open_field_yards_allowed",
+        # Drive-level metrics
+        "off_successful_drive_rate",
+        "off_busted_drive_rate",
+        "off_explosive_drive_rate",
+        "def_successful_drive_rate_allowed",
+        "def_busted_drive_rate_allowed",
+        "def_explosive_drive_rate_allowed",
+        # Special teams metrics (if available)
+        "off_avg_net_punt_yards",
+    ]
+    present_metric_cols = [c for c in metric_cols if c in weighted.columns]
+
+    def _agg_group(g: pd.DataFrame) -> pd.Series:
+        out: dict[str, float] = {}
+        w = g["recency_weight"].astype(float)
+        wsum = w.sum() if w.sum() > 0 else 1.0
+        for col in present_metric_cols:
+            vals = g[col].astype(float)
+            out[col] = float((vals * w).sum() / wsum)
+
+        # Add momentum features
+        last_3 = g.tail(3)
+        for col in present_metric_cols:
+            out[f"{col}_last_3"] = last_3[col].mean()
+
+        last_1 = g.tail(1)
+        for col in present_metric_cols:
+            out[f"{col}_last_1"] = last_1[col].mean()
+
+        out["games_played"] = float(len(g))
+        if "luck_factor" in g.columns:
+            out["cumulative_luck_factor"] = g["luck_factor"].sum()
+        return pd.Series(out)
+
+    season_agg = (
+        weighted.groupby(["season", "team"], as_index=False)
+        .apply(_agg_group, include_groups=False)
+        .reset_index(drop=True)
+    )
+    return season_agg
 
 def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate team-game metrics to season-to-date with recency weighting.

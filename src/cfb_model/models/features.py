@@ -145,14 +145,19 @@ def generate_point_in_time_features(
         data_root=resolved_root, file_format="csv", data_type="raw"
     )
 
-    # 1. Load all team_game data for the season
-    team_game_records = processed_storage.read_index("team_game", {"year": year})
-    if not team_game_records:
-        raise ValueError(f"No team_game data found for year {year}")
-    team_game_df = pd.DataFrame.from_records(team_game_records)
+    # 1. Load all team_game data for the season up to the target week
+    all_team_game_records = []
+    for w in range(1, week):
+        weekly_records = processed_storage.read_index("team_game", {"year": year, "week": w})
+        if weekly_records:
+            all_team_game_records.extend(weekly_records)
 
-    # 2. Filter to data *before* the target week for feature calculation
-    feature_data = team_game_df[team_game_df["week"] < week].copy()
+    if not all_team_game_records:
+        raise ValueError(f"No team_game data found for year {year} up to week {week}")
+    team_game_df = pd.DataFrame.from_records(all_team_game_records)
+
+    # 2. Filter to data *before* the target week for feature calculation (already done by loop)
+    feature_data = team_game_df.copy()
 
     if feature_data.empty:
         raise ValueError(f"No historical data found before week {week} for year {year}")

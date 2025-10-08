@@ -3,7 +3,7 @@
 This document is the tactical plan for the **cfb_model** project. It translates the goals from the
 [Project Charter](../project_org/project_charter.md) into a high-level schedule of epics and tasks.
 
-> 📋 **Last Updated**: 2025-09-30 | **Next Review**: Weekly Wednesday sprint planning
+> 📋 **Last Updated**: 2025-10-06 | **Next Review**: Weekly Wednesday sprint planning
 > 🔗 **Related**: [Open Decisions](../project_org/open_decisions.md) | [Decision Log](../decisions/decision_log.md)
 
 ## Sprint Overview
@@ -76,12 +76,12 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 ### Sprint 3 Tasks (Production Readiness) - Planned
 | ID | Epic | Deliverable | Effort | Dependencies | Owner | Status |
 |:--:|:-----|:-----------|:------:|:-------------|:-----:|:------:|
-| 16 | Publishing | Implement Publisher Script (Email) | 2d | Task 13 | @dev | 📋 Ready |
-| 21 | Operations | Setup Local Automation (cron job) | 1d | Task 16 | @dev | 📋 Ready |
-| 22 | Operations | Weekly pipeline automation | 3d | Task 21 | @dev | 🚫 Blocked |
+| 16 | Publishing | Implement Publisher Script (Email) | 2d | Task 13 | @dev | ✅ Complete |
+| 21 | Operations | Setup Local Automation (cron job) | 1d | Task 16 | @dev | 🚫 Cancelled |
+| 22 | Operations | Weekly pipeline automation | 3d | Task 21 | @dev | 🚫 Cancelled |
 | 20 | Validation | Model evaluation metrics and validation reports | 4d | Task 19 | @dev | ✅ Complete |
 | 15 | Explainability | SHAP summaries for model insights | 4d | Task 12 | @dev | ✅ Complete |
-| 17 | Performance | Add ROI/Win-Rate to Email Report | 1d | Task 16 | @dev | 📋 Ready |
+| 17 | Performance | Add ROI/Win-Rate to Email Report | 1d | Task 16 | @dev | ✅ Complete |
 
 **Sprint 3 Risks**:  
 - ✅ **Deployment decision**: RESOLVED - Publisher model adopted.  
@@ -102,8 +102,11 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 
 ### Backlog (Future Sprints)
 
+> **Next Step:** Now that initial feature expansion is complete, the next priority is to implement a systematic feature selection process as outlined in the [Feature Engineering Guide](./guides/cfb-feature-engineering-guide.md). This involves applying filter methods (variance, correlation) and embedded methods (Lasso regularization) to identify the most predictive features before re-running experiments.
+
 || ID | Epic | Deliverable | Effort | Dependencies | Priority |
 ||:--:|:-----|:-----------|:------:|:-------------|:--------:|
+|| 34 | Feature Eng. | Systematic feature selection (filter + embedded) | 3d | Task 29 | High |
 || 30 | Modeling | Variance reduction via ensemble methods | 4d | Task 29 | High |
 || 31 | Modeling | Confidence-based bet filtering | 3d | Task 29 | High |
 || 14 | Modeling | Try alternative models (XGBoost) for comparison | 6d | Task 20, OPEN-002 | Medium |

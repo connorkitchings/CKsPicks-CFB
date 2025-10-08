@@ -22,6 +22,7 @@ import smtplib
 from datetime import datetime
 from email import encoders
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -30,6 +31,26 @@ from typing import Any, List, Tuple
 import pandas as pd
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+TEAM_LOGO_MAP = {
+    "Sam Houston": "Sam Houston State",
+    "UL Monroe": "Louisiana Monroe",
+    "Massachusetts": "UMass",
+    "App State": "Appalachian State",
+    "San José State": "San Jose State",
+    "UTSA": "UT San Antonio",
+    "Hawai'i": "Hawai_i",
+    "Southern Miss": "Southern Mississippi",
+}
+
+
+def _logo_cid_for(name: str) -> str:
+    """Return a normalized CID for a team name using TEAM_LOGO_MAP normalization.
+
+    Ensures accents/aliases map to the actual logo filename and stabilizes CIDs.
+    """
+    mapped = TEAM_LOGO_MAP.get(name, name)
+    return f"logo_{str(mapped).replace(' ', '_')}"
 
 
 def _safe_float(x: Any) -> float | None:
@@ -54,9 +75,11 @@ def _compute_displays(df: pd.DataFrame) -> pd.DataFrame:
     if "game_date_dt" in df.columns:
         df["date_display"] = df["game_date_dt"].dt.strftime("%m/%d/%Y")
         df["time_display"] = df["game_date_dt"].dt.strftime("%I:%M %p")
+        df["datetime_display"] = df["game_date_dt"].dt.strftime("%A, %I:%M %p")
     else:
         df["date_display"] = df.get("Date", "").astype(str)
         df["time_display"] = df.get("Time", "").astype(str)
+        df["datetime_display"] = ""
 
     # Derive home/away from Game if missing
     if "home_team" not in df.columns or "away_team" not in df.columns:
@@ -180,32 +203,49 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
     spreads = []
     for _, r in spreads_df.iterrows():
         bet_side = str(r.get("Spread Bet", "")).lower()
+        home_team = r.get("home_team")
+        away_team = r.get("away_team")
         bet_spread_team = (
-            r.get("home_team")
-            if bet_side == "home"
-            else r.get("away_team")
-            if bet_side == "away"
-            else ""
+            home_team if bet_side == "home" else away_team if bet_side == "away" else ""
         )
+
+        consider_moneyline = False
+        vegas_spread = r.get("home_team_spread_line")
+        model_spread = r.get("Spread Prediction")
+
+        if pd.notna(vegas_spread) and pd.notna(model_spread):
+            # Condition 1: Vegas favors the home team, but the model confidently predicts the away team will win.
+            if vegas_spread < 0 and model_spread <= -3:
+                consider_moneyline = True
+            # Condition 2: Vegas favors the away team, but the model confidently predicts the home team will win.
+            elif vegas_spread > 0 and model_spread >= 3:
+                consider_moneyline = True
+
         spreads.append(
             {
-                "date_display": r.get("date_display", ""),
-                "time_display": r.get("time_display", ""),
+                "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
-                "home_team": r.get("home_team", ""),
+                "home_team": home_team,
+                "away_team": away_team,
+                "home_team_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
+                "away_team_logo_cid": _logo_cid_for(away_team) if pd.notna(away_team) else "",
                 "spread_line_display": r.get("spread_line_display", ""),
+                "line_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
+                "line_num_display": (f"{float(r.get('home_team_spread_line')):+.1f}"
+                                      if pd.notna(r.get("home_team_spread_line")) else ""),
                 "predicted_spread": float(r.get("Spread Prediction", float("nan")))
                 if pd.notna(r.get("Spread Prediction"))
                 else None,
                 "predicted_spread_std_dev": float(
                     r.get("predicted_spread_std_dev", float("nan"))
                 )
-                if pd.notna(r.get("predicted_spread_std_dev", float("nan")))
+                if pd.notna(r.get("predicted_spread_std_dev"))
                 else None,
                 "edge_spread": float(r.get("edge_spread", 0.0))
-                if pd.notna(r.get("edge_spread", 0.0))
+                if pd.notna(r.get("edge_spread"))
                 else 0.0,
                 "bet_spread_team": bet_spread_team,
+                "consider_moneyline": "✅" if consider_moneyline else "",
             }
         )
 
@@ -217,14 +257,18 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
     )
     totals = []
     for _, r in totals_df.iterrows():
+        home_team = r.get("home_team")
+        away_team = r.get("away_team")
         totals.append(
             {
-                "date_display": r.get("date_display", ""),
-                "time_display": r.get("time_display", ""),
+                "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
-                "home_team": r.get("home_team", ""),
+                "home_team": home_team,
+                "away_team": away_team,
+                "home_team_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
+                "away_team_logo_cid": _logo_cid_for(away_team) if pd.notna(away_team) else "",
                 "total_line": float(r.get("total_line", float("nan")))
-                if pd.notna(r.get("total_line", float("nan")))
+                if pd.notna(r.get("total_line"))
                 else None,
                 "predicted_total": float(r.get("Total Prediction", float("nan")))
                 if pd.notna(r.get("Total Prediction"))
@@ -232,16 +276,16 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
                 "predicted_total_std_dev": float(
                     r.get("predicted_total_std_dev", float("nan"))
                 )
-                if pd.notna(r.get("predicted_total_std_dev", float("nan")))
+                if pd.notna(r.get("predicted_total_std_dev"))
                 else None,
                 "edge_total": float(r.get("edge_total", 0.0))
-                if pd.notna(r.get("edge_total", 0.0))
+                if pd.notna(r.get("edge_total"))
                 else 0.0,
                 "bet_total": str(r.get("Total Bet", "")).title(),
             }
         )
 
-    # Determine a single Best Bet across spread and total by largest edge
+    # Determine a single Best Bet
     best_bet = None
     if spreads:
         best_spread = max(spreads, key=lambda x: x.get("edge_spread", 0.0))
@@ -282,53 +326,36 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
 
 def compute_hit_rates(
     year: int, up_to_week: int | None, report_dir: Path
-) -> tuple[float | None, float | None, float | None, float | None, int, int]:
+) -> tuple[float | None, float | None, int, int]:
     """
-    Compute spread/total hit rates, ROI, and counts for a year.
-
-    Assumes -110 juice (win 1 unit, risk 1.1 units).
-    ROI is calculated as (total units won / total units risked).
+    Compute spread/total hit rates and counts for a year.
     """
     import glob
 
-    # 1) Prefer precomputed metrics if present
-    metrics_path = report_dir / "metrics" / f"hit_rates_{year}.csv"
-    if metrics_path.exists():
-        try:
-            mdf = pd.read_csv(metrics_path)
-            row = mdf.iloc[0]
-            spr = (
-                float(row["spread_hit_rate"])
-                if pd.notna(row.get("spread_hit_rate"))
-                else None
-            )
-            tot = (
-                float(row["total_hit_rate"])
-                if pd.notna(row.get("total_hit_rate"))
-                else None
-            )
-            spr_roi = (
-                float(row["spread_roi"]) if pd.notna(row.get("spread_roi")) else None
-            )
-            tot_roi = (
-                float(row["total_roi"]) if pd.notna(row.get("total_roi")) else None
-            )
-            spr_n = int(row.get("spread_count", 0))
-            tot_n = int(row.get("total_count", 0))
-            return spr, tot, spr_roi, tot_roi, spr_n, tot_n
-        except Exception:
-            pass
+    def _calculate_metrics(
+        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
+    ) -> tuple[float | None, int]:
+        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
+        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
+        count = len(decided)
+        if count == 0:
+            return None, 0
 
-    # 2) Parse scored CSVs
-    def _load_scored_paths(y: int) -> list[Path]:
-        return [
-            Path(p)
-            for p in glob.glob(str(report_dir / str(y) / "CFB_week*_bets_scored.csv"))
-        ]
+        if result_col in ["pick_win", "total_pick_win"]:
+            wins = int(decided[result_col].sum())
+        else:
+            wins = int((decided[result_col] == "Win").sum())
 
-    paths = _load_scored_paths(year)
+        hit_rate = wins / count if count > 0 else 0.0
+
+        return hit_rate, count
+
+    paths = [
+        Path(p)
+        for p in glob.glob(str(report_dir / str(year) / "CFB_week*_bets_scored.csv"))
+    ]
     if not paths:
-        return None, None, None, None, 0, 0
+        return None, None, 0, 0
 
     frames: list[pd.DataFrame] = []
     for p in paths:
@@ -338,75 +365,60 @@ def compute_hit_rates(
         except Exception:
             continue
     if not frames:
-        return None, None, None, None, 0, 0
+        return None, None, 0, 0
 
     scored = pd.concat(frames, ignore_index=True)
 
-    # Filter by week if applicable
     if up_to_week is not None:
         week_col = "Week" if "Week" in scored.columns else "week"
         if week_col in scored.columns:
             scored = scored[scored[week_col] <= up_to_week]
 
-    # ROI calculation constants
-    win_payout = 1.0
-    risk_amount = 1.1
-
-    def _calculate_metrics(
-        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
-    ) -> tuple[float | None, float | None, int]:
-        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
-        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
-        count = len(decided)
-        if count == 0:
-            return None, None, 0
-
-        if result_col in ["pick_win", "total_pick_win"]:
-            wins = decided[result_col].sum()
-        else:
-            wins = (decided[result_col] == "Win").sum()
-
-        hit_rate = wins / count
-        units_won = wins * win_payout
-        units_risked = count * risk_amount
-        roi = (
-            (units_won - (count - wins) * risk_amount) / units_risked
-            if units_risked > 0
-            else 0.0
-        )
-
-        return hit_rate, roi, count
-
-    # Spread
-    spr, spr_roi, spr_n = _calculate_metrics(
+    spr, spr_n = _calculate_metrics(
         scored, "Spread Bet", "Spread Bet Result", ["home", "away"]
     )
     if spr_n == 0 and {"bet_spread", "pick_win"}.issubset(scored.columns):
-        spr, spr_roi, spr_n = _calculate_metrics(
+        spr, spr_n = _calculate_metrics(
             scored, "bet_spread", "pick_win", ["home", "away"]
         )
 
-    # Total
-    tot, tot_roi, tot_n = _calculate_metrics(
+    tot, tot_n = _calculate_metrics(
         scored, "Total Bet", "Total Bet Result", ["over", "under"]
     )
     if tot_n == 0 and {"bet_total", "total_pick_win"}.issubset(scored.columns):
-        tot, tot_roi, tot_n = _calculate_metrics(
+        tot, tot_n = _calculate_metrics(
             scored, "bet_total", "total_pick_win", ["over", "under"]
         )
 
-    return spr, tot, spr_roi, tot_roi, spr_n, tot_n
+    return spr, tot, spr_n, tot_n
 
 
 def compute_week_hit_rates(
     year: int, week: int, report_dir: Path
-) -> tuple[float | None, float | None, float | None, float | None, int, int]:
+) -> tuple[float | None, float | None, int, int]:
     """
-    Compute spread/total hit rates, ROI, and counts for a specific week.
+    Compute spread/total hit rates and counts for a specific week.
     """
     import glob
 
-    # Prefer weekly file if available
+    def _calculate_metrics(
+        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
+    ) -> tuple[float | None, int]:
+        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
+        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
+        count = len(decided)
+        if count == 0:
+            return None, 0
+
+        if result_col in ["pick_win", "total_pick_win"]:
+            wins = int(decided[result_col].sum())
+        else:
+            wins = int((decided[result_col] == "Win").sum())
+
+        hit_rate = wins / count if count > 0 else 0.0
+
+        return hit_rate, count
+
     weekly_path = report_dir / str(year) / f"CFB_week{week}_bets_scored.csv"
     frames: list[pd.DataFrame] = []
     if weekly_path.exists():
@@ -415,7 +427,6 @@ def compute_week_hit_rates(
         except Exception:
             pass
     else:
-        # Fallback to combined season if present
         season_combined = (
             report_dir / str(year) / f"CFB_season_{year}_all_bets_scored.csv"
         )
@@ -426,7 +437,6 @@ def compute_week_hit_rates(
             except Exception:
                 pass
         else:
-            # Try any weekly files and filter
             for p in glob.glob(
                 str(report_dir / str(year) / "CFB_week*_bets_scored.csv")
             ):
@@ -436,65 +446,31 @@ def compute_week_hit_rates(
                     continue
 
     if not frames:
-        return None, None, None, None, 0, 0
+        return None, None, 0, 0
 
     df = pd.concat(frames, ignore_index=True)
-    # Filter exact week
     week_col = "Week" if "Week" in df.columns else "week"
     if week_col in df.columns:
         df = df[df[week_col] == week]
 
     if df.empty:
-        return None, None, None, None, 0, 0
+        return None, None, 0, 0
 
-    # ROI calculation constants
-    win_payout = 1.0
-    risk_amount = 1.1
-
-    def _calculate_metrics(
-        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
-    ) -> tuple[float | None, float | None, int]:
-        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
-        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
-        count = len(decided)
-        if count == 0:
-            return None, None, 0
-
-        if result_col in ["pick_win", "total_pick_win"]:
-            wins = decided[result_col].sum()
-        else:
-            wins = (decided[result_col] == "Win").sum()
-
-        hit_rate = wins / count
-        units_won = wins * win_payout
-        units_risked = count * risk_amount
-        roi = (
-            (units_won - (count - wins) * risk_amount) / units_risked
-            if units_risked > 0
-            else 0.0
-        )
-
-        return hit_rate, roi, count
-
-    # Spread
-    spr, spr_roi, spr_n = _calculate_metrics(
+    spr, spr_n = _calculate_metrics(
         df, "Spread Bet", "Spread Bet Result", ["home", "away"]
     )
     if spr_n == 0 and {"bet_spread", "pick_win"}.issubset(df.columns):
-        spr, spr_roi, spr_n = _calculate_metrics(
-            df, "bet_spread", "pick_win", ["home", "away"]
-        )
+        spr, spr_n = _calculate_metrics(df, "bet_spread", "pick_win", ["home", "away"])
 
-    # Total
-    tot, tot_roi, tot_n = _calculate_metrics(
+    tot, tot_n = _calculate_metrics(
         df, "Total Bet", "Total Bet Result", ["over", "under"]
     )
     if tot_n == 0 and {"bet_total", "total_pick_win"}.issubset(df.columns):
-        tot, tot_roi, tot_n = _calculate_metrics(
+        tot, tot_n = _calculate_metrics(
             df, "bet_total", "total_pick_win", ["over", "under"]
         )
 
-    return spr, tot, spr_roi, tot_roi, spr_n, tot_n
+    return spr, tot, spr_n, tot_n
 
 
 def render_email_html(template_dir: Path, context):
@@ -520,7 +496,7 @@ def build_plain_text(context):
     if bb:
         lines.append("Best Bet:")
         lines.append(
-            f"  {bb.get('date_display', '')} {bb.get('time_display', '')} | {bb.get('game', '')} | {bb.get('category')} | {bb.get('line_display', '')} | Pred: {bb.get('prediction', '')} | Edge: {bb.get('edge', '')} | Bet: {bb.get('bet', '')} | Std Dev: {bb.get('std_dev', '')}"
+            f"  {bb.get('datetime_display', '')} | {bb.get('game', '')} | {bb.get('category')} | {bb.get('line_display', '')} | Pred: {bb.get('prediction', '')} | Edge: {bb.get('edge', '')} | Bet: {bb.get('bet', '')} | Std Dev: {bb.get('std_dev', '')}"
         )
         lines.append("")
 
@@ -531,14 +507,14 @@ def build_plain_text(context):
         lines.append("Spread Bets:")
         for r in spreads:
             lines.append(
-                f"  {r.get('date_display', '')} {r.get('time_display', '')} | {r.get('game', '')} | {r.get('spread_line_display', '')} | Pred: {r.get('predicted_spread', '')} | Edge: {r.get('edge_spread', '')} | Bet: {r.get('bet_spread_team', '')} | Std Dev: {r.get('predicted_spread_std_dev', '')}"
+                f"  {r.get('datetime_display', '')} | {r.get('game', '')} | {r.get('spread_line_display', '')} | Pred: {r.get('predicted_spread', '')} | Edge: {r.get('edge_spread', '')} | Bet: {r.get('bet_spread_team', '')} | Std Dev: {r.get('predicted_spread_std_dev', '')}"
             )
         lines.append("")
     if totals:
         lines.append("Totals Bets:")
         for r in totals:
             lines.append(
-                f"  {r.get('date_display', '')} {r.get('time_display', '')} | {r.get('game', '')} | O/U: {r.get('total_line', '')} | Pred: {r.get('predicted_total', '')} | Edge: {r.get('edge_total', '')} | Bet: {r.get('bet_total', '')} | Std Dev: {r.get('predicted_total_std_dev', '')}"
+                f"  {r.get('datetime_display', '')} | {r.get('game', '')} | O/U: {r.get('total_line', '')} | Pred: {r.get('predicted_total', '')} | Edge: {r.get('edge_total', '')} | Bet: {r.get('bet_total', '')} | Std Dev: {r.get('predicted_total_std_dev', '')}"
             )
         lines.append("")
 
@@ -556,13 +532,10 @@ def send_email(
     server: str,
     port: int,
     attachments: List[Tuple[str, bytes, str]] | None = None,
+    image_attachments: List[MIMEImage] | None = None,
 ) -> None:
-    """Send an email using SMTP with HTML, plaintext, and optional attachments.
-
-    attachments: list of (filename, bytes_content, mime_type)
-    """
-    # mixed container for attachments with an alternative part for text/html
-    msg = MIMEMultipart("mixed")
+    """Send an email using SMTP with HTML, plaintext, and optional attachments."""
+    msg = MIMEMultipart("related")
     msg["Subject"] = subject
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
@@ -571,6 +544,10 @@ def send_email(
     alt_part.attach(MIMEText(text_content, "plain"))
     alt_part.attach(MIMEText(html_content, "html"))
     msg.attach(alt_part)
+
+    # Attach images
+    for img in image_attachments or []:
+        msg.attach(img)
 
     # Attach files
     for filename, content_bytes, mime_type in attachments or []:
@@ -618,7 +595,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # --- 1. Load Config from Environment ---
+    # --- Load Config from Environment ---
     try:
         smtp_server = os.environ["PUBLISHER_SMTP_SERVER"]
         smtp_port = int(os.environ["PUBLISHER_SMTP_PORT"])
@@ -629,7 +606,7 @@ def main() -> None:
         print("Please set all PUBLISHER_* environment variables.")
         return
 
-    # Resolve recipients based on mode and new env vars
+    # Resolve recipients based on mode
     recipients: List[str] = []
     if args.mode == "test":
         test_recipient = os.environ.get("TEST_EMAIL_RECIPIENT")
@@ -642,15 +619,15 @@ def main() -> None:
         if not raw:
             print("Error: PROD_EMAIL_RECIPIENTS not set in environment")
             return
-        # Accept JSON list (preferred) or comma-separated string
         try:
             import ast
             import json
 
-            try:
-                parsed = json.loads(raw)
-            except json.JSONDecodeError:
-                parsed = ast.literal_eval(raw)
+            parsed = (
+                json.loads(raw)
+                if raw.strip().startswith("[")
+                else ast.literal_eval(raw)
+            )
             if isinstance(parsed, list):
                 recipients = [str(x).strip() for x in parsed if str(x).strip()]
             else:
@@ -658,12 +635,10 @@ def main() -> None:
         except Exception:
             recipients = [s.strip() for s in str(raw).split(",") if s.strip()]
         if not recipients:
-            print(
-                "Error: Could not parse PROD_EMAIL_RECIPIENTS into a non-empty recipient list"
-            )
+            print("Error: Could not parse PROD_EMAIL_RECIPIENTS")
             return
 
-    # --- 2. Load the Weekly Bets CSV ---
+    # --- Load and Validate Weekly Bets CSV ---
     bets_file = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
     )
@@ -673,86 +648,94 @@ def main() -> None:
 
     all_games_df = pd.read_csv(bets_file)
 
-    # Prepare recommended sets and context
-    spreads, totals, best_bet = _prepare_recommended(all_games_df)
-    generated_at = datetime.now().strftime("%m/%d/%Y %I:%M %p")
+    # Validation check for missing lines
+    recommended_bets_df = all_games_df[
+        (all_games_df["Spread Bet"].isin(["home", "away"]))
+        | (all_games_df["Total Bet"].isin(["over", "under"]))
+    ].copy()
 
-    # Thresholds (defaults; keep consistent with generator defaults)
-    spread_threshold = 6.0
-    total_threshold = 6.0
+    if not recommended_bets_df.empty:
+        spread_missing = recommended_bets_df[
+            recommended_bets_df["Spread Bet"].isin(["home", "away"])
+            & recommended_bets_df["home_team_spread_line"].isnull()
+        ]
+        total_missing = recommended_bets_df[
+            recommended_bets_df["Total Bet"].isin(["over", "under"])
+            & recommended_bets_df["total_line"].isnull()
+        ]
+        if not spread_missing.empty or not total_missing.empty:
+            print(
+                "Error: Found recommended bets with missing line data. Aborting email."
+            )
+            if not spread_missing.empty:
+                print("\nSpread bets with missing lines:")
+                print(spread_missing[["Game", "Spread Bet"]])
+            if not total_missing.empty:
+                print("\nTotal bets with missing lines:")
+                print(total_missing[["Game", "Total Bet"]])
+            return
 
-    summary = {
-        "spread_bets": len(spreads),
-        "total_bets_only": len(totals),
-        "total_bets": len(spreads) + len(totals),
-        "total_units": None,  # units not included in CSV
-        "portfolio_cap": None,
-    }
-
-    repo_root = Path(__file__).resolve().parents[1]
-    template_dir = repo_root / "templates"
-
-    # Build full schedule for bottom table
+    # --- Prepare Email Content ---
     all_df = _compute_displays(all_games_df)
     all_df = (
         all_df.sort_values(["game_date_dt", "Game"])
         if "game_date_dt" in all_df.columns
         else all_df
     )
+
+    min_date = all_df["game_date_dt"].min()
+    max_date = all_df["game_date_dt"].max()
+    if min_date.month == max_date.month:
+        date_range = f"{min_date.strftime('%B %-d')}-{max_date.day}"
+    else:
+        date_range = f"{min_date.strftime('%B %-d')} - {max_date.strftime('%B %-d')}"
+
+    spreads, totals, best_bet = _prepare_recommended(all_df)
+    generated_at = datetime.now().strftime("%m/%d/%Y %I:%M %p")
+    spread_threshold = 6.0
+    total_threshold = 6.0
+    summary = {
+        "spread_bets": len(spreads),
+        "total_bets_only": len(totals),
+        "total_bets": len(spreads) + len(totals),
+    }
+    repo_root = Path(__file__).resolve().parents[1]
+    template_dir = repo_root / "templates"
+
     all_games: list[dict[str, Any]] = []
     for _, r in all_df.iterrows():
         bet_side = str(r.get("Spread Bet", "")).strip().lower()
-        raw_spread_reason = r.get("spread_bet_reason", None)
-        raw_total_reason = r.get("total_bet_reason", None)
-
-        def _map_reason(reason: str, edge: float | None, threshold: float) -> str:
-            if not isinstance(reason, str):
-                reason = None
-            if reason:
-                if "Min Games" in reason:
-                    return "No Bet - Not enough FBS games yet"
-                if "Small Edge" in reason:
-                    return "No Bet - Edge below threshold"
-                if "Low Confidence" in reason:
-                    return "No Bet - Prediction uncertainty too high"
-                if reason != "No Bet":
-                    return reason
-            # Infer reason when not explicitly provided
-            if edge is not None and not pd.isna(edge):
-                if edge < threshold:
-                    return "No Bet - Edge below threshold"
-            return "No Bet - Edge below threshold"
 
         game_str = str(r.get("Game", ""))
-        home_from_game = None
-        away_from_game = None
-        if " @ " in game_str:
-            away_from_game, home_from_game = game_str.split(" @ ", 1)
+        home_from_game, away_from_game = (game_str.split(" @ ", 1) + [None, None])[:2]
         home_name = r.get("home_team") or home_from_game or "home"
         away_name = r.get("away_team") or away_from_game or "away"
 
-        if bet_side == "home":
-            spread_bet_display = home_name
-        elif bet_side == "away":
-            spread_bet_display = away_name
-        else:
-            es = r.get("edge_spread")
-            spread_bet_display = _map_reason(raw_spread_reason, es, spread_threshold)
+        spread_bet_display = (
+            home_name
+            if bet_side == "home"
+            else away_name
+            if bet_side == "away"
+            else "No Bet"
+        )
+        total_bet_display = (
+            str(r.get("Total Bet", "")).strip().title()
+            if str(r.get("Total Bet", "")).strip().lower() in ("over", "under")
+            else "No Bet"
+        )
 
-        tb = str(r.get("Total Bet", "")).strip().lower()
-        if tb in ("over", "under"):
-            total_bet_display = tb.title()
-        else:
-            et = r.get("edge_total")
-            total_bet_display = _map_reason(raw_total_reason, et, total_threshold)
         all_games.append(
             {
-                "date_display": r.get("date_display", ""),
-                "time_display": r.get("time_display", ""),
+                "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
                 "home_team": home_name,
                 "away_team": away_name,
+                "home_team_logo_cid": _logo_cid_for(home_name) if pd.notna(home_name) else "",
+                "away_team_logo_cid": _logo_cid_for(away_name) if pd.notna(away_name) else "",
                 "spread_line_display": r.get("spread_line_display", ""),
+                "line_logo_cid": _logo_cid_for(home_name) if pd.notna(home_name) else "",
+                "line_num_display": (f"{float(r.get('home_team_spread_line')):+.1f}"
+                                      if pd.notna(r.get("home_team_spread_line")) else ""),
                 "total_line": _safe_float(r.get("total_line")),
                 "predicted_spread": _safe_float(r.get("Spread Prediction")),
                 "predicted_total": _safe_float(r.get("Total Prediction")),
@@ -763,52 +746,31 @@ def main() -> None:
             }
         )
 
-    # Model context (prev year vs current to date)
     report_dir_path = Path(args.report_dir)
-    (
-        prev_spread,
-        prev_total,
-        prev_spread_roi,
-        prev_total_roi,
-        prev_spread_n,
-        prev_total_n,
-    ) = compute_hit_rates(args.year - 1, None, report_dir_path)
-    (
-        curr_spread,
-        curr_total,
-        curr_spread_roi,
-        curr_total_roi,
-        curr_spread_n,
-        curr_total_n,
-    ) = compute_hit_rates(args.year, args.week, report_dir_path)
-    (
-        lastyr_week_spr,
-        lastyr_week_tot,
-        lastyr_week_spr_roi,
-        lastyr_week_tot_roi,
-        lastyr_week_spr_n,
-        lastyr_week_tot_n,
-    ) = compute_week_hit_rates(args.year - 1, args.week, report_dir_path)
+    prev_spread, prev_total, prev_spread_n, prev_total_n = compute_hit_rates(
+        args.year - 1, None, report_dir_path
+    )
+    curr_spread, curr_total, curr_spread_n, curr_total_n = compute_hit_rates(
+        args.year, args.week, report_dir_path
+    )
+    lastyr_week_spr, lastyr_week_tot, lastyr_week_spr_n, lastyr_week_tot_n = (
+        compute_week_hit_rates(args.year - 1, args.week, report_dir_path)
+    )
+
     model_context = {
         "prev_year": args.year - 1,
         "prev_spread": prev_spread,
         "prev_total": prev_total,
-        "prev_spread_roi": prev_spread_roi,
-        "prev_total_roi": prev_total_roi,
         "prev_spread_count": prev_spread_n,
         "prev_total_count": prev_total_n,
         "curr_year": args.year,
         "curr_through_week": args.week,
         "curr_spread": curr_spread,
         "curr_total": curr_total,
-        "curr_spread_roi": curr_spread_roi,
-        "curr_total_roi": curr_total_roi,
         "curr_spread_count": curr_spread_n,
         "curr_total_count": curr_total_n,
         "last_year_week_spread": lastyr_week_spr,
         "last_year_week_total": lastyr_week_tot,
-        "last_year_week_spread_roi": lastyr_week_spr_roi,
-        "last_year_week_total_roi": lastyr_week_tot_roi,
         "last_year_week_spread_count": lastyr_week_spr_n,
         "last_year_week_total_count": lastyr_week_tot_n,
     }
@@ -816,6 +778,7 @@ def main() -> None:
     context = {
         "year": args.year,
         "week": args.week,
+        "date_range": date_range,
         "generated_at": generated_at,
         "spread_threshold": spread_threshold,
         "total_threshold": total_threshold,
@@ -833,8 +796,37 @@ def main() -> None:
     html = render_email_html(template_dir, context)
     text = build_plain_text(context)
 
-    # --- 3. Send ---
-    subject = f"CK's CFB Picks: {args.year} Week {args.week}"
+    # --- Attach Logos (only those actually referenced in HTML) ---
+    # Extract all cid: references used in the rendered HTML
+    import re
+    cids_in_html = set(re.findall(r"cid:([^\"']+)", html))
+
+    image_attachments = []
+    logo_dir = repo_root / "Logos"
+
+    # Attach exactly the CIDs referenced in HTML, mapping to logo files via TEAM_LOGO_MAP
+    for cid in sorted(cids_in_html):
+        if not cid.startswith("logo_"):
+            continue
+        name_part = cid[len("logo_"):].replace("_", " ")
+        logo_name = TEAM_LOGO_MAP.get(name_part, name_part)
+        logo_path = logo_dir / f"{logo_name}.png"
+        if not logo_path.exists():
+            continue
+        with open(logo_path, "rb") as f:
+            img_data = f.read()
+        img = MIMEImage(img_data)
+        img.add_header("Content-ID", f"<{cid}>")
+        # Hint to clients to render inline rather than as a separate attachment
+        img.add_header("Content-Disposition", "inline", filename=logo_path.name)
+        image_attachments.append(img)
+
+    # --- Attach and Send Email ---
+    with open(bets_file, "rb") as f:
+        csv_attachment = f.read()
+    attachments = [(f"CFB_week{args.week}_bets.csv", csv_attachment, "text/csv")]
+
+    subject = f"CK's CFB Picks: {args.year} Week {args.week} ({date_range})"
     try:
         send_email(
             subject,
@@ -845,6 +837,8 @@ def main() -> None:
             sender_password,
             smtp_server,
             smtp_port,
+            attachments=attachments,
+            image_attachments=image_attachments,
         )
         print(
             f"Successfully sent picks for Week {args.week} to {', '.join(recipients)}."

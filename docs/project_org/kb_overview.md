@@ -160,6 +160,15 @@ in later stages.
 
 ---
 
+## `[KB:FeatureSelectionValidation]`
+
+- **Context**: A systematic, multi-stage feature selection process (filtering, embedded, and wrapper methods) was executed to reduce the feature set and potentially improve model performance.
+- **Pattern**: The models trained on the smaller, selected feature set resulted in a lower hit rate (52.3%) on the holdout season compared to the models trained on the full feature set (54.6%). The changes were subsequently reverted.
+- **Learning**: Feature selection is not a guaranteed improvement. It is a hypothesis that must be tested. Always validate the performance of models trained on a reduced feature set against the performance of models trained on the full set. A larger, and potentially noisier, set of features may contain more collective predictive power for an ensemble than a smaller, more refined set.
+- **Discovered In**: `[LOG:2025-10-07/01]`
+
+---
+
 ## `[KB:IsolateWithDiagnosticScript]`
 
 - **Context**: A process is hanging or failing due to an issue with an external service (e.g., SMTP, API) or complex configuration (e.g., credentials in a .env file), making it difficult to debug within the main application.
@@ -183,4 +192,31 @@ in later stages.
 - **Context**: A script fails with an `IndentationError` after being modified by a file writing tool.
 - **Pattern**: Some file writing tools might introduce incorrect indentation, especially when replacing blocks of code. It is important to carefully review the indentation of the modified code and the surrounding lines. If the error persists, it might be necessary to reconstruct the file from a known good version and re-apply the changes with correct indentation.
 - **Usage**: After using a file writing tool, visually inspect the indentation of the modified file or run a linter to catch any indentation errors.
-- **Discovered In**: `[LOG:2025-10-04]`
+- **Discovered In**: `[LOG:2025-10-07/03]`
+
+---
+
+## `[KB:PipelineDependency]`
+
+- **Context**: A script fails because an upstream data processing step was not executed or completed correctly, leading to missing or outdated intermediate data.
+- **Pattern**: Ensure all intermediate data generation steps (e.g., `preagg` for `team_game` data) are explicitly run or verified before downstream steps that depend on them (e.g., `cache_weekly_stats`). The weekly pipeline should include all necessary data preparation steps.
+- **Usage**: If `cache_weekly_stats` fails due to missing `team_game` data, run `scripts/cli.py aggregate preagg` first.
+- **Discovered In**: `[LOG:2025-10-07/03]`
+
+---
+
+## `[KB:EmailImageEmbedding]`
+
+- **Context**: Embedding team logos or other images directly into HTML emails for visual appeal and branding.
+- **Pattern**: Use `MIMEMultipart("related")` as the main message type. For each image, read its binary data, create a `MIMEImage` object, add a unique `Content-ID` header (e.g., `<logo_team_name>`), and attach it to the `MIMEMultipart("related")` message. In the HTML content, reference the image using `src="cid:logo_team_name"`.
+- **Usage**: In `publish_picks.py`, collect unique team names, load their logos, create `MIMEImage` objects, and pass them to `send_email`. In `templates/email_weekly_picks.html`, use `<img src="cid:{{ r.team_logo_cid }}">`.
+- **Discovered In**: `[LOG:2025-10-07/03]`
+
+---
+
+## `[KB:LintingIteration]`
+
+- **Context**: Resolving linting errors, especially those related to variable naming (`N806`) and undefined names (`F821`), often requires multiple iterations of fixes and re-checks.
+- **Pattern**: When renaming variables (e.g., from `X` to `x`), ensure all usages of the old variable name are also updated. `ruff check --fix` can help with some issues, but manual `replace` calls might be necessary for all occurrences. Re-run lint checks after each set of changes to catch cascading errors.
+- **Usage**: After renaming `X` to `x` in `scripts/run_feature_selection.py`, subsequent `F821` errors for `X` indicated that not all usages were updated.
+- **Discovered In**: `[LOG:2025-10-07/03]`

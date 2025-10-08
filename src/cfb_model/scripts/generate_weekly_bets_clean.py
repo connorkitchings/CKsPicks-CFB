@@ -389,6 +389,8 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
         "home_team_spread_line",
         "Over/Under",
         "total_line",
+        "home_moneyline",
+        "away_moneyline",
         "Spread Prediction",
         "Total Prediction",
         # Confidence (std dev) and edges
