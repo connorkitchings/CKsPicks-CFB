@@ -125,7 +125,7 @@ def calculate_kelly_fraction(
 - **Base Unit**: 2% of bankroll (`--base-unit-fraction 0.02`) for unit reporting
 - **Win Probability**: Derived from a normal CDF using ensemble std-dev as sigma
 - **ATS/OU Pricing**: Uses provider odds when present; falls back to -110
-- **Confidence Filters**: Spread std-dev ≤ 3.0, Total std-dev ≤ 1.5 by default
+- **Confidence Filters**: Spread std-dev ≤ 2.0, Total std-dev ≤ 1.5 by default
 
 ### Option C: Confidence-Based Sizing (Advanced)
 

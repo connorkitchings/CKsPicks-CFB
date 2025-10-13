@@ -4,6 +4,53 @@ Log of planning-level decisions. Use one entry per decision.
 
 ---
 
+## 2025-10-10 — MLOps Reorientation: MLflow Integration
+
+- Category: MLOps / Tooling / Architecture
+- Decision: Began an incremental reorientation of the project towards a more formal MLOps structure. The first step was to integrate **MLflow** for experiment tracking.
+- Rationale: The existing method of tracking experiments via CSVs and manual logs is not scalable. MLflow provides a robust, centralized solution for tracking parameters, metrics, and model artifacts, which is critical for reproducible research and development.
+- Impact:
+  - Added `mlflow`, `hydra-core`, `hydra-optuna-sweeper`, and `optuna` to `pyproject.toml`.
+  - Created a `conf/` directory for future Hydra configurations.
+  - Refactored `src/cfb_model/models/train_model.py` to use nested MLflow runs for tracking the training of the model ensemble.
+  - This sets the foundation for subsequent integration of Hydra and Optuna.
+- References: `docs/guides/MLOps_Integration_Guide.md`, `src/cfb_model/models/train_model.py`
+
+---
+
+## 2025-10-10 — Re-tune Confidence Thresholds
+
+- Category: Modeling / Betting Policy
+- Decision: After the latest advanced features increased model variance, the confidence thresholds (ensemble prediction standard deviation) were re-tuned using the 2024 holdout season. The optimal thresholds were found to be **2.0 for spreads** and **1.5 for totals**.
+- Rationale: The previous spread threshold of 3.0 was too loose with the new features, resulting in a lower hit rate. The new threshold of 2.0 provides a better balance of bet volume and accuracy (57.0% hit rate over 114 bets). The totals threshold of 1.5 remained optimal, now yielding a 59.1% hit rate over 115 bets.
+- Impact: The default `--spread-std-dev-threshold` was updated to `2.0` in `scripts/cli.py` and `src/cfb_model/scripts/generate_weekly_bets_clean.py`. Documentation in `docs/operations/weekly_pipeline.md` and `docs/project_org/betting_policy.md` was updated to reflect the new default.
+- References: `scripts/confidence_threshold_sweep.py`, `reports/2024/confidence_threshold_sweep_spread.csv`
+
+---
+
+## 2025-10-10 — Advanced Feature Implementation & Findings
+
+- Category: Feature Engineering / Modeling
+- Decision: Implemented advanced situational efficiency features, specifically `off_third_down_conversion_rate` and `def_third_down_conversion_rate`. The other requested features (rushing analytics) were already present in the codebase.
+- Rationale: To improve model performance by capturing more granular, situational aspects of team performance, as outlined in the project roadmap (ID 32, 33).
+- Impact: After retraining the models with the new features, a full 2024 season simulation was run. The new features increased the variance of the ensemble model's predictions, causing the confidence filter (based on prediction standard deviation) to reject most potential bets. This resulted in a significant decrease in the number of bets placed (4 total bets for the season). While the hit rate on these few bets was high (3/4 = 75%), the sample size is too small to be meaningful.
+- Next Steps: The confidence thresholds (`--spread-std-dev-threshold` and `--total-std-dev-threshold`) may need to be re-tuned to account for the higher variance of the new model. Alternatively, the new features may need to be re-evaluated for their contribution to model stability.
+- References: `src/cfb_model/data/aggregations/core.py`, `reports/2024/weekly_hit_summary_2024.csv`
+
+---
+
+## 2025-10-09 — Modular Caching Pipeline Refactor
+
+- Category: Data / Pipeline / Architecture
+- Decision: Refactor the weekly feature caching process into a two-stage pipeline. 
+  1. A new script (`scripts/cache_running_season_stats.py`) now creates a `processed/running_team_season` asset, which stores the non-adjusted, point-in-time weekly aggregations.
+  2. The existing script (`scripts/cache_weekly_stats.py`) was modified to read from this new intermediate layer, performing only the opponent-adjustment step and saving the final, model-ready features to `processed/team_week_adj`.
+- Rationale: This change, suggested by the user, decouples the initial aggregation from the opponent-adjustment logic. It makes the pipeline more modular, easier to debug, and simplifies experimentation with different opponent-adjustment methodologies in the future.
+- Impact: `scripts/cache_weekly_stats.py` was refactored. A new script, `scripts/cache_running_season_stats.py`, was created. The process for generating weekly features is now a two-step process, which is reflected in the updated `docs/operations/weekly_pipeline.md`.
+- References: `[LOG:2025-10-09/01]`, `scripts/cache_running_season_stats.py`, `scripts/cache_weekly_stats.py`
+
+---
+
 ## 2025-10-07 — Betting Line Ingestion Fix & Email Safety Check
 
 - Category: Data / Operations / Reporting

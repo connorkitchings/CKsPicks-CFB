@@ -227,12 +227,21 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
                 "game": r.get("Game", ""),
                 "home_team": home_team,
                 "away_team": away_team,
-                "home_team_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
-                "away_team_logo_cid": _logo_cid_for(away_team) if pd.notna(away_team) else "",
+                "home_team_logo_cid": _logo_cid_for(home_team)
+                if pd.notna(home_team)
+                else "",
+                "away_team_logo_cid": _logo_cid_for(away_team)
+                if pd.notna(away_team)
+                else "",
                 "spread_line_display": r.get("spread_line_display", ""),
-                "line_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
-                "line_num_display": (f"{float(r.get('home_team_spread_line')):+.1f}"
-                                      if pd.notna(r.get("home_team_spread_line")) else ""),
+                "line_logo_cid": _logo_cid_for(home_team)
+                if pd.notna(home_team)
+                else "",
+                "line_num_display": (
+                    f"{float(r.get('home_team_spread_line')):+.1f}"
+                    if pd.notna(r.get("home_team_spread_line"))
+                    else ""
+                ),
                 "predicted_spread": float(r.get("Spread Prediction", float("nan")))
                 if pd.notna(r.get("Spread Prediction"))
                 else None,
@@ -265,8 +274,12 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
                 "game": r.get("Game", ""),
                 "home_team": home_team,
                 "away_team": away_team,
-                "home_team_logo_cid": _logo_cid_for(home_team) if pd.notna(home_team) else "",
-                "away_team_logo_cid": _logo_cid_for(away_team) if pd.notna(away_team) else "",
+                "home_team_logo_cid": _logo_cid_for(home_team)
+                if pd.notna(home_team)
+                else "",
+                "away_team_logo_cid": _logo_cid_for(away_team)
+                if pd.notna(away_team)
+                else "",
                 "total_line": float(r.get("total_line", float("nan")))
                 if pd.notna(r.get("total_line"))
                 else None,
@@ -730,12 +743,21 @@ def main() -> None:
                 "game": r.get("Game", ""),
                 "home_team": home_name,
                 "away_team": away_name,
-                "home_team_logo_cid": _logo_cid_for(home_name) if pd.notna(home_name) else "",
-                "away_team_logo_cid": _logo_cid_for(away_name) if pd.notna(away_name) else "",
+                "home_team_logo_cid": _logo_cid_for(home_name)
+                if pd.notna(home_name)
+                else "",
+                "away_team_logo_cid": _logo_cid_for(away_name)
+                if pd.notna(away_name)
+                else "",
                 "spread_line_display": r.get("spread_line_display", ""),
-                "line_logo_cid": _logo_cid_for(home_name) if pd.notna(home_name) else "",
-                "line_num_display": (f"{float(r.get('home_team_spread_line')):+.1f}"
-                                      if pd.notna(r.get("home_team_spread_line")) else ""),
+                "line_logo_cid": _logo_cid_for(home_name)
+                if pd.notna(home_name)
+                else "",
+                "line_num_display": (
+                    f"{float(r.get('home_team_spread_line')):+.1f}"
+                    if pd.notna(r.get("home_team_spread_line"))
+                    else ""
+                ),
                 "total_line": _safe_float(r.get("total_line")),
                 "predicted_spread": _safe_float(r.get("Spread Prediction")),
                 "predicted_total": _safe_float(r.get("Total Prediction")),
@@ -799,6 +821,7 @@ def main() -> None:
     # --- Attach Logos (only those actually referenced in HTML) ---
     # Extract all cid: references used in the rendered HTML
     import re
+
     cids_in_html = set(re.findall(r"cid:([^\"']+)", html))
 
     image_attachments = []
@@ -808,7 +831,7 @@ def main() -> None:
     for cid in sorted(cids_in_html):
         if not cid.startswith("logo_"):
             continue
-        name_part = cid[len("logo_"):].replace("_", " ")
+        name_part = cid[len("logo_") :].replace("_", " ")
         logo_name = TEAM_LOGO_MAP.get(name_part, name_part)
         logo_path = logo_dir / f"{logo_name}.png"
         if not logo_path.exists():

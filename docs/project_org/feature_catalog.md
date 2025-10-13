@@ -113,6 +113,8 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 | off_finish_pts_per_opp | team-season | float | Points per scoring opportunity (first down at or inside opp 40) | drives.parquet, scoring | sum(points_on_opps)/n_opportunities | finishing drives |
 | def_eckel_rate_allowed | team-season | float | % of opponent drives meeting eckel definition   | drives.parquet | mean(is_eckel_drive_allowed) | possession metric |
 | def_finish_pts_per_opp_allowed | team-season | float | Points allowed per opponent scoring opportunity | drives.parquet, scoring | sum(points_allowed_on_opps)/n_opportunities | finishing drives |
+| off_third_down_conversion_rate | team-season | float | Offensive third down conversion rate | plays.parquet | mean(thirddown_conversion) | |
+| def_third_down_conversion_rate | team-season | float | Defensive third down conversion rate | plays.parquet | mean(thirddown_conversion_allowed) | |
 
 Notes:
 
@@ -153,6 +155,8 @@ Algorithm (per season s, team t, base metric x ∈ {epa_pp, sr, ypp, rush_ypp, p
 | adj_off_expl_pass            | off_expl_rate_pass                | team-season | float| Opponent-adjusted pass explosive rate             | pass ≥20 |
 | adj_off_eckel_rate           | off_eckel_rate                    | team-season | float| Opponent-adjusted Eckel rate                      | possession |
 | adj_off_finish_pts_per_opp   | off_finish_pts_per_opp            | team-season | float| Opponent-adjusted finishing points per opportunity| possession |
+| adj_off_third_down_conversion_rate | off_third_down_conversion_rate | team-season | float | Opponent-adjusted offensive third down conversion rate | | 
+| adj_def_third_down_conversion_rate | def_third_down_conversion_rate | team-season | float | Opponent-adjusted defensive third down conversion rate | |
 
 ## 3) Pace and possession-aware features
 

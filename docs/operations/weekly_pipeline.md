@@ -24,7 +24,19 @@ This runbook defines the end-to-end weekly process for producing betting recomme
 
 ### Step 0: Caching (Optional, One-Time)
 
-If you have not already generated the weekly adjusted stats cache for the season, run this command once. This process can take a significant amount of time.
+If you have not already generated the weekly stats caches for the season, run these commands once. This is now a two-stage process.
+
+**Stage 1: Non-Adjusted Weekly Aggregates**
+
+This creates a weekly season-to-date aggregation of team stats *before* opponent adjustment.
+
+```bash
+uv run python scripts/cache_running_season_stats.py --year 2024 --data-root "/path/to/root"
+```
+
+**Stage 2: Opponent-Adjusted Weekly Stats**
+
+This reads the non-adjusted data from Stage 1, applies the opponent-adjustment algorithm, and saves the final model-ready features.
 
 ```bash
 uv run python scripts/cache_weekly_stats.py --year 2024 --data-root "/path/to/root"
@@ -60,7 +72,7 @@ python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --d
 - Spreads: configurable threshold (default 6.0 via `--spread-threshold`)
 - Totals: configurable threshold (default 6.0 via `--total-threshold`)
 - Confidence filter (ensemble std dev): defaults set from sweep analysis
-  - Spreads: `--spread-std-dev-threshold 3.0`
+  - Spreads: `--spread-std-dev-threshold 2.0`
   - Totals: `--total-std-dev-threshold 1.5`
 - Only include games where both teams have ≥ 4 games played.
 

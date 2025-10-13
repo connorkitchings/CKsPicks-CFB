@@ -12,7 +12,7 @@ from cfb_model.scripts.generate_weekly_bets_clean import (
     apply_betting_policy,
     build_feature_list,
     generate_csv_report,
-    load_ensemble_models,
+    load_hybrid_ensemble_models,
     load_week_dataset,
 )
 
@@ -47,14 +47,16 @@ def process_week(
     data_root: str,
     model_dir: str,
     output_dir: str,
+    totals_model_dir: str,
     *,
     spread_threshold: float,
     total_threshold: float,
     spread_std: float,
     total_std: float,
 ) -> Dict[str, int]:
-    models = load_ensemble_models(year, model_dir)
+    models = load_hybrid_ensemble_models(year, model_dir, totals_model_dir)
     df = load_week_dataset(year, week, data_root)
+    df = df.fillna(0)
 
     feature_list = build_feature_list(df)
     # Align per-model features for predictions
@@ -150,7 +152,10 @@ def main() -> None:
         type=str,
         default="/Volumes/CK SSD/Coding Projects/cfb_model/data",
     )
-    ap.add_argument("--model-dir", type=str, default="./models/ridge_baseline")
+    ap.add_argument("--model-dir", type=str, default="./models")
+    ap.add_argument(
+        "--totals-model-dir", type=str, default="./models/totals_differential"
+    )
     ap.add_argument("--output-dir", type=str, default="./reports")
     ap.add_argument("--spread-threshold", type=float, default=6.0)
     ap.add_argument("--total-threshold", type=float, default=6.0)
@@ -170,6 +175,7 @@ def main() -> None:
                 args.data_root,
                 args.model_dir,
                 args.output_dir,
+                totals_model_dir=args.totals_model_dir,
                 spread_threshold=args.spread_threshold,
                 total_threshold=args.total_threshold,
                 spread_std=args.spread_std,

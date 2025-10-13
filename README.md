@@ -50,6 +50,7 @@ For detailed usage guides (running tests, pipelines, and docs), see the
 
 ```text
 cfb_model/
+├── conf/                 # Hydra configuration files
 ├── docs/                 # Project documentation (MkDocs)
 ├── notebooks/            # Jupyter notebooks for exploration and analysis
 ├── session_logs/         # Chronological development session logs
@@ -67,6 +68,12 @@ cfb_model/
 ├── LICENSE
 └── README.md             # This file
 ```
+
+---
+
+## 🤖 MLOps Stack
+
+The project is organized around a modern MLOps stack to ensure reproducibility, scalability, and efficient experimentation. For more details, see the [MLOps Stack documentation](./docs/project_org/mlops_stack.md).
 
 ---
 

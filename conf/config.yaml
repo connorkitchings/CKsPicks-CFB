@@ -1,0 +1,5 @@
+train_years: "2019,2021,2022,2023"
+test_year: 2024
+data_root: null
+model_dir: "./models"
+metrics_dir: "./reports/metrics"

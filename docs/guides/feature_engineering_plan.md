@@ -75,9 +75,9 @@ The `CFB_Functions.ipynb` notebook, which previously contained exploratory work,
 
 ---
 
-## Advanced Feature Engineering (Planned)
+## Advanced Feature Engineering (Implemented)
 
-This section details the next set of high-value features to be implemented. These features require more complex calculations and are designed to provide a deeper, more nuanced view of team performance.
+This section details the high-value features that have been implemented in the model.
 
 ### 1. Advanced Rushing Analytics
 

@@ -118,5 +118,15 @@ To get up to speed, review this minimal context pack:
 - **Track Decisions**: Record material changes in `docs/decisions/decision_log.md`.
 
 ---
+
+## 6. Session Initialization
+
+To begin a development session, please provide the following prompt to ensure the AI has full project context:
+
+```
+Please review @README.md , @mkdocs.yml , @pyproject.toml , @docs/** , and @session_logs/** to get up to speed on the project. Then review the codebase in @src/** , @scripts/** , and @tests/**
+```
+
+---
 ## Gemini Added Memories
 - When a new session starts in the `/Users/connorkitchings/Desktop/Repositories/cfb_model` directory, please read the following files to get context: `README.md`, `mkdocs.yml`, `pyproject.toml`, `docs/**`, `src/**`, `scripts/**`, and `tests/**`.

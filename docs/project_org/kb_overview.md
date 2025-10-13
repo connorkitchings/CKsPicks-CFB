@@ -214,9 +214,44 @@ in later stages.
 
 ---
 
-## `[KB:LintingIteration]`
+## `[KB:LintingIteration]
+
+---
+
+## `[KB:MLflowNestedRuns]`
+
+- **Context**: When training an ensemble of models, it's useful to track both the performance of the overall ensemble and the individual performance of each component model.
+- **Pattern**: Use nested MLflow runs. A parent run can track the overall experiment (e.g., ensemble performance, data versions), while nested child runs track the parameters, metrics, and artifacts for each individual model in the ensemble.
+- **Usage**: `with mlflow.start_run(run_name="Parent_Run"): ... with mlflow.start_run(run_name="Child_Model_1", nested=True): ...`
+- **Discovered In**: `[LOG:2025-10-10/02]``
 
 - **Context**: Resolving linting errors, especially those related to variable naming (`N806`) and undefined names (`F821`), often requires multiple iterations of fixes and re-checks.
 - **Pattern**: When renaming variables (e.g., from `X` to `x`), ensure all usages of the old variable name are also updated. `ruff check --fix` can help with some issues, but manual `replace` calls might be necessary for all occurrences. Re-run lint checks after each set of changes to catch cascading errors.
-- **Usage**: After renaming `X` to `x` in `scripts/run_feature_selection.py`, subsequent `F821` errors for `X` indicated that not all usages were updated.
-- **Discovered In**: `[LOG:2025-10-07/03]`
+
+
+---
+
+## `[KB:HydraMultiRunConfig]`
+
+- **Context**: When using Hydra's multirun with the Optuna sweeper, the search space might need to be passed via the command line instead of being defined in the config file.
+- **Pattern**: If you encounter an `AssertionError` related to `search_space` in the Optuna sweeper, try removing the `search_space` from your Hydra config and defining it on the command line using the `+` syntax.
+- **Usage**: `uv run python scripts/optimize_hyperparameters.py -m "+model.alpha=choice(0.1,0.5,1.0)"`
+- **Discovered In**: `[LOG:2025-10-11]`
+
+---
+
+## `[KB:ShellQuoting]`
+
+- **Context**: Passing complex arguments with parentheses or other special characters to a shell command can cause syntax errors.
+- **Pattern**: Always quote complex arguments to prevent the shell from interpreting them.
+- **Usage**: `uv run python script.py -m 'model.param=choice(a,b,c)'`
+- **Discovered In**: `[LOG:2025-10-11]`
+
+---
+
+## `[KB:ImputeNaNs]`
+
+- **Context**: Scikit-learn models like Ridge regression do not accept `NaN` values in the input data.
+- **Pattern**: Before training a model, ensure that any `NaN` values in your feature matrix are handled. A simple strategy is to fill them with 0 using `.fillna(0)`.
+- **Usage**: `x_train = train_df[feature_list].astype(float).fillna(0)`
+- **Discovered In**: `[LOG:2025-10-11]`

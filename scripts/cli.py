@@ -210,7 +210,7 @@ def run_season(
     spread_std_dev_threshold: Annotated[
         float,
         typer.Option(help="Standard deviation threshold for spread bets"),
-    ] = None,
+    ] = 2.0,
     total_std_dev_threshold: Annotated[
         float, typer.Option(help="Standard deviation threshold for total bets")
     ] = None,

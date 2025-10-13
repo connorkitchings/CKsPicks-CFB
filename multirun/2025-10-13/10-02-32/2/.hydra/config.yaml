@@ -1,0 +1,9 @@
+core:
+  train_years: 2019,2021,2022,2023
+  test_year: 2024
+  data_root: null
+  output_dir: ./reports/optimization
+  fast: false
+model:
+  _target_: sklearn.linear_model.Ridge
+target: spread

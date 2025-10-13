@@ -3,7 +3,20 @@
     "python.defaultInterpreterPath": ".venv/bin/python",
     "python.terminal.activateEnvironment": true,
     "python.envFile": "${workspaceFolder}/.env",
-    "python.analysis.extraPaths": ["./src"],
+    "python.analysis.extraPaths": [
+        "./src"
+    ],
+    // --- Added for Ruff linting and formatting ---
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    "ruff.organizeImports": true,
+    // --- End of added settings ---
     "files.exclude": {
         "**/__pycache__": true,
         "**/.pytest_cache": true,

@@ -136,6 +136,15 @@ The project follows a clear separation between data ingestion, processing, model
 
 ### Minimal Context Pack (start each session)
 
+### AI Session Kickoff
+
+To begin a development session, please provide the following prompt to ensure the AI has full project context:
+
+```
+Please review @README.md , @mkdocs.yml , @pyproject.toml , @docs/** , and @session_logs/** to get up to speed on the project. Then review the codebase in @src/** , @scripts/** , and @tests/**
+```
+
+
 Essential documents to review before making changes:
 
 1. `docs/project_org/project_charter.md` - Project scope and technical goals

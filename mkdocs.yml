@@ -46,6 +46,7 @@ nav:
     - 'Modeling Baseline': 'project_org/modeling_baseline.md'
     - 'Feature Catalog': 'project_org/feature_catalog.md'
     - 'Development Standards': 'project_org/development_standards.md'
+    - 'MLOps Stack': 'project_org/mlops_stack.md'
     - 'Checklists': 'project_org/checklists.md'
     - 'Knowledge Base': 'project_org/kb_overview.md'
   - 'Operations':

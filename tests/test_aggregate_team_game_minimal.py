@@ -21,14 +21,8 @@ def test_aggregate_team_game_minimal():
                 "success": 1,
                 "yards_gained": 5,
                 "ppa": 0.2,
-                # additional columns required by aggregation
-                "havoc": 0,
-                "line_yards": 0.0,
-                "second_level_yards": 0.0,
-                "open_field_yards": 0.0,
-                "is_power_situation": 0,
-                "power_success_converted": 0,
                 "st": 0,
+                "thirddown_conversion": 1,
             },
             {
                 "season": 2024,
@@ -41,14 +35,8 @@ def test_aggregate_team_game_minimal():
                 "pass_attempt": 1,
                 "success": 0,
                 "yards_gained": 10,
-                "ppa": 0.1,
-                "havoc": 0,
-                "line_yards": 0.0,
-                "second_level_yards": 0.0,
-                "open_field_yards": 0.0,
-                "is_power_situation": 0,
-                "power_success_converted": 0,
                 "st": 0,
+                "thirddown_conversion": 0,
             },
             {
                 "season": 2024,
@@ -69,6 +57,7 @@ def test_aggregate_team_game_minimal():
                 "is_power_situation": 0,
                 "power_success_converted": 0,
                 "st": 0,
+                "thirddown_conversion": None,
             },
         ]
     )

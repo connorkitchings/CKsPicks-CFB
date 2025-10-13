@@ -19,8 +19,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from cfb_model.analysis.loader import load_scored_season_data
 
 BET_TYPES = {
-    "spread": {"edge_col": "edge_spread", "win_col": "Spread Bet Result"},
-    "total": {"edge_col": "edge_total", "win_col": "Total Bet Result"},
+    "spread": {
+        "edge_col": "edge_spread",
+        "win_col": "Spread Bet Result",
+        "bet_col": "Spread Bet",
+        "valid_bets": ["home", "away"],
+    },
+    "total": {
+        "edge_col": "edge_total",
+        "win_col": "Total Bet Result",
+        "bet_col": "Total Bet",
+        "valid_bets": ["over", "under"],
+    },
 }
 
 
@@ -30,19 +40,30 @@ def result_to_win_int(s: pd.Series) -> pd.Series:
 
 
 def sweep(
-    df: pd.DataFrame, edge_col: str, win_col: str, thresholds: List[float]
+    df: pd.DataFrame,
+    *,
+    edge_col: str,
+    win_col: str,
+    bet_col: str,
+    valid_bets: List[str],
+    thresholds: List[float],
 ) -> pd.DataFrame:
-    """Calculate hit rate at various edge thresholds."""
+    """Calculate hit rate at various edge thresholds for actual bets."""
     d = df.copy()
+
+    # First, filter to only include rows where a bet was actually placed.
+    d = d[d[bet_col].isin(valid_bets)].copy()
+
     d[edge_col] = pd.to_numeric(d[edge_col], errors="coerce")
     d["win"] = result_to_win_int(d[win_col])
-    d = d.dropna(subset=[edge_col])
+    d = d.dropna(subset=[edge_col, "win"])
 
     rows: List[Dict] = []
     for t in thresholds:
         mask = d[edge_col] >= t
-        picks = int(mask.sum())
-        wins = int(d.loc[mask, "win"].sum())
+        subset = d[mask]
+        picks = len(subset)
+        wins = int(subset["win"].sum())
         hit = float(wins / picks) if picks > 0 else np.nan
         rows.append({"threshold": t, "picks": picks, "wins": wins, "hit_rate": hit})
     return pd.DataFrame(rows)
@@ -85,7 +106,12 @@ def main() -> None:
 
     # The win column names have changed in the refactored scoring script
     out = sweep(
-        df, edge_col=cfg["edge_col"], win_col=cfg["win_col"], thresholds=thresholds
+        df,
+        edge_col=cfg["edge_col"],
+        win_col=cfg["win_col"],
+        bet_col=cfg["bet_col"],
+        valid_bets=cfg["valid_bets"],
+        thresholds=thresholds,
     )
 
     out_path = os.path.join(

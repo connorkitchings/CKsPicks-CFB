@@ -1,0 +1,3 @@
+- +model.n_estimators=200
+- +model.max_depth=16
+- +model.min_samples_leaf=7
