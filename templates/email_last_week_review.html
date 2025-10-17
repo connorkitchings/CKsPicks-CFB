@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CK's CFB Picks — {{ year }} Week {{ week }} Review</title>
+  <title>CK's CFB Picks — {{ year }} Week {{ week }} Review</title>
   <style>
     /* Improved readability: subtle borders, zebra rows, clear headers */
     .hdr { background: #f6f8fa; }
-    .th { font-size: 12px; color: #222; padding: 8px; border-bottom: 1px solid #ddd; }
-    .td { font-size: 13px; color: #111; padding: 8px; border-bottom: 1px solid #eee; }
+    .th { font-size: 12px; color: #222; padding: 8px; border-bottom: 1px solid #ddd; text-align: center; }
+    .td { font-size: 13px; color: #111; padding: 8px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle; }
     .zebra { background: #fafafa; }
     .win { color: #28a745; font-weight: bold; }
     .loss { color: #dc3545; font-weight: bold; }
+    .logo { width: 24px; height: 24px; vertical-align: middle; display: inline-block; object-fit: contain; }
     @media (prefers-color-scheme: dark) {
       body { background: #111 !important; color: #eee !important; }
       .card, .table { background: #1a1a1a !important; }
@@ -30,12 +31,21 @@
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
     <tr>
       <td align="center" style="padding:24px 12px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" width="640" class="card" style="border:1px solid #e6e6e6; border-radius:8px; background:#ffffff;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="720" class="card" style="border:1px solid #e6e6e6; border-radius:8px; background:#ffffff;">
           <tr>
             <td style="padding:20px 24px; border-bottom:1px solid #eaeaea;">
-<div style="font-size:20px; font-weight:700; text-align:center;">CK's CFB Picks — {{ year }} Week {{ week }} Review</div>
+              <div style="font-size:20px; font-weight:700; text-align:center;">CK's CFB Picks — {{ year }} Week {{ week }} Review</div>
               <div class="muted" style="font-size:12px; color:#666; margin-top:6px; text-align:center;">
                 Generated {{ generated_at }}
+              </div>
+              <div style="margin:10px 0; border-top:1px solid #eaeaea;"></div>
+              <div style="margin-top:10px; font-size:13px;">
+                <div style="font-weight:600; margin-bottom:4px; text-align:center;">Quick Reference</div>
+                <div style="line-height:1.6; text-align:center;">
+                  <strong>Spread Result:</strong> Final margin vs the closing line.<br/>
+                  <strong>Total Result:</strong> Final combined points vs the posted total.<br/>
+                  <strong>Bet Result:</strong> Outcome of our recommendation (Win / Loss / Push).
+                </div>
               </div>
             </td>
           </tr>
@@ -45,13 +55,13 @@
             <td style="padding:16px 24px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
-<td style="padding:14px; background:#ffffff; border:1px solid #dcdcdc; border-radius:6px; color:#111;">
+                  <td style="padding:14px; background:#ffffff; border:1px solid #dcdcdc; border-radius:6px; color:#111;">
                     <div style="font-weight:700; font-size:14px; margin-bottom:6px; text-align:center;">Last Week's Performance</div>
-<div style="font-size:13px; color:#111; text-align:center;">
-                      Spread Bets: {{ summary.spread_wins }} - {{ summary.spread_losses }} ({{ "%.1f" | format(summary.spread_hit_rate * 100) }}%)
+                    <div style="font-size:13px; color:#111; text-align:center;">
+                      Spread: {{ summary.spread_wins }}-{{ summary.spread_losses }} ({{ "%.1f" | format(summary.spread_hit_rate * 100) }}%)
                     </div>
-<div style="font-size:13px; margin-top:6px; color:#111; text-align:center;">
-                      Total Bets: {{ summary.total_wins }} - {{ summary.total_losses }} ({{ "%.1f" | format(summary.total_hit_rate * 100) }}%)
+                    <div style="font-size:13px; margin-top:4px; color:#111; text-align:center;">
+                      Totals: {{ summary.total_wins }}-{{ summary.total_losses }} ({{ "%.1f" | format(summary.total_hit_rate * 100) }}%)
                     </div>
                   </td>
                 </tr>
@@ -67,23 +77,33 @@
               <table class="table" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse; width:100%; background:#fff;">
                 <thead class="hdr">
                   <tr>
-                    <th align="left" class="th">Date</th>
-                    <th align="left" class="th">Time</th>
-                    <th align="left" class="th">Game</th>
-                    <th align="left" class="th">Line</th>
-                    <th align="left" class="th">Model Prediction</th>
-                    <th align="left" class="th">Bet</th>
-                    <th align="left" class="th">Final Score</th>
-                    <th align="left" class="th">Final Result</th>
-                    <th align="left" class="th">Bet Result</th>
+                    <th class="th">Date</th>
+                    <th class="th" style="width: 28px;"></th>
+                    <th class="th">Game</th>
+                    <th class="th" style="width: 28px;"></th>
+                    <th class="th">Line</th>
+                    <th class="th">Model</th>
+                    <th class="th">Bet</th>
+                    <th class="th">Final Score</th>
+                    <th class="th">Result</th>
+                    <th class="th">Bet Result</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for r in bets %}
                   <tr class="{% if loop.index0 % 2 == 1 %}zebra{% endif %} {% if r.bet_result == 'Win' %}win{% elif r.bet_result == 'Loss' %}loss{% endif %}">
                     <td class="td">{{ r.date }}</td>
-                    <td class="td">{{ r.time }}</td>
-                    <td class="td">{{ r.game }}</td>
+                    <td class="td" style="text-align: right; padding-right: 0;">
+                      {% if r.away_team_logo_cid %}
+                        <img class="logo" src="cid:{{ r.away_team_logo_cid }}" alt="{{ r.away_team }}">
+                      {% endif %}
+                    </td>
+                    <td class="td" style="text-align: center;">{{ r.game }}</td>
+                    <td class="td" style="text-align: left; padding-left: 0;">
+                      {% if r.home_team_logo_cid %}
+                        <img class="logo" src="cid:{{ r.home_team_logo_cid }}" alt="{{ r.home_team }}">
+                      {% endif %}
+                    </td>
                     <td class="td">{{ r.line }}</td>
                     <td class="td">{{ "%.2f" | format(r.prediction) if r.prediction is not none else '' }}</td>
                     <td class="td">{{ r.bet }}</td>

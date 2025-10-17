@@ -5,8 +5,8 @@ import argparse
 import json
 from typing import Any, Dict, List
 
-from cfb_model.data.storage.local_storage import LocalStorage
-from cfb_model.data.validation import validate_adjusted_consistency
+from src.utils.local_storage import LocalStorage
+from src.utils.validation import validate_adjusted_consistency
 
 
 def validate_adjusted(data_root: str, years: List[int]) -> Dict[int, Dict[str, Any]]:

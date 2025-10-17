@@ -22,12 +22,13 @@ from sklearn.feature_selection import RFECV, VarianceThreshold
 from sklearn.model_selection import TimeSeriesSplit
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.models.features import (
+from src.models.features import (
     build_feature_list,
     generate_point_in_time_features,
 )
+from src.config import REPORTS_DIR
 
 
 def load_training_data(train_years: list[int], data_root: str | None) -> pd.DataFrame:
@@ -126,7 +127,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./reports/feature_selection",
+        default=str(REPORTS_DIR / "feature_selection"),
         help="Output directory for results",
     )
     args = parser.parse_args()

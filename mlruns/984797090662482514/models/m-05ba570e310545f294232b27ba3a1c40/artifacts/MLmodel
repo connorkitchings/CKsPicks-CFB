@@ -1,0 +1,22 @@
+artifact_path: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/mlruns/984797090662482514/models/m-05ba570e310545f294232b27ba3a1c40/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.12
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.1
+mlflow_version: 3.1.4
+model_id: m-05ba570e310545f294232b27ba3a1c40
+model_size_bytes: 1673669
+model_uuid: m-05ba570e310545f294232b27ba3a1c40
+prompts: null
+run_id: eed9b2ac2b1d48b187c99a4dab1d9983
+utc_time_created: '2025-10-17 16:04:58.787370'

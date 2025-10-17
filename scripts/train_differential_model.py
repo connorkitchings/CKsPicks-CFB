@@ -15,11 +15,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from cfb_model.models.features import (
+from src.models.features import (
     build_differential_feature_list,
     build_differential_features,
     generate_point_in_time_features,
 )
+from src.config import REPORTS_DIR, METRICS_SUBDIR
 
 
 def _train_and_save(
@@ -72,7 +73,7 @@ def main() -> None:
     parser.add_argument(
         "--metrics-dir",
         type=str,
-        default="./reports/metrics",
+        default=str(REPORTS_DIR / METRICS_SUBDIR),
         help="Output dir for metrics CSV",
     )
     args = parser.parse_args()

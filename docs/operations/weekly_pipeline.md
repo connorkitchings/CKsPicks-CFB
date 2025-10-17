@@ -121,11 +121,11 @@ Then cache weekly stats and generate picks (examples shown for weeks already pla
 uv run python scripts/cache_weekly_stats.py --year 2025 --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
 
 # Generate a weekly report (uses models/2025 → 2024)
-uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
+uv run python -m src.scripts.generate_weekly_bets_clean \
   --year 2025 --week 6 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --model-dir ./models \
-  --output-dir ./reports \
+  --output-dir artifacts/reports \
   --spread-threshold 6.0 \
   --total-threshold 6.0
 
@@ -133,7 +133,7 @@ uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
 uv run python scripts/score_weekly_picks.py \
   --year 2025 --week 6 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --report-dir ./reports
+  --report-dir artifacts/reports
 ```
 
 Notes:
@@ -156,11 +156,11 @@ Prereqs:
 Generate weekly picks (no API usage; reads from data root):
 
 ```bash
-uv run python src/cfb_model/scripts/generate_weekly_bets_clean.py \
+uv run python -m src.scripts.generate_weekly_bets_clean \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --model-dir ./models \
-  --output-dir ./reports \
+  --output-dir artifacts/reports \
   --spread-threshold 6.0 \
   --total-threshold 6.0 \
   --spread-std-dev-threshold 3.0 \
@@ -177,7 +177,7 @@ Score the week against final outcomes:
 uv run python scripts/score_weekly_picks.py \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --report-dir ./reports
+  --report-dir artifacts/reports
 
 # Option B (fresh scoring utility used during 2025 Wk6 incident):
 # Ensures game_id mapping, parses lines, validates 7/3 bet counts, and reads week-partitioned raw data.

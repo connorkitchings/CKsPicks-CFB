@@ -16,7 +16,8 @@ import pandas as pd
 # Add src to path for local imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from cfb_model.analysis.loader import load_scored_season_data
+from src.loader import load_scored_season_data
+from src.config import REPORTS_DIR, METRICS_SUBDIR
 
 BET_TYPES = {
     "spread": {
@@ -78,7 +79,7 @@ def main() -> None:
     )
     p.add_argument(
         "--report-dir",
-        default="./reports",
+        default=str(REPORTS_DIR),
         help="Root directory where season reports are stored.",
     )
     p.add_argument("--bet-type", choices=["spread", "total"], default="spread")
@@ -88,7 +89,9 @@ def main() -> None:
     p.add_argument("--out-dir", default=None, help="Optional output directory.")
     args = p.parse_args()
 
-    out_dir = args.out_dir or os.path.join(args.report_dir, str(args.year))
+    out_dir = args.out_dir or os.path.join(
+        args.report_dir, METRICS_SUBDIR, str(args.year)
+    )
     os.makedirs(out_dir, exist_ok=True)
 
     # Use the new centralized loader

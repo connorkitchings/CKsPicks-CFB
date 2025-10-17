@@ -11,14 +11,12 @@ import pandas as pd
 from tqdm import tqdm
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.config import get_data_root
-from cfb_model.data.aggregations.core import (
-    apply_iterative_opponent_adjustment,
-)
-from cfb_model.data.storage.base import Partition
-from cfb_model.data.storage.local_storage import LocalStorage
+from src.config import get_data_root
+from src.features.core import apply_iterative_opponent_adjustment
+from src.utils.base import Partition
+from src.utils.local_storage import LocalStorage
 
 
 def cache_season_stats(year: int, data_root: str | None):

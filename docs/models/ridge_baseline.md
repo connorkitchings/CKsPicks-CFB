@@ -57,7 +57,7 @@ python -m cfb_model.models.ridge_baseline.train \
   --test-year 2024 \
   --data-root /absolute/data/root \
   --model-dir ./models/ridge_baseline \
-  --metrics-dir ./reports/metrics
+  --metrics-dir artifacts/reports/metrics
 ```
 
 ### Weekly Predictions

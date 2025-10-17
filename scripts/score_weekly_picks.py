@@ -13,11 +13,16 @@ from pathlib import Path
 import pandas as pd
 
 # Add src to path for local imports
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.analysis.scoring import settle_spread_bets, settle_total_bets
-from cfb_model.config import get_data_root
-from cfb_model.data.storage.local_storage import LocalStorage
+from src.scoring import settle_spread_bets, settle_total_bets
+from src.config import (
+    get_data_root,
+    REPORTS_DIR,
+    PREDICTIONS_SUBDIR,
+    SCORED_SUBDIR,
+)
+from src.utils.local_storage import LocalStorage
 
 
 def main() -> None:
@@ -36,7 +41,7 @@ def main() -> None:
     parser.add_argument(
         "--report-dir",
         type=str,
-        default="./reports",
+        default=str(REPORTS_DIR),
         help="Directory where weekly reports are located.",
     )
     args = parser.parse_args()
@@ -46,10 +51,21 @@ def main() -> None:
 
     # --- Load Input Files ---
     # Try the file with game IDs first, then fallback to regular file
+    predictions_dir = os.path.join(
+        args.report_dir, str(args.year), PREDICTIONS_SUBDIR
+    )
     bets_file_with_ids = os.path.join(
-        args.report_dir, str(args.year), f"CFB_week{args.week}_bets_with_ids.csv"
+        predictions_dir, f"CFB_week{args.week}_bets_with_ids.csv"
     )
     bets_file = os.path.join(
+        predictions_dir, f"CFB_week{args.week}_bets.csv"
+    )
+
+    # Legacy locations (pre-folder structure) for backward compatibility
+    legacy_with_ids = os.path.join(
+        args.report_dir, str(args.year), f"CFB_week{args.week}_bets_with_ids.csv"
+    )
+    legacy_bets = os.path.join(
         args.report_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
     )
 
@@ -58,6 +74,12 @@ def main() -> None:
         print(f"Using file with game IDs: {bets_file}")
     elif os.path.exists(bets_file):
         print(f"Using regular bets file: {bets_file}")
+    elif os.path.exists(legacy_with_ids):
+        bets_file = legacy_with_ids
+        print(f"Using legacy file with game IDs: {bets_file}")
+    elif os.path.exists(legacy_bets):
+        bets_file = legacy_bets
+        print(f"Using legacy bets file: {bets_file}")
     else:
         print(f"Error: No bets file found at {bets_file} or {bets_file_with_ids}")
         return
@@ -112,8 +134,10 @@ def main() -> None:
     final_df["Total Result"] = final_df["home_points"] + final_df["away_points"]
 
     # --- Save and Summarize ---
+    scored_dir = os.path.join(args.report_dir, str(args.year), SCORED_SUBDIR)
+    os.makedirs(scored_dir, exist_ok=True)
     output_path = os.path.join(
-        args.report_dir, str(args.year), f"CFB_week{args.week}_bets_scored.csv"
+        scored_dir, f"CFB_week{args.week}_bets_scored.csv"
     )
     final_df.to_csv(output_path, index=False)
     print(f"Scored results saved to {output_path}")

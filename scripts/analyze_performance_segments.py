@@ -15,9 +15,10 @@ import numpy as np
 import pandas as pd
 
 # Add src to path for local imports
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.analysis.loader import load_scored_season_data
+from src.loader import load_scored_season_data
+from src.config import REPORTS_DIR
 
 
 def analyze_favorites_vs_underdogs(df: pd.DataFrame) -> pd.DataFrame:
@@ -108,7 +109,7 @@ def main():
     )
     parser.add_argument(
         "--report-dir",
-        default="./reports",
+        default=str(REPORTS_DIR),
         help="Root directory where season reports are stored.",
     )
     args = parser.parse_args()

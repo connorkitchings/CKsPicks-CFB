@@ -25,11 +25,10 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-
-from cfb_model.models.calibration import apply_weekly_bias, compute_weekly_bias
+from src.models.calibration import apply_weekly_bias, compute_weekly_bias
+from src.utils.local_storage import LocalStorage
 
 
 def _compute_actuals(df: pd.DataFrame) -> pd.DataFrame:
@@ -47,15 +46,8 @@ def _compute_actuals(df: pd.DataFrame) -> pd.DataFrame:
 def _attach_actuals_from_games(
     df: pd.DataFrame, data_root: str | None, year: int
 ) -> pd.DataFrame:
-    """Merge actual scores from raw games for a single season."""
-    try:
-        import sys
-        from pathlib import Path
 
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-        from cfb_model.data.storage.local_storage import LocalStorage
-    except Exception:
-        return df
+
 
     games = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     game_rows = games.read_index("games", {"year": year})
@@ -77,14 +69,7 @@ def _attach_actuals_multi_years(
     """Merge actual scores from raw games across all seasons present in df."""
     if "game_id" not in df.columns or "season" not in df.columns:
         return df
-    try:
-        import sys
-        from pathlib import Path
 
-        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-        from cfb_model.data.storage.local_storage import LocalStorage
-    except Exception:
-        return df
 
     storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     seasons = sorted(set(int(s) for s in df["season"].dropna().unique()))

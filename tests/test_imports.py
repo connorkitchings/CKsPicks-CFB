@@ -1,16 +1,19 @@
 # Basic import smoke tests for key modules
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import importlib
 
 import pytest
 
 MODULES = [
-    "cfb_model.data.aggregations.byplay",
-    "cfb_model.data.aggregations.core",
-    "cfb_model.data.aggregations.pipeline",
-    "cfb_model.data.aggregations.persist",
-    "cfb_model.models.train_model",
-    "cfb_model.utils.logging",
+    "features.byplay",
+    "features.core",
+    "features.pipeline",
+    "features.persist",
+    "models.train_model",
+    "utils.logging",
 ]
 
 

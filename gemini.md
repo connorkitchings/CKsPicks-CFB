@@ -101,12 +101,26 @@ uv run mkdocs serve
 
 ## 4. Session Context Requirements
 
-To get up to speed, review this minimal context pack:
-1.  `docs/project_org/project_charter.md` - Project scope and goals.
-2.  `docs/project_org/feature_catalog.md` - Feature definitions.
-3.  `docs/operations/weekly_pipeline.md` - Production runbook.
-4.  `docs/project_org/modeling_baseline.md` - MVP model specs.
-5.  `docs/decisions/decision_log.md` - Architectural decisions.
+To get up to speed, review this minimal context pack (in order):
+
+**Docs**
+1. `docs/project_org/project_charter.md` — Project scope, guardrails, and success criteria.
+2. `docs/planning/roadmap.md` — Sprint focus and active tasks.
+3. `docs/decisions/decision_log.md` — Most recent architecture and policy decisions.
+4. `docs/project_org/modeling_baseline.md` — Current ensemble configuration and training plan.
+5. `docs/operations/weekly_pipeline.md` — Manual weekly runbook and dependencies.
+6. `docs/project_org/feature_catalog.md` — Canonical feature definitions and validation patterns.
+7. `docs/project_org/betting_policy.md` — Risk controls, sizing rules, and thresholds.
+8. Latest `session_logs/<date>/<nn>.md` — Today's handoff or most recent session summary.
+
+**Code Anchors**
+- `src/config.py` — Repository/data path resolution and shared constants.
+- `src/utils/local_storage.py` — Storage contract, partition naming, manifest schema.
+- `src/features/pipeline.py` & `src/features/persist.py` — End-to-end feature pipeline and persistence.
+- `src/models/train_model.py` — Ensemble training loop and MLflow integration.
+- `src/scripts/generate_weekly_bets_clean.py` — Weekly prediction, edge filtering, report writing.
+- `scripts/cli.py` — Typer CLI for ingestion/aggregation/season automation.
+- Representative tests in `tests/` (e.g., `test_aggregations_core.py`, `test_betting_policy_kelly.py`) — Validation expectations.
 
 ---
 
@@ -121,12 +135,12 @@ To get up to speed, review this minimal context pack:
 
 ## 6. Session Initialization
 
-To begin a development session, please provide the following prompt to ensure the AI has full project context:
+To begin a development session, share this prompt so Gemini refreshes global context and the minimal pack above:
 
 ```
-Please review @README.md , @mkdocs.yml , @pyproject.toml , @docs/** , and @session_logs/** to get up to speed on the project. Then review the codebase in @src/** , @scripts/** , and @tests/**
+Please review @README.md , @mkdocs.yml , @pyproject.toml , the Minimal Context Pack (docs + code anchors) listed in gemini.md, and @session_logs/** before inspecting broader @src/** , @scripts/** , and @tests/**.
 ```
 
 ---
 ## Gemini Added Memories
-- When a new session starts in the `/Users/connorkitchings/Desktop/Repositories/cfb_model` directory, please read the following files to get context: `README.md`, `mkdocs.yml`, `pyproject.toml`, `docs/**`, `src/**`, `scripts/**`, and `tests/**`.
+- When a new session starts in the `/Users/connorkitchings/Desktop/Repositories/cfb_model` directory, load `README.md`, `mkdocs.yml`, `pyproject.toml`, the Minimal Context Pack (docs plus code anchors) listed above, and the latest `session_logs/` handoff before drilling into broader `src/**`, `scripts/**`, or `tests/**`.

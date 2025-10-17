@@ -32,6 +32,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from src.config import REPORTS_DIR, PREDICTIONS_SUBDIR, SCORED_SUBDIR, METRICS_SUBDIR
+
 TEAM_LOGO_MAP = {
     "Sam Houston": "Sam Houston State",
     "UL Monroe": "Louisiana Monroe",
@@ -40,8 +42,16 @@ TEAM_LOGO_MAP = {
     "San José State": "San Jose State",
     "UTSA": "UT San Antonio",
     "Hawai'i": "Hawai_i",
+    "UConn": "Connecticut",
     "Southern Miss": "Southern Mississippi",
 }
+
+
+def _season_subdir(report_dir: Path, year: int, subdir: str) -> Path:
+    preferred = report_dir / str(year) / subdir
+    if preferred.exists():
+        return preferred
+    return report_dir / str(year)
 
 
 def _logo_cid_for(name: str) -> str:
@@ -363,9 +373,10 @@ def compute_hit_rates(
 
         return hit_rate, count
 
+    scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
     paths = [
         Path(p)
-        for p in glob.glob(str(report_dir / str(year) / "CFB_week*_bets_scored.csv"))
+        for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv"))
     ]
     if not paths:
         return None, None, 0, 0
@@ -385,7 +396,8 @@ def compute_hit_rates(
     if up_to_week is not None:
         week_col = "Week" if "Week" in scored.columns else "week"
         if week_col in scored.columns:
-            scored = scored[scored[week_col] <= up_to_week]
+            week_numeric = pd.to_numeric(scored[week_col], errors="coerce")
+            scored = scored[week_numeric <= up_to_week]
 
     spr, spr_n = _calculate_metrics(
         scored, "Spread Bet", "Spread Bet Result", ["home", "away"]
@@ -432,7 +444,8 @@ def compute_week_hit_rates(
 
         return hit_rate, count
 
-    weekly_path = report_dir / str(year) / f"CFB_week{week}_bets_scored.csv"
+    scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
+    weekly_path = scored_dir / f"CFB_week{week}_bets_scored.csv"
     frames: list[pd.DataFrame] = []
     if weekly_path.exists():
         try:
@@ -440,9 +453,7 @@ def compute_week_hit_rates(
         except Exception:
             pass
     else:
-        season_combined = (
-            report_dir / str(year) / f"CFB_season_{year}_all_bets_scored.csv"
-        )
+        season_combined = scored_dir / f"CFB_season_{year}_all_bets_scored.csv"
         if season_combined.exists():
             try:
                 df = pd.read_csv(season_combined)
@@ -450,9 +461,7 @@ def compute_week_hit_rates(
             except Exception:
                 pass
         else:
-            for p in glob.glob(
-                str(report_dir / str(year) / "CFB_week*_bets_scored.csv")
-            ):
+            for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv")):
                 try:
                     frames.append(pd.read_csv(p))
                 except Exception:
@@ -464,7 +473,8 @@ def compute_week_hit_rates(
     df = pd.concat(frames, ignore_index=True)
     week_col = "Week" if "Week" in df.columns else "week"
     if week_col in df.columns:
-        df = df[df[week_col] == week]
+        week_numeric = pd.to_numeric(df[week_col], errors="coerce")
+        df = df[week_numeric == week]
 
     if df.empty:
         return None, None, 0, 0
@@ -598,7 +608,9 @@ def main() -> None:
         "--week", type=int, required=True, help="The week of the report."
     )
     parser.add_argument(
-        "--report-dir", default="./reports", help="Directory where reports are stored."
+        "--report-dir",
+        default=str(REPORTS_DIR),
+        help="Directory where reports are stored.",
     )
     parser.add_argument(
         "--mode",
@@ -652,12 +664,17 @@ def main() -> None:
             return
 
     # --- Load and Validate Weekly Bets CSV ---
-    bets_file = os.path.join(
-        args.report_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
-    )
-    if not os.path.exists(bets_file):
-        print(f"Error: Bets file not found at {bets_file}")
-        return
+    report_dir_path = Path(args.report_dir)
+    predictions_dir = _season_subdir(report_dir_path, args.year, PREDICTIONS_SUBDIR)
+    base_filename = f"CFB_week{args.week}_bets.csv"
+    bets_file = predictions_dir / base_filename
+    if not bets_file.exists():
+        legacy_file = report_dir_path / str(args.year) / base_filename
+        if legacy_file.exists():
+            bets_file = legacy_file
+        else:
+            print(f"Error: Bets file not found at {bets_file}")
+            return
 
     all_games_df = pd.read_csv(bets_file)
 
@@ -768,7 +785,6 @@ def main() -> None:
             }
         )
 
-    report_dir_path = Path(args.report_dir)
     prev_spread, prev_total, prev_spread_n, prev_total_n = compute_hit_rates(
         args.year - 1, None, report_dir_path
     )

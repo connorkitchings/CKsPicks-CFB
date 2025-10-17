@@ -5,14 +5,17 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import joblib
 import numpy as np
 import pandas as pd
 
-from cfb_model.config import get_data_root
-from cfb_model.data.storage.local_storage import LocalStorage
-from cfb_model.models.features import (
+from src.config import get_data_root, REPORTS_DIR
+from src.utils.local_storage import LocalStorage
+from src.models.features import (
     build_differential_feature_list,
     build_differential_features,
 )
@@ -276,7 +279,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./reports/differential",
+        default=str(REPORTS_DIR / "differential"),
         help="Directory to save the weekly report",
     )
     parser.add_argument(
@@ -335,8 +338,10 @@ def main() -> None:
             min_games_played=4,  # Using a reasonable default
         )
 
+        output_dir = os.path.join(args.output_dir, str(args.year))
+        os.makedirs(output_dir, exist_ok=True)
         output_path = os.path.join(
-            args.output_dir, str(args.year), f"CFB_week{args.week}_bets.csv"
+            output_dir, f"CFB_week{args.week}_bets.csv"
         )
         print("Writing CSV report...")
         generate_csv_report(final_df, output_path)

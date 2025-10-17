@@ -1,0 +1,1 @@
+[('scaler', StandardScaler()), ('huber', HuberRegressor(max_iter=500))]

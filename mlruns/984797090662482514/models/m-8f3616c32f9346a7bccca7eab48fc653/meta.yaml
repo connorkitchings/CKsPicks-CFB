@@ -1,0 +1,10 @@
+artifact_location: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/mlruns/984797090662482514/models/m-8f3616c32f9346a7bccca7eab48fc653/artifacts
+creation_timestamp: 1760717062178
+experiment_id: '984797090662482514'
+last_updated_timestamp: 1760717063229
+model_id: m-8f3616c32f9346a7bccca7eab48fc653
+model_type: null
+name: spread_huber
+source_run_id: d51bec9fba16492b800ad574864b99dc
+status: 2
+status_message: null

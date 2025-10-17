@@ -136,22 +136,34 @@ The project follows a clear separation between data ingestion, processing, model
 
 ### Minimal Context Pack (start each session)
 
+Before making changes, review the following high-signal references:
+
+**Docs (read in order)**
+1. `docs/project_org/project_charter.md` — Vision, scope, guardrails
+2. `docs/planning/roadmap.md` — Current sprint goals and active tasks
+3. `docs/decisions/decision_log.md` — Architectural and policy decisions to date
+4. `docs/project_org/modeling_baseline.md` — Ensemble configuration and training window
+5. `docs/operations/weekly_pipeline.md` — Manual runbook and operational checkpoints
+6. `docs/project_org/feature_catalog.md` — Canonical feature definitions and validation notes
+7. `docs/project_org/betting_policy.md` — Risk controls, unit sizing, and betting thresholds
+8. Latest entry in `session_logs/` — Most recent handoff context
+
+**Code Anchors (scan after docs)**
+- `src/config.py` — Path resolution and shared constants
+- `src/utils/local_storage.py` — Partitioned storage contract and manifests
+- `src/features/pipeline.py` + `src/features/persist.py` — Play→season pipeline and persistence
+- `src/models/train_model.py` — Ensemble training, MLflow logging, feature generation
+- `src/scripts/generate_weekly_bets_clean.py` — Weekly prediction & bet selection flow
+- `scripts/cli.py` — Typer CLI orchestration for ingestion/aggregation/season runs
+- `tests/` (especially `test_aggregations_core.py`, `test_betting_policy_kelly.py`) — Guardrails for aggregation math and policy
+
 ### AI Session Kickoff
 
-To begin a development session, please provide the following prompt to ensure the AI has full project context:
+To begin a development session, provide this prompt so the assistant gathers baseline context and then drills into the minimal pack above:
 
 ```
-Please review @README.md , @mkdocs.yml , @pyproject.toml , @docs/** , and @session_logs/** to get up to speed on the project. Then review the codebase in @src/** , @scripts/** , and @tests/**
+Please review @README.md , @mkdocs.yml , @pyproject.toml , @session_logs/** , the docs listed in WARP.md's Minimal Context Pack, and the Code Anchors (src/config.py, src/utils/local_storage.py, src/features/pipeline.py, src/features/persist.py, src/models/train_model.py, src/scripts/generate_weekly_bets_clean.py, scripts/cli.py, representative tests) before inspecting broader @src/** , @scripts/** , and @tests/**.
 ```
-
-
-Essential documents to review before making changes:
-
-1. `docs/project_org/project_charter.md` - Project scope and technical goals
-2. `docs/project_org/feature_catalog.md` - Complete feature definitions and validation rules
-3. `docs/operations/weekly_pipeline.md` - Production pipeline runbook
-4. `docs/project_org/modeling_baseline.md` - MVP model specifications
-5. `docs/decisions/decision_log.md` - Architectural decisions to date
 
 ### Full Context Pack
 

@@ -9,6 +9,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from src.config import REPORTS_DIR, SCORED_SUBDIR, METRICS_SUBDIR
+
 
 def calculate_roi(hit_rate, odds=-110):
     """Calculates ROI given a hit rate and American odds."""
@@ -31,18 +33,20 @@ def main():
     parser.add_argument(
         "--report-dir",
         type=str,
-        default="./reports",
+        default=str(REPORTS_DIR),
         help="Directory where scored reports are located.",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./reports/metrics",
+        default=str(REPORTS_DIR / METRICS_SUBDIR),
         help="Directory to save the summary report.",
     )
     args = parser.parse_args()
 
-    season_report_dir = os.path.join(args.report_dir, str(args.year))
+    season_report_dir = os.path.join(
+        args.report_dir, str(args.year), SCORED_SUBDIR
+    )
     if not os.path.exists(season_report_dir):
         print(f"Report directory not found: {season_report_dir}")
         return

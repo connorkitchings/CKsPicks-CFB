@@ -15,7 +15,7 @@ Subcommands:
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
 import subprocess
@@ -24,22 +24,25 @@ import pandas as pd
 import typer
 from typing_extensions import Annotated
 
-from cfb_model.config import get_data_root
-from cfb_model.data.aggregations.persist import (
-    persist_byplay_only,
+from src.config import (
+    get_data_root,
+    REPORTS_DIR,
+    PREDICTIONS_SUBDIR,
+    SCORED_SUBDIR,
+)
+from src.features.persist import (
     persist_preaggregations,
+    persist_byplay_only,
 )
-from cfb_model.data.ingestion import (
-    BettingLinesIngester,
-    CoachesIngester,
-    GamesIngester,
-    GameStatsIngester,
-    PlaysIngester,
-    RostersIngester,
-    TeamsIngester,
-    VenuesIngester,
-)
-from cfb_model.data.storage.local_storage import LocalStorage
+from src.data.betting_lines import BettingLinesIngester
+from src.data.coaches import CoachesIngester
+from src.data.games import GamesIngester
+from src.data.game_stats import GameStatsIngester
+from src.data.plays import PlaysIngester
+from src.data.rosters import RostersIngester
+from src.data.teams import TeamsIngester
+from src.data.venues import VenuesIngester
+from src.utils.local_storage import LocalStorage
 
 app = typer.Typer(help="CFB Model CLI for data ingestion and processing.")
 
@@ -47,7 +50,8 @@ app = typer.Typer(help="CFB Model CLI for data ingestion and processing.")
 @app.command()
 def ingest(
     entity: Annotated[
-        str, typer.Argument(help="Entity type to ingest", case_sensitive=False)
+        str,
+        typer.Argument(help="Entity type to ingest", case_sensitive=False),
     ],
     data_root: Annotated[
         str,
@@ -105,7 +109,8 @@ def ingest(
 @app.command()
 def aggregate(
     command: Annotated[
-        str, typer.Argument(help="Aggregation command to run", case_sensitive=False)
+        str,
+        typer.Argument(help="Aggregation command to run", case_sensitive=False),
     ],
     data_root: Annotated[
         str,
@@ -152,17 +157,17 @@ def ingest_year(
     print(f"Using data root: {storage.root()}")
 
     ingestion_sequence = [
-        (TeamsIngester, {}),
-        (VenuesIngester, {}),
-        (GamesIngester, {"season_type": season_type}),
-        (RostersIngester, {}),
-        (CoachesIngester, {}),
+        (TeamsIngester, {{}}),
+        (VenuesIngester, {{}}),
+        (GamesIngester, {{"season_type": season_type}}),
+        (RostersIngester, {{}}),
+        (CoachesIngester, {{}}),
         (
             BettingLinesIngester,
-            {"season_type": season_type, "limit_games": limit_games},
+            {{"season_type": season_type, "limit_games": limit_games}},
         ),
-        (PlaysIngester, {"season_type": season_type, "limit_games": limit_games}),
-        (GameStatsIngester, {"limit_games": limit_games, "season_type": season_type}),
+        (PlaysIngester, {{"season_type": season_type, "limit_games": limit_games}}),
+        (GameStatsIngester, {{"limit_games": limit_games, "season_type": season_type}}),
     ]
 
     failures: list[str] = []
@@ -198,7 +203,7 @@ def run_season(
     ] = "./models/ridge_baseline",
     report_dir: Annotated[
         str, typer.Option(help="Path to reports output directory")
-    ] = "./reports",
+    ] = str(REPORTS_DIR),
     start_week: Annotated[int, typer.Option(help="Starting week (inclusive)")] = 5,
     end_week: Annotated[int, typer.Option(help="Ending week (inclusive)")] = 16,
     spread_threshold: Annotated[
@@ -229,7 +234,8 @@ def run_season(
             env["PYTHONPATH"] = "./src"
             cmd = [
                 "python3",
-                "src/cfb_model/scripts/generate_weekly_bets_clean.py",
+                "-m",
+                "src.scripts.generate_weekly_bets_clean",
                 "--year",
                 str(year),
                 "--week",
@@ -246,9 +252,10 @@ def run_season(
                 str(total_threshold),
             ]
             if spread_std_dev_threshold is not None:
-                cmd.extend(
-                    ["--spread-std-dev-threshold", str(spread_std_dev_threshold)]
-                )
+                cmd.extend([
+                    "--spread-std-dev-threshold",
+                    str(spread_std_dev_threshold),
+                ])
             if total_std_dev_threshold is not None:
                 cmd.extend(["--total-std-dev-threshold", str(total_std_dev_threshold)])
 
@@ -291,7 +298,15 @@ def run_season(
             print(f"ERROR scoring week {week}: {e}")
             continue
 
-        scored_path = f"{report_dir}/{year}/CFB_week{week}_bets_scored.csv"
+        scored_path = os.path.join(
+            report_dir, str(year), SCORED_SUBDIR, f"CFB_week{week}_bets_scored.csv"
+        )
+        if not os.path.exists(scored_path):
+            legacy_scored = os.path.join(
+                report_dir, str(year), f"CFB_week{week}_bets_scored.csv"
+            )
+            if os.path.exists(legacy_scored):
+                scored_path = legacy_scored
         if os.path.exists(scored_path):
             try:
                 scored_df = pd.read_csv(scored_path)
@@ -375,8 +390,13 @@ def run_season(
 
     if all_results:
         combined_df = pd.concat(all_results, ignore_index=True)
-        combined_path = f"{report_dir}/{year}/CFB_season_{year}_all_bets_scored.csv"
+        combined_dir = os.path.join(report_dir, str(year), SCORED_SUBDIR)
+        os.makedirs(combined_dir, exist_ok=True)
+        combined_path = os.path.join(
+            combined_dir, f"CFB_season_{year}_all_bets_scored.csv"
+        )
         combined_df.to_csv(combined_path, index=False)
+
         print(f"\nCombined results saved to: {combined_path}")
 
 

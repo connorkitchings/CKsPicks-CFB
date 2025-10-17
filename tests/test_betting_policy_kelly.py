@@ -1,8 +1,11 @@
 # Unit tests for Kelly sizing and confidence filters in weekly betting policy
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
 
-from cfb_model.scripts.generate_weekly_bets_clean import apply_betting_policy
+from scripts.generate_weekly_bets_clean import apply_betting_policy
 
 
 def test_apply_betting_policy_kelly_basic():

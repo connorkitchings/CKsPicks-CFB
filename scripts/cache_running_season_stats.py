@@ -12,12 +12,12 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.config import get_data_root
-from cfb_model.data.aggregations.core import aggregate_team_season
-from cfb_model.data.storage.base import Partition
-from cfb_model.data.storage.local_storage import LocalStorage
+from src.config import get_data_root
+from src.features.core import aggregate_team_season
+from src.utils.base import Partition
+from src.utils.local_storage import LocalStorage
 
 
 def cache_running_stats(year: int, data_root: str | None):

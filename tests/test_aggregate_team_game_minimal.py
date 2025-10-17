@@ -1,8 +1,11 @@
 # Unit test for aggregate_team_game using tiny synthetic inputs
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
 
-from cfb_model.data.aggregations.core import aggregate_team_game
+from features.core import aggregate_team_game
 
 
 def test_aggregate_team_game_minimal():

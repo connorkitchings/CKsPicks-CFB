@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import smtplib
+import sys
 from datetime import datetime
 from email import encoders
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -30,6 +33,30 @@ from typing import List, Tuple
 import pandas as pd
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from src.config import REPORTS_DIR, SCORED_SUBDIR  # noqa: E402
+
+TEAM_LOGO_MAP = {
+    "Sam Houston": "Sam Houston State",
+    "UL Monroe": "Louisiana Monroe",
+    "Massachusetts": "UMass",
+    "App State": "Appalachian State",
+    "San José State": "San Jose State",
+    "UTSA": "UT San Antonio",
+    "Hawai'i": "Hawai_i",
+    "UConn": "Connecticut",
+    "Southern Miss": "Southern Mississippi",
+}
+
+
+def _logo_cid_for(name: str | None) -> str:
+    if not name:
+        return ""
+    mapped = TEAM_LOGO_MAP.get(name, name)
+    return f"logo_{str(mapped).replace(' ', '_')}"
 
 
 def render_email_html(template_dir: Path, context):
@@ -53,13 +80,14 @@ def send_email(
     server: str,
     port: int,
     attachments: List[Tuple[str, bytes, str]] | None = None,
+    image_attachments: List[MIMEImage] | None = None,
 ) -> None:
     """Send an email using SMTP with HTML, plaintext, and optional attachments.
 
     attachments: list of (filename, bytes_content, mime_type)
     """
-    # mixed container for attachments with an alternative part for text/html
-    msg = MIMEMultipart("mixed")
+    # related container for inline images with an alternative part for text/html
+    msg = MIMEMultipart("related")
     msg["Subject"] = subject
     msg["From"] = sender
     msg["To"] = ", ".join(recipients)
@@ -68,6 +96,10 @@ def send_email(
     alt_part.attach(MIMEText(text_content, "plain"))
     alt_part.attach(MIMEText(html_content, "html"))
     msg.attach(alt_part)
+
+    # Attach inline images
+    for img in image_attachments or []:
+        msg.attach(img)
 
     # Attach files
     for filename, content_bytes, mime_type in attachments or []:
@@ -133,7 +165,9 @@ def main() -> None:
         "--week", type=int, required=True, help="The week of the report."
     )
     parser.add_argument(
-        "--report-dir", default="./reports", help="Directory where reports are stored."
+        "--report-dir",
+        default=str(REPORTS_DIR),
+        help="Directory where reports are stored.",
     )
     parser.add_argument(
         "--mode",
@@ -189,10 +223,13 @@ def main() -> None:
             return
 
     # --- 2. Load the Weekly Bets CSV ---
-    bets_file = os.path.join(
-        args.report_dir, str(args.year), f"CFB_week{args.week}_bets_scored.csv"
-    )
-    if not os.path.exists(bets_file):
+    report_dir_path = Path(args.report_dir)
+    scored_dir = report_dir_path / str(args.year) / SCORED_SUBDIR
+    if scored_dir.exists():
+        bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
+    else:
+        bets_file = report_dir_path / str(args.year) / f"CFB_week{args.week}_bets_scored.csv"
+    if not bets_file.exists():
         print(f"Error: Bets file not found at {bets_file}")
         return
 
@@ -257,6 +294,11 @@ def main() -> None:
 
     bets = []
     for _, row in all_games_df.iterrows():
+        home_team = row.get("home_team")
+        away_team = row.get("away_team")
+        home_logo_cid = _logo_cid_for(home_team) if pd.notna(home_team) else ""
+        away_logo_cid = _logo_cid_for(away_team) if pd.notna(away_team) else ""
+
         # Spread bet row (if present)
         if row["Spread Bet"] in ["home", "away"]:
             # Line column (spread text from report)
@@ -266,12 +308,16 @@ def main() -> None:
             # Bet text (team + signed number)
             if row["Spread Bet"] == "home":
                 bet_team = row["home_team"]
-                line_val = row["home_team_spread_line"]
-                bet_text = f"{bet_team} {line_val:+.1f}"
+                line_val = row.get("home_team_spread_line")
+                bet_text = (
+                    f"{bet_team}"
+                    if bet_team
+                    else ""
+                )
             else:
                 bet_team = row["away_team"]
-                line_val = -row["home_team_spread_line"]
-                bet_text = f"{bet_team} {line_val:+.1f}"
+                line_val = row.get("home_team_spread_line")
+                bet_text = f"{bet_team}" if bet_team else ""
             # Final score and final result (spread margin)
             final_score = (
                 f"{int(row['away_points'])} - {int(row['home_points'])}"
@@ -283,14 +329,21 @@ def main() -> None:
                 if pd.notna(row.get("Spread Result"))
                 else None
             )
+            line_display = (
+                line_text
+                if line_text
+                else (
+                    f"{row['home_team']} {row['home_team_spread_line']:+.1f}"
+                    if pd.notna(row.get("home_team_spread_line"))
+                    else ""
+                )
+            )
             bets.append(
                 {
                     "date": row["date_display"],
                     "time": row["time_display"],
                     "game": row["Game"],
-                    "line": line_text
-                    if line_text
-                    else f"{row['home_team']} {row['home_team_spread_line']:+.1f}",
+                    "line": line_display,
                     "prediction": float(row["Spread Prediction"])
                     if pd.notna(row.get("Spread Prediction"))
                     else None,
@@ -298,13 +351,17 @@ def main() -> None:
                     "final_score": final_score,
                     "final_result": final_result,
                     "bet_result": row["Spread Bet Result"],
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "home_team_logo_cid": home_logo_cid,
+                    "away_team_logo_cid": away_logo_cid,
                 }
             )
 
         # Total bet row (if present)
         if row["Total Bet"] in ["over", "under"]:
             line_text = row.get("Over/Under")
-            bet_text = f"{row['Total Bet'].capitalize()} {row['Over/Under']}"
+            bet_text = f"{row['Total Bet'].capitalize()}"
             final_score = (
                 f"{int(row['away_points'])} - {int(row['home_points'])}"
                 if pd.notna(row["home_points"]) and pd.notna(row["away_points"])
@@ -328,6 +385,10 @@ def main() -> None:
                     "final_score": final_score,
                     "final_result": final_result,
                     "bet_result": row["Total Bet Result"],
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "home_team_logo_cid": home_logo_cid,
+                    "away_team_logo_cid": away_logo_cid,
                 }
             )
 
@@ -346,6 +407,25 @@ def main() -> None:
     html = render_email_html(template_dir, context)
     text = "Please enable HTML to view this email."
 
+    # Inline logo images referenced by CID
+    cids_in_html = set(re.findall(r"cid:([^\"']+)", html))
+    image_attachments: List[MIMEImage] = []
+    logo_dir = REPO_ROOT / "Logos"
+    for cid in sorted(cids_in_html):
+        if not cid.startswith("logo_"):
+            continue
+        name_part = cid[len("logo_") :].replace("_", " ")
+        logo_name = TEAM_LOGO_MAP.get(name_part, name_part)
+        logo_path = logo_dir / f"{logo_name}.png"
+        if not logo_path.exists():
+            continue
+        with open(logo_path, "rb") as f:
+            img_data = f.read()
+        img = MIMEImage(img_data)
+        img.add_header("Content-ID", f"<{cid}>")
+        img.add_header("Content-Disposition", "inline", filename=logo_path.name)
+        image_attachments.append(img)
+
     # --- 4. Send ---
     subject = f"CK's CFB Picks: {args.year} Week {args.week} Review"
     try:
@@ -358,6 +438,7 @@ def main() -> None:
             sender_password,
             smtp_server,
             smtp_port,
+            image_attachments=image_attachments,
         )
         print(
             f"Successfully sent review for Week {args.week} to {', '.join(recipients)}."

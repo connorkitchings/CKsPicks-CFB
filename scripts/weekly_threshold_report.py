@@ -7,7 +7,8 @@ from typing import Dict, List
 
 import pandas as pd
 
-from cfb_model.data.storage.local_storage import LocalStorage
+from src.utils.local_storage import LocalStorage
+from src.config import REPORTS_DIR, PREDICTIONS_SUBDIR
 
 
 def list_weeks(data_root: str, year: int) -> List[int]:
@@ -23,7 +24,9 @@ def list_weeks(data_root: str, year: int) -> List[int]:
 def evaluate_week(
     data_root: str, report_dir: str, year: int, week: int, threshold: float
 ) -> Dict:
-    path = os.path.join(report_dir, str(year), f"CFB_week{week}_bets.csv")
+    path = os.path.join(
+        report_dir, str(year), PREDICTIONS_SUBDIR, f"CFB_week{week}_bets.csv"
+    )
     if not os.path.exists(path):
         return {"week": week, "picks": 0, "wins": 0, "hit_rate": None}
     bets = pd.read_csv(path)
@@ -76,7 +79,7 @@ def main() -> None:
         description="Weekly win rates at a given edge threshold"
     )
     p.add_argument("--data-root", required=True)
-    p.add_argument("--report-dir", default="./reports")
+    p.add_argument("--report-dir", default=str(REPORTS_DIR))
     p.add_argument("--year", type=int, default=2024)
     p.add_argument("--threshold", type=float, default=5.0)
     args = p.parse_args()

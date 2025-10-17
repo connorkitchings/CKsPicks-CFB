@@ -1,117 +1,168 @@
 """
-Compute season hit rates and counts from scored weekly reports.
+Build per-week and season-level betting results summaries from scored reports.
 
-Writes a CSV to reports/metrics/hit_rates_<year>.csv with columns:
-- year, up_to_week, spread_hit_rate, total_hit_rate, spread_count, total_count
-
-Usage:
-  uv run python scripts/compute_hit_rates.py --year 2024 --report-dir ./reports
-  uv run python scripts/compute_hit_rates.py --year 2025 --report-dir ./reports --up-to-week 5
+Writes CSV files to artifacts/reports/<year>/metrics/<year>_results.csv with columns:
+- week (individual weeks plus a "season" aggregate row)
+- games_available, spread_bets, total_bets, spread_wins, total_wins
+- spread_hit_rate, total_hit_rate, overall_hit_rate
 """
 
 from __future__ import annotations
 
 import argparse
-import glob
+import re
 from pathlib import Path
+from typing import Optional
+
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
+from src.config import REPORTS_DIR, SCORED_SUBDIR, METRICS_SUBDIR
 
-def compute(
-    year: int, report_dir: Path, up_to_week: int | None
-) -> tuple[float | None, float | None, int, int]:
-    paths: list[Path] = []
-    season_combined = report_dir / str(year) / f"CFB_season_{year}_all_bets_scored.csv"
-    if season_combined.exists():
-        paths = [season_combined]
-    else:
-        paths = [
-            Path(p)
-            for p in glob.glob(
-                str(report_dir / str(year) / "CFB_week*_bets_scored.csv")
-            )
-        ]
-    if not paths:
-        return None, None, 0, 0
 
-    frames: list[pd.DataFrame] = []
-    for p in paths:
-        try:
-            df = pd.read_csv(p)
-            frames.append(df)
-        except Exception:
+def _get_scored_dir(report_dir: Path, year: int) -> Path:
+    preferred = report_dir / str(year) / SCORED_SUBDIR
+    legacy = report_dir / str(year)
+    if preferred.exists():
+        return preferred
+    if legacy.exists():
+        return legacy
+    raise FileNotFoundError(
+        f"No scored reports found for {year} under {preferred} or {legacy}"
+    )
+
+
+def _extract_week(path: Path) -> Optional[int]:
+    match = re.search(r"week(\d+)", path.stem)
+    return int(match.group(1)) if match else None
+
+
+def _count_spread_bets(df: pd.DataFrame) -> tuple[int, int]:
+    if "Spread Bet" in df.columns and "Spread Bet Result" in df.columns:
+        mask = df["Spread Bet"].astype(str).str.lower().isin(["home", "away"])
+        wins = (df["Spread Bet Result"] == "Win") & mask
+        return int(mask.sum()), int(wins.sum())
+    if {"bet_spread", "pick_win"}.issubset(df.columns):
+        mask = df["bet_spread"].astype(str).str.lower().isin(["home", "away"])
+        wins = df["pick_win"].fillna(0).astype(int)
+        return int(mask.sum()), int((wins == 1).astype(int)[mask].sum())
+    return 0, 0
+
+
+def _count_total_bets(df: pd.DataFrame) -> tuple[int, int]:
+    if "Total Bet" in df.columns and "Total Bet Result" in df.columns:
+        mask = df["Total Bet"].astype(str).str.lower().isin(["over", "under"])
+        wins = (df["Total Bet Result"] == "Win") & mask
+        return int(mask.sum()), int(wins.sum())
+    if {"bet_total", "total_pick_win"}.issubset(df.columns):
+        mask = df["bet_total"].astype(str).str.lower().isin(["over", "under"])
+        wins = df["total_pick_win"].fillna(0).astype(int)
+        return int(mask.sum()), int((wins == 1).astype(int)[mask].sum())
+    return 0, 0
+
+
+def _games_available(df: pd.DataFrame) -> int:
+    if "Game" in df.columns:
+        return df["Game"].nunique()
+    if "game_id" in df.columns:
+        return df["game_id"].nunique()
+    return len(df)
+
+
+def build_results_summary(year: int, report_dir: Path) -> pd.DataFrame:
+    scored_dir = _get_scored_dir(report_dir, year)
+    weekly_paths = sorted(
+        (p for p in scored_dir.glob("CFB_week*_bets_scored.csv") if p.is_file()),
+        key=lambda p: _extract_week(p) or 0,
+    )
+    if not weekly_paths:
+        raise FileNotFoundError(f"No weekly scored reports found in {scored_dir}")
+
+    rows: list[dict[str, object]] = []
+
+    for path in weekly_paths:
+        week = _extract_week(path)
+        if week is None:
             continue
-    if not frames:
-        return None, None, 0, 0
+        df = pd.read_csv(path)
+        games = _games_available(df)
+        spread_bets, spread_wins = _count_spread_bets(df)
+        total_bets, total_wins = _count_total_bets(df)
 
-    scored = pd.concat(frames, ignore_index=True)
-    if up_to_week is not None and "Week" in scored.columns:
-        scored = scored[scored["Week"] <= up_to_week]
+        overall_bets = spread_bets + total_bets
+        overall_wins = spread_wins + total_wins
 
-    # Spread
-    spr = None
-    spr_n = 0
-    if {"Spread Bet", "Spread Bet Result"}.issubset(scored.columns):
-        placed = scored[scored["Spread Bet"].str.lower().isin(["home", "away"])]
-        decided = placed[placed["Spread Bet Result"].isin(["Win", "Loss"])]
-        spr_n = int(len(decided))
-        if spr_n > 0:
-            spr = float((decided["Spread Bet Result"] == "Win").mean())
-    elif "bet_spread" in scored.columns and "pick_win" in scored.columns:
-        placed = scored[scored["bet_spread"].str.lower().isin(["home", "away"])]
-        # pick_win assumed 1=win, 0=loss; exclude NaNs
-        decided = placed[placed["pick_win"].isin([0, 1])]
-        spr_n = int(len(decided))
-        if spr_n > 0:
-            spr = float(decided["pick_win"].mean())
+        row = {
+            "week": week,
+            "games_available": games,
+            "spread_bets": spread_bets,
+            "spread_wins": spread_wins,
+            "spread_hit_rate": (
+                spread_wins / spread_bets if spread_bets > 0 else None
+            ),
+            "total_bets": total_bets,
+            "total_wins": total_wins,
+            "total_hit_rate": total_wins / total_bets if total_bets > 0 else None,
+            "overall_bets": overall_bets,
+            "overall_wins": overall_wins,
+            "overall_hit_rate": (
+                overall_wins / overall_bets if overall_bets > 0 else None
+            ),
+        }
+        rows.append(row)
 
-    # Total
-    tot = None
-    tot_n = 0
-    if {"Total Bet", "Total Bet Result"}.issubset(scored.columns):
-        placed_t = scored[scored["Total Bet"].str.lower().isin(["over", "under"])]
-        decided_t = placed_t[placed_t["Total Bet Result"].isin(["Win", "Loss"])]
-        tot_n = int(len(decided_t))
-        if tot_n > 0:
-            tot = float((decided_t["Total Bet Result"] == "Win").mean())
-    elif "bet_total" in scored.columns and "total_pick_win" in scored.columns:
-        placed_t = scored[scored["bet_total"].str.lower().isin(["over", "under"])]
-        decided_t = placed_t[placed_t["total_pick_win"].isin([0, 1])]
-        tot_n = int(len(decided_t))
-        if tot_n > 0:
-            tot = float(decided_t["total_pick_win"].mean())
+    summary = pd.DataFrame(rows).sort_values("week").reset_index(drop=True)
 
-    return spr, tot, spr_n, tot_n
+    season_row = {
+        "week": "season",
+        "games_available": summary["games_available"].sum(),
+        "spread_bets": summary["spread_bets"].sum(),
+        "spread_wins": summary["spread_wins"].sum(),
+        "spread_hit_rate": (
+            summary["spread_wins"].sum() / summary["spread_bets"].sum()
+            if summary["spread_bets"].sum() > 0
+            else None
+        ),
+        "total_bets": summary["total_bets"].sum(),
+        "total_wins": summary["total_wins"].sum(),
+        "total_hit_rate": (
+            summary["total_wins"].sum() / summary["total_bets"].sum()
+            if summary["total_bets"].sum() > 0
+            else None
+        ),
+        "overall_bets": summary["overall_bets"].sum(),
+        "overall_wins": summary["overall_wins"].sum(),
+        "overall_hit_rate": (
+            summary["overall_wins"].sum() / summary["overall_bets"].sum()
+            if summary["overall_bets"].sum() > 0
+            else None
+        ),
+    }
+    summary = pd.concat([summary, pd.DataFrame([season_row])], ignore_index=True)
+    return summary
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Compute hit rates and counts from scored reports."
+        description="Summarize weekly and season betting performance."
     )
     ap.add_argument("--year", type=int, required=True)
-    ap.add_argument("--report-dir", type=str, default="./reports")
-    ap.add_argument("--up-to-week", type=int, default=None)
+    ap.add_argument("--report-dir", type=str, default=str(REPORTS_DIR))
     args = ap.parse_args()
 
     report_dir = Path(args.report_dir)
-    spr, tot, spr_n, tot_n = compute(args.year, report_dir, args.up_to_week)
+    summary = build_results_summary(args.year, report_dir)
 
-    out_dir = report_dir / "metrics"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"hit_rates_{args.year}.csv"
+    metrics_dir = report_dir / str(args.year) / METRICS_SUBDIR
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    out_path = metrics_dir / f"{args.year}_results.csv"
+    summary.to_csv(out_path, index=False)
 
-    row = {
-        "year": args.year,
-        "up_to_week": args.up_to_week,
-        "spread_hit_rate": spr,
-        "total_hit_rate": tot,
-        "spread_count": spr_n,
-        "total_count": tot_n,
-    }
-    pd.DataFrame([row]).to_csv(out_path, index=False)
-    print(f"Saved hit rates to {out_path}")
-    print(row)
+    print(summary.to_string(index=False))
+    print(f"\nSaved results summary to {out_path}")
 
 
 if __name__ == "__main__":

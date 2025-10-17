@@ -9,7 +9,7 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
-from cfb_model.models.features import (
+from src.models.features import (
     build_differential_feature_list,
     build_differential_features,
     generate_point_in_time_features,

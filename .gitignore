@@ -101,6 +101,7 @@ ipython_config.py
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
 #   commonly ignored for libraries.
 #uv.lock
+.uv_cache/
 
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
@@ -152,12 +153,6 @@ venv.bak/
 
 # Rope project settings
 .ropeproject
-
-# mkdocs documentation
-site/
-
-# MLflow
-mlruns/
 
 # OpenLineage
 lineage.log
@@ -217,12 +212,14 @@ __marimo__/
 # CLIs
 .geminiignore
 
+.gemini/
+gha-creds-*.json
 
-# Local data directory (actual data is on external drive)
-data/
+# Local data directogry (actual data is on external drive)
+/data
 
-# Generated reports
-reports/
+# Generated project outputs
+/artifacts/
 
-# Trained models
-models/
+# Site
+site/

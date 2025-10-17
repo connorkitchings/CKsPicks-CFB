@@ -1,3 +1,0 @@
-- +model.n_estimators=300
-- +model.max_depth=8
-- +model.min_samples_leaf=7

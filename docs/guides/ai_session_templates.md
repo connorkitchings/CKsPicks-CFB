@@ -22,6 +22,9 @@ To get up to speed, please perform the following steps:
     - `docs/decisions/decision_log.md` — Planning-level decisions made so far.
     - `docs/project_org/modeling_baseline.md` — MVP modeling approach and betting policy.
     - `docs/operations/weekly_pipeline.md` — Manual weekly runbook and outputs.
+    - `docs/project_org/feature_catalog.md` — Canonical feature definitions and validation hooks.
+    - `docs/project_org/betting_policy.md` — Risk controls, unit sizing, and thresholds.
+    - Code anchors: `src/config.py`, `src/utils/local_storage.py`, `src/features/pipeline.py`, `src/features/persist.py`, `src/models/train_model.py`, `src/scripts/generate_weekly_bets_clean.py`, `scripts/cli.py`, representative tests (`tests/test_aggregations_core.py`, `tests/test_betting_policy_kelly.py`).
     - Optional quick refs: `docs/index.md`, `README.md`, `pyproject.toml` (only if needed).
     - Keep context small: skim headings and bullet summaries; capture 6–10 concise bullets.
 

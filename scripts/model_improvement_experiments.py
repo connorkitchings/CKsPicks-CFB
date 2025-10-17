@@ -31,9 +31,9 @@ except Exception:  # ImportError or runtime issues
     _XGB_AVAILABLE = False
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from cfb_model.models.features import (
+from src.models.features import (
     build_feature_list,
     generate_point_in_time_features,
 )

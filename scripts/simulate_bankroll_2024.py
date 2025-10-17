@@ -8,12 +8,13 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from cfb_model.scripts.generate_weekly_bets_clean import (
+from src.scripts.generate_weekly_bets_clean import (
     apply_betting_policy,
     build_feature_list,
     load_ensemble_models,
     load_week_dataset,
 )
+from src.config import REPORTS_DIR, METRICS_SUBDIR
 
 
 def _american_to_b(odds: float | int) -> float:
@@ -178,7 +179,7 @@ def main() -> None:
     )
     ap.add_argument("--model-dir", type=str, default="./models")
     ap.add_argument("--start-bankroll", type=float, default=100.0)
-    ap.add_argument("--report-dir", type=str, default="./reports")
+    ap.add_argument("--report-dir", type=str, default=str(REPORTS_DIR))
 
     ap.add_argument("--spread-threshold", type=float, default=6.0)
     ap.add_argument("--total-threshold", type=float, default=6.0)
@@ -192,7 +193,8 @@ def main() -> None:
 
     args = ap.parse_args()
 
-    os.makedirs(os.path.join(args.report_dir, str(args.year)), exist_ok=True)
+    metrics_dir = os.path.join(args.report_dir, METRICS_SUBDIR, str(args.year))
+    os.makedirs(metrics_dir, exist_ok=True)
 
     bankroll = float(args.start_bankroll)
     summary_rows = []
@@ -239,7 +241,7 @@ def main() -> None:
 
     summary = pd.DataFrame(summary_rows)
     out_path = os.path.join(
-        args.report_dir, str(args.year), f"bankroll_sim_{args.year}.csv"
+        metrics_dir, f"bankroll_sim_{args.year}.csv"
     )
     summary.to_csv(out_path, index=False)
     print(summary)
