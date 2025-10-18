@@ -32,7 +32,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from src.config import REPORTS_DIR, PREDICTIONS_SUBDIR, SCORED_SUBDIR, METRICS_SUBDIR
+from src.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR
 
 TEAM_LOGO_MAP = {
     "Sam Houston": "Sam Houston State",
@@ -374,10 +374,7 @@ def compute_hit_rates(
         return hit_rate, count
 
     scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
-    paths = [
-        Path(p)
-        for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv"))
-    ]
+    paths = [Path(p) for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv"))]
     if not paths:
         return None, None, 0, 0
 

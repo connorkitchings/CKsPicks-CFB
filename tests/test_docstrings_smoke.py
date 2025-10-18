@@ -4,9 +4,9 @@ import ast
 import os
 
 PRIORITY_DIRS = [
-    os.path.join("src", "cfb_model", "data"),
-    os.path.join("src", "cfb_model", "models"),
-    os.path.join("src", "cfb_model", "utils"),
+    os.path.join("src", "data"),
+    os.path.join("src", "models"),
+    os.path.join("src", "utils"),
 ]
 
 

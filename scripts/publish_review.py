@@ -228,7 +228,9 @@ def main() -> None:
     if scored_dir.exists():
         bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
     else:
-        bets_file = report_dir_path / str(args.year) / f"CFB_week{args.week}_bets_scored.csv"
+        bets_file = (
+            report_dir_path / str(args.year) / f"CFB_week{args.week}_bets_scored.csv"
+        )
     if not bets_file.exists():
         print(f"Error: Bets file not found at {bets_file}")
         return
@@ -308,15 +310,9 @@ def main() -> None:
             # Bet text (team + signed number)
             if row["Spread Bet"] == "home":
                 bet_team = row["home_team"]
-                line_val = row.get("home_team_spread_line")
-                bet_text = (
-                    f"{bet_team}"
-                    if bet_team
-                    else ""
-                )
+                bet_text = f"{bet_team}" if bet_team else ""
             else:
                 bet_team = row["away_team"]
-                line_val = row.get("home_team_spread_line")
                 bet_text = f"{bet_team}" if bet_team else ""
             # Final score and final result (spread margin)
             final_score = (

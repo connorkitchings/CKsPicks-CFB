@@ -219,7 +219,8 @@ gha-creds-*.json
 /data
 
 # Generated project outputs
-/artifacts/
+/.artifacts/
+artifacts/mlruns/
 
 # Site
 site/

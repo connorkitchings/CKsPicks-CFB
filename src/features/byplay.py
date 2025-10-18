@@ -8,6 +8,7 @@ CFBD inconsistencies.
 from __future__ import annotations
 
 import logging
+
 import numpy as np
 import pandas as pd
 
@@ -32,11 +33,21 @@ def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
         ((400547739, 11, 14), {"yards_gained": -5}),
         (
             (400547739, 11, 15),
-            {"yard_line": 82, "yards_to_goal": 18, "yards_to_first": 18, "adj_yd_line": 18},
+            {
+                "yard_line": 82,
+                "yards_to_goal": 18,
+                "yards_to_first": 18,
+                "adj_yd_line": 18,
+            },
         ),
         (
             (400547739, 11, 16),
-            {"yard_line": 82, "yards_to_goal": 18, "yards_to_first": 18, "adj_yd_line": 18},
+            {
+                "yard_line": 82,
+                "yards_to_goal": 18,
+                "yards_to_first": 18,
+                "adj_yd_line": 18,
+            },
         ),
         ((400869843, 27, 9), {"yards_gained": -5}),
         ((400869843, 27, 10), {"yard_line": 78, "yards_to_goal": 22}),
@@ -78,7 +89,12 @@ def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
         ((401022561, 20, 11), {"yards_gained": 15}),
         (
             (401643724, 22, 15),
-            {"yard_line": 25, "yards_to_goal": 25, "yards_to_first": 25, "adj_yd_line": 25},
+            {
+                "yard_line": 25,
+                "yards_to_goal": 25,
+                "yards_to_first": 25,
+                "adj_yd_line": 25,
+            },
         ),
     ]
     for condition, updates in conditions_and_updates:
@@ -86,7 +102,9 @@ def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
         play_number = play_number_list[0] if play_number_list else None
 
         if play_number is None:
-            condition_mask = (df["game_id"] == game_id) & (df["drive_number"] == drive_number)
+            condition_mask = (df["game_id"] == game_id) & (
+                df["drive_number"] == drive_number
+            )
         else:
             condition_mask = (
                 (df["game_id"] == game_id)
@@ -214,9 +232,10 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
     df["time_remaining_after"] = np.where(
         df["quarter"] <= 4,
         # Quarters remaining after current quarter * 15 minutes + time left in current quarter
-        (4 - df["quarter"]) * 15 * 60 + (df["clock_minutes"] * 60 + df["clock_seconds"]),
+        (4 - df["quarter"]) * 15 * 60
+        + (df["clock_minutes"] * 60 + df["clock_seconds"]),
         # For overtime, just use the clock time (assuming 15 minute OT periods)
-        df["clock_minutes"] * 60 + df["clock_seconds"]
+        df["clock_minutes"] * 60 + df["clock_seconds"],
     )
     # Calculate time_remaining_before with quarter boundary awareness
     df["time_remaining_before"] = np.nan
@@ -232,9 +251,9 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
                 prev_quarter = game_df.iloc[idx - 1]["quarter"]
                 if current_quarter == prev_quarter:
                     # Same quarter: use previous play's time_remaining_after
-                    df.loc[game_df.index[idx], "time_remaining_before"] = (
-                        game_df.iloc[idx - 1]["time_remaining_after"]
-                    )
+                    df.loc[game_df.index[idx], "time_remaining_before"] = game_df.iloc[
+                        idx - 1
+                    ]["time_remaining_after"]
                 else:
                     # Quarter changed: use time at end of previous quarter (which is 0:00)
                     # For CFB, quarters end at 0:00, so time remaining = minutes left in game
@@ -253,7 +272,9 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
                     else:
                         # End of OT periods = 0 seconds
                         quarter_end_time = 0
-                    df.loc[game_df.index[idx], "time_remaining_before"] = quarter_end_time
+                    df.loc[game_df.index[idx], "time_remaining_before"] = (
+                        quarter_end_time
+                    )
 
     df["play_duration"] = (
         pd.to_numeric(df["time_remaining_before"], errors="coerce")
@@ -267,7 +288,9 @@ def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
         # Count quarter transitions that may cause negative durations
         quarter_changes = 0
         for game_id, game_group in df.groupby("game_id"):
-            game_df = game_group.sort_values(["quarter", "play_number"]).reset_index(drop=True)
+            game_df = game_group.sort_values(["quarter", "play_number"]).reset_index(
+                drop=True
+            )
             quarter_changes += (game_df["quarter"].diff() > 0).sum()
         logging.warning(
             (
@@ -414,6 +437,9 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
 def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
     """Transform raw plays into enriched by-play dataset."""
     df = data.copy()
+    df = df.drop_duplicates(
+        subset=["game_id", "drive_number", "play_number"], keep="first"
+    )
 
     # --- Normalize column names first ---
     if "yards_to_first" not in df.columns and "distance" in df.columns:

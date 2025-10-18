@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 
 import pandas as pd
+
 from src.config import SCORED_SUBDIR
 
 
@@ -29,9 +30,7 @@ def load_scored_season_data(year: int, report_dir: str) -> pd.DataFrame | None:
     elif os.path.isdir(legacy_dir):
         season_dir = legacy_dir
     else:
-        print(
-            f"Warning: Report directory not found for year {year} at {preferred_dir}"
-        )
+        print(f"Warning: Report directory not found for year {year} at {preferred_dir}")
         return None
 
     scored_files = [

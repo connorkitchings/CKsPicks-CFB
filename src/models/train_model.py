@@ -13,20 +13,20 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 
 import joblib
+import mlflow
 import numpy as np
 import pandas as pd
-import mlflow
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import ElasticNet, HuberRegressor, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+from src.config import MODELS_DIR, get_data_root
 from src.models.features import (
     build_feature_list,
     generate_point_in_time_features,
 )
-from src.config import get_data_root, MODELS_DIR, REPORTS_DIR
 
 
 def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
@@ -117,7 +117,6 @@ def main() -> None:
     model_dir = MODELS_DIR
     metrics_dir = model_dir / str(test_year) / "metrics"
 
-
     # --- MLflow Setup ---
     mlflow.set_experiment("CFB_Model_Training")
 
@@ -127,9 +126,7 @@ def main() -> None:
         print(f"Generating features for training year: {year}")
         for week in range(1, 16):
             try:
-                weekly_features = generate_point_in_time_features(
-                    year, week, data_root
-                )
+                weekly_features = generate_point_in_time_features(year, week, data_root)
                 all_training_games.append(weekly_features)
             except ValueError as e:
                 print(f"  Skipping week {week} for year {year}: {e}")
@@ -156,19 +153,24 @@ def main() -> None:
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
 
-    X_train = train_df[feature_list]
+    x_train = train_df[feature_list]
     y_spread_train = train_df["spread_target"].astype(float)
     y_total_train = train_df["total_target"].astype(float)
 
-    X_test = test_df[feature_list]
+    x_test = test_df[feature_list]
     y_spread_test = test_df["spread_target"].astype(float)
     y_total_test = test_df["total_target"].astype(float)
 
     out_dir = model_dir / str(test_year)
     os.makedirs(out_dir, exist_ok=True)
 
+    print("Describing x_train:")
+    print(x_train.describe())
+    print("Checking for infinite values in x_train:")
+    print(np.isinf(x_train).sum())
+
     # --- Parent MLflow Run ---
-    with mlflow.start_run(run_name=f"Ensemble_Training_{test_year}") as parent_run:
+    with mlflow.start_run(run_name=f"Ensemble_Training_{test_year}"):
         mlflow.log_param("train_years", str(train_years))
         mlflow.log_param("test_year", test_year)
         mlflow.log_param("feature_count", len(feature_list))
@@ -189,12 +191,12 @@ def main() -> None:
             with mlflow.start_run(run_name=f"spread_{name}", nested=True):
                 print(f"  Training spread_{name}...")
                 mlflow.log_params(model.get_params())
-                model.fit(X_train, y_spread_train)
-                
-                preds = model.predict(X_test)
+                model.fit(x_train, y_spread_train)
+
+                preds = model.predict(x_test)
                 metrics = _evaluate(y_spread_test.to_numpy(), preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
-                
+
                 joblib.dump(model, out_dir / f"spread_{name}.joblib")
                 mlflow.sklearn.log_model(model, f"spread_{name}")
 
@@ -202,19 +204,27 @@ def main() -> None:
         print("Training and logging total models...")
         total_models = {
             "random_forest": RandomForestRegressor(
-                n_estimators=200, max_depth=8, min_samples_split=10, min_samples_leaf=5, random_state=42
+                n_estimators=200,
+                max_depth=8,
+                min_samples_split=10,
+                min_samples_leaf=5,
+                random_state=42,
             ),
             "gradient_boosting": GradientBoostingRegressor(
-                n_estimators=200, learning_rate=0.1, max_depth=6, subsample=0.8, random_state=42
+                n_estimators=200,
+                learning_rate=0.1,
+                max_depth=6,
+                subsample=0.8,
+                random_state=42,
             ),
         }
         for name, model in total_models.items():
             with mlflow.start_run(run_name=f"total_{name}", nested=True):
                 print(f"  Training total_{name}...")
                 mlflow.log_params(model.get_params())
-                model.fit(X_train, y_total_train)
+                model.fit(x_train, y_total_train)
 
-                preds = model.predict(X_test)
+                preds = model.predict(x_test)
                 metrics = _evaluate(y_total_test.to_numpy(), preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
 
@@ -223,8 +233,14 @@ def main() -> None:
 
         # --- Evaluate and Log Ensemble Performance ---
         print("Evaluating ensemble predictions...")
-        spread_preds = [joblib.load(out_dir / f"spread_{name}.joblib").predict(X_test) for name in spread_models]
-        total_preds = [joblib.load(out_dir / f"total_{name}.joblib").predict(X_test) for name in total_models]
+        spread_preds = [
+            joblib.load(out_dir / f"spread_{name}.joblib").predict(x_test)
+            for name in spread_models
+        ]
+        total_preds = [
+            joblib.load(out_dir / f"total_{name}.joblib").predict(x_test)
+            for name in total_models
+        ]
 
         spread_pred_ensemble = np.mean(spread_preds, axis=0)
         total_pred_ensemble = np.mean(total_preds, axis=0)
@@ -248,13 +264,14 @@ def main() -> None:
                     "mae": spread_metrics.mae,
                 },
                 {
-                    "target": "total_ensemble", 
-                    "rmse": total_metrics.rmse, 
-                    "mae": total_metrics.mae
+                    "target": "total_ensemble",
+                    "rmse": total_metrics.rmse,
+                    "mae": total_metrics.mae,
                 },
             ]
         ).to_csv(metrics_path, index=False)
         print(f"Saved final evaluation metrics to {metrics_path}")
+
 
 if __name__ == "__main__":
     main()

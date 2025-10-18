@@ -1,15 +1,15 @@
 # MLOps Stack
 
-This document outlines the MLOps stack used in the `cfb_model` project to ensure reproducibility, scalability, and efficient experimentation.
+This document outlines the MLOps stack currently in use for the `cfb_model` project and highlights planned upgrades captured on the roadmap.
 
 ## Core Components
 
-The project is built around a modern MLOps stack that includes:
+The present-day stack is intentionally lightweight:
 
-- **Core ML:** Scikit-learn for traditional ML models.
+- **Core ML:** Scikit-learn for the ensemble models described in the modeling baseline.
 - **Experiment Tracking:** MLflow for experiment management and model versioning.
-- **Configuration:** Hydra for managing different model configurations and feature sets.
-- **Hyperparameter Optimization:** Optuna for finding optimal model parameters.
+- **Configuration:** Standard Python argparse/CLI flags (Hydra is targeted as a future enhancement per the roadmap).
+- **Hyperparameter Optimization:** Manual grid search utilities in `scripts/optimize_hyperparameters.py` (Optuna adoption is deferred).
 
 ## 1. Core ML: Scikit-learn
 
@@ -21,12 +21,12 @@ The project is built around a modern MLOps stack that includes:
 - **Role:** MLflow is used to log experiments, including parameters, metrics, and model artifacts. This provides a centralized and organized way to track model performance and compare different experiments.
 - **Implementation:** MLflow is integrated into the training script (`src/cfb_model/models/train_model.py`) and the hyperparameter optimization script (`scripts/optimize_hyperparameters.py`).
 
-## 3. Configuration: Hydra
+## 3. Configuration: CLI Flags
 
-- **Role:** Hydra is used for managing configurations for training and hyperparameter optimization. This allows for easy switching between different models, feature sets, and other parameters without changing the code.
-- **Implementation:** Hydra configurations are stored in the `conf/` directory. The training and optimization scripts are decorated with `@hydra.main()` to load the configurations.
+- **Role:** Command-line arguments (via `argparse`/Typer) manage runtime parameters for scripts such as `src/models/train_model.py` and `scripts/cli.py`.
+- **Future Work:** The roadmap tracks an upgrade to Hydra for richer configuration composition once the underlying flows stabilize.
 
-## 4. Hyperparameter Optimization: Optuna
+## 4. Hyperparameter Optimization: Manual Grid Search
 
-- **Role:** Optuna is used for efficient hyperparameter optimization. It is integrated with Hydra through the `hydra-optuna-sweeper` plugin.
-- **Implementation:** The hyperparameter optimization script (`scripts/optimize_hyperparameters.py`) uses Optuna to find the best hyperparameters for the models. The search space is defined in the Hydra configuration files.
+- **Role:** Simple, reproducible grid searches (see `scripts/optimize_hyperparameters.py`) are used to tune model parameters.
+- **Future Work:** Optuna remains on the roadmap; once revisited, this section will expand to cover sweeper configuration and experiment management.

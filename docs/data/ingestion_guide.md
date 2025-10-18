@@ -28,10 +28,10 @@ local CSV storage for both raw and processed data using the project's storage ba
 
 ## Ingestion Modules
 
-Data ingestion has been reorganized into reusable modules in `src/cfb_model/data/ingestion/` with a
+Data ingestion has been reorganized into reusable modules in `src/data/` with a
 shared base class for common functionality.
 
-### Teams (`src/cfb_model/data/ingestion/teams.py`)
+### Teams (`src/data/teams.py`)
 
 - **Status**: ✅ Complete
 - **Records**: 134 FBS teams for 2024
@@ -39,7 +39,7 @@ shared base class for common functionality.
 - **Usage**: `python scripts/ingest_cli.py teams --year 2024`
 - **Module**: `TeamsIngester`
 
-### Venues (`src/cfb_model/data/ingestion/venues.py`)
+### Venues (`src/data/venues.py`)
 
 - **Status**: ✅ Complete
 - **Records**: 150 venues used by FBS games in 2024
@@ -48,7 +48,7 @@ shared base class for common functionality.
 - **Module**: `VenuesIngester`
 - **Note**: Automatically filters to venues used by FBS games only
 
-### Games (`src/cfb_model/data/ingestion/games.py`)
+### Games (`src/data/games.py`)
 
 - **Status**: ✅ Complete
 - **Records**: 753 FBS regular season games for 2024
@@ -57,7 +57,7 @@ shared base class for common functionality.
 - **Module**: `GamesIngester`
 - **Dependencies**: Requires venues table to be populated first
 
-### Plays (`src/cfb_model/data/ingestion/plays.py`)
+### Plays (`src/data/plays.py`)
 
 - **Status**: ✅ Complete (Rewritten)
 - **Records**: Play-by-play data for FBS games
@@ -66,7 +66,7 @@ shared base class for common functionality.
 - **Module**: `PlaysIngester`
 - **Dependencies**: Requires games table to be populated first
 
-### Betting Lines (`src/cfb_model/data/ingestion/betting_lines.py`)
+### Betting Lines (`src/data/betting_lines.py`)
 
 - **Status**: ✅ Complete
 - **Records**: Sportsbook betting lines for FBS games
@@ -75,7 +75,7 @@ shared base class for common functionality.
 - **Module**: `BettingLinesIngester`
 - **Dependencies**: Requires games table to be populated first
 
-### Rosters (`src/cfb_model/data/ingestion/rosters.py`)
+### Rosters (`src/data/rosters.py`)
 
 - **Status**: ✅ Complete
 - **Records**: Player roster data for FBS teams
@@ -84,7 +84,7 @@ shared base class for common functionality.
 - **Module**: `RostersIngester`
 - **Dependencies**: Requires teams table to be populated first
 
-### Coaches (`src/cfb_model/data/ingestion/coaches.py`)
+### Coaches (`src/data/coaches.py`)
 
 - **Status**: ✅ Complete
 - **Records**: Coaching staff data for FBS teams
@@ -93,7 +93,7 @@ shared base class for common functionality.
 - **Module**: `CoachesIngester`
 - **Dependencies**: Requires teams table to be populated first
 
-### Game Stats (Raw) (`src/cfb_model/data/ingestion/game_stats.py`)
+### Game Stats (Raw) (`src/data/game_stats.py`)
 
 - **Status**: 🟡 In Progress
 - **Records**: Raw advanced box score JSON objects for each FBS game.
@@ -135,7 +135,7 @@ All scripts use the CFBD API with Bearer token authentication:
   - team_season: `processed/team_season/year/<YYYY>/team/<TEAM>/side/<offense|defense>/`
   - team_season_adj: `processed/team_season_adj/year/<YYYY>/team/<TEAM>/side/<offense|defense>/`
 - Each partition includes a `manifest.json` with row counts and metadata to enable validation
-- Referential integrity between entities is validated using utilities in `src/cfb_model/data/validation.py`
+- Referential integrity between entities is validated using utilities in `src/utils/validation.py`
 - Idempotent writes: partitions are atomically overwritten to avoid partial writes and duplicates
 
 ### Validation gates (ingestion)
@@ -171,6 +171,9 @@ All ingestion commands support a common set of flags:
 - `--week`: Optional specific week to ingest (supported for `games` and `plays`)
 - `--workers`: Parallel worker count for API calls
 - `--exclude-seasons`: Comma-separated years to skip (optional; default: none)
+- `ingest-year` diagnostics:
+  - `--only` / `--skip` let you tailor which ingestion tasks run (e.g., `--only games --only plays`).
+  - `--dry-run` prints the resolved ingestion plan without executing it—useful for verifying order before a long run.
 
 ### Examples
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 from src.config import get_data_root
@@ -142,21 +141,31 @@ def build_differential_features(df: pd.DataFrame) -> pd.DataFrame:
     # Define which stats are zero-centered (use subtraction) vs. positive (use ratio)
     zero_centered_metrics = ["epa_pp"]
     positive_metrics = [
-        "sr", "ypp", "expl_rate_overall_10", "expl_rate_overall_20",
-        "expl_rate_overall_30", "expl_rate_rush", "expl_rate_pass",
-        "eckel_rate", "finish_pts_per_opp", "stuff_rate", "havoc_rate",
-        "plays_per_game", "drives_per_game", "avg_scoring_opps_per_game"
+        "sr",
+        "ypp",
+        "expl_rate_overall_10",
+        "expl_rate_overall_20",
+        "expl_rate_overall_30",
+        "expl_rate_rush",
+        "expl_rate_pass",
+        "eckel_rate",
+        "finish_pts_per_opp",
+        "stuff_rate",
+        "havoc_rate",
+        "plays_per_game",
+        "drives_per_game",
+        "avg_scoring_opps_per_game",
     ]
-    
+
     base_metrics = zero_centered_metrics + positive_metrics
     momentum_suffixes = ["_last_3", "_last_1"]
-    
+
     new_df = df.copy()
 
     for metric in base_metrics:
         for suffix in [""] + momentum_suffixes:
             full_metric_name = f"{metric}{suffix}"
-            
+
             # Define the four columns for the matchup
             home_off_col = f"home_adj_off_{full_metric_name}"
             away_def_col = f"away_adj_def_{full_metric_name}"
@@ -174,14 +183,22 @@ def build_differential_features(df: pd.DataFrame) -> pd.DataFrame:
 
             if metric in zero_centered_metrics:
                 # Use subtraction for zero-centered stats
-                new_df[matchup_home_off_col] = new_df[home_off_col] - new_df[away_def_col]
-                new_df[matchup_away_off_col] = new_df[away_off_col] - new_df[home_def_col]
+                new_df[matchup_home_off_col] = (
+                    new_df[home_off_col] - new_df[away_def_col]
+                )
+                new_df[matchup_away_off_col] = (
+                    new_df[away_off_col] - new_df[home_def_col]
+                )
             elif metric in positive_metrics:
                 # Use safe ratio for positive-only stats
                 # Adding a small epsilon to avoid division by zero
                 epsilon = 1e-6
-                new_df[matchup_home_off_col] = new_df[home_off_col] / (new_df[away_def_col] + epsilon)
-                new_df[matchup_away_off_col] = new_df[away_off_col] / (new_df[home_def_col] + epsilon)
+                new_df[matchup_home_off_col] = new_df[home_off_col] / (
+                    new_df[away_def_col] + epsilon
+                )
+                new_df[matchup_away_off_col] = new_df[away_off_col] / (
+                    new_df[home_def_col] + epsilon
+                )
 
     return new_df
 
@@ -191,12 +208,12 @@ def build_differential_feature_list(df: pd.DataFrame) -> list[str]:
     Construct the list of modeling features after differential transformation.
     """
     features = [col for col in df.columns if col.startswith("matchup_")]
-    
+
     # Add global game context features
     for global_feat in ["neutral_site", "same_conference"]:
         if global_feat in df.columns:
             features.append(global_feat)
-            
+
     return features
 
 
@@ -215,7 +232,9 @@ def generate_point_in_time_features(
     # 1. Load all team_game data for the season up to the target week
     all_team_game_records = []
     for w in range(1, week):
-        weekly_records = processed_storage.read_index("team_game", {"year": year, "week": w})
+        weekly_records = processed_storage.read_index(
+            "team_game", {"year": year, "week": w}
+        )
         if weekly_records:
             all_team_game_records.extend(weekly_records)
 

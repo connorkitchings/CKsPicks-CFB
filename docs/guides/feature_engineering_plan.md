@@ -5,6 +5,8 @@ season-to-date features ready for opponent adjustment.
 
 ---
 
+> **Path update:** Modules referenced historically as `src/cfb_model/...` now reside under `src/...`.
+
 ## Goals
 
 - Produce reliable, reproducible team-game and team-season feature sets.

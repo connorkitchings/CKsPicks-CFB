@@ -6,6 +6,8 @@ future development.
 
 Use the format `[KB:PatternName]` to reference entries from other documents.
 
+> **Note:** The source tree was flattened; modules formerly referenced as `src/cfb_model/...` now live directly under `src/...`.
+
 ---
 
 ## `[KB:DataStoragePattern]`
@@ -30,6 +32,24 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
   relative imports.
 - **Usage**: Instead of `python src/cfb_model/data/validation.py`, use `python -m src.cfb_model.data.validation`.
 - **Discovered In**: `[LOG:2025-08-15]`
+
+---
+
+## `[KB:AnalysisCLI]`
+
+- **Context**: Multiple standalone analysis scripts (hit rates, thresholds, segmentation) created maintenance overhead.
+- **Pattern**: Use `scripts/analysis_cli.py` with subcommands (`summary`, `segments`, `split`, `confidence`) to run those tasks from one entrypoint.
+- **Usage**: `uv run python scripts/analysis_cli.py summary reports/2024/CFB_season_2024_all_bets_scored.csv`
+- **Discovered In**: Refactor (2025-10-17)
+
+---
+
+## `[KB:TrainingCLI]`
+
+- **Context**: Model training scripts proliferated (baseline, differential, experiments) with inconsistent flags.
+- **Pattern**: Invoke `scripts/training_cli.py` subcommands (`train`, `differential`, etc.) to keep workflows consistent.
+- **Usage**: `uv run python scripts/training_cli.py train --train-years 2019,2021,2022,2023 --test-year 2024`
+- **Discovered In**: Refactor (2025-10-17)
 
 ---
 
@@ -231,11 +251,12 @@ in later stages.
 
 ---
 
-## `[KB:HydraMultiRunConfig]`
+## `[KB:HydraMultiRunConfig]` *(archived for future migration)*
 
-- **Context**: When using Hydra's multirun with the Optuna sweeper, the search space might need to be passed via the command line instead of being defined in the config file.
-- **Pattern**: If you encounter an `AssertionError` related to `search_space` in the Optuna sweeper, try removing the `search_space` from your Hydra config and defining it on the command line using the `+` syntax.
-- **Usage**: `uv run python scripts/optimize_hyperparameters.py -m "+model.alpha=choice(0.1,0.5,1.0)"`
+- **Context**: Planned Hydra + Optuna integration (see roadmap) will likely require passing the search space via CLI in multirun mode.
+- **Pattern**: If/when Hydra is reintroduced, prefer defining the Optuna search space with the `+` CLI syntax to avoid sweeper `AssertionError`s.
+- **Usage**: Example command (when Hydra is in place): `uv run python scripts/optimize_hyperparameters.py -m "+model.alpha=choice(0.1,0.5,1.0)"`
+- **Status**: Hydra is currently paused; retain this note for the eventual migration.
 - **Discovered In**: `[LOG:2025-10-11]`
 
 ---
@@ -255,3 +276,12 @@ in later stages.
 - **Pattern**: Before training a model, ensure that any `NaN` values in your feature matrix are handled. A simple strategy is to fill them with 0 using `.fillna(0)`.
 - **Usage**: `x_train = train_df[feature_list].astype(float).fillna(0)`
 - **Discovered In**: `[LOG:2025-10-11]`
+
+---
+
+## `[KB:EXPLICIT-DATA-ROOT]`
+
+- **Context**: Scripts were silently creating a local `data/` directory when an environment variable for the data root was not properly loaded, leading to confusion and validation errors against the wrong data source.
+- **Pattern**: Modify storage classes (like `LocalStorage`) to remove automatic directory creation (`mkdir(exist_ok=True)`). Instead, the class should assume the path provided to it exists and fail explicitly with a `StorageError` or `FileNotFoundError` if it does not. This makes path resolution failures loud and immediate, preventing the pipeline from running with an incorrect configuration.
+- **Usage**: In `src/utils/local_storage.py`, the `__init__` method was changed to remove the `root.mkdir()` call and only check `if not root.is_dir()`.
+- **Discovered In**: `[LOG:2025-10-18/03]`

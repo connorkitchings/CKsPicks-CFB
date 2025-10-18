@@ -24,11 +24,11 @@ from sklearn.model_selection import TimeSeriesSplit
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.config import REPORTS_DIR
 from src.models.features import (
     build_feature_list,
     generate_point_in_time_features,
 )
-from src.config import REPORTS_DIR
 
 
 def load_training_data(train_years: list[int], data_root: str | None) -> pd.DataFrame:

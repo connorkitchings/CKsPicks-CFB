@@ -51,18 +51,17 @@ This document describes the MVP ridge regression model used for ATS and totals p
 Run training and evaluation:
 
 ```bash
-PYTHONPATH=src \
-python -m cfb_model.models.ridge_baseline.train \
+uv run python src/models/train_model.py \
   --train-years 2019,2021,2022,2023 \
   --test-year 2024 \
   --data-root /absolute/data/root \
-  --model-dir ./models/ridge_baseline \
+  --model-dir ./models \
   --metrics-dir artifacts/reports/metrics
 ```
 
 ### Weekly Predictions
 
-- The weekly script `src/cfb_model/scripts/generate_weekly_bets.py` loads the above models,
+- The weekly script `src/scripts/generate_weekly_bets_clean.py` loads the above models,
   merges `team_season_adj` with `games` for the target week, joins `betting_lines`, generates
   predictions, applies the betting policy, and writes CSV to `reports/YYYY/CFB_weekWW_bets.csv`.
 

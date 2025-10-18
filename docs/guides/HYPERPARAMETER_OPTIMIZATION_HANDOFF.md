@@ -4,6 +4,8 @@
 **Status**: Optimization jobs running in background  
 **Session**: Priority 2 - Hyperparameter Optimization
 
+> **Path update:** References to modules formerly under `src/cfb_model/...` should now be interpreted under `src/...`.
+
 ---
 
 ## Current State
@@ -169,7 +171,7 @@ cat reports/optimization/comparison.md
 
 ### 3. Apply Best Parameters (if improvements are significant)
 
-**Update `src/cfb_model/models/train_model.py`**:
+**Update `src/models/train_model.py`**:
 
 For Ridge (spreads) - around line 180:
 ```python
@@ -191,7 +193,7 @@ total_model = RandomForestRegressor(
 ### 4. Retrain Models
 
 ```bash
-uv run python src/cfb_model/models/train_model.py \
+uv run python src/models/train_model.py \
   --train-years 2019,2021,2022,2023 \
   --test-year 2024 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"

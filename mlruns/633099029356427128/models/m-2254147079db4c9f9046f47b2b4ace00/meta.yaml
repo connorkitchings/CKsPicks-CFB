@@ -1,0 +1,10 @@
+artifact_location: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/mlruns/633099029356427128/models/m-2254147079db4c9f9046f47b2b4ace00/artifacts
+creation_timestamp: 1760812412563
+experiment_id: '633099029356427128'
+last_updated_timestamp: 1760812414272
+model_id: m-2254147079db4c9f9046f47b2b4ace00
+model_type: null
+name: spread_ridge
+source_run_id: e12b6b9f6a0e4a2eb9f13c9b90ad2207
+status: 2
+status_message: null

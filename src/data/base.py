@@ -154,17 +154,6 @@ class BaseIngester(ABC):
             f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
         )
 
-        # --- DEBUGGING TEST: Read back immediately ---
-        try:
-            filters = {key: str(getattr(self, key)) for key in self.partition_keys}
-            read_back_data = self.storage.read_index(self.entity_name, filters)
-            print(
-                f"DEBUG: Successfully read back {len(read_back_data)} records immediately after writing."
-            )
-        except Exception as e:
-            print(f"DEBUG: FAILED to read back data immediately after writing: {e}")
-        # --- END DEBUGGING TEST ---
-
     def run(self) -> None:
         """Execute the complete ingestion process using local storage."""
         try:

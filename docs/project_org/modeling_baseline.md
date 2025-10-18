@@ -74,7 +74,7 @@ To improve prediction stability and reduce week-to-week variance, the project us
   - Calibration analysis: `reports/calibration/*.csv`
 
 - **Reproducibility**
-  - Training: `uv run python src/cfb_model/models/train_model.py --train-years 2019,2021,2022,2023 --test-year 2024`
+  - Training: `uv run python src/models/train_model.py --train-years 2019,2021,2022,2023 --test-year 2024`
   - All scripts accept `--data-root` for custom data locations
   - Random seeds fixed for deterministic outputs
 

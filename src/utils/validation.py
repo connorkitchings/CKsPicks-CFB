@@ -16,8 +16,11 @@ from typing import Any
 
 import pandas as pd
 
-from .aggregations.core import apply_iterative_opponent_adjustment
-from .storage.local_storage import LocalStorage
+from src.features.core import (
+    aggregate_team_season,
+    apply_iterative_opponent_adjustment,
+)
+from src.utils.local_storage import LocalStorage
 
 
 @dataclass
@@ -273,143 +276,9 @@ _RATE_TOL = 1e-3
 _TIME_TOL = 1.5  # seconds
 
 
-def _recompute_explosive_rates_from_integers(ts_df: pd.DataFrame, tg_df: pd.DataFrame) -> pd.DataFrame:
-    """Recompute explosive rates from integer counts to resolve floating-point precision issues.
-    
-    This addresses discrepancies in 2017/2018 data where historical .mean() calculations
-    on boolean conditions accumulated small floating-point errors over time.
-    
-    Args:
-        ts_df: Team season DataFrame from aggregate_team_season
-        tg_df: Team game DataFrame with raw play counts
-    
-    Returns:
-        Updated team season DataFrame with precisely recalculated explosive rates
-    """
-    ts_enhanced = ts_df.copy()
-    
-    # Find explosive rate columns that need recomputation
-    explosive_cols = [
-        "off_expl_rate_overall_10", "off_expl_rate_overall_20", "off_expl_rate_overall_30",
-        "off_expl_rate_rush", "off_expl_rate_pass",
-        "def_expl_rate_overall_10", "def_expl_rate_overall_20", "def_expl_rate_overall_30", 
-        "def_expl_rate_rush", "def_expl_rate_pass"
-    ]
-    
-    # Only process columns that exist in the dataframe
-    present_cols = [col for col in explosive_cols if col in ts_enhanced.columns]
-    
-    if not present_cols or tg_df.empty:
-        return ts_enhanced
-    
-    # Load byplay data for precise explosive play counting
-    try:
-        from utils.local_storage import LocalStorage
-        from config import get_data_root        
-        # Get first year from ts_df to load byplay data
-        year = int(ts_df['season'].iloc[0]) if not ts_df.empty else None
-        if year is None:
-            return ts_enhanced
-            
-        processed_storage = LocalStorage(
-            data_root=get_data_root(), file_format="csv", data_type="processed"
-        )
-        
-        byplay_records = processed_storage.read_index(
-            "byplay", 
-            {"year": year},
-            columns=["game_id", "offense", "defense", "yards_gained", "rush_attempt", "pass_attempt"]
-        )
-        
-        if not byplay_records:
-            return ts_enhanced
-            
-        bp = pd.DataFrame.from_records(byplay_records)
-        
-        # For each team/season, recompute explosive rates from integer counts
-        for _, team_row in ts_enhanced.iterrows():
-            season = team_row['season']
-            team = team_row['team']
-            
-            # Get games for this team up to their season-to-date point
-            team_games = tg_df[(tg_df['season'] == season) & (tg_df['team'] == team)]
-            if team_games.empty:
-                continue
-                
-            game_ids = team_games['game_id'].unique()
-            
-            # Get offensive plays for this team in these games
-            off_plays = bp[(bp['game_id'].isin(game_ids)) & (bp['offense'] == team)].copy()
-            # Get defensive plays (where this team is defense) for these games  
-            def_plays = bp[(bp['game_id'].isin(game_ids)) & (bp['defense'] == team)].copy()
-            
-            # Recompute offensive explosive rates with integer precision
-            if not off_plays.empty:
-                total_off_plays = len(off_plays)
-                if total_off_plays > 0:
-                    # Overall explosive rates (any play type)
-                    if 'off_expl_rate_overall_10' in present_cols:
-                        count_10 = int((off_plays['yards_gained'] >= 10).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'off_expl_rate_overall_10'] = count_10 / total_off_plays
-                    
-                    if 'off_expl_rate_overall_20' in present_cols:
-                        count_20 = int((off_plays['yards_gained'] >= 20).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'off_expl_rate_overall_20'] = count_20 / total_off_plays
-                    
-                    if 'off_expl_rate_overall_30' in present_cols:
-                        count_30 = int((off_plays['yards_gained'] >= 30).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'off_expl_rate_overall_30'] = count_30 / total_off_plays
-                
-                # Rush explosive rates
-                rush_plays = off_plays[off_plays['rush_attempt'] == 1]
-                if not rush_plays.empty and 'off_expl_rate_rush' in present_cols:
-                    rush_explosive_count = int((rush_plays['yards_gained'] >= 15).sum())
-                    ts_enhanced.loc[ts_enhanced['team'] == team, 'off_expl_rate_rush'] = rush_explosive_count / len(rush_plays)
-                
-                # Pass explosive rates  
-                pass_plays = off_plays[off_plays['pass_attempt'] == 1]
-                if not pass_plays.empty and 'off_expl_rate_pass' in present_cols:
-                    pass_explosive_count = int((pass_plays['yards_gained'] >= 20).sum())
-                    ts_enhanced.loc[ts_enhanced['team'] == team, 'off_expl_rate_pass'] = pass_explosive_count / len(pass_plays)
-            
-            # Recompute defensive explosive rates with integer precision
-            if not def_plays.empty:
-                total_def_plays = len(def_plays)
-                if total_def_plays > 0:
-                    # Overall explosive rates allowed (any play type)
-                    if 'def_expl_rate_overall_10' in present_cols:
-                        count_10 = int((def_plays['yards_gained'] >= 10).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'def_expl_rate_overall_10'] = count_10 / total_def_plays
-                    
-                    if 'def_expl_rate_overall_20' in present_cols:
-                        count_20 = int((def_plays['yards_gained'] >= 20).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'def_expl_rate_overall_20'] = count_20 / total_def_plays
-                    
-                    if 'def_expl_rate_overall_30' in present_cols:
-                        count_30 = int((def_plays['yards_gained'] >= 30).sum())
-                        ts_enhanced.loc[ts_enhanced['team'] == team, 'def_expl_rate_overall_30'] = count_30 / total_def_plays
-                
-                # Rush explosive rates allowed
-                def_rush_plays = def_plays[def_plays['rush_attempt'] == 1]
-                if not def_rush_plays.empty and 'def_expl_rate_rush' in present_cols:
-                    rush_explosive_count = int((def_rush_plays['yards_gained'] >= 15).sum())
-                    ts_enhanced.loc[ts_enhanced['team'] == team, 'def_expl_rate_rush'] = rush_explosive_count / len(def_rush_plays)
-                
-                # Pass explosive rates allowed
-                def_pass_plays = def_plays[def_plays['pass_attempt'] == 1] 
-                if not def_pass_plays.empty and 'def_expl_rate_pass' in present_cols:
-                    pass_explosive_count = int((def_pass_plays['yards_gained'] >= 20).sum())
-                    ts_enhanced.loc[ts_enhanced['team'] == team, 'def_expl_rate_pass'] = pass_explosive_count / len(def_pass_plays)
-    
-    except Exception as e:
-        # If byplay data loading fails, just return original dataframe
-        # This ensures validation doesn't break if byplay data is unavailable
-        pass
-    
-    return ts_enhanced
-
-
-def validate_adjusted_consistency(storage: LocalStorage, year: int, tol: float = _FLOAT_TOL) -> list[ValidationIssue]:
+def validate_adjusted_consistency(
+    storage: LocalStorage, year: int, tol: float = _FLOAT_TOL
+) -> list[ValidationIssue]:
     """Deep validation: recompute adjusted metrics via pipeline semantics and compare to persisted.
 
     Steps:
@@ -419,40 +288,48 @@ def validate_adjusted_consistency(storage: LocalStorage, year: int, tol: float =
     - Compare to persisted team_season_adj per-side rows (only compare columns present in each row)
     """
     issues: list[ValidationIssue] = []
-    try:
-        from .aggregations.core import aggregate_team_season, apply_iterative_opponent_adjustment
-    except Exception as e:
-        issues.append(ValidationIssue("ERROR", f"Import failure: {e}", entity="team_season_adj"))
-        return issues
-
     # Load inputs
     tg_records = storage.read_index("team_game", {"year": year})
     if not tg_records:
-        issues.append(ValidationIssue("WARN", "No team_game data to validate", entity="team_season_adj"))
+        issues.append(
+            ValidationIssue(
+                "WARN", "No team_game data to validate", entity="team_season_adj"
+            )
+        )
         return issues
     tg = pd.DataFrame.from_records(tg_records)
 
     # Recompute team_season and adjusted
     ts_recalc = aggregate_team_season(tg)
-    
-    # Enhanced explosive rate validation: recompute from integer counts/denominators
-    # to resolve 2017/2018 floating-point precision discrepancies
-    ts_recalc = _recompute_explosive_rates_from_integers(ts_recalc, tg)
-    
+
     # Normalize rate-like columns before adjustment to reduce float drift
     for c in list(ts_recalc.columns):
         if isinstance(c, str) and "rate" in c:
-            ts_recalc[c] = pd.to_numeric(ts_recalc[c], errors="coerce").clip(lower=0.0, upper=1.0).round(6)
+            ts_recalc[c] = (
+                pd.to_numeric(ts_recalc[c], errors="coerce")
+                .clip(lower=0.0, upper=1.0)
+                .round(6)
+            )
     adj_recalc = apply_iterative_opponent_adjustment(ts_recalc, tg)
     # Also normalize adjusted rate columns post-adjust for comparison
     for c in list(adj_recalc.columns):
         if isinstance(c, str) and "rate" in c:
-            adj_recalc[c] = pd.to_numeric(adj_recalc[c], errors="coerce").clip(lower=-1.0, upper=2.0).round(6)
+            adj_recalc[c] = (
+                pd.to_numeric(adj_recalc[c], errors="coerce")
+                .clip(lower=-1.0, upper=2.0)
+                .round(6)
+            )
 
     # Load persisted adjusted
     adj_records = storage.read_index("team_season_adj", {"year": year})
     if not adj_records:
-        issues.append(ValidationIssue("WARN", "No persisted team_season_adj rows found", entity="team_season_adj"))
+        issues.append(
+            ValidationIssue(
+                "WARN",
+                "No persisted team_season_adj rows found",
+                entity="team_season_adj",
+            )
+        )
         return issues
     adj_persist = pd.DataFrame.from_records(adj_records)
 
@@ -465,13 +342,21 @@ def validate_adjusted_consistency(storage: LocalStorage, year: int, tol: float =
     adj_def = adj_recalc[["season", "team"] + def_cols].copy()
 
     # Merge per-side recomputed values onto persisted
-    merged = adj_persist.merge(adj_off, on=["season", "team"], how="left", suffixes=("", "_recomp_off"))
-    merged = merged.merge(adj_def, on=["season", "team"], how="left", suffixes=("", "_recomp_def"))
+    merged = adj_persist.merge(
+        adj_off, on=["season", "team"], how="left", suffixes=("", "_recomp_off")
+    )
+    merged = merged.merge(
+        adj_def, on=["season", "team"], how="left", suffixes=("", "_recomp_def")
+    )
 
     total_mismatches = 0
     # Offense columns
     for c in off_cols:
-        if c in merged.columns and f"{c}" in merged.columns and f"{c}_recomp_off" in merged.columns:
+        if (
+            c in merged.columns
+            and f"{c}" in merged.columns
+            and f"{c}_recomp_off" in merged.columns
+        ):
             a = pd.to_numeric(merged[c], errors="coerce")
             b = pd.to_numeric(merged[f"{c}_recomp_off"], errors="coerce")
             # For rate-like columns, round before diff to reduce floating artifacts
@@ -490,9 +375,19 @@ def validate_adjusted_consistency(storage: LocalStorage, year: int, tol: float =
                         entity="team_season_adj",
                     )
                 )
+                mismatch_df = merged[d > col_tol][
+                    ["season", "team", c, f"{c}_recomp_off"]
+                ].copy()
+                mismatch_df["diff"] = d[d > col_tol]
+                print(f"--- Mismatches for {c} ---")
+                print(mismatch_df.head())
     # Defense columns
     for c in def_cols:
-        if c in merged.columns and f"{c}" in merged.columns and f"{c}_recomp_def" in merged.columns:
+        if (
+            c in merged.columns
+            and f"{c}" in merged.columns
+            and f"{c}_recomp_def" in merged.columns
+        ):
             a = pd.to_numeric(merged[c], errors="coerce")
             b = pd.to_numeric(merged[f"{c}_recomp_def"], errors="coerce")
             if "rate" in c:
@@ -510,11 +405,19 @@ def validate_adjusted_consistency(storage: LocalStorage, year: int, tol: float =
                         entity="team_season_adj",
                     )
                 )
+                mismatch_df = merged[d > col_tol][
+                    ["season", "team", c, f"{c}_recomp_def"]
+                ].copy()
+                mismatch_df["diff"] = d[d > col_tol]
+                print(f"--- Mismatches for {c} ---")
+                print(mismatch_df.head())
 
     if total_mismatches == 0:
         issues.append(
             ValidationIssue(
-                "INFO", "Adjusted features match recomputation within tolerance", entity="team_season_adj"
+                "INFO",
+                "Adjusted features match recomputation within tolerance",
+                entity="team_season_adj",
             )
         )
     return issues
@@ -529,7 +432,9 @@ def _approx_equal(a: Any, b: Any, tol: float = _FLOAT_TOL) -> bool:
         return False
 
 
-def validate_drives_consistency(storage: LocalStorage, year: int) -> list[ValidationIssue]:
+def validate_drives_consistency(
+    storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
 
     # Read byplay without column restrictions to be robust to schema evolution
@@ -636,7 +541,9 @@ def validate_drives_consistency(storage: LocalStorage, year: int) -> list[Valida
     merged = drv.merge(recon, on=grp_keys, how="left")
 
     for _, r in merged.iterrows():
-        if not _approx_equal(r.get("drive_plays"), r.get("recon_drive_plays"), tol=1e-3):
+        if not _approx_equal(
+            r.get("drive_plays"), r.get("recon_drive_plays"), tol=1e-3
+        ):
             issues.append(
                 ValidationIssue(
                     "ERROR",
@@ -644,7 +551,9 @@ def validate_drives_consistency(storage: LocalStorage, year: int) -> list[Valida
                     entity="drives",
                 )
             )
-        if not _approx_equal(r.get("drive_yards"), r.get("recon_drive_yards"), tol=1e-3):
+        if not _approx_equal(
+            r.get("drive_yards"), r.get("recon_drive_yards"), tol=1e-3
+        ):
             issues.append(
                 ValidationIssue(
                     "ERROR",
@@ -652,7 +561,9 @@ def validate_drives_consistency(storage: LocalStorage, year: int) -> list[Valida
                     entity="drives",
                 )
             )
-        if not _approx_equal(r.get("drive_time"), r.get("recon_drive_time"), tol=_TIME_TOL):
+        if not _approx_equal(
+            r.get("drive_time"), r.get("recon_drive_time"), tol=_TIME_TOL
+        ):
             issues.append(
                 ValidationIssue(
                     "WARN",
@@ -674,7 +585,9 @@ def validate_drives_consistency(storage: LocalStorage, year: int) -> list[Valida
     return issues
 
 
-def validate_team_game_consistency(storage: LocalStorage, year: int) -> list[ValidationIssue]:
+def validate_team_game_consistency(
+    storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
 
     tg_cols = [
@@ -707,58 +620,137 @@ def validate_team_game_consistency(storage: LocalStorage, year: int) -> list[Val
             tg[c] = pd.NA
 
     # Mirror checks: join opponent row within same game_id
-    opp = tg[["game_id", "team", "off_sr", "off_ypp", "off_epa_pp", "def_sr", "def_ypp", "def_epa_pp"]].copy()
-    opp = opp.rename(columns={
-        "team": "team_opp",
-        "off_sr": "opp_off_sr",
-        "off_ypp": "opp_off_ypp",
-        "off_epa_pp": "opp_off_epa_pp",
-        "def_sr": "opp_def_sr",
-        "def_ypp": "opp_def_ypp",
-        "def_epa_pp": "opp_def_epa_pp",
-    })
+    opp = tg[
+        [
+            "game_id",
+            "team",
+            "off_sr",
+            "off_ypp",
+            "off_epa_pp",
+            "def_sr",
+            "def_ypp",
+            "def_epa_pp",
+        ]
+    ].copy()
+    opp = opp.rename(
+        columns={
+            "team": "team_opp",
+            "off_sr": "opp_off_sr",
+            "off_ypp": "opp_off_ypp",
+            "off_epa_pp": "opp_off_epa_pp",
+            "def_sr": "opp_def_sr",
+            "def_ypp": "opp_def_ypp",
+            "def_epa_pp": "opp_def_epa_pp",
+        }
+    )
     joined = tg.merge(opp, on="game_id", how="inner")
     joined = joined[joined["team"] != joined["team_opp"]]
 
     # Compare each row to its opponent’s mirror
     for _, r in joined.iterrows():
         if not _approx_equal(r.get("off_sr"), r.get("opp_def_sr"), tol=_RATE_TOL):
-            issues.append(ValidationIssue("WARN", "off_sr vs opponent def_sr mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN", "off_sr vs opponent def_sr mismatch", entity="team_game"
+                )
+            )
         if not _approx_equal(r.get("def_sr"), r.get("opp_off_sr"), tol=_RATE_TOL):
-            issues.append(ValidationIssue("WARN", "def_sr vs opponent off_sr mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN", "def_sr vs opponent off_sr mismatch", entity="team_game"
+                )
+            )
         if not _approx_equal(r.get("off_ypp"), r.get("opp_def_ypp"), tol=1e-2):
-            issues.append(ValidationIssue("WARN", "off_ypp vs opponent def_ypp mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN", "off_ypp vs opponent def_ypp mismatch", entity="team_game"
+                )
+            )
         if not _approx_equal(r.get("def_ypp"), r.get("opp_off_ypp"), tol=1e-2):
-            issues.append(ValidationIssue("WARN", "def_ypp vs opponent off_ypp mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN", "def_ypp vs opponent off_ypp mismatch", entity="team_game"
+                )
+            )
         if not _approx_equal(r.get("off_epa_pp"), r.get("opp_def_epa_pp"), tol=5e-3):
-            issues.append(ValidationIssue("WARN", "off_epa_pp vs opponent def_epa_pp mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN",
+                    "off_epa_pp vs opponent def_epa_pp mismatch",
+                    entity="team_game",
+                )
+            )
         if not _approx_equal(r.get("def_epa_pp"), r.get("opp_off_epa_pp"), tol=5e-3):
-            issues.append(ValidationIssue("WARN", "def_epa_pp vs opponent off_epa_pp mismatch", entity="team_game"))
+            issues.append(
+                ValidationIssue(
+                    "WARN",
+                    "def_epa_pp vs opponent off_epa_pp mismatch",
+                    entity="team_game",
+                )
+            )
 
     # Count checks using byplay and drives
-    byp = pd.DataFrame.from_records(storage.read_index("byplay", {"year": year}, columns=byplay_cols))
-    drv = pd.DataFrame.from_records(storage.read_index("drives", {"year": year}, columns=drv_cols))
+    byp = pd.DataFrame.from_records(
+        storage.read_index("byplay", {"year": year}, columns=byplay_cols)
+    )
+    drv = pd.DataFrame.from_records(
+        storage.read_index("drives", {"year": year}, columns=drv_cols)
+    )
     if not byp.empty:
-        by_counts = byp.groupby(["game_id", "offense"], as_index=False).agg(n_off_plays_calc=("play_number", "count"))
-        merged = tg.merge(by_counts, left_on=["game_id", "team"], right_on=["game_id", "offense"], how="left")
+        by_counts = byp.groupby(["game_id", "offense"], as_index=False).agg(
+            n_off_plays_calc=("play_number", "count")
+        )
+        merged = tg.merge(
+            by_counts,
+            left_on=["game_id", "team"],
+            right_on=["game_id", "offense"],
+            how="left",
+        )
         for _, r in merged.iterrows():
             calc = r.get("n_off_plays_calc")
-            if pd.notna(calc) and not _approx_equal(r.get("n_off_plays"), calc, tol=1e-3):
-                issues.append(ValidationIssue("ERROR", "n_off_plays does not match byplay count", entity="team_game"))
+            if pd.notna(calc) and not _approx_equal(
+                r.get("n_off_plays"), calc, tol=1e-3
+            ):
+                issues.append(
+                    ValidationIssue(
+                        "ERROR",
+                        "n_off_plays does not match byplay count",
+                        entity="team_game",
+                    )
+                )
     if not drv.empty and "off_drives" in tg.columns:
-        d_counts = drv.groupby(["game_id", "offense"], as_index=False).agg(off_drives_calc=("drive_number", "count"))
-        merged = tg.merge(d_counts, left_on=["game_id", "team"], right_on=["game_id", "offense"], how="left")
+        d_counts = drv.groupby(["game_id", "offense"], as_index=False).agg(
+            off_drives_calc=("drive_number", "count")
+        )
+        merged = tg.merge(
+            d_counts,
+            left_on=["game_id", "team"],
+            right_on=["game_id", "offense"],
+            how="left",
+        )
         for _, r in merged.iterrows():
             calc = r.get("off_drives_calc")
-            if pd.notna(calc) and not _approx_equal(r.get("off_drives"), calc, tol=1e-3):
-                issues.append(ValidationIssue("ERROR", "off_drives does not match drives count", entity="team_game"))
+            if pd.notna(calc) and not _approx_equal(
+                r.get("off_drives"), calc, tol=1e-3
+            ):
+                issues.append(
+                    ValidationIssue(
+                        "ERROR",
+                        "off_drives does not match drives count",
+                        entity="team_game",
+                    )
+                )
 
     # Rate bounds
     for col in ["off_sr", "def_sr"]:
         if col in tg.columns:
             bad = tg[(tg[col] < -_RATE_TOL) | (tg[col] > 1 + _RATE_TOL)]
             if not bad.empty:
-                issues.append(ValidationIssue("ERROR", f"{col} outside [0,1] range", entity="team_game"))
+                issues.append(
+                    ValidationIssue(
+                        "ERROR", f"{col} outside [0,1] range", entity="team_game"
+                    )
+                )
 
     return issues
 
@@ -780,7 +772,9 @@ def _recency_weighted_mean(df: pd.DataFrame, value_col: str) -> float:
     return float((vals * w).sum() / denom)
 
 
-def validate_team_season_consistency(storage: LocalStorage, year: int) -> list[ValidationIssue]:
+def validate_team_season_consistency(
+    storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     tg_cols = [
         "season",
@@ -795,13 +789,19 @@ def validate_team_season_consistency(storage: LocalStorage, year: int) -> list[V
         "off_eckel_rate",
         "off_finish_pts_per_opp",
     ]
-    tg = pd.DataFrame.from_records(storage.read_index("team_game", {"year": year}, columns=tg_cols))
+    tg = pd.DataFrame.from_records(
+        storage.read_index("team_game", {"year": year}, columns=tg_cols)
+    )
     if tg.empty:
         return issues
 
     # Read persisted season offense/defense sides separately and merge back
-    off_rows = pd.DataFrame.from_records(storage.read_index("team_season", {"year": year, "side": "offense"}))
-    def_rows = pd.DataFrame.from_records(storage.read_index("team_season", {"year": year, "side": "defense"}))
+    off_rows = pd.DataFrame.from_records(
+        storage.read_index("team_season", {"year": year, "side": "offense"})
+    )
+    def_rows = pd.DataFrame.from_records(
+        storage.read_index("team_season", {"year": year, "side": "defense"})
+    )
     if off_rows.empty or def_rows.empty:
         return issues
 
@@ -832,10 +832,22 @@ def validate_team_season_consistency(storage: LocalStorage, year: int) -> list[V
         if key not in expected:
             continue
         exp = expected[key]
-        for m in ["off_sr", "off_ypp", "off_epa_pp", "off_eckel_rate", "off_finish_pts_per_opp"]:
+        for m in [
+            "off_sr",
+            "off_ypp",
+            "off_epa_pp",
+            "off_eckel_rate",
+            "off_finish_pts_per_opp",
+        ]:
             if m in row and m in exp and pd.notna(row[m]) and pd.notna(exp[m]):
                 if not _approx_equal(row[m], exp[m], tol=5e-3):
-                    issues.append(ValidationIssue("WARN", f"team_season offense {m} differs from recompute", entity="team_season"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"team_season offense {m} differs from recompute",
+                            entity="team_season",
+                        )
+                    )
 
     # Compare defense
     for _, row in def_rows.iterrows():
@@ -846,18 +858,30 @@ def validate_team_season_consistency(storage: LocalStorage, year: int) -> list[V
         for m in ["def_sr", "def_ypp", "def_epa_pp"]:
             if m in row and m in exp and pd.notna(row[m]) and pd.notna(exp[m]):
                 if not _approx_equal(row[m], exp[m], tol=5e-3):
-                    issues.append(ValidationIssue("WARN", f"team_season defense {m} differs from recompute", entity="team_season"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"team_season defense {m} differs from recompute",
+                            entity="team_season",
+                        )
+                    )
 
     return issues
 
 
-def validate_opponent_adjustment_consistency(storage: LocalStorage, year: int) -> list[ValidationIssue]:
+def validate_opponent_adjustment_consistency(
+    storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
 
     # Load team_game, and recombine team_season offense/defense into one frame
     tg = pd.DataFrame.from_records(storage.read_index("team_game", {"year": year}))
-    off_rows = pd.DataFrame.from_records(storage.read_index("team_season", {"year": year, "side": "offense"}))
-    def_rows = pd.DataFrame.from_records(storage.read_index("team_season", {"year": year, "side": "defense"}))
+    off_rows = pd.DataFrame.from_records(
+        storage.read_index("team_season", {"year": year, "side": "offense"})
+    )
+    def_rows = pd.DataFrame.from_records(
+        storage.read_index("team_season", {"year": year, "side": "defense"})
+    )
     if tg.empty or off_rows.empty or def_rows.empty:
         return issues
 
@@ -867,8 +891,12 @@ def validate_opponent_adjustment_consistency(storage: LocalStorage, year: int) -
     recomputed_adj = apply_iterative_opponent_adjustment(ts, tg)
 
     # Read persisted adjusted offense/defense
-    adj_off = pd.DataFrame.from_records(storage.read_index("team_season_adj", {"year": year, "side": "offense"}))
-    adj_def = pd.DataFrame.from_records(storage.read_index("team_season_adj", {"year": year, "side": "defense"}))
+    adj_off = pd.DataFrame.from_records(
+        storage.read_index("team_season_adj", {"year": year, "side": "offense"})
+    )
+    adj_def = pd.DataFrame.from_records(
+        storage.read_index("team_season_adj", {"year": year, "side": "defense"})
+    )
     if adj_off.empty or adj_def.empty:
         return issues
 
@@ -880,22 +908,38 @@ def validate_opponent_adjustment_consistency(storage: LocalStorage, year: int) -
     rec_off = recomputed_adj[["season", "team"] + off_cols]
     rec_def = recomputed_adj[["season", "team"] + def_cols]
 
-    merged_off = adj_off.merge(rec_off, on=["season", "team"], suffixes=("", "_recomp"), how="left")
-    merged_def = adj_def.merge(rec_def, on=["season", "team"], suffixes=("", "_recomp"), how="left")
+    merged_off = adj_off.merge(
+        rec_off, on=["season", "team"], suffixes=("", "_recomp"), how="left"
+    )
+    merged_def = adj_def.merge(
+        rec_def, on=["season", "team"], suffixes=("", "_recomp"), how="left"
+    )
 
     for _, r in merged_off.iterrows():
         for c in off_cols:
             if c in merged_off.columns and f"{c}_recomp" in merged_off.columns:
                 a, b = r.get(c), r.get(f"{c}_recomp")
                 if pd.notna(a) and pd.notna(b) and not _approx_equal(a, b, tol=1e-2):
-                    issues.append(ValidationIssue("WARN", f"Adjusted offense {c} differs from recompute", entity="team_season_adj"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"Adjusted offense {c} differs from recompute",
+                            entity="team_season_adj",
+                        )
+                    )
 
     for _, r in merged_def.iterrows():
         for c in def_cols:
             if c in merged_def.columns and f"{c}_recomp" in merged_def.columns:
                 a, b = r.get(c), r.get(f"{c}_recomp")
                 if pd.notna(a) and pd.notna(b) and not _approx_equal(a, b, tol=1e-2):
-                    issues.append(ValidationIssue("WARN", f"Adjusted defense {c} differs from recompute", entity="team_season_adj"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"Adjusted defense {c} differs from recompute",
+                            entity="team_season_adj",
+                        )
+                    )
 
     return issues
 
@@ -953,25 +997,32 @@ def _extract_boxscore_team_rows(box: Any) -> list[dict[str, Any]]:
                 name = _deep_find_first(entry, ["team", "school", "name"])  # type: ignore[arg-type]
                 if not isinstance(name, str):
                     continue
-                plays = _deep_find_first(entry, ["plays", "offensivePlays", "offensePlays"])  # type: ignore[arg-type]
+                plays = _deep_find_first(
+                    entry, ["plays", "offensivePlays", "offensePlays"]
+                )  # type: ignore[arg-type]
                 ypp = _deep_find_first(entry, ["yardsPerPlay", "yards_per_play", "ypp"])  # type: ignore[arg-type]
                 sr = _deep_find_first(entry, ["successRate", "success_rate"])  # type: ignore[arg-type]
+
                 def _to_int(x):
                     try:
                         return int(x)
                     except Exception:
                         return None
+
                 def _to_float(x):
                     try:
                         return float(x)
                     except Exception:
                         return None
-                rows.append({
-                    "team": name,
-                    "plays": _to_int(plays),
-                    "ypp": _to_float(ypp),
-                    "sr": _to_float(sr),
-                })
+
+                rows.append(
+                    {
+                        "team": name,
+                        "plays": _to_int(plays),
+                        "ypp": _to_float(ypp),
+                        "sr": _to_float(sr),
+                    }
+                )
             except Exception:
                 continue
     except Exception:
@@ -979,7 +1030,9 @@ def _extract_boxscore_team_rows(box: Any) -> list[dict[str, Any]]:
     return rows
 
 
-def validate_team_game_vs_boxscore(processed_storage: LocalStorage, raw_storage: LocalStorage, year: int) -> list[ValidationIssue]:
+def validate_team_game_vs_boxscore(
+    processed_storage: LocalStorage, raw_storage: LocalStorage, year: int
+) -> list[ValidationIssue]:
     """Compare processed team_game against CFBD advanced box score (raw) for key metrics.
 
     Thresholds (absolute):
@@ -1039,23 +1092,59 @@ def validate_team_game_vs_boxscore(processed_storage: LocalStorage, raw_storage:
             if pd.notna(row.get("n_off_plays")) and match.get("plays") is not None:
                 diff = abs(float(row["n_off_plays"]) - float(match["plays"]))
                 if diff > plays_err:
-                    issues.append(ValidationIssue("ERROR", f"plays diff {diff:.0f} > {plays_err}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"plays diff {diff:.0f} > {plays_err}",
+                            entity="team_game",
+                        )
+                    )
                 elif diff > plays_warn:
-                    issues.append(ValidationIssue("WARN", f"plays diff {diff:.0f} > {plays_warn}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"plays diff {diff:.0f} > {plays_warn}",
+                            entity="team_game",
+                        )
+                    )
             # ypp
             if pd.notna(row.get("off_ypp")) and match.get("ypp") is not None:
                 diff = abs(float(row["off_ypp"]) - float(match["ypp"]))
                 if diff > ypp_err:
-                    issues.append(ValidationIssue("ERROR", f"ypp diff {diff:.2f} > {ypp_err}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"ypp diff {diff:.2f} > {ypp_err}",
+                            entity="team_game",
+                        )
+                    )
                 elif diff > ypp_warn:
-                    issues.append(ValidationIssue("WARN", f"ypp diff {diff:.2f} > {ypp_warn}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"ypp diff {diff:.2f} > {ypp_warn}",
+                            entity="team_game",
+                        )
+                    )
             # success rate
             if pd.notna(row.get("off_sr")) and match.get("sr") is not None:
                 diff = abs(float(row["off_sr"]) - float(match["sr"]))
                 if diff > sr_err:
-                    issues.append(ValidationIssue("ERROR", f"sr diff {diff:.3f} > {sr_err}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"sr diff {diff:.3f} > {sr_err}",
+                            entity="team_game",
+                        )
+                    )
                 elif diff > sr_warn:
-                    issues.append(ValidationIssue("WARN", f"sr diff {diff:.3f} > {sr_warn}", entity="team_game"))
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"sr diff {diff:.3f} > {sr_warn}",
+                            entity="team_game",
+                        )
+                    )
         except Exception:
             continue
 
@@ -1064,6 +1153,8 @@ def validate_team_game_vs_boxscore(processed_storage: LocalStorage, raw_storage:
 
 def main() -> None:
     import argparse
+
+    from src.config import get_data_root
 
     parser = argparse.ArgumentParser(
         description="Validate local CSV data for a season."
@@ -1088,8 +1179,10 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    data_root = args.data_root or get_data_root()
+
     storage = LocalStorage(
-        data_root=args.data_root, file_format="csv", data_type=args.data_type
+        data_root=data_root, file_format="csv", data_type=args.data_type
     )
 
     if args.data_type == "processed":
@@ -1102,8 +1195,12 @@ def main() -> None:
             issues.extend(validate_opponent_adjustment_consistency(storage, args.year))
             issues.extend(validate_adjusted_consistency(storage, args.year))
             # Compare against raw advanced box scores if available
-            raw_storage = LocalStorage(data_root=args.data_root, file_format="csv", data_type="raw")
-            issues.extend(validate_team_game_vs_boxscore(storage, raw_storage, args.year))
+            raw_storage = LocalStorage(
+                data_root=args.data_root, file_format="csv", data_type="raw"
+            )
+            issues.extend(
+                validate_team_game_vs_boxscore(storage, raw_storage, args.year)
+            )
     else:
         issues = validate_raw_season(storage, args.year)
 

@@ -12,7 +12,9 @@ from .byplay import allplays_to_byplay
 from .core import aggregate_drives, aggregate_team_game, aggregate_team_season
 
 
-def calculate_luck_factor(team_game_df: pd.DataFrame, byplay_df: pd.DataFrame) -> pd.DataFrame:
+def calculate_luck_factor(
+    team_game_df: pd.DataFrame, byplay_df: pd.DataFrame
+) -> pd.DataFrame:
     """Calculate luck factor as actual margin minus expected margin from PPA."""
     # For MVP, we'll add a simple placeholder luck factor
     # In the future, this could compare actual vs expected score based on PPA

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+
 import joblib
+
 
 def load_hybrid_ensemble_models(
     model_year: int, spread_model_dir: str, total_model_dir: str

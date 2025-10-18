@@ -6,9 +6,9 @@ It performs a simple grid search over predefined parameters.
 """
 
 import argparse
+import itertools
 import sys
 from pathlib import Path
-import itertools
 
 import mlflow
 import numpy as np
@@ -20,14 +20,16 @@ from sklearn.model_selection import TimeSeriesSplit
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import get_data_root, REPORTS_DIR
+from src.config import REPORTS_DIR, get_data_root
 from src.models.features import (
     build_feature_list,
     generate_point_in_time_features,
 )
 
 
-def load_data(years: list[int], data_root: str | None, cache_path: Path) -> pd.DataFrame:
+def load_data(
+    years: list[int], data_root: str | None, cache_path: Path
+) -> pd.DataFrame:
     """Load and combine data for multiple years, using a cache to speed up."""
     if cache_path.exists():
         print(f"Loading cached data from {cache_path}...")
@@ -68,7 +70,9 @@ def run_optimization(
     mlflow.set_experiment(f"CFB_Model_Optimization_{target}")
 
     # --- Data Loading ---
-    train_cache_path = output_dir / f"train_data_cache__{'_'.join(map(str, train_years))}.parquet"
+    train_cache_path = (
+        output_dir / f"train_data_cache__{'_'.join(map(str, train_years))}.parquet"
+    )
     train_df = load_data(train_years, data_root, train_cache_path)
 
     test_cache_path = output_dir / f"test_data_cache__{test_year}.parquet"
@@ -87,7 +91,7 @@ def run_optimization(
     # In a real scenario, this would be more extensive.
     # This is a placeholder to remove the Hydra dependency.
     param_grid = {
-        'alpha': [0.1, 1.0, 10.0],
+        "alpha": [0.1, 1.0, 10.0],
     }
     model_class = Ridge
 
@@ -98,7 +102,7 @@ def run_optimization(
     keys, values = zip(*param_grid.items())
     for param_values in itertools.product(*values):
         params = dict(zip(keys, param_values))
-        
+
         with mlflow.start_run(run_name=f"{model_class.__name__}_{params}"):
             mlflow.log_params(params)
             mlflow.log_param("target", target)
@@ -109,8 +113,14 @@ def run_optimization(
             cv = TimeSeriesSplit(n_splits=5)
             rmses = []
             for train_idx, val_idx in cv.split(x_train):
-                x_train_fold, x_val_fold = x_train.iloc[train_idx], x_train.iloc[val_idx]
-                y_train_fold, y_val_fold = y_train.iloc[train_idx], y_train.iloc[val_idx]
+                x_train_fold, x_val_fold = (
+                    x_train.iloc[train_idx],
+                    x_train.iloc[val_idx],
+                )
+                y_train_fold, y_val_fold = (
+                    y_train.iloc[train_idx],
+                    y_train.iloc[val_idx],
+                )
 
                 model.fit(x_train_fold, y_train_fold)
                 preds = model.predict(x_val_fold)
@@ -125,12 +135,16 @@ def run_optimization(
             test_rmse = np.sqrt(mean_squared_error(y_test, test_preds))
             mlflow.log_metric("test_rmse", test_rmse)
 
-            print(f"Params: {params} -> CV RMSE: {cv_rmse:.4f}, Test RMSE: {test_rmse:.4f}")
-            results.append({
-                "params": params,
-                "cv_rmse": cv_rmse,
-                "test_rmse": test_rmse,
-            })
+            print(
+                f"Params: {params} -> CV RMSE: {cv_rmse:.4f}, Test RMSE: {test_rmse:.4f}"
+            )
+            results.append(
+                {
+                    "params": params,
+                    "cv_rmse": cv_rmse,
+                    "test_rmse": test_rmse,
+                }
+            )
 
     # --- Save Results ---
     results_df = pd.DataFrame(results)

@@ -15,13 +15,13 @@ import pandas as pd
 # Add src to path for local imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.scoring import settle_spread_bets, settle_total_bets
 from src.config import (
-    get_data_root,
-    REPORTS_DIR,
     PREDICTIONS_SUBDIR,
+    REPORTS_DIR,
     SCORED_SUBDIR,
+    get_data_root,
 )
+from src.scoring import settle_spread_bets, settle_total_bets
 from src.utils.local_storage import LocalStorage
 
 
@@ -51,15 +51,11 @@ def main() -> None:
 
     # --- Load Input Files ---
     # Try the file with game IDs first, then fallback to regular file
-    predictions_dir = os.path.join(
-        args.report_dir, str(args.year), PREDICTIONS_SUBDIR
-    )
+    predictions_dir = os.path.join(args.report_dir, str(args.year), PREDICTIONS_SUBDIR)
     bets_file_with_ids = os.path.join(
         predictions_dir, f"CFB_week{args.week}_bets_with_ids.csv"
     )
-    bets_file = os.path.join(
-        predictions_dir, f"CFB_week{args.week}_bets.csv"
-    )
+    bets_file = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
 
     # Legacy locations (pre-folder structure) for backward compatibility
     legacy_with_ids = os.path.join(
@@ -136,9 +132,7 @@ def main() -> None:
     # --- Save and Summarize ---
     scored_dir = os.path.join(args.report_dir, str(args.year), SCORED_SUBDIR)
     os.makedirs(scored_dir, exist_ok=True)
-    output_path = os.path.join(
-        scored_dir, f"CFB_week{args.week}_bets_scored.csv"
-    )
+    output_path = os.path.join(scored_dir, f"CFB_week{args.week}_bets_scored.csv")
     final_df.to_csv(output_path, index=False)
     print(f"Scored results saved to {output_path}")
 

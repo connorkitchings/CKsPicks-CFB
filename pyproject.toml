@@ -12,10 +12,14 @@ dependencies = [
     "python-dotenv>=1.0",
     "prefect>=2.19.0",
     "shap>=0.45.0",
-    "cfbd>=5.9.1",  # CollegeFootballData API access
-    "pyarrow>=15.0",  # Parquet IO
-    "jinja2>=3.1",     # Email template rendering
-    "mlflow>=2.0"
+    "cfbd>=5.9.1", # CollegeFootballData API access
+    "pyarrow>=15.0", # Parquet IO
+    "jinja2>=3.1", # Email template rendering
+    "mlflow>=2.0",
+    "iniconfig>=2.1.0",
+    "pluggy>=1.6.0",
+    "pytest>=8.4.1",
+    "ruff>=0.12.7",
 ]
 
 [project.optional-dependencies]

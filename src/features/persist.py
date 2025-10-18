@@ -8,12 +8,14 @@ processed storage.
 from __future__ import annotations
 
 import logging
+
 import pandas as pd
+
+from src.utils.base import Partition
+from src.utils.local_storage import LocalStorage
 
 from .core import apply_iterative_opponent_adjustment
 from .pipeline import build_preaggregation_pipeline
-from src.utils.base import Partition
-from src.utils.local_storage import LocalStorage
 
 
 def persist_preaggregations(
@@ -182,7 +184,9 @@ def persist_preaggregations(
     return totals
 
 
-def persist_byplay_only(*, year: int, data_root: str | None = None, verbose: bool = True) -> int:
+def persist_byplay_only(
+    *, year: int, data_root: str | None = None, verbose: bool = True
+) -> int:
     """Build and persist only the byplay dataset from raw plays."""
     raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     records = raw_storage.read_index("plays", {"year": year})
@@ -213,4 +217,6 @@ def persist_byplay_only(*, year: int, data_root: str | None = None, verbose: boo
             f"Byplay written under {processed_storage.root()} for season {year}: rows={total_written}"
         )
     return total_written
+
+
 #

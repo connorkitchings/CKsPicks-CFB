@@ -49,17 +49,12 @@ class LocalStorage(StorageBackend):
         base_root = (
             Path(data_root)
             if data_root is not None
-            else Path(os.getenv("CFB_MODEL_DATA_ROOT")) if os.getenv("CFB_MODEL_DATA_ROOT") else (Path.cwd() / "data")
+            else Path(os.getenv("CFB_MODEL_DATA_ROOT"))
+            if os.getenv("CFB_MODEL_DATA_ROOT")
+            else (Path.cwd() / "data")
         )
         root_path = Path(base_root) / f"{data_type}"
         root = root_path.resolve()
-
-        try:
-            root.mkdir(parents=True, exist_ok=True)
-        except Exception as e:
-            raise StorageError(
-                f"Failed to create data root directory at {root}: {e}"
-            ) from e
 
         if not root.is_dir():
             raise StorageError(
@@ -134,7 +129,9 @@ class LocalStorage(StorageBackend):
             "data_type": self._data_type,
             "file_format": self.file_format,
             "entity": entity,
-            "schema_version": ("processed_v1" if self._data_type == "processed" else "raw_v1"),
+            "schema_version": (
+                "processed_v1" if self._data_type == "processed" else "raw_v1"
+            ),
             "schema": None,
         }
         if schema is not None:

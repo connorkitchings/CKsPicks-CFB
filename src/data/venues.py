@@ -30,7 +30,9 @@ class VenuesIngester(BaseIngester):
 
     def get_fbs_venue_ids(self) -> set[int]:
         """Get venue IDs used by FBS games using local games index to minimize API calls."""
-        games_index = self.storage.read_index("games", {"year": self.year}, columns=["venue_id"])
+        games_index = self.storage.read_index(
+            "games", {"year": self.year}, columns=["venue_id"]
+        )
         ids: set[int] = set()
         for row in games_index:
             vid = row.get("venue_id")
@@ -39,7 +41,9 @@ class VenuesIngester(BaseIngester):
                     ids.add(int(vid))
                 except Exception:
                     continue
-        print(f"Derived {len(ids)} unique venue IDs from local games index for {self.year}.")
+        print(
+            f"Derived {len(ids)} unique venue IDs from local games index for {self.year}."
+        )
         return ids
 
     def fetch_data(self) -> list[Any]:

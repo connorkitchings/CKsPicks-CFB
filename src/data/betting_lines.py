@@ -4,8 +4,9 @@ from typing import Any
 
 import cfbd
 
-from .base import BaseIngester
 from src.utils.base import Partition
+
+from .base import BaseIngester
 
 
 class BettingLinesIngester(BaseIngester):
@@ -136,14 +137,17 @@ class BettingLinesIngester(BaseIngester):
             return
 
         from collections import defaultdict
+
         by_week = defaultdict(list)
         for row in data:
-            if row.get('week') is not None:
-                by_week[row['week']].append(row)
+            if row.get("week") is not None:
+                by_week[row["week"]].append(row)
 
         for week, rows in by_week.items():
             partition = Partition({"year": str(self.year), "week": str(week)})
-            written = self.storage.write(self.entity_name, rows, partition, overwrite=True)
+            written = self.storage.write(
+                self.entity_name, rows, partition, overwrite=True
+            )
             print(
                 f"Wrote {written} records to {self.entity_name}/{partition.path_suffix()}."
             )
@@ -154,6 +158,7 @@ def main() -> None:
     # This main function is for standalone execution and testing.
     # The primary CLI entrypoint is in scripts/cli.py
     import argparse
+
     parser = argparse.ArgumentParser(description="Ingest betting lines from CFBD API.")
     parser.add_argument("--year", type=int, default=2024)
     parser.add_argument("--week", type=int, default=None)

@@ -3,11 +3,11 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
-from pathlib import Path
 
 import cfbd
 
 from src.utils.base import Partition
+
 from .base import BaseIngester
 
 
@@ -101,13 +101,17 @@ class PlaysIngester(BaseIngester):
                 # Count existing game_id partitions under this week
                 try:
                     existing_game_dirs = [
-                        d for d in week_dir.iterdir() if d.is_dir() and d.name.startswith("game_id=")
+                        d
+                        for d in week_dir.iterdir()
+                        if d.is_dir() and d.name.startswith("game_id=")
                     ]
                 except FileNotFoundError:
                     existing_game_dirs = []
                 expected_games = len(games_by_week.get(w, set()))
                 if existing_game_dirs and len(existing_game_dirs) >= expected_games:
-                    print(f"  Skipping week {w}: already ingested ({len(existing_game_dirs)}/{expected_games} games).")
+                    print(
+                        f"  Skipping week {w}: already ingested ({len(existing_game_dirs)}/{expected_games} games)."
+                    )
                     continue
             weeks_to_fetch.append(w)
 

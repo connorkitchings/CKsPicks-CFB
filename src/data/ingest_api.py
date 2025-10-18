@@ -5,8 +5,8 @@ lightweight wrappers and cleaning for calendar/plays endpoints used in
 notebooks or ad-hoc backfills.
 """
 
-import time
 import logging
+import time
 from typing import Dict, List
 
 import pandas as pd

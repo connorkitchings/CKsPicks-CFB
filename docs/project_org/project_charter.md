@@ -106,7 +106,7 @@ graph TD
 
 ### Folder Structure
 
-- `/src/cfb_model`: Contains the main source code for the project
+- `/src`: Contains the main source code for the project
 - `/docs`: Contains all project documentation, including planning, guides, and logs
 - `/notebooks`: Contains Jupyter notebooks for experimentation and analysis
 - `/data`: Contains raw, interim, and processed data (not versioned by Git)

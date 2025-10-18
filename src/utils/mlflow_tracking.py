@@ -3,7 +3,7 @@
 import mlflow
 
 # Default local tracking URI. For a remote server, use a different URI.
-TRACKING_URI = "file:./mlruns"
+TRACKING_URI = "file:./artifacts/mlruns"
 
 
 def setup_mlflow(tracking_uri: str = TRACKING_URI) -> None:
@@ -12,7 +12,7 @@ def setup_mlflow(tracking_uri: str = TRACKING_URI) -> None:
 
     Args:
         tracking_uri (str): The URI for the MLflow tracking server.
-                            Defaults to a local './mlruns' directory.
+                            Defaults to a local './artifacts/mlruns' directory.
     """
     mlflow.set_tracking_uri(tracking_uri)
 

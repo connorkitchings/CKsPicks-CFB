@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.models.calibration import apply_weekly_bias, compute_weekly_bias
@@ -46,9 +48,6 @@ def _compute_actuals(df: pd.DataFrame) -> pd.DataFrame:
 def _attach_actuals_from_games(
     df: pd.DataFrame, data_root: str | None, year: int
 ) -> pd.DataFrame:
-
-
-
     games = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     game_rows = games.read_index("games", {"year": year})
     if not game_rows:
@@ -69,7 +68,6 @@ def _attach_actuals_multi_years(
     """Merge actual scores from raw games across all seasons present in df."""
     if "game_id" not in df.columns or "season" not in df.columns:
         return df
-
 
     storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     seasons = sorted(set(int(s) for s in df["season"].dropna().unique()))

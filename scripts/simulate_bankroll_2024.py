@@ -8,13 +8,13 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
+from src.config import METRICS_SUBDIR, REPORTS_DIR
 from src.scripts.generate_weekly_bets_clean import (
     apply_betting_policy,
     build_feature_list,
     load_ensemble_models,
     load_week_dataset,
 )
-from src.config import REPORTS_DIR, METRICS_SUBDIR
 
 
 def _american_to_b(odds: float | int) -> float:
@@ -240,9 +240,7 @@ def main() -> None:
             continue
 
     summary = pd.DataFrame(summary_rows)
-    out_path = os.path.join(
-        metrics_dir, f"bankroll_sim_{args.year}.csv"
-    )
+    out_path = os.path.join(metrics_dir, f"bankroll_sim_{args.year}.csv")
     summary.to_csv(out_path, index=False)
     print(summary)
     print(f"Saved bankroll simulation to {out_path}")

@@ -4,6 +4,8 @@ This document provides a high-level overview of advanced feature engineering con
 
 ---
 
+> **Path update:** Module references in earlier logs may use `src/cfb_model/...`; the current codebase places these modules directly under `src/...`.
+
 ## Understanding Advanced Feature Engineering
 
 Advanced feature engineering is the practice of creating more predictive and nuanced variables from raw data. Where basic feature engineering might involve simple averages or counts, advanced techniques aim to capture **context, interactions, and domain-specific knowledge**.

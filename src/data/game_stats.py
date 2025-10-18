@@ -3,11 +3,11 @@
 import json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
-from pathlib import Path
 
 import cfbd
 
 from src.utils.base import Partition
+
 from .base import BaseIngester
 
 
@@ -65,7 +65,9 @@ class GameStatsIngester(BaseIngester):
         def fetch_week_stats(week: int) -> list[Any]:
             try:
                 api = cfbd.GamesApi(cfbd.ApiClient(self.cfbd_config))
-                return api.get_game_team_stats(year=self.year, week=week, season_type=self.season_type)
+                return api.get_game_team_stats(
+                    year=self.year, week=week, season_type=self.season_type
+                )
             except Exception as e:
                 print(f"    Error fetching team stats for week {week}: {e}")
                 return []
@@ -83,12 +85,18 @@ class GameStatsIngester(BaseIngester):
             if week_dir.exists():
                 try:
                     existing = len(
-                        [d for d in week_dir.iterdir() if d.is_dir() and d.name.startswith("game_id=")]
+                        [
+                            d
+                            for d in week_dir.iterdir()
+                            if d.is_dir() and d.name.startswith("game_id=")
+                        ]
                     )
                 except FileNotFoundError:
                     existing = 0
             if existing >= expected_games and expected_games > 0:
-                print(f"  Skipping team stats for week {w}: already ingested ({existing}/{expected_games} games).")
+                print(
+                    f"  Skipping team stats for week {w}: already ingested ({existing}/{expected_games} games)."
+                )
                 continue
             weeks_to_fetch.append(w)
 
@@ -176,4 +184,6 @@ class GameStatsIngester(BaseIngester):
             )
             total_written += written
         print(f"Total {self.entity_name} records written: {total_written}")
+
+
 #

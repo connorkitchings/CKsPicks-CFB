@@ -23,8 +23,8 @@ Log of planning-level decisions. Use one entry per decision.
 - Category: Modeling / Betting Policy
 - Decision: After the latest advanced features increased model variance, the confidence thresholds (ensemble prediction standard deviation) were re-tuned using the 2024 holdout season. The optimal thresholds were found to be **2.0 for spreads** and **1.5 for totals**.
 - Rationale: The previous spread threshold of 3.0 was too loose with the new features, resulting in a lower hit rate. The new threshold of 2.0 provides a better balance of bet volume and accuracy (57.0% hit rate over 114 bets). The totals threshold of 1.5 remained optimal, now yielding a 59.1% hit rate over 115 bets.
-- Impact: The default `--spread-std-dev-threshold` was updated to `2.0` in `scripts/cli.py` and `src/cfb_model/scripts/generate_weekly_bets_clean.py`. Documentation in `docs/operations/weekly_pipeline.md` and `docs/project_org/betting_policy.md` was updated to reflect the new default.
-- References: `scripts/confidence_threshold_sweep.py`, `reports/2024/confidence_threshold_sweep_spread.csv`
+- Impact: The default `--spread-std-dev-threshold` was updated to `2.0` in `scripts/cli.py` and `src/scripts/generate_weekly_bets_clean.py`. Documentation in `docs/operations/weekly_pipeline.md` and `docs/project_org/betting_policy.md` was updated to reflect the new default.
+- References: `scripts/analysis_cli.py confidence`, `reports/2024/confidence_threshold_sweep_spread.csv`
 
 ---
 
@@ -43,11 +43,11 @@ Log of planning-level decisions. Use one entry per decision.
 
 - Category: Data / Pipeline / Architecture
 - Decision: Refactor the weekly feature caching process into a two-stage pipeline. 
-  1. A new script (`scripts/cache_running_season_stats.py`) now creates a `processed/running_team_season` asset, which stores the non-adjusted, point-in-time weekly aggregations.
-  2. The existing script (`scripts/cache_weekly_stats.py`) was modified to read from this new intermediate layer, performing only the opponent-adjustment step and saving the final, model-ready features to `processed/team_week_adj`.
+  1. The caching utility now supports a `--stage running` mode to create a `processed/running_team_season` asset with non-adjusted, point-in-time weekly aggregations.
+  2. The same utility supports `--stage adjusted`, reading the running aggregates, applying opponent adjustment, and persisting `processed/team_week_adj` outputs.
 - Rationale: This change, suggested by the user, decouples the initial aggregation from the opponent-adjustment logic. It makes the pipeline more modular, easier to debug, and simplifies experimentation with different opponent-adjustment methodologies in the future.
-- Impact: `scripts/cache_weekly_stats.py` was refactored. A new script, `scripts/cache_running_season_stats.py`, was created. The process for generating weekly features is now a two-step process, which is reflected in the updated `docs/operations/weekly_pipeline.md`.
-- References: `[LOG:2025-10-09/01]`, `scripts/cache_running_season_stats.py`, `scripts/cache_weekly_stats.py`
+- Impact: `scripts/cache_weekly_stats.py` exposes `--stage` flags to run the running-only, adjusted-only, or combined process, keeping the pipeline modular while reducing script sprawl. Documentation reflects the revised workflow.
+- References: `[LOG:2025-10-09/01]`, `scripts/cache_weekly_stats.py`
 
 ---
 

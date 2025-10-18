@@ -1,0 +1,10 @@
+artifact_location: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/mlruns/633099029356427128/models/m-0320cfb0ef0449b789508e90aa9c7b0b/artifacts
+creation_timestamp: 1760812452805
+experiment_id: '633099029356427128'
+last_updated_timestamp: 1760812454048
+model_id: m-0320cfb0ef0449b789508e90aa9c7b0b
+model_type: null
+name: total_gradient_boosting
+source_run_id: aa4034b8c0b04f009f11a13d163d8046
+status: 2
+status_message: null

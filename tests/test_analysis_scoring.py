@@ -1,8 +1,10 @@
 """
-Tests for the bet settling and scoring utilities in src/cfb_model/analysis/scoring.py.
+Tests for the bet settling and scoring utilities in src/scoring.py.
 """
+
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd

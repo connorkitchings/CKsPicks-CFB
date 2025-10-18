@@ -31,7 +31,7 @@ If you have not already generated the weekly stats caches for the season, run th
 This creates a weekly season-to-date aggregation of team stats *before* opponent adjustment.
 
 ```bash
-uv run python scripts/cache_running_season_stats.py --year 2024 --data-root "/path/to/root"
+uv run python scripts/cache_weekly_stats.py --year 2024 --stage running --data-root "/path/to/root"
 ```
 
 **Stage 2: Opponent-Adjusted Weekly Stats**
@@ -39,8 +39,10 @@ uv run python scripts/cache_running_season_stats.py --year 2024 --data-root "/pa
 This reads the non-adjusted data from Stage 1, applies the opponent-adjustment algorithm, and saves the final model-ready features.
 
 ```bash
-uv run python scripts/cache_weekly_stats.py --year 2024 --data-root "/path/to/root"
+uv run python scripts/cache_weekly_stats.py --year 2024 --stage adjusted --data-root "/path/to/root"
 ```
+
+Tip: pass `--stage both` to run both steps in one command once the raw `team_game` partitions are in place.
 
 ### Step 1: Data Collection (API-Minimizing)
 
@@ -91,6 +93,16 @@ python scripts/publish_picks.py --year 2024 --week 5
 
 ```bash
 python scripts/publish_review.py --year 2024 --week 5
+```
+
+Need quick performance snapshots? Use the consolidated analysis CLI:
+
+```bash
+# Hit rates and volume
+uv run python scripts/analysis_cli.py summary reports/2024/CFB_season_2024_all_bets_scored.csv
+
+# Confidence sweep
+uv run python scripts/analysis_cli.py confidence reports/2024/CFB_season_2024_all_bets_scored.csv --bet-type spread
 ```
 
 ### Step 6: Outputs
