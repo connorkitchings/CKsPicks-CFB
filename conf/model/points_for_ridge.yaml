@@ -1,0 +1,10 @@
+name: ridge
+type: points_for
+
+params:
+  alpha: 0.1
+
+hydra:
+  sweeper:
+    params:
+      model.params.alpha: range(0.01, 10.0)

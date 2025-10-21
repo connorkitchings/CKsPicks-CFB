@@ -1,10 +1,11 @@
-"""Generate weekly ATS recommendations using a hybrid model strategy."""
+"""Generate weekly ATS recommendations using either legacy ensembles or points-for models."""
 
 from __future__ import annotations
 
 import argparse
 import os
 import sys
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -22,6 +23,129 @@ from src.models.features import (
     build_feature_list,
 )
 from src.utils.local_storage import LocalStorage
+
+POINTS_FOR_HOME_MODEL_NAME = "points_for_home.joblib"
+POINTS_FOR_AWAY_MODEL_NAME = "points_for_away.joblib"
+
+
+def load_points_for_models(model_year: int, model_dir: str) -> tuple:
+    """Load points-for models for home and away scoring predictions."""
+
+    base_path = Path(model_dir) / str(model_year)
+    home_path = base_path / POINTS_FOR_HOME_MODEL_NAME
+    away_path = base_path / POINTS_FOR_AWAY_MODEL_NAME
+
+    if not home_path.is_file():
+        raise FileNotFoundError(
+            f"Points-for home model not found at {home_path}. Train and save the model before running predictions."
+        )
+    if not away_path.is_file():
+        raise FileNotFoundError(
+            f"Points-for away model not found at {away_path}. Train and save the model before running predictions."
+        )
+
+    return joblib.load(home_path), joblib.load(away_path)
+
+
+def _prepare_feature_matrix(df: pd.DataFrame, model, prefix: str) -> pd.DataFrame:
+    feature_names = list(getattr(model, "feature_names_in_", []))
+    if not feature_names:
+        feature_names = [col for col in df.columns if col.startswith(f"{prefix}adj_")]
+        games_col = f"{prefix}games_played"
+        if games_col in df.columns:
+            feature_names.append(games_col)
+    if not feature_names:
+        raise ValueError(
+            f"No features found for prefix '{prefix}'. Ensure weekly caches include opponent-adjusted columns."
+        )
+    matrix = df.reindex(columns=feature_names, fill_value=0.0).astype("float64")
+    return matrix
+
+
+def predict_with_points_for(
+    df: pd.DataFrame,
+    home_model,
+    away_model,
+    *,
+    spread_std: float,
+    total_std: float,
+) -> pd.DataFrame:
+    working_df = df.copy()
+    x_home = _prepare_feature_matrix(working_df, home_model, "home_")
+    x_away = _prepare_feature_matrix(working_df, away_model, "away_")
+
+    preds_home = home_model.predict(x_home)
+    preds_away = away_model.predict(x_away)
+
+    working_df["predicted_home_points"] = preds_home
+    working_df["predicted_away_points"] = preds_away
+    working_df["predicted_spread"] = preds_home - preds_away
+    working_df["predicted_total"] = preds_home + preds_away
+    working_df["predicted_spread_std_dev"] = float(spread_std)
+    working_df["predicted_total_std_dev"] = float(total_std)
+
+    working_df = working_df.replace([np.inf, -np.inf], np.nan)
+    working_df = working_df.dropna(subset=["predicted_spread", "predicted_total"])
+    return working_df
+
+
+def predict_with_legacy(models: dict[str, list], df: pd.DataFrame) -> pd.DataFrame:
+    spread_feature_list = build_feature_list(df)
+    df_spread_predict = df.dropna(subset=spread_feature_list).copy()
+
+    spread_predictions = []
+    if not df_spread_predict.empty:
+        for m in models["spread"]:
+            required_features = (
+                list(getattr(m, "feature_names_in_", [])) or spread_feature_list
+            )
+            x_model = df_spread_predict.reindex(
+                columns=required_features, fill_value=0.0
+            ).astype("float64")
+            spread_predictions.append(
+                pd.Series(m.predict(x_model), index=x_model.index)
+            )
+
+    if spread_predictions:
+        df_spread_predict["predicted_spread"] = np.mean(spread_predictions, axis=0)
+        df_spread_predict["predicted_spread_std_dev"] = np.std(
+            spread_predictions, axis=0
+        )
+    else:
+        df_spread_predict["predicted_spread"] = np.nan
+        df_spread_predict["predicted_spread_std_dev"] = np.nan
+
+    df_totals_predict = build_differential_features(df.copy())
+    totals_feature_list = build_differential_feature_list(df_totals_predict)
+    df_totals_predict = df_totals_predict.dropna(subset=totals_feature_list).copy()
+
+    total_predictions = []
+    if not df_totals_predict.empty:
+        for m in models["total"]:
+            required_features = (
+                list(getattr(m, "feature_names_in_", [])) or totals_feature_list
+            )
+            x_model = df_totals_predict.reindex(
+                columns=required_features, fill_value=0.0
+            ).astype("float64")
+            total_predictions.append(pd.Series(m.predict(x_model), index=x_model.index))
+
+    if total_predictions:
+        df_totals_predict["predicted_total"] = np.mean(total_predictions, axis=0)
+        df_totals_predict["predicted_total_std_dev"] = np.std(total_predictions, axis=0)
+    else:
+        df_totals_predict["predicted_total"] = np.nan
+        df_totals_predict["predicted_total_std_dev"] = np.nan
+
+    final_df = df.copy()
+    final_df = final_df.join(
+        df_spread_predict[["predicted_spread", "predicted_spread_std_dev"]]
+    )
+    final_df = final_df.join(
+        df_totals_predict[["predicted_total", "predicted_total_std_dev"]]
+    )
+    final_df = final_df.dropna(subset=["predicted_spread", "predicted_total"])
+    return final_df
 
 
 def load_hybrid_ensemble_models(
@@ -112,6 +236,18 @@ def load_week_dataset(
         raise ValueError(
             f"No raw games found for year {year}, week {week} after filtering"
         )
+    if "id" not in week_games_df.columns:
+        raise ValueError("Games dataset missing game identifier column 'id'.")
+
+    # Keep the latest snapshot per game (prefer completed rows over interim ingests).
+    sort_cols: list[str] = []
+    if "completed" in week_games_df.columns:
+        sort_cols.append("completed")
+    if "start_date" in week_games_df.columns:
+        sort_cols.append("start_date")
+    if sort_cols:
+        week_games_df = week_games_df.sort_values(sort_cols)
+    week_games_df = week_games_df.drop_duplicates(subset=["id"], keep="last")
 
     home_features = team_features_df.add_prefix("home_")
     away_features = team_features_df.add_prefix("away_")
@@ -288,83 +424,51 @@ def main() -> None:
         default=1.5,
         help="Std dev threshold for total bets",
     )
+    parser.add_argument(
+        "--prediction-mode",
+        choices=["legacy", "points_for"],
+        default="legacy",
+        help="Which prediction workflow to run (default: legacy ensemble)",
+    )
+    parser.add_argument(
+        "--points-for-spread-std",
+        type=float,
+        default=18.0,
+        help="Assumed spread prediction std-dev for points-for mode",
+    )
+    parser.add_argument(
+        "--points-for-total-std",
+        type=float,
+        default=17.0,
+        help="Assumed total prediction std-dev for points-for mode",
+    )
 
     args = parser.parse_args()
     model_year = args.model_year or args.year
 
     try:
-        print(f"Loading hybrid ensemble models for year {model_year}...")
-        models = load_hybrid_ensemble_models(model_year, args.model_dir, args.model_dir)
-
         print(f"Loading dataset for year {args.year}, week {args.week}...")
         df = load_week_dataset(args.year, args.week, args.data_root)
-
-        # --- HYBRID PREDICTION ---
-
-        # 1. Prepare data and predict for Spreads
-        spread_feature_list = build_feature_list(df)
-        df_spread_predict = df.dropna(subset=spread_feature_list).copy()
-
-        spread_predictions = []
-        if not df_spread_predict.empty:
-            for m in models["spread"]:
-                required_features = (
-                    list(getattr(m, "feature_names_in_", [])) or spread_feature_list
-                )
-                x_model = df_spread_predict.reindex(
-                    columns=required_features, fill_value=0.0
-                ).astype("float64")
-                spread_predictions.append(
-                    pd.Series(m.predict(x_model), index=x_model.index)
-                )
-
-        if spread_predictions:
-            df_spread_predict["predicted_spread"] = np.mean(spread_predictions, axis=0)
-            df_spread_predict["predicted_spread_std_dev"] = np.std(
-                spread_predictions, axis=0
+        if args.prediction_mode == "legacy":
+            print(f"Loading hybrid ensemble models for year {model_year}...")
+            models = load_hybrid_ensemble_models(
+                model_year, args.model_dir, args.model_dir
             )
+            final_df = predict_with_legacy(models, df)
+            spread_std_threshold = args.spread_std_dev_threshold
+            total_std_threshold = args.total_std_dev_threshold
         else:
-            df_spread_predict["predicted_spread"] = np.nan
-            df_spread_predict["predicted_spread_std_dev"] = np.nan
-
-        # 2. Prepare data and predict for Totals
-        df_totals_predict = build_differential_features(df.copy())
-        totals_feature_list = build_differential_feature_list(df_totals_predict)
-        df_totals_predict = df_totals_predict.dropna(subset=totals_feature_list).copy()
-
-        total_predictions = []
-        if not df_totals_predict.empty:
-            for m in models["total"]:
-                required_features = (
-                    list(getattr(m, "feature_names_in_", [])) or totals_feature_list
-                )
-                x_model = df_totals_predict.reindex(
-                    columns=required_features, fill_value=0.0
-                ).astype("float64")
-                total_predictions.append(
-                    pd.Series(m.predict(x_model), index=x_model.index)
-                )
-
-        if total_predictions:
-            df_totals_predict["predicted_total"] = np.mean(total_predictions, axis=0)
-            df_totals_predict["predicted_total_std_dev"] = np.std(
-                total_predictions, axis=0
+            print(f"Loading points-for models for year {model_year}...")
+            home_model, away_model = load_points_for_models(model_year, args.model_dir)
+            final_df = predict_with_points_for(
+                df,
+                home_model,
+                away_model,
+                spread_std=args.points_for_spread_std,
+                total_std=args.points_for_total_std,
             )
-        else:
-            df_totals_predict["predicted_total"] = np.nan
-            df_totals_predict["predicted_total_std_dev"] = np.nan
-
-        # 3. Combine predictions back into the main dataframe
-        final_df = df.copy()
-        final_df = final_df.join(
-            df_spread_predict[["predicted_spread", "predicted_spread_std_dev"]]
-        )
-        final_df = final_df.join(
-            df_totals_predict[["predicted_total", "predicted_total_std_dev"]]
-        )
-
-        # Now drop rows where predictions could not be made
-        final_df = final_df.dropna(subset=["predicted_spread", "predicted_total"])
+            spread_std_threshold = None
+            total_std_threshold = None
 
         if final_df.empty:
             print("No games with complete predictions. Exiting.")
@@ -382,8 +486,8 @@ def main() -> None:
             final_df,
             spread_edge_threshold=args.spread_threshold,
             total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=args.spread_std_dev_threshold,
-            total_std_dev_threshold=args.total_std_dev_threshold,
+            spread_std_dev_threshold=spread_std_threshold,
+            total_std_dev_threshold=total_std_threshold,
             min_games_played=4,
         )
 

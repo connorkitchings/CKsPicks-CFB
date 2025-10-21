@@ -100,7 +100,7 @@ def main() -> None:
     # --- Merge and Score ---
     week_games_df = games_df[games_df["week"] == args.week].copy()
     # Remove duplicate games to prevent merge duplicates (preserves legitimate spread+total combinations)
-    week_games_df = week_games_df.drop_duplicates(subset=["id"])
+    week_games_df = week_games_df.drop_duplicates(subset=["id"], keep="last")
 
     # Merge using the reliable game_id
     merged_df = pd.merge(

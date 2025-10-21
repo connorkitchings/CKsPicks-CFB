@@ -4,6 +4,17 @@ Log of planning-level decisions. Use one entry per decision.
 
 ---
 
+## 2025-10-20 — Exploration Kickoff: Unified Points-For Modeling
+
+- Category: Modeling / Architecture
+- Decision: Begin documentation and design work to evaluate replacing the separate spread and total pipelines with a unified points-for modeling approach that predicts home and away scoring directly.
+- Rationale: A single scoring model could simplify feature maintenance, enable richer uncertainty calibration, and support both spread and total bets from one set of predictions. The team needs a written plan before altering production code.
+- Impact: Draft design note outlining data requirements, modeling options (multi-output regression vs. paired single-target models), evaluation strategy, and rollout considerations. Identify downstream docs that must change once the approach is approved.
+- Next Steps: Finalize the design note, resolve open questions (model form, fallback expectations, tuning strategy), then scope implementation tasks.
+- References: `docs/planning/points_for_model.md`
+
+---
+
 ## 2025-10-10 — MLOps Reorientation: MLflow Integration
 
 - Category: MLOps / Tooling / Architecture

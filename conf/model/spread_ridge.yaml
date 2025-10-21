@@ -1,0 +1,6 @@
+name: ridge
+type: spread
+target: spread_target
+
+params:
+  alpha: 0.1

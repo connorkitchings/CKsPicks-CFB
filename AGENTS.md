@@ -39,3 +39,7 @@ This guide orients contributors and AI agents to the `cfb_model` repository. Fol
   - **Docs:** `docs/project_org/project_charter.md`, `docs/planning/roadmap.md`, `docs/decisions/decision_log.md`, `docs/project_org/modeling_baseline.md`, `docs/operations/weekly_pipeline.md`, `docs/project_org/feature_catalog.md`, `docs/project_org/betting_policy.md`, latest `session_logs/` entry.
   - **Code Anchors:** `src/config.py`, `src/utils/local_storage.py`, `src/features/pipeline.py`, `src/features/persist.py`, `src/models/train_model.py`, `src/scripts/generate_weekly_bets_clean.py`, `scripts/cli.py`, representative tests (`tests/test_aggregations_core.py`, `tests/test_betting_policy_kelly.py`).
 - Document outcomes, blockers, and next steps in a new session log (`session_logs/YYYY-MM-DD/NN.md`) before you finish.
+
+### Data Access Notes
+- Production data lives on an external drive; the absolute path is defined in `.env` via `CFB_DATA_ROOT`. Make sure that drive is mounted before running any ingestion, caching, or modeling commands—`src/config.get_data_root()` and `LocalStorage` both rely on that environment variable.
+- Processed entities such as `team_game` are partitioned as `.../year=YYYY/week=WW/team=<Team Name>/data.csv`; don’t expect a single `data.csv` directly under the week folder when probing the filesystem.

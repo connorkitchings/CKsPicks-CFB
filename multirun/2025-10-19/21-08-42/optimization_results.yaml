@@ -1,0 +1,4 @@
+name: optuna
+best_params:
+  model.params.alpha: 9.01
+best_value: 18.0798828256492

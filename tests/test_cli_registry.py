@@ -60,6 +60,7 @@ def test_build_ingest_kwargs_ignores_week_when_not_supported():
 
 
 def test_cli_ingest_year_dry_run(tmp_path):
+    (tmp_path / "data-root" / "raw").mkdir(parents=True)
     runner = CliRunner()
     result = runner.invoke(
         cli.app,
@@ -79,6 +80,7 @@ def test_cli_ingest_year_dry_run(tmp_path):
 
 
 def test_cli_ingest_year_failure_is_reported(tmp_path, monkeypatch):
+    (tmp_path / "data-root" / "raw").mkdir(parents=True)
     runner = CliRunner()
 
     def _raise_on_run(task, **kwargs):

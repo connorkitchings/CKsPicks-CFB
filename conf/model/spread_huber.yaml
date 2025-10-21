@@ -1,0 +1,7 @@
+name: huber
+type: spread
+target: spread_target
+
+params:
+  epsilon: float(1.0, 2.0)
+  alpha: float(0.0001, 1.0, log=True)

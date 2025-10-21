@@ -4,6 +4,8 @@ This catalog defines the engineered features and fields used by the MVP modeling
 It complements `docs/project_org/modeling_baseline.md` and the runbook in
 `docs/operations/weekly_pipeline.md`.
 
+> NOTE (2025-10-20): Feature requirements may change for the points-for modeling initiative. Track updates in `docs/planning/points_for_model.md`.
+
 ## Conventions
 
 - Level: team-season, team-week, game-level, or team-game.

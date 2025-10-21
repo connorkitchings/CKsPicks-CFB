@@ -238,6 +238,10 @@ in later stages.
 
 ---
 
+  - `[KB:HYDRA-INTERPOLATION]` Older versions of Hydra might not support the `${env:VAR}` syntax for environment variable interpolation. Use `${oc.env:VAR}` instead.
+  - `[KB:PANDAS-COLUMN-NAMES]` Be aware that the column name for the game identifier in the raw `games` data is `id`, not `game_id`.
+  - `[KB:LIST-DIRECTORY-IGNORES]` The `list_directory` tool respects `.gitignore` by default. Use `file_filtering_options=ListDirectoryFileFilteringOptions(respect_git_ignore=False)` to disable this behavior.
+- **MLflow**
 ## `[KB:MLflowNestedRuns]`
 
 - **Context**: When training an ensemble of models, it's useful to track both the performance of the overall ensemble and the individual performance of each component model.
@@ -285,3 +289,57 @@ in later stages.
 - **Pattern**: Modify storage classes (like `LocalStorage`) to remove automatic directory creation (`mkdir(exist_ok=True)`). Instead, the class should assume the path provided to it exists and fail explicitly with a `StorageError` or `FileNotFoundError` if it does not. This makes path resolution failures loud and immediate, preventing the pipeline from running with an incorrect configuration.
 - **Usage**: In `src/utils/local_storage.py`, the `__init__` method was changed to remove the `root.mkdir()` call and only check `if not root.is_dir()`.
 - **Discovered In**: `[LOG:2025-10-18/03]`
+
+---
+
+## `[KB:MLFLOW-CONFIG]`
+
+- **Context**: When running MLflow, the default tracking URI is `mlruns`. This can be changed to a different location.
+- **Pattern**: Use `mlflow.set_tracking_uri()` to set the tracking URI to a different location. This is useful for organizing project outputs.
+- **Usage**: `mlflow.set_tracking_uri("file:./artifacts/mlruns")`
+- **Discovered In**: `[LOG:2025-10-19/01]`
+
+---
+
+## `[KB:GIT-ARTIFACTS]`
+
+- **Context**: Directories containing generated artifacts and experiment tracking data (e.g., `mlruns`, `artifacts`) should not be committed to the git repository.
+- **Pattern**: Add the paths to these directories to the `.gitignore` file.
+- **Usage**: Add `/artifacts/` and `/mlruns/` to the `.gitignore` file.
+- **Discovered In**: `[LOG:2025-10-19/01]`
+
+---
+
+## `[KB:UV-RUN-MODULE]`
+
+- **Context**: When a package's executable is not found in the path, it can be run as a module.
+- **Pattern**: Use `uv run python -m <module_name>` to run the module.
+- **Usage**: `uv run python -m mkdocs build --quiet`
+- **Discovered In**: `[LOG:2025-10-19/01]`
+
+---
+
+## `[KB:PERFORMANCE-BOTTLENECK]`
+
+- **Context**: A time-series validation script was unacceptably slow, taking hours to run.
+- **Pattern**: The cause was identified as a feature generation function that recalculated complex stats (like opponent adjustments) from raw data on every iteration. The solution is to ensure such processes use pre-calculated, cached data. For this project, the `walk_forward_validation.py` script was refactored to load weekly data from the `processed/team_week_adj/` cache instead of regenerating it.
+- **Usage**: When building iterative validation tools, always check if intermediate, pre-calculated data can be used instead of re-running expensive calculations in a loop.
+- **Discovered In**: `[LOG:2025-10-20/05]`
+
+---
+
+## `[KB:REFACTORING-IMPORTS]`
+
+- **Context**: Deleting a function caused `ImportError`s in multiple, seemingly unrelated parts of the application, which were only caught by the test suite.
+- **Pattern**: When a function is removed or refactored, it is crucial to perform a project-wide search for its usages to prevent leaving dangling imports. The test suite, especially tests that simply try to import all modules (like `tests/test_imports.py`), is an invaluable safety net for catching these errors.
+- **Usage**: Before considering a refactoring task complete, run the full test suite to ensure no import errors have been introduced.
+- **Discovered In**: `[LOG:2025-10-20/05]`
+
+---
+
+## `[KB:TYPER-CLI-STRUCTURE]`
+
+- **Context**: A main CLI script that aggregates other Typer apps (e.g., `scripts/cli.py`) failed with an `AttributeError` because it could not find the `app` object in a sub-command module.
+- **Pattern**: If a Python script defines a Typer application and is also intended to be imported as a module by another script, it must maintain its top-level `app = typer.Typer()` definition. Accidentally removing this during a refactor will break the import chain.
+- **Usage**: Ensure that any script providing a Typer app for aggregation defines the `app` object at the module level.
+- **Discovered In**: `[LOG:2025-10-20/05]`

@@ -1196,7 +1196,7 @@ def main() -> None:
             issues.extend(validate_adjusted_consistency(storage, args.year))
             # Compare against raw advanced box scores if available
             raw_storage = LocalStorage(
-                data_root=args.data_root, file_format="csv", data_type="raw"
+                data_root=data_root, file_format="csv", data_type="raw"
             )
             issues.extend(
                 validate_team_game_vs_boxscore(storage, raw_storage, args.year)

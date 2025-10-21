@@ -1,0 +1,9 @@
+name: gradient_boosting
+type: total
+target: total_target
+
+params:
+  n_estimators: int(100, 500)
+  learning_rate: float(0.01, 0.3, log=True)
+  max_depth: int(3, 8)
+  subsample: float(0.7, 1.0)

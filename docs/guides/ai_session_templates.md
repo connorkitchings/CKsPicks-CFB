@@ -75,6 +75,8 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
 3. **Define Next Steps:**
     - **Immediate Next Task:** `[What is the very next thing to do? e.g., 'Refactor the data
       ingestion pipeline to handle rate-limiting.']`
+    - If weekly predictions were generated, confirm the `CFB_weekXX_bets.csv` file has **one row per
+      game** (use `df['Game'].nunique()` as a quick check). Re-run the generator if duplicates remain.
 
 4. **Final Health Check:**
     - Run `uv run ruff check .` and `uv run ruff format .` to ensure code quality
@@ -96,6 +98,9 @@ prepare for a smooth handoff, please perform the following wrap-up tasks:
       `mkdocs.yml`, `docs/project_org/project_charter.md`, and `docs/project_org/kb_overview.md`.
     - Also review `docs/guides/ai_session_templates.md` if workflow guidance changed (e.g., new flows, health checks).
     - Update any relevant documentation based on the changes made during the session.
+    - When weekly picks are ready to share, send a **test** email first:
+      `uv run python -m scripts.publish_picks --year <YYYY> --week <WW> --mode test`. Once the test
+      render looks good, repeat with `--mode prod` to notify the full list.
 
 After you have generated the dev log, I will review it and make any final edits. All version control
 (committing, pushing, etc.) is handled manually and outside the AI workflow.

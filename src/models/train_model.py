@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import argparse
 import os
+import warnings
 from collections.abc import Iterable
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import joblib
@@ -25,7 +27,7 @@ from sklearn.preprocessing import StandardScaler
 from src.config import MODELS_DIR, get_data_root
 from src.models.features import (
     build_feature_list,
-    generate_point_in_time_features,
+    load_point_in_time_data,
 )
 
 
@@ -88,6 +90,72 @@ def _concat_years(dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
+@contextmanager
+def _suppress_linear_runtime_warnings() -> Iterable[None]:
+    """Temporarily ignore benign matmul RuntimeWarnings from numpy/BLAS."""
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="divide by zero encountered in matmul",
+            category=RuntimeWarning,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message="overflow encountered in matmul",
+            category=RuntimeWarning,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message="invalid value encountered in matmul",
+            category=RuntimeWarning,
+        )
+        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+            yield
+
+
+spread_models = {
+    "ridge": Ridge(alpha=0.1),
+    "elastic_net": ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
+    "huber": Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("huber", HuberRegressor(epsilon=1.35, max_iter=500)),
+        ]
+    ),
+}
+
+total_models = {
+    "ridge": Ridge(alpha=0.1),
+    "random_forest": RandomForestRegressor(
+        n_estimators=200,
+        max_depth=8,
+        min_samples_split=10,
+        min_samples_leaf=5,
+        random_state=42,
+    ),
+    "gradient_boosting": GradientBoostingRegressor(
+        n_estimators=200,
+        learning_rate=0.1,
+        max_depth=6,
+        subsample=0.8,
+        random_state=42,
+    ),
+}
+
+points_for_models = {
+    "ridge": Ridge(alpha=0.1),
+    "elastic_net": ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
+    "gradient_boosting": GradientBoostingRegressor(
+        n_estimators=200,
+        learning_rate=0.1,
+        max_depth=3,
+        subsample=0.8,
+        random_state=42,
+    ),
+}
+
+
 def main() -> None:
     """CLI entrypoint for training models."""
     parser = argparse.ArgumentParser(description="Train and evaluate ensemble models.")
@@ -118,32 +186,25 @@ def main() -> None:
     metrics_dir = model_dir / str(test_year) / "metrics"
 
     # --- MLflow Setup ---
+    mlflow.set_tracking_uri("file:./artifacts/mlruns")
     mlflow.set_experiment("CFB_Model_Training")
 
     # --- Data Loading ---
     all_training_games = []
     for year in train_years:
-        print(f"Generating features for training year: {year}")
+        print(f"Loading training data for year: {year}")
         for week in range(1, 16):
-            try:
-                weekly_features = generate_point_in_time_features(year, week, data_root)
-                all_training_games.append(weekly_features)
-            except ValueError as e:
-                print(f"  Skipping week {week} for year {year}: {e}")
-                continue
+            weekly_data = load_point_in_time_data(year, week, data_root)
+            if weekly_data is not None:
+                all_training_games.append(weekly_data)
     train_df = _concat_years(all_training_games)
 
     all_test_games = []
-    print(f"Generating features for test year: {test_year}")
+    print(f"Loading test data for year: {test_year}")
     for week in range(1, 16):
-        try:
-            weekly_features = generate_point_in_time_features(
-                test_year, week, data_root
-            )
-            all_test_games.append(weekly_features)
-        except ValueError as e:
-            print(f"  Skipping week {week} for year {test_year}: {e}")
-            continue
+        weekly_data = load_point_in_time_data(test_year, week, data_root)
+        if weekly_data is not None:
+            all_test_games.append(weekly_data)
     test_df = _concat_years(all_test_games)
 
     # --- Feature Preparation ---
@@ -177,23 +238,13 @@ def main() -> None:
 
         # --- Spread Models ---
         print("Training and logging spread models...")
-        spread_models = {
-            "ridge": Ridge(alpha=0.1),
-            "elastic_net": ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
-            "huber": Pipeline(
-                [
-                    ("scaler", StandardScaler()),
-                    ("huber", HuberRegressor(epsilon=1.35, max_iter=500)),
-                ]
-            ),
-        }
         for name, model in spread_models.items():
             with mlflow.start_run(run_name=f"spread_{name}", nested=True):
                 print(f"  Training spread_{name}...")
                 mlflow.log_params(model.get_params())
-                model.fit(x_train, y_spread_train)
-
-                preds = model.predict(x_test)
+                with _suppress_linear_runtime_warnings():
+                    model.fit(x_train, y_spread_train)
+                    preds = model.predict(x_test)
                 metrics = _evaluate(y_spread_test.to_numpy(), preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
 
@@ -202,29 +253,13 @@ def main() -> None:
 
         # --- Total Models ---
         print("Training and logging total models...")
-        total_models = {
-            "random_forest": RandomForestRegressor(
-                n_estimators=200,
-                max_depth=8,
-                min_samples_split=10,
-                min_samples_leaf=5,
-                random_state=42,
-            ),
-            "gradient_boosting": GradientBoostingRegressor(
-                n_estimators=200,
-                learning_rate=0.1,
-                max_depth=6,
-                subsample=0.8,
-                random_state=42,
-            ),
-        }
         for name, model in total_models.items():
             with mlflow.start_run(run_name=f"total_{name}", nested=True):
                 print(f"  Training total_{name}...")
                 mlflow.log_params(model.get_params())
-                model.fit(x_train, y_total_train)
-
-                preds = model.predict(x_test)
+                with _suppress_linear_runtime_warnings():
+                    model.fit(x_train, y_total_train)
+                    preds = model.predict(x_test)
                 metrics = _evaluate(y_total_test.to_numpy(), preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
 
@@ -233,14 +268,19 @@ def main() -> None:
 
         # --- Evaluate and Log Ensemble Performance ---
         print("Evaluating ensemble predictions...")
-        spread_preds = [
-            joblib.load(out_dir / f"spread_{name}.joblib").predict(x_test)
-            for name in spread_models
-        ]
-        total_preds = [
-            joblib.load(out_dir / f"total_{name}.joblib").predict(x_test)
-            for name in total_models
-        ]
+        spread_preds: list[np.ndarray] = []
+        for name in spread_models:
+            with _suppress_linear_runtime_warnings():
+                spread_preds.append(
+                    joblib.load(out_dir / f"spread_{name}.joblib").predict(x_test)
+                )
+
+        total_preds: list[np.ndarray] = []
+        for name in total_models:
+            with _suppress_linear_runtime_warnings():
+                total_preds.append(
+                    joblib.load(out_dir / f"total_{name}.joblib").predict(x_test)
+                )
 
         spread_pred_ensemble = np.mean(spread_preds, axis=0)
         total_pred_ensemble = np.mean(total_preds, axis=0)

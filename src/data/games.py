@@ -1,11 +1,17 @@
 """Games data ingestion from CFBD API."""
 
 import argparse
+import json
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 import cfbd
+import pandas as pd
 
 from .base import BaseIngester
+from src.utils.base import Partition
 
 
 class GamesIngester(BaseIngester):
@@ -168,6 +174,79 @@ class GamesIngester(BaseIngester):
             )
 
         return games_to_insert
+
+    def ingest_data(self, data: list[dict[str, Any]]) -> None:
+        """Persist games data with per-week partitions and year-level upserts.
+
+        When a specific week is requested we overwrite that week's partition and
+        update the year-level CSV so completed box scores replace earlier
+        in-progress snapshots.
+        """
+        if not data:
+            print("No data to ingest.")
+            return
+
+        if self.week is None:
+            super().ingest_data(data)
+            return
+
+        # 1) Persist the week-specific partition (overwrites existing snapshot).
+        partition_week = Partition({"year": str(self.year), "week": str(self.week)})
+        written = self.storage.write(
+            self.entity_name, data, partition_week, overwrite=True
+        )
+        print(
+            f"Wrote {written} records to "
+            f"{self.entity_name}/{partition_week.path_suffix()}."
+        )
+
+        # 2) Upsert into the year-level file so downstream reads get the latest scores.
+        year_dir = Path(self.storage.root()) / self.entity_name / f"year={self.year}"
+        year_file = year_dir / "data.csv"
+        if year_file.exists():
+            existing_df = pd.read_csv(year_file)
+        else:
+            existing_df = pd.DataFrame()
+
+        def _normalize_record(record: dict[str, Any]) -> dict[str, Any]:
+            normalized: dict[str, Any] = {}
+            for key, value in record.items():
+                if isinstance(value, (datetime, pd.Timestamp)):
+                    normalized[key] = value.isoformat()
+                elif isinstance(value, Enum):
+                    normalized[key] = value.value if hasattr(value, "value") else str(
+                        value
+                    )
+                elif isinstance(value, (list, tuple, set)):
+                    normalized[key] = json.dumps(list(value))
+                else:
+                    normalized[key] = value
+            return normalized
+
+        normalized_data = [_normalize_record(row) for row in data]
+        new_df = pd.DataFrame(normalized_data)
+
+        if existing_df.empty:
+            combined_df = new_df
+        else:
+            combined_df = pd.concat([existing_df, new_df], ignore_index=True, sort=False)
+            # Keep the last occurrence so freshly-ingested games overwrite stale rows.
+            combined_df = combined_df.drop_duplicates(subset="id", keep="last")
+
+        # Optional stability: sort by week then start date for reproducible ordering.
+        sort_cols = [col for col in ["week", "start_date", "id"] if col in combined_df]
+        if sort_cols:
+            combined_df = combined_df.sort_values(sort_cols).reset_index(drop=True)
+
+        combined_records = combined_df.to_dict(orient="records")
+        partition_year = Partition({"year": str(self.year)})
+        # Avoid removing the entire year directory (which also holds week= subfolders).
+        self.storage.write(
+            self.entity_name,
+            combined_records,
+            partition_year,
+            overwrite=False,
+        )
 
 
 def main() -> None:

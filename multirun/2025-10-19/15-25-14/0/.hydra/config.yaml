@@ -1,0 +1,20 @@
+model:
+  name: spread_ridge
+  type: spread
+  target: spread_target
+  params:
+    alpha:
+      _target_: optuna.distributions.FloatDistribution
+    low: 0.01
+    high: 10.0
+    log: true
+data:
+  data_root: ${env:CFB_DATA_ROOT,./data}
+  train_years:
+  - 2019
+  - 2021
+  - 2022
+  - 2023
+  test_year: 2024
+mlflow:
+  experiment_name: CFB_Model_Hyperparameter_Tuning

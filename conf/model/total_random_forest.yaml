@@ -1,0 +1,9 @@
+name: random_forest
+type: total
+target: total_target
+
+params:
+  n_estimators: int(100, 500)
+  max_depth: int(3, 10)
+  min_samples_split: int(2, 20)
+  min_samples_leaf: int(1, 10)

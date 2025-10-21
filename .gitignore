@@ -215,12 +215,12 @@ __marimo__/
 .gemini/
 gha-creds-*.json
 
-# Local data directogry (actual data is on external drive)
-/data
+# Local data directory (actual data is on external drive)
+/data/
 
 # Generated project outputs
-/.artifacts/
-artifacts/mlruns/
+artifacts/
+/mlruns/
 
 # Site
 site/

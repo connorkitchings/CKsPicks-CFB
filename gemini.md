@@ -32,7 +32,7 @@ uv run safety check
 
 # Data validation and quality checks
 python scripts/check_links.py
-python -m src.cfb_model.data.validation --year 2024 --data-type processed --deep
+PYTHONPATH=src uv run python -m utils.validation --year 2024 --data-type processed --deep
 ```
 
 ### Data Pipeline Operations
@@ -49,7 +49,7 @@ python scripts/ingest_cli.py games --year 2024 --season-type regular
 python scripts/cli.py aggregate preagg --year 2024
 
 # Train Ridge baseline models
-python src/cfb_model/models/ridge_baseline/train.py --train-years 2019,2021,2022,2023 --test-year 2024
+PYTHONPATH=src uv run python -m models.train_model --train-years 2019,2021,2022,2023 --test-year 2024
 ```
 
 ### Documentation
@@ -130,6 +130,7 @@ To get up to speed, review this minimal context pack (in order):
 - **Verify Output**: Always review and validate AI-generated code. You are responsible for its quality.
 - **Update Documentation**: All changes to code, data, or workflow must be reflected in the documentation.
 - **Track Decisions**: Record material changes in `docs/decisions/decision_log.md`.
+- **Create New Session Logs**: Always create a new, sequentially numbered session log file for each development session. Do not edit existing session logs unless explicitly asked to.
 
 ---
 
@@ -144,3 +145,4 @@ Please review @README.md , @mkdocs.yml , @pyproject.toml , the Minimal Context P
 ---
 ## Gemini Added Memories
 - When a new session starts in the `/Users/connorkitchings/Desktop/Repositories/cfb_model` directory, load `README.md`, `mkdocs.yml`, `pyproject.toml`, the Minimal Context Pack (docs plus code anchors) listed above, and the latest `session_logs/` handoff before drilling into broader `src/**`, `scripts/**`, or `tests/**`.
+- To run a python script, use `uv run python <script_name>.py`.

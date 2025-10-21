@@ -1,0 +1,13 @@
+name: elastic_net
+type: spread
+target: spread_target
+
+params:
+  alpha: 0.1
+  l1_ratio: 0.5
+
+hydra:
+  sweeper:
+    params:
+      model.params.alpha: range(0.01, 10.0)
+      model.params.l1_ratio: range(0.0, 1.0)

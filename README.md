@@ -50,6 +50,8 @@ For detailed usage guides (running tests, pipelines, and docs), see the
 
 ```text
 cfb_model/
+├── artifacts/
+│   └── mlruns/
 ├── conf/                 # Hydra configuration files
 ├── docs/                 # Project documentation (MkDocs)
 ├── notebooks/            # Jupyter notebooks for exploration and analysis

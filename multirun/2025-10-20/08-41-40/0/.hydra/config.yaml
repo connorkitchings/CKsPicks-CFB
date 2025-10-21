@@ -1,0 +1,9 @@
+model:
+  name: elastic_net
+  type: spread
+  target: spread_target
+  params:
+    alpha: 9.01
+    l1_ratio: 1.0
+data:
+  data_root: /Volumes/CK SSD/Coding Projects/cfb_model

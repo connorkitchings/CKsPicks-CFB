@@ -2,6 +2,8 @@
 
 This runbook defines the end-to-end weekly process for producing betting recommendations.
 
+> NOTE (2025-10-20): Pipeline updates are being designed to support a unified points-for model. Refer to `docs/planning/points_for_model.md` before modifying workflow steps.
+
 ## Schedule
 
 - Cadence: Wednesdays at 12:00 ET (manual trigger)
@@ -181,6 +183,8 @@ uv run python -m src.scripts.generate_weekly_bets_clean \
   --kelly-cap 0.25 \
   --base-unit-fraction 0.02
 ```
+
+Points-for evaluation: once `models/<year>/points_for_home.joblib` and `points_for_away.joblib` exist (see `scripts/train_points_for_models.py`), add `--prediction-mode points_for` and optional `--points-for-spread-std` / `--points-for-total-std` arguments to generate a comparative report without disturbing the legacy ensemble flow.
 
 Score the week against final outcomes:
 

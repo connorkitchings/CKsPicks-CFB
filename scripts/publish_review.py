@@ -291,6 +291,52 @@ def main() -> None:
         "total_hit_rate": total_hit_rate,
     }
 
+    # --- Season-to-date Summary (up to supplied week) ---
+    season_summary = None
+    season_frames: list[pd.DataFrame] = []
+    season_root = report_dir_path / str(args.year)
+    season_files = sorted(
+        season_root.rglob("CFB_week*_bets_scored.csv"),
+        key=lambda p: p.name,
+    )
+    for scored_path in season_files:
+        match = re.search(r"CFB_week(\d+)_bets_scored\.csv", scored_path.name)
+        if not match:
+            continue
+        week_num = int(match.group(1))
+        if week_num > args.week:
+            continue
+        season_frames.append(pd.read_csv(scored_path))
+
+    if season_frames:
+        season_df = pd.concat(season_frames, ignore_index=True)
+
+        def _record(df: pd.DataFrame, bet_col: str, result_col: str) -> tuple[int, int, float]:
+            mask = df[bet_col].isin(["home", "away"]) if bet_col == "Spread Bet" else df[
+                bet_col
+            ].isin(["over", "under"])
+            outcomes = df.loc[mask & df[result_col].isin(["Win", "Loss"]), result_col]
+            wins = int((outcomes == "Win").sum())
+            losses = int((outcomes == "Loss").sum())
+            hit_rate = wins / (wins + losses) if (wins + losses) > 0 else 0.0
+            return wins, losses, hit_rate
+
+        season_spread_wins, season_spread_losses, season_spread_hit = _record(
+            season_df, "Spread Bet", "Spread Bet Result"
+        )
+        season_total_wins, season_total_losses, season_total_hit = _record(
+            season_df, "Total Bet", "Total Bet Result"
+        )
+
+        season_summary = {
+            "spread_wins": season_spread_wins,
+            "spread_losses": season_spread_losses,
+            "spread_hit_rate": season_spread_hit,
+            "total_wins": season_total_wins,
+            "total_losses": season_total_losses,
+            "total_hit_rate": season_total_hit,
+        }
+
     # Remove only full row duplicates (same game with identical bet types)
     all_games_df = all_games_df.drop_duplicates()
 
@@ -396,6 +442,7 @@ def main() -> None:
         "week": args.week,
         "generated_at": datetime.now().strftime("%m/%d/%Y %I:%M %p"),
         "summary": summary,
+        "season_summary": season_summary,
         "bets": bets,
         "docs_url": "https://github.com/connorkitchings/cfb_model",
     }

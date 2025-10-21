@@ -2,6 +2,8 @@
 
 This document defines the initial, minimal modeling approach to generate weekly ATS recommendations.
 
+> NOTE (2025-10-20): A unified points-for modeling approach is under evaluation. See `docs/planning/points_for_model.md` for the proposed changes and upcoming revisions to this baseline.
+
 ## Objectives
 
 - Hit rate target: ≥ 52.4% (breakeven threshold)
