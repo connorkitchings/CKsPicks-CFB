@@ -46,6 +46,15 @@ def parse_args() -> argparse.Namespace:
         default=Path("outputs/prototypes/points_for_training_slice.csv"),
         help="Destination CSV file.",
     )
+    parser.add_argument(
+        "--adjustment-iteration",
+        type=int,
+        default=4,
+        help=(
+            "Opponent-adjustment iteration depth to read from team_week_adj caches "
+            "(default: 4). Use -1 to fall back to the legacy layout."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -68,20 +77,35 @@ def load_raw_games(raw_root: Path, season: int) -> list[dict[str, str]]:
 
 
 def load_week_features(
-    processed_root: Path, season: int, week: int
+    processed_root: Path,
+    season: int,
+    week: int,
+    iteration: int | None,
 ) -> Dict[str, dict[str, str]]:
-    features_path = (
+    candidate_paths: list[Path] = []
+    if iteration is not None:
+        candidate_paths.append(
+            processed_root
+            / "team_week_adj"
+            / f"iteration={iteration}"
+            / f"year={season}"
+            / f"week={week}"
+            / "data.csv"
+        )
+    candidate_paths.append(
         processed_root
         / "team_week_adj"
         / f"year={season}"
         / f"week={week}"
         / "data.csv"
     )
-    if not features_path.is_file():
-        return {}
-    with features_path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        return {row["team"]: row for row in reader if row.get("team")}
+
+    for features_path in candidate_paths:
+        if features_path.is_file():
+            with features_path.open("r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                return {row["team"]: row for row in reader if row.get("team")}
+    return {}
 
 
 def determine_feature_columns(feature_map: Dict[str, dict[str, str]]) -> list[str]:
@@ -99,6 +123,7 @@ def build_slice(
     processed_root: Path,
     season: int,
     min_games: float,
+    iteration: int | None,
 ) -> tuple[list[dict[str, str]], dict[int, int], list[tuple], list[tuple]]:
     rows: list[dict[str, str]] = []
     kept_weeks: dict[int, int] = defaultdict(int)
@@ -118,7 +143,7 @@ def build_slice(
             continue
 
         if week not in cache:
-            feature_map = load_week_features(processed_root, season, week)
+            feature_map = load_week_features(processed_root, season, week, iteration)
             cache[week] = feature_map
             columns_cache[week] = determine_feature_columns(feature_map)
 
@@ -181,6 +206,10 @@ def main() -> None:
     data_root = resolve_data_root(args.data_root)
     raw_root = data_root / "raw"
     processed_root = data_root / "processed"
+    iteration_value = args.adjustment_iteration
+    iteration = (
+        None if iteration_value is not None and iteration_value < 0 else iteration_value
+    )
 
     raw_games = load_raw_games(raw_root, args.season)
     rows, kept_weeks, missing, insufficient = build_slice(
@@ -188,6 +217,7 @@ def main() -> None:
         processed_root=processed_root,
         season=args.season,
         min_games=args.min_games,
+        iteration=iteration,
     )
     write_rows(rows, args.output)
 

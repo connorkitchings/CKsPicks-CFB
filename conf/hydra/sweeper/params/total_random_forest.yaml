@@ -1,0 +1,4 @@
+model.params.n_estimators: int(100, 500)
+model.params.max_depth: int(3, 10)
+model.params.min_samples_split: int(2, 20)
+model.params.min_samples_leaf: int(1, 10)

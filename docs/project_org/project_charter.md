@@ -110,7 +110,7 @@ graph TD
 - `/docs`: Contains all project documentation, including planning, guides, and logs
 - `/notebooks`: Contains Jupyter notebooks for experimentation and analysis
 - `/artifacts`
-    - `/mlruns`: Contains MLflow experiment tracking data
+    - `/artifacts/mlruns`: Contains MLflow experiment tracking data
 - `/data`: Contains raw, interim, and processed data (not versioned by Git)
 - `/tests`: Contains all unit, integration, and functional tests
 

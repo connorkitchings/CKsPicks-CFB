@@ -32,6 +32,18 @@ def main(cfg: DictConfig) -> float:
     mlflow.set_experiment(cfg.mlflow.experiment_name)
 
     with mlflow.start_run(nested=True):
+        resolved_offense_iteration = (
+            cfg.data.adjustment_iteration_offense
+            if cfg.data.adjustment_iteration_offense is not None
+            else cfg.data.adjustment_iteration
+        )
+        resolved_defense_iteration = (
+            cfg.data.adjustment_iteration_defense
+            if cfg.data.adjustment_iteration_defense is not None
+            else cfg.data.adjustment_iteration
+        )
+        mlflow.log_param("off_adjustment_iteration", resolved_offense_iteration)
+        mlflow.log_param("def_adjustment_iteration", resolved_defense_iteration)
         if cfg.model.type == "points_for":
             return _run_points_for_optimization(cfg)
         # --- Data Loading ---
@@ -39,7 +51,12 @@ def main(cfg: DictConfig) -> float:
         for year in cfg.data.train_years:
             for week in range(1, 16):
                 weekly_features = load_point_in_time_data(
-                    year, week, cfg.data.data_root
+                    year,
+                    week,
+                    cfg.data.data_root,
+                    adjustment_iteration=cfg.data.adjustment_iteration,
+                    adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
+                    adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
                 )
                 if weekly_features is not None:
                     all_training_games.append(weekly_features)
@@ -48,7 +65,12 @@ def main(cfg: DictConfig) -> float:
         all_test_games = []
         for week in range(1, 16):
             weekly_features = load_point_in_time_data(
-                cfg.data.test_year, week, cfg.data.data_root
+                cfg.data.test_year,
+                week,
+                cfg.data.data_root,
+                adjustment_iteration=cfg.data.adjustment_iteration,
+                adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
+                adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
             )
             if weekly_features is not None:
                 all_test_games.append(weekly_features)
@@ -107,8 +129,10 @@ def main(cfg: DictConfig) -> float:
         model.set_params(**params)
         mlflow.log_params(params)
 
-        model.fit(x_train, y_train)
-        preds = model.predict(x_test)
+        with _suppress_linear_runtime_warnings():
+            model.fit(x_train, y_train)
+        with _suppress_linear_runtime_warnings():
+            preds = model.predict(x_test)
         metrics = _evaluate(y_test.to_numpy(), preds)
 
         mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})

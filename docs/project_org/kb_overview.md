@@ -294,8 +294,8 @@ in later stages.
 
 ## `[KB:MLFLOW-CONFIG]`
 
-- **Context**: When running MLflow, the default tracking URI is `mlruns`. This can be changed to a different location.
-- **Pattern**: Use `mlflow.set_tracking_uri()` to set the tracking URI to a different location. This is useful for organizing project outputs.
+- **Context**: MLflow now tracks experiments under `artifacts/mlruns` instead of the legacy project-root `mlruns` directory.
+- **Pattern**: Use `mlflow.set_tracking_uri()` to keep experiment output consolidated under `artifacts/`.
 - **Usage**: `mlflow.set_tracking_uri("file:./artifacts/mlruns")`
 - **Discovered In**: `[LOG:2025-10-19/01]`
 
@@ -303,9 +303,9 @@ in later stages.
 
 ## `[KB:GIT-ARTIFACTS]`
 
-- **Context**: Directories containing generated artifacts and experiment tracking data (e.g., `mlruns`, `artifacts`) should not be committed to the git repository.
+- **Context**: Directories containing generated artifacts and experiment tracking data (e.g., `artifacts/mlruns`, `artifacts/reports`) should not be committed to the git repository.
 - **Pattern**: Add the paths to these directories to the `.gitignore` file.
-- **Usage**: Add `/artifacts/` and `/mlruns/` to the `.gitignore` file.
+- **Usage**: Ensure `/artifacts/` is listed in `.gitignore`.
 - **Discovered In**: `[LOG:2025-10-19/01]`
 
 ---
@@ -322,7 +322,7 @@ in later stages.
 ## `[KB:PERFORMANCE-BOTTLENECK]`
 
 - **Context**: A time-series validation script was unacceptably slow, taking hours to run.
-- **Pattern**: The cause was identified as a feature generation function that recalculated complex stats (like opponent adjustments) from raw data on every iteration. The solution is to ensure such processes use pre-calculated, cached data. For this project, the `walk_forward_validation.py` script was refactored to load weekly data from the `processed/team_week_adj/` cache instead of regenerating it.
+- **Pattern**: The cause was identified as a feature generation function that recalculated complex stats (like opponent adjustments) from raw data on every iteration. The solution is to ensure such processes use pre-calculated, cached data. For this project, the `walk_forward_validation.py` script was refactored to load weekly data from the `processed/team_week_adj/iteration=4/` cache instead of regenerating it. Alternate depths can now be evaluated by overriding the `adjustment_iteration` parameter.
 - **Usage**: When building iterative validation tools, always check if intermediate, pre-calculated data can be used instead of re-running expensive calculations in a loop.
 - **Discovered In**: `[LOG:2025-10-20/05]`
 

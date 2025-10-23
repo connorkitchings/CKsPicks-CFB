@@ -13,6 +13,7 @@ import warnings
 from collections.abc import Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 import joblib
 import mlflow
@@ -68,8 +69,10 @@ def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
     return combined
 
 
-def _build_feature_list(df: pd.DataFrame) -> list[str]:
-    return build_feature_list(df)
+def _build_feature_list(
+    df: pd.DataFrame, exclude_rushing_analytics: bool = False
+) -> list[str]:
+    return build_feature_list(df, exclude_rushing_analytics=exclude_rushing_analytics)
 
 
 @dataclass
@@ -177,13 +180,66 @@ def main() -> None:
         default=None,
         help="Absolute path to the data root directory. If not provided, uses CFB_DATA_ROOT from .env or default.",
     )
+    parser.add_argument(
+        "--model-dir",
+        type=str,
+        default=None,
+        help="Directory to persist trained model artifacts (defaults to artifacts/models).",
+    )
+    parser.add_argument(
+        "--metrics-dir",
+        type=str,
+        default=None,
+        help="Directory to write evaluation metrics CSV (defaults to <model-dir>/<test_year>/metrics).",
+    )
+    parser.add_argument(
+        "--adjustment-iteration",
+        type=int,
+        default=4,
+        help=(
+            "Opponent-adjustment iteration depth to load from team_week_adj caches "
+            "(default: 4)."
+        ),
+    )
+    parser.add_argument(
+        "--offense-adjustment-iteration",
+        type=int,
+        default=None,
+        help=(
+            "Override the offensive feature adjustment depth. Defaults to the value "
+            "provided via --adjustment-iteration."
+        ),
+    )
+    parser.add_argument(
+        "--defense-adjustment-iteration",
+        type=int,
+        default=None,
+        help=(
+            "Override the defensive feature adjustment depth. Defaults to the value "
+            "provided via --adjustment-iteration."
+        ),
+    )
     args = parser.parse_args()
 
     train_years = [int(y.strip()) for y in args.train_years.split(",") if y.strip()]
     test_year = args.test_year
     data_root = args.data_root or get_data_root()
-    model_dir = MODELS_DIR
-    metrics_dir = model_dir / str(test_year) / "metrics"
+    model_dir = Path(args.model_dir).resolve() if args.model_dir else MODELS_DIR
+    metrics_dir = (
+        Path(args.metrics_dir).resolve()
+        if args.metrics_dir
+        else model_dir / str(test_year) / "metrics"
+    )
+    offense_iteration = (
+        args.offense_adjustment_iteration
+        if args.offense_adjustment_iteration is not None
+        else args.adjustment_iteration
+    )
+    defense_iteration = (
+        args.defense_adjustment_iteration
+        if args.defense_adjustment_iteration is not None
+        else args.adjustment_iteration
+    )
 
     # --- MLflow Setup ---
     mlflow.set_tracking_uri("file:./artifacts/mlruns")
@@ -194,7 +250,14 @@ def main() -> None:
     for year in train_years:
         print(f"Loading training data for year: {year}")
         for week in range(1, 16):
-            weekly_data = load_point_in_time_data(year, week, data_root)
+            weekly_data = load_point_in_time_data(
+                year,
+                week,
+                data_root,
+                adjustment_iteration=args.adjustment_iteration,
+                adjustment_iteration_offense=args.offense_adjustment_iteration,
+                adjustment_iteration_defense=args.defense_adjustment_iteration,
+            )
             if weekly_data is not None:
                 all_training_games.append(weekly_data)
     train_df = _concat_years(all_training_games)
@@ -202,7 +265,14 @@ def main() -> None:
     all_test_games = []
     print(f"Loading test data for year: {test_year}")
     for week in range(1, 16):
-        weekly_data = load_point_in_time_data(test_year, week, data_root)
+        weekly_data = load_point_in_time_data(
+            test_year,
+            week,
+            data_root,
+            adjustment_iteration=args.adjustment_iteration,
+            adjustment_iteration_offense=args.offense_adjustment_iteration,
+            adjustment_iteration_defense=args.defense_adjustment_iteration,
+        )
         if weekly_data is not None:
             all_test_games.append(weekly_data)
     test_df = _concat_years(all_test_games)
@@ -235,6 +305,8 @@ def main() -> None:
         mlflow.log_param("train_years", str(train_years))
         mlflow.log_param("test_year", test_year)
         mlflow.log_param("feature_count", len(feature_list))
+        mlflow.log_param("off_adjustment_iteration", offense_iteration)
+        mlflow.log_param("def_adjustment_iteration", defense_iteration)
 
         # --- Spread Models ---
         print("Training and logging spread models...")

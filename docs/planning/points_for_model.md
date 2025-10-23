@@ -20,7 +20,7 @@ The current system maintains separate ensembles for spread and total predictions
    - Define per-team historical targets: `home_points_for`, `away_points_for`.
    - Confirm raw partitions capture final scores for every game; backfill gaps if needed.
 2. **Feature Caching**
-   - Ensure `team_week_adj` contains offense/defense splits sufficient for per-team scoring estimates.
+   - Ensure `team_week_adj` (now partitioned by `iteration=<n>`) contains offense/defense splits sufficient for per-team scoring estimates and capture which adjustment depth (0–4 passes) yields the most stable targets.
    - Evaluate if additional pace or drive-level metrics are required for accurate totals.
    - Determine whether caches need extra columns (e.g., variance indicators) or if modeling handles this internally.
    - `scripts/build_points_for_slice.py` can generate filtered training slices (enforces minimum prior games) for rapid experimentation.
@@ -57,6 +57,11 @@ Initial recommendation: prototype dual single-target models that share the exist
 4. Choose a strategy for modeling correlation between home and away outputs when using independent models.
 5. Capture any reporting requirements (e.g., displaying expected scores) that would affect schema changes.
 
+> 📌 **Future considerations:**  
+> - Once residual analysis stabilizes, derive per-game predictive variance (analytic or conformal) so spread/total bets can be filtered or sized via probability thresholds rather than fixed edge cutoffs.  
+> - Evaluate whether fewer opponent-adjustment iterations (e.g., 1–3 rounds instead of 4) yield more stable or predictive weekly stats before generating points-for features.
+> - Audit feature selection: the current models rely on very dense feature sets. Plan a research slice to compare a curated/regularized subset (e.g., via permutation importance, SHAP, or iterative pruning) against the full bundle to confirm we’re not masking signal with noise.
+
 ## Risks and Mitigations
 - **Error Propagation:** Summing two noisy predictions amplifies total variance. Mitigation: track covariance and consider shrinkage or calibration layers.
 - **Data Quality:** Missing or inconsistent final scores could silently skew targets. Mitigation: add validation checks before training.
@@ -76,6 +81,7 @@ Initial recommendation: prototype dual single-target models that share the exist
 3. Extend Hydra/Optuna configuration for the chosen approach and add regression tests.
 4. Implement weekly generator updates with feature flag for dual operation (legacy vs. points-for).
 5. Roll out documentation and pipeline updates, then retire legacy models if performance holds.
+6. Current status (2025-10-22): keep points-for outputs in comparison-only mode. Focus next on simplifying the model—calibrate residual variance and revisit feature selection/regularization before considering production rollout.
 
 ### Hydra/Optuna Integration Plan (Documentation-Only Draft)
 - Add a new Hydra config group `model: points_for` representing the paired single-target models (home/away) with shared preprocessing.
@@ -90,12 +96,14 @@ Initial recommendation: prototype dual single-target models that share the exist
 python scripts/build_points_for_slice.py --season 2023 --min-games 2 \
   --output outputs/prototypes/points_for_training_slice_2023_filtered.csv
 
-# Train and persist points-for models (saves joblib files under models/<year>/)
+# Train and persist points-for models (saves joblib files under artifacts/models/<year>/)
 python scripts/train_points_for_models.py \
   --slice-path outputs/prototypes/points_for_training_slice_2023_filtered.csv \
   --model ridge \
   --model-year 2024 \
-  --model-dir ./models
+  --model-dir ./artifacts/models \
+  --spread-threshold 8.0 \
+  --total-threshold 8.0
 
 # Summarize scored results across modes (e.g., legacy vs points_for)
 python scripts/report_model_comparison.py \

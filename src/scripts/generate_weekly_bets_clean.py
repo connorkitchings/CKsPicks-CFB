@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -11,16 +12,13 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.config import (
-    PREDICTIONS_SUBDIR,
-    REPORTS_DIR,
-    get_data_root,
-)
+from src.config import MODELS_DIR, PREDICTIONS_SUBDIR, REPORTS_DIR, get_data_root
 from src.models.betting import apply_betting_policy
 from src.models.features import (
     build_differential_feature_list,
     build_differential_features,
     build_feature_list,
+    load_weekly_team_features,
 )
 from src.utils.local_storage import LocalStorage
 
@@ -47,6 +45,18 @@ def load_points_for_models(model_year: int, model_dir: str) -> tuple:
     return joblib.load(home_path), joblib.load(away_path)
 
 
+def load_points_for_stats(model_year: int, model_dir: str) -> dict | None:
+    stats_path = Path(model_dir) / str(model_year) / "points_for_stats.json"
+    if not stats_path.is_file():
+        return None
+    try:
+        with stats_path.open("r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except json.JSONDecodeError as exc:
+        print(f"Warning: unable to parse points-for stats file {stats_path}: {exc}")
+        return None
+
+
 def _prepare_feature_matrix(df: pd.DataFrame, model, prefix: str) -> pd.DataFrame:
     feature_names = list(getattr(model, "feature_names_in_", []))
     if not feature_names:
@@ -58,7 +68,9 @@ def _prepare_feature_matrix(df: pd.DataFrame, model, prefix: str) -> pd.DataFram
         raise ValueError(
             f"No features found for prefix '{prefix}'. Ensure weekly caches include opponent-adjusted columns."
         )
-    matrix = df.reindex(columns=feature_names, fill_value=0.0).astype("float64")
+    matrix = (
+        df.reindex(columns=feature_names, fill_value=0.0).fillna(0.0).astype("float64")
+    )
     return matrix
 
 
@@ -69,6 +81,7 @@ def predict_with_points_for(
     *,
     spread_std: float,
     total_std: float,
+    stats: dict | None = None,
 ) -> pd.DataFrame:
     working_df = df.copy()
     x_home = _prepare_feature_matrix(working_df, home_model, "home_")
@@ -81,8 +94,18 @@ def predict_with_points_for(
     working_df["predicted_away_points"] = preds_away
     working_df["predicted_spread"] = preds_home - preds_away
     working_df["predicted_total"] = preds_home + preds_away
-    working_df["predicted_spread_std_dev"] = float(spread_std)
-    working_df["predicted_total_std_dev"] = float(total_std)
+    default_spread_std = float(spread_std)
+    default_total_std = float(total_std)
+    working_df["predicted_spread_std_dev"] = default_spread_std
+    working_df["predicted_total_std_dev"] = default_total_std
+
+    if stats:
+        spread_stat = stats.get("spread_points", {}).get("std")
+        total_stat = stats.get("total_points", {}).get("std")
+        if isinstance(spread_stat, (int, float)) and not np.isnan(spread_stat):
+            working_df["predicted_spread_std_dev"] = float(spread_stat)
+        if isinstance(total_stat, (int, float)) and not np.isnan(total_stat):
+            working_df["predicted_total_std_dev"] = float(total_stat)
 
     working_df = working_df.replace([np.inf, -np.inf], np.nan)
     working_df = working_df.dropna(subset=["predicted_spread", "predicted_total"])
@@ -208,23 +231,29 @@ def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_week_dataset(
-    year: int, week: int, data_root: str | None = None
+    year: int,
+    week: int,
+    data_root: str | None = None,
+    *,
+    adjustment_iteration: int | None = 4,
+    adjustment_iteration_offense: int | None = None,
+    adjustment_iteration_defense: int | None = None,
 ) -> pd.DataFrame:
     resolved_root = data_root or get_data_root()
-    processed = LocalStorage(
-        data_root=resolved_root, file_format="csv", data_type="processed"
-    )
     raw = LocalStorage(data_root=resolved_root, file_format="csv", data_type="raw")
 
-    team_feature_records = processed.read_index(
-        "team_week_adj", {"year": year, "week": week}
+    team_features_df = load_weekly_team_features(
+        year,
+        week,
+        resolved_root,
+        adjustment_iteration=adjustment_iteration,
+        adjustment_iteration_offense=adjustment_iteration_offense,
+        adjustment_iteration_defense=adjustment_iteration_defense,
     )
-    if not team_feature_records:
+    if team_features_df is None:
         raise ValueError(
             f"No cached weekly adjusted stats found for year {year}, week {week}"
         )
-
-    team_features_df = pd.DataFrame.from_records(team_feature_records)
 
     all_game_records = raw.read_index("games", {"year": year})
     if not all_game_records:
@@ -347,6 +376,8 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
         "total_line",
         "home_moneyline",
         "away_moneyline",
+        "predicted_home_points",
+        "predicted_away_points",
         "Spread Prediction",
         "Total Prediction",
         "predicted_spread_std_dev",
@@ -391,7 +422,7 @@ def main() -> None:
     parser.add_argument(
         "--model-dir",
         type=str,
-        default="./models",
+        default=str(MODELS_DIR),
         help="Directory with trained models",
     )
     parser.add_argument(
@@ -403,14 +434,14 @@ def main() -> None:
     parser.add_argument(
         "--spread-threshold",
         type=float,
-        default=6.0,
-        help="Edge threshold for spread bets",
+        default=8.0,
+        help="Edge threshold for spread bets. Recommended value is 8.0 based on 2024 off1_def3 backtest.",
     )
     parser.add_argument(
         "--total-threshold",
         type=float,
-        default=6.0,
-        help="Edge threshold for totals bets",
+        default=8.0,
+        help="Edge threshold for totals bets. Recommended value is 8.0 based on 2024 off1_def3 backtest.",
     )
     parser.add_argument(
         "--spread-std-dev-threshold",
@@ -442,13 +473,47 @@ def main() -> None:
         default=17.0,
         help="Assumed total prediction std-dev for points-for mode",
     )
+    parser.add_argument(
+        "--adjustment-iteration",
+        type=int,
+        default=4,
+        help=(
+            "Opponent-adjustment iteration depth to read from the weekly cache "
+            "(default: 4)."
+        ),
+    )
+    parser.add_argument(
+        "--offense-adjustment-iteration",
+        type=int,
+        default=None,
+        help=(
+            "Override the offensive feature adjustment depth. Defaults to the value "
+            "passed to --adjustment-iteration."
+        ),
+    )
+    parser.add_argument(
+        "--defense-adjustment-iteration",
+        type=int,
+        default=None,
+        help=(
+            "Override the defensive feature adjustment depth. Defaults to the value "
+            "passed to --adjustment-iteration."
+        ),
+    )
 
     args = parser.parse_args()
     model_year = args.model_year or args.year
 
     try:
         print(f"Loading dataset for year {args.year}, week {args.week}...")
-        df = load_week_dataset(args.year, args.week, args.data_root)
+        df = load_week_dataset(
+            args.year,
+            args.week,
+            args.data_root,
+            adjustment_iteration=args.adjustment_iteration,
+            adjustment_iteration_offense=args.offense_adjustment_iteration,
+            adjustment_iteration_defense=args.defense_adjustment_iteration,
+        )
         if args.prediction_mode == "legacy":
             print(f"Loading hybrid ensemble models for year {model_year}...")
             models = load_hybrid_ensemble_models(
@@ -460,12 +525,18 @@ def main() -> None:
         else:
             print(f"Loading points-for models for year {model_year}...")
             home_model, away_model = load_points_for_models(model_year, args.model_dir)
+            stats = load_points_for_stats(model_year, args.model_dir)
+            if stats is None:
+                print(
+                    "Warning: points-for stats not found; falling back to CLI standard deviations."
+                )
             final_df = predict_with_points_for(
                 df,
                 home_model,
                 away_model,
                 spread_std=args.points_for_spread_std,
                 total_std=args.points_for_total_std,
+                stats=stats,
             )
             spread_std_threshold = None
             total_std_threshold = None

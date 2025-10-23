@@ -33,18 +33,25 @@ If you have not already generated the weekly stats caches for the season, run th
 This creates a weekly season-to-date aggregation of team stats *before* opponent adjustment.
 
 ```bash
-uv run python scripts/cache_weekly_stats.py --year 2024 --stage running --data-root "/path/to/root"
+uv run python scripts/cache_weekly_stats.py \
+  --year 2024 \
+  --stage running \
+  --data-root "/path/to/root"
 ```
 
 **Stage 2: Opponent-Adjusted Weekly Stats**
 
-This reads the non-adjusted data from Stage 1, applies the opponent-adjustment algorithm, and saves the final model-ready features.
+This reads the non-adjusted data from Stage 1, applies the opponent-adjustment algorithm, and saves the final model-ready features. Use `--adjustment-iterations` to emit multiple depths (e.g., raw snapshot plus 1–4 adjustment rounds).
 
 ```bash
-uv run python scripts/cache_weekly_stats.py --year 2024 --stage adjusted --data-root "/path/to/root"
+uv run python scripts/cache_weekly_stats.py \
+  --year 2024 \
+  --stage adjusted \
+  --data-root "/path/to/root" \
+  --adjustment-iterations 0,1,2,3,4
 ```
 
-Tip: pass `--stage both` to run both steps in one command once the raw `team_game` partitions are in place.
+Tip: pass `--stage both` to run both steps in one command once the raw `team_game` partitions are in place. Adjust the iteration list as needed; the weekly generator defaults to iteration `4` when no override is supplied.
 
 ### Step 1: Data Collection (API-Minimizing)
 
@@ -63,18 +70,18 @@ python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --d
 
 ### Step 2: Feature Transformation
 
-- This step is now handled by the caching process. The prediction script will load pre-computed, point-in-time features from the `processed/team_week_adj/` directory.
+- This step is now handled by the caching process. The prediction script will load pre-computed, point-in-time features from the `processed/team_week_adj/iteration=<depth>/` directory (default depth = 4 iterations).
 
 ### Step 3: Modeling and Predictions
 
 - The prediction script now reads directly from the cache, making this step much faster.
-- It applies the trained Ridge Regression baseline to the pre-calculated features.
+- It applies the trained Ridge Regression baseline to the pre-calculated features. To evaluate alternate adjustment depths, pass `--adjustment-iteration <n>` to `generate_weekly_bets_clean`; omit the flag to use the default four-pass adjustment. Mixed-depth experiments are also supported via `--offense-adjustment-iteration` and `--defense-adjustment-iteration`, which override the offensive and defensive feature depths independently.
 
 ### Step 4: Bet Selection
 
 - The script computes edges (`|model − line|`) and applies the betting policy.
-- Spreads: configurable threshold (default 6.0 via `--spread-threshold`)
-- Totals: configurable threshold (default 6.0 via `--total-threshold`)
+- Spreads: configurable threshold (default 8.0 via `--spread-threshold`)
+- Totals: configurable threshold (default 8.0 via `--total-threshold`)
 - Confidence filter (ensemble std dev): defaults set from sweep analysis
   - Spreads: `--spread-std-dev-threshold 2.0`
   - Totals: `--total-std-dev-threshold 1.5`
@@ -121,11 +128,11 @@ uv run python scripts/analysis_cli.py confidence reports/2024/CFB_season_2024_al
 
 ### Current Season (2025) — Prediction Only with Prior-Year Models
 
-To produce 2025 picks without training on 2025 data, reuse the 2024-trained ensemble models. The weekly generator loads models from `models/<year>/`, so create a symlink first:
+To produce 2025 picks without training on 2025 data, reuse the 2024-trained ensemble models. The weekly generator loads models from `artifacts/models/<year>/`, so create a symlink first:
 
 ```bash
-# One-time: point models/2025 to the 2024 artifact directory
-ln -s 2024 models/2025
+# One-time: point artifacts/models/2025 to the 2024 artifact directory
+ln -s 2024 artifacts/models/2025
 ```
 
 Then cache weekly stats and generate picks (examples shown for weeks already played):
@@ -134,14 +141,14 @@ Then cache weekly stats and generate picks (examples shown for weeks already pla
 # Cache point-in-time adjusted stats for 2025 (reads processed team_game)
 uv run python scripts/cache_weekly_stats.py --year 2025 --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
 
-# Generate a weekly report (uses models/2025 → 2024)
+# Generate a weekly report (uses artifacts/models/2025 → 2024)
 uv run python -m src.scripts.generate_weekly_bets_clean \
   --year 2025 --week 6 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --model-dir ./models \
+  --model-dir ./artifacts/models \
   --output-dir artifacts/reports \
-  --spread-threshold 6.0 \
-  --total-threshold 6.0
+  --spread-threshold 8.0 \
+  --total-threshold 8.0
 
 # Score once games are final
 uv run python scripts/score_weekly_picks.py \
@@ -163,8 +170,8 @@ uv run python scripts/preaggregations_cli.py --year 2024 --data-root "/Volumes/C
 ```
 
 Prereqs:
-- Trained models at `models/ridge_baseline/<year>/ridge_*.joblib`
-- **Cached weekly adjusted stats** present at `processed/team_week_adj/`.
+- Trained models at `artifacts/models/ridge_baseline/<year>/ridge_*.joblib`
+- **Cached weekly adjusted stats** present at `processed/team_week_adj/iteration=4/` (or the desired iteration depth).
 - Raw games and betting_lines present for the target year.
 
 Generate weekly picks (no API usage; reads from data root):
@@ -173,10 +180,10 @@ Generate weekly picks (no API usage; reads from data root):
 uv run python -m src.scripts.generate_weekly_bets_clean \
   --year 2024 --week 5 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --model-dir ./models \
+  --model-dir ./artifacts/models \
   --output-dir artifacts/reports \
-  --spread-threshold 6.0 \
-  --total-threshold 6.0 \
+  --spread-threshold 8.0 \
+  --total-threshold 8.0 \
   --spread-std-dev-threshold 3.0 \
   --total-std-dev-threshold 1.5 \
   --kelly-fraction 0.25 \
@@ -184,7 +191,7 @@ uv run python -m src.scripts.generate_weekly_bets_clean \
   --base-unit-fraction 0.02
 ```
 
-Points-for evaluation: once `models/<year>/points_for_home.joblib` and `points_for_away.joblib` exist (see `scripts/train_points_for_models.py`), add `--prediction-mode points_for` and optional `--points-for-spread-std` / `--points-for-total-std` arguments to generate a comparative report without disturbing the legacy ensemble flow.
+Points-for evaluation: once `artifacts/models/<year>/points_for_home.joblib` and `points_for_away.joblib` exist (see `scripts/train_points_for_models.py`), add `--prediction-mode points_for` and optional `--points-for-spread-std` / `--points-for-total-std` arguments to generate a comparative report without disturbing the legacy ensemble flow.
 
 Score the week against final outcomes:
 

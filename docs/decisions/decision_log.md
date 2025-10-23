@@ -55,7 +55,7 @@ Log of planning-level decisions. Use one entry per decision.
 - Category: Data / Pipeline / Architecture
 - Decision: Refactor the weekly feature caching process into a two-stage pipeline. 
   1. The caching utility now supports a `--stage running` mode to create a `processed/running_team_season` asset with non-adjusted, point-in-time weekly aggregations.
-  2. The same utility supports `--stage adjusted`, reading the running aggregates, applying opponent adjustment, and persisting `processed/team_week_adj` outputs.
+  2. The same utility supports `--stage adjusted`, reading the running aggregates, applying opponent adjustment, and persisting `processed/team_week_adj/iteration=<n>/` outputs.
 - Rationale: This change, suggested by the user, decouples the initial aggregation from the opponent-adjustment logic. It makes the pipeline more modular, easier to debug, and simplifies experimentation with different opponent-adjustment methodologies in the future.
 - Impact: `scripts/cache_weekly_stats.py` exposes `--stage` flags to run the running-only, adjusted-only, or combined process, keeping the pipeline modular while reducing script sprawl. Documentation reflects the revised workflow.
 - References: `[LOG:2025-10-09/01]`, `scripts/cache_weekly_stats.py`
@@ -135,10 +135,10 @@ Log of planning-level decisions. Use one entry per decision.
 ## 2025-10-02 — 2025 Season Predictions Using 2024 Models (No 2025 Training)
 
 - Category: Modeling / Operations
-- Decision: For the 2025 season, do not train on 2025 data. Generate 2025 predictions using the previously trained 2024 ensemble models. To accommodate the current script interface (which loads models from `models/<year>/`), create a symlink `models/2025 -> models/2024`.
+- Decision: For the 2025 season, do not train on 2025 data. Generate 2025 predictions using the previously trained 2024 ensemble models. To accommodate the current script interface (which loads models from `artifacts/models/<year>/`), create a symlink `artifacts/models/2025 -> artifacts/models/2024`.
 - Rationale: Preserve an honest out-of-sample evaluation for 2025 by avoiding in-season training. Using the 2024-trained models maintains continuity while new 2025 data accrues.
 - Impact:
-    - Operational step added to weekly runbook to ensure `models/2025` resolves to 2024 artifacts when predicting 2025.
+    - Operational step added to weekly runbook to ensure `artifacts/models/2025` resolves to 2024 artifacts when predicting 2025.
     - All 2025 weekly reports use the 2024-trained ensemble without code changes.
 - References: `src/cfb_model/scripts/generate_weekly_bets_clean.py`, `reports/2025/CFB_week{WW}_bets.csv`, session log `[LOG:2025-10-02]`
 
@@ -168,7 +168,7 @@ Log of planning-level decisions. Use one entry per decision.
 - Impact: 
     - `src/cfb_model/models/train_model.py` was updated to train and save a collection of models for each target.
     - `src/cfb_model/scripts/generate_weekly_bets_clean.py` was updated to load all models for a target, generate predictions from each, and average the results.
-    - Model artifacts are now saved with specific names (e.g., `spread_ridge.joblib`, `total_randomforest.joblib`) in the `models/<year>/` directory.
+    - Model artifacts are now saved with specific names (e.g., `spread_ridge.joblib`, `total_randomforest.joblib`) in the `artifacts/models/<year>/` directory.
 - References: `src/cfb_model/models/train_model.py`, `src/cfb_model/scripts/generate_weekly_bets_clean.py`, `[LOG:2025-09-30]`
 
 ## 2025-09-30 — RandomForest Model for Totals Predictions
@@ -176,7 +176,7 @@ Log of planning-level decisions. Use one entry per decision.
 - Category: Modeling / Architecture
 - Decision: Switched totals model from Ridge Regression to RandomForestRegressor while maintaining Ridge for spreads. Final configuration: RandomForestRegressor with n_estimators=200, max_depth=8, min_samples_split=10, min_samples_leaf=5, random_state=42.
 - Rationale: Initial experiments showed RandomForest better captures non-linear relationships in total scoring patterns. Full 2024 season validation achieved 54.7% hit rate for spreads (Ridge) and 54.5% for totals (RandomForest), both exceeding the 52.4% breakeven threshold and marking the project's first profitable model configuration.
-- Impact: Model training pipeline (`src/cfb_model/models/train_model.py`) updated to use RandomForest for totals. Both models saved to `models/<year>/spread_model.joblib` and `models/<year>/total_model.joblib`. Weekly prediction script continues to work unchanged as it loads models dynamically.
+- Impact: Model training pipeline (`src/cfb_model/models/train_model.py`) updated to use RandomForest for totals. Both models saved to `artifacts/models/<year>/spread_model.joblib` and `artifacts/models/<year>/total_model.joblib`. Weekly prediction script continues to work unchanged as it loads models dynamically.
 - Performance: Combined 2024 results (261 bets): Ridge spreads 135/247 (54.7%), RandomForest totals 83/152 (54.5%). First time project has crossed profitability threshold.
 - References: `src/cfb_model/models/train_model.py`, `scripts/model_improvement_experiments.py`, session log `[LOG:2025-09-30]`
 
@@ -192,7 +192,7 @@ Log of planning-level decisions. Use one entry per decision.
 
 - Category: Pipeline / Code Quality
 - Decision:
-    1.  **Implement Weekly Stats Cache:** To improve prediction speed, pre-calculate and cache weekly point-in-time adjusted stats in a new `processed/team_week_adj` entity.
+    1.  **Implement Weekly Stats Cache:** To improve prediction speed, pre-calculate and cache weekly point-in-time adjusted stats in a new `processed/team_week_adj/iteration=<n>/` entity.
     2.  **Update Prediction Script:** Modify the weekly prediction script (`generate_weekly_bets_clean.py`) to read from this new cache instead of calculating features on the fly.
     3.  **Unify CLI:** Consolidate the `run_ingestion_year.py` and `run_full_season.py` scripts into the main `scripts/cli.py` as new commands (`ingest-year`, `run-season`) to create a single entry point.
     4.  **Refactor Legacy Code:** Remove the redundant `src/cfb_model/models/train_model.py` script and fix the corresponding import test.

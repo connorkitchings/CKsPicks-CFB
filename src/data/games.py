@@ -10,8 +10,9 @@ from typing import Any
 import cfbd
 import pandas as pd
 
-from .base import BaseIngester
 from src.utils.base import Partition
+
+from .base import BaseIngester
 
 
 class GamesIngester(BaseIngester):
@@ -214,8 +215,8 @@ class GamesIngester(BaseIngester):
                 if isinstance(value, (datetime, pd.Timestamp)):
                     normalized[key] = value.isoformat()
                 elif isinstance(value, Enum):
-                    normalized[key] = value.value if hasattr(value, "value") else str(
-                        value
+                    normalized[key] = (
+                        value.value if hasattr(value, "value") else str(value)
                     )
                 elif isinstance(value, (list, tuple, set)):
                     normalized[key] = json.dumps(list(value))
@@ -229,7 +230,9 @@ class GamesIngester(BaseIngester):
         if existing_df.empty:
             combined_df = new_df
         else:
-            combined_df = pd.concat([existing_df, new_df], ignore_index=True, sort=False)
+            combined_df = pd.concat(
+                [existing_df, new_df], ignore_index=True, sort=False
+            )
             # Keep the last occurrence so freshly-ingested games overwrite stale rows.
             combined_df = combined_df.drop_duplicates(subset="id", keep="last")
 

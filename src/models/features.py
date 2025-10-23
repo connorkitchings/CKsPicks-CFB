@@ -200,21 +200,136 @@ def build_differential_feature_list(df: pd.DataFrame) -> list[str]:
     return features
 
 
-def load_point_in_time_data(
-    year: int, week: int, data_root: str
+def _read_team_week_adj_partition(
+    storage: LocalStorage,
+    year: int,
+    week: int,
+    iteration: int | None,
 ) -> pd.DataFrame | None:
-    """Loads pre-cached, point-in-time features for a specific week."""
+    """Read weekly adjusted features for a specific iteration (or legacy layout)."""
+    filters: dict[str, int] = {"year": year, "week": week}
+    if iteration is not None:
+        filters = {"iteration": iteration, "year": year, "week": week}
+
+    records = storage.read_index("team_week_adj", filters)
+    if not records and iteration is not None:
+        # Fall back to legacy layout when iteration-specific partitions are absent.
+        records = storage.read_index("team_week_adj", {"year": year, "week": week})
+    if not records:
+        return None
+    return pd.DataFrame.from_records(records)
+
+
+def _merge_mixed_iteration_features(
+    offense_df: pd.DataFrame,
+    defense_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Combine offense metrics from one iteration with defense metrics from another."""
+    key_columns = ["season", "team"]
+    for candidate in ("week", "before_week"):
+        if candidate in offense_df.columns and candidate in defense_df.columns:
+            key_columns = ["season", candidate, "team"]
+            break
+
+    offense_idx = offense_df.set_index(key_columns)
+    defense_idx = defense_df.set_index(key_columns)
+
+    def _is_defense_column(column: str) -> bool:
+        return column.startswith("def_") or column.startswith("adj_def_")
+
+    # Ensure all defense columns exist on the combined frame before assignment.
+    missing_def_cols = [col for col in defense_idx.columns if _is_defense_column(col)]
+    for col in missing_def_cols:
+        if col not in offense_idx.columns:
+            offense_idx[col] = pd.NA
+
+    offense_idx.loc[:, missing_def_cols] = defense_idx[missing_def_cols]
+    combined = offense_idx.reset_index()
+    return combined
+
+
+def load_weekly_team_features(
+    year: int,
+    week: int,
+    data_root: str,
+    *,
+    adjustment_iteration: int | None = 4,
+    adjustment_iteration_offense: int | None = None,
+    adjustment_iteration_defense: int | None = None,
+) -> pd.DataFrame | None:
+    """Load weekly team features with optional mixed offense/defense iterations."""
     processed = LocalStorage(
         data_root=data_root, file_format="csv", data_type="processed"
     )
+
+    offense_iteration = (
+        adjustment_iteration_offense
+        if adjustment_iteration_offense is not None
+        else adjustment_iteration
+    )
+    defense_iteration = (
+        adjustment_iteration_defense
+        if adjustment_iteration_defense is not None
+        else adjustment_iteration
+    )
+
+    offense_df = _read_team_week_adj_partition(processed, year, week, offense_iteration)
+    if offense_df is None:
+        return None
+
+    team_features_df = offense_df
+    if defense_iteration != offense_iteration:
+        defense_df = _read_team_week_adj_partition(
+            processed, year, week, defense_iteration
+        )
+        if defense_df is not None:
+            team_features_df = _merge_mixed_iteration_features(offense_df, defense_df)
+
+    team_features_df = team_features_df.copy()
+    team_features_df["off_adjustment_iteration"] = (
+        offense_iteration if offense_iteration is not None else pd.NA
+    )
+    team_features_df["def_adjustment_iteration"] = (
+        defense_iteration if defense_iteration is not None else pd.NA
+    )
+    return team_features_df
+
+
+def load_point_in_time_data(
+    year: int,
+    week: int,
+    data_root: str,
+    *,
+    adjustment_iteration: int | None = 4,
+    adjustment_iteration_offense: int | None = None,
+    adjustment_iteration_defense: int | None = None,
+) -> pd.DataFrame | None:
+    """Loads pre-cached, point-in-time features for a specific week.
+
+    Args:
+        year: Season to load.
+        week: Week (1-indexed) within the season.
+        data_root: Root directory for the data lake.
+        adjustment_iteration: Number of opponent-adjustment iterations the cache
+            represents. Defaults to 4. Pass ``None`` to fall back to the legacy
+            layout without the iteration directory.
+        adjustment_iteration_offense: Override offense iteration depth (defaults to
+            ``adjustment_iteration``).
+        adjustment_iteration_defense: Override defense iteration depth (defaults to
+            ``adjustment_iteration``).
+    """
     raw = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
 
-    team_feature_records = processed.read_index(
-        "team_week_adj", {"year": year, "week": week}
+    team_features_df = load_weekly_team_features(
+        year,
+        week,
+        data_root,
+        adjustment_iteration=adjustment_iteration,
+        adjustment_iteration_offense=adjustment_iteration_offense,
+        adjustment_iteration_defense=adjustment_iteration_defense,
     )
-    if not team_feature_records:
+    if team_features_df is None:
         return None
-    team_features_df = pd.DataFrame.from_records(team_feature_records)
 
     all_game_records = raw.read_index("games", {"year": year})
     if not all_game_records:

@@ -311,10 +311,14 @@ def main() -> None:
     if season_frames:
         season_df = pd.concat(season_frames, ignore_index=True)
 
-        def _record(df: pd.DataFrame, bet_col: str, result_col: str) -> tuple[int, int, float]:
-            mask = df[bet_col].isin(["home", "away"]) if bet_col == "Spread Bet" else df[
-                bet_col
-            ].isin(["over", "under"])
+        def _record(
+            df: pd.DataFrame, bet_col: str, result_col: str
+        ) -> tuple[int, int, float]:
+            mask = (
+                df[bet_col].isin(["home", "away"])
+                if bet_col == "Spread Bet"
+                else df[bet_col].isin(["over", "under"])
+            )
             outcomes = df.loc[mask & df[result_col].isin(["Win", "Loss"]), result_col]
             wins = int((outcomes == "Win").sum())
             losses = int((outcomes == "Loss").sum())

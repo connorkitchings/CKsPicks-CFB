@@ -8,7 +8,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from src.config import METRICS_SUBDIR, REPORTS_DIR
+from src.config import METRICS_SUBDIR, MODELS_DIR, REPORTS_DIR
 from src.scripts.generate_weekly_bets_clean import (
     apply_betting_policy,
     build_feature_list,
@@ -177,7 +177,7 @@ def main() -> None:
     ap.add_argument(
         "--data-root", type=str, default="/Volumes/CK SSD/Coding Projects/cfb_model"
     )
-    ap.add_argument("--model-dir", type=str, default="./models")
+    ap.add_argument("--model-dir", type=str, default=str(MODELS_DIR))
     ap.add_argument("--start-bankroll", type=float, default=100.0)
     ap.add_argument("--report-dir", type=str, default=str(REPORTS_DIR))
 

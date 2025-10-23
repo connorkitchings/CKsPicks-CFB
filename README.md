@@ -57,6 +57,11 @@ cfb_model/
 ├── notebooks/            # Jupyter notebooks for exploration and analysis
 ├── session_logs/         # Chronological development session logs
 ├── scripts/              # Utility and automation scripts
+├── artifacts/           # Generated outputs (MLflow, models, reports, validation)
+│   ├── mlruns/         # MLflow experiment tracking data
+│   ├── models/         # Trained model artifacts per year
+│   ├── reports/        # Weekly predictions, scored results, metrics
+│   └── validation/     # Walk-forward and other evaluation outputs
 ├── src/
 │   └── cfb_model/
 │       ├── data/         # Ingestion, storage, aggregations

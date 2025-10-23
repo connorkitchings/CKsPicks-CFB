@@ -1,6 +1,7 @@
 defaults:
   - _self_
   - model: spread_elastic_net
+  - hydra/sweeper/params: spread_elastic_net
   - override hydra/sweeper: optuna
 
 data:
@@ -10,11 +11,19 @@ data:
   slice_path: null
   train_weeks: []
   test_weeks: []
+  adjustment_iteration: 4
+  adjustment_iteration_offense: null
+  adjustment_iteration_defense: null
 
 mlflow:
   experiment_name: "CFB_Model_Hyperparameter_Tuning"
 
 hydra:
+  run:
+    dir: ${oc.env:HYDRA_RUN_DIR,artifacts/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}}
+  sweep:
+    dir: ${oc.env:HYDRA_SWEEP_DIR,artifacts/outputs/${now:%Y-%m-%d}}
+    subdir: ${model.name}_${now:%H-%M-%S}_${hydra.job.num}
   sweeper:
     direction: minimize
     study_name: ${model.name}_${now:%Y-%m-%d_%H-%M-%S}
@@ -24,5 +33,5 @@ hydra:
 walk_forward:
   spread_strategy: ensemble   # options: ensemble, best_single
   best_spread_model: elastic_net
-  total_strategy: best_single # options: ensemble, best_single
+  total_strategy: best_single # options: ensemble, best_single, points_for
   best_total_model: random_forest

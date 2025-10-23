@@ -4,6 +4,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Iterable, Sequence
 
 import pandas as pd
 from tqdm import tqdm
@@ -72,7 +73,11 @@ def cache_running_stats(year: int, data_root: str | None) -> list[int]:
 
 
 def cache_adjusted_stats(
-    year: int, data_root: str | None, weeks: list[int] | None = None
+    year: int,
+    data_root: str | None,
+    weeks: list[int] | None = None,
+    *,
+    iteration_depths: Sequence[int] = (4,),
 ) -> None:
     """
     Reads non-adjusted weekly stats, applies opponent adjustment, and saves the result.
@@ -110,7 +115,16 @@ def cache_adjusted_stats(
         print("No weeks found for adjusted caching; nothing to do.")
         return
 
-    print(f"Will generate ADJUSTED caches for weeks {weeks}...")
+    normalized_iterations = sorted(
+        {int(depth) for depth in iteration_depths if int(depth) >= 0}
+    )
+    if not normalized_iterations:
+        print("No valid iteration counts supplied; skipping adjusted cache build.")
+        return
+
+    print(
+        f"Will generate ADJUSTED caches for weeks {weeks} at iterations {normalized_iterations}..."
+    )
 
     # Also load team_game data once for the adjustment function
     team_game_records = processed_reader.read_index("team_game", {"year": year})
@@ -133,22 +147,33 @@ def cache_adjusted_stats(
         team_season_pre_week = pd.DataFrame.from_records(non_adjusted_records)
         prior_games_df = team_game_df[team_game_df["week"] < week].copy()
 
-        # Perform opponent adjustment on the point-in-time data
-        team_season_adj_pre_week = apply_iterative_opponent_adjustment(
-            team_season_pre_week, prior_games_df
-        )
+        for iteration_count in normalized_iterations:
+            if iteration_count == 0:
+                adjusted_df = team_season_pre_week.copy()
+            else:
+                adjusted_df = apply_iterative_opponent_adjustment(
+                    team_season_pre_week,
+                    prior_games_df,
+                    iterations=iteration_count,
+                )
 
-        team_season_adj_pre_week["before_week"] = week
+            adjusted_df["before_week"] = week
 
-        cols = team_season_adj_pre_week.columns.tolist()
-        if "before_week" in cols:
-            cols.insert(1, cols.pop(cols.index("before_week")))
-            team_season_adj_pre_week = team_season_adj_pre_week[cols]
+            cols = adjusted_df.columns.tolist()
+            if "before_week" in cols:
+                cols.insert(1, cols.pop(cols.index("before_week")))
+                adjusted_df = adjusted_df[cols]
 
-        partition_values = {"year": year, "week": week}
-        partition = Partition(partition_values)
-        records_to_write = team_season_adj_pre_week.to_dict(orient="records")
-        processed_writer.write("team_week_adj", records_to_write, partition=partition)
+            partition_values = {
+                "iteration": iteration_count,
+                "year": year,
+                "week": week,
+            }
+            partition = Partition(partition_values)
+            records_to_write = adjusted_df.to_dict(orient="records")
+            processed_writer.write(
+                "team_week_adj", records_to_write, partition=partition
+            )
 
     print(f"--- Successfully cached weekly adjusted stats for year {year} ---")
 
@@ -177,6 +202,15 @@ def main():
         default="both",
         help="Which stage to run (defaults to both).",
     )
+    parser.add_argument(
+        "--adjustment-iterations",
+        type=str,
+        default="4",
+        help=(
+            "Comma-separated list of opponent-adjustment iteration counts to persist "
+            "(default: '4'). Include 0 to also snapshot unadjusted aggregates."
+        ),
+    )
     args = parser.parse_args()
 
     # Resolve data_root using the centralized config helper if not provided
@@ -185,7 +219,26 @@ def main():
     if args.stage in {"running", "both"}:
         weeks = cache_running_stats(args.year, data_root)
     if args.stage in {"adjusted", "both"}:
-        cache_adjusted_stats(args.year, data_root, weeks)
+        cache_adjusted_stats(
+            args.year,
+            data_root,
+            weeks,
+            iteration_depths=_parse_iteration_depths(args.adjustment_iterations),
+        )
+
+
+def _parse_iteration_depths(raw: str | None) -> Iterable[int]:
+    if not raw:
+        return [4]
+    values = []
+    for chunk in (piece.strip() for piece in raw.split(",") if piece.strip()):
+        try:
+            values.append(int(chunk))
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid adjustment iteration value '{chunk}'. Expected integers."
+            ) from exc
+    return values or [4]
 
 
 if __name__ == "__main__":

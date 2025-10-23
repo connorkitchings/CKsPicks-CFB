@@ -33,9 +33,9 @@ RAW_DATA_DIR = DATA_ROOT / "raw"
 PROCESSED_DATA_DIR = DATA_ROOT / "processed"
 
 REPO_ROOT = get_repo_root()
-MODELS_DIR = REPO_ROOT / "models"
-LOGOS_DIR = REPO_ROOT / "Logos"
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
+MODELS_DIR = ARTIFACTS_DIR / "models"
+LOGOS_DIR = REPO_ROOT / "Logos"
 REPORTS_DIR = ARTIFACTS_DIR / "reports"
 
 # Subdirectories within per-season report folders

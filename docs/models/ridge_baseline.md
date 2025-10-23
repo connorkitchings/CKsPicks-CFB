@@ -42,7 +42,7 @@ This document describes the MVP ridge regression model used for ATS and totals p
 
 ### Storage Layout
 
-- Models are saved under `models/ridge_baseline/<test_year>/`:
+- Models are saved under `artifacts/models/ridge_baseline/<test_year>/`:
   - `ridge_spread.joblib`, `ridge_total.joblib`
 - Evaluation metrics under `reports/metrics/ridge_baseline_eval_<test_year>.csv`
 
@@ -55,7 +55,7 @@ uv run python src/models/train_model.py \
   --train-years 2019,2021,2022,2023 \
   --test-year 2024 \
   --data-root /absolute/data/root \
-  --model-dir ./models \
+  --model-dir ./artifacts/models \
   --metrics-dir artifacts/reports/metrics
 ```
 

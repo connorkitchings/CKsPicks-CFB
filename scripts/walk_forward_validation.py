@@ -101,10 +101,22 @@ def main(cfg: DictConfig) -> None:
         )
 
     with mlflow.start_run(run_name="Walk_Forward_Validation_All_Models"):
+        resolved_offense_iteration = (
+            cfg.data.adjustment_iteration_offense
+            if cfg.data.adjustment_iteration_offense is not None
+            else cfg.data.adjustment_iteration
+        )
+        resolved_defense_iteration = (
+            cfg.data.adjustment_iteration_defense
+            if cfg.data.adjustment_iteration_defense is not None
+            else cfg.data.adjustment_iteration
+        )
         mlflow.log_params(
             {
                 "train_years": str(cfg.data.train_years),
                 "test_year": cfg.data.test_year,
+                "off_adjustment_iteration": resolved_offense_iteration,
+                "def_adjustment_iteration": resolved_defense_iteration,
             }
         )
 
@@ -120,7 +132,12 @@ def main(cfg: DictConfig) -> None:
                 for train_year in range(cfg.data.train_years[0], year + 1):
                     for train_week in range(1, 16 if train_year < year else week):
                         weekly_data = load_point_in_time_data(
-                            train_year, train_week, cfg.data.data_root
+                            train_year,
+                            train_week,
+                            cfg.data.data_root,
+                            adjustment_iteration=cfg.data.adjustment_iteration,
+                            adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
+                            adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
                         )
                         if weekly_data is not None:
                             all_training_games.append(weekly_data)
@@ -132,7 +149,14 @@ def main(cfg: DictConfig) -> None:
                 print(f"    Training data loaded: {len(train_df)} games.")
 
                 print("    Loading test data...")
-                test_df = load_point_in_time_data(year, week, cfg.data.data_root)
+                test_df = load_point_in_time_data(
+                    year,
+                    week,
+                    cfg.data.data_root,
+                    adjustment_iteration=cfg.data.adjustment_iteration,
+                    adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
+                    adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
+                )
                 if test_df is None:
                     print(f"    Skipping week {week}: No test data available.")
                     continue

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import typer
 
-from src.config import get_data_root
+from src.config import MODELS_DIR, get_data_root
 
 app = typer.Typer(help="Model training and tuning utilities.")
 
@@ -28,10 +28,27 @@ def train(
         help="Data root directory (defaults to config helper).",
     ),
     model_dir: Path = typer.Option(
-        None, "--model-dir", help="Directory for saving trained models."
+        Path(MODELS_DIR),
+        "--model-dir",
+        help="Directory for saving trained models.",
     ),
     metrics_dir: Path = typer.Option(
         None, "--metrics-dir", help="Directory for evaluation metrics."
+    ),
+    adjustment_iteration: int = typer.Option(
+        4,
+        "--adjustment-iteration",
+        help="Opponent-adjustment iteration depth to load from weekly caches (default: 4).",
+    ),
+    offense_adjustment_iteration: int | None = typer.Option(
+        None,
+        "--offense-adjustment-iteration",
+        help="Override offensive feature adjustment depth; defaults to --adjustment-iteration.",
+    ),
+    defense_adjustment_iteration: int | None = typer.Option(
+        None,
+        "--defense-adjustment-iteration",
+        help="Override defensive feature adjustment depth; defaults to --adjustment-iteration.",
     ),
 ) -> None:
     """Invoke the standard training pipeline defined in src.models.train_model."""
@@ -44,6 +61,16 @@ def train(
         "--data-root",
         resolved_data_root,
     ]
+    if adjustment_iteration is not None:
+        args.extend(["--adjustment-iteration", str(adjustment_iteration)])
+    if offense_adjustment_iteration is not None:
+        args.extend(
+            ["--offense-adjustment-iteration", str(offense_adjustment_iteration)]
+        )
+    if defense_adjustment_iteration is not None:
+        args.extend(
+            ["--defense-adjustment-iteration", str(defense_adjustment_iteration)]
+        )
     if model_dir:
         args.extend(["--model-dir", str(model_dir)])
     if metrics_dir:

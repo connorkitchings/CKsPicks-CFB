@@ -27,11 +27,7 @@ import typer
 from typing_extensions import Annotated
 
 from scripts import analysis_cli, training_cli
-from src.config import (
-    REPORTS_DIR,
-    SCORED_SUBDIR,
-    get_data_root,
-)
+from src.config import MODELS_DIR, REPORTS_DIR, SCORED_SUBDIR, get_data_root
 from src.data.base import BaseIngester
 from src.data.betting_lines import BettingLinesIngester
 from src.data.coaches import CoachesIngester
@@ -352,9 +348,9 @@ def run_season(
         typer.Option(help="Path to data root directory", default_factory=get_data_root),
     ],
     year: Annotated[int, typer.Option(help="Season year to process")] = 2024,
-    model_dir: Annotated[
-        str, typer.Option(help="Path to model directory")
-    ] = "./models/ridge_baseline",
+    model_dir: Annotated[str, typer.Option(help="Path to model directory")] = str(
+        MODELS_DIR
+    ),
     report_dir: Annotated[
         str, typer.Option(help="Path to reports output directory")
     ] = str(REPORTS_DIR),
@@ -362,10 +358,10 @@ def run_season(
     end_week: Annotated[int, typer.Option(help="Ending week (inclusive)")] = 16,
     spread_threshold: Annotated[
         float, typer.Option(help="Spread edge threshold for betting")
-    ] = 6.0,
+    ] = 8.0,
     total_threshold: Annotated[
         float, typer.Option(help="Total edge threshold for betting")
-    ] = 6.0,
+    ] = 8.0,
     spread_std_dev_threshold: Annotated[
         float,
         typer.Option(help="Standard deviation threshold for spread bets"),

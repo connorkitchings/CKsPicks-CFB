@@ -1,105 +1,63 @@
 {
-    "makefile.configureOnOpen": false,
-    "python.defaultInterpreterPath": ".venv/bin/python",
-    "python.terminal.activateEnvironment": true,
-    "python.envFile": "${workspaceFolder}/.env",
-    "python.analysis.extraPaths": [
-        "./src"
-    ],
-    // --- Added for Ruff linting and formatting ---
-    "[python]": {
-        "editor.defaultFormatter": "charliermarsh.ruff",
-        "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-            "source.fixAll": "explicit",
-            "source.organizeImports": "explicit"
-        }
-    },
-    "ruff.organizeImports": true,
-    // --- End of added settings ---
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/.pytest_cache": true,
-        "**/.mypy_cache": true,
-        "**/.ruff_cache": true,
-        "**/.venv/**": true
-    },
-    "files.associations": {
-        "*.env.example": "properties"
-    },
-    "jupyter.askForKernelRestart": false,
-    "jupyter.interactiveWindow.collapseCellInputCode": false,
-    "jupyter.notebookFileRoot": "${workspaceFolder}",
-    "cSpell.words": [
-        "aenum",
-        "allplays",
-        "backtests",
-        "cfbd",
-        "compileall",
-        "Connelly",
-        "datetime",
-        "datetimes",
-        "defn",
-        "defside",
-        "dropback",
-        "edium",
-        "endofdrive",
-        "expl",
-        "Explainability",
-        "EXTDRV",
-        "extrapoint",
-        "FIPS",
-        "fourthdown",
-        "Fremeau",
-        "getattr",
-        "Hapley",
-        "idempotently",
-        "Ingester",
-        "joblib",
-        "Matchups",
-        "Moneyline",
-        "moneylines",
-        "mypy",
-        "nbstripout",
-        "numpy",
-        "openlineage",
-        "opps",
-        "pandas",
-        "passattempt",
-        "passwordless",
-        "pathing",
-        "playtype",
-        "Postgame",
-        "preagg",
-        "preaggregation",
-        "preaggregations",
-        "PYTHONPATH",
-        "RMSE",
-        "runbook",
-        "Runbooks",
-        "rushattempt",
-        "rushresult",
-        "SHAP",
-        "sklearn",
-        "sportsbook",
-        "streamlit",
-        "supabase",
-        "timespec",
-        "timestamptz",
-        "tvahbmeisffwtcfjqalp",
-        "twopoint",
-        "Uncategorized",
-        "unders",
-        "wallclock",
-        "XGBoost",
-        "Yardline"
-    ],
-    "search.exclude": {
-        "**/data/raw/**": true,
-        "**/data/processed/**": true,
-        "**/.venv/**": true
-    },
-    "cursorpyright.analysis.extraPaths": [
-        "./src"
-    ]
+  // --- Global ---
+  "editor.formatOnSave": true,
+
+  // Run Ruff quick-fixes automatically (not just when explicitly requested)
+  "editor.codeActionsOnSave": {
+    "source.fixAll.ruff": true,
+    "source.organizeImports.ruff": true
+  },
+
+  // --- Python via Ruff ---
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "ruff.format.enable": true,
+  "ruff.lint.enable": true,
+  "ruff.organizeImports": true,
+
+  // --- Markdown via Prettier ---
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // (Optional) markdownlint can still lint, but Prettier formats
+  "markdownlint.run": "onSave",
+  "markdownlint.config": {
+    "MD013": false
+  },
+
+  // --- Your existing settings (kept) ---
+  "makefile.configureOnOpen": false,
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.analysis.extraPaths": ["./src"],
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.venv/**": true
+  },
+  "files.associations": { "*.env.example": "properties" },
+  "jupyter.askForKernelRestart": false,
+  "jupyter.interactiveWindow.collapseCellInputCode": false,
+  "jupyter.notebookFileRoot": "${workspaceFolder}",
+  "cSpell.words": [
+    "aenum","allplays","backtests","cfbd","compileall","Connelly","datetime","datetimes",
+    "defn","defside","dropback","edium","endofdrive","expl","Explainability","EXTDRV",
+    "extrapoint","FIPS","fourthdown","Fremeau","getattr","Hapley","idempotently","Ingester",
+    "joblib","Matchups","Moneyline","moneylines","mypy","nbstripout","numpy","openlineage",
+    "opps","pandas","passattempt","passwordless","pathing","playtype","Postgame","preagg",
+    "preaggregation","preaggregations","PYTHONPATH","RMSE","runbook","Runbooks","rushattempt",
+    "rushresult","SHAP","sklearn","sportsbook","streamlit","supabase","timespec","timestamptz",
+    "tvahbmeisffwtcfjqalp","twopoint","Uncategorized","unders","wallclock","XGBoost","Yardline"
+  ],
+  "search.exclude": {
+    "**/data/raw/**": true,
+    "**/data/processed/**": true,
+    "**/.venv/**": true
+  },
+  "cursorpyright.analysis.extraPaths": ["./src"]
 }

@@ -60,13 +60,14 @@ To improve prediction stability and reduce week-to-week variance, the project us
 ## Configuration
 
 - Centralize defaults for data roots, season ranges, and seeds via CLI args or a small config file; all scripts must be deterministic for a given config.
+- Weekly feature loaders default to the four-pass opponent-adjusted cache; override via `--adjustment-iteration` (CLIs) or `data.adjustment_iteration` (Hydra) to test alternative depths. For asymmetric experiments, use `--offense-adjustment-iteration` / `--defense-adjustment-iteration` or the Hydra keys `data.adjustment_iteration_offense` and `data.adjustment_iteration_defense`.
 
 ## Artifacts and Metrics
 
 - **Model Artifacts**
-  - Spread Models: `models/<year>/spread_ridge.joblib`, `models/<year>/spread_elastic_net.joblib`, etc.
-  - Total Models: `models/<year>/total_random_forest.joblib`, `models/<year>/total_gradient_boosting.joblib`, etc.
-  - Weekly adjusted stats cache: `processed/team_week_adj/year=<Y>/week=<W>/`
+  - Spread Models: `artifacts/models/<year>/spread_ridge.joblib`, `artifacts/models/<year>/spread_elastic_net.joblib`, etc.
+  - Total Models: `artifacts/models/<year>/total_random_forest.joblib`, `artifacts/models/<year>/total_gradient_boosting.joblib`, etc.
+- Weekly adjusted stats cache: `processed/team_week_adj/iteration=4/year=<Y>/week=<W>/`
 
 - **Metrics Reports**
   - Training metrics: RMSE/MAE on training and test sets
@@ -83,8 +84,8 @@ To improve prediction stability and reduce week-to-week variance, the project us
 ## Betting Policy (MVP)
 
 - Compute edge = |model_prediction − sportsbook_line|
-- Spreads: configurable threshold (default ≥ 6.0 points via `--spread-threshold`); policy previously 3.5
-- Totals: configurable threshold (default ≥ 6.0 points via `--total-threshold`)
+- Spreads: configurable threshold (default ≥ 8.0 points via `--spread-threshold`); policy previously 6.0
+- Totals: configurable threshold (default ≥ 8.0 points via `--total-threshold`)
 - Enforce no-bet policy if either team has < 4 games played
 - Flat staking (e.g., 1 unit) for MVP
 
