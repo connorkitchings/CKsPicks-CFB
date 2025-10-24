@@ -55,6 +55,8 @@ Install all required project dependencies using `uv` (include dev tools like pyt
 uv sync --extra dev
 ```
 
+> **Note:** `uv run` currently panics in the macOS environment that backs this project. Activate the virtual environment (`source .venv/bin/activate`) and call tools via `python`/`pip` inside the venv until the upstream issue is resolved.
+
 ## 5. Code Quality
 
 Run formatting and lint checks before committing changes:

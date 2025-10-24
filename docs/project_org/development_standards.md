@@ -98,7 +98,7 @@ Python files should follow this order:
 
 1. **Exploration:** Initial data exploration and hypothesis testing
 2. **Analysis:** Structured analysis with clear methodology
-3. Production: Convert stable code to modules in `src/cfb_model/`
+3. Production: Convert stable code to modules under `src/`
 4. **Archive:** Move completed notebooks to appropriate folders
 
 ## Quality Gates & Automation
@@ -156,5 +156,5 @@ All pull requests trigger:
 
 ---
 
-*This document consolidates development standards, code review guidelines, notebook governance, and
-operational workflows into a single reference for this project.*
+_This document consolidates development standards, code review guidelines, notebook governance, and
+operational workflows into a single reference for this project._

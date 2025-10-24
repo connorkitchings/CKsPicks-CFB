@@ -1,21 +1,25 @@
 # Points-For Modeling Initiative
 
 ## Overview
+
 The current system maintains separate ensembles for spread and total predictions. This initiative explores consolidating both into a unified points-for framework that estimates home and away scoring, then derives spreads and totals downstream. The goal is to reduce maintenance overhead while improving consistency between markets.
 
 ## Objectives
+
 - Train models that output expected points for both teams with calibrated uncertainty.
 - Derive spread and total predictions (and confidence bands) from the same scoring view.
 - Preserve or improve hit rate, bet volume, and calibration relative to existing ensembles.
 - Avoid leakage and maintain deterministic weekly generation.
 
 ## Scope Assumptions
+
 - Applies to FBS regular-season games (consistent with existing pipelines).
 - Reuses cached weekly features where possible, with extensions for per-team scoring targets.
 - Continues to exclude in-season data beyond the prediction week.
 - Keeps betting policy thresholds configurable and comparable to legacy outputs.
 
 ## Data and Pipeline Implications
+
 1. **Targets**
    - Define per-team historical targets: `home_points_for`, `away_points_for`.
    - Confirm raw partitions capture final scores for every game; backfill gaps if needed.
@@ -29,6 +33,7 @@ The current system maintains separate ensembles for spread and total predictions
    - Maintain compatibility with existing reporting schema while introducing new diagnostic fields (e.g., predicted points, point variance).
 
 ## Candidate Modeling Approaches
+
 1. **Dual Single-Target Models (Shared Pipeline)**
    - Train mirrored regressors for home and away points.
    - Advantages: simpler tooling; reuse of current Optuna/Hydra setup.
@@ -45,30 +50,55 @@ The current system maintains separate ensembles for spread and total predictions
 Initial recommendation: prototype dual single-target models that share the existing offensive/defensive feature pipeline (home vs. away context included), while instrumenting prediction covariance. Evaluate whether a tighter multi-output model is necessary after we benchmark against current ensembles.
 
 ## Evaluation Strategy
+
 - **Backtest Window:** Train on 2019–2023 (skip 2020), test on 2024 (and a 2025-to-date smoke check).
 - **Metrics:** RMSE/MAE for points, derived spread/total accuracy, hit rate vs. closing lines, calibration of prediction intervals.
 - **Baseline Comparison:** Compare against current ensembles to ensure no regression in hit rate or bet volume.
 - **Uncertainty Validation:** Confirm that combined variance (home + away) matches observed total variance; adjust calibration if mismatched.
 
+## Evaluation Plan
+
+To systematically evaluate and improve the points-for model, the following steps will be taken, with a primary focus on the "totals" prediction task:
+
+1.  **Adapt Walk-Forward Validation:** The existing script (`scripts/walk_forward_validation.py`) will be modified to train and evaluate the points-for models. This will involve:
+
+    - Adding a training loop for the `points_for_models` (home and away points).
+    - Calculating the derived `predicted_total` from the points-for model's output.
+    - Logging the performance (RMSE, MAE, and betting hit rate) of the points-for totals prediction.
+    - Adding `points_for` as a configurable strategy in `conf/config.yaml` to allow for direct comparison against the legacy ensemble.
+
+2.  **Experiment with XGBoost:** A more powerful `XGBoost` model will be introduced to predict home and away scores.
+
+    - This aligns with the project roadmap and aims to capture more complex patterns in the data.
+    - The existing Hydra/Optuna pipeline will be used to perform hyperparameter tuning for the new XGBoost models.
+
+3.  **Benchmark Performance:** The new XGBoost-based points-for model will be benchmarked against the legacy totals ensemble and the baseline points-for model using the adapted walk-forward validation framework.
+
+4.  **Analyze and Document:** The results will be analyzed, and a recommendation will be made. If the new model proves superior, a decision will be recorded in the `decision_log.md` and project documentation will be updated.
+
 ## Open Questions
+
 1. Confirm that paired single-target models (home points, away points) using shared offense/defense features remain acceptable for the first iteration.
 2. Define expectations for running legacy spread/total ensembles in parallel for validation and potential fallback.
 3. Decide how Optuna sweeps should score trials (e.g., single-objective total points RMSE with additional logging).
 4. Choose a strategy for modeling correlation between home and away outputs when using independent models.
 5. Capture any reporting requirements (e.g., displaying expected scores) that would affect schema changes.
 
-> 📌 **Future considerations:**  
-> - Once residual analysis stabilizes, derive per-game predictive variance (analytic or conformal) so spread/total bets can be filtered or sized via probability thresholds rather than fixed edge cutoffs.  
+> 📌 **Future considerations:**
+>
+> - Once residual analysis stabilizes, derive per-game predictive variance (analytic or conformal) so spread/total bets can be filtered or sized via probability thresholds rather than fixed edge cutoffs.
 > - Evaluate whether fewer opponent-adjustment iterations (e.g., 1–3 rounds instead of 4) yield more stable or predictive weekly stats before generating points-for features.
 > - Audit feature selection: the current models rely on very dense feature sets. Plan a research slice to compare a curated/regularized subset (e.g., via permutation importance, SHAP, or iterative pruning) against the full bundle to confirm we’re not masking signal with noise.
 
 ## Risks and Mitigations
+
 - **Error Propagation:** Summing two noisy predictions amplifies total variance. Mitigation: track covariance and consider shrinkage or calibration layers.
 - **Data Quality:** Missing or inconsistent final scores could silently skew targets. Mitigation: add validation checks before training.
 - **Tooling Complexity:** Multi-output Optuna sweeps may increase runtime. Mitigation: start with constrained parameter spaces and caching intermediate datasets.
 - **Operational Change:** Weekly scripts, tests, and documentation need synchronized updates. Mitigation: stage changes behind feature flags or configuration toggles.
 
 ## Documentation Touchpoints
+
 - `docs/project_org/modeling_baseline.md` — describe new modeling architecture and outputs.
 - `docs/operations/weekly_pipeline.md` — update generation workflow and diagnostics.
 - `docs/project_org/feature_catalog.md` — include any new features or targets.
@@ -76,6 +106,7 @@ Initial recommendation: prototype dual single-target models that share the exist
 - Tests and runbooks should reference the points-for outputs once stabilized.
 
 ## Proposed Next Steps
+
 1. Answer open questions and finalize modeling approach.
 2. Prototype points-for training locally using existing caches; document findings.
 3. Extend Hydra/Optuna configuration for the chosen approach and add regression tests.
@@ -84,6 +115,7 @@ Initial recommendation: prototype dual single-target models that share the exist
 6. Current status (2025-10-22): keep points-for outputs in comparison-only mode. Focus next on simplifying the model—calibrate residual variance and revisit feature selection/regularization before considering production rollout.
 
 ### Hydra/Optuna Integration Plan (Documentation-Only Draft)
+
 - Add a new Hydra config group `model: points_for` representing the paired single-target models (home/away) with shared preprocessing.
 - Introduce sweep parameters for the primary estimator while keeping the objective scalar (total points RMSE); log derived spread/total RMSEs as supplemental metrics.
 - Update `conf/config.yaml` defaults to keep legacy ensembles active by default; enable points-for runs via explicit override once experiments begin.
@@ -91,6 +123,7 @@ Initial recommendation: prototype dual single-target models that share the exist
 - Defer implementation until active Hydra experiments complete.
 
 #### Example Command Sequence (when ready to run)
+
 ```bash
 # Build or refresh the filtered slice (enforces 2+ prior FBS games)
 python scripts/build_points_for_slice.py --season 2023 --min-games 2 \
@@ -130,13 +163,15 @@ uv run python scripts/optimize_hyperparameters.py \
 ```
 
 #### Recent Sweep Snapshot (2025-10-20)
-| Model | Total RMSE | Total MAE | Spread RMSE | Spread MAE |
-|-------|------------|-----------|-------------|------------|
-| ElasticNet (default sweep) | 17.203 | 13.869 | 18.656 | 14.931 |
-| Ridge (alpha sweep) | **17.076** | **13.565** | 18.164 | 14.486 |
-| Gradient Boosting (choice sweep) | 18.088 | 14.826 | **18.116** | **14.365** |
+
+| Model                            | Total RMSE | Total MAE  | Spread RMSE | Spread MAE |
+| -------------------------------- | ---------- | ---------- | ----------- | ---------- |
+| ElasticNet (default sweep)       | 17.203     | 13.869     | 18.656      | 14.931     |
+| Ridge (alpha sweep)              | **17.076** | **13.565** | 18.164      | 14.486     |
+| Gradient Boosting (choice sweep) | 18.088     | 14.826     | **18.116**  | **14.365** |
 
 ## Tracking
+
 - Owner: TBD
 - Target Decision Date: 2025-11-01 (before next sprint planning)
 - Dependencies: Hydra/Optuna stability (`session_logs/2025-10-20/01.md`), data cache completeness.

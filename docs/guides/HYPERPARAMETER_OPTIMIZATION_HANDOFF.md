@@ -4,6 +4,8 @@
 **Status**: Optimization jobs running in background  
 **Session**: Priority 2 - Hyperparameter Optimization
 
+> **2025-10-22 Update:** The active workflow now uses Hydra + Optuna sweeps (`scripts/optimize_hyperparameters.py` with `hydra/sweeper=optuna`). The details below capture the historical grid-search handoff; follow `docs/guides/hydra_guide.md` for the current process and artifact layout.
+
 > **Path update:** References to modules formerly under `src/cfb_model/...` should now be interpreted under `src/...`.
 
 ---
@@ -45,9 +47,11 @@ ls -lh reports/optimization/
 ## What Was Created
 
 ### 1. Hyperparameter Optimization Script
+
 **File**: `scripts/optimize_hyperparameters.py`
 
 **Features**:
+
 - GridSearchCV with TimeSeriesSplit (time-series aware CV)
 - Optimizes both Ridge (spreads) and RandomForest (totals)
 - `--fast` mode for quicker iteration (smaller grid)
@@ -55,6 +59,7 @@ ls -lh reports/optimization/
 - Outputs JSON and CSV results
 
 **Usage**:
+
 ```bash
 # Optimize both (full grid)
 uv run python scripts/optimize_hyperparameters.py \
@@ -77,16 +82,19 @@ uv run python scripts/optimize_hyperparameters.py \
 ```
 
 ### 2. Results Monitor Script
+
 **File**: `scripts/apply_hyperparameter_results.py`
 
 **Purpose**: Waits for optimization to complete, then generates summary report
 
 **Usage**:
+
 ```bash
 uv run python scripts/apply_hyperparameter_results.py
 ```
 
 This will:
+
 - Wait for results file to appear
 - Load and parse results
 - Generate comparison report
@@ -97,6 +105,7 @@ This will:
 ## Expected Outputs
 
 ### Directory Structure
+
 ```
 reports/optimization/
 ├── hyperparameter_optimization_results.json  # Detailed results
@@ -107,12 +116,13 @@ reports/optimization/
 ### Results Format
 
 **JSON** (`hyperparameter_optimization_results.json`):
+
 ```json
 [
   {
     "model_name": "Ridge",
     "target": "spread",
-    "best_params": {"alpha": 0.1, "fit_intercept": true, "solver": "auto"},
+    "best_params": { "alpha": 0.1, "fit_intercept": true, "solver": "auto" },
     "best_cv_score": 13.456,
     "cv_std": 0.234,
     "train_rmse": 12.345,
@@ -142,10 +152,10 @@ reports/optimization/
 ```
 
 **CSV** (`hyperparameter_optimization_summary.csv`):
-| model | target | cv_rmse | cv_std | test_rmse | test_mae | improvement_% |
+| model | target | cv*rmse | cv_std | test_rmse | test_mae | improvement*% |
 |-------|--------|---------|--------|-----------|----------|---------------|
-| Ridge | spread | 13.456  | 0.234  | 13.456    | 10.123   | 2.34          |
-| RandomForest | total | 16.234 | 0.345 | 16.234 | 12.456 | 2.76          |
+| Ridge | spread | 13.456 | 0.234 | 13.456 | 10.123 | 2.34 |
+| RandomForest | total | 16.234 | 0.345 | 16.234 | 12.456 | 2.76 |
 
 ---
 
@@ -165,6 +175,7 @@ cat reports/optimization/comparison.md
 ### 2. Evaluate Improvements
 
 **Decision criteria**:
+
 - **Significant improvement**: >2% RMSE reduction on test set
 - **Marginal improvement**: 0.5-2% RMSE reduction
 - **No improvement**: <0.5% reduction
@@ -174,11 +185,13 @@ cat reports/optimization/comparison.md
 **Update `src/models/train_model.py`**:
 
 For Ridge (spreads) - around line 180:
+
 ```python
 spread_model = Ridge(alpha=<BEST_ALPHA>)  # Update from optimization results
 ```
 
 For RandomForest (totals) - around line 185:
+
 ```python
 total_model = RandomForestRegressor(
     n_estimators=<BEST_N_ESTIMATORS>,
@@ -240,6 +253,7 @@ If improvements are substantial:
 ## Parameter Grids Used
 
 ### Ridge (Spreads) - Fast Mode
+
 ```python
 {
     "alpha": [0.001, 0.01, 0.05, 0.1, 0.5, 1.0, 5.0, 10.0],
@@ -251,6 +265,7 @@ If improvements are substantial:
 Current baseline: `alpha=0.1`
 
 ### RandomForest (Totals) - Fast Mode
+
 ```python
 {
     "n_estimators": [150, 200, 250],
@@ -263,6 +278,7 @@ Current baseline: `alpha=0.1`
 ```
 
 Current baseline:
+
 - n_estimators=200
 - max_depth=8
 - min_samples_split=10
@@ -292,6 +308,7 @@ uv run python scripts/optimize_hyperparameters.py \
 ### If Results Look Worse
 
 This can happen due to:
+
 1. **Overfitting to CV folds**: Check if CV score improved but test score degraded
 2. **Wrong baseline comparison**: Ensure baseline uses same train/test split
 3. **Hyperparameter grid misalignment**: Verify grid includes sensible values
@@ -301,10 +318,12 @@ This can happen due to:
 ### If Taking Too Long
 
 Fast mode should complete in:
+
 - Ridge: 2-5 minutes
 - RandomForest: 15-25 minutes
 
 If much longer:
+
 - Check CPU usage with `top` or `htop`
 - Verify data is accessible (external drive connected)
 - Consider killing and running with even smaller grid
@@ -314,11 +333,13 @@ If much longer:
 ## Performance Expectations
 
 ### Current Baseline (2024 Holdout)
+
 - **Spreads (Ridge alpha=0.1)**: 54.7% hit rate
 - **Totals (RandomForest)**: 54.5% hit rate
 - **Combined**: 54.6% hit rate
 
 ### Realistic Improvement Targets
+
 - **Conservative**: +0.3-0.5 percentage points (55.0-55.2% combined)
 - **Optimistic**: +0.8-1.2 percentage points (55.5-55.8% combined)
 - **Best case**: +1.5-2.0 percentage points (56.0-56.5% combined)
@@ -330,19 +351,22 @@ If much longer:
 ## Session Summary
 
 **What We Accomplished**:
+
 1. ✅ Created comprehensive hyperparameter optimization framework
 2. ✅ Implemented fast mode for quicker iteration
 3. ✅ Started parallel optimizations for both models
 4. ✅ Created monitoring and reporting scripts
 5. ✅ Documented complete workflow for applying results
 
-**Current Status**: 
+**Current Status**:
+
 - Optimizations running in background
 - Expected completion: 3:30-3:40 PM for spreads, 3:35-3:45 PM for totals
 - Results will be saved automatically
 - Ready for review and application
 
 **Next Session**:
+
 - Review optimization results
 - Apply best parameters if improvements are significant
 - Retrain models and validate on full 2024 season

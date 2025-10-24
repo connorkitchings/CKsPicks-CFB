@@ -362,6 +362,8 @@ def load_point_in_time_data(
         merged_df["total_target"] = merged_df["home_points"].astype(float) + merged_df[
             "away_points"
         ].astype(float)
+        merged_df["home_points_for"] = merged_df["home_points"].astype(float)
+        merged_df["away_points_for"] = merged_df["away_points"].astype(float)
 
     if (
         "home_conference" in merged_df.columns

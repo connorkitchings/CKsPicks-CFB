@@ -24,7 +24,7 @@ This document describes the MVP ridge regression model used for ATS and totals p
     `expl_rate_rush`, `expl_rate_pass`.
 - Selected unadjusted offense extras if present: `off_eckel_rate`, `off_finish_pts_per_opp`,
   `stuff_rate`, `havoc_rate`.
-- For modeling, features are merged twice per game (home_*, away_*). No explicit home-field
+- For modeling, features are merged twice per game (home*\*, away*\*). No explicit home-field
   dummy is added in MVP (can be added later as `home_field=1`).
 
 ### Targets

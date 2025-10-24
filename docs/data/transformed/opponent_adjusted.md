@@ -11,7 +11,8 @@ The key for this dataset is `(season, team)`.
 The columns are the opponent-adjusted versions of the core metrics from the `team_season` dataset, prefixed with `adj_`.
 
 Example columns:
-* `adj_off_epa_pp`
-* `adj_def_sr`
-* `adj_off_ypp`
-* etc.
+
+- `adj_off_epa_pp`
+- `adj_def_sr`
+- `adj_off_ypp`
+- etc.

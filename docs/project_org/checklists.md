@@ -26,6 +26,7 @@ Run this checklist before every git commit.
 - [ ] **Commit message is descriptive:** Follows standard conventions (e.g., `feat: short description`).
 
 <a id="pre-merge"></a>
+
 ## Pre-Merge Checklist (Pull Request) {#pre-merge}
 
 Run this more thorough checklist before merging a feature branch into main.
@@ -40,9 +41,10 @@ Run this more thorough checklist before merging a feature branch into main.
 - [ ] **Security scan passed:** `uv run bandit -r src/` finds no high-severity issues
 - [ ] **Security Review Checklist reviewed:** See [Security Review](#security-review) below
 - [ ] **No "TODO" comments remain:** All temporary todos have been resolved or converted to tasks in
-  implementation_schedule.md
+      implementation_schedule.md
 
 <a id="security-review"></a>
+
 ## Security Review Checklist {#security-review}
 
 A mandatory review for any feature handling user input, authentication, or data.
@@ -58,7 +60,7 @@ A mandatory review for any feature handling user input, authentication, or data.
 - [ ] **Passwords are not stored in plain text** (hashed and salted)
 - [ ] **Endpoints correctly verify authentication** that the user is authenticated
 - [ ] **Endpoints correctly verify authorization** that the user is authorized to access/modify the
-  specific resource
+      specific resource
 
 ### Error Handling & Logging
 
@@ -74,5 +76,5 @@ A mandatory review for any feature handling user input, authentication, or data.
 
 ---
 
-*This document consolidates all quality gates and checklists from the original checklist files
-into a single, easily navigable reference with anchor links.*
+_This document consolidates all quality gates and checklists from the original checklist files
+into a single, easily navigable reference with anchor links._

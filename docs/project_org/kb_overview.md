@@ -14,8 +14,8 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 
 - **Context**: Efficient and organized storage of raw and processed College Football Data API data locally.
 - **Pattern**: Both raw and processed datasets are stored in CSV format for easier inspection and
-   portability. Data is partitioned by `year`, `week`, and `game_id` for plays and plays-derived
-   outputs; by `year` for other entities. Folder names are simplified (e.g., `2024/1/401628319`).
+  portability. Data is partitioned by `year`, `week`, and `game_id` for plays and plays-derived
+  outputs; by `year` for other entities. Folder names are simplified (e.g., `2024/1/401628319`).
 - **Usage**: The `LocalStorage` class handles the read/write operations and manages the folder
   structure. Ingesters and aggregations use this storage backend with `file_format="csv"`.
 - **Discovered In**: `[LOG:2025-08-14_02]`
@@ -30,7 +30,7 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 - **Pattern**: Run the script as a module from the project's root directory using the `-m` flag.
   This allows the Python interpreter to correctly recognize the package structure and resolve
   relative imports.
-- **Usage**: Instead of `python src/cfb_model/data/validation.py`, use `python -m src.cfb_model.data.validation`.
+- **Usage**: Instead of executing a script directly (`python src/models/train_model.py`), run it as a module from the repo root: `uv run python -m src.models.train_model`.
 - **Discovered In**: `[LOG:2025-08-15]`
 
 ---
@@ -56,7 +56,7 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 ## `[KB:DataframeColumnTrace]`
 
 - **Context**: Debugging a pandas pipeline where necessary columns (e.g., for logging) are missing
-in later stages.
+  in later stages.
 - **Pattern**: Instead of passing columns through every transformation step (where they might be
   dropped), create a lookup map (e.g., a dictionary) from the initial, raw DataFrame. Use this map
   in later stages to retrieve the necessary data via a common key like `game_id`.
@@ -78,7 +78,7 @@ in later stages.
 
 - **Context**: Comparing processed team_game metrics to CFBD advanced box score data.
 - **Pattern**: Adopt absolute thresholds: plays WARN>3/ERROR>8; ypp WARN>0.20/ERROR>0.50; sr WARN>0.02/ERROR>0.05.
-- **Usage**: See `validate_team_game_vs_boxscore` in `src/cfb_model/data/validation.py`.
+- **Usage**: See `validate_team_game_vs_boxscore` in `src/utils/validation.py`.
 - **Discovered In**: `[LOG:2025-09-05]`
 
 ---
@@ -141,7 +141,7 @@ in later stages.
 
 - **Context**: When running scripts from the command line that are part of a package, `ModuleNotFoundError` can occur.
 - **Pattern**: It's crucial to ensure that the package's root directory is in the `PYTHONPATH`. This can be done by running the script as a module (`-m`), setting the `PYTHONPATH` environment variable, or by adding the path to `sys.path` within the script itself.
-- **Usage**: `python3 -m src.cfb_model.scripts.generate_weekly_bets_clean` or `sys.path.insert(0, './src')`
+- **Usage**: `uv run python -m src.models.train_model` or add `sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))` (after `from pathlib import Path`)
 - **Discovered In**: `[LOG:2025-09-30]`
 
 ---
@@ -160,7 +160,7 @@ in later stages.
 - **Context**: An automated script fails with a non-standard error like "invalid chunk" or "missing finish reason".
 - **Pattern**: This can be caused by printing an extremely large, wide DataFrame or other large string to standard output. The process running the script may not be able to handle the large, uninterrupted block of text in the output stream, leading to corruption. Removing or modifying the large print statement can resolve the issue.
 - **Usage**: Avoid `print(df.to_string())` on very wide DataFrames in automated scripts. If you need to inspect data, print a subset of columns or use a logger.
-- **Discovered In**: `[LOG:2025-10-01]` 
+- **Discovered In**: `[LOG:2025-10-01]`
 
 ## `[KB:EnsembleConfidenceFilter]`
 
@@ -238,10 +238,11 @@ in later stages.
 
 ---
 
-  - `[KB:HYDRA-INTERPOLATION]` Older versions of Hydra might not support the `${env:VAR}` syntax for environment variable interpolation. Use `${oc.env:VAR}` instead.
-  - `[KB:PANDAS-COLUMN-NAMES]` Be aware that the column name for the game identifier in the raw `games` data is `id`, not `game_id`.
-  - `[KB:LIST-DIRECTORY-IGNORES]` The `list_directory` tool respects `.gitignore` by default. Use `file_filtering_options=ListDirectoryFileFilteringOptions(respect_git_ignore=False)` to disable this behavior.
+- `[KB:HYDRA-INTERPOLATION]` Older versions of Hydra might not support the `${env:VAR}` syntax for environment variable interpolation. Use `${oc.env:VAR}` instead.
+- `[KB:PANDAS-COLUMN-NAMES]` Be aware that the column name for the game identifier in the raw `games` data is `id`, not `game_id`.
+- `[KB:LIST-DIRECTORY-IGNORES]` The `list_directory` tool respects `.gitignore` by default. Use `file_filtering_options=ListDirectoryFileFilteringOptions(respect_git_ignore=False)` to disable this behavior.
 - **MLflow**
+
 ## `[KB:MLflowNestedRuns]`
 
 - **Context**: When training an ensemble of models, it's useful to track both the performance of the overall ensemble and the individual performance of each component model.
@@ -252,10 +253,9 @@ in later stages.
 - **Context**: Resolving linting errors, especially those related to variable naming (`N806`) and undefined names (`F821`), often requires multiple iterations of fixes and re-checks.
 - **Pattern**: When renaming variables (e.g., from `X` to `x`), ensure all usages of the old variable name are also updated. `ruff check --fix` can help with some issues, but manual `replace` calls might be necessary for all occurrences. Re-run lint checks after each set of changes to catch cascading errors.
 
-
 ---
 
-## `[KB:HydraMultiRunConfig]` *(archived for future migration)*
+## `[KB:HydraMultiRunConfig]` _(archived for future migration)_
 
 - **Context**: Planned Hydra + Optuna integration (see roadmap) will likely require passing the search space via CLI in multirun mode.
 - **Pattern**: If/when Hydra is reintroduced, prefer defining the Optuna search space with the `+` CLI syntax to avoid sweeper `AssertionError`s.

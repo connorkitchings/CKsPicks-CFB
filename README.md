@@ -28,17 +28,12 @@ For a deep dive into the methodology and guides, please see our [full documentat
    cd cfb_model
    ```
 
-2. **Create and activate a virtual environment:**
-
-   ```bash
-   uv venv
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies:**
+2. **Create and activate a virtual environment, then install dependencies:**
 
 ```bash
+uv venv
 uv sync --extra dev
+source .venv/bin/activate  # temporary workaround while we investigate `uv run` panic
 ```
 
 For detailed usage guides (running tests, pipelines, and docs), see the
@@ -50,24 +45,25 @@ For detailed usage guides (running tests, pipelines, and docs), see the
 
 ```text
 cfb_model/
-├── artifacts/
-│   └── mlruns/
-├── conf/                 # Hydra configuration files
+├── artifacts/           # Generated outputs (MLflow, models, reports, sweeps)
+│   ├── mlruns/          # MLflow experiment tracking data
+│   ├── models/          # Trained model artifacts per season
+│   ├── outputs/         # Hydra/Optuna sweep artifacts
+│   ├── reports/         # Weekly predictions, scored results, metrics
+│   └── validation/      # Walk-forward and other evaluation outputs
+├── conf/                 # Hydra defaults, model configs, Optuna sweeper params
 ├── docs/                 # Project documentation (MkDocs)
 ├── notebooks/            # Jupyter notebooks for exploration and analysis
 ├── session_logs/         # Chronological development session logs
 ├── scripts/              # Utility and automation scripts
-├── artifacts/           # Generated outputs (MLflow, models, reports, validation)
-│   ├── mlruns/         # MLflow experiment tracking data
-│   ├── models/         # Trained model artifacts per year
-│   ├── reports/        # Weekly predictions, scored results, metrics
-│   └── validation/     # Walk-forward and other evaluation outputs
 ├── src/
-│   └── cfb_model/
-│       ├── data/         # Ingestion, storage, aggregations
-│       ├── flows/        # Prefect orchestration flows
-│       ├── models/       # Modeling code
-│       └── utils/        # Shared utilities
+│   ├── config.py         # Path helpers and global constants
+│   ├── data/             # Ingestion, storage, aggregation utilities
+│   ├── features/         # Feature engineering pipeline
+│   ├── flows/            # Prefect orchestration flows
+│   ├── models/           # Training logic, betting policy helpers
+│   ├── scripts/          # Programmatic entrypoints (training, scoring, reports)
+│   └── utils/            # Shared utilities (storage, partitions, etc.)
 ├── mkdocs.yml            # Documentation site config
 ├── prefect.yaml          # Prefect deployments/config
 ├── pyproject.toml        # Project metadata and dependencies
@@ -80,7 +76,12 @@ cfb_model/
 
 ## 🤖 MLOps Stack
 
-The project is organized around a modern MLOps stack to ensure reproducibility, scalability, and efficient experimentation. For more details, see the [MLOps Stack documentation](./docs/project_org/mlops_stack.md).
+Experiment tracking and configuration are handled via MLflow + Hydra. Optuna sweeps write into
+`artifacts/outputs/<YYYY-MM-DD>/` alongside per-trial `.hydra/` configs. For details on Hydra
+usage, sweep configuration, and expected artifacts, see:
+
+- [Hydra Guide](docs/guides/hydra_guide.md)
+- [MLOps Stack](docs/project_org/mlops_stack.md)
 
 ---
 

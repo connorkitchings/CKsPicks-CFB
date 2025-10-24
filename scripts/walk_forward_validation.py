@@ -20,6 +20,7 @@ from src.models.train_model import (
     _concat_years,
     _evaluate,
     _suppress_linear_runtime_warnings,
+    points_for_models,
     spread_models,
     total_models,
 )
@@ -79,6 +80,8 @@ def main(cfg: DictConfig) -> None:
             return f"{prefix}_pred_ensemble"
         if strategy == "best_single":
             return f"{prefix}_pred_{best_model_key}"
+        if strategy == "points_for":
+            return "total_pred_points_for_ensemble"
         raise ValueError(
             f"Unknown {prefix} strategy '{strategy}'. Expected 'ensemble' or 'best_single'."
         )
@@ -165,7 +168,12 @@ def main(cfg: DictConfig) -> None:
                 # --- Feature Preparation ---
                 feature_list = build_feature_list(train_df)
                 feature_list = [c for c in feature_list if c in test_df.columns]
-                target_cols = ["spread_target", "total_target"]
+                target_cols = [
+                    "spread_target",
+                    "total_target",
+                    "home_points_for",
+                    "away_points_for",
+                ]
 
                 train_df = train_df.dropna(subset=feature_list + target_cols)
                 test_df = test_df.dropna(subset=feature_list + target_cols)
@@ -175,12 +183,18 @@ def main(cfg: DictConfig) -> None:
                     continue
 
                 x_train = train_df[feature_list]
+                x_train = train_df[feature_list]
                 y_train_spread = train_df["spread_target"].astype(float)
                 y_train_total = train_df["total_target"].astype(float)
 
                 x_test = test_df[feature_list]
                 y_test_spread = test_df["spread_target"].astype(float)
                 y_test_total = test_df["total_target"].astype(float)
+                y_train_home_points = train_df["home_points_for"].astype(float)
+                y_train_away_points = train_df["away_points_for"].astype(float)
+
+                y_test_home_points = test_df["home_points_for"].astype(float)
+                y_test_away_points = test_df["away_points_for"].astype(float)
 
                 # --- Model Training and Prediction ---
                 week_predictions = test_df[
@@ -188,6 +202,8 @@ def main(cfg: DictConfig) -> None:
                 ].copy()
                 week_predictions["spread_actual"] = y_test_spread
                 week_predictions["total_actual"] = y_test_total
+                week_predictions["home_points_actual"] = y_test_home_points
+                week_predictions["away_points_actual"] = y_test_away_points
 
                 print("    Training and predicting with spread models...")
                 with _suppress_linear_runtime_warnings():
@@ -204,6 +220,27 @@ def main(cfg: DictConfig) -> None:
                         preds = model.predict(x_test)
                         week_predictions[f"total_pred_{model_name}"] = preds
                 print("    Total models complete.")
+
+                print("    Training and predicting with points-for models...")
+                with _suppress_linear_runtime_warnings():
+                    for model_name, model in points_for_models.items():
+                        # Home points
+                        model.fit(x_train, y_train_home_points)
+                        preds_home = model.predict(x_test)
+                        week_predictions[f"home_points_pred_{model_name}"] = preds_home
+
+                        # Away points
+                        model.fit(x_train, y_train_away_points)
+                        preds_away = model.predict(x_test)
+                        week_predictions[f"away_points_pred_{model_name}"] = preds_away
+
+                # Add derived total from points-for models
+                for model_name in points_for_models:
+                    week_predictions[f"total_pred_points_for_{model_name}"] = (
+                        week_predictions[f"home_points_pred_{model_name}"]
+                        + week_predictions[f"away_points_pred_{model_name}"]
+                    )
+                print("    Points-for models complete.")
 
                 all_predictions.append(week_predictions)
 
@@ -234,6 +271,29 @@ def main(cfg: DictConfig) -> None:
                 season_predictions["total_pred_ensemble"] = season_predictions[
                     total_pred_cols
                 ].mean(axis=1)
+
+            # Add ensemble for points-for
+            home_points_cols = [
+                c
+                for c in season_predictions.columns
+                if c.startswith("home_points_pred_")
+            ]
+            away_points_cols = [
+                c
+                for c in season_predictions.columns
+                if c.startswith("away_points_pred_")
+            ]
+            if home_points_cols and away_points_cols:
+                season_predictions["home_points_pred_ensemble"] = season_predictions[
+                    home_points_cols
+                ].mean(axis=1)
+                season_predictions["away_points_pred_ensemble"] = season_predictions[
+                    away_points_cols
+                ].mean(axis=1)
+                season_predictions["total_pred_points_for_ensemble"] = (
+                    season_predictions["home_points_pred_ensemble"]
+                    + season_predictions["away_points_pred_ensemble"]
+                )
 
             for model_name in spread_models:
                 _evaluate_and_log(

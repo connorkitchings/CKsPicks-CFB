@@ -1,0 +1,5 @@
+model.params.n_estimators: choice(100, 200, 300, 400, 500)
+model.params.learning_rate: tag(log, interval(0.01, 0.3))
+model.params.max_depth: int(3, 10)
+model.params.subsample: interval(0.6, 1.0)
+model.params.colsample_bytree: interval(0.6, 1.0)

@@ -8,9 +8,9 @@ data:
   data_root: ${oc.env:CFB_DATA_ROOT,./data}
   train_years: [2019, 2021, 2022, 2023]
   test_year: 2024
-  slice_path: null
-  train_weeks: []
-  test_weeks: []
+  slice_path: outputs/prototypes/points_for_training_slice_2023_filtered.csv
+  train_weeks: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  test_weeks: [13, 14, 15]
   adjustment_iteration: 4
   adjustment_iteration_offense: null
   adjustment_iteration_defense: null
@@ -33,5 +33,5 @@ hydra:
 walk_forward:
   spread_strategy: ensemble   # options: ensemble, best_single
   best_spread_model: elastic_net
-  total_strategy: best_single # options: ensemble, best_single, points_for
+  total_strategy: points_for # options: ensemble, best_single, points_for
   best_total_model: random_forest

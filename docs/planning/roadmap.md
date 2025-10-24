@@ -11,6 +11,7 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 **Current Sprint:** Sprint 4: MLOps Foundation
 
 **Key Goals:**
+
 - Finalize the integration of Hydra and Optuna for hyperparameter optimization.
 - Refactor the prediction pipeline to use Hydra for configuration.
 - Integrate the MLflow Model Registry for model versioning.
@@ -21,19 +22,19 @@ This document is the tactical plan for the **cfb_model** project. It translates 
 
 ### Sprint 4: MLOps Foundation
 
-| ID | Epic | Deliverable | Effort | Dependencies | Priority |
-|:--:|:---|:---|:---:|:---|:---:|
-| 35 | MLOps | Finalize Hydra/Optuna Integration | 3d | - | High |
-| 36 | MLOps | Refactor Prediction Script with Hydra | 2d | Task 35 | High |
-| 37 | MLOps | Integrate MLflow Model Registry | 2d | Task 35 | Medium |
+| ID  | Epic  | Deliverable                           | Effort | Dependencies | Priority |
+| :-: | :---- | :------------------------------------ | :----: | :----------- | :------: |
+| 35  | MLOps | Finalize Hydra/Optuna Integration     |   3d   | -            |   High   |
+| 36  | MLOps | Refactor Prediction Script with Hydra |   2d   | Task 35      |   High   |
+| 37  | MLOps | Integrate MLflow Model Registry       |   2d   | Task 35      |  Medium  |
 
 ### Sprint 5: Advanced Modeling & Monitoring
 
-| ID | Epic | Deliverable | Effort | Dependencies | Priority |
-|:--:|:---|:---|:---:|:---|:---:|
-| 14 | Modeling | Experiment with XGBoost | 6d | Task 20, OPEN-002 | Medium |
-| 25 | Monitoring | Build a Simple Monitoring Dashboard | 5d | Task 21, OPEN-007 | Low |
-| 38 | Monitoring | Implement Rolling Performance Monitoring | 3d | Task 25 | Low |
+| ID  | Epic       | Deliverable                              | Effort | Dependencies      | Priority |
+| :-: | :--------- | :--------------------------------------- | :----: | :---------------- | :------: |
+| 14  | Modeling   | Experiment with XGBoost                  |   6d   | Task 20, OPEN-002 |  Medium  |
+| 25  | Monitoring | Build a Simple Monitoring Dashboard      |   5d   | Task 21, OPEN-007 |   Low    |
+| 38  | Monitoring | Implement Rolling Performance Monitoring |   3d   | Task 25           |   Low    |
 
 ---
 

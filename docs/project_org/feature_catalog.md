@@ -10,7 +10,7 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 
 - Level: team-season, team-week, game-level, or team-game.
 - Types: numeric (int/float), categorical, boolean, datetime, string.
-- Naming: snake_case; prefixes encouraged (e.g., `off_`, `def_`, `adj_`).
+- Naming: snake*case; prefixes encouraged (e.g., `off*`, `def*`, `adj*`).
 - All features should be reproducible from source CSV and deterministic given a seed.
 
 ### Play filters and definitions
@@ -34,25 +34,25 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 - Teams: `offense`, `defense`, `home`, `away`, `home_away` (derived)
 - Situation: `down`, `distance` (aka yards_to_first), `yard_line`, `yards_to_goal`
 - Timing: `clock_minutes`, `clock_seconds`, normalized `time_remaining_before`,
-   `time_remaining_after`, `play_duration`
+  `time_remaining_after`, `play_duration`
 - Outcome: `yards_gained`, `play_type`, `play_text`, `ppa` (proxy for EPA), `scoring`
 - Derived flags:
   - Play taxonomy: `rush_attempt`, `pass_attempt`, `dropback`, `sack`, `penalty`, `turnover`, `st`
-  (special teams), `twopoint`
+    (special teams), `twopoint`
   - Quality: `success` (CFBD thresholds by down), `explosive` (rush ≥15, pass ≥20), `garbage`
-  (half/score-based), `red_zone`, `eckel`
+    (half/score-based), `red_zone`, `eckel`
   - Conversions: `thirddown_conversion`, `fourthdown_conversion`
 - Source/implementation notes:
-  - Canonicalization and by-play enrichment are implemented in `src/cfb_model/data/aggregations/byplay.py`
+  - Canonicalization and by-play enrichment are implemented in `src/data/aggregations/byplay.py`
     (function `allplays_to_byplay`) and related helpers.
   - Standardize yards on fumbles and sacks; treat sacks as passes for split metrics.
 
 ### Drives: segmentation rules and schema
 
 - Segmentation: assign `drive_number` within `game_id` by detecting possession changes and
-   end-of-drive events:
+  end-of-drive events:
   - Start of half, kickoff, punt, turnover (INT/FUM), safety, turnover on downs, successful FG/TD,
-   end of period/half/game
+    end of period/half/game
   - Consecutive penalties without a snap remain in the same drive
 - Drive keys: `game_id`, `drive_number`, `offense`, `defense`
 - Start fields: `drive_start_period`, `drive_start_clock_seconds`, `start_yardline`, `start_yards_to_goal`
@@ -72,18 +72,18 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 - From plays (offense perspective unless noted):
   - Volume: `n_off_plays`, `n_rush_plays`, `n_pass_plays`
   - Efficiency: `off_sr` (mean of `success`), `off_ypp` (sum `yards_gained` / `n_off_plays`),
-   `off_epa_pp` (sum `ppa` / `n_off_plays`)
+    `off_epa_pp` (sum `ppa` / `n_off_plays`)
   - Explosiveness: `off_expl_rate_overall_10/20/30`, `off_expl_rate_rush`, `off_expl_rate_pass`
   - Negatives: `stuff_rate` (rush ≤ 0), `havoc_rate` (INT+FUM+TFL etc.)
   - Defensive mirrors computed from opponent plays: `def_sr`, `def_ypp`, `def_epa_pp`, explosive
-   rates allowed
+    rates allowed
 - From drives (offense perspective):
   - `off_eckel_rate` = mean(`is_eckel_drive`)
   - `off_finish_pts_per_opp` = sum(`points_on_opps`) / count(`had_scoring_opportunity`)
   - Pace proxies: `off_drives`, `plays_per_game`, `sec_per_play`
 - Keys and joins:
   - Join plays- and drives-derived aggregates by `game_id` + team role; ensure consistent
-  `home/away` labeling for modeling stage.
+    `home/away` labeling for modeling stage.
 
 ### Season: team-season aggregation (season-to-date)
 
@@ -96,31 +96,32 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 ## 1) Team-season aggregates (offense/defense)
 
 <!-- markdownlint-disable MD013 -->
-| feature_name | level       | dtype  | definition                                         | inputs                                   | transform                                 | notes |
-|--------------|-------------|--------|----------------------------------------------------|------------------------------------------|--------------------------------------------|-------|
-| off_epa_pp   | team-season | float  | Season-to-date offensive EPA per play              | plays.parquet (offense team, EPA)        | sum(EPA)/n_plays                           | pace-aware |
-| def_epa_pp   | team-season | float  | Season-to-date defensive EPA per play              | plays.parquet (defense team, EPA)        | sum(EPA_allowed)/n_plays_defended          | pace-aware |
-| off_sr       | team-season | float  | Offensive success rate                             | plays.parquet                            | mean(success_bool)                         | CFBD thresholds |
-| def_sr       | team-season | float  | Defensive success rate allowed                     | plays.parquet                            | mean(success_bool_allowed)                 | CFBD thresholds |
-| off_ypp      | team-season | float  | Offensive yards per play                           | plays.parquet                            | sum(yards_gained)/n_plays                  | split below |
-| def_ypp      | team-season | float  | Defensive yards per play allowed                   | plays.parquet                            | sum(yards_allowed)/n_plays_defended        |             |
-| off_rush_ypp | team-season | float  | Offensive rush yards per play                      | plays.parquet (rush only)                | sum(yards_gained)/n_rush_plays             |             |
-| off_pass_ypp | team-season | float  | Offensive pass yards per play                      | plays.parquet (pass only)                | sum(yards_gained)/n_pass_plays             | sack-as-pass policy documented in code |
-| off_expl_rate_overall_10 | team-season | float | % plays gaining ≥10 yards (any type)     | plays.parquet                            | mean(yards_gained >= 10)                   | explosive bucket |
-| off_expl_rate_overall_20 | team-season | float | % plays gaining ≥20 yards (any type)     | plays.parquet                            | mean(yards_gained >= 20)                   | explosive bucket |
-| off_expl_rate_overall_30 | team-season | float | % plays gaining ≥30 yards (any type)     | plays.parquet                            | mean(yards_gained >= 30)                   | explosive bucket |
-| off_expl_rate_rush       | team-season | float | % rush plays gaining ≥15 yards           | plays.parquet (rush only)                | mean(yards_gained >= 15)                   |             |
-| off_expl_rate_pass       | team-season | float | % pass plays gaining ≥20 yards           | plays.parquet (pass only)                | mean(yards_gained >= 20)                   | split threshold |
-| off_eckel_rate | team-season | float | % of drives that either gain ≥2 first downs or reach opp 40 | drives.parquet | mean(is_eckel_drive) | possession metric |
-| off_finish_pts_per_opp | team-season | float | Points per scoring opportunity (first down at or inside opp 40) | drives.parquet, scoring | sum(points_on_opps)/n_opportunities | finishing drives |
-| def_eckel_rate_allowed | team-season | float | % of opponent drives meeting eckel definition   | drives.parquet | mean(is_eckel_drive_allowed) | possession metric |
-| def_finish_pts_per_opp_allowed | team-season | float | Points allowed per opponent scoring opportunity | drives.parquet, scoring | sum(points_allowed_on_opps)/n_opportunities | finishing drives |
-| off_third_down_conversion_rate | team-season | float | Offensive third down conversion rate | plays.parquet | mean(thirddown_conversion) | |
-| def_third_down_conversion_rate | team-season | float | Defensive third down conversion rate | plays.parquet | mean(thirddown_conversion_allowed) | |
+
+| feature_name                   | level       | dtype | definition                                                      | inputs                            | transform                                   | notes                                  |
+| ------------------------------ | ----------- | ----- | --------------------------------------------------------------- | --------------------------------- | ------------------------------------------- | -------------------------------------- |
+| off_epa_pp                     | team-season | float | Season-to-date offensive EPA per play                           | plays.parquet (offense team, EPA) | sum(EPA)/n_plays                            | pace-aware                             |
+| def_epa_pp                     | team-season | float | Season-to-date defensive EPA per play                           | plays.parquet (defense team, EPA) | sum(EPA_allowed)/n_plays_defended           | pace-aware                             |
+| off_sr                         | team-season | float | Offensive success rate                                          | plays.parquet                     | mean(success_bool)                          | CFBD thresholds                        |
+| def_sr                         | team-season | float | Defensive success rate allowed                                  | plays.parquet                     | mean(success_bool_allowed)                  | CFBD thresholds                        |
+| off_ypp                        | team-season | float | Offensive yards per play                                        | plays.parquet                     | sum(yards_gained)/n_plays                   | split below                            |
+| def_ypp                        | team-season | float | Defensive yards per play allowed                                | plays.parquet                     | sum(yards_allowed)/n_plays_defended         |                                        |
+| off_rush_ypp                   | team-season | float | Offensive rush yards per play                                   | plays.parquet (rush only)         | sum(yards_gained)/n_rush_plays              |                                        |
+| off_pass_ypp                   | team-season | float | Offensive pass yards per play                                   | plays.parquet (pass only)         | sum(yards_gained)/n_pass_plays              | sack-as-pass policy documented in code |
+| off_expl_rate_overall_10       | team-season | float | % plays gaining ≥10 yards (any type)                            | plays.parquet                     | mean(yards_gained >= 10)                    | explosive bucket                       |
+| off_expl_rate_overall_20       | team-season | float | % plays gaining ≥20 yards (any type)                            | plays.parquet                     | mean(yards_gained >= 20)                    | explosive bucket                       |
+| off_expl_rate_overall_30       | team-season | float | % plays gaining ≥30 yards (any type)                            | plays.parquet                     | mean(yards_gained >= 30)                    | explosive bucket                       |
+| off_expl_rate_rush             | team-season | float | % rush plays gaining ≥15 yards                                  | plays.parquet (rush only)         | mean(yards_gained >= 15)                    |                                        |
+| off_expl_rate_pass             | team-season | float | % pass plays gaining ≥20 yards                                  | plays.parquet (pass only)         | mean(yards_gained >= 20)                    | split threshold                        |
+| off_eckel_rate                 | team-season | float | % of drives that either gain ≥2 first downs or reach opp 40     | drives.parquet                    | mean(is_eckel_drive)                        | possession metric                      |
+| off_finish_pts_per_opp         | team-season | float | Points per scoring opportunity (first down at or inside opp 40) | drives.parquet, scoring           | sum(points_on_opps)/n_opportunities         | finishing drives                       |
+| def_eckel_rate_allowed         | team-season | float | % of opponent drives meeting eckel definition                   | drives.parquet                    | mean(is_eckel_drive_allowed)                | possession metric                      |
+| def_finish_pts_per_opp_allowed | team-season | float | Points allowed per opponent scoring opportunity                 | drives.parquet, scoring           | sum(points_allowed_on_opps)/n_opportunities | finishing drives                       |
+| off_third_down_conversion_rate | team-season | float | Offensive third down conversion rate                            | plays.parquet                     | mean(thirddown_conversion)                  |                                        |
+| def_third_down_conversion_rate | team-season | float | Defensive third down conversion rate                            | plays.parquet                     | mean(thirddown_conversion_allowed)          |                                        |
 
 Notes:
 
-- Drive-level features depend on raw `plays.parquet` → drive segmentation; see feature build helpers under `src/cfb_model/data/aggregations/`.
+- Drive-level features depend on raw `plays.parquet` → drive segmentation; see feature build helpers under `src/data/aggregations/`.
 
 ## 2) Opponent-adjusted features (iterative averaging)
 
@@ -135,66 +136,66 @@ Algorithm (per season s, team t, base metric x ∈ {epa_pp, sr, ypp, rush_ypp, p
 3. For k in 1..4 (iterations):
    - Compute league mean μ_x = mean_t adj_x^(k-1)(t).
    - For each team t with opponents Opp(t):
-     - Offense: adj_off_x^(k)(t) = off_x_base(t) − mean_{o ∈ Opp(t)} (adj_def_x^(k-1)(o) − μ_x)
-     - Defense: adj_def_x^(k)(t) = def_x_base(t) − mean_{o ∈ Opp(t)} (adj_off_x^(k-1)(o) − μ_x)
+     - Offense: adj*off_x^(k)(t) = off_x_base(t) − mean*{o ∈ Opp(t)} (adj_def_x^(k-1)(o) − μ_x)
+     - Defense: adj*def_x^(k)(t) = def_x_base(t) − mean*{o ∈ Opp(t)} (adj_off_x^(k-1)(o) − μ_x)
    - Means over opponents are weighted by the game-level recency weights.
 4. Output adj_off_x = adj_off_x^(4), adj_def_x = adj_def_x^(4).
 
-| feature_name                  | base_feature                     | level       | dtype | definition                                        | notes |
-|-------------------------------|----------------------------------|-------------|------|---------------------------------------------------|-------|
-| adj_off_epa_pp               | off_epa_pp                        | team-season | float| Opponent-adjusted offensive EPA/play              | 4 iters, recency weights |
-| adj_def_epa_pp               | def_epa_pp                        | team-season | float| Opponent-adjusted defensive EPA/play              | 4 iters, recency weights |
-| adj_off_sr                   | off_sr                            | team-season | float| Opponent-adjusted offensive success rate          | centered by league mean |
-| adj_def_sr                   | def_sr                            | team-season | float| Opponent-adjusted defensive success rate allowed  | centered by league mean |
-| adj_off_ypp                  | off_ypp                           | team-season | float| Opponent-adjusted offensive yards per play        | |
-| adj_def_ypp                  | def_ypp                           | team-season | float| Opponent-adjusted defensive yards per play        | |
-| adj_off_rush_ypp             | off_rush_ypp                      | team-season | float| Opponent-adjusted offensive rush ypp              | |
-| adj_off_pass_ypp             | off_pass_ypp                      | team-season | float| Opponent-adjusted offensive pass ypp              | |
-| adj_off_expl_overall_10      | off_expl_rate_overall_10          | team-season | float| Opponent-adjusted overall 10+ explosive rate      | bucketed |
-| adj_off_expl_overall_20      | off_expl_rate_overall_20          | team-season | float| Opponent-adjusted overall 20+ explosive rate      | bucketed |
-| adj_off_expl_overall_30      | off_expl_rate_overall_30          | team-season | float| Opponent-adjusted overall 30+ explosive rate      | bucketed |
-| adj_off_expl_rush            | off_expl_rate_rush                | team-season | float| Opponent-adjusted rush explosive rate             | rush ≥15 |
-| adj_off_expl_pass            | off_expl_rate_pass                | team-season | float| Opponent-adjusted pass explosive rate             | pass ≥20 |
-| adj_off_eckel_rate           | off_eckel_rate                    | team-season | float| Opponent-adjusted Eckel rate                      | possession |
-| adj_off_finish_pts_per_opp   | off_finish_pts_per_opp            | team-season | float| Opponent-adjusted finishing points per opportunity| possession |
-| adj_off_third_down_conversion_rate | off_third_down_conversion_rate | team-season | float | Opponent-adjusted offensive third down conversion rate | | 
-| adj_def_third_down_conversion_rate | def_third_down_conversion_rate | team-season | float | Opponent-adjusted defensive third down conversion rate | |
+| feature_name                       | base_feature                   | level       | dtype | definition                                             | notes                    |
+| ---------------------------------- | ------------------------------ | ----------- | ----- | ------------------------------------------------------ | ------------------------ |
+| adj_off_epa_pp                     | off_epa_pp                     | team-season | float | Opponent-adjusted offensive EPA/play                   | 4 iters, recency weights |
+| adj_def_epa_pp                     | def_epa_pp                     | team-season | float | Opponent-adjusted defensive EPA/play                   | 4 iters, recency weights |
+| adj_off_sr                         | off_sr                         | team-season | float | Opponent-adjusted offensive success rate               | centered by league mean  |
+| adj_def_sr                         | def_sr                         | team-season | float | Opponent-adjusted defensive success rate allowed       | centered by league mean  |
+| adj_off_ypp                        | off_ypp                        | team-season | float | Opponent-adjusted offensive yards per play             |                          |
+| adj_def_ypp                        | def_ypp                        | team-season | float | Opponent-adjusted defensive yards per play             |                          |
+| adj_off_rush_ypp                   | off_rush_ypp                   | team-season | float | Opponent-adjusted offensive rush ypp                   |                          |
+| adj_off_pass_ypp                   | off_pass_ypp                   | team-season | float | Opponent-adjusted offensive pass ypp                   |                          |
+| adj_off_expl_overall_10            | off_expl_rate_overall_10       | team-season | float | Opponent-adjusted overall 10+ explosive rate           | bucketed                 |
+| adj_off_expl_overall_20            | off_expl_rate_overall_20       | team-season | float | Opponent-adjusted overall 20+ explosive rate           | bucketed                 |
+| adj_off_expl_overall_30            | off_expl_rate_overall_30       | team-season | float | Opponent-adjusted overall 30+ explosive rate           | bucketed                 |
+| adj_off_expl_rush                  | off_expl_rate_rush             | team-season | float | Opponent-adjusted rush explosive rate                  | rush ≥15                 |
+| adj_off_expl_pass                  | off_expl_rate_pass             | team-season | float | Opponent-adjusted pass explosive rate                  | pass ≥20                 |
+| adj_off_eckel_rate                 | off_eckel_rate                 | team-season | float | Opponent-adjusted Eckel rate                           | possession               |
+| adj_off_finish_pts_per_opp         | off_finish_pts_per_opp         | team-season | float | Opponent-adjusted finishing points per opportunity     | possession               |
+| adj_off_third_down_conversion_rate | off_third_down_conversion_rate | team-season | float | Opponent-adjusted offensive third down conversion rate |                          |
+| adj_def_third_down_conversion_rate | def_third_down_conversion_rate | team-season | float | Opponent-adjusted defensive third down conversion rate |                          |
 
 ## 3) Pace and possession-aware features
 
-| feature_name              | level       | dtype | definition                                           | inputs                  | transform |
-|---------------------------|-------------|------|------------------------------------------------------|-------------------------|-----------|
-| plays_per_game            | team-season | float | Avg offensive plays per game                         | plays.parquet, games    | n_off_plays / n_games |
-| sec_per_play              | team-season | float | Avg seconds per play (offense)                       | plays.parquet, game clocks | total_off_seconds / n_off_plays |
-| drives_per_game           | team-season | float | Avg offensive drives per game                        | drives.parquet, games   | n_off_drives / n_games |
-| possessions_per_game      | team-season | float | Proxy via offensive drives per game                  | drives.parquet, games   | = drives_per_game |
-| avg_start_field_pos_ydln  | team-season | float | Avg starting field position (own-yardline scale)     | drives.parquet          | mean(start_ydln_own_side) |
-| avg_scoring_opps_per_game | team-season | float | Avg scoring opportunities per game (opp 40+ first down) | drives.parquet       | n_opportunities / n_games |
+| feature_name              | level       | dtype | definition                                              | inputs                     | transform                       |
+| ------------------------- | ----------- | ----- | ------------------------------------------------------- | -------------------------- | ------------------------------- |
+| plays_per_game            | team-season | float | Avg offensive plays per game                            | plays.parquet, games       | n_off_plays / n_games           |
+| sec_per_play              | team-season | float | Avg seconds per play (offense)                          | plays.parquet, game clocks | total_off_seconds / n_off_plays |
+| drives_per_game           | team-season | float | Avg offensive drives per game                           | drives.parquet, games      | n_off_drives / n_games          |
+| possessions_per_game      | team-season | float | Proxy via offensive drives per game                     | drives.parquet, games      | = drives_per_game               |
+| avg_start_field_pos_ydln  | team-season | float | Avg starting field position (own-yardline scale)        | drives.parquet             | mean(start_ydln_own_side)       |
+| avg_scoring_opps_per_game | team-season | float | Avg scoring opportunities per game (opp 40+ first down) | drives.parquet             | n_opportunities / n_games       |
 
 <!-- markdownlint-enable MD013 -->
 
 ## 4) Luck and Variance Features
 
-| feature_name | level | dtype | definition | inputs | transform | notes |
-|---|---|---|---|---|---|---|
-| luck_factor | team-game | float | Actual score margin minus PPA-based expected score margin | byplay.ppa, games.points | `(actual_margin - ppa_margin)` | Identifies teams outperforming/underperforming their play-by-play stats |
-| avg_luck_factor | team-season | float | Season-to-date average luck factor per game | team_game.luck_factor | recency-weighted mean | Signals potential for regression to the mean |
+| feature_name    | level       | dtype | definition                                                | inputs                   | transform                      | notes                                                                   |
+| --------------- | ----------- | ----- | --------------------------------------------------------- | ------------------------ | ------------------------------ | ----------------------------------------------------------------------- |
+| luck_factor     | team-game   | float | Actual score margin minus PPA-based expected score margin | byplay.ppa, games.points | `(actual_margin - ppa_margin)` | Identifies teams outperforming/underperforming their play-by-play stats |
+| avg_luck_factor | team-season | float | Season-to-date average luck factor per game               | team_game.luck_factor    | recency-weighted mean          | Signals potential for regression to the mean                            |
 
 ## 5) Rushing Analytics Features
 
-| feature_name | level | dtype | definition | inputs | transform | notes |
-|---|---|---|---|---|---|---|
-| line_yards | by-play | float | Yards gained on a rush play credited to the offensive line | byplay.yards_gained | Weighted formula | Isolates OL performance |
-| power_success_rate | team-game | float | Conversion rate on 3rd/4th and short | byplay.is_power_situation, byplay.power_success_converted | `sum(converted) / sum(situations)` | Measures short-yardage offense |
-| second_level_yards | by-play | float | Yards gained 5-10 yards past the line of scrimmage | byplay.yards_gained | `clip(5, 10)` | Isolates RB elusiveness |
-| open_field_yards | by-play | float | Yards gained 10+ yards past the line of scrimmage | byplay.yards_gained | `clip(10)` | Isolates RB breakaway speed |
+| feature_name       | level     | dtype | definition                                                 | inputs                                                    | transform                          | notes                          |
+| ------------------ | --------- | ----- | ---------------------------------------------------------- | --------------------------------------------------------- | ---------------------------------- | ------------------------------ |
+| line_yards         | by-play   | float | Yards gained on a rush play credited to the offensive line | byplay.yards_gained                                       | Weighted formula                   | Isolates OL performance        |
+| power_success_rate | team-game | float | Conversion rate on 3rd/4th and short                       | byplay.is_power_situation, byplay.power_success_converted | `sum(converted) / sum(situations)` | Measures short-yardage offense |
+| second_level_yards | by-play   | float | Yards gained 5-10 yards past the line of scrimmage         | byplay.yards_gained                                       | `clip(5, 10)`                      | Isolates RB elusiveness        |
+| open_field_yards   | by-play   | float | Yards gained 10+ yards past the line of scrimmage          | byplay.yards_gained                                       | `clip(10)`                         | Isolates RB breakaway speed    |
 
 ## 6) Special Teams Features
 
-| feature_name | level | dtype | definition | inputs | transform | notes |
-|---|---|---|---|---|---|---|
-| net_punt_yards | by-play | float | Net change in field position on a punt | punt play `yards_to_goal`, next drive `start_yards_to_goal` | `punt_ytg - (100 - next_drive_start_ytg)` | Captures punt and return |
-| fg_rate_by_dist | team-game | float | Field goal success rate, bucketed by distance | byplay.kick_distance, byplay.is_fg_made | `sum(made) / sum(attempts)` | More granular than overall FG% |
+| feature_name    | level     | dtype | definition                                    | inputs                                                      | transform                                 | notes                          |
+| --------------- | --------- | ----- | --------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------- | ------------------------------ |
+| net_punt_yards  | by-play   | float | Net change in field position on a punt        | punt play `yards_to_goal`, next drive `start_yards_to_goal` | `punt_ytg - (100 - next_drive_start_ytg)` | Captures punt and return       |
+| fg_rate_by_dist | team-game | float | Field goal success rate, bucketed by distance | byplay.kick_distance, byplay.is_fg_made                     | `sum(made) / sum(attempts)`               | More granular than overall FG% |
 
 Definitions:
 
@@ -219,10 +220,10 @@ Definitions:
 
 ## 7) Momentum and Trending Features
 
-| feature_name | level | dtype | definition | inputs | transform | notes |
-|---|---|---|---|---|---|---|
-| metric_last_3 | team-season | float | Average of the metric over the last 3 games | team_game | `mean(last(3))` | Captures recent form |
-| metric_last_1 | team-season | float | The metric's value from the most recent game | team_game | `last(1)` | Captures most recent performance |
+| feature_name  | level       | dtype | definition                                   | inputs    | transform       | notes                            |
+| ------------- | ----------- | ----- | -------------------------------------------- | --------- | --------------- | -------------------------------- |
+| metric_last_3 | team-season | float | Average of the metric over the last 3 games  | team_game | `mean(last(3))` | Captures recent form             |
+| metric_last_1 | team-season | float | The metric's value from the most recent game | team_game | `last(1)`       | Captures most recent performance |
 
 ## 8) Validation checks
 
@@ -240,4 +241,4 @@ Definitions:
 
 - Any material change to feature definitions must be recorded in
   `docs/decisions/decision_log.md` with rationale and effective date.
-- Keep this catalog up to date alongside code changes in `src/cfb_model/data/aggregations/`.
+- Keep this catalog up to date alongside code changes in `src/data/aggregations/`.

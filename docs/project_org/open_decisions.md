@@ -9,6 +9,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 ## High Priority Decisions (Target: Sprint 2)
 
 ### OPEN-001: Production Deployment Strategy
+
 - **Category**: Infrastructure
 - **Owner**: @dev
 - **Target Date**: Before Week 4 of CFB season
@@ -22,6 +23,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Impact**: Critical for operational reliability during betting season
 
 ### OPEN-002: Model Selection Post-MVP
+
 - **Category**: Modeling
 - **Owner**: @dev
 - **Target Date**: After 4 weeks of Ridge baseline results
@@ -34,7 +36,8 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Impact**: Affects model complexity, interpretability, and maintenance overhead
 
 ### OPEN-003: Authentication & Access Control
-- **Category**: Security/UX  
+
+- **Category**: Security/UX
 - **Owner**: @dev
 - **Target Date**: Before live deployment
 - **Context**: MVP uses single shared password. Need to decide on user management strategy.
@@ -51,6 +54,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 ## Medium Priority Decisions (Target: Sprint 3-4)
 
 ### OPEN-004: Data Storage Scaling Strategy
+
 - **Category**: Infrastructure
 - **Owner**: @dev
 - **Target Date**: When dataset exceeds 10GB or performance degrades
@@ -62,7 +66,8 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Dependencies**: Related to production deployment decision
 - **Impact**: Query performance, development complexity, hosting costs
 
-### OPEN-005: Betting Unit Sizing Methodology  
+### OPEN-005: Betting Unit Sizing Methodology
+
 - **Category**: Business Logic
 - **Owner**: @dev
 - **Target Date**: After initial ROI data available
@@ -76,8 +81,9 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Impact**: Risk management and long-term profitability
 
 ### OPEN-006: Feature Engineering Expansion Priority
+
 - **Category**: Modeling
-- **Owner**: @dev  
+- **Owner**: @dev
 - **Target Date**: After MVP feature evaluation
 - **Context**: Current feature set is comprehensive but many advanced features are planned.
 - **Options**:
@@ -94,6 +100,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 ## Low Priority Decisions (Target: Post-MVP)
 
 ### OPEN-007: Performance Monitoring & Alerting
+
 - **Category**: Operations
 - **Owner**: @dev
 - **Target Date**: After 1 month of live operation
@@ -106,6 +113,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Impact**: Operational reliability and incident response time
 
 ### OPEN-008: Data Source Diversification
+
 - **Category**: Data Strategy
 - **Owner**: @dev
 - **Target Date**: If CFBD becomes unreliable or insufficient
@@ -119,6 +127,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Impact**: Data reliability and feature richness
 
 ### OPEN-009: Model Interpretability & Explainability
+
 - **Category**: UX/Trust
 - **Owner**: @dev
 - **Target Date**: When model complexity increases beyond Ridge
@@ -136,6 +145,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 ## Decision Process
 
 ### Making a Decision
+
 1. **Research**: Gather data, pros/cons, expert opinions
 2. **Stakeholder Input**: Collect input from relevant parties
 3. **Document Options**: Update this document with findings
@@ -143,6 +153,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 5. **Decide & Record**: Move to decision_log.md with rationale
 
 ### Decision Criteria Framework
+
 - **MVP Alignment**: Does it support core MVP objectives?
 - **Risk vs. Reward**: What's the upside potential vs. downside risk?
 - **Complexity Cost**: Implementation and maintenance overhead
@@ -150,6 +161,7 @@ This document tracks all **pending decisions** that need to be made for the cfb_
 - **Data Availability**: Do we have the data/resources needed?
 
 ### Escalation Process
+
 - **Blocked Decision**: If decision is blocking other work, escalate to daily review
 - **High Impact**: Major architectural or business decisions require extra validation
 - **Resource Constraints**: If decision requires significant time/money, document trade-offs
@@ -174,10 +186,10 @@ graph TD
 ## Decision Review Schedule
 
 - **Weekly Review**: Every Wednesday during sprint planning
-- **Sprint Planning**: Review all decisions during roadmap updates  
+- **Sprint Planning**: Review all decisions during roadmap updates
 - **Emergency Review**: When decisions are blocking critical work
 
 ---
 
-*Last Updated: 2025-01-03*  
-*Next Review: Weekly Wednesday sprint planning*
+_Last Updated: 2025-01-03_  
+_Next Review: Weekly Wednesday sprint planning_

@@ -19,6 +19,7 @@ import joblib
 import mlflow
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import ElasticNet, HuberRegressor, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -72,7 +73,9 @@ def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
 def _build_feature_list(
     df: pd.DataFrame, exclude_rushing_analytics: bool = False
 ) -> list[str]:
-    return build_feature_list(df, exclude_rushing_analytics=exclude_rushing_analytics)
+    # build_feature_list currently ignores rushing analytics filtering;
+    # keep the argument for compatibility in case future callers need it.
+    return build_feature_list(df)
 
 
 @dataclass
@@ -156,6 +159,7 @@ points_for_models = {
         subsample=0.8,
         random_state=42,
     ),
+    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
 }
 
 

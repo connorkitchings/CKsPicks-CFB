@@ -9,11 +9,13 @@ This guide provides a comprehensive framework for advanced feature engineering a
 Your existing model using opponent-adjusted statistics is a solid foundation, but there are several areas for improvement:
 
 **Current Strengths:**
+
 - Uses opponent-adjusted metrics (good baseline approach)
 - Compares team statistics directly
 - Presumably uses College Football Data API
 
 **Areas for Enhancement:**
+
 - Limited feature diversity and depth
 - High computational complexity
 - Lack of systematic feature selection
@@ -25,6 +27,7 @@ Your existing model using opponent-adjusted statistics is a solid foundation, bu
 ### 1.1 Core Feature Categories
 
 #### **Basic Statistical Features (Enhanced)**
+
 Beyond simple opponent-adjusted stats, create these enhanced metrics:
 
 ```python
@@ -40,6 +43,7 @@ Beyond simple opponent-adjusted stats, create these enhanced metrics:
 ```
 
 #### **Situational Features**
+
 These capture context-dependent performance:
 
 ```python
@@ -55,6 +59,7 @@ These capture context-dependent performance:
 ```
 
 #### **Advanced Efficiency Metrics**
+
 Based on modern college football analytics:
 
 ```python
@@ -72,12 +77,13 @@ Based on modern college football analytics:
 ```
 
 #### **Strength of Schedule Features**
+
 Move beyond simple opponent win percentage:
 
 ```python
 # Multi-layered SOS
 - Opponent win percentage
-- Opponent's opponent win percentage  
+- Opponent's opponent win percentage
 - Average opponent FPI/rating
 - Strength of victories (quality of teams beaten)
 - Strength of losses (quality of teams lost to)
@@ -85,6 +91,7 @@ Move beyond simple opponent win percentage:
 ```
 
 #### **Momentum and Trend Features**
+
 Capture recent performance patterns:
 
 ```python
@@ -98,6 +105,7 @@ Capture recent performance patterns:
 ```
 
 #### **Team Composition Features**
+
 Personnel and recruitment quality:
 
 ```python
@@ -107,13 +115,14 @@ Personnel and recruitment quality:
 - Experience metrics (returning starters)
 - Transfer portal additions/losses impact
 
-# Coaching Features  
+# Coaching Features
 - Head coach tenure
 - Coordinator changes (new offensive/defensive coordinators)
 - Historical performance in similar situations
 ```
 
 #### **External Factors**
+
 Environmental and contextual elements:
 
 ```python
@@ -130,6 +139,7 @@ Environmental and contextual elements:
 ### 1.2 Advanced Feature Engineering Techniques
 
 #### **Interaction Features**
+
 Create features that capture relationships between variables:
 
 ```python
@@ -146,6 +156,7 @@ Create features that capture relationships between variables:
 ```
 
 #### **Rolling Windows and Weighted Averages**
+
 Instead of season-long averages, use time-weighted metrics:
 
 ```python
@@ -157,6 +168,7 @@ Instead of season-long averages, use time-weighted metrics:
 ```
 
 #### **Opponent-Adjusted Advanced Statistics**
+
 Build on your existing approach with these enhanced methods:
 
 ```python
@@ -165,7 +177,7 @@ Build on your existing approach with these enhanced methods:
 def opponent_adjust_ridge(team_stats, opponent_ratings):
     # Fit ridge regression: team_performance ~ opponent_strength
     # Residuals represent opponent-adjusted performance
-    
+
 # Margin-Based Adjustments
 - Points scored above/below expectation vs opponent
 - Yards gained/allowed relative to opponent averages
@@ -175,11 +187,12 @@ def opponent_adjust_ridge(team_stats, opponent_ratings):
 ### 1.3 Feature Scaling and Normalization
 
 #### **Standardization Methods**
+
 ```python
 # Z-Score Normalization
 feature_standardized = (feature - feature_mean) / feature_std
 
-# Min-Max Scaling (0-1 range)  
+# Min-Max Scaling (0-1 range)
 feature_scaled = (feature - feature_min) / (feature_max - feature_min)
 
 # Robust Scaling (less sensitive to outliers)
@@ -187,6 +200,7 @@ feature_robust = (feature - feature_median) / feature_IQR
 ```
 
 #### **Distribution Handling**
+
 ```python
 # Log Transformation for skewed distributions
 feature_log = log(feature + 1)  # +1 to handle zeros
@@ -203,6 +217,7 @@ feature_rank = feature.rank(pct=True)  # Convert to percentile ranks
 ### 2.1 Filter Methods (Fast, Model-Independent)
 
 #### **Correlation Analysis**
+
 ```python
 # Remove highly correlated features (>0.7 correlation)
 correlation_matrix = features.corr()
@@ -214,6 +229,7 @@ for pair in high_corr_pairs:
 ```
 
 #### **Statistical Tests**
+
 ```python
 # Chi-Square Test for categorical features
 from sklearn.feature_selection import chi2, SelectKBest
@@ -231,6 +247,7 @@ selector = VarianceThreshold(threshold=0.01)
 ### 2.2 Wrapper Methods (Model-Dependent)
 
 #### **Recursive Feature Elimination (RFE)**
+
 Best practice for tree-based models like Random Forest:
 
 ```python
@@ -239,8 +256,8 @@ from sklearn.ensemble import RandomForestRegressor
 
 # Use cross-validated RFE
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
-rfecv = RFECV(estimator=rf, 
-              step=1, 
+rfecv = RFECV(estimator=rf,
+              step=1,
               cv=5,
               scoring='neg_mean_squared_error',
               min_features_to_select=10)
@@ -251,18 +268,19 @@ selected_features = X.columns[rfecv.support_]
 ```
 
 #### **Sequential Feature Selection**
+
 ```python
 from sklearn.feature_selection import SequentialFeatureSelector
 
 # Forward selection
-sfs_forward = SequentialFeatureSelector(rf, 
+sfs_forward = SequentialFeatureSelector(rf,
                                        n_features_to_select=25,
                                        direction='forward',
                                        cv=5)
 
-# Backward elimination  
+# Backward elimination
 sfs_backward = SequentialFeatureSelector(rf,
-                                        n_features_to_select=25, 
+                                        n_features_to_select=25,
                                         direction='backward',
                                         cv=5)
 ```
@@ -270,6 +288,7 @@ sfs_backward = SequentialFeatureSelector(rf,
 ### 2.3 Embedded Methods (Built into Model Training)
 
 #### **Lasso Regularization (L1)**
+
 ```python
 from sklearn.linear_model import LassoCV
 
@@ -282,6 +301,7 @@ selected_features = X.columns[lasso.coef_ != 0]
 ```
 
 #### **Tree-Based Feature Importance**
+
 ```python
 # Random Forest Feature Importance
 rf = RandomForestRegressor(n_estimators=200, random_state=42)
@@ -312,33 +332,33 @@ def hybrid_feature_selection(X, y, target_features=30):
     """
     Multi-stage feature selection combining filter, wrapper, and embedded methods
     """
-    
+
     # Stage 1: Filter Method - Remove low variance and highly correlated features
     # Remove features with variance < 0.01
     variance_selector = VarianceThreshold(threshold=0.01)
     X_var = variance_selector.fit_transform(X)
-    
+
     # Remove highly correlated features
     corr_matrix = pd.DataFrame(X_var).corr().abs()
     high_corr_pairs = find_high_correlation_pairs(corr_matrix, threshold=0.85)
     features_to_remove = remove_correlated_features(high_corr_pairs, X, y)
     X_filtered = X.drop(columns=features_to_remove)
-    
+
     # Stage 2: Embedded Method - Use tree-based importance
     rf = RandomForestRegressor(n_estimators=100, random_state=42)
     rf.fit(X_filtered, y)
-    
+
     # Select top 50 features by importance
     importance_scores = rf.feature_importances_
     top_features_idx = np.argsort(importance_scores)[-50:]
     X_embedded = X_filtered.iloc[:, top_features_idx]
-    
+
     # Stage 3: Wrapper Method - RFE for final selection
     rfecv = RFECV(estimator=rf, step=1, cv=5, min_features_to_select=target_features)
     rfecv.fit(X_embedded, y)
-    
+
     final_features = X_embedded.columns[rfecv.support_]
-    
+
     return final_features, rfecv
 ```
 
@@ -347,6 +367,7 @@ def hybrid_feature_selection(X, y, target_features=30):
 ### 3.1 Data Leakage Prevention
 
 **Critical Rules:**
+
 - Never use future information in features
 - Be careful with season-long averages early in season
 - Account for when information becomes available
@@ -360,17 +381,18 @@ def time_series_split(data, test_weeks=4):
     """
     # Sort by date
     data = data.sort_values(['season', 'week'])
-    
+
     # Use first N-4 weeks for training, last 4 weeks for testing
     train_data = data[data['week'] <= data['week'].max() - test_weeks]
     test_data = data[data['week'] > data['week'].max() - test_weeks]
-    
+
     return train_data, test_data
 ```
 
 ### 3.2 Handling College Football Specifics
 
 #### **Early Season Challenges**
+
 ```python
 # Weight features based on sample size
 def early_season_weighting(current_week, feature_value, season_avg):
@@ -385,6 +407,7 @@ def early_season_weighting(current_week, feature_value, season_avg):
 ```
 
 #### **Conference Effects**
+
 ```python
 # Account for conference strength and play style differences
 conference_adjustments = {
@@ -415,17 +438,17 @@ def calibration_score(y_true, y_prob, n_bins=10):
     bin_boundaries = np.linspace(0, 1, n_bins + 1)
     bin_lowers = bin_boundaries[:-1]
     bin_uppers = bin_boundaries[1:]
-    
+
     ece = 0
     for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
         in_bin = (y_prob > bin_lower) & (y_prob <= bin_upper)
         prop_in_bin = in_bin.mean()
-        
+
         if prop_in_bin > 0:
             accuracy_in_bin = y_true[in_bin].mean()
             avg_confidence_in_bin = y_prob[in_bin].mean()
             ece += np.abs(avg_confidence_in_bin - accuracy_in_bin) * prop_in_bin
-    
+
     return ece
 ```
 
@@ -460,41 +483,41 @@ class CollegeFootballFeatureEngine:
     def __init__(self):
         self.feature_selectors = {}
         self.scalers = {}
-        
+
     def create_base_features(self, games_df, stats_df):
         """Create basic statistical features"""
         # Implement basic stats, opponent adjustments
         pass
-        
+
     def create_situational_features(self, games_df):
         """Create situational and contextual features"""
         # Implement home/away, conference, rivalry features
         pass
-        
+
     def create_advanced_features(self, base_features):
         """Create interaction and derived features"""
         # Implement interaction terms, rolling averages
         pass
-        
+
     def select_features(self, X, y, method='hybrid'):
         """Apply feature selection pipeline"""
         if method == 'hybrid':
             return self.hybrid_feature_selection(X, y)
         # Other selection methods
-        
+
     def fit_transform(self, X, y):
         """Complete feature engineering pipeline"""
         # Create features
         features = self.create_base_features(X)
         features = self.create_situational_features(features)
         features = self.create_advanced_features(features)
-        
+
         # Select features
         selected_features = self.select_features(features, y)
-        
+
         # Scale features
         scaled_features = self.scale_features(selected_features)
-        
+
         return scaled_features
 ```
 
@@ -507,15 +530,15 @@ def monitor_feature_drift(model, X_train, X_current):
     Monitor if feature importance is changing over time
     """
     train_importance = model.feature_importances_
-    
+
     # Retrain on recent data
     recent_model = clone(model)
     recent_model.fit(X_current[-1000:], y_current[-1000:])
     recent_importance = recent_model.feature_importances_
-    
+
     # Calculate importance drift
     importance_correlation = np.corrcoef(train_importance, recent_importance)[0, 1]
-    
+
     return importance_correlation
 ```
 
@@ -533,20 +556,20 @@ class EfficientCFBModel:
     def __init__(self):
         self.feature_cache = {}
         self.model_cache = {}
-        
+
     def cache_opponent_adjustments(self, season_data):
         """Pre-compute and cache expensive opponent adjustments"""
         for team in season_data['team'].unique():
             self.feature_cache[team] = self.compute_opponent_adj_stats(team, season_data)
-    
+
     def predict_game(self, team_a, team_b):
         """Fast prediction using cached features"""
         features_a = self.feature_cache.get(team_a)
         features_b = self.feature_cache.get(team_b)
-        
+
         if features_a is None or features_b is None:
             return self.compute_on_demand(team_a, team_b)
-        
+
         # Fast prediction using pre-computed features
         return self.model.predict([features_a - features_b])[0]
 ```
@@ -576,14 +599,14 @@ def college_football_cv_split(data, n_splits=5):
     """
     # Split by seasons, not random sampling
     seasons = sorted(data['season'].unique())
-    
+
     for i in range(len(seasons) - n_splits + 1):
         train_seasons = seasons[i:i+3]  # 3 seasons for training
         val_season = seasons[i+3:i+4]   # 1 season for validation
-        
+
         train_idx = data[data['season'].isin(train_seasons)].index
         val_idx = data[data['season'].isin(val_season)].index
-        
+
         yield train_idx, val_idx
 ```
 
@@ -596,14 +619,14 @@ def evaluate_betting_model(predictions, actual_results, betting_lines):
     """
     # ROI calculation
     roi = calculate_roi(predictions, betting_lines, actual_results)
-    
+
     # Hit rate by confidence level
     confidence_bins = pd.cut(predictions['confidence'], bins=5)
     hit_rates = actual_results.groupby(confidence_bins).mean()
-    
+
     # Calibration error
     calibration_error = calculate_calibration_error(predictions['probability'], actual_results)
-    
+
     return {
         'roi': roi,
         'hit_rates': hit_rates,

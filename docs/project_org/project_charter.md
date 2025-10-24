@@ -5,7 +5,7 @@ It is derived from the [Initial Project Prompt](../planning/initial_prompt.md) a
 as the project evolves.
 
 > 📚 For a high-level entry point and links to all documentation, see the project README on GitHub
-or the docs home page.
+> or the docs home page.
 
 ## Project Overview
 
@@ -29,7 +29,7 @@ quantitative analysis to find an edge against sportsbook lines.
 
 - **Role:** Analytical Sports Bettor
 - **Pain Points:** Manual data collection is time-consuming; it's difficult to systematically
-identify value across dozens of games; most public analysis lacks statistical rigor.
+  identify value across dozens of games; most public analysis lacks statistical rigor.
 - **Goals:** Access automated, data-driven betting recommendations; understand the key factors
   driving each prediction; save time and improve betting ROI.
 
@@ -110,22 +110,22 @@ graph TD
 - `/docs`: Contains all project documentation, including planning, guides, and logs
 - `/notebooks`: Contains Jupyter notebooks for experimentation and analysis
 - `/artifacts`
-    - `/artifacts/mlruns`: Contains MLflow experiment tracking data
+  - `/artifacts/mlruns`: Contains MLflow experiment tracking data
 - `/data`: Contains raw, interim, and processed data (not versioned by Git)
 - `/tests`: Contains all unit, integration, and functional tests
 
 ## Technology Stack
 
-| Category | Technology | Version | Notes |
-|----------|------------|---------|-------|
-| Package Management | uv | latest | High-performance Python package manager and resolver |
-| Core Language | Python | 3.12+ | Primary programming language |
-| Linting & Formatting | Ruff | latest | Combines linting, formatting, and import sorting |
-| Web Interface | Streamlit | latest | For building and deploying the user-facing application |
-| Storage | Local CSV (raw and processed) | latest | Partitioned dataset with per-partition manifests |
-| Testing | Pytest | latest | Framework for writing and running tests |
-| Documentation | MkDocs | latest | Static site generator for project documentation |
-| Orchestration | Prefect | latest | Workflow orchestration and scheduling |
+| Category             | Technology                    | Version | Notes                                                  |
+| -------------------- | ----------------------------- | ------- | ------------------------------------------------------ |
+| Package Management   | uv                            | latest  | High-performance Python package manager and resolver   |
+| Core Language        | Python                        | 3.12+   | Primary programming language                           |
+| Linting & Formatting | Ruff                          | latest  | Combines linting, formatting, and import sorting       |
+| Web Interface        | Streamlit                     | latest  | For building and deploying the user-facing application |
+| Storage              | Local CSV (raw and processed) | latest  | Partitioned dataset with per-partition manifests       |
+| Testing              | Pytest                        | latest  | Framework for writing and running tests                |
+| Documentation        | MkDocs                        | latest  | Static site generator for project documentation        |
+| Orchestration        | Prefect                       | latest  | Workflow orchestration and scheduling                  |
 
 ## Risks & Assumptions
 
@@ -140,15 +140,17 @@ contain enough signal to build a predictive model with a win rate >52.4%.
 ### Technical Risks
 
 | Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
+| ---- | ----------- | ------ | ---------- |
+
 <!-- markdownlint-disable-next-line MD013 -->
+
 | CFB Data API Failure | Low | High | Implement robust error handling, data validation, and logging. If the API is down, the pipeline should fail gracefully and notify administrators. |
 
 ## Decision Log
 
-*Key architectural and product decisions will be recorded here as the project evolves.*
+_Key architectural and product decisions will be recorded here as the project evolves._
 
 ---
 
-*This document consolidates the project definition, technical context, and scope appendix into a
-single source of truth.*
+_This document consolidates the project definition, technical context, and scope appendix into a
+single source of truth._

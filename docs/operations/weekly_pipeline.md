@@ -30,7 +30,7 @@ If you have not already generated the weekly stats caches for the season, run th
 
 **Stage 1: Non-Adjusted Weekly Aggregates**
 
-This creates a weekly season-to-date aggregation of team stats *before* opponent adjustment.
+This creates a weekly season-to-date aggregation of team stats _before_ opponent adjustment.
 
 ```bash
 uv run python scripts/cache_weekly_stats.py \
@@ -124,6 +124,12 @@ uv run python scripts/analysis_cli.py confidence reports/2024/CFB_season_2024_al
 
 ---
 
+## Known Data Caveats
+
+- The CollegeFootballData feed occasionally lists FCS opponents (for example, Portland State) with the same metadata shape as FBS programs. Downstream summaries such as the `analysis` CLI leaderboards or scatter plots can therefore still show 12 games for teams that played an FCS opponent unless the raw classifications are corrected manually. Double-check opponent classification when auditing regular-season aggregates and adjust findings accordingly.
+
+---
+
 ## Prediction & Scoring (MVP commands)
 
 ### Current Season (2025) — Prediction Only with Prior-Year Models
@@ -158,6 +164,7 @@ uv run python scripts/score_weekly_picks.py \
 ```
 
 Notes:
+
 - Do not train on 2025 data.
 - If SHAP explanations error due to model wrapper incompatibility, the generator will continue without explanations (columns left blank).
 
@@ -170,6 +177,7 @@ uv run python scripts/preaggregations_cli.py --year 2024 --data-root "/Volumes/C
 ```
 
 Prereqs:
+
 - Trained models at `artifacts/models/ridge_baseline/<year>/ridge_*.joblib`
 - **Cached weekly adjusted stats** present at `processed/team_week_adj/iteration=4/` (or the desired iteration depth).
 - Raw games and betting_lines present for the target year.
@@ -208,6 +216,7 @@ uv run python score_fresh.py
 ```
 
 Important:
+
 - When reading game results, ensure the storage root points to the project root (e.g., `/Volumes/CK SSD/Coding Projects/cfb_model`) with `data_type=raw`. Weekly game results are written under `raw/games/year=<YYYY>/week=<WW>/data.csv`.
 - If you accidentally point to `/data/raw/games/year=<YYYY>/data.csv`, you may read stale or aggregated rows. Use the week-partitioned file for authoritative scored results.
 
@@ -220,4 +229,7 @@ python scripts/cli.py run-season \
   --end-week 16 \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
 ```
+
+```
+
 ```

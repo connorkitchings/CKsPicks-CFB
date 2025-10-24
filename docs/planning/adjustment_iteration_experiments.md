@@ -31,13 +31,13 @@ features use different iteration depths.
 
 ### A. Uniform Iteration Depths (5 runs)
 
-| Depth `n` | Description                              | Command Template |
-|-----------|-------------------------------------------|------------------|
+| Depth `n` | Description                               | Command Template                        |
+| --------- | ----------------------------------------- | --------------------------------------- |
 | 0         | No opponent adjustment (running averages) | `hydra.run data.adjustment_iteration=0` |
-| 1         | Single-pass adjustment                    | `...=1`          |
-| 2         | Two passes                                | `...=2`          |
-| 3         | Three passes                              | `...=3`          |
-| 4         | Current production default                | `...=4`          |
+| 1         | Single-pass adjustment                    | `...=1`                                 |
+| 2         | Two passes                                | `...=2`                                 |
+| 3         | Three passes                              | `...=3`                                 |
+| 4         | Current production default                | `...=4`                                 |
 
 Run both:
 
@@ -55,8 +55,8 @@ python scripts/walk_forward_validation.py data.adjustment_iteration=<n>
 
 ### B. Mixed Offense/Defense Depths (5×5 grid)
 
-| `n_off` (offense) | `n_def` (defense) | Notes |
-|-------------------|-------------------|-------|
+| `n_off` (offense) | `n_def` (defense) | Notes                                                                   |
+| ----------------- | ----------------- | ----------------------------------------------------------------------- |
 | 0–4               | 0–4               | 25 combinations; start with {0,2,4}×{0,2,4} for a cheaper initial pass. |
 
 Implementation notes:

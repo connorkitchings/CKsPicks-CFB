@@ -4,11 +4,22 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
 import typer
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.analysis.unadjusted import (
+    build_leaderboard as build_unadjusted_leaderboard,
+    filter_to_fbs,
+    load_running_season_snapshot,
+    scatter_plot as unadjusted_scatter_plot,
+)
+from src.config import get_data_root
 
 app = typer.Typer(help="Analysis utilities for scored bets.")
 
@@ -148,6 +159,162 @@ def threshold(
             }
         )
     typer.echo(json.dumps(results, indent=2, default=float))
+
+
+@app.command("unadjusted-leaderboard")
+def unadjusted_leaderboard(
+    year: int = typer.Argument(..., help="Season to evaluate."),
+    stat: str = typer.Argument(
+        ..., help="Stat suffix to rank (e.g., 'ypp', 'sr', 'third_down_conversion_rate')."
+    ),
+    side: str = typer.Option(
+        "offense",
+        "--side",
+        "-s",
+        help="Stat side to rank (offense or defense).",
+    ),
+    limit: int = typer.Option(
+        10,
+        "--limit",
+        "-n",
+        help="Number of teams to display (0 means show all).",
+    ),
+    min_games_played: int = typer.Option(
+        12,
+        "--min-games",
+        help="Minimum games played filter (default 12 to approximate FBS season).",
+    ),
+    before_week: int | None = typer.Option(
+        None,
+        "--before-week",
+        help="Optional before-week snapshot (defaults to latest available).",
+    ),
+    data_root: str | None = typer.Option(
+        None,
+        "--data-root",
+        help="Path to the data root (defaults to CFB_DATA_ROOT or ./data).",
+    ),
+) -> None:
+    """Display a leaderboard for an unadjusted stat snapshot."""
+    resolved_root = data_root or str(get_data_root())
+    snapshot, meta = load_running_season_snapshot(
+        year,
+        data_root=resolved_root,
+        before_week=before_week,
+    )
+    snapshot = filter_to_fbs(snapshot, year, data_root=resolved_root)
+    if min_games_played:
+        snapshot = snapshot[snapshot["games_played"].astype(float) >= min_games_played]
+
+    if snapshot.empty:
+        raise typer.BadParameter(
+            "No teams found after applying FBS/min-games filters. "
+            "Consider lowering --min-games."
+        )
+
+    leaderboard = build_unadjusted_leaderboard(
+        snapshot,
+        stat,
+        side=side,
+        limit=limit if limit > 0 else len(snapshot),
+    )
+    header = (
+        f"Unadjusted leaderboard for {stat} ({side}) - "
+        f"season {meta.year}, before week {meta.before_week}"
+    )
+    typer.echo(header)
+    typer.echo("-" * len(header))
+    typer.echo(
+        leaderboard[[f"{stat}_rank", "team", stat, "games_played"]].rename(
+            columns={f"{stat}_rank": "rank", "games_played": "games"}
+        ).to_string(
+            index=False
+        )
+    )
+
+
+@app.command("unadjusted-scatter")
+def unadjusted_scatter(
+    year: int = typer.Argument(..., help="Season to evaluate."),
+    stat_x: str = typer.Argument(..., help="X-axis stat suffix (e.g., 'ypp')."),
+    stat_y: str = typer.Argument(..., help="Y-axis stat suffix (e.g., 'sr')."),
+    output: Path = typer.Argument(..., help="Path to save the generated plot."),
+    side: str = typer.Option(
+        "offense",
+        "--side",
+        "-s",
+        help="Which side of the ball to use for both stats.",
+    ),
+    before_week: int | None = typer.Option(
+        None,
+        "--before-week",
+        help="Optional before-week snapshot (defaults to latest available).",
+    ),
+    min_games_played: int = typer.Option(
+        12,
+        "--min-games",
+        help="Minimum games played filter (default 12 to approximate FBS season).",
+    ),
+    highlight_team: str | None = typer.Option(
+        None,
+        "--highlight-team",
+        "-h",
+        help="Optional team name to highlight (others will be muted).",
+    ),
+    show_medians: bool = typer.Option(
+        True,
+        "--show-medians/--hide-medians",
+        help="Toggle median guide lines.",
+    ),
+    data_root: str | None = typer.Option(
+        None,
+        "--data-root",
+        help="Path to the data root (defaults to CFB_DATA_ROOT or ./data).",
+    ),
+) -> None:
+    """Save a scatter plot for two unadjusted stats."""
+    resolved_root = data_root or str(get_data_root())
+    snapshot, meta = load_running_season_snapshot(
+        year,
+        data_root=resolved_root,
+        before_week=before_week,
+    )
+    snapshot = filter_to_fbs(snapshot, year, data_root=resolved_root)
+    if min_games_played:
+        snapshot = snapshot[
+            snapshot["games_played"].astype(float) >= min_games_played
+        ].copy()
+
+    if snapshot.empty:
+        raise typer.BadParameter(
+            "No teams found after applying FBS/min-games filters. "
+            "Consider lowering --min-games."
+        )
+
+    import matplotlib  # pylint: disable=import-outside-toplevel
+
+    matplotlib.use("Agg")
+
+    fig, ax = unadjusted_scatter_plot(
+        snapshot,
+        stat_x,
+        stat_y,
+        side=side,
+        highlight_team=highlight_team,
+        show_medians=show_medians,
+    )
+    import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel,wrong-import-position
+
+    ax.set_title(
+        f"{side.capitalize()} {stat_x} vs {stat_y} – "
+        f"season {meta.year}, before week {meta.before_week}"
+    )
+    plt.tight_layout()
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output, dpi=150, bbox_inches="tight")
+    typer.echo(f"Saved scatter plot to {output}")
+    plt.close(fig)
 
 
 def _normalize_week_column(df: pd.DataFrame) -> Tuple[pd.DataFrame, str]:
