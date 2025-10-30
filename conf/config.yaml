@@ -35,3 +35,22 @@ walk_forward:
   best_spread_model: elastic_net
   total_strategy: points_for # options: ensemble, best_single, points_for
   best_total_model: random_forest
+
+weekly_bets:
+  year: 2024
+  week: 5
+  model_year: null
+  model_dir: ${oc.env:PROJECT_ROOT,./}/artifacts/models
+  output_dir: ${oc.env:PROJECT_ROOT,./}/artifacts/reports
+  prediction_mode: "legacy" # or "points_for"
+  model_registry:
+    spread_models: ["spread_ridge", "spread_elastic_net", "spread_huber"]
+    total_models: ["total_random_forest", "total_gradient_boosting"]
+  betting:
+    spread_threshold: 8.0
+    total_threshold: 8.0
+    spread_std_dev_threshold: 2.0
+    total_std_dev_threshold: 1.5
+  points_for:
+    spread_std: 18.0
+    total_std: 17.0

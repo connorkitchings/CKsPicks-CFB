@@ -8,19 +8,19 @@ simple helpers for leaderboards and downstream visualisations.
 from __future__ import annotations
 
 import re
-from functools import lru_cache
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image, ImageOps
 
-from src.config import LOGOS_DIR, get_data_root
-from src.features.core import aggregate_team_season
-from src.utils.local_storage import LocalStorage
+from config import LOGOS_DIR, get_data_root
+from features.core import aggregate_team_season
+from utils.local_storage import LocalStorage
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -70,7 +70,7 @@ def load_running_season_snapshot(
     year: int,
     *,
     data_root: str | None = None,
-    before_week: Optional[int] = None,
+    before_week: int | None = None,
 ) -> tuple[pd.DataFrame, SnapshotMetadata]:
     """Compute the unadjusted season-to-date snapshot for the requested week.
 
@@ -115,14 +115,18 @@ def load_running_season_snapshot(
 
     games_df["id"] = games_df["id"].astype(team_game_df["game_id"].dtype)
     games_df["season_type"] = games_df["season_type"].astype(str).str.lower()
-    games_df["home_classification"] = games_df["home_classification"].astype(str).str.lower()
-    games_df["away_classification"] = games_df["away_classification"].astype(str).str.lower()
+    games_df["home_classification"] = (
+        games_df["home_classification"].astype(str).str.lower()
+    )
+    games_df["away_classification"] = (
+        games_df["away_classification"].astype(str).str.lower()
+    )
     games_df["start_date"] = pd.to_datetime(
         games_df["start_date"], utc=True, errors="coerce"
     )
     games_df["start_date"] = games_df["start_date"].dt.tz_convert(None)
 
-    cutoff = pd.Timestamp(year, 12, 7)
+    cutoff = pd.Timestamp(year, 12, 7)  # noqa: DTZ001
 
     def _is_army_navy(row: pd.Series) -> bool:
         home = _normalize_name(str(row["home_team"]))
@@ -130,7 +134,9 @@ def load_running_season_snapshot(
         return {"army", "navy"}.issubset({home, away})
 
     regular_mask = games_df["season_type"] == "regular"
-    date_mask = games_df["start_date"].le(cutoff) | games_df.apply(_is_army_navy, axis=1)
+    date_mask = games_df["start_date"].le(cutoff) | games_df.apply(
+        _is_army_navy, axis=1
+    )
     classification_mask = (games_df["home_classification"] == "fbs") & (
         games_df["away_classification"] == "fbs"
     )
@@ -138,7 +144,9 @@ def load_running_season_snapshot(
 
     regular_ids = set(valid_games_df["id"])
     if not regular_ids:
-        raise ValueError("No regular season games before cutoff found for the supplied season.")
+        raise ValueError(
+            "No regular season games before cutoff found for the supplied season."
+        )
 
     valid_game_ids = regular_ids
     if not valid_game_ids:

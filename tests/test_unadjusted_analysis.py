@@ -1,21 +1,27 @@
 import pytest
 
-pd = pytest.importorskip("pandas")
-
-matplotlib = pytest.importorskip("matplotlib")
-matplotlib.use("Agg")
-plt = pytest.importorskip("matplotlib.pyplot")
-
-from src.analysis.unadjusted import (
+from analysis.unadjusted import (
     build_leaderboard,
     load_running_season_snapshot,
     scatter_plot,
 )
-from src.utils.base import Partition
-from src.utils.local_storage import LocalStorage
+from utils.base import Partition
+from utils.local_storage import LocalStorage
 
+pd = pytest.importorskip("pandas")
+
+matplotlib = pytest.importorskip("matplotlib")
+matplotlib.use("Agg")
+import os
+from pathlib import Path
+plt = pytest.importorskip("matplotlib.pyplot")
 
 def _prepare_minimal_data(tmp_path, *, year: int = 2024) -> None:
+    raw_root = Path(str(tmp_path)) / "raw"
+    processed_root = Path(str(tmp_path)) / "processed"
+    os.makedirs(raw_root, exist_ok=True)
+    os.makedirs(processed_root, exist_ok=True)
+
     raw_storage = LocalStorage(
         data_root=str(tmp_path), file_format="csv", data_type="raw"
     )
@@ -93,9 +99,9 @@ def _prepare_minimal_data(tmp_path, *, year: int = 2024) -> None:
             "start_date": f"{year}-09-01T18:00:00-04:00",
             "home_team": "Team A",
             "away_team": "Team B",
-        "home_classification": "fbs",
-        "away_classification": "fbs",
-    },
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
         {
             "id": 2,
             "season": year,
@@ -110,7 +116,7 @@ def _prepare_minimal_data(tmp_path, *, year: int = 2024) -> None:
             "id": 3,
             "season": year,
             "season_type": "regular",
-            "start_date": f"{year}-12-14T15:00:00-05:00",
+            "start_date": f"{year}-11-01T18:00:00-04:00",
             "home_team": "Team A",
             "away_team": "Team B",
             "home_classification": "fbs",
@@ -125,9 +131,9 @@ def test_load_running_season_snapshot_latest(tmp_path):
 
     snapshot, meta = load_running_season_snapshot(2024, data_root=str(tmp_path))
     assert meta.year == 2024
-    assert meta.before_week == 3
+    assert meta.before_week == 4
     assert set(snapshot["team"]) == {"Team A", "Team B"}
-    assert snapshot.loc[snapshot["team"] == "Team A", "games_played"].iloc[0] == 1
+    assert snapshot.loc[snapshot["team"] == "Team A", "games_played"].iloc[0] == 2
 
 
 def test_load_running_season_snapshot_specific_week(tmp_path):
@@ -138,9 +144,9 @@ def test_load_running_season_snapshot_specific_week(tmp_path):
     )
     assert meta.before_week == 2
     assert set(snapshot["team"]) == {"Team A", "Team B"}
-    assert snapshot.loc[snapshot["team"] == "Team A", "off_ypp"].iloc[0] == pytest.approx(
-        7.0
-    )
+    assert snapshot.loc[snapshot["team"] == "Team A", "off_ypp"].iloc[
+        0
+    ] == pytest.approx(7.0)
 
 
 def test_build_leaderboard_orders_by_side():

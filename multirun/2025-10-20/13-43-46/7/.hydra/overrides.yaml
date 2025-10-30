@@ -1,4 +1,0 @@
-- model=points_for_gradient_boosting
-- data.slice_path=outputs/prototypes/points_for_training_slice_2023_filtered.csv
-- data.train_weeks=[3,4,5,6,7,8,9,10]
-- data.test_weeks=[11,12,13,14,15]

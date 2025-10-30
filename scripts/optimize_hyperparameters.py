@@ -9,6 +9,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import hydra
 import mlflow
+import logging
+import joblib
+import os
+import tempfile
 import pandas as pd
 from omegaconf import DictConfig
 from sklearn.base import clone
@@ -31,7 +35,12 @@ def main(cfg: DictConfig) -> float:
     mlflow.set_tracking_uri("file:./artifacts/mlruns")
     mlflow.set_experiment(cfg.mlflow.experiment_name)
 
-    with mlflow.start_run(nested=True):
+    with mlflow.start_run(nested=True, run_name=f"{cfg.model.name}_trial") as run:
+        run_id = run.info.run_id
+        experiment_id = run.info.experiment_id
+        print(f"run_id: {run_id}")
+        print(f"experiment_id: {experiment_id}")
+
         resolved_offense_iteration = (
             cfg.data.adjustment_iteration_offense
             if cfg.data.adjustment_iteration_offense is not None
@@ -44,8 +53,9 @@ def main(cfg: DictConfig) -> float:
         )
         mlflow.log_param("off_adjustment_iteration", resolved_offense_iteration)
         mlflow.log_param("def_adjustment_iteration", resolved_defense_iteration)
-        if cfg.model.type == "points_for":
-            return _run_points_for_optimization(cfg)
+        mlflow.log_param("model_name", cfg.model.name)
+        mlflow.log_param("model_type", cfg.model.type)
+
         # --- Data Loading ---
         all_training_games = []
         for year in cfg.data.train_years:
@@ -136,6 +146,7 @@ def main(cfg: DictConfig) -> float:
         metrics = _evaluate(y_test.to_numpy(), preds)
 
         mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
+        mlflow.sklearn.log_model(model, "model")
 
         return metrics.rmse
 
@@ -234,7 +245,7 @@ def _run_points_for_optimization(cfg: DictConfig) -> float:
             "test_mae_away": away_metrics.mae,
             "test_rmse_total": total_metrics.rmse,
             "test_mae_total": total_metrics.mae,
-            "test_rmse_spread": spread_metrics.rmse,
+            "test_rmse_spread": spread_matrix.rmse,
             "test_mae_spread": spread_metrics.mae,
         }
     )

@@ -6,20 +6,24 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 import pandas as pd
 import typer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.analysis.unadjusted import (
+from analysis.unadjusted import (
     build_leaderboard as build_unadjusted_leaderboard,
+)
+from analysis.unadjusted import (
     filter_to_fbs,
     load_running_season_snapshot,
+)
+from analysis.unadjusted import (
     scatter_plot as unadjusted_scatter_plot,
 )
-from src.config import get_data_root
+from config import get_data_root
 
 app = typer.Typer(help="Analysis utilities for scored bets.")
 
@@ -165,7 +169,8 @@ def threshold(
 def unadjusted_leaderboard(
     year: int = typer.Argument(..., help="Season to evaluate."),
     stat: str = typer.Argument(
-        ..., help="Stat suffix to rank (e.g., 'ypp', 'sr', 'third_down_conversion_rate')."
+        ...,
+        help="Stat suffix to rank (e.g., 'ypp', 'sr', 'third_down_conversion_rate').",
     ),
     side: str = typer.Option(
         "offense",
@@ -225,11 +230,9 @@ def unadjusted_leaderboard(
     typer.echo(header)
     typer.echo("-" * len(header))
     typer.echo(
-        leaderboard[[f"{stat}_rank", "team", stat, "games_played"]].rename(
-            columns={f"{stat}_rank": "rank", "games_played": "games"}
-        ).to_string(
-            index=False
-        )
+        leaderboard[[f"{stat}_rank", "team", stat, "games_played"]]
+        .rename(columns={f"{stat}_rank": "rank", "games_played": "games"})
+        .to_string(index=False)
     )
 
 
@@ -306,8 +309,8 @@ def unadjusted_scatter(
     import matplotlib.pyplot as plt  # pylint: disable=import-outside-toplevel,wrong-import-position
 
     ax.set_title(
-        f"{side.capitalize()} {stat_x} vs {stat_y} – "
-        f"season {meta.year}, before week {meta.before_week}"
+        f"{side.capitalize()} {stat_x} vs {stat_y} – season {meta.year}, "
+        f"before week {meta.before_week}"
     )
     plt.tight_layout()
 
@@ -317,7 +320,7 @@ def unadjusted_scatter(
     plt.close(fig)
 
 
-def _normalize_week_column(df: pd.DataFrame) -> Tuple[pd.DataFrame, str]:
+def _normalize_week_column(df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
     if "Week" in df.columns:
         return df, "Week"
     if "week" in df.columns:
@@ -338,7 +341,7 @@ def _result_to_bool(series: pd.Series) -> pd.Series:
 
 def _summaries(
     df: pd.DataFrame, result_col: str, week_col: str
-) -> Tuple[pd.DataFrame, dict]:
+) -> tuple[pd.DataFrame, dict]:
     placed = df[df[result_col].notna()].copy()
     if placed[result_col].dtype.kind in {"i", "u", "f"}:
         placed["win"] = (

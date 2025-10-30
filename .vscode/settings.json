@@ -4,8 +4,8 @@
 
   // Run Ruff quick-fixes automatically (not just when explicitly requested)
   "editor.codeActionsOnSave": {
-    "source.fixAll.ruff": true,
-    "source.organizeImports.ruff": true
+    "source.fixAll.ruff": "explicit",
+    "source.organizeImports.ruff": "explicit"
   },
 
   // --- Python via Ruff ---

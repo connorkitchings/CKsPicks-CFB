@@ -129,6 +129,7 @@ spread_models = {
             ("huber", HuberRegressor(epsilon=1.35, max_iter=500)),
         ]
     ),
+    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
 }
 
 total_models = {
@@ -147,6 +148,7 @@ total_models = {
         subsample=0.8,
         random_state=42,
     ),
+    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
 }
 
 points_for_models = {

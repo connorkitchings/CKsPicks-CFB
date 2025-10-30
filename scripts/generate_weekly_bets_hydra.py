@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import sys
 from pathlib import Path
 
+import hydra
 import joblib
 import numpy as np
 import pandas as pd
+from omegaconf import DictConfig
 
 from src.config import MODELS_DIR, PREDICTIONS_SUBDIR, REPORTS_DIR, get_data_root
 from src.models.betting import apply_betting_policy
@@ -21,6 +22,7 @@ from src.models.features import (
     load_weekly_team_features,
 )
 from src.utils.local_storage import LocalStorage
+from scripts.model_registry import get_production_model
 
 POINTS_FOR_HOME_MODEL_NAME = "points_for_home.joblib"
 POINTS_FOR_AWAY_MODEL_NAME = "points_for_away.joblib"
@@ -112,7 +114,20 @@ def predict_with_points_for(
     return working_df
 
 
-def predict_with_legacy(models: dict[str, list], df: pd.DataFrame) -> pd.DataFrame:
+def load_models_from_registry(model_names: dict[str, list[str]]) -> dict[str, list]:
+    """Load models from the MLflow Model Registry."""
+    models = {"spread": [], "total": []}
+    for model_type, model_name_list in model_names.items():
+        for model_name in model_name_list:
+            model = get_production_model(model_name)
+            if model is None:
+                raise ValueError(f"Could not load production model: {model_name}")
+            models[model_type].append(model)
+    return models
+
+
+def predict_with_registered_models(models: dict[str, list], df: pd.DataFrame) -> pd.DataFrame:
+    """Generate predictions using models loaded from the MLflow Model Registry."""
     spread_feature_list = build_feature_list(df)
     df_spread_predict = df.dropna(subset=spread_feature_list).copy()
 
@@ -171,41 +186,7 @@ def predict_with_legacy(models: dict[str, list], df: pd.DataFrame) -> pd.DataFra
     return final_df
 
 
-def load_hybrid_ensemble_models(
-    model_year: int, spread_model_dir: str, total_model_dir: str
-) -> dict[str, list]:
-    """Load spread models from one dir and total models from another."""
-    models = {"spread": [], "total": []}
 
-    # Load Spread Models
-    spread_dir = os.path.join(spread_model_dir, str(model_year))
-    if not os.path.isdir(spread_dir):
-        raise FileNotFoundError(f"Spread model directory not found: {spread_dir}")
-    for file_name in os.listdir(spread_dir):
-        if file_name.endswith(".joblib") and (
-            file_name.startswith("spread_") or "spread" in file_name
-        ):
-            model_path = os.path.join(spread_dir, file_name)
-            models["spread"].append(joblib.load(model_path))
-
-    # Load Total Models
-    total_dir = os.path.join(total_model_dir, str(model_year))
-    if not os.path.isdir(total_dir):
-        raise FileNotFoundError(f"Total model directory not found: {total_dir}")
-    for file_name in os.listdir(total_dir):
-        if file_name.endswith(".joblib") and file_name.startswith("total_"):
-            model_path = os.path.join(total_dir, file_name)
-            models["total"].append(joblib.load(model_path))
-
-    if not models["spread"]:
-        raise FileNotFoundError(f"No spread models found in {spread_dir}")
-    if not models["total"]:
-        raise FileNotFoundError(f"No total models found in {total_dir}")
-
-    print(
-        f"Loaded {len(models['spread'])} spread models and {len(models['total'])} total models."
-    )
-    return models
 
 
 def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
@@ -431,135 +412,34 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
     print(f"Weekly betting report saved to {output_path}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate weekly CFB betting recommendations using a hybrid model strategy."
-    )
-    parser.add_argument(
-        "--year", type=int, required=True, help="Season year for predictions"
-    )
-    parser.add_argument(
-        "--week", type=int, required=True, help="Week number for predictions"
-    )
-    parser.add_argument(
-        "--model-year",
-        type=int,
-        default=None,
-        help="Year of the trained models to use (defaults to the prediction year)",
-    )
-    parser.add_argument(
-        "--data-root",
-        type=str,
-        default=None,
-        help="Absolute path to the data root directory",
-    )
-    parser.add_argument(
-        "--model-dir",
-        type=str,
-        default=str(MODELS_DIR),
-        help="Directory with trained models",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=str,
-        default=str(REPORTS_DIR),
-        help="Directory to save the weekly report",
-    )
-    parser.add_argument(
-        "--spread-threshold",
-        type=float,
-        default=8.0,
-        help="Edge threshold for spread bets. Recommended value is 8.0 based on 2024 off1_def3 backtest.",
-    )
-    parser.add_argument(
-        "--total-threshold",
-        type=float,
-        default=8.0,
-        help="Edge threshold for totals bets. Recommended value is 8.0 based on 2024 off1_def3 backtest.",
-    )
-    parser.add_argument(
-        "--spread-std-dev-threshold",
-        type=float,
-        default=2.0,
-        help="Std dev threshold for spread bets",
-    )
-    parser.add_argument(
-        "--total-std-dev-threshold",
-        type=float,
-        default=1.5,
-        help="Std dev threshold for total bets",
-    )
-    parser.add_argument(
-        "--prediction-mode",
-        choices=["legacy", "points_for"],
-        default="legacy",
-        help="Which prediction workflow to run (default: legacy ensemble)",
-    )
-    parser.add_argument(
-        "--points-for-spread-std",
-        type=float,
-        default=18.0,
-        help="Assumed spread prediction std-dev for points-for mode",
-    )
-    parser.add_argument(
-        "--points-for-total-std",
-        type=float,
-        default=17.0,
-        help="Assumed total prediction std-dev for points-for mode",
-    )
-    parser.add_argument(
-        "--adjustment-iteration",
-        type=int,
-        default=4,
-        help=(
-            "Opponent-adjustment iteration depth to read from the weekly cache "
-            "(default: 4)."
-        ),
-    )
-    parser.add_argument(
-        "--offense-adjustment-iteration",
-        type=int,
-        default=None,
-        help=(
-            "Override the offensive feature adjustment depth. Defaults to the value "
-            "passed to --adjustment-iteration."
-        ),
-    )
-    parser.add_argument(
-        "--defense-adjustment-iteration",
-        type=int,
-        default=None,
-        help=(
-            "Override the defensive feature adjustment depth. Defaults to the value "
-            "passed to --adjustment-iteration."
-        ),
-    )
-
-    args = parser.parse_args()
-    model_year = args.model_year or args.year
+@hydra.main(config_path="../conf", config_name="config", version_base=None)
+def main(cfg: DictConfig) -> None:
+    model_year = cfg.weekly_bets.model_year or cfg.weekly_bets.year
 
     try:
-        print(f"Loading dataset for year {args.year}, week {args.week}...")
+        print(f"Loading dataset for year {cfg.weekly_bets.year}, week {cfg.weekly_bets.week}...")
         df = load_week_dataset(
-            args.year,
-            args.week,
-            args.data_root,
-            adjustment_iteration=args.adjustment_iteration,
-            adjustment_iteration_offense=args.offense_adjustment_iteration,
-            adjustment_iteration_defense=args.defense_adjustment_iteration,
+            cfg.weekly_bets.year,
+            cfg.weekly_bets.week,
+            cfg.data.data_root,
+            adjustment_iteration=cfg.data.adjustment_iteration,
+            adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
+            adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
         )
-        if args.prediction_mode == "legacy":
-            print(f"Loading hybrid ensemble models for year {model_year}...")
-            models = load_hybrid_ensemble_models(
-                model_year, args.model_dir, args.model_dir
-            )
-            final_df = predict_with_legacy(models, df)
-            spread_std_threshold = args.spread_std_dev_threshold
-            total_std_threshold = args.total_std_dev_threshold
+        if cfg.weekly_bets.prediction_mode == "legacy":
+            print(f"Loading models from MLflow Model Registry...")
+            model_names = {
+                "spread": cfg.weekly_bets.model_registry.spread_models,
+                "total": cfg.weekly_bets.model_registry.total_models,
+            }
+            models = load_models_from_registry(model_names)
+            final_df = predict_with_registered_models(models, df)
+            spread_std_threshold = cfg.weekly_bets.betting.spread_std_dev_threshold
+            total_std_threshold = cfg.weekly_bets.betting.total_std_dev_threshold
         else:
             print(f"Loading points-for models for year {model_year}...")
-            home_model, away_model = load_points_for_models(model_year, args.model_dir)
-            stats = load_points_for_stats(model_year, args.model_dir)
+            home_model, away_model = load_points_for_models(model_year, cfg.weekly_bets.model_dir)
+            stats = load_points_for_stats(model_year, cfg.weekly_bets.model_dir)
             if stats is None:
                 print(
                     "Warning: points-for stats not found; falling back to CLI standard deviations."
@@ -568,8 +448,8 @@ def main() -> None:
                 df,
                 home_model,
                 away_model,
-                spread_std=args.points_for_spread_std,
-                total_std=args.points_for_total_std,
+                spread_std=cfg.weekly_bets.points_for.spread_std,
+                total_std=cfg.weekly_bets.points_for.total_std,
                 stats=stats,
             )
             spread_std_threshold = None
@@ -577,10 +457,10 @@ def main() -> None:
 
         if final_df.empty:
             print("No games with complete predictions. Exiting.")
-            year_root = os.path.join(args.output_dir, str(args.year))
+            year_root = os.path.join(cfg.weekly_bets.output_dir, str(cfg.weekly_bets.year))
             predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
             os.makedirs(predictions_dir, exist_ok=True)
-            output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
+            output_path = os.path.join(predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv")
             # Write empty df to avoid breaking downstream scoring script
             generate_csv_report(pd.DataFrame(columns=df.columns), output_path)
 
@@ -589,18 +469,18 @@ def main() -> None:
         print("Applying betting policy...")
         final_df = apply_betting_policy(
             final_df,
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
+            spread_edge_threshold=cfg.weekly_bets.betting.spread_threshold,
+            total_edge_threshold=cfg.weekly_bets.betting.total_threshold,
             spread_std_dev_threshold=spread_std_threshold,
             total_std_dev_threshold=total_std_threshold,
             min_games_played=4,
         )
 
-        year_root = os.path.join(args.output_dir, str(args.year))
+        year_root = os.path.join(cfg.weekly_bets.output_dir, str(cfg.weekly_bets.year))
         predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
         os.makedirs(predictions_dir, exist_ok=True)
 
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
+        output_path = os.path.join(predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv")
         print("Writing CSV report...")
         generate_csv_report(final_df, output_path)
 
@@ -608,7 +488,7 @@ def main() -> None:
 
     except Exception as e:
         print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
+            f"Error during weekly bet generation for year {cfg.weekly_bets.year}, week {cfg.weekly_bets.week}: {e}"
         )
         import traceback
 
@@ -618,373 +498,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-        print("Applying betting policy...")
-        final_df = apply_betting_policy(
-            final_df,
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-
-

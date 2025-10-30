@@ -1,0 +1,10 @@
+name: ridge
+type: total
+target: total_target
+
+params:
+  alpha: 0.1type: total
+target: total_target
+
+params:
+  alpha: 0.1
