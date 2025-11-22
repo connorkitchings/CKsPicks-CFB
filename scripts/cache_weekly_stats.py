@@ -18,6 +18,29 @@ from src.utils.base import Partition
 from src.utils.local_storage import LocalStorage
 
 
+def _augment_with_style_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    target_cols = [
+        "plays_per_game",
+        "drives_per_game",
+        "avg_scoring_opps_per_game",
+        "tempo_rating",
+        "pace_rating",
+    ]
+    missing = [c for c in target_cols if c not in df.columns]
+    if len(missing) == len(target_cols):
+        return df
+    augmented = df.copy()
+    attacking_cols = [c for c in target_cols if c in augmented.columns]
+    for col in attacking_cols:
+        for depth in (1, 2, 3):
+            window = depth
+            new_col = f"{col}_last_{window}"
+            augmented[new_col] = augmented.groupby(
+                ["season", "team"], group_keys=False
+            )[col].apply(lambda g: g.rolling(window, min_periods=1).mean())
+    return augmented
+
+
 def cache_running_stats(year: int, data_root: str | None) -> list[int]:
     """Stage 1: cache non-adjusted running stats per week."""
     print(f"--- Starting weekly NON-ADJUSTED stats caching for year {year} ---")
@@ -54,6 +77,7 @@ def cache_running_stats(year: int, data_root: str | None) -> list[int]:
         if prior_games_df.empty:
             continue
         team_season_pre_week = aggregate_team_season(prior_games_df)
+        team_season_pre_week = _augment_with_style_metrics(team_season_pre_week)
         team_season_pre_week["before_week"] = week
 
         cols = team_season_pre_week.columns.tolist()
@@ -156,6 +180,7 @@ def cache_adjusted_stats(
                     prior_games_df,
                     iterations=iteration_count,
                 )
+            adjusted_df = _augment_with_style_metrics(adjusted_df)
 
             adjusted_df["before_week"] = week
 

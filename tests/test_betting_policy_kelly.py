@@ -45,6 +45,10 @@ def test_apply_betting_policy_kelly_basic():
         fractional_kelly=0.25,
         kelly_cap=0.25,
         base_unit_fraction=0.02,
+        single_bet_cap=0.05,
+        bankroll=10000,
+        max_weekly_exposure_fraction=0.15,
+        max_weekly_bets=12,
     )
 
     row = out.iloc[0]
@@ -54,9 +58,9 @@ def test_apply_betting_policy_kelly_basic():
     # Kelly fractions should be positive and capped
     assert 0 < row["kelly_fraction_spread"] <= 0.25 * 0.25
     assert 0 < row["kelly_fraction_total"] <= 0.25 * 0.25
-    # Units should be positive numbers
-    assert row["bet_units_spread"] > 0
-    assert row["bet_units_total"] > 0
+    # Units should be positive numbers and respect the 5% single-bet cap (2.5u)
+    assert 0 < row["bet_units_spread"] <= 2.5
+    assert 0 < row["bet_units_total"] <= 2.5
 
 
 def test_apply_betting_policy_confidence_filter_blocks():
@@ -89,6 +93,7 @@ def test_apply_betting_policy_confidence_filter_blocks():
         spread_std_dev_threshold=3.0,
         total_std_dev_threshold=1.5,
         min_games_played=4,
+        bankroll=10000,
     )
 
     row = out.iloc[0]

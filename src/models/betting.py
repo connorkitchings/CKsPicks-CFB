@@ -43,7 +43,17 @@ def apply_betting_policy(
     base_unit_fraction: float = 0.02,
     default_american_price: int = -110,
     single_bet_cap: float = 0.05,
+    bankroll: float | None = None,
+    max_weekly_exposure_fraction: float = 0.15,
+    max_weekly_bets: int = 12,
 ) -> pd.DataFrame:
+    if bankroll is None or bankroll <= 0:
+        raise ValueError("bankroll must be a positive number to enforce policy caps")
+
+    single_bet_cap = max(single_bet_cap, 0.0)
+    max_weekly_exposure_fraction = max(max_weekly_exposure_fraction, 0.0)
+    max_weekly_bets = max(int(max_weekly_bets), 0)
+
     df = predictions_df.copy()
     df["expected_home_margin"] = -df["home_team_spread_line"]
     df["edge_spread"] = (df["predicted_spread"] - df["expected_home_margin"]).abs()
@@ -138,6 +148,60 @@ def apply_betting_policy(
         ),
     )
     df.loc[df["bet_total"] == "none", "kelly_fraction_total"] = 0.0
+
+    def _reject_bet(idx: int, bet_type: str, reason: str) -> None:
+        if bet_type == "spread":
+            df.at[idx, "spread_bet_reason"] = reason
+            df.at[idx, "bet_spread"] = "none"
+            df.at[idx, "kelly_fraction_spread"] = 0.0
+        else:
+            df.at[idx, "total_bet_reason"] = reason
+            df.at[idx, "bet_total"] = "none"
+            df.at[idx, "kelly_fraction_total"] = 0.0
+
+    # Enforce single bet cap (5% default)
+    spread_single_cap = (df["spread_bet_reason"] == "Bet Placed") & (
+        df["kelly_fraction_spread"] > single_bet_cap
+    )
+    if spread_single_cap.any():
+        df.loc[spread_single_cap, "kelly_fraction_spread"] = single_bet_cap
+
+    total_single_cap = (df["total_bet_reason"] == "Bet Placed") & (
+        df["kelly_fraction_total"] > single_bet_cap
+    )
+    if total_single_cap.any():
+        df.loc[total_single_cap, "kelly_fraction_total"] = single_bet_cap
+
+    # Enforce portfolio-wide exposure and bet-count limits
+    bet_candidates: list[tuple[str, int, float, float]] = []
+    for idx, row in df.iterrows():
+        if row.get("spread_bet_reason") == "Bet Placed":
+            edge_val = row.get("edge_spread")
+            edge = float(edge_val) if pd.notna(edge_val) else 0.0
+            frac_val = row.get("kelly_fraction_spread", 0.0)
+            fraction = float(frac_val) if pd.notna(frac_val) else 0.0
+            bet_candidates.append(("spread", idx, fraction, edge))
+        if row.get("total_bet_reason") == "Bet Placed":
+            edge_val = row.get("edge_total")
+            edge = float(edge_val) if pd.notna(edge_val) else 0.0
+            frac_val = row.get("kelly_fraction_total", 0.0)
+            fraction = float(frac_val) if pd.notna(frac_val) else 0.0
+            bet_candidates.append(("total", idx, fraction, edge))
+
+    bet_candidates.sort(key=lambda item: item[3], reverse=True)
+    exposure_used = 0.0
+    bets_placed = 0
+    for bet_type, idx, fraction, _edge in bet_candidates:
+        if fraction <= 0:
+            continue
+        if bets_placed >= max_weekly_bets:
+            _reject_bet(idx, bet_type, "No Bet - Weekly Limit")
+            continue
+        if exposure_used + fraction > max_weekly_exposure_fraction + 1e-9:
+            _reject_bet(idx, bet_type, "No Bet - Exposure Cap")
+            continue
+        bets_placed += 1
+        exposure_used += fraction
 
     # Bet Units
     df["bet_units_spread"] = (df["kelly_fraction_spread"] / base_unit_fraction).round(2)

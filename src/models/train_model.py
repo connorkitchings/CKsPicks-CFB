@@ -20,7 +20,13 @@ import mlflow
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from catboost import CatBoostRegressor
+from lightgbm import LGBMRegressor
+from sklearn.ensemble import (
+    GradientBoostingRegressor,
+    HistGradientBoostingRegressor,
+    RandomForestRegressor,
+)
 from sklearn.linear_model import ElasticNet, HuberRegressor, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.pipeline import Pipeline
@@ -28,9 +34,12 @@ from sklearn.preprocessing import StandardScaler
 
 from src.config import MODELS_DIR, get_data_root
 from src.models.features import (
+    FEATURE_PACK_CHOICES,
     build_feature_list,
+    filter_features_by_pack,
     load_point_in_time_data,
 )
+from src.utils.mlflow_tracking import get_tracking_uri
 
 
 def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
@@ -130,6 +139,29 @@ spread_models = {
         ]
     ),
     "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
+    "hist_gradient_boosting": HistGradientBoostingRegressor(
+        learning_rate=0.1,
+        max_depth=6,
+        max_iter=300,
+        l2_regularization=0.0,
+        random_state=42,
+    ),
+    "lightgbm": LGBMRegressor(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=-1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+    ),
+    "catboost": CatBoostRegressor(
+        loss_function="RMSE",
+        depth=6,
+        learning_rate=0.05,
+        iterations=800,
+        random_seed=42,
+        verbose=0,
+    ),
 }
 
 total_models = {
@@ -149,6 +181,29 @@ total_models = {
         random_state=42,
     ),
     "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
+    "hist_gradient_boosting": HistGradientBoostingRegressor(
+        learning_rate=0.1,
+        max_depth=6,
+        max_iter=300,
+        l2_regularization=0.0,
+        random_state=42,
+    ),
+    "lightgbm": LGBMRegressor(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=-1,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+    ),
+    "catboost": CatBoostRegressor(
+        loss_function="RMSE",
+        depth=6,
+        learning_rate=0.05,
+        iterations=800,
+        random_seed=42,
+        verbose=0,
+    ),
 }
 
 points_for_models = {
@@ -225,6 +280,25 @@ def main() -> None:
             "provided via --adjustment-iteration."
         ),
     )
+    parser.add_argument(
+        "--feature-pack",
+        action="append",
+        dest="feature_packs",
+        choices=FEATURE_PACK_CHOICES + ["all"],
+        help=(
+            "Repeatable flag used to restrict modeling to specific feature packs "
+            f"{FEATURE_PACK_CHOICES}. Defaults to all packs when omitted."
+        ),
+    )
+    parser.add_argument(
+        "--min-feature-variance",
+        type=float,
+        default=0.0,
+        help=(
+            "Drop numeric features whose variance on the training set falls below "
+            "this threshold (default keeps all features)."
+        ),
+    )
     args = parser.parse_args()
 
     train_years = [int(y.strip()) for y in args.train_years.split(",") if y.strip()]
@@ -248,7 +322,7 @@ def main() -> None:
     )
 
     # --- MLflow Setup ---
-    mlflow.set_tracking_uri("file:./artifacts/mlruns")
+    mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment("CFB_Model_Training")
 
     # --- Data Loading ---
@@ -286,6 +360,13 @@ def main() -> None:
     # --- Feature Preparation ---
     feature_list = _build_feature_list(train_df)
     feature_list = [c for c in feature_list if c in test_df.columns]
+    feature_list = filter_features_by_pack(feature_list, args.feature_packs)
+    if not feature_list:
+        raise ValueError("No features available after applying pack filters.")
+    if args.feature_packs:
+        print(
+            f"Feature packs {args.feature_packs} selected → {len(feature_list)} columns"
+        )
     target_cols = ["spread_target", "total_target"]
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
@@ -295,6 +376,26 @@ def main() -> None:
     y_total_train = train_df["total_target"].astype(float)
 
     x_test = test_df[feature_list]
+
+    if args.min_feature_variance > 0:
+        variances = x_train.var(axis=0, numeric_only=True)
+        keep_cols = [
+            col
+            for col in feature_list
+            if variances.get(col, 0.0) >= args.min_feature_variance
+        ]
+        dropped = [col for col in feature_list if col not in keep_cols]
+        if not keep_cols:
+            raise ValueError(
+                "Variance threshold removed all features; lower --min-feature-variance."
+            )
+        if dropped:
+            print(
+                f"Dropping {len(dropped)} low-variance features (threshold={args.min_feature_variance})"
+            )
+        feature_list = keep_cols
+        x_train = x_train[feature_list]
+        x_test = x_test[feature_list]
     y_spread_test = test_df["spread_target"].astype(float)
     y_total_test = test_df["total_target"].astype(float)
 

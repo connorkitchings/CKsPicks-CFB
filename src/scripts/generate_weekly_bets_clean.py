@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
@@ -24,6 +25,94 @@ from src.utils.local_storage import LocalStorage
 
 POINTS_FOR_HOME_MODEL_NAME = "points_for_home.joblib"
 POINTS_FOR_AWAY_MODEL_NAME = "points_for_away.joblib"
+
+
+def _placed_mask(df: pd.DataFrame, column: str) -> pd.Series:
+    if column not in df.columns:
+        return pd.Series([False] * len(df), index=df.index, dtype=bool)
+    return df[column] == "Bet Placed"
+
+
+def build_week_metadata(
+    df: pd.DataFrame,
+    *,
+    year: int,
+    week: int,
+    model_year: int,
+    prediction_mode: str,
+    bankroll: float,
+    data_root: str,
+    model_dir: str,
+    output_path: str,
+    spread_threshold: float,
+    total_threshold: float,
+    spread_std_dev_threshold: float | None,
+    total_std_dev_threshold: float | None,
+    max_single_bet_fraction: float,
+    max_weekly_exposure_fraction: float,
+    max_weekly_bets: int,
+) -> dict:
+    spread_mask = _placed_mask(df, "spread_bet_reason")
+    total_mask = _placed_mask(df, "total_bet_reason")
+    spread_units = (
+        float(df.loc[spread_mask, "bet_units_spread"].sum())
+        if "bet_units_spread" in df.columns
+        else 0.0
+    )
+    total_units = (
+        float(df.loc[total_mask, "bet_units_total"].sum())
+        if "bet_units_total" in df.columns
+        else 0.0
+    )
+    spread_fraction = (
+        float(df.loc[spread_mask, "kelly_fraction_spread"].sum())
+        if "kelly_fraction_spread" in df.columns
+        else 0.0
+    )
+    total_fraction = (
+        float(df.loc[total_mask, "kelly_fraction_total"].sum())
+        if "kelly_fraction_total" in df.columns
+        else 0.0
+    )
+    metadata = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "year": year,
+        "week": week,
+        "model_year": model_year,
+        "prediction_mode": prediction_mode,
+        "paths": {
+            "data_root": data_root,
+            "model_dir": model_dir,
+            "report_path": output_path,
+        },
+        "bankroll": bankroll,
+        "betting_thresholds": {
+            "spread_edge": spread_threshold,
+            "total_edge": total_threshold,
+            "spread_std_dev": spread_std_dev_threshold,
+            "total_std_dev": total_std_dev_threshold,
+        },
+        "risk_limits": {
+            "max_single_bet_fraction": max_single_bet_fraction,
+            "max_weekly_exposure_fraction": max_weekly_exposure_fraction,
+            "max_weekly_bets": max_weekly_bets,
+        },
+        "portfolio": {
+            "spread_bets": int(spread_mask.sum()),
+            "total_bets": int(total_mask.sum()),
+            "spread_units": spread_units,
+            "total_units": total_units,
+            "weekly_exposure_fraction": spread_fraction + total_fraction,
+        },
+    }
+    return metadata
+
+
+def write_metadata(path: str, payload: dict) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2)
 
 
 def load_points_for_models(model_year: int, model_dir: str) -> tuple:
@@ -329,11 +418,17 @@ def load_week_dataset(
         and "away_classification" in merged_df.columns
     ):
         # Convert to lowercase for consistent comparison
-        merged_df["home_classification"] = merged_df["home_classification"].astype(str).str.lower()
-        merged_df["away_classification"] = merged_df["away_classification"].astype(str).str.lower()
+        merged_df["home_classification"] = (
+            merged_df["home_classification"].astype(str).str.lower()
+        )
+        merged_df["away_classification"] = (
+            merged_df["away_classification"].astype(str).str.lower()
+        )
 
         # Filter out games where either team is FCS
-        fbs_mask = (merged_df["home_classification"] == "fbs") & (merged_df["away_classification"] == "fbs")
+        fbs_mask = (merged_df["home_classification"] == "fbs") & (
+            merged_df["away_classification"] == "fbs"
+        )
         original_count = len(merged_df)
 
         # Log specific games that would be filtered for debugging
@@ -341,9 +436,11 @@ def load_week_dataset(
         if not non_fbs_games.empty:
             print("Games with non-FBS opponents (will be filtered):")
             for _, row in non_fbs_games.iterrows():
-                home_class = row.get('home_classification', 'unknown')
-                away_class = row.get('away_classification', 'unknown')
-                print(f"  - {row['away_team']} @ {row['home_team']}: {home_class} vs {away_class}")
+                home_class = row.get("home_classification", "unknown")
+                away_class = row.get("away_classification", "unknown")
+                print(
+                    f"  - {row['away_team']} @ {row['home_team']}: {home_class} vs {away_class}"
+                )
             # Also validate that we're not filtering legitimate FBS games
             fbs_games = merged_df[fbs_mask].copy()
             if not fbs_games.empty:
@@ -353,7 +450,9 @@ def load_week_dataset(
 
         filtered_count = original_count - len(merged_df)
         if filtered_count > 0:
-            print(f"Filtered out {filtered_count} games with FCS opponents. Remaining: {len(merged_df)} FBS vs FBS games.")
+            print(
+                f"Filtered out {filtered_count} games with FCS opponents. Remaining: {len(merged_df)} FBS vs FBS games."
+            )
         else:
             print(f"All {len(merged_df)} games are FBS vs FBS matchups.")
 
@@ -431,6 +530,138 @@ def generate_csv_report(predictions_df: pd.DataFrame, output_path: str) -> None:
     print(f"Weekly betting report saved to {output_path}")
 
 
+def run_pipeline(args):
+    model_year = args.model_year or args.year
+    resolved_data_root = args.data_root or str(get_data_root())
+
+    try:
+        print(f"Loading dataset for year {args.year}, week {args.week}...")
+        df = load_week_dataset(
+            args.year,
+            args.week,
+            resolved_data_root,
+            adjustment_iteration=args.adjustment_iteration,
+            adjustment_iteration_offense=args.offense_adjustment_iteration,
+            adjustment_iteration_defense=args.defense_adjustment_iteration,
+        )
+        if args.prediction_mode == "legacy":
+            print(f"Loading hybrid ensemble models for year {model_year}...")
+            models = load_hybrid_ensemble_models(
+                model_year, args.model_dir, args.model_dir
+            )
+            final_df = predict_with_legacy(models, df)
+            spread_std_threshold = args.spread_std_dev_threshold
+            total_std_threshold = args.total_std_dev_threshold
+        else:
+            print(f"Loading points-for models for year {model_year}...")
+            home_model, away_model = load_points_for_models(model_year, args.model_dir)
+            stats = load_points_for_stats(model_year, args.model_dir)
+            if stats is None:
+                print(
+                    "Warning: points-for stats not found; falling back to CLI standard deviations."
+                )
+            final_df = predict_with_points_for(
+                df,
+                home_model,
+                away_model,
+                spread_std=args.points_for_spread_std,
+                total_std=args.points_for_total_std,
+                stats=stats,
+            )
+            spread_std_threshold = None
+            total_std_threshold = None
+
+        if final_df.empty:
+            print("No games with complete predictions. Exiting.")
+            year_root = os.path.join(args.output_dir, str(args.year))
+            predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
+            os.makedirs(predictions_dir, exist_ok=True)
+            output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
+            # Write empty df to avoid breaking downstream scoring script
+            generate_csv_report(pd.DataFrame(columns=df.columns), output_path)
+
+            metadata_path = os.path.join(
+                predictions_dir, f"CFB_week{args.week}_bets_metadata.json"
+            )
+            metadata = build_week_metadata(
+                pd.DataFrame(columns=df.columns),
+                year=args.year,
+                week=args.week,
+                model_year=model_year,
+                prediction_mode=args.prediction_mode,
+                bankroll=args.bankroll,
+                data_root=resolved_data_root,
+                model_dir=args.model_dir,
+                output_path=output_path,
+                spread_threshold=args.spread_threshold,
+                total_threshold=args.total_threshold,
+                spread_std_dev_threshold=spread_std_threshold,
+                total_std_dev_threshold=total_std_threshold,
+                max_single_bet_fraction=args.max_single_bet_fraction,
+                max_weekly_exposure_fraction=args.max_weekly_exposure_fraction,
+                max_weekly_bets=args.max_weekly_bets,
+            )
+            write_metadata(metadata_path, metadata)
+
+            sys.exit(0)
+
+        print("Applying betting policy...")
+        final_df = apply_betting_policy(
+            final_df,
+            spread_edge_threshold=args.spread_threshold,
+            total_edge_threshold=args.total_threshold,
+            spread_std_dev_threshold=spread_std_threshold,
+            total_std_dev_threshold=total_std_threshold,
+            min_games_played=4,
+            bankroll=args.bankroll,
+            max_weekly_exposure_fraction=args.max_weekly_exposure_fraction,
+            max_weekly_bets=args.max_weekly_bets,
+            single_bet_cap=args.max_single_bet_fraction,
+        )
+
+        year_root = os.path.join(args.output_dir, str(args.year))
+        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
+        os.makedirs(predictions_dir, exist_ok=True)
+
+        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
+        print("Writing CSV report...")
+        generate_csv_report(final_df, output_path)
+
+        metadata_path = os.path.join(
+            predictions_dir, f"CFB_week{args.week}_bets_metadata.json"
+        )
+        metadata = build_week_metadata(
+            final_df,
+            year=args.year,
+            week=args.week,
+            model_year=model_year,
+            prediction_mode=args.prediction_mode,
+            bankroll=args.bankroll,
+            data_root=resolved_data_root,
+            model_dir=args.model_dir,
+            output_path=output_path,
+            spread_threshold=args.spread_threshold,
+            total_threshold=args.total_threshold,
+            spread_std_dev_threshold=spread_std_threshold,
+            total_std_dev_threshold=total_std_threshold,
+            max_single_bet_fraction=args.max_single_bet_fraction,
+            max_weekly_exposure_fraction=args.max_weekly_exposure_fraction,
+            max_weekly_bets=args.max_weekly_bets,
+        )
+        write_metadata(metadata_path, metadata)
+
+        print("Done.")
+
+    except Exception as e:
+        print(
+            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
+        )
+        import traceback
+
+        traceback.print_exc()
+        sys.exit(1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate weekly CFB betting recommendations using a hybrid model strategy."
@@ -464,6 +695,30 @@ def main() -> None:
         type=str,
         default=str(REPORTS_DIR),
         help="Directory to save the weekly report",
+    )
+    parser.add_argument(
+        "--bankroll",
+        type=float,
+        required=True,
+        help="Current bankroll used for bet sizing and exposure caps",
+    )
+    parser.add_argument(
+        "--max-weekly-exposure-fraction",
+        type=float,
+        default=0.15,
+        help="Maximum share of bankroll exposed in a single week (default 15%)",
+    )
+    parser.add_argument(
+        "--max-single-bet-fraction",
+        type=float,
+        default=0.05,
+        help="Maximum share of bankroll per bet (default 5%)",
+    )
+    parser.add_argument(
+        "--max-weekly-bets",
+        type=int,
+        default=12,
+        help="Maximum number of bets to place per week (default 12)",
     )
     parser.add_argument(
         "--spread-threshold",
@@ -536,455 +791,8 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    model_year = args.model_year or args.year
-
-    try:
-        print(f"Loading dataset for year {args.year}, week {args.week}...")
-        df = load_week_dataset(
-            args.year,
-            args.week,
-            args.data_root,
-            adjustment_iteration=args.adjustment_iteration,
-            adjustment_iteration_offense=args.offense_adjustment_iteration,
-            adjustment_iteration_defense=args.defense_adjustment_iteration,
-        )
-        if args.prediction_mode == "legacy":
-            print(f"Loading hybrid ensemble models for year {model_year}...")
-            models = load_hybrid_ensemble_models(
-                model_year, args.model_dir, args.model_dir
-            )
-            final_df = predict_with_legacy(models, df)
-            spread_std_threshold = args.spread_std_dev_threshold
-            total_std_threshold = args.total_std_dev_threshold
-        else:
-            print(f"Loading points-for models for year {model_year}...")
-            home_model, away_model = load_points_for_models(model_year, args.model_dir)
-            stats = load_points_for_stats(model_year, args.model_dir)
-            if stats is None:
-                print(
-                    "Warning: points-for stats not found; falling back to CLI standard deviations."
-                )
-            final_df = predict_with_points_for(
-                df,
-                home_model,
-                away_model,
-                spread_std=args.points_for_spread_std,
-                total_std=args.points_for_total_std,
-                stats=stats,
-            )
-            spread_std_threshold = None
-            total_std_threshold = None
-
-        if final_df.empty:
-            print("No games with complete predictions. Exiting.")
-            year_root = os.path.join(args.output_dir, str(args.year))
-            predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-            os.makedirs(predictions_dir, exist_ok=True)
-            output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-            # Write empty df to avoid breaking downstream scoring script
-            generate_csv_report(pd.DataFrame(columns=df.columns), output_path)
-
-            sys.exit(0)
-
-        print("Applying betting policy...")
-        final_df = apply_betting_policy(
-            final_df,
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
+    run_pipeline(args)
 
 
 if __name__ == "__main__":
     main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-
-
-        print("Applying betting policy...")
-        final_df = apply_betting_policy(
-            final_df,
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-            spread_edge_threshold=args.spread_threshold,
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-            total_edge_threshold=args.total_threshold,
-            spread_std_dev_threshold=spread_std_threshold,
-            total_std_dev_threshold=total_std_threshold,
-            min_games_played=4,
-        )
-
-        year_root = os.path.join(args.output_dir, str(args.year))
-        predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
-        os.makedirs(predictions_dir, exist_ok=True)
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-        output_path = os.path.join(predictions_dir, f"CFB_week{args.week}_bets.csv")
-        print("Writing CSV report...")
-        generate_csv_report(final_df, output_path)
-
-        print("Done.")
-
-    except Exception as e:
-        print(
-            f"Error during weekly bet generation for year {args.year}, week {args.week}: {e}"
-        )
-        import traceback
-
-        traceback.print_exc()
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
-
-
-
-

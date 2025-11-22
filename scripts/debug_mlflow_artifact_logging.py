@@ -1,18 +1,21 @@
-
-import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
 
-import mlflow
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import hydra
+import mlflow
 from omegaconf import DictConfig
 from sklearn.linear_model import Ridge
+
 from src.models.features import load_point_in_time_data
 from src.models.train_model import _build_feature_list, _concat_years
+from src.utils.mlflow_tracking import get_tracking_uri
+
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
-    mlflow.set_tracking_uri("file:./artifacts/mlruns")
+    mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment("MLflow Debug")
 
     print(f"Current working directory before run: {os.getcwd()}")
@@ -46,6 +49,7 @@ def main(cfg: DictConfig) -> None:
         # Log the model
         mlflow.sklearn.log_model(model, "model")
         print("Model logged")
+
 
 if __name__ == "__main__":
     main()

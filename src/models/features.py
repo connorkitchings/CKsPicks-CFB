@@ -7,6 +7,24 @@ import pandas as pd
 from src.config import get_data_root
 from src.utils.local_storage import LocalStorage
 
+STYLE_METRICS: dict[str, str] = {
+    "plays_per_game": "tempo",
+    "drives_per_game": "drives",
+    "avg_scoring_opps_per_game": "scoring_opps",
+}
+
+FEATURE_PACK_CHOICES = [
+    "offense",
+    "defense",
+    "drive",
+    "pace",
+    "special_teams",
+    "special_teams_high_risk",
+    "context",
+    "matchup",
+    "other",
+]
+
 
 def prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
     """Build one-row-per-team features combining adjusted offense/defense and extras.
@@ -102,6 +120,9 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
             "off_finish_pts_per_opp",
             "stuff_rate",
             "havoc_rate",
+            "off_points_per_drive",
+            "off_avg_start_field_position",
+            "net_field_position_delta",
         ]:
             col = f"{side}_{extra}"
             if col in df.columns:
@@ -115,9 +136,31 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
             col = f"{side}_{pace}"
             if col in df.columns:
                 features.append(col)
+        # Defensive per-drive/state metrics scoped to the opponent
+        for defensive_extra in [
+            "def_points_per_drive_allowed",
+            "def_avg_start_field_position_allowed",
+        ]:
+            col = f"{side}_{defensive_extra}"
+            if col in df.columns:
+                features.append(col)
 
     # Global game context features
-    for global_feat in ["neutral_site", "same_conference"]:
+    global_context = [
+        "neutral_site",
+        "same_conference",
+    ]
+    style_context = []
+    for metric_label in STYLE_METRICS.values():
+        style_context.extend(
+            [
+                f"{metric_label}_contrast",
+                f"{metric_label}_total",
+                f"{metric_label}_ratio",
+            ]
+        )
+
+    for global_feat in [*global_context, *style_context]:
         if global_feat in df.columns:
             features.append(global_feat)
 
@@ -198,6 +241,92 @@ def build_differential_feature_list(df: pd.DataFrame) -> list[str]:
             features.append(global_feat)
 
     return features
+
+
+def _categorize_feature_name(feature_name: str) -> str:
+    if feature_name.startswith("matchup_"):
+        return "matchup"
+    if feature_name.startswith(("adj_off_", "off_")):
+        return "offense"
+    if feature_name.startswith(("adj_def_", "def_")):
+        return "defense"
+    if feature_name in {"neutral_site", "same_conference"} or feature_name.startswith(
+        ("tempo_", "drives_", "scoring_opps_")
+    ):
+        return "context"
+    if (
+        feature_name.endswith("plays_per_game")
+        or feature_name.endswith("drives_per_game")
+        or feature_name.endswith("avg_scoring_opps_per_game")
+    ):
+        return "pace"
+    lowered = feature_name.lower()
+    if any(token in lowered for token in ["punt", "fg_", "kick"]):
+        return "special_teams"
+    if any(token in lowered for token in ["net_punt"]):
+        return "special_teams_high_risk"
+    if any(
+        token in lowered
+        for token in [
+            "eckel",
+            "drive",
+            "points_per_drive",
+            "finish_pts",
+            "field_position",
+        ]
+    ):
+        return "drive"
+    if "_def_" in feature_name and not feature_name.startswith("matchup_"):
+        return "defense"
+    if "_off_" in feature_name:
+        return "offense"
+    return "other"
+
+
+def filter_features_by_pack(
+    feature_names: list[str], allowed_packs: list[str] | None
+) -> list[str]:
+    """Filter a feature list down to the specified conceptual packs."""
+
+    if not feature_names:
+        return []
+    if not allowed_packs or "all" in allowed_packs:
+        # By default, drop high-risk ST metrics (net punt/kick) unless explicitly requested
+        return [
+            f
+            for f in feature_names
+            if _categorize_feature_name(f) != "special_teams_high_risk"
+        ]
+    allowed = {pack.lower() for pack in allowed_packs}
+    filtered: list[str] = []
+    for name in feature_names:
+        if _categorize_feature_name(name) in allowed:
+            filtered.append(name)
+    return filtered
+
+
+def _add_style_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Augment merged datasets with tempo/drive/opp contrast features."""
+    augmented = df.copy()
+    epsilon = 1e-6
+    for metric, label in STYLE_METRICS.items():
+        home_col = f"home_{metric}"
+        away_col = f"away_{metric}"
+        if home_col not in augmented.columns or away_col not in augmented.columns:
+            continue
+        contrast_col = f"{label}_contrast"
+        total_col = f"{label}_total"
+        ratio_col = f"{label}_ratio"
+        augmented[contrast_col] = augmented[home_col].astype(float) - augmented[
+            away_col
+        ].astype(float)
+        augmented[total_col] = augmented[home_col].astype(float) + augmented[
+            away_col
+        ].astype(float)
+        augmented[ratio_col] = augmented[home_col].astype(float) / (
+            augmented[away_col].astype(float) + epsilon
+        )
+    return augmented
 
 
 def _read_team_week_adj_partition(
@@ -379,6 +508,7 @@ def load_point_in_time_data(
         merged_df["same_conference"] = 0
 
     merged_df = merged_df.drop(columns=["home_season", "away_season"], errors="ignore")
+    merged_df = _add_style_features(merged_df)
     return merged_df
 
 
@@ -446,4 +576,5 @@ def load_merged_dataset(year: int, data_root: str | None) -> pd.DataFrame:
         "away_points"
     ].astype(float)
     merged_df = merged_df.drop(columns=["home_season", "away_season"], errors="ignore")
+    merged_df = _add_style_features(merged_df)
     return merged_df

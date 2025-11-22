@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /model: ridge
+  - override /features: standard_v1
+
+experiment:
+  name: debug_dry_run
+
+model:
+  params:
+    alpha: 0.5

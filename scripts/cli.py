@@ -356,6 +356,10 @@ def run_season(
     ] = str(REPORTS_DIR),
     start_week: Annotated[int, typer.Option(help="Starting week (inclusive)")] = 5,
     end_week: Annotated[int, typer.Option(help="Ending week (inclusive)")] = 16,
+    bankroll: Annotated[
+        float,
+        typer.Option(help="Current bankroll used for bet sizing and exposure caps"),
+    ] = 10000.0,
     spread_threshold: Annotated[
         float, typer.Option(help="Spread edge threshold for betting")
     ] = 8.0,
@@ -396,6 +400,8 @@ def run_season(
                 model_dir,
                 "--output-dir",
                 report_dir,
+                "--bankroll",
+                str(bankroll),
                 "--spread-threshold",
                 str(spread_threshold),
                 "--total-threshold",

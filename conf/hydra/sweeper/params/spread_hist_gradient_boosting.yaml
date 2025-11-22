@@ -1,0 +1,4 @@
+model.params.learning_rate: tag(log, interval(0.01, 0.3))
+model.params.max_depth: int(3, 10)
+model.params.max_iter: int(200, 500)
+model.params.l2_regularization: tag(log, interval(1e-6, 1e-1))

@@ -7,17 +7,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+
 import hydra
 import mlflow
-import logging
-import joblib
-import os
-import tempfile
 import pandas as pd
 from omegaconf import DictConfig
 from sklearn.base import clone
+from sklearn.preprocessing import StandardScaler
 
-from src.models.features import load_point_in_time_data
+from src.models.features import filter_features_by_pack, load_point_in_time_data
 from src.models.train_model import (
     _build_feature_list,
     _concat_years,
@@ -27,12 +25,13 @@ from src.models.train_model import (
     spread_models,
     total_models,
 )
+from src.utils.mlflow_tracking import get_tracking_uri
 
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> float:
     """Main entrypoint for hyperparameter optimization."""
-    mlflow.set_tracking_uri("file:./artifacts/mlruns")
+    mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment(cfg.mlflow.experiment_name)
 
     with mlflow.start_run(nested=True, run_name=f"{cfg.model.name}_trial") as run:
@@ -115,6 +114,22 @@ def main(cfg: DictConfig) -> float:
         # --- Feature Preparation ---
         feature_list = _build_feature_list(train_df)
         feature_list = [c for c in feature_list if c in test_df.columns]
+        feature_packs = None
+        if "features" in cfg and cfg.features.get("packs"):
+            feature_packs = [str(pack) for pack in cfg.features.packs]
+        min_feature_variance = (
+            float(cfg.features.min_variance) if "features" in cfg else 0.0
+        )
+        feature_list = filter_features_by_pack(feature_list, feature_packs)
+        if not feature_list:
+            raise ValueError(
+                "No features available after applying feature pack filters."
+            )
+        if feature_packs:
+            mlflow.log_param("feature_packs", ",".join(feature_packs))
+        else:
+            mlflow.log_param("feature_packs", "all")
+        mlflow.log_param("min_feature_variance", min_feature_variance)
 
         # Drop rows lacking model features or targets
         train_df = train_df.dropna(subset=feature_list + [target_col])
@@ -130,9 +145,47 @@ def main(cfg: DictConfig) -> float:
         x_test = test_df[feature_list]
         y_test = test_df[target_col].astype(float)
 
+        if min_feature_variance > 0:
+            variances = x_train.var(axis=0, numeric_only=True)
+            keep_cols = [
+                col
+                for col in feature_list
+                if variances.get(col, 0.0) >= min_feature_variance
+            ]
+            if not keep_cols:
+                raise ValueError(
+                    "All features were removed by the variance threshold. Lower features.min_variance."
+                )
+            dropped = [col for col in feature_list if col not in keep_cols]
+            if dropped:
+                print(
+                    f"Dropping {len(dropped)} low-variance features (threshold={min_feature_variance})"
+                )
+            feature_list = keep_cols
+            x_train = x_train[feature_list]
+            x_test = x_test[feature_list]
+
+        scaler = None
+        if bool(cfg.model.get("use_standard_scaler", False)):
+            scaler = StandardScaler()
+            x_train = pd.DataFrame(
+                scaler.fit_transform(x_train),
+                columns=x_train.columns,
+                index=x_train.index,
+            )
+            x_test = pd.DataFrame(
+                scaler.transform(x_test),
+                columns=x_test.columns,
+                index=x_test.index,
+            )
+            mlflow.log_param("feature_scaler", "standard")
+        else:
+            mlflow.log_param("feature_scaler", "none")
+
         # --- Model Training ---
         models_to_train = spread_models if cfg.model.type == "spread" else total_models
-        model = models_to_train[cfg.model.name]
+        base_model = models_to_train[cfg.model.name]
+        model = clone(base_model)
 
         # Override model parameters with the ones from the trial
         params = {k: v for k, v in cfg.model.params.items() if k in model.get_params()}
@@ -245,7 +298,7 @@ def _run_points_for_optimization(cfg: DictConfig) -> float:
             "test_mae_away": away_metrics.mae,
             "test_rmse_total": total_metrics.rmse,
             "test_mae_total": total_metrics.mae,
-            "test_rmse_spread": spread_matrix.rmse,
+            "test_rmse_spread": spread_metrics.rmse,
             "test_mae_spread": spread_metrics.mae,
         }
     )

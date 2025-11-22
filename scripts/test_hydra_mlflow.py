@@ -1,11 +1,18 @@
+import sys
+from pathlib import Path
+
 import hydra
-from omegaconf import DictConfig
 import mlflow
-import os
+from omegaconf import DictConfig
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.mlflow_tracking import get_tracking_uri
+
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
-    mlflow.set_tracking_uri("file:./artifacts/mlruns")
+    mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment("MLflow Hydra Test")
 
     with mlflow.start_run() as run:
@@ -14,6 +21,7 @@ def main(cfg: DictConfig) -> None:
         with open("test.txt", "w") as f:
             f.write("hello world")
         mlflow.log_artifact("test.txt", "test_artifact")
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,11 @@
+name: catboost
+type: total
+target: total_target
+
+params:
+  depth: 6
+  learning_rate: 0.05
+  iterations: 800
+  l2_leaf_reg: 3.0
+  subsample: 0.8
+  random_seed: 42

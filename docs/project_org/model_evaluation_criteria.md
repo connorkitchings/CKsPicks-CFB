@@ -208,6 +208,18 @@ flowchart TD
 - Hydra orchestrates walk-forward validation across the configured training and evaluation seasons. For each week, the script fits the selected models, generates predictions, and logs RMSE/MAE to MLflow with keys such as `<year>_<model>_<target>_rmse`.
 - Aggregated summaries are materialized under `artifacts/reports/metrics/adjustment_iteration/` and related folders. These CSVs report hit rate, ROI, bet volume, and standard deviation thresholds for every strategy (ensemble, best_single, points_for).
 - Each Hydra run persists the composed config (`.hydra/config.yaml`) inside the run directory, ensuring evaluations are fully reproducible.
+- **Latest snapshot (2025-11-19):** Targeted walk-forward validation with `data.train_years=[2023]`, `data.test_year=2024`, and weeks 8–13 for both seasons compared the registered staging models (`cfb_spread_lightgbm`, `cfb_total_catboost`) against the legacy ensembles. Results (stored in `artifacts/validation/walk_forward/metrics_summary.csv`):
+
+  | Target | Strategy (weeks 8–13) | 2023 RMSE / MAE | 2024 RMSE / MAE | Notes |
+  | --- | --- | --- | --- | --- |
+  | Spread | Legacy ensemble | 45.72 / 2606.8 | **16.72 / 13.45** | 2023 blow-ups reflect minimal training data; 2024 remains the benchmark. |
+  | Spread | LightGBM best_single | 18.81 / 14.69 | 17.98 / 14.43 | Slightly worse than ensemble on 2024 holdout; keep in staging for additional tuning. |
+  | Total  | Legacy ensemble | 18.47 / 1061.2 | **17.14 / 13.64** | Baseline. |
+  | Total  | CatBoost best_single | 17.28 / 13.68 | 17.17 / 13.66 | Matches ensemble within 0.03 RMSE; acceptable candidate for promotion pending longer horizon. |
+
+  These evaluations inform MLflow Model Registry decisions and monitoring dashboards (see `docs/reports/model_sweep_2025-11-19.md`).
+
+- **Extended window (2019, 2021–2024; weeks 6–13):** Running the validator in two batches to avoid Hydra timeouts produced average RMSE/MAE across five seasons of 17.68/14.07 for the legacy spread ensemble vs. 18.42/14.67 for LightGBM, and 17.34/13.77 for the total ensemble vs. 17.51/13.91 for CatBoost (`artifacts/validation/walk_forward/metrics_summary_2019_2024_avg.csv`). Per-season raw metrics live beside the combined file for deeper inspection.
 
 ### Post-Season Scoring & Analysis
 

@@ -220,6 +220,11 @@ gha-creds-*.json
 
 # Generated project outputs
 artifacts/
+catboost_info/
 
 # Site
 site/
+
+# Artifacts
+artifacts/
+conf/local.yaml

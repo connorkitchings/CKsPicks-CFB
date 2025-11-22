@@ -660,26 +660,22 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         ]
         if st_fill_cols:
             filled[st_fill_cols] = (
-                filled[st_fill_cols]
-                .apply(pd.to_numeric, errors="coerce")
-                .fillna(0.0)
+                filled[st_fill_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0)
             )
         # Trench warfare features (line yards, etc.)
         trench_cols = [
             c
             for c in present_metric_cols
-            if "line_yards" in c
-            or "second_level_yards" in c
-            or "open_field_yards" in c
+            if "line_yards" in c or "second_level_yards" in c or "open_field_yards" in c
         ]
         if trench_cols:
             filled[trench_cols] = filled[trench_cols].fillna(0.0)
 
         # Clip net punt yards to a reasonable range (-10 to 65)
         if "off_avg_net_punt_yards" in filled.columns:
-            filled["off_avg_net_punt_yards"] = filled[
-                "off_avg_net_punt_yards"
-            ].clip(-10, 65)
+            filled["off_avg_net_punt_yards"] = filled["off_avg_net_punt_yards"].clip(
+                -10, 65
+            )
 
         w = filled["recency_weight"].astype(float)
         wsum = w.sum() if w.sum() > 0 else 1.0
@@ -734,6 +730,8 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
                 series[col] = series[
                     col.rsplit("_", 2)[0]
                 ]  # Fallback to the season-long average
+                if pd.isna(series[col]):
+                    series[col] = 0.0
         return series
 
     season_agg = (

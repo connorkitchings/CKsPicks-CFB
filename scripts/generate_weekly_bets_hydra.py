@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.config import MODELS_DIR, PREDICTIONS_SUBDIR, REPORTS_DIR, get_data_root
+from scripts.model_registry import get_production_model
+from src.config import PREDICTIONS_SUBDIR, get_data_root
 from src.models.betting import apply_betting_policy
 from src.models.features import (
     build_differential_feature_list,
@@ -22,7 +23,6 @@ from src.models.features import (
     load_weekly_team_features,
 )
 from src.utils.local_storage import LocalStorage
-from scripts.model_registry import get_production_model
 
 POINTS_FOR_HOME_MODEL_NAME = "points_for_home.joblib"
 POINTS_FOR_AWAY_MODEL_NAME = "points_for_away.joblib"
@@ -126,7 +126,9 @@ def load_models_from_registry(model_names: dict[str, list[str]]) -> dict[str, li
     return models
 
 
-def predict_with_registered_models(models: dict[str, list], df: pd.DataFrame) -> pd.DataFrame:
+def predict_with_registered_models(
+    models: dict[str, list], df: pd.DataFrame
+) -> pd.DataFrame:
     """Generate predictions using models loaded from the MLflow Model Registry."""
     spread_feature_list = build_feature_list(df)
     df_spread_predict = df.dropna(subset=spread_feature_list).copy()
@@ -184,9 +186,6 @@ def predict_with_registered_models(models: dict[str, list], df: pd.DataFrame) ->
     )
     final_df = final_df.dropna(subset=["predicted_spread", "predicted_total"])
     return final_df
-
-
-
 
 
 def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
@@ -310,11 +309,17 @@ def load_week_dataset(
         and "away_classification" in merged_df.columns
     ):
         # Convert to lowercase for consistent comparison
-        merged_df["home_classification"] = merged_df["home_classification"].astype(str).str.lower()
-        merged_df["away_classification"] = merged_df["away_classification"].astype(str).str.lower()
+        merged_df["home_classification"] = (
+            merged_df["home_classification"].astype(str).str.lower()
+        )
+        merged_df["away_classification"] = (
+            merged_df["away_classification"].astype(str).str.lower()
+        )
 
         # Filter out games where either team is FCS
-        fbs_mask = (merged_df["home_classification"] == "fbs") & (merged_df["away_classification"] == "fbs")
+        fbs_mask = (merged_df["home_classification"] == "fbs") & (
+            merged_df["away_classification"] == "fbs"
+        )
         original_count = len(merged_df)
 
         # Log specific games that would be filtered for debugging
@@ -322,9 +327,11 @@ def load_week_dataset(
         if not non_fbs_games.empty:
             print("Games with non-FBS opponents (will be filtered):")
             for _, row in non_fbs_games.iterrows():
-                home_class = row.get('home_classification', 'unknown')
-                away_class = row.get('away_classification', 'unknown')
-                print(f"  - {row['away_team']} @ {row['home_team']}: {home_class} vs {away_class}")
+                home_class = row.get("home_classification", "unknown")
+                away_class = row.get("away_classification", "unknown")
+                print(
+                    f"  - {row['away_team']} @ {row['home_team']}: {home_class} vs {away_class}"
+                )
             # Also validate that we're not filtering legitimate FBS games
             fbs_games = merged_df[fbs_mask].copy()
             if not fbs_games.empty:
@@ -334,7 +341,9 @@ def load_week_dataset(
 
         filtered_count = original_count - len(merged_df)
         if filtered_count > 0:
-            print(f"Filtered out {filtered_count} games with FCS opponents. Remaining: {len(merged_df)} FBS vs FBS games.")
+            print(
+                f"Filtered out {filtered_count} games with FCS opponents. Remaining: {len(merged_df)} FBS vs FBS games."
+            )
         else:
             print(f"All {len(merged_df)} games are FBS vs FBS matchups.")
 
@@ -417,7 +426,9 @@ def main(cfg: DictConfig) -> None:
     model_year = cfg.weekly_bets.model_year or cfg.weekly_bets.year
 
     try:
-        print(f"Loading dataset for year {cfg.weekly_bets.year}, week {cfg.weekly_bets.week}...")
+        print(
+            f"Loading dataset for year {cfg.weekly_bets.year}, week {cfg.weekly_bets.week}..."
+        )
         df = load_week_dataset(
             cfg.weekly_bets.year,
             cfg.weekly_bets.week,
@@ -427,7 +438,7 @@ def main(cfg: DictConfig) -> None:
             adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
         )
         if cfg.weekly_bets.prediction_mode == "legacy":
-            print(f"Loading models from MLflow Model Registry...")
+            print("Loading models from MLflow Model Registry...")
             model_names = {
                 "spread": cfg.weekly_bets.model_registry.spread_models,
                 "total": cfg.weekly_bets.model_registry.total_models,
@@ -438,7 +449,9 @@ def main(cfg: DictConfig) -> None:
             total_std_threshold = cfg.weekly_bets.betting.total_std_dev_threshold
         else:
             print(f"Loading points-for models for year {model_year}...")
-            home_model, away_model = load_points_for_models(model_year, cfg.weekly_bets.model_dir)
+            home_model, away_model = load_points_for_models(
+                model_year, cfg.weekly_bets.model_dir
+            )
             stats = load_points_for_stats(model_year, cfg.weekly_bets.model_dir)
             if stats is None:
                 print(
@@ -457,10 +470,14 @@ def main(cfg: DictConfig) -> None:
 
         if final_df.empty:
             print("No games with complete predictions. Exiting.")
-            year_root = os.path.join(cfg.weekly_bets.output_dir, str(cfg.weekly_bets.year))
+            year_root = os.path.join(
+                cfg.weekly_bets.output_dir, str(cfg.weekly_bets.year)
+            )
             predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
             os.makedirs(predictions_dir, exist_ok=True)
-            output_path = os.path.join(predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv")
+            output_path = os.path.join(
+                predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv"
+            )
             # Write empty df to avoid breaking downstream scoring script
             generate_csv_report(pd.DataFrame(columns=df.columns), output_path)
 
@@ -474,13 +491,19 @@ def main(cfg: DictConfig) -> None:
             spread_std_dev_threshold=spread_std_threshold,
             total_std_dev_threshold=total_std_threshold,
             min_games_played=4,
+            bankroll=cfg.weekly_bets.bankroll,
+            max_weekly_exposure_fraction=cfg.weekly_bets.max_weekly_exposure_fraction,
+            max_weekly_bets=cfg.weekly_bets.max_weekly_bets,
+            single_bet_cap=cfg.weekly_bets.max_single_bet_fraction,
         )
 
         year_root = os.path.join(cfg.weekly_bets.output_dir, str(cfg.weekly_bets.year))
         predictions_dir = os.path.join(year_root, PREDICTIONS_SUBDIR)
         os.makedirs(predictions_dir, exist_ok=True)
 
-        output_path = os.path.join(predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv")
+        output_path = os.path.join(
+            predictions_dir, f"CFB_week{cfg.weekly_bets.week}_bets.csv"
+        )
         print("Writing CSV report...")
         generate_csv_report(final_df, output_path)
 

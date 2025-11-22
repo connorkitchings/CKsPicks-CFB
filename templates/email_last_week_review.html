@@ -38,6 +38,13 @@
               <div class="muted" style="font-size:12px; color:#666; margin-top:6px; text-align:center;">
                 Generated {{ generated_at }}
               </div>
+              {% if edge_thresholds %}
+              <div class="muted" style="font-size:12px; color:#666; margin-top:4px; text-align:center;">
+                Spread Edge Threshold: {{ "%.1f" | format(edge_thresholds.spread) if edge_thresholds.spread is not none else "N/A" }}
+                &nbsp;|&nbsp;
+                Total Edge Threshold: {{ "%.1f" | format(edge_thresholds.total) if edge_thresholds.total is not none else "N/A" }}
+              </div>
+              {% endif %}
               <div style="margin:10px 0; border-top:1px solid #eaeaea;"></div>
               <div style="margin-top:10px; font-size:13px;">
                 <div style="font-weight:600; margin-bottom:4px; text-align:center;">Quick Reference</div>

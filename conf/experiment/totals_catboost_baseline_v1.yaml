@@ -1,0 +1,9 @@
+# @package _global_
+defaults:
+  - override /model: catboost
+  - override /features: standard_v1
+
+experiment:
+  name: totals_catboost_baseline_v1
+
+target: total_target

@@ -1,0 +1,5 @@
+model.params.depth: int(4, 10)
+model.params.learning_rate: tag(log, interval(0.01, 0.2))
+model.params.iterations: int(300, 1200)
+model.params.l2_leaf_reg: tag(log, interval(1e-2, 10.0))
+model.params.subsample: interval(0.5, 1.0)

@@ -17,6 +17,7 @@ Configuration via environment variables:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import smtplib
@@ -37,7 +38,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.config import REPORTS_DIR, SCORED_SUBDIR  # noqa: E402
+from src.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR  # noqa: E402
 
 TEAM_LOGO_MAP = {
     "Sam Houston": "Sam Houston State",
@@ -175,6 +176,11 @@ def main() -> None:
         default="test",
         help="Select email recipient mode (test sends to TEST_EMAIL_RECIPIENT; prod sends to PROD_EMAIL_RECIPIENTS).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Render the email preview files instead of sending via SMTP.",
+    )
     args = parser.parse_args()
 
     # --- 1. Load Config from Environment ---
@@ -204,7 +210,6 @@ def main() -> None:
         # Accept JSON list (preferred) or comma-separated string
         try:
             import ast
-            import json
 
             try:
                 parsed = json.loads(raw)
@@ -441,6 +446,27 @@ def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     template_dir = repo_root / "templates"
 
+    metadata_dir = report_dir_path / str(args.year) / PREDICTIONS_SUBDIR
+    metadata_file = metadata_dir / f"CFB_week{args.week}_bets_metadata.json"
+    spread_threshold = None
+    total_threshold = None
+    if metadata_file.exists():
+        try:
+            with metadata_file.open("r", encoding="utf-8") as fh:
+                metadata_payload = json.load(fh)
+            thresholds = metadata_payload.get("betting_thresholds") or {}
+            spread_threshold = thresholds.get("spread_edge")
+            total_threshold = thresholds.get("total_edge")
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"Warning: Unable to load metadata from {metadata_file}: {exc}")
+
+    edge_thresholds = None
+    if spread_threshold is not None or total_threshold is not None:
+        edge_thresholds = {
+            "spread": spread_threshold,
+            "total": total_threshold,
+        }
+
     context = {
         "year": args.year,
         "week": args.week,
@@ -449,6 +475,7 @@ def main() -> None:
         "season_summary": season_summary,
         "bets": bets,
         "docs_url": "https://github.com/connorkitchings/cfb_model",
+        "edge_thresholds": edge_thresholds,
     }
 
     html = render_email_html(template_dir, context)
@@ -473,8 +500,20 @@ def main() -> None:
         img.add_header("Content-Disposition", "inline", filename=logo_path.name)
         image_attachments.append(img)
 
-    # --- 4. Send ---
+    # --- 4. Send or preview ---
     subject = f"CK's CFB Picks: {args.year} Week {args.week} Review"
+    if args.dry_run:
+        preview_dir = report_dir_path / str(args.year) / "email_previews"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        html_path = preview_dir / f"week_{args.week:02d}_review.html"
+        text_path = preview_dir / f"week_{args.week:02d}_review.txt"
+        html_path.write_text(html, encoding="utf-8")
+        text_path.write_text(text, encoding="utf-8")
+        print(
+            f"Dry run enabled; wrote HTML preview to {html_path} and text preview to {text_path}."
+        )
+        return
+
     try:
         send_email(
             subject,

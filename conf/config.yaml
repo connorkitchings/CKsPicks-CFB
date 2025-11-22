@@ -1,56 +1,22 @@
 defaults:
   - _self_
-  - model: spread_elastic_net
-  - hydra/sweeper/params: spread_elastic_net
-  - override hydra/sweeper: optuna
-
-data:
-  data_root: ${oc.env:CFB_DATA_ROOT,./data}
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
-  slice_path: outputs/prototypes/points_for_training_slice_2023_filtered.csv
-  train_weeks: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-  test_weeks: [13, 14, 15]
-  adjustment_iteration: 4
-  adjustment_iteration_offense: null
-  adjustment_iteration_defense: null
-
-mlflow:
-  experiment_name: "CFB_Model_Hyperparameter_Tuning"
+  - model: catboost
+  - features: standard_v1
+  - experiment: null
 
 hydra:
   run:
-    dir: ${oc.env:HYDRA_RUN_DIR,artifacts/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}}
+    dir: artifacts/mlruns/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: ${oc.env:HYDRA_SWEEP_DIR,artifacts/outputs/${now:%Y-%m-%d}}
-    subdir: ${model.name}_${now:%H-%M-%S}_${hydra.job.num}
-  sweeper:
-    direction: minimize
-    study_name: ${model.name}_${now:%Y-%m-%d_%H-%M-%S}
-    n_trials: 20
-    n_jobs: 1 # Set to -1 to use all available CPUs
+    dir: artifacts/mlruns/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
 
-walk_forward:
-  spread_strategy: ensemble   # options: ensemble, best_single
-  best_spread_model: elastic_net
-  total_strategy: points_for # options: ensemble, best_single, points_for
-  best_total_model: random_forest
+paths:
+  root_dir: ${oc.env:PWD}
+  data_dir: ${oc.env:CFB_DATA_ROOT,${oc.env:CFB_MODEL_DATA_ROOT,${paths.root_dir}/data}}
+  artifacts_dir: ${paths.root_dir}/artifacts
+  reports_dir: ${paths.artifacts_dir}/reports
+  models_dir: ${paths.artifacts_dir}/models
 
-weekly_bets:
-  year: 2024
-  week: 5
-  model_year: null
-  model_dir: ${oc.env:PROJECT_ROOT,./}/artifacts/models
-  output_dir: ${oc.env:PROJECT_ROOT,./}/artifacts/reports
-  prediction_mode: "legacy" # or "points_for"
-  model_registry:
-    spread_models: ["spread_ridge", "spread_elastic_net", "spread_huber"]
-    total_models: ["total_random_forest", "total_gradient_boosting"]
-  betting:
-    spread_threshold: 8.0
-    total_threshold: 8.0
-    spread_std_dev_threshold: 2.0
-    total_std_dev_threshold: 1.5
-  points_for:
-    spread_std: 18.0
-    total_std: 17.0
+random_seed: 42
+target: spread_target # default target

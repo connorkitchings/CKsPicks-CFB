@@ -1,11 +1,7 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 import pandas as pd
 
-from features.core import (
+from src.features.core import (
+    aggregate_team_game,
     aggregate_team_season,
     apply_iterative_opponent_adjustment,
 )
@@ -14,7 +10,8 @@ from features.core import (
 def test_aggregate_team_season_recency_weighting():
     """
     Tests that the recency weighting in aggregate_team_season is applied correctly.
-    The last 3 games should be weighted 3, 2, 1. All others are 1.
+    The last four games are weighted 4, 3, 2, 1 (most recent lowest index gets 1).
+    Any earlier games retain a weight of 1.
     """
     team_game_data = {
         "season": [2024, 2024, 2024, 2024],
@@ -25,11 +22,11 @@ def test_aggregate_team_season_recency_weighting():
     team_game_df = pd.DataFrame(team_game_data)
 
     # Expected calculation (based on current implementation):
-    # Weights for weeks 1, 2, 3, 4 are [1.0, 3.0, 2.0, 1.0]
-    # Weighted sum = (0.1 * 1.0) + (0.2 * 3.0) + (0.3 * 2.0) + (0.4 * 1.0) = 0.1 + 0.6 + 0.6 + 0.4 = 1.7
-    # Sum of weights = 1 + 3 + 2 + 1 = 7
-    # Expected mean = 1.7 / 7
-    expected_off_sr = 1.7 / 7.0
+    # Weights for weeks 1, 2, 3, 4 are [4.0, 3.0, 2.0, 1.0]
+    # Weighted sum = (0.1 * 4.0) + (0.2 * 3.0) + (0.3 * 2.0) + (0.4 * 1.0) = 2.0
+    # Sum of weights = 10
+    # Expected mean = 0.2
+    expected_off_sr = 0.2
 
     team_season_df = aggregate_team_season(team_game_df)
 
@@ -59,6 +56,29 @@ def test_aggregate_team_season_missing_metric_cols():
     team_season_df = aggregate_team_season(team_game_df)
     assert len(team_season_df) == 1
     assert "off_sr" not in team_season_df.columns
+
+
+def test_aggregate_team_season_fills_special_teams_missingness():
+    """
+    Special-teams metrics (e.g., net punt yards) can be missing for teams with no punts.
+    Ensure the aggregation fills NaNs and still produces finite momentum features.
+    """
+    team_game_df = pd.DataFrame(
+        {
+            "season": [2024, 2024],
+            "week": [1, 2],
+            "team": ["A", "A"],
+            "off_avg_net_punt_yards": [pd.NA, 40.0],
+        }
+    )
+
+    team_season_df = aggregate_team_season(team_game_df)
+    row = team_season_df.iloc[0]
+
+    assert not pd.isna(row["off_avg_net_punt_yards"])
+    assert not pd.isna(row["off_avg_net_punt_yards_last_1"])
+    assert abs(row["off_avg_net_punt_yards_last_1"] - 40.0) < 1e-6
+    assert abs(row["off_avg_net_punt_yards_last_2"] - 20.0) < 1e-6
 
 
 def test_apply_iterative_opponent_adjustment_simple():
@@ -105,3 +125,192 @@ def test_apply_iterative_opponent_adjustment_simple():
     assert "adj_def_sr" in team_a_adj
     assert abs(team_a_adj["adj_off_sr"] - 0.5) < 1e-6
     assert abs(team_a_adj["adj_def_sr"] - 0.4) < 1e-6
+
+
+def test_aggregate_team_game_field_position_and_drive_metrics():
+    season = 2024
+    week = 1
+    game_id = 111
+
+    def _play(**overrides):
+        base = {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "play_number": overrides.get("play_number", 1),
+            "offense": overrides.get("offense", "TeamA"),
+            "defense": overrides.get("defense", "TeamB"),
+            "rush_attempt": overrides.get("rush_attempt", 1),
+            "pass_attempt": overrides.get("pass_attempt", 0),
+            "success": overrides.get("success", 1),
+            "yards_gained": overrides.get("yards_gained", 5),
+            "ppa": overrides.get("ppa", 0.1),
+            "havoc": overrides.get("havoc", 0),
+            "line_yards": overrides.get("line_yards", 2.0),
+            "second_level_yards": overrides.get("second_level_yards", 1.0),
+            "open_field_yards": overrides.get("open_field_yards", 0.5),
+            "is_power_situation": overrides.get("is_power_situation", 0),
+            "power_success_converted": overrides.get("power_success_converted", 0),
+            "thirddown_conversion": overrides.get("thirddown_conversion", 0),
+            "play_type": overrides.get("play_type", "Rush"),
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "quarter": 1,
+            "time_remaining_before": 900,
+            "time_remaining_after": 890,
+            "eckel": 0,
+            "yards_to_goal": overrides.get("yards_to_goal", 65),
+            "drive_number": overrides.get("drive_number", 1),
+            "scoring": overrides.get("scoring", 0),
+            "turnover": overrides.get("turnover", 0),
+            "st_fg": 0,
+            "st_punt": 0,
+            "kick_distance": 0,
+            "is_fg_made": 0,
+        }
+        base.update(overrides)
+        return base
+
+    plays = [
+        _play(
+            play_number=1,
+            drive_number=1,
+            offense="TeamA",
+            defense="TeamB",
+            yards_gained=7,
+        ),
+        _play(
+            play_number=2,
+            drive_number=2,
+            offense="TeamA",
+            defense="TeamB",
+            yards_gained=3,
+            success=0,
+        ),
+        _play(
+            play_number=3,
+            drive_number=1,
+            offense="TeamB",
+            defense="TeamA",
+            yards_gained=4,
+        ),
+        _play(
+            play_number=4,
+            drive_number=2,
+            offense="TeamB",
+            defense="TeamA",
+            yards_gained=6,
+        ),
+        _play(
+            play_number=5,
+            drive_number=3,
+            offense="TeamB",
+            defense="TeamA",
+            yards_gained=8,
+        ),
+    ]
+    plays_df = pd.DataFrame(plays)
+
+    drives = [
+        {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "drive_number": 1,
+            "offense": "TeamA",
+            "defense": "TeamB",
+            "is_eckel_drive": 1,
+            "is_successful_drive": 1,
+            "is_busted_drive": 0,
+            "is_explosive_drive": 0,
+            "points_on_opps": 7,
+            "had_scoring_opportunity": 1,
+            "start_yards_to_goal": 70,
+            "points": 7,
+            "turnover": 0,
+            "play_duration": 120,
+        },
+        {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "drive_number": 2,
+            "offense": "TeamA",
+            "defense": "TeamB",
+            "is_eckel_drive": 0,
+            "is_successful_drive": 1,
+            "is_busted_drive": 0,
+            "is_explosive_drive": 0,
+            "points_on_opps": 3,
+            "had_scoring_opportunity": 1,
+            "start_yards_to_goal": 60,
+            "points": 3,
+            "turnover": 0,
+            "play_duration": 90,
+        },
+        # Opponent drives against TeamA defense
+        {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "drive_number": 1,
+            "offense": "TeamB",
+            "defense": "TeamA",
+            "is_eckel_drive": 0,
+            "is_successful_drive": 1,
+            "is_busted_drive": 0,
+            "is_explosive_drive": 0,
+            "points_on_opps": 3,
+            "had_scoring_opportunity": 1,
+            "start_yards_to_goal": 80,
+            "points": 3,
+            "turnover": 0,
+            "play_duration": 100,
+        },
+        {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "drive_number": 2,
+            "offense": "TeamB",
+            "defense": "TeamA",
+            "is_eckel_drive": 0,
+            "is_successful_drive": 1,
+            "is_busted_drive": 0,
+            "is_explosive_drive": 0,
+            "points_on_opps": 3,
+            "had_scoring_opportunity": 1,
+            "start_yards_to_goal": 75,
+            "points": 3,
+            "turnover": 0,
+            "play_duration": 80,
+        },
+        {
+            "season": season,
+            "week": week,
+            "game_id": game_id,
+            "drive_number": 3,
+            "offense": "TeamB",
+            "defense": "TeamA",
+            "is_eckel_drive": 0,
+            "is_successful_drive": 0,
+            "is_busted_drive": 0,
+            "is_explosive_drive": 0,
+            "points_on_opps": 2,
+            "had_scoring_opportunity": 1,
+            "start_yards_to_goal": 70,
+            "points": 2,
+            "turnover": 0,
+            "play_duration": 70,
+        },
+    ]
+    drives_df = pd.DataFrame(drives)
+
+    team_game = aggregate_team_game(plays_df, drives_df)
+    team_a_row = team_game[team_game["team"] == "TeamA"].iloc[0]
+
+    assert abs(team_a_row["off_points_per_drive"] - 5.0) < 1e-6
+    expected_def_ppd = 8.0 / 3.0
+    assert abs(team_a_row["def_points_per_drive_allowed"] - expected_def_ppd) < 1e-6
+    assert abs(team_a_row["net_field_position_delta"] - 10.0) < 1e-6

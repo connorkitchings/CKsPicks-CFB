@@ -68,6 +68,8 @@ def simulate_week(
     base_unit_fraction: float = 0.02,
     default_price: int = -110,
     single_bet_cap: float = 0.05,
+    weekly_exposure_cap: float = 0.15,
+    max_weekly_bets: int = 12,
 ) -> Tuple[pd.DataFrame, float, dict]:
     models = load_ensemble_models(year, model_dir)
     df = load_week_dataset(year, week, data_root)
@@ -110,6 +112,9 @@ def simulate_week(
         base_unit_fraction=base_unit_fraction,
         default_american_price=default_price,
         single_bet_cap=single_bet_cap,
+        bankroll=bankroll,
+        max_weekly_exposure_fraction=weekly_exposure_cap,
+        max_weekly_bets=max_weekly_bets,
     )
 
     # Settle using raw outcomes present in the dataset
@@ -190,6 +195,8 @@ def main() -> None:
     ap.add_argument("--base-unit-fraction", type=float, default=0.02)
     ap.add_argument("--default-price", type=int, default=-110)
     ap.add_argument("--single-bet-cap", type=float, default=0.05)
+    ap.add_argument("--weekly-exposure-cap", type=float, default=0.15)
+    ap.add_argument("--max-weekly-bets", type=int, default=12)
 
     args = ap.parse_args()
 
@@ -216,6 +223,8 @@ def main() -> None:
                 base_unit_fraction=args.base_unit_fraction,
                 default_price=args.default_price,
                 single_bet_cap=args.single_bet_cap,
+                weekly_exposure_cap=args.weekly_exposure_cap,
+                max_weekly_bets=args.max_weekly_bets,
             )
             summary_rows.append(
                 {

@@ -1,0 +1,8 @@
+model.params.n_estimators: int(200, 600)
+model.params.learning_rate: tag(log, interval(0.03, 0.1))
+model.params.max_depth: int(3, 8)
+model.params.subsample: interval(0.6, 0.9)
+model.params.colsample_bytree: interval(0.5, 0.9)
+model.params.min_child_samples: int(30, 120)
+model.params.lambda_l1: tag(log, interval(1e-3, 5.0))
+model.params.lambda_l2: tag(log, interval(1e-3, 5.0))

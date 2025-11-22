@@ -12,6 +12,7 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 - Types: numeric (int/float), categorical, boolean, datetime, string.
 - Naming: snake*case; prefixes encouraged (e.g., `off*`, `def*`, `adj*`).
 - All features should be reproducible from source CSV and deterministic given a seed.
+- Use `scripts/profile_feature_cache.py --year <Y> --week <W>` to inspect coverage/missingness for the cached `team_week_adj` partitions before introducing new downstream transforms.
 
 ### Play filters and definitions
 
@@ -114,8 +115,13 @@ It complements `docs/project_org/modeling_baseline.md` and the runbook in
 | off_expl_rate_pass             | team-season | float | % pass plays gaining ≥20 yards                                  | plays.parquet (pass only)         | mean(yards_gained >= 20)                    | split threshold                        |
 | off_eckel_rate                 | team-season | float | % of drives that either gain ≥2 first downs or reach opp 40     | drives.parquet                    | mean(is_eckel_drive)                        | possession metric                      |
 | off_finish_pts_per_opp         | team-season | float | Points per scoring opportunity (first down at or inside opp 40) | drives.parquet, scoring           | sum(points_on_opps)/n_opportunities         | finishing drives                       |
+| off_points_per_drive           | team-season | float | Average offensive points scored per drive                        | drives.parquet                    | sum(points)/n_drives                       | derived weekly + cached                |
+| off_avg_start_field_position   | team-season | float | Average starting field position (distance from own goal line)    | drives.parquet                    | mean(100 − start_yards_to_goal)            | larger = shorter field                 |
 | def_eckel_rate_allowed         | team-season | float | % of opponent drives meeting eckel definition                   | drives.parquet                    | mean(is_eckel_drive_allowed)                | possession metric                      |
 | def_finish_pts_per_opp_allowed | team-season | float | Points allowed per opponent scoring opportunity                 | drives.parquet, scoring           | sum(points_allowed_on_opps)/n_opportunities | finishing drives                       |
+| def_points_per_drive_allowed   | team-season | float | Points allowed per defensive drive                              | drives.parquet                    | sum(points_allowed)/n_drives_allowed       | mirrors offense metric                 |
+| def_avg_start_field_position_allowed | team-season | float | Average opponent starting field position                         | drives.parquet                    | mean(100 − start_yards_to_goal_allowed)    | shorter = better defense               |
+| net_field_position_delta       | team-season | float | Difference between offensive and defensive starting field positions | derived from two cols             | off_avg_start_field_position − def_avg_start_field_position_allowed | positive favors offense |
 | off_third_down_conversion_rate | team-season | float | Offensive third down conversion rate                            | plays.parquet                     | mean(thirddown_conversion)                  |                                        |
 | def_third_down_conversion_rate | team-season | float | Defensive third down conversion rate                            | plays.parquet                     | mean(thirddown_conversion_allowed)          |                                        |
 
@@ -171,6 +177,22 @@ Algorithm (per season s, team t, base metric x ∈ {epa_pp, sr, ypp, rush_ypp, p
 | possessions_per_game      | team-season | float | Proxy via offensive drives per game                     | drives.parquet, games      | = drives_per_game               |
 | avg_start_field_pos_ydln  | team-season | float | Avg starting field position (own-yardline scale)        | drives.parquet             | mean(start_ydln_own_side)       |
 | avg_scoring_opps_per_game | team-season | float | Avg scoring opportunities per game (opp 40+ first down) | drives.parquet             | n_opportunities / n_games       |
+
+### Derived tempo/style contrasts & recency features (team-week level)
+
+| feature_name        | level    | dtype | definition                                                    | inputs                                                   | transform                                                         |
+| ------------------- | -------- | ----- | ------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
+| tempo_contrast      | team-week | float | Difference in plays per game (home offense − away offense)    | home/away `plays_per_game`                               | `home_plays_per_game - away_plays_per_game`                       |
+| tempo_total         | team-week | float | Sum of expected plays per game for both teams                 | home/away `plays_per_game`                               | `home_plays_per_game + away_plays_per_game`                       |
+| tempo_ratio         | team-week | float | Ratio of home pace vs. away pace                              | home/away `plays_per_game`                               | `(home_plays_per_game)/(away_plays_per_game + 1e-6)`              |
+| drives_contrast     | team-week | float | Difference in drives per game                                 | home/away `drives_per_game`                              | `home_drives_per_game - away_drives_per_game`                     |
+| drives_total        | team-week | float | Sum of drives per game                                        | home/away `drives_per_game`                              | `home_drives_per_game + away_drives_per_game`                     |
+| drives_ratio        | team-week | float | Ratio of home drives tempo vs. away drives tempo              | home/away `drives_per_game`                              | `(home_drives_per_game)/(away_drives_per_game + 1e-6)`            |
+| scoring_opps_contrast | team-week | float | Difference in scoring opportunities per game                   | home/away `avg_scoring_opps_per_game`                    | `home_avg_scoring_opps_per_game - away_avg_scoring_opps_per_game` |
+| scoring_opps_total  | team-week | float | Sum of scoring opportunities per game                         | home/away `avg_scoring_opps_per_game`                    | `home_avg_scoring_opps_per_game + away_avg_scoring_opps_per_game` |
+| scoring_opps_ratio  | team-week | float | Ratio of home scoring opportunities vs. away opportunities    | home/away `avg_scoring_opps_per_game`                    | `(home_avg_scoring_opps_per_game)/(away_avg_scoring_opps_per_game + 1e-6)` |
+
+Recency columns now include `_last_1`, `_last_2`, and `_last_3` suffixes for every aggregated stat (offense, defense, and pace metrics). The underlying weights emphasize the most recent four games (4/3/2/1), improving late-season responsiveness.
 
 <!-- markdownlint-enable MD013 -->
 

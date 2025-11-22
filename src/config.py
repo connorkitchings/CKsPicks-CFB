@@ -18,10 +18,10 @@ def get_repo_root() -> Path:
 
 def get_data_root() -> Path:
     """
-    Resolve the data root from the CFB_DATA_ROOT environment variable.
+    Resolve the data root using env vars (CFB_DATA_ROOT or CFB_MODEL_DATA_ROOT).
     Falls back to 'data/' in the repo root if not set.
     """
-    env_path = os.getenv("CFB_DATA_ROOT")
+    env_path = os.getenv("CFB_DATA_ROOT") or os.getenv("CFB_MODEL_DATA_ROOT")
     if env_path:
         return Path(env_path)
     return get_repo_root() / "data"

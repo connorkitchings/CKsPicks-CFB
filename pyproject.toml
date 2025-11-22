@@ -2,7 +2,7 @@
 name = "cfb_model"
 version = "0.1.0"
 description = "An end-to-end college football betting model that predicts point spreads and over/unders."
-requires-python = ">=3.12,<4"
+requires-python = ">=3.12,<3.13"
 authors = [{ name = "Connor Kitchings", email = "connor.kitchings@gmail.com" }]
 dependencies = [
     "pandas>=2.0",
@@ -11,15 +11,16 @@ dependencies = [
     "requests>=2.30",
     "python-dotenv>=1.0",
     # "prefect>=2.19.0",
-    "shap>=0.45.0",
+    "shap>=0.50.0",
     "cfbd>=5.9.1", # CollegeFootballData API access
-    "shap>=0.45.0",
     "pyarrow>=15.0", # Parquet IO
     "jinja2>=3.1", # Email template rendering
     "mlflow>=2.0",
     "hydra-core>=1.3.2",
     "hydra-optuna-sweeper==1.2.0",
     "optuna<3.0.0,>=2.10.0",
+    "lightgbm>=4.5.0",
+    "catboost>=1.2.7",
     "iniconfig>=2.1.0",
     "pluggy>=1.6.0",
     "pytest>=8.4.1",
@@ -31,6 +32,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "ruff>=0.5.0",
+    "typer>=0.9.0",
 
     "jupyter>=1.0",
     "ipykernel>=6.29.0",

@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import pytest
 
 from analysis.unadjusted import (
@@ -12,9 +15,8 @@ pd = pytest.importorskip("pandas")
 
 matplotlib = pytest.importorskip("matplotlib")
 matplotlib.use("Agg")
-import os
-from pathlib import Path
 plt = pytest.importorskip("matplotlib.pyplot")
+
 
 def _prepare_minimal_data(tmp_path, *, year: int = 2024) -> None:
     raw_root = Path(str(tmp_path)) / "raw"

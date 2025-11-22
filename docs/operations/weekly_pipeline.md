@@ -104,6 +104,9 @@ python scripts/publish_picks.py --year 2024 --week 5
 python scripts/publish_review.py --year 2024 --week 5
 ```
 
+Pass `--dry-run` to skip SMTP delivery and save HTML/text previews under
+`artifacts/reports/<year>/email_previews/`.
+
 Need quick performance snapshots? Use the consolidated analysis CLI:
 
 ```bash
@@ -153,8 +156,11 @@ uv run python -m src.scripts.generate_weekly_bets_clean \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --model-dir ./artifacts/models \
   --output-dir artifacts/reports \
+  --bankroll 10000 \
   --spread-threshold 8.0 \
-  --total-threshold 8.0
+  --total-threshold 8.0 \
+  --max-weekly-exposure-fraction 0.15 \
+  --max-single-bet-fraction 0.05
 
 # Score once games are final
 uv run python scripts/score_weekly_picks.py \
@@ -190,16 +196,18 @@ uv run python -m src.scripts.generate_weekly_bets_clean \
   --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
   --model-dir ./artifacts/models \
   --output-dir artifacts/reports \
+  --bankroll 10000 \
   --spread-threshold 8.0 \
   --total-threshold 8.0 \
   --spread-std-dev-threshold 3.0 \
   --total-std-dev-threshold 1.5 \
-  --kelly-fraction 0.25 \
-  --kelly-cap 0.25 \
-  --base-unit-fraction 0.02
+  --max-weekly-exposure-fraction 0.15 \
+  --max-single-bet-fraction 0.05
 ```
 
 Points-for evaluation: once `artifacts/models/<year>/points_for_home.joblib` and `points_for_away.joblib` exist (see `scripts/train_points_for_models.py`), add `--prediction-mode points_for` and optional `--points-for-spread-std` / `--points-for-total-std` arguments to generate a comparative report without disturbing the legacy ensemble flow.
+
+Each generator run now emits a companion `CFB_weekXX_bets_metadata.json` file beside the CSV. This metadata records the bankroll, threshold overrides, risk caps (5% single bet / 15% weekly exposure by default), and the resolved data/model paths used for that slate—save it with the report for reproducibility and policy audits.
 
 Score the week against final outcomes:
 
@@ -233,3 +241,12 @@ python scripts/cli.py run-season \
 ```
 
 ```
+
+## Session Closing Checklist (AI Assistant)
+
+When ending an AI-assisted session with code/doc changes:
+
+1. Capture a TL;DR and session details in `session_logs/YYYY-MM-DD/NN.md` using the template in `docs/guides/ai_session_templates.md`.
+2. Summarize accomplishments, blockers, and next steps in the final assistant message.
+3. Remind the user to review `git status`, `git add`, `git commit`, and `git push` with a proposed commit message if changes were made.
+4. Recommend running `uv run ruff format . && uv run ruff check .`, `uv run pytest -q`, and (if docs changed) `uv run mkdocs build --quiet`.

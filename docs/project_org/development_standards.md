@@ -139,6 +139,32 @@ All pull requests trigger:
 - Document all parameters and return values
 - Provide usage examples
 
+### Experiment Management & Reproducibility
+
+All modeling experiments must be **immutable and fully reproducible**:
+
+- **Hydra-First:** All experiments are launched via Hydra configurations under `conf/`.  
+  No ad-hoc `python foo.py --flag=...` runs for anything we care about keeping.
+- **Config Logging:** Every run records, at minimum:
+  - `git_sha`
+  - `hydra_config_path` (config group + overrides)
+  - `dataset_snapshot_id` (e.g., manifest hash or dated cache label)
+  - `feature_set_id` (explicit name for a feature selection or transformation bundle)
+  - `random_seed` and any CV/Optuna settings
+- **Immutable Outputs:**
+  - Runs write into a unique directory under `artifacts/` (Hydra-run directory or MLflow run ID).
+  - No run directory is ever reused or overwritten; new setting → new run.
+- **Feature Selection Changes:**
+  - Any change to feature sets (adding/removing columns, new transforms) must:
+    - Update `feature_set_id`,
+    - Be logged as a config change,
+    - Be recorded in the decision log if it affects production models.
+- **Notebook Rule:** Notebooks are for exploration only. Any experiment worth keeping is re-run via
+  a Hydra config and logged under `artifacts/` with full metadata.
+
+- **Docker MCP First:** Any persistent service (experiment tracker, monitoring UI, etc.) should be
+  run via Docker and accessed through Docker MCP, not an ad-hoc local process or external SaaS.
+
 ## Deployment & Operations
 
 ### Environment Management

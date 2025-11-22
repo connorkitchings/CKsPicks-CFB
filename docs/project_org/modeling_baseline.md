@@ -81,6 +81,18 @@ To improve prediction stability and reduce week-to-week variance, the project us
   - All scripts accept `--data-root` for custom data locations
   - Random seeds fixed for deterministic outputs
 
+## Near-Term Research Ideas
+
+- **Raw offense vs. adjusted defense (x1) comparisons:** Prototype a points-for variant that
+  feeds unadjusted offensive metrics against once-adjusted defensive metrics. Early intuition is
+  that “raw vs. adjusted” matchups could better capture stylistic clashes and stabilize predictions
+  for the home/away scoring models.
+- **Probabilistic power ratings for spreads:** Build a standard probabilistic ratings engine (Elo,
+  Bayesian hierarchical, or state-space) tuned specifically for spread prediction. The ratings
+  would emit a distribution over team strength, allowing spreads to be derived from rating
+  differentials plus uncertainty. This may provide an alternative to direct score regressions and
+  could unlock calibrated confidence intervals for ATS bets.
+
 ## Betting Policy (MVP)
 
 - Compute edge = |model_prediction − sportsbook_line|

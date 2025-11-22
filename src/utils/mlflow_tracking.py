@@ -1,20 +1,35 @@
 """Utilities for MLflow tracking and experiment management."""
 
+from __future__ import annotations
+
+import os
+
 import mlflow
 
-# Default local tracking URI. For a remote server, use a different URI.
-TRACKING_URI = "file:./artifacts/mlruns"
+from src.config import get_repo_root
 
 
-def setup_mlflow(tracking_uri: str = TRACKING_URI) -> None:
-    """
-    Sets the MLflow tracking URI.
+def _default_tracking_uri() -> str:
+    """Return the canonical MLflow file URI under the repo's artifacts dir."""
 
-    Args:
-        tracking_uri (str): The URI for the MLflow tracking server.
-                            Defaults to a local './artifacts/mlruns' directory.
-    """
-    mlflow.set_tracking_uri(tracking_uri)
+    return (get_repo_root() / "artifacts" / "mlruns").resolve().as_uri()
+
+
+TRACKING_URI = _default_tracking_uri()
+
+
+def get_tracking_uri() -> str:
+    """Return the active tracking URI, honoring ``MLFLOW_TRACKING_URI`` overrides."""
+
+    return os.getenv("MLFLOW_TRACKING_URI", TRACKING_URI)
+
+
+def setup_mlflow(tracking_uri: str | None = None) -> str:
+    """Set MLflow's tracking URI and return the resolved target."""
+
+    resolved = tracking_uri or get_tracking_uri()
+    mlflow.set_tracking_uri(resolved)
+    return resolved
 
 
 def get_or_create_experiment(experiment_name: str) -> str:

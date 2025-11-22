@@ -296,7 +296,7 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 
 - **Context**: MLflow now tracks experiments under `artifacts/mlruns` instead of the legacy project-root `mlruns` directory.
 - **Pattern**: Use `mlflow.set_tracking_uri()` to keep experiment output consolidated under `artifacts/`.
-- **Usage**: `mlflow.set_tracking_uri("file:./artifacts/mlruns")`
+- **Usage**: `from src.utils.mlflow_tracking import get_tracking_uri; mlflow.set_tracking_uri(get_tracking_uri())`
 - **Discovered In**: `[LOG:2025-10-19/01]`
 
 ---
@@ -343,3 +343,21 @@ Use the format `[KB:PatternName]` to reference entries from other documents.
 - **Pattern**: If a Python script defines a Typer application and is also intended to be imported as a module by another script, it must maintain its top-level `app = typer.Typer()` definition. Accidentally removing this during a refactor will break the import chain.
 - **Usage**: Ensure that any script providing a Typer app for aggregation defines the `app` object at the module level.
 - **Discovered In**: `[LOG:2025-10-20/05]`
+
+## `[KB:HydraExperimentPattern]`
+
+- **Context**: Avoiding lost experiments when tweaking model parameters or feature sets.
+- **Pattern**: Treat every experiment as an immutable object defined by:
+  `(git_sha, hydra_config, dataset_snapshot_id, feature_set_id, seed)`. Always launch via Hydra,
+  write outputs to a unique `artifacts/` subdirectory, and store the full config with the run.
+- **Usage**: See `conf/` configs and `artifacts/mlruns` (or Dockerized tracker) for examples.
+- **Discovered In**: `[LOG:2025-11-17/01]`
+
+---
+
+## `[KB:CFBD-API-KEY-AUTH]`
+
+- **Context**: The `cfbd` API returns a 401 Unauthorized error even when the API key is correct.
+- **Pattern**: The `cfbd` python library has two ways to configure the API key. The first method is to use `cfbd.Configuration(access_token=os.environ["BEARER_TOKEN"])`. The second method is to use `configuration.api_key['Authorization'] = os.getenv("CFBD_API_KEY")` and `configuration.api_key_prefix['Authorization'] = 'Bearer'`. If one method does not work, try the other one. Also, make sure that the environment variable name in the `.env` file matches the one used in the code.
+- **Usage**: If you are using `cfbd.Configuration(access_token=os.environ["BEARER_TOKEN"])`, make sure that the environment variable name in the `.env` file is `BEARER_TOKEN`. If you are using `configuration.api_key['Authorization'] = os.getenv("CFBD_API_KEY")`, make sure that the environment variable name in the `.env` file is `CFBD_API_KEY`.
+- **Discovered In**: `[LOG:2025-11-17/01]`

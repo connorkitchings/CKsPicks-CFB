@@ -1,7 +1,13 @@
-import mlflow
-import os
+import sys
+from pathlib import Path
 
-mlflow.set_tracking_uri("file:./artifacts/mlruns")
+import mlflow
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.mlflow_tracking import get_tracking_uri
+
+mlflow.set_tracking_uri(get_tracking_uri())
 mlflow.set_experiment("MLflow Test")
 
 with mlflow.start_run() as run:

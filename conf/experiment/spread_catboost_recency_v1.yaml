@@ -1,0 +1,10 @@
+# @package _global_
+defaults:
+  - override /model: catboost
+  - override /features: standard_v1
+
+experiment:
+  name: spread_catboost_recency_v1
+
+features:
+  recency_window: fast
