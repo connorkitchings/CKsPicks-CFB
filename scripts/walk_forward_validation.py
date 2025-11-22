@@ -7,13 +7,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import warnings
+
 import hydra
 import mlflow
+import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 
 from src.models.features import (
     build_feature_list,
+    filter_features_by_pack,
     load_point_in_time_data,
 )
 from src.models.train_model import (
@@ -24,16 +30,115 @@ from src.models.train_model import (
     spread_models,
     total_models,
 )
+from src.utils.mlflow_tracking import get_tracking_uri
+
+
+def _compute_vif(frame: pd.DataFrame) -> pd.Series:
+    """Compute variance inflation factor (VIF) per column using linear regression R^2."""
+
+    if frame.shape[1] <= 1:
+        return pd.Series([0.0] * frame.shape[1], index=frame.columns)
+
+    x = frame.to_numpy(dtype=float)
+    vif_values: list[float] = []
+    for idx, col in enumerate(frame.columns):
+        y = x[:, idx]
+        x_other = np.delete(x, idx, axis=1)
+        if x_other.shape[1] == 0 or np.allclose(y, y[0]):
+            vif_values.append(0.0)
+            continue
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+                model = LinearRegression()
+                model.fit(x_other, y)
+                r2 = model.score(x_other, y)
+        vif = float("inf") if r2 >= 0.999999 else float(1.0 / max(1e-12, 1.0 - r2))
+        vif_values.append(vif)
+    return pd.Series(vif_values, index=frame.columns)
+
+
+def _prune_high_vif(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    *,
+    threshold: float = 50.0,
+    max_iter: int = 10,
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Iteratively remove columns with VIF above threshold."""
+    keep_cols = list(train_df.columns)
+    dropped: list[str] = []
+    for _ in range(max_iter):
+        if len(keep_cols) <= 1:
+            break
+        vif = _compute_vif(train_df[keep_cols])
+        high = vif[vif > threshold]
+        if high.empty:
+            break
+        # drop the highest VIF column
+        drop_col = high.sort_values(ascending=False).index[0]
+        keep_cols.remove(drop_col)
+        dropped.append(drop_col)
+    return train_df[keep_cols], test_df[keep_cols], dropped
+
+
+def _scale_features(
+    train_df: pd.DataFrame, test_df: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Scale features using StandardScaler fitted on train_df."""
+    scaler = StandardScaler()
+    train_scaled = pd.DataFrame(
+        scaler.fit_transform(train_df),
+        columns=train_df.columns,
+        index=train_df.index,
+    )
+    test_scaled = pd.DataFrame(
+        scaler.transform(test_df),
+        columns=train_df.columns,
+        index=test_df.index,
+    )
+    return train_scaled, test_scaled
+
+
+def _clip_extremes(
+    train_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    *,
+    lower_q: float = 0.005,
+    upper_q: float = 0.995,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Clip feature values using train quantiles to reduce extreme outliers."""
+    bounds = {}
+    for col in train_df.columns:
+        series = train_df[col].astype(float)
+        bounds[col] = (
+            series.quantile(lower_q),
+            series.quantile(upper_q),
+        )
+    train_clipped = train_df.copy()
+    test_clipped = test_df.copy()
+    for col, (lo, hi) in bounds.items():
+        train_clipped[col] = train_clipped[col].clip(lo, hi)
+        test_clipped[col] = test_clipped[col].clip(lo, hi)
+    return train_clipped, test_clipped
 
 
 @hydra.main(config_path="../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     """Main entrypoint for walk-forward validation."""
-    mlflow.set_tracking_uri("file:./artifacts/mlruns")
+    mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment(cfg.mlflow.experiment_name)
 
     season_metric_rows: list[dict] = []
     all_season_predictions: list[pd.DataFrame] = []
+    start_week = int(cfg.walk_forward.get("start_week", 1))
+    end_week = int(cfg.walk_forward.get("end_week", 15))
+    configured_years = cfg.walk_forward.get("years")
+    configured_feature_packs = cfg.walk_forward.get("feature_packs")
+    if configured_years:
+        years_to_process = sorted({int(y) for y in configured_years})
+    else:
+        years_to_process = list(range(cfg.data.train_years[0], cfg.data.test_year + 1))
 
     def _evaluate_and_log(
         df: pd.DataFrame,
@@ -103,6 +208,39 @@ def main(cfg: DictConfig) -> None:
             f"is not one of the available total models: {list(total_models.keys())}"
         )
 
+    feature_packs = None
+    # Prefer run-level feature packs; fall back to global features config
+    if configured_feature_packs:
+        feature_packs = [str(pack) for pack in configured_feature_packs]
+    elif "features" in cfg and cfg.features.get("packs"):
+        feature_packs = [str(pack) for pack in cfg.features.packs]
+
+    spread_model_names = cfg.walk_forward.get("spread_models") or list(
+        spread_models.keys()
+    )
+    active_spread_models = {
+        name: model
+        for name, model in spread_models.items()
+        if name in spread_model_names
+    }
+    total_model_names = cfg.walk_forward.get("total_models") or list(
+        total_models.keys()
+    )
+    active_total_models = {
+        name: model for name, model in total_models.items() if name in total_model_names
+    }
+    points_for_model_names = cfg.walk_forward.get("points_for_models") or list(
+        points_for_models.keys()
+    )
+    active_points_for_models = {
+        name: model
+        for name, model in points_for_models.items()
+        if name in points_for_model_names
+    }
+    min_feature_variance = (
+        float(cfg.features.min_variance) if "features" in cfg else 0.0
+    )
+
     with mlflow.start_run(run_name="Walk_Forward_Validation_All_Models"):
         resolved_offense_iteration = (
             cfg.data.adjustment_iteration_offense
@@ -120,20 +258,31 @@ def main(cfg: DictConfig) -> None:
                 "test_year": cfg.data.test_year,
                 "off_adjustment_iteration": resolved_offense_iteration,
                 "def_adjustment_iteration": resolved_defense_iteration,
+                "feature_packs": ",".join(feature_packs) if feature_packs else "all",
+                "min_feature_variance": min_feature_variance,
             }
         )
 
-        for year in range(cfg.data.train_years[0], cfg.data.test_year + 1):
+        for year in years_to_process:
             print(f"--- Running walk-forward validation for year: {year} ---")
             all_predictions = []
-            for week in range(1, 16):
+            for week in range(start_week, end_week + 1):
                 print(f"  Processing Year {year}, Week {week}")
 
                 # --- Data Loading (now using cached features) ---
                 print("    Loading training data...")
                 all_training_games = []
-                for train_year in range(cfg.data.train_years[0], year + 1):
-                    for train_week in range(1, 16 if train_year < year else week):
+                if configured_years:
+                    candidate_train_years = [y for y in years_to_process if y <= year]
+                else:
+                    candidate_train_years = list(
+                        range(cfg.data.train_years[0], year + 1)
+                    )
+                for train_year in candidate_train_years:
+                    limit = (
+                        end_week + 1 if train_year < year else min(week, end_week + 1)
+                    )
+                    for train_week in range(start_week, limit):
                         weekly_data = load_point_in_time_data(
                             train_year,
                             train_week,
@@ -168,6 +317,16 @@ def main(cfg: DictConfig) -> None:
                 # --- Feature Preparation ---
                 feature_list = build_feature_list(train_df)
                 feature_list = [c for c in feature_list if c in test_df.columns]
+                feature_list = filter_features_by_pack(feature_list, feature_packs)
+                if not feature_list:
+                    print(
+                        f"    Skipping week {week}: no features available after filtering."
+                    )
+                    continue
+                if feature_packs:
+                    print(
+                        f"    Feature packs {feature_packs} selected → {len(feature_list)} columns"
+                    )
                 target_cols = [
                     "spread_target",
                     "total_target",
@@ -196,6 +355,45 @@ def main(cfg: DictConfig) -> None:
                 y_test_home_points = test_df["home_points_for"].astype(float)
                 y_test_away_points = test_df["away_points_for"].astype(float)
 
+                if min_feature_variance > 0:
+                    variances = x_train.var(axis=0, numeric_only=True)
+                    keep_cols = [
+                        col
+                        for col in feature_list
+                        if variances.get(col, 0.0) >= min_feature_variance
+                    ]
+                    if not keep_cols:
+                        print(
+                            f"    Skipping week {week}: variance threshold removed all features."
+                        )
+                        continue
+                    dropped = [col for col in feature_list if col not in keep_cols]
+                    if dropped:
+                        print(
+                            f"    Dropping {len(dropped)} low-variance features (threshold={min_feature_variance})"
+                        )
+                    feature_list = keep_cols
+                    x_train = x_train[feature_list]
+                    x_test = x_test[feature_list]
+
+                # --- Outlier handling ---
+                x_train, x_test = _clip_extremes(x_train, x_test)
+
+                # --- Stable preprocessing: VIF pruning + scaling ---
+                x_train, x_test, vif_dropped = _prune_high_vif(
+                    x_train,
+                    x_test,
+                    threshold=float(cfg.features.get("vif_threshold", 50.0)),
+                    max_iter=10,
+                )
+                if vif_dropped:
+                    print(
+                        f"    Dropped {len(vif_dropped)} high-VIF features: "
+                        f"{', '.join(vif_dropped[:5])}"
+                        + ("..." if len(vif_dropped) > 5 else "")
+                    )
+                x_train, x_test = _scale_features(x_train, x_test)
+
                 # --- Model Training and Prediction ---
                 week_predictions = test_df[
                     ["season", "week", "id", "home_team", "away_team"]
@@ -207,7 +405,7 @@ def main(cfg: DictConfig) -> None:
 
                 print("    Training and predicting with spread models...")
                 with _suppress_linear_runtime_warnings():
-                    for model_name, model in spread_models.items():
+                    for model_name, model in active_spread_models.items():
                         model.fit(x_train, y_train_spread)
                         preds = model.predict(x_test)
                         week_predictions[f"spread_pred_{model_name}"] = preds
@@ -215,7 +413,7 @@ def main(cfg: DictConfig) -> None:
 
                 print("    Training and predicting with total models...")
                 with _suppress_linear_runtime_warnings():
-                    for model_name, model in total_models.items():
+                    for model_name, model in active_total_models.items():
                         model.fit(x_train, y_train_total)
                         preds = model.predict(x_test)
                         week_predictions[f"total_pred_{model_name}"] = preds
@@ -223,7 +421,7 @@ def main(cfg: DictConfig) -> None:
 
                 print("    Training and predicting with points-for models...")
                 with _suppress_linear_runtime_warnings():
-                    for model_name, model in points_for_models.items():
+                    for model_name, model in active_points_for_models.items():
                         # Home points
                         model.fit(x_train, y_train_home_points)
                         preds_home = model.predict(x_test)
@@ -235,7 +433,7 @@ def main(cfg: DictConfig) -> None:
                         week_predictions[f"away_points_pred_{model_name}"] = preds_away
 
                 # Add derived total from points-for models
-                for model_name in points_for_models:
+                for model_name in active_points_for_models:
                     week_predictions[f"total_pred_points_for_{model_name}"] = (
                         week_predictions[f"home_points_pred_{model_name}"]
                         + week_predictions[f"away_points_pred_{model_name}"]
@@ -295,7 +493,7 @@ def main(cfg: DictConfig) -> None:
                     + season_predictions["away_points_pred_ensemble"]
                 )
 
-            for model_name in spread_models:
+            for model_name in active_spread_models:
                 _evaluate_and_log(
                     season_predictions,
                     year_label=str(year),
@@ -305,7 +503,7 @@ def main(cfg: DictConfig) -> None:
                     pred_col=f"spread_pred_{model_name}",
                 )
 
-            for model_name in total_models:
+            for model_name in active_total_models:
                 _evaluate_and_log(
                     season_predictions,
                     year_label=str(year),
@@ -400,7 +598,7 @@ def main(cfg: DictConfig) -> None:
                     total_cols
                 ].mean(axis=1)
 
-            for model_name in spread_models:
+            for model_name in active_spread_models:
                 _evaluate_and_log(
                     combined_predictions,
                     year_label="overall",
@@ -410,7 +608,7 @@ def main(cfg: DictConfig) -> None:
                     pred_col=f"spread_pred_{model_name}",
                 )
 
-            for model_name in total_models:
+            for model_name in active_total_models:
                 _evaluate_and_log(
                     combined_predictions,
                     year_label="overall",
@@ -479,6 +677,15 @@ def main(cfg: DictConfig) -> None:
             print(f"Saved aggregated metrics summary to {metrics_output}")
 
     print("Walk-forward validation complete.")
+
+    # Return the final metric for Hydra
+    final_rmse = metrics_df[
+        (metrics_df["year"] == "overall")
+        & (metrics_df["target"] == "spread")
+        & (metrics_df["model"] == f"strategy_{cfg.walk_forward.spread_strategy}")
+    ]["rmse"].iloc[0]
+
+    return float(final_rmse)
 
 
 if __name__ == "__main__":

@@ -137,11 +137,17 @@ def calculate_st_analytics_agg(
         punts["net_punt_yards"] = punts["yards_to_goal"] - (
             100 - punts["next_drive_start_ytg"]
         )
-        punt_agg = (
-            punts.groupby(["game_id", "offense"])
-            .agg(off_avg_net_punt_yards=("net_punt_yards", "mean"))
-            .reset_index()
-        )
+        punts = punts.dropna(subset=["net_punt_yards"])
+        if punts.empty:
+            punt_agg = pd.DataFrame(
+                columns=["game_id", "offense", "off_avg_net_punt_yards"]
+            )
+        else:
+            punt_agg = (
+                punts.groupby(["game_id", "offense"])
+                .agg(off_avg_net_punt_yards=("net_punt_yards", "mean"))
+                .reset_index()
+            )
     else:
         punt_agg = pd.DataFrame(
             columns=["game_id", "offense", "off_avg_net_punt_yards"]
@@ -365,7 +371,7 @@ def aggregate_team_game(
     drv_grp = drives_df.groupby(
         ["season", "week", "game_id", "offense"], as_index=False
     )
-    drv_agg = drv_grp.agg(
+    drv_agg_kwargs = dict(
         off_drives=("drive_number", "count"),
         off_eckel_rate=("is_eckel_drive", "mean"),
         off_successful_drive_rate=("is_successful_drive", "mean"),
@@ -374,7 +380,10 @@ def aggregate_team_game(
         _sum_pts_on_opps=("points_on_opps", "sum"),
         _sum_opp=("had_scoring_opportunity", "sum"),
         off_avg_start_position=("start_yards_to_goal", "mean"),
-    ).rename(columns={"offense": "team"})
+    )
+    if "points" in drives_df.columns:
+        drv_agg_kwargs["off_points_scored"] = ("points", "sum")
+    drv_agg = drv_grp.agg(**drv_agg_kwargs).rename(columns={"offense": "team"})
 
     # Compute finish points per scoring opportunity safely
     denom = drv_agg["_sum_opp"].where(drv_agg["_sum_opp"] > 0, 1)
@@ -406,7 +415,7 @@ def aggregate_team_game(
     def_drv_grp = drives_df.groupby(
         ["season", "week", "game_id", "defense"], as_index=False
     )
-    def_drv_agg = def_drv_grp.agg(
+    def_drv_agg_kwargs = dict(
         def_drives_allowed=("drive_number", "count"),
         def_eckel_rate_allowed=("is_eckel_drive", "mean"),
         def_successful_drive_rate_allowed=("is_successful_drive", "mean"),
@@ -415,7 +424,12 @@ def aggregate_team_game(
         _def_sum_pts_on_opps_allowed=("points_on_opps", "sum"),
         _def_sum_opp_allowed=("had_scoring_opportunity", "sum"),
         def_avg_start_position_allowed=("start_yards_to_goal", "mean"),
-    ).rename(columns={"defense": "team"})
+    )
+    if "points" in drives_df.columns:
+        def_drv_agg_kwargs["def_points_allowed"] = ("points", "sum")
+    def_drv_agg = def_drv_grp.agg(**def_drv_agg_kwargs).rename(
+        columns={"defense": "team"}
+    )
 
     # Compute defensive finish points per scoring opportunity safely
     def_denom = def_drv_agg["_def_sum_opp_allowed"].where(
@@ -443,6 +457,15 @@ def aggregate_team_game(
     st_agg = calculate_st_analytics_agg(plays_df, drives_df)
     if not st_agg.empty:
         team_game = team_game.merge(st_agg, on=["game_id", "team"], how="left")
+    st_cols = [
+        c
+        for c in team_game.columns
+        if c.startswith("off_fg_")
+        or c.startswith("off_avg_net_punt_yards")
+        or c.startswith("off_avg_net_kick_")
+    ]
+    if st_cols:
+        team_game[st_cols] = team_game[st_cols].fillna(0)
 
     # Merge defensive split YPP computed from plays
     def_denom_rush = plays_df.groupby(
@@ -491,6 +514,36 @@ def aggregate_team_game(
         on=["season", "week", "game_id", "team"],
         how="left",
     )
+
+    # Derived drive/field-position features (safe divisions)
+    if "off_points_scored" in team_game.columns and "off_drives" in team_game.columns:
+        team_game["off_points_per_drive"] = team_game["off_points_scored"].astype(
+            float
+        ) / team_game["off_drives"].replace(0, 1)
+    if (
+        "def_points_allowed" in team_game.columns
+        and "def_drives_allowed" in team_game.columns
+    ):
+        team_game["def_points_per_drive_allowed"] = team_game[
+            "def_points_allowed"
+        ].astype(float) / team_game["def_drives_allowed"].replace(0, 1)
+
+    if "off_avg_start_position" in team_game.columns:
+        team_game["off_avg_start_field_position"] = 100 - team_game[
+            "off_avg_start_position"
+        ].astype(float)
+    if "def_avg_start_position_allowed" in team_game.columns:
+        team_game["def_avg_start_field_position_allowed"] = 100 - team_game[
+            "def_avg_start_position_allowed"
+        ].astype(float)
+    if (
+        "off_avg_start_field_position" in team_game.columns
+        and "def_avg_start_field_position_allowed" in team_game.columns
+    ):
+        team_game["net_field_position_delta"] = (
+            team_game["off_avg_start_field_position"]
+            - team_game["def_avg_start_field_position_allowed"]
+        )
     return team_game
 
 
@@ -523,10 +576,11 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
     def _apply_weights(g: pd.DataFrame) -> pd.DataFrame:
         g = g.sort_values("week").copy()
         weights = np.ones(len(g), dtype=float)
-        # Assign 3,2,1 to last three games (most recent highest), earlier = 1
-        for i, w in enumerate([1.0, 2.0, 3.0], start=1):
-            if len(g) - i >= 0:
-                weights[-i] = w
+        # Assign 4,3,2,1 to last four games (most recent highest), earlier = 1
+        for i, w in enumerate([1.0, 2.0, 3.0, 4.0], start=1):
+            idx = len(g) - i
+            if idx >= 0:
+                weights[idx] = w
         g["recency_weight"] = weights
         return g
 
@@ -579,32 +633,108 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         "def_successful_drive_rate_allowed",
         "def_busted_drive_rate_allowed",
         "def_explosive_drive_rate_allowed",
+        "off_points_per_drive",
+        "def_points_per_drive_allowed",
+        "off_avg_start_field_position",
+        "def_avg_start_field_position_allowed",
+        "net_field_position_delta",
         # Special teams metrics (if available)
         "off_avg_net_punt_yards",
     ]
     present_metric_cols = [c for c in metric_cols if c in weighted.columns]
+    special_team_prefixes = ("off_fg_", "off_avg_net_punt_yards", "off_avg_net_kick_")
+    special_metric_cols = [
+        c
+        for c in weighted.columns
+        if any(c.startswith(prefix) for prefix in special_team_prefixes)
+    ]
+    present_metric_cols = sorted(set(present_metric_cols + special_metric_cols))
 
     def _agg_group(g: pd.DataFrame) -> pd.Series:
         out: dict[str, float] = {}
-        w = g["recency_weight"].astype(float)
+        filled = g.copy()
+        st_fill_cols = [
+            c
+            for c in present_metric_cols
+            if c.startswith(("off_avg_net_punt_yards", "off_fg_", "off_avg_net_kick_"))
+        ]
+        if st_fill_cols:
+            filled[st_fill_cols] = (
+                filled[st_fill_cols]
+                .apply(pd.to_numeric, errors="coerce")
+                .fillna(0.0)
+            )
+        # Trench warfare features (line yards, etc.)
+        trench_cols = [
+            c
+            for c in present_metric_cols
+            if "line_yards" in c
+            or "second_level_yards" in c
+            or "open_field_yards" in c
+        ]
+        if trench_cols:
+            filled[trench_cols] = filled[trench_cols].fillna(0.0)
+
+        # Clip net punt yards to a reasonable range (-10 to 65)
+        if "off_avg_net_punt_yards" in filled.columns:
+            filled["off_avg_net_punt_yards"] = filled[
+                "off_avg_net_punt_yards"
+            ].clip(-10, 65)
+
+        w = filled["recency_weight"].astype(float)
         wsum = w.sum() if w.sum() > 0 else 1.0
         for col in present_metric_cols:
-            vals = g[col].astype(float)
-            out[col] = float((vals * w).sum() / wsum)
+            vals = filled[col].astype(float)
+            out[col] = float(np.nansum(vals * w) / wsum)
 
         # Add momentum features
-        last_3 = g.tail(3)
+        last_3 = filled.tail(3)
         for col in present_metric_cols:
             out[f"{col}_last_3"] = last_3[col].mean()
 
-        last_1 = g.tail(1)
+        last_2 = filled.tail(2)
+        for col in present_metric_cols:
+            out[f"{col}_last_2"] = last_2[col].mean()
+
+        last_1 = filled.tail(1)
         for col in present_metric_cols:
             out[f"{col}_last_1"] = last_1[col].mean()
 
         out["games_played"] = float(len(g))
+        if "n_off_plays" in g.columns:
+            plays_vals = g["n_off_plays"].astype(float)
+            out["plays_per_game"] = float((plays_vals * w).sum() / wsum)
+        if "off_drives" in g.columns:
+            drives_vals = g["off_drives"].astype(float)
+            out["drives_per_game"] = float((drives_vals * w).sum() / wsum)
+        if "off_drives" in g.columns:
+            drives_vals = g["off_drives"].astype(float)
+            scoring_rate = None
+            if "off_drive_start_opponent_50_20_rate" in g.columns:
+                scoring_rate = g["off_drive_start_opponent_50_20_rate"].astype(float)
+            if "off_drive_start_inside_opponent_20_rate" in g.columns:
+                inside_rate = g["off_drive_start_inside_opponent_20_rate"].astype(float)
+                scoring_rate = (
+                    scoring_rate + inside_rate
+                    if scoring_rate is not None
+                    else inside_rate
+                )
+            if scoring_rate is not None:
+                scoring_opps = drives_vals * scoring_rate
+                out["avg_scoring_opps_per_game"] = float(
+                    (scoring_opps * w).sum() / wsum
+                )
         if "luck_factor" in g.columns:
             out["cumulative_luck_factor"] = g["luck_factor"].sum()
-        return pd.Series(out)
+
+        series = pd.Series(out)
+        # Impute NaNs in momentum features with the overall mean for that feature
+        for col in series.index:
+            if col.endswith(("_last_1", "_last_2", "_last_3")) and pd.isna(series[col]):
+                series[col] = series[
+                    col.rsplit("_", 2)[0]
+                ]  # Fallback to the season-long average
+        return series
 
     season_agg = (
         weighted.groupby(["season", "team"], as_index=False)
