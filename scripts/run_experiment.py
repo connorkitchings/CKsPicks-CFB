@@ -343,8 +343,8 @@ def main(cfg: DictConfig):
                 )
                 if test_sample is not None:
                     test_sample = test_sample.dropna(subset=[cfg.target])
-                    X_test_sample = select_features(test_sample, cfg)
-                    test_feature_sets.append(set(X_test_sample.columns))
+                    x_test_sample = select_features(test_sample, cfg)
+                    test_feature_sets.append(set(x_test_sample.columns))
 
             # Find common features across train and all test years
             common_features = set(X_train_full.columns)
@@ -387,12 +387,10 @@ def main(cfg: DictConfig):
             test_df = _concat_years(all_test_data)
             test_df = test_df.dropna(subset=[cfg.target])
             X_test_full = select_features(test_df, cfg)  # noqa: N806
-            X_test = X_test_full[
-                common_features
-            ]  # Use only common features  # noqa: N806
+            x_test = X_test_full[common_features]  # Use only common features
             y_test = test_df[cfg.target]
 
-            preds = model.predict(X_test)
+            preds = model.predict(x_test)
 
             rmse = np.sqrt(mean_squared_error(y_test, preds))
             mae = mean_absolute_error(y_test, preds)

@@ -31,6 +31,7 @@ This document defines the initial, minimal modeling approach to generate weekly 
 To improve prediction stability and reduce week-to-week variance, the project uses an ensemble approach, averaging the predictions of multiple diverse models for each target.
 
 - **Spreads Ensemble**: An average of three linear models with different regularization and robustness properties.
+
   - `Ridge(alpha=0.1)`
   - `ElasticNet(alpha=0.1, l1_ratio=0.5)`
   - `HuberRegressor(epsilon=1.35)`
@@ -70,6 +71,7 @@ To improve prediction stability and reduce week-to-week variance, the project us
 - Weekly adjusted stats cache: `processed/team_week_adj/iteration=4/year=<Y>/week=<W>/`
 
 - **Metrics Reports**
+
   - Training metrics: RMSE/MAE on training and test sets
   - Weekly predictions: `reports/<year>/CFB_week<WW>_bets.csv`
   - Scored results: `reports/<year>/CFB_week<WW>_bets_scored.csv`
@@ -95,11 +97,18 @@ To improve prediction stability and reduce week-to-week variance, the project us
 
 ## Betting Policy (MVP)
 
-- Compute edge = |model_prediction − sportsbook_line|
-- Spreads: configurable threshold (default ≥ 8.0 points via `--spread-threshold`); policy previously 6.0
-- Totals: configurable threshold (default ≥ 8.0 points via `--total-threshold`)
-- Enforce no-bet policy if either team has < 4 games played
-- Flat staking (e.g., 1 unit) for MVP
+- **Edge Calculation**:
+  - Spread: `edge = prediction - (-betting_line)` (line negated to match margin convention)
+  - Total: `edge = prediction - betting_line`
+- **Thresholds**:
+  - Spread: Bet if `|edge| >= 3.5` points (configurable via `--edge-threshold`)
+  - Total: Bet if `|edge| >= 3.5` points
+- **Settlement Logic**:
+  - Spread: Win if `actual_margin > expected_margin` (home bet) or `actual_margin < expected_margin` (away bet)
+  - Total: Win if `actual_total > line` (over bet) or `actual_total < line` (under bet)
+  - **Pushes**: Exact ties are excluded from win rate calculation (`wins / (wins + losses)`)
+- **No-Bet Policy**: Enforce no-bet if either team has < 4 games played
+- **Staking**: Flat staking (1 unit) for MVP
 
 ## Outputs
 

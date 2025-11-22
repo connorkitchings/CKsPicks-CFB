@@ -25,8 +25,6 @@ Run this checklist before every git commit.
 - [ ] **No hardcoded secrets:** API keys, passwords, etc., are loaded from environment variables
 - [ ] **Commit message is descriptive:** Follows standard conventions (e.g., `feat: short description`).
 
-<a id="pre-merge"></a>
-
 ## Pre-Merge Checklist (Pull Request) {#pre-merge}
 
 Run this more thorough checklist before merging a feature branch into main.
@@ -42,8 +40,6 @@ Run this more thorough checklist before merging a feature branch into main.
 - [ ] **Security Review Checklist reviewed:** See [Security Review](#security-review) below
 - [ ] **No "TODO" comments remain:** All temporary todos have been resolved or converted to tasks in
       implementation_schedule.md
-
-<a id="security-review"></a>
 
 ## Security Review Checklist {#security-review}
 

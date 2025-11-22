@@ -30,6 +30,7 @@ def get_data_root() -> Path:
 # Define core paths
 DATA_ROOT = get_data_root()
 RAW_DATA_DIR = DATA_ROOT / "raw"
+INTERIM_DATA_DIR = DATA_ROOT / "interim"
 PROCESSED_DATA_DIR = DATA_ROOT / "processed"
 
 REPO_ROOT = get_repo_root()

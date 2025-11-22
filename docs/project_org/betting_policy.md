@@ -75,7 +75,7 @@ def calculate_bet_size_fixed_fractional(
 
 **Example**:
 
-```
+```text
 Bankroll: $10,000
 Base Unit: $200 (2%)
 Model Edge: 7.5 points
@@ -172,7 +172,7 @@ def calculate_confidence_based_size(
 
 #### Bankroll Segmentation
 
-```
+```text
 Total Bankroll: $10,000
 ├── Active Betting Capital: $8,000 (80%)
 ├── Reserve Fund: $1,500 (15%)

@@ -27,7 +27,7 @@ class LocalStorage(StorageBackend):
         self,
         data_root: str | Path | None = None,
         file_format: Literal["parquet", "csv"] = "parquet",
-        data_type: Literal["raw", "processed"] = "raw",
+        data_type: Literal["raw", "interim", "processed"] = "raw",
     ) -> None:
         """Initializes the local storage backend.
 
@@ -38,12 +38,12 @@ class LocalStorage(StorageBackend):
 
         Note: This class expects `data_root` to point to the parent "data" directory
         (e.g., "/path/to/repo/data" or a mounted drive's data root). Subdirectories
-        "raw" or "processed" are appended automatically via `data_type`.
+        "raw", "interim", or "processed" are appended automatically via `data_type`.
 
         Args:
             data_root: An optional, explicit path to the data storage root.
             file_format: The file format to use for storage ('parquet' or 'csv').
-            data_type: The type of data being stored ('raw' or 'processed').
+            data_type: The type of data being stored ('raw', 'interim', 'processed').
         """
         # If not provided, prefer CFB_MODEL_DATA_ROOT; otherwise default to CWD/data
         base_root = (
@@ -62,7 +62,7 @@ class LocalStorage(StorageBackend):
             )
         self._root = root
         self.file_format = file_format
-        self._data_type: Literal["raw", "processed"] = data_type
+        self._data_type: Literal["raw", "interim", "processed"] = data_type
 
     def root(self) -> Path:
         return self._root
@@ -130,7 +130,11 @@ class LocalStorage(StorageBackend):
             "file_format": self.file_format,
             "entity": entity,
             "schema_version": (
-                "processed_v1" if self._data_type == "processed" else "raw_v1"
+                "processed_v1"
+                if self._data_type == "processed"
+                else "interim_v1"
+                if self._data_type == "interim"
+                else "raw_v1"
             ),
             "schema": None,
         }
