@@ -1,11 +1,9 @@
 # @package _global_
 defaults:
   - override /model: catboost
-  - override /features: standard_v1
+  - override /features: pace_v1
 
 experiment:
   name: totals_pace_interaction_v1
 
 target: total_target
-features:
-  include_pace_interactions: true

@@ -24,8 +24,230 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error  # noqa: E40
 from src.features.selector import get_feature_set_id, select_features  # noqa: E402
 from src.models.features import load_point_in_time_data  # noqa: E402
 from src.models.train_model import _concat_years  # noqa: E402
+from src.utils.local_storage import LocalStorage  # noqa: E402
 
 log = logging.getLogger(__name__)
+
+
+def compute_ats_metrics(
+    test_df: pd.DataFrame,
+    predictions: np.ndarray,
+    actuals: np.ndarray,
+    data_root: str,
+    target_type: str = "spread",  # NEW: "spread" or "total"
+    edge_threshold: float = 3.5,
+) -> dict:
+    """Compute ATS-style hit rate using actual betting lines.
+
+    Args:
+        test_df: Test dataframe with game metadata (id, season, week)
+        predictions: Model predictions
+        actuals: Actual outcomes
+        data_root: Path to data storage
+        target_type: "spread" or "total" - determines betting logic
+        edge_threshold: Minimum edge (in points) to place a bet
+
+    Returns:
+        Dict with hit_rate, edge_bucket_hit_rates, num_bets, etc.
+    """
+    storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
+
+    # Load betting lines for all games in test set
+    all_lines = []
+    for year in test_df["season"].unique():
+        for week in test_df[test_df["season"] == year]["week"].unique():
+            try:
+                lines_records = storage.read_index(
+                    "betting_lines", {"year": int(year), "week": int(week)}
+                )
+                if lines_records:
+                    all_lines.extend(lines_records)
+            except FileNotFoundError:
+                continue
+
+    if not all_lines:
+        log.warning("No betting lines found. Skipping ATS metrics.")
+        return {
+            "overall_hit_rate": 0.0,
+            "edge_buckets": {},
+            "num_bets": 0,
+            "num_wins": 0,
+            "num_losses": 0,
+            "num_pushes": 0,
+        }
+
+    # Convert to DataFrame and get consensus line (use DraftKings preference)
+    lines_df = pd.DataFrame(all_lines)
+    lines_df = lines_df.sort_values(["game_id", "provider"])
+    lines_df["is_draftkings"] = lines_df["provider"] == "DraftKings"
+    consensus_lines = lines_df.sort_values(
+        ["game_id", "is_draftkings"], ascending=[True, False]
+    ).drop_duplicates(subset="game_id", keep="first")
+
+    # Select appropriate line column based on target type
+    if target_type == "spread":
+        line_col = "spread"
+    elif target_type == "total":
+        line_col = "over_under"
+    else:
+        raise ValueError(f"Unknown target_type: {target_type}")
+
+    # Merge with test data
+    test_eval_df = test_df[["id", "season", "week"]].copy()
+    test_eval_df["prediction"] = predictions
+    test_eval_df["actual"] = actuals
+    test_eval_df = test_eval_df.merge(
+        consensus_lines[["game_id", line_col, "provider"]],
+        left_on="id",
+        right_on="game_id",
+        how="left",
+    )
+
+    # Filter to games with lines
+    test_eval_df = test_eval_df.dropna(subset=[line_col])
+    if len(test_eval_df) == 0:
+        log.warning("No games with betting lines. Skipping ATS metrics.")
+        return {
+            "overall_hit_rate": 0.0,
+            "edge_buckets": {},
+            "num_bets": 0,
+            "num_wins": 0,
+            "num_losses": 0,
+            "num_pushes": 0,
+        }
+
+    # Calculate edge based on target type
+    if target_type == "spread":
+        # For spread: compare prediction to expected margin
+        test_eval_df["expected"] = -test_eval_df[line_col]  # Negate spread
+        test_eval_df["edge"] = test_eval_df["prediction"] - test_eval_df["expected"]
+        # Bet home if edge < -threshold, away if edge > threshold
+        test_eval_df["bet_home"] = test_eval_df["edge"] < -edge_threshold
+        test_eval_df["bet_away"] = test_eval_df["edge"] > edge_threshold
+    elif target_type == "total":
+        # For total: compare prediction directly to line
+        test_eval_df["edge"] = test_eval_df["prediction"] - test_eval_df[line_col]
+        # Bet over if edge > threshold, under if edge < -threshold
+        test_eval_df["bet_over"] = test_eval_df["edge"] > edge_threshold
+        test_eval_df["bet_under"] = test_eval_df["edge"] < -edge_threshold
+
+    test_eval_df["bet_made"] = (
+        test_eval_df["bet_home"] | test_eval_df["bet_away"]
+        if target_type == "spread"
+        else test_eval_df["bet_over"] | test_eval_df["bet_under"]
+    )
+
+    # Settle bets based on target type
+    def settle_bet(row):
+        """Settle a bet. Returns 'win', 'loss', 'push', or None."""
+        if not row["bet_made"]:
+            return None
+
+        if target_type == "spread":
+            # Spread betting logic
+            actual_margin = row["actual"]
+            expected_margin = row["expected"]
+
+            if row["bet_home"]:
+                if actual_margin > expected_margin:
+                    return "win"
+                elif actual_margin < expected_margin:
+                    return "loss"
+                else:
+                    return "push"
+            elif row["bet_away"]:
+                if actual_margin < expected_margin:
+                    return "win"
+                elif actual_margin > expected_margin:
+                    return "loss"
+                else:
+                    return "push"
+        elif target_type == "total":
+            # Total betting logic
+            actual_total = row["actual"]
+            line_total = row[line_col]
+
+            if row["bet_over"]:
+                if actual_total > line_total:
+                    return "win"
+                elif actual_total < line_total:
+                    return "loss"
+                else:
+                    return "push"
+            elif row["bet_under"]:
+                if actual_total < line_total:
+                    return "win"
+                elif actual_total > line_total:
+                    return "loss"
+                else:
+                    return "push"
+        return None
+
+    test_eval_df["bet_result"] = test_eval_df.apply(settle_bet, axis=1)
+
+    # Calculate hit rate (only for games where we bet, excluding pushes)
+    bet_games = test_eval_df[test_eval_df["bet_made"]]
+    if len(bet_games) == 0:
+        log.warning("No bets met edge threshold. Skipping ATS metrics.")
+        return {
+            "overall_hit_rate": 0.0,
+            "edge_buckets": {},
+            "num_bets": 0,
+            "num_wins": 0,
+            "num_losses": 0,
+            "num_pushes": 0,
+        }
+
+    # Count wins, losses, pushes
+    num_wins = (bet_games["bet_result"] == "win").sum()
+    num_losses = (bet_games["bet_result"] == "loss").sum()
+    num_pushes = (bet_games["bet_result"] == "push").sum()
+
+    # Win rate = wins / (wins + losses), excluding pushes
+    hit_rate = (
+        num_wins / (num_wins + num_losses) if (num_wins + num_losses) > 0 else 0.0
+    )
+
+    # Edge bucket analysis (also excluding pushes from win rate)
+    edge_buckets = [(3.5, 5.0), (5.0, 7.0), (7.0, 10.0), (10.0, 100.0)]
+    bucket_stats = {}
+    test_eval_df["abs_edge"] = test_eval_df["edge"].abs()
+
+    for low, high in edge_buckets:
+        bucket_bets = test_eval_df[
+            (test_eval_df["abs_edge"] >= low)
+            & (test_eval_df["abs_edge"] < high)
+            & test_eval_df["bet_made"]
+        ]
+        if len(bucket_bets) > 0:
+            bucket_wins = (bucket_bets["bet_result"] == "win").sum()
+            bucket_losses = (bucket_bets["bet_result"] == "loss").sum()
+            bucket_pushes = (bucket_bets["bet_result"] == "push").sum()
+
+            # Win rate excluding pushes
+            bucket_hit_rate = (
+                bucket_wins / (bucket_wins + bucket_losses)
+                if (bucket_wins + bucket_losses) > 0
+                else 0.0
+            )
+
+            bucket_stats[f"edge_{low}_{high}"] = {
+                "hit_rate": float(bucket_hit_rate),
+                "count": int(len(bucket_bets)),
+                "wins": int(bucket_wins),
+                "losses": int(bucket_losses),
+                "pushes": int(bucket_pushes),
+            }
+
+    return {
+        "overall_hit_rate": float(hit_rate),
+        "edge_buckets": bucket_stats,
+        "num_bets": int(len(bet_games)),
+        "num_wins": int(num_wins),
+        "num_losses": int(num_losses),
+        "num_pushes": int(num_pushes),
+        "total_games": int(len(test_eval_df)),
+    }
 
 
 @hydra.main(config_path="../conf", config_name="config", version_base="1.2")
@@ -109,7 +331,33 @@ def main(cfg: DictConfig):
 
             log.info(f"Training model on {len(train_df)} records...")
             train_df = train_df.dropna(subset=[cfg.target])
-            X_train = select_features(train_df, cfg)  # noqa: N806
+            X_train_full = select_features(train_df, cfg)  # noqa: N806
+
+            # Collect features from all test years to ensure consistency
+            # (Some features may not exist in all years due to data availability)
+            log.info("Checking feature consistency across test years...")
+            test_feature_sets = []
+            for test_year in test_years:
+                test_sample = load_point_in_time_data(
+                    test_year, 2, cfg.paths.data_dir, adjustment_iteration=4
+                )
+                if test_sample is not None:
+                    test_sample = test_sample.dropna(subset=[cfg.target])
+                    X_test_sample = select_features(test_sample, cfg)
+                    test_feature_sets.append(set(X_test_sample.columns))
+
+            # Find common features across train and all test years
+            common_features = set(X_train_full.columns)
+            for test_feats in test_feature_sets:
+                common_features = common_features.intersection(test_feats)
+
+            common_features = sorted(list(common_features))
+            log.info(
+                f"Using {len(common_features)} common features "
+                f"(reduced from {len(X_train_full.columns)})"
+            )
+
+            X_train = X_train_full[common_features]  # noqa: N806
             y_train = train_df[cfg.target]
 
             # Initialize Model
@@ -138,7 +386,10 @@ def main(cfg: DictConfig):
 
             test_df = _concat_years(all_test_data)
             test_df = test_df.dropna(subset=[cfg.target])
-            X_test = select_features(test_df, cfg)  # noqa: N806
+            X_test_full = select_features(test_df, cfg)  # noqa: N806
+            X_test = X_test_full[
+                common_features
+            ]  # Use only common features  # noqa: N806
             y_test = test_df[cfg.target]
 
             preds = model.predict(X_test)
@@ -146,8 +397,31 @@ def main(cfg: DictConfig):
             rmse = np.sqrt(mean_squared_error(y_test, preds))
             mae = mean_absolute_error(y_test, preds)
 
-            log.info(f"Year {year} RMSE: {rmse:.4f}, MAE: {mae:.4f}")
-            metrics.append({"year": year, "rmse": rmse, "mae": mae})
+            # Compute ATS metrics with actual betting lines
+            target_type = "spread" if "spread" in cfg.target else "total"
+            ats_metrics = compute_ats_metrics(
+                test_df,
+                preds,
+                y_test.values,
+                cfg.paths.data_dir,
+                target_type=target_type,
+            )
+
+            log.info(
+                f"Year {year} RMSE: {rmse:.4f}, MAE: {mae:.4f}, "
+                f"Hit Rate: {ats_metrics['overall_hit_rate']:.1%} "
+                f"({ats_metrics['num_wins']}-{ats_metrics['num_losses']}-{ats_metrics['num_pushes']} "
+                f"W-L-P, {ats_metrics['num_bets']}/{ats_metrics['total_games']} bet)"
+            )
+            metrics.append(
+                {
+                    "year": year,
+                    "rmse": rmse,
+                    "mae": mae,
+                    "hit_rate": ats_metrics["overall_hit_rate"],
+                    "num_bets": ats_metrics["num_bets"],
+                }
+            )
 
             # Save predictions
             pred_df = test_df[["id", "season", "week", "home_team", "away_team"]].copy()
@@ -168,10 +442,17 @@ def main(cfg: DictConfig):
         if metrics:
             avg_rmse = np.mean([m["rmse"] for m in metrics])
             avg_mae = np.mean([m["mae"] for m in metrics])
+            avg_hit_rate = np.mean(
+                [m.get("hit_rate", 0) for m in metrics if "hit_rate" in m]
+            )
 
             mlflow.log_metric("rmse_test", avg_rmse)
             mlflow.log_metric("mae_test", avg_mae)
-            log.info(f"Run complete. Avg RMSE: {avg_rmse:.4f}, Avg MAE: {avg_mae:.4f}")
+            mlflow.log_metric("hit_rate_test", avg_hit_rate)
+            log.info(
+                f"Run complete. Avg RMSE: {avg_rmse:.4f}, Avg MAE: {avg_mae:.4f}, "
+                f"Avg Hit Rate: {avg_hit_rate:.1%}"
+            )
 
             # Log to experiment_log.csv
             log_entry = {
@@ -182,6 +463,7 @@ def main(cfg: DictConfig):
                 "target": cfg.target,
                 "rmse_test": avg_rmse,
                 "mae_test": avg_mae,
+                "hit_rate_test": avg_hit_rate,
                 "config_path": "conf/config.yaml",
             }
             log_path = Path(cfg.paths.artifacts_dir) / "experiment_log.csv"

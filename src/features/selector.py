@@ -20,7 +20,7 @@ def get_feature_groups() -> Dict[str, List[str]]:
         ],
         "pace_stats": [
             "plays_per_game",
-            "sec_per_play",
+            "drives_per_game",
             "tempo_contrast",
             "tempo_total",
         ],
@@ -40,18 +40,19 @@ def select_features(df: pd.DataFrame, cfg: DictConfig) -> pd.DataFrame:
 
     # Expand recency stats dynamically if requested
     if "recency_stats" in groups:
-        base_cols = defined_groups["off_def_stats"]  # simplified assumption
+        # Determine suffix based on recency_window config
+        suffix_map = {"fast": "_last_1", "last_1": "_last_1", "standard": "_last_3"}
+        recency_window = cfg.features.get("recency_window", "standard")
+        suffix = suffix_map.get(recency_window, "_last_3")
 
-        suffix = "_last_3"
-        if cfg.features.get("recency_window") == "fast":
-            suffix = "_last_1"
+        # Scan dataframe for all columns matching the recency pattern
+        recency_cols = [c for c in df.columns if c.endswith(suffix)]
 
-        recency_cols = [f"{c}{suffix}" for c in base_cols]
-        # Also add specific pace recency if pace is enabled
-        if "pace_stats" in groups:
-            recency_cols.extend([f"{c}{suffix}" for c in defined_groups["pace_stats"]])
+        # Also include _last_2 if requested
+        if cfg.features.get("include_last_2", False):
+            recency_cols.extend([c for c in df.columns if c.endswith("_last_2")])
 
-        # Add to the list
+        # Add to feature list
         feature_cols.extend(recency_cols)
 
     for group in groups:
