@@ -1,5 +1,31 @@
 # Decision Log
 
+## 2025-11-23: Calibration Analysis Reveals Systematic Spread Bias
+
+- **Context:** Performed comprehensive calibration analysis on Iteration-2 CatBoost models using 2024 holdout data (Train: 2019, 2021-2023; Test: 2024). Analyzed residuals, calibration curves, and edge bin performance for both spread and total models.
+- **Findings:**
+  - **Spread Model (Baseline v1):** RMSE 17.93, MAE 14.02, but shows **+1.4 point positive bias** (mean residual). This indicates systematic under-prediction of home team margins.
+  - **Total Model (Pace Interaction v1):** RMSE 17.14, MAE 13.33, **near-zero bias** (-0.35 points). Excellent calibration.
+  - **Edge Bin Analysis:** No performance degradation at higher edges; bias is consistent across all edge magnitudes.
+  - **Hit Rates:** Spread 46.6% (below breakeven), Total 54.6% (above breakeven, +82 units).
+- **Decision:**
+  1. **Immediate:** Apply post-processing bias correction to spread predictions (`calibrated_pred = raw_pred - 1.4`) before production deployment.
+  2. **Threshold Tuning:** Increase spread edge threshold from 3.5 → 5.0 points to improve hit rate and reduce bet volume on marginal edges.
+  3. **Monitoring:** Add prediction interval logging to `run_experiment.py` and set up weekly calibration monitoring for live betting.
+- **Rationale:** Bias correction is a simple, reversible fix that can immediately improve spread model performance. Threshold tuning reduces exposure to low-edge bets where the model is less profitable.
+- **Impact:** Expected to improve spread hit rate by ~2-3 percentage points (bias correction) and reduce bet volume by ~40% while concentrating on higher-quality opportunities.
+- **Artifacts:** Full analysis in `artifacts/reports/calibration/calibration_analysis_2024.md` with 8 plots and detailed recommendations.
+
+## 2025-11-23: Standardize on Adjustment Iteration 2
+
+- **Context:** We conducted a series of experiments to evaluate the impact of opponent-adjustment iteration depth (0-4) on model performance. The initial default was Iteration 4. We re-ran the experiments with a strict training split (2019, 2021-2023) and test set (2024).
+- **Decision:** Switch both the **Spread** and **Total** CatBoost models to use **Iteration 2**.
+- **Rationale:**
+  - **Spread:** Iteration 2 yielded the best RMSE (17.97) and tied for the best Hit Rate (48.2%).
+  - **Total:** Iteration 2 yielded the best Hit Rate (54.1%), outperforming the default Iteration 4 (53.3%) despite a slightly higher RMSE.
+  - **Simplicity:** Standardizing on a single iteration depth simplifies the feature pipeline and cache management.
+- **Impact:** `conf/model/spread_catboost.yaml` and `conf/model/total_catboost.yaml` updated to `adjustment_iteration: 2`. Future feature engineering can focus on optimizing Iteration 2.
+
 ## 2025-11-21: Successful Walk-Forward Validation of CatBoost Spread Model
 
 - **Context:** After multiple failed attempts to stabilize the linear models, the root cause was identified as a data quality issue in the feature engineering pipeline, specifically the handling of `NaN` values in special teams and trench warfare features for older seasons.

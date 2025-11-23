@@ -1,6 +1,7 @@
 name: catboost
-type: total
+type: catboost
 target: total_target
+adjustment_iteration: 2
 
 params:
   depth: 6

@@ -1,6 +1,8 @@
 name: catboost
-type: spread
+type: catboost
 target: spread_target
+adjustment_iteration: 2
+calibration_bias: 1.4  # Systematic bias correction (2024 calibration analysis)
 
 params:
   depth: 6

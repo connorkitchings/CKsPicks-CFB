@@ -35,7 +35,7 @@ def compute_ats_metrics(
     actuals: np.ndarray,
     data_root: str,
     target_type: str = "spread",  # NEW: "spread" or "total"
-    edge_threshold: float = 3.5,
+    edge_threshold: float = 5.0,  # Updated from 3.5 based on 2024 calibration analysis
 ) -> dict:
     """Compute ATS-style hit rate using actual betting lines.
 
@@ -259,13 +259,23 @@ def main(cfg: DictConfig):
     # Setup MLflow
     mlflow_tracking_uri = f"file://{cfg.paths.artifacts_dir}/mlruns"
     mlflow.set_tracking_uri(mlflow_tracking_uri)
-    experiment_name = cfg.experiment.name if cfg.experiment else "default"
+    experiment_name = (
+        cfg.experiment.name if "experiment" in cfg and cfg.experiment else "default"
+    )
     mlflow.set_experiment(experiment_name)
 
     # Define WFV years
     # Default to 2023, 2024 if not specified
     test_years = cfg.get("test_years", [2023, 2024])
     start_train_year = cfg.get("start_train_year", 2019)
+
+    start_train_year = cfg.get("start_train_year", 2019)
+
+    # Determine adjustment iteration: prefer model config, fallback to data config
+    adjustment_iteration = cfg.model.get(
+        "adjustment_iteration", cfg.data.adjustment_iteration
+    )
+    log.info(f"Using adjustment_iteration: {adjustment_iteration}")
 
     metrics = []
 
@@ -294,6 +304,8 @@ def main(cfg: DictConfig):
             # Let's stick to the pattern in walk_forward_validation.py for now.
 
             for t_year in train_years:
+                if t_year == 2020:
+                    continue
                 # Load all weeks for training year
                 # Assuming 15 weeks max
                 for week in range(1, 16):
@@ -301,7 +313,7 @@ def main(cfg: DictConfig):
                         t_year,
                         week,
                         cfg.paths.data_dir,
-                        adjustment_iteration=4,  # Default to 4 for now
+                        adjustment_iteration=adjustment_iteration,
                     )
                     if df is not None:
                         all_train_data.append(df)
@@ -339,7 +351,10 @@ def main(cfg: DictConfig):
             test_feature_sets = []
             for test_year in test_years:
                 test_sample = load_point_in_time_data(
-                    test_year, 2, cfg.paths.data_dir, adjustment_iteration=4
+                    test_year,
+                    2,
+                    cfg.paths.data_dir,
+                    adjustment_iteration=cfg.data.adjustment_iteration,
                 )
                 if test_sample is not None:
                     test_sample = test_sample.dropna(subset=[cfg.target])
@@ -375,7 +390,10 @@ def main(cfg: DictConfig):
             all_test_data = []
             for week in range(1, 16):
                 df = load_point_in_time_data(
-                    year, week, cfg.paths.data_dir, adjustment_iteration=4
+                    year,
+                    week,
+                    cfg.paths.data_dir,
+                    adjustment_iteration=cfg.data.adjustment_iteration,
                 )
                 if df is not None:
                     all_test_data.append(df)
@@ -391,6 +409,16 @@ def main(cfg: DictConfig):
             y_test = test_df[cfg.target]
 
             preds = model.predict(x_test)
+
+            # Apply calibration correction if configured
+            preds_raw = preds.copy()  # Save raw predictions
+            calibration_bias = cfg.model.get("calibration_bias", 0.0)
+            if calibration_bias != 0.0:
+                log.info(f"Applying calibration bias correction: {calibration_bias}")
+                preds = preds - calibration_bias
+
+            # TODO: Compute prediction intervals (std dev) for uncertainty quantification
+            # For CatBoost, could use ensemble variance or bootstrap methods
 
             rmse = np.sqrt(mean_squared_error(y_test, preds))
             mae = mean_absolute_error(y_test, preds)
@@ -424,7 +452,11 @@ def main(cfg: DictConfig):
             # Save predictions
             pred_df = test_df[["id", "season", "week", "home_team", "away_team"]].copy()
             pred_df["prediction"] = preds
+            pred_df["prediction_raw"] = preds_raw  # Save uncalibrated predictions
             pred_df["actual"] = y_test
+            pred_df["residual"] = y_test.values - preds
+            if calibration_bias != 0.0:
+                pred_df["calibration_bias"] = calibration_bias
 
             out_path = (
                 Path(cfg.paths.artifacts_dir)

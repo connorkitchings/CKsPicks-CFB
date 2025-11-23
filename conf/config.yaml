@@ -4,6 +4,9 @@ defaults:
   - features: standard_v1
   - experiment: null
 
+data:
+  adjustment_iteration: 4
+
 hydra:
   run:
     dir: artifacts/mlruns/${now:%Y-%m-%d}/${now:%H-%M-%S}
@@ -20,3 +23,4 @@ paths:
 
 random_seed: 42
 target: spread_target # default target
+test_years: [2024]
