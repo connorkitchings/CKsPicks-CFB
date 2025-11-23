@@ -1,0 +1,25 @@
+name: spread_shap_pruned
+groups:
+  - off_def_stats
+  - pace_stats
+  - recency_stats
+  - luck_stats
+recency_window: standard
+include_pace_interactions: false
+exclude:
+  - away_cumulative_luck_factor
+  - home_cumulative_luck_factor
+  - away_def_expl_rate_overall_10_last_3
+  - away_def_expl_rate_overall_30_last_3
+  - away_def_explosive_drive_rate_allowed_last_3
+  - away_def_ypp_last_3
+  - away_off_rush_ypp_last_3
+  - away_off_ypp_last_3
+  - home_adj_off_expl_rate_overall_20
+  - home_def_avg_open_field_yards_allowed_last_3
+  - home_def_successful_drive_rate_allowed_last_3
+  - home_off_avg_open_field_yards_last_3
+  - home_off_expl_rate_overall_30_last_3
+  - home_off_expl_rate_pass_last_3
+  - home_stuff_rate_last_3
+  - home_off_ypp_last_3

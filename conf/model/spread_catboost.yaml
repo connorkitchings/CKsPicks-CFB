@@ -3,6 +3,12 @@ type: catboost
 target: spread_target
 adjustment_iteration: 2
 calibration_bias: 1.4  # Systematic bias correction (2024 calibration analysis)
+# Optional calibration layer:
+# - null: no additional calibration
+# - isotonic: fit isotonic regression on training predictions
+# - residual_tree: fit a small tree model on a calibration year (see calibration_year)
+calibration_type: null
+calibration_year: null  # Defaults to latest training year when residual_tree is used
 
 params:
   depth: 6

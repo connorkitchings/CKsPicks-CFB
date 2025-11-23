@@ -92,18 +92,18 @@ Perform comprehensive calibration diagnostics on Iteration-2 CatBoost models usi
 
 ### Medium-Term Actions (Next Sprint)
 
-4. **SHAP Feature Importance**
+1. **SHAP Feature Importance**
 
    - Run SHAP analysis on both models
    - Identify top 20 features and check for redundancies
    - Consider feature pruning based on importance rankings
 
-5. **Residual Modeling** (Optional)
+2. **Residual Modeling** (Optional)
 
    - Train secondary model to predict residuals by week/opponent/neutral-site
    - Use stacking approach to adjust primary predictions
 
-6. **Weekly Calibration Monitoring**
+3. **Weekly Calibration Monitoring**
    - Automate calibration curve generation after each betting week
    - Track mean residual and RMSE trends
    - Trigger retraining if bias exceeds ±2 points
@@ -194,32 +194,32 @@ Perform comprehensive calibration diagnostics on Iteration-2 CatBoost models usi
 
 ### Medium Priority
 
-3. **VIF Collinearity Check** (Deferred from today)
+1. **VIF Collinearity Check** (Deferred from today)
 
    - Compute Variance Inflation Factor for all 153 features
    - Flag features with VIF > 10 for potential removal
    - **Value:** Identify multicollinearity issues
 
-4. **Ensemble Uncertainty Quantification**
+2. **Ensemble Uncertainty Quantification**
    - Implement proper prediction intervals (bootstrap or conformal prediction)
    - Use intervals for Kelly sizing and confidence filtering
    - **Value:** Better uncertainty estimates → better bankroll management
 
 ### Optional / Research
 
-5. **Residual Modeling / Stacking** (If hit rate still insufficient)
+1. **Residual Modeling / Stacking** (If hit rate still insufficient)
 
    - Train secondary model to predict residuals by week/opponent/neutral-site
    - Use stacking to combine primary + residual predictions
    - **Value:** Could add 1-2% hit rate improvement
 
-6. **Points-For Modeling Push** (Option C from initial plan)
+2. **Points-For Modeling Push** (Option C from initial plan)
 
    - Revisit points-for initiative (Ridge/XGBoost home/away scoring)
    - Compare derived spreads/totals vs current CatBoost approach
    - **Value:** Unified architecture, better interpretability
 
-7. **Total Model Deep Dive** (Research question)
+3. **Total Model Deep Dive** (Research question)
    - Investigate why total model performs so much better (54.6% vs 48.6%)
    - Apply insights to improve spread model
 

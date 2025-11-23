@@ -86,6 +86,10 @@ def select_features(df: pd.DataFrame, cfg: DictConfig) -> pd.DataFrame:
 
     available_cols = [c for c in final_cols if c in df.columns]
 
+    exclude_features = set(cfg.features.get("exclude", []))
+    if exclude_features:
+        available_cols = [c for c in available_cols if c not in exclude_features]
+
     # Check for missing base features (if neither home nor away found)
     # This is approximate
     missing_base = []

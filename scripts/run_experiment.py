@@ -20,6 +20,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from catboost import CatBoostRegressor  # noqa: E402
 from sklearn.linear_model import Ridge  # noqa: E402
 from sklearn.metrics import mean_absolute_error, mean_squared_error  # noqa: E402
+from sklearn.isotonic import IsotonicRegression  # noqa: E402
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: E402
 
 from src.features.selector import get_feature_set_id, select_features  # noqa: E402
 from src.models.features import load_point_in_time_data  # noqa: E402
@@ -285,6 +287,7 @@ def main(cfg: DictConfig):
         mlflow.log_param("features", cfg.features.name)
         mlflow.log_param("target", cfg.target)
         mlflow.log_param("feature_set_id", get_feature_set_id(cfg))
+        mlflow.log_param("calibration_type", cfg.model.get("calibration_type", None))
 
         for year in test_years:
             log.info(f"--- Processing Test Year: {year} ---")
@@ -375,6 +378,27 @@ def main(cfg: DictConfig):
             X_train = X_train_full[common_features]  # noqa: N806
             y_train = train_df[cfg.target]
 
+            # Split out a calibration slice if requested
+            calibration_model = None
+            residual_model = None
+            calibration_type = cfg.model.get("calibration_type")
+            calibrate_on_year = cfg.model.get(
+                "calibration_year", max(train_df["season"].unique())
+            )
+            if calibration_type == "residual_tree":
+                calibration_mask = train_df["season"] == calibrate_on_year
+                base_train_mask = train_df["season"] < calibrate_on_year
+                if base_train_mask.sum() == 0 or calibration_mask.sum() == 0:
+                    log.warning(
+                        "Calibration split failed (insufficient data); "
+                        "falling back to full training without residual calibration."
+                    )
+                else:
+                    X_calib = X_train[calibration_mask]
+                    y_calib = y_train[calibration_mask]
+                    X_train = X_train[base_train_mask]
+                    y_train = y_train[base_train_mask]
+
             # Initialize Model
             if cfg.model.type == "catboost":
                 model = CatBoostRegressor(**cfg.model.params)
@@ -384,6 +408,32 @@ def main(cfg: DictConfig):
                 raise ValueError(f"Unknown model type: {cfg.model.type}")
 
             model.fit(X_train, y_train)
+
+            # Optional isotonic calibration on training predictions (prototype)
+            calibration_model = None
+            if cfg.model.get("calibration_type") == "isotonic":
+                train_preds_for_cal = model.predict(X_train)
+                calibration_model = IsotonicRegression(out_of_bounds="clip")
+                calibration_model.fit(train_preds_for_cal, y_train)
+                log.info("Fitted isotonic calibration model on training predictions")
+            elif calibration_type == "residual_tree" and calibration_mask.sum() > 0:
+                base_preds_for_cal = model.predict(X_calib)
+                calibration_bias = cfg.model.get("calibration_bias", 0.0)
+                if calibration_bias != 0.0:
+                    base_preds_for_cal = base_preds_for_cal - calibration_bias
+                residuals = y_calib.values - base_preds_for_cal
+                residual_model = GradientBoostingRegressor(
+                    n_estimators=200,
+                    learning_rate=0.05,
+                    max_depth=3,
+                    random_state=cfg.random_seed,
+                )
+                residual_model.fit(base_preds_for_cal.reshape(-1, 1), residuals)
+                log.info(
+                    "Fitted residual tree calibration on year %s (%d rows)",
+                    calibrate_on_year,
+                    len(residuals),
+                )
 
             # Evaluate on Test Year
             log.info(f"Evaluating on {year}...")
@@ -416,6 +466,12 @@ def main(cfg: DictConfig):
             if calibration_bias != 0.0:
                 log.info(f"Applying calibration bias correction: {calibration_bias}")
                 preds = preds - calibration_bias
+            if calibration_model is not None:
+                preds = calibration_model.predict(preds)
+                log.info("Applied isotonic calibration to predictions")
+            if residual_model is not None:
+                preds = preds + residual_model.predict(preds.reshape(-1, 1))
+                log.info("Applied residual-tree calibration to predictions")
 
             # TODO: Compute prediction intervals (std dev) for uncertainty quantification
             # For CatBoost, could use ensemble variance or bootstrap methods
