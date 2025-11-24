@@ -17,7 +17,6 @@ from src.features.selector import select_features  # noqa: E402
 from src.models.features import load_point_in_time_data  # noqa: E402
 from src.models.train_model import _concat_years  # noqa: E402
 
-
 log = logging.getLogger(__name__)
 
 
@@ -82,7 +81,9 @@ def _train_and_explain(cfg: DictConfig, model_name: str) -> dict:
         [test_year], cfg, adjustment_iteration=cfg.data.adjustment_iteration
     )
     if train_df.empty or test_df.empty:
-        raise RuntimeError("Training or test data frame is empty; check data availability.")
+        raise RuntimeError(
+            "Training or test data frame is empty; check data availability."
+        )
 
     train_df = train_df.dropna(subset=[cfg.target])
     test_df = test_df.dropna(subset=[cfg.target])
@@ -92,7 +93,9 @@ def _train_and_explain(cfg: DictConfig, model_name: str) -> dict:
 
     common_features = sorted(set(x_train_full.columns) & set(x_test_full.columns))
     if not common_features:
-        raise RuntimeError("No overlapping features found between train and test splits.")
+        raise RuntimeError(
+            "No overlapping features found between train and test splits."
+        )
 
     x_train = x_train_full[common_features].astype(float)
     y_train = train_df[cfg.target]
@@ -130,7 +133,10 @@ def _train_and_explain(cfg: DictConfig, model_name: str) -> dict:
     importance_df.to_csv(out_path, index=False)
 
     log.info(
-        "Saved %s SHAP importances (%d features) to %s", model_name, len(importance_df), out_path
+        "Saved %s SHAP importances (%d features) to %s",
+        model_name,
+        len(importance_df),
+        out_path,
     )
     return {
         "model": model_name,
@@ -160,7 +166,11 @@ def main() -> None:
             f"\n=== {summary['model']} | Test {summary['test_year']} | "
             f"RMSE {summary['rmse']:.2f} | MAE {summary['mae']:.2f} ==="
         )
-        print(summary["top_features"][["rank", "feature", "mean_abs_shap"]].to_string(index=False))
+        print(
+            summary["top_features"][["rank", "feature", "mean_abs_shap"]].to_string(
+                index=False
+            )
+        )
         print(f"Saved: {summary['output_path']}")
 
 

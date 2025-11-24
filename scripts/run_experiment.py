@@ -18,10 +18,10 @@ load_dotenv()
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from catboost import CatBoostRegressor  # noqa: E402
+from sklearn.ensemble import GradientBoostingRegressor  # noqa: E402
+from sklearn.isotonic import IsotonicRegression  # noqa: E402
 from sklearn.linear_model import Ridge  # noqa: E402
 from sklearn.metrics import mean_absolute_error, mean_squared_error  # noqa: E402
-from sklearn.isotonic import IsotonicRegression  # noqa: E402
-from sklearn.ensemble import GradientBoostingRegressor  # noqa: E402
 
 from src.features.selector import get_feature_set_id, select_features  # noqa: E402
 from src.models.features import load_point_in_time_data  # noqa: E402
@@ -394,9 +394,9 @@ def main(cfg: DictConfig):
                         "falling back to full training without residual calibration."
                     )
                 else:
-                    X_calib = X_train[calibration_mask]
+                    x_calib = X_train[calibration_mask]
                     y_calib = y_train[calibration_mask]
-                    X_train = X_train[base_train_mask]
+                    x_train = X_train[base_train_mask]
                     y_train = y_train[base_train_mask]
 
             # Initialize Model
@@ -407,7 +407,15 @@ def main(cfg: DictConfig):
             else:
                 raise ValueError(f"Unknown model type: {cfg.model.type}")
 
-            model.fit(X_train, y_train)
+            # Fit model on training data (x_train if calibration split, else X_train)
+            training_features = (
+                x_train
+                if calibration_type == "residual_tree"
+                and calibration_mask.sum() > 0
+                and base_train_mask.sum() > 0
+                else X_train
+            )
+            model.fit(training_features, y_train)
 
             # Optional isotonic calibration on training predictions (prototype)
             calibration_model = None
@@ -417,7 +425,7 @@ def main(cfg: DictConfig):
                 calibration_model.fit(train_preds_for_cal, y_train)
                 log.info("Fitted isotonic calibration model on training predictions")
             elif calibration_type == "residual_tree" and calibration_mask.sum() > 0:
-                base_preds_for_cal = model.predict(X_calib)
+                base_preds_for_cal = model.predict(x_calib)
                 calibration_bias = cfg.model.get("calibration_bias", 0.0)
                 if calibration_bias != 0.0:
                     base_preds_for_cal = base_preds_for_cal - calibration_bias

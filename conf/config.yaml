@@ -2,10 +2,13 @@ defaults:
   - _self_
   - model: catboost
   - features: standard_v1
+  - weekly_bets: default
   - experiment: null
 
 data:
-  adjustment_iteration: 4
+  adjustment_iteration: 2
+  adjustment_iteration_offense: null
+  adjustment_iteration_defense: null
 
 hydra:
   run:

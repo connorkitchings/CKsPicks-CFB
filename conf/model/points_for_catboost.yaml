@@ -1,0 +1,15 @@
+name: points_for_catboost
+type: catboost
+target: points_target  # Placeholder, will be overridden to home_points/away_points
+adjustment_iteration: 2
+calibration_bias: 0.0  # Start neutral
+calibration_type: null
+calibration_year: null
+
+params:
+  depth: 6
+  learning_rate: 0.05
+  iterations: 800
+  l2_leaf_reg: 3.0
+  subsample: 0.8
+  random_seed: 42

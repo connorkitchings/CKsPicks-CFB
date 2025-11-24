@@ -217,6 +217,14 @@ points_for_models = {
         random_state=42,
     ),
     "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
+    "catboost": CatBoostRegressor(
+        loss_function="RMSE",
+        depth=6,
+        learning_rate=0.05,
+        iterations=800,
+        random_seed=42,
+        verbose=0,
+    ),
 }
 
 

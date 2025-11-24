@@ -1,0 +1,7 @@
+# @package _global_
+defaults:
+  - override /model: spread_catboost
+  - override /features: spread_top_40
+
+experiment:
+  name: spread_catboost_pruned_top40

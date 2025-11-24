@@ -14,8 +14,9 @@ This document defines the initial, minimal modeling approach to generate weekly 
 
 ## Targets
 
-- Spread model: home_final_points − away_final_points (final margin)
-- Total model: home_final_points + away_final_points (total points)
+- **Points-For Models**: Predict `home_final_points` and `away_final_points` directly.
+- **Derived Spread**: `home_final_points - away_final_points`
+- **Derived Total**: `home_final_points + away_final_points`
 
 ## Features
 
@@ -26,19 +27,19 @@ This document defines the initial, minimal modeling approach to generate weekly 
 
 ## Model Architecture
 
-### Current Configuration (as of 2025-10-01)
+### Current Configuration (as of 2025-11-23)
 
-To improve prediction stability and reduce week-to-week variance, the project uses an ensemble approach, averaging the predictions of multiple diverse models for each target.
+The project uses a **"Points-For" architecture**, predicting the final score for the Home and Away teams independently. Spread and Total predictions are derived from these score estimates.
 
-- **Spreads Ensemble**: An average of three linear models with different regularization and robustness properties.
+- **Points-For Ensemble**:
 
-  - `Ridge(alpha=0.1)`
-  - `ElasticNet(alpha=0.1, l1_ratio=0.5)`
-  - `HuberRegressor(epsilon=1.35)`
+  - **Home Model**: 5-seed ensemble of `CatBoostRegressor` predicting home points.
+  - **Away Model**: 5-seed ensemble of `CatBoostRegressor` predicting away points.
+  - **Features**: "Standard" feature set with Iteration 2 opponent adjustment.
+  - **Calibration**: No bias correction applied initially (bias=0.0).
 
-- **Totals Ensemble**: An average of two powerful tree-based models.
-  - `RandomForestRegressor(n_estimators=200, max_depth=8, ...)`
-  - `GradientBoostingRegressor(n_estimators=200, learning_rate=0.1, ...)`
+- **Legacy Ensembles (Deprecated)**:
+  - Previous direct spread/total ensembles (Ridge/ElasticNet/Huber for spread, RF/GBM for total) are deprecated in favor of the unified Points-For approach.
 
 ### Training Strategy
 

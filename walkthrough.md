@@ -1,230 +1,104 @@
-# Calibration Analysis Walkthrough (2025-11-23)
+# Walkthrough: Points-For Model Prototype
 
-## Session Objective
+## Goal
 
-Perform comprehensive calibration diagnostics on Iteration-2 CatBoost models using 2024 holdout data to identify systematic biases and validate model performance.
+Prototype a unified modeling approach that predicts Home and Away scores, then derives spread and total predictions from those estimates.
 
-## What Was Accomplished
+## Hypothesis
 
-### 1. Feature Cache Validation
+By modeling the underlying score distribution for each team, we can:
 
-✅ Confirmed 100% coverage for all 153 features at iteration=2 for 2024 data
+1. Improve prediction accuracy for both spread and totals
+2. Reduce maintenance overhead (one model architecture instead of two)
+3. Better capture the correlation between home and away scoring
 
-- Used `scripts/profile_feature_cache.py` to verify feature availability
-- All opponent-adjusted metrics, recency features, and pace indicators present
-- 225 teams with complete feature sets (week 6+)
+## Implementation
 
-### 2. Calibration Analysis Framework
+### Models Trained
 
-✅ Created comprehensive analysis script (`scripts/extract_predictions_analysis.py`)
+- **Home Points Model:** CatBoost regressor using Top 40 features
+- **Away Points Model:** CatBoost regressor using Top 40 features (same architecture)
 
-- Automated loading of experiment predictions from MLflow artifacts
-- Residual analysis with statistical tests (mean, std, skew, kurtosis)
-- Calibration curve generation (binned actual vs. predicted)
-- Edge bin analysis (performance by edge magnitude)
-- Generated 8 diagnostic plots automatically
+### Training Data
 
-### 3. Model Performance Analysis
+- Years: 2019, 2021-2023 (skip 2020)
+- Features: Top 40 features from SHAP analysis (same as pruned spread model)
+- Adjustment Iteration: 2
 
-**Spread Model (Baseline v1):**
+### Test Data
 
-- RMSE: 17.93, MAE: 14.02
-- **Key Finding:** +1.4 point systematic bias (under-predicts home margins)
-- Hit Rate: 46.6% (below 52.4% breakeven)
-- Calibration: Strong linear relationship but parallel offset from ideal
+- Year: 2024
+- Same evaluation framework as baseline models
 
-**Total Model (Pace Interaction v1):**
+## Results
 
-- RMSE: 17.14, MAE: 13.33
-- **Key Finding:** Near-perfect calibration (-0.35 bias)
-- Hit Rate: 54.6% (profitable, +82 units on 2024)
-- Calibration: Excellent alignment with actual outcomes
+### Performance Metrics (2024 Holdout)
 
-### 4. Edge Bin Insights
+#### Derived Spread
 
-- No performance degradation at higher edges for either model
-- Spread bias consistent across all edge magnitudes (0-5, 5-10, 10-15, 15+ points)
-- Total model finds large edges frequently (100% of games in 15+ bin)
+- **RMSE:** 18.72 points
+- **MAE:** Not logged
+- **Hit Rate:** **53.3%** (+2.2% vs. baseline 51.1%)
+- **Bet Volume:** 460 bets (threshold 5.0 points)
 
-### 5. Documentation
+#### Derived Total
 
-✅ Created comprehensive calibration report: `artifacts/reports/calibration/calibration_analysis_2024.md`
-✅ Updated decision log with findings and approved recommendations
-✅ Generated 8 diagnostic plots in `artifacts/reports/calibration/`
+- **RMSE:** 17.40 points
+- **MAE:** Not logged
+- **Hit Rate:** **55.2%** (+0.6% vs. baseline 54.6%)
+- **Bet Volume:** 503 bets (threshold 3.5 points)
 
-## Artifacts Created
+### Comparison to Baselines
 
-**Scripts:**
+| Model                      | Spread Hit Rate | Total Hit Rate | Spread RMSE | Total RMSE |
+| -------------------------- | --------------- | -------------- | ----------- | ---------- |
+| **Pruned Spread Ensemble** | 51.1%           | -              | 18.61       | -          |
+| **Total CatBoost**         | -               | 54.6%          | -           | ~17.14     |
+| **Points-For Prototype**   | **53.3%**       | **55.2%**      | 18.72       | 17.40      |
 
-- `scripts/analyze_calibration.py` - General calibration framework (with VIF capabilities)
-- `scripts/extract_predictions_analysis.py` - Automated prediction analysis tool
+## Key Findings
 
-**Reports:**
+1. **Spread Hit Rate Improvement:** The Points-For approach achieves a 53.3% hit rate on spreads, which is:
 
-- `artifacts/reports/calibration/calibration_analysis_2024.md` - Full analysis report
-- 8 PNG plots (residuals, calibration curves, edge analysis)
-- 2 CSV files (residuals by edge bin)
+   - **Above the 52.4% breakeven threshold** (profitable!)
+   - +2.2% better than the pruned direct spread model
+   - This closes the profitability gap we've been working to solve
 
-**Documentation:**
+2. **Totals Hit Rate Improvement:** 55.2% is also a modest improvement over the existing 54.6% total model.
 
-- Updated `docs/decisions/decision_log.md` with calibration findings
+3. **RMSE Trade-off:** The Points-For model has slightly higher RMSE for spreads (18.72 vs 18.61), but this is expected due to error propagation (combining two predictions). The key win is the **hit rate**, which drives betting profitability.
 
-## Approved Next Steps
+4. **Architecture Benefits:**
+   - Unified modeling approach reduces maintenance
+   - Natural uncertainty quantification (variance of home + variance of away)
+   - Can derive both spread AND total from same model
 
-### Immediate Actions (This Week)
+## Next Steps
 
-1. **Spread Bias Correction**
+### Immediate (Recommended)
 
-   - Implement post-processing: `calibrated_pred = raw_pred - 1.4`
-   - Add to `run_experiment.py` or create bias correction utility
-   - Re-run 2024 holdout evaluation to validate correction
+1. **Register and Deploy:** Train 5-seed ensemble of Points-For models and register in MLflow
+2. **Update Weekly Pipeline:** Modify `generate_weekly_bets_hydra.py` to use Points-For models as the default
+3. **Validate Full Walk-Forward:** Run walk-forward validation across all years to confirm consistency
 
-2. **Threshold Tuning**
+### Future Enhancements
 
-   - Update spread edge threshold: 3.5 → 5.0 points
-   - Update `conf/model/spread_catboost.yaml` or betting policy config
-   - Re-compute hit rate on 2024 to confirm breakeven threshold
+1. **Hyperparameter Tuning:** The prototype uses default CatBoost params. Optuna sweep could improve further.
+2. **Multi-Output Regression:** Explore joint modeling (single model with 2 outputs) to capture correlation
+3. **Feature Engineering:** Consider pace/tempo interactions that might be more relevant for total scoring
+4. **Calibration:** Apply bias correction if systematic over/under-prediction emerges
 
-3. **Prediction Interval Logging**
-   - Modify `run_experiment.py` to save ensemble std-dev or bootstrap intervals
-   - Add uncertainty columns to prediction CSV outputs
-   - Use intervals for Kelly sizing and confidence filtering
+## Decision Recommendation
 
-### Medium-Term Actions (Next Sprint)
+**PROCEED with Points-For as the new production architecture:**
 
-1. **SHAP Feature Importance**
+- ✅ Achieves profitability for spread bets (53.3% > 52.4% breakeven)
+- ✅ Maintains strong totals performance (55.2%)
+- ✅ Cleaner architecture and better uncertainty quantification
+- ⚠️ Slightly higher RMSE acceptable given hit rate gains
 
-   - Run SHAP analysis on both models
-   - Identify top 20 features and check for redundancies
-   - Consider feature pruning based on importance rankings
+## Artifacts
 
-2. **Residual Modeling** (Optional)
-
-   - Train secondary model to predict residuals by week/opponent/neutral-site
-   - Use stacking approach to adjust primary predictions
-
-3. **Weekly Calibration Monitoring**
-   - Automate calibration curve generation after each betting week
-   - Track mean residual and RMSE trends
-   - Trigger retraining if bias exceeds ±2 points
-
-## Key Learnings
-
-1. **Total model is production-ready:** Excellent calibration and profitable hit rate
-2. **Spread model needs bias fix:** Simple post-processing can address systematic error
-3. **Edge independence:** No evidence that high-edge games are harder to predict
-4. **Threshold matters:** Spread model likely profitable at higher edge thresholds (5.0+)
-
-## Train/Test Split Validation
-
-✅ All analysis used correct split: **Train: 2019, 2021-2023 | Test: 2024**
-
-- Explicitly enforced in `run_experiment.py` (skip 2020 logic confirmed)
-- All predictions loaded from 2024 holdout experiments
-- No data leakage concerns
-
-## Status
-
-**Phase 2 Calibration Analysis:** ✅ Complete  
-**Phase 3 Feature Importance:** 🔄 Deferred to next session  
-**Recommendations:** ✅ Approved and Implemented
-
-## Implementation & Validation Results
-
-### Changes Made
-
-1. **Spread Bias Correction:**
-
-   - Added `calibration_bias: 1.4` to `conf/model/spread_catboost.yaml`
-   - Modified `scripts/run_experiment.py` to apply correction: `preds = preds_raw - calibration_bias`
-   - Now logs both raw and calibrated predictions for transparency
-
-2. **Edge Threshold Tuning:**
-
-   - Updated default threshold from 3.5 → 5.0 points in `run_experiment.py`
-   - Aligns with production betting.py defaults
-
-3. **Enhanced Prediction Logging:**
-   - Added columns: `prediction_raw`, `prediction` (calibrated), `residual`, `calibration_bias`
-   - Prepared framework for ensemble std-dev logging (placeholder added)
-
-### Validation on 2024 Holdout
-
-**Before Calibration (Baseline):**
-
-- Hit Rate: 46.6% (361-415 record, below breakeven)
-- Total Bets: 766 games
-- RMSE: 17.93, MAE: 14.02
-
-**After Calibration (Current):**
-
-- Hit Rate: **48.6%** (209-221-12 record, +2.0 percentage points) 🎯
-- Total Bets: **442 games** (-42% volume reduction)
-- RMSE: 18.12, MAE: 14.20
-
-### Impact Analysis
-
-✅ **Hit Rate Improvement:** +2.0 percentage points brings model closer to breakeven (52.4%)
-✅ **Volume Reduction:** 42% fewer bets concentrates capital on highest-quality opportunities  
-✅ **Calibration Working:** Mean residual reduced from +1.4 to near-zero (bias corrected)  
-⚠️ **RMSE Slightly Higher:** 18.12 vs 17.93 due to calibration shift (expected, not a concern)
-
-### Next Steps for Future Sessions
-
-- Run SHAP analysis for feature importance
-- Consider additional residual modeling if hit rate improvement insufficient
-- Monitor weekly calibration curves in live betting
-
-## Potential Future Work (Priority Order)
-
-### High Priority
-
-1. **SHAP Feature Importance Analysis** (~1-2 hours)
-
-   - Identify top 20 most important features for both models
-   - Check for redundant/highly correlated features
-   - Potentially prune low-importance features to reduce overfitting
-   - **Value:** Improved model generalization and interpretability
-
-2. **Weekly Calibration Monitoring** (Production readiness)
-   - Automate calibration tracking after each betting week
-   - Monitor mean residual and RMSE trends
-   - Trigger alerts if bias exceeds ±2 points
-   - **Value:** Ensures model doesn't drift over time
-
-### Medium Priority
-
-1. **VIF Collinearity Check** (Deferred from today)
-
-   - Compute Variance Inflation Factor for all 153 features
-   - Flag features with VIF > 10 for potential removal
-   - **Value:** Identify multicollinearity issues
-
-2. **Ensemble Uncertainty Quantification**
-   - Implement proper prediction intervals (bootstrap or conformal prediction)
-   - Use intervals for Kelly sizing and confidence filtering
-   - **Value:** Better uncertainty estimates → better bankroll management
-
-### Optional / Research
-
-1. **Residual Modeling / Stacking** (If hit rate still insufficient)
-
-   - Train secondary model to predict residuals by week/opponent/neutral-site
-   - Use stacking to combine primary + residual predictions
-   - **Value:** Could add 1-2% hit rate improvement
-
-2. **Points-For Modeling Push** (Option C from initial plan)
-
-   - Revisit points-for initiative (Ridge/XGBoost home/away scoring)
-   - Compare derived spreads/totals vs current CatBoost approach
-   - **Value:** Unified architecture, better interpretability
-
-3. **Total Model Deep Dive** (Research question)
-   - Investigate why total model performs so much better (54.6% vs 48.6%)
-   - Apply insights to improve spread model
-
----
-
-**Session Date:** 2025-11-23  
-**Duration:** ~3.5 hours  
-**Next Session:** Monitor live performance, consider SHAP analysis or residual modeling
+- `scripts/run_points_for_experiment.py`: Training script
+- `scripts/evaluate_points_for_prototype.py`: Evaluation script
+- `artifacts/predictions/points_for_prototype/*.csv`: Prediction outputs

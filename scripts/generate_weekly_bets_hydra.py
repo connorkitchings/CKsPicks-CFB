@@ -7,6 +7,9 @@ import os
 import sys
 from pathlib import Path
 
+# Add project root to path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 import hydra
 import joblib
 import numpy as np
@@ -116,8 +119,9 @@ def predict_with_points_for(
 
 def load_models_from_registry(model_names: dict[str, list[str]]) -> dict[str, list]:
     """Load models from the MLflow Model Registry."""
-    models = {"spread": [], "total": []}
+    models = {}
     for model_type, model_name_list in model_names.items():
+        models[model_type] = []
         for model_name in model_name_list:
             model = get_production_model(model_name)
             if model is None:
@@ -137,7 +141,9 @@ def predict_with_registered_models(
     if not df_spread_predict.empty:
         for m in models["spread"]:
             required_features = (
-                list(getattr(m, "feature_names_in_", [])) or spread_feature_list
+                list(getattr(m, "feature_names_in_", []))
+                or list(getattr(m, "feature_names_", []))
+                or spread_feature_list
             )
             x_model = df_spread_predict.reindex(
                 columns=required_features, fill_value=0.0
@@ -163,7 +169,9 @@ def predict_with_registered_models(
     if not df_totals_predict.empty:
         for m in models["total"]:
             required_features = (
-                list(getattr(m, "feature_names_in_", [])) or totals_feature_list
+                list(getattr(m, "feature_names_in_", []))
+                or list(getattr(m, "feature_names_", []))
+                or totals_feature_list
             )
             x_model = df_totals_predict.reindex(
                 columns=required_features, fill_value=0.0
@@ -186,6 +194,79 @@ def predict_with_registered_models(
     )
     final_df = final_df.dropna(subset=["predicted_spread", "predicted_total"])
     return final_df
+
+
+def predict_with_registered_points_for_models(
+    models: dict[str, list], df: pd.DataFrame
+) -> pd.DataFrame:
+    """Generate predictions using points-for models loaded from the MLflow Model Registry."""
+    # Prepare features for home models
+    # Assuming all home models use the same features, check the first one
+    home_model_0 = models["points_for_home"][0]
+    home_features = list(getattr(home_model_0, "feature_names_in_", [])) or list(
+        getattr(home_model_0, "feature_names_", [])
+    )
+    if not home_features:
+        # Fallback to loading from config or assuming standard set if not in model
+        # For now, let's assume models have feature names. If not, we might need to pass cfg.
+        # But CatBoost usually saves them.
+        # If missing, we can try to build from df columns matching pattern.
+        home_features = [col for col in df.columns if col.startswith("home_adj_")]
+        if "home_games_played" in df.columns:
+            home_features.append("home_games_played")
+
+    x_home = df.reindex(columns=home_features, fill_value=0.0).astype("float64")
+
+    # Predict Home Points
+    home_preds_list = []
+    for m in models["points_for_home"]:
+        home_preds_list.append(pd.Series(m.predict(x_home), index=x_home.index))
+
+    avg_home_points = np.mean(home_preds_list, axis=0)
+    std_home_points = np.std(home_preds_list, axis=0)
+
+    # Prepare features for away models
+    away_model_0 = models["points_for_away"][0]
+    away_features = list(getattr(away_model_0, "feature_names_in_", [])) or list(
+        getattr(away_model_0, "feature_names_", [])
+    )
+    if not away_features:
+        away_features = [col for col in df.columns if col.startswith("away_adj_")]
+        if "away_games_played" in df.columns:
+            away_features.append("away_games_played")
+
+    x_away = df.reindex(columns=away_features, fill_value=0.0).astype("float64")
+
+    # Predict Away Points
+    away_preds_list = []
+    for m in models["points_for_away"]:
+        away_preds_list.append(pd.Series(m.predict(x_away), index=x_away.index))
+
+    avg_away_points = np.mean(away_preds_list, axis=0)
+    std_away_points = np.std(away_preds_list, axis=0)
+
+    # Derived Predictions
+    working_df = df.copy()
+    working_df["predicted_home_points"] = avg_home_points
+    working_df["predicted_away_points"] = avg_away_points
+
+    # Spread = Home - Away
+    working_df["predicted_spread"] = avg_home_points - avg_away_points
+    # Spread Std Dev = sqrt(HomeStd^2 + AwayStd^2) (assuming independence)
+    working_df["predicted_spread_std_dev"] = np.sqrt(
+        std_home_points**2 + std_away_points**2
+    )
+
+    # Total = Home + Away
+    working_df["predicted_total"] = avg_home_points + avg_away_points
+    # Total Std Dev = sqrt(HomeStd^2 + AwayStd^2)
+    working_df["predicted_total_std_dev"] = np.sqrt(
+        std_home_points**2 + std_away_points**2
+    )
+
+    working_df = working_df.replace([np.inf, -np.inf], np.nan)
+    working_df = working_df.dropna(subset=["predicted_spread", "predicted_total"])
+    return working_df
 
 
 def _reduce_betting_lines(lines_df: pd.DataFrame) -> pd.DataFrame:
@@ -432,7 +513,7 @@ def main(cfg: DictConfig) -> None:
         df = load_week_dataset(
             cfg.weekly_bets.year,
             cfg.weekly_bets.week,
-            cfg.data.data_root,
+            cfg.paths.data_dir,
             adjustment_iteration=cfg.data.adjustment_iteration,
             adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
             adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
@@ -445,6 +526,16 @@ def main(cfg: DictConfig) -> None:
             }
             models = load_models_from_registry(model_names)
             final_df = predict_with_registered_models(models, df)
+            spread_std_threshold = cfg.weekly_bets.betting.spread_std_dev_threshold
+            total_std_threshold = cfg.weekly_bets.betting.total_std_dev_threshold
+        elif cfg.weekly_bets.prediction_mode == "points_for_registry":
+            print("Loading points-for models from MLflow Model Registry...")
+            model_names = {
+                "points_for_home": cfg.weekly_bets.model_registry.points_for_home_models,
+                "points_for_away": cfg.weekly_bets.model_registry.points_for_away_models,
+            }
+            models = load_models_from_registry(model_names)
+            final_df = predict_with_registered_points_for_models(models, df)
             spread_std_threshold = cfg.weekly_bets.betting.spread_std_dev_threshold
             total_std_threshold = cfg.weekly_bets.betting.total_std_dev_threshold
         else:

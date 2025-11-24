@@ -238,7 +238,7 @@ def main(cfg: DictConfig) -> None:
         if name in points_for_model_names
     }
     min_feature_variance = (
-        float(cfg.features.min_variance) if "features" in cfg else 0.0
+        float(cfg.features.get("min_variance", 0.0)) if "features" in cfg else 0.0
     )
 
     with mlflow.start_run(run_name="Walk_Forward_Validation_All_Models"):
@@ -432,11 +432,15 @@ def main(cfg: DictConfig) -> None:
                         preds_away = model.predict(x_test)
                         week_predictions[f"away_points_pred_{model_name}"] = preds_away
 
-                # Add derived total from points-for models
+                # Add derived total and spread from points-for models
                 for model_name in active_points_for_models:
                     week_predictions[f"total_pred_points_for_{model_name}"] = (
                         week_predictions[f"home_points_pred_{model_name}"]
                         + week_predictions[f"away_points_pred_{model_name}"]
+                    )
+                    week_predictions[f"spread_pred_points_for_{model_name}"] = (
+                        week_predictions[f"home_points_pred_{model_name}"]
+                        - week_predictions[f"away_points_pred_{model_name}"]
                     )
                 print("    Points-for models complete.")
 
@@ -492,6 +496,10 @@ def main(cfg: DictConfig) -> None:
                     season_predictions["home_points_pred_ensemble"]
                     + season_predictions["away_points_pred_ensemble"]
                 )
+                season_predictions["spread_pred_points_for_ensemble"] = (
+                    season_predictions["home_points_pred_ensemble"]
+                    - season_predictions["away_points_pred_ensemble"]
+                )
 
             for model_name in active_spread_models:
                 _evaluate_and_log(
@@ -513,6 +521,24 @@ def main(cfg: DictConfig) -> None:
                     pred_col=f"total_pred_{model_name}",
                 )
 
+            for model_name in active_points_for_models:
+                _evaluate_and_log(
+                    season_predictions,
+                    year_label=str(year),
+                    target="spread",
+                    model_key=f"points_for_{model_name}",
+                    actual_col="spread_actual",
+                    pred_col=f"spread_pred_points_for_{model_name}",
+                )
+                _evaluate_and_log(
+                    season_predictions,
+                    year_label=str(year),
+                    target="total",
+                    model_key=f"points_for_{model_name}",
+                    actual_col="total_actual",
+                    pred_col=f"total_pred_points_for_{model_name}",
+                )
+
             if "spread_pred_ensemble" in season_predictions.columns:
                 _evaluate_and_log(
                     season_predictions,
@@ -531,6 +557,24 @@ def main(cfg: DictConfig) -> None:
                     model_key="ensemble",
                     actual_col="total_actual",
                     pred_col="total_pred_ensemble",
+                )
+
+            if "spread_pred_points_for_ensemble" in season_predictions.columns:
+                _evaluate_and_log(
+                    season_predictions,
+                    year_label=str(year),
+                    target="spread",
+                    model_key="points_for_ensemble",
+                    actual_col="spread_actual",
+                    pred_col="spread_pred_points_for_ensemble",
+                )
+                _evaluate_and_log(
+                    season_predictions,
+                    year_label=str(year),
+                    target="total",
+                    model_key="points_for_ensemble",
+                    actual_col="total_actual",
+                    pred_col="total_pred_points_for_ensemble",
                 )
 
             # Log strategy selections
@@ -618,6 +662,24 @@ def main(cfg: DictConfig) -> None:
                     pred_col=f"total_pred_{model_name}",
                 )
 
+            for model_name in active_points_for_models:
+                _evaluate_and_log(
+                    combined_predictions,
+                    year_label="overall",
+                    target="spread",
+                    model_key=f"points_for_{model_name}",
+                    actual_col="spread_actual",
+                    pred_col=f"spread_pred_points_for_{model_name}",
+                )
+                _evaluate_and_log(
+                    combined_predictions,
+                    year_label="overall",
+                    target="total",
+                    model_key=f"points_for_{model_name}",
+                    actual_col="total_actual",
+                    pred_col=f"total_pred_points_for_{model_name}",
+                )
+
             if "spread_pred_ensemble" in combined_predictions.columns:
                 _evaluate_and_log(
                     combined_predictions,
@@ -635,6 +697,24 @@ def main(cfg: DictConfig) -> None:
                     model_key="ensemble",
                     actual_col="total_actual",
                     pred_col="total_pred_ensemble",
+                )
+
+            if "spread_pred_points_for_ensemble" in combined_predictions.columns:
+                _evaluate_and_log(
+                    combined_predictions,
+                    year_label="overall",
+                    target="spread",
+                    model_key="points_for_ensemble",
+                    actual_col="spread_actual",
+                    pred_col="spread_pred_points_for_ensemble",
+                )
+                _evaluate_and_log(
+                    combined_predictions,
+                    year_label="overall",
+                    target="total",
+                    model_key="points_for_ensemble",
+                    actual_col="total_actual",
+                    pred_col="total_pred_points_for_ensemble",
                 )
 
             overall_spread_strategy_col = _resolve_strategy(

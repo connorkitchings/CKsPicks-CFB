@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import mlflow
+import mlflow.catboost
 import mlflow.sklearn
 from mlflow.tracking import MlflowClient
 
@@ -157,8 +158,12 @@ def get_production_model(model_name: str):
         return mlflow.sklearn.load_model(model_uri)
 
     except Exception as e:
-        print(f"Failed to load production model: {e}")
-        return None
+        # Try loading as catboost model
+        try:
+            return mlflow.catboost.load_model(model_uri)
+        except Exception as e2:
+            print(f"Failed to load production model: {e} (and {e2})")
+            return None
 
 
 def list_model_versions(model_name: str) -> list[dict]:

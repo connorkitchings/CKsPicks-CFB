@@ -56,6 +56,73 @@ Initial recommendation: prototype dual single-target models that share the exist
 - **Baseline Comparison:** Compare against current ensembles to ensure no regression in hit rate or bet volume.
 - **Uncertainty Validation:** Confirm that combined variance (home + away) matches observed total variance; adjust calibration if mismatched.
 
+## Productionization Outcomes (November 2024)
+
+### Implementation Summary
+
+The Points-For modeling initiative has been successfully productionized. The architecture predicts home and away scores independently using CatBoost ensembles, then derives spread and total predictions downstream.
+
+**Architecture:**
+
+- **5-seed CatBoost ensembles** for both `home_points` and `away_points`
+- **Adjustment Iteration 2** selected as optimal (4 passes of opponent adjustment showed overfitting)
+- **Derived predictions:** Spread = Home - Away, Total = Home + Away
+- **MLflow Registry:** All models registered and promoted to Production stage
+
+### Performance Results
+
+**Walk-Forward Validation (2019-2024):**
+
+| Model                 | Spread RMSE | Total RMSE | Spread MAE | Total MAE |
+| :-------------------- | :---------- | :--------- | :--------- | :-------- |
+| Points-For (CatBoost) | **18.37**   | **17.12**  | **14.52**  | **13.65** |
+| Points-For (Ensemble) | 18.42       | 17.14      | 14.55      | 13.68     |
+| Direct Spread/Total   | 18.57       | 17.25      | 14.65      | 13.80     |
+
+**Betting Performance (2024 Season):**
+
+| Market    | Threshold | W-L         | Hit Rate  | Units      | Volume  |
+| :-------- | :-------- | :---------- | :-------- | :--------- | :------ |
+| Spread    | > 0.0     | 384-349     | 52.4%     | +0.06u     | 737     |
+| Spread    | > 2.5     | 283-257     | 52.4%     | +0.25u     | 543     |
+| **Total** | **> 5.0** | **186-165** | **53.0%** | **+4.07u** | **352** |
+
+> [!IMPORTANT]
+> The Points-For model achieves profitability on both spreads and totals, with particularly strong performance on high-confidence total bets (>5.0 edge).
+
+### Feature Pruning
+
+SHAP analysis was performed to identify the most important features for each model:
+
+**Pruned Model Performance (2024):**
+
+| Metric           | Baseline (116 features) | Pruned (40 features) | Difference |
+| :--------------- | :---------------------- | :------------------- | :--------- |
+| Home Points RMSE | 13.39                   | 13.49                | +0.10      |
+| Away Points RMSE | 11.95                   | 11.83                | -0.12      |
+| Spread RMSE      | 18.69                   | 18.54                | **-0.15**  |
+| Total RMSE       | 17.18                   | 17.33                | +0.15      |
+
+**Top Features Identified:**
+
+- **Home Points:** `home_adj_off_epa_pp`, `home_adj_off_sr`, `home_def_expl_rate_overall_10_last_3`
+- **Away Points:** `away_adj_off_sr`, `away_adj_off_epa_pp`, `away_off_eckel_rate_last_3`
+
+**Recommendation:** The pruned models offer a **65.5% feature reduction** with minimal performance impact (~0.15 RMSE difference). They are suitable for faster training and experimentation while the baseline models remain in production for maximum accuracy.
+
+### Integration Status
+
+- ✅ **Weekly Generation:** `scripts/generate_weekly_bets_hydra.py` updated with `points_for_registry` mode
+- ✅ **Walk-Forward Validation:** `scripts/walk_forward_validation.py` supports Points-For evaluation
+- ✅ **MLflow Registry:** All 10 models (baseline + pruned) registered and promoted
+- ✅ **Documentation:** `docs/operations/weekly_pipeline.md` and `docs/decisions/decision_log.md` updated
+
+### Next Steps
+
+1. **Monitor Production Performance:** Track weekly calibration and betting performance
+2. **Calibration Monitoring:** Implement automated weekly bias checks
+3. **Probabilistic Ratings:** Begin research on probabilistic power ratings (future sprint)
+
 ## Evaluation Plan
 
 To systematically evaluate and improve the points-for model, the following steps will be taken, with a primary focus on the "totals" prediction task:

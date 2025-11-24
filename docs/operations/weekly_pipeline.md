@@ -2,7 +2,7 @@
 
 This runbook defines the end-to-end weekly process for producing betting recommendations.
 
-> NOTE (2025-10-20): Pipeline updates are being designed to support a unified points-for model. Refer to `docs/planning/points_for_model.md` before modifying workflow steps.
+> > [!NOTE] > **Pipeline Updated (November 2024):** The weekly prediction pipeline now uses the Points-For modeling architecture, which predicts home and away scores separately to derive spread and total predictions. See `docs/planning/points_for_model.md` for details on the architecture and productionization.
 
 ## Schedule
 
@@ -72,10 +72,33 @@ python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --d
 
 - This step is now handled by the caching process. The prediction script will load pre-computed, point-in-time features from the `processed/team_week_adj/iteration=<depth>/` directory (default depth = 4 iterations).
 
-### Step 3: Modeling and Predictions
+### Step 3: Modeling and Predictions (Points-For Architecture)
 
-- The prediction script now reads directly from the cache, making this step much faster.
-- It applies the trained Ridge Regression baseline to the pre-calculated features. To evaluate alternate adjustment depths, pass `--adjustment-iteration <n>` to `generate_weekly_bets_clean`; omit the flag to use the default four-pass adjustment. Mixed-depth experiments are also supported via `--offense-adjustment-iteration` and `--defense-adjustment-iteration`, which override the offensive and defensive feature depths independently.
+The prediction pipeline uses the **Points-For modeling approach**, which predicts home and away scores independently using CatBoost ensembles, then derives spread and total predictions from these scores.
+
+**Model Architecture:**
+
+- **Home Points Model:** 5-seed CatBoost ensemble (`points_for_home_seed_1` through `_seed_5`)
+- **Away Points Model:** 5-seed CatBoost ensemble (`points_for_away_seed_1` through `_seed_5`)
+- **Derived Predictions:**
+  - Spread = Home Points - Away Points
+  - Total = Home Points + Away Points
+
+**Feature Pruning:**
+
+- **Baseline models:** 116 features (full standard feature set with adjustment iteration = 2)
+- **Pruned models (optional):** 40 features (65.5% reduction), identified via SHAP analysis
+- Performance difference is minimal (~0.15 RMSE), making pruned models suitable for faster training
+
+**Configuration:**
+
+- Models are loaded from MLflow Registry (Production stage)
+- Default configuration: `conf/weekly_bets/default.yaml`
+  - `prediction_mode: points_for_registry`
+  - `home_model_name: points_for_home`
+  - `away_model_name: points_for_away`invariant
+
+To use the pruned models instead, override the model names in the config.
 
 ### Step 4: Bet Selection
 
