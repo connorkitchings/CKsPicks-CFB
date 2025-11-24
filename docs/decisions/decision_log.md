@@ -1,6 +1,67 @@
 # Decision Log
 
-## 2025-11-23: Productionize Points-For Model Architecture
+## 2025-11-24: Pruned Points-For Model Validation Rejects Static Bias Correction
+
+- **Context:** Validated the pruned (40-feature) Points-For model across 5 years (2019-2024) to assess performance stability and calibration bias.
+- **Findings:**
+  - **Bias Instability:** Bias drifted significantly from -1.43 (2021) to +0.83 (2024).
+  - **Performance:** RMSE improved over time (19.49 -> 17.89), but bias direction flipped.
+- **Decision:** **Reject static bias correction.** Do not apply the +1.4 correction derived from 2024 data to other years or future predictions without dynamic adjustment.
+- **Rationale:** Applying a static correction would have exacerbated errors in 2019-2022 (doubling the bias).
+- **Impact:** Future work must focus on dynamic calibration (e.g., trailing average) rather than static offsets.
+- **Artifacts:** `artifacts/reports/pruned_model_validation.md`, `artifacts/reports/calibration/pruned_validation/bias_summary.csv`.
+
+## 2025-11-24: Walk-Forward Validation of Points-For Model Does Not Support Production Deployment
+
+- **Context:** A full walk-forward validation (2019-2024) was performed on the Points-For CatBoost model architecture. This was to rigorously test the promising results from a single-season (2024) prototype, which had shown a profitable >53% hit rate.
+- **Experiment:** Ran `scripts/walk_forward_validation.py` for years 2019, 2021, 2022, 2023, and 2024. The script trained a CatBoost model for home and away points on all data up to the current week and predicted on the current week's games. Betting performance was then calculated on the derived spread and total predictions.
+- **Findings:**
+  - **Overall Spread Performance (2019-2024):** At a 0.0 edge threshold, the model achieved a **51.4%** hit rate (744-704-9), resulting in a negative ROI of -1.91%.
+  - **Overall Total Performance (2019-2024):** At a 0.0 edge threshold, the model achieved a **51.2%** hit rate (744-709-4), resulting in a negative ROI of -2.25%.
+  - **Conclusion:** While the 2024 prototype was profitable, the multi-year validation shows that the model's performance does not consistently exceed the ~52.4% breakeven threshold. The 2024 results appear to be an outlier.
+- **Decision:** **Do not promote the current Points-For CatBoost model to be the primary production architecture.** The project's official modeling strategy is rolled back from the premature decision on 2025-11-23.
+- **Rationale:** A model must demonstrate consistent, multi-year profitability in walk-forward validation before it can be trusted for production betting. This model fails that test.
+- **Impact:** The project will not proceed with deploying this specific Points-For model. The previous production models (if any) or modeling strategies remain the default. Future work must focus on improving the Points-For model's edge through more advanced feature engineering or different model architectures (e.g., the mixed CatBoost/XGBoost ensemble).
+- **Artifacts:**
+  - Validation script: `scripts/walk_forward_validation.py`
+  - Analysis script: `scripts/create_walk_forward_report.py`
+  - Results report: `artifacts/reports/walk_forward_summary.md`
+
+## 2025-11-24: Systematic Adjustment-Iteration Experiments Confirm Depth=2 Default
+
+- **Context:** The project recently switched from `adjustment_iteration=4` to `adjustment_iteration=2` based on ad-hoc testing during Points-For prototyping. The planning document `docs/planning/adjustment_iteration_experiments.md` called for a systematic comparison across all depths (0-4), but this had not been completed.
+- **Experiment:** Trained Points-For CatBoost models (home + away) at each opponent-adjustment depth (0, 1, 2, 3, 4) using standard_v1 features. Evaluated derived spread and total predictions on 2024 holdout data (train: 2019, 2021-2023).
+- **Findings:**
+  - **Depth 0 (No Adjustment):** Spread RMSE = 19.51, significantly worse (baseline confirmation)
+  - **Depth 1 (Single Pass):** Spread RMSE = 18.11 (major improvement, ~75% of total gain)
+  - **Depth 2 (Current Default):** Spread RMSE = 18.36, Total RMSE = **17.32 (best)**, Spread Bias = -0.41
+  - **Depth 3:** Spread RMSE = 18.13, Total RMSE = 17.52
+  - **Depth 4 (Legacy Default):** Spread RMSE = **17.92 (best)**, Total RMSE = 17.32 (tied), Spread Bias = -1.65 ⚠️
+  - **Key Insight:** Depth 4 achieves only 0.44 points better spread RMSE than depth 2, but at the cost of 20 additional features (116 vs. 96) and significantly worse calibration bias (-1.65 vs. -0.41).
+- **Decision:** **CONFIRM and MAINTAIN `adjustment_iteration=2` as the default** for all models.
+- **Rationale:**
+  1. **Minimal Performance Gap:** Depth 2 ties for best total RMSE (17.32) and is only 0.44 points worse on spread RMSE (< 2.5% difference).
+  2. **Superior Calibration:** Depth 2 shows -0.41 spread bias vs. -1.65 for depth 4 (a 4x improvement).
+  3. **Feature Efficiency:** 20 fewer features reduces overfitting risk and computational load.
+  4. **Diminishing Returns:** Depths 2-4 perform nearly identically, suggesting opponent-adjustment converges quickly.
+  5. **Robustness:** Lower depth reduces risk of amplifying data quality issues through excessive iteration.
+- **Impact:** The recent switch to depth=2 is validated as the correct choice. No changes to configs required. Uniform-depth experiments from `adjustment_iteration_experiments.md` are now COMPLETE.
+- **Artifacts:**
+  - Experiment script: `scripts/adjustment_iteration_experiment_v2.py`
+  - Results CSV: `artifacts/reports/metrics/adjustment_iteration_summary_v2.csv`
+  - Visualization: `artifacts/reports/metrics/adjustment_iteration_comparison.png`
+  - Walkthrough: Full analysis in<!-- Newest decisions at the top -->
+
+### [2025-11-24] Reject Dynamic Calibration for Points-For Model
+
+- **Context**: Research simulated "Rolling 4-Week" and "Season-to-Date" bias correction on 2019-2024 validation data.
+- **Decision**: **Reject** dynamic calibration.
+- **Rationale**: While calibration reduced average bias to near zero, it increased RMSE in 4 out of 5 years tested. The bias signal is too noisy/unstable to predict, leading to "whipsawing" predictions.
+- **Consequences**: The "Pruned Points-For" model will be used "as-is" (without bias correction). Future improvements must come from variance reduction (new features/models), not bias correction.
+
+### [2025-11-24] Reject Static Bias Correction for Points-For Model
+
+Architecture
 
 - **Context:** The "Points-For" prototype (predicting Home/Away scores directly) achieved a 53.3% spread hit rate and 55.2% totals hit rate on 2024 holdout, outperforming legacy models.
 - **Decision:**

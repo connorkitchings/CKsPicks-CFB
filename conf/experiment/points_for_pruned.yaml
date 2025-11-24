@@ -1,0 +1,23 @@
+# @package _global_
+defaults:
+  - override /model: points_for_catboost
+  - override /features: points_for_pruned_union
+
+experiment:
+  name: points_for_pruned_validation
+
+walk_forward:
+  years: [2019, 2021, 2022, 2023, 2024]
+  start_week: 1
+  end_week: 15
+  spread_strategy: points_for
+  total_strategy: points_for
+  points_for_models: ["catboost"]
+  spread_models: ["none"]
+  total_models: ["none"]
+
+data:
+  adjustment_iteration: 2
+
+mlflow:
+  experiment_name: "PointsForPrunedValidation"

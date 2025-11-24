@@ -1,11 +1,18 @@
-name: xgboost
-type: points_for
+name: points_for_xgboost
+type: xgboost
+target: points_target  # Placeholder
+adjustment_iteration: 2
+calibration_bias: 0.0
+calibration_type: null
+calibration_year: null
 
+# Default Parameters (Performed best in ensemble)
 params:
-  objective: "reg:squarederror"
-  n_estimators: 500
-  learning_rate: 0.014914904454111767
-  max_depth: 3
-  subsample: 0.8181297711433825
-  colsample_bytree: 0.9834413314527001
+  n_estimators: 1000
+  learning_rate: 0.05
+  max_depth: 6
+  subsample: 0.8
+  colsample_bytree: 0.8
+  objective: reg:squarederror
+  n_jobs: -1
   random_state: 42

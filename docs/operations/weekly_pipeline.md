@@ -74,15 +74,23 @@ python scripts/cli.py ingest betting_lines --year 2024 --season-type regular --d
 
 ### Step 3: Modeling and Predictions (Points-For Architecture)
 
-The prediction pipeline uses the **Points-For modeling approach**, which predicts home and away scores independently using CatBoost ensembles, then derives spread and total predictions from these scores.
+The prediction pipeline uses the **Points-For modeling approach**, which predicts home and away scores independently using a **Mixed Ensemble (CatBoost + XGBoost)**, then derives spread and total predictions from these scores.
 
 **Model Architecture:**
 
-- **Home Points Model:** 5-seed CatBoost ensemble (`points_for_home_seed_1` through `_seed_5`)
-- **Away Points Model:** 5-seed CatBoost ensemble (`points_for_away_seed_1` through `_seed_5`)
+- **Home Points Model:** Mixed Ensemble (Optimized CatBoost + Default XGBoost)
+- **Away Points Model:** Mixed Ensemble (Optimized CatBoost + Default XGBoost)
 - **Derived Predictions:**
   - Spread = Home Points - Away Points
   - Total = Home Points + Away Points
+
+**Training (Annual/Periodic):**
+
+Models are trained on historical data (e.g., 2019, 2021-2023) and saved as `points_for_home.joblib` and `points_for_away.joblib` in the `artifacts/models/<year>/` directory.
+
+```bash
+uv run python scripts/train_points_for_production.py --output-dir artifacts/models
+```
 
 **Feature Pruning:**
 

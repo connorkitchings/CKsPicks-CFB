@@ -1,0 +1,7 @@
+# This file defines all the paths used in the project.
+
+root_dir: ${oc.env:PWD}
+data_dir: ${oc.env:CFB_DATA_ROOT,${oc.env:CFB_MODEL_DATA_ROOT,${paths.root_dir}/data}}
+artifacts_dir: ${paths.root_dir}/artifacts
+reports_dir: ${paths.artifacts_dir}/reports
+models_dir: ${paths.artifacts_dir}/models

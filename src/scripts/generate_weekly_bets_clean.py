@@ -149,17 +149,32 @@ def load_points_for_stats(model_year: int, model_dir: str) -> dict | None:
 def _prepare_feature_matrix(df: pd.DataFrame, model, prefix: str) -> pd.DataFrame:
     feature_names = list(getattr(model, "feature_names_in_", []))
     if not feature_names:
+        print(
+            f"DEBUG: No feature_names_in_ for model. Using prefix '{prefix}' fallback."
+        )
         feature_names = [col for col in df.columns if col.startswith(f"{prefix}adj_")]
         games_col = f"{prefix}games_played"
         if games_col in df.columns:
             feature_names.append(games_col)
+        feature_names = sorted(feature_names)
+    else:
+        print(
+            f"DEBUG: Found {len(feature_names)} feature_names_in_: {feature_names[:3]}..."
+        )
+
     if not feature_names:
         raise ValueError(
             f"No features found for prefix '{prefix}'. Ensure weekly caches include opponent-adjusted columns."
         )
+
+    print(
+        f"DEBUG: Preparing matrix for prefix '{prefix}' with {len(feature_names)} features. First feature: {feature_names[0]}"
+    )
+
     matrix = (
         df.reindex(columns=feature_names, fill_value=0.0).fillna(0.0).astype("float64")
     )
+    print(f"DEBUG: Matrix columns[0]: {matrix.columns[0]}")
     return matrix
 
 

@@ -1,0 +1,29 @@
+# @package _global_
+
+# This configuration drives the training of the production Points-For ensembles.
+# It defines the data to use, the features to select, and the model parameters
+# for both the home and away points predictors.
+
+defaults:
+  - override /paths: default.yaml
+  - override /features: standard_v1.yaml
+  - override /model: points_for_catboost.yaml
+  - _self_
+
+experiment:
+  name: "PointsForProduction"
+  description: "Production training run for the Points-For CatBoost ensembles (Home & Away)."
+
+data:
+  train_years: [2019, 2021, 2022, 2023]
+  adjustment_iteration: 2
+
+model:
+  num_seeds: 5
+  model_registry_name_home: "points_for_home"
+  model_registry_name_away: "points_for_away"
+
+# Hydra settings
+hydra:
+  run:
+    dir: ${paths.artifacts_dir}/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}

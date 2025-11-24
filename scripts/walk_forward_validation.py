@@ -14,6 +14,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
+from sklearn.base import clone
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
 
@@ -180,13 +181,19 @@ def main(cfg: DictConfig) -> None:
             }
         )
 
-    def _resolve_strategy(prefix: str, strategy: str, best_model_key: str) -> str:
+    def _resolve_strategy(
+        prefix: str, strategy: str, best_model_key: str | None
+    ) -> str:
         if strategy == "ensemble":
             return f"{prefix}_pred_ensemble"
         if strategy == "best_single":
+            if best_model_key is None:
+                raise ValueError(
+                    "best_model_key must be provided for 'best_single' strategy"
+                )
             return f"{prefix}_pred_{best_model_key}"
         if strategy == "points_for":
-            return "total_pred_points_for_ensemble"
+            return f"{prefix}_pred_points_for_ensemble"
         raise ValueError(
             f"Unknown {prefix} strategy '{strategy}'. Expected 'ensemble' or 'best_single'."
         )
@@ -286,7 +293,7 @@ def main(cfg: DictConfig) -> None:
                         weekly_data = load_point_in_time_data(
                             train_year,
                             train_week,
-                            cfg.data.data_root,
+                            cfg.paths.data_dir,
                             adjustment_iteration=cfg.data.adjustment_iteration,
                             adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
                             adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
@@ -304,7 +311,7 @@ def main(cfg: DictConfig) -> None:
                 test_df = load_point_in_time_data(
                     year,
                     week,
-                    cfg.data.data_root,
+                    cfg.paths.data_dir,
                     adjustment_iteration=cfg.data.adjustment_iteration,
                     adjustment_iteration_offense=cfg.data.adjustment_iteration_offense,
                     adjustment_iteration_defense=cfg.data.adjustment_iteration_defense,
@@ -423,13 +430,15 @@ def main(cfg: DictConfig) -> None:
                 with _suppress_linear_runtime_warnings():
                     for model_name, model in active_points_for_models.items():
                         # Home points
-                        model.fit(x_train, y_train_home_points)
-                        preds_home = model.predict(x_test)
+                        home_model = clone(model)
+                        home_model.fit(x_train, y_train_home_points)
+                        preds_home = home_model.predict(x_test)
                         week_predictions[f"home_points_pred_{model_name}"] = preds_home
 
                         # Away points
-                        model.fit(x_train, y_train_away_points)
-                        preds_away = model.predict(x_test)
+                        away_model = clone(model)
+                        away_model.fit(x_train, y_train_away_points)
+                        preds_away = away_model.predict(x_test)
                         week_predictions[f"away_points_pred_{model_name}"] = preds_away
 
                 # Add derived total and spread from points-for models
@@ -581,7 +590,7 @@ def main(cfg: DictConfig) -> None:
             spread_strategy_col = _resolve_strategy(
                 "spread",
                 cfg.walk_forward.spread_strategy,
-                cfg.walk_forward.best_spread_model,
+                cfg.walk_forward.get("best_spread_model"),
             )
             _evaluate_and_log(
                 season_predictions,
@@ -595,7 +604,7 @@ def main(cfg: DictConfig) -> None:
             total_strategy_col = _resolve_strategy(
                 "total",
                 cfg.walk_forward.total_strategy,
-                cfg.walk_forward.best_total_model,
+                cfg.walk_forward.get("best_total_model"),
             )
             _evaluate_and_log(
                 season_predictions,
@@ -720,7 +729,7 @@ def main(cfg: DictConfig) -> None:
             overall_spread_strategy_col = _resolve_strategy(
                 "spread",
                 cfg.walk_forward.spread_strategy,
-                cfg.walk_forward.best_spread_model,
+                cfg.walk_forward.get("best_spread_model"),
             )
             _evaluate_and_log(
                 combined_predictions,
@@ -734,7 +743,7 @@ def main(cfg: DictConfig) -> None:
             overall_total_strategy_col = _resolve_strategy(
                 "total",
                 cfg.walk_forward.total_strategy,
-                cfg.walk_forward.best_total_model,
+                cfg.walk_forward.get("best_total_model"),
             )
             _evaluate_and_log(
                 combined_predictions,

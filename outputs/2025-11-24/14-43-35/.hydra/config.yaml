@@ -1,0 +1,175 @@
+data:
+  adjustment_iteration: 2
+  adjustment_iteration_offense: null
+  adjustment_iteration_defense: null
+  train_years:
+  - 2019
+  - 2021
+  - 2022
+  - 2023
+  test_year: 2024
+paths:
+  root_dir: ${oc.env:PWD}
+  data_dir: ${oc.env:CFB_DATA_ROOT,${oc.env:CFB_MODEL_DATA_ROOT,${paths.root_dir}/data}}
+  artifacts_dir: ${paths.root_dir}/artifacts
+  reports_dir: ${paths.artifacts_dir}/reports
+  models_dir: ${paths.artifacts_dir}/models
+model:
+  name: points_for_catboost
+  type: catboost
+  target: points_target
+  adjustment_iteration: 2
+  calibration_bias: 0.0
+  calibration_type: null
+  calibration_year: null
+  home_params:
+    depth: 6
+    learning_rate: 0.02458
+    iterations: 800
+    l2_leaf_reg: 6.6488
+    subsample: 0.7514
+    colsample_bylevel: 0.6982
+    min_data_in_leaf: 13
+    loss_function: RMSE
+    random_seed: 42
+    verbose: 0
+  away_params:
+    depth: 7
+    learning_rate: 0.01379
+    iterations: 1500
+    l2_leaf_reg: 2.7971
+    subsample: 0.8057
+    colsample_bylevel: 0.837
+    min_data_in_leaf: 1
+    loss_function: RMSE
+    random_seed: 42
+    verbose: 0
+features:
+  name: points_for_pruned_union
+  recency_window: standard
+  groups:
+  - away_adj_def_epa_pp
+  - away_adj_def_sr
+  - away_adj_def_ypp
+  - away_adj_off_epa_pp
+  - away_adj_off_sr
+  - away_adj_off_ypp
+  - away_def_avg_line_yards_allowed_last_3
+  - away_def_avg_open_field_yards_allowed_last_3
+  - away_def_avg_second_level_yards_allowed_last_3
+  - away_def_busted_drive_rate_allowed_last_3
+  - away_def_epa_pp_last_3
+  - away_def_pass_ypp_last_3
+  - away_def_sr_last_3
+  - away_def_successful_drive_rate_allowed_last_3
+  - away_def_third_down_conversion_rate_last_3
+  - away_off_avg_net_punt_yards_last_3
+  - away_off_avg_open_field_yards_last_3
+  - away_off_busted_drive_rate_last_3
+  - away_off_eckel_rate_last_3
+  - away_off_epa_pp_last_3
+  - away_off_expl_rate_pass_last_3
+  - away_off_expl_rate_rush_last_3
+  - away_off_explosive_drive_rate_last_3
+  - away_off_finish_pts_per_opp_last_3
+  - away_off_pass_ypp_last_3
+  - away_off_sr_last_3
+  - away_off_successful_drive_rate_last_3
+  - away_off_third_down_conversion_rate_last_3
+  - away_off_ypp_last_3
+  - home_adj_def_epa_pp
+  - home_adj_def_sr
+  - home_adj_def_ypp
+  - home_adj_off_epa_pp
+  - home_adj_off_sr
+  - home_adj_off_ypp
+  - home_def_avg_line_yards_allowed_last_3
+  - home_def_epa_pp_last_3
+  - home_def_expl_rate_overall_10_last_3
+  - home_def_expl_rate_overall_30_last_3
+  - home_def_expl_rate_pass_last_3
+  - home_def_expl_rate_rush_last_3
+  - home_def_explosive_drive_rate_allowed_last_3
+  - home_def_rush_ypp_last_3
+  - home_def_sr_last_3
+  - home_def_successful_drive_rate_allowed_last_3
+  - home_def_third_down_conversion_rate_last_3
+  - home_drives_per_game
+  - home_drives_per_game_last_3
+  - home_off_avg_line_yards_last_3
+  - home_off_avg_net_punt_yards_last_3
+  - home_off_avg_open_field_yards_last_3
+  - home_off_busted_drive_rate_last_3
+  - home_off_eckel_rate_last_3
+  - home_off_epa_pp_last_3
+  - home_off_expl_rate_overall_10_last_3
+  - home_off_expl_rate_overall_20_last_3
+  - home_off_expl_rate_overall_30_last_3
+  - home_off_expl_rate_pass_last_3
+  - home_off_expl_rate_rush_last_3
+  - home_off_explosive_drive_rate_last_3
+  - home_off_finish_pts_per_opp_last_3
+  - home_off_pass_ypp_last_3
+  - home_off_rush_ypp_last_3
+  - home_off_sr_last_3
+  - home_off_successful_drive_rate_last_3
+  - home_stuff_rate_last_3
+weekly_bets:
+  year: 2024
+  week: 13
+  model_year: 2024
+  output_dir: artifacts/reports
+  prediction_mode: points_for_registry
+  bankroll: 10000
+  max_weekly_exposure_fraction: 0.15
+  max_weekly_bets: 12
+  max_single_bet_fraction: 0.05
+  model_registry:
+    spread_models:
+    - spread_catboost_pruned_seed_1
+    - spread_catboost_pruned_seed_2
+    - spread_catboost_pruned_seed_3
+    - spread_catboost_pruned_seed_4
+    - spread_catboost_pruned_seed_5
+    total_models:
+    - cfb_total_catboost
+    points_for_home_models:
+    - points_for_home_seed_1
+    - points_for_home_seed_2
+    - points_for_home_seed_3
+    - points_for_home_seed_4
+    - points_for_home_seed_5
+    points_for_away_models:
+    - points_for_away_seed_1
+    - points_for_away_seed_2
+    - points_for_away_seed_3
+    - points_for_away_seed_4
+    - points_for_away_seed_5
+  betting:
+    spread_threshold: 5.0
+    total_threshold: 3.5
+    spread_std_dev_threshold: null
+    total_std_dev_threshold: null
+  points_for:
+    spread_std: 14.0
+    total_std: 14.0
+  model_dir: artifacts/models
+experiment:
+  name: points_for_pruned_validation
+walk_forward:
+  years:
+  - 2019
+  - 2021
+  - 2022
+  - 2023
+  - 2024
+  start_week: 1
+  end_week: 15
+  spread_strategy: points_for
+  total_strategy: points_for
+  points_for_models:
+  - catboost
+  spread_models: []
+  total_models: []
+mlflow:
+  experiment_name: PointsForPrunedValidation
