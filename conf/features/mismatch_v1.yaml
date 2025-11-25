@@ -1,0 +1,13 @@
+# Mismatch Features V1
+# Includes standard packs plus the new mismatch/rank features (which are in 'matchup')
+feature_packs:
+  - offense
+  - defense
+  - drive
+  - pace
+  - special_teams
+  - context
+  - matchup
+
+min_feature_variance: 0.0
+preprocess: false

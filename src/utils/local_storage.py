@@ -181,7 +181,7 @@ class LocalStorage(StorageBackend):
                     print(f"Skipping unreadable file: {fpath} -> {e}")
                     continue
             return rows
-        elif self.file_format == "csv":
+        if self.file_format == "csv":
             # Recursively read all CSV files under the base_dir to support nested partitions
             files = sorted(
                 [

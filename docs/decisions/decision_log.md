@@ -1,5 +1,17 @@
 # Decision Log
 
+## 2025-11-25: Final Rejection of Points-For Prototype Configuration
+
+- **Context:** Following the failed walk-forward validation (2025-11-24), a deep-dive investigation was conducted to determine if the discrepancy was due to implementation differences (preprocessing, model ensembling) or the model itself. We restored the exact prototype configuration (CatBoost only, no preprocessing, 5.0 threshold, Consensus lines) and re-evaluated on 2024.
+- **Findings:**
+  - **Replicated Win Rate:** **50.0%** (270-270) on 2024 data.
+  - **ROI:** **-5.9%**.
+  - **Conclusion:** The 53.3% win rate observed in the initial prototype was an anomaly (likely due to a specific random seed or subset of games). When validated robustly, the "raw features + CatBoost" approach provides no edge over a coin flip.
+- **Decision:** **Formally reject the current "Points-For" model configuration.** Stop all efforts to productionize this specific version.
+- **Rationale:** The model is not profitable. Continued optimization of this specific feature set/architecture is unlikely to yield the >52.4% required for profitability.
+- **Impact:** The project must pivot to new strategies (e.g., residual modeling, advanced feature engineering) to find an edge.
+- **Artifacts:** `walkthrough.md` (Investigation details).
+
 ## 2025-11-24: Pruned Points-For Model Validation Rejects Static Bias Correction
 
 - **Context:** Validated the pruned (40-feature) Points-For model across 5 years (2019-2024) to assess performance stability and calibration bias.

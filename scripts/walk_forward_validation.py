@@ -384,22 +384,27 @@ def main(cfg: DictConfig) -> None:
                     x_test = x_test[feature_list]
 
                 # --- Outlier handling ---
-                x_train, x_test = _clip_extremes(x_train, x_test)
+                if cfg.features.get("preprocess", True):
+                    x_train, x_test = _clip_extremes(x_train, x_test)
 
-                # --- Stable preprocessing: VIF pruning + scaling ---
-                x_train, x_test, vif_dropped = _prune_high_vif(
-                    x_train,
-                    x_test,
-                    threshold=float(cfg.features.get("vif_threshold", 50.0)),
-                    max_iter=10,
-                )
-                if vif_dropped:
-                    print(
-                        f"    Dropped {len(vif_dropped)} high-VIF features: "
-                        f"{', '.join(vif_dropped[:5])}"
-                        + ("..." if len(vif_dropped) > 5 else "")
+                    # --- Stable preprocessing: VIF pruning + scaling ---
+                    x_train, x_test, vif_dropped = _prune_high_vif(
+                        x_train,
+                        x_test,
+                        threshold=float(cfg.features.get("vif_threshold", 50.0)),
+                        max_iter=10,
                     )
-                x_train, x_test = _scale_features(x_train, x_test)
+                    if vif_dropped:
+                        print(
+                            f"    Dropped {len(vif_dropped)} high-VIF features: "
+                            f"{', '.join(vif_dropped[:5])}"
+                            + ("..." if len(vif_dropped) > 5 else "")
+                        )
+                    x_train, x_test = _scale_features(x_train, x_test)
+                else:
+                    print(
+                        "    Skipping preprocessing (clipping, VIF, scaling) as configured."
+                    )
 
                 # --- Model Training and Prediction ---
                 week_predictions = test_df[

@@ -307,6 +307,13 @@ def main() -> None:
             "this threshold (default keeps all features)."
         ),
     )
+    parser.add_argument(
+        "--target-type",
+        type=str,
+        default="absolute",
+        choices=["absolute", "residual", "quantile"],
+        help="Type of target to predict: 'absolute', 'residual', or 'quantile'.",
+    )
     args = parser.parse_args()
 
     train_years = [int(y.strip()) for y in args.train_years.split(",") if y.strip()]
@@ -329,6 +336,30 @@ def main() -> None:
         else args.adjustment_iteration
     )
 
+    use_residual = args.target_type in ["residual", "quantile"]
+    use_quantile = args.target_type == "quantile"
+
+    if use_quantile:
+        # Override models for quantile regression
+        # Predicts 10th, 50th, 90th percentiles
+        quantile_model = CatBoostRegressor(
+            loss_function="MultiQuantile:alpha=0.1,0.5,0.9",
+            eval_metric="MultiQuantile:alpha=0.1,0.5,0.9",
+            iterations=1000,
+            learning_rate=0.03,
+            depth=6,
+            l2_leaf_reg=3.0,
+            random_seed=42,
+            verbose=0,
+        )
+        # We replace the ensemble dictionaries with just this model
+        # We have to modify the global dictionaries or local variables.
+        # Local variables are better but the code uses the globals.
+        # Let's just re-assign the globals for this run (safe since it's a script)
+        global spread_models, total_models
+        spread_models = {"catboost_quantile": quantile_model}
+        total_models = {"catboost_quantile": quantile_model}
+
     # --- MLflow Setup ---
     mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment("CFB_Model_Training")
@@ -345,6 +376,7 @@ def main() -> None:
                 adjustment_iteration=args.adjustment_iteration,
                 adjustment_iteration_offense=args.offense_adjustment_iteration,
                 adjustment_iteration_defense=args.defense_adjustment_iteration,
+                include_betting_lines=use_residual,
             )
             if weekly_data is not None:
                 all_training_games.append(weekly_data)
@@ -360,6 +392,7 @@ def main() -> None:
             adjustment_iteration=args.adjustment_iteration,
             adjustment_iteration_offense=args.offense_adjustment_iteration,
             adjustment_iteration_defense=args.defense_adjustment_iteration,
+            include_betting_lines=use_residual,
         )
         if weekly_data is not None:
             all_test_games.append(weekly_data)
@@ -375,13 +408,22 @@ def main() -> None:
         print(
             f"Feature packs {args.feature_packs} selected → {len(feature_list)} columns"
         )
+
     target_cols = ["spread_target", "total_target"]
+    if use_residual:
+        target_cols.extend(["spread_residual_target", "total_residual_target"])
+
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
 
     x_train = train_df[feature_list]
-    y_spread_train = train_df["spread_target"].astype(float)
-    y_total_train = train_df["total_target"].astype(float)
+
+    if use_residual:
+        y_spread_train = train_df["spread_residual_target"].astype(float)
+        y_total_train = train_df["total_residual_target"].astype(float)
+    else:
+        y_spread_train = train_df["spread_target"].astype(float)
+        y_total_train = train_df["total_target"].astype(float)
 
     x_test = test_df[feature_list]
 
@@ -404,8 +446,13 @@ def main() -> None:
         feature_list = keep_cols
         x_train = x_train[feature_list]
         x_test = x_test[feature_list]
-    y_spread_test = test_df["spread_target"].astype(float)
-    y_total_test = test_df["total_target"].astype(float)
+
+    if use_residual:
+        y_spread_test = test_df["spread_residual_target"].astype(float)
+        y_total_test = test_df["total_residual_target"].astype(float)
+    else:
+        y_spread_test = test_df["spread_target"].astype(float)
+        y_total_test = test_df["total_target"].astype(float)
 
     out_dir = model_dir / str(test_year)
     os.makedirs(out_dir, exist_ok=True)
@@ -423,6 +470,9 @@ def main() -> None:
         mlflow.log_param("off_adjustment_iteration", offense_iteration)
         mlflow.log_param("def_adjustment_iteration", defense_iteration)
 
+        # Capture input example for MLflow signature inference
+        input_example = x_train.head(5)
+
         # --- Spread Models ---
         print("Training and logging spread models...")
         for name, model in spread_models.items():
@@ -432,11 +482,21 @@ def main() -> None:
                 with _suppress_linear_runtime_warnings():
                     model.fit(x_train, y_spread_train)
                     preds = model.predict(x_test)
-                metrics = _evaluate(y_spread_test.to_numpy(), preds)
+
+                if use_quantile:
+                    # preds is (N, 3) -> [p10, p50, p90]
+                    # Evaluate using median (p50)
+                    eval_preds = preds[:, 1]
+                else:
+                    eval_preds = preds
+
+                metrics = _evaluate(y_spread_test.to_numpy(), eval_preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
 
                 joblib.dump(model, out_dir / f"spread_{name}.joblib")
-                mlflow.sklearn.log_model(model, f"spread_{name}")
+                mlflow.sklearn.log_model(
+                    model, f"spread_{name}", input_example=input_example
+                )
 
         # --- Total Models ---
         print("Training and logging total models...")
@@ -447,11 +507,19 @@ def main() -> None:
                 with _suppress_linear_runtime_warnings():
                     model.fit(x_train, y_total_train)
                     preds = model.predict(x_test)
-                metrics = _evaluate(y_total_test.to_numpy(), preds)
+
+                if use_quantile:
+                    eval_preds = preds[:, 1]
+                else:
+                    eval_preds = preds
+
+                metrics = _evaluate(y_total_test.to_numpy(), eval_preds)
                 mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
 
                 joblib.dump(model, out_dir / f"total_{name}.joblib")
-                mlflow.sklearn.log_model(model, f"total_{name}")
+                mlflow.sklearn.log_model(
+                    model, f"total_{name}", input_example=input_example
+                )
 
         # --- Evaluate and Log Ensemble Performance ---
         print("Evaluating ensemble predictions...")
@@ -472,8 +540,20 @@ def main() -> None:
         spread_pred_ensemble = np.mean(spread_preds, axis=0)
         total_pred_ensemble = np.mean(total_preds, axis=0)
 
-        spread_metrics = _evaluate(y_spread_test.to_numpy(), spread_pred_ensemble)
-        total_metrics = _evaluate(y_total_test.to_numpy(), total_pred_ensemble)
+        spread_pred_ensemble = np.mean(spread_preds, axis=0)
+        total_pred_ensemble = np.mean(total_preds, axis=0)
+
+        if use_quantile:
+            # Ensemble is (N, 3). Use median for metrics.
+            spread_metrics = _evaluate(
+                y_spread_test.to_numpy(), spread_pred_ensemble[:, 1]
+            )
+            total_metrics = _evaluate(
+                y_total_test.to_numpy(), total_pred_ensemble[:, 1]
+            )
+        else:
+            spread_metrics = _evaluate(y_spread_test.to_numpy(), spread_pred_ensemble)
+            total_metrics = _evaluate(y_total_test.to_numpy(), total_pred_ensemble)
 
         mlflow.log_metric("ensemble_spread_rmse", spread_metrics.rmse)
         mlflow.log_metric("ensemble_spread_mae", spread_metrics.mae)
@@ -498,6 +578,107 @@ def main() -> None:
             ]
         ).to_csv(metrics_path, index=False)
         print(f"Saved final evaluation metrics to {metrics_path}")
+
+        # Save predictions
+        pred_df = test_df.copy()
+
+        if use_residual:
+            # Reconstruct absolute predictions
+            # spread_residual = target + line  =>  target = residual - line
+            # total_residual = target - line   =>  target = residual + line (Total is different)
+
+            # Wait, Total Line is usually positive (e.g. 50.5).
+            # Total Target = Home + Away.
+            # Residual = Target - Line. (e.g. 60 - 50.5 = 9.5 Over).
+            # So Total Residual = Target - Line is correct.
+            # Total Reconstruction = Residual + Line.
+
+            # Ensure lines are present (they should be if use_residual=True)
+            # Ensure lines are present (they should be if use_residual=True)
+            if "spread_line" in pred_df.columns:
+                if use_quantile:
+                    pred_df["spread_p10"] = spread_pred_ensemble[:, 0]
+                    pred_df["spread_p50"] = spread_pred_ensemble[:, 1]
+                    pred_df["spread_p90"] = spread_pred_ensemble[:, 2]
+                    # Use Median for "predicted"
+                    pred_df["spread_predicted_residual"] = pred_df["spread_p50"]
+                    pred_df["spread_predicted"] = (
+                        pred_df["spread_p50"] - pred_df["spread_line"]
+                    )
+                else:
+                    pred_df["spread_predicted_residual"] = spread_pred_ensemble
+                    pred_df["spread_predicted"] = (
+                        spread_pred_ensemble - pred_df["spread_line"]
+                    )
+            else:
+                print(
+                    "Warning: spread_line not found, saving residuals as spread_predicted"
+                )
+                if use_quantile:
+                    pred_df["spread_predicted"] = spread_pred_ensemble[:, 1]
+                else:
+                    pred_df["spread_predicted"] = spread_pred_ensemble
+
+            if "total_line" in pred_df.columns:
+                if use_quantile:
+                    pred_df["total_p10"] = total_pred_ensemble[:, 0]
+                    pred_df["total_p50"] = total_pred_ensemble[:, 1]
+                    pred_df["total_p90"] = total_pred_ensemble[:, 2]
+                    pred_df["total_predicted_residual"] = pred_df["total_p50"]
+                    pred_df["total_predicted"] = (
+                        pred_df["total_p50"] + pred_df["total_line"]
+                    )
+                else:
+                    pred_df["total_predicted_residual"] = total_pred_ensemble
+                    pred_df["total_predicted"] = (
+                        total_pred_ensemble + pred_df["total_line"]
+                    )
+            else:
+                print(
+                    "Warning: total_line not found, saving residuals as total_predicted"
+                )
+                if use_quantile:
+                    pred_df["total_predicted"] = total_pred_ensemble[:, 1]
+                else:
+                    pred_df["total_predicted"] = total_pred_ensemble
+        else:
+            pred_df["spread_predicted"] = spread_pred_ensemble
+            pred_df["total_predicted"] = total_pred_ensemble
+
+        pred_cols = [
+            "id",
+            "season",
+            "week",
+            "home_team",
+            "away_team",
+            "home_points",
+            "away_points",
+            "spread_predicted",
+            "total_predicted",
+        ]
+        if use_residual:
+            pred_cols.extend(
+                [
+                    "spread_predicted_residual",
+                    "total_predicted_residual",
+                    "spread_line",
+                    "total_line",
+                ]
+            )
+        if use_quantile:
+            pred_cols.extend(
+                [
+                    "spread_p10",
+                    "spread_p50",
+                    "spread_p90",
+                    "total_p10",
+                    "total_p50",
+                    "total_p90",
+                ]
+            )
+
+        pred_df[pred_cols].to_csv(out_dir / "predictions.csv", index=False)
+        print(f"Saved predictions to {out_dir / 'predictions.csv'}")
 
 
 if __name__ == "__main__":

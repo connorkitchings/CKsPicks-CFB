@@ -71,6 +71,49 @@ def prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
             ]
         )
 
+    # Calculate Percentile Ranks for Key Metrics
+    # We group by season to rank teams relative to their peers in that year.
+    rank_metrics = [
+        "adj_off_epa_pp",
+        "adj_def_epa_pp",
+        "adj_off_sr",
+        "adj_def_sr",
+        "adj_off_expl_rate_overall_20",
+        "adj_def_expl_rate_overall_20",
+        "off_epa_pp",
+        "def_epa_pp",
+    ]
+
+    for metric in rank_metrics:
+        if metric in combined.columns:
+            # Rank 0.0 to 1.0 (1.0 is best).
+            # For Offense: Higher is better.
+            # For Defense: Lower is better (usually negative EPA).
+            # Wait, EPA/SR are "higher is better" for offense.
+            # For Defense, "lower allowed" is better.
+            # But usually we want "Rank 1.0" to mean "Best Team".
+            # So for Offense: pct=True (higher value -> higher rank)
+            # For Defense: pct=True, ascending=False?
+            # Let's standardize: 1.0 = Best, 0.0 = Worst.
+
+            rank_col = f"{metric}_rank"
+
+            if "def_" in metric:
+                # Defense: Lower value (more negative) is better.
+                # So we rank ascending=False (Lower value gets higher rank?)
+                # No, rank(ascending=True) gives low values low ranks.
+                # We want low value (good defense) to have HIGH rank (1.0).
+                # So we rank ascending=False.
+                combined[rank_col] = combined.groupby("season")[metric].rank(
+                    pct=True, ascending=False
+                )
+            else:
+                # Offense: Higher value is better.
+                # We want high value to have HIGH rank (1.0).
+                combined[rank_col] = combined.groupby("season")[metric].rank(
+                    pct=True, ascending=True
+                )
+
     # Include pace and opportunity metrics if present (excluding timing metrics like sec_per_play)
     pace_cols = [
         "plays_per_game",
@@ -115,6 +158,22 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
                 col = f"{side}_{prefix}{metric}"
                 if col in df.columns:
                     features.append(col)
+
+        # Add Ranks
+        for metric in [
+            "adj_off_epa_pp",
+            "adj_def_epa_pp",
+            "adj_off_sr",
+            "adj_def_sr",
+            "adj_off_expl_rate_overall_20",
+            "adj_def_expl_rate_overall_20",
+            "off_epa_pp",
+            "def_epa_pp",
+        ]:
+            col = f"{side}_{metric}_rank"
+            if col in df.columns:
+                features.append(col)
+
         for extra in [
             "off_eckel_rate",
             "off_finish_pts_per_opp",
@@ -226,6 +285,57 @@ def build_differential_features(df: pd.DataFrame) -> pd.DataFrame:
                 new_df[home_def_col] + epsilon
             )
 
+    # --- Mismatch / Rank Diff Features ---
+    # Calculate rank differences (Offense Rank - Defense Rank)
+    # Since 1.0 is Best and 0.0 = Worst for both Off/Def (as calculated above):
+    # Diff > 0 means Offense is better ranked than Defense.
+    # Diff < 0 means Defense is better ranked than Offense.
+
+    # Map Offense metric to corresponding Defense metric for matchup
+    # e.g. adj_off_epa_pp vs adj_def_epa_pp
+    metric_pairs = {
+        "adj_off_epa_pp": "adj_def_epa_pp",
+        "adj_off_sr": "adj_def_sr",
+        "adj_off_expl_rate_overall_20": "adj_def_expl_rate_overall_20",
+    }
+
+    for off_metric, def_metric in metric_pairs.items():
+        # Home Off vs Away Def
+        home_off_rank_col = f"home_{off_metric}_rank"
+        away_def_rank_col = f"away_{def_metric}_rank"
+
+        if home_off_rank_col in new_df.columns and away_def_rank_col in new_df.columns:
+            diff_col = (
+                f"matchup_home_off_rank_diff_{off_metric.replace('adj_off_', '')}"
+            )
+            new_df[diff_col] = new_df[home_off_rank_col] - new_df[away_def_rank_col]
+
+            # Mismatch Flag: Offense Top 25% vs Defense Bottom 25%
+            # Offense Rank > 0.75 AND Defense Rank < 0.25
+            mismatch_col = (
+                f"mismatch_home_advantage_{off_metric.replace('adj_off_', '')}"
+            )
+            new_df[mismatch_col] = (
+                (new_df[home_off_rank_col] > 0.75) & (new_df[away_def_rank_col] < 0.25)
+            ).astype(int)
+
+        # Away Off vs Home Def
+        away_off_rank_col = f"away_{off_metric}_rank"
+        home_def_rank_col = f"home_{def_metric}_rank"
+
+        if away_off_rank_col in new_df.columns and home_def_rank_col in new_df.columns:
+            diff_col = (
+                f"matchup_away_off_rank_diff_{off_metric.replace('adj_off_', '')}"
+            )
+            new_df[diff_col] = new_df[away_off_rank_col] - new_df[home_def_rank_col]
+
+            mismatch_col = (
+                f"mismatch_away_advantage_{off_metric.replace('adj_off_', '')}"
+            )
+            new_df[mismatch_col] = (
+                (new_df[away_off_rank_col] > 0.75) & (new_df[home_def_rank_col] < 0.25)
+            ).astype(int)
+
     return new_df
 
 
@@ -244,8 +354,10 @@ def build_differential_feature_list(df: pd.DataFrame) -> list[str]:
 
 
 def _categorize_feature_name(feature_name: str) -> str:
-    if feature_name.startswith("matchup_"):
+    if feature_name.startswith("matchup_") or feature_name.startswith("mismatch_"):
         return "matchup"
+    if "_rank" in feature_name:
+        return "matchup"  # Treat ranks as matchup/context info
     if feature_name.startswith(("adj_off_", "off_")):
         return "offense"
     if feature_name.startswith(("adj_def_", "def_")):
@@ -424,6 +536,37 @@ def load_weekly_team_features(
     return team_features_df
 
 
+def _load_betting_lines(
+    storage: LocalStorage, year: int, week: int
+) -> pd.DataFrame | None:
+    """Load betting lines for a specific year and week."""
+    records = storage.read_index("betting_lines", {"year": year, "week": week})
+    if not records:
+        return None
+
+    df = pd.DataFrame.from_records(records)
+
+    # Filter/Prioritize providers
+    # Priority: Consensus > Bovada > DraftKings > FanDuel > ...
+    # We want one line per game.
+    if "provider" in df.columns:
+        provider_priority = {
+            "Consensus": 0,
+            "consensus": 0,
+            "Bovada": 1,
+            "DraftKings": 2,
+            "FanDuel": 3,
+            "BetMGM": 4,
+            "Caesars": 5,
+        }
+        df["provider_rank"] = df["provider"].map(provider_priority).fillna(99)
+        df = df.sort_values(["game_id", "provider_rank"])
+        df = df.drop_duplicates(subset=["game_id"], keep="first")
+        df = df.drop(columns=["provider_rank"])
+
+    return df
+
+
 def load_point_in_time_data(
     year: int,
     week: int,
@@ -432,6 +575,7 @@ def load_point_in_time_data(
     adjustment_iteration: int | None = 4,
     adjustment_iteration_offense: int | None = None,
     adjustment_iteration_defense: int | None = None,
+    include_betting_lines: bool = False,
 ) -> pd.DataFrame | None:
     """Loads pre-cached, point-in-time features for a specific week.
 
@@ -446,6 +590,8 @@ def load_point_in_time_data(
             ``adjustment_iteration``).
         adjustment_iteration_defense: Override defense iteration depth (defaults to
             ``adjustment_iteration``).
+        include_betting_lines: If True, load and merge betting lines to calculate
+            residual targets.
     """
     raw = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
 
@@ -493,6 +639,39 @@ def load_point_in_time_data(
         ].astype(float)
         merged_df["home_points_for"] = merged_df["home_points"].astype(float)
         merged_df["away_points_for"] = merged_df["away_points"].astype(float)
+
+    if include_betting_lines:
+        lines_df = _load_betting_lines(raw, year, week)
+        if lines_df is not None and not lines_df.empty:
+            # Merge lines
+            # lines_df has 'game_id', merged_df has 'id'
+            # We use left join to keep all games, but targets will be NaN if no line
+            merged_df = merged_df.merge(
+                lines_df[["game_id", "spread", "over_under"]],
+                left_on="id",
+                right_on="game_id",
+                how="left",
+                suffixes=("", "_line"),
+            )
+
+            # Calculate Residuals
+            # spread_target is (Home - Away). spread_line is Home Spread (e.g. -7 for Home Fav).
+            # If Home wins by 7 (Target=7) and Line is -7. Residual should be 0.
+            # Residual = Target + Line.
+            if "spread" in merged_df.columns and "spread_target" in merged_df.columns:
+                merged_df["spread_line"] = merged_df["spread"]
+                merged_df["spread_residual_target"] = (
+                    merged_df["spread_target"] + merged_df["spread_line"]
+                )
+
+            if (
+                "over_under" in merged_df.columns
+                and "total_target" in merged_df.columns
+            ):
+                merged_df["total_line"] = merged_df["over_under"]
+                merged_df["total_residual_target"] = (
+                    merged_df["total_target"] - merged_df["total_line"]
+                )
 
     if (
         "home_conference" in merged_df.columns

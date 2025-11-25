@@ -127,6 +127,7 @@ _“No code/docs changes detected; no commit needed this session.”_
 
   - Trains/evaluates models, runs sweeps, and compares baselines. Produces MLflow-backed reports.
   - Always reports metrics vs. baseline and documents any change in modeling assumptions.
+    - **MLflow logging requirement:** All model logs must include `input_example=X_train.head(5)` to auto-infer signature and prevent schema warnings.
 
 - **Bets & Policy Checker**
 
@@ -219,6 +220,40 @@ _“No code/docs changes detected; no commit needed this session.”_
 - **Windows:** Train 2014–2023 (skip 2020 disruptions), holdout 2024 (unless task explicitly changes).
 - **Columns:** maintain `season`, `week`, `game_id`, and `team` keys; prefix `off_`, `def_`, `adj_` consistently.
 - **Evaluation:** Always report R² + one additional error metric; attach baseline comparisons.
+
+### MLflow Model Logging Standards
+
+When logging models to MLflow (via `mlflow.sklearn.log_model`, `mlflow.xgboost.log_model`, etc.):
+
+**Required:**
+
+- Always provide an `input_example` parameter with a representative sample of training data
+- This auto-infers the model signature and prevents schema-related warnings
+
+**Pattern:**
+
+```python
+# Example for sklearn/xgboost models
+import mlflow
+import pandas as pd
+
+# After training, before logging
+input_example = X_train.head(5)  # Use first 5 rows of training data
+
+mlflow.sklearn.log_model(
+    model,
+    "model",
+    input_example=input_example,  # ← Required
+    registered_model_name="my_model"
+)
+```
+
+**Why:** The signature allows MLflow to validate inputs at serving time and provides clear documentation of expected feature schemas.
+
+**Don't:**
+
+- Log models without `input_example`
+- Use synthetic/dummy data as the example (use actual training data subset)
 
 ---
 
