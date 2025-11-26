@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html
+  lang="en"
+  xmlns:v="urn:schemas-microsoft-com:vml"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <title>CK's CFB Picks — {{ year }} Week {{ week }}</title>
+    <style>
+      /* RESET */
+      body,
+      table,
+      td,
+      a {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+      }
+      table {
+        border-collapse: collapse !important;
+      }
+      body {
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+      }
+
+      /* TYPOGRAPHY */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+          "Segoe UI Symbol";
+        background-color: #f3f4f6;
+        color: #1f2937;
+      }
+
+      /* UTILITIES */
+      .w-full {
+        width: 100%;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .font-bold {
+        font-weight: 700;
+      }
+      .uppercase {
+        text-transform: uppercase;
+      }
+
+      /* CARDS & CONTAINERS */
+      .container {
+        max-width: 700px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+
+      /* HEADER */
+      .header-bg {
+        background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .header-title {
+        color: #ffffff;
+        font-size: 32px;
+        margin: 0 0 10px 0;
+        letter-spacing: -1px;
+      }
+      .header-sub {
+        color: #bfdbfe;
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      /* STAT GRID (New System Info) */
+      .stat-grid {
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        background-color: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+      }
+      .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6b7280;
+        margin-bottom: 4px;
+        display: block;
+      }
+      .stat-value {
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+        display: block;
+      }
+      .stat-sub {
+        font-size: 10px;
+        color: #9ca3af;
+      }
+
+      /* SECTION HEADERS */
+      .section-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #111827;
+        margin: 0;
+        padding: 30px 20px 15px;
+        border-bottom: 2px solid #f3f4f6;
+        text-align: left;
+        display: block;
+      }
+      .badge-count {
+        background-color: #e5e7eb;
+        color: #4b5563;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+
+      /* BEST BET CARD */
+      .best-bet-container {
+        padding: 20px;
+      }
+      .best-bet-card {
+        background: linear-gradient(to right bottom, #fffbeb, #fff7ed);
+        border: 1px solid #fcd34d;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.1);
+        text-align: center;
+      }
+      .bb-badge {
+        background-color: #f59e0b;
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 99px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: inline-block;
+        margin-bottom: 12px;
+      }
+
+      /* TABLES */
+      .data-table {
+        width: 100%;
+        border-spacing: 0;
+      }
+      .data-table th {
+        background-color: #f9fafb;
+        color: #6b7280;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 8px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .data-table td {
+        padding: 12px 8px;
+        border-bottom: 1px solid #f3f4f6;
+        font-size: 14px;
+        color: #374151;
+        text-align: center;
+      }
+      .data-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      /* TEAM & BET STYLING */
+      .team-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .logo-sm {
+        width: 20px;
+        height: 20px;
+        display: block;
+      }
+      .vs-text {
+        color: #9ca3af;
+        font-size: 10px;
+        margin: 0 4px;
+      }
+
+      .bet-badge {
+        background-color: #dbeafe;
+        color: #1e40af;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .bet-badge-home {
+        background-color: #d1fae5;
+        color: #065f46;
+      } /* Green for Home/Positive vibe */
+      .bet-badge-away {
+        background-color: #e0f2fe;
+        color: #075985;
+      } /* Blue for Away */
+      .edge-pill {
+        background-color: #ecfccb;
+        color: #3f6212;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 12px;
+      }
+
+      /* FOOTER */
+      .footer {
+        background-color: #1f2937;
+        padding: 32px 20px;
+        text-align: center;
+      }
+      .footer p {
+        color: #9ca3af;
+        font-size: 12px;
+        line-height: 1.6;
+        margin: 0 0 10px 0;
+      }
+      .footer-link {
+        color: #60a5fa;
+        text-decoration: none;
+      }
+
+      /* DARK MODE OVERRIDES */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #000000 !important;
+        }
+        .container {
+          background-color: #171717 !important;
+        }
+        .header-title {
+          color: #ffffff !important;
+        }
+        .section-title {
+          color: #f3f4f6 !important;
+          border-bottom-color: #262626 !important;
+        }
+        .badge-count {
+          background-color: #404040 !important;
+          color: #d4d4d4 !important;
+        }
+
+        /* Stat Grid Dark */
+        .stat-card {
+          background-color: #262626 !important;
+          border-color: #404040 !important;
+        }
+        .stat-value {
+          color: #ffffff !important;
+        }
+        .stat-label {
+          color: #a3a3a3 !important;
+        }
+
+        /* Table Dark */
+        .data-table th {
+          background-color: #262626 !important;
+          color: #a3a3a3 !important;
+          border-bottom-color: #404040 !important;
+        }
+        .data-table td {
+          color: #e5e5e5 !important;
+          border-bottom-color: #262626 !important;
+        }
+
+        /* Badges Dark */
+        .bet-badge {
+          background-color: #1e3a8a !important;
+          color: #bfdbfe !important;
+        }
+        .bet-badge-home {
+          background-color: #064e3b !important;
+          color: #6ee7b7 !important;
+        }
+        .edge-pill {
+          background-color: #365314 !important;
+          color: #bef264 !important;
+        }
+
+        /* Best Bet Dark */
+        .best-bet-card {
+          background: #2a1c05 !important;
+          border-color: #78350f !important;
+        }
+      }
+
+      /* MOBILE ADJUSTMENTS */
+      @media screen and (max-width: 600px) {
+        .header-title {
+          font-size: 24px !important;
+        }
+        .data-table th,
+        .data-table td {
+          padding: 10px 4px !important;
+          font-size: 12px !important;
+        }
+        .hide-mobile {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0">
+    <table
+      role="presentation"
+      cellspacing="0"
+      cellpadding="0"
+      border="0"
+      width="100%"
+    >
+      <tr>
+        <td align="center" style="padding: 20px 0">
+          <table
+            role="presentation"
+            class="container"
+            cellspacing="0"
+            cellpadding="0"
+            border="0"
+            width="100%"
+            style="max-width: 700px"
+          >
+            <tr>
+              <td class="header-bg">
+                <h1 class="header-title">CK's CFB Picks</h1>
+                <p class="header-sub">
+                  {{ year }} Week {{ week }} • {{ date_range }}
+                </p>
+                <p
+                  style="
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.6);
+                    margin-top: 8px;
+                    margin-bottom: 0;
+                  "
+                >
+                  Generated {{ generated_at }} • Model ID: {{
+                  model_context.model_id }}
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding: 20px">
+                <table
+                  role="presentation"
+                  cellspacing="0"
+                  cellpadding="0"
+                  border="0"
+                  width="100%"
+                >
+                  <tr>
+                    <td width="32%" style="padding-right: 8px">
+                      <div class="stat-card">
+                        <span class="stat-label"
+                          >Last Season ({{ model_context.prev_year }})</span
+                        >
+                        <span class="stat-value">
+                          {% if model_context.prev_spread_wins is not none %} {{
+                          (model_context.prev_spread * 100) | round(1) }}% {%
+                          else %} N/A {% endif %}
+                        </span>
+                        <span class="stat-sub">Spread Win %</span>
+                      </div>
+                    </td>
+                    <td
+                      width="32%"
+                      style="padding-right: 8px; padding-left: 8px"
+                    >
+                      <div
+                        class="stat-card"
+                        style="border-color: #3b82f6; background-color: #eff6ff"
+                      >
+                        <span class="stat-label" style="color: #1d4ed8"
+                          >Current ({{ model_context.curr_year }})</span
+                        >
+                        <span class="stat-value" style="color: #1e3a8a">
+                          {% if model_context.curr_spread_wins is not none %} {{
+                          (model_context.curr_spread * 100) | round(1) }}% {%
+                          else %} N/A {% endif %}
+                        </span>
+                        <span class="stat-sub" style="color: #60a5fa"
+                          >Thru Wk {{ model_context.curr_through_week }}</span
+                        >
+                      </div>
+                    </td>
+                    <td width="32%" style="padding-left: 8px">
+                      <div class="stat-card">
+                        <span class="stat-label">Hist. Week {{ week }}</span>
+                        <span class="stat-value">
+                          {% if model_context.last_year_week_spread_wins is not
+                          none %} {{ (model_context.last_year_week_spread * 100)
+                          | round(1) }}% {% else %} N/A {% endif %}
+                        </span>
+                        <span class="stat-sub">Spread Win %</span>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            {% if best_bet %}
+            <tr>
+              <td class="best-bet-container">
+                <div class="best-bet-card">
+                  <span class="bb-badge">⭐ Best Bet of the Week</span>
+
+                  <div
+                    style="
+                      font-size: 20px;
+                      font-weight: 800;
+                      color: #111827;
+                      margin: 10px 0;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      gap: 10px;
+                    "
+                  >
+                    <img
+                      src="cid:{{ best_bet.away_team_logo_cid }}"
+                      width="40"
+                      height="40"
+                      style="display: block"
+                    />
+                    <span
+                      >{{ best_bet.away_team }} @ {{ best_bet.home_team }}</span
+                    >
+                    <img
+                      src="cid:{{ best_bet.home_team_logo_cid }}"
+                      width="40"
+                      height="40"
+                      style="display: block"
+                    />
+                  </div>
+
+                  <table width="100%" style="margin-top: 16px">
+                    <tr>
+                      <td width="33%" style="border: none; padding: 0">
+                        <div
+                          style="
+                            font-size: 11px;
+                            color: #6b7280;
+                            text-transform: uppercase;
+                          "
+                        >
+                          Line
+                        </div>
+                        <div style="font-weight: 700; color: #374151">
+                          {{ best_bet.line_display }}
+                        </div>
+                      </td>
+                      <td
+                        width="33%"
+                        style="
+                          border: none;
+                          padding: 0;
+                          border-left: 1px solid #e5e7eb;
+                          border-right: 1px solid #e5e7eb;
+                        "
+                      >
+                        <div
+                          style="
+                            font-size: 11px;
+                            color: #6b7280;
+                            text-transform: uppercase;
+                          "
+                        >
+                          Edge
+                        </div>
+                        <div
+                          style="
+                            font-weight: 800;
+                            color: #059669;
+                            font-size: 16px;
+                          "
+                        >
+                          {{ best_bet.edge | round(1) if best_bet.edge is not
+                          none else '' }}
+                        </div>
+                      </td>
+                      <td width="33%" style="border: none; padding: 0">
+                        <div
+                          style="
+                            font-size: 11px;
+                            color: #6b7280;
+                            text-transform: uppercase;
+                          "
+                        >
+                          Model
+                        </div>
+                        <div style="font-weight: 700; color: #374151">
+                          {% if best_bet.category == 'Spread' %} {{
+                          best_bet.home_team }} {{ "%+.1f" |
+                          format(-best_bet.prediction) if best_bet.prediction is
+                          not none else '' }} {% else %} {{ "%.1f" |
+                          format(best_bet.prediction) if best_bet.prediction is
+                          not none else '' }} {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div
+                    style="
+                      margin-top: 20px;
+                      padding-top: 15px;
+                      border-top: 1px dashed #d1d5db;
+                    "
+                  >
+                    <span style="font-size: 14px; color: #4b5563"
+                      >OFFICIAL PICK:</span
+                    ><br />
+                    <span
+                      style="font-size: 24px; font-weight: 900; color: #111827"
+                      >{{ best_bet.bet }}</span
+                    >
+                  </div>
+
+                  <div
+                    style="
+                      margin-top: 10px;
+                      font-size: 11px;
+                      color: #9ca3af;
+                      font-style: italic;
+                    "
+                  >
+                    Current Season Record: {{ best_bet_record }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endif %} {% if spreads|length > 0 %}
+            <tr>
+              <td>
+                <h3 class="section-title">
+                  Spread Bets
+                  <span class="badge-count">{{ spreads|length }}</span>
+                </h3>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th align="left" style="padding-left: 16px">Matchup</th>
+                      <th>Line</th>
+                      <th class="hide-mobile">Model</th>
+                      <th>Edge</th>
+                      <th>Pick</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in spreads %}
+                    <tr>
+                      <td align="left" style="padding-left: 16px">
+                        <div
+                          style="
+                            font-size: 10px;
+                            color: #9ca3af;
+                            margin-bottom: 4px;
+                          "
+                        >
+                          {{ r.date_display }} {{ r.time_display }}
+                        </div>
+                        <div
+                          class="team-row"
+                          style="justify-content: flex-start"
+                        >
+                          <img
+                            src="cid:{{ r.away_team_logo_cid }}"
+                            class="logo-sm"
+                          />
+                          <span>{{ r.away_team }}</span>
+                          <span class="vs-text">@</span>
+                          <img
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            class="logo-sm"
+                          />
+                          <span>{{ r.home_team }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 600">
+                          {{ r.line_num_display }}
+                        </div>
+                        <div style="font-size: 10px; color: #9ca3af">
+                          <img
+                            src="cid:{{ r.line_logo_cid }}"
+                            width="10"
+                            height="10"
+                            style="vertical-align: middle"
+                          />
+                          Fav
+                        </div>
+                      </td>
+                      <td class="hide-mobile">
+                        <div style="font-size: 13px">
+                          {{ "%+.1f" | format(-r.predicted_spread) if
+                          r.predicted_spread is not none else '' }}
+                          <span style="font-size: 10px; color: #9ca3af"
+                            >({{ r.home_team }})</span
+                          >
+                        </div>
+                      </td>
+                      <td>
+                        <span class="edge-pill"
+                          >{{ r.edge_spread | round(1) if r.edge_spread is not
+                          none else '' }}</span
+                        >
+                      </td>
+                      <td>
+                        {% if r.bet_spread_team == r.home_team %}
+                        <div class="bet-badge bet-badge-home">
+                          <img
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            width="14"
+                            height="14"
+                          />
+                          {{ r.home_team }}
+                        </div>
+                        {% elif r.bet_spread_team == r.away_team %}
+                        <div class="bet-badge bet-badge-away">
+                          <img
+                            src="cid:{{ r.away_team_logo_cid }}"
+                            width="14"
+                            height="14"
+                          />
+                          {{ r.away_team }}
+                        </div>
+                        {% else %}
+                        <div class="bet-badge">{{ r.bet_spread_team }}</div>
+                        {% endif %} {% if r.consider_moneyline == 'Yes' %}
+                        <div
+                          style="
+                            font-size: 9px;
+                            color: #059669;
+                            font-weight: bold;
+                            margin-top: 2px;
+                          "
+                        >
+                          Consider ML
+                        </div>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {% endif %} {% if totals|length > 0 %}
+            <tr>
+              <td>
+                <h3 class="section-title" style="margin-top: 10px">
+                  Total Bets
+                  <span class="badge-count">{{ totals|length }}</span>
+                </h3>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th align="left" style="padding-left: 16px">Matchup</th>
+                      <th>O/U</th>
+                      <th class="hide-mobile">Model</th>
+                      <th>Edge</th>
+                      <th>Pick</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in totals %}
+                    <tr>
+                      <td align="left" style="padding-left: 16px">
+                        <div
+                          style="
+                            font-size: 10px;
+                            color: #9ca3af;
+                            margin-bottom: 4px;
+                          "
+                        >
+                          {{ r.date_display }} {{ r.time_display }}
+                        </div>
+                        <div
+                          class="team-row"
+                          style="justify-content: flex-start"
+                        >
+                          <span>{{ r.away_team }} / {{ r.home_team }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style="font-weight: 600">
+                          {{ r.total_line | round(1) if r.total_line is not none
+                          else '' }}
+                        </div>
+                      </td>
+                      <td class="hide-mobile">
+                        {{ "%.1f" | format(r.predicted_total) if
+                        r.predicted_total is not none else '' }}
+                      </td>
+                      <td>
+                        <span class="edge-pill"
+                          >{{ r.edge_total | round(1) if r.edge_total is not
+                          none else '' }}</span
+                        >
+                      </td>
+                      <td>
+                        <div
+                          class="bet-badge"
+                          style="background-color: #f3f4f6; color: #374151"
+                        >
+                          {{ r.bet_total }}
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {% endif %}
+
+            <tr>
+              <td>
+                <h3
+                  class="section-title"
+                  style="
+                    margin-top: 10px;
+                    border-bottom: none;
+                    padding-bottom: 10px;
+                  "
+                >
+                  Full Schedule
+                </h3>
+                <div style="background-color: #f9fafb; padding: 15px">
+                  <table
+                    class="data-table"
+                    style="
+                      background: white;
+                      border-radius: 8px;
+                      overflow: hidden;
+                      border: 1px solid #e5e7eb;
+                    "
+                  >
+                    <thead>
+                      <tr>
+                        <th align="left" style="padding-left: 12px">Game</th>
+                        <th>Line</th>
+                        <th>Model</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for r in all_games %}
+                      <tr>
+                        <td align="left" style="padding-left: 12px">
+                          <span style="font-size: 12px; font-weight: 600"
+                            >{{ r.away_team }} @ {{ r.home_team }}</span
+                          >
+                          <div style="font-size: 10px; color: #9ca3af">
+                            {{ r.date_display }}
+                          </div>
+                        </td>
+                        <td style="font-size: 12px">
+                          {{ r.line_num_display }}
+                        </td>
+                        <td style="font-size: 12px">
+                          {{ "%+.1f" | format(-r.predicted_spread) if
+                          r.predicted_spread is not none else '' }}
+                        </td>
+                        <td style="font-size: 12px">
+                          {{ r.total_line | round(1) if r.total_line is not none
+                          else '' }}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td class="footer">
+                <p>
+                  <strong>Betting Thresholds:</strong> Spread Edge ≥ {{
+                  spread_threshold }} • Total Edge ≥ {{ total_threshold }}
+                </p>
+                <p>
+                  Lines reflect 'consensus' provider. Games excluded if teams
+                  have < 2 FBS games played.
+                </p>
+                <p style="margin-top: 20px">
+                  © {{ year }} cfb_model •
+                  <a href="{{ docs_url }}" class="footer-link">Documentation</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

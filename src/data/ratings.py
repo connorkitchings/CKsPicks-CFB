@@ -1,3 +1,9 @@
+"""Data loading and preparation utilities for the ratings model.
+
+This module provides functions to load and prepare game data for training
+probabilistic power ratings models.
+"""
+
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 

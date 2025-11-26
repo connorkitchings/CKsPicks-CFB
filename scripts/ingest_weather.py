@@ -151,15 +151,21 @@ def fetch_weather_utc(lat, lon, date_str):
 
 
 def main():
+    # Add src to path for imports
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+    from src.config import get_data_root
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--years", type=str, default="2024", help="Comma-separated years"
     )
-    parser.add_argument("--data-root", type=str, default="./data")
+    parser.add_argument("--data-root", type=str, default=None)
     args = parser.parse_args()
 
     years = [int(y) for y in args.years.split(",")]
-    data_root = Path(args.data_root)
+    data_root = Path(args.data_root) if args.data_root else get_data_root()
 
     for year in years:
         process_year_robust(year, data_root)

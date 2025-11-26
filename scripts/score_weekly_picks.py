@@ -83,7 +83,12 @@ def main() -> None:
     bets_df = pd.read_csv(bets_file)
     # Rename columns to match the internal logic expected by scoring functions
     bets_df = bets_df.rename(
-        columns={"Spread Bet": "bet_spread", "Total Bet": "bet_total"}
+        columns={
+            "Spread Bet": "bet_spread",
+            "Total Bet": "bet_total",
+            "Spread Line": "home_team_spread_line",
+            "Total Line": "total_line",
+        }
     )
 
     try:

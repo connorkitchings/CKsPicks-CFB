@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import os
 import smtplib
+import sys
 from datetime import datetime
 from email import encoders
 from email.mime.base import MIMEBase
@@ -31,6 +32,9 @@ from typing import Any, List, Tuple
 import pandas as pd
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+# Add project root to path
+sys.path.append(os.getcwd())
 
 from src.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR
 
@@ -397,6 +401,17 @@ def compute_hit_rates(
             df = pd.read_csv(p)
             if df.empty:
                 continue
+            # Infer week from filename if missing
+            # Filename format: CFB_week{N}_bets_scored.csv
+            if "Week" not in df.columns and "week" not in df.columns:
+                try:
+                    # Extract N from ...weekN_...
+                    name = p.name
+                    if "_week" in name:
+                        w_part = name.split("_week")[1].split("_")[0]
+                        df["Week"] = int(w_part)
+                except Exception:
+                    pass
             frames.append(df)
         except Exception:
             continue
@@ -404,6 +419,10 @@ def compute_hit_rates(
         return None, None, 0, 0
 
     scored = pd.concat(frames, ignore_index=True)
+
+    # Coalesce Week and week
+    if "Week" in scored.columns and "week" in scored.columns:
+        scored["Week"] = scored["Week"].fillna(scored["week"])
 
     if up_to_week is not None:
         week_col = "Week" if "Week" in scored.columns else "week"
@@ -539,6 +558,11 @@ def compute_week_hit_rates(
         return None, None, 0, 0
 
     df = pd.concat(frames, ignore_index=True)
+
+    # Coalesce Week and week
+    if "Week" in df.columns and "week" in df.columns:
+        df["Week"] = df["Week"].fillna(df["week"])
+
     week_col = "Week" if "Week" in df.columns else "week"
     if week_col in df.columns:
         week_numeric = pd.to_numeric(df[week_col], errors="coerce")
@@ -631,7 +655,7 @@ def render_email_html(template_dir: Path, context):
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    tmpl = env.get_template("email_weekly_picks.html")
+    tmpl = env.get_template("email_weekly_picks_v2.html")
     return tmpl.render(**context)
 
 
@@ -776,17 +800,34 @@ def main() -> None:
             import ast
             import json
 
-            parsed = (
-                json.loads(raw)
-                if raw.strip().startswith("[")
-                else ast.literal_eval(raw)
-            )
+            # Try parsing as Python literal (handles single quotes) first
+            try:
+                parsed = ast.literal_eval(raw)
+            except (ValueError, SyntaxError):
+                # Try JSON (handles double quotes)
+                try:
+                    parsed = json.loads(raw)
+                except json.JSONDecodeError:
+                    parsed = None
+
             if isinstance(parsed, list):
                 recipients = [str(x).strip() for x in parsed if str(x).strip()]
             else:
-                recipients = [s.strip() for s in str(raw).split(",") if s.strip()]
+                # Fallback: manual splitting
+                # Remove outer brackets if present
+                cleaned = raw.strip()
+                if cleaned.startswith("[") and cleaned.endswith("]"):
+                    cleaned = cleaned[1:-1]
+                # Split by comma and strip quotes/whitespace
+                recipients = [
+                    s.strip().strip("'").strip('"')
+                    for s in cleaned.split(",")
+                    if s.strip()
+                ]
         except Exception:
+            print("Error parsing PROD_EMAIL_RECIPIENTS, using raw split fallback.")
             recipients = [s.strip() for s in str(raw).split(",") if s.strip()]
+
         if not recipients:
             print("Error: Could not parse PROD_EMAIL_RECIPIENTS")
             return
@@ -863,8 +904,8 @@ def main() -> None:
     generated_at = datetime.now().strftime("%m/%d/%Y %I:%M %p")
 
     # Define thresholds
-    spread_threshold = 0.0
-    total_threshold = 5.0
+    spread_threshold = 1.0
+    total_threshold = 10.0
 
     spreads, totals, best_bet = _prepare_recommended(
         all_df, spread_threshold, total_threshold
@@ -977,8 +1018,8 @@ def main() -> None:
         "prev_total_count": prev_total_n,
         "prev_spread_wins": prev_spread_wins,
         "prev_total_wins": prev_total_wins,
-        "model_name": "Probabilistic Power Ratings",
-        "model_id": "PPR-2025",
+        "model_name": "Model: Chimera-v1",
+        "model_id": "HYBRID-2025",
         "curr_year": args.year,
         "curr_through_week": args.week,
         "curr_spread": curr_spread,
@@ -995,6 +1036,18 @@ def main() -> None:
         "last_year_week_total_wins": lastyr_week_tot_wins,
     }
 
+    # Get Best Bet History
+    try:
+        from scripts.analyze_best_bets import analyze_best_bets
+
+        bb_record, bb_pct = analyze_best_bets(
+            year=args.year, start_week=2, end_week=args.week
+        )
+        best_bet_record = f"{bb_record} ({bb_pct})"
+    except Exception as e:
+        print(f"Error analyzing best bets: {e}")
+        best_bet_record = "N/A"
+
     context = {
         "year": args.year,
         "week": args.week,
@@ -1005,6 +1058,7 @@ def main() -> None:
         "spreads": spreads,
         "totals": totals,
         "best_bet": best_bet,
+        "best_bet_record": best_bet_record,
         "summary": summary,
         "model_context": model_context,
         "all_games": all_games,

@@ -1,3 +1,4 @@
+import argparse
 import logging
 import subprocess
 from typing import List
@@ -87,14 +88,24 @@ def process_week(year: int, week: int):
 
 
 def main():
-    # 2024 Weeks 4-15
-    # Note: Week 12 failed previously due to encoding. It will be retried here.
-    for week in range(4, 16):
-        process_week(2024, week)
+    parser = argparse.ArgumentParser(description="Backfill ratings and bets.")
+    parser.add_argument(
+        "--years",
+        type=str,
+        default="2024",
+        help="Comma-separated years (e.g. 2024,2025)",
+    )
+    parser.add_argument(
+        "--start-week", type=int, default=4, help="Start week (inclusive)"
+    )
+    parser.add_argument("--end-week", type=int, default=16, help="End week (exclusive)")
+    args = parser.parse_args()
 
-    # 2025 Weeks 4-14 (Skip 1-3 as model needs data)
-    for week in range(4, 15):
-        process_week(2025, week)
+    years = [int(y) for y in args.years.split(",")]
+
+    for year in years:
+        for week in range(args.start_week, args.end_week):
+            process_week(year, week)
 
 
 if __name__ == "__main__":

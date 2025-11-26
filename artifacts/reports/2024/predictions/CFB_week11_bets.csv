@@ -1,1 +1,51 @@
-
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,Spread Line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,Total Line,Model Total,Total Edge
+401644760,11/05/2024,07:30 PM,Bowling Green @ Central Michigan,Central Michigan,Bowling Green,Home,16.0,-7.13,23.13,High,55.46,-7.13,Over,48.5,55.46,6.960000000000001
+401644688,11/05/2024,08:00 PM,Miami (OH) @ Ball State,Ball State,Miami (OH),Home,13.0,-9.39,22.39,High,50.38,-9.39,No Bet,48.0,50.38,0.0
+401644762,11/06/2024,07:00 PM,Northern Illinois @ Western Michigan,Western Michigan,Northern Illinois,No Bet,2.0,-0.05,0.0,None,51.47,-0.05,No Bet,52.0,51.47,0.0
+401644761,11/06/2024,07:00 PM,Ohio @ Kent State,Kent State,Ohio,Home,20.5,-16.92,37.42,High,58.6,-16.92,Over,53.0,58.6,5.600000000000001
+401645361,11/07/2024,08:00 PM,Florida Atlantic @ East Carolina,East Carolina,Florida Atlantic,Away,-7.5,10.01,17.509999999999998,High,57.93,10.01,No Bet,58.5,57.93,0.0
+401643825,11/07/2024,08:00 PM,App State @ Coastal Carolina,Coastal Carolina,App State,Away,2.5,8.89,6.390000000000001,High,67.83,8.89,Over,63.0,67.83,4.829999999999998
+401634773,11/08/2024,08:00 PM,California @ Wake Forest,Wake Forest,California,Home,7.0,-5.97,12.969999999999999,High,46.81,-5.97,Under,55.5,46.81,8.689999999999998
+401628542,11/08/2024,09:00 PM,Iowa @ UCLA,UCLA,Iowa,Home,6.5,-6.95,13.45,High,51.36,-6.95,Over,45.5,51.36,5.859999999999999
+401645362,11/08/2024,09:00 PM,Rice @ Memphis,Memphis,Rice,Away,-7.0,10.87,17.869999999999997,High,47.78,10.87,No Bet,50.5,47.78,0.0
+401643754,11/08/2024,10:30 PM,New Mexico @ San Diego State,San Diego State,New Mexico,Away,-1.0,10.36,11.36,High,70.41,10.36,Over,65.0,70.41,5.409999999999997
+401628545,11/09/2024,12:00 PM,Purdue @ Ohio State,Ohio State,Purdue,Away,-37.0,41.06,78.06,High,58.07,41.06,No Bet,56.0,58.07,0.0
+401636918,11/09/2024,12:00 PM,West Virginia @ Cincinnati,Cincinnati,West Virginia,Away,-5.0,12.66,17.66,High,53.13,12.66,No Bet,54.5,53.13,0.0
+401635606,11/09/2024,12:00 PM,Syracuse @ Boston College,Boston College,Syracuse,Away,-3.0,5.44,8.440000000000001,High,54.75,5.44,No Bet,52.0,54.75,0.0
+401628544,11/09/2024,12:00 PM,Minnesota @ Rutgers,Rutgers,Minnesota,Home,6.5,-3.48,9.98,High,47.01,-3.48,No Bet,44.5,47.01,0.0
+401628417,11/09/2024,12:00 PM,Florida @ Texas,Texas,Florida,Away,-22.0,17.73,39.730000000000004,High,50.39,17.73,No Bet,49.0,50.39,0.0
+401635609,11/09/2024,12:00 PM,Miami @ Georgia Tech,Georgia Tech,Miami,Home,9.5,-8.49,17.990000000000002,High,67.32,-8.49,No Bet,65.0,67.32,0.0
+401645363,11/09/2024,12:00 PM,Navy @ South Florida,South Florida,Navy,Home,4.5,-1.4,5.9,High,60.07,-1.4,No Bet,58.0,60.07,0.0
+401643828,11/09/2024,12:00 PM,Texas State @ UL Monroe,UL Monroe,Texas State,Home,9.5,-1.76,11.26,High,51.13,-1.76,No Bet,50.0,51.13,0.0
+401640995,11/09/2024,01:00 PM,Liberty @ Middle Tennessee,Middle Tennessee,Liberty,Home,13.0,-5.85,18.85,High,52.27,-5.85,No Bet,55.0,52.27,0.0
+401629037,11/09/2024,02:30 PM,UConn @ UAB,UAB,UConn,Home,7.5,-5.03,12.530000000000001,High,59.04,-5.03,Over,54.0,59.04,5.039999999999999
+401643829,11/09/2024,03:00 PM,Marshall @ Southern Miss,Southern Miss,Marshall,Home,13.5,-10.97,24.47,High,53.58,-10.97,No Bet,53.5,53.58,0.0
+401643755,11/09/2024,03:30 PM,San José State @ Oregon State,Oregon State,San José State,Away,-3.0,5.02,8.02,High,61.23,5.02,No Bet,58.5,61.23,0.0
+401635607,11/09/2024,03:30 PM,Clemson @ Virginia Tech,Virginia Tech,Clemson,No Bet,5.5,5.25,0.0,None,60.89,5.25,Over,54.5,60.89,6.390000000000001
+401635608,11/09/2024,03:30 PM,Duke @ NC State,NC State,Duke,No Bet,-3.0,-1.67,0.0,None,58.48,-1.67,Over,51.5,58.48,6.979999999999997
+401643826,11/09/2024,03:30 PM,Georgia State @ James Madison,James Madison,Georgia State,Away,-14.5,23.79,38.29,High,51.37,23.79,No Bet,53.5,51.37,0.0
+401636919,11/09/2024,03:30 PM,Iowa State @ Kansas,Kansas,Iowa State,Home,2.5,-5.0,7.5,High,43.78,-5.0,Under,53.0,43.78,9.219999999999999
+401628541,11/09/2024,03:30 PM,Michigan @ Indiana,Indiana,Michigan,Away,-14.5,27.85,42.35,High,56.59,27.85,Over,47.5,56.59,9.090000000000003
+401628414,11/09/2024,03:30 PM,Georgia @ Ole Miss,Ole Miss,Georgia,Away,2.0,11.07,9.07,High,52.58,11.07,No Bet,55.5,52.58,0.0
+401629045,11/09/2024,03:30 PM,Army @ North Texas,North Texas,Army,Home,6.5,-6.99,13.49,High,70.2,-6.99,No Bet,68.0,70.2,0.0
+401641021,11/09/2024,04:00 PM,Kennesaw State @ UTEP,UTEP,Kennesaw State,Away,-4.5,6.98,11.48,High,44.76,6.98,No Bet,42.0,44.76,0.0
+401636921,11/09/2024,04:00 PM,Colorado @ Texas Tech,Texas Tech,Colorado,Home,5.0,-0.86,5.86,High,64.95,-0.86,No Bet,62.0,64.95,0.0
+401645364,11/09/2024,04:00 PM,Temple @ Tulane,Tulane,Temple,Away,-25.5,33.92,59.42,High,55.7,33.92,Over,50.5,55.7,5.200000000000003
+401628418,11/09/2024,04:15 PM,South Carolina @ Vanderbilt,Vanderbilt,South Carolina,Home,6.0,-1.1,7.1,High,52.31,-1.1,Over,44.5,52.31,7.810000000000002
+401641004,11/09/2024,04:30 PM,Jacksonville State @ Louisiana Tech,Louisiana Tech,Jacksonville State,Home,10.0,-3.73,13.73,High,56.17,-3.73,No Bet,55.5,56.17,0.0
+401643827,11/09/2024,05:00 PM,Arkansas State @ Louisiana,Louisiana,Arkansas State,Away,-14.0,19.8,33.8,High,55.06,19.8,Under,60.0,55.06,4.939999999999998
+401641036,11/09/2024,06:00 PM,Western Kentucky @ New Mexico State,New Mexico State,Western Kentucky,Home,18.0,-15.18,33.18,High,56.86,-15.18,Over,53.5,56.86,3.3599999999999994
+401628543,11/09/2024,07:00 PM,Maryland @ Oregon,Oregon,Maryland,Away,-24.0,20.31,44.31,High,57.28,20.31,No Bet,58.0,57.28,0.0
+401636920,11/09/2024,07:00 PM,Oklahoma State @ TCU,TCU,Oklahoma State,Away,-10.5,9.16,19.66,High,67.91,9.16,No Bet,68.5,67.91,0.0
+401628416,11/09/2024,07:00 PM,Mississippi State @ Tennessee,Tennessee,Mississippi State,Away,-26.5,28.23,54.730000000000004,High,59.48,28.23,No Bet,61.5,59.48,0.0
+401636917,11/09/2024,07:00 PM,UCF @ Arizona State,Arizona State,UCF,Away,-2.5,4.9,7.4,High,59.26,4.9,Over,56.0,59.26,3.259999999999998
+401628413,11/09/2024,07:30 PM,Alabama @ LSU,LSU,Alabama,Home,3.0,-2.83,5.83,High,57.71,-2.83,No Bet,58.5,57.71,0.0
+401628984,11/09/2024,07:30 PM,Florida State @ Notre Dame,Notre Dame,Florida State,Away,-25.5,30.37,55.870000000000005,High,40.38,30.37,Under,44.0,40.38,3.6199999999999974
+401628415,11/09/2024,07:45 PM,Oklahoma @ Missouri,Missouri,Oklahoma,No Bet,3.5,5.37,0.0,None,43.34,5.37,No Bet,42.5,43.34,0.0
+401643752,11/09/2024,08:00 PM,Nevada @ Boise State,Boise State,Nevada,Away,-23.5,26.63,50.129999999999995,High,66.98,26.63,Over,61.5,66.98,5.480000000000004
+401628546,11/09/2024,08:00 PM,Washington @ Penn State,Penn State,Washington,Away,-13.5,12.3,25.8,High,38.24,12.3,Under,48.0,38.24,9.759999999999998
+401635610,11/09/2024,08:00 PM,Virginia @ Pittsburgh,Pittsburgh,Virginia,Away,-7.0,15.03,22.03,High,56.09,15.03,No Bet,58.0,56.09,0.0
+401643753,11/09/2024,09:00 PM,UNLV @ Hawai'i,Hawai'i,UNLV,Home,12.0,-10.26,22.259999999999998,High,49.85,-10.26,No Bet,51.5,49.85,0.0
+401643751,11/09/2024,09:45 PM,Fresno State @ Air Force,Air Force,Fresno State,Home,9.5,-7.56,17.06,High,35.73,-7.56,Under,40.5,35.73,4.770000000000003
+401636922,11/09/2024,10:15 PM,BYU @ Utah,Utah,BYU,Home,3.0,-5.82,8.82,High,39.08,-5.82,No Bet,40.5,39.08,0.0
+401643756,11/09/2024,10:30 PM,Utah State @ Washington State,Washington State,Utah State,Away,-20.5,25.99,46.489999999999995,High,74.61,25.99,Over,69.0,74.61,5.609999999999999

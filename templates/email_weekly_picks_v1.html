@@ -146,27 +146,7 @@
                   model_context.last_year_week_spread_wins is not none %}{{ model_context.last_year_week_spread_wins }}/{{ model_context.last_year_week_spread_count }} ({{ (model_context.last_year_week_spread * 100) | round(1) }}%){% else %}n/a{% endif %}, Total {% if
                   model_context.last_year_week_total_wins is not none %}{{ model_context.last_year_week_total_wins }}/{{ model_context.last_year_week_total_count }} ({{ (model_context.last_year_week_total * 100) | round(1) }}%){% else %}n/a{% endif %}
                 </div>
-                <div
-                  style="margin: 10px 0; border-top: 1px solid #eaeaea"
-                ></div>
-                <!-- Quick Reference Guide -->
-                <div style="margin-top: 10px; font-size: 13px">
-                  <div
-                    style="
-                      font-weight: 600;
-                      margin-bottom: 4px;
-                      text-align: center;
-                    "
-                  >
-                    Quick Reference
-                  </div>
-                  <div style="line-height: 1.6; text-align: center">
-                    <strong>Edge:</strong> Diff between model & Vegas. Higher =
-                    stronger.<br />
-                    <strong>Line:</strong> Point spread. Negative = favored.<br />
-                    <strong>O/U:</strong> Over/Under total points.
-                  </div>
-                </div>
+
               </td>
             </tr>
 
@@ -292,6 +272,17 @@
                         Bet: {{ best_bet.bet }} (Edge: {{ best_bet.edge |
                         round(1) if best_bet.edge is not none else '' }})
                       </div>
+                      <div
+                        style="
+                          font-size: 11px;
+                          margin-top: 6px;
+                          color: #666;
+                          text-align: center;
+                          font-style: italic;
+                        "
+                      >
+                        Season Record: {{ best_bet_record }}
+                      </div>
                     </td>
                   </tr>
                 </table>
@@ -359,26 +350,28 @@
                               {{ r.home_team }}
                             </div>
                           </td>
-                          <td class="td">
+                          <td class="td" style="min-width: 70px;">
                             <div style="white-space: nowrap">
                               <img
                                 class="logo"
                                 src="cid:{{ r.line_logo_cid }}"
-                                style="width: 16px; height: 16px"
+                                style="width: 16px; height: 16px; vertical-align: middle;"
                               />
-                              <span style="font-weight: 600"
+                              <span
                                 >{{ r.line_num_display }}</span
                               >
                             </div>
                           </td>
-                          <td class="td">
+                          <td class="td" style="min-width: 70px;">
+                            <div style="white-space: nowrap">
                             <img
                               class="logo"
                               src="cid:{{ r.home_team_logo_cid }}"
-                              style="width: 16px; height: 16px"
+                              style="width: 16px; height: 16px; vertical-align: middle;"
                             />
                             {{ "%+.1f" | format(-r.predicted_spread) if
                             r.predicted_spread is not none else '' }}
+                            </div>
                           </td>
                           <td
                             class="td"
@@ -466,8 +459,8 @@
                           <th class="th">Date</th>
                           <th class="th">Matchup</th>
                           <th class="th">Line</th>
-                          <th class="th">O/U</th>
                           <th class="th">Model Spread</th>
+                          <th class="th">O/U</th>
                           <th class="th">Model Total</th>
                         </tr>
                       </thead>
@@ -494,11 +487,11 @@
                             </div>
                           </td>
                           <td class="td">
-                            {{ r.total_line | round(1) if r.total_line is not none else '' }}
-                          </td>
-                          <td class="td">
                             <img class="logo" src="cid:{{ r.home_team_logo_cid }}" style="width: 14px; height: 14px" />
                             {{ "%+.1f" | format(-r.predicted_spread) if r.predicted_spread is not none else '' }}
+                          </td>
+                          <td class="td">
+                            {{ r.total_line | round(1) if r.total_line is not none else '' }}
                           </td>
                           <td class="td">
                             {{ "%.1f" | format(r.predicted_total) if r.predicted_total is not none else '' }}
@@ -513,6 +506,24 @@
                 <!-- Footer -->
                 <tr>
                   <td style="padding: 20px 24px; border-top: 1px solid #eaeaea">
+                    <!-- Quick Reference Guide -->
+                    <div style="margin-bottom: 16px; font-size: 13px">
+                      <div
+                        style="
+                          font-weight: 600;
+                          margin-bottom: 4px;
+                          text-align: center;
+                        "
+                      >
+                        Quick Reference
+                      </div>
+                      <div style="line-height: 1.6; text-align: center">
+                        <strong>Edge:</strong> Diff between model & Vegas. Higher =
+                        stronger.<br />
+                        <strong>Line:</strong> Point spread. Negative = favored.<br />
+                        <strong>O/U:</strong> Over/Under total points.
+                      </div>
+                    </div>
                     <div class="muted" style="font-size: 12px; color: #666">
                       Lines reflect the 'consensus' provider where available.
                       Bets are omitted when teams have fewer than 2 FBS games or

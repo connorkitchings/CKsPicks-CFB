@@ -1,3 +1,9 @@
+"""Bayesian probabilistic power ratings model using PyMC.
+
+This module implements a hierarchical Bayesian model for estimating team ratings
+and predicting game outcomes with uncertainty quantification.
+"""
+
 from typing import Dict, Optional
 
 import arviz as az
@@ -38,6 +44,16 @@ class ProbabilisticPowerRating:
         away_points = df["away_points"].values
         neutral_site = df["neutral_site"].values.astype(int)
 
+        # Weather inputs (fill NaNs with defaults)
+        # We assume these columns exist in df; caller must ensure they do (or we fill 0/70)
+        wind = df.get("wind_speed", pd.Series(np.zeros(len(df)))).fillna(0.0).values
+        rain = df.get("precipitation", pd.Series(np.zeros(len(df)))).fillna(0.0).values
+        # Center temperature at 70F so 0 means "room temp"
+        temp_raw = (
+            df.get("temperature", pd.Series(np.full(len(df), 70.0))).fillna(70.0).values
+        )
+        temp_centered = temp_raw - 70.0
+
         # Calculate weights if recency is used
         weights = np.ones(len(df))
         if recency_weight is not None:
@@ -60,6 +76,14 @@ class ProbabilisticPowerRating:
             # Global parameters
             base_score = pm.Normal("base_score", mu=28, sigma=5)
             sigma_score = pm.HalfNormal("sigma_score", sigma=10)
+
+            # Weather coefficients
+            # Wind: expect negative effect on scoring
+            beta_wind = pm.Normal("beta_wind", mu=0, sigma=0.5)
+            # Rain: expect negative effect
+            beta_rain = pm.Normal("beta_rain", mu=0, sigma=0.5)
+            # Temp: uncertain direction, maybe positive (warmer = more scoring)?
+            beta_temp = pm.Normal("beta_temp", mu=0, sigma=0.5)
 
             # HFA
             if use_team_hfa:
@@ -85,17 +109,24 @@ class ProbabilisticPowerRating:
             )
 
             # Expected scores
-            # Note: Def rating is "points allowed", so positive is BAD for defense?
-            # Let's define: mu = Base + Off - Def.
-            # If Def is "strength", it should be minus. If Def is "weakness", it should be plus.
-            # Standard convention: Higher rating = Better.
-            # So: mu = Base + Off_own - Def_opp.
-            # If Def_opp is high (good defense), score should go DOWN. So minus is correct.
+            # mu = Base + Off_own - Def_opp + HFA + Weather
+            weather_effect = (
+                (beta_wind * wind) + (beta_rain * rain) + (beta_temp * temp_centered)
+            )
 
             mu_home = (
-                base_score + off_rating[home_idx] - def_rating[away_idx] + hfa_term
+                base_score
+                + off_rating[home_idx]
+                - def_rating[away_idx]
+                + hfa_term
+                + weather_effect
             )
-            mu_away = base_score + off_rating[away_idx] - def_rating[home_idx]
+            mu_away = (
+                base_score
+                + off_rating[away_idx]
+                - def_rating[home_idx]
+                + weather_effect
+            )
 
             # Likelihood with weighted sigma
             pm.Normal(
@@ -148,7 +179,13 @@ class ProbabilisticPowerRating:
         return pd.DataFrame(ratings).sort_values("net_rating", ascending=False)
 
     def predict_spread(
-        self, home_team: str, away_team: str, neutral: bool = False
+        self,
+        home_team: str,
+        away_team: str,
+        neutral: bool = False,
+        wind_speed: float = 0.0,
+        precipitation: float = 0.0,
+        temperature: float = 70.0,
     ) -> Dict[str, float]:
         """
         Predicts spread (Home - Away) distribution stats.
@@ -174,6 +211,11 @@ class ProbabilisticPowerRating:
         off_a = posterior["off_rating"][:, :, a_idx].values.flatten()
         def_a = posterior["def_rating"][:, :, a_idx].values.flatten()
 
+        # Weather coeffs
+        beta_wind = posterior["beta_wind"].values.flatten()
+        beta_rain = posterior["beta_rain"].values.flatten()
+        beta_temp = posterior["beta_temp"].values.flatten()
+
         # Handle HFA shape
         if hfa.ndim > 2:  # Team-specific HFA: (chains, draws, n_teams)
             hfa_val = hfa[:, :, h_idx].flatten()
@@ -182,8 +224,17 @@ class ProbabilisticPowerRating:
 
         hfa_effect = hfa_val if not neutral else 0
 
-        mu_h = base + off_h - def_a + hfa_effect
-        mu_a = base + off_a - def_h
+        # Weather effect
+        # Center temp
+        temp_centered = temperature - 70.0
+        weather_effect = (
+            (beta_wind * wind_speed)
+            + (beta_rain * precipitation)
+            + (beta_temp * temp_centered)
+        )
+
+        mu_h = base + off_h - def_a + hfa_effect + weather_effect
+        mu_a = base + off_a - def_h + weather_effect
 
         margin = mu_h - mu_a  # Home margin
         total = mu_h + mu_a

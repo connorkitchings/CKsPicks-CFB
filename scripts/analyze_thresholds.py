@@ -5,164 +5,133 @@ import numpy as np
 import pandas as pd
 
 
-def analyze_thresholds():
-    # Define data directory
-    # Using the path found in the previous step
-    data_dir = Path("artifacts/reports/2024/scored")
+def analyze_thresholds(year=2025):
+    """
+    Analyze win rates and volume at different edge thresholds for Spreads and Totals.
+    """
+    scored_dir = Path(f"artifacts/reports/{year}/scored")
+    pattern = str(scored_dir / "CFB_week*_bets_scored.csv")
+    paths = [Path(p) for p in glob.glob(pattern)]
 
-    # Load all scored bet files
-    files = glob.glob(str(data_dir / "CFB_week*_bets_scored.csv"))
-    if not files:
-        print(f"No files found in {data_dir}")
+    if not paths:
+        print(f"No scored files found for {year}")
         return
 
-    print(f"Found {len(files)} scored files.")
-
-    dfs = []
-    for f in files:
+    frames = []
+    for p in paths:
         try:
-            df = pd.read_csv(f)
-            dfs.append(df)
-        except Exception as e:
-            print(f"Error reading {f}: {e}")
+            df = pd.read_csv(p)
+            if not df.empty:
+                # Infer week if missing (for consistency, though 2025 has it mostly)
+                if "Week" not in df.columns and "week" not in df.columns:
+                    if "_week" in p.name:
+                        w_part = p.name.split("_week")[1].split("_")[0]
+                        df["Week"] = int(w_part)
+                frames.append(df)
+        except Exception:
+            pass
 
-    if not dfs:
+    if not frames:
         print("No data loaded.")
         return
 
-    all_bets = pd.concat(dfs, ignore_index=True)
-    print(f"Total bets loaded: {len(all_bets)}")
+    df = pd.concat(frames, ignore_index=True)
 
-    # Normalize Result columns
-    # Assuming 'Spread Bet Result' and 'Total Bet Result' contain 'Win', 'Loss', 'Push'
-    # Or 1.0, 0.0, 0.5
+    # Coalesce Week
+    if "Week" in df.columns and "week" in df.columns:
+        df["Week"] = df["Week"].fillna(df["week"])
 
-    results = []
+    print(f"Loaded {len(df)} rows for {year}")
 
-    thresholds = np.arange(0.0, 10.5, 0.5)
+    # --- Spread Analysis ---
+    print("\n--- Spread Threshold Analysis ---")
+    print(
+        f"{'Threshold':<10} | {'Record':<12} | {'Win %':<8} | {'Volume':<6} | {'ROI':<6}"
+    )
+    print("-" * 55)
 
-    for threshold in thresholds:
-        # --- Spread Bets ---
-        # Filter for valid spread bets
-        spread_bets = all_bets[all_bets["Spread Bet"].isin(["home", "away"])].copy()
+    # Ensure numeric
+    cols = ["Spread Prediction", "home_team_spread_line", "home_points", "away_points"]
+    for c in cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
-        # Ensure edge_spread exists
-        if "edge_spread" not in spread_bets.columns:
-            # Try to calculate if missing (optional, but better to rely on existing data)
-            pass
+    df["edge_spread"] = abs(df["Spread Prediction"] - (-df["home_team_spread_line"]))
 
-        # Filter by threshold
-        spread_subset = spread_bets[spread_bets["edge_spread"] >= threshold]
+    # Sim Result
+    df["bet_side_spread"] = np.where(
+        df["Spread Prediction"] > -df["home_team_spread_line"], "home", "away"
+    )
+    df["margin"] = df["home_points"] - df["away_points"]
+    df["cover_margin"] = df["margin"] + df["home_team_spread_line"]
 
-        s_wins = 0
-        s_losses = 0
-        s_pushes = 0
+    conditions = [
+        (df["bet_side_spread"] == "home") & (df["cover_margin"] > 0),
+        (df["bet_side_spread"] == "home") & (df["cover_margin"] < 0),
+        (df["bet_side_spread"] == "away") & (df["cover_margin"] < 0),
+        (df["bet_side_spread"] == "away") & (df["cover_margin"] > 0),
+    ]
+    choices = ["Win", "Loss", "Win", "Loss"]
+    df["sim_spread_result"] = np.select(conditions, choices, default="Push")
 
-        # Calculate results
-        # Check for different result formats
-        if "Spread Bet Result" in spread_subset.columns:
-            s_wins = len(
-                spread_subset[spread_subset["Spread Bet Result"].isin(["Win", 1, 1.0])]
-            )
-            s_losses = len(
-                spread_subset[spread_subset["Spread Bet Result"].isin(["Loss", 0, 0.0])]
-            )
-            s_pushes = len(
-                spread_subset[spread_subset["Spread Bet Result"].isin(["Push", 0.5])]
-            )
+    for thresh in np.arange(0.0, 10.5, 0.5):
+        subset = df[df["edge_spread"] >= thresh]
+        wins = len(subset[subset["sim_spread_result"] == "Win"])
+        losses = len(subset[subset["sim_spread_result"] == "Loss"])
+        pushes = len(subset[subset["sim_spread_result"] == "Push"])
+        total = wins + losses
+        win_rate = (wins / total * 100) if total > 0 else 0.0
+        volume = len(subset)
 
-        s_count = s_wins + s_losses + s_pushes
-        s_win_rate = s_wins / (s_wins + s_losses) if (s_wins + s_losses) > 0 else 0.0
-        s_net_units = (s_wins * 1.0) - (s_losses * 1.1)
-        s_roi = (
-            s_net_units / ((s_wins + s_losses) * 1.1)
-            if (s_wins + s_losses) > 0
-            else 0.0
+        # Simple ROI (assuming -110 odds -> win 0.909, loss -1)
+        net_units = (wins * 0.909) - losses
+        roi = (net_units / total * 100) if total > 0 else 0.0
+
+        print(
+            f"{thresh:<10.1f} | {wins}-{losses}-{pushes:<5} | {win_rate:<7.1f}% | {volume:<6} | {roi:+.1f}%"
         )
 
-        # --- Total Bets ---
-        total_bets = all_bets[all_bets["Total Bet"].isin(["over", "under"])].copy()
-        total_subset = total_bets[total_bets["edge_total"] >= threshold]
+    # --- Total Analysis ---
+    print("\n--- Total Threshold Analysis ---")
+    print(
+        f"{'Threshold':<10} | {'Record':<12} | {'Win %':<8} | {'Volume':<6} | {'ROI':<6}"
+    )
+    print("-" * 55)
 
-        t_wins = 0
-        t_losses = 0
-        t_pushes = 0
+    cols_t = ["Total Prediction", "total_line"]
+    for c in cols_t:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
 
-        if "Total Bet Result" in total_subset.columns:
-            t_wins = len(
-                total_subset[total_subset["Total Bet Result"].isin(["Win", 1, 1.0])]
-            )
-            t_losses = len(
-                total_subset[total_subset["Total Bet Result"].isin(["Loss", 0, 0.0])]
-            )
-            t_pushes = len(
-                total_subset[total_subset["Total Bet Result"].isin(["Push", 0.5])]
-            )
+    df["edge_total"] = abs(df["Total Prediction"] - df["total_line"])
 
-        t_count = t_wins + t_losses + t_pushes
-        t_win_rate = t_wins / (t_wins + t_losses) if (t_wins + t_losses) > 0 else 0.0
-        t_net_units = (t_wins * 1.0) - (t_losses * 1.1)
-        t_roi = (
-            t_net_units / ((t_wins + t_losses) * 1.1)
-            if (t_wins + t_losses) > 0
-            else 0.0
+    df["bet_side_total"] = np.where(
+        df["Total Prediction"] > df["total_line"], "over", "under"
+    )
+    df["total_score"] = df["home_points"] + df["away_points"]
+
+    conditions_t = [
+        (df["bet_side_total"] == "over") & (df["total_score"] > df["total_line"]),
+        (df["bet_side_total"] == "over") & (df["total_score"] < df["total_line"]),
+        (df["bet_side_total"] == "under") & (df["total_score"] < df["total_line"]),
+        (df["bet_side_total"] == "under") & (df["total_score"] > df["total_line"]),
+    ]
+    choices_t = ["Win", "Loss", "Win", "Loss"]
+    df["sim_total_result"] = np.select(conditions_t, choices_t, default="Push")
+
+    for thresh in np.arange(0.0, 15.5, 0.5):
+        subset = df[df["edge_total"] >= thresh]
+        wins = len(subset[subset["sim_total_result"] == "Win"])
+        losses = len(subset[subset["sim_total_result"] == "Loss"])
+        pushes = len(subset[subset["sim_total_result"] == "Push"])
+        total = wins + losses
+        win_rate = (wins / total * 100) if total > 0 else 0.0
+        volume = len(subset)
+
+        net_units = (wins * 0.909) - losses
+        roi = (net_units / total * 100) if total > 0 else 0.0
+
+        print(
+            f"{thresh:<10.1f} | {wins}-{losses}-{pushes:<5} | {win_rate:<7.1f}% | {volume:<6} | {roi:+.1f}%"
         )
-
-        # --- Combined ---
-        c_wins = s_wins + t_wins
-        c_losses = s_losses + t_losses
-        c_pushes = s_pushes + t_pushes
-        c_count = c_wins + c_losses + c_pushes
-        c_win_rate = c_wins / (c_wins + c_losses) if (c_wins + c_losses) > 0 else 0.0
-        c_net_units = s_net_units + t_net_units
-        c_roi = (
-            c_net_units / ((c_wins + c_losses) * 1.1)
-            if (c_wins + c_losses) > 0
-            else 0.0
-        )
-
-        results.append(
-            {
-                "Threshold": threshold,
-                "Spread Count": s_count,
-                "Spread Win%": s_win_rate,
-                "Spread Units": s_net_units,
-                "Spread ROI": s_roi,
-                "Total Count": t_count,
-                "Total Win%": t_win_rate,
-                "Total Units": t_net_units,
-                "Total ROI": t_roi,
-                "Combined Count": c_count,
-                "Combined Win%": c_win_rate,
-                "Combined Units": c_net_units,
-                "Combined ROI": c_roi,
-            }
-        )
-
-    results_df = pd.DataFrame(results)
-
-    # Formatting for display
-    display_df = results_df.copy()
-    for col in [
-        "Spread Win%",
-        "Spread ROI",
-        "Total Win%",
-        "Total ROI",
-        "Combined Win%",
-        "Combined ROI",
-    ]:
-        display_df[col] = display_df[col].map("{:.1%}".format)
-    for col in ["Spread Units", "Total Units", "Combined Units"]:
-        display_df[col] = display_df[col].map("{:+.1f}".format)
-
-    print("\nThreshold Analysis (2024 Season)")
-    print("================================")
-    print(display_df.to_string(index=False))
-
-    # Save raw results
-    output_path = data_dir.parent / "threshold_analysis_2024.csv"
-    results_df.to_csv(output_path, index=False)
-    print(f"\nResults saved to {output_path}")
 
 
 if __name__ == "__main__":

@@ -23,7 +23,8 @@ def settle_spread_bets(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     def score_row(row):
-        if row.get("bet_spread") not in ("home", "away"):
+        bet = str(row.get("bet_spread", "")).lower()
+        if bet not in ("home", "away"):
             return "No Bet"
         if pd.isna(row.get("home_points")) or pd.isna(row.get("away_points")):
             return "Pending"
@@ -31,13 +32,13 @@ def settle_spread_bets(df: pd.DataFrame) -> pd.DataFrame:
         actual_margin = float(row["home_points"]) - float(row["away_points"])
         expected_margin = -float(row["home_team_spread_line"])
 
-        if row["bet_spread"] == "home":
+        if bet == "home":
             if actual_margin > expected_margin:
                 return "Win"
             if actual_margin < expected_margin:
                 return "Loss"
             return "Push"
-        if row["bet_spread"] == "away":
+        if bet == "away":
             if actual_margin < expected_margin:
                 return "Win"
             if actual_margin > expected_margin:
@@ -65,7 +66,8 @@ def settle_total_bets(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     def score_row(row):
-        if row.get("bet_total") not in ("over", "under"):
+        bet = str(row.get("bet_total", "")).lower()
+        if bet not in ("over", "under"):
             return "No Bet"
         if pd.isna(row.get("home_points")) or pd.isna(row.get("away_points")):
             return "Pending"
@@ -73,13 +75,13 @@ def settle_total_bets(df: pd.DataFrame) -> pd.DataFrame:
         actual_total = float(row["home_points"]) + float(row["away_points"])
         total_line = float(row["total_line"])
 
-        if row["bet_total"] == "over":
+        if bet == "over":
             if actual_total > total_line:
                 return "Win"
             if actual_total < total_line:
                 return "Loss"
             return "Push"
-        if row["bet_total"] == "under":
+        if bet == "under":
             if actual_total < total_line:
                 return "Win"
             if actual_total > total_line:

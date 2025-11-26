@@ -1,1 +1,50 @@
-
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,Spread Line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,Total Line,Model Total,Total Edge
+401643797,10/03/2024,07:00 PM,Texas State @ Troy,Troy,Texas State,Home,14.5,-1.26,15.76,High,58.09,-1.26,No Bet,56.0,58.09,0.0
+401641029,10/03/2024,09:00 PM,Sam Houston @ UTEP,UTEP,Sam Houston,Home,10.0,-8.24,18.240000000000002,High,53.11,-8.24,Over,49.5,53.11,3.6099999999999994
+401641001,10/04/2024,07:00 PM,Jacksonville State @ Kennesaw State,Kennesaw State,Jacksonville State,Home,17.0,-3.48,20.48,High,52.4,-3.48,No Bet,49.5,52.4,0.0
+401636891,10/04/2024,07:30 PM,Houston @ TCU,TCU,Houston,Away,-16.5,14.15,30.65,High,45.36,14.15,Under,52.0,45.36,6.640000000000001
+401634779,10/04/2024,09:00 PM,Syracuse @ UNLV,UNLV,Syracuse,Away,-5.5,29.46,34.96,High,63.14,29.46,Over,55.5,63.14,7.640000000000001
+401628506,10/04/2024,09:00 PM,Michigan State @ Oregon,Oregon,Michigan State,Away,-22.5,17.27,39.769999999999996,High,51.49,17.27,No Bet,53.0,51.49,0.0
+401628383,10/05/2024,12:00 PM,Missouri @ Texas A&M,Texas A&M,Missouri,No Bet,-2.5,-2.99,0.0,None,32.62,-2.99,Under,47.5,32.62,14.880000000000003
+401628509,10/05/2024,12:00 PM,Purdue @ Wisconsin,Wisconsin,Purdue,Away,-12.0,10.47,22.47,High,49.22,10.47,Over,44.5,49.22,4.719999999999999
+401645339,10/05/2024,12:00 PM,Army @ Tulsa,Tulsa,Army,Home,14.0,-15.85,29.85,High,50.92,-15.85,No Bet,50.5,50.92,0.0
+401628510,10/05/2024,12:00 PM,UCLA @ Penn State,Penn State,UCLA,Away,-29.5,15.64,45.14,High,44.36,15.64,Under,47.5,44.36,3.1400000000000006
+401629044,10/05/2024,12:00 PM,Massachusetts @ Northern Illinois,Northern Illinois,Massachusetts,Away,-14.0,25.63,39.629999999999995,High,36.68,25.63,Under,41.0,36.68,4.32
+401635638,10/05/2024,12:00 PM,Wake Forest @ NC State,NC State,Wake Forest,Away,-4.0,7.81,11.809999999999999,High,69.93,7.81,Over,52.5,69.93,17.430000000000007
+401635572,10/05/2024,12:00 PM,Pittsburgh @ North Carolina,North Carolina,Pittsburgh,No Bet,2.5,2.39,0.0,None,75.45,2.39,Over,62.5,75.45,12.950000000000003
+401635571,10/05/2024,12:00 PM,SMU @ Louisville,Louisville,SMU,Away,-7.0,14.57,21.57,High,66.06,14.57,Over,55.0,66.06,11.060000000000002
+401635567,10/05/2024,12:00 PM,Boston College @ Virginia,Virginia,Boston College,Away,-2.0,6.58,8.58,High,50.17,6.58,No Bet,52.5,50.17,0.0
+401643722,10/05/2024,12:00 PM,Navy @ Air Force,Air Force,Navy,Home,10.0,-21.92,31.92,High,46.18,-21.92,Over,37.0,46.18,9.18
+401645338,10/05/2024,01:00 PM,Tulane @ UAB,UAB,Tulane,Home,20.0,-8.87,28.869999999999997,High,50.98,-8.87,No Bet,52.0,50.98,0.0
+401644741,10/05/2024,02:00 PM,Western Michigan @ Ball State,Ball State,Western Michigan,Home,10.0,3.36,6.640000000000001,High,64.94,3.36,Over,58.0,64.94,6.939999999999998
+401635573,10/05/2024,03:30 PM,Virginia Tech @ Stanford,Stanford,Virginia Tech,Home,8.5,-5.5,14.0,High,52.23,-5.5,No Bet,49.5,52.23,0.0
+401645340,10/05/2024,03:30 PM,East Carolina @ Charlotte,Charlotte,East Carolina,Home,9.5,6.11,3.3899999999999997,High,46.64,6.11,No Bet,47.5,46.64,0.0
+401644740,10/05/2024,03:30 PM,Bowling Green @ Akron,Akron,Bowling Green,Home,16.5,-9.79,26.29,High,56.67,-9.79,Over,48.5,56.67,8.170000000000002
+401629033,10/05/2024,03:30 PM,Temple @ UConn,UConn,Temple,Away,-17.5,24.91,42.41,High,59.72,24.91,Over,49.5,59.72,10.219999999999999
+401643799,10/05/2024,03:30 PM,App State @ Marshall,Marshall,App State,Away,-3.0,19.43,22.43,High,55.34,19.43,No Bet,56.5,55.34,0.0
+401644684,10/05/2024,03:30 PM,Miami (OH) @ Toledo,Toledo,Miami (OH),Away,-4.5,18.8,23.3,High,43.69,18.8,No Bet,43.5,43.69,0.0
+401628381,10/05/2024,03:30 PM,Auburn @ Georgia,Georgia,Auburn,Away,-21.0,21.51,42.510000000000005,High,51.04,21.51,No Bet,50.5,51.04,0.0
+401628504,10/05/2024,03:30 PM,Iowa @ Ohio State,Ohio State,Iowa,Away,-17.0,19.91,36.91,High,57.89,19.91,Over,46.0,57.89,11.89
+401628382,10/05/2024,03:30 PM,Ole Miss @ South Carolina,South Carolina,Ole Miss,Home,10.0,-4.73,14.73,High,51.85,-4.73,No Bet,53.5,51.85,0.0
+401628503,10/05/2024,03:30 PM,Indiana @ Northwestern,Northwestern,Indiana,Home,12.5,-24.19,36.69,High,45.31,-24.19,Over,40.5,45.31,4.810000000000002
+401636890,10/05/2024,04:00 PM,West Virginia @ Oklahoma State,Oklahoma State,West Virginia,Away,-2.5,12.91,15.41,High,61.7,12.91,No Bet,64.5,61.7,0.0
+401628508,10/05/2024,04:00 PM,Rutgers @ Nebraska,Nebraska,Rutgers,Away,-7.0,5.03,12.030000000000001,High,42.84,5.03,Over,39.5,42.84,3.3400000000000034
+401628384,10/05/2024,04:15 PM,Alabama @ Vanderbilt,Vanderbilt,Alabama,Home,23.0,-5.78,28.78,High,66.16,-5.78,Over,53.5,66.16,12.659999999999997
+401643724,10/05/2024,06:30 PM,Colorado State @ Oregon State,Oregon State,Colorado State,Away,-10.5,11.69,22.189999999999998,High,41.09,11.69,Under,47.0,41.09,5.909999999999997
+401643723,10/05/2024,07:00 PM,Utah State @ Boise State,Boise State,Utah State,Away,-28.0,39.96,67.96000000000001,High,78.0,39.96,Over,66.5,78.0,11.5
+401643802,10/05/2024,07:00 PM,Louisiana @ Southern Miss,Southern Miss,Louisiana,Home,17.5,-7.45,24.95,High,57.62,-7.45,No Bet,57.5,57.62,0.0
+401635569,10/05/2024,07:00 PM,Clemson @ Florida State,Florida State,Clemson,Home,16.5,-5.65,22.15,High,53.43,-5.65,Over,47.0,53.43,6.43
+401643798,10/05/2024,07:00 PM,Old Dominion @ Coastal Carolina,Coastal Carolina,Old Dominion,Away,-4.0,9.0,13.0,High,55.61,9.0,Over,51.5,55.61,4.109999999999999
+401643800,10/05/2024,07:00 PM,South Alabama @ Arkansas State,Arkansas State,South Alabama,Home,2.5,-3.41,5.91,High,71.63,-3.41,Over,62.5,71.63,9.129999999999995
+401643801,10/05/2024,07:00 PM,James Madison @ UL Monroe,UL Monroe,James Madison,Home,16.5,-1.27,17.77,High,45.59,-1.27,No Bet,48.0,45.59,0.0
+401628505,10/05/2024,07:30 PM,Michigan @ Washington,Washington,Michigan,Away,-1.5,18.85,20.35,High,40.38,18.85,No Bet,39.5,40.38,0.0
+401628379,10/05/2024,07:30 PM,Tennessee @ Arkansas,Arkansas,Tennessee,Home,14.0,-7.29,21.29,High,58.57,-7.29,No Bet,57.0,58.57,0.0
+401628507,10/05/2024,07:30 PM,USC @ Minnesota,Minnesota,USC,No Bet,8.5,8.93,0.0,None,42.13,8.93,Under,45.5,42.13,3.3699999999999974
+401636889,10/05/2024,07:30 PM,Baylor @ Iowa State,Iowa State,Baylor,Away,-13.0,15.14,28.14,High,46.06,15.14,No Bet,45.0,46.06,0.0
+401643726,10/05/2024,07:30 PM,Nevada @ San José State,San José State,Nevada,Away,-7.0,9.88,16.880000000000003,High,54.93,9.88,Over,51.0,54.93,3.9299999999999997
+401628380,10/05/2024,07:45 PM,UCF @ Florida,Florida,UCF,No Bet,1.0,0.03,0.0,None,68.59,0.03,Over,62.0,68.59,6.590000000000003
+401636888,10/05/2024,08:00 PM,Kansas @ Arizona State,Arizona State,Kansas,No Bet,-2.5,-0.87,0.0,None,54.26,-0.87,Over,50.0,54.26,4.259999999999998
+401635570,10/05/2024,08:00 PM,Duke @ Georgia Tech,Georgia Tech,Duke,Away,-10.0,-2.54,7.46,High,47.57,-2.54,Under,52.5,47.57,4.93
+401643725,10/05/2024,08:00 PM,Hawai'i @ San Diego State,San Diego State,Hawai'i,No Bet,-1.5,0.34,0.0,None,37.41,0.34,Under,47.5,37.41,10.090000000000003
+401635568,10/05/2024,10:30 PM,Miami @ California,California,Miami,Home,10.0,-13.86,23.86,High,53.05,-13.86,No Bet,54.0,53.05,0.0
+401636887,10/05/2024,11:00 PM,Texas Tech @ Arizona,Arizona,Texas Tech,Away,-6.0,12.22,18.22,High,70.45,12.22,Over,63.5,70.45,6.950000000000003

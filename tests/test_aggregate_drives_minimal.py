@@ -59,8 +59,7 @@ def test_aggregate_drives_minimal():
     assert row["drive_plays"] == 2
     # drive_yards should sum yards_gained
     assert row["drive_yards"] == 12
-    # time should sum play_duration for counted plays
-    assert row["drive_time"] == 22
+    # NOTE: drive_time column was removed in a previous refactoring
     # scoring opportunity derived from eckel
     assert row["had_scoring_opportunity"] == 1
     # points sum

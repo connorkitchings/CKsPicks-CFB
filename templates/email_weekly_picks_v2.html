@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CK's CFB Picks — {{ year }} Week {{ week }}</title>
+    <style>
+      /* Base styles with improved typography */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #f5f5f7;
+        color: #1d1d1f;
+        line-height: 1.5;
+      }
+
+      /* Card container with subtle shadow */
+      .card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      /* Header styling with gradient accent */
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff;
+        padding: 32px 24px;
+        text-align: center;
+      }
+
+      .header-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.5px;
+      }
+
+      .header-subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+        margin: 0;
+      }
+
+      /* Model context card */
+      .model-context {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 16px;
+        margin: 20px 24px;
+        border-radius: 6px;
+      }
+
+      .model-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1d1d1f;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      .model-stats {
+        font-size: 13px;
+        color: #6e6e73;
+        line-height: 1.7;
+      }
+
+      /* Best bet highlight */
+      .best-bet {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 24px;
+        box-shadow: 0 4px 12px rgba(253, 203, 110, 0.3);
+      }
+
+      .best-bet-title {
+        font-size: 18px;
+        font-weight: 700;
+        text-align: center;
+        color: #2d3436;
+        margin-bottom: 12px;
+      }
+
+      .best-bet-matchup {
+        text-align: center;
+        margin: 12px 0;
+      }
+
+      .best-bet-details {
+        text-align: center;
+        font-size: 14px;
+        color: #2d3436;
+        margin-top: 8px;
+      }
+
+      /* Section headers */
+      .section-header {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1d1d1f;
+        padding: 24px 24px 12px;
+        border-bottom: 2px solid #e8e8ed;
+        margin-bottom: 0;
+        text-align: center;
+      }
+
+      .bet-count {
+        font-size: 16px;
+        font-weight: 400;
+        color: #6e6e73;
+      }
+
+      /* Table styling with improved spacing */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+      }
+
+      .table thead {
+        background: #f8f9fa;
+      }
+
+      .table th {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6e6e73;
+        padding: 12px 8px;
+        text-align: center;
+        border-bottom: 2px solid #e8e8ed;
+      }
+
+      .table td {
+        font-size: 14px;
+        color: #1d1d1f;
+        padding: 14px 8px;
+        text-align: center;
+        border-bottom: 1px solid #f0f0f5;
+      }
+
+      .table tbody tr:hover {
+        background: #fafafa;
+      }
+
+      /* Team display with logos */
+      .team-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .logo {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        vertical-align: middle;
+      }
+
+      /* Game info in table */
+      .game-time {
+        font-size: 12px;
+        color: #86868b;
+        white-space: nowrap;
+      }
+
+      /* Edge/bet styling with colors */
+      .edge-positive {
+        font-weight: 600;
+        color: #0f7c41;
+      }
+
+      .bet-recommendation {
+        font-weight: 700;
+        color: #667eea;
+      }
+
+      /* Line indicator with team logo */
+      .line-display {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* Footer styling */
+      .footer {
+        background: #f8f9fa;
+        padding: 24px;
+        border-top: 1px solid #e8e8ed;
+      }
+
+      .footer-content {
+        font-size: 13px;
+        color: #6e6e73;
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+
+      .footer-title {
+        font-weight: 600;
+        color: #1d1d1f;
+        margin-bottom: 8px;
+        text-align: center;
+      }
+
+      .footer-note {
+        font-size: 12px;
+        color: #86868b;
+        text-align: center;
+        margin-top: 16px;
+      }
+
+      /* Dark mode support */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #000000;
+          color: #f5f5f7;
+        }
+        .card {
+          background: #1c1c1e;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        .model-context {
+          background: #2c2c2e;
+          border-left-color: #8b8ef5;
+        }
+        .model-name {
+          color: #f5f5f7;
+        }
+        .model-stats {
+          color: #a1a1a6;
+        }
+        .section-header {
+          color: #f5f5f7;
+          border-bottom-color: #3a3a3c;
+        }
+        .bet-count {
+          color: #a1a1a6;
+        }
+        .table thead {
+          background: #2c2c2e;
+        }
+        .table th {
+          color: #a1a1a6;
+          border-bottom-color: #3a3a3c;
+        }
+        .table td {
+          color: #f5f5f7;
+          border-bottom-color: #2c2c2e;
+        }
+        .table tbody tr:hover {
+          background: #2c2c2e;
+        }
+        .game-time {
+          color: #6e6e73;
+        }
+        .footer {
+          background: #2c2c2e;
+          border-top-color: #3a3a3c;
+        }
+        .footer-content {
+          color: #a1a1a6;
+        }
+        .footer-title {
+          color: #f5f5f7;
+        }
+        .footer-note {
+          color: #6e6e73;
+        }
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 640px) {
+        .header-title {
+          font-size: 22px;
+        }
+        .section-header {
+          font-size: 18px;
+        }
+        .table th,
+        .table td {
+          padding: 10px 4px;
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table
+      role="presentation"
+      cellpadding="0"
+      cellspacing="0"
+      width="100%"
+      style="border-collapse: collapse"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <table
+            role="presentation"
+            cellpadding="0"
+            cellspacing="0"
+            width="720"
+            class="card"
+          >
+            <!-- Header -->
+            <tr>
+              <td class="header">
+                <h1 class="header-title">CK's CFB Picks</h1>
+                <p class="header-subtitle">
+                  {{ year }} Week {{ week }} • {{ date_range }}<br />
+                  Generated {{ generated_at }}
+                </p>
+              </td>
+            </tr>
+
+            <!-- System Info -->
+            <tr>
+              <td>
+                <div
+                  class="section-header"
+                  style="
+                    padding-top: 20px;
+                    padding-bottom: 8px;
+                    border-bottom: none;
+                  "
+                >
+                  System Info
+                </div>
+                <div class="model-context" style="margin-top: 0">
+                  <div class="model-name">
+                    {{ model_context.model_name }}
+                    <span
+                      style="font-weight: 400; font-size: 13px; color: #6e6e73"
+                      >(ID: {{ model_context.model_id }})</span
+                    >
+                  </div>
+                  <div class="model-stats">
+                    <strong
+                      >Last Season ({{ model_context.prev_year }}):</strong
+                    >
+                    Spread {% if model_context.prev_spread_wins is not none %}{{
+                    model_context.prev_spread_wins }}/{{
+                    model_context.prev_spread_count }} ({{
+                    (model_context.prev_spread * 100) | round(1) }}%){% else
+                    %}n/a{% endif %}, Total {% if model_context.prev_total_wins
+                    is not none %}{{ model_context.prev_total_wins }}/{{
+                    model_context.prev_total_count }} ({{
+                    (model_context.prev_total * 100) | round(1) }}%){% else
+                    %}n/a{% endif %}
+                    <br />
+                    <strong
+                      >Current Season ({{ model_context.curr_year }}) through
+                      Week {{ model_context.curr_through_week }}:</strong
+                    >
+                    Spread {% if model_context.curr_spread_wins is not none %}{{
+                    model_context.curr_spread_wins }}/{{
+                    model_context.curr_spread_count }} ({{
+                    (model_context.curr_spread * 100) | round(1) }}%){% else
+                    %}n/a{% endif %}, Total {% if model_context.curr_total_wins
+                    is not none %}{{ model_context.curr_total_wins }}/{{
+                    model_context.curr_total_count }} ({{
+                    (model_context.curr_total * 100) | round(1) }}%){% else
+                    %}n/a{% endif %}
+                    <br />
+                    <strong
+                      >This Week Last Year (Week {{ week }}, {{
+                      model_context.prev_year }}):</strong
+                    >
+                    Spread {% if model_context.last_year_week_spread_wins is not
+                    none %}{{ model_context.last_year_week_spread_wins }}/{{
+                    model_context.last_year_week_spread_count }} ({{
+                    (model_context.last_year_week_spread * 100) | round(1)
+                    }}%){% else %}n/a{% endif %}, Total {% if
+                    model_context.last_year_week_total_wins is not none %}{{
+                    model_context.last_year_week_total_wins }}/{{
+                    model_context.last_year_week_total_count }} ({{
+                    (model_context.last_year_week_total * 100) | round(1) }}%){%
+                    else %}n/a{% endif %}
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            {% if best_bet %}
+            <!-- Best Bet -->
+            <tr>
+              <td>
+                <div class="best-bet">
+                  <div class="best-bet-title">⭐ Best Bet of the Week ⭐</div>
+                  <div class="best-bet-matchup">
+                    <img
+                      class="logo"
+                      src="cid:{{ best_bet.away_team_logo_cid }}"
+                      alt="{{ best_bet.away_team }}"
+                      width="32"
+                      height="32"
+                      style="width: 32px; height: 32px"
+                    />
+                    <strong style="font-size: 16px; margin: 0 8px"
+                      >{{ best_bet.away_team }} @ {{ best_bet.home_team
+                      }}</strong
+                    >
+                    <img
+                      class="logo"
+                      src="cid:{{ best_bet.home_team_logo_cid }}"
+                      alt="{{ best_bet.home_team }}"
+                      width="32"
+                      height="32"
+                      style="width: 32px; height: 32px"
+                    />
+                  </div>
+                  <div
+                    style="
+                      font-size: 13px;
+                      color: #636e72;
+                      text-align: center;
+                      margin-top: 4px;
+                    "
+                  >
+                    {{ best_bet.datetime_display }} • {{ best_bet.category }}
+                  </div>
+                  <div class="best-bet-details">
+                    <strong>Line:</strong> {{ best_bet.line_display }} •
+                    <strong>Model:</strong> {% if best_bet.category == 'Spread'
+                    %}{{ best_bet.home_team }} {{ "%+.1f" |
+                    format(-best_bet.prediction) if best_bet.prediction is not
+                    none else '' }}{% else %}{{ "%.1f" |
+                    format(best_bet.prediction) if best_bet.prediction is not
+                    none else '' }}{% endif %}
+                    <br />
+                    <strong style="color: #2d3436; font-size: 16px"
+                      >BET: {{ best_bet.bet }}</strong
+                    >
+                    <span style="color: #0f7c41; font-weight: 600"
+                      >(Edge: {{ best_bet.edge | round(1) if best_bet.edge is
+                      not none else '' }})</span
+                    >
+                  </div>
+                  <div
+                    style="
+                      font-size: 12px;
+                      color: #636e72;
+                      text-align: center;
+                      margin-top: 8px;
+                      font-style: italic;
+                    "
+                  >
+                    Season Record: {{ best_bet_record }}
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endif %} {% if spreads|length > 0 %}
+            <!-- Spread Bets -->
+            <tr>
+              <td>
+                <div class="section-header">
+                  Spread Bets
+                  <span class="bet-count">({{ spreads|length }})</span>
+                </div>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Date/Time</th>
+                      <th>Matchup</th>
+                      <th>Line</th>
+                      <th>Model</th>
+                      <th>Edge</th>
+                      <th>Bet</th>
+                      <th>ML?</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in spreads %}
+                    <tr>
+                      <td class="game-time">
+                        {{ r.date_display }}<br />{{ r.time_display }}
+                      </td>
+                      <td>
+                        <div
+                          class="team-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.away_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.away_team }}</span>
+                          <span style="color: #86868b; margin: 0 4px">@</span>
+                          <img
+                            class="logo"
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.home_team }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div
+                          class="line-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.line_logo_cid }}"
+                            style="width: 16px; height: 16px"
+                          />
+                          <span>{{ r.line_num_display }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div
+                          class="line-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            style="width: 16px; height: 16px"
+                          />
+                          <span
+                            >{{ "%+.1f" | format(-r.predicted_spread) if
+                            r.predicted_spread is not none else '' }}</span
+                          >
+                        </div>
+                      </td>
+                      <td class="edge-positive">
+                        {{ r.edge_spread | round(1) if r.edge_spread is not none
+                        else '' }}
+                      </td>
+                      <td class="bet-recommendation">
+                        {% if r.bet_spread_team == r.home_team %}
+                        <img
+                          class="logo"
+                          src="cid:{{ r.home_team_logo_cid }}"
+                          style="width: 20px; height: 20px"
+                        />
+                        {% elif r.bet_spread_team == r.away_team %}
+                        <img
+                          class="logo"
+                          src="cid:{{ r.away_team_logo_cid }}"
+                          style="width: 20px; height: 20px"
+                        />
+                        {% else %} {{ r.bet_spread_team }} {% endif %}
+                      </td>
+                      <td style="font-size: 12px">
+                        {{ r.consider_moneyline }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {% endif %} {% if totals|length > 0 %}
+            <!-- Total Bets -->
+            <tr>
+              <td>
+                <div class="section-header">
+                  Total Bets
+                  <span class="bet-count">({{ totals|length }})</span>
+                </div>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Date/Time</th>
+                      <th>Matchup</th>
+                      <th>O/U</th>
+                      <th>Model</th>
+                      <th>Edge</th>
+                      <th>Bet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in totals %}
+                    <tr>
+                      <td class="game-time">
+                        {{ r.date_display }}<br />{{ r.time_display }}
+                      </td>
+                      <td>
+                        <div
+                          class="team-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.away_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.away_team }}</span>
+                          <span style="color: #86868b; margin: 0 4px">@</span>
+                          <img
+                            class="logo"
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.home_team }}</span>
+                        </div>
+                      </td>
+                      <td style="font-weight: 600">
+                        {{ r.total_line | round(1) if r.total_line is not none
+                        else '' }}
+                      </td>
+                      <td>
+                        {{ "%.1f" | format(r.predicted_total) if
+                        r.predicted_total is not none else '' }}
+                      </td>
+                      <td class="edge-positive">
+                        {{ r.edge_total | round(1) if r.edge_total is not none
+                        else '' }}
+                      </td>
+                      <td class="bet-recommendation">{{ r.bet_total }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+            {% endif %}
+
+            <!-- Full Schedule -->
+            <tr>
+              <td>
+                <div class="section-header">
+                  Full Week {{ week }} Schedule
+                  <span class="bet-count">({{ all_games|length }} games)</span>
+                </div>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Date/Time</th>
+                      <th>Matchup</th>
+                      <th>Line</th>
+                      <th>Model</th>
+                      <th>O/U</th>
+                      <th>Model</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in all_games %}
+                    <tr>
+                      <td class="game-time">
+                        {{ r.date_display }}<br />{{ r.time_display }}
+                      </td>
+                      <td>
+                        <div
+                          class="team-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.away_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.away_team }}</span>
+                          <span style="color: #86868b; margin: 0 4px">@</span>
+                          <img
+                            class="logo"
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            style="width: 18px; height: 18px"
+                          />
+                          <span>{{ r.home_team }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div
+                          class="line-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.line_logo_cid }}"
+                            style="width: 14px; height: 14px"
+                          />
+                          <span>{{ r.line_num_display }}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div
+                          class="line-display"
+                          style="justify-content: center"
+                        >
+                          <img
+                            class="logo"
+                            src="cid:{{ r.home_team_logo_cid }}"
+                            style="width: 14px; height: 14px"
+                          />
+                          <span
+                            >{{ "%+.1f" | format(-r.predicted_spread) if
+                            r.predicted_spread is not none else '' }}</span
+                          >
+                        </div>
+                      </td>
+                      <td>
+                        {{ r.total_line | round(1) if r.total_line is not none
+                        else '' }}
+                      </td>
+                      <td>
+                        {{ "%.1f" | format(r.predicted_total) if
+                        r.predicted_total is not none else '' }}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td class="footer">
+                <div class="footer-content">
+                  <div class="footer-title">📊 Quick Reference</div>
+                  <strong>Edge:</strong> Difference between model prediction and
+                  Vegas line. Higher edge = stronger recommendation.<br />
+                  <strong>Line:</strong> Point spread. Negative number = team is
+                  favored.<br />
+                  <strong>O/U:</strong> Over/Under total points prediction for
+                  the game.<br />
+                  <strong>ML?:</strong> Consider moneyline bet when spread edge
+                  is high.
+                </div>
+                <div class="footer-content">
+                  <div class="footer-title">ℹ️ Notes</div>
+                  Lines reflect 'consensus' provider where available. Betting
+                  thresholds: Spread ≥ {{ spread_threshold }}, Total ≥ {{
+                  total_threshold }}. Games excluded when teams have fewer than
+                  2 FBS games played or confidence thresholds aren't met.
+                </div>
+                <div class="footer-note">
+                  © {{ year }} cfb_model •
+                  <a
+                    href="{{ docs_url }}"
+                    style="color: #667eea; text-decoration: none"
+                    >Documentation</a
+                  >
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

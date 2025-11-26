@@ -1,1 +1,10 @@
-
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,Spread Line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,Total Line,Model Total,Total Edge
+401673466,12/06/2024,07:00 PM,Western Kentucky @ Jacksonville State,Jacksonville State,Western Kentucky,Away,-4.0,7.22,11.219999999999999,High,59.01,7.22,No Bet,58.0,59.01,0.0
+401673468,12/06/2024,08:00 PM,UNLV @ Boise State,Boise State,UNLV,Away,-4.0,5.61,9.61,High,67.75,5.61,Over,57.5,67.75,10.25
+401673462,12/06/2024,08:00 PM,Tulane @ Army,Army,Tulane,Home,5.0,-1.78,6.78,High,48.16,-1.78,No Bet,46.0,48.16,0.0
+401673467,12/07/2024,12:00 PM,Ohio @ Miami (OH),Miami (OH),Ohio,No Bet,-2.5,-1.46,0.0,None,34.68,-1.46,Under,44.0,34.68,9.32
+401673465,12/07/2024,12:00 PM,Iowa State @ Arizona State,Arizona State,Iowa State,No Bet,-1.5,-0.57,0.0,None,47.76,-0.57,No Bet,50.5,47.76,0.0
+401673469,12/07/2024,04:00 PM,Georgia @ Texas,Texas,Georgia,Away,-3.0,5.08,8.08,High,46.86,5.08,Under,51.0,46.86,4.140000000000001
+401673470,12/07/2024,07:30 PM,Marshall @ Louisiana,Louisiana,Marshall,Away,-5.0,7.81,12.809999999999999,High,59.62,7.81,No Bet,57.0,59.62,0.0
+401673463,12/07/2024,08:00 PM,Clemson @ SMU,SMU,Clemson,Away,-3.0,3.18,6.18,High,57.47,3.18,No Bet,56.0,57.47,0.0
+401673464,12/07/2024,08:00 PM,Penn State @ Oregon,Oregon,Penn State,Away,-3.0,0.78,3.7800000000000002,High,43.14,0.78,Under,51.0,43.14,7.859999999999999
