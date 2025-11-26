@@ -22,6 +22,7 @@ FEATURE_PACK_CHOICES = [
     "special_teams_high_risk",
     "context",
     "matchup",
+    "weather",
     "other",
 ]
 
@@ -208,6 +209,9 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
     global_context = [
         "neutral_site",
         "same_conference",
+        "temperature",
+        "precipitation",
+        "wind_speed",
     ]
     style_context = []
     for metric_label in STYLE_METRICS.values():
@@ -392,6 +396,8 @@ def _categorize_feature_name(feature_name: str) -> str:
         return "defense"
     if "_off_" in feature_name:
         return "offense"
+    if feature_name in {"temperature", "precipitation", "wind_speed"}:
+        return "weather"
     return "other"
 
 
@@ -606,6 +612,8 @@ def load_point_in_time_data(
     if team_features_df is None:
         return None
 
+    from src.features.weather import load_weather_data
+
     all_game_records = raw.read_index("games", {"year": year})
     if not all_game_records:
         return None
@@ -613,6 +621,18 @@ def load_point_in_time_data(
     week_games_df = all_games_df[all_games_df["week"] == week].copy()
     if week_games_df.empty:
         return None
+
+    # Load and merge weather data
+    weather_df = load_weather_data(year, data_root)
+    if not weather_df.empty:
+        # weather_df has game_id, temperature, precipitation, wind_speed
+        # week_games_df has id
+        week_games_df = week_games_df.merge(
+            weather_df[["game_id", "temperature", "precipitation", "wind_speed"]],
+            left_on="id",
+            right_on="game_id",
+            how="left",
+        ).drop(columns=["game_id"], errors="ignore")
 
     home_features = team_features_df.add_prefix("home_")
     away_features = team_features_df.add_prefix("away_")

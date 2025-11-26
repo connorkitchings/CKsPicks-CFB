@@ -640,6 +640,10 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         "net_field_position_delta",
         # Special teams metrics (if available)
         "off_avg_net_punt_yards",
+        # Weather metrics
+        "temperature",
+        "precipitation",
+        "wind_speed",
     ]
     present_metric_cols = [c for c in metric_cols if c in weighted.columns]
     special_team_prefixes = ("off_fg_", "off_avg_net_punt_yards", "off_avg_net_kick_")

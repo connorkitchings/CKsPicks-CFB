@@ -10,6 +10,7 @@ import pandas as pd
 
 from .byplay import allplays_to_byplay
 from .core import aggregate_drives, aggregate_team_game, aggregate_team_season
+from .weather import merge_weather_features
 
 
 def calculate_luck_factor(
@@ -25,12 +26,14 @@ def calculate_luck_factor(
 
 def build_preaggregation_pipeline(
     plays_raw_df: pd.DataFrame,
+    weather_df: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run plays → byplay → drives → team-game → team-season pipeline.
 
     Args:
         plays_raw_df: Raw plays DataFrame containing at minimum season and week.
             If season is missing but a constant year column exists, season is derived.
+        weather_df: Optional DataFrame containing game-level weather data.
 
     Returns:
         Tuple of (byplay_df, drives_df, team_game_df, team_season_df), suitable for
@@ -63,6 +66,11 @@ def build_preaggregation_pipeline(
             how="left",
         )
     team_game = aggregate_team_game(byplay, drives)
+
+    # Merge weather features if available
+    if weather_df is not None:
+        team_game = merge_weather_features(team_game, weather_df)
+
     # Add simple luck factor calculation if needed
     team_game = calculate_luck_factor(team_game, byplay)
     team_season = aggregate_team_season(team_game)

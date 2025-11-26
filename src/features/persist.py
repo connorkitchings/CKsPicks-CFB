@@ -14,8 +14,12 @@ import pandas as pd
 from src.utils.base import Partition
 from src.utils.local_storage import LocalStorage
 
-from .core import apply_iterative_opponent_adjustment
+from .core import (
+    aggregate_team_season,
+    apply_iterative_opponent_adjustment,
+)
 from .pipeline import build_preaggregation_pipeline
+from .weather import load_weather_data
 
 
 def persist_preaggregations(
@@ -48,8 +52,11 @@ def persist_preaggregations(
             "Raw plays are missing required 'week' column for partitioning."
         )
 
+    # Load weather data
+    weather_df = load_weather_data(year, raw_storage.root().parent)
+
     byplay_df, drives_df, team_game_df, team_season_df = build_preaggregation_pipeline(
-        plays_df
+        plays_df, weather_df=weather_df
     )
     team_season_adj_df = apply_iterative_opponent_adjustment(
         team_season_df, team_game_df
@@ -170,6 +177,54 @@ def persist_preaggregations(
             "team_season_adj",
             group_def.to_dict(orient="records"),
             part_def,
+            overwrite=True,
+        )
+
+    # Team-week-adjusted: partition by year/week (for training)
+    # We need to generate point-in-time stats for each week.
+    # For week W, we aggregate games from weeks < W.
+    # We also need to apply opponent adjustment for each week.
+    # This is expensive but necessary for correct training data.
+
+    logging.info(f"Generating team_week_adj for {year}...")
+
+    # We can optimize by reusing the logic from aggregate_team_season
+    # but applied to expanding windows.
+
+    # Pre-calculate opponent adjustments for the full season?
+    # No, opponent adjustments should also be point-in-time.
+    # But applying iterative adjustment for every week is very slow.
+    # MVP approach: Use season-ending opponent adjustments?
+    # Or just run the aggregation without adjustment for now?
+    # The model expects 'adj_off_...' columns.
+    # So we MUST run adjustment.
+
+    # Let's try to run it for each week.
+    max_week = team_game_df["week"].max()
+    for week in range(
+        1, int(max_week) + 2
+    ):  # +2 to include bowl games/post-season if any, or just cover all weeks
+        # Games available BEFORE this week
+        past_games = team_game_df[team_game_df["week"] < week].copy()
+        if past_games.empty:
+            continue
+
+        # Aggregate season-to-date
+        std_df = aggregate_team_season(past_games)
+
+        # Apply opponent adjustment (point-in-time)
+        # We use past_games for the adjustment context
+        std_adj_df = apply_iterative_opponent_adjustment(std_df, past_games)
+
+        # Add 'week' column to the result
+        std_adj_df["week"] = week
+
+        # Write to storage
+        part = Partition({"year": str(year), "week": str(week)})
+        totals["team_season_adj"] += processed_storage.write(
+            "team_week_adj",
+            std_adj_df.to_dict(orient="records"),
+            part,
             overwrite=True,
         )
 

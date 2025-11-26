@@ -42,8 +42,11 @@ TEAM_LOGO_MAP = {
     "San José State": "San Jose State",
     "UTSA": "UT San Antonio",
     "Hawai'i": "Hawai_i",
+    "Hawaii": "Hawai_i",
+    "Hawai i": "Hawai_i",
     "UConn": "Connecticut",
     "Southern Miss": "Southern Mississippi",
+    "Texas A&M": "Texas A&M",
 }
 
 
@@ -58,9 +61,12 @@ def _logo_cid_for(name: str) -> str:
     """Return a normalized CID for a team name using TEAM_LOGO_MAP normalization.
 
     Ensures accents/aliases map to the actual logo filename and stabilizes CIDs.
+    Ampersands are replaced with __AMP__ for safe CID usage.
     """
     mapped = TEAM_LOGO_MAP.get(name, name)
-    return f"logo_{str(mapped).replace(' ', '_')}"
+    # Replace & with __AMP__ for safe CID (won't conflict with team names), spaces with underscores
+    safe_cid = str(mapped).replace("&", "__AMP__").replace(" ", "_")
+    return f"logo_{safe_cid}"
 
 
 def _safe_float(x: Any) -> float | None:
@@ -197,16 +203,27 @@ def _compute_displays(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _prepare_recommended(all_games_df: pd.DataFrame):
+def _prepare_recommended(
+    df: pd.DataFrame, spread_threshold: float, total_threshold: float
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any] | None]:
     """Return (spreads, totals, best_bet) from the weekly CSV rows with recommended bets only."""
-    df = _compute_displays(all_games_df)
+    df = _compute_displays(df)
     df = (
         df.sort_values(["game_date_dt", "Game"]) if "game_date_dt" in df.columns else df
     )
 
+    # Normalize bet columns for filtering
+    if "Spread Bet" in df.columns:
+        df["Spread Bet"] = df["Spread Bet"].astype(str).str.lower().str.strip()
+    if "Total Bet" in df.columns:
+        df["Total Bet"] = df["Total Bet"].astype(str).str.lower().str.strip()
+
     # Build spreads list
     spreads_df = (
-        df[df["Spread Bet"].isin(["home", "away"])].copy()
+        df[
+            df["Spread Bet"].astype(str).str.lower().str.strip().isin(["home", "away"])
+            & (df["edge_spread"] >= spread_threshold)
+        ].copy()
         if "Spread Bet" in df.columns
         else df.iloc[0:0]
     )
@@ -233,6 +250,8 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
 
         spreads.append(
             {
+                "date_display": r.get("date_display", ""),
+                "time_display": r.get("time_display", ""),
                 "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
                 "home_team": home_team,
@@ -270,7 +289,10 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
 
     # Build totals list
     totals_df = (
-        df[df["Total Bet"].isin(["over", "under"])].copy()
+        df[
+            df["Total Bet"].isin(["over", "under"])
+            & (df["edge_total"] >= total_threshold)
+        ].copy()
         if "Total Bet" in df.columns
         else df.iloc[0:0]
     )
@@ -280,6 +302,8 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
         away_team = r.get("away_team")
         totals.append(
             {
+                "date_display": r.get("date_display", ""),
+                "time_display": r.get("time_display", ""),
                 "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
                 "home_team": home_team,
@@ -348,30 +372,19 @@ def _prepare_recommended(all_games_df: pd.DataFrame):
 
 
 def compute_hit_rates(
-    year: int, up_to_week: int | None, report_dir: Path
-) -> tuple[float | None, float | None, int, int]:
+    year: int,
+    up_to_week: int | None,
+    report_dir: Path,
+    spread_threshold: float = 0.0,
+    total_threshold: float = 0.0,
+) -> tuple[float | None, float | None, int, int, int, int]:
     """
-    Compute spread/total hit rates and counts for a year.
+    Compute spread/total hit rates, counts, and wins for a year by re-evaluating bets.
+    Returns: (spr_rate, tot_rate, spr_count, tot_count, spr_wins, tot_wins)
     """
     import glob
 
-    def _calculate_metrics(
-        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
-    ) -> tuple[float | None, int]:
-        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
-        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
-        count = len(decided)
-        if count == 0:
-            return None, 0
-
-        if result_col in ["pick_win", "total_pick_win"]:
-            wins = int(decided[result_col].sum())
-        else:
-            wins = int((decided[result_col] == "Win").sum())
-
-        hit_rate = wins / count if count > 0 else 0.0
-
-        return hit_rate, count
+    import numpy as np
 
     scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
     paths = [Path(p) for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv"))]
@@ -382,6 +395,8 @@ def compute_hit_rates(
     for p in paths:
         try:
             df = pd.read_csv(p)
+            if df.empty:
+                continue
             frames.append(df)
         except Exception:
             continue
@@ -396,50 +411,106 @@ def compute_hit_rates(
             week_numeric = pd.to_numeric(scored[week_col], errors="coerce")
             scored = scored[week_numeric <= up_to_week]
 
-    spr, spr_n = _calculate_metrics(
-        scored, "Spread Bet", "Spread Bet Result", ["home", "away"]
-    )
-    if spr_n == 0 and {"bet_spread", "pick_win"}.issubset(scored.columns):
-        spr, spr_n = _calculate_metrics(
-            scored, "bet_spread", "pick_win", ["home", "away"]
+    # --- Spread Logic ---
+    # Ensure numeric columns
+    for col in [
+        "Spread Prediction",
+        "home_team_spread_line",
+        "home_points",
+        "away_points",
+    ]:
+        if col in scored.columns:
+            scored[col] = pd.to_numeric(scored[col], errors="coerce")
+
+    # Calculate Edge if missing or re-calc
+    if "edge_spread" not in scored.columns:
+        scored["edge_spread"] = abs(
+            scored["Spread Prediction"] - (-scored["home_team_spread_line"])
         )
 
-    tot, tot_n = _calculate_metrics(
-        scored, "Total Bet", "Total Bet Result", ["over", "under"]
+    # Determine Bet Side: Pred > -Line => Home
+    scored["bet_side_spread"] = np.where(
+        scored["Spread Prediction"] > -scored["home_team_spread_line"], "home", "away"
     )
-    if tot_n == 0 and {"bet_total", "total_pick_win"}.issubset(scored.columns):
-        tot, tot_n = _calculate_metrics(
-            scored, "bet_total", "total_pick_win", ["over", "under"]
-        )
 
-    return spr, tot, spr_n, tot_n
+    # Determine Result
+    scored["margin"] = scored["home_points"] - scored["away_points"]
+    scored["cover_margin"] = scored["margin"] + scored["home_team_spread_line"]
+
+    conditions = [
+        (scored["bet_side_spread"] == "home") & (scored["cover_margin"] > 0),
+        (scored["bet_side_spread"] == "home") & (scored["cover_margin"] < 0),
+        (scored["bet_side_spread"] == "away") & (scored["cover_margin"] < 0),
+        (scored["bet_side_spread"] == "away") & (scored["cover_margin"] > 0),
+    ]
+    choices = ["Win", "Loss", "Win", "Loss"]
+    scored["sim_spread_result"] = np.select(conditions, choices, default="Push")
+
+    # Filter and Count
+    spread_bets = scored[scored["edge_spread"] >= spread_threshold]
+    spr_wins = len(spread_bets[spread_bets["sim_spread_result"] == "Win"])
+    spr_losses = len(spread_bets[spread_bets["sim_spread_result"] == "Loss"])
+    spr_n = (
+        spr_wins
+        + spr_losses
+        + len(spread_bets[spread_bets["sim_spread_result"] == "Push"])
+    )
+    spr = spr_wins / (spr_wins + spr_losses) if (spr_wins + spr_losses) > 0 else 0.0
+
+    # --- Total Logic ---
+    for col in ["Total Prediction", "total_line"]:
+        if col in scored.columns:
+            scored[col] = pd.to_numeric(scored[col], errors="coerce")
+
+    if "edge_total" not in scored.columns:
+        scored["edge_total"] = abs(scored["Total Prediction"] - scored["total_line"])
+
+    scored["bet_side_total"] = np.where(
+        scored["Total Prediction"] > scored["total_line"], "over", "under"
+    )
+
+    scored["total_score"] = scored["home_points"] + scored["away_points"]
+
+    conditions_t = [
+        (scored["bet_side_total"] == "over")
+        & (scored["total_score"] > scored["total_line"]),
+        (scored["bet_side_total"] == "over")
+        & (scored["total_score"] < scored["total_line"]),
+        (scored["bet_side_total"] == "under")
+        & (scored["total_score"] < scored["total_line"]),
+        (scored["bet_side_total"] == "under")
+        & (scored["total_score"] > scored["total_line"]),
+    ]
+    choices_t = ["Win", "Loss", "Win", "Loss"]
+    scored["sim_total_result"] = np.select(conditions_t, choices_t, default="Push")
+
+    total_bets = scored[scored["edge_total"] >= total_threshold]
+    tot_wins = len(total_bets[total_bets["sim_total_result"] == "Win"])
+    tot_losses = len(total_bets[total_bets["sim_total_result"] == "Loss"])
+    tot_n = (
+        tot_wins
+        + tot_losses
+        + len(total_bets[total_bets["sim_total_result"] == "Push"])
+    )
+    tot = tot_wins / (tot_wins + tot_losses) if (tot_wins + tot_losses) > 0 else 0.0
+
+    return spr, tot, spr_n, tot_n, spr_wins, tot_wins
 
 
 def compute_week_hit_rates(
-    year: int, week: int, report_dir: Path
-) -> tuple[float | None, float | None, int, int]:
+    year: int,
+    week: int,
+    report_dir: Path,
+    spread_threshold: float = 0.0,
+    total_threshold: float = 0.0,
+) -> tuple[float | None, float | None, int, int, int, int]:
     """
-    Compute spread/total hit rates and counts for a specific week.
+    Compute spread/total hit rates, counts, and wins for a specific week by re-evaluating bets.
+    Returns: (spr_rate, tot_rate, spr_count, tot_count, spr_wins, tot_wins)
     """
     import glob
 
-    def _calculate_metrics(
-        df: pd.DataFrame, bet_col: str, result_col: str, valid_bets: list[str]
-    ) -> tuple[float | None, int]:
-        placed = df[df[bet_col].astype(str).str.lower().isin(valid_bets)]
-        decided = placed[placed[result_col].isin(["Win", "Loss", 0, 1])]
-        count = len(decided)
-        if count == 0:
-            return None, 0
-
-        if result_col in ["pick_win", "total_pick_win"]:
-            wins = int(decided[result_col].sum())
-        else:
-            wins = int((decided[result_col] == "Win").sum())
-
-        hit_rate = wins / count if count > 0 else 0.0
-
-        return hit_rate, count
+    import numpy as np
 
     scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
     weekly_path = scored_dir / f"CFB_week{week}_bets_scored.csv"
@@ -476,21 +547,81 @@ def compute_week_hit_rates(
     if df.empty:
         return None, None, 0, 0
 
-    spr, spr_n = _calculate_metrics(
-        df, "Spread Bet", "Spread Bet Result", ["home", "away"]
-    )
-    if spr_n == 0 and {"bet_spread", "pick_win"}.issubset(df.columns):
-        spr, spr_n = _calculate_metrics(df, "bet_spread", "pick_win", ["home", "away"])
+    # --- Spread Logic ---
+    for col in [
+        "Spread Prediction",
+        "home_team_spread_line",
+        "home_points",
+        "away_points",
+    ]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    tot, tot_n = _calculate_metrics(
-        df, "Total Bet", "Total Bet Result", ["over", "under"]
-    )
-    if tot_n == 0 and {"bet_total", "total_pick_win"}.issubset(df.columns):
-        tot, tot_n = _calculate_metrics(
-            df, "bet_total", "total_pick_win", ["over", "under"]
+    if "edge_spread" not in df.columns:
+        df["edge_spread"] = abs(
+            df["Spread Prediction"] - (-df["home_team_spread_line"])
         )
 
-    return spr, tot, spr_n, tot_n
+    df["bet_side_spread"] = np.where(
+        df["Spread Prediction"] > -df["home_team_spread_line"], "home", "away"
+    )
+
+    df["margin"] = df["home_points"] - df["away_points"]
+    df["cover_margin"] = df["margin"] + df["home_team_spread_line"]
+
+    conditions = [
+        (df["bet_side_spread"] == "home") & (df["cover_margin"] > 0),
+        (df["bet_side_spread"] == "home") & (df["cover_margin"] < 0),
+        (df["bet_side_spread"] == "away") & (df["cover_margin"] < 0),
+        (df["bet_side_spread"] == "away") & (df["cover_margin"] > 0),
+    ]
+    choices = ["Win", "Loss", "Win", "Loss"]
+    df["sim_spread_result"] = np.select(conditions, choices, default="Push")
+
+    spread_bets = df[df["edge_spread"] >= spread_threshold]
+    spr_wins = len(spread_bets[spread_bets["sim_spread_result"] == "Win"])
+    spr_losses = len(spread_bets[spread_bets["sim_spread_result"] == "Loss"])
+    spr_n = (
+        spr_wins
+        + spr_losses
+        + len(spread_bets[spread_bets["sim_spread_result"] == "Push"])
+    )
+    spr = spr_wins / (spr_wins + spr_losses) if (spr_wins + spr_losses) > 0 else 0.0
+
+    # --- Total Logic ---
+    for col in ["Total Prediction", "total_line"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    if "edge_total" not in df.columns:
+        df["edge_total"] = abs(df["Total Prediction"] - df["total_line"])
+
+    df["bet_side_total"] = np.where(
+        df["Total Prediction"] > df["total_line"], "over", "under"
+    )
+
+    df["total_score"] = df["home_points"] + df["away_points"]
+
+    conditions_t = [
+        (df["bet_side_total"] == "over") & (df["total_score"] > df["total_line"]),
+        (df["bet_side_total"] == "over") & (df["total_score"] < df["total_line"]),
+        (df["bet_side_total"] == "under") & (df["total_score"] < df["total_line"]),
+        (df["bet_side_total"] == "under") & (df["total_score"] > df["total_line"]),
+    ]
+    choices_t = ["Win", "Loss", "Win", "Loss"]
+    df["sim_total_result"] = np.select(conditions_t, choices_t, default="Push")
+
+    total_bets = df[df["edge_total"] >= total_threshold]
+    tot_wins = len(total_bets[total_bets["sim_total_result"] == "Win"])
+    tot_losses = len(total_bets[total_bets["sim_total_result"] == "Loss"])
+    tot_n = (
+        tot_wins
+        + tot_losses
+        + len(total_bets[total_bets["sim_total_result"] == "Push"])
+    )
+    tot = tot_wins / (tot_wins + tot_losses) if (tot_wins + tot_losses) > 0 else 0.0
+
+    return spr, tot, spr_n, tot_n, spr_wins, tot_wins
 
 
 def render_email_html(template_dir: Path, context):
@@ -675,6 +806,18 @@ def main() -> None:
 
     all_games_df = pd.read_csv(bets_file)
 
+    # Normalize columns from CSV to internal names
+    if (
+        "Spread Line" in all_games_df.columns
+        and "home_team_spread_line" not in all_games_df.columns
+    ):
+        all_games_df["home_team_spread_line"] = all_games_df["Spread Line"]
+    if (
+        "Total Line" in all_games_df.columns
+        and "total_line" not in all_games_df.columns
+    ):
+        all_games_df["total_line"] = all_games_df["Total Line"]
+
     # Validation check for missing lines
     recommended_bets_df = all_games_df[
         (all_games_df["Spread Bet"].isin(["home", "away"]))
@@ -713,18 +856,25 @@ def main() -> None:
     min_date = all_df["game_date_dt"].min()
     max_date = all_df["game_date_dt"].max()
     if min_date.month == max_date.month:
-        date_range = f"{min_date.strftime('%B %-d')}-{max_date.day}"
+        date_range = f"{min_date.strftime('%B %-d')} - {max_date.strftime('%-d')}"
     else:
         date_range = f"{min_date.strftime('%B %-d')} - {max_date.strftime('%B %-d')}"
 
-    spreads, totals, best_bet = _prepare_recommended(all_df)
     generated_at = datetime.now().strftime("%m/%d/%Y %I:%M %p")
-    spread_threshold = 6.0
-    total_threshold = 6.0
+
+    # Define thresholds
+    spread_threshold = 0.0
+    total_threshold = 5.0
+
+    spreads, totals, best_bet = _prepare_recommended(
+        all_df, spread_threshold, total_threshold
+    )
+
+    # Compute summary stats
     summary = {
-        "spread_bets": len(spreads),
-        "total_bets_only": len(totals),
-        "total_bets": len(spreads) + len(totals),
+        "n_spreads": len(spreads),
+        "n_totals": len(totals),
+        "n_best_bets": 1 if best_bet else 0,
     }
     repo_root = Path(__file__).resolve().parents[1]
     template_dir = repo_root / "templates"
@@ -753,6 +903,8 @@ def main() -> None:
 
         all_games.append(
             {
+                "date_display": r.get("date_display", ""),
+                "time_display": r.get("time_display", ""),
                 "datetime_display": r.get("datetime_display", ""),
                 "game": r.get("Game", ""),
                 "home_team": home_name,
@@ -782,14 +934,39 @@ def main() -> None:
             }
         )
 
-    prev_spread, prev_total, prev_spread_n, prev_total_n = compute_hit_rates(
-        args.year - 1, None, report_dir_path
+    (
+        prev_spread,
+        prev_total,
+        prev_spread_n,
+        prev_total_n,
+        prev_spread_wins,
+        prev_total_wins,
+    ) = compute_hit_rates(
+        args.year - 1, None, report_dir_path, spread_threshold, total_threshold
     )
-    curr_spread, curr_total, curr_spread_n, curr_total_n = compute_hit_rates(
-        args.year, args.week, report_dir_path
+    (
+        curr_spread,
+        curr_total,
+        curr_spread_n,
+        curr_total_n,
+        curr_spread_wins,
+        curr_total_wins,
+    ) = compute_hit_rates(
+        args.year, args.week, report_dir_path, spread_threshold, total_threshold
     )
-    lastyr_week_spr, lastyr_week_tot, lastyr_week_spr_n, lastyr_week_tot_n = (
-        compute_week_hit_rates(args.year - 1, args.week, report_dir_path)
+    (
+        lastyr_week_spr,
+        lastyr_week_tot,
+        lastyr_week_spr_n,
+        lastyr_week_tot_n,
+        lastyr_week_spr_wins,
+        lastyr_week_tot_wins,
+    ) = compute_week_hit_rates(
+        args.year - 1,
+        args.week,
+        report_dir_path,
+        spread_threshold,
+        total_threshold,
     )
 
     model_context = {
@@ -798,16 +975,24 @@ def main() -> None:
         "prev_total": prev_total,
         "prev_spread_count": prev_spread_n,
         "prev_total_count": prev_total_n,
+        "prev_spread_wins": prev_spread_wins,
+        "prev_total_wins": prev_total_wins,
+        "model_name": "Probabilistic Power Ratings",
+        "model_id": "PPR-2025",
         "curr_year": args.year,
         "curr_through_week": args.week,
         "curr_spread": curr_spread,
         "curr_total": curr_total,
         "curr_spread_count": curr_spread_n,
         "curr_total_count": curr_total_n,
+        "curr_spread_wins": curr_spread_wins,
+        "curr_total_wins": curr_total_wins,
         "last_year_week_spread": lastyr_week_spr,
         "last_year_week_total": lastyr_week_tot,
         "last_year_week_spread_count": lastyr_week_spr_n,
         "last_year_week_total_count": lastyr_week_tot_n,
+        "last_year_week_spread_wins": lastyr_week_spr_wins,
+        "last_year_week_total_wins": lastyr_week_tot_wins,
     }
 
     context = {
@@ -844,7 +1029,8 @@ def main() -> None:
     for cid in sorted(cids_in_html):
         if not cid.startswith("logo_"):
             continue
-        name_part = cid[len("logo_") :].replace("_", " ")
+        # Reverse the CID sanitization: replace __AMP__ back to &
+        name_part = cid[len("logo_") :].replace("__AMP__", "&").replace("_", " ")
         logo_name = TEAM_LOGO_MAP.get(name_part, name_part)
         logo_path = logo_dir / f"{logo_name}.png"
         if not logo_path.exists():
@@ -858,9 +1044,8 @@ def main() -> None:
         image_attachments.append(img)
 
     # --- Attach and Send Email ---
-    with open(bets_file, "rb") as f:
-        csv_attachment = f.read()
-    attachments = [(f"CFB_week{args.week}_bets.csv", csv_attachment, "text/csv")]
+    # CSV attachment removed per user request
+    attachments = []
 
     subject = f"CK's CFB Picks: {args.year} Week {args.week} ({date_range})"
     try:
