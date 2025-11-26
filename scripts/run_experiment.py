@@ -285,7 +285,7 @@ def main(cfg: DictConfig):
         # Log params
         mlflow.log_params(OmegaConf.to_container(cfg.model.params, resolve=True))
         mlflow.log_param("features", cfg.features.name)
-        mlflow.log_param("target", cfg.target)
+        mlflow.log_param("target", cfg.model.target)
         mlflow.log_param("feature_set_id", get_feature_set_id(cfg))
         mlflow.log_param("calibration_type", cfg.model.get("calibration_type", None))
 
@@ -345,7 +345,7 @@ def main(cfg: DictConfig):
             # Let's stick to Season-Holdout for this baseline to match "Train on seasons [Start, T-1]".
 
             log.info(f"Training model on {len(train_df)} records...")
-            train_df = train_df.dropna(subset=[cfg.target])
+            train_df = train_df.dropna(subset=[cfg.model.target])
             X_train_full = select_features(train_df, cfg)  # noqa: N806
 
             # Collect features from all test years to ensure consistency
@@ -360,7 +360,7 @@ def main(cfg: DictConfig):
                     adjustment_iteration=cfg.data.adjustment_iteration,
                 )
                 if test_sample is not None:
-                    test_sample = test_sample.dropna(subset=[cfg.target])
+                    test_sample = test_sample.dropna(subset=[cfg.model.target])
                     x_test_sample = select_features(test_sample, cfg)
                     test_feature_sets.append(set(x_test_sample.columns))
 
@@ -376,7 +376,7 @@ def main(cfg: DictConfig):
             )
 
             X_train = X_train_full[common_features]  # noqa: N806
-            y_train = train_df[cfg.target]
+            y_train = train_df[cfg.model.target]
 
             # Split out a calibration slice if requested
             calibration_model = None
@@ -461,12 +461,31 @@ def main(cfg: DictConfig):
                 continue
 
             test_df = _concat_years(all_test_data)
-            test_df = test_df.dropna(subset=[cfg.target])
+            test_df = test_df.dropna(subset=[cfg.model.target])
             X_test_full = select_features(test_df, cfg)  # noqa: N806
             x_test = X_test_full[common_features]  # Use only common features
-            y_test = test_df[cfg.target]
+            y_test = test_df[cfg.model.target]
+
+            # Check for Quantile Regression
+            loss_function = cfg.model.params.get("loss_function", "")
+            is_quantile = isinstance(loss_function, str) and loss_function.startswith(
+                "MultiQuantile"
+            )
 
             preds = model.predict(x_test)
+
+            preds_lower = None
+            preds_upper = None
+
+            if is_quantile:
+                # preds is (N, 3) -> [p10, p50, p90] assuming alpha=0.1,0.5,0.9
+                preds_lower = preds[:, 0]
+                preds_median = preds[:, 1]
+                preds_upper = preds[:, 2]
+                preds = preds_median  # Use median for point metrics
+                log.info(
+                    "Quantile Regression: Using median (p50) for point predictions."
+                )
 
             # Apply calibration correction if configured
             preds_raw = preds.copy()  # Save raw predictions
@@ -488,7 +507,7 @@ def main(cfg: DictConfig):
             mae = mean_absolute_error(y_test, preds)
 
             # Compute ATS metrics with actual betting lines
-            target_type = "spread" if "spread" in cfg.target else "total"
+            target_type = "spread" if "spread" in cfg.model.target else "total"
             ats_metrics = compute_ats_metrics(
                 test_df,
                 preds,
@@ -517,6 +536,9 @@ def main(cfg: DictConfig):
             pred_df = test_df[["id", "season", "week", "home_team", "away_team"]].copy()
             pred_df["prediction"] = preds
             pred_df["prediction_raw"] = preds_raw  # Save uncalibrated predictions
+            if is_quantile:
+                pred_df["prediction_p10"] = preds_lower
+                pred_df["prediction_p90"] = preds_upper
             pred_df["actual"] = y_test
             pred_df["residual"] = y_test.values - preds
             if calibration_bias != 0.0:
@@ -554,7 +576,7 @@ def main(cfg: DictConfig):
                 "timestamp": datetime.utcnow().isoformat(),
                 "experiment_name": experiment_name,
                 "model_type": cfg.model.type,
-                "target": cfg.target,
+                "target": cfg.model.target,
                 "rmse_test": avg_rmse,
                 "mae_test": avg_mae,
                 "hit_rate_test": avg_hit_rate,

@@ -6,4 +6,5 @@ defaults:
 experiment:
   name: totals_pace_interaction_v1
 
-target: total_target
+model:
+  target: total_target

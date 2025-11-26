@@ -27,7 +27,7 @@ def get_feature_groups() -> Dict[str, List[str]]:
         "recency_stats": [
             # Will be dynamically expanded to include _last_3 versions of base stats
         ],
-        "luck_stats": ["avg_luck_factor", "cumulative_luck_factor"],
+        "luck_stats": ["cumulative_luck_factor"],
         "weather_stats": ["temperature", "precipitation", "wind_speed"],
     }
 

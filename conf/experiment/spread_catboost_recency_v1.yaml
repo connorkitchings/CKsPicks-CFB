@@ -6,4 +6,5 @@ defaults:
 experiment:
   name: spread_catboost_recency_v1
 
-target: spread_target
+model:
+  target: spread_target

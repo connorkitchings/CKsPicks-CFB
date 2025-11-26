@@ -23,7 +23,7 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         DataFrame with one row per (game_id, drive_number, offense, defense) and columns:
-            - drive_plays, drive_yards, drive_time
+            - drive_plays, drive_yards
             - drive_start_period, drive_end_period
             - start_time_remain, end_time_remain
             - start_yards_to_goal, end_yards_to_goal
@@ -39,7 +39,6 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
         "offense",
         "defense",
         "yards_gained",
-        "play_duration",
         "quarter",
         "time_remaining_after",
         "time_remaining_before",
@@ -60,17 +59,12 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
             & (plays_df.get("twopoint", 0) == 0)
             & (~plays_df["play_type"].isin(approx_non_count))
         ).astype(int)
-    plays_df["counted_play_duration"] = np.where(
-        plays_df["is_drive_play"] == 1, plays_df["play_duration"], 0
-    )
-
     agg = (
         plays_df.sort_values(["game_id", "drive_number", "quarter", "play_number"])
         .groupby(["game_id", "drive_number", "offense", "defense"], as_index=False)
         .agg(
             drive_plays=("is_drive_play", "sum"),
             drive_yards=("yards_gained", "sum"),
-            drive_time=("counted_play_duration", "sum"),
             drive_start_period=("quarter", "min"),
             drive_end_period=("quarter", "max"),
             start_time_remain=("time_remaining_before", "max"),

@@ -133,7 +133,16 @@ def persist_preaggregations(
         offense_cols = [
             c
             for c in group.columns
-            if c.startswith("off_") or c in ["season", "team", "games_played"]
+            if c.startswith("off_")
+            or c
+            in [
+                "season",
+                "team",
+                "games_played",
+                "plays_per_game",
+                "drives_per_game",
+                "cumulative_luck_factor",
+            ]
         ]
         defense_cols = [
             c
@@ -156,7 +165,16 @@ def persist_preaggregations(
         offense_cols = [
             c
             for c in group.columns
-            if c.startswith("adj_off_") or c in ["season", "team", "games_played"]
+            if c.startswith("adj_off_")
+            or c
+            in [
+                "season",
+                "team",
+                "games_played",
+                "plays_per_game",
+                "drives_per_game",
+                "cumulative_luck_factor",
+            ]
         ]
         defense_cols = [
             c

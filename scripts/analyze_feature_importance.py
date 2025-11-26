@@ -59,13 +59,13 @@ def main(cfg: DictConfig):
         return
 
     train_df = _concat_years(all_train_data)
-    train_df = train_df.dropna(subset=[cfg.target])
+    train_df = train_df.dropna(subset=[cfg.model.target])
 
     log.info(f"Training data shape: {train_df.shape}")
 
     # Select features
     x_train = select_features(train_df, cfg)
-    y_train = train_df[cfg.target]
+    y_train = train_df[cfg.model.target]
 
     feature_names = x_train.columns.tolist()
     log.info(f"Number of features: {len(feature_names)}")

@@ -38,7 +38,7 @@ def prepare_ratings_data(
         df = df.rename(columns={"id": "game_id"})
 
     # Filter to completed games
-    df = df[df["completed"] == True].copy()
+    df = df[df["completed"]].copy()
 
     # Filter by week if requested (train on past, predict on current)
     if week is not None:

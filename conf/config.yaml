@@ -12,3 +12,5 @@ data:
   adjustment_iteration_defense: null
   train_years: [2019, 2021, 2022, 2023]
   test_year: 2024
+
+random_seed: 42
