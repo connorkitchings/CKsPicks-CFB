@@ -1,5 +1,16 @@
 # Decision Log
 
+## 2025-11-27: Enable Current Weather Features and Interactions
+
+- **Context:** Analysis revealed that the `standard_v1` feature pack included historical weather features (via `_last_3` wildcard) but missed current game forecasts. This caused weather features to underperform.
+- **Decision:**
+  1.  **Refactor Selector:** Replace wildcard recency logic with an explicit allow-list (`RECENCY_BASE_FEATURES`) to prevent future feature creep.
+  2.  **Enable Weather:** Add `weather_stats` group to `standard_v1.yaml` to include current `temperature`, `wind_speed`, `precipitation`.
+  3.  **Add Interactions:** Implement `wind_speed` × `passing` interactions in `selector.py`.
+- **Rationale:** Models need current weather forecasts to predict weather impacts. Explicit allow-listing improves pipeline stability and safety.
+- **Impact:** Next training run will use improved feature set (139 features vs 132). Expected improvement in spread RMSE.
+- **Artifacts:** `artifacts/analysis/weather_feature_analysis.md`, `src/features/selector.py`.
+
 ## 2025-11-25: Final Rejection of Points-For Prototype Configuration
 
 - **Context:** Following the failed walk-forward validation (2025-11-24), a deep-dive investigation was conducted to determine if the discrepancy was due to implementation differences (preprocessing, model ensembling) or the model itself. We restored the exact prototype configuration (CatBoost only, no preprocessing, 5.0 threshold, Consensus lines) and re-evaluated on 2024.

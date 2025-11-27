@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path.cwd()))
-# noqa: E402from src.config import get_data_root
-from src.models.features import load_point_in_time_data
+from src.config import get_data_root  # noqa: E402
+from src.models.features import load_point_in_time_data  # noqa: E402
 
 
 def main():

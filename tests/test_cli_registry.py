@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 from typer.testing import CliRunner
 
-from scripts import analysis_cli, cli
+from scripts import cli
+from scripts.analysis import analysis_cli
 
 
 def test_plan_ingestion_sequence_default_order():

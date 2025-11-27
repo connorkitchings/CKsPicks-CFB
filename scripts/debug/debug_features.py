@@ -1,11 +1,9 @@
 import sys
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 # Add src to path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-# noqa: E402load_dotenv()
+
 
 from src.config import get_data_root  # noqa: E402
 from src.models.features import (  # noqa: E402

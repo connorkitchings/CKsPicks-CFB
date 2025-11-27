@@ -128,7 +128,7 @@ def _predict_subprocess(model_path: str, x: pd.DataFrame) -> np.ndarray:  # noqa
         output_path = tmp_out.name
 
     try:
-        X.to_pickle(input_path)
+        x.to_pickle(input_path)
 
         # We need a helper script. We can write a tiny one on the fly or use a dedicated one.
         # Let's write a tiny one on the fly to keep this self-contained?

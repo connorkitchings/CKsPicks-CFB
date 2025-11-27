@@ -14,11 +14,11 @@ load_dotenv()
 
 # Add src to path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-# noqa: E402
-from src.features.selector import select_features
-from src.models.features import load_point_in_time_data
-from src.models.train_model import _concat_years
-from src.utils.mlflow_tracking import setup_mlflow
+
+from src.features.selector import select_features  # noqa: E402
+from src.models.features import load_point_in_time_data  # noqa: E402
+from src.models.train_model import _concat_years  # noqa: E402
+from src.utils.mlflow_tracking import setup_mlflow  # noqa: E402
 
 log = logging.getLogger(__name__)
 

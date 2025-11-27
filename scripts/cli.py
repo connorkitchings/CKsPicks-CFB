@@ -24,7 +24,8 @@ from typing import Iterable, Sequence
 import typer
 from typing_extensions import Annotated
 
-from scripts import analysis_cli, training_cli
+from scripts.analysis import analysis_cli
+from scripts.pipeline import training_cli
 from src.config import REPORTS_DIR, get_data_root
 from src.data.base import BaseIngester
 from src.data.betting_lines import BettingLinesIngester
