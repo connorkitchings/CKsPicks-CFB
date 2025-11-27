@@ -1,3 +1,0 @@
-- model=spread_catboost
-- features=spread_baseline_pruned
-- +test_years=[2024]

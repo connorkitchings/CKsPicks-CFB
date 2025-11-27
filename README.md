@@ -105,16 +105,26 @@ High-level directory structure (subject to change as the project evolves):
 ```text
 .
 ├── src/                    # Library code (features, models, pipelines, utilities)
-│   └── cfb_model/
-│       ├── data/           # Data access and ingestion
-│       ├── features/       # Feature engineering pipelines
-│       ├── models/         # Training, evaluation, and prediction logic
-│       ├── betting/        # Edge calculation and bet suggestions
-│       └── config.py       # Paths and config helpers
-├── scripts/                # CLI entrypoints and ad-hoc utilities
+│   ├── config/             # Configuration (paths, experiments, champion models)
+│   ├── data/               # Data access and ingestion
+│   ├── features/           # Feature engineering pipelines
+│   ├── models/             # Training, evaluation, and prediction logic
+│   ├── inference/          # Prediction and reporting (predict.py, report.py)
+│   ├── training/           # Training workflows (train.py)
+│   └── utils/              # Utilities (MLflow, local storage, etc.)
+├── scripts/                # CLI entrypoints and organized utilities
+│   ├── pipeline/           # Production pipeline scripts
+│   ├── analysis/           # Analysis and validation scripts
+│   ├── experiments/        # Research and optimization scripts
+│   ├── debug/              # Debugging tools
+│   ├── utils/              # Helper scripts
+│   └── cli.py              # Main CLI entry point
 ├── docs/                   # Project documentation (charter, roadmap, guides, etc.)
 ├── session_logs/           # Chronological development session logs
-├── artifacts/              # Local experiment outputs, ML runs, and cached data (git-ignored)
+├── artifacts/              # Consolidated outputs (git-ignored)
+│   ├── mlruns/             # MLflow tracking data
+│   ├── outputs/            # Generated reports and predictions
+│   └── models/             # Saved model artifacts
 ├── tests/                  # Unit and integration tests
 ├── AI_GUIDE.md             # Front door instructions for AI agents and humans
 ├── AGENTS.md               # Agent roles, handoffs, and guardrails

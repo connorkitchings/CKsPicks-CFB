@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.utils.mlflow_tracking import get_tracking_uri
 
 
-@hydra.main(config_path="../conf", config_name="config", version_base=None)
+@hydra.main(config_path="../../conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     mlflow.set_tracking_uri(get_tracking_uri())
     mlflow.set_experiment("MLflow Hydra Test")

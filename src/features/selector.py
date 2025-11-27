@@ -65,6 +65,22 @@ def select_features(df: pd.DataFrame, cfg: DictConfig) -> pd.DataFrame:
             # Allow direct column names if not a group
             feature_cols.append(group)
 
+    # Generate Interactions if configured
+    interactions = cfg.features.get("interactions", [])
+    if interactions:
+        for f1, f2 in interactions:
+            # Home Offense vs Away Defense
+            h_col = f"home_{f1}_x_away_{f2}"
+            if f"home_{f1}" in df.columns and f"away_{f2}" in df.columns:
+                df[h_col] = df[f"home_{f1}"] * df[f"away_{f2}"]
+                feature_cols.append(h_col)
+
+            # Away Offense vs Home Defense
+            a_col = f"away_{f1}_x_home_{f2}"
+            if f"away_{f1}" in df.columns and f"home_{f2}" in df.columns:
+                df[a_col] = df[f"away_{f1}"] * df[f"home_{f2}"]
+                feature_cols.append(a_col)
+
     # Filter to columns that actually exist in df
     # Try to expand for home/away if not present directly
     final_cols = []

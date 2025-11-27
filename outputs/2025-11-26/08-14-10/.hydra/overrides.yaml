@@ -1,5 +1,0 @@
-- weekly_bets.year=2025
-- weekly_bets.week=14
-- weekly_bets.prediction_mode=legacy
-- weekly_bets.model_registry.spread_models=[]
-- weekly_bets.model_registry.total_models=[cfb_total_catboost]

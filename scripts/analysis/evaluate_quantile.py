@@ -7,7 +7,7 @@ import pandas as pd
 # Add project root to sys.path
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
-
+# noqa: E402
 from src.config import ARTIFACTS_DIR  # noqa: E402
 
 logging.basicConfig(

@@ -1,0 +1,13 @@
+name: interaction_v1
+groups:
+  - off_def_stats
+  - pace_stats
+  - recency_stats
+  - luck_stats
+recency_window: standard
+include_pace_interactions: false
+preprocess: false
+interactions:
+  - ["adj_off_epa_pp", "adj_def_epa_pp"]
+  - ["adj_off_sr", "adj_def_sr"]
+  - ["adj_off_expl_rate_overall_20", "adj_def_expl_rate_overall_20"]

@@ -17,6 +17,7 @@ will be following the Vibe Coding System.
 To get up to speed, please perform the following steps:
 
 1. **Load the Minimal Context Pack (token-efficient):**
+
    - `docs/project_org/project_charter.md` — Charter, scope, and standards.
    - `docs/planning/roadmap.md` — Current sprint goal, tasks, and acceptance criteria.
    - `docs/decisions/decision_log.md` — Planning-level decisions made so far.
@@ -24,20 +25,23 @@ To get up to speed, please perform the following steps:
    - `docs/operations/weekly_pipeline.md` — Manual weekly runbook and outputs.
    - `docs/project_org/feature_catalog.md` — Canonical feature definitions and validation hooks.
    - `docs/project_org/betting_policy.md` — Risk controls, unit sizing, and thresholds.
-   - Code anchors: `src/config.py`, `src/utils/local_storage.py`, `src/features/pipeline.py`, `src/features/persist.py`, `src/models/train_model.py`, `src/scripts/generate_weekly_bets_clean.py`, `scripts/cli.py`, representative tests (`tests/test_aggregations_core.py`, `tests/test_betting_policy_kelly.py`).
+   - Code anchors: `src/config/__init__.py`, `src/utils/local_storage.py`, `src/features/pipeline.py`, `src/features/persist.py`, `src/models/train_model.py`, `src/inference/predict.py`, `src/inference/report.py`, `src/training/train.py`, `scripts/cli.py`, representative tests (`tests/test_aggregations_core.py`, `tests/test_betting_policy_kelly.py`).
    - Optional quick refs: `docs/index.md`, `README.md`, `pyproject.toml` (only if needed).
    - Keep context small: skim headings and bullet summaries; capture 6–10 concise bullets.
 
 2. **Confirm the Sprint Focus:**
+
    - From `docs/planning/roadmap.md`, extract the sprint goal and top 3 active tasks.
    - Note acceptance criteria relevant to today's objective.
 
 3. **Quick Health Check (fast, optional):**
+
    - `uv run ruff check .` — ensure linter is clean or note issues to fix.
    - `uv run pytest -q` — run unit tests (synthetic tests exist; no external data needed).
    - `uv run mkdocs build --strict` — catch doc reference issues if docs are in scope.
 
 4. **Review the Last Session's Handoff:**
+
    - Search `/session_logs/` for all `.md` files matching today's date (e.g., `2025-08-03.md`,
      `2025-08-03_02.md`, etc.).
    - Review the most recent session log entry to understand exactly where we left off, focusing on
@@ -62,23 +66,27 @@ We are now ending our development session for today. To ensure we maintain our p
 prepare for a smooth handoff, please perform the following wrap-up tasks:
 
 1. **Summarize Session Accomplishments:**
+
    - **Task Completed:** `[IMPL-task:ID] - [Brief description of the task]`
    - **Key Outcomes:** `[List the 1-3 main achievements of the session, e.g., 'Successfully
 connected to the CollegeFootballData API to ingest play-by-play data.']`
 
 2. **Identify Blockers and Learnings:**
+
    - **Blockers Encountered:** `[Describe any issues that are preventing progress, e.g., 'The API
 is rate-limiting our requests.']`
    - **New Learnings/Patterns:** `[Mention any new solutions or patterns discovered that should be
 added to the knowledge_base.md, e.g., 'Found a more efficient way to parse JSON responses.']`
 
 3. **Define Next Steps:**
+
    - **Immediate Next Task:** `[What is the very next thing to do? e.g., 'Refactor the data
 ingestion pipeline to handle rate-limiting.']`
    - If weekly predictions were generated, confirm the `CFB_weekXX_bets.csv` file has **one row per
      game** (use `df['Game'].nunique()` as a quick check). Re-run the generator if duplicates remain.
 
 4. **Final Health Check:**
+
    - Run `uv run ruff check .` and `uv run ruff format .` to ensure code quality
    - Run `uv run pytest tests/ -v --tb=short` to verify all tests pass
    - Run `uv run mkdocs build --quiet` to verify documentation builds correctly

@@ -14,3 +14,13 @@ data:
   test_year: 2024
 
 random_seed: 42
+
+
+total_models:
+  - totals_catboost_baseline_v1
+
+spread_models:
+  - cfb_points_for_home
+  - cfb_points_for_away
+
+spread_model_type: points_for

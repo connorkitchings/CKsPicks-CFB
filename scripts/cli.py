@@ -18,16 +18,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import os
-import subprocess
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
-import pandas as pd
 import typer
 from typing_extensions import Annotated
 
 from scripts import analysis_cli, training_cli
-from src.config import MODELS_DIR, REPORTS_DIR, SCORED_SUBDIR, get_data_root
+from src.config import REPORTS_DIR, get_data_root
 from src.data.base import BaseIngester
 from src.data.betting_lines import BettingLinesIngester
 from src.data.coaches import CoachesIngester
@@ -348,12 +346,6 @@ def run_season(
         typer.Option(help="Path to data root directory", default_factory=get_data_root),
     ],
     year: Annotated[int, typer.Option(help="Season year to process")] = 2024,
-    model_dir: Annotated[str, typer.Option(help="Path to model directory")] = str(
-        MODELS_DIR
-    ),
-    report_dir: Annotated[
-        str, typer.Option(help="Path to reports output directory")
-    ] = str(REPORTS_DIR),
     start_week: Annotated[int, typer.Option(help="Starting week (inclusive)")] = 5,
     end_week: Annotated[int, typer.Option(help="Ending week (inclusive)")] = 16,
     bankroll: Annotated[
@@ -362,200 +354,56 @@ def run_season(
     ] = 10000.0,
     spread_threshold: Annotated[
         float, typer.Option(help="Spread edge threshold for betting")
-    ] = 8.0,
+    ] = 3.5,
     total_threshold: Annotated[
         float, typer.Option(help="Total edge threshold for betting")
-    ] = 8.0,
-    spread_std_dev_threshold: Annotated[
-        float,
-        typer.Option(help="Standard deviation threshold for spread bets"),
-    ] = 2.0,
-    total_std_dev_threshold: Annotated[
-        float, typer.Option(help="Standard deviation threshold for total bets")
-    ] = None,
+    ] = 3.5,
 ):
-    """Run model predictions and scoring for a full season."""
-    weeks_to_run = list(range(start_week, end_week + 1))
-    print(f"Running model for {len(weeks_to_run)} weeks: {weeks_to_run}")
+    """Run model predictions and scoring for a full season using the champion model."""
+    from src.config.champion import get_champion_model_paths
+    from src.inference.predict import predict_week
+    from src.inference.report import generate_report
 
-    all_results = []
-    bet_summary = []
+    weeks_to_run = list(range(start_week, end_week + 1))
+    print(f"Running champion model for {len(weeks_to_run)} weeks: {weeks_to_run}")
+
+    champion_paths = get_champion_model_paths()
+    spread_model_path = str(champion_paths["spread"])
+    # total_model_path = str(champion_paths["total"]) # TODO: Add total support
 
     for week in weeks_to_run:
         print(f"\n=== Processing Week {week} ===")
         try:
-            env = os.environ.copy()
-            env["PYTHONPATH"] = "./src"
-            cmd = [
-                "python3",
-                "-m",
-                "src.scripts.generate_weekly_bets_clean",
-                "--year",
-                str(year),
-                "--week",
-                str(week),
-                "--data-root",
-                data_root,
-                "--model-dir",
-                model_dir,
-                "--output-dir",
-                report_dir,
-                "--bankroll",
-                str(bankroll),
-                "--spread-threshold",
-                str(spread_threshold),
-                "--total-threshold",
-                str(total_threshold),
-            ]
-            if spread_std_dev_threshold is not None:
-                cmd.extend(
-                    [
-                        "--spread-std-dev-threshold",
-                        str(spread_std_dev_threshold),
-                    ]
-                )
-            if total_std_dev_threshold is not None:
-                cmd.extend(["--total-std-dev-threshold", str(total_std_dev_threshold)])
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
+            # 1. Predict
+            # For now, we only predict spread. Total needs to be added.
+            predictions_path = f"predictions_week_{week}.csv"
+            predict_week(
+                year=year,
+                week=week,
+                model_path=spread_model_path,
+                output_path=predictions_path,
+                data_root=data_root,
+                use_subprocess=True,
             )
-            if result.returncode != 0:
-                print(f"ERROR generating week {week}: {result.stderr}")
-                continue
-            print(f"Generated predictions for week {week}")
+
+            # 2. Report
+            generate_report(
+                predictions_path=predictions_path,
+                year=year,
+                week=week,
+                bankroll=bankroll,
+                spread_threshold=spread_threshold,
+                total_threshold=total_threshold,
+                output_dir=str(REPORTS_DIR / str(year)),
+            )
+
+            # Cleanup temp file
+            if os.path.exists(predictions_path):
+                os.remove(predictions_path)
+
         except Exception as e:
-            print(f"ERROR running predictions for week {week}: {e}")
+            print(f"ERROR processing week {week}: {e}")
             continue
-
-        try:
-            result = subprocess.run(
-                [
-                    "python3",
-                    "scripts/score_weekly_picks.py",
-                    "--year",
-                    str(year),
-                    "--week",
-                    str(week),
-                    "--data-root",
-                    data_root,
-                    "--report-dir",
-                    report_dir,
-                ],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0:
-                print(f"ERROR scoring week {week}: {result.stderr}")
-                continue
-            print(f"Scored predictions for week {week}")
-        except Exception as e:
-            print(f"ERROR scoring week {week}: {e}")
-            continue
-
-        scored_path = os.path.join(
-            report_dir, str(year), SCORED_SUBDIR, f"CFB_week{week}_bets_scored.csv"
-        )
-        if not os.path.exists(scored_path):
-            legacy_scored = os.path.join(
-                report_dir, str(year), f"CFB_week{week}_bets_scored.csv"
-            )
-            if os.path.exists(legacy_scored):
-                scored_path = legacy_scored
-        if os.path.exists(scored_path):
-            try:
-                scored_df = pd.read_csv(scored_path)
-                wins = 0
-                total = 0
-                hit_rate = None
-
-                # Schema variant 1: legacy internal columns
-                if {"bet_spread", "pick_win"}.issubset(scored_df.columns):
-                    placed = scored_df[
-                        scored_df["bet_spread"]
-                        .astype(str)
-                        .str.lower()
-                        .isin(["home", "away"])
-                    ]
-                    decided = placed[placed["pick_win"].isin([0, 1])]
-                    total = len(decided)
-                    if total > 0:
-                        wins = int(decided["pick_win"].sum())
-                        hit_rate = wins / total
-
-                # Schema variant 2: report columns
-                elif {"Spread Bet", "Spread Bet Result"}.issubset(scored_df.columns):
-                    placed = scored_df[
-                        scored_df["Spread Bet"]
-                        .astype(str)
-                        .str.lower()
-                        .isin(["home", "away"])
-                    ]
-                    decided = placed[placed["Spread Bet Result"].isin(["Win", "Loss"])]
-                    total = len(decided)
-                    if total > 0:
-                        wins = int((decided["Spread Bet Result"] == "Win").sum())
-                        hit_rate = wins / total
-
-                else:
-                    print(
-                        f"Week {week}: Unknown scored schema; columns: {list(scored_df.columns)[:8]}..."
-                    )
-
-                if total > 0:
-                    print(f"Week {week}: {wins}/{total} = {hit_rate:.3f}")
-                    bet_summary.append(
-                        {
-                            "week": week,
-                            "wins": wins,
-                            "total_bets": total,
-                            "hit_rate": hit_rate,
-                        }
-                    )
-                else:
-                    print(f"Week {week}: No bets generated")
-                    bet_summary.append(
-                        {"week": week, "wins": 0, "total_bets": 0, "hit_rate": None}
-                    )
-
-                all_results.append(scored_df)
-            except Exception as e:
-                print(f"ERROR analyzing week {week}: {e}")
-        else:
-            print(f"ERROR: Scored file not found for week {week}")
-
-    print("\n" + "=" * 60)
-    print("SEASON SUMMARY")
-    print("=" * 60)
-    total_wins = sum(s["wins"] for s in bet_summary)
-    total_bets = sum(s["total_bets"] for s in bet_summary)
-    print("\nWeekly Results:")
-    for summary in bet_summary:
-        if summary["hit_rate"] is not None:
-            print(
-                f"Week {summary['week']:2d}: {summary['wins']:2d}/{summary['total_bets']:2d} = {summary['hit_rate']:5.3f}"
-            )
-        else:
-            print(f"Week {summary['week']:2d}: No bets")
-    if total_bets > 0:
-        overall_hit_rate = total_wins / total_bets
-        print(f"\nOVERALL: {total_wins}/{total_bets} = {overall_hit_rate:.3f}")
-    else:
-        print("\nNo bets generated across all weeks")
-
-    if all_results:
-        combined_df = pd.concat(all_results, ignore_index=True)
-        combined_dir = os.path.join(report_dir, str(year), SCORED_SUBDIR)
-        os.makedirs(combined_dir, exist_ok=True)
-        combined_path = os.path.join(
-            combined_dir, f"CFB_season_{year}_all_bets_scored.csv"
-        )
-        combined_df.to_csv(combined_path, index=False)
-
-        print(f"\nCombined results saved to: {combined_path}")
 
 
 if __name__ == "__main__":

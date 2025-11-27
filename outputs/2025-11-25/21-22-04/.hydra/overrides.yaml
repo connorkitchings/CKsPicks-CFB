@@ -1,3 +1,0 @@
-- experiment=spread_catboost_recency_v1
-- +test_years=[2024]
-- model.params.loss_function='MultiQuantile:alpha=0.1,0.5,0.9'

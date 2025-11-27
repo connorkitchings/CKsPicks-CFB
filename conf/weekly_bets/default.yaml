@@ -1,6 +1,6 @@
-year: 2024
-week: 13
-model_year: 2024
+year: 2025
+week: 14
+model_year: 2025
 output_dir: artifacts/reports
 prediction_mode: points_for_registry
 bankroll: 10000
@@ -10,28 +10,13 @@ max_single_bet_fraction: 0.05
 
 model_registry:
   spread_models: 
-    - spread_catboost_pruned_seed_1
-    - spread_catboost_pruned_seed_2
-    - spread_catboost_pruned_seed_3
-    - spread_catboost_pruned_seed_4
-    - spread_catboost_pruned_seed_5
+    - cfb_points_for_home
+    - cfb_points_for_away
   total_models: 
-    - cfb_total_catboost
-  points_for_home_models:
-    - points_for_home_seed_1
-    - points_for_home_seed_2
-    - points_for_home_seed_3
-    - points_for_home_seed_4
-    - points_for_home_seed_5
-  points_for_away_models:
-    - points_for_away_seed_1
-    - points_for_away_seed_2
-    - points_for_away_seed_3
-    - points_for_away_seed_4
-    - points_for_away_seed_5
+    - totals_catboost_baseline_v1
 
 betting:
-  spread_threshold: 5.0
+  spread_threshold: 10.0
   total_threshold: 3.5
   spread_std_dev_threshold: null
   total_std_dev_threshold: null
