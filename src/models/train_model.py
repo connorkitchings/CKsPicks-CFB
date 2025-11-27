@@ -1,684 +1,268 @@
-"""Model training CLI.
+"""Model training script with Hydra, Optuna, and MLflow Registry integration.
 
-Loads opponent-adjusted team-season features, merges with games, builds
-feature matrices for spread and total targets, trains the specified models, and
-emits metrics/artifacts.
+Usage:
+    # Standard training
+    uv run python src/models/train_model.py
+
+    # Hyperparameter optimization
+    uv run python src/models/train_model.py mode=optimize
+
+    # Debug run
+    uv run python src/models/train_model.py +experiment=debug
 """
 
-from __future__ import annotations
-
-import argparse
-import os
-import warnings
-from collections.abc import Iterable
-from contextlib import contextmanager
-from dataclasses import dataclass
+import logging
 from pathlib import Path
 
+import hydra
 import joblib
 import mlflow
 import numpy as np
+import optuna
 import pandas as pd
-import xgboost as xgb
 from catboost import CatBoostRegressor
-from lightgbm import LGBMRegressor
-from sklearn.ensemble import (
-    GradientBoostingRegressor,
-    HistGradientBoostingRegressor,
-    RandomForestRegressor,
-)
-from sklearn.linear_model import ElasticNet, HuberRegressor, Ridge
+from omegaconf import DictConfig, OmegaConf
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from src.config import MODELS_DIR, get_data_root
 from src.models.features import (
-    FEATURE_PACK_CHOICES,
     build_feature_list,
     filter_features_by_pack,
     load_point_in_time_data,
 )
 from src.utils.mlflow_tracking import get_tracking_uri
+from src.utils.model_registry import generate_model_id, register_model
+
+log = logging.getLogger(__name__)
 
 
-def _prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
-    base_cols = ["season", "team", "games_played"]
-    off_metric_cols = [
-        c for c in team_season_adj_df.columns if c.startswith("adj_off_")
-    ]
-    for extra in [
-        "off_eckel_rate",
-        "off_finish_pts_per_opp",
-        "stuff_rate",
-        "havoc_rate",
-    ]:
-        if extra in team_season_adj_df.columns:
-            off_metric_cols.append(extra)
-    def_metric_cols = [
-        c for c in team_season_adj_df.columns if c.startswith("adj_def_")
-    ]
-    off_df = team_season_adj_df[base_cols + off_metric_cols].copy()
-    if off_metric_cols:
-        off_df = off_df.dropna(subset=off_metric_cols, how="all")
-    def_df = team_season_adj_df[base_cols + def_metric_cols].copy()
-    if def_metric_cols:
-        def_df = def_df.dropna(subset=def_metric_cols, how="all")
-    combined = off_df.merge(
-        def_df, on=["season", "team"], how="outer", suffixes=("", "_defside")
-    )
-    if "games_played_x" in combined.columns or "games_played_y" in combined.columns:
-        combined["games_played"] = combined[
-            [c for c in ["games_played_x", "games_played_y"] if c in combined.columns]
-        ].max(axis=1, skipna=True)
-        combined = combined.drop(
-            columns=[
-                c for c in ["games_played_x", "games_played_y"] if c in combined.columns
-            ]
-        )
-    return combined
+def _evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+    return {
+        "rmse": float(np.sqrt(mean_squared_error(y_true, y_pred))),
+        "mae": float(mean_absolute_error(y_true, y_pred)),
+    }
 
 
-def _build_feature_list(
-    df: pd.DataFrame, exclude_rushing_analytics: bool = False
-) -> list[str]:
-    # build_feature_list currently ignores rushing analytics filtering;
-    # keep the argument for compatibility in case future callers need it.
-    return build_feature_list(df)
-
-
-@dataclass
-class Metrics:
-    rmse: float
-    mae: float
-
-
-def _evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> Metrics:
-    return Metrics(
-        rmse=float(np.sqrt(mean_squared_error(y_true, y_pred))),
-        mae=float(mean_absolute_error(y_true, y_pred)),
-    )
-
-
-def _concat_years(dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
+def _concat_years(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     frames = [df for df in dfs if df is not None and not df.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-@contextmanager
-def _suppress_linear_runtime_warnings() -> Iterable[None]:
-    """Temporarily ignore benign matmul RuntimeWarnings from numpy/BLAS."""
+def load_data(cfg: DictConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Load training and testing data based on configuration."""
+    data_root = cfg.paths.data_dir or get_data_root()
+    train_years = cfg.data.train_years
+    test_year = cfg.data.test_year
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="divide by zero encountered in matmul",
-            category=RuntimeWarning,
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message="overflow encountered in matmul",
-            category=RuntimeWarning,
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message="invalid value encountered in matmul",
-            category=RuntimeWarning,
-        )
-        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
-            yield
+    # Resolve adjustment iterations
+    adj_iter = cfg.data.adjustment_iteration
+    off_iter = cfg.data.adjustment_iteration_offense or adj_iter
+    def_iter = cfg.data.adjustment_iteration_defense or adj_iter
 
-
-spread_models = {
-    "ridge": Ridge(alpha=0.1),
-    "elastic_net": ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
-    "huber": Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            ("huber", HuberRegressor(epsilon=1.35, max_iter=500)),
-        ]
-    ),
-    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
-    "hist_gradient_boosting": HistGradientBoostingRegressor(
-        learning_rate=0.1,
-        max_depth=6,
-        max_iter=300,
-        l2_regularization=0.0,
-        random_state=42,
-    ),
-    "lightgbm": LGBMRegressor(
-        n_estimators=500,
-        learning_rate=0.05,
-        max_depth=-1,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=42,
-    ),
-    "catboost": CatBoostRegressor(
-        loss_function="RMSE",
-        depth=6,
-        learning_rate=0.05,
-        iterations=800,
-        random_seed=42,
-        verbose=0,
-    ),
-}
-
-total_models = {
-    "ridge": Ridge(alpha=0.1),
-    "random_forest": RandomForestRegressor(
-        n_estimators=200,
-        max_depth=8,
-        min_samples_split=10,
-        min_samples_leaf=5,
-        random_state=42,
-    ),
-    "gradient_boosting": GradientBoostingRegressor(
-        n_estimators=200,
-        learning_rate=0.1,
-        max_depth=6,
-        subsample=0.8,
-        random_state=42,
-    ),
-    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
-    "hist_gradient_boosting": HistGradientBoostingRegressor(
-        learning_rate=0.1,
-        max_depth=6,
-        max_iter=300,
-        l2_regularization=0.0,
-        random_state=42,
-    ),
-    "lightgbm": LGBMRegressor(
-        n_estimators=500,
-        learning_rate=0.05,
-        max_depth=-1,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        random_state=42,
-    ),
-    "catboost": CatBoostRegressor(
-        loss_function="RMSE",
-        depth=6,
-        learning_rate=0.05,
-        iterations=800,
-        random_seed=42,
-        verbose=0,
-    ),
-}
-
-points_for_models = {
-    "ridge": Ridge(alpha=0.1),
-    "elastic_net": ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42),
-    "gradient_boosting": GradientBoostingRegressor(
-        n_estimators=200,
-        learning_rate=0.1,
-        max_depth=3,
-        subsample=0.8,
-        random_state=42,
-    ),
-    "xgboost": xgb.XGBRegressor(objective="reg:squarederror", random_state=42),
-    "catboost": CatBoostRegressor(
-        loss_function="RMSE",
-        depth=6,
-        learning_rate=0.05,
-        iterations=800,
-        random_seed=42,
-        verbose=0,
-    ),
-}
-
-
-def main() -> None:
-    """CLI entrypoint for training models."""
-    parser = argparse.ArgumentParser(description="Train and evaluate ensemble models.")
-    parser.add_argument(
-        "--train-years",
-        type=str,
-        default="2019,2021,2022,2023",
-        help="Comma-separated list of years to train on.",
-    )
-    parser.add_argument(
-        "--test-year",
-        type=int,
-        default=2024,
-        help="Year to use for testing.",
-    )
-    parser.add_argument(
-        "--data-root",
-        type=str,
-        default=None,
-        help="Absolute path to the data root directory. If not provided, uses CFB_DATA_ROOT from .env or default.",
-    )
-    parser.add_argument(
-        "--model-dir",
-        type=str,
-        default=None,
-        help="Directory to persist trained model artifacts (defaults to artifacts/models).",
-    )
-    parser.add_argument(
-        "--metrics-dir",
-        type=str,
-        default=None,
-        help="Directory to write evaluation metrics CSV (defaults to <model-dir>/<test_year>/metrics).",
-    )
-    parser.add_argument(
-        "--adjustment-iteration",
-        type=int,
-        default=4,
-        help=(
-            "Opponent-adjustment iteration depth to load from team_week_adj caches "
-            "(default: 4)."
-        ),
-    )
-    parser.add_argument(
-        "--offense-adjustment-iteration",
-        type=int,
-        default=None,
-        help=(
-            "Override the offensive feature adjustment depth. Defaults to the value "
-            "provided via --adjustment-iteration."
-        ),
-    )
-    parser.add_argument(
-        "--defense-adjustment-iteration",
-        type=int,
-        default=None,
-        help=(
-            "Override the defensive feature adjustment depth. Defaults to the value "
-            "provided via --adjustment-iteration."
-        ),
-    )
-    parser.add_argument(
-        "--feature-pack",
-        action="append",
-        dest="feature_packs",
-        choices=FEATURE_PACK_CHOICES + ["all"],
-        help=(
-            "Repeatable flag used to restrict modeling to specific feature packs "
-            f"{FEATURE_PACK_CHOICES}. Defaults to all packs when omitted."
-        ),
-    )
-    parser.add_argument(
-        "--min-feature-variance",
-        type=float,
-        default=0.0,
-        help=(
-            "Drop numeric features whose variance on the training set falls below "
-            "this threshold (default keeps all features)."
-        ),
-    )
-    parser.add_argument(
-        "--target-type",
-        type=str,
-        default="absolute",
-        choices=["absolute", "residual", "quantile"],
-        help="Type of target to predict: 'absolute', 'residual', or 'quantile'.",
-    )
-    args = parser.parse_args()
-
-    train_years = [int(y.strip()) for y in args.train_years.split(",") if y.strip()]
-    test_year = args.test_year
-    data_root = args.data_root or get_data_root()
-    model_dir = Path(args.model_dir).resolve() if args.model_dir else MODELS_DIR
-    metrics_dir = (
-        Path(args.metrics_dir).resolve()
-        if args.metrics_dir
-        else model_dir / str(test_year) / "metrics"
-    )
-    offense_iteration = (
-        args.offense_adjustment_iteration
-        if args.offense_adjustment_iteration is not None
-        else args.adjustment_iteration
-    )
-    defense_iteration = (
-        args.defense_adjustment_iteration
-        if args.defense_adjustment_iteration is not None
-        else args.adjustment_iteration
-    )
-
-    use_residual = args.target_type in ["residual", "quantile"]
-    use_quantile = args.target_type == "quantile"
-
-    if use_quantile:
-        # Override models for quantile regression
-        # Predicts 10th, 50th, 90th percentiles
-        quantile_model = CatBoostRegressor(
-            loss_function="MultiQuantile:alpha=0.1,0.5,0.9",
-            eval_metric="MultiQuantile:alpha=0.1,0.5,0.9",
-            iterations=1000,
-            learning_rate=0.03,
-            depth=6,
-            l2_leaf_reg=3.0,
-            random_seed=42,
-            verbose=0,
-        )
-        # We replace the ensemble dictionaries with just this model
-        # We have to modify the global dictionaries or local variables.
-        # Local variables are better but the code uses the globals.
-        # Let's just re-assign the globals for this run (safe since it's a script)
-        global spread_models, total_models
-        spread_models = {"catboost_quantile": quantile_model}
-        total_models = {"catboost_quantile": quantile_model}
-
-    # --- MLflow Setup ---
-    mlflow.set_tracking_uri(get_tracking_uri())
-    mlflow.set_experiment("CFB_Model_Training")
-
-    # --- Data Loading ---
+    log.info(f"Loading training data for years: {train_years}")
     all_training_games = []
     for year in train_years:
-        print(f"Loading training data for year: {year}")
         for week in range(1, 16):
             weekly_data = load_point_in_time_data(
                 year,
                 week,
                 data_root,
-                adjustment_iteration=args.adjustment_iteration,
-                adjustment_iteration_offense=args.offense_adjustment_iteration,
-                adjustment_iteration_defense=args.defense_adjustment_iteration,
-                include_betting_lines=use_residual,
+                adjustment_iteration=adj_iter,
+                adjustment_iteration_offense=off_iter,
+                adjustment_iteration_defense=def_iter,
+                include_betting_lines=False,  # We focus on Points-For (absolute) for now
             )
             if weekly_data is not None:
                 all_training_games.append(weekly_data)
     train_df = _concat_years(all_training_games)
 
+    log.info(f"Loading test data for year: {test_year}")
     all_test_games = []
-    print(f"Loading test data for year: {test_year}")
     for week in range(1, 16):
         weekly_data = load_point_in_time_data(
             test_year,
             week,
             data_root,
-            adjustment_iteration=args.adjustment_iteration,
-            adjustment_iteration_offense=args.offense_adjustment_iteration,
-            adjustment_iteration_defense=args.defense_adjustment_iteration,
-            include_betting_lines=use_residual,
+            adjustment_iteration=adj_iter,
+            adjustment_iteration_offense=off_iter,
+            adjustment_iteration_defense=def_iter,
+            include_betting_lines=False,
         )
         if weekly_data is not None:
             all_test_games.append(weekly_data)
     test_df = _concat_years(all_test_games)
 
-    # --- Feature Preparation ---
-    feature_list = _build_feature_list(train_df)
+    return train_df, test_df
+
+
+def prepare_features(
+    train_df: pd.DataFrame, test_df: pd.DataFrame, cfg: DictConfig
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Prepare feature matrices."""
+    feature_list = build_feature_list(train_df)
+
+    # Filter by pack if specified
+    if cfg.features.get("packs"):
+        feature_list = filter_features_by_pack(feature_list, cfg.features.packs)
+
+    # Ensure features exist in test set
     feature_list = [c for c in feature_list if c in test_df.columns]
-    feature_list = filter_features_by_pack(feature_list, args.feature_packs)
+
     if not feature_list:
-        raise ValueError("No features available after applying pack filters.")
-    if args.feature_packs:
-        print(
-            f"Feature packs {args.feature_packs} selected → {len(feature_list)} columns"
-        )
+        raise ValueError("No features available after filtering.")
 
-    target_cols = ["spread_target", "total_target"]
-    if use_residual:
-        target_cols.extend(["spread_residual_target", "total_residual_target"])
-
+    # Drop rows with missing features/targets
+    target_cols = ["home_points", "away_points"]  # Points-For targets
     train_df = train_df.dropna(subset=feature_list + target_cols)
     test_df = test_df.dropna(subset=feature_list + target_cols)
 
-    x_train = train_df[feature_list]
+    return train_df, test_df, feature_list
 
-    if use_residual:
-        y_spread_train = train_df["spread_residual_target"].astype(float)
-        y_total_train = train_df["total_residual_target"].astype(float)
+
+def train_model(
+    x_train, y_train, x_test, y_test, params: dict, model_type: str = "catboost"
+):
+    """Train a single model."""
+    if model_type == "catboost":
+        model = CatBoostRegressor(**params)
+        model.fit(x_train, y_train, verbose=0)
+        preds = model.predict(x_test)
+        return model, preds
+    elif model_type == "xgboost":
+        import xgboost as xgb
+
+        model = xgb.XGBRegressor(**params)
+        model.fit(x_train, y_train, verbose=False)
+        preds = model.predict(x_test)
+        return model, preds
     else:
-        y_spread_train = train_df["spread_target"].astype(float)
-        y_total_train = train_df["total_target"].astype(float)
+        raise ValueError(f"Unsupported model type: {model_type}")
 
+
+def objective(
+    trial: optuna.Trial, x_train, y_train, x_test, y_test, cfg: DictConfig
+) -> float:
+    """Optuna objective function."""
+    # Suggest parameters based on config
+    params = {}
+    for param_name, param_config in cfg.tuning.params.items():
+        if param_config.type == "float":
+            params[param_name] = trial.suggest_float(
+                param_name,
+                param_config.low,
+                param_config.high,
+                log=param_config.get("log", False),
+            )
+        elif param_config.type == "int":
+            params[param_name] = trial.suggest_int(
+                param_name, param_config.low, param_config.high
+            )
+
+    # Add fixed params
+    params.update({"loss_function": "RMSE", "random_seed": 42, "verbose": 0})
+
+    model, preds = train_model(
+        x_train, y_train, x_test, y_test, params, model_type=cfg.model.type
+    )
+    metrics = _evaluate(y_test, preds)
+    return metrics["rmse"]
+
+
+@hydra.main(version_base=None, config_path="../../conf", config_name="config")
+def main(cfg: DictConfig) -> None:
+    mlflow.set_tracking_uri(get_tracking_uri())
+    mlflow.set_experiment("CFB_Model_Training")
+
+    # Load Data
+    train_df, test_df = load_data(cfg)
+    train_df, test_df, feature_list = prepare_features(train_df, test_df, cfg)
+
+    x_train = train_df[feature_list]
     x_test = test_df[feature_list]
 
-    if args.min_feature_variance > 0:
-        variances = x_train.var(axis=0, numeric_only=True)
-        keep_cols = [
-            col
-            for col in feature_list
-            if variances.get(col, 0.0) >= args.min_feature_variance
-        ]
-        dropped = [col for col in feature_list if col not in keep_cols]
-        if not keep_cols:
-            raise ValueError(
-                "Variance threshold removed all features; lower --min-feature-variance."
-            )
-        if dropped:
-            print(
-                f"Dropping {len(dropped)} low-variance features (threshold={args.min_feature_variance})"
-            )
-        feature_list = keep_cols
-        x_train = x_train[feature_list]
-        x_test = x_test[feature_list]
+    # Targets (Points-For)
+    targets = {
+        "home": ("home_points", train_df["home_points"], test_df["home_points"]),
+        "away": ("away_points", train_df["away_points"], test_df["away_points"]),
+    }
 
-    if use_residual:
-        y_spread_test = test_df["spread_residual_target"].astype(float)
-        y_total_test = test_df["total_residual_target"].astype(float)
-    else:
-        y_spread_test = test_df["spread_target"].astype(float)
-        y_total_test = test_df["total_target"].astype(float)
+    mode = cfg.get("mode", "train")  # train or optimize
 
-    out_dir = model_dir / str(test_year)
-    os.makedirs(out_dir, exist_ok=True)
+    if mode == "optimize":
+        log.info("Starting Hyperparameter Optimization...")
+        study = optuna.create_study(direction=cfg.tuning.direction)
 
-    print("Describing x_train:")
-    print(x_train.describe())
-    print("Checking for infinite values in x_train:")
-    print(np.isinf(x_train).sum())
+        # Optimize for Home Score (can be extended to Away)
+        y_train = targets["home"][1]
+        y_test = targets["home"][2]
 
-    # --- Parent MLflow Run ---
-    with mlflow.start_run(run_name=f"Ensemble_Training_{test_year}"):
-        mlflow.log_param("train_years", str(train_years))
-        mlflow.log_param("test_year", test_year)
+        study.optimize(
+            lambda trial: objective(trial, x_train, y_train, x_test, y_test, cfg),
+            n_trials=cfg.tuning.n_trials,
+        )
+
+        log.info(f"Best params: {study.best_params}")
+        # Save best params
+        out_path = Path("conf/model/params/catboost_best.yaml")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        OmegaConf.save(DictConfig(study.best_params), out_path)
+        log.info(f"Saved best params to {out_path}")
+        return
+
+    # Standard Training
+    with mlflow.start_run(run_name=f"PointsFor_{cfg.data.test_year}") as run:
+        mlflow.log_params(OmegaConf.to_container(cfg, resolve=True))
         mlflow.log_param("feature_count", len(feature_list))
-        mlflow.log_param("off_adjustment_iteration", offense_iteration)
-        mlflow.log_param("def_adjustment_iteration", defense_iteration)
 
-        # Capture input example for MLflow signature inference
-        input_example = x_train.head(5)
+        for target_name, (_, y_train, y_test) in targets.items():
+            log.info(f"Training {target_name} model...")
 
-        # --- Spread Models ---
-        print("Training and logging spread models...")
-        for name, model in spread_models.items():
-            with mlflow.start_run(run_name=f"spread_{name}", nested=True):
-                print(f"  Training spread_{name}...")
-                mlflow.log_params(model.get_params())
-                with _suppress_linear_runtime_warnings():
-                    model.fit(x_train, y_spread_train)
-                    preds = model.predict(x_test)
+            # Use params from config
+            params = OmegaConf.to_container(cfg.model.params, resolve=True)
 
-                if use_quantile:
-                    # preds is (N, 3) -> [p10, p50, p90]
-                    # Evaluate using median (p50)
-                    eval_preds = preds[:, 1]
-                else:
-                    eval_preds = preds
-
-                metrics = _evaluate(y_spread_test.to_numpy(), eval_preds)
-                mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
-
-                joblib.dump(model, out_dir / f"spread_{name}.joblib")
-                mlflow.sklearn.log_model(
-                    model, f"spread_{name}", input_example=input_example
-                )
-
-        # --- Total Models ---
-        print("Training and logging total models...")
-        for name, model in total_models.items():
-            with mlflow.start_run(run_name=f"total_{name}", nested=True):
-                print(f"  Training total_{name}...")
-                mlflow.log_params(model.get_params())
-                with _suppress_linear_runtime_warnings():
-                    model.fit(x_train, y_total_train)
-                    preds = model.predict(x_test)
-
-                if use_quantile:
-                    eval_preds = preds[:, 1]
-                else:
-                    eval_preds = preds
-
-                metrics = _evaluate(y_total_test.to_numpy(), eval_preds)
-                mlflow.log_metrics({"test_rmse": metrics.rmse, "test_mae": metrics.mae})
-
-                joblib.dump(model, out_dir / f"total_{name}.joblib")
-                mlflow.sklearn.log_model(
-                    model, f"total_{name}", input_example=input_example
-                )
-
-        # --- Evaluate and Log Ensemble Performance ---
-        print("Evaluating ensemble predictions...")
-        spread_preds: list[np.ndarray] = []
-        for name in spread_models:
-            with _suppress_linear_runtime_warnings():
-                spread_preds.append(
-                    joblib.load(out_dir / f"spread_{name}.joblib").predict(x_test)
-                )
-
-        total_preds: list[np.ndarray] = []
-        for name in total_models:
-            with _suppress_linear_runtime_warnings():
-                total_preds.append(
-                    joblib.load(out_dir / f"total_{name}.joblib").predict(x_test)
-                )
-
-        spread_pred_ensemble = np.mean(spread_preds, axis=0)
-        total_pred_ensemble = np.mean(total_preds, axis=0)
-
-        spread_pred_ensemble = np.mean(spread_preds, axis=0)
-        total_pred_ensemble = np.mean(total_preds, axis=0)
-
-        if use_quantile:
-            # Ensemble is (N, 3). Use median for metrics.
-            spread_metrics = _evaluate(
-                y_spread_test.to_numpy(), spread_pred_ensemble[:, 1]
+            model, preds = train_model(
+                x_train, y_train, x_test, y_test, params, model_type=cfg.model.type
             )
-            total_metrics = _evaluate(
-                y_total_test.to_numpy(), total_pred_ensemble[:, 1]
-            )
-        else:
-            spread_metrics = _evaluate(y_spread_test.to_numpy(), spread_pred_ensemble)
-            total_metrics = _evaluate(y_total_test.to_numpy(), total_pred_ensemble)
+            metrics = _evaluate(y_test, preds)
 
-        mlflow.log_metric("ensemble_spread_rmse", spread_metrics.rmse)
-        mlflow.log_metric("ensemble_spread_mae", spread_metrics.mae)
-        mlflow.log_metric("ensemble_total_rmse", total_metrics.rmse)
-        mlflow.log_metric("ensemble_total_mae", total_metrics.mae)
-
-        # --- Persist Final Metrics CSV ---
-        os.makedirs(metrics_dir, exist_ok=True)
-        metrics_path = metrics_dir / f"model_eval_{test_year}.csv"
-        pd.DataFrame(
-            [
+            mlflow.log_metrics(
                 {
-                    "target": "spread_ensemble",
-                    "rmse": spread_metrics.rmse,
-                    "mae": spread_metrics.mae,
-                },
-                {
-                    "target": "total_ensemble",
-                    "rmse": total_metrics.rmse,
-                    "mae": total_metrics.mae,
-                },
-            ]
-        ).to_csv(metrics_path, index=False)
-        print(f"Saved final evaluation metrics to {metrics_path}")
-
-        # Save predictions
-        pred_df = test_df.copy()
-
-        if use_residual:
-            # Reconstruct absolute predictions
-            # spread_residual = target + line  =>  target = residual - line
-            # total_residual = target - line   =>  target = residual + line (Total is different)
-
-            # Wait, Total Line is usually positive (e.g. 50.5).
-            # Total Target = Home + Away.
-            # Residual = Target - Line. (e.g. 60 - 50.5 = 9.5 Over).
-            # So Total Residual = Target - Line is correct.
-            # Total Reconstruction = Residual + Line.
-
-            # Ensure lines are present (they should be if use_residual=True)
-            # Ensure lines are present (they should be if use_residual=True)
-            if "spread_line" in pred_df.columns:
-                if use_quantile:
-                    pred_df["spread_p10"] = spread_pred_ensemble[:, 0]
-                    pred_df["spread_p50"] = spread_pred_ensemble[:, 1]
-                    pred_df["spread_p90"] = spread_pred_ensemble[:, 2]
-                    # Use Median for "predicted"
-                    pred_df["spread_predicted_residual"] = pred_df["spread_p50"]
-                    pred_df["spread_predicted"] = (
-                        pred_df["spread_p50"] - pred_df["spread_line"]
-                    )
-                else:
-                    pred_df["spread_predicted_residual"] = spread_pred_ensemble
-                    pred_df["spread_predicted"] = (
-                        spread_pred_ensemble - pred_df["spread_line"]
-                    )
-            else:
-                print(
-                    "Warning: spread_line not found, saving residuals as spread_predicted"
-                )
-                if use_quantile:
-                    pred_df["spread_predicted"] = spread_pred_ensemble[:, 1]
-                else:
-                    pred_df["spread_predicted"] = spread_pred_ensemble
-
-            if "total_line" in pred_df.columns:
-                if use_quantile:
-                    pred_df["total_p10"] = total_pred_ensemble[:, 0]
-                    pred_df["total_p50"] = total_pred_ensemble[:, 1]
-                    pred_df["total_p90"] = total_pred_ensemble[:, 2]
-                    pred_df["total_predicted_residual"] = pred_df["total_p50"]
-                    pred_df["total_predicted"] = (
-                        pred_df["total_p50"] + pred_df["total_line"]
-                    )
-                else:
-                    pred_df["total_predicted_residual"] = total_pred_ensemble
-                    pred_df["total_predicted"] = (
-                        total_pred_ensemble + pred_df["total_line"]
-                    )
-            else:
-                print(
-                    "Warning: total_line not found, saving residuals as total_predicted"
-                )
-                if use_quantile:
-                    pred_df["total_predicted"] = total_pred_ensemble[:, 1]
-                else:
-                    pred_df["total_predicted"] = total_pred_ensemble
-        else:
-            pred_df["spread_predicted"] = spread_pred_ensemble
-            pred_df["total_predicted"] = total_pred_ensemble
-
-        pred_cols = [
-            "id",
-            "season",
-            "week",
-            "home_team",
-            "away_team",
-            "home_points",
-            "away_points",
-            "spread_predicted",
-            "total_predicted",
-        ]
-        if use_residual:
-            pred_cols.extend(
-                [
-                    "spread_predicted_residual",
-                    "total_predicted_residual",
-                    "spread_line",
-                    "total_line",
-                ]
-            )
-        if use_quantile:
-            pred_cols.extend(
-                [
-                    "spread_p10",
-                    "spread_p50",
-                    "spread_p90",
-                    "total_p10",
-                    "total_p50",
-                    "total_p90",
-                ]
+                    f"{target_name}_rmse": metrics["rmse"],
+                    f"{target_name}_mae": metrics["mae"],
+                }
             )
 
-        pred_df[pred_cols].to_csv(out_dir / "predictions.csv", index=False)
-        print(f"Saved predictions to {out_dir / 'predictions.csv'}")
+            # Register Model
+            model_id = generate_model_id(
+                model_type=cfg.model.type,
+                feature_set=cfg.features.get("name", "custom"),
+                tuning="baseline",  # TODO: dynamic
+                data_version=f"train_{min(cfg.data.train_years)}_{max(cfg.data.train_years)}",
+            )
+
+            # Prepare input example for signature inference
+            input_example = x_train.head(5)
+
+            # Log and Register with signature
+            mlflow.sklearn.log_model(
+                model,
+                f"model_{target_name}",
+                input_example=input_example,
+                # Signature is inferred from input_example
+            )
+            register_model(
+                run_id=run.info.run_id,
+                model_name=f"PointsFor_{target_name.capitalize()}",
+                model_id=model_id,
+                tags={"target": target_name, "framework": cfg.model.type},
+            )
+
+            # Save local artifact
+            out_dir = MODELS_DIR / str(cfg.data.test_year)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            joblib.dump(model, out_dir / f"{target_name}_catboost.joblib")
+
+        log.info("Training complete.")
 
 
 if __name__ == "__main__":

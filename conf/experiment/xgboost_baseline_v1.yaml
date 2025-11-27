@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - override /model: xgboost
+  - override /features: standard_v1
+
+experiment:
+  name: xgboost_baseline_v1
+
+model:
+  params:
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.05
+    verbose: 0

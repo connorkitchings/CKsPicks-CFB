@@ -1,0 +1,24 @@
+# @package _global_
+defaults:
+  - override /model: xgboost
+  - override /features: standard_v1
+
+experiment:
+  name: xgboost_full_validation_v1
+
+data:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+
+model:
+  params:
+    n_estimators: 1000
+    max_depth: 6
+    learning_rate: 0.03
+    min_child_weight: 3
+    subsample: 0.8
+    colsample_bytree: 0.8
+    gamma: 0
+    reg_alpha: 0
+    reg_lambda: 1
+    verbose: 0

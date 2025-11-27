@@ -15,6 +15,18 @@ model_registry:
   total_models: 
     - totals_catboost_baseline_v1
 
+# Weekly Betting Configuration
+# Based on 2024 threshold analysis (Nov 2024)
+
+# Spread threshold optimized for CatBoost model
+spread_edge_threshold: 5.0  # CatBoost achieves 2.3% ROI at this threshold
+
+# Total threshold optimized for XGBoost model  
+total_edge_threshold: 5.5  # XGBoost achieves 5.5% ROI at this threshold
+
+# Kelly fraction for position sizing
+kelly_fraction: 0.25
+
 betting:
   spread_threshold: 10.0
   total_threshold: 3.5

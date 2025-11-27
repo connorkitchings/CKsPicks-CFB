@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - override /model: ridge
+  - override /model: catboost
   - override /features: standard_v1
 
 experiment:
@@ -8,4 +8,6 @@ experiment:
 
 model:
   params:
-    alpha: 0.5
+    iterations: 1
+    depth: 2
+    verbose: 0

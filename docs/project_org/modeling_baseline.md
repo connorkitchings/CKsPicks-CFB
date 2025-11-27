@@ -27,16 +27,21 @@ This document defines the initial, minimal modeling approach to generate weekly 
 
 ## Model Architecture
 
-### Current Configuration (as of 2025-11-23)
+### Current Configuration (as of 2025-11-27)
 
 The project uses a **"Points-For" architecture**, predicting the final score for the Home and Away teams independently. Spread and Total predictions are derived from these score estimates.
 
-- **Points-For Ensemble**:
+- **Points-For Ensemble (Spread)**:
 
-  - **Home Model**: 5-seed ensemble of `CatBoostRegressor` predicting home points.
-  - **Away Model**: 5-seed ensemble of `CatBoostRegressor` predicting away points.
-  - **Features**: "Standard" feature set with Iteration 2 opponent adjustment.
-  - **Calibration**: No bias correction applied initially (bias=0.0).
+  - **Model**: `spread_catboost_recency_v1` (CatBoost with recency weighting).
+  - **Performance**: 50.1% Hit Rate (2024 holdout).
+  - **Features**: Standard feature set + recency-weighted aggregates.
+
+- **Points-For Ensemble (Total)**:
+
+  - **Model**: `totals_pace_interaction_v1` (CatBoost with pace interactions).
+  - **Performance**: 54.4% Hit Rate (2024 holdout).
+  - **Features**: Standard feature set + explicit pace interaction terms.
 
 - **Legacy Ensembles (Deprecated)**:
   - Previous direct spread/total ensembles (Ridge/ElasticNet/Huber for spread, RF/GBM for total) are deprecated in favor of the unified Points-For approach.
@@ -80,9 +85,12 @@ The project uses a **"Points-For" architecture**, predicting the final score for
   - Calibration analysis: `reports/calibration/*.csv`
 
 - **Reproducibility**
-  - Training: `uv run python src/models/train_model.py --train-years 2019,2021,2022,2023 --test-year 2024`
-  - All scripts accept `--data-root` for custom data locations
-  - Random seeds fixed for deterministic outputs
+  - Training (Hydra-based): `PYTHONPATH=. uv run python src/models/train_model.py`
+  - Override parameters: `PYTHONPATH=. uv run python src/models/train_model.py data.test_year=2025 model.params.depth=8`
+  - Run experiments: `PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1`
+  - Optimize hyperparameters: `PYTHONPATH=. uv run python src/models/train_model.py mode=optimize`
+  - View results: `mlflow ui --backend-store-uri artifacts/mlruns`
+  - See [MLOps Guide](../guides/mlops_experimentation.md) for full details
 
 ## Near-Term Research Ideas
 

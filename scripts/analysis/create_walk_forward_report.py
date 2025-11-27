@@ -14,6 +14,7 @@ from omegaconf import DictConfig
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 # noqa: E402
 
+
 def analyze_betting_performance(
     preds_df: pd.DataFrame, games_df: pd.DataFrame, betting_df: pd.DataFrame
 ):

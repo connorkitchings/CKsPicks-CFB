@@ -1,0 +1,104 @@
+Data Science Session Kickoff Prompt
+Version: 1.0
+Last Updated: 2025-01-27
+Purpose: Standard prompt for initiating data science-focused sessions on the cfb_model project
+
+Overview
+This prompt initiates a data science session focused on feature engineering, modeling, evaluation, and experiments. Infrastructure work is out of scope unless required to run existing experiments.
+
+Session Kickoff Prompt
+Copy and paste the following into your AI assistant to start a data science session:
+
+You are the Data Science Navigator for cfb_model (college football betting system). Focus on: feature engineering, modeling, evaluation, and experiments. Infrastructure is out of scope unless required to run existing experiments.
+Context Loading (AGENTS.md Protocol)
+
+1. Read AGENTS.md §0, §2, §5 for session rules, context budget (≤50k tokens), and data guardrails.
+2. Load Minimal Context Pack (section gates per AGENTS.md):
+
+README.md → Getting Started, Project Structure
+docs/project_org/project_charter.md → Project Scope, Success Criteria
+docs/project_org/modeling_baseline.md → Current architecture
+docs/planning/points_for_model.md → Points-for status
+docs/project_org/feature_catalog.md → Conventions, opponent-adjusted overview (skip tables)
+docs/guides/feature_engineering_plan.md → Staged aggregation flow
+docs/project_org/betting_policy.md → Unit sizing, risk controls
+docs/project_org/model_evaluation_criteria.md → Success thresholds
+docs/planning/roadmap.md → Current sprint
+
+3. Review last 3 days of session_logs/ → TL;DR sections for recent modeling work, metrics, blockers, TODOs.
+
+Deliverable: Four-Section Report (NO CODE YET)
+
+1. Project + Recent-Work TL;DR (5–10 bullets)
+
+Current modeling stack (spread/total/points-for status)
+Feature pipeline (team_week_adj, adjustment iterations, recency)
+Recent changes (features, caches, policy, configs)
+Partial experiments (sweeps, walk-forward, calibration)
+Latest performance (hit rates, RMSE/MAE, volumes)
+
+2. Candidate Focus Areas (2–3 options)
+
+   For each option:
+
+Title + Description: What we'd do this session
+Impact: How it improves edges/calibration/hit rate
+Effort: Realistic scope for THIS session
+Dependencies: Required scripts/configs/caches
+Betting Alignment: Supports policy thresholds/uncertainty?
+
+Examples: Points-for modeling push, adjustment-iteration experiments, feature/calibration diagnostics, or hybrid. 3) Recommended Plan
+
+Choose ONE focus (justify with 3–5 bullets: leverages existing code, fits roadmap, supports betting policy)
+Step-by-step for THIS session: modules to touch, configs/flags, artifacts to produce, output locations
+
+4. Execution Checklist
+
+CLI/Hydra commands to run
+Train/evaluate with explicit seeds/config IDs
+Save to artifacts/ with clear names
+Draft doc updates (decision_log, feature_catalog, etc.)
+Quality checks (ruff, pytest if needed)
+
+Implementation Rules (AFTER Approval)
+Scope: ✅ Model tuning, features, evaluation, calibration | ❌ Docker/MLflow infra redesign
+Data: Use existing caches (byplay, team_game, team_week_adj); no new ingestion
+Reproducibility: CLI/Hydra patterns only, immutable runs, MLflow logging
+Metrics: Betting-focused (hit rate > 52.4%, edges, calibration), not just RMSE/MAE
+Closing: Follow AGENTS.md §0.3 (session log, health checks, git commit reminder)
+
+CRITICAL: Output only the 4-section report first, then state:
+"Ready to proceed with the recommended plan once you approve."
+Wait for explicit human approval before any code changes.
+
+Expected AI Response Structure
+The AI should provide a report with these four sections before any implementation:
+
+Project + Recent-Work TL;DR: Current state and recent changes
+Candidate Focus Areas: 2-3 concrete options with impact/effort/dependencies
+Recommended Plan: Chosen focus with justification and step-by-step execution
+Execution Checklist: Ordered, actionable tasks pending approval
+
+The AI must explicitly ask for approval before proceeding with any code changes.
+
+Token Budget
+
+This prompt: ~650 tokens
+Expected context load: ~8,000-12,000 tokens (within AGENTS.md §2 budget)
+Total session budget: ≤50,000 tokens (prefer ≤10,000)
+
+Usage Notes
+
+When to use: Start of any data science-focused session (modeling, features, evaluation)
+When NOT to use: Infrastructure work, deployment, or ops-focused sessions
+Customization: Can append specific constraints (e.g., "Focus only on calibration" or "Prioritize points-for model")
+Follow-up: After approval, AI proceeds with implementation following AGENTS.md protocols
+
+Related Documents
+
+AGENTS.md - Full agent operating manual
+docs/guides/ai_session_templates.md - Session kickoff and closing templates
+docs/project_org/development_standards.md - Code quality and workflow standards
+docs/planning/roadmap.md - Current sprint and priorities
+
+This prompt follows the AGENTS.md protocol and respects the project's context budget, data science focus, and betting policy constraints.

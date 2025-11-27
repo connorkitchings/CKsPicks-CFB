@@ -9,6 +9,7 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 # noqa: E402
 
+
 def calculate_metrics(predictions_path: Path, output_path: Path):
     """
     Calculate model performance metrics for 2025 predictions.

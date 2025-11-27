@@ -193,16 +193,41 @@ implementation begins.
 
 ## 🧪 Modeling, Experiments, and MLOps
 
-Experiments are run using **Hydra** for configuration and a Dockerized tracking stack (for example,
-MLflow running in Docker and accessed via Docker MCP). The core principles are:
+The project uses **Hydra** for configuration management, **Optuna** for hyperparameter optimization, and **MLflow** for experiment tracking and model registry.
 
-- **Hydra-first:**
-  Any experiment that matters is launched via a Hydra config and not as a one-off Python command
-  with ad-hoc flags.
+### Quick Start
 
-- **Immutable runs:**
-  Each experiment produces a unique run under `artifacts/` and/or the tracking service. Runs are
-  never overwritten.
+**Train a model:**
+
+```bash
+PYTHONPATH=. uv run python src/models/train_model.py
+```
+
+**Run hyperparameter optimization:**
+
+```bash
+PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+```
+
+**Run a pre-configured experiment:**
+
+```bash
+PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
+```
+
+### Core Principles
+
+- **Hydra-first:** All experiments are launched via Hydra configs in `conf/experiment/`
+- **Reproducibility:** Every model gets a standardized ID encoding model type, features, tuning, and data version
+- **Tracking:** MLflow automatically logs all runs, metrics, and model artifacts
+- **Registry:** Models are registered to MLflow with proper versioning and staging (Development → Staging → Production)
+
+For detailed instructions, see [MLOps and Experimentation Guide](docs/guides/mlops_experimentation.md).
+
+---
+
+Each experiment produces a unique run under `artifacts/` and/or the tracking service. Runs are
+never overwritten.
 
 - **Rich metadata:**
   Each run logs, at minimum:

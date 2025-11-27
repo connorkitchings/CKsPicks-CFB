@@ -15,12 +15,23 @@ data:
 
 random_seed: 42
 
+# Hybrid Model Strategy (Nov 2024 Analysis)
+# CatBoost for spreads (2.3% ROI @ 5.0pt threshold)
+# XGBoost for totals (5.5% ROI @ 5.5pt threshold)
 
 total_models:
-  - totals_catboost_baseline_v1
+  - totals_xgboost_optimized_v1  # XGBoost optimized via Optuna
 
 spread_models:
-  - cfb_points_for_home
-  - cfb_points_for_away
+  - spread_catboost_recency_v1  # CatBoost baseline
 
 spread_model_type: points_for
+total_model_type: points_for
+
+hydra:
+  run:
+    dir: artifacts/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: artifacts/hydra_outputs/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: true
