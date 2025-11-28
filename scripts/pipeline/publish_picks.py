@@ -55,6 +55,12 @@ TEAM_LOGO_MAP = {
 
 
 def _season_subdir(report_dir: Path, year: int, subdir: str) -> Path:
+    # Redirect to production data
+    if subdir == "scored":
+        return Path(f"data/production/scored/{year}")
+    elif subdir == "predictions":
+        return Path(f"data/production/predictions/{year}")
+
     preferred = report_dir / str(year) / subdir
     if preferred.exists():
         return preferred
@@ -794,6 +800,11 @@ def main() -> None:
         default="test",
         help="Select email recipient mode (test sends to TEST_EMAIL_RECIPIENT; prod sends to PROD_EMAIL_RECIPIENTS).",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Render the email preview files instead of sending via SMTP.",
+    )
     args = parser.parse_args()
 
     # --- Load Config from Environment ---
@@ -851,23 +862,44 @@ def main() -> None:
         except Exception:
             print("Error parsing PROD_EMAIL_RECIPIENTS, using raw split fallback.")
             recipients = [s.strip() for s in str(raw).split(",") if s.strip()]
-
         if not recipients:
             print("Error: Could not parse PROD_EMAIL_RECIPIENTS")
             return
 
-    # --- Load and Validate Weekly Bets CSV ---
+    # --- 2. Load the Weekly Bets CSV ---
     report_dir_path = Path(args.report_dir)
-    predictions_dir = _season_subdir(report_dir_path, args.year, PREDICTIONS_SUBDIR)
-    base_filename = f"CFB_week{args.week}_bets.csv"
-    bets_file = predictions_dir / base_filename
-    if not bets_file.exists():
-        legacy_file = report_dir_path / str(args.year) / base_filename
-        if legacy_file.exists():
-            bets_file = legacy_file
+
+    # Try production scored first, then production predictions
+    prod_scored = Path(
+        f"data/production/scored/{args.year}/CFB_week{args.week}_bets_scored.csv"
+    )
+    prod_preds = Path(
+        f"data/production/predictions/{args.year}/CFB_week{args.week}_bets.csv"
+    )
+
+    if prod_scored.exists():
+        bets_file = prod_scored
+    elif prod_preds.exists():
+        bets_file = prod_preds
+    else:
+        # Fallback to reports dir
+        scored_dir = report_dir_path / str(args.year) / SCORED_SUBDIR
+        if scored_dir.exists():
+            bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
         else:
-            print(f"Error: Bets file not found at {bets_file}")
-            return
+            bets_file = (
+                report_dir_path
+                / str(args.year)
+                / f"CFB_week{args.week}_bets_scored.csv"
+            )
+            if not bets_file.exists():
+                # Try predictions
+                pred_dir = report_dir_path / str(args.year) / PREDICTIONS_SUBDIR
+                bets_file = pred_dir / f"CFB_week{args.week}_bets.csv"
+
+    if not bets_file.exists():
+        print(f"Error: Bets file not found at {bets_file}")
+        return
 
     all_games_df = pd.read_csv(bets_file)
 
@@ -1138,9 +1170,22 @@ def main() -> None:
 
     # --- Attach and Send Email ---
     # CSV attachment removed per user request
+    # --- 4. Send or preview ---
+    subject = f"CK's CFB Picks: {args.year} Week {args.week}"
+    if args.dry_run:
+        preview_dir = report_dir_path / str(args.year) / "email_previews"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        html_path = preview_dir / f"week_{args.week:02d}_picks.html"
+        text_path = preview_dir / f"week_{args.week:02d}_picks.txt"
+        html_path.write_text(html, encoding="utf-8")
+        text_path.write_text(text, encoding="utf-8")
+        print(
+            f"Dry run enabled; wrote HTML preview to {html_path} and text preview to {text_path}."
+        )
+        return
+
     attachments = []
 
-    subject = f"CK's CFB Picks: {args.year} Week {args.week} ({date_range})"
     try:
         send_email(
             subject,

@@ -228,14 +228,26 @@ def main() -> None:
             return
 
     # --- 2. Load the Weekly Bets CSV ---
-    report_dir_path = Path(args.report_dir)
-    scored_dir = report_dir_path / str(args.year) / SCORED_SUBDIR
-    if scored_dir.exists():
-        bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
+    # Try production scored first
+    prod_scored = Path(
+        f"data/production/scored/{args.year}/CFB_week{args.week}_bets_scored.csv"
+    )
+
+    if prod_scored.exists():
+        bets_file = prod_scored
     else:
-        bets_file = (
-            report_dir_path / str(args.year) / f"CFB_week{args.week}_bets_scored.csv"
-        )
+        # Fallback to reports dir
+        report_dir_path = Path(args.report_dir)
+        scored_dir = report_dir_path / str(args.year) / SCORED_SUBDIR
+        if scored_dir.exists():
+            bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
+        else:
+            bets_file = (
+                report_dir_path
+                / str(args.year)
+                / f"CFB_week{args.week}_bets_scored.csv"
+            )
+
     if not bets_file.exists():
         print(f"Error: Bets file not found at {bets_file}")
         return

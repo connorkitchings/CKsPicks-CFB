@@ -8,6 +8,7 @@ dependencies = [
     "pandas>=2.0",
     "scikit-learn>=1.4",
     "streamlit>=1.30",
+    "plotly>=5.18.0",
     "requests>=2.30",
     "python-dotenv>=1.0",
     # "prefect>=2.19.0",

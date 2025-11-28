@@ -20,7 +20,7 @@ def main():
                         "uv",
                         "run",
                         "python",
-                        "scripts/score_weekly_picks.py",
+                        "scripts/pipeline/score_weekly_bets.py",
                         "--year",
                         str(year),
                         "--week",

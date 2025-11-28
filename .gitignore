@@ -217,6 +217,7 @@ gha-creds-*.json
 
 # Local data directory (actual data is on external drive)
 /data/
+!/data/production/
 
 # Generated project outputs
 artifacts/

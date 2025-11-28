@@ -1,0 +1,20 @@
+# @package _global_
+defaults:
+  - override /model: xgboost
+  - override /features: standard_v1
+
+experiment:
+  name: totals_xgboost_optimized_v1
+
+model:
+  params:
+    n_estimators: 1000
+    learning_rate: 0.03
+    max_depth: 6
+    min_child_weight: 3
+    subsample: 0.8
+    colsample_bytree: 0.8
+    gamma: 0
+    reg_alpha: 0
+    reg_lambda: 1
+    objective: reg:squarederror

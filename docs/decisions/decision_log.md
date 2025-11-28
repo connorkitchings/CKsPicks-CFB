@@ -1,5 +1,18 @@
 # Decision Log
 
+## 2025-11-27: Retrain Production Models with Weather Features
+
+- **Context:** The `standard_v1` feature set was updated to include current weather forecasts, but the "Hybrid Strategy" models (Session 1) were trained on the old feature set (without valid weather data). This created a mismatch between the codebase and the artifacts.
+- **Decision:** **Retrain both Spread (CatBoost) and Total (XGBoost) models** using the fixed `standard_v1` feature set before deployment.
+- **Rationale:**
+  1.  **Consistency:** Ensures model artifacts match the current feature pipeline code.
+  2.  **Performance:** Incorporates the high-value hypothesis that current weather forecasts improve prediction accuracy (Total RMSE improved to 16.99).
+- **Impact:**
+  - Spread Model: `spread_catboost.joblib` (RMSE 18.39)
+  - Total Model: `total_xgboost.joblib` (RMSE 16.99)
+  - Both models now use the latest feature set with 139 features.
+- **Artifacts:** `artifacts/models/2024/spread_catboost.joblib`, `artifacts/models/2024/total_xgboost.joblib`.
+
 ## 2025-11-27: Enable Current Weather Features and Interactions
 
 - **Context:** Analysis revealed that the `standard_v1` feature pack included historical weather features (via `_last_3` wildcard) but missed current game forecasts. This caused weather features to underperform.
