@@ -123,15 +123,17 @@ def analyze_thresholds(year=2025):
         losses = len(subset[subset["sim_total_result"] == "Loss"])
         pushes = len(subset[subset["sim_total_result"] == "Push"])
         total = wins + losses
-        win_rate = (wins / total * 100) if total > 0 else 0.0
+        bet_win_rate = (wins / total * 100) if total > 0 else 0.0
         volume = len(subset)
 
         net_units = (wins * 0.909) - losses
-        roi = (net_units / total * 100) if total > 0 else 0.0
+        roi = (net_units / total) * 100 if total > 0 else 0.0
 
-        print(
-            f"{thresh:<10.1f} | {wins}-{losses}-{pushes:<5} | {win_rate:<7.1f}% | {volume:<6} | {roi:+.1f}%"
-        )
+        # Only print if we have reasonable volume
+        if total >= 10:
+            print(
+                f"{thresh:<10.1f} | {wins}-{losses}-{pushes:<5} | {bet_win_rate:<7.1f}% | {volume:<6} | {roi:+.1f}%"
+            )
 
 
 if __name__ == "__main__":

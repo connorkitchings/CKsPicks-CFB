@@ -212,7 +212,7 @@ def evaluate_performance(merged_df: pd.DataFrame) -> str:
         losses = len(df_bets[df_bets[outcome_col] == "LOSS"])
         pushes = len(df_bets[df_bets[outcome_col] == "PUSH"])
 
-        win_rate = (wins / (wins + losses)) * 100 if (wins + losses) > 0 else 0.0
+        bet_win_rate = (wins / (wins + losses)) * 100 if (wins + losses) > 0 else 0.0
         roi = (
             ((wins - 1.1 * losses) / (wins + losses + pushes)) * 100
             if n_bets > 0
@@ -222,7 +222,7 @@ def evaluate_performance(merged_df: pd.DataFrame) -> str:
         report += f"## Performance vs {line_type}\n"
         report += f"- **Total Bets**: {n_bets}\n"
         report += f"- **Record**: {wins}-{losses}-{pushes}\n"
-        report += f"- **Win Rate**: {win_rate:.2f}%\n"
+        report += f"- **Win Rate**: {bet_win_rate:.2f}%\n"
         report += f"- **Est. ROI (Flat)**: {roi:.2f}%\n\n"
 
         # Breakdown by Year

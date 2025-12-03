@@ -64,7 +64,7 @@ def calculate_stats(df, threshold, edge_col, result_col):
 
     # Win Rate (excluding pushes)
     decisions = wins + losses
-    win_rate = (wins / decisions) * 100 if decisions > 0 else 0.0
+    bet_win_rate = (wins / decisions) * 100 if decisions > 0 else 0.0
 
     # ROI (Assuming -110 odds: Win=+0.909, Loss=-1.0)
     # ROI = (Net Profit / Total Wagered) * 100
@@ -79,7 +79,7 @@ def calculate_stats(df, threshold, edge_col, result_col):
         "Count": count,
         "Wins": wins,
         "Losses": losses,
-        "Win Rate": win_rate,
+        "Win Rate": bet_win_rate,
         "ROI": roi,
     }
 

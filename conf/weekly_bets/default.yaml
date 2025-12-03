@@ -10,10 +10,9 @@ max_single_bet_fraction: 0.05
 
 model_registry:
   spread_models: 
-    - cfb_points_for_home
-    - cfb_points_for_away
+    - spread_catboost_ppr_seed_5
   total_models: 
-    - totals_catboost_baseline_v1
+    - totals_xgboost_ppr_seed_5
 
 # Weekly Betting Configuration
 # Based on 2024 threshold analysis (Nov 2024)
@@ -22,14 +21,15 @@ model_registry:
 spread_edge_threshold: 5.0  # CatBoost achieves 2.3% ROI at this threshold
 
 # Total threshold optimized for XGBoost model  
-total_edge_threshold: 5.5  # XGBoost achieves 5.5% ROI at this threshold
+# Optimization (Dec 2025): >5% ROI at 6.0, >9% ROI at 8.0. Setting to 7.5.
+total_edge_threshold: 7.5
 
 # Kelly fraction for position sizing
 kelly_fraction: 0.25
 
 betting:
-  spread_threshold: 10.0
-  total_threshold: 3.5
+  spread_threshold: 5.0  # Must match spread_edge_threshold
+  total_threshold: 7.5   # Must match total_edge_threshold
   spread_std_dev_threshold: null
   total_std_dev_threshold: null
 

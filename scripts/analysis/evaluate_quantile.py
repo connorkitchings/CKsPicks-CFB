@@ -106,13 +106,13 @@ def evaluate_quantile(year: int = 2024):
 
     wins = bets_df["win"].sum()
     total = len(bets_df)
-    win_rate = wins / total if total > 0 else 0
+    bet_win_rate = wins / total if total > 0 else 0
     roi = (wins * 0.909 - (total - wins)) / total if total > 0 else 0
 
     print("\n--- High Confidence Betting (Outside 80% Interval) ---")
     print(f"Total Bets: {total}")
     print(f"Record: {wins}-{total - wins}")
-    print(f"Win Rate: {win_rate:.2%}")
+    print(f"Win Rate: {bet_win_rate:.2%}")
     print(f"ROI: {roi:.2%}")
 
     # Save results
@@ -122,7 +122,7 @@ def evaluate_quantile(year: int = 2024):
         f.write(f"**Coverage**: {coverage:.2%}\n\n")
         f.write("## High Confidence Betting\n")
         f.write(f"- **Bets**: {total}\n")
-        f.write(f"- **Win Rate**: {win_rate:.2%}\n")
+        f.write(f"- **Win Rate**: {bet_win_rate:.2%}\n")
         f.write(f"- **ROI**: {roi:.2%}\n")
 
     # --- 3. Calibrated Interval (Historical RMSE) ---

@@ -119,22 +119,17 @@ def analyze_thresholds(df, target_type="spread"):
         wins = len(decided[decided["bet_result"] == "Win"])
         losses = len(decided[decided["bet_result"] == "Loss"])
         total_bets = len(subset)
+        pushes = len(subset[subset["bet_result"] == "Push"])
 
-        if wins + losses == 0:
-            win_rate = 0.0
-        else:
-            win_rate = (wins / (wins + losses)) * 100
-
-        # ROI (Assume -110 odds => bet 1.1 to win 1)
-        profit = (wins * 0.90909) - losses
-        risked = (wins + losses) * 1.1
-        if risked == 0:
+        if (wins + losses) == 0:
+            bet_win_rate = 0.0
             roi = 0.0
         else:
-            roi = (profit / risked) * 100
+            bet_win_rate = (wins / (wins + losses)) * 100
+            roi = (((wins * 0.909) - losses) / (wins + losses + pushes)) * 100
 
         print(
-            f"{t:10.2f} {total_bets:6d} {wins:6d} {losses:6d} {win_rate:8.2f} {roi:8.2f}"
+            f"{t:10.2f} {total_bets:6d} {wins:6d} {losses:6d} {bet_win_rate:8.2f} {roi:8.2f}"
         )
 
 

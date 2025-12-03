@@ -698,9 +698,17 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         if "n_off_plays" in g.columns:
             plays_vals = g["n_off_plays"].astype(float)
             out["plays_per_game"] = float((plays_vals * w).sum() / wsum)
+            out["plays_per_game_last_1"] = last_1["n_off_plays"].mean()
+            out["plays_per_game_last_2"] = last_2["n_off_plays"].mean()
+            out["plays_per_game_last_3"] = last_3["n_off_plays"].mean()
+
         if "off_drives" in g.columns:
             drives_vals = g["off_drives"].astype(float)
             out["drives_per_game"] = float((drives_vals * w).sum() / wsum)
+            out["drives_per_game_last_1"] = last_1["off_drives"].mean()
+            out["drives_per_game_last_2"] = last_2["off_drives"].mean()
+            out["drives_per_game_last_3"] = last_3["off_drives"].mean()
+
         if "off_drives" in g.columns:
             drives_vals = g["off_drives"].astype(float)
             scoring_rate = None
@@ -718,6 +726,16 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
                 out["avg_scoring_opps_per_game"] = float(
                     (scoring_opps * w).sum() / wsum
                 )
+                # Momentum for scoring opps
+                # We need to calculate scoring_opps per game for last_X
+                # scoring_opps series
+                g_scoring_opps = scoring_opps  # This is a Series aligned with g
+
+                # We need to slice it for last_X
+                # g is sorted by week.
+                out["avg_scoring_opps_per_game_last_1"] = g_scoring_opps.tail(1).mean()
+                out["avg_scoring_opps_per_game_last_2"] = g_scoring_opps.tail(2).mean()
+                out["avg_scoring_opps_per_game_last_3"] = g_scoring_opps.tail(3).mean()
         if "luck_factor" in g.columns:
             out["cumulative_luck_factor"] = g["luck_factor"].sum()
 

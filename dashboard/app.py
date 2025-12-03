@@ -1,22 +1,56 @@
 import glob
+import os
+import sys
 from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+# Add project root to path
+sys.path.append(os.getcwd())
+# noqa: E402
+from src.config import DATA_ROOT as EXTERNAL_DATA_ROOT
+
 st.set_page_config(page_title="CFB Model Dashboard", layout="wide")
 
 # --- Constants ---
-DATA_ROOT = Path("data/production/scored")
+LOCAL_DATA_ROOT = Path("data/production/scored")
 
 
 # --- Helper Functions ---
 @st.cache_data
+def load_conferences(years):
+    """Load conference info from raw games data."""
+    frames = []
+    for year in years:
+        try:
+            # Path to raw games on external drive
+            csv_path = (
+                EXTERNAL_DATA_ROOT / "raw" / "games" / f"year={year}" / "data.csv"
+            )
+            if csv_path.exists():
+                df = pd.read_csv(
+                    csv_path, usecols=["id", "home_conference", "away_conference"]
+                )
+                df["year"] = year
+                frames.append(df)
+        except Exception as e:
+            st.warning(f"Failed to load games data for {year}: {e}")
+
+    if not frames:
+        return pd.DataFrame(
+            columns=["id", "home_conference", "away_conference", "year"]
+        )
+
+    return pd.concat(frames, ignore_index=True).rename(columns={"id": "game_id"})
+
+
+@st.cache_data
 def load_data():
     """Load all scored bets from the production directory."""
     all_files = glob.glob(
-        str(DATA_ROOT / "**" / "CFB_week*_bets_scored.csv"), recursive=True
+        str(LOCAL_DATA_ROOT / "**" / "CFB_week*_bets_scored.csv"), recursive=True
     )
     if not all_files:
         return pd.DataFrame()
@@ -107,6 +141,21 @@ if df.empty:
     )
     st.stop()
 
+# Load and merge conference data
+years = sorted(df["year"].unique())
+conf_df = load_conferences(years)
+if not conf_df.empty:
+    # Merge on game_id
+    # Ensure game_id types match
+    df["game_id"] = df["game_id"].astype(str)
+    conf_df["game_id"] = conf_df["game_id"].astype(str)
+
+    # Drop year from conf_df to avoid duplicates if present
+    if "year" in conf_df.columns:
+        conf_df = conf_df.drop(columns=["year"])
+
+    df = pd.merge(df, conf_df, on="game_id", how="left")
+
 # Sidebar Filters
 st.sidebar.header("Filters")
 selected_years = st.sidebar.multiselect(
@@ -118,10 +167,31 @@ selected_weeks = st.sidebar.multiselect(
     default=[],
 )
 
+# Conference Filter
+all_confs = set()
+if "home_conference" in df.columns:
+    all_confs.update(df["home_conference"].dropna().unique())
+if "away_conference" in df.columns:
+    all_confs.update(df["away_conference"].dropna().unique())
+
+selected_confs = st.sidebar.multiselect(
+    "Select Conference(s)",
+    sorted(list(all_confs)),
+    default=[],
+    help="Includes games where at least one team is in the selected conference(s).",
+)
+
 # Apply Filters
 filtered_df = df[df["year"].isin(selected_years)]
 if selected_weeks:
     filtered_df = filtered_df[filtered_df["Week"].isin(selected_weeks)]
+
+if selected_confs:
+    # Filter if home OR away conference is in selected
+    filtered_df = filtered_df[
+        filtered_df["home_conference"].isin(selected_confs)
+        | filtered_df["away_conference"].isin(selected_confs)
+    ]
 
 # --- Overview Tab ---
 tab1, tab2, tab3, tab4 = st.tabs(

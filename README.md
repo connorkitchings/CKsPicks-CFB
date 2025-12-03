@@ -263,6 +263,14 @@ For concrete run commands and config patterns, see `docs/points_for_model.md`,
 `docs/advanced_feature_engineering_overview.md`, `docs/weekly_pipeline.md`, and
 `docs/operations/mlflow_mcp.md` (MCP hookup for MLflow dashboards).
 
+### Metric Definitions
+
+To avoid ambiguity, this project uses the following standard definitions:
+
+- **Straight-Up (SU) Win Accuracy:** The percentage of games where the model correctly predicted the winning team, regardless of the betting line.
+- **Against-The-Spread (ATS) Accuracy:** The percentage of games where the model correctly predicted the winner after adjusting for the spread (e.g., Home Score + Spread > Away Score).
+- **Betting Win Rate:** The ATS accuracy specifically for the subset of games where the model flagged a "betable" edge (i.e., edge > threshold).
+
 ---
 
 ## 🎲 Betting Policy and Safety

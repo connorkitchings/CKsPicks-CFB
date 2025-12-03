@@ -30,9 +30,9 @@ def main():
     losses = len(spread_bets[spread_bets["Spread Bet Result"] == "Loss"])
     pushes = len(spread_bets[spread_bets["Spread Bet Result"] == "Push"])
     total = wins + losses
-    win_rate = wins / total if total > 0 else 0.0
+    bet_win_rate = wins / total if total > 0 else 0.0
 
-    print(f"Overall: {wins}-{losses}-{pushes} ({win_rate:.1%})")
+    print(f"Overall: {wins}-{losses}-{pushes} ({bet_win_rate:.1%})")
 
     # By Week
     print("\nBy Week:")
@@ -52,9 +52,9 @@ def main():
     losses = len(total_bets[total_bets["Total Bet Result"] == "Loss"])
     pushes = len(total_bets[total_bets["Total Bet Result"] == "Push"])
     total = wins + losses
-    win_rate = wins / total if total > 0 else 0.0
+    bet_win_rate = wins / total if total > 0 else 0.0
 
-    print(f"Overall: {wins}-{losses}-{pushes} ({win_rate:.1%})")
+    print(f"Overall: {wins}-{losses}-{pushes} ({bet_win_rate:.1%})")
 
 
 if __name__ == "__main__":

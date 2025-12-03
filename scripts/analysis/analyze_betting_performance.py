@@ -147,11 +147,12 @@ def analyze_betting_performance():
         total = wins + losses
 
         if total > 0:
-            win_rate = wins / total
-            units = (wins * 0.909) - (losses * 1.0)
-            print(
-                f"Total Threshold {th}: {wins}-{losses} ({win_rate:.1%}) | Units: {units:.2f} | Vol: {len(bets)}"
-            )
+            bet_win_rate = wins / total
+            units = (wins * 0.909) - losses
+            if total >= 10:
+                print(
+                    f"Total Threshold {th}: {wins}-{losses} ({bet_win_rate:.1%}) | Units: {units:.2f} | Vol: {len(bets)}"
+                )
 
 
 if __name__ == "__main__":

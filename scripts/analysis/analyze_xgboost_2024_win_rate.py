@@ -19,7 +19,7 @@ from src.config import get_data_root
 from src.models.features import load_point_in_time_data
 
 
-def calculate_win_rate():
+def calculate_bet_win_rate():
     """Calculate 2024 win rate for optimized XGBoost."""
     # Load the most recent XGBoost model from artifacts
     # Assuming it was saved in the last training run
@@ -200,4 +200,4 @@ def calculate_win_rate():
 
 
 if __name__ == "__main__":
-    calculate_win_rate()
+    calculate_bet_win_rate()

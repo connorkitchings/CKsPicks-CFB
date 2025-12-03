@@ -104,17 +104,24 @@
         padding: 8px;
         background-color: #ffffff;
         border-bottom: 1px solid #cbd5e1;
-        border-right: 1px solid #cbd5e1;
+        border-right: 1px solid #e2e8f0;
+      }
+      .sys-table th:last-child {
+        border-right: none;
       }
       .sys-table td {
         font-size: 13px;
         color: #0f172a;
         padding: 8px;
         text-align: center;
-        border-right: 1px solid #cbd5e1;
+        border-bottom: 1px solid #e2e8f0;
+        border-right: 1px solid #e2e8f0;
       }
       .sys-table td:last-child {
         border-right: none;
+      }
+      .sys-table tr:last-child td {
+        border-bottom: none;
       }
 
       /* SECTION HEADERS */
@@ -384,6 +391,7 @@
         }
         .sys-table td {
           color: #e5e5e5 !important;
+          border-bottom-color: #333 !important;
           border-right-color: #333 !important;
         }
 
@@ -531,7 +539,7 @@
                         >
                           Current ({{ model_context.curr_year }})
                         </td>
-                        <td style="background-color: #ffffff">
+                        <td>
                           {% if model_context.curr_spread_wins is not none %}
                           <span style="color: #1e40af; font-weight: 700"
                             >{{ model_context.curr_spread_wins }}-{{
@@ -544,7 +552,7 @@
                           >
                           {% else %} - {% endif %}
                         </td>
-                        <td style="background-color: #ffffff">
+                        <td>
                           {% if model_context.curr_total_wins is not none %}
                           <span style="color: #1e40af; font-weight: 700"
                             >{{ model_context.curr_total_wins }}-{{
@@ -566,7 +574,7 @@
                             padding-left: 12px;
                           "
                         >
-                          Hist. Wk {{ week }}
+                          2024 Wk {{ week }}
                         </td>
                         <td>
                           {% if model_context.last_year_week_spread_wins is not

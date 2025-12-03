@@ -130,6 +130,13 @@ def prepare_team_features(team_season_adj_df: pd.DataFrame) -> pd.DataFrame:
         )
         combined = combined.merge(pace_df, on=["season", "team"], how="left")
 
+    # Include PPR Rating if present
+    if "ppr_rating" in team_season_adj_df.columns:
+        ppr_df = team_season_adj_df[["season", "team", "ppr_rating"]].drop_duplicates(
+            subset=["season", "team"]
+        )
+        combined = combined.merge(ppr_df, on=["season", "team"], how="left")
+
     return combined
 
 
@@ -204,6 +211,11 @@ def build_feature_list(df: pd.DataFrame) -> list[str]:
             col = f"{side}_{defensive_extra}"
             if col in df.columns:
                 features.append(col)
+
+        # PPR Rating
+        col = f"{side}_ppr_rating"
+        if col in df.columns:
+            features.append(col)
 
     # Global game context features
     global_context = [

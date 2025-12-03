@@ -1,0 +1,13 @@
+# @package _global_
+defaults:
+  - override /model: catboost
+  - override /features: ppr_v1
+
+experiment:
+  name: spread_catboost_ppr_v1
+  years: [2019, 2021, 2022, 2023]  # Exclude 2024 test year
+
+model_registry_name: spread_catboost_ppr
+
+model:
+  target: spread_target

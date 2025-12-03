@@ -52,7 +52,7 @@ def compute_metrics(
 ) -> Dict[str, float]:
     placed = df[df[bet_col].str.lower().isin(["home", "away", "over", "under"])]
     if placed.empty:
-        return {"win_rate": float("nan"), "wins": 0, "bets": 0}
+        return {"bet_win_rate": float("nan"), "wins": 0, "bets": 0}
     wins = _result_to_win(placed[result_col]).sum()
     bets = len(placed)
     units_col = "bet_units_spread" if bet_col == "Spread Bet" else "bet_units_total"
@@ -64,7 +64,7 @@ def compute_metrics(
     ]
     net_units = units_won.sum() - units_lost.sum()
     return {
-        "win_rate": wins / bets if bets else float("nan"),
+        "bet_win_rate": wins / bets if bets else float("nan"),
         "wins": int(wins),
         "bets": int(bets),
         "net_units": float(net_units),
@@ -124,11 +124,11 @@ def main() -> None:
             {
                 "season": args.season,
                 "mode": mode,
-                "spread_win_rate": spread["win_rate"],
+                "spread_win_rate": spread["bet_win_rate"],
                 "spread_bets": spread["bets"],
                 "spread_wins": spread["wins"],
                 "spread_net_units": spread["net_units"],
-                "total_win_rate": totals["win_rate"],
+                "total_win_rate": totals["bet_win_rate"],
                 "total_bets": totals["bets"],
                 "total_wins": totals["wins"],
                 "total_net_units": totals["net_units"],

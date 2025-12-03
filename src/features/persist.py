@@ -8,6 +8,7 @@ processed storage.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import pandas as pd
 
@@ -217,6 +218,19 @@ def persist_preaggregations(
     # The model expects 'adj_off_...' columns.
     # So we MUST run adjustment.
 
+    # Load PPR ratings for this year
+    ppr_path = Path("artifacts/features/ppr_ratings.parquet")
+    ppr_year_df = pd.DataFrame()
+    if ppr_path.exists():
+        logging.info(f"Loading PPR ratings for {year} from {ppr_path}...")
+        ppr_df = pd.read_parquet(ppr_path)
+        ppr_year_df = ppr_df[ppr_df["year"] == int(year)].copy()
+        logging.info(f"Loaded {len(ppr_year_df)} ratings for {year}.")
+    else:
+        logging.warning(
+            f"PPR ratings file not found at {ppr_path.absolute()}. Skipping injection."
+        )
+
     # Let's try to run it for each week.
     max_week = team_game_df["week"].max()
     for week in range(
@@ -236,6 +250,22 @@ def persist_preaggregations(
 
         # Add 'week' column to the result
         std_adj_df["week"] = week
+
+        # Inject PPR Ratings if available
+        if not ppr_year_df.empty:
+            # Filter for ratings available entering this week
+            # The backtest file for 'week' contains ratings used to predict games in 'week'.
+            # These are derived from training on data < week.
+            # So we just match on week.
+            week_ratings = ppr_year_df[ppr_year_df["week"] == week][
+                ["team", "ppr_rating"]
+            ]
+
+            if not week_ratings.empty:
+                std_adj_df = std_adj_df.merge(week_ratings, on="team", how="left")
+                # Fill missing with 0.0 (prior mean)
+                if "ppr_rating" in std_adj_df.columns:
+                    std_adj_df["ppr_rating"] = std_adj_df["ppr_rating"].fillna(0.0)
 
         # Write to storage
         part = Partition({"year": str(year), "week": str(week)})

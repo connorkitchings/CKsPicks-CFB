@@ -142,10 +142,11 @@ def analyze_best_bets(year=2025, start_week=2, end_week=14):
             pushes += 1
 
     total = wins + losses
-    win_rate = wins / total if total > 0 else 0.0
+    bet_win_rate = wins / total if total > 0 else 0.0
 
     record_str = f"{wins}-{losses}-{pushes}"
-    percentage_str = f"{win_rate:.1%}"
+    # Format as percentage string
+    percentage_str = f"{bet_win_rate:.1%}"
 
     print(f"\nOverall Best Bet Record: {record_str} ({percentage_str})")
     return record_str, percentage_str

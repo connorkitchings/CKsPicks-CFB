@@ -67,7 +67,7 @@ def analyze_betting_performance(
             losses = len(decisive_bets[decisive_bets["result"] == -1])
             total_bets = wins + losses
             if total_bets > 0:
-                win_rate = wins / total_bets
+                bet_win_rate = wins / total_bets
                 units = (wins * 0.909) - (losses * 1.0)
                 roi = (units / total_bets) * 100 if total_bets > 0 else 0
                 results["spread"].append(
@@ -76,7 +76,7 @@ def analyze_betting_performance(
                         "wins": wins,
                         "losses": losses,
                         "pushes": len(bets) - total_bets,
-                        "win_rate": win_rate,
+                        "bet_win_rate": bet_win_rate,
                         "units": units,
                         "roi": roi,
                         "volume": len(bets),
@@ -107,7 +107,7 @@ def analyze_betting_performance(
             losses = len(decisive_bets[decisive_bets["result"] == -1])
             total_bets = wins + losses
             if total_bets > 0:
-                win_rate = wins / total_bets
+                bet_win_rate = wins / total_bets
                 units = (wins * 0.909) - (losses * 1.0)
                 roi = (units / total_bets) * 100 if total_bets > 0 else 0
                 results["total"].append(
@@ -116,7 +116,7 @@ def analyze_betting_performance(
                         "wins": wins,
                         "losses": losses,
                         "pushes": len(bets) - total_bets,
-                        "win_rate": win_rate,
+                        "bet_win_rate": bet_win_rate,
                         "units": units,
                         "roi": roi,
                         "volume": len(bets),
@@ -141,7 +141,7 @@ def generate_markdown_report(results: dict, years: list) -> str:
 """
             continue
         df = pd.DataFrame(results[bet_type])
-        df["win_rate"] = df["win_rate"].map("{:.1%}".format)
+        df["bet_win_rate"] = df["bet_win_rate"].map("{:.1%}".format)
         df["units"] = df["units"].map("{:.2f}".format)
         df["roi"] = df["roi"].map("{:.2f}%".format)
         df.rename(
@@ -150,7 +150,7 @@ def generate_markdown_report(results: dict, years: list) -> str:
                 "wins": "Wins",
                 "losses": "Losses",
                 "pushes": "Pushes",
-                "win_rate": "Win Rate",
+                "bet_win_rate": "Win Rate",
                 "units": "Units",
                 "roi": "ROI",
                 "volume": "Volume",

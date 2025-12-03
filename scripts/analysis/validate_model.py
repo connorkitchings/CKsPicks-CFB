@@ -264,7 +264,7 @@ def calculate_metrics(df: pd.DataFrame) -> dict:
                 "wins": 0,
                 "losses": 0,
                 "pushes": 0,
-                "win_rate": 0.0,
+                "bet_win_rate": 0.0,
                 "roi": 0.0,
             }
             continue
@@ -275,7 +275,7 @@ def calculate_metrics(df: pd.DataFrame) -> dict:
         total = wins + losses  # Exclude pushes from denominator for win rate?
         # Standard convention: Win Rate = Wins / (Wins + Losses)
 
-        win_rate = (wins / total) * 100 if total > 0 else 0.0
+        bet_win_rate = (wins / total) * 100 if total > 0 else 0.0
 
         # ROI Calculation (assuming -110 odds -> 0.909 win, 1.0 loss)
         # Profit = (Wins * 0.909) - (Losses * 1.0)
@@ -288,7 +288,7 @@ def calculate_metrics(df: pd.DataFrame) -> dict:
             "wins": wins,
             "losses": losses,
             "pushes": pushes,
-            "win_rate": win_rate,
+            "bet_win_rate": bet_win_rate,
             "roi": roi,
         }
 
@@ -364,7 +364,7 @@ def main():
         print(f"\n{bet_type.upper()}:")
         print(f"  Bets:     {stats['bets']}")
         print(f"  Record:   {stats['wins']}-{stats['losses']}-{stats['pushes']}")
-        print(f"  Win Rate: {stats['win_rate']:.2f}%")
+        print(f"  Win Rate: {stats['bet_win_rate']:.2f}%")
         print(f"  ROI:      {stats['roi']:.2f}%")
 
     print("\n" + "=" * 40)

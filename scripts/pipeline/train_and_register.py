@@ -38,7 +38,10 @@ def main(cfg: DictConfig):
     mlflow.set_experiment(experiment_name)
 
     # Training years: 2019, 2021-2023
-    train_years = [2019, 2021, 2022, 2023]
+    if "experiment" in cfg and "years" in cfg.experiment:
+        train_years = list(cfg.experiment.years)
+    else:
+        train_years = [2019, 2021, 2022, 2023]
     adjustment_iteration = cfg.model.get(
         "adjustment_iteration", cfg.data.adjustment_iteration
     )
@@ -63,10 +66,10 @@ def main(cfg: DictConfig):
         return
 
     train_df = _concat_years(all_train_data)
-    train_df = train_df.dropna(subset=[cfg.target])
+    train_df = train_df.dropna(subset=[cfg.model.target])
 
     x_train = select_features(train_df, cfg)
-    y_train = train_df[cfg.target]
+    y_train = train_df[cfg.model.target]
 
     log.info(
         f"Training on {len(train_df)} records with {len(x_train.columns)} features."
@@ -90,6 +93,10 @@ def main(cfg: DictConfig):
 
         if cfg.model.type == "catboost":
             model = CatBoostRegressor(**params)
+        elif cfg.model.type == "xgboost":
+            from xgboost import XGBRegressor
+
+            model = XGBRegressor(**params)
         else:
             log.error(f"Model type {cfg.model.type} not supported for this script.")
             return
@@ -98,7 +105,7 @@ def main(cfg: DictConfig):
             # Log params
             mlflow.log_params(params)
             mlflow.log_param("features", cfg.features.name)
-            mlflow.log_param("target", cfg.target)
+            mlflow.log_param("target", cfg.model.target)
             mlflow.log_param("feature_set_id", get_feature_set_id(cfg))
             mlflow.log_param("calibration_bias", cfg.model.get("calibration_bias", 0.0))
             mlflow.log_param("ensemble_seed_index", i)
@@ -108,11 +115,18 @@ def main(cfg: DictConfig):
 
             # Log model
             log.info("Logging model to MLflow...")
-            mlflow.catboost.log_model(
-                cb_model=model,
-                artifact_path="model",
-                registered_model_name=None,
-            )
+            if cfg.model.type == "catboost":
+                mlflow.catboost.log_model(
+                    cb_model=model,
+                    artifact_path="model",
+                    registered_model_name=None,
+                )
+            elif cfg.model.type == "xgboost":
+                mlflow.xgboost.log_model(
+                    xgb_model=model,
+                    artifact_path="model",
+                    registered_model_name=None,
+                )
 
             run_id = run.info.run_id
             log.info(f"Run ID: {run_id}")

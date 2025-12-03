@@ -41,14 +41,14 @@ def analyze_backfill():
         pushes = len(spread_bets[spread_bets["Spread Bet Result"] == "Push"])
 
         decisive = wins + losses
-        win_rate = wins / decisive if decisive > 0 else 0.0
+        bet_win_rate = wins / decisive if decisive > 0 else 0.0
 
         # ROI (assuming -110 odds -> win=0.909, loss=-1)
         units = (wins * 0.909) - (losses * 1.0)
         roi = units / decisive if decisive > 0 else 0.0
 
         print(f"Record: {wins}-{losses}-{pushes}")
-        print(f"Win Rate: {win_rate:.1%}")
+        print(f"Win Rate: {bet_win_rate:.1%}")
         print(f"Units: {units:.2f}")
         print(f"ROI: {roi:.1%}")
     else:
@@ -65,13 +65,13 @@ def analyze_backfill():
         pushes = len(total_bets[total_bets["Total Bet Result"] == "Push"])
 
         decisive = wins + losses
-        win_rate = wins / decisive if decisive > 0 else 0.0
+        bet_win_rate = wins / decisive if decisive > 0 else 0.0
 
         units = (wins * 0.909) - (losses * 1.0)
         roi = units / decisive if decisive > 0 else 0.0
 
         print(f"Record: {wins}-{losses}-{pushes}")
-        print(f"Win Rate: {win_rate:.1%}")
+        print(f"Win Rate: {bet_win_rate:.1%}")
         print(f"Units: {units:.2f}")
         print(f"ROI: {roi:.1%}")
     else:

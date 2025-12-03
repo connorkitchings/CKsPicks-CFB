@@ -9,4 +9,8 @@ services:
       - "8501:8501"
     volumes:
       - ../data/production:/app/data/production:ro
+      - ../src:/app/src:ro
+      - ${CFB_MODEL_DATA_ROOT}:/external_data:ro
+    environment:
+      - CFB_MODEL_DATA_ROOT=/external_data
     restart: unless-stopped
