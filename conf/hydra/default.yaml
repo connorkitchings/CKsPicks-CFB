@@ -1,0 +1,6 @@
+run:
+  dir: artifacts/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+sweep:
+  dir: artifacts/hydra_outputs/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+job:
+  chdir: true

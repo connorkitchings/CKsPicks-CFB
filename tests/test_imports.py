@@ -13,7 +13,7 @@ MODULES = [
     "features.core",
     "features.pipeline",
     "features.persist",
-    "models.train_model",
+    "models.v1_baseline",
     "utils.logging",
 ]
 

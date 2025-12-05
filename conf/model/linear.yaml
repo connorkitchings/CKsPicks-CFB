@@ -1,0 +1,5 @@
+name: linear
+type: linear_regression
+params:
+  alpha: 1.0  # Ridge regularization strength
+target: spread_target

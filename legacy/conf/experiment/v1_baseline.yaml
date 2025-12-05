@@ -1,0 +1,11 @@
+# @package _global_
+defaults:
+  - override /features: v1_baseline
+
+experiment:
+  name: v1_baseline
+  years: [2019, 2021, 2022, 2023]
+
+model:
+  type: linear_regression
+  target: spread_target

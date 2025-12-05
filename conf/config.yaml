@@ -1,37 +1,10 @@
 defaults:
   - _self_
   - paths: default
-  - model: catboost
-  - features: standard_v1
-  - weekly_bets: default
+  - model: linear
+  - features: v1_baseline
+  - training: default
+  - hydra: default
   - experiment: null
 
-data:
-  adjustment_iteration: 2
-  adjustment_iteration_offense: null
-  adjustment_iteration_defense: null
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
-
 random_seed: 42
-
-# Hybrid Model Strategy (Nov 2024 Analysis)
-# CatBoost for spreads (2.3% ROI @ 5.0pt threshold)
-# XGBoost for totals (5.5% ROI @ 5.5pt threshold)
-
-total_models:
-  - totals_xgboost_optimized_v1  # XGBoost optimized via Optuna
-
-spread_models:
-  - spread_catboost_recency_v1  # CatBoost baseline
-
-spread_model_type: points_for
-total_model_type: points_for
-
-hydra:
-  run:
-    dir: artifacts/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  sweep:
-    dir: artifacts/hydra_outputs/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
-  job:
-    chdir: true
