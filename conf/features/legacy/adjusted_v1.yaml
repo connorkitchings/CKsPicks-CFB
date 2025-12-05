@@ -1,0 +1,14 @@
+# This is an example of a new feature set.
+# It expands on the baseline by adding more opponent-adjusted metrics.
+
+name: adjusted_v1
+features:
+  - adj_off_epa_pp
+  - adj_def_epa_pp
+  - adj_off_sr
+  - adj_def_sr
+  - adj_off_ypp
+  - adj_def_ypp
+  - adj_off_expl_overall_20
+  - adj_def_expl_overall_20
+target: spread_target

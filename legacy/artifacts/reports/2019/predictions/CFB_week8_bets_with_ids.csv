@@ -1,0 +1,62 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,Spread Line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,Total Line,Model Total,Total Edge
+401121953,10/16/2019,08:00 PM,South Alabama @ Troy,Troy,South Alabama,Away,-17.5,13.67,31.17,High,55.28,13.67,No Bet,55.5,55.28,0.0
+401121954,10/17/2019,07:30 PM,Louisiana @ Arkansas State,Arkansas State,Louisiana,Home,6.0,-5.42,11.42,High,68.64,-5.42,No Bet,69.0,68.64,0.0
+401114210,10/17/2019,09:00 PM,UCLA @ Stanford,Stanford,UCLA,Away,-5.5,11.66,17.16,High,51.2,11.66,No Bet,48.5,51.2,0.0
+401114288,10/18/2019,06:30 PM,Marshall @ Florida Atlantic,Florida Atlantic,Marshall,Away,-3.5,13.87,17.369999999999997,High,53.5,13.87,Under,58.5,53.5,5.0
+401112483,10/18/2019,07:00 PM,Pittsburgh @ Syracuse,Syracuse,Pittsburgh,No Bet,3.5,2.64,0.0,None,44.38,2.64,Under,52.5,44.38,8.119999999999997
+401112248,10/18/2019,08:30 PM,Ohio State @ Northwestern,Northwestern,Ohio State,Home,26.5,-24.97,51.47,High,44.43,-24.97,Under,50.0,44.43,5.57
+401117528,10/18/2019,10:00 PM,UNLV @ Fresno State,Fresno State,UNLV,Away,-14.5,13.13,27.630000000000003,High,60.53,13.13,Over,52.0,60.53,8.530000000000001
+401112488,10/19/2019,12:00 PM,Georgia Tech @ Miami,Miami,Georgia Tech,Away,-18.0,19.02,37.019999999999996,High,49.04,19.02,Over,46.0,49.04,3.039999999999999
+401112090,10/19/2019,12:00 PM,Iowa State @ Texas Tech,Texas Tech,Iowa State,Home,10.0,-3.65,13.65,High,57.31,-3.65,No Bet,58.0,57.31,0.0
+401110829,10/19/2019,12:00 PM,Florida @ South Carolina,South Carolina,Florida,Home,3.5,-0.52,4.02,High,47.09,-0.52,Over,44.0,47.09,3.0900000000000034
+401112485,10/19/2019,12:00 PM,Clemson @ Louisville,Louisville,Clemson,Home,24.0,-8.22,32.22,High,63.08,-8.22,No Bet,62.0,63.08,0.0
+401117886,10/19/2019,12:00 PM,Houston @ UConn,UConn,Houston,Home,21.0,-15.67,36.67,High,63.44,-15.67,Over,56.0,63.44,7.439999999999998
+401112484,10/19/2019,12:00 PM,NC State @ Boston College,Boston College,NC State,Home,4.5,0.55,3.95,High,52.86,0.55,No Bet,54.0,52.86,0.0
+401112196,10/19/2019,12:00 PM,Purdue @ Iowa,Iowa,Purdue,Away,-17.5,18.49,35.989999999999995,High,39.48,18.49,Under,47.5,39.48,8.020000000000003
+401112119,10/19/2019,12:00 PM,West Virginia @ Oklahoma,Oklahoma,West Virginia,Away,-33.0,28.68,61.68,High,67.02,28.68,Over,63.5,67.02,3.519999999999996
+401119283,10/19/2019,12:00 PM,Kent State @ Ohio,Ohio,Kent State,Away,-9.0,5.68,14.68,High,59.87,5.68,Under,64.5,59.87,4.630000000000003
+401110825,10/19/2019,12:00 PM,Auburn @ Arkansas,Arkansas,Auburn,Home,20.5,-13.25,33.75,High,56.23,-13.25,No Bet,56.0,56.23,0.0
+401112151,10/19/2019,12:00 PM,Wisconsin @ Illinois,Illinois,Wisconsin,Home,28.5,-25.41,53.91,High,57.74,-25.41,Over,52.0,57.74,5.740000000000002
+401119282,10/19/2019,02:00 PM,Central Michigan @ Bowling Green,Bowling Green,Central Michigan,Home,11.5,-6.13,17.63,High,55.28,-6.13,No Bet,54.0,55.28,0.0
+401119285,10/19/2019,02:00 PM,Toledo @ Ball State,Ball State,Toledo,Away,-3.5,6.24,9.74,High,57.62,6.24,No Bet,58.5,57.62,0.0
+401119284,10/19/2019,02:30 PM,Northern Illinois @ Miami (OH),Miami (OH),Northern Illinois,Away,1.5,6.58,5.08,High,57.94,6.58,Over,48.0,57.94,9.939999999999998
+401114178,10/19/2019,02:30 PM,Oregon State @ California,California,Oregon State,Away,-10.0,12.9,22.9,High,52.52,12.9,No Bet,51.0,52.52,0.0
+401112109,10/19/2019,02:30 PM,TCU @ Kansas State,Kansas State,TCU,No Bet,4.0,3.85,0.0,None,55.11,3.85,Over,44.0,55.11,11.11
+401121956,10/19/2019,03:00 PM,Coastal Carolina @ Georgia Southern,Georgia Southern,Coastal Carolina,Away,-7.0,1.42,8.42,High,51.91,1.42,Over,43.0,51.91,8.909999999999997
+401117526,10/19/2019,03:00 PM,New Mexico @ Wyoming,Wyoming,New Mexico,Away,-17.5,21.79,39.29,High,62.6,21.79,Over,49.0,62.6,13.600000000000001
+401117887,10/19/2019,03:30 PM,Temple @ SMU,SMU,Temple,Away,-9.5,10.24,19.740000000000002,High,61.3,10.24,No Bet,60.0,61.3,0.0
+401121955,10/19/2019,03:30 PM,UL Monroe @ App State,App State,UL Monroe,Away,-16.5,19.29,35.79,High,71.25,19.29,Over,65.5,71.25,5.75
+401117885,10/19/2019,03:30 PM,Tulsa @ Cincinnati,Cincinnati,Tulsa,Away,-16.0,17.83,33.83,High,48.4,17.83,No Bet,47.0,48.4,0.0
+401114196,10/19/2019,03:30 PM,Oregon @ Washington,Washington,Oregon,Home,3.0,0.33,2.67,High,49.75,0.33,No Bet,48.0,49.75,0.0
+401112234,10/19/2019,03:30 PM,Minnesota @ Rutgers,Rutgers,Minnesota,Home,28.5,-17.47,45.97,High,53.02,-17.47,Over,46.0,53.02,7.020000000000003
+401112163,10/19/2019,03:30 PM,Indiana @ Maryland,Maryland,Indiana,No Bet,6.5,6.3,0.0,None,60.61,6.3,No Bet,59.5,60.61,0.0
+401112486,10/19/2019,03:30 PM,Duke @ Virginia,Virginia,Duke,Away,-3.5,4.24,7.74,High,56.72,4.24,Over,45.0,56.72,11.719999999999999
+401110828,10/19/2019,03:30 PM,LSU @ Mississippi State,Mississippi State,LSU,Home,19.0,-13.74,32.74,High,71.04,-13.74,Over,62.5,71.04,8.540000000000006
+401117883,10/19/2019,03:30 PM,South Florida @ Navy,Navy,South Florida,Away,-15.5,21.9,37.4,High,58.17,21.9,Over,52.0,58.17,6.170000000000002
+401112489,10/19/2019,03:30 PM,North Carolina @ Virginia Tech,Virginia Tech,North Carolina,Home,4.5,-2.07,6.57,High,54.59,-2.07,No Bet,57.0,54.59,0.0
+401114289,10/19/2019,03:30 PM,Southern Miss @ Louisiana Tech,Louisiana Tech,Southern Miss,Away,3.0,8.04,5.039999999999999,High,61.01,8.04,No Bet,58.5,61.01,0.0
+401119281,10/19/2019,03:30 PM,Buffalo @ Akron,Akron,Buffalo,Home,17.5,-13.47,30.97,High,49.66,-13.47,No Bet,47.5,49.66,0.0
+401114286,10/19/2019,04:00 PM,Charlotte @ Western Kentucky,Western Kentucky,Charlotte,Away,-9.5,13.71,23.21,High,57.95,13.71,Over,48.0,57.95,9.950000000000003
+401114291,10/19/2019,04:00 PM,Old Dominion @ UAB,UAB,Old Dominion,Away,-16.5,17.53,34.03,High,45.13,17.53,No Bet,42.5,45.13,0.0
+401110830,10/19/2019,04:00 PM,Missouri @ Vanderbilt,Vanderbilt,Missouri,Home,21.0,-20.76,41.760000000000005,High,53.01,-20.76,Under,56.5,53.01,3.490000000000002
+401112079,10/19/2019,04:00 PM,Baylor @ Oklahoma State,Oklahoma State,Baylor,Away,-5.5,4.56,10.059999999999999,High,63.82,4.56,Under,68.5,63.82,4.68
+401114290,10/19/2019,04:00 PM,Middle Tennessee @ North Texas,North Texas,Middle Tennessee,Away,-7.0,11.57,18.57,High,60.75,11.57,No Bet,59.5,60.75,0.0
+401110826,10/19/2019,06:00 PM,Kentucky @ Georgia,Georgia,Kentucky,Away,-23.5,21.69,45.19,High,45.43,21.69,No Bet,45.5,45.43,0.0
+401114292,10/19/2019,06:00 PM,Rice @ UTSA,UTSA,Rice,Home,5.0,-0.39,5.39,High,47.31,-0.39,Over,43.0,47.31,4.310000000000002
+401114158,10/19/2019,06:00 PM,Arizona State @ Utah,Utah,Arizona State,Away,-16.0,15.3,31.3,High,36.76,15.3,Under,46.0,36.76,9.240000000000002
+401117529,10/19/2019,07:00 PM,San Diego State @ San José State,San José State,San Diego State,Home,7.5,-2.82,10.32,High,42.75,-2.82,No Bet,45.5,42.75,0.0
+401114329,10/19/2019,07:00 PM,Army @ Georgia State,Georgia State,Army,No Bet,4.0,1.83,0.0,None,61.69,1.83,Over,54.5,61.69,7.189999999999998
+401119286,10/19/2019,07:00 PM,Western Michigan @ Eastern Michigan,Eastern Michigan,Western Michigan,Home,9.0,-3.39,12.39,High,59.37,-3.39,No Bet,61.0,59.37,0.0
+401117884,10/19/2019,07:00 PM,East Carolina @ UCF,UCF,East Carolina,Away,-34.5,25.97,60.47,High,57.28,25.97,Under,65.5,57.28,8.219999999999999
+401114187,10/19/2019,07:00 PM,Colorado @ Washington State,Washington State,Colorado,Away,-13.5,13.4,26.9,High,76.67,13.4,Over,68.0,76.67,8.670000000000002
+401114287,10/19/2019,07:00 PM,UTEP @ Florida International,Florida International,UTEP,Away,-25.0,21.63,46.629999999999995,High,48.6,21.63,No Bet,51.0,48.6,0.0
+401117888,10/19/2019,07:00 PM,Tulane @ Memphis,Memphis,Tulane,Away,-2.0,5.34,7.34,High,59.77,5.34,No Bet,60.5,59.77,0.0
+401112102,10/19/2019,07:00 PM,Kansas @ Texas,Texas,Kansas,Away,-20.0,22.06,42.06,High,59.22,22.06,Under,63.5,59.22,4.280000000000001
+401112226,10/19/2019,07:30 PM,Michigan @ Penn State,Penn State,Michigan,Away,-7.5,21.3,28.8,High,51.92,21.3,Over,47.0,51.92,4.920000000000002
+401110827,10/19/2019,07:30 PM,Texas A&M @ Ole Miss,Ole Miss,Texas A&M,Home,6.0,0.35,5.65,High,56.34,0.35,No Bet,54.5,56.34,0.0
+401112487,10/19/2019,07:30 PM,Florida State @ Wake Forest,Wake Forest,Florida State,Away,3.0,10.76,7.76,High,69.64,10.76,No Bet,69.0,69.64,0.0
+401110824,10/19/2019,09:00 PM,Tennessee @ Alabama,Alabama,Tennessee,Away,-35.0,34.39,69.39,High,59.13,34.39,No Bet,62.0,59.13,0.0
+401114169,10/19/2019,09:30 PM,Arizona @ USC,USC,Arizona,Away,-10.0,11.74,21.740000000000002,High,61.96,11.74,Under,68.0,61.96,6.039999999999999
+401117527,10/19/2019,10:15 PM,Nevada @ Utah State,Utah State,Nevada,Away,-21.0,25.55,46.55,High,61.92,25.55,No Bet,59.0,61.92,0.0
+401117215,10/19/2019,10:15 PM,Boise State @ BYU,BYU,Boise State,Home,7.0,-7.92,14.92,High,55.97,-7.92,Over,45.0,55.97,10.969999999999999
+401117525,10/19/2019,11:00 PM,Air Force @ Hawai'i,Hawai'i,Air Force,Home,4.5,1.2,3.3,High,63.58,1.2,No Bet,66.5,63.58,0.0

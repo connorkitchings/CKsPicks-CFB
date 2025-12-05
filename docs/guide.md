@@ -1,9 +1,29 @@
 # CFB Model Guide — Single Source of Truth
 
-**Last Updated**: 2025-12-04
-**Status**: Active (Post-Reorganization)
+**Last Updated**: 2025-12-05  
+**Status**: Active (V2 Workflow Aligned)
 
 This is the canonical entry point for all project documentation. All other docs link here or are linked from here.
+
+---
+
+## 🎯 V2 Experimentation Workflow (NEW)
+
+**Status**: Implementation starting Week 1 (Dec 9, 2025)
+
+The project follows a **4-phase V2 workflow** for all modeling work:
+
+1. **Phase 1: Baseline Establishment** → Ridge regression with minimal features
+2. **Phase 2: Feature Engineering & Selection** → Test features with baseline model
+3. **Phase 3: Model Selection** → Test complex models with promot features
+4. **Phase 4: Deployment & Monitoring** → Champion Model to production
+
+**Key Documents**:
+
+- [V2 Workflow](process/experimentation_workflow.md) — Full 4-phase process
+- [12-Week Plan](process/12_week_implementation_plan.md) — Week-by-week roadmap
+- [Promotion Framework](process/promotion_framework.md) — 5-gate rigor system
+- [V2 Baseline](modeling/baseline.md) — Ridge regression philosophy
 
 ---
 
@@ -16,48 +36,72 @@ This is the canonical entry point for all project documentation. All other docs 
 
 ### I Need To...
 
-| Task | Go To |
-|------|-------|
-| Set up development environment | [Getting Started](#getting-started) |
-| Run the weekly pipeline | [Weekly Pipeline](ops/weekly_pipeline.md) |
-| Understand current models | [Modeling Baseline](modeling/baseline.md) |
-| Run an experiment | [Experiments](experiments/index.md) |
-| Add a new feature | [Feature Engineering](modeling/features.md) |
-| Review betting policy | [Betting Policy](modeling/betting_policy.md) |
-| Check recent decisions | [Decision Log](decisions/decision_log.md) |
-| Troubleshoot data issues | [Data & Paths](ops/data_paths.md) |
+| Task                           | Go To                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| **Understand V2 workflow**     | [V2 Workflow](process/experimentation_workflow.md)                                                |
+| **See 12-week plan**           | [12-Week Plan](process/12_week_implementation_plan.md)                                            |
+| Set up development environment | [Getting Started](#getting-started)                                                               |
+| Run the weekly pipeline        | [Weekly Pipeline](ops/weekly_pipeline.md)                                                         |
+| Understand current baseline    | [V2 Baseline](modeling/baseline.md)                                                               |
+| Run an experiment              | [Experiments](experiments/index.md) + [Promotion Framework](process/promotion_framework.md)       |
+| Add a new feature              | [Feature Engineering](modeling/features.md) + [Feature Registry](project_org/feature_registry.md) |
+| Review betting policy          | [Betting Policy](modeling/betting_policy.md)                                                      |
+| Check recent decisions         | [Decision Log](decisions/decision_log.md)                                                         |
+| Troubleshoot data issues       | [Data & Paths](ops/data_paths.md) + [Data Quality](ops/data_quality.md)                           |
+| Monitor model performance      | [Monitoring Dashboard](ops/monitoring.md)                                                         |
+| Rollback a model               | [Rollback SOP](ops/rollback_sop.md)                                                               |
 
 ---
 
 ## 📖 Documentation Structure
 
 ### Process & Workflow
+
 **How we work: development standards, ML workflow, AI collaboration**
 
 - [ML Workflow](process/ml_workflow.md) — Train/Test/Deploy split, model versioning
 - [Development Standards](process/development_standards.md) — Code style, testing, documentation
+- [Experimentation Workflow](process/experimentation_workflow.md) - The V2 process for all modeling.
+- [Data Quality Validation Workflow](process/data_quality_workflow.md) - Automated checks for data integrity.
+- [Opponent-Adjustment Analysis Workflow](process/adjustment_analysis_workflow.md) - Process for validating adjustment iterations.
 - [AI Session Templates](process/ai_session_templates.md) — Kickoff and closing templates
 - [Session Logs](../session_logs/) — Chronological development history
 
+### Data Pipeline Flow
+
+1.  **Raw Ingestion** → Fetch from CollegeFootballData.com API into local raw storage.
+2.  **Aggregation** → Run `scripts/pipeline/run_pipeline_generic.py` to transform raw plays into aggregated `byplay`, `drives`, and `team_game` datasets in processed storage.
+3.  **Validation** → Run `scripts/pipeline/validate_data.py` to verify the quality and integrity of the aggregated data.
+4.  **Feature Engineering** → Generate point-in-time, opponent-adjusted features for modeling (`team_week_adj`).
+5.  **Modeling** → Train models using the V2 Experimentation Workflow.
+6.  **Inference** → Derive spreads/totals, calculate edges, and apply betting policy.
+
 ### Modeling & Features
+
 **What we build: models, features, evaluation criteria**
 
 - [Modeling Baseline](modeling/baseline.md) — Current production architecture
 - [Feature Catalog](modeling/features.md) — All engineered features and definitions
+- [Generated Feature Dictionary](modeling/feature_dictionary.md) - Auto-generated dictionary of all available features.
 - [Feature Registry](../project_org/feature_registry.md) — Active feature groups (Hydra configs)
 - [Experiments Index](../experiments/index.md) — Experiment tracking and results
 - [Betting Policy](modeling/betting_policy.md) — Unit sizing, exposure rules, risk management
 - [Calibration](modeling/calibration.md) — Model calibration and bias correction
 
 ### Operations
-**How we run: pipelines, deployment, data management**
+
+**How we run: pipelines, deployment, data management, monitoring**
 
 - [Weekly Pipeline](ops/weekly_pipeline.md) — 5-step production workflow
+- [Production Deployment](ops/production_deployment.md) — Champion Model deployment (Phase 4)
+- **[Monitoring Dashboard](ops/monitoring.md)** — **NEW:** Streamlit dashboard for performance tracking
+- **[Rollback SOP](ops/rollback_sop.md)** — **NEW:** Model rollback procedure
+- **[Data Quality](ops/data_quality.md)** — **NEW:** 3-layer validation system
 - [Data Paths & Storage](ops/data_paths.md) — External drive configuration, partitioning
 - [MLflow Usage](ops/mlflow_mcp.md) — Experiment tracking, model registry
-- [Dashboard](ops/dashboard.md) — Monitoring and visualization
 
 ### Planning & Roadmap
+
 **Where we're going: roadmap, active initiatives**
 
 - [Project Roadmap](planning/roadmap.md) — High-level strategy and timeline
@@ -65,12 +109,14 @@ This is the canonical entry point for all project documentation. All other docs 
 - [Points-For Model (Archive)](archive/points_for_model.md) — Historical: rejected architecture
 
 ### Research
+
 **Exploratory work: PRDs, prototypes, investigations**
 
 - [Probabilistic Power Ratings](research/ppr_prd.md) — Bayesian team ratings (active research)
 - [Research Archive](research/archive/) — Completed or abandoned investigations
 
 ### Decisions
+
 **Why we chose: decision history and rationale**
 
 - [Decision Log](decisions/decision_log.md) — All major modeling and architecture decisions
@@ -126,6 +172,7 @@ MLFLOW_TRACKING_URI='file://./artifacts/mlruns'                    # MLflow stor
 ```
 
 **Always verify before ANY data operation**:
+
 ```python
 import os
 from pathlib import Path
@@ -171,10 +218,12 @@ cfb_model/
 │   ├── experiment/           # Pre-packaged experiments
 │   └── weekly_bets/          # Betting policy configs
 ├── tests/                    # Test suite
-├── artifacts/                # Local outputs (git-ignored)
+├── artifacts/                # V2 outputs (see docs/ops/artifacts_structure.md)
 │   ├── mlruns/               # MLflow tracking
-│   ├── outputs/              # Generated reports
-│   └── models/               # Saved model artifacts
+│   ├── models/               # Trained models (baseline, candidates, production)
+│   ├── experiments/          # Experiment outputs (metrics, plots)
+│   ├── production/           # Weekly predictions, scoring, monitoring
+│   └── validation/           # Data quality, walk-forward validation
 ├── archive/                  # Unused scripts, configs, notebooks
 ├── session_logs/             # Development session history
 ├── CLAUDE.md                 # AI assistant protocols
@@ -197,12 +246,13 @@ See [Weekly Pipeline](ops/weekly_pipeline.md) for production workflow.
 
 **As of December 2025 (v5 models)**:
 
-| Model | Target | Architecture | Features | Performance (2024 Test) |
-|-------|--------|-------------|----------|------------------------|
-| `spread_catboost_ppr` v5 | Spread | CatBoost ensemble (5 seeds) | ppr_v1 | 52.2% hit rate (226-207-8) |
-| `totals_xgboost_ppr` v5 | Total | XGBoost ensemble (5 seeds) | standard_v1 | 58.6% hit rate (112-79-4) |
+| Model                    | Target | Architecture                | Features    | Performance (2024 Test)    |
+| ------------------------ | ------ | --------------------------- | ----------- | -------------------------- |
+| `spread_catboost_ppr` v5 | Spread | CatBoost ensemble (5 seeds) | ppr_v1      | 52.2% hit rate (226-207-8) |
+| `totals_xgboost_ppr` v5  | Total  | XGBoost ensemble (5 seeds)  | standard_v1 | 58.6% hit rate (112-79-4)  |
 
 **Key Configuration**:
+
 - Train Years: 2019, 2021, 2022, 2023 (exclude 2020 COVID year)
 - Test Year: 2024 (locked holdout)
 - Deploy Year: 2025 (live production)
@@ -279,6 +329,7 @@ mkdocs build --quiet
 - **Volume**: Number of bets meeting threshold criteria
 
 **Current Status (2025 Live Performance)**:
+
 - Spread: 50.1% hit rate (237-236-11) — Below breakeven ⚠️
 - Total: 51.4% hit rate (95-90-0) — Below breakeven ⚠️
 
@@ -289,18 +340,22 @@ See [Experiments Index](../experiments/index.md) for detailed tracking.
 ## 🚨 Common Pitfalls
 
 ### 1. Data Not on External Drive
+
 **Problem**: Script creates `./data/` in project root
 **Solution**: Always load `CFB_MODEL_DATA_ROOT` from env; fail loudly if not set
 
 ### 2. Train/Test Data Leakage
+
 **Problem**: Including test year in training data
 **Solution**: Use locked split: Train on 2019/2021-2023, Test on 2024, Deploy on 2025
 
 ### 3. Hardcoded Paths
+
 **Problem**: Using `/Users/...` or `./data/`
 **Solution**: Always use `os.getenv("CFB_MODEL_DATA_ROOT")`
 
 ### 4. Modifying Betting Policy in Code
+
 **Problem**: Changing unit sizing or exposure rules programmatically
 **Solution**: Only read and apply policy from [Betting Policy](modeling/betting_policy.md)
 
@@ -311,18 +366,21 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 ## 📚 Learning Paths
 
 ### New Developer
+
 1. Read this guide → [Getting Started](#getting-started)
 2. Review [Development Standards](process/development_standards.md)
 3. Explore [Modeling Baseline](modeling/baseline.md)
 4. Try running [Weekly Pipeline](ops/weekly_pipeline.md) on historical data
 
 ### Data Scientist / Researcher
+
 1. Start with [Modeling Baseline](modeling/baseline.md) and [Feature Catalog](modeling/features.md)
 2. Review [Experiments Index](../experiments/index.md) for current state
 3. Check [Decision Log](decisions/decision_log.md) for recent changes
 4. Read [ML Workflow](process/ml_workflow.md) for train/test protocols
 
 ### AI Assistant
+
 1. Read [CLAUDE.md](../CLAUDE.md) for session protocols
 2. Review this guide for navigation
 3. Check [AI Session Templates](process/ai_session_templates.md) for workflows
@@ -342,6 +400,7 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 ## 📝 Changelog
 
 ### 2025-12-04: Repository Reorganization
+
 - Created `docs/guide.md` as single source of truth
 - Reorganized docs into process/, modeling/, ops/, planning/, research/ buckets
 - Created archive/ for unused scripts and configs
@@ -349,11 +408,13 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 - Purged stale artifacts (preserved 2025 Week 15 predictions)
 
 ### 2025-12-03: ML Workflow Standardization
+
 - Fixed train/test split (removed 2024 from training)
 - Retrained v5 models with proper split
 - Created `docs/project_org/ml_workflow.md`
 
 ### 2025-12-01: PPR Prototype
+
 - Implemented Probabilistic Power Ratings with Gaussian Random Walk
 - Created backtest script for walk-forward validation
 

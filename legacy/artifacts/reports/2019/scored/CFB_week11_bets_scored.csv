@@ -1,0 +1,49 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401119297,11/05/2019,07:00 PM,Kent State @ Toledo,Toledo,Kent State,Away,-4.5,6.75,11.25,High,54.38,6.75,Under,63.0,54.38,8.619999999999997,401119297,35,33,Win,Loss,2,68
+401119296,11/05/2019,08:00 PM,Ball State @ Western Michigan,Western Michigan,Ball State,Away,-6.5,7.43,13.93,High,61.95,7.43,Under,65.0,61.95,3.049999999999997,401119296,35,31,Win,Loss,4,66
+401119298,11/06/2019,08:00 PM,Miami (OH) @ Ohio,Ohio,Miami (OH),Away,-7.5,9.03,16.53,High,63.41,9.03,Over,57.5,63.41,5.909999999999997,401119298,21,24,Win,Loss,-3,45
+401121964,11/07/2019,07:30 PM,Louisiana @ Coastal Carolina,Coastal Carolina,Louisiana,Home,14.0,-8.28,22.28,High,55.43,-8.28,No Bet,58.0,55.43,0.0,401121964,7,48,Loss,No Bet,-41,55
+401117899,11/07/2019,08:00 PM,Temple @ South Florida,South Florida,Temple,Away,0.0,3.8,3.8,High,50.43,3.8,No Bet,50.0,50.43,0.0,401117899,7,17,Win,No Bet,-10,24
+401117900,11/08/2019,07:00 PM,UCF @ Tulsa,Tulsa,UCF,Home,17.0,-12.6,29.6,High,70.0,-12.6,No Bet,68.5,70.0,0.0,401117900,34,31,Win,No Bet,3,65
+401114205,11/08/2019,10:30 PM,Washington @ Oregon State,Oregon State,Washington,Home,11.0,-4.18,15.18,High,67.01,-4.18,No Bet,64.5,67.01,0.0,401114205,7,19,Loss,No Bet,-12,26
+401112142,11/09/2019,12:00 PM,Texas Tech @ West Virginia,West Virginia,Texas Tech,Home,2.5,-0.51,3.01,High,56.03,-0.51,No Bet,57.5,56.03,0.0,401112142,17,38,Loss,No Bet,-21,55
+401114332,11/09/2019,12:00 PM,Massachusetts @ Army,Army,Massachusetts,Away,-35.0,38.48,73.47999999999999,High,66.26,38.48,Over,61.0,66.26,5.260000000000005,401114332,63,7,Loss,Win,56,70
+401110844,11/09/2019,12:00 PM,Vanderbilt @ Florida,Florida,Vanderbilt,Away,-27.5,31.19,58.69,High,47.66,31.19,No Bet,49.5,47.66,0.0,401110844,56,0,Loss,No Bet,56,56
+401117902,11/09/2019,12:00 PM,East Carolina @ SMU,SMU,East Carolina,Away,-23.0,23.11,46.11,High,71.99,23.11,No Bet,74.0,71.99,0.0,401117902,59,51,Win,No Bet,8,110
+401112209,11/09/2019,12:00 PM,Maryland @ Ohio State,Ohio State,Maryland,Away,-43.5,41.67,85.17,High,62.29,41.67,Under,66.0,62.29,3.710000000000001,401112209,73,14,Loss,Loss,59,87
+401110843,11/09/2019,12:00 PM,Western Kentucky @ Arkansas,Arkansas,Western Kentucky,No Bet,0.0,-0.87,0.0,,49.05,-0.87,No Bet,51.0,49.05,0.0,401110843,19,45,No Bet,No Bet,-26,64
+401112249,11/09/2019,12:00 PM,Purdue @ Northwestern,Northwestern,Purdue,No Bet,0.0,1.61,0.0,,41.72,1.61,Over,38.5,41.72,3.219999999999999,401112249,22,24,No Bet,Win,-2,46
+401112502,11/09/2019,12:00 PM,Florida State @ Boston College,Boston College,Florida State,Away,-1.5,4.98,6.48,High,63.92,4.98,No Bet,64.0,63.92,0.0,401112502,31,38,Win,No Bet,-7,69
+401112081,11/09/2019,12:00 PM,Baylor @ TCU,TCU,Baylor,No Bet,3.0,2.55,0.0,,58.28,2.55,Over,48.5,58.28,9.78,401112081,23,29,No Bet,Win,-6,52
+401112235,11/09/2019,12:00 PM,Penn State @ Minnesota,Minnesota,Penn State,Home,7.0,-8.39,15.39,High,57.32,-8.39,Over,49.0,57.32,8.32,401112235,31,26,Win,Win,5,57
+401112504,11/09/2019,12:30 PM,Georgia Tech @ Virginia,Virginia,Georgia Tech,Away,-15.5,19.16,34.66,High,54.15,19.16,Over,46.5,54.15,7.649999999999999,401112504,33,28,Win,Win,5,61
+401114307,11/09/2019,02:00 PM,UTSA @ Old Dominion,Old Dominion,UTSA,Away,-3.0,7.31,10.31,High,44.96,7.31,No Bet,42.0,44.96,0.0,401114307,23,24,Win,No Bet,-1,47
+401114190,11/09/2019,03:00 PM,Stanford @ Colorado,Colorado,Stanford,No Bet,4.0,2.42,0.0,,50.95,2.42,Under,57.0,50.95,6.049999999999997,401114190,16,13,No Bet,Win,3,29
+401121967,11/09/2019,03:00 PM,South Alabama @ Texas State,Texas State,South Alabama,Away,-7.0,8.0,15.0,High,35.29,8.0,Under,41.0,35.29,5.710000000000001,401121967,30,28,Win,Loss,2,58
+401114304,11/09/2019,03:00 PM,Charlotte @ UTEP,UTEP,Charlotte,Home,13.0,-6.51,19.51,High,65.64,-6.51,Over,55.0,65.64,10.64,401114304,21,28,Win,Loss,-7,49
+401110842,11/09/2019,03:30 PM,LSU @ Alabama,Alabama,LSU,Away,-5.0,7.05,12.05,High,75.26,7.05,Over,65.0,75.26,10.260000000000003,401110842,41,46,Win,Win,-5,87
+401114160,11/09/2019,03:30 PM,USC @ Arizona State,Arizona State,USC,No Bet,4.5,3.31,0.0,,50.48,3.31,Under,54.5,50.48,4.020000000000003,401114160,26,31,No Bet,Loss,-5,57
+401112505,11/09/2019,03:30 PM,Louisville @ Miami,Miami,Louisville,Away,-7.0,9.41,16.41,High,53.53,9.41,Over,49.5,53.53,4.030000000000001,401112505,52,27,Loss,Win,25,79
+401112506,11/09/2019,03:30 PM,Wake Forest @ Virginia Tech,Virginia Tech,Wake Forest,Home,3.0,-2.17,5.17,High,65.52,-2.17,Over,61.0,65.52,4.519999999999996,401112506,36,17,Win,Loss,19,53
+401114308,11/09/2019,03:30 PM,UAB @ Southern Miss,Southern Miss,UAB,Away,-7.5,5.2,12.7,High,53.78,5.2,Over,49.5,53.78,4.280000000000001,401114308,37,2,Loss,Loss,35,39
+401121965,11/09/2019,03:30 PM,Georgia Southern @ Troy,Troy,Georgia Southern,No Bet,2.0,1.62,0.0,,63.16,1.62,Over,57.0,63.16,6.159999999999997,401121965,49,28,No Bet,Win,21,77
+401112154,11/09/2019,03:30 PM,Illinois @ Michigan State,Michigan State,Illinois,Away,-15.0,12.76,27.76,High,48.94,12.76,No Bet,47.0,48.94,0.0,401112154,34,37,Win,No Bet,-3,71
+401112111,11/09/2019,03:30 PM,Kansas State @ Texas,Texas,Kansas State,Away,-7.0,3.1,10.1,High,66.89,3.1,Over,58.0,66.89,8.89,401112111,27,24,Win,Loss,3,51
+401117901,11/09/2019,03:30 PM,UConn @ Cincinnati,Cincinnati,UConn,Away,-34.0,31.5,65.5,High,54.51,31.5,No Bet,53.0,54.51,0.0,401117901,48,3,Loss,No Bet,45,51
+401114306,11/09/2019,04:00 PM,North Texas @ Louisiana Tech,Louisiana Tech,North Texas,Away,-6.0,8.35,14.35,High,71.77,8.35,No Bet,72.5,71.77,0.0,401114306,52,17,Loss,No Bet,35,69
+401110847,11/09/2019,04:00 PM,New Mexico State @ Ole Miss,Ole Miss,New Mexico State,Away,-28.0,24.97,52.97,High,57.05,24.97,Under,64.5,57.05,7.450000000000003,401110847,41,3,Loss,Win,38,44
+401112198,11/09/2019,04:00 PM,Iowa @ Wisconsin,Wisconsin,Iowa,Away,-8.0,15.81,23.81,High,37.36,15.81,No Bet,37.5,37.36,0.0,401112198,24,22,Win,No Bet,2,46
+401121966,11/09/2019,05:00 PM,Georgia State @ UL Monroe,UL Monroe,Georgia State,Home,3.0,-2.52,5.52,High,84.46,-2.52,Over,77.0,84.46,7.459999999999994,401121966,45,31,Win,Loss,14,76
+401114305,11/09/2019,06:00 PM,Florida International @ Florida Atlantic,Florida Atlantic,Florida International,Away,-12.5,18.97,31.47,High,52.54,18.97,Under,59.0,52.54,6.460000000000001,401114305,37,7,Loss,Win,30,44
+401110845,11/09/2019,07:00 PM,Missouri @ Georgia,Georgia,Missouri,Away,-19.5,14.86,34.36,High,49.65,14.86,No Bet,48.0,49.65,0.0,401110845,27,0,Loss,No Bet,27,27
+401117540,11/09/2019,07:00 PM,Utah State @ Fresno State,Fresno State,Utah State,Away,-5.0,4.6,9.6,High,60.89,4.6,No Bet,59.0,60.89,0.0,401117540,35,37,Win,No Bet,-2,72
+401114180,11/09/2019,07:00 PM,Washington State @ California,California,Washington State,Home,8.5,-2.57,11.07,High,57.89,-2.57,Over,52.5,57.89,5.390000000000001,401114180,33,20,Win,Win,13,53
+401110848,11/09/2019,07:00 PM,App State @ South Carolina,South Carolina,App State,Away,-7.0,-1.98,5.02,High,57.3,-1.98,Over,51.0,57.3,6.299999999999997,401110848,15,20,Win,Loss,-5,35
+401111654,11/09/2019,07:30 PM,Notre Dame @ Duke,Duke,Notre Dame,Home,7.5,0.16,7.34,High,58.37,0.16,Over,50.0,58.37,8.369999999999997,401111654,7,38,Loss,Loss,-31,45
+401112503,11/09/2019,07:30 PM,Clemson @ NC State,NC State,Clemson,Home,36.0,-22.3,58.3,High,49.25,-22.3,Under,55.0,49.25,5.75,401112503,10,55,Loss,Loss,-45,65
+401114353,11/09/2019,07:30 PM,Liberty @ BYU,BYU,Liberty,Away,-17.5,10.29,27.79,High,56.28,10.29,Under,62.5,56.28,6.219999999999999,401114353,31,24,Win,Win,7,55
+401110846,11/09/2019,07:30 PM,Tennessee @ Kentucky,Kentucky,Tennessee,Away,-1.5,4.52,6.02,High,38.06,4.52,Under,42.5,38.06,4.439999999999998,401110846,13,17,Win,Win,-4,30
+401112092,11/09/2019,08:00 PM,Iowa State @ Oklahoma,Oklahoma,Iowa State,Away,-15.5,13.13,28.630000000000003,High,70.03,13.13,No Bet,71.0,70.03,0.0,401112092,42,41,Win,No Bet,1,83
+401117541,11/09/2019,10:15 PM,Wyoming @ Boise State,Boise State,Wyoming,Away,-16.5,12.41,28.91,High,57.53,12.41,Over,48.0,57.53,9.53,401117541,20,17,Win,Loss,3,37
+401117542,11/09/2019,10:30 PM,Nevada @ San Diego State,San Diego State,Nevada,Away,-17.0,23.69,40.69,High,38.79,23.69,No Bet,40.0,38.79,0.0,401117542,13,17,Win,No Bet,-4,30
+401117543,11/09/2019,11:00 PM,San José State @ Hawai'i,Hawai'i,San José State,Away,-7.5,9.92,17.42,High,76.03,9.92,No Bet,79.0,76.03,0.0,401117543,42,40,Win,No Bet,2,82

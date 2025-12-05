@@ -10,15 +10,15 @@ This directory contains unused, legacy, or deprecated scripts, configs, and note
 
 ### Scripts
 
-*To be populated during script archiving phase*
+_To be populated during script archiving phase_
 
 ### Configs
 
-*To be populated during config archiving phase*
+_To be populated during config archiving phase_
 
 ### Notebooks
 
-*To be populated during notebook archiving phase*
+_To be populated during notebook archiving phase_
 
 ### Decision Log
 
@@ -62,11 +62,44 @@ If an archived item is needed again:
 
 ### 2025-12-04: Initial Reorganization
 
-**Decision Log** decision_log_legacy.md
+**Decision Log**: `decision_log_legacy.md`
+
 - **Original Location**: `docs/decisions/decision_log.md`
 - **Reason**: Repository reorganization — starting fresh post-reorg
 - **Size**: ~185 decision entries (2025-11-20 through 2025-12-03)
 - **Restore If**: Need to reference historical model development context
+
+---
+
+### 2025-12-05: V2 Documentation Alignment
+
+**Model Documentation**: `model_history.md`
+
+- **Original Location**: `docs/models/model_history.md`
+- **Reason**: V2 reorganization — legacy model timeline no longer relevant
+- **Size**: Historical model progression documentation
+- **Restore If**: Need to reference pre-V2 model development timeline
+
+**Model Architecture**: `points_for.md`
+
+- **Original Location**: `docs/models/points_for.md`
+- **Reason**: Points-for architecture rejected (see decision log 2025-XX-XX)
+- **Size**: Architectural documentation
+- **Restore If**: Reconsidering points-for approach (unlikely)
+
+**Ridge Baseline (Legacy)**: `ridge_baseline_legacy.md`
+
+- **Original Location**: `docs/models/ridge_baseline.md`
+- **Reason**: Replaced by V2 baseline.md with new philosophy
+- **Size**: Legacy ridge documentation
+- **Restore If**: Reference for comparison to V2 baseline
+
+**Experiments (Legacy)**: `experiments_legacy.md`
+
+- **Original Location**: `docs/experiments/index.md`
+- **Reason**: V2 workflow reset — starting fresh experiment tracking
+- **Size**: Pre-V2 experiments (SPR-001, TOT-001, etc.)
+- **Restore If**: Need to reference legacy model performance benchmarks
 
 ---
 

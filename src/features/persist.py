@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.utils.base import Partition
-from src.utils.local_storage import LocalStorage
+from utils.base import Partition
+from utils.local_storage import LocalStorage
 
 from .core import (
     aggregate_team_season,
@@ -59,7 +59,7 @@ def persist_preaggregations(
     byplay_df, drives_df, team_game_df, team_season_df = build_preaggregation_pipeline(
         plays_df, weather_df=weather_df
     )
-    team_season_adj_df = apply_iterative_opponent_adjustment(
+    team_season_adj_iterations_df = apply_iterative_opponent_adjustment(
         team_season_df, team_game_df
     )
 
@@ -71,7 +71,7 @@ def persist_preaggregations(
         "drives": 0,
         "team_game": 0,
         "team_season": 0,
-        "team_season_adj": 0,
+        "team_season_adj_iterations": 0,
     }
 
     # Create a game_id to team names mapping for efficient logging
@@ -161,62 +161,17 @@ def persist_preaggregations(
             "team_season", group_def.to_dict(orient="records"), part_def, overwrite=True
         )
 
-    # Team-season-adjusted: partition by year/team, write offense and defense CSVs in side-specific subfolders
-    for team, group in team_season_adj_df.groupby("team", dropna=False):
-        offense_cols = [
-            c
-            for c in group.columns
-            if c.startswith("adj_off_")
-            or c
-            in [
-                "season",
-                "team",
-                "games_played",
-                "plays_per_game",
-                "drives_per_game",
-                "cumulative_luck_factor",
-            ]
-        ]
-        defense_cols = [
-            c
-            for c in group.columns
-            if c.startswith("adj_def_") or c in ["season", "team", "games_played"]
-        ]
-        group_off = group[offense_cols].copy()
-        group_def = group[defense_cols].copy()
-        part_off = Partition({"year": str(year), "team": str(team), "side": "offense"})
-        totals["team_season_adj"] += processed_storage.write(
-            "team_season_adj",
-            group_off.to_dict(orient="records"),
-            part_off,
-            overwrite=True,
-        )
-        part_def = Partition({"year": str(year), "team": str(team), "side": "defense"})
-        totals["team_season_adj"] += processed_storage.write(
-            "team_season_adj",
-            group_def.to_dict(orient="records"),
-            part_def,
-            overwrite=True,
-        )
+    # Save the new long-format DataFrame with all adjustment iterations
+    part = Partition({"year": str(year)})
+    rows = team_season_adj_iterations_df.to_dict(orient="records")
+    totals["team_season_adj_iterations"] += processed_storage.write(
+        "team_season_adj_iterations", rows, part, overwrite=True
+    )
 
     # Team-week-adjusted: partition by year/week (for training)
-    # We need to generate point-in-time stats for each week.
-    # For week W, we aggregate games from weeks < W.
-    # We also need to apply opponent adjustment for each week.
-    # This is expensive but necessary for correct training data.
-
+    # This logic needs to be updated to use the new iteration-aware data.
+    # For now, we will extract the final iteration for the point-in-time calculation.
     logging.info(f"Generating team_week_adj for {year}...")
-
-    # We can optimize by reusing the logic from aggregate_team_season
-    # but applied to expanding windows.
-
-    # Pre-calculate opponent adjustments for the full season?
-    # No, opponent adjustments should also be point-in-time.
-    # But applying iterative adjustment for every week is very slow.
-    # MVP approach: Use season-ending opponent adjustments?
-    # Or just run the aggregation without adjustment for now?
-    # The model expects 'adj_off_...' columns.
-    # So we MUST run adjustment.
 
     # Load PPR ratings for this year
     ppr_path = Path("artifacts/features/ppr_ratings.parquet")
@@ -231,45 +186,37 @@ def persist_preaggregations(
             f"PPR ratings file not found at {ppr_path.absolute()}. Skipping injection."
         )
 
-    # Let's try to run it for each week.
     max_week = team_game_df["week"].max()
-    for week in range(
-        1, int(max_week) + 2
-    ):  # +2 to include bowl games/post-season if any, or just cover all weeks
-        # Games available BEFORE this week
+    for week in range(1, int(max_week) + 2):
         past_games = team_game_df[team_game_df["week"] < week].copy()
         if past_games.empty:
             continue
 
-        # Aggregate season-to-date
         std_df = aggregate_team_season(past_games)
 
-        # Apply opponent adjustment (point-in-time)
-        # We use past_games for the adjustment context
-        std_adj_df = apply_iterative_opponent_adjustment(std_df, past_games)
+        # We run the adjustment on point-in-time data
+        std_adj_iterations_df = apply_iterative_opponent_adjustment(std_df, past_games)
 
-        # Add 'week' column to the result
+        # For the team_week_adj dataset, we only need the FINAL iteration
+        final_iteration = std_adj_iterations_df["iteration"].max()
+        std_adj_df = std_adj_iterations_df[
+            std_adj_iterations_df["iteration"] == final_iteration
+        ].copy()
+
         std_adj_df["week"] = week
 
-        # Inject PPR Ratings if available
         if not ppr_year_df.empty:
-            # Filter for ratings available entering this week
-            # The backtest file for 'week' contains ratings used to predict games in 'week'.
-            # These are derived from training on data < week.
-            # So we just match on week.
             week_ratings = ppr_year_df[ppr_year_df["week"] == week][
                 ["team", "ppr_rating"]
             ]
-
             if not week_ratings.empty:
                 std_adj_df = std_adj_df.merge(week_ratings, on="team", how="left")
-                # Fill missing with 0.0 (prior mean)
                 if "ppr_rating" in std_adj_df.columns:
                     std_adj_df["ppr_rating"] = std_adj_df["ppr_rating"].fillna(0.0)
 
-        # Write to storage
         part = Partition({"year": str(year), "week": str(week)})
-        totals["team_season_adj"] += processed_storage.write(
+        # Note: This total is not captured in the final summary, as it's part of the same conceptual dataset.
+        processed_storage.write(
             "team_week_adj",
             std_adj_df.to_dict(orient="records"),
             part,
@@ -282,7 +229,7 @@ def persist_preaggregations(
             f"Pre-aggregations written under {root} for season {year}: "
             f"byplay={totals['byplay']}, drives={totals['drives']}, "
             f"team_game={totals['team_game']}, team_season={totals['team_season']}, "
-            f"team_season_adj={totals['team_season_adj']}"
+            f"team_season_adj_iterations={totals['team_season_adj_iterations']}"
         )
     return totals
 

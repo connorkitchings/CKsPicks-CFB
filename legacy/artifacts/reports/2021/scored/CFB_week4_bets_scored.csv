@@ -1,0 +1,61 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401282208,09/23/2021,07:30 PM,Marshall @ App State,App State,Marshall,Away,-7.5,5.06,12.56,High,55.38,5.06,Under,59.5,55.38,4.119999999999997,401282208,31,30,Win,Loss,1,61
+401282204,09/24/2021,06:30 PM,Middle Tennessee @ Charlotte,Charlotte,Middle Tennessee,Away,-3.0,5.89,8.89,High,50.66,5.89,Under,56.0,50.66,5.340000000000003,401282204,42,39,Push,Loss,3,81
+401282638,09/24/2021,07:00 PM,Wake Forest @ Virginia,Virginia,Wake Forest,Away,-3.5,4.57,8.07,High,53.89,4.57,Under,70.0,53.89,16.11,401282638,17,37,Win,Win,-20,54
+401282637,09/24/2021,08:00 PM,Liberty @ Syracuse,Syracuse,Liberty,Home,7.0,2.38,4.62,High,46.94,2.38,Under,54.0,46.94,7.060000000000002,401282637,24,21,Win,Win,3,45
+401310707,09/24/2021,10:00 PM,UNLV @ Fresno State,Fresno State,UNLV,Away,-30.0,26.29,56.29,High,57.38,26.29,No Bet,58.5,57.38,0.0,401310707,38,30,Win,No Bet,8,68
+401282206,09/25/2021,12:00 PM,Florida International @ Central Michigan,Central Michigan,Florida International,Away,-12.5,11.53,24.03,High,59.24,11.53,Over,55.5,59.24,3.740000000000002,401282206,31,27,Win,Win,4,58
+401301010,09/25/2021,12:00 PM,Wagner @ Temple,Temple,Wagner,Away,-36.5,14.07,50.57,High,66.28,14.07,Over,55.5,66.28,10.78,401301010,41,7,Win,Loss,34,48
+401282805,09/25/2021,12:00 PM,Ohio @ Northwestern,Northwestern,Ohio,Away,-14.0,14.33,28.33,High,50.36,14.33,No Bet,47.5,50.36,0.0,401282805,35,6,Loss,No Bet,29,41
+401308834,09/25/2021,12:00 PM,Miami (OH) @ Army,Army,Miami (OH),Away,-8.0,12.4,20.4,High,58.34,12.4,Over,49.0,58.34,9.340000000000003,401308834,23,10,Loss,Loss,13,33
+401287910,09/25/2021,12:00 PM,SMU @ TCU,TCU,SMU,Away,-9.5,4.1,13.6,High,55.36,4.1,Under,65.5,55.36,10.14,401287910,34,42,Win,Loss,-8,76
+401282792,09/25/2021,12:00 PM,Bowling Green @ Minnesota,Minnesota,Bowling Green,Away,-31.0,10.89,41.89,High,51.75,10.89,No Bet,51.0,51.75,0.0,401282792,10,14,Win,No Bet,-4,24
+401282086,09/25/2021,12:00 PM,Missouri @ Boston College,Boston College,Missouri,Away,-1.0,15.51,16.509999999999998,High,54.25,15.51,Under,58.0,54.25,3.75,401282086,41,34,Loss,Loss,7,75
+401282085,09/25/2021,12:00 PM,LSU @ Mississippi State,Mississippi State,LSU,No Bet,1.0,3.37,0.0,,54.99,3.37,No Bet,55.0,54.99,0.0,401282085,25,28,No Bet,No Bet,-3,53
+401282088,09/25/2021,12:00 PM,Georgia @ Vanderbilt,Vanderbilt,Georgia,Home,37.0,-9.74,46.74,High,50.9,-9.74,Under,54.5,50.9,3.6000000000000014,401282088,0,62,Loss,Loss,-62,62
+401310706,09/25/2021,12:00 PM,Boise State @ Utah State,Utah State,Boise State,Home,9.5,5.09,4.41,High,62.17,5.09,Under,70.0,62.17,7.829999999999998,401310706,3,27,Loss,Win,-24,30
+401282707,09/25/2021,12:00 PM,Notre Dame @ Wisconsin,Wisconsin,Notre Dame,Away,-6.0,3.02,9.02,High,39.83,3.02,Under,44.0,39.83,4.170000000000002,401282707,13,41,Win,Loss,-28,54
+401287911,09/25/2021,12:00 PM,Texas Tech @ Texas,Texas,Texas Tech,Away,-9.0,7.2,16.2,High,58.55,7.2,Under,63.0,58.55,4.450000000000003,401287911,70,35,Loss,Loss,35,105
+401286301,09/25/2021,01:00 PM,Massachusetts @ Coastal Carolina,Coastal Carolina,Massachusetts,Away,-36.0,23.46,59.46,High,64.83,23.46,No Bet,66.0,64.83,0.0,401286301,53,3,Loss,No Bet,50,56
+401309554,09/25/2021,02:00 PM,San José State @ Western Michigan,Western Michigan,San José State,Away,-3.0,6.28,9.28,High,51.49,6.28,Under,61.5,51.49,10.009999999999998,401309554,23,3,Loss,Win,20,26
+401309555,09/25/2021,02:00 PM,Toledo @ Ball State,Ball State,Toledo,Home,5.0,-0.14,5.14,High,55.58,-0.14,No Bet,56.5,55.58,0.0,401309555,12,22,Loss,No Bet,-10,34
+401309557,09/25/2021,02:00 PM,Texas State @ Eastern Michigan,Eastern Michigan,Texas State,Away,-7.5,8.52,16.02,High,56.74,8.52,Under,62.0,56.74,5.259999999999998,401309557,59,21,Loss,Loss,38,80
+401309861,09/25/2021,02:30 PM,Washington State @ Utah,Utah,Washington State,Away,-15.0,13.96,28.96,High,56.26,13.96,No Bet,53.5,56.26,0.0,401309861,24,13,Win,No Bet,11,37
+401282640,09/25/2021,03:30 PM,Louisville @ Florida State,Florida State,Louisville,No Bet,1.0,1.6,0.0,,58.63,1.6,No Bet,60.5,58.63,0.0,401282640,23,31,No Bet,No Bet,-8,54
+401282775,09/25/2021,03:30 PM,Rutgers @ Michigan,Michigan,Rutgers,Away,-20.0,7.56,27.56,High,51.69,7.56,No Bet,50.0,51.69,0.0,401282775,20,13,Win,No Bet,7,33
+401282082,09/25/2021,03:30 PM,Texas A&M @ Arkansas,Arkansas,Texas A&M,Home,4.0,-3.69,7.69,High,40.91,-3.69,Under,47.0,40.91,6.090000000000003,401282082,20,10,Win,Win,10,30
+401282756,09/25/2021,03:30 PM,Colorado State @ Iowa,Iowa,Colorado State,Away,-23.5,17.12,40.620000000000005,High,46.5,17.12,No Bet,44.0,46.5,0.0,401282756,24,14,Win,No Bet,10,38
+401282716,09/25/2021,03:30 PM,Illinois @ Purdue,Purdue,Illinois,Away,-11.0,13.82,24.82,High,51.21,13.82,No Bet,53.0,51.21,0.0,401282716,13,9,Win,No Bet,4,22
+401282213,09/25/2021,03:30 PM,UTSA @ Memphis,Memphis,UTSA,No Bet,-3.0,-0.82,0.0,,59.59,-0.82,Under,66.5,59.59,6.909999999999997,401282213,28,31,No Bet,Win,-3,59
+401286190,09/25/2021,03:30 PM,Wyoming @ UConn,UConn,Wyoming,Home,31.5,-9.62,41.12,High,61.18,-9.62,Over,53.5,61.18,7.68,401286190,22,24,Win,Loss,-2,46
+401282643,09/25/2021,03:30 PM,Clemson @ NC State,NC State,Clemson,Home,10.5,7.03,3.47,High,38.45,7.03,Under,47.5,38.45,9.049999999999995,401282643,27,21,Win,Loss,6,48
+401282765,09/25/2021,03:30 PM,Kent State @ Maryland,Maryland,Kent State,Away,-13.5,13.77,27.27,High,51.48,13.77,Under,71.0,51.48,19.520000000000003,401282765,37,16,Loss,Win,21,53
+401287907,09/25/2021,03:30 PM,Iowa State @ Baylor,Baylor,Iowa State,Away,7.0,13.53,6.529999999999999,High,47.7,13.53,No Bet,46.5,47.7,0.0,401287907,31,29,Loss,No Bet,2,60
+401282639,09/25/2021,04:00 PM,Kansas @ Duke,Duke,Kansas,Away,-16.0,16.33,32.33,High,58.3,16.33,No Bet,57.5,58.3,0.0,401282639,52,33,Loss,No Bet,19,85
+401282083,09/25/2021,04:00 PM,Georgia State @ Auburn,Auburn,Georgia State,Away,-27.5,25.48,52.98,High,54.99,25.48,No Bet,57.5,54.99,0.0,401282083,34,24,Win,No Bet,10,58
+401301011,09/25/2021,05:00 PM,Arkansas State @ Tulsa,Tulsa,Arkansas State,Away,-14.5,12.6,27.1,High,63.77,12.6,No Bet,64.0,63.77,0.0,401301011,41,34,Win,No Bet,7,75
+401309858,09/25/2021,06:00 PM,UCLA @ Stanford,Stanford,UCLA,Away,4.0,7.78,3.78,High,58.84,7.78,No Bet,60.0,58.84,0.0,401309858,24,35,Win,No Bet,-11,59
+401282209,09/25/2021,06:00 PM,Buffalo @ Old Dominion,Old Dominion,Buffalo,Home,13.0,1.84,11.16,High,55.19,1.84,Over,50.5,55.19,4.689999999999998,401282209,34,35,Win,Win,-1,69
+401309610,09/25/2021,06:00 PM,Louisiana @ Georgia Southern,Georgia Southern,Louisiana,Home,14.5,-0.7,15.2,High,56.43,-0.7,No Bet,54.0,56.43,0.0,401309610,20,28,Win,No Bet,-8,48
+401282210,09/25/2021,06:30 PM,Texas Southern @ Rice,Rice,Texas Southern,Away,-37.5,3.67,41.17,High,65.17,3.67,Over,53.5,65.17,11.670000000000002,401282210,48,34,Win,Win,14,82
+401282205,09/25/2021,07:00 PM,North Texas @ Louisiana Tech,Louisiana Tech,North Texas,Away,-11.0,8.17,19.17,High,63.06,8.17,No Bet,65.5,63.06,0.0,401282205,24,17,Win,No Bet,7,41
+401282087,09/25/2021,07:00 PM,Kentucky @ South Carolina,South Carolina,Kentucky,Away,5.0,9.22,4.220000000000001,High,50.48,9.22,No Bet,48.5,50.48,0.0,401282087,10,16,Win,No Bet,-6,26
+401282784,09/25/2021,07:00 PM,Nebraska @ Michigan State,Michigan State,Nebraska,Away,-4.0,7.72,11.72,High,49.7,7.72,Under,54.0,49.7,4.299999999999997,401282784,23,20,Win,Win,3,43
+401287909,09/25/2021,07:00 PM,Kansas State @ Oklahoma State,Oklahoma State,Kansas State,Away,-5.0,2.28,7.279999999999999,High,46.98,2.28,No Bet,47.5,46.98,0.0,401287909,31,20,Loss,No Bet,11,51
+401282084,09/25/2021,07:00 PM,Tennessee @ Florida,Florida,Tennessee,Away,-19.0,5.13,24.13,High,54.04,5.13,Under,64.5,54.04,10.46,401282084,38,14,Loss,Win,24,52
+401301008,09/25/2021,07:00 PM,Navy @ Houston,Houston,Navy,Away,-19.0,23.36,42.36,High,50.07,23.36,Over,47.0,50.07,3.0700000000000003,401301008,28,20,Win,Win,8,48
+401287908,09/25/2021,07:30 PM,West Virginia @ Oklahoma,Oklahoma,West Virginia,Away,-17.0,6.74,23.74,High,55.12,6.74,No Bet,56.0,55.12,0.0,401287908,16,13,Win,No Bet,3,29
+401282811,09/25/2021,07:30 PM,Akron @ Ohio State,Ohio State,Akron,Away,-48.0,18.06,66.06,High,65.35,18.06,No Bet,66.5,65.35,0.0,401282811,59,7,Loss,No Bet,52,66
+401282081,09/25/2021,07:30 PM,Southern Miss @ Alabama,Alabama,Southern Miss,Away,-45.0,13.62,58.62,High,50.16,13.62,Under,58.0,50.16,7.840000000000003,401282081,63,14,Loss,Loss,49,77
+401282641,09/25/2021,07:30 PM,North Carolina @ Georgia Tech,Georgia Tech,North Carolina,Home,14.0,-2.57,16.57,High,47.59,-2.57,Under,65.0,47.59,17.409999999999997,401282641,45,22,Win,Loss,23,67
+401282211,09/25/2021,08:00 PM,UAB @ Tulane,Tulane,UAB,Away,-3.0,2.02,5.02,High,62.92,2.02,Over,54.5,62.92,8.420000000000002,401282211,21,28,Win,Loss,-7,49
+401282207,09/25/2021,08:00 PM,Florida Atlantic @ Air Force,Air Force,Florida Atlantic,Away,-4.0,5.89,9.89,High,52.73,5.89,No Bet,54.0,52.73,0.0,401282207,31,7,Loss,No Bet,24,38
+401310708,09/25/2021,08:00 PM,Hawai'i @ New Mexico State,New Mexico State,Hawai'i,Home,17.0,5.54,11.46,High,58.54,5.54,Under,63.0,58.54,4.460000000000001,401310708,21,41,Loss,Win,-20,62
+401309611,09/25/2021,08:00 PM,Troy @ UL Monroe,UL Monroe,Troy,Home,24.0,-4.72,28.72,High,43.84,-4.72,Under,49.5,43.84,5.659999999999997,401309611,29,16,Win,Win,13,45
+401282214,09/25/2021,08:00 PM,Indiana @ Western Kentucky,Western Kentucky,Indiana,No Bet,9.0,10.79,0.0,,62.2,10.79,No Bet,64.0,62.2,0.0,401282214,31,33,No Bet,No Bet,-2,64
+401282212,09/25/2021,09:00 PM,New Mexico @ UTEP,UTEP,New Mexico,Away,2.0,7.97,5.97,High,53.71,7.97,No Bet,54.0,53.71,0.0,401282212,20,13,Loss,No Bet,7,33
+401309857,09/25/2021,09:30 PM,California @ Washington,Washington,California,Away,-7.0,12.14,19.14,High,49.1,12.14,No Bet,47.5,49.1,0.0,401309857,31,24,Push,No Bet,7,55
+401301009,09/25/2021,10:15 PM,South Florida @ BYU,BYU,South Florida,Away,-23.5,15.42,38.92,High,53.01,15.42,No Bet,54.0,53.01,0.0,401301009,35,27,Win,No Bet,8,62
+401309859,09/25/2021,10:30 PM,Arizona @ Oregon,Oregon,Arizona,Away,-29.5,19.59,49.09,High,52.29,19.59,Under,58.0,52.29,5.710000000000001,401309859,41,19,Win,Loss,22,60
+401309862,09/25/2021,10:30 PM,Colorado @ Arizona State,Arizona State,Colorado,Away,-14.0,9.34,23.34,High,43.64,9.34,No Bet,46.0,43.64,0.0,401309862,35,13,Loss,No Bet,22,48
+401309860,09/25/2021,10:30 PM,Oregon State @ USC,USC,Oregon State,Away,-11.0,7.15,18.15,High,55.13,7.15,Under,62.5,55.13,7.369999999999997,401309860,27,45,Win,Loss,-18,72

@@ -1,0 +1,21 @@
+# @package _global_
+
+defaults:
+  - override /hydra: default
+  - override /model: linear      # Use the baseline model
+  - override /features: adjusted_v1 # Use the new, expanded feature set
+
+# This experiment tests the hypothesis that adding more adjusted features
+# improves the performance of the simple baseline model.
+
+# The results of this run should be compared directly to the 'train_baseline' run.
+# If performance improves, 'adjusted_v1' is a candidate for the new benchmark feature set.
+
+# To run:
+# PYTHONPATH=. uv run python src/train.py experiment=02_test_adjusted_features
+
+core:
+  experiment_name: "test_adjusted_features_v1"
+  tags: ["features", "v1"]
+
+# No changes to model or feature defaults are needed for this run.

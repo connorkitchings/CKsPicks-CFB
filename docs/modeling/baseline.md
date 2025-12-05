@@ -1,140 +1,300 @@
-# Modeling Baseline (MVP)
+# V2 Baseline Model (Ridge Regression)
 
-This document defines the initial, minimal modeling approach to generate weekly ATS recommendations.
+**Status**: Phase 1 — Baseline Establishment  
+**Model**: Ridge Regression (sklearn)  
+**Features**: Minimal Unadjusted EPA/SR  
+**Philosophy**: Start simple, validate V2 workflow  
+**Date Established**: TBD (2025-12-XX)
 
-> NOTE (2025-10-20): A unified points-for modeling approach is under evaluation. See `docs/planning/points_for_model.md` for the proposed changes and upcoming revisions to this baseline.
+---
 
-## Objectives
+## Overview
 
-- Hit rate target: ≥ 52.4% (breakeven threshold)
-- Current performance: 54.7% spreads, 54.5% totals (2024 holdout)
-- Scope: FBS regular season only, include Week 0
-- Training window: 2019–2023 seasons (exclude 2020); 2024 as holdout/test
-- In-season predictions begin once both teams have ≥ 4 games played
+The **V2 Baseline** is the foundation of the new experimentation workflow. It is intentionally simple, fast, and reproducible, serving as the benchmark against which all future improvements are measured.
 
-## Targets
+> **Note**: This represents a complete reset from legacy models (CatBoost/XGBoost v5). Legacy models are archived; V2 starts from scratch with rigor-first philosophy.
 
-- **Points-For Models**: Predict `home_final_points` and `away_final_points` directly.
-- **Derived Spread**: `home_final_points - away_final_points`
-- **Derived Total**: `home_final_points + away_final_points`
+---
 
-## Features
+## Objective
 
-- Per-play and per-possession rate features (pace-aware)
-- Opponent-adjusted statistics via iterative averaging (4 iterations)
-- Season-to-date aggregates with extra weight on last 3 games
-- Home/away indicator included in the model (not baked into raw stats)
+1. **Establish Benchmark**: Create a simple, interpretable baseline model
+2. **Validate Workflow**: Prove the V2 4-phase workflow (Baseline → Features → Models → Deployment)
+3. **Define Floor**: Set minimum acceptable performance before adding complexity
+
+---
 
 ## Model Architecture
 
-### Current Configuration (as of 2025-11-27)
+### Algorithm
 
-The project uses a **"Points-For" architecture**, predicting the final score for the Home and Away teams independently. Spread and Total predictions are derived from these score estimates.
+**Ridge Regression** (`sklearn.linear_model.Ridge`)
 
-- **Points-For Ensemble (Spread)**:
+**Rationale**:
 
-  - **Model**: `spread_catboost_recency_v1` (CatBoost with recency weighting).
-  - **Performance**: 50.1% Hit Rate (2024 holdout).
-  - **Features**: Standard feature set + recency-weighted aggregates.
+- **Interpretable**: Linear coefficients are explainable
+- **Fast**: Trains in seconds, no hyperparameter tuning needed
+- **Stable**: Regularization prevents overfitting
+- **Baseline-appropriate**: Simple enough to measure feature/model improvements clearly
 
-- **Points-For Ensemble (Total)**:
+**Hyperparameters**:
 
-  - **Model**: `totals_pace_interaction_v1` (CatBoost with pace interactions).
-  - **Performance**: 54.4% Hit Rate (2024 holdout).
-  - **Features**: Standard feature set + explicit pace interaction terms.
+- `alpha=1.0` (L2 regularization strength, fixed for baseline)
 
-- **Legacy Ensembles (Deprecated)**:
-  - Previous direct spread/total ensembles (Ridge/ElasticNet/Huber for spread, RF/GBM for total) are deprecated in favor of the unified Points-For approach.
+---
 
-### Training Strategy
+## Features
 
-- Point-in-time feature generation prevents data leakage.
-- All models in an ensemble are trained on the same dataset (2019–2023, excluding 2020).
-- The final prediction is the simple average of the predictions from all models in the respective ensemble.
+### Phase 1: Minimal Unadjusted Set
 
-## Validation Strategy
+**Philosophy**: Start from **raw, unadjusted** statistics to establish absolute floor performance.
 
-- Historical testing: fit on the designated training window and report RMSE/MAE on holdout seasons.
-- Final test: report RMSE/MAE on 2024 as the last pre-deployment measurement.
-- Anti-leakage: all season-to-date features are computed up to (but not including) the current game; enforce via unit tests.
-- Policy: betting lines are not model features; home-field is excluded from raw stats and may be added as a model feature.
+**Feature Set**: `minimal_unadjusted_v1`
 
-## Feature Selection (MVP Plan)
+**Features** (4 total):
 
-- Start broad with the documented feature set; prune based on holdout performance to avoid multicollinearity and heteroskedasticity.
-- Avoid target leakage and preserve interpretability; defer SHAP/explainability to post-MVP.
+```python
+home_off_epa_pp       # Home team offensive EPA per play (season-to-date)
+home_def_epa_pp       # Home team defensive EPA per play (season-to-date)
+away_off_epa_pp       # Away team offensive EPA per play (season-to-date)
+away_def_epa_pp       # Away team defensive EPA per play (season-to-date)
+```
+
+**Data Source**: `processed/team_season/year=YYYY/team=XXX/side=offense|defense/*.csv`
+
+**Rationale**:
+
+- EPA (Expected Points Added) is the most predictive single metric in CFB
+- Season-to-date aggregation is simple and transparent
+- No opponent adjustment — this establishes the baseline before proving adjustment helps
+- No recency weighting — uniform weighting of all games
+- No special teams, tempo, or advanced features — added in Phase 2 if they improve performance
+
+---
+
+## Targets
+
+**Spread Prediction** (Primary):
+
+```python
+spread_target = home_final_points - away_final_points
+```
+
+**Total Prediction** (Optional):
+
+```python
+total_target = home_final_points + away_final_points
+```
+
+---
+
+## Training Protocol
+
+### Data Split
+
+| Year(s)         | Purpose        | Usage                                        |
+| --------------- | -------------- | -------------------------------------------- |
+| 2019, 2021-2023 | Training       | Fit Ridge regression                         |
+| 2024            | Test (Holdout) | Evaluate performance, never used in training |
+| 2025            | Deployment     | Live predictions                             |
+
+**Critical Rule**: **Never** include 2024 data in training. This is the locked holdout for all V2 experiments.
+
+**COVID Exclusion**: 2020 excluded due to season disruptions (shortened schedule, opt-outs).
+
+---
+
+### Training Steps
+
+1. **Load Data**:
+
+   ```bash
+   uv run python src/features/v1_pipeline.py \
+       --years 2019,2021,2022,2023,2024
+   ```
+
+2. **Train Model**:
+
+   ```bash
+   PYTHONPATH=. uv run python src/train.py \
+       model=linear \
+       features=minimal_unadjusted_v1 \
+       training.train_years=[2019,2021,2022,2023] \
+       training.test_year=2024
+   ```
+
+3. **Log to MLflow**:
+   - Experiment: `v2_baseline`
+   - Run name: `ridge_minimal_v1`
+   - Metrics: `rmse`, `mae`, `hit_rate`, `roi`
+
+---
+
+## Expected Performance
+
+### Hypothesis
+
+**RMSE**: 12-14 points (spread prediction error)  
+**Hit Rate**: 51-53% (against closing line, ATS)  
+**ROI**: -2% to +2% (near breakeven with -110 odds)
+
+**Rationale**:
+
+- Unadjusted EPA is moderately predictive but known to be biased by schedule strength
+- Linear model cannot capture non-linear interactions
+- This sets a realistic floor for Phase 2/3 improvements
+
+### Promotion Criteria for Phase 2
+
+To graduate to Phase 2 (Feature Engineering & Selection):
+
+- [ ] Baseline documented in MLflow with full metrics
+- [ ] Performance within expected range (not anomalous)
+- [ ] Reproducible (can re-run and get same results ±1%)
+
+---
+
+## Storage & Artifacts
+
+**Model Artifacts**:
+
+```
+artifacts/models/baseline/v2-001/
+├── model.joblib           # Trained Ridge model
+├── metadata.json          # Training config, metrics
+└── feature_importance.csv # Feature coefficients
+```
+
+**MLflow Tracking**:
+
+```
+Experiment: v2_baseline
+├── Run: ridge_minimal_v1
+│   ├── params/
+│   │   ├── model.alpha: 1.0
+│   │   ├── features: minimal_unadjusted_v1
+│   │   └── training.test_year: 2024
+│   ├── metrics/
+│   │   ├── spread_rmse: X.XX
+│   │   ├── spread_mae: X.XX
+│   │   ├── spread_hit_rate: 0.XXX
+│   │   └── spread_roi: 0.XXX
+│   └── artifacts/
+│       └── ridge_spread.joblib
+```
+
+---
+
+## Path to V2 Champion
+
+This baseline is **not** intended to be the final production model. It is the starting point of a rigorous journey:
+
+```mermaid
+graph LR
+    A[Phase 1: Ridge Baseline] --> B[Phase 2: Feature Engineering]
+    B --> C[Phase 3: Model Selection]
+    C --> D[Phase 4: Deployment]
+
+    B -->|If +1.0% ROI| E[Promote Features]
+    C -->|If +1.5% ROI| F[Promote Model = Champion]
+    F --> D
+```
+
+**Timeline**:
+
+- **Week 1-2**: Establish this baseline
+- **Week 3-6**: Phase 2 — Test opponent adjustment, recency weighting
+- **Week 7-10**: Phase 3 — Test CatBoost, XGBoost on best features
+- **Week 11-12**: Phase 4 — Deploy Champion Model
+
+**Success = Beating this baseline through rigorous, gated promotion**
+
+---
 
 ## Configuration
 
-- Centralize defaults for data roots, season ranges, and seeds via CLI args or a small config file; all scripts must be deterministic for a given config.
-- Weekly feature loaders default to the four-pass opponent-adjusted cache; override via `--adjustment-iteration` (CLIs) or `data.adjustment_iteration` (Hydra) to test alternative depths. For asymmetric experiments, use `--offense-adjustment-iteration` / `--defense-adjustment-iteration` or the Hydra keys `data.adjustment_iteration_offense` and `data.adjustment_iteration_defense`.
+### Hydra Config
 
-## Artifacts and Metrics
+**Model**: `conf/model/linear.yaml`
 
-- **Model Artifacts**
-  - Spread Models: `artifacts/models/<year>/spread_ridge.joblib`, `artifacts/models/<year>/spread_elastic_net.joblib`, etc.
-  - Total Models: `artifacts/models/<year>/total_random_forest.joblib`, `artifacts/models/<year>/total_gradient_boosting.joblib`, etc.
-- Weekly adjusted stats cache: `processed/team_week_adj/iteration=4/year=<Y>/week=<W>/`
+```yaml
+name: linear
+type: linear_regression
+params:
+  alpha: 1.0
+target: spread_target
+```
 
-- **Metrics Reports**
+**Features**: `conf/features/minimal_unadjusted_v1.yaml`
 
-  - Training metrics: RMSE/MAE on training and test sets
-  - Weekly predictions: `reports/<year>/CFB_week<WW>_bets.csv`
-  - Scored results: `reports/<year>/CFB_week<WW>_bets_scored.csv`
-  - Season summary: `reports/<year>/CFB_season_<year>_all_bets_scored.csv`
-  - Calibration analysis: `reports/calibration/*.csv`
+```yaml
+name: minimal_unadjusted_v1
+description: "Phase 1 baseline - raw EPA/SR only"
+features:
+  - home_off_epa_pp
+  - home_def_epa_pp
+  - away_off_epa_pp
+  - away_def_epa_pp
+```
 
-- **Reproducibility**
-  - Training (Hydra-based): `PYTHONPATH=. uv run python src/models/train_model.py`
-  - Override parameters: `PYTHONPATH=. uv run python src/models/train_model.py data.test_year=2025 model.params.depth=8`
-  - Run experiments: `PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1`
-  - Optimize hyperparameters: `PYTHONPATH=. uv run python src/models/train_model.py mode=optimize`
-  - View results: `mlflow ui --backend-store-uri artifacts/mlruns`
-  - See [MLOps Guide](../guides/mlops_experimentation.md) for full details
+**Training**: `conf/training/default.yaml`
 
-## Near-Term Research Ideas
+```yaml
+train_years: [2019, 2021, 2022, 2023]
+test_year: 2024
+deploy_year: 2025
+```
 
-- **Raw offense vs. adjusted defense (x1) comparisons:** Prototype a points-for variant that
-  feeds unadjusted offensive metrics against once-adjusted defensive metrics. Early intuition is
-  that “raw vs. adjusted” matchups could better capture stylistic clashes and stabilize predictions
-  for the home/away scoring models.
-- **Probabilistic power ratings for spreads:** Build a standard probabilistic ratings engine (Elo,
-  Bayesian hierarchical, or state-space) tuned specifically for spread prediction. The ratings
-  would emit a distribution over team strength, allowing spreads to be derived from rating
-  differentials plus uncertainty. This may provide an alternative to direct score regressions and
-  could unlock calibrated confidence intervals for ATS bets.
+---
 
-## Betting Policy (MVP)
+## Comparison to Legacy Models
 
-- **Edge Calculation**:
-  - Spread: `edge = prediction - (-betting_line)` (line negated to match margin convention)
-  - Total: `edge = prediction - betting_line`
-- **Thresholds**:
-  - Spread: Bet if `|edge| >= 3.5` points (configurable via `--edge-threshold`)
-  - Total: Bet if `|edge| >= 3.5` points
-- **Settlement Logic**:
-  - Spread: Win if `actual_margin > expected_margin` (home bet) or `actual_margin < expected_margin` (away bet)
-  - Total: Win if `actual_total > line` (over bet) or `actual_total < line` (under bet)
-  - **Pushes**: Exact ties are excluded from win rate calculation (`wins / (wins + losses)`)
-- **No-Bet Policy**: Enforce no-bet if either team has < 4 games played
-- **Staking**: Flat staking (1 unit) for MVP
+| Metric          | V2 Ridge Baseline       | Legacy CatBoost v5               |
+| --------------- | ----------------------- | -------------------------------- |
+| Algorithm       | Ridge Regression        | CatBoost Gradient Boosting       |
+| Features        | 4 (minimal, unadjusted) | ~40 (adjusted, engineered)       |
+| Training Time   | <1 minute               | ~15 minutes                      |
+| Hyperparameters | 1 (alpha)               | ~10 (depth, iterations, etc.)    |
+| Hit Rate (2024) | TBD                     | 50.1% (spread), 51.4% (total)    |
+| ROI (2024)      | TBD                     | -0.36% (spread), +11.95% (total) |
+| Status          | ✅ V2 Baseline          | 🗄️ Archived                      |
 
-## Outputs
+**Goal**: Match or exceed legacy performance through systematic improvement, not initial complexity.
 
-- Weekly CSV: `reports/YYYY/CFB_weekWW_bets.csv`
-- Suggested columns:
-  - season, week, game_id, game_date
-  - home_team, away_team, neutral_site
-  - sportsbook
-  - spread_line, total_line
-  - model_spread, model_total
-  - edge_spread, edge_total
-  - bet_spread (home/away/none), bet_total (over/under/none)
-  - bet_units
+---
 
-## Links
+## Decision Log Entries
 
-- Project Charter: `docs/project_org/project_charter.md`
-- Weekly Pipeline: `docs/operations/weekly_pipeline.md`
-- CFBD Data Ingestion: `docs/cfbd/data_ingestion.md`
-- Feature Catalog: `docs/project_org/feature_catalog.md`
+Related decisions:
+
+- [2025-12-05: V2 Workflow Adoption](../decisions/decision_log.md#2025-12-05-v2-workflow-adoption) (pending)
+- [2025-12-05: Unadjusted Baseline Philosophy](../decisions/decision_log.md#2025-12-05-unadjusted-baseline-philosophy) (pending)
+- [2025-12-05: Pure V2 Rebuild](../decisions/decision_log.md#2025-12-05-pure-v2-rebuild) (pending)
+
+---
+
+## Next Steps
+
+1. **Immediate** (Week 1):
+
+   - [ ] Generate processed data for 2019, 2021-2024
+   - [ ] Create `conf/features/minimal_unadjusted_v1.yaml`
+   - [ ] Train Ridge baseline and log to MLflow
+   - [ ] Document metrics in decision log
+
+2. **Phase 2** (Week 3-6):
+
+   - [ ] Test `opponent_adjusted_v1` feature set
+   - [ ] Test `recency_weighted_v1` feature set
+   - [ ] Run 5-gate promotion tests
+   - [ ] Promote winning feature set (if any pass)
+
+3. **Phase 3** (Week 7-10):
+   - [ ] Test CatBoost on promoted features
+   - [ ] Test XGBoost on promoted features
+   - [ ] Promote Champion Model (if passes +1.5% ROI gate)
+
+---
+
+**Last Updated**: 2025-12-05  
+**Owner**: V2 Workflow Implementation Team

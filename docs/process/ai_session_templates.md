@@ -14,31 +14,51 @@ in the bracketed information to bring the AI up to speed quickly.
 Hello. We are continuing our work on the 'cfb_model' project. Your role is my AI co-pilot, and we
 will be following the Vibe Coding System.
 
+**IMPORTANT: As of December 2025, all modeling work follows the V2 4-phase experimentation workflow.**
+
 To get up to speed, please perform the following steps:
 
 1. **Load the Minimal Context Pack (token-efficient):**
 
-   - `docs/project_org/project_charter.md` — Charter, scope, and standards.
-   - `docs/planning/roadmap.md` — Current sprint goal, tasks, and acceptance criteria.
-   - `docs/decisions/decision_log.md` — Planning-level decisions made so far.
-   - `docs/project_org/modeling_baseline.md` — MVP modeling approach and betting policy.
-   - `docs/operations/weekly_pipeline.md` — Manual weekly runbook and outputs.
-   - `docs/project_org/feature_catalog.md` — Canonical feature definitions and validation hooks.
-   - `docs/project_org/betting_policy.md` — Risk controls, unit sizing, and thresholds.
-   - Code anchors: `src/config/__init__.py`, `src/utils/local_storage.py`, `src/features/pipeline.py`, `src/features/persist.py`, `src/models/train_model.py`, `src/inference/predict.py`, `src/inference/report.py`, `src/training/train.py`, `scripts/cli.py`, representative tests (`tests/test_aggregations_core.py`, `tests/test_betting_policy_kelly.py`).
-   - Optional quick refs: `docs/index.md`, `README.md`, `pyproject.toml` (only if needed).
+   **V2 Workflow (MANDATORY for modeling work):**
+
+   - [`docs/process/experimentation_workflow.md`](docs/process/experimentation_workflow.md) — 4-phase V2 workflow
+   - [`docs/process/promotion_framework.md`](docs/process/promotion_framework.md) — 5-gate promotion criteria
+   - [`docs/process/12_week_implementation_plan.md`](docs/process/12_week_implementation_plan.md) — Week-by-week plan
+   - [`docs/modeling/baseline.md`](docs/modeling/baseline.md) — V2 Ridge baseline
+   - [`docs/project_org/feature_registry.md`](docs/project_org/feature_registry.md) — V2 feature sets
+
+   **Project Context:**
+
+   - [`CLAUDE.md`](CLAUDE.md) — Critical external data root config + V2 overview
+   - [`docs/guide.md`](docs/guide.md) — Documentation navigation hub
+   - [`docs/planning/roadmap.md`](docs/planning/roadmap.md) — Current sprint goal, tasks, and acceptance criteria
+   - [`docs/decisions/decision_log.md`](docs/decisions/decision_log.md) — Recent decisions (read last 6 entries from 2025-12-05)
+   - [`docs/ops/weekly_pipeline.md`](docs/ops/weekly_pipeline.md) — Manual weekly runbook
+   - [`docs/experiments/index.md`](docs/experiments/index.md) — V2 experiment tracking
+
+   **Code Anchors (if relevant):**
+
+   - `src/config/__init__.py`, `src/utils/local_storage.py`
+   - `src/features/pipeline.py`, `src/features/persist.py`
+   - `src/models/train_model.py`, `src/train.py`
+   - Representative tests: `tests/test_aggregations_core.py`
+
+   **Optional Quick Refs:**
+
+   - `docs/index.md`, `README.md`, `pyproject.toml` (only if needed)
    - Keep context small: skim headings and bullet summaries; capture 6–10 concise bullets.
 
-2. **Confirm the Sprint Focus:**
+2. **Confirm the V2 Status:**
 
-   - From `docs/planning/roadmap.md`, extract the sprint goal and top 3 active tasks.
-   - Note acceptance criteria relevant to today's objective.
+   - From `docs/process/12_week_implementation_plan.md`, identify which week/phase we're in
+   - From `docs/experiments/index.md`, check latest experiment and benchmark
+   - Note current constraints (e.g., Phase 1 = Ridge only, Phase 2 = test features with Ridge, etc.)
 
 3. **Quick Health Check (fast, optional):**
 
    - `uv run ruff check .` — ensure linter is clean or note issues to fix.
    - `uv run pytest -q` — run unit tests (synthetic tests exist; no external data needed).
-   - `uv run mkdocs build --strict` — catch doc reference issues if docs are in scope.
 
 4. **Review the Last Session's Handoff:**
 

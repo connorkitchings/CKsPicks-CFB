@@ -7,8 +7,6 @@ CFBD inconsistencies.
 
 from __future__ import annotations
 
-import logging
-
 import numpy as np
 import pandas as pd
 
@@ -211,107 +209,6 @@ def calculate_play_success(row: pd.Series) -> int | None:
     if penalty == 1:
         return None
     return None
-
-
-def calculate_time_features(data: pd.DataFrame) -> pd.DataFrame:
-    """Compute time-remaining features and play durations; mask noisy contexts."""
-    df = data.copy()
-    df = df.sort_values(
-        by=["season", "week", "game_id", "quarter", "drive_number", "play_number"],
-        ascending=[True, True, True, True, True, True],
-    ).reset_index(drop=True)
-
-    if (
-        df.get("clock_minutes", pd.Series([0])).max() > 15
-        or df.get("clock_seconds", pd.Series([0])).max() >= 60
-    ):
-        logging.warning("Some clock values seem to be out of range.")
-
-    # Calculate total time remaining in the game after this play
-    # Time = (quarters remaining after this one) * 15 minutes + current quarter time remaining
-    df["time_remaining_after"] = np.where(
-        df["quarter"] <= 4,
-        # Quarters remaining after current quarter * 15 minutes + time left in current quarter
-        (4 - df["quarter"]) * 15 * 60
-        + (df["clock_minutes"] * 60 + df["clock_seconds"]),
-        # For overtime, just use the clock time (assuming 15 minute OT periods)
-        df["clock_minutes"] * 60 + df["clock_seconds"],
-    )
-    # Calculate time_remaining_before with quarter boundary awareness
-    df["time_remaining_before"] = np.nan
-    # Process each game separately to handle quarter transitions properly
-    for game_id, game_group in df.groupby("game_id"):
-        game_df = game_group.copy().reset_index(drop=True)
-        for idx in range(len(game_df)):
-            if idx == 0:
-                # First play of the game
-                df.loc[game_df.index[idx], "time_remaining_before"] = 3600  # 60 minutes
-            else:
-                current_quarter = game_df.iloc[idx]["quarter"]
-                prev_quarter = game_df.iloc[idx - 1]["quarter"]
-                if current_quarter == prev_quarter:
-                    # Same quarter: use previous play's time_remaining_after
-                    df.loc[game_df.index[idx], "time_remaining_before"] = game_df.iloc[
-                        idx - 1
-                    ]["time_remaining_after"]
-                else:
-                    # Quarter changed: use time at end of previous quarter (which is 0:00)
-                    # For CFB, quarters end at 0:00, so time remaining = minutes left in game
-                    if prev_quarter == 1:
-                        # End of 1st quarter = start of 2nd = 45 minutes left in game
-                        quarter_end_time = 3 * 15 * 60  # 2700 seconds
-                    elif prev_quarter == 2:
-                        # End of 2nd quarter (halftime) = start of 3rd = 30 minutes left
-                        quarter_end_time = 2 * 15 * 60  # 1800 seconds
-                    elif prev_quarter == 3:
-                        # End of 3rd quarter = start of 4th = 15 minutes left
-                        quarter_end_time = 1 * 15 * 60  # 900 seconds
-                    elif prev_quarter == 4:
-                        # End of regulation = start of OT = 0 seconds
-                        quarter_end_time = 0
-                    else:
-                        # End of OT periods = 0 seconds
-                        quarter_end_time = 0
-                    df.loc[game_df.index[idx], "time_remaining_before"] = (
-                        quarter_end_time
-                    )
-
-    df["play_duration"] = (
-        pd.to_numeric(df["time_remaining_before"], errors="coerce")
-        - pd.to_numeric(df["time_remaining_after"], errors="coerce")
-    ).astype(float)
-
-    # Check for negative durations and provide detailed warning
-    min_dur = pd.Series(df["play_duration"], dtype="float64").min(skipna=True)
-    if pd.notna(min_dur) and min_dur < 0:
-        neg_count = (df["play_duration"] < 0).sum()
-        # Count quarter transitions that may cause negative durations
-        quarter_changes = 0
-        for game_id, game_group in df.groupby("game_id"):
-            game_df = game_group.sort_values(["quarter", "play_number"]).reset_index(
-                drop=True
-            )
-            quarter_changes += (game_df["quarter"].diff() > 0).sum()
-        logging.warning(
-            (
-                f"{neg_count} play durations are negative (min: {min_dur:.1f}s). "
-                f"Includes {quarter_changes} quarter transitions and clock inconsistencies. "
-                "Negative durations will be set to NaN."
-            )
-        )
-
-    # Create masks for invalid contexts - only mask if columns exist and values are 1
-    # This preserves play durations for plays that don't have these special context flags
-    if "penalty" in df.columns:
-        df.loc[df["penalty"] == 1, "play_duration"] = np.nan
-    if "st" in df.columns:
-        df.loc[df["st"] == 1, "play_duration"] = np.nan
-    if "twopoint" in df.columns:
-        df.loc[df["twopoint"] == 1, "play_duration"] = np.nan
-    # Set negative and extreme durations to NaN
-    df.loc[df["play_duration"] <= 0, "play_duration"] = np.nan
-    df.loc[df["play_duration"] >= 60, "play_duration"] = np.nan
-    return df
 
 
 def assign_drive_numbers(
@@ -639,7 +536,6 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values(
         by=["season", "week", "game_id", "quarter", "drive_number", "play_number"]
     )
-    df = calculate_time_features(df)
 
     def calculate_garbage_time(df_inner: pd.DataFrame) -> pd.Series:
         df_inner["garbage"] = False
@@ -669,8 +565,6 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         1,
         0,
     )
-
-    df["clock_minutes_in_secs"] = df["clock_minutes"] * 60
 
     column_order = [
         "season",
@@ -729,12 +623,6 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "havoc",
         "thirddown_conversion",
         "fourthdown_conversion",
-        "clock_minutes",
-        "clock_minutes_in_secs",
-        "clock_seconds",
-        "time_remaining_after",
-        "time_remaining_before",
-        "play_duration",
         "line_yards",
         "is_power_situation",
         "power_success_converted",

@@ -220,12 +220,58 @@ gha-creds-*.json
 !/data/production/
 
 # Generated project outputs
-artifacts/
 catboost_info/
 
 # Site
 site/
 
-# Artifacts
-artifacts/
+# Artifacts - V2 Granular Strategy
+# Keep: directory structure, READMEs, metadata files
+# Exclude: model binaries, large CSVs, plots, personal workspace
+
+# MLflow tracking (keep structure, exclude large artifacts)
+artifacts/mlruns/*/artifacts/
+artifacts/mlruns/*/metrics/
+artifacts/mlruns/*/params/
+artifacts/mlruns/*/tags/
+
+# Models (exclude binaries, keep metadata)
+artifacts/models/**/*.joblib
+artifacts/models/**/*.pkl
+artifacts/models/**/*.h5
+artifacts/models/**/*.pt
+!artifacts/models/**/metadata.json
+!artifacts/models/**/feature_importance.csv
+
+# Experiments (exclude large outputs, keep summaries)
+artifacts/experiments/**/*.csv
+artifacts/experiments/**/*.png
+artifacts/experiments/**/*.jpg
+artifacts/experiments/**/*.pkl
+!artifacts/experiments/**/summary.json
+!artifacts/experiments/**/config.yaml
+
+# Production (keep predictions, exclude scored & monitoring)
+artifacts/production/scored/
+artifacts/production/monitoring/*.csv
+artifacts/production/monitoring/*.json
+!artifacts/production/predictions/
+
+# Validation (exclude large reports)
+artifacts/validation/**/*.csv
+!artifacts/validation/**/summary.json
+
+# Analysis (completely excluded, personal workspace)
+artifacts/analysis/*
+!artifacts/analysis/README.md
+
+# Archive (excluded but preserve MANIFEST)
+artifacts/archive/*
+!artifacts/archive/MANIFEST.md
+
+# Hydra outputs (if used)
+artifacts/hydra_outputs/
+artifacts/outputs/
+
+# Local config overrides
 conf/local.yaml

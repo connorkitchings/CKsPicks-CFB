@@ -1,0 +1,8 @@
+Feature 1,Feature 2,Interaction Name,Rationale,Priority
+plays_per_game,off_expl_rate_overall_20,pace_x_explosiveness,Fast teams with big play ability can score in bunches,High
+wind_speed,off_pass_rate,wind_x_pass_volume,High wind disproportionately affects passing heavy teams,High
+wind_speed,off_pass_ypp,wind_x_pass_efficiency,High wind reduces passing efficiency,High
+precipitation,off_fumble_rate,rain_x_fumbles,Rain increases fumble risk for prone teams,Medium
+off_epa_pp,def_epa_pp,epa_mismatch,Direct efficiency mismatch (already captured by tree models but explicit term helps),Medium
+off_red_zone_efficiency,def_red_zone_efficiency,rz_mismatch,Critical scoring area mismatch,Medium
+temperature,is_dome,temp_x_dome,Temperature irrelevant in domes (interaction handles this naturally),Low

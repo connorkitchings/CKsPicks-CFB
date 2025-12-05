@@ -1,0 +1,49 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401121948,10/03/2019,07:30 PM,Georgia Southern @ South Alabama,South Alabama,Georgia Southern,Home,10.0,2.2,7.8,High,45.43,2.2,No Bet,45.0,45.43,0.0,401121948,17,20,Win,No Bet,-3,37
+401117874,10/03/2019,08:00 PM,Temple @ East Carolina,East Carolina,Temple,Home,12.5,-0.52,13.02,High,41.99,-0.52,Under,46.0,41.99,4.009999999999998,401117874,17,27,Win,Win,-10,44
+401117875,10/04/2019,08:00 PM,UCF @ Cincinnati,Cincinnati,UCF,Home,3.5,-3.0,6.5,High,61.16,-3.0,No Bet,64.0,61.16,0.0,401117875,27,24,Win,No Bet,3,51
+401117519,10/04/2019,10:00 PM,New Mexico @ San José State,San José State,New Mexico,Away,-6.5,12.2,18.7,High,66.99,12.2,Under,70.0,66.99,3.010000000000005,401117519,32,21,Loss,Win,11,53
+401110813,10/05/2019,12:00 PM,Utah State @ LSU,LSU,Utah State,Away,-27.5,16.4,43.9,High,73.05,16.4,No Bet,73.5,73.05,0.0,401110813,42,6,Loss,No Bet,36,48
+401112205,10/05/2019,12:00 PM,Maryland @ Rutgers,Rutgers,Maryland,Home,14.0,-14.61,28.61,High,54.38,-14.61,No Bet,55.5,54.38,0.0,401112205,7,48,Loss,No Bet,-41,55
+401112126,10/05/2019,12:00 PM,Oklahoma State @ Texas Tech,Texas Tech,Oklahoma State,Home,9.0,-5.84,14.84,High,57.52,-5.84,Under,62.5,57.52,4.979999999999997,401112126,45,35,Win,Loss,10,80
+401112269,10/05/2019,12:00 PM,Kent State @ Wisconsin,Wisconsin,Kent State,Away,-35.0,26.3,61.3,High,60.48,26.3,No Bet,58.5,60.48,0.0,401112269,48,0,Loss,No Bet,48,48
+401112101,10/05/2019,12:00 PM,Oklahoma @ Kansas,Kansas,Oklahoma,Home,32.5,-15.35,47.85,High,60.38,-15.35,Under,67.0,60.38,6.619999999999997,401112101,20,45,Win,Win,-25,65
+401117876,10/05/2019,12:00 PM,South Florida @ UConn,UConn,South Florida,Home,10.5,3.77,6.73,High,52.92,3.77,Over,48.5,52.92,4.420000000000002,401117876,22,48,Loss,Win,-26,70
+401112260,10/05/2019,12:00 PM,Purdue @ Penn State,Penn State,Purdue,Away,-28.5,36.94,65.44,High,60.87,36.94,Over,55.5,60.87,5.369999999999997,401112260,35,7,Win,Loss,28,42
+401112194,10/05/2019,12:00 PM,Iowa @ Michigan,Michigan,Iowa,Away,-4.0,1.57,5.57,High,45.71,1.57,No Bet,48.0,45.71,0.0,401112194,10,3,Loss,No Bet,7,13
+401114328,10/05/2019,12:00 PM,Tulane @ Army,Army,Tulane,No Bet,2.0,-0.39,0.0,,50.05,-0.39,Over,43.5,50.05,6.549999999999997,401114328,33,42,No Bet,Win,-9,75
+401112473,10/05/2019,12:30 PM,Boston College @ Louisville,Louisville,Boston College,Away,-3.5,12.09,15.59,High,60.1,12.09,No Bet,61.0,60.1,0.0,401112473,41,39,Win,No Bet,2,80
+401112088,10/05/2019,02:00 PM,TCU @ Iowa State,Iowa State,TCU,Away,-3.0,3.87,6.87,High,58.65,3.87,Over,45.5,58.65,13.15,401112088,49,24,Loss,Win,25,73
+401119273,10/05/2019,03:00 PM,Eastern Michigan @ Central Michigan,Central Michigan,Eastern Michigan,Home,4.0,0.02,3.98,High,56.33,0.02,No Bet,54.0,56.33,0.0,401119273,42,16,Win,No Bet,26,58
+401112137,10/05/2019,03:30 PM,Texas @ West Virginia,West Virginia,Texas,Home,10.5,-2.97,13.47,High,62.83,-2.97,No Bet,62.0,62.83,0.0,401112137,31,42,Loss,No Bet,-11,73
+401119274,10/05/2019,03:30 PM,Ohio @ Buffalo,Buffalo,Ohio,Away,3.0,7.48,4.48,High,57.8,7.48,Over,53.0,57.8,4.799999999999997,401119274,20,21,Loss,Loss,-1,41
+401114337,10/05/2019,03:30 PM,Bowling Green @ Notre Dame,Notre Dame,Bowling Green,Away,-45.5,34.51,80.00999999999999,High,55.88,34.51,Under,64.5,55.88,8.619999999999997,401114337,52,0,Loss,Win,52,52
+401114275,10/05/2019,03:30 PM,Marshall @ Middle Tennessee,Middle Tennessee,Marshall,Home,5.0,0.92,4.08,High,61.78,0.92,Over,53.5,61.78,8.280000000000001,401114275,24,13,Win,Loss,11,37
+401121949,10/05/2019,03:30 PM,Arkansas State @ Georgia State,Georgia State,Arkansas State,Home,6.5,-0.86,7.36,High,73.84,-0.86,Over,69.5,73.84,4.340000000000003,401121949,52,38,Win,Win,14,90
+401112077,10/05/2019,03:30 PM,Baylor @ Kansas State,Kansas State,Baylor,Away,1.0,7.72,6.72,High,54.37,7.72,Over,48.5,54.37,5.869999999999997,401112077,12,31,Win,Loss,-19,43
+401112476,10/05/2019,03:30 PM,Virginia Tech @ Miami,Miami,Virginia Tech,Away,-14.0,19.96,33.96,High,50.59,19.96,Over,46.0,50.59,4.590000000000003,401112476,35,42,Win,Win,-7,77
+401110812,10/05/2019,03:30 PM,Auburn @ Florida,Florida,Auburn,No Bet,2.5,2.81,0.0,,50.45,2.81,No Bet,48.5,50.45,0.0,401110812,24,13,No Bet,No Bet,11,37
+401119275,10/05/2019,03:30 PM,Western Michigan @ Toledo,Toledo,Western Michigan,Away,-1.5,5.69,7.19,High,61.88,5.69,Under,74.0,61.88,12.119999999999996,401119275,31,24,Loss,Win,7,55
+401119272,10/05/2019,03:30 PM,Ball State @ Northern Illinois,Northern Illinois,Ball State,Away,-4.0,1.05,5.05,High,58.47,1.05,Over,55.0,58.47,3.469999999999999,401119272,20,27,Win,Loss,-7,47
+401117516,10/05/2019,03:30 PM,Air Force @ Navy,Navy,Air Force,Away,3.0,6.82,3.82,High,57.62,6.82,Over,46.5,57.62,11.119999999999996,401117516,34,25,Loss,Win,9,59
+401112149,10/05/2019,03:30 PM,Illinois @ Minnesota,Minnesota,Illinois,Away,-14.0,6.32,20.32,High,65.89,6.32,Over,57.5,65.89,8.39,401112149,40,17,Loss,Loss,23,57
+401117877,10/05/2019,03:45 PM,Memphis @ UL Monroe,UL Monroe,Memphis,Home,15.5,-7.76,23.26,High,62.26,-7.76,No Bet,64.5,62.26,0.0,401117877,33,52,Loss,No Bet,-19,85
+401112242,10/05/2019,04:00 PM,Northwestern @ Nebraska,Nebraska,Northwestern,Away,-7.5,9.97,17.47,High,48.77,9.97,No Bet,48.5,48.77,0.0,401112242,13,10,Win,No Bet,3,23
+401110815,10/05/2019,04:00 PM,Troy @ Missouri,Missouri,Troy,Away,-25.5,17.57,43.07,High,64.52,17.57,No Bet,65.0,64.52,0.0,401110815,42,10,Loss,No Bet,32,52
+401112475,10/05/2019,04:00 PM,North Carolina @ Georgia Tech,Georgia Tech,North Carolina,Home,9.5,-4.63,14.13,High,43.62,-4.63,Under,47.0,43.62,3.3800000000000026,401112475,22,38,Loss,Loss,-16,60
+401114167,10/05/2019,04:30 PM,Arizona @ Colorado,Colorado,Arizona,Away,-2.5,6.95,9.45,High,69.14,6.95,Over,63.5,69.14,5.640000000000001,401114167,30,35,Win,Win,-5,65
+401114276,10/05/2019,06:00 PM,Western Kentucky @ Old Dominion,Old Dominion,Western Kentucky,No Bet,2.5,3.49,0.0,,49.54,3.49,Over,42.0,49.54,7.539999999999999,401114276,3,20,No Bet,Loss,-17,23
+401114274,10/05/2019,07:00 PM,Massachusetts @ Florida International,Florida International,Massachusetts,Away,-28.0,21.22,49.22,High,64.01,21.22,Under,70.5,64.01,6.489999999999995,401114274,44,0,Loss,Win,44,44
+401114277,10/05/2019,07:00 PM,Rice @ UAB,UAB,Rice,Away,-10.0,15.5,25.5,High,39.95,15.5,Under,43.5,39.95,3.549999999999997,401114277,35,20,Loss,Loss,15,55
+401110816,10/05/2019,07:00 PM,Georgia @ Tennessee,Tennessee,Georgia,Home,24.5,-13.97,38.47,High,48.14,-13.97,Under,51.5,48.14,3.359999999999999,401110816,14,43,Loss,Loss,-29,57
+401117878,10/05/2019,07:30 PM,Tulsa @ SMU,SMU,Tulsa,Away,-12.0,17.99,29.99,High,60.67,17.99,No Bet,63.5,60.67,0.0,401117878,43,37,Win,No Bet,6,80
+401112216,10/05/2019,07:30 PM,Michigan State @ Ohio State,Ohio State,Michigan State,Away,-19.0,26.8,45.8,High,55.52,26.8,Over,51.0,55.52,4.520000000000003,401112216,34,10,Loss,Loss,24,44
+401110814,10/05/2019,07:30 PM,Vanderbilt @ Ole Miss,Ole Miss,Vanderbilt,Away,-6.5,16.17,22.67,High,58.43,16.17,Under,63.5,58.43,5.07,401110814,31,6,Loss,Win,25,37
+401114278,10/05/2019,08:00 PM,UTSA @ UTEP,UTEP,UTSA,Away,-1.5,5.1,6.6,High,53.31,5.1,Over,47.0,53.31,6.310000000000002,401114278,16,26,Win,Loss,-10,42
+401114342,10/05/2019,08:00 PM,Liberty @ New Mexico State,New Mexico State,Liberty,Home,4.5,-7.82,12.32,High,52.01,-7.82,Under,62.5,52.01,10.490000000000002,401114342,13,20,Loss,Win,-7,33
+401114177,10/05/2019,08:00 PM,California @ Oregon,Oregon,California,Away,-21.5,17.76,39.260000000000005,High,45.83,17.76,No Bet,46.5,45.83,0.0,401114177,17,7,Win,No Bet,10,24
+401112474,10/05/2019,08:00 PM,Pittsburgh @ Duke,Duke,Pittsburgh,Away,-3.5,12.41,15.91,High,42.73,12.41,Under,47.5,42.73,4.770000000000003,401112474,30,33,Win,Loss,-3,63
+401114203,10/05/2019,09:00 PM,Oregon State @ UCLA,UCLA,Oregon State,Away,-4.5,3.42,7.92,High,63.83,3.42,No Bet,63.5,63.83,0.0,401114203,31,48,Win,No Bet,-17,79
+401117518,10/05/2019,10:00 PM,San Diego State @ Colorado State,Colorado State,San Diego State,Home,7.5,-0.18,7.68,High,53.58,-0.18,Over,49.0,53.58,4.579999999999998,401117518,10,24,Loss,Loss,-14,34
+401114209,10/05/2019,10:30 PM,Washington @ Stanford,Stanford,Washington,Home,13.5,-6.0,19.5,High,50.64,-6.0,No Bet,52.0,50.64,0.0,401114209,23,13,Win,No Bet,10,36
+401117517,10/05/2019,10:30 PM,Boise State @ UNLV,UNLV,Boise State,Home,24.0,-9.17,33.17,High,54.41,-9.17,No Bet,57.0,54.41,0.0,401117517,13,38,Loss,No Bet,-25,51

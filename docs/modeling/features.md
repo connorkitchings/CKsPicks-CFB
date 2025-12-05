@@ -1,8 +1,9 @@
 # Feature Catalog
 
-This catalog defines the engineered features and fields used by the MVP modeling pipeline.
-It complements `docs/project_org/modeling_baseline.md` and the runbook in
-`docs/operations/weekly_pipeline.md`.
+**V2 Status** (as of 2025-12-05): This catalog contains definitions for all available features. For V2-specific feature sets and their promotion status, see [`feature_registry.md`](../project_org/feature_registry.md). The V2 baseline uses `minimal_unadjusted_v1` (4 features only).
+
+This catalog defines the engineered features and fields used by the modeling pipeline.
+It complements the V2 baseline documentation in [`docs/modeling/baseline.md`](baseline.md) and the weekly pipeline in [`docs/ops/weekly_pipeline.md`](../ops/weekly_pipeline.md).
 
 > NOTE (2025-10-20): Feature requirements may change for the points-for modeling initiative. Track updates in `docs/planning/points_for_model.md`.
 

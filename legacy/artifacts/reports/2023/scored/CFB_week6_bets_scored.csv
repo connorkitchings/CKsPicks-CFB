@@ -1,0 +1,51 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401520294,10/04/2023,08:00 PM,Jacksonville State @ Middle Tennessee,Middle Tennessee,Jacksonville State,Home,-3.0,-5.54,2.54,High,47.93,-5.54,Under,52.0,47.93,4.07,401520294,30,45,Loss,Loss,-15,75
+401520297,10/04/2023,09:00 PM,Florida International @ New Mexico State,New Mexico State,Florida International,Away,-6.5,10.95,17.45,High,42.18,10.95,Under,49.5,42.18,7.32,401520297,34,17,Loss,Loss,17,51
+401520296,10/05/2023,07:00 PM,Sam Houston @ Liberty,Liberty,Sam Houston,Away,-21.5,24.27,45.77,High,43.91,24.27,No Bet,46.5,43.91,0.0,401520296,21,16,Win,No Bet,5,37
+401520295,10/05/2023,08:00 PM,Western Kentucky @ Louisiana Tech,Louisiana Tech,Western Kentucky,Home,6.0,1.74,4.26,High,59.68,1.74,No Bet,59.0,59.68,0.0,401520295,28,35,Loss,No Bet,-7,63
+401525857,10/06/2023,07:30 PM,Kansas State @ Oklahoma State,Oklahoma State,Kansas State,Home,11.5,-10.79,22.29,High,54.2,-10.79,No Bet,54.0,54.2,0.0,401525857,29,21,Win,No Bet,8,50
+401520301,10/06/2023,08:00 PM,Nebraska @ Illinois,Illinois,Nebraska,Away,-3.0,3.72,6.720000000000001,High,42.35,3.72,No Bet,41.5,42.35,0.0,401520301,7,20,Win,No Bet,-13,27
+401520311,10/07/2023,12:00 PM,Rutgers @ Wisconsin,Wisconsin,Rutgers,Away,-13.0,8.02,21.02,High,40.93,8.02,Under,44.0,40.93,3.0700000000000003,401520311,24,13,Win,Win,11,37
+401520298,10/07/2023,12:00 PM,Boston College @ Army,Army,Boston College,Away,-2.0,18.38,20.38,High,55.92,18.38,Over,47.0,55.92,8.920000000000002,401520298,24,27,Win,Win,-3,51
+401520307,10/07/2023,12:00 PM,Maryland @ Ohio State,Ohio State,Maryland,Away,-17.0,13.32,30.32,High,42.53,13.32,Under,57.0,42.53,14.47,401520307,37,17,Loss,Win,20,54
+401526837,10/07/2023,12:00 PM,Toledo @ Massachusetts,Massachusetts,Toledo,Home,19.0,-8.49,27.49,High,70.9,-8.49,Over,55.5,70.9,15.400000000000006,401526837,24,41,Win,Win,-17,65
+401520304,10/07/2023,12:00 PM,Western Michigan @ Mississippi State,Mississippi State,Western Michigan,Away,-21.0,11.86,32.86,High,62.38,11.86,Over,55.0,62.38,7.380000000000003,401520304,41,28,Win,Win,13,69
+401520305,10/07/2023,12:00 PM,LSU @ Missouri,Missouri,LSU,Home,6.5,1.19,5.3100000000000005,High,60.36,1.19,Under,63.5,60.36,3.140000000000001,401520305,39,49,Loss,Loss,-10,88
+401525861,10/07/2023,12:00 PM,Oklahoma @ Texas,Texas,Oklahoma,Home,-4.0,-8.91,4.91,High,45.01,-8.91,Under,61.5,45.01,16.490000000000002,401525861,30,34,Loss,Loss,-4,64
+401532415,10/07/2023,02:00 PM,Central Michigan @ Buffalo,Buffalo,Central Michigan,No Bet,2.5,4.52,0.0,,67.1,4.52,Over,52.0,67.1,15.099999999999994,401532415,37,13,No Bet,Loss,24,50
+401531389,10/07/2023,02:00 PM,UTSA @ Temple,Temple,UTSA,Home,14.0,0.78,13.22,High,42.68,0.78,Under,56.5,42.68,13.82,401531389,34,49,Loss,Loss,-15,83
+401525521,10/07/2023,02:00 PM,Marshall @ NC State,NC State,Marshall,Away,-6.5,6.28,12.78,High,45.53,6.28,No Bet,44.0,45.53,0.0,401525521,48,41,Loss,No Bet,7,89
+401520306,10/07/2023,03:00 PM,Howard @ Northwestern,Northwestern,Howard,Away,-23.0,10.77,33.769999999999996,High,66.9,10.77,Over,51.0,66.9,15.900000000000006,401520306,23,20,Win,Loss,3,43
+401524028,10/07/2023,03:00 PM,Washington State @ UCLA,UCLA,Washington State,Away,-3.5,5.89,9.39,High,57.21,5.89,No Bet,59.5,57.21,0.0,401524028,25,17,Loss,No Bet,8,42
+401520310,10/07/2023,03:30 PM,Alabama @ Texas A&M,Texas A&M,Alabama,Away,2.5,6.37,3.87,High,48.6,6.37,Over,45.5,48.6,3.1000000000000014,401520310,20,26,Win,Win,-6,46
+401532416,10/07/2023,03:30 PM,Bowling Green @ Miami (OH),Miami (OH),Bowling Green,Away,-7.5,11.08,18.58,High,51.02,11.08,Over,43.0,51.02,8.020000000000003,401532416,27,0,Loss,Loss,27,27
+401525517,10/07/2023,03:30 PM,Wake Forest @ Clemson,Clemson,Wake Forest,Away,-21.0,19.09,40.09,High,49.51,19.09,Under,53.0,49.51,3.490000000000002,401525517,17,12,Win,Win,5,29
+401531433,10/07/2023,03:30 PM,North Texas @ Navy,Navy,North Texas,Away,-6.5,8.15,14.65,High,66.75,8.15,Over,60.0,66.75,6.75,401531433,27,24,Win,Loss,3,51
+401532417,10/07/2023,03:30 PM,Kent State @ Ohio,Ohio,Kent State,Away,-24.0,25.23,49.23,High,31.42,25.23,Under,45.5,31.42,14.079999999999998,401532417,42,17,Loss,Loss,25,59
+401525520,10/07/2023,03:30 PM,Syracuse @ North Carolina,North Carolina,Syracuse,Away,-9.0,0.22,9.22,High,52.46,0.22,Under,59.0,52.46,6.539999999999999,401525520,40,7,Loss,Win,33,47
+401525518,10/07/2023,03:30 PM,Virginia Tech @ Florida State,Florida State,Virginia Tech,Away,-24.0,21.93,45.93,High,55.23,21.93,No Bet,52.5,55.23,0.0,401525518,39,17,Win,No Bet,22,56
+401532414,10/07/2023,03:30 PM,Ball State @ Eastern Michigan,Eastern Michigan,Ball State,Away,-2.0,11.59,13.59,High,38.76,11.59,Under,43.5,38.76,4.740000000000002,401532414,24,10,Loss,Win,14,34
+401520302,10/07/2023,03:30 PM,Purdue @ Iowa,Iowa,Purdue,Away,-2.0,11.07,13.07,High,44.9,11.07,Over,38.5,44.9,6.399999999999999,401520302,20,14,Loss,Loss,6,34
+401532418,10/07/2023,03:30 PM,Northern Illinois @ Akron,Akron,Northern Illinois,No Bet,4.0,4.9,0.0,,36.14,4.9,Under,42.5,36.14,6.359999999999999,401532418,14,55,No Bet,Loss,-41,69
+401531884,10/07/2023,03:30 PM,Texas State @ Louisiana,Louisiana,Texas State,Away,-1.0,2.41,3.41,High,69.05,2.41,No Bet,66.5,69.05,0.0,401531884,34,30,Loss,No Bet,4,64
+401525860,10/07/2023,04:00 PM,UCF @ Kansas,Kansas,UCF,No Bet,2.0,1.42,0.0,,67.55,1.42,Over,64.5,67.55,3.049999999999997,401525860,51,22,No Bet,Win,29,73
+401520299,10/07/2023,04:00 PM,Vanderbilt @ Florida,Florida,Vanderbilt,Away,-18.5,16.08,34.58,High,55.6,16.08,Over,51.0,55.6,4.600000000000001,401520299,38,14,Loss,Win,24,52
+401531887,10/07/2023,04:00 PM,Arkansas State @ Troy,Troy,Arkansas State,Away,-15.5,18.05,33.55,High,51.68,18.05,No Bet,52.5,51.68,0.0,401531887,37,3,Loss,No Bet,34,40
+401531380,10/07/2023,04:00 PM,South Florida @ UAB,UAB,South Florida,No Bet,3.0,0.73,0.0,,64.27,0.73,Under,67.5,64.27,3.230000000000004,401531380,56,35,No Bet,Loss,21,91
+401520309,10/07/2023,05:00 PM,UConn @ Rice,Rice,UConn,Away,-10.0,16.2,26.2,High,57.1,16.2,Over,47.5,57.1,9.6,401520309,31,38,Win,Win,-7,69
+401531340,10/07/2023,06:00 PM,Tulsa @ Florida Atlantic,Florida Atlantic,Tulsa,Away,-2.5,2.42,4.92,High,56.24,2.42,No Bet,54.5,56.24,0.0,401531340,20,17,Loss,No Bet,3,37
+401524026,10/07/2023,06:30 PM,Colorado @ Arizona State,Arizona State,Colorado,Home,3.0,-5.42,8.42,High,57.66,-5.42,No Bet,58.5,57.66,0.0,401524026,24,27,Push,No Bet,-3,51
+401531886,10/07/2023,07:00 PM,Old Dominion @ Southern Miss,Southern Miss,Old Dominion,No Bet,-3.0,-1.19,0.0,,63.05,-1.19,Over,56.5,63.05,6.549999999999997,401531886,13,17,No Bet,Loss,-4,30
+401520300,10/07/2023,07:00 PM,Kentucky @ Georgia,Georgia,Kentucky,Away,-14.5,10.42,24.92,High,49.73,10.42,Over,46.5,49.73,3.229999999999997,401520300,51,13,Loss,Win,38,64
+401531885,10/07/2023,07:00 PM,South Alabama @ UL Monroe,UL Monroe,South Alabama,Home,11.0,1.03,9.97,High,48.36,1.03,No Bet,50.5,48.36,0.0,401531885,7,55,Loss,No Bet,-48,62
+401520308,10/07/2023,07:30 PM,Arkansas @ Ole Miss,Ole Miss,Arkansas,Away,-13.5,15.62,29.119999999999997,High,64.04,15.62,No Bet,62.0,64.04,0.0,401520308,27,20,Win,No Bet,7,47
+401520303,10/07/2023,07:30 PM,Michigan @ Minnesota,Minnesota,Michigan,Home,18.5,-13.39,31.89,High,38.08,-13.39,Under,46.0,38.08,7.920000000000002,401520303,10,52,Loss,Loss,-42,62
+401525439,10/07/2023,07:37 PM,Notre Dame @ Louisville,Louisville,Notre Dame,Home,6.0,-3.51,9.51,High,52.72,-3.51,No Bet,54.5,52.72,0.0,401525439,33,20,Win,No Bet,13,53
+401525859,10/07/2023,08:00 PM,TCU @ Iowa State,Iowa State,TCU,Home,6.5,-1.3,7.8,High,50.35,-1.3,No Bet,52.5,50.35,0.0,401525859,27,14,Win,No Bet,13,41
+401532590,10/07/2023,08:00 PM,Colorado State @ Utah State,Utah State,Colorado State,Away,3.0,9.46,6.460000000000001,High,72.14,9.46,Over,62.0,72.14,10.14,401532590,44,24,Loss,Win,20,68
+401532592,10/07/2023,08:00 PM,San José State @ Boise State,Boise State,San José State,Away,-7.5,7.93,15.43,High,59.13,7.93,No Bet,57.0,59.13,0.0,401532592,35,27,Loss,No Bet,8,62
+401532591,10/07/2023,08:00 PM,Fresno State @ Wyoming,Wyoming,Fresno State,Home,6.0,-3.68,9.68,High,48.67,-3.68,Over,42.5,48.67,6.170000000000002,401532591,24,19,Win,Win,5,43
+401525519,10/07/2023,08:00 PM,Georgia Tech @ Miami,Miami,Georgia Tech,Away,-19.0,22.6,41.6,High,62.33,22.6,Over,57.0,62.33,5.329999999999998,401525519,20,23,Win,Loss,-3,43
+401525858,10/07/2023,08:00 PM,Texas Tech @ Baylor,Baylor,Texas Tech,Home,2.5,-3.73,6.23,High,56.95,-3.73,No Bet,59.5,56.95,0.0,401525858,14,39,Loss,No Bet,-25,53
+401524027,10/07/2023,10:00 PM,Oregon State @ California,California,Oregon State,Home,7.5,-3.64,11.14,High,56.11,-3.64,Over,51.0,56.11,5.109999999999999,401524027,40,52,Loss,Win,-12,92
+401524025,10/07/2023,10:30 PM,Arizona @ USC,USC,Arizona,Away,-21.0,18.09,39.09,High,66.14,18.09,Under,69.5,66.14,3.359999999999999,401524025,43,41,Win,Loss,2,84

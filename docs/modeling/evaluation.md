@@ -1,8 +1,24 @@
 # Model Evaluation Criteria
 
+**V2 Status** (as of 2025-12-05): This document defines evaluation metrics for general model development. For **V2 promotion-specific criteria**, see [`promotion_framework.md`](../process/promotion_framework.md) which defines the 5-gate system.
+
 This document defines the success thresholds, performance metrics, and model selection criteria for the cfb_model betting system.
 
-> 🔗 **Related**: [Modeling Baseline](modeling_baseline.md) | [Open Decision OPEN-002](open_decisions.md#open-002-model-selection-post-mvp) | [Feature Catalog](feature_catalog.md)
+> 🔗 **Related**: [V2 Promotion Framework](../process/promotion_framework.md) | [Modeling Baseline](baseline.md) | [Feature Catalog](features.md)
+
+---
+
+## V2 Promotion Metrics (Quick Reference)
+
+**For feature/model promotion in V2 workflow**, these specific thresholds apply:
+
+- **Phase 2 (Features)**: +1.0% ROI improvement, 90% bootstrap confidence
+- **Phase 3 (Models)**: +1.5% ROI improvement, 95% bootstrap confidence
+- **Both Phases**: Volume ≥100 bets, stability (3/4 quarters positive), no degradation
+
+**Full details**: See [`promotion_framework.md`](../process/promotion_framework.md)
+
+The metrics below provide supporting context and additional evaluation criteria beyond the V2 gates.
 
 ---
 
@@ -210,12 +226,12 @@ flowchart TD
 - Each Hydra run persists the composed config (`.hydra/config.yaml`) inside the run directory, ensuring evaluations are fully reproducible.
 - **Latest snapshot (2025-11-19):** Targeted walk-forward validation with `data.train_years=[2023]`, `data.test_year=2024`, and weeks 8–13 for both seasons compared the registered staging models (`cfb_spread_lightgbm`, `cfb_total_catboost`) against the legacy ensembles. Results (stored in `artifacts/validation/walk_forward/metrics_summary.csv`):
 
-  | Target | Strategy (weeks 8–13) | 2023 RMSE / MAE | 2024 RMSE / MAE | Notes |
-  | --- | --- | --- | --- | --- |
-  | Spread | Legacy ensemble | 45.72 / 2606.8 | **16.72 / 13.45** | 2023 blow-ups reflect minimal training data; 2024 remains the benchmark. |
-  | Spread | LightGBM best_single | 18.81 / 14.69 | 17.98 / 14.43 | Slightly worse than ensemble on 2024 holdout; keep in staging for additional tuning. |
-  | Total  | Legacy ensemble | 18.47 / 1061.2 | **17.14 / 13.64** | Baseline. |
-  | Total  | CatBoost best_single | 17.28 / 13.68 | 17.17 / 13.66 | Matches ensemble within 0.03 RMSE; acceptable candidate for promotion pending longer horizon. |
+  | Target | Strategy (weeks 8–13) | 2023 RMSE / MAE | 2024 RMSE / MAE   | Notes                                                                                         |
+  | ------ | --------------------- | --------------- | ----------------- | --------------------------------------------------------------------------------------------- |
+  | Spread | Legacy ensemble       | 45.72 / 2606.8  | **16.72 / 13.45** | 2023 blow-ups reflect minimal training data; 2024 remains the benchmark.                      |
+  | Spread | LightGBM best_single  | 18.81 / 14.69   | 17.98 / 14.43     | Slightly worse than ensemble on 2024 holdout; keep in staging for additional tuning.          |
+  | Total  | Legacy ensemble       | 18.47 / 1061.2  | **17.14 / 13.64** | Baseline.                                                                                     |
+  | Total  | CatBoost best_single  | 17.28 / 13.68   | 17.17 / 13.66     | Matches ensemble within 0.03 RMSE; acceptable candidate for promotion pending longer horizon. |
 
   These evaluations inform MLflow Model Registry decisions and monitoring dashboards (see `docs/reports/model_sweep_2025-11-19.md`).
 

@@ -1,0 +1,31 @@
+random_seed: 42
+paths:
+  data: ${oc.env:CFB_MODEL_DATA_ROOT}
+  raw: ${paths.data}/raw
+  processed: ${paths.data}/processed
+  external: ${paths.data}/external
+  interim: ${paths.data}/interim
+  models: ${paths.data}/models
+  reports: ${paths.data}/reports
+model:
+  name: linear
+  type: linear_regression
+  params:
+    alpha: 1.0
+  target: spread_target
+features:
+  name: v1_baseline
+  features:
+  - adj_off_epa_pp
+  - adj_def_epa_pp
+  - adj_off_sr
+  - adj_def_sr
+  target: spread_target
+training:
+  train_years:
+  - 2019
+  - 2021
+  - 2022
+  - 2023
+  test_year: 2024
+  split_strategy: time_series

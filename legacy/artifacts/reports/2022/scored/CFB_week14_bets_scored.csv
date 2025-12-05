@@ -1,0 +1,12 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401506450,12/02/2022,01:00 PM,Akron @ Buffalo,Buffalo,Akron,Away,-12.0,15.45,27.45,High,55.12,15.45,No Bet,55.0,55.12,0.0,401506450,23,22,Win,No Bet,1,45
+401437032,12/02/2022,07:30 PM,North Texas @ UTSA,UTSA,North Texas,Away,-8.0,10.92,18.92,High,66.42,10.92,Under,70.0,66.42,3.5799999999999983,401437032,48,27,Loss,Loss,21,75
+401437035,12/02/2022,08:00 PM,Utah @ USC,USC,Utah,No Bet,-3.0,-2.74,0.0,,64.26,-2.74,Under,67.5,64.26,3.239999999999995,401437035,24,47,No Bet,Loss,-23,71
+401437033,12/03/2022,12:00 PM,Toledo @ Ohio,Ohio,Toledo,No Bet,3.5,1.16,0.0,,63.66,1.16,Over,54.5,63.66,9.159999999999997,401437033,7,17,No Bet,Loss,-10,24
+401437030,12/03/2022,12:00 PM,Kansas State @ TCU,TCU,Kansas State,No Bet,1.0,0.65,0.0,,54.24,0.65,Under,61.0,54.24,6.759999999999998,401437030,28,31,No Bet,Win,-3,59
+401437037,12/03/2022,03:30 PM,Coastal Carolina @ Troy,Troy,Coastal Carolina,Away,-6.5,10.86,17.36,High,46.56,10.86,No Bet,49.0,46.56,0.0,401437037,45,26,Loss,No Bet,19,71
+401437008,12/03/2022,04:00 PM,UCF @ Tulane,Tulane,UCF,Away,-3.5,5.3,8.8,High,52.55,5.3,Under,57.0,52.55,4.450000000000003,401437008,45,28,Loss,Loss,17,73
+401437034,12/03/2022,04:00 PM,Fresno State @ Boise State,Boise State,Fresno State,Away,-3.0,5.34,8.34,High,51.33,5.34,Under,54.5,51.33,3.1700000000000017,401437034,16,28,Win,Win,-12,44
+401437036,12/03/2022,04:00 PM,LSU @ Georgia,Georgia,LSU,Away,-17.0,12.98,29.98,High,43.96,12.98,Under,52.0,43.96,8.04,401437036,50,30,Loss,Loss,20,80
+401437009,12/03/2022,08:00 PM,Clemson @ North Carolina,North Carolina,Clemson,Home,7.0,-6.1,13.1,High,63.56,-6.1,No Bet,64.0,63.56,0.0,401437009,10,39,Loss,No Bet,-29,49
+401437031,12/03/2022,08:00 PM,Purdue @ Michigan,Michigan,Purdue,Away,-15.0,16.2,31.2,High,51.98,16.2,No Bet,54.0,51.98,0.0,401437031,43,22,Loss,No Bet,21,65

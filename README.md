@@ -10,20 +10,40 @@ The project follows the **Vibe Coding** conventions for observability, reproduci
 AI-assisted collaboration. It is designed so that humans and AI agents can safely iterate on the
 codebase, keep documentation in sync, and never lose critical experiment history.
 
-For a deeper dive into methodology and project docs, see:
+## 🎯 V2 Experimentation Workflow (NEW - Dec 2025)
+
+The project now follows a rigorous **4-phase V2 workflow** for all modeling work:
+
+1. **Phase 1: Baseline Establishment** → Ridge regression with minimal features
+2. **Phase 2: Feature Engineering & Selection** → Test features, promote if +1.0% ROI
+3. **Phase 3: Model Selection** → Test complex models, promote if +1.5% ROI
+4. **Phase 4: Deployment & Monitoring** → Champion Model to production with monitoring
+
+**Key Features**:
+
+- **5-Gate Promotion System**: Performance, volume, statistical significance, stability, no degradation
+- **Pure V2**: No legacy model fallback ("burn the boats")
+- **12-Week Timeline**: From Ridge baseline to Champion Model
+- **Manual Workflow**: User controls all steps, dashboard provides decision support
+
+For deeper methodology and full documentation:
 
 - **[📖 Documentation Guide](./docs/guide.md)** — Single source of truth for all project documentation
+- **[V2 Workflow](./docs/process/experimentation_workflow.md)** — **NEW:** Full 4-phase process
+- **[12-Week Plan](./docs/process/12_week_implementation_plan.md)** — **NEW:** Implementation roadmap
+- **[Promotion Framework](./docs/process/promotion_framework.md)** — **NEW:** 5-gate rigor system
 - [AI Assistant Protocols](./CLAUDE.md) — Session management and AI collaboration guidelines
 
 ### Quick Links
 
+- **[V2 Baseline](./docs/modeling/baseline.md)** — Ridge regression with minimal features
 - [Weekly Pipeline](./docs/ops/weekly_pipeline.md) — Production workflow
-- [Modeling Baseline](./docs/modeling/baseline.md) — Current models and architecture
-- [Feature Catalog](./docs/modeling/features.md) — Feature engineering reference
+- [Monitoring Dashboard](./docs/ops/monitoring.md) — **NEW:** Performance tracking and rollback
+- [Feature Registry](./docs/project_org/feature_registry.md) — V2 feature sets
 - [ML Workflow](./docs/process/ml_workflow.md) — Train/Test/Deploy standards
 - [Decision Log](./docs/decisions/decision_log.md) — Major decisions and rationale
 
-> **Note**: The repository was reorganized on 2025-12-04. All documentation is now accessible from [docs/guide.md](./docs/guide.md).
+> **Note**: Documentation reorganized on 2025-12-04, V2 workflow alignment on 2025-12-05. All docs now accessible from [docs/guide.md](./docs/guide.md).
 
 ---
 

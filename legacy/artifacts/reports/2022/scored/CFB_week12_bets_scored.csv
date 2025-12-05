@@ -1,0 +1,63 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401416642,11/15/2022,07:00 PM,Bowling Green @ Toledo,Toledo,Bowling Green,Away,-14.5,19.28,33.78,High,61.21,19.28,Over,46.5,61.21,14.71,401416642,35,42,Win,Win,-7,77
+401416643,11/15/2022,07:00 PM,Ohio @ Ball State,Ball State,Ohio,Home,3.5,-0.27,3.77,High,60.77,-0.27,Over,57.5,60.77,3.270000000000003,401416643,18,32,Loss,Loss,-14,50
+401416644,11/16/2022,06:00 PM,Eastern Michigan @ Kent State,Kent State,Eastern Michigan,Away,-7.5,10.13,17.630000000000003,High,56.12,10.13,Under,60.0,56.12,3.8800000000000026,401416644,24,31,Win,Win,-7,55
+401416646,11/16/2022,07:00 PM,Miami (OH) @ Northern Illinois,Northern Illinois,Miami (OH),Away,0.0,6.71,6.71,High,51.12,6.71,Over,44.0,51.12,7.119999999999997,401416646,23,29,Win,Win,-6,52
+401416645,11/16/2022,08:00 PM,Western Michigan @ Central Michigan,Central Michigan,Western Michigan,Away,-10.0,11.22,21.22,High,48.47,11.22,No Bet,49.0,48.47,0.0,401416645,10,12,Win,No Bet,-2,22
+401415658,11/17/2022,07:30 PM,SMU @ Tulane,Tulane,SMU,Away,-3.5,7.42,10.92,High,62.95,7.42,No Bet,65.0,62.95,0.0,401415658,59,24,Loss,No Bet,35,83
+401415659,11/18/2022,09:00 PM,South Florida @ Tulsa,Tulsa,South Florida,Away,-14.0,10.86,24.86,High,66.07,10.86,Over,57.5,66.07,8.569999999999993,401415659,48,42,Win,Win,6,90
+401415264,11/18/2022,09:45 PM,San Diego State @ New Mexico,New Mexico,San Diego State,Home,14.5,-5.12,19.62,High,33.51,-5.12,No Bet,36.0,33.51,0.0,401415264,10,34,Loss,No Bet,-24,44
+401415661,11/19/2022,11:00 AM,Navy @ UCF,UCF,Navy,Away,-15.0,18.49,33.489999999999995,High,49.75,18.49,Under,53.0,49.75,3.25,401415661,14,17,Win,Win,-3,31
+401403946,11/19/2022,12:00 PM,Austin Peay @ Alabama,Alabama,Austin Peay,Away,-44.5,28.87,73.37,High,59.46,28.87,No Bet,59.0,59.46,0.0,401403946,34,0,Win,No Bet,34,34
+401403955,11/19/2022,12:00 PM,Florida @ Vanderbilt,Vanderbilt,Florida,Home,14.0,-5.95,19.95,High,64.13,-5.95,Over,58.5,64.13,5.6299999999999955,401403955,31,24,Win,Loss,7,55
+401405143,11/19/2022,12:00 PM,Northwestern @ Purdue,Purdue,Northwestern,Away,-17.0,17.09,34.09,High,49.55,17.09,Over,44.0,49.55,5.549999999999997,401405143,17,9,Win,Loss,8,26
+401405142,11/19/2022,12:00 PM,Wisconsin @ Nebraska,Nebraska,Wisconsin,Home,10.0,-8.34,18.34,High,52.7,-8.34,Over,40.5,52.7,12.200000000000005,401405142,14,15,Win,Loss,-1,29
+401411166,11/19/2022,12:00 PM,Louisiana @ Florida State,Florida State,Louisiana,Away,-25.0,18.09,43.09,High,49.72,18.09,No Bet,52.0,49.72,0.0,401411166,49,17,Loss,No Bet,32,66
+401405145,11/19/2022,12:00 PM,Illinois @ Michigan,Michigan,Illinois,Away,-17.0,16.89,33.89,High,42.98,16.89,No Bet,41.5,42.98,0.0,401405145,19,17,Win,No Bet,2,36
+401411169,11/19/2022,12:00 PM,Duke @ Pittsburgh,Pittsburgh,Duke,Away,-6.5,2.45,8.95,High,55.08,2.45,Over,49.0,55.08,6.079999999999998,401411169,28,26,Win,Win,2,54
+401403954,11/19/2022,12:00 PM,Massachusetts @ Texas A&M,Texas A&M,Massachusetts,Away,-32.0,23.54,55.54,High,36.68,23.54,Under,46.0,36.68,9.32,401403954,20,3,Win,Win,17,23
+401404165,11/19/2022,12:00 PM,Virginia Tech @ Liberty,Liberty,Virginia Tech,Away,-10.5,14.21,24.71,High,46.62,14.21,No Bet,46.0,46.62,0.0,401404165,22,23,Win,No Bet,-1,45
+401404143,11/19/2022,12:00 PM,UConn @ Army,Army,UConn,Away,-10.0,10.91,20.91,High,46.72,10.91,No Bet,45.0,46.72,0.0,401404143,34,17,Loss,No Bet,17,51
+401404114,11/19/2022,12:00 PM,TCU @ Baylor,Baylor,TCU,Home,2.0,-1.1,3.1,High,61.66,-1.1,Over,58.5,61.66,3.1599999999999966,401404114,28,29,Win,Loss,-1,57
+401405146,11/19/2022,12:00 PM,Indiana @ Michigan State,Michigan State,Indiana,Away,-12.5,12.16,24.66,High,54.72,12.16,Over,47.0,54.72,7.719999999999999,401405146,31,39,Win,Win,-8,70
+401426611,11/19/2022,01:00 PM,UTSA @ Rice,Rice,UTSA,Home,14.0,-9.87,23.869999999999997,High,65.02,-9.87,Over,56.0,65.02,9.019999999999996,401426611,7,41,Loss,Loss,-34,48
+401426378,11/19/2022,02:00 PM,Georgia State @ James Madison,James Madison,Georgia State,Away,-10.0,18.04,28.04,High,56.94,18.04,Over,52.0,56.94,4.939999999999998,401426378,42,40,Win,Win,2,82
+401415660,11/19/2022,02:00 PM,Houston @ East Carolina,East Carolina,Houston,Away,-6.0,8.65,14.65,High,70.26,8.65,Over,66.5,70.26,3.760000000000005,401415660,3,42,Win,Loss,-39,45
+401404039,11/19/2022,02:00 PM,Washington State @ Arizona,Arizona,Washington State,Home,4.0,-4.79,8.79,High,57.12,-4.79,Under,63.0,57.12,5.880000000000003,401404039,20,31,Loss,Win,-11,51
+401404117,11/19/2022,02:00 PM,Kansas State @ West Virginia,West Virginia,Kansas State,Home,8.5,-9.27,17.77,High,56.84,-9.27,No Bet,54.5,56.84,0.0,401404117,31,48,Loss,No Bet,-17,79
+401404040,11/19/2022,02:15 PM,Oregon State @ Arizona State,Arizona State,Oregon State,Home,7.5,-6.76,14.26,High,53.1,-6.76,No Bet,53.5,53.1,0.0,401404040,7,31,Loss,No Bet,-24,38
+401426376,11/19/2022,02:30 PM,Old Dominion @ App State,App State,Old Dominion,Away,-16.0,16.0,32.0,High,54.55,16.0,Over,50.5,54.55,4.049999999999997,401426376,27,14,Win,Loss,13,41
+401404132,11/19/2022,02:30 PM,Boston College @ Notre Dame,Notre Dame,Boston College,Away,-20.0,20.53,40.53,High,47.43,20.53,Over,42.0,47.43,5.43,401404132,44,0,Loss,Win,44,44
+401405144,11/19/2022,03:30 PM,Ohio State @ Maryland,Maryland,Ohio State,Home,26.5,-16.55,43.05,High,59.87,-16.55,No Bet,62.5,59.87,0.0,401405144,30,43,Win,No Bet,-13,73
+401403949,11/19/2022,03:30 PM,Georgia @ Kentucky,Kentucky,Georgia,Home,22.5,-18.94,41.44,High,38.94,-18.94,Under,47.0,38.94,8.060000000000002,401403949,6,16,Win,Win,-10,22
+401404116,11/19/2022,03:30 PM,Texas @ Kansas,Kansas,Texas,Home,9.0,-1.85,10.85,High,62.21,-1.85,No Bet,63.5,62.21,0.0,401404116,14,55,Loss,No Bet,-41,69
+401411167,11/19/2022,03:30 PM,NC State @ Louisville,Louisville,NC State,Away,-4.0,8.42,12.42,High,40.54,8.42,No Bet,43.0,40.54,0.0,401411167,25,10,Loss,No Bet,15,35
+401426610,11/19/2022,03:30 PM,Florida Atlantic @ Middle Tennessee,Middle Tennessee,Florida Atlantic,Home,5.0,-2.33,7.33,High,52.39,-2.33,No Bet,51.0,52.39,0.0,401426610,49,21,Win,No Bet,28,70
+401426379,11/19/2022,03:30 PM,South Alabama @ Southern Miss,Southern Miss,South Alabama,Home,7.5,-4.61,12.11,High,47.77,-4.61,No Bet,45.0,47.77,0.0,401426379,20,27,Win,No Bet,-7,47
+401411165,11/19/2022,03:30 PM,Miami @ Clemson,Clemson,Miami,Away,-18.5,17.75,36.25,High,53.1,17.75,Over,47.5,53.1,5.600000000000001,401411165,40,10,Loss,Win,30,50
+401405147,11/19/2022,03:30 PM,Penn State @ Rutgers,Rutgers,Penn State,Home,19.0,-16.11,35.11,High,45.51,-16.11,No Bet,45.0,45.51,0.0,401405147,10,55,Loss,No Bet,-45,65
+401426608,11/19/2022,03:30 PM,Louisiana Tech @ Charlotte,Charlotte,Louisiana Tech,Home,2.0,-1.7,3.7,High,76.97,-1.7,Over,66.5,76.97,10.47,401426608,26,21,Win,Loss,5,47
+401426381,11/19/2022,03:30 PM,UL Monroe @ Troy,Troy,UL Monroe,Away,-15.0,17.5,32.5,High,46.51,17.5,No Bet,48.5,46.51,0.0,401426381,34,16,Loss,No Bet,18,50
+401426613,11/19/2022,04:00 PM,Western Kentucky @ Auburn,Auburn,Western Kentucky,No Bet,-5.0,-5.35,0.0,,56.13,-5.35,No Bet,54.0,56.13,0.0,401426613,41,17,No Bet,No Bet,24,58
+401426609,11/19/2022,04:00 PM,Florida International @ UTEP,UTEP,Florida International,Away,-14.0,14.23,28.23,High,46.16,14.23,Under,50.0,46.16,3.8400000000000034,401426609,40,6,Loss,Win,34,46
+401415663,11/19/2022,04:00 PM,Cincinnati @ Temple,Temple,Cincinnati,Home,17.0,-10.4,27.4,High,45.78,-10.4,Under,49.0,45.78,3.219999999999999,401415663,3,23,Loss,Win,-20,26
+401405141,11/19/2022,04:00 PM,Iowa @ Minnesota,Minnesota,Iowa,Away,-2.0,8.89,10.89,High,29.34,8.89,No Bet,31.5,29.34,0.0,401405141,10,13,Win,No Bet,-3,23
+401426380,11/19/2022,05:00 PM,Arkansas State @ Texas State,Texas State,Arkansas State,Away,-6.0,4.94,10.94,High,53.36,4.94,Over,50.0,53.36,3.359999999999999,401426380,16,13,Win,Loss,3,29
+401411168,11/19/2022,05:30 PM,Georgia Tech @ North Carolina,North Carolina,Georgia Tech,Away,-21.5,19.89,41.39,High,63.48,19.89,No Bet,63.0,63.48,0.0,401411168,17,21,Win,No Bet,-4,38
+401404041,11/19/2022,05:30 PM,Stanford @ California,California,Stanford,Away,-5.0,6.84,11.84,High,44.39,6.84,No Bet,45.5,44.39,0.0,401404041,27,20,Loss,No Bet,7,47
+401426377,11/19/2022,06:00 PM,Marshall @ Georgia Southern,Georgia Southern,Marshall,Home,6.0,0.58,5.42,High,54.16,0.58,No Bet,52.0,54.16,0.0,401426377,10,23,Loss,No Bet,-13,33
+401403953,11/19/2022,07:00 PM,Tennessee @ South Carolina,South Carolina,Tennessee,Home,23.0,-18.24,41.239999999999995,High,68.58,-18.24,No Bet,67.0,68.58,0.0,401403953,63,38,Win,No Bet,25,101
+401404115,11/19/2022,07:00 PM,Texas Tech @ Iowa State,Iowa State,Texas Tech,Away,-3.5,5.16,8.66,High,41.43,5.16,Under,47.0,41.43,5.57,401404115,10,14,Win,Win,-4,24
+401415261,11/19/2022,07:00 PM,Boise State @ Wyoming,Wyoming,Boise State,Home,14.5,-7.03,21.53,High,46.69,-7.03,No Bet,44.5,46.69,0.0,401415261,17,20,Win,No Bet,-3,37
+401403947,11/19/2022,07:30 PM,Ole Miss @ Arkansas,Arkansas,Ole Miss,Home,0.0,-3.28,3.28,High,64.25,-3.28,Under,68.0,64.25,3.75,401403947,42,27,Win,Loss,15,69
+401403952,11/19/2022,07:30 PM,New Mexico State @ Missouri,Missouri,New Mexico State,Away,-29.0,21.26,50.260000000000005,High,41.95,21.26,Under,46.5,41.95,4.549999999999997,401403952,45,14,Loss,Loss,31,59
+401404118,11/19/2022,07:30 PM,Oklahoma State @ Oklahoma,Oklahoma,Oklahoma State,Away,-7.0,3.37,10.37,High,68.68,3.37,No Bet,68.0,68.68,0.0,401404118,28,13,Loss,No Bet,15,41
+401404044,11/19/2022,08:00 PM,USC @ UCLA,UCLA,USC,Home,2.0,-0.6,2.6,High,72.76,-0.6,Under,77.5,72.76,4.739999999999995,401404044,45,48,Loss,Loss,-3,93
+401411171,11/19/2022,08:00 PM,Syracuse @ Wake Forest,Wake Forest,Syracuse,Away,-9.5,7.48,16.98,High,58.16,7.48,No Bet,59.0,58.16,0.0,401411171,45,35,Loss,No Bet,10,80
+401415262,11/19/2022,09:00 PM,Colorado State @ Air Force,Air Force,Colorado State,Away,-21.5,25.56,47.06,High,37.8,25.56,Under,43.0,37.8,5.200000000000003,401415262,24,12,Win,Win,12,36
+401426612,11/19/2022,09:00 PM,UAB @ LSU,LSU,UAB,Away,-15.5,12.2,27.7,High,46.07,12.2,Under,50.5,46.07,4.43,401426612,41,10,Loss,Loss,31,51
+401404042,11/19/2022,09:00 PM,Colorado @ Washington,Washington,Colorado,Away,-30.0,29.83,59.83,High,64.37,29.83,Over,60.0,64.37,4.3700000000000045,401404042,54,7,Loss,Win,47,61
+401415265,11/19/2022,09:45 PM,San José State @ Utah State,Utah State,San José State,Home,-1.5,-4.6,3.0999999999999996,High,51.86,-4.6,No Bet,51.0,51.86,0.0,401415265,35,31,Win,No Bet,4,66
+401415263,11/19/2022,10:30 PM,Fresno State @ Nevada,Nevada,Fresno State,Home,23.0,-11.56,34.56,High,54.89,-11.56,No Bet,54.0,54.89,0.0,401415263,14,41,Loss,No Bet,-27,55
+401404043,11/19/2022,10:30 PM,Utah @ Oregon,Oregon,Utah,No Bet,-1.0,0.59,0.0,,68.69,0.59,Over,61.5,68.69,7.189999999999998,401404043,20,17,No Bet,Loss,3,37
+401415266,11/19/2022,11:00 PM,UNLV @ Hawai'i,Hawai'i,UNLV,Home,11.0,-9.39,20.39,High,58.7,-9.39,No Bet,56.5,58.7,0.0,401415266,31,25,Win,No Bet,6,56

@@ -1,0 +1,2 @@
+game_id,Date,Time,Game,Home Team,Away Team,Spread Bet,home_team_spread_line,Model Spread,Spread Edge,Spread Confidence,Total Prediction,Spread Prediction,Total Bet,total_line,Model Total,Total Edge,id,home_points,away_points,Spread Bet Result,Total Bet Result,Spread Result,Total Result
+401301056,12/11/2021,03:00 PM,Navy @ Army,Army,Navy,Away,-7,17.07,24.07,High,51.3,17.07,Over,35.5,51.3,15.799999999999995,401301056,13,17,Win,Loss,-4,30

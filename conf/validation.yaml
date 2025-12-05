@@ -1,0 +1,102 @@
+# Configuration for the Data Quality Validation script
+
+validation:
+  team_game:
+    required_columns:
+      - season
+      - week
+      - game_id
+      - team
+      - n_off_plays
+      - n_rush_plays
+      - n_pass_plays
+      - off_sr
+      - off_ypp
+      - off_epa_pp
+      - off_expl_rate_overall_10
+      - off_expl_rate_overall_20
+      - off_expl_rate_overall_30
+      - off_expl_rate_rush
+      - off_expl_rate_pass
+      - stuff_rate
+      - havoc_rate
+      - off_power_success_rate
+      - def_sr
+      - def_ypp
+      - def_epa_pp
+      - def_power_success_rate_allowed
+      - off_drives
+      - off_eckel_rate
+      - off_successful_drive_rate
+      - off_busted_drive_rate
+      - off_explosive_drive_rate
+      - net_field_position_delta
+      - temperature
+      - wind_speed
+      - luck_factor
+
+    uniqueness_columns:
+      - season
+      - week
+      - game_id
+      - team
+
+    null_checks:
+      critical_null_checks:
+        - season
+        - week
+        - game_id
+        - team
+      warning_null_checks:
+        off_epa_pp: 5.0
+        def_epa_pp: 5.0
+        # Weather can sometimes be missing
+        temperature: 10.0
+        wind_speed: 10.0
+
+    range_checks:
+      # Rate-based metrics
+      off_sr: {min: 0.0, max: 1.0}
+      def_sr: {min: 0.0, max: 1.0}
+      off_expl_rate_overall_10: {min: 0.0, max: 1.0}
+      off_expl_rate_overall_20: {min: 0.0, max: 1.0}
+      off_expl_rate_overall_30: {min: 0.0, max: 1.0}
+      off_expl_rate_rush: {min: 0.0, max: 1.0}
+      off_expl_rate_pass: {min: 0.0, max: 1.0}
+      stuff_rate: {min: 0.0, max: 1.0}
+      havoc_rate: {min: 0.0, max: 1.0}
+      off_power_success_rate: {min: 0.0, max: 1.0}
+      def_power_success_rate_allowed: {min: 0.0, max: 1.0}
+      off_eckel_rate: {min: 0.0, max: 1.0}
+
+      # Per-play metrics
+      off_ypp: {min: -20.0, max: 100.0}
+      def_ypp: {min: -20.0, max: 100.0}
+      off_epa_pp: {min: -10.0, max: 10.0}
+      def_epa_pp: {min: -10.0, max: 10.0}
+
+      # Counts
+      n_off_plays: {min: 10, max: 150}
+      n_rush_plays: {min: 0, max: 120}
+      n_pass_plays: {min: 0, max: 120}
+      off_drives: {min: 1, max: 30}
+      def_drives_allowed: {min: 1, max: 30}
+
+      # Other
+      temperature: {min: -20, max: 120} # Reasonable Farenheit range
+      wind_speed: {min: 0, max: 100}
+
+    categorical_checks:
+      # This is an example. A real implementation would list all valid conferences.
+      # conference:
+      #   - "SEC"
+      #   - "Big Ten"
+      #   - "Big 12"
+      #   - "ACC"
+      #   - "Pac-12"
+      #   - "American Athletic"
+      #   - "Conference USA"
+      #   - "Mid-American"
+      #   - "Mountain West"
+      #   - "Sun Belt"
+      #   - "FBS Independents"

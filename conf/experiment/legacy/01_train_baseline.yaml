@@ -1,0 +1,19 @@
+# @package _global_
+
+defaults:
+  - override /hydra: default
+  - override /model: linear
+  - override /features: v1_baseline
+
+# This experiment trains the baseline model (Ridge) on the baseline feature set.
+# The resulting performance becomes the benchmark that all other experiments
+# must be compared against.
+
+# To run:
+# PYTHONPATH=. uv run python src/train.py experiment=01_train_baseline
+
+core:
+  experiment_name: "train_baseline"
+  tags: ["baseline", "v1"]
+
+# No changes to model or feature defaults are needed for this run.

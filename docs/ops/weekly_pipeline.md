@@ -1,103 +1,223 @@
-# Weekly Pipeline (The 5-Step Process)
+# Weekly Pipeline (Manual Workflow)
 
-This runbook defines the rigorous 5-step process for producing betting recommendations. This workflow ensures that every model deployed to production has passed strict validation gates.
+**Status**: V2-aligned as of 2025-12-05  
+**Workflow Type**: Manual (user-driven, not automated)
 
-## The 5-Step Workflow
-
-1.  **Ingest & Process**: Clean, automated data flow to create point-in-time features.
-2.  **Model & Experiment**: Train a "Champion" model on historical data (2019, 2021-2023).
-3.  **2024 Baseline (The Gate)**: Validate the Champion on the 2024 season (simulated). **Must pass performance thresholds.**
-4.  **2025 Actuals (Validation)**: Validate the Champion on the current 2025 season (walk-forward).
-5.  **Production (Execution)**: Generate predictions for the upcoming week using the validated Champion.
+This document defines the manual process for generating weekly betting recommendations using the V2 Champion Model.
 
 ---
 
-## Step 1: Ingest & Process
+## Overview
 
-Ensure the data cache is up-to-date. This creates the "Point-in-Time" feature snapshots used for both training and inference.
+**All steps are performed manually by the user.** There is no automated pipeline. The V2 workflow emphasizes:
+
+- Manual review at every stage
+- User judgment for all decisions
+- Dashboard as decision support (not automation trigger)
+
+---
+
+## Prerequisites
+
+Before running the weekly pipeline:
+
+1. ✅ **CFB_MODEL_DATA_ROOT** environment variable is set
+2. ✅ **Champion Model** has been selected and registered in MLflow (Phase 4)
+3. ✅ **External drive** is mounted and accessible
+4. ✅ **Raw data** has been ingested for the current week
+
+---
+
+## The Weekly Process
+
+### Step 1: Update Raw Data
+
+**When**: Tuesday after games are final (usually ~2 days after weekend)
+
+**Action**: Ingest latest games, plays, and betting lines
 
 ```bash
-# Cache weekly stats for the current season (e.g., 2025)
-uv run python scripts/cache_weekly_stats.py \
-  --year 2025 \
-  --stage adjusted \
-  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --adjustment-iterations 0,1,2,3,4
+# Ingest raw data for current season
+uv run python scripts/ingestion/ingest_games.py --year 2025
+uv run python scripts/ingestion/ingest_plays.py --year 2025
+uv run python scripts/ingestion/ingest_betting_lines.py --year 2025
 ```
 
-> **Note**: For training (Step 2), you must also ensure 2019, 2021, 2022, and 2023 are cached.
+**Verify**: Check that new games appear in `data/raw/games/year=2025/`
 
-## Step 2: Model & Experiment (Train Champion)
+---
 
-Train the "Points-For" Mixed Ensemble (CatBoost + XGBoost) on historical data (2019, 2021-2023). This creates the model artifacts that will be candidates for production.
+### Step 2: Run Aggregation Pipeline
+
+**When**: After raw data is updated
+
+**Action**: Generate processed features (byplay, drives, team_game, team_season)
 
 ```bash
-# Train and save models to artifacts/models/2024 (The "Model Year")
-uv run python scripts/train_points_for_production.py \
-  --output-dir artifacts/models
+# Run pipeline for 2025
+uv run python scripts/pipeline/run_pipeline_generic.py --year 2025
 ```
 
-**Output**: `artifacts/models/2024/points_for_home.joblib`, `points_for_away.joblib`, `metadata.json`
+**Verify**: Check `data/processed/team_season/year=2025/` has updated files
 
-## Step 3: 2024 Baseline (The Gate)
-
-**Critical Step**: Before using the model for 2025, it must prove it can beat the market on the 2024 season. This script runs the _saved_ model through the entire 2024 season without retraining.
+**Data Quality** (Week 3+ after validation framework is built):
 
 ```bash
-uv run python scripts/validate_model.py \
-  --year 2024 \
-  --model-year 2024 \
-  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
+# Run validation checks
+uv run python scripts/validation/validate_aggregation.py --year 2025
 ```
 
-**Success Criteria**:
+---
 
-- Spread Hit Rate > 52.4% (Profitability Threshold)
-- Sufficient Volume (> 5 bets/week average)
+### Step 3: Generate Weekly Predictions
 
-## Step 4: 2025 Actuals (Validation)
+**When**: After aggregation is complete, before games start
 
-Run the same model on the current season (2025) to see how it is performing _right now_.
+**Action**: Load Champion Model and generate predictions
 
 ```bash
-uv run python scripts/validate_model.py \
-  --year 2025 \
-  --model-year 2024 \
-  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model"
+# Generate predictions for upcoming week
+uv run python scripts/prediction/generate_weekly_bets.py \
+    --year 2025 \
+    --week <WEEK_NUMBER> \
+    --model-path artifacts/models/production/champion_current/
+```
+
+**Output**: `data/production/predictions/2025/CFB_week<WW>_bets.csv`
+
+**Manual Review**:
+
+1. Open the CSV in Excel/Numbers
+2. Review each prediction:
+   - Does the edge make sense?
+   - Are any matchups suspicious?
+   - Do the recommended bets align with your judgment?
+3. Make final bet selections manually
+
+---
+
+### Step 4: Place Bets
+
+**When**: Before game kickoffs (manual timing)
+
+**Action**: User places bets manually via sportsbook
+
+**Process**:
+
+1. Log into sportsbook
+2. For each selected bet from CSV:
+   - Find the game
+   - Check current line (confirm it's still within acceptable range)
+   - Place bet with appropriate unit size
+3. Record actual bets placed (if different from recommendations)
+
+---
+
+### Step 5: Score Results
+
+**When**: After games are final (Tuesday/Wednesday)
+
+**Action**: Compare predictions to actual outcomes
+
+```bash
+# Score the week's bets
+uv run python scripts/scoring/score_weekly_bets.py \
+    --predictions data/production/predictions/2025/CFB_week<WW>_bets.csv \
+    --output data/production/scored/2025/CFB_week<WW>_bets_scored.csv
+```
+
+**Output**: `data/production/scored/2025/CFB_week<WW>_bets_scored.csv`
+
+---
+
+### Step 6: Check Monitoring Dashboard
+
+**When**: After scoring, when convenient
+
+**Action**: Review Champion Model performance
+
+```bash
+# Launch dashboard
+streamlit run dashboard/monitoring.py
 ```
 
 **Review**:
 
-- Is the ROI positive?
-- Are there any alarming trends (e.g., failing late in the season)?
+1. Check alert status (🟢/🟡/🟠/🔴)
+2. Review rolling 4-week ROI
+3. Check hit rate trends
+4. Note any feature drift warnings
 
-## Step 5: Production (Execution)
-
-Only if Steps 3 & 4 are satisfactory, generate the picks for the upcoming week.
-
-```bash
-# Example: Generate picks for Week 14 of 2025 using the 2024 model
-uv run python -m src.scripts.generate_weekly_bets_clean \
-  --year 2025 --week 14 \
-  --model-year 2024 \
-  --prediction-mode points_for \
-  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --bankroll 10000 \
-  --spread-threshold 8.0 \
-  --total-threshold 8.0
-```
-
-**Output**: `artifacts/reports/2025/predictions/CFB_week14_bets.csv`
+**Decision**: If 🔴 RED for 2+ weeks, consider rollback (see [Rollback SOP](./rollback_sop.md))
 
 ---
 
-## Scoring & Review
+## V2 Champion Model
 
-After the games are played, score the picks to update the "Actuals" for next week's Step 4.
+**Current Champion** (as of Week 1): TBD (Ridge baseline to be trained)
+
+**How to check current Champion**:
 
 ```bash
-uv run python scripts/score_weekly_picks.py \
-  --year 2025 --week 14 \
-  --data-root "/Volumes/CK SSD/Coding Projects/cfb_model" \
-  --report-dir artifacts/reports
+# List registered models in MLflow
+uv run python -c "
+import mlflow
+mlflow.set_tracking_uri('file://./artifacts/mlruns')
+client = mlflow.MlflowClient()
+models = client.search_registered_models()
+for m in models:
+    versions = client.search_model_versions(f'name=\"{m.name}\"')
+    for v in versions:
+        if 'production' in v.tags:
+            print(f'{m.name} v{v.version} (production)')
+"
 ```
+
+---
+
+## Frequency
+
+**Weekly Cadence** (example for Week 10):
+
+- **Monday**: Check if new data is available
+- **Tuesday**: Ingest raw data, run aggregation pipeline
+- **Wednesday**: Generate predictions, review, make decisions
+- **Thursday**: Place bets (if needed before Thu games)
+- **Saturday**: Place remaining bets (before Sat games)
+- **Sunday-Tuesday**: Games complete, score results
+- **Wednesday**: Check dashboard, decide if action needed
+
+**No automation** — all steps require user initiation.
+
+---
+
+## Emergency Procedures
+
+### If Pipeline Fails
+
+1. **Check CFB_MODEL_DATA_ROOT**: Ensure external drive is mounted
+2. **Review logs**: Check console output for errors
+3. **Manual fix**: Address specific error (missing data, schema changes, etc.)
+4. **Re-run step**: Once fixed, re-run the failed step
+
+### If Model Performance Degrades
+
+1. **Check dashboard**: Confirm it's not short-term variance
+2. **Review decision**: Use judgment + dashboard alerts
+3. **Rollback if needed**: Follow [Rollback SOP](./rollback_sop.md)
+
+---
+
+## Related Documentation
+
+- [Monitoring Dashboard](./monitoring.md) — Dashboard usage and alert interpretation
+- [Rollback SOP](./rollback_sop.md) — Model rollback procedure
+- [Data Quality](./data_quality.md) — Validation framework (Week 3+)
+- [V2 Workflow](../process/experimentation_workflow.md) — Overall 4-phase process
+- [Production Deployment](./production_deployment.md) — Phase 4 deployment criteria
+
+---
+
+**Last Updated**: 2025-12-05  
+**Status**: V2-aligned, manual workflow
+facts/reports

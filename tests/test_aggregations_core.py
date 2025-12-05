@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.features.core import (
+from features.core import (
     aggregate_team_game,
     aggregate_team_season,
     apply_iterative_opponent_adjustment,
@@ -119,7 +119,9 @@ def test_apply_iterative_opponent_adjustment_simple():
         team_season_df, team_game_df, iterations=1
     )
 
-    team_a_adj = adjusted_df[adjusted_df["team"] == "A"].iloc[0]
+    # Filter for the final iteration (iteration=1)
+    final_iteration_df = adjusted_df[adjusted_df["iteration"] == 1]
+    team_a_adj = final_iteration_df[final_iteration_df["team"] == "A"].iloc[0]
 
     assert "adj_off_sr" in team_a_adj
     assert "adj_def_sr" in team_a_adj
@@ -157,8 +159,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "penalty": 0,
             "twopoint": 0,
             "quarter": 1,
-            "time_remaining_before": 900,
-            "time_remaining_after": 890,
             "eckel": 0,
             "yards_to_goal": overrides.get("yards_to_goal", 65),
             "drive_number": overrides.get("drive_number", 1),
@@ -229,7 +229,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "start_yards_to_goal": 70,
             "points": 7,
             "turnover": 0,
-            "play_duration": 120,
         },
         {
             "season": season,
@@ -247,7 +246,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "start_yards_to_goal": 60,
             "points": 3,
             "turnover": 0,
-            "play_duration": 90,
         },
         # Opponent drives against TeamA defense
         {
@@ -266,7 +264,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "start_yards_to_goal": 80,
             "points": 3,
             "turnover": 0,
-            "play_duration": 100,
         },
         {
             "season": season,
@@ -284,7 +281,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "start_yards_to_goal": 75,
             "points": 3,
             "turnover": 0,
-            "play_duration": 80,
         },
         {
             "season": season,
@@ -302,7 +298,6 @@ def test_aggregate_team_game_field_position_and_drive_metrics():
             "start_yards_to_goal": 70,
             "points": 2,
             "turnover": 0,
-            "play_duration": 70,
         },
     ]
     drives_df = pd.DataFrame(drives)

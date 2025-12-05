@@ -72,8 +72,10 @@ When code or docs have changed:
 5. ✅ Update relevant docs if behavior changed
 
 **Template for session logs:**
+
 ```markdown
 # TL;DR (≤5 lines)
+
 - Attempted: [what was tried]
 - Outcome: [what happened]
 - Blockers/IDs: [any issues, MLflow run IDs]
@@ -87,21 +89,84 @@ When code or docs have changed:
 
 ## Project Overview
 
-This is a college football betting model system that predicts point spreads and over/unders using machine learning. The project uses a **points-for approach** (predicting home and away scores separately) and follows a weekly update pipeline for generating betting recommendations.
+This is a college football betting model system that predicts point spreads and over/unders. **As of December 2025**, the project follows a rigorous **V2 4-phase experimentation workflow** for all modeling work.
 
 **Key Technologies:**
+
 - Python 3.12+ with `uv` for dependency management
 - Hydra for configuration management
 - Optuna for hyperparameter optimization
 - MLflow for experiment tracking and model registry
-- CatBoost/XGBoost for modeling
 - Parquet for data storage on external drive
+
+---
+
+## 🎯 V2 Experimentation Workflow (ACTIVE)
+
+**Status**: Implementation starting Week 1 (Dec 9, 2025)  
+**Philosophy**: Pure V2 rebuild — No legacy model fallback ("burn the boats")
+
+### The 4 Phases
+
+All modeling work follows this mandatory workflow:
+
+1. **Phase 1: Baseline Establishment** (Week 1-2)
+
+   - Ridge regression with minimal unadjusted features
+   - 4 features: home/away off/def EPA (season-to-date, no adjustment)
+   - Establishes benchmark for all future improvements
+
+2. **Phase 2: Feature Engineering & Selection** (Week 5-6)
+
+   - Test new feature sets **with baseline model**
+   - Promotion requires: +1.0% ROI improvement, passing 5 gates
+   - Gates: Performance, Volume (≥100 bets), Statistical significance (90%), Stability (3/4 quarters), No degradation
+
+3. **Phase 3: Model Selection** (Week 7-10)
+
+   - Test complex models (CatBoost, XGBoost) **with promoted features**
+   - Promotion requires: +1.5% ROI improvement, passing 5 gates (stricter)
+   - Gates: Same as Phase 2 but 95% confidence required
+
+4. **Phase 4: Deployment & Monitoring** (Week 11-12)
+   - Champion Model to production
+   - Manual workflow: User generates predictions, reviews, places bets
+   - Streamlit dashboard for performance tracking (🟢/🟡/🟠/🔴 alerts)
+   - Rollback SOP if performance degrades (manual decision)
+
+### Critical V2 Documents
+
+**MUST READ before any modeling work:**
+
+- [`docs/process/experimentation_workflow.md`](docs/process/experimentation_workflow.md) — Full V2 process
+- [`docs/process/promotion_framework.md`](docs/process/promotion_framework.md) — 5-gate system details
+- [`docs/process/12_week_implementation_plan.md`](docs/process/12_week_implementation_plan.md) — Week-by-week roadmap
+- [`docs/modeling/baseline.md`](docs/modeling/baseline.md) — V2 Ridge baseline philosophy
+- [`docs/ops/monitoring.md`](docs/ops/monitoring.md) — Dashboard design (Week 11)
+- [`docs/ops/rollback_sop.md`](docs/ops/rollback_sop.md) — Rollback procedure
+
+### V2 Rules
+
+❌ **NEVER**:
+
+- Skip phases (must go 1 → 2 → 3 → 4)
+- Promote without passing ALL 5 gates
+- Reference or use legacy models (they're archived)
+- Train without logging to MLflow
+
+✅ **ALWAYS**:
+
+- Start from current benchmark
+- Run promotion tests before claiming improvement
+- Document decisions in decision log
+- Update feature registry when promoting
 
 ---
 
 ## Essential Commands
 
 ### Environment Setup
+
 ```bash
 # Install dependencies (from repo root)
 uv sync --extra dev
@@ -111,6 +176,7 @@ source .venv/bin/activate
 ```
 
 ### Testing and Linting
+
 ```bash
 # Run all tests
 uv run pytest
@@ -147,6 +213,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 ```
 
 ### Production Pipeline
+
 ```bash
 # Train production points-for models
 PYTHONPATH=. uv run python scripts/pipeline/train_production_points_for.py
@@ -159,6 +226,7 @@ PYTHONPATH=. uv run python scripts/pipeline/score_weekly_bets.py
 ```
 
 ### MLflow Tracking
+
 ```bash
 # Start MLflow UI (Docker)
 MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow
@@ -168,6 +236,7 @@ MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow
 ```
 
 ### Dashboard
+
 ```bash
 # Run monitoring dashboard
 cd dashboard
@@ -183,17 +252,20 @@ docker compose up
 The system follows a hierarchical aggregation pipeline:
 
 1. **Raw Ingestion** (`src/data/`): Fetch data from CollegeFootballData.com API
+
    - `ingest_api.py`: Core API client
    - `plays.py`, `games.py`, `teams.py`, etc.: Domain-specific loaders
    - Data stored as Parquet files under `CFB_MODEL_DATA_ROOT` (external drive)
 
 2. **Aggregation** (`src/features/pipeline.py`):
+
    - Plays → `byplay` (play-level features)
    - Byplay → `drives` (drive-level aggregations)
    - Drives → `team_game` (game-level team stats)
    - Team-game → `team_season` (season-level metrics)
 
 3. **Feature Engineering** (`src/features/`):
+
    - `core.py`: Core aggregation functions
    - `byplay.py`: Play-level transformations
    - `weather.py`: Weather feature integration
@@ -210,16 +282,19 @@ The system follows a hierarchical aggregation pipeline:
 ### Points-For Modeling Approach
 
 Unlike traditional spread models, this system predicts:
+
 1. **Home team points**
 2. **Away team points**
 
 Then derives spreads and totals from those predictions:
+
 - `predicted_spread = home_points - away_points`
 - `predicted_total = home_points + away_points`
 
 This approach provides more flexibility and better captures asymmetric team matchups.
 
 **Current Production Models (as of Nov 2024):**
+
 - Spreads: CatBoost with recency features
 - Totals: XGBoost optimized via Optuna
 
@@ -229,6 +304,7 @@ This approach provides more flexibility and better captures asymmetric team matc
 The system uses iterative opponent adjustment to normalize raw stats. The `adjustment_iteration` parameter controls how many rounds of adjustment are applied (typically 2-4).
 
 **Feature Categories:**
+
 - Offensive efficiency (yards/play, success rate, explosiveness)
 - Defensive efficiency (same metrics, from defense perspective)
 - Situational performance (red zone, third down, etc.)
@@ -238,6 +314,7 @@ The system uses iterative opponent adjustment to normalize raw stats. The `adjus
 - Mismatch features (offense vs defense interactions)
 
 **Feature Naming Convention:**
+
 - `home_off_*`: Home team offensive stats
 - `home_def_*`: Home team defensive stats
 - `away_off_*`: Away team offensive stats
@@ -274,7 +351,7 @@ defaults:
   - experiment: null
 
 data:
-  adjustment_iteration: 2  # Opponent adjustment depth
+  adjustment_iteration: 2 # Opponent adjustment depth
   train_years: [2019, 2021, 2022, 2023]
   test_year: 2024
 ```
@@ -365,11 +442,13 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 ## Development Guidelines
 
 ### Testing Requirements
+
 - All new aggregation functions must have unit tests
 - Use minimal fixtures (see `tests/test_aggregate_drives_minimal.py`)
 - Test edge cases: empty DataFrames, missing columns, single-row inputs
 
 ### Code Style
+
 - Format with `ruff format .` before committing
 - Fix linting issues with `ruff check .`
 - Line length: 88 characters (Black-compatible)
@@ -378,26 +457,31 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 ### Data & Modeling Guardrails
 
 **Storage Location:**
+
 - All raw and processed data resides on external drive at `CFB_MODEL_DATA_ROOT`
 - Validate this path exists before any I/O operation
 - Never create `./data/` in project root
 
 **Data Leakage Prevention:**
+
 - Training strictly precedes prediction
 - No target-aware transforms on full dataset
 - Use `load_point_in_time_data()` to avoid future data leakage
 
 **Training Windows:**
+
 - Train: 2019, 2021-2023 (skip 2020 COVID year)
 - Holdout: 2024
 - Minimum games: 4 games required for adjusted stats & betting eligibility
 
 **Column Conventions:**
+
 - Maintain: `season`, `week`, `game_id`, `team` keys
 - Prefix: `off_*`, `def_*`, `adj_*` consistently
 - No bookmaker-derived features in model inputs (only in post-model edge calc)
 
 ### Feature Engineering
+
 - Always provide opponent-adjusted versions of raw stats
 - Use explicit feature allow-lists in `conf/features/` configs
 - Document new feature groups in feature configs
@@ -405,6 +489,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 - Update `docs/modeling/features.md` when adding features
 
 ### Model Development
+
 - Use Hydra configs for all experiments (no hardcoded parameters)
 - Log all runs to MLflow with tags: `git_sha`, `model_type`, `feature_set`
 - Generate unique model IDs: `{model_type}_{feature_set}_{tuning}_{data_version}`
@@ -413,6 +498,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 - Always report baseline comparisons
 
 ### Betting Policy
+
 - Policy is defined in `docs/modeling/betting_policy.md`
 - **Never modify** policy programmatically
 - Only apply existing rules, return reason codes for violations
@@ -421,6 +507,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 - Track actual vs predicted performance
 
 ### Documentation Discipline
+
 - Update session logs under `session_logs/YYYY-MM-DD/NN.md` for any code changes
 - Decision logs go in `docs/decisions/decision_log.md`
 - Keep README.md in sync with major changes
@@ -433,39 +520,51 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 Scripts are organized by purpose under `scripts/`:
 
 ### Pipeline (`scripts/pipeline/`)
+
 Production pipeline scripts:
+
 - `train_production_points_for.py`: Main production training
 - `generate_weekly_bets.py`: Generate bet recommendations
 - `score_weekly_bets.py`: Evaluate bet performance
 - `cache_weekly_stats.py`: Cache feature computations
 
 ### Analysis (`scripts/analysis/`)
+
 Analysis and validation tools:
+
 - `compare_models.py`: Model comparison reports
 - `run_shap_analysis.py`: Feature importance analysis
 - `analyze_calibration.py`: Calibration diagnostics
 - `simulate_bankroll_2024.py`: Bankroll simulation
 
 ### Experiments (`scripts/experiments/`)
+
 Research and optimization:
+
 - `optimize_hyperparameters.py`: Optuna sweeps
 - `run_points_for_experiment.py`: Points-for experiments
 - `run_feature_selection.py`: Feature selection studies
 
 ### Debug (`scripts/debug/`)
+
 Debugging utilities:
+
 - `debug_features.py`: Feature pipeline debugging
 - `inspect_model.py`: Model inspection
 - `list_models.py`: List registered models
 - `check_data_columns.py`: Verify data schema
 
 ### Utils (`scripts/utils/`)
+
 Helper utilities:
+
 - `model_registry.py`: Model registration helpers
 - `init_session.py`: Session initialization
 
 ### Ratings (`scripts/ratings/`)
+
 Probabilistic power ratings (research phase):
+
 - `train_ppr.py`: Train power ratings
 - `backtest_ppr.py`: Backtest ratings
 
@@ -570,6 +669,7 @@ All training runs are automatically tracked in MLflow:
 ### Model Registry Stages
 
 Models can be promoted through stages:
+
 1. None → Development
 2. Development → Staging
 3. Staging → Production
@@ -579,6 +679,7 @@ Use `src/utils/model_registry.py` utilities for model registration.
 ### Model ID Convention
 
 Production models follow naming convention:
+
 ```
 {target}_{model_type}_{feature_set}_{tuning_method}_{data_version}
 ```
@@ -590,10 +691,13 @@ Example: `home_points_catboost_standard_v1_optuna_2024_adj2`
 ## Project-Specific Details
 
 ### Year 2020 is Excluded
+
 COVID-affected 2020 season is typically excluded from training sets due to schedule disruptions.
 
 ### Adjustment Iterations
+
 The system supports different adjustment depths for offense and defense:
+
 - `adjustment_iteration`: Default for both
 - `adjustment_iteration_offense`: Override for offense
 - `adjustment_iteration_defense`: Override for defense
@@ -601,12 +705,15 @@ The system supports different adjustment depths for offense and defense:
 Typical value is 2-4 iterations.
 
 ### Hydra Output Directories
+
 Hydra outputs go to `artifacts/hydra_outputs/` by default. Each run gets a timestamped subdirectory. The `.hydra/` subfolder contains composed configs for reproducibility.
 
 ### Feature Set IDs
+
 Feature sets have semantic IDs like `standard_v1`, `recency_v1`, `pace_v1`. These are composed via Hydra defaults. Pruned variants (e.g., `spread_shap_pruned`) exist for performance-optimized models.
 
 ### Dashboard and Monitoring
+
 A Flask-based dashboard (`dashboard/app.py`) provides monitoring and visualization. It's containerized and can be run via `docker compose` in the dashboard directory.
 
 ---
@@ -617,6 +724,7 @@ A Flask-based dashboard (`dashboard/app.py`) provides monitoring and visualizati
 Ensure you run scripts with `PYTHONPATH=.` from repo root, or activate the venv with `source .venv/bin/activate`.
 
 **Missing Data / Path Errors:**
+
 1. Check `CFB_MODEL_DATA_ROOT` environment variable is set
 2. Verify external drive is mounted
 3. Confirm path exists: `ls "$CFB_MODEL_DATA_ROOT"`
@@ -624,11 +732,13 @@ Ensure you run scripts with `PYTHONPATH=.` from repo root, or activate the venv 
 
 **Hydra Config Errors:**
 Use `--cfg job --resolve` flag to debug composed configuration:
+
 ```bash
 PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 ```
 
 **MLflow Tracking Issues:**
+
 1. Ensure `artifacts/mlruns/` directory exists and is writable
 2. Start MLflow UI with Docker compose
 3. Check `MLFLOW_TRACKING_URI` if using custom location
@@ -640,6 +750,7 @@ Run `uv run pytest -v` for verbose output. Check that test data fixtures are val
 If ruff fails, ensure you're using the version specified in `pyproject.toml`. Run `uv sync` to update dependencies.
 
 **External Drive Not Accessible:**
+
 1. Verify drive is mounted: `ls /Volumes/`
 2. Check drive name matches `CFB_MODEL_DATA_ROOT`
 3. Remount if necessary
@@ -650,23 +761,27 @@ If ruff fails, ensure you're using the version specified in `pyproject.toml`. Ru
 ## Quick Reference: Key Files
 
 ### Must Read First
+
 - `CLAUDE.md` (this file) - Start here for every session
 - `README.md` - Project overview and setup
 - `.env` - Environment configuration (set `CFB_MODEL_DATA_ROOT` here)
 
 ### Configuration
+
 - `conf/config.yaml` - Main Hydra config
 - `conf/model/` - Model configurations
 - `conf/features/` - Feature set definitions
 - `conf/experiment/` - Pre-configured experiments
 
 ### Core Code Anchors
+
 - `src/config.py` - Path configuration and constants
 - `src/features/pipeline.py` - Feature engineering pipeline
 - `src/models/train_model.py` - Main training script
 - `scripts/pipeline/generate_weekly_bets.py` - Prediction generation
 
 ### Documentation (Read on Demand)
+
 - `docs/guide.md` - Documentation hub (start here!)
 - `docs/modeling/features.md` - Feature definitions
 - `docs/modeling/betting_policy.md` - Unit sizing rules
@@ -674,6 +789,7 @@ If ruff fails, ensure you're using the version specified in `pyproject.toml`. Ru
 - `docs/ops/weekly_pipeline.md` - Production workflow
 
 ### Testing
+
 - `tests/test_*.py` - Test suite with usage examples
 - `pyproject.toml` - Dependencies and tool config
 
@@ -684,10 +800,12 @@ If ruff fails, ensure you're using the version specified in `pyproject.toml`. Ru
 When working on tasks in this repository:
 
 ### Context Budget
+
 - Per-task context budget: ≤ 50k tokens overall, prefer ≤ 10k
 - Default read order: CLAUDE.md → README.md → pyproject.toml → last 3 days session logs → code anchors on demand
 
 ### What NOT to Read Automatically
+
 - `artifacts/**`, `.venv/**`, `.git/**`, `**__pycache__/`
 - `notebooks/**` (only when debugging exploration outcomes)
 - `session_logs/` older than 3 days
@@ -695,6 +813,7 @@ When working on tasks in this repository:
 - Files unchanged in last 30 days (use `git diff --name-only --since=30.days`)
 
 ### Load Code on Demand
+
 Only open source files when actively working on them. Use section gating for docs (read headers/summaries, skip large tables unless needed).
 
 ---

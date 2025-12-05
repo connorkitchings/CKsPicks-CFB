@@ -16,8 +16,7 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
     Args:
         plays_df: Enriched play-level DataFrame. Must include columns:
             - game_id, drive_number, offense, defense
-            - yards_gained, play_duration, quarter
-            - time_remaining_before, time_remaining_after
+            - yards_gained, quarter
             - eckel (indicator for scoring opp window), yards_to_goal, scoring, turnover
             - play_type (string), is_drive_play (optional; inferred if missing)
 
@@ -25,7 +24,6 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with one row per (game_id, drive_number, offense, defense) and columns:
             - drive_plays, drive_yards
             - drive_start_period, drive_end_period
-            - start_time_remain, end_time_remain
             - start_yards_to_goal, end_yards_to_goal
             - is_eckel_drive, had_scoring_opportunity, points, turnovers
             - is_successful_drive, is_busted_drive, is_explosive_drive
@@ -40,8 +38,6 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
         "defense",
         "yards_gained",
         "quarter",
-        "time_remaining_after",
-        "time_remaining_before",
         "eckel",
         "yards_to_goal",
         "scoring",
@@ -67,8 +63,6 @@ def aggregate_drives(plays_df: pd.DataFrame) -> pd.DataFrame:
             drive_yards=("yards_gained", "sum"),
             drive_start_period=("quarter", "min"),
             drive_end_period=("quarter", "max"),
-            start_time_remain=("time_remaining_before", "max"),
-            end_time_remain=("time_remaining_after", "min"),
             start_yards_to_goal=("yards_to_goal", "first"),
             end_yards_to_goal=("yards_to_goal", "last"),
             is_eckel_drive=("eckel", "max"),
@@ -759,23 +753,13 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def apply_iterative_opponent_adjustment(
-    team_season_df: pd.DataFrame, team_game_df: pd.DataFrame, iterations: int = 4
+    team_season_df: pd.DataFrame, team_game_df: pd.DataFrame, iterations: int = 6
 ) -> pd.DataFrame:
-    """Apply iterative opponent adjustment to season-to-date metrics.
-
-    For each iteration, adjusts team season metrics by subtracting opponent average
-    strengths (centered by league means) weighted by game recency.
-
-    Args:
-        team_season_df: Season-to-date per-team metrics (output of aggregate_team_season).
-        team_game_df: Team-game metrics with recency_weight and per-game opponents.
-        iterations: Number of adjustment passes (default 4 as per MVP spec).
-
-    Returns:
-        DataFrame with added adj_off_* and adj_def_* columns for metrics present in
-        the inputs, leaving original off_/def_ metrics unchanged.
+    """
+    Apply iterative opponent adjustment and return a long-format DataFrame with all iterations.
     """
     adjusted_df = team_season_df.copy()
+    iteration_results = []
 
     metrics_to_adjust = [
         "epa_pp",
@@ -799,8 +783,6 @@ def apply_iterative_opponent_adjustment(
         "fg_rate_mid",
         "fg_rate_long",
     ]
-
-    # Define defensive metrics that use '_allowed' suffix
     defensive_allowed_metrics = {
         "power_success_rate",
         "avg_line_yards",
@@ -812,161 +794,108 @@ def apply_iterative_opponent_adjustment(
         "avg_net_punt_yards",
     }
 
+    # Initialize adj_ columns
     for metric in metrics_to_adjust:
-        # Offensive metric - only add if column exists
         off_col = f"off_{metric}"
-        if off_col in adjusted_df.columns:
-            adjusted_df[f"adj_off_{metric}"] = adjusted_df[off_col]
-
-        # Defensive metric - handle metrics that use '_allowed' suffix, only add if column exists
+        def_col = f"def_{metric}"
         if metric in defensive_allowed_metrics:
-            def_col = f"def_{metric}_allowed"
-        else:
-            def_col = f"def_{metric}"
+            def_col += "_allowed"
 
+        if off_col in adjusted_df.columns:
+            adjusted_df[f"adj_{off_col}"] = adjusted_df[off_col]
         if def_col in adjusted_df.columns:
-            adjusted_df[f"adj_def_{metric}"] = adjusted_df[def_col]
+            adjusted_df[f"adj_{def_col}"] = adjusted_df[def_col]
 
-    # Build recency weights (3 for most recent game, then 2, then 1; earlier = 1)
-    # Avoid groupby.apply to ensure grouping columns remain intact across pandas versions
-    team_game_sorted = team_game_df.sort_values(["season", "team", "week"]).copy()
-    g = team_game_sorted.groupby(["season", "team"], as_index=False)
-    team_game_sorted["_gsize"] = g["week"].transform("size")
-    team_game_sorted["_ord"] = g["week"].cumcount()
-    team_game_sorted["recency_weight"] = 1.0
-    team_game_sorted.loc[
-        team_game_sorted["_ord"] == team_game_sorted["_gsize"] - 1, "recency_weight"
-    ] = 3.0
-    team_game_sorted.loc[
-        team_game_sorted["_ord"] == team_game_sorted["_gsize"] - 2, "recency_weight"
-    ] = 2.0
-    # third most recent remains 1.0 by default; earlier already 1.0
-    team_game_weighted = team_game_sorted.drop(columns=["_gsize", "_ord"]).reset_index(
-        drop=True
-    )
+    # Store iteration 0
+    iter0_df = adjusted_df.copy()
+    iter0_df["iteration"] = 0
+    iteration_results.append(iter0_df)
+
+    # Prepare game data with opponents
+    team_game_weighted = team_game_df.copy()
+    if "recency_weight" not in team_game_weighted.columns:
+        team_game_weighted["recency_weight"] = 1.0
 
     games_with_opponents = team_game_weighted.merge(
-        team_game_weighted,
+        team_game_weighted[["season", "week", "game_id", "team"]].add_suffix("_opp"),
         left_on=["season", "week", "game_id"],
-        right_on=["season", "week", "game_id"],
-        suffixes=("", "_opp"),
+        right_on=["season_opp", "week_opp", "game_id_opp"],
     )
     games_with_opponents = games_with_opponents[
         games_with_opponents["team"] != games_with_opponents["team_opp"]
-    ]
+    ].copy()
 
-    for _ in range(iterations):
-        # Only include columns that actually exist in the DataFrame
-        adj_cols = ["season", "team"]
-        for m in metrics_to_adjust:
-            if f"adj_off_{m}" in adjusted_df.columns:
-                adj_cols.append(f"adj_off_{m}")
-            if f"adj_def_{m}" in adjusted_df.columns:
-                adj_cols.append(f"adj_def_{m}")
+    for i in range(1, iterations + 1):
+        league_means = adjusted_df[
+            [col for col in adjusted_df.columns if col.startswith("adj_")]
+        ].mean()
 
-        current_adjusted_metrics = adjusted_df[adj_cols].copy()
-        current_adjusted_metrics = current_adjusted_metrics.set_index(
-            ["season", "team"]
-        )  # type: ignore[assignment]
+        adj_for_merge = adjusted_df.set_index(["season", "team"])[
+            [col for col in adjusted_df.columns if col.startswith("adj_")]
+        ]
 
-        new_adjusted_df = adjusted_df.copy()
+        merged_games = games_with_opponents.merge(
+            adj_for_merge, left_on=["season", "team_opp"], right_index=True, how="left"
+        )
 
-        for index, row in adjusted_df.iterrows():
-            season = row["season"]
-            team = row["team"]
+        for metric in metrics_to_adjust:
+            adj_off_col, adj_def_col = f"adj_off_{metric}", f"adj_def_{metric}"
+            if metric in defensive_allowed_metrics:
+                adj_def_col = f"adj_def_{metric}_allowed"
 
-            team_games = games_with_opponents[
-                (games_with_opponents["season"] == season)
-                & (games_with_opponents["team"] == team)
-            ]
-            if team_games.empty:
-                continue
-
-            team_games_with_opp_adj = team_games.merge(
-                current_adjusted_metrics,
-                left_on=["season", "team_opp"],
-                right_index=True,
-                how="left",
-                suffixes=("", "_opp_adj"),
-            )
-
-            league_means = {}
-            for metric in metrics_to_adjust:
-                if f"adj_off_{metric}" in adjusted_df.columns:
-                    league_means[f"off_{metric}"] = adjusted_df[
-                        f"adj_off_{metric}"
-                    ].mean()
-                if f"adj_def_{metric}" in adjusted_df.columns:
-                    league_means[f"def_{metric}"] = adjusted_df[
-                        f"adj_def_{metric}"
-                    ].mean()
-
-            for metric in metrics_to_adjust:
-                # Skip metrics that don't have both offensive and required columns
-                off_col_name = f"off_{metric}"
-                if metric in defensive_allowed_metrics:
-                    def_col_name = f"def_{metric}_allowed"
-                else:
-                    def_col_name = f"def_{metric}"
-
-                # Skip if required columns don't exist
-                if (
-                    off_col_name not in row.index
-                    or def_col_name not in row.index
-                    or f"off_{metric}" not in league_means
-                    or f"def_{metric}" not in league_means
-                ):
-                    continue
-
-                off_base_metric = row[off_col_name]
-                def_base_metric = row[def_col_name]
-
-                # Handle column names with or without the merge suffix
-                def_col = (
-                    f"adj_def_{metric}_opp_adj"
-                    if f"adj_def_{metric}_opp_adj" in team_games_with_opp_adj.columns
-                    else f"adj_def_{metric}"
-                )
-                off_col = (
-                    f"adj_off_{metric}_opp_adj"
-                    if f"adj_off_{metric}_opp_adj" in team_games_with_opp_adj.columns
-                    else f"adj_off_{metric}"
+            if adj_def_col in merged_games.columns:
+                league_mean_def = league_means.get(adj_def_col, 0)
+                merged_games[f"opp_def_adj_for_{metric}"] = (
+                    merged_games[adj_def_col] - league_mean_def
                 )
 
-                # Skip if required adjusted columns don't exist
-                if (
-                    def_col not in team_games_with_opp_adj.columns
-                    or off_col not in team_games_with_opp_adj.columns
-                ):
-                    continue
-
-                opp_def_metrics = team_games_with_opp_adj[def_col]
-                opp_off_metrics = team_games_with_opp_adj[off_col]
-                weights = team_games_with_opp_adj["recency_weight"]
-
-                weighted_opp_def_mean = (
-                    ((opp_def_metrics - league_means[f"def_{metric}"]) * weights).sum()
-                    / weights.sum()
-                    if weights.sum() > 0
-                    else 0
+            if adj_off_col in merged_games.columns:
+                league_mean_off = league_means.get(adj_off_col, 0)
+                merged_games[f"opp_off_adj_for_{metric}"] = (
+                    merged_games[adj_off_col] - league_mean_off
                 )
 
-                weighted_opp_off_mean = (
-                    ((opp_off_metrics - league_means[f"off_{metric}"]) * weights).sum()
-                    / weights.sum()
-                    if weights.sum() > 0
-                    else 0
+        for metric in metrics_to_adjust:
+            raw_off_col, raw_def_col = f"off_{metric}", f"def_{metric}"
+            if metric in defensive_allowed_metrics:
+                raw_def_col += "_allowed"
+
+            if (
+                f"opp_def_adj_for_{metric}" in merged_games.columns
+                and raw_off_col in adjusted_df.columns
+            ):
+                team_level_adj = merged_games.groupby(["season", "team"])[
+                    f"opp_def_adj_for_{metric}"
+                ].mean()
+                adjusted_df = adjusted_df.merge(
+                    team_level_adj.rename(f"final_opp_def_adj_{metric}"),
+                    on=["season", "team"],
+                    how="left",
                 )
+                adjusted_df[f"adj_{raw_off_col}"] = adjusted_df[
+                    raw_off_col
+                ] - adjusted_df[f"final_opp_def_adj_{metric}"].fillna(0)
+                adjusted_df = adjusted_df.drop(columns=[f"final_opp_def_adj_{metric}"])
 
-                if f"adj_off_{metric}" in new_adjusted_df.columns:
-                    new_adjusted_df.loc[index, f"adj_off_{metric}"] = (
-                        off_base_metric - weighted_opp_def_mean
-                    )
-                if f"adj_def_{metric}" in new_adjusted_df.columns:
-                    new_adjusted_df.loc[index, f"adj_def_{metric}"] = (
-                        def_base_metric - weighted_opp_off_mean
-                    )
+            if (
+                f"opp_off_adj_for_{metric}" in merged_games.columns
+                and raw_def_col in adjusted_df.columns
+            ):
+                team_level_adj = merged_games.groupby(["season", "team"])[
+                    f"opp_off_adj_for_{metric}"
+                ].mean()
+                adjusted_df = adjusted_df.merge(
+                    team_level_adj.rename(f"final_opp_off_adj_{metric}"),
+                    on=["season", "team"],
+                    how="left",
+                )
+                adjusted_df[f"adj_{raw_def_col}"] = adjusted_df[
+                    raw_def_col
+                ] - adjusted_df[f"final_opp_off_adj_{metric}"].fillna(0)
+                adjusted_df = adjusted_df.drop(columns=[f"final_opp_off_adj_{metric}"])
 
-        adjusted_df = new_adjusted_df
+        iter_df = adjusted_df.copy()
+        iter_df["iteration"] = i
+        iteration_results.append(iter_df)
 
-    return adjusted_df
+    return pd.concat(iteration_results, ignore_index=True)

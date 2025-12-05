@@ -1,0 +1,1 @@
+{'name': 'v1_baseline', 'features': ['adj_off_epa_pp', 'adj_def_epa_pp', 'adj_off_sr', 'adj_def_sr'], 'target': 'spread_target'}

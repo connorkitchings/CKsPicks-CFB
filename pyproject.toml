@@ -33,19 +33,17 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.5.0",
-    "typer>=0.9.0",
-
-    "jupyter>=1.0",
-    "ipykernel>=6.29.0",
-    "mkdocs>=1.6.0",
-    "mkdocs-material>=9.0",
-    "mkdocstrings[python]>=0.25.0",
-    "safety>=2.3.5",
-    "openlineage-python>=1.15.0",
-    "nbstripout>=0.7.1",
-    "nbformat>=5.10.4"
+    "rich>=13.0",
+    "ruff>=0.12.7",
+    "ipykernel==6.29.5",
+    "pytest>=8.4.1",
+    "pandas-stubs==2.2.0.240218",
+    "types-requests==2.31.0.20240218",
+    "mkdocs-material==9.5.7",
+    "mkdocs==1.5.3",
+    "mkdocstrings[python]==0.24.1",
+    "mike==2.0.0",
+    "seaborn",
 ]
 
 [tool.ruff]

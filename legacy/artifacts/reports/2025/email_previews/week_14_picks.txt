@@ -1,0 +1,39 @@
+CK's CFB Picks — 2025 Week 14
+Generated 11/27/2025 07:33 PM | Thresholds: spread ≥ 10.0, total ≥ 3.5
+
+Best Bet:
+  Friday, 03:00 PM | Air Force @ Colorado State | Total | O/U 45.0 | Pred: 56.66 | Edge: 11.659999999999997 | Bet: Over | Std Dev: None
+
+Spread Bets:
+  Saturday, 10:30 PM | Notre Dame @ Stanford | Stanford +32.5 | Pred: -22.38 | Edge: 10.120000000000001 | Bet: Stanford | Std Dev: None
+
+Totals Bets:
+  Friday, 12:00 PM | Iowa @ Nebraska | O/U: 38.5 | Pred: 43.51 | Edge: 5.009999999999998 | Bet: Over | Std Dev: None
+  Friday, 12:00 PM | Ohio @ Buffalo | O/U: 44.5 | Pred: 48.57 | Edge: 4.07 | Bet: Over | Std Dev: None
+  Friday, 03:00 PM | Air Force @ Colorado State | O/U: 45.0 | Pred: 56.66 | Edge: 11.659999999999997 | Bet: Over | Std Dev: None
+  Friday, 03:30 PM | Georgia @ Georgia Tech | O/U: 60.0 | Pred: 50.51 | Edge: 9.490000000000002 | Bet: Under | Std Dev: None
+  Friday, 03:30 PM | Temple @ North Texas | O/U: 65.0 | Pred: 72.37 | Edge: 7.3700000000000045 | Bet: Over | Std Dev: None
+  Friday, 07:30 PM | Texas A&M @ Texas | O/U: 51.5 | Pred: 56.83 | Edge: 5.329999999999998 | Bet: Over | Std Dev: None
+  Saturday, 12:00 AM | Colorado @ Kansas State | O/U: 49.5 | Pred: 57.73 | Edge: 8.229999999999997 | Bet: Over | Std Dev: None
+  Saturday, 12:00 AM | Florida State @ Florida | O/U: 50.0 | Pred: 44.48 | Edge: 5.520000000000003 | Bet: Under | Std Dev: None
+  Saturday, 12:00 AM | Houston @ Baylor | O/U: 59.5 | Pred: 64.55 | Edge: 5.049999999999997 | Bet: Over | Std Dev: None
+  Saturday, 12:00 AM | Miami @ Pittsburgh | O/U: 50.5 | Pred: 55.01 | Edge: 4.509999999999998 | Bet: Over | Std Dev: None
+  Saturday, 12:00 AM | Oregon @ Washington | O/U: 51.0 | Pred: 57.82 | Edge: 6.82 | Bet: Over | Std Dev: None
+  Saturday, 12:00 AM | UCF @ BYU | O/U: 47.0 | Pred: 43.32 | Edge: 3.6799999999999997 | Bet: Under | Std Dev: None
+  Saturday, 12:00 AM | Virginia Tech @ Virginia | O/U: 53.0 | Pred: 56.78 | Edge: 3.780000000000001 | Bet: Over | Std Dev: None
+  Saturday, 01:00 PM | UTEP @ Delaware | O/U: 55.0 | Pred: 58.5 | Edge: 3.5 | Bet: Over | Std Dev: None
+  Saturday, 01:30 PM | Georgia Southern @ Marshall | O/U: 63.5 | Pred: 69.51 | Edge: 6.010000000000005 | Bet: Over | Std Dev: None
+  Saturday, 02:00 PM | Georgia State @ Old Dominion | O/U: 58.5 | Pred: 54.92 | Edge: 3.5799999999999983 | Bet: Under | Std Dev: None
+  Saturday, 02:30 PM | Arkansas State @ App State | O/U: 54.5 | Pred: 50.2 | Edge: 4.299999999999997 | Bet: Under | Std Dev: None
+  Saturday, 03:00 PM | Boston College @ Syracuse | O/U: 52.5 | Pred: 57.18 | Edge: 4.68 | Bet: Over | Std Dev: None
+  Saturday, 03:00 PM | UL Monroe @ Louisiana | O/U: 48.5 | Pred: 52.17 | Edge: 3.6700000000000017 | Bet: Over | Std Dev: None
+  Saturday, 03:30 PM | Kennesaw State @ Liberty | O/U: 55.5 | Pred: 50.65 | Edge: 4.850000000000001 | Bet: Under | Std Dev: None
+  Saturday, 03:30 PM | LSU @ Oklahoma | O/U: 36.5 | Pred: 30.97 | Edge: 5.530000000000001 | Bet: Under | Std Dev: None
+  Saturday, 03:30 PM | Missouri @ Arkansas | O/U: 57.5 | Pred: 64.42 | Edge: 6.920000000000002 | Bet: Over | Std Dev: None
+  Saturday, 03:30 PM | Vanderbilt @ Tennessee | O/U: 65.5 | Pred: 77.0 | Edge: 11.5 | Bet: Over | Std Dev: None
+  Saturday, 07:00 PM | Maryland @ Michigan State | O/U: 48.5 | Pred: 44.23 | Edge: 4.270000000000003 | Bet: Under | Std Dev: None
+  Saturday, 09:00 PM | UNLV @ Nevada | O/U: 53.0 | Pred: 59.48 | Edge: 6.479999999999997 | Bet: Over | Std Dev: None
+  Saturday, 10:30 PM | Fresno State @ San José State | O/U: 46.5 | Pred: 51.33 | Edge: 4.829999999999998 | Bet: Over | Std Dev: None
+  Saturday, 11:00 PM | Wyoming @ Hawai'i | O/U: 45.0 | Pred: 38.85 | Edge: 6.149999999999999 | Bet: Under | Std Dev: None
+
+Full report attached as CSV.

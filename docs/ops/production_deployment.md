@@ -1,8 +1,60 @@
 # Production Deployment Strategy
 
+**Status**: V2-aligned as of 2025-12-05
+
 This document outlines the production deployment options for the cfb_model system, covering hosting, monitoring, backup, and security considerations.
 
-> 🔗 **Related**: [Open Decision OPEN-001](../project_org/open_decisions.md#open-001-production-deployment-strategy) | [Weekly Pipeline](weekly_pipeline.md)
+> 🔗 **Related**: [V2 Workflow](../process/experimentation_workflow.md) | [Weekly Pipeline](weekly_pipeline.md) | [Promotion Framework](../process/promotion_framework.md)
+
+---
+
+## V2 Phase 4: Deployment Criteria
+
+**NEW as of Dec 2025**: A model can ONLY be deployed to production after passing all Phase 4 requirements.
+
+### Prerequisites for Production Deployment
+
+A candidate model must have successfully completed **all 3 prior phases**:
+
+1. **Phase 1 Complete**: Ridge baseline established and documented
+2. **Phase 2 Complete**: Features promoted (passed 5-gate system with +1.0% ROI)
+3. **Phase 3 Complete**: Model promoted (passed 5-gate system with +1.5% ROI)
+
+### Champion Model Requirements
+
+The "Champion Model" is selected in Phase 3 and must meet these criteria before Phase 4 deployment:
+
+✅ **5-Gate Checklist** (from Phase 3):
+
+1. **Performance**: +1.5% ROI improvement over Ridge baseline (95% confidence)
+2. **Volume**: ≥100 bets in test set
+3. **Statistical Significance**: Bootstrap p-value < 0.05 (10,000 iterations)
+4. **Stability**: Positive ROI in 3/4 quarterly splits (walk-forward)
+5. **No Degradation**: No metric regression (hit rate, calibration, volume)
+
+✅ **MLflow Registration**:
+
+- Model artifact saved to MLflow
+- Tagged with `phase: 3`, `promoted: true`, `production: true`
+- Experiment ID and metrics logged
+
+✅ **Documentation**:
+
+- Decision log entry explaining Champion selection
+- Feature registry updated with promoted features
+- Experiment index updated (V2-006 or final Phase 3 experiment)
+
+### Manual Deployment Process
+
+**V2 uses a manual workflow** (no automation):
+
+1. **User verifies** all 5 gates passed
+2. **User reviews** model artifacts in MLflow
+3. **User creates** `conf/model/champion.yaml` config
+4. **User updates** decision log
+5. **User begins** using Champion for weekly predictions (see [Weekly Pipeline](./weekly_pipeline.md))
+
+**Monitoring** is via Streamlit dashboard (manual review, not automated alerts)
 
 ---
 
