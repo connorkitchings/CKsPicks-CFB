@@ -1,0 +1,10 @@
+game_id,Game,Spread Bet,home_team_spread_line,Spread Prediction,edge_spread,Spread Confidence,total_line,Total Prediction,edge_total,Total Bet,id,start_date,home_team,away_team,Date,Time,Home Team,Away Team,predicted_spread_std_dev,predicted_total_std_dev
+401777352,Troy @ James Madison,No Bet,-23.5,26.3964724553817,2.8964724553817014,,47.5,40.887836,6.6121635,No Bet,401777352,2025-12-05 19:00:00-05:00,James Madison,Troy,2025-12-05,19:00:00,James Madison,Troy,,
+401777325,Kennesaw State @ Jacksonville State,No Bet,2.5,1.7545020590241087,4.254502059024109,,60.0,67.676216,7.676216,Over,401777325,2025-12-05 19:00:00-05:00,Jacksonville State,Kennesaw State,2025-12-05,19:00:00,Jacksonville State,Kennesaw State,,
+401777326,UNLV @ Boise State,Away,-4.5,-4.208048040660142,8.708048040660142,High,59.0,62.17094,3.1709404,No Bet,401777326,2025-12-05 20:00:00-05:00,Boise State,UNLV,2025-12-05,20:00:00,Boise State,UNLV,,
+401777324,North Texas @ Tulane,Home,2.5,3.980641547296664,6.480641547296663,High,67.5,57.490456,10.009544,Under,401777324,2025-12-05 20:00:00-05:00,Tulane,North Texas,2025-12-05,20:00:00,Tulane,North Texas,,
+401777329,Miami (OH) @ Western Michigan,No Bet,-2.0,-0.3593151269471795,2.3593151269471795,,43.5,49.599796,6.0997963,No Bet,401777329,2025-12-06 12:00:00-05:00,Western Michigan,Miami (OH),2025-12-06,12:00:00,Western Michigan,Miami (OH),,
+401777327,BYU @ Texas Tech,No Bet,-13.0,12.754013003323925,0.24598699667607526,,49.5,51.54457,2.044571,No Bet,401777327,2025-12-06 12:00:00-05:00,Texas Tech,BYU,2025-12-06,12:00:00,Texas Tech,BYU,,
+401777351,Georgia @ Alabama,No Bet,2.5,-2.118019231158323,0.381980768841677,,48.0,41.89767,6.1023293,No Bet,401777351,2025-12-06 16:00:00-05:00,Alabama,Georgia,2025-12-06,16:00:00,Alabama,Georgia,,
+401777353,Indiana @ Ohio State,No Bet,-4.0,1.6851267959508558,2.314873204049144,,47.5,56.98254,9.48254,Over,401777353,2025-12-06 20:00:00-05:00,Ohio State,Indiana,2025-12-06,20:00:00,Ohio State,Indiana,,
+401777328,Duke @ Virginia,No Bet,-4.5,9.147392195166617,4.647392195166617,,58.0,40.28585,17.71415,Under,401777328,2025-12-06 20:00:00-05:00,Virginia,Duke,2025-12-06,20:00:00,Virginia,Duke,,

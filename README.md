@@ -12,16 +12,18 @@ codebase, keep documentation in sync, and never lose critical experiment history
 
 For a deeper dive into methodology and project docs, see:
 
-- [AI Guide (front door for agents and humans)](./AI_GUIDE.md) if present
-- [Agents Manual](./AGENTS.md)
-- [Project Charter](./docs/project_charter.md)
-- [Roadmap](./docs/roadmap.md)
-- [Weekly Pipeline](./docs/weekly_pipeline.md)
-- [Points-For Model](./docs/points_for_model.md)
-- [Feature Catalog](./docs/feature_catalog.md)
-- [Betting Policy](./docs/betting_policy.md)
+- **[📖 Documentation Guide](./docs/guide.md)** — Single source of truth for all project documentation
+- [AI Assistant Protocols](./CLAUDE.md) — Session management and AI collaboration guidelines
 
-> If any of these links are out of date, check the `docs/` folder directly.
+### Quick Links
+
+- [Weekly Pipeline](./docs/ops/weekly_pipeline.md) — Production workflow
+- [Modeling Baseline](./docs/modeling/baseline.md) — Current models and architecture
+- [Feature Catalog](./docs/modeling/features.md) — Feature engineering reference
+- [ML Workflow](./docs/process/ml_workflow.md) — Train/Test/Deploy standards
+- [Decision Log](./docs/decisions/decision_log.md) — Major decisions and rationale
+
+> **Note**: The repository was reorganized on 2025-12-04. All documentation is now accessible from [docs/guide.md](./docs/guide.md).
 
 ---
 

@@ -161,17 +161,26 @@ def main():
     parser.add_argument(
         "--years", type=str, default="2024", help="Comma-separated years"
     )
+    parser.add_argument(
+        "--weeks",
+        type=str,
+        default=None,
+        help="Optional comma-separated weeks to restrict (e.g., '14,15')",
+    )
     parser.add_argument("--data-root", type=str, default=None)
     args = parser.parse_args()
 
     years = [int(y) for y in args.years.split(",")]
+    weeks = None
+    if args.weeks:
+        weeks = {int(w) for w in args.weeks.split(",")}
     data_root = Path(args.data_root) if args.data_root else get_data_root()
 
     for year in years:
-        process_year_robust(year, data_root)
+        process_year_robust(year, data_root, weeks=weeks)
 
 
-def process_year_robust(year, data_root):
+def process_year_robust(year, data_root, weeks=None):
     games_path = data_root / f"raw/games/year={year}/data.csv"
     stadiums_path = data_root / "stadiums.csv"
     output_dir = data_root / f"raw/weather/year={year}"
@@ -190,6 +199,8 @@ def process_year_robust(year, data_root):
     games["venue_id"] = pd.to_numeric(games["venue_id"], errors="coerce")
     stadiums["id"] = pd.to_numeric(stadiums["id"], errors="coerce")
     merged = pd.merge(games, stadiums, left_on="venue_id", right_on="id", how="inner")
+    if weeks:
+        merged = merged[merged["week"].isin(weeks)]
 
     results = []
 

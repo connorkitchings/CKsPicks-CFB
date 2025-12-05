@@ -56,9 +56,6 @@ def verify_ats():
     # If Edge > 0, Model expects Home to outperform line -> Pick Home
     valid["model_edge"] = valid["Spread Prediction"] + valid["home_team_spread_line"]
 
-    # 3. Evaluate
-    results = []
-
     # A. All Games (Model vs Line)
     # Exclude Pushes
     no_push = valid[valid["cover_margin"] != 0].copy()

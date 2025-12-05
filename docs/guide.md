@@ -1,0 +1,362 @@
+# CFB Model Guide — Single Source of Truth
+
+**Last Updated**: 2025-12-04
+**Status**: Active (Post-Reorganization)
+
+This is the canonical entry point for all project documentation. All other docs link here or are linked from here.
+
+---
+
+## 🚀 Quick Start
+
+### First Time Here?
+
+1. **Humans**: Read [Getting Started](#getting-started) below
+2. **AI Assistants**: Start with [CLAUDE.md](../CLAUDE.md) for session protocols, then return here for domain knowledge
+
+### I Need To...
+
+| Task | Go To |
+|------|-------|
+| Set up development environment | [Getting Started](#getting-started) |
+| Run the weekly pipeline | [Weekly Pipeline](ops/weekly_pipeline.md) |
+| Understand current models | [Modeling Baseline](modeling/baseline.md) |
+| Run an experiment | [Experiments](experiments/index.md) |
+| Add a new feature | [Feature Engineering](modeling/features.md) |
+| Review betting policy | [Betting Policy](modeling/betting_policy.md) |
+| Check recent decisions | [Decision Log](decisions/decision_log.md) |
+| Troubleshoot data issues | [Data & Paths](ops/data_paths.md) |
+
+---
+
+## 📖 Documentation Structure
+
+### Process & Workflow
+**How we work: development standards, ML workflow, AI collaboration**
+
+- [ML Workflow](process/ml_workflow.md) — Train/Test/Deploy split, model versioning
+- [Development Standards](process/development_standards.md) — Code style, testing, documentation
+- [AI Session Templates](process/ai_session_templates.md) — Kickoff and closing templates
+- [Session Logs](../session_logs/) — Chronological development history
+
+### Modeling & Features
+**What we build: models, features, evaluation criteria**
+
+- [Modeling Baseline](modeling/baseline.md) — Current production architecture
+- [Feature Catalog](modeling/features.md) — All engineered features and definitions
+- [Feature Registry](../project_org/feature_registry.md) — Active feature groups (Hydra configs)
+- [Experiments Index](../experiments/index.md) — Experiment tracking and results
+- [Betting Policy](modeling/betting_policy.md) — Unit sizing, exposure rules, risk management
+- [Calibration](modeling/calibration.md) — Model calibration and bias correction
+
+### Operations
+**How we run: pipelines, deployment, data management**
+
+- [Weekly Pipeline](ops/weekly_pipeline.md) — 5-step production workflow
+- [Data Paths & Storage](ops/data_paths.md) — External drive configuration, partitioning
+- [MLflow Usage](ops/mlflow_mcp.md) — Experiment tracking, model registry
+- [Dashboard](ops/dashboard.md) — Monitoring and visualization
+
+### Planning & Roadmap
+**Where we're going: roadmap, active initiatives**
+
+- [Project Roadmap](planning/roadmap.md) — High-level strategy and timeline
+- [Active Initiatives](planning/) — Current research and development tracks
+- [Points-For Model (Archive)](archive/points_for_model.md) — Historical: rejected architecture
+
+### Research
+**Exploratory work: PRDs, prototypes, investigations**
+
+- [Probabilistic Power Ratings](research/ppr_prd.md) — Bayesian team ratings (active research)
+- [Research Archive](research/archive/) — Completed or abandoned investigations
+
+### Decisions
+**Why we chose: decision history and rationale**
+
+- [Decision Log](decisions/decision_log.md) — All major modeling and architecture decisions
+- [Decision Log (Legacy Archive)](../archive/decision_log_legacy.md) — Pre-reorganization history
+
+---
+
+## 🎯 Getting Started
+
+### Prerequisites
+
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) for dependency management
+- [Docker](https://www.docker.com/) for MLflow and dashboard services
+- CollegeFootballData.com API key
+- External storage drive (for data)
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/connorkitchings/cfb_model.git
+cd cfb_model
+
+# Install dependencies
+uv sync --extra dev
+
+# Activate environment
+source .venv/bin/activate
+
+# Configure environment
+cp .env.example .env
+# Edit .env and set:
+#   CFB_MODEL_DATA_ROOT='/path/to/external/drive'
+#   CFBD_API_KEY='your_api_key'
+
+# Verify installation
+uv run pytest -q
+uv run ruff check .
+```
+
+### Essential Environment Variables
+
+**CRITICAL**: All raw and processed data lives on an external drive, NOT in the project directory.
+
+```bash
+# Required
+CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'  # External drive path
+CFBD_API_KEY='your_api_key_here'                                   # API access
+
+# Optional
+MLFLOW_TRACKING_URI='file://./artifacts/mlruns'                    # MLflow storage
+```
+
+**Always verify before ANY data operation**:
+```python
+import os
+from pathlib import Path
+
+data_root = os.getenv("CFB_MODEL_DATA_ROOT")
+assert data_root and Path(data_root).exists(), f"Data root not accessible: {data_root}"
+```
+
+---
+
+## 🏗️ Project Architecture
+
+### Directory Structure
+
+```
+cfb_model/
+├── src/                      # Library code
+│   ├── config/               # Path configuration, constants
+│   ├── data/                 # Data ingestion and access
+│   ├── features/             # Feature engineering pipeline
+│   ├── models/               # Training, evaluation, prediction
+│   ├── inference/            # Production inference
+│   └── utils/                # MLflow, storage utilities
+├── scripts/                  # CLI entry points
+│   ├── pipeline/             # Production pipeline scripts
+│   ├── analysis/             # Analysis and validation
+│   ├── experiments/          # Research and optimization
+│   └── cli.py                # Main CLI
+├── docs/                     # Documentation (you are here!)
+│   ├── guide.md              # This file (hub)
+│   ├── process/              # How we work
+│   ├── modeling/             # What we build
+│   ├── ops/                  # How we run
+│   ├── planning/             # Where we're going
+│   ├── research/             # Exploratory work
+│   ├── decisions/            # Why we chose
+│   ├── experiments/          # Experiment tracking
+│   └── archive/              # Historical/obsolete docs
+├── conf/                     # Hydra configuration
+│   ├── config.yaml           # Top-level defaults
+│   ├── model/                # Model configs
+│   ├── features/             # Feature set definitions
+│   ├── experiment/           # Pre-packaged experiments
+│   └── weekly_bets/          # Betting policy configs
+├── tests/                    # Test suite
+├── artifacts/                # Local outputs (git-ignored)
+│   ├── mlruns/               # MLflow tracking
+│   ├── outputs/              # Generated reports
+│   └── models/               # Saved model artifacts
+├── archive/                  # Unused scripts, configs, notebooks
+├── session_logs/             # Development session history
+├── CLAUDE.md                 # AI assistant protocols
+└── README.md                 # Project overview
+```
+
+### Data Pipeline Flow
+
+1. **Raw Ingestion** → Fetch from CollegeFootballData.com API
+2. **Aggregation** → Plays → Drives → Team-Game → Team-Season
+3. **Feature Engineering** → Opponent adjustment, recency weighting, interactions
+4. **Modeling** → Points-For architecture (predict home/away scores)
+5. **Inference** → Derive spreads/totals, calculate edges, apply policy
+
+See [Weekly Pipeline](ops/weekly_pipeline.md) for production workflow.
+
+---
+
+## 🎲 Current Production Models
+
+**As of December 2025 (v5 models)**:
+
+| Model | Target | Architecture | Features | Performance (2024 Test) |
+|-------|--------|-------------|----------|------------------------|
+| `spread_catboost_ppr` v5 | Spread | CatBoost ensemble (5 seeds) | ppr_v1 | 52.2% hit rate (226-207-8) |
+| `totals_xgboost_ppr` v5 | Total | XGBoost ensemble (5 seeds) | standard_v1 | 58.6% hit rate (112-79-4) |
+
+**Key Configuration**:
+- Train Years: 2019, 2021, 2022, 2023 (exclude 2020 COVID year)
+- Test Year: 2024 (locked holdout)
+- Deploy Year: 2025 (live production)
+- Adjustment Iteration: 2 (opponent adjustment depth)
+- Thresholds: 5.0 (spread), 7.5 (total)
+
+See [Modeling Baseline](modeling/baseline.md) for full details.
+
+---
+
+## 🔧 Common Workflows
+
+### Weekly Production Pipeline
+
+```bash
+# 1. Ingest latest week data
+uv run python scripts/pipeline/cache_weekly_stats.py --year 2025
+
+# 2. Generate predictions
+uv run python scripts/pipeline/generate_weekly_bets.py --year 2025 --week 16
+
+# 3. After games: Score performance
+uv run python scripts/pipeline/score_weekly_bets.py --year 2025 --week 16
+```
+
+### Training a New Model
+
+```bash
+# Train with Hydra experiment config
+PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_ppr_v1
+
+# Hyperparameter optimization
+PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+
+# Debug configuration
+PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
+```
+
+### Running Analysis
+
+```bash
+# Verify baseline performance
+uv run python scripts/analysis/verify_baseline_2024.py
+
+# Threshold optimization
+uv run python scripts/analysis/optimize_thresholds.py --year 2024
+
+# SHAP feature importance
+uv run python scripts/analysis/run_shap_analysis.py
+```
+
+### Health Checks
+
+```bash
+# Format and lint
+uv run ruff format . && uv run ruff check .
+
+# Run tests
+uv run pytest -q
+
+# Build documentation
+mkdocs build --quiet
+```
+
+---
+
+## 📊 Key Performance Metrics
+
+**Definitions** (see [Modeling Baseline](modeling/baseline.md)):
+
+- **Hit Rate**: Percentage of correct predictions against the spread/total
+- **Breakeven**: 52.4% hit rate required to profit at -110 odds
+- **ROI**: Return on investment assuming -110 juice
+- **Volume**: Number of bets meeting threshold criteria
+
+**Current Status (2025 Live Performance)**:
+- Spread: 50.1% hit rate (237-236-11) — Below breakeven ⚠️
+- Total: 51.4% hit rate (95-90-0) — Below breakeven ⚠️
+
+See [Experiments Index](../experiments/index.md) for detailed tracking.
+
+---
+
+## 🚨 Common Pitfalls
+
+### 1. Data Not on External Drive
+**Problem**: Script creates `./data/` in project root
+**Solution**: Always load `CFB_MODEL_DATA_ROOT` from env; fail loudly if not set
+
+### 2. Train/Test Data Leakage
+**Problem**: Including test year in training data
+**Solution**: Use locked split: Train on 2019/2021-2023, Test on 2024, Deploy on 2025
+
+### 3. Hardcoded Paths
+**Problem**: Using `/Users/...` or `./data/`
+**Solution**: Always use `os.getenv("CFB_MODEL_DATA_ROOT")`
+
+### 4. Modifying Betting Policy in Code
+**Problem**: Changing unit sizing or exposure rules programmatically
+**Solution**: Only read and apply policy from [Betting Policy](modeling/betting_policy.md)
+
+See [Data Paths](ops/data_paths.md) for full troubleshooting.
+
+---
+
+## 📚 Learning Paths
+
+### New Developer
+1. Read this guide → [Getting Started](#getting-started)
+2. Review [Development Standards](process/development_standards.md)
+3. Explore [Modeling Baseline](modeling/baseline.md)
+4. Try running [Weekly Pipeline](ops/weekly_pipeline.md) on historical data
+
+### Data Scientist / Researcher
+1. Start with [Modeling Baseline](modeling/baseline.md) and [Feature Catalog](modeling/features.md)
+2. Review [Experiments Index](../experiments/index.md) for current state
+3. Check [Decision Log](decisions/decision_log.md) for recent changes
+4. Read [ML Workflow](process/ml_workflow.md) for train/test protocols
+
+### AI Assistant
+1. Read [CLAUDE.md](../CLAUDE.md) for session protocols
+2. Review this guide for navigation
+3. Check [AI Session Templates](process/ai_session_templates.md) for workflows
+4. Always verify data root before ANY data operations
+
+---
+
+## 🔗 External Resources
+
+- [Project Repository](https://github.com/connorkitchings/cfb_model)
+- [CollegeFootballData.com API](https://collegefootballdata.com/exporter)
+- [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
+- [Hydra Configuration](https://hydra.cc/docs/intro/)
+
+---
+
+## 📝 Changelog
+
+### 2025-12-04: Repository Reorganization
+- Created `docs/guide.md` as single source of truth
+- Reorganized docs into process/, modeling/, ops/, planning/, research/ buckets
+- Created archive/ for unused scripts and configs
+- Archived legacy decision log
+- Purged stale artifacts (preserved 2025 Week 15 predictions)
+
+### 2025-12-03: ML Workflow Standardization
+- Fixed train/test split (removed 2024 from training)
+- Retrained v5 models with proper split
+- Created `docs/project_org/ml_workflow.md`
+
+### 2025-12-01: PPR Prototype
+- Implemented Probabilistic Power Ratings with Gaussian Random Walk
+- Created backtest script for walk-forward validation
+
+---
+
+**Questions or issues?** Check the [Decision Log](decisions/decision_log.md) or create a session log entry.

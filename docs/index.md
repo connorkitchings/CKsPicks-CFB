@@ -6,13 +6,18 @@
 Welcome to the central documentation hub for the **cfb_model** project. This site provides in-depth
 information on the project's architecture, development standards, and usage guides.
 
-## Navigation
+> **📖 Start Here:** [Documentation Guide](./guide.md) — Single source of truth for all project documentation
 
-- **[Guides](./guides/getting_started.md):** "How-to" documents for setting up and using the project.
-- **[Project Org](./project_org/project_charter.md):** Project charter, development standards, and checklists.
-- **[Knowledge Base](./project_org/kb_overview.md):** Useful information and resources.
-- **[Decisions](./decisions/README.md):** Log of architectural decisions.
-- **[Roadmap](./planning/roadmap.md):** Implementation schedule and future plans.
-- **[CFBD Data Docs](./cfbd/data_ingestion.md):** Data ingestion, schemas, and FBS filtering.
-- **Session Logs:** See the `session_logs/` folder in the repository for daily, chronological logs.
-- **[AI Session Templates](./guides/ai_session_templates.md):** Templates for AI-assisted sessions.
+## Quick Navigation
+
+- **[📖 Documentation Guide](./guide.md)** — Main hub with complete navigation
+- **[Process & Workflow](./process/ml_workflow.md)** — How we work (ML workflow, dev standards, AI templates)
+- **[Modeling & Features](./modeling/baseline.md)** — What we build (models, features, betting policy)
+- **[Operations](./ops/weekly_pipeline.md)** — How we run (weekly pipeline, MLflow, data paths)
+- **[Planning & Roadmap](./planning/roadmap.md)** — Where we're going (roadmap, initiatives)
+- **[Research](./research/ppr_prd.md)** — Exploratory work (PPR prototypes)
+- **[Decisions](./decisions/decision_log.md)** — Decision history and rationale
+- **[Experiments](./experiments/index.md)** — Experiment tracking and results
+- **Session Logs:** See `session_logs/` folder for daily development logs
+
+> **Note:** Documentation was reorganized on 2025-12-04. All docs now accessible from [guide.md](./guide.md).

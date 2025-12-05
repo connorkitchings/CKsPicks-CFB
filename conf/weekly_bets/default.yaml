@@ -15,13 +15,12 @@ model_registry:
     - totals_xgboost_ppr_seed_5
 
 # Weekly Betting Configuration
-# Based on 2024 threshold analysis (Nov 2024)
+# Based on 2024 analysis; reverting to higher-volume cuts for live use
 
-# Spread threshold optimized for CatBoost model
-spread_edge_threshold: 5.0  # CatBoost achieves 2.3% ROI at this threshold
+# Spread threshold: 5.0 (balanced volume/performance)
+spread_edge_threshold: 5.0
 
-# Total threshold optimized for XGBoost model  
-# Optimization (Dec 2025): >5% ROI at 6.0, >9% ROI at 8.0. Setting to 7.5.
+# Total threshold: 7.5 (stable high hit rate on 2024)
 total_edge_threshold: 7.5
 
 # Kelly fraction for position sizing

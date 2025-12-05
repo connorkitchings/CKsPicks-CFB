@@ -18,13 +18,13 @@ from src.utils.local_storage import LocalStorage
 from src.utils.mlflow_tracking import setup_mlflow
 
 
-def load_week_data(year, week):
+def load_week_data(year, week, adjustment_iteration: int = 2):
     data_root = get_data_root()
     raw = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
 
-    # Load features (Iteration 4 for PPR)
+    # Load features (align with training split defaults; fall back to legacy layout)
     team_features = load_weekly_team_features(
-        year, week, data_root, adjustment_iteration=4
+        year, week, data_root, adjustment_iteration=adjustment_iteration
     )
     if team_features is None:
         raise ValueError("No team features found")
@@ -51,6 +51,15 @@ def load_week_data(year, week):
         how="left",
     )
 
+    # Promote game-level weather columns (per-game values duplicated across teams)
+    for col in ["temperature", "wind_speed", "precipitation"]:
+        home_col = f"home_{col}"
+        away_col = f"away_{col}"
+        if home_col in merged.columns or away_col in merged.columns:
+            merged[col] = merged.get(home_col)
+            if away_col in merged.columns:
+                merged[col] = merged[col].combine_first(merged[away_col])
+
     # Load lines
     lines = pd.DataFrame.from_records(
         raw.read_index("betting_lines", {"year": year, "week": week})
@@ -73,6 +82,12 @@ def main():
         type=str,
         default="conf/weekly_bets/default.yaml",
         help="Path to config file",
+    )
+    parser.add_argument(
+        "--adjustment-iteration",
+        type=int,
+        default=2,
+        help="Opponent-adjustment iteration to load (default=2; falls back to legacy layout if missing)",
     )
     args = parser.parse_args()
 
@@ -110,7 +125,9 @@ def main():
     total_full_cfg = OmegaConf.create({"features": total_feat_cfg})
 
     try:
-        data_df = load_week_data(year, week)
+        data_df = load_week_data(
+            year, week, adjustment_iteration=args.adjustment_iteration
+        )
         if data_df.empty:
             print(f"No games found for Week {week}. Exiting.")
             return
@@ -143,12 +160,12 @@ def main():
                 data_df[col] = default_val
 
         # Predict Spread
-        X_spread = select_features(data_df, spread_full_cfg)
-        spread_preds = spread_model.predict(X_spread)
+        x_spread = select_features(data_df, spread_full_cfg)
+        spread_preds = spread_model.predict(x_spread)
 
         # Predict Total
-        X_total = select_features(data_df, total_full_cfg)
-        total_preds = total_model.predict(X_total)
+        x_total = select_features(data_df, total_full_cfg)
+        total_preds = total_model.predict(x_total)
 
         # Construct Bets DataFrame
         bets = []

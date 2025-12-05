@@ -89,17 +89,17 @@ def main():
             print("Empty data after cleaning.")
             continue
 
-        X_train = train_df[feature_list]
+        x_train = train_df[feature_list]
         y_train = train_df["spread_target"]
-        X_test = test_df[feature_list]
+        x_test = test_df[feature_list]
         y_test = test_df["spread_target"]  # Actual margin
 
         # 4. Train Model
         model = CatBoostRegressor(**spread_params)
-        model.fit(X_train, y_train)
+        model.fit(x_train, y_train)
 
         # 5. Predict
-        preds = model.predict(X_test)
+        preds = model.predict(x_test)
 
         # 6. Store Results
         for idx, (pred, actual) in enumerate(zip(preds, y_test)):

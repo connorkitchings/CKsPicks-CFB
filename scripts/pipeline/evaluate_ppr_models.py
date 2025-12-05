@@ -67,22 +67,18 @@ def evaluate_models():
                 continue
 
             # --- Spread Prediction ---
-            X_spread = select_features(df, spread_full_cfg)
-            # Ensure columns match model expectation (MLflow usually handles this if signature is logged,
-            # but CatBoost/XGBoost might be picky about column order if passed as DF)
-            # We'll trust select_features returns the right set.
-
-            spread_preds = spread_model.predict(X_spread)
+            x_spread = select_features(df, spread_full_cfg)
+            spread_preds = spread_model.predict(x_spread)
 
             # --- Total Prediction ---
-            X_total = select_features(df, total_full_cfg)
-            if "home_drives_per_game_last_3" in X_total.columns:
-                print("DEBUG: home_drives_per_game_last_3 IS in X_total")
+            x_total = select_features(df, total_full_cfg)
+            if "home_drives_per_game_last_3" in x_total.columns:
+                print("DEBUG: home_drives_per_game_last_3 IS in x_total")
             else:
-                print("DEBUG: home_drives_per_game_last_3 IS NOT in X_total")
-                print(f"DEBUG: X_total columns: {X_total.columns.tolist()[:10]}...")
+                print("DEBUG: home_drives_per_game_last_3 IS NOT in x_total")
+                print(f"DEBUG: x_total columns: {x_total.columns.tolist()[:10]}...")
 
-            total_preds = total_model.predict(X_total)
+            total_preds = total_model.predict(x_total)
 
             # --- Metrics ---
             # Spread RMSE
@@ -150,7 +146,9 @@ def evaluate_models():
     print(results_df[["spread_rmse", "total_rmse", "spread_acc", "ats_acc"]].mean())
 
     # Weighted average by n_games
-    wm = lambda x: np.average(x, weights=results_df.loc[x.index, "n_games"])
+    def wm(x):
+        return np.average(x, weights=results_df.loc[x.index, "n_games"])
+
     print("\nWeighted Overall Results:")
     print(
         results_df.agg(

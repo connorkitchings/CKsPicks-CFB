@@ -1,0 +1,15 @@
+# @package _global_
+defaults:
+  - override /model: xgboost
+  - override /features: standard_v1
+
+experiment:
+  name: debug_totals
+  years: [2023]
+
+model_registry_name: debug_totals
+
+model:
+  target: total_target
+  params:
+    n_estimators: 10

@@ -97,12 +97,12 @@ def optimize_thresholds():
                 continue
 
             # --- Spread Prediction ---
-            X_spread = select_features(df, spread_full_cfg)
-            spread_preds = spread_model.predict(X_spread)
+            x_spread = select_features(df, spread_full_cfg)
+            spread_preds = spread_model.predict(x_spread)
 
             # --- Total Prediction ---
-            X_total = select_features(df, total_full_cfg)
-            total_preds = total_model.predict(X_total)
+            x_total = select_features(df, total_full_cfg)
+            total_preds = total_model.predict(x_total)
 
             # --- Calculate Edges and Results ---
 

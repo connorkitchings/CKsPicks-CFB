@@ -67,3 +67,6 @@ build-backend = "setuptools.build_meta"
 pythonpath = [
   "src"
 ]
+norecursedirs = [
+  "scripts/archive"
+]
