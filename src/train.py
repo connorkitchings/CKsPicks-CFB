@@ -50,6 +50,21 @@ def get_model(cfg: DictConfig):
         # Convert DictConfig to dict for unpacking
         params = OmegaConf.to_container(params, resolve=True)
         return V1BaselineModel(features=features, **params)
+    elif cfg.model.type == "catboost":
+        from src.models.v2_catboost import V2CatBoostModel
+
+        params = cfg.model.get("params", {})
+        params = OmegaConf.to_container(params, resolve=True)
+        return V2CatBoostModel(features=features, **params)
+    elif cfg.model.type == "xgboost":
+        from src.models.v2_xgboost import V2XGBoostModel
+
+        params = cfg.model.get("params", {})
+        params = OmegaConf.to_container(params, resolve=True)
+        # remove early_stopping_rounds from init params if passed, as it's usually for fit
+        if "early_stopping_rounds" in params:
+            del params["early_stopping_rounds"]
+        return V2XGBoostModel(features=features, **params)
     else:
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
@@ -93,9 +108,25 @@ def main(cfg: DictConfig):
         # Save Model (Local & MLflow)
         # For now, just local save if model supports it
         if hasattr(model, "save"):
-            model_path = Path("models") / f"{cfg.model.name}.joblib"
+            # Determine extension
+            ext = ".joblib"
+            if cfg.model.type == "xgboost":
+                ext = ".json"
+            elif cfg.model.type == "catboost":
+                ext = ".cbm"
+
+            model_path = Path("models") / f"{cfg.model.name}{ext}"
             model.save(model_path)
-            mlflow.log_artifact(str(model_path))
+
+            # wrapper might append extension, check for it
+            if not model_path.exists():
+                if Path(f"{model_path}.json").exists():
+                    model_path = Path(f"{model_path}.json")
+
+            if model_path.exists():
+                mlflow.log_artifact(str(model_path))
+            else:
+                print(f"Warning: Could not find saved model at {model_path}")
 
 
 if __name__ == "__main__":
