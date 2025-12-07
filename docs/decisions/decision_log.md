@@ -1,5 +1,25 @@
 # Decision Log
 
+## 2025-12-07: V2 Phase 2 Interaction Features - Rejected
+
+- **Context**: Tested 4 explicit interaction features (Off x Def EPA/SR) on top of the Recency Champion.
+- **Results**:
+  - **Interactions**: ROI -0.26% | Hit Rate 52.2%
+  - **Champion (Corrected)**: ROI +0.52% | Hit Rate 52.7%
+- **Decision**: **REJECT**.
+  - Interactions degraded performance by ~0.8% ROI.
+  - Complexity not justified.
+
+## 2025-12-07: Critical Bug Fix - Recency Data Duplication
+
+- **Context**: Discovered `load_v2_recency_data` was returning 5x duplicate rows (one for each iteration 0-4) due to missing filter in `v2_recency.py`.
+- **Fix**: Added filter to keep only the final iteration (`adj_df = adj_df[adj_df["iteration"] == iterations]`).
+- **Impact**: Retrained Champion on corrected data. New metrics are significantly better (positive ROI!).
+- **New Champion Metrics (2024)**:
+  - Hit Rate: **52.65%**
+  - ROI: **+0.52%**
+  - RMSE: 18.82
+
 ## 2025-12-07: V2 Phase 4 Stacking - Failed
 
 - **Context**: Trained a Stacking Ensemble (Meta-learner: Logistic Regression) on Linear and XGBoost OOF predictions.

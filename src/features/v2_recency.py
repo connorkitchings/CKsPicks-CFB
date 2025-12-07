@@ -123,6 +123,8 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4):
         adj_df = apply_iterative_opponent_adjustment(
             current_week_stats, prior_games, iterations=iterations
         )
+        # Only keep the final iteration for training
+        adj_df = adj_df[adj_df["iteration"] == iterations]
         adj_dfs.append(adj_df)
 
     full_adj_df = pd.concat(adj_dfs, ignore_index=True)

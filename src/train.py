@@ -61,11 +61,11 @@ def load_and_prepare_data(cfg: DictConfig):
     return train_df, test_df
 
 
-def get_model(cfg: DictConfig):
+def get_model(cfg: DictConfig, feature_override=None):
     """Factory to get model based on config type."""
-    # Extract features list if available
-    features = None
-    if "features" in cfg and "features" in cfg.features:
+    # Use override if provided, else config
+    features = feature_override
+    if features is None and "features" in cfg and "features" in cfg.features:
         features = list(cfg.features.features)
 
     if cfg.model.type == "linear_regression":
@@ -126,8 +126,20 @@ def main(cfg: DictConfig):
         train_df, test_df = load_and_prepare_data(cfg)
         print(f"Train size: {len(train_df)}, Test size: {len(test_df)}")
 
+        # Feature Selection & Interaction Generation
+        from src.features.selector import select_features
+
+        # Note: select_features modifies df in-place to add interactions,
+        # then returns the selected subset. We want the side-effect (interactions added to df)
+        # and the list of selected columns.
+        X_train = select_features(train_df, cfg)
+        X_test = select_features(test_df, cfg)
+
+        final_features = list(X_train.columns)
+        print(f"Selected {len(final_features)} features (including interactions).")
+
         # Initialize Model
-        model = get_model(cfg)
+        model = get_model(cfg, feature_override=final_features)
 
         # Train
         print("Training...")

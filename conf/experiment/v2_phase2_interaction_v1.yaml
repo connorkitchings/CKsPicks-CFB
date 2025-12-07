@@ -1,0 +1,14 @@
+# @package _global_
+defaults:
+  - override /model: linear
+  - override /features: interaction_v1
+
+experiment:
+  name: v2_phase2_interaction_v1
+  phase: 2
+  description: "Testing interaction features (Off x Def) on Linear Recency Champion"
+
+training:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+  deploy_year: 2025
