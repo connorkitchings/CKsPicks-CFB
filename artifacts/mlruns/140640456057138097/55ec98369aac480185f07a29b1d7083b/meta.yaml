@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/artifacts/mlruns/140640456057138097/55ec98369aac480185f07a29b1d7083b/artifacts
+end_time: 1765125727063
+entry_point_name: ''
+experiment_id: '140640456057138097'
+lifecycle_stage: active
+run_id: 55ec98369aac480185f07a29b1d7083b
+run_name: xgboost_v1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765125723980
+status: 4
+tags: []
+user_id: connorkitchings

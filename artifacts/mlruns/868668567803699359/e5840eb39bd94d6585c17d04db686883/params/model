@@ -1,0 +1,1 @@
+{'name': 'xgboost_v1', 'type': 'xgboost', 'params': {'n_estimators': 624, 'learning_rate': 0.0011236555114013528, 'max_depth': 8, 'objective': 'reg:squarederror', 'random_state': 42, 'early_stopping_rounds': 50, 'subsample': 0.8789327756224457, 'colsample_bytree': 0.9515991583050895, 'reg_alpha': 3.519382613554834, 'reg_lambda': 7.021596064999022}, 'target': 'spread_target'}

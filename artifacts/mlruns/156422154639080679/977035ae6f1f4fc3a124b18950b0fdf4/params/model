@@ -1,0 +1,1 @@
+{'name': 'stacking_v1', 'type': 'stacking', 'params': {'cv': 5, 'meta_model_params': {'C': 1.0, 'solver': 'lbfgs'}, 'models': [{'type': 'linear', 'params': {'alpha': 10.0}}, {'type': 'xgboost', 'params': {'n_estimators': 624, 'learning_rate': 0.001, 'max_depth': 8, 'objective': 'reg:squarederror', 'random_state': 42}}]}, 'target': 'spread_target'}

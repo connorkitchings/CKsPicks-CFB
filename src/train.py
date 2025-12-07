@@ -19,8 +19,23 @@ def load_and_prepare_data(cfg: DictConfig):
 
     # Load Training Data
     train_dfs = []
+
+    # Check for recency features
+    use_recency = False
+    if "features" in cfg and "params" in cfg.features:
+        if cfg.features.params.get("type") == "recency":
+            use_recency = True
+            alpha = cfg.features.params.get("alpha", 0.5)
+
     for year in cfg.training.train_years:
-        df = load_v1_data(year, features=features)
+        if use_recency:
+            from src.features.v2_recency import load_v2_recency_data
+
+            print(f"Loading Recency Weighted data for {year} (alpha={alpha})...")
+            df = load_v2_recency_data(year, alpha=alpha)
+        else:
+            df = load_v1_data(year, features=features)
+
         if df is not None:
             train_dfs.append(df)
 
@@ -30,7 +45,16 @@ def load_and_prepare_data(cfg: DictConfig):
     train_df = pd.concat(train_dfs, ignore_index=True)
 
     # Load Test Data
-    test_df = load_v1_data(cfg.training.test_year, features=features)
+    if use_recency:
+        from src.features.v2_recency import load_v2_recency_data
+
+        print(
+            f"Loading Recency Weighted data for {cfg.training.test_year} (alpha={alpha})..."
+        )
+        test_df = load_v2_recency_data(cfg.training.test_year, alpha=alpha)
+    else:
+        test_df = load_v1_data(cfg.training.test_year, features=features)
+
     if test_df is None:
         raise ValueError(f"No test data found for year {cfg.training.test_year}")
 
@@ -65,6 +89,18 @@ def get_model(cfg: DictConfig):
         if "early_stopping_rounds" in params:
             del params["early_stopping_rounds"]
         return V2XGBoostModel(features=features, **params)
+    elif cfg.model.type == "ensemble":
+        from src.models.v2_ensemble import V2EnsembleModel
+
+        params = cfg.model.get("params", {})
+        params = OmegaConf.to_container(params, resolve=True)
+        return V2EnsembleModel(features=features, **params)
+    elif cfg.model.type == "stacking":
+        from src.models.v2_stacking import V2StackingModel
+
+        params = cfg.model.get("params", {})
+        params = OmegaConf.to_container(params, resolve=True)
+        return V2StackingModel(features=features, **params)
     else:
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 

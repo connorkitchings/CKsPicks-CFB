@@ -1,0 +1,9 @@
+# @package _global_
+defaults:
+  - override /model: stacking_v1
+  - override /features: recency_weighted_v1
+
+experiment:
+  name: v2_phase4_stacking
+  phase: 4
+  description: "Stacking (Linear + XGBoost) with Meta-Learner"

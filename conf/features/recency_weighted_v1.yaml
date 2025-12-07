@@ -1,0 +1,13 @@
+name: recency_weighted_v1
+features:
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+params:
+  type: recency
+  alpha: 0.3

@@ -31,6 +31,14 @@ def load_v1_data(year: int, features: list[str] | None = None):
     if "id" in games_df.columns and "game_id" not in games_df.columns:
         games_df = games_df.rename(columns={"id": "game_id"})
 
+    # Filter for completed games only (Data Quality)
+    if "completed" in games_df.columns:
+        games_df = games_df[games_df["completed"] == True]
+
+    # Also ensure scores are present (redundant but safe)
+    if "home_points" in games_df.columns and "away_points" in games_df.columns:
+        games_df = games_df.dropna(subset=["home_points", "away_points"])
+
     # Ensure week is int for merging
     if "week" in games_df.columns:
         games_df["week"] = games_df["week"].astype(int)

@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/artifacts/mlruns/150606210677057381/30e9b7fff12a42c6907cf0ae7d0a8973/artifacts
+end_time: 1765125566313
+entry_point_name: ''
+experiment_id: '150606210677057381'
+lifecycle_stage: active
+run_id: 30e9b7fff12a42c6907cf0ae7d0a8973
+run_name: catboost_v1
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765125564928
+status: 3
+tags: []
+user_id: connorkitchings

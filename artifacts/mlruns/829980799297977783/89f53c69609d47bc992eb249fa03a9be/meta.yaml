@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/artifacts/mlruns/829980799297977783/89f53c69609d47bc992eb249fa03a9be/artifacts
+end_time: 1765126565911
+entry_point_name: ''
+experiment_id: '829980799297977783'
+lifecycle_stage: active
+run_id: 89f53c69609d47bc992eb249fa03a9be
+run_name: linear
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1765126545923
+status: 3
+tags: []
+user_id: connorkitchings

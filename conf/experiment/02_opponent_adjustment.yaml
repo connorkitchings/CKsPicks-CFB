@@ -1,0 +1,9 @@
+# @package _global_
+defaults:
+  - override /model: linear
+  - override /features: opponent_adjusted_v1
+
+experiment:
+  name: v2_phase2_opponent_adjustment
+  phase: 2
+  description: "Testing opponent adjustment impact on Ridge baseline"

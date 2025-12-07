@@ -1,0 +1,1 @@
+{'name': 'catboost_v1', 'type': 'catboost', 'params': {'iterations': 10, 'learning_rate': 0.05, 'depth': 6, 'loss_function': 'RMSE', 'random_seed': 42, 'verbose': 100, 'allow_writing_files': False}, 'target': 'spread_target'}

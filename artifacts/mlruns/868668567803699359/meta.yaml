@@ -1,0 +1,6 @@
+artifact_location: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/artifacts/mlruns/868668567803699359
+creation_time: 1765126157871
+experiment_id: '868668567803699359'
+last_update_time: 1765126157871
+lifecycle_stage: active
+name: v2_phase3_xgboost_tuned

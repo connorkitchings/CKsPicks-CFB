@@ -1,0 +1,6 @@
+artifact_location: file:///Users/connorkitchings/Desktop/Repositories/cfb_model/artifacts/mlruns/150606210677057381
+creation_time: 1765125564890
+experiment_id: '150606210677057381'
+last_update_time: 1765125564890
+lifecycle_stage: active
+name: v2_phase3_catboost

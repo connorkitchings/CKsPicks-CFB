@@ -1,0 +1,1 @@
+{'name': 'opponent_adjusted_v1', 'description': 'Phase 2 - Opponent Adjusted EPA/SR', 'features': ['home_adj_off_epa_pp', 'home_adj_def_epa_pp', 'home_adj_off_sr', 'home_adj_def_sr', 'away_adj_off_epa_pp', 'away_adj_def_epa_pp', 'away_adj_off_sr', 'away_adj_def_sr']}

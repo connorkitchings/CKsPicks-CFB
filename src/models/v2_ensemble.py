@@ -113,7 +113,8 @@ class V2EnsembleModel:
 
     def save(self, path):
         import joblib
+
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self, path)
         print(f"Ensemble model saved to {path}")
-```
+        print(f"Ensemble model saved to {path}")

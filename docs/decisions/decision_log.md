@@ -1,5 +1,25 @@
 # Decision Log
 
+## 2025-12-07: V2 Phase 4 Stacking - Failed
+
+- **Context**: Trained a Stacking Ensemble (Meta-learner: Logistic Regression) on Linear and XGBoost OOF predictions.
+- **Results**:
+  - **Stacking**: ROI -5.36% | Hit Rate 49.6%
+- **Decision**: **REJECT**.
+  - Significantly worse than the Recency-Weighted Linear Model (-0.15%).
+  - Increased complexity yielded negative value. Confirms that simpler models are currently superior for this dataset.
+
+## 2025-12-07: V2 Phase 2.5 Recency Weighting - Promoted
+
+- **Context**: Implemented exponential decay (`alpha=0.3`) for storage aggregation to weight recent games more heavily.
+- **Results**:
+  - **Recency Linear**: ROI -0.15% | Hit Rate 52.3%
+  - **Previous Best**: ROI -0.97%
+- **Decision**: **PROMOTE TO CHAMPION**.
+  - This is the single biggest improvement in the V2 workflow.
+  - ROI is virtually break-even (-0.15%).
+  - Validates the hypothesis that "recent form matters more."
+
 ## 2025-12-07: V2 Phase 3.5 XGBoost Tuning - Failed
 
 - **Context**: Used Optuna to tune XGBoost hyperparameters to beat the -0.97% ROI benchmark.
