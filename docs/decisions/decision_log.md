@@ -1,5 +1,25 @@
 # Decision Log
 
+## 2025-12-07: V2 Phase 3.5 XGBoost Tuning - Failed
+
+- **Context**: Used Optuna to tune XGBoost hyperparameters to beat the -0.97% ROI benchmark.
+- **Results**:
+  - **Tuned XGBoost**: ROI -1.23% | Hit Rate 51.7%
+- **Decision**: **REJECT**.
+  - The tuned model performed worse than the untuned default XGBoost (-0.71%).
+  - Shows high sensitivity to hyperparameters and potential overfitting.
+  - Linear models remain the most robust "Bang for Buck".
+
+## 2025-12-07: V2 Phase 4 Ensembling - Failed
+
+- **Context**: Tested a weighted ensemble (50/50) of the Baseline (Linear) and XGBoost models.
+- **Results**:
+  - **Ensemble**: ROI -3.09% | Hit Rate 50.8%
+- **Decision**: **REJECT**.
+  - The ensemble performed significantly worse than its components (Linear -0.97%, XGBoost -0.71%).
+  - Naive averaging is not effective for these models on this dataset.
+  - Future hypothesis: Use Stacking (train a meta-model on predictions) or improve calibration of XGBoost before averaging.
+
 ## 2025-12-07: V2 Phase 3 Model Selection - Status Quo
 
 - **Context**: Tested advanced non-linear models (CatBoost, XGBoost) against the linear baseline (`opponent_adjusted_v1`) on 2024 data.

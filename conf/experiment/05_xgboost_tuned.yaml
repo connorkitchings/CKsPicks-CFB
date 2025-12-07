@@ -1,0 +1,21 @@
+# @package _global_
+defaults:
+  - override /model: xgboost_v1
+  - override /features: opponent_adjusted_v1
+
+model:
+  params:
+    n_estimators: 624
+    learning_rate: 0.0011236555114013528
+    max_depth: 8
+    subsample: 0.8789327756224457
+    colsample_bytree: 0.9515991583050895
+    reg_alpha: 3.519382613554834
+    reg_lambda: 7.021596064999022
+    objective: reg:squarederror
+    random_state: 42
+
+experiment:
+  name: v2_phase3_xgboost_tuned
+  phase: 3.5
+  description: "Tuned XGBoost (Optuna Trial 10 Best)"
