@@ -37,6 +37,27 @@ This log records all major modeling, architecture, and process decisions made du
 
 ## Decisions
 
+### 2025-12-06: V2 Baseline Metrics Established
+
+- **Context**: Completed Phase 1 setup. Trained Ridge regression on `minimal_unadjusted_v1` features (raw EPA/SR) for years 2019, 2021-2023, tested on 2024.
+- **Decision**: Accept these metrics as the official V2 Benchmark (the "Floor").
+- **Results**:
+  - **RMSE**: 18.64 points (High, indicates noise in unadjusted stats)
+  - **Hit Rate**: 50.6% (721 bets)
+  - **ROI**: -3.35% (Below breakeven)
+- **Rationale**: 
+  - Validates the end-to-end V2 pipeline (Data -> Train -> Evaluate).
+  - Confirms that raw stats alone are insufficient for profitability.
+  - Sets a clear, beatable target for Phase 2 (Opponent Adjustment).
+- **Impact**:
+  - Phase 2 experiments must beat -3.35% ROI by +1.0% (target > -2.35%) to be promoted.
+- **Artifacts**:
+  - Experiment: `v2_baseline/linear`
+  - Model: `models/linear.joblib`
+  - Run ID: (Local MLflow run)
+
+---
+
 ### 2025-12-05: V2 Experimentation Workflow Adoption
 
 - **Context**: Post-reorganization, legacy models archived, need rigorous process to prevent regressions and measure improvements clearly. Previous development was rapid but lacked systematic evaluation.

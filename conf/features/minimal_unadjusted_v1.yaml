@@ -1,0 +1,7 @@
+name: minimal_unadjusted_v1
+description: "Phase 1 baseline - raw EPA/SR only"
+features:
+  - home_off_epa_pp
+  - home_def_epa_pp
+  - away_off_epa_pp
+  - away_def_epa_pp

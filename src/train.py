@@ -12,10 +12,15 @@ from src.utils.mlflow_tracking import get_or_create_experiment, get_tracking_uri
 
 def load_and_prepare_data(cfg: DictConfig):
     """Load and concatenate data for configured years."""
+    # Extract features list if available
+    features = None
+    if "features" in cfg and "features" in cfg.features:
+        features = list(cfg.features.features)
+
     # Load Training Data
     train_dfs = []
     for year in cfg.training.train_years:
-        df = load_v1_data(year)
+        df = load_v1_data(year, features=features)
         if df is not None:
             train_dfs.append(df)
 
@@ -25,7 +30,7 @@ def load_and_prepare_data(cfg: DictConfig):
     train_df = pd.concat(train_dfs, ignore_index=True)
 
     # Load Test Data
-    test_df = load_v1_data(cfg.training.test_year)
+    test_df = load_v1_data(cfg.training.test_year, features=features)
     if test_df is None:
         raise ValueError(f"No test data found for year {cfg.training.test_year}")
 
@@ -34,10 +39,17 @@ def load_and_prepare_data(cfg: DictConfig):
 
 def get_model(cfg: DictConfig):
     """Factory to get model based on config type."""
+    # Extract features list if available
+    features = None
+    if "features" in cfg and "features" in cfg.features:
+        features = list(cfg.features.features)
+
     if cfg.model.type == "linear_regression":
         # Pass params from config
         params = cfg.model.get("params", {})
-        return V1BaselineModel(**params)
+        # Convert DictConfig to dict for unpacking
+        params = OmegaConf.to_container(params, resolve=True)
+        return V1BaselineModel(features=features, **params)
     else:
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
