@@ -1,0 +1,25 @@
+# Matchup V1 Feature Set
+# Extends recency champion with rush/pass specific features
+name: matchup_v1
+groups:
+  # Existing champion features (EPA and SR)
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  # New: Rush/Pass specific YPP
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+params:
+  type: recency
+  alpha: 0.3  # Same as champion

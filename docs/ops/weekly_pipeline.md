@@ -96,7 +96,32 @@ uv run python scripts/prediction/generate_weekly_bets.py \
 
 ---
 
-### Step 4: Place Bets
+### Step 4: Generate System Info & Publish Picks
+
+**When**: After generating predictions
+
+**Action**: Calculate historical system performance for the email report and send the picks email.
+
+1.  **Generate System Stats** (Backtest 2024 & Current YTD):
+
+    ```bash
+    uv run python -m scripts.pipeline.generate_system_stats --config conf/weekly_bets/v2_champion.yaml
+    ```
+
+    - **Output**: `data/production/system_stats.json`
+
+2.  **Publish Picks Email**:
+
+    ```bash
+    uv run python scripts/pipeline/publish_picks.py --year 2025 --week <WEEK_NUMBER>
+    # Add --mode test to send to yourself first
+    ```
+
+    - **Output**: HTML Email sent to subscribers (or test address)
+
+---
+
+### Step 5: Place Bets
 
 **When**: Before game kickoffs (manual timing)
 
@@ -113,7 +138,7 @@ uv run python scripts/prediction/generate_weekly_bets.py \
 
 ---
 
-### Step 5: Score Results
+### Step 6: Score Results
 
 **When**: After games are final (Tuesday/Wednesday)
 
@@ -130,7 +155,7 @@ uv run python scripts/scoring/score_weekly_bets.py \
 
 ---
 
-### Step 6: Check Monitoring Dashboard
+### Step 7: Check Monitoring Dashboard
 
 **When**: After scoring, when convenient
 
@@ -154,24 +179,23 @@ streamlit run dashboard/monitoring.py
 
 ## V2 Champion Model
 
-**Current Champion** (as of Week 1): TBD (Ridge baseline to be trained)
+**Current Champions** (as of 2025-12-08):
 
-**How to check current Champion**:
+| Target | Model  | Features            | ROI   | Threshold | Config                              |
+| ------ | ------ | ------------------- | ----- | --------- | ----------------------------------- |
+| Spread | Linear | recency_weighted_v1 | +2.1% | 7.0 pts   | `conf/weekly_bets/v2_champion.yaml` |
+| Totals | Linear | recency_weighted_v1 | +6.1% | 0.5 pts   | `conf/weekly_bets/v2_champion.yaml` |
 
-```bash
-# List registered models in MLflow
-uv run python -c "
-import mlflow
-mlflow.set_tracking_uri('file://./artifacts/mlruns')
-client = mlflow.MlflowClient()
-models = client.search_registered_models()
-for m in models:
-    versions = client.search_model_versions(f'name=\"{m.name}\"')
-    for v in versions:
-        if 'production' in v.tags:
-            print(f'{m.name} v{v.version} (production)')
-"
-```
+**Model Files**:
+
+- `models/linear_spread_target.joblib` (trained 2025-12-07)
+- `models/linear_total_target.joblib` (trained 2025-12-07)
+
+**Feature Config**: `conf/features/recency_weighted_v1.yaml`
+
+- 8 features: EPA and SR (offense/defense) for home/away
+- EWMA decay: α=0.3
+- 4-iteration opponent adjustment
 
 ---
 
@@ -218,6 +242,5 @@ for m in models:
 
 ---
 
-**Last Updated**: 2025-12-05  
+**Last Updated**: 2025-12-08  
 **Status**: V2-aligned, manual workflow
-facts/reports

@@ -17,6 +17,7 @@ Configuration via environment variables:
 from __future__ import annotations
 
 import argparse
+import json as json_lib
 import os
 import smtplib
 import sys
@@ -399,7 +400,7 @@ def compute_hit_rates(
     scored_dir = _season_subdir(report_dir, year, SCORED_SUBDIR)
     paths = [Path(p) for p in glob.glob(str(scored_dir / "CFB_week*_bets_scored.csv"))]
     if not paths:
-        return None, None, 0, 0
+        return None, None, 0, 0, 0, 0
 
     frames: list[pd.DataFrame] = []
     for p in paths:
@@ -457,7 +458,7 @@ def compute_hit_rates(
         except Exception:
             continue
     if not frames:
-        return None, None, 0, 0
+        return None, None, 0, 0, 0, 0
 
     scored = pd.concat(frames, ignore_index=True)
 
@@ -593,7 +594,7 @@ def compute_week_hit_rates(
                     continue
 
     if not frames:
-        return None, None, 0, 0
+        return None, None, 0, 0, 0, 0
 
     df = pd.concat(frames, ignore_index=True)
 
@@ -607,7 +608,7 @@ def compute_week_hit_rates(
         df = df[week_numeric == week]
 
     if df.empty:
-        return None, None, 0, 0
+        return None, None, 0, 0, 0, 0
 
     # --- Spread Logic ---
     for col in [
@@ -964,9 +965,21 @@ def main() -> None:
 
     config_dir = Path(__file__).resolve().parents[2] / "conf"
     with initialize_config_dir(version_base=None, config_dir=str(config_dir)):
-        cfg = compose(config_name="config")
-        spread_threshold = cfg.weekly_bets.betting.spread_threshold
-        total_threshold = cfg.weekly_bets.betting.total_threshold
+        # Default to loading v2_champion for thresholds if not specified
+        cfg = compose(config_name="config", overrides=["+weekly_bets=v2_champion"])
+
+        if "spread_edge_threshold" in cfg.weekly_bets:
+            # V2 Config Structure
+            spread_threshold = cfg.weekly_bets.spread_edge_threshold
+            total_threshold = cfg.weekly_bets.total_edge_threshold
+        elif "betting" in cfg.weekly_bets:
+            # V1 Config Structure
+            spread_threshold = cfg.weekly_bets.betting.spread_threshold
+            total_threshold = cfg.weekly_bets.betting.total_threshold
+        else:
+            # Fallback defaults
+            spread_threshold = 0.0
+            total_threshold = 0.0
 
     print(
         f"Using thresholds from config: spread={spread_threshold}, total={total_threshold}"
@@ -1075,43 +1088,90 @@ def main() -> None:
         total_threshold,
     )
 
+    # Load Validation History (Last Year)
+    history_file = Path("data/production/system_stats.json")
+    history_data = {}
+    if history_file.exists():
+        try:
+            with open(history_file, "r") as f:
+                history_data = json_lib.load(f)
+        except Exception as e:
+            print(f"Error loading validation history: {e}")
+
+    # Parse Standard Validation History
+    # Structure:
+    # {
+    #   "2024_full": {spread: {}, total: {}},
+    #   "2025_ytd": {spread: {}, total: {}},
+    #   "2024_week_16": {spread: {}, total: {}}
+    # }
+
+    # 2024 Full
+    stats_24 = history_data.get("2024_full", {})
+    prev_spr = stats_24.get("spread", {})
+    prev_tot = stats_24.get("total", {})
+
+    # 2025 YTD (System Record)
+    # Prefer this over live record for "System Info" consistency if available
+    stats_25 = history_data.get("2025_ytd", {})
+    curr_spr = stats_25.get("spread", {})
+    curr_tot = stats_25.get("total", {})
+
+    # If 2025 YTD missing, fall back to live counted (which we already computed in vars curr_spread, etc.)
+    # But usually we want to override.
+    use_system_ytd = bool(stats_25)
+
+    # 2024 Specific Week
+    wk_key = f"2024_week_{args.week}"
+    stats_24_wk = history_data.get(wk_key, {})
+    prev_wk_spr = stats_24_wk.get("spread", {})
+    prev_wk_tot = stats_24_wk.get("total", {})
+
+    # Load System Metadata
+    system_name = cfg.get("weekly_bets", {}).get("system_name", "Model: Chimera-v1")
+    model_id = cfg.get("weekly_bets", {}).get("model_id", "HYBRID-2025")
+
     model_context = {
         "prev_year": args.year - 1,
-        "prev_spread": prev_spread,
-        "prev_total": prev_total,
-        "prev_spread_count": prev_spread_n,
-        "prev_total_count": prev_total_n,
-        "prev_spread_wins": prev_spread_wins,
-        "prev_total_wins": prev_total_wins,
-        "model_name": "Model: Chimera-v1",
-        "model_id": "HYBRID-2025",
+        "prev_spread": prev_spr.get("roi", 0.0),
+        "prev_total": prev_tot.get("roi", 0.0),
+        "prev_spread_count": prev_spr.get("bets", 0),
+        "prev_total_count": prev_tot.get("bets", 0),
+        "prev_spread_wins": prev_spr.get("wins", 0),
+        "prev_total_wins": prev_tot.get("wins", 0),
+        "model_name": system_name,
+        "model_id": model_id,
         "curr_year": args.year,
         "curr_through_week": args.week,
-        "curr_spread": curr_spread,
-        "curr_total": curr_total,
-        "curr_spread_count": curr_spread_n,
-        "curr_total_count": curr_total_n,
-        "curr_spread_wins": curr_spread_wins,
-        "curr_total_wins": curr_total_wins,
-        "last_year_week_spread": lastyr_week_spr,
-        "last_year_week_total": lastyr_week_tot,
-        "last_year_week_spread_count": lastyr_week_spr_n,
-        "last_year_week_total_count": lastyr_week_tot_n,
-        "last_year_week_spread_wins": lastyr_week_spr_wins,
-        "last_year_week_total_wins": lastyr_week_tot_wins,
+        # Override with System YTD if available
+        "curr_spread": curr_spr.get("roi", 0.0)
+        if use_system_ytd
+        else (curr_spread or 0.0),
+        "curr_total": curr_tot.get("roi", 0.0)
+        if use_system_ytd
+        else (curr_total or 0.0),
+        "curr_spread_count": curr_spr.get("bets", 0)
+        if use_system_ytd
+        else (curr_spread_n or 0),
+        "curr_total_count": curr_tot.get("bets", 0)
+        if use_system_ytd
+        else (curr_total_n or 0),
+        "curr_spread_wins": curr_spr.get("wins", 0)
+        if use_system_ytd
+        else (curr_spread_wins or 0),
+        "curr_total_wins": curr_tot.get("wins", 0)
+        if use_system_ytd
+        else (curr_total_wins or 0),
+        "last_year_week_spread": prev_wk_spr.get("roi", 0.0),
+        "last_year_week_total": prev_wk_tot.get("roi", 0.0),
+        "last_year_week_spread_count": prev_wk_spr.get("bets", 0),
+        "last_year_week_total_count": prev_wk_tot.get("bets", 0),
+        "last_year_week_spread_wins": prev_wk_spr.get("wins", 0),
+        "last_year_week_total_wins": prev_wk_tot.get("wins", 0),
     }
 
     # Get Best Bet History
-    try:
-        from scripts.analyze_best_bets import analyze_best_bets
-
-        bb_record, bb_pct = analyze_best_bets(
-            year=args.year, start_week=2, end_week=args.week
-        )
-        best_bet_record = f"{bb_record} ({bb_pct})"
-    except Exception as e:
-        print(f"Error analyzing best bets: {e}")
-        best_bet_record = "N/A"
+    best_bet_record = "N/A"
 
     context = {
         "year": args.year,

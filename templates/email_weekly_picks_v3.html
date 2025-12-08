@@ -512,7 +512,7 @@
                           model_context.prev_spread_count -
                           model_context.prev_spread_wins }}
                           <br /><span style="font-size: 10px; color: #64748b"
-                            >{{ (model_context.prev_spread * 100) | round(1)
+                            >{{ "%+.1f"|format(model_context.prev_spread * 100)
                             }}%</span
                           >
                           {% else %} - {% endif %}
@@ -523,7 +523,7 @@
                           model_context.prev_total_count -
                           model_context.prev_total_wins }}
                           <br /><span style="font-size: 10px; color: #64748b"
-                            >{{ (model_context.prev_total * 100) | round(1)
+                            >{{ "%+.1f"|format(model_context.prev_total * 100)
                             }}%</span
                           >
                           {% else %} - {% endif %}

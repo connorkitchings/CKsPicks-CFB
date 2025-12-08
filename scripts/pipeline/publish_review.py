@@ -228,6 +228,7 @@ def main() -> None:
             return
 
     # --- 2. Load the Weekly Bets CSV ---
+    report_dir_path = Path(args.report_dir)
     # Try production scored first
     prod_scored = Path(
         f"data/production/scored/{args.year}/CFB_week{args.week}_bets_scored.csv"
@@ -237,7 +238,6 @@ def main() -> None:
         bets_file = prod_scored
     else:
         # Fallback to reports dir
-        report_dir_path = Path(args.report_dir)
         scored_dir = report_dir_path / str(args.year) / SCORED_SUBDIR
         if scored_dir.exists():
             bets_file = scored_dir / f"CFB_week{args.week}_bets_scored.csv"
@@ -278,6 +278,16 @@ def main() -> None:
         "%I:%M %p"
     )
     all_games_df = all_games_df.sort_values(by="game_datetime_et")
+
+    # Normalize bet columns
+    if "Spread Bet" in all_games_df.columns:
+        all_games_df["Spread Bet"] = (
+            all_games_df["Spread Bet"].astype(str).str.lower().str.strip()
+        )
+    if "Total Bet" in all_games_df.columns:
+        all_games_df["Total Bet"] = (
+            all_games_df["Total Bet"].astype(str).str.lower().str.strip()
+        )
 
     # --- 3. Process Data for Email ---
     spread_bets = all_games_df[all_games_df["Spread Bet"].isin(["home", "away"])].copy()

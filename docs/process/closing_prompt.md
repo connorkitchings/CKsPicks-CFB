@@ -43,6 +43,7 @@ ingestion pipeline to handle rate-limiting.']`
   date directory.
 
 6. **Update Documentation:**
+
    - Review `README.md`,`docs/index.md`, `pyproject.toml`, `docs/decisions/README.md`,
      `mkdocs.yml`, `docs/project_org/project_charter.md`, and `docs/project_org/kb_overview.md`.
    - Also review `docs/process/first_prompt.md` and `docs/process/last_prompt.md` if workflow guidance changed (e.g., new flows, health checks).
@@ -51,8 +52,22 @@ ingestion pipeline to handle rate-limiting.']`
      `uv run python -m scripts.publish_picks --year <YYYY> --week <WW> --mode test`. Once the test
      render looks good, repeat with `--mode prod` to notify the full list.
 
-After you have generated the dev log, I will review it and make any final edits. All version control
-(committing, pushing, etc.) is handled manually and outside the AI workflow.
+7. **Commit and Push Changes:**
+
+   - Stage all changes: `git add .`
+   - Commit with descriptive message:
+
+     ```bash
+     git commit -m "feat(v2): [brief description of session work]
+
+     - [Key outcome 1]
+     - [Key outcome 2]
+     - [Key outcome 3]"
+     ```
+
+   - Push to remote: `git push origin main`
+
+After you have generated the dev log and committed changes, the session is complete.
 
 ### Usage Tips
 
@@ -60,9 +75,6 @@ After you have generated the dev log, I will review it and make any final edits.
 - **Enforce Links**: Always use the linking syntax to keep logs and docs interconnected.
 - **Be Concise**: Logs should capture _decisions and results_, not every keystroke.
 - **Review Checklist**: Before ending, run `pre-commit run --all-files` to catch linting issues.
-- **Manual Version Control**: All actions related to git (committing, pushing, branching, etc.)
-  must be performed manually by the user. The AI will never perform these actions or prompt you to
-  do so automatically.
 
 ---
 

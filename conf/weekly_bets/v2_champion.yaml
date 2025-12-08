@@ -1,0 +1,34 @@
+# V2 Weekly Bets Configuration
+# Uses V2 Champion Models (Linear + Recency Weighted Features)
+system_name: "Trench Warfare V2"
+model_id: "TW-V2-2025"
+
+# Season and week settings
+year: 2025
+week: 16  # CFP Quarterfinals (update as needed)
+
+# Betting thresholds (from Dec 7 threshold optimization)
+spread_edge_threshold: 7.0   # pts edge required for spread bets
+total_edge_threshold: 0.5    # pts edge required for total bets
+
+# Model paths (local joblib files)
+models:
+  spread:
+    path: models/linear_spread_target.joblib
+    features: conf/features/matchup_v1.yaml
+    target: spread_target
+  total:
+    path: models/linear_total_target.joblib
+    features: conf/features/matchup_v1.yaml
+    target: total_target
+
+# Feature parameters
+features:
+  type: recency
+  alpha: 0.3  # EWMA decay parameter
+
+# Training data reference (for context, not used in prediction)
+training:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+  deploy_year: 2025

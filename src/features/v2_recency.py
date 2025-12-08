@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
@@ -72,7 +73,7 @@ def aggregate_team_season_ewma(team_game_df, alpha):
     return team_season
 
 
-def load_v2_recency_data(year, alpha=0.5, iterations=4):
+def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     """
     Load raw team-game data, calculate EWMA stats, apply adjustment, and return training/test DF.
     """
@@ -92,6 +93,84 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4):
         return None
 
     team_game_df = pd.DataFrame.from_records(records)
+
+    # Normalize Weeks for Postseason (Week 1 -> Week 16+)
+    # We need to map game_id to season_type to identify postseason games
+    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
+    games = raw_storage.read_index("games", {"year": year})
+    games_df = pd.DataFrame(games)
+    if "id" in games_df.columns:
+        games_df = games_df.rename(columns={"id": "game_id"})
+
+    # Create mapping: game_id -> season_type
+    if "season_type" in games_df.columns:
+        # Fill missing season_type with regular
+        games_df["season_type"] = games_df["season_type"].fillna("regular")
+
+        # Adjust week in games_df first
+        # Assuming regular season max week is 15. Postseason week 1 becomes 16.
+        # Check specific values
+        games_df["week"] = np.where(
+            games_df["season_type"] == "postseason",
+            games_df["week"] + 15,
+            games_df["week"],
+        )
+
+        # Map back to team_game_df
+        # We can merge on game_id
+        week_map = games_df[["game_id", "week"]].set_index("game_id")["week"]
+
+        # Update team_game_df week
+        # Only update if game_id exists in map (it should)
+        team_game_df["week"] = (
+            team_game_df["game_id"].map(week_map).fillna(team_game_df["week"])
+        )
+
+    if for_prediction:
+        # Load raw schedule to ensure future games are present
+        # We need LocalStorage initialized with raw
+        raw_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="raw"
+        )
+        games = raw_storage.read_index("games", {"year": year})
+        games_df = pd.DataFrame(games)
+
+        # Rename id to game_id if needed
+        if "id" in games_df.columns:
+            games_df = games_df.rename(columns={"id": "game_id"})
+
+        # Identify missing games in team_game_df
+        existing_ids = set(team_game_df["game_id"].unique())
+        future_games = games_df[~games_df["game_id"].isin(existing_ids)]
+
+        if not future_games.empty:
+            print(f"Injecting {len(future_games)} future games for prediction...")
+            rows = []
+            for _, g in future_games.iterrows():
+                rows.append(
+                    {
+                        "season": g["season"],
+                        "week": g["week"],  # Already adjusted above
+                        "game_id": g["game_id"],
+                        "team": g["home_team"],
+                        "opponent": g["away_team"],
+                        "home_away": "home",
+                        "date": g.get("start_date"),
+                    }
+                )
+                rows.append(
+                    {
+                        "season": g["season"],
+                        "week": g["week"],  # Already adjusted above
+                        "game_id": g["game_id"],
+                        "team": g["away_team"],
+                        "opponent": g["home_team"],
+                        "home_away": "away",
+                        "date": g.get("start_date"),
+                    }
+                )
+            future_df = pd.DataFrame(rows)
+            team_game_df = pd.concat([team_game_df, future_df], ignore_index=True)
 
     # Calculate EWMA Unadjusted
     print(f"Calculating EWMA (alpha={alpha}) for {year}...")
@@ -127,14 +206,24 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4):
         adj_df = adj_df[adj_df["iteration"] == iterations]
         adj_dfs.append(adj_df)
 
-    full_adj_df = pd.concat(adj_dfs, ignore_index=True)
+    if not adj_dfs:
+        # If no adjusted stats, we can't do much.
+        # But for prediction, we might be predicting Week 1. (which has no prior stats)
+        # In that case, we return what we can?
+        # But team_season depends on PRIOR games.
+        pass
+
+    if adj_dfs:
+        full_adj_df = pd.concat(adj_dfs, ignore_index=True)
+    else:
+        full_adj_df = pd.DataFrame()  # Should fallback or handle empty
 
     # Merge with Targets (Merge Home/Away for training)
     # Re-use v1_pipeline merge logic or implement simpler one here
-    return _merge_for_training(full_adj_df, year)
+    return _merge_for_training(full_adj_df, year, for_prediction=for_prediction)
 
 
-def _merge_for_training(team_stats, year):
+def _merge_for_training(team_stats, year, for_prediction=False):
     # Load Games (Targets)
     data_root = get_data_root()
     raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
@@ -143,6 +232,16 @@ def _merge_for_training(team_stats, year):
 
     if "id" in games_df.columns:
         games_df = games_df.rename(columns={"id": "game_id"})
+
+    # Normalize Weeks for Postseason in Games DF (for accurate filtering/merging)
+    if "season_type" in games_df.columns:
+        games_df["season_type"] = games_df["season_type"].fillna("regular")
+        # Assuming regular season max week is 15. Postseason week 1 becomes 16.
+        games_df["week"] = np.where(
+            games_df["season_type"] == "postseason",
+            games_df["week"] + 15,
+            games_df["week"],
+        )
 
     # Betting Lines
     betting = raw_storage.read_index("betting_lines", {"year": year})
@@ -161,26 +260,10 @@ def _merge_for_training(team_stats, year):
 
     # Merge Home/Away Stats
     # team_stats has 'team' column.
-    # games_df has 'home_team', 'away_team'.
-    # Join on game_id is cleaner.
-
-    # But team_stats keys are (game_id, team).
-    # team_stats contains the stats *entering* the game_id.
-
-    # NOTE: home_stats rename was unused - the merge below uses team_stats directly
-    # and renames columns via the merge's suffixes and the rename_map at the end
-    # Remove team name from merge key if present, but we need to match home_team?
-    # Actually, if we merge on game_id and team, we need to know who is home.
-    # Better:
-    # 1. Merge game_df with home_stats on (game_id, home_team)
-    # 2. Merge with away_stats on (game_id, away_team)
-
-    # Need 'team' column in home_stats matching 'home_team' in games
-
-    # Normalize names function might be needed? assuming IDs/Names align from ingestion
 
     # Filter valid games
-    games_df = games_df[games_df["completed"]]
+    if not for_prediction:
+        games_df = games_df[games_df["completed"]]
 
     # Prepare stats
     # team_stats has 'team'.

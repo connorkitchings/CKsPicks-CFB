@@ -765,6 +765,8 @@ def apply_iterative_opponent_adjustment(
         "epa_pp",
         "sr",
         "ypp",
+        "rush_ypp",  # Added for matchup features
+        "pass_ypp",  # Added for matchup features
         "expl_rate_overall_10",
         "expl_rate_overall_20",
         "expl_rate_overall_30",

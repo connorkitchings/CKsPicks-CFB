@@ -162,9 +162,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest betting lines from CFBD API.")
     parser.add_argument("--year", type=int, default=2024)
     parser.add_argument("--week", type=int, default=None)
+    parser.add_argument(
+        "--season_type", type=str, default="regular", help="regular or postseason"
+    )
     args = parser.parse_args()
 
-    ingester = BettingLinesIngester(year=args.year, week=args.week)
+    ingester = BettingLinesIngester(
+        year=args.year, week=args.week, season_type=args.season_type
+    )
     ingester.run()
 
 

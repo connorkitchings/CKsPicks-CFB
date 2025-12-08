@@ -13,7 +13,8 @@ sys.path.append(os.getcwd())
 # noqa: E402
 from src.config import get_data_root
 from src.features.selector import select_features
-from src.models.features import load_weekly_team_features
+
+# from src.models.features import load_weekly_team_features
 from src.utils.local_storage import LocalStorage
 from src.utils.mlflow_tracking import setup_mlflow
 
@@ -105,34 +106,116 @@ def main():
 
     setup_mlflow()
 
-    # Load Models from MLflow
-    print("Loading models from MLflow...")
-    spread_model_name = cfg.model_registry.spread_models[0]
-    total_model_name = cfg.model_registry.total_models[0]
+    # Load Models and Feature Configs
+    # Support both MLflow registry (legacy) and local paths (V2)
 
-    print(f"Loading Spread Model: {spread_model_name}")
-    spread_model = mlflow.pyfunc.load_model(f"models:/{spread_model_name}/Production")
+    # Spread
+    if "models" in cfg and "spread" in cfg.models and "path" in cfg.models.spread:
+        print(f"Loading Spread Model from local path: {cfg.models.spread.path}")
+        from joblib import load
 
-    print(f"Loading Total Model: {total_model_name}")
-    total_model = mlflow.pyfunc.load_model(f"models:/{total_model_name}/Production")
+        spread_model = load(cfg.models.spread.path)
+        spread_feat_path = cfg.models.spread.get(
+            "features", "conf/features/ppr_v1.yaml"
+        )
+    else:
+        spread_model_name = cfg.model_registry.spread_models[0]
+        print(f"Loading Spread Model from MLflow: {spread_model_name}")
+        spread_model = mlflow.pyfunc.load_model(
+            f"models:/{spread_model_name}/Production"
+        )
+        spread_feat_path = "conf/features/ppr_v1.yaml"
 
-    # Load Feature Configs
-    # Assuming standard locations for now, or we could add to config
-    spread_feat_cfg = OmegaConf.load("conf/features/ppr_v1.yaml")
-    total_feat_cfg = OmegaConf.load("conf/features/standard_v1.yaml")
+    print(f"Loading Spread Features from: {spread_feat_path}")
+    spread_feat_cfg = OmegaConf.load(spread_feat_path)
+    # Check for overrides in main config
+    if "features" in cfg:
+        # If main config has feature params (e.g. alpha), merge them
+        if "params" in cfg.features:
+            spread_feat_cfg["params"] = cfg.features.params
+
+    # Total
+    if "models" in cfg and "total" in cfg.models and "path" in cfg.models.total:
+        print(f"Loading Total Model from local path: {cfg.models.total.path}")
+        from joblib import load
+
+        total_model = load(cfg.models.total.path)
+        total_feat_path = cfg.models.total.get(
+            "features", "conf/features/standard_v1.yaml"
+        )
+    else:
+        total_model_name = cfg.model_registry.total_models[0]
+        print(f"Loading Total Model from MLflow: {total_model_name}")
+        total_model = mlflow.pyfunc.load_model(f"models:/{total_model_name}/Production")
+        total_feat_path = "conf/features/standard_v1.yaml"
+
+    print(f"Loading Total Features from: {total_feat_path}")
+    total_feat_cfg = OmegaConf.load(total_feat_path)
+    if "features" in cfg and "params" in cfg.features:
+        total_feat_cfg["params"] = cfg.features.params
 
     spread_full_cfg = OmegaConf.create({"features": spread_feat_cfg})
     total_full_cfg = OmegaConf.create({"features": total_feat_cfg})
 
+    # Load Data
+    # For V2, we might need to pass feature params (alpha, type) to load function
+    # load_week_data currently doesn't support alpha...
+    # But wait, load_week_data loads `team_week_adj` which assumes PRE-CALCULATED stats.
+    # The pipeline step `run_pipeline_generic` calculated `team_week_adj` for specific iterations.
+    # Recency type=recency in `matchup_v1` implies we rely on `v2_recency` to load data?
+    # NO. `generate_weekly_bets` expects `adjustment_iteration` to load from `team_week_adj`.
+    # `matchup_v1` has `params: type: recency, alpha: 0.3`.
+    # `v2_recency.py` calculates stats ON THE FLY or loads them.
+    # THE V2 PIPELINE for `matchup_v1` works differently than V1 `load_weekly_team_features`.
+
+    # We need to detect if configs require V2 Recency loading
+    use_recency = False
+    alpha = 0.5
+    if "features" in cfg and cfg.features.get("type") == "recency":
+        use_recency = True
+        alpha = cfg.features.get("alpha", 0.5)
+
     try:
-        data_df = load_week_data(
-            year, week, adjustment_iteration=args.adjustment_iteration
-        )
+        if use_recency:
+            print(f"Using V2 Recency Loading (alpha={alpha})...")
+            from src.features.v2_recency import load_v2_recency_data
+
+            # load_v2_recency_data loads the WHOLE YEAR. We filter for week.
+            full_year_df = load_v2_recency_data(
+                year,
+                alpha=alpha,
+                iterations=args.adjustment_iteration,
+                for_prediction=True,
+            )
+            if full_year_df is None or full_year_df.empty:
+                print("No data found via V2 Recency loader.")
+                return
+
+            # Filter for requested week
+            data_df = full_year_df[full_year_df["week"] == week].copy()
+            # Rename columns if needed? load_v2_recency_data returns `home_...` `away_...` compatible with training.
+            # Does it have `id` for game_id?
+            # It has `game_id`.
+            if "id" not in data_df.columns and "game_id" in data_df.columns:
+                data_df = data_df.rename(columns={"game_id": "id"})
+
+            # Ensure betting lines are there (load_v2_recency_data merges them)
+            if (
+                "home_team_spread_line" not in data_df.columns
+                and "spread_line" in data_df.columns
+            ):
+                data_df = data_df.rename(
+                    columns={"spread_line": "home_team_spread_line"}
+                )
+
+        else:
+            raise NotImplementedError("Legacy loading not supported in V2 pipeline.")
+
         if data_df.empty:
             print(f"No games found for Week {week}. Exiting.")
             return
 
-        # Calculate missing tempo features
+        # Calculate missing tempo features (needed only for V1 models usually, but checking anyway)
         if (
             "home_plays_per_game" in data_df.columns
             and "away_plays_per_game" in data_df.columns
@@ -144,7 +227,7 @@ def main():
                 data_df["home_plays_per_game"] + data_df["away_plays_per_game"]
             )
         else:
-            print("Warning: plays_per_game missing, cannot calculate tempo features.")
+            # print("Warning: plays_per_game missing, cannot calculate tempo features.")
             data_df["tempo_contrast"] = 0.0
             data_df["tempo_total"] = 0.0
 
@@ -156,10 +239,14 @@ def main():
         }
         for col, default_val in weather_defaults.items():
             if col not in data_df.columns:
-                print(f"Warning: {col} missing, filling with default {default_val}")
+                # print(f"Warning: {col} missing, filling with default {default_val}")
                 data_df[col] = default_val
 
+        # Reset index to ensure alignment with predictions array
+        data_df = data_df.reset_index(drop=True)
+
         # Predict Spread
+        # For V2 models (linear), we need to ensure features match exactly
         x_spread = select_features(data_df, spread_full_cfg)
         spread_preds = spread_model.predict(x_spread)
 

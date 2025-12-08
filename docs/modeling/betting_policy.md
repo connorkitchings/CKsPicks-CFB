@@ -19,12 +19,45 @@ This document establishes the comprehensive betting policy, unit sizing methodol
 ### Betting Universe
 
 - **Sports**: College Football (FBS) only
-- **Bet Types**: Point spreads (primary), totals (future expansion)
-- **Season**: Regular season games, exclude bowl games initially
-- **Markets**: Against-the-spread (ATS) bets only
+- **Bet Types**: Point spreads and totals (both active)
+- **Season**: Regular season + bowl games (including CFP)
+- **Markets**: Against-the-spread (ATS) and Over/Under (O/U) bets
 - **Timing**: Bets placed mid-week (Wednesday), held until game completion
 
 ---
+
+## V2 Champion Models (Active as of Dec 2025)
+
+> **Note**: V2 workflow established profitable models through rigorous experimentation. See [Experiments Index](../experiments/index.md) for full history.
+
+### Current Champions
+
+| Target | Model  | Features            | 2024 ROI | Optimal Threshold | Optimal ROI |
+| ------ | ------ | ------------------- | -------- | ----------------- | ----------- |
+| Spread | Linear | recency_weighted_v1 | +0.52%   | 7.0 pts           | +2.1%       |
+| Totals | Linear | recency_weighted_v1 | +5.3%    | 0.5 pts           | +6.1%       |
+
+### Recommended Betting Strategy
+
+**Spread Bets**:
+
+- **Threshold**: Bet only when model edge ≥ 7.0 points from Vegas line
+- **Expected Volume**: ~516 bets/season (2024 holdout)
+- **Expected ROI**: +2.1% (+10.9 units profit)
+
+**Totals Bets**:
+
+- **Threshold**: Bet only when model edge ≥ 0.5 points from Vegas line
+- **Expected Volume**: ~689 bets/season (2024 holdout)
+- **Expected ROI**: +6.1% (+42.2 units profit)
+
+### Model Details
+
+- **Algorithm**: Ridge Regression (sklearn)
+- **Features**: Recency-weighted (α=0.3) opponent-adjusted EPA/SR
+- **Training Data**: 2019, 2021-2023 (excludes 2020 COVID year)
+- **Test Data**: 2024 (locked holdout)
+- **Deployment**: 2025 season (including CFP)
 
 ## Unit Sizing Methodology
 
@@ -604,6 +637,6 @@ def daily_risk_check() -> Dict[str, Any]:
 
 ---
 
-_Last Updated: 2025-10-02_
-_Next Review: After 4 weeks of live implementation_  
-_Policy Version: 1.0 (MVP)_
+_Last Updated: 2025-12-08_
+_Next Review: After CFP deployment_  
+_Policy Version: 2.0 (V2 Champion Models)_

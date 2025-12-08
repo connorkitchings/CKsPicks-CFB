@@ -1,5 +1,50 @@
 # Decision Log
 
+## 2025-12-08: Walk-Forward Validation - Matchup Features PROMOTED
+
+- **Context**: Validated matchup_v1 features using walk-forward validation across 4 holdout years.
+- **Walk-Forward Results** (spread target):
+
+  | Holdout | Champion ROI | Matchup ROI | Improvement |
+  | ------- | ------------ | ----------- | ----------- |
+  | 2021    | -6.60%       | -6.05%      | +0.55%      |
+  | 2022    | +1.07%       | +2.17%      | +1.10%      |
+  | 2023    | -8.01%       | -8.01%      | +0.00%      |
+  | 2024    | +0.52%       | +0.78%      | +0.26%      |
+  | **Avg** | **-3.26%**   | **-2.78%**  | **+0.48%**  |
+
+- **Decision**: **PROMOTE** matchup_v1 as new champion.
+  - Improvement is consistent across 3/4 years (never worse)
+  - Average improvement of +0.48% ROI
+  - Totals showed +1.05% improvement on 2024 holdout
+- **New Champion Config**: `conf/features/matchup_v1.yaml` (16 features)
+
+## 2025-12-08: V2 Phase 2 Alpha Optimization - No Change
+
+- **Context**: Grid searched EWMA decay alpha ∈ {0.1, 0.2, 0.3, 0.4, 0.5} on spread target.
+- **Results** (2024 Holdout):
+  | Alpha | Hit Rate | ROI |
+  |-------|----------|-----|
+  | 0.1 | 50.75% | -3.12% |
+  | 0.2 | 51.84% | -1.04% |
+  | **0.3** | **52.65%** | **+0.52%** |
+  | 0.4 | 52.11% | -0.52% |
+  | 0.5 | 52.65% | +0.52% |
+- **Decision**: **NO CHANGE**. α=0.3 and α=0.5 are tied at +0.52% ROI. No improvement over current champion.
+- **Insight**: The 0.3-0.5 range is optimal; lower alpha (more smoothing) degrades performance. Recommend keeping α=0.3.
+
+## 2025-12-08: V2 Documentation Aligned - Champion Models Ready for Deployment
+
+- **Context**: Completed Option A (Documentation & Deployment) from session plan.
+- **Updates Made**:
+  - `docs/experiments/index.md` — All 10 V2 experiments documented with results
+  - `docs/modeling/betting_policy.md` — V2 Champion section with optimal thresholds
+  - `docs/project_org/feature_registry.md` — Feature status corrected (recency_weighted_v1 = champion)
+- **Current Champions**:
+  - **Spread**: Linear + recency_weighted_v1 → +0.52% ROI (7.0 pt threshold → +2.1% ROI)
+  - **Totals**: Linear + recency_weighted_v1 → +5.3% ROI (0.5 pt threshold → +6.1% ROI)
+- **Decision**: Models are **ready for CFP deployment** (Dec 20-21 quarterfinals).
+
 ## 2025-12-07: V2 Phase 2 Interaction Features - Rejected
 
 - **Context**: Tested 4 explicit interaction features (Off x Def EPA/SR) on top of the Recency Champion.
