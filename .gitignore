@@ -229,11 +229,13 @@ site/
 # Keep: directory structure, READMEs, metadata files
 # Exclude: model binaries, large CSVs, plots, personal workspace
 
-# MLflow tracking (keep structure, exclude large artifacts)
-artifacts/mlruns/*/artifacts/
-artifacts/mlruns/*/metrics/
-artifacts/mlruns/*/params/
-artifacts/mlruns/*/tags/
+# MLflow tracking (exclude all run data, keep only meta.yaml files for structure)
+artifacts/mlruns/[0-9]*/
+artifacts/mlruns/.trash/
+
+# Top-level MLflow and models (created during training, should be in artifacts/)
+/mlruns/
+/models/
 
 # Models (exclude binaries, keep metadata)
 artifacts/models/**/*.joblib
