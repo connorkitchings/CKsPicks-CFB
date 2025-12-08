@@ -11,69 +11,8 @@ from omegaconf import OmegaConf
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.config import get_data_root
 from src.features.selector import select_features
-
-# from src.models.features import load_weekly_team_features
-from src.utils.local_storage import LocalStorage
 from src.utils.mlflow_tracking import setup_mlflow
-
-
-def load_week_data(year, week, adjustment_iteration: int = 2):
-    data_root = get_data_root()
-    raw = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-
-    # Load features (align with training split defaults; fall back to legacy layout)
-    team_features = load_weekly_team_features(
-        year, week, data_root, adjustment_iteration=adjustment_iteration
-    )
-    if team_features is None:
-        raise ValueError("No team features found")
-
-    # Load games
-    games = pd.DataFrame.from_records(raw.read_index("games", {"year": year}))
-    week_games = games[games["week"] == week].copy()
-    week_games = week_games.drop_duplicates(subset=["id"], keep="last")
-
-    # Merge features
-    home_feats = team_features.add_prefix("home_")
-    away_feats = team_features.add_prefix("away_")
-
-    merged = week_games.merge(
-        home_feats,
-        left_on=["season", "home_team"],
-        right_on=["home_season", "home_team"],
-        how="left",
-    )
-    merged = merged.merge(
-        away_feats,
-        left_on=["season", "away_team"],
-        right_on=["away_season", "away_team"],
-        how="left",
-    )
-
-    # Promote game-level weather columns (per-game values duplicated across teams)
-    for col in ["temperature", "wind_speed", "precipitation"]:
-        home_col = f"home_{col}"
-        away_col = f"away_{col}"
-        if home_col in merged.columns or away_col in merged.columns:
-            merged[col] = merged.get(home_col)
-            if away_col in merged.columns:
-                merged[col] = merged[col].combine_first(merged[away_col])
-
-    # Load lines
-    lines = pd.DataFrame.from_records(
-        raw.read_index("betting_lines", {"year": year, "week": week})
-    )
-    if not lines.empty:
-        # Simple dedupe
-        lines = lines.sort_values("provider").groupby("game_id", as_index=False).first()
-        # Rename cols if needed
-        rename_map = {"over_under": "total_line", "spread": "home_team_spread_line"}
-        lines = lines.rename(columns=rename_map)
-        merged = merged.merge(lines, left_on="id", right_on="game_id", how="left")
-
-    return merged
 
 
 def main():

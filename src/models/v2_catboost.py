@@ -8,20 +8,22 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
 class V2CatBoostModel:
-    def __init__(self, features=None, **params):
+    def __init__(self, features=None, target="spread_target", **params):
         """
         Wrapper for CatBoostRegressor.
         Args:
             features: List of feature names to use.
+            target: The target column name ('spread_target' or 'total_target').
             **params: CatBoost hyperparameters.
         """
         self.features = features
+        self.target = target
         self.model = CatBoostRegressor(**params)
         self.params = params
 
     def fit(self, df):
         # Drop rows with missing target
-        df_clean = df.dropna(subset=["spread_target"])
+        df_clean = df.dropna(subset=[self.target])
 
         # Select features
         if self.features:
@@ -30,7 +32,7 @@ class V2CatBoostModel:
             # Fallback if no features specified (shouldn't happen in V2)
             raise ValueError("V2CatBoostModel requires explicit features list")
 
-        y = df_clean["spread_target"]
+        y = df_clean[self.target]
 
         print(f"DEBUG: X shape: {x.shape}, Y shape: {y.shape}")
 
@@ -46,9 +48,9 @@ class V2CatBoostModel:
         return self.model.predict(x)
 
     def evaluate(self, df):
-        df_clean = df.dropna(subset=["spread_target"])
+        df_clean = df.dropna(subset=[self.target])
         preds = self.predict(df_clean)
-        actuals = df_clean["spread_target"]
+        actuals = df_clean[self.target]
 
         metrics = {}
 
@@ -56,8 +58,8 @@ class V2CatBoostModel:
         metrics["rmse"] = np.sqrt(mean_squared_error(actuals, preds))
         metrics["mae"] = mean_absolute_error(actuals, preds)
 
-        # Betting Metrics (Hit Rate & ROI)
-        if "spread_line" in df_clean.columns:
+        # Betting Metrics (Hit Rate & ROI) - Determine based on target type
+        if self.target == "spread_target" and "spread_line" in df_clean.columns:
             # spread_line is Home Spread (e.g. -7 means Home favored by 7)
             # We predict Home Margin (Home - Away)
             # Vegas Margin = -1 * spread_line (e.g. -7 line -> Vegas expects +7 margin)
@@ -89,6 +91,36 @@ class V2CatBoostModel:
                 metrics["hit_rate"] = 0.0
                 metrics["roi"] = 0.0
                 metrics["n_bets"] = 0
+
+        elif self.target == "total_target" and "total_line" in df_clean.columns:
+            vegas_line = df_clean["total_line"]
+            bet_over = preds > vegas_line
+            bet_under = preds < vegas_line
+
+            outcome_over = actuals > vegas_line
+            outcome_under = actuals < vegas_line
+
+            wins = (bet_over & outcome_over) | (bet_under & outcome_under)
+            losses = (bet_over & outcome_under) | (bet_under & outcome_over)
+
+            n_bets = wins.sum() + losses.sum()
+            if n_bets > 0:
+                hit_rate = wins.sum() / n_bets
+                profit = (wins.sum() * 0.90909) - losses.sum()
+                roi = profit / n_bets
+
+                metrics["hit_rate"] = hit_rate
+                metrics["roi"] = roi
+                metrics["n_bets"] = n_bets
+            else:
+                metrics["hit_rate"] = 0.0
+                metrics["roi"] = 0.0
+                metrics["n_bets"] = 0
+        else:
+            # If target is not spread or total, or missing line, no betting metrics
+            metrics["hit_rate"] = 0.0
+            metrics["roi"] = 0.0
+            metrics["n_bets"] = 0
 
         return metrics
 

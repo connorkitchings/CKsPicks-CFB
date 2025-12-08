@@ -8,11 +8,11 @@ def run_validation():
     print("=== Walk-Forward Validation: Totals (Matchup V1) ===")
 
     # Configuration
-    ALPHA = 0.3
-    HOLDOUT_YEARS = [2021, 2022, 2023, 2024]
+    alpha = 0.3
+    holdout_years = [2021, 2022, 2023, 2024]
 
     # Feature Set (from matchup_v1.yaml)
-    FEATURES = [
+    features = [
         "home_adj_off_epa_pp",
         "home_adj_def_epa_pp",
         "home_adj_off_sr",
@@ -31,12 +31,12 @@ def run_validation():
         "away_adj_def_pass_ypp",
     ]
 
-    TARGET = "total_target"
+    target = "total_target"
 
     # Results storage
     results = []
 
-    for test_year in HOLDOUT_YEARS:
+    for test_year in holdout_years:
         print(f"\nProcessing Holdout Year: {test_year}")
 
         # Define training years (All available years PRIOR to test_year, excluding 2020)
@@ -55,7 +55,7 @@ def run_validation():
         for ty in train_years:
             try:
                 # Assuming alpha=0.3 consistent with Matchup V1 config
-                df = load_v2_recency_data(ty, alpha=ALPHA)
+                df = load_v2_recency_data(ty, alpha=alpha)
                 if df is not None:
                     train_dfs.append(df)
             except Exception as e:
@@ -70,7 +70,7 @@ def run_validation():
 
         # Load Test Data
         try:
-            test_df = load_v2_recency_data(test_year, alpha=ALPHA)
+            test_df = load_v2_recency_data(test_year, alpha=alpha)
         except Exception as e:
             print(f"  Error loading test data {test_year}: {e}")
             continue
@@ -82,7 +82,7 @@ def run_validation():
         print(f"  Test Size: {len(test_df)} games")
 
         # Train Model
-        model = V1BaselineModel(alpha=1.0, features=FEATURES, target=TARGET)
+        model = V1BaselineModel(alpha=1.0, features=features, target=target)
         model.fit(train_df)
 
         # Evaluate
@@ -93,19 +93,19 @@ def run_validation():
         # We should calculate strict ROI with the optimal threshold (0.5).
 
         preds = model.predict(test_df)
-        actuals = test_df[TARGET]
+        actuals = test_df[target]
         lines = test_df["total_line"] if "total_line" in test_df.columns else None
 
         metric_row = {"year": test_year}
 
         if lines is not None:
             # Calculate betting Performance with threshold=0.5
-            THRESHOLD = 0.5
+            threshold = 0.5
 
-            # Bet Over: Pred > Line + Threshold
-            bet_over = preds > (lines + THRESHOLD)
-            # Bet Under: Pred < Line - Threshold
-            bet_under = preds < (lines - THRESHOLD)
+            # Bet Over: Pred > Line + threshold
+            bet_over = preds > (lines + threshold)
+            # Bet Under: Pred < Line - threshold
+            bet_under = preds < (lines - threshold)
 
             outcome_over = actuals > lines
             outcome_under = actuals < lines

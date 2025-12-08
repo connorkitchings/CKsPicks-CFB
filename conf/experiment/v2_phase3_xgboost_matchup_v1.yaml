@@ -1,0 +1,9 @@
+# conf/experiment/v2_phase3_xgboost_matchup_v1.yaml
+defaults:
+  - override /model: xgboost_v1
+  - override /features: matchup_v1
+
+experiment:
+  name: v2_phase3_xgboost_matchup_v1
+  phase: 3
+  description: "Testing XGBoost with Matchup V1 features"

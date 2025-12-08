@@ -8,61 +8,70 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
 class V2XGBoostModel:
-    def __init__(self, features=None, **params):
+    def __init__(self, features=None, target="spread_target", **params):
         """
-        Wrapper for XGBRegressor.
+        Wrapper for XGBoostRegressor.
         Args:
             features: List of feature names to use.
+            target: The target column name ('spread_target' or 'total_target').
             **params: XGBoost hyperparameters.
         """
         self.features = features
-        self.model = xgb.XGBRegressor(**params)
+        self.target = target
         self.params = params
+        self.model = xgb.XGBRegressor(
+            **{k: v for k, v in params.items() if k != "early_stopping_rounds"}
+        )
 
     def fit(self, df):
-        # Drop rows with missing target
-        df_clean = df.dropna(subset=["spread_target"])
+        df_clean = df.dropna(subset=[self.target])
 
-        # Select features
         if self.features:
             x = df_clean[self.features]
         else:
             raise ValueError("V2XGBoostModel requires explicit features list")
 
-        y = df_clean["spread_target"]
+        y = df_clean[self.target]
 
-        # Fit model
-        self.model.fit(x, y, verbose=True)
+        early_stopping_rounds = self.params.get("early_stopping_rounds", None)
+        if early_stopping_rounds:
+            # Simple train/eval split for early stopping, ideally should use a dedicated validation set
+            split_idx = int(len(x) * 0.8)
+            x_train, x_val = x[:split_idx], x[split_idx:]
+            y_train, y_val = y[:split_idx], y[split_idx:]
+            self.model.fit(
+                x_train,
+                y_train,
+                eval_set=[(x_val, y_val)],
+                early_stopping_rounds=early_stopping_rounds,
+                verbose=False,
+            )
+        else:
+            self.model.fit(x, y)
 
     def predict(self, df):
         if self.features:
             x = df[self.features]
         else:
-            # Fallback (shouldn't happen in V2)
-            # Try to infer from columns if they match features (risky)
             raise ValueError("V2XGBoostModel requires explicit features list")
 
         return self.model.predict(x)
 
     def evaluate(self, df):
-        df_clean = df.dropna(subset=["spread_target"])
+        df_clean = df.dropna(subset=[self.target])
         preds = self.predict(df_clean)
-        actuals = df_clean["spread_target"]
+        actuals = df_clean[self.target]
 
         metrics = {}
-
-        # Standard Metrics
         metrics["rmse"] = np.sqrt(mean_squared_error(actuals, preds))
         metrics["mae"] = mean_absolute_error(actuals, preds)
 
         # Betting Metrics (Hit Rate & ROI)
-        if "spread_line" in df_clean.columns:
+        if self.target == "spread_target" and "spread_line" in df_clean.columns:
             vegas_line = df_clean["spread_line"]
             vegas_margin = -1 * vegas_line
-
             bet_home = preds > vegas_margin
             bet_away = preds < vegas_margin
-
             home_cover = actuals > vegas_margin
             away_cover = actuals < vegas_margin
 
@@ -82,13 +91,37 @@ class V2XGBoostModel:
                 metrics["hit_rate"] = 0.0
                 metrics["roi"] = 0.0
                 metrics["n_bets"] = 0
+        elif self.target == "total_target" and "total_line" in df_clean.columns:
+            vegas_line = df_clean["total_line"]
+            bet_over = preds > vegas_line
+            bet_under = preds < vegas_line
+
+            outcome_over = actuals > vegas_line
+            outcome_under = actuals < vegas_line
+
+            wins = (bet_over & outcome_over) | (bet_under & outcome_under)
+            losses = (bet_over & outcome_under) | (bet_under & outcome_over)
+
+            n_bets = wins.sum() + losses.sum()
+            if n_bets > 0:
+                hit_rate = wins.sum() / n_bets
+                profit = (wins.sum() * 0.90909) - losses.sum()
+                roi = profit / n_bets
+
+                metrics["hit_rate"] = hit_rate
+                metrics["roi"] = roi
+                metrics["n_bets"] = n_bets
+            else:
+                metrics["hit_rate"] = 0.0
+                metrics["roi"] = 0.0
+                metrics["n_bets"] = 0
+        else:
+            metrics["hit_rate"] = 0.0
+            metrics["roi"] = 0.0
+            metrics["n_bets"] = 0
 
         return metrics
 
     def save(self, path):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        # XGBoost requires .json or .ubj extension usually, or just use save_model
-        save_path = str(path)
-        if not save_path.endswith(".json"):
-            save_path += ".json"
-        self.model.save_model(save_path)
+        self.model.save_model(str(path))

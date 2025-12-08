@@ -82,7 +82,7 @@ def get_model(cfg: DictConfig, feature_override=None):
 
         params = cfg.model.get("params", {})
         params = OmegaConf.to_container(params, resolve=True)
-        return V2CatBoostModel(features=features, **params)
+        return V2CatBoostModel(features=features, target=cfg.model.target, **params)
     elif cfg.model.type == "xgboost":
         from src.models.v2_xgboost import V2XGBoostModel
 
@@ -91,7 +91,7 @@ def get_model(cfg: DictConfig, feature_override=None):
         # remove early_stopping_rounds from init params if passed, as it's usually for fit
         if "early_stopping_rounds" in params:
             del params["early_stopping_rounds"]
-        return V2XGBoostModel(features=features, **params)
+        return V2XGBoostModel(features=features, target=cfg.model.target, **params)
     elif cfg.model.type == "ensemble":
         from src.models.v2_ensemble import V2EnsembleModel
 
