@@ -1,3 +1,5 @@
+"""Ensemble Model Wrapper for V2 Pipeline."""
+
 from pathlib import Path
 
 import numpy as np

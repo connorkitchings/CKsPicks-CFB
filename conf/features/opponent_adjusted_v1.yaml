@@ -1,6 +1,6 @@
 name: opponent_adjusted_v1
 description: "Phase 2 - Opponent Adjusted EPA/SR"
-features:
+groups:
   - home_adj_off_epa_pp
   - home_adj_def_epa_pp
   - home_adj_off_sr

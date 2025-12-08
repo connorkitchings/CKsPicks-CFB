@@ -1,6 +1,7 @@
+"""CatBoost Model Wrapper for V2 Pipeline."""
+
 from pathlib import Path
 
-"""CatBoost Model Wrapper for V2 Pipeline."""
 import numpy as np
 from catboost import CatBoostRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error

@@ -33,7 +33,7 @@ def load_v1_data(year: int, features: list[str] | None = None):
 
     # Filter for completed games only (Data Quality)
     if "completed" in games_df.columns:
-        games_df = games_df[games_df["completed"] == True]
+        games_df = games_df[games_df["completed"]]
 
     # Also ensure scores are present (redundant but safe)
     if "home_points" in games_df.columns and "away_points" in games_df.columns:
@@ -58,9 +58,12 @@ def load_v1_data(year: int, features: list[str] | None = None):
 
         if "spread" in bet_df.columns:
             bet_df = bet_df.rename(columns={"spread": "spread_line"})
-            games_df = games_df.merge(
-                bet_df[["game_id", "spread_line"]], on="game_id", how="left"
-            )
+        if "over_under" in bet_df.columns:
+            bet_df = bet_df.rename(columns={"over_under": "total_line"})
+
+        games_df = games_df.merge(
+            bet_df[["game_id", "spread_line", "total_line"]], on="game_id", how="left"
+        )
     else:
         print(f"Warning: No betting lines found for {year}")
 
@@ -130,6 +133,9 @@ def load_v1_data(year: int, features: list[str] | None = None):
 
     # Calculate Target (Home - Away Score)
     merged["spread_target"] = merged["home_points"].astype(float) - merged[
+        "away_points"
+    ].astype(float)
+    merged["total_target"] = merged["home_points"].astype(float) + merged[
         "away_points"
     ].astype(float)
 

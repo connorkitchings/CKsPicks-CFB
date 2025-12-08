@@ -167,13 +167,8 @@ def _merge_for_training(team_stats, year):
     # But team_stats keys are (game_id, team).
     # team_stats contains the stats *entering* the game_id.
 
-    home_stats = team_stats.rename(
-        columns={
-            c: f"home_{c}"
-            for c in team_stats.columns
-            if c not in ["game_id", "season", "week"]
-        }
-    )
+    # NOTE: home_stats rename was unused - the merge below uses team_stats directly
+    # and renames columns via the merge's suffixes and the rename_map at the end
     # Remove team name from merge key if present, but we need to match home_team?
     # Actually, if we merge on game_id and team, we need to know who is home.
     # Better:
@@ -185,7 +180,7 @@ def _merge_for_training(team_stats, year):
     # Normalize names function might be needed? assuming IDs/Names align from ingestion
 
     # Filter valid games
-    games_df = games_df[games_df["completed"] == True]
+    games_df = games_df[games_df["completed"]]
 
     # Prepare stats
     # team_stats has 'team'.
@@ -210,6 +205,7 @@ def _merge_for_training(team_stats, year):
 
     # Calculate Target
     merged["spread_target"] = merged["home_points"] - merged["away_points"]
+    merged["total_target"] = merged["home_points"] + merged["away_points"]
 
     # Prefix features
     feature_cols = [

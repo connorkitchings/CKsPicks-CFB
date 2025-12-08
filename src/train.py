@@ -14,8 +14,11 @@ def load_and_prepare_data(cfg: DictConfig):
     """Load and concatenate data for configured years."""
     # Extract features list if available
     features = None
-    if "features" in cfg and "features" in cfg.features:
-        features = list(cfg.features.features)
+    if "features" in cfg:
+        if "groups" in cfg.features:
+            features = list(cfg.features.groups)
+        elif "features" in cfg.features:
+            features = list(cfg.features.features)
 
     # Load Training Data
     train_dfs = []
@@ -73,7 +76,7 @@ def get_model(cfg: DictConfig, feature_override=None):
         params = cfg.model.get("params", {})
         # Convert DictConfig to dict for unpacking
         params = OmegaConf.to_container(params, resolve=True)
-        return V1BaselineModel(features=features, **params)
+        return V1BaselineModel(features=features, target=cfg.model.target, **params)
     elif cfg.model.type == "catboost":
         from src.models.v2_catboost import V2CatBoostModel
 
@@ -132,10 +135,10 @@ def main(cfg: DictConfig):
         # Note: select_features modifies df in-place to add interactions,
         # then returns the selected subset. We want the side-effect (interactions added to df)
         # and the list of selected columns.
-        X_train = select_features(train_df, cfg)
-        X_test = select_features(test_df, cfg)
+        train_features = select_features(train_df, cfg)
+        _ = select_features(test_df, cfg)  # Apply same transforms to test (side-effect)
 
-        final_features = list(X_train.columns)
+        final_features = list(train_features.columns)
         print(f"Selected {len(final_features)} features (including interactions).")
 
         # Initialize Model
@@ -156,6 +159,8 @@ def main(cfg: DictConfig):
         # Save Model (Local & MLflow)
         # For now, just local save if model supports it
         if hasattr(model, "save"):
+            from src.config import get_repo_root
+
             # Determine extension
             ext = ".joblib"
             if cfg.model.type == "xgboost":
@@ -163,7 +168,10 @@ def main(cfg: DictConfig):
             elif cfg.model.type == "catboost":
                 ext = ".cbm"
 
-            model_path = Path("models") / f"{cfg.model.name}{ext}"
+            # Use absolute path relative to repo root
+            model_dir = get_repo_root() / "models"
+            model_dir.mkdir(parents=True, exist_ok=True)
+            model_path = model_dir / f"{cfg.model.name}_{cfg.model.target}{ext}"
             model.save(model_path)
 
             # wrapper might append extension, check for it
