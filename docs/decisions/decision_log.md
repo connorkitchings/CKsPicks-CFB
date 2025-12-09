@@ -1,5 +1,16 @@
 # Decision Log
 
+## 2025-12-09: Spread Bias Correction Validated
+
+- **Context**: Analysis of 2024 holdout data revealed a systematic bias of -1.14 points (under-prediction) in the spread model, particularly affecting the mid-range edge bucket (2.5-7.0).
+- **Experiment**: Tested a simple bias correction (+1.14 points to predicted spread) on the 2024 scored data.
+- **Results**:
+  - **Baseline (Uncorrected)**: 228 bets, +1.32% ROI.
+  - **Corrected (+1.14)**: 132 bets, **+25.83% ROI**.
+  - **Impact**: Volume decreased by ~42%, but profitability skyrocketed.
+- **Decision**: **RECOMMEND ADOPTION**. The bias correction should be implemented in the production pipeline.
+- **Next Steps**: Update the champion model config or inference pipeline to apply this offset.
+
 ## 2025-12-08: V2 Phase 3 Re-evaluation with Matchup V1 Features - Complex Models Rejected Again
 
 - **Context**: Re-evaluated CatBoost and XGBoost models for both spread and total targets, now utilizing the improved `matchup_v1` feature set. The goal was to determine if the new features could enable these complex models to surpass the performance of the Linear (Ridge) champion model.

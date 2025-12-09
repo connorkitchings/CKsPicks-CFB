@@ -6,6 +6,7 @@ This catalog defines the engineered features and fields used by the modeling pip
 It complements the V2 baseline documentation in [`docs/modeling/baseline.md`](baseline.md) and the weekly pipeline in [`docs/ops/weekly_pipeline.md`](../ops/weekly_pipeline.md).
 
 > NOTE (2025-10-20): Feature requirements may change for the points-for modeling initiative. Track updates in `docs/planning/points_for_model.md`.
+> FOLLOW-UP (2025-12-08): We observed sklearn runtime warnings during inference traced to large identifier/metadata columns present in prediction frames. Current feature configs (e.g., `matchup_v1`) do not consume these columns, but we should 1) keep non-informative IDs out of model inputs and 2) consider standardized/normalized feature pipelines in a future iteration to improve numerical stability.
 
 ## Conventions
 

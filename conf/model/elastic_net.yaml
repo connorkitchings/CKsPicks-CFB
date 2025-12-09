@@ -1,0 +1,7 @@
+name: elastic_net
+type: linear_regression
+params:
+  alpha: 0.0005    # ridge strength
+  l1_ratio: 0.2    # elastic net mixing
+  fit_intercept: true
+target: spread_target

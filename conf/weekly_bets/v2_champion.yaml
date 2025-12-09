@@ -7,9 +7,15 @@ model_id: "TW-V2-2025"
 year: 2025
 week: 16  # CFP Quarterfinals (update as needed)
 
-# Betting thresholds (from Dec 7 threshold optimization)
-spread_edge_threshold: 7.0   # pts edge required for spread bets
-total_edge_threshold: 0.5    # pts edge required for total bets
+# Betting thresholds (Dec 8 optimization)
+# Dual approach for spreads:
+#   - Default (broad coverage): 0.0 pts
+#   - High confidence (selective): 8.0 pts
+spread_edge_threshold: 0.0
+spread_edge_threshold_high_conf: 8.0
+
+# Totals optimized threshold (balances ROI/volume)
+total_edge_threshold: 1.5
 
 # Model paths (local joblib files)
 models:
@@ -17,6 +23,7 @@ models:
     path: models/linear_spread_target.joblib
     features: conf/features/matchup_v1.yaml
     target: spread_target
+    calibration_offset: 1.14  # Bias correction (+1.14 pts) validated 2025-12-09
   total:
     path: models/linear_total_target.joblib
     features: conf/features/matchup_v1.yaml

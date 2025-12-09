@@ -126,6 +126,21 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
             team_game_df["game_id"].map(week_map).fillna(team_game_df["week"])
         )
 
+    # Attach opponent from games_df (home/away mapping)
+    if {"home_team", "away_team", "game_id"}.issubset(games_df.columns):
+        opp_map = pd.concat(
+            [
+                games_df[["game_id", "home_team", "away_team"]]
+                .rename(columns={"home_team": "team", "away_team": "opponent"}),
+                games_df[["game_id", "home_team", "away_team"]]
+                .rename(columns={"away_team": "team", "home_team": "opponent"}),
+            ],
+            ignore_index=True,
+        )
+        team_game_df = team_game_df.merge(
+            opp_map, on=["game_id", "team"], how="left"
+        )
+
     if for_prediction:
         # Load raw schedule to ensure future games are present
         # We need LocalStorage initialized with raw
@@ -176,6 +191,19 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     print(f"Calculating EWMA (alpha={alpha}) for {year}...")
     team_season = aggregate_team_season_ewma(team_game_df, alpha=alpha)
 
+    # Clip extreme pass YPP matchup metrics to reduce numerical blow-ups downstream
+    pass_cols = [
+        "home_adj_off_pass_ypp",
+        "home_adj_def_pass_ypp",
+        "away_adj_off_pass_ypp",
+        "away_adj_def_pass_ypp",
+    ]
+    for col in pass_cols:
+        if col in team_season.columns:
+            lower = team_season[col].quantile(0.005)
+            upper = team_season[col].quantile(0.995)
+            team_season[col] = team_season[col].clip(lower=lower, upper=upper)
+
     # Ideally we'd augment style metrics here
     # team_season = _augment_with_style_metrics(team_season)
 
@@ -198,9 +226,67 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
         if current_week_stats.empty:
             continue
 
+        # Opponent strength features: average opponent defensive form entering this week
+        opp_strength = None
+        if not prior_games.empty:
+            opp_strength = (
+                prior_games.groupby("team")[
+                    [
+                        "def_epa_pp",
+                        "def_sr",
+                        "def_pass_ypp",
+                        "def_rush_ypp",
+                    ]
+                ]
+                .mean()
+                .rename(
+                    columns={
+                        "def_epa_pp": "opp_avg_def_epa_pp",
+                        "def_sr": "opp_avg_def_sr",
+                        "def_pass_ypp": "opp_avg_def_pass_ypp",
+                        "def_rush_ypp": "opp_avg_def_rush_ypp",
+                    }
+                )
+            )
+
+        adj_input = current_week_stats.copy()
+        # Re-attach opponent for mapping (team_season lost opponent during aggregation)
+        opp_map = (
+            team_game_df[team_game_df["week"] == week][["team", "opponent"]]
+            .drop_duplicates()
+            .set_index("team")
+        )
+        adj_input = adj_input.merge(
+            opp_map,
+            left_on="team",
+            right_index=True,
+            how="left",
+        )
+        if opp_strength is not None:
+            # Map opponent strength onto each row via the opponent column
+            adj_input = adj_input.merge(
+                opp_strength,
+                left_on="opponent",
+                right_index=True,
+                how="left",
+            )
+            # Fill early-season missing values with league means to avoid NaNs
+            for col in [
+                "opp_avg_def_epa_pp",
+                "opp_avg_def_sr",
+                "opp_avg_def_pass_ypp",
+                "opp_avg_def_rush_ypp",
+            ]:
+                if col in adj_input.columns:
+                    adj_input[col] = adj_input[col].fillna(
+                        adj_input[col].mean()
+                    )
+
         # Run adjustment
         adj_df = apply_iterative_opponent_adjustment(
-            current_week_stats, prior_games, iterations=iterations
+            adj_input.drop(columns=["opponent"], errors="ignore"),
+            prior_games,
+            iterations=iterations,
         )
         # Only keep the final iteration for training
         adj_df = adj_df[adj_df["iteration"] == iterations]

@@ -1,0 +1,50 @@
+# Matchup V2 Feature Set
+# Extends champion (matchup_v1) with explosive, finishing, power, and 3rd-down indicators.
+name: matchup_v2
+groups:
+  # Champion core (EPA/SR)
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  # Rush/Pass YPP splits
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+  # Explosive drive rates (adjusted)
+  - home_adj_off_explosive_drive_rate
+  - home_adj_def_explosive_drive_rate_allowed
+  - away_adj_off_explosive_drive_rate
+  - away_adj_def_explosive_drive_rate_allowed
+  # Finishing/points per opp
+  - home_off_finish_pts_per_opp
+  - home_def_finish_pts_per_opp_allowed
+  - away_off_finish_pts_per_opp
+  - away_def_finish_pts_per_opp_allowed
+  # Points per drive
+  - home_off_points_per_drive
+  - home_def_points_per_drive_allowed
+  - away_off_points_per_drive
+  - away_def_points_per_drive_allowed
+  # Power success
+  - home_adj_off_power_success_rate
+  - home_adj_def_power_success_rate_allowed
+  - away_adj_off_power_success_rate
+  - away_adj_def_power_success_rate_allowed
+  # Third down conversion
+  - home_adj_off_third_down_conversion_rate
+  - home_adj_def_third_down_conversion_rate
+  - away_adj_off_third_down_conversion_rate
+  - away_adj_def_third_down_conversion_rate
+params:
+  type: recency
+  alpha: 0.3  # align with champion decay

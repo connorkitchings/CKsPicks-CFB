@@ -4,13 +4,26 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import ElasticNet, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 
 class V1BaselineModel:
-    def __init__(self, alpha=1.0, features=None, target="spread_target"):
-        self.model = Ridge(alpha=alpha)
+    def __init__(
+        self,
+        alpha=1.0,
+        features=None,
+        target="spread_target",
+        l1_ratio=None,
+        fit_intercept=True,
+    ):
+        # If l1_ratio is provided, use ElasticNet; otherwise, Ridge
+        if l1_ratio is not None:
+            self.model = ElasticNet(
+                alpha=alpha, l1_ratio=l1_ratio, fit_intercept=fit_intercept
+            )
+        else:
+            self.model = Ridge(alpha=alpha, fit_intercept=fit_intercept)
         self.target = target
         if not features:
             raise ValueError("V1BaselineModel requires a 'features' list.")

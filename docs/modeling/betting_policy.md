@@ -32,29 +32,35 @@ This document establishes the comprehensive betting policy, unit sizing methodol
 
 ### Current Champions
 
-| Target | Model  | Features            | 2024 ROI | Optimal Threshold | Optimal ROI |
-| ------ | ------ | ------------------- | -------- | ----------------- | ----------- |
-| Spread | Linear | recency_weighted_v1 | +0.52%   | 7.0 pts           | +2.1%       |
-| Totals | Linear | recency_weighted_v1 | +5.3%    | 0.5 pts           | +6.1%       |
+| Target | Model  | Features   | 2024 ROI | Optimal Threshold(s)            | Optimal ROI |
+| ------ | ------ | ---------- | -------- | -------------------------------- | ----------- |
+| Spread | Linear | matchup_v1 | +0.78%   | 0.0 pts (general) / 8.0 pts (HC) | +2.03% @ 8.0 |
+| Totals | Linear | matchup_v1 | +6.35%   | 1.5 pts                          | +6.81%       |
 
 ### Recommended Betting Strategy
 
 **Spread Bets**:
 
-- **Threshold**: Bet only when model edge ≥ 7.0 points from Vegas line
-- **Expected Volume**: ~516 bets/season (2024 holdout)
-- **Expected ROI**: +2.1% (+10.9 units profit)
+- **Threshold**: Two modes supported
+  - **General**: Edge ≥ 0.0 pts (broad coverage, +0.78% ROI)
+  - **High-Confidence**: Edge ≥ 8.0 pts (selective, +2.03% ROI)
+- **Expected Volume**:
+  - General: ~735 bets/season (2024 holdout)
+  - High-Confidence: ~305 bets/season (2024 holdout)
+- **Expected ROI**:
+  - General: +0.78% (+5.7 units profit)
+  - High-Confidence: +2.03% (+6.2 units profit)
 
 **Totals Bets**:
 
-- **Threshold**: Bet only when model edge ≥ 0.5 points from Vegas line
-- **Expected Volume**: ~689 bets/season (2024 holdout)
-- **Expected ROI**: +6.1% (+42.2 units profit)
+- **Threshold**: Bet when model edge ≥ 1.5 points from the total line
+- **Expected Volume**: ~597 bets/season (2024 holdout)
+- **Expected ROI**: +6.81% (+40.6 units profit)
 
 ### Model Details
 
 - **Algorithm**: Ridge Regression (sklearn)
-- **Features**: Recency-weighted (α=0.3) opponent-adjusted EPA/SR
+- **Features**: `matchup_v1` (recency-weighted α=0.3 opponent-adjusted EPA/SR with rush/pass YPP matchup splits; 16 features)
 - **Training Data**: 2019, 2021-2023 (excludes 2020 COVID year)
 - **Test Data**: 2024 (locked holdout)
 - **Deployment**: 2025 season (including CFP)

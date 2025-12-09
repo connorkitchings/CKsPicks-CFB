@@ -4,6 +4,7 @@ import hydra
 import mlflow
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
+from sklearn.preprocessing import RobustScaler, StandardScaler
 
 from src.features.v1_pipeline import load_v1_data
 from src.models.v1_baseline import V1BaselineModel
@@ -140,6 +141,40 @@ def main(cfg: DictConfig):
 
         final_features = list(train_features.columns)
         print(f"Selected {len(final_features)} features (including interactions).")
+
+        # Optional preprocessing (e.g., standardization)
+        if cfg.get("preprocessing"):
+            pre = cfg.preprocessing
+            if pre.get("standardize", False):
+                scaler = StandardScaler()
+                print(
+                    "Applying feature standardization (fit on train, transform train/test)..."
+                )
+                train_df.loc[:, final_features] = scaler.fit_transform(
+                    train_df[final_features]
+                )
+                test_df.loc[:, final_features] = scaler.transform(
+                    test_df[final_features]
+                )
+
+            # Optional robust scaling for pass YPP matchup features only
+            if pre.get("robust_pass_ypp", False):
+                pass_cols = [
+                    "home_adj_off_pass_ypp",
+                    "home_adj_def_pass_ypp",
+                    "away_adj_off_pass_ypp",
+                    "away_adj_def_pass_ypp",
+                ]
+                missing = [c for c in pass_cols if c not in train_df.columns]
+                if missing:
+                    print(f"Skipping robust_pass_ypp; missing columns: {missing[:4]}")
+                else:
+                    r_scaler = RobustScaler()
+                    print("Applying RobustScaler to pass YPP matchup features...")
+                    train_df.loc[:, pass_cols] = r_scaler.fit_transform(
+                        train_df[pass_cols]
+                    )
+                    test_df.loc[:, pass_cols] = r_scaler.transform(test_df[pass_cols])
 
         # Initialize Model
         model = get_model(cfg, feature_override=final_features)

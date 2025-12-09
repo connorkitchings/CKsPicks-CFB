@@ -181,19 +181,21 @@ streamlit run dashboard/monitoring.py
 
 **Current Champions** (as of 2025-12-08):
 
-| Target | Model  | Features            | ROI   | Threshold | Config                              |
-| ------ | ------ | ------------------- | ----- | --------- | ----------------------------------- |
-| Spread | Linear | recency_weighted_v1 | +2.1% | 7.0 pts   | `conf/weekly_bets/v2_champion.yaml` |
-| Totals | Linear | recency_weighted_v1 | +6.1% | 0.5 pts   | `conf/weekly_bets/v2_champion.yaml` |
+| Target | Model  | Features   | ROI (2024)                 | Thresholds                               | Config                              |
+| ------ | ------ | ---------- | -------------------------- | ---------------------------------------- | ----------------------------------- |
+| Spread | Linear | matchup_v1 | +0.78% (8.0 edge → +2.03%) | 0.0 pts default; 8.0 pts high-confidence | `conf/weekly_bets/v2_champion.yaml` |
+| Totals | Linear | matchup_v1 | +6.35% (1.5 edge → +6.81%) | 1.5 pts                                   | `conf/weekly_bets/v2_champion.yaml` |
+
+**Fallback (spread only)**: If numerical warnings spike, you can run with `preprocessing=robust_pass_ypp` to apply `RobustScaler` to pass YPP matchup features (`conf/preprocessing/robust_pass_ypp.yaml`). This is not promoted; use only to mitigate inference instability. High-edge (≥8.0) spread policy remains unchanged; avoid mid-edge 2.5–7.0 buckets.
 
 **Model Files**:
 
-- `models/linear_spread_target.joblib` (trained 2025-12-07)
-- `models/linear_total_target.joblib` (trained 2025-12-07)
+- `models/linear_spread_target.joblib` (trained 2025-12-08)
+- `models/linear_total_target.joblib` (trained 2025-12-08)
 
-**Feature Config**: `conf/features/recency_weighted_v1.yaml`
+**Feature Config**: `conf/features/matchup_v1.yaml`
 
-- 8 features: EPA and SR (offense/defense) for home/away
+- 16 features: EPA/SR + rush/pass YPP matchup splits (home/away)
 - EWMA decay: α=0.3
 - 4-iteration opponent adjustment
 

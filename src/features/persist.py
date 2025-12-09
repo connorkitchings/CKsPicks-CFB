@@ -26,13 +26,6 @@ from .weather import load_weather_data
 def persist_preaggregations(
     *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> dict[str, int]:
-    """Build and persist pre-aggregations derived from raw plays into the processed store.
-
-    Reads raw plays for the given season from local CSV storage, computes the
-    by-play enriched dataset, drive-level aggregates, team-game aggregates, and
-    season-to-date team aggregates (plus adjusted), then writes them to the
-    `processed/` directory using season/week (and game_id where applicable) partitioning.
-    """
     raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
     records = raw_storage.read_index("plays", {"year": year})
     if not records:
@@ -53,11 +46,25 @@ def persist_preaggregations(
             "Raw plays are missing required 'week' column for partitioning."
         )
 
+    # Load games data for situational features
+    games_records = raw_storage.read_index("games", {"year": year})
+    games_df = pd.DataFrame.from_records(games_records) if games_records else pd.DataFrame()
+
+    # Load teams and venues data for travel distance calculation
+    teams_records = raw_storage.read_index("teams", {"year": year})
+    teams_df = pd.DataFrame.from_records(teams_records) if teams_records else pd.DataFrame()
+    venues_records = raw_storage.read_index("venues", {"year": year})
+    venues_df = pd.DataFrame.from_records(venues_records) if venues_records else pd.DataFrame()
+
     # Load weather data
     weather_df = load_weather_data(year, raw_storage.root().parent)
 
     byplay_df, drives_df, team_game_df, team_season_df = build_preaggregation_pipeline(
-        plays_df, weather_df=weather_df
+        plays_df,
+        games_df=games_df,
+        teams_df=teams_df,
+        venues_df=venues_df,
+        weather_df=weather_df,
     )
     team_season_adj_iterations_df = apply_iterative_opponent_adjustment(
         team_season_df, team_game_df

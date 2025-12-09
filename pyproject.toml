@@ -22,6 +22,7 @@ dependencies = [
     "optuna<3.0.0,>=2.10.0",
     "lightgbm>=4.5.0",
     "catboost>=1.2.7",
+    "geopy>=2.4.1",
     "iniconfig>=2.1.0",
     "pluggy>=1.6.0",
     "pytest>=8.4.1",
@@ -42,7 +43,9 @@ dev = [
     "mkdocs-material==9.5.7",
     "mkdocs==1.5.3",
     "mike==2.0.0",
-    "seaborn",
+    "seaborn>=0.13.0",
+    "matplotlib>=3.8.0",
+    "typer>=0.9.0",
 ]
 
 [tool.ruff]
@@ -64,6 +67,9 @@ build-backend = "setuptools.build_meta"
 dev = [
     "mkdocs-material>=9.5.7",
     "mkdocstrings[python]>=0.28.3",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "typer>=0.9.0",
 ]
 
 [tool.pytest.ini_options]

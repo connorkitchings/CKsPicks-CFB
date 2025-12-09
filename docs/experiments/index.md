@@ -2,7 +2,7 @@
 
 **Status**: Active  
 **Started**: 2025-12-06  
-**Current Champion**: Linear + `recency_weighted_v1` (Spread +0.52% ROI, Totals +5.3% ROI)
+**Current Champion**: Linear + `matchup_v1` (Spread +0.78% ROI, Totals +6.35% ROI)
 
 ---
 
@@ -20,7 +20,7 @@ Track all V2 modeling experiments (Phases 1-4). Each experiment must align with 
 | ------ | ----- | ---------- | -------- | --------------------- | ----- | -------- | ------ | --------------- |
 | V2-001 | 1     | 2025-12-06 | Ridge    | minimal_unadjusted_v1 | 18.64 | 50.6%    | -3.35% | ✅ Baseline     |
 | V2-002 | 2     | 2025-12-07 | Ridge    | opponent_adjusted_v1  | 18.5  | 51.9%    | -0.97% | ✔️ Promoted     |
-| V2-003 | 2     | 2025-12-07 | Ridge    | recency_weighted_v1   | 18.82 | 52.65%   | +0.52% | 🏆 **Champion** |
+| V2-003 | 2     | 2025-12-07 | Ridge    | recency_weighted_v1   | 18.82 | 52.65%   | +0.52% | ✔️ Promoted     |
 | V2-004 | 2     | 2025-12-07 | Ridge    | interaction_v1        | —     | 52.2%    | -0.26% | ❌ Rejected     |
 | V2-005 | 3     | 2025-12-07 | CatBoost | opponent_adjusted_v1  | —     | 51.5%    | -1.76% | ❌ Rejected     |
 | V2-006 | 3     | 2025-12-07 | XGBoost  | opponent_adjusted_v1  | —     | 52.0%    | -0.71% | ❌ Rejected     |
@@ -54,11 +54,12 @@ Track all V2 modeling experiments (Phases 1-4). Each experiment must align with 
 - **Metrics**: RMSE 18.64, Hit Rate 50.6%, ROI -3.35%
 - **Decision**: Established as baseline
 
-### Phase 2 Feature Promotions (Dec 7)
+### Phase 2 Feature Promotions (Dec 7–8)
 
 - **Exp V2-002**: Ridge + opponent_adjusted_v1 → **PROMOTED** (+2.38% ROI lift)
-- **Exp V2-003**: Ridge + recency_weighted_v1 → **PROMOTED TO CHAMPION** (+0.52% ROI)
+- **Exp V2-003**: Ridge + recency_weighted_v1 → **PROMOTED** (+0.52% ROI, superseded by matchup_v1)
 - **Exp V2-004**: Interaction terms → **REJECTED** (degraded performance)
+- **Exp V2-011**: Ridge + matchup_v1 → **PROMOTED TO CHAMPION** (+0.78% spread ROI, +6.35% totals ROI)
 
 ### Phase 3 Model Selection (Dec 7)
 
