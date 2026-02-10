@@ -130,16 +130,16 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     if {"home_team", "away_team", "game_id"}.issubset(games_df.columns):
         opp_map = pd.concat(
             [
-                games_df[["game_id", "home_team", "away_team"]]
-                .rename(columns={"home_team": "team", "away_team": "opponent"}),
-                games_df[["game_id", "home_team", "away_team"]]
-                .rename(columns={"away_team": "team", "home_team": "opponent"}),
+                games_df[["game_id", "home_team", "away_team"]].rename(
+                    columns={"home_team": "team", "away_team": "opponent"}
+                ),
+                games_df[["game_id", "home_team", "away_team"]].rename(
+                    columns={"away_team": "team", "home_team": "opponent"}
+                ),
             ],
             ignore_index=True,
         )
-        team_game_df = team_game_df.merge(
-            opp_map, on=["game_id", "team"], how="left"
-        )
+        team_game_df = team_game_df.merge(opp_map, on=["game_id", "team"], how="left")
 
     if for_prediction:
         # Load raw schedule to ensure future games are present
@@ -278,9 +278,7 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
                 "opp_avg_def_rush_ypp",
             ]:
                 if col in adj_input.columns:
-                    adj_input[col] = adj_input[col].fillna(
-                        adj_input[col].mean()
-                    )
+                    adj_input[col] = adj_input[col].fillna(adj_input[col].mean())
 
         # Run adjustment
         adj_df = apply_iterative_opponent_adjustment(

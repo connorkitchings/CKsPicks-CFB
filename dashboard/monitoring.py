@@ -1,4 +1,3 @@
-
 import glob
 import re
 from pathlib import Path
@@ -15,13 +14,16 @@ st.set_page_config(
 
 # --- Functions ---
 
+
 def get_repo_root():
     """Finds the repository root from the current script's location."""
     return Path(__file__).parent.parent
 
-def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+
+def natural_sort_key(s, _nsre=re.compile("([0-9]+)")):
     """Sorts strings with numbers in a natural, human-friendly order."""
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
+
 
 @st.cache_data
 def load_data(year):
@@ -44,9 +46,9 @@ def load_data(year):
     for file in all_files:
         try:
             df = pd.read_csv(file)
-            week_search = re.search(r'week(\d+)', file)
+            week_search = re.search(r"week(\d+)", file)
             if week_search:
-                df['week'] = int(week_search.group(1))
+                df["week"] = int(week_search.group(1))
             df_list.append(df)
         except Exception as e:
             st.error(f"Error loading file {file}: {e}")
@@ -55,33 +57,33 @@ def load_data(year):
         return pd.DataFrame()
 
     full_df = pd.concat(df_list, ignore_index=True)
-    full_df = full_df.sort_values(by='week').reset_index(drop=True)
+    full_df = full_df.sort_values(by="week").reset_index(drop=True)
     return full_df
+
 
 def calculate_metrics(df):
     """Calculates key performance metrics from a DataFrame of bets."""
     if df.empty:
-        return {
-            "total_bets": 0, "hit_rate": 0, "roi": 0, "total_profit": 0
-        }
+        return {"total_bets": 0, "hit_rate": 0, "roi": 0, "total_profit": 0}
 
     total_bets = len(df)
-    correct_bets = len(df[df['correct_bet'] == 1])
+    correct_bets = len(df[df["correct_bet"] == 1])
     hit_rate = (correct_bets / total_bets) * 100 if total_bets > 0 else 0
 
     # Assuming 1 unit per bet and standard -110 juice
-    df['profit'] = df.apply(
-        lambda row: 0.909 if row['correct_bet'] == 1 else -1, axis=1
+    df["profit"] = df.apply(
+        lambda row: 0.909 if row["correct_bet"] == 1 else -1, axis=1
     )
-    total_profit = df['profit'].sum()
+    total_profit = df["profit"].sum()
     roi = (total_profit / total_bets) * 100 if total_bets > 0 else 0
 
     return {
         "total_bets": total_bets,
         "hit_rate": hit_rate,
         "roi": roi,
-        "total_profit": total_profit
+        "total_profit": total_profit,
     }
+
 
 # --- UI ---
 st.title("🏆 CFB Model V2 Monitoring Dashboard")
@@ -111,8 +113,8 @@ st.markdown("---")
 
 # Performance by Bet Type
 st.subheader("Performance by Bet Type")
-spread_data = data[data['bet_type'] == 'spread']
-total_data = data[data['bet_type'] == 'total']
+spread_data = data[data["bet_type"] == "spread"]
+total_data = data[data["bet_type"] == "total"]
 
 spread_metrics = calculate_metrics(spread_data)
 total_metrics = calculate_metrics(total_data)
@@ -137,27 +139,32 @@ st.markdown("---")
 # Weekly Performance Trends
 st.subheader("Weekly Performance")
 
-weekly_profit = data.groupby('week')['profit'].sum().cumsum()
-weekly_roi = data.groupby('week').apply(lambda x: calculate_metrics(x)['roi'])
+weekly_profit = data.groupby("week")["profit"].sum().cumsum()
+weekly_roi = data.groupby("week").apply(lambda x: calculate_metrics(x)["roi"])
 
 # Create a DataFrame for charting
-chart_data = pd.DataFrame({
-    'Cumulative Profit (Units)': weekly_profit,
-    'Weekly ROI (%)': weekly_roi
-}).reset_index()
+chart_data = pd.DataFrame(
+    {"Cumulative Profit (Units)": weekly_profit, "Weekly ROI (%)": weekly_roi}
+).reset_index()
 
-st.line_chart(chart_data.set_index('week')['Cumulative Profit (Units)'])
+st.line_chart(chart_data.set_index("week")["Cumulative Profit (Units)"])
 
 st.markdown("---")
 
 # Performance by Edge
 st.subheader("ROI by Edge Bucket")
-data['edge_bucket'] = pd.cut(data['model_edge'], bins=range(0, int(data['model_edge'].max()) + 2, 1))
+data["edge_bucket"] = pd.cut(
+    data["model_edge"], bins=range(0, int(data["model_edge"].max()) + 2, 1)
+)
 
-edge_performance = data.groupby('edge_bucket').apply(lambda x: calculate_metrics(x)['roi']).reset_index()
-edge_performance.columns = ['Edge Bucket', 'ROI (%)']
+edge_performance = (
+    data.groupby("edge_bucket")
+    .apply(lambda x: calculate_metrics(x)["roi"])
+    .reset_index()
+)
+edge_performance.columns = ["Edge Bucket", "ROI (%)"]
 
-st.bar_chart(edge_performance.set_index('Edge Bucket'))
+st.bar_chart(edge_performance.set_index("Edge Bucket"))
 
 # Display Raw Data
 with st.expander("Show Raw Data"):

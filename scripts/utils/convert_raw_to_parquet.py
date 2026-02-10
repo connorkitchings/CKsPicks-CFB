@@ -1,4 +1,3 @@
-
 import os
 import re
 from pathlib import Path
@@ -15,34 +14,35 @@ REPO_ROOT = Path(__file__).parent.parent.parent
 DATA_ROOT = os.getenv("CFB_MODEL_DATA_ROOT")
 
 if not DATA_ROOT:
-    console.print("[bold red]Error: CFB_MODEL_DATA_ROOT environment variable is not set.[/bold red]")
+    console.print(
+        "[bold red]Error: CFB_MODEL_DATA_ROOT environment variable is not set.[/bold red]"
+    )
     raise typer.Exit(code=1)
 
 RAW_DATA_PATH = Path(DATA_ROOT) / "raw"
 
+
 # --- Functions ---
-def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
+def natural_sort_key(s, _nsre=re.compile("([0-9]+)")):
     """Sorts strings with numbers in a natural, human-friendly order."""
     return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
+
 def main(
     overwrite: bool = typer.Option(
-        False,
-        "--overwrite",
-        "-o",
-        help="Overwrite existing Parquet files."
+        False, "--overwrite", "-o", help="Overwrite existing Parquet files."
     ),
     delete_csv: bool = typer.Option(
         False,
         "--delete-csv",
         "-d",
-        help="Delete the source CSV file after successful conversion."
-    )
+        help="Delete the source CSV file after successful conversion.",
+    ),
 ):
     """
     Converts all raw data from CSV to Parquet format.
-    
-    This command scans the `data/raw` directory for subdirectories like 'games', 
+
+    This command scans the `data/raw` directory for subdirectories like 'games',
     'plays', etc., and converts all found CSV files to Parquet.
     """
     console.print("[bold]Starting raw data conversion from CSV to Parquet[/bold]")
@@ -62,7 +62,10 @@ def main(
     if delete_csv:
         console.print("[bold]Original CSV files have been deleted.[/bold]")
     else:
-        console.print("Original CSV files remain. Re-run with --delete-csv to remove them.")
+        console.print(
+            "Original CSV files remain. Re-run with --delete-csv to remove them."
+        )
+
 
 def convert_directory(path: Path, overwrite: bool, delete_csv: bool):
     """
@@ -93,14 +96,16 @@ def convert_directory(path: Path, overwrite: bool, delete_csv: bool):
                 inferred_table = pa.Table.from_pandas(df, preserve_index=False)
 
                 # If a 'week' column exists, enforce a consistent type for it.
-                if 'week' in inferred_table.schema.names:
+                if "week" in inferred_table.schema.names:
                     fields = list(inferred_table.schema)
-                    week_index = inferred_table.schema.get_field_index('week')
-                    fields[week_index] = pa.field('week', pa.int64())
+                    week_index = inferred_table.schema.get_field_index("week")
+                    fields[week_index] = pa.field("week", pa.int64())
                     corrected_schema = pa.schema(fields)
 
                     # Create the final table using the corrected schema
-                    final_table = pa.Table.from_pandas(df, schema=corrected_schema, preserve_index=False)
+                    final_table = pa.Table.from_pandas(
+                        df, schema=corrected_schema, preserve_index=False
+                    )
                 else:
                     final_table = inferred_table
 
@@ -110,7 +115,9 @@ def convert_directory(path: Path, overwrite: bool, delete_csv: bool):
                     csv_path.unlink()
 
             except Exception as e:
-                console.print(f"\n[bold red]Error converting {csv_path}: {e}[/bold red]")
+                console.print(
+                    f"\n[bold red]Error converting {csv_path}: {e}[/bold red]"
+                )
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ import pandas as pd
 def get_repo_root():
     return Path(__file__).parent.parent.parent
 
+
 def calculate_roi(df):
     if len(df) == 0:
         return 0.0, 0.0
@@ -25,13 +26,14 @@ def calculate_roi(df):
     # If Spread Bet Result is 1/0, we can calculate.
 
     n_bets = len(df)
-    n_wins = df['Spread Bet Result'].sum()
-    n_losses = n_bets - n_wins # Approximation if no pushes coded
+    n_wins = df["Spread Bet Result"].sum()
+    n_losses = n_bets - n_wins  # Approximation if no pushes coded
 
     # More precise using columns if available, but let's stick to the standard from previous analysis
     roi = ((n_wins * 0.9091) - n_losses) / n_bets
     hit_rate = n_wins / n_bets
     return roi, hit_rate
+
 
 def test_bias_correction():
     repo_root = get_repo_root()
@@ -42,32 +44,42 @@ def test_bias_correction():
     df = pd.concat((pd.read_csv(f) for f in all_files), ignore_index=True)
 
     # Cleanup
-    numeric_cols = ['edge_spread', 'Spread Prediction', 'home_team_spread_line', 'home_points', 'away_points']
+    numeric_cols = [
+        "edge_spread",
+        "Spread Prediction",
+        "home_team_spread_line",
+        "home_points",
+        "away_points",
+    ]
     for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
+        df[col] = pd.to_numeric(df[col], errors="coerce")
 
     # Convert 'Win'/'Loss' to 1/0
     # Note: Scored files have 'Spread Bet Result' as 'Win'/'Loss'
-    if df['Spread Bet Result'].dtype == 'object':
-        df['Spread Bet Result'] = df['Spread Bet Result'].apply(lambda x: 1 if x == 'Win' else 0)
+    if df["Spread Bet Result"].dtype == "object":
+        df["Spread Bet Result"] = df["Spread Bet Result"].apply(
+            lambda x: 1 if x == "Win" else 0
+        )
 
-    df.dropna(subset=numeric_cols + ['Spread Bet Result'], inplace=True)
+    df.dropna(subset=numeric_cols + ["Spread Bet Result"], inplace=True)
 
     # 2. Baseline Performance (Original 2.5 - 7.0 bucket)
-    baseline_df = df[(df['edge_spread'] >= 2.5) & (df['edge_spread'] <= 7.0)].copy()
+    baseline_df = df[(df["edge_spread"] >= 2.5) & (df["edge_spread"] <= 7.0)].copy()
     base_roi, base_hr = calculate_roi(baseline_df)
 
     print("--- Baseline (2.5 <= Edge <= 7.0) ---")
     print(f"Bets: {len(baseline_df)}")
     print(f"Hit Rate: {base_hr:.2%}")
     print(f"ROI: {base_roi:.2%}")
-    print("-------------------------------------\
-")
+    print(
+        "-------------------------------------\
+"
+    )
 
     # 3. Apply Correction
     # Bias was -1.14 (Prediction < Actual). So we ADD 1.14 to Prediction.
     correction = 1.14
-    df['corrected_prediction'] = df['Spread Prediction'] + correction
+    df["corrected_prediction"] = df["Spread Prediction"] + correction
 
     # 4. Recalculate Edges and Bet outcomes
     # Edge = |Pred - Line|
@@ -79,28 +91,28 @@ def test_bias_correction():
     # Let's replicate this logic.
 
     def evaluate_bet(row):
-        pred = row['corrected_prediction']
-        line = row['home_team_spread_line']
-        actual_margin = row['home_points'] - row['away_points'] # Home Margin
+        pred = row["corrected_prediction"]
+        line = row["home_team_spread_line"]
+        actual_margin = row["home_points"] - row["away_points"]  # Home Margin
 
         # Determine Bet
         if pred > line:
             # Bet Home
             edge = pred - line
-            bet_side = 'Home'
+            bet_side = "Home"
             # Result: Win if Actual > Line
             # (Tie logic: Actual == Line -> Push)
             if actual_margin > line:
                 result = 1
             elif actual_margin == line:
-                result = 0.5 # Treat push as no P/L, but let's count volume?
-                             # For ROI calc, Push means 0 profit.
+                result = 0.5  # Treat push as no P/L, but let's count volume?
+                # For ROI calc, Push means 0 profit.
             else:
                 result = 0
         else:
             # Bet Away
             edge = line - pred
-            bet_side = 'Away'
+            bet_side = "Away"
             # Result: Win if Actual < Line
             if actual_margin < line:
                 result = 1
@@ -111,10 +123,10 @@ def test_bias_correction():
 
         return pd.Series([edge, bet_side, result])
 
-    df[['new_edge', 'new_bet_side', 'new_result']] = df.apply(evaluate_bet, axis=1)
+    df[["new_edge", "new_bet_side", "new_result"]] = df.apply(evaluate_bet, axis=1)
 
     # 5. Evaluate Corrected Performance (New 2.5 - 7.0 bucket)
-    corrected_df = df[(df['new_edge'] >= 2.5) & (df['new_edge'] <= 7.0)].copy()
+    corrected_df = df[(df["new_edge"] >= 2.5) & (df["new_edge"] <= 7.0)].copy()
 
     # Recalculate ROI for new results
     # Handle Pushes (0.5) correctly for ROI
@@ -122,17 +134,23 @@ def test_bias_correction():
     # Wins = count of 1s
     # Losses = count of 0s
     n_bets_new = len(corrected_df)
-    n_wins_new = len(corrected_df[corrected_df['new_result'] == 1])
-    n_losses_new = len(corrected_df[corrected_df['new_result'] == 0])
-    n_pushes_new = len(corrected_df[corrected_df['new_result'] == 0.5])
+    n_wins_new = len(corrected_df[corrected_df["new_result"] == 1])
+    n_losses_new = len(corrected_df[corrected_df["new_result"] == 0])
+    n_pushes_new = len(corrected_df[corrected_df["new_result"] == 0.5])
 
     if n_bets_new > 0:
         profit_new = (n_wins_new * 0.9091) - n_losses_new
-        roi_new = profit_new / n_bets_new # ROI is usually on total turnover. Pushes count as returned stake.
+        roi_new = (
+            profit_new / n_bets_new
+        )  # ROI is usually on total turnover. Pushes count as returned stake.
     else:
         roi_new = 0
 
-    hit_rate_new = n_wins_new / (n_bets_new - n_pushes_new) if (n_bets_new - n_pushes_new) > 0 else 0
+    hit_rate_new = (
+        n_wins_new / (n_bets_new - n_pushes_new)
+        if (n_bets_new - n_pushes_new) > 0
+        else 0
+    )
 
     print("--- Corrected (+1.14 pts) (2.5 <= Edge <= 7.0) ---")
     print(f"Bets: {n_bets_new}")
@@ -142,8 +160,11 @@ def test_bias_correction():
 
     # 6. Comparison
     print("Impact of Correction:")
-    print(f"Volume: {len(baseline_df)} -> {n_bets_new} ({n_bets_new - len(baseline_df):+d})")
+    print(
+        f"Volume: {len(baseline_df)} -> {n_bets_new} ({n_bets_new - len(baseline_df):+d})"
+    )
     print(f"ROI: {base_roi:.2%} -> {roi_new:.2%} ({roi_new - base_roi:+.2%})")
+
 
 if __name__ == "__main__":
     test_bias_correction()

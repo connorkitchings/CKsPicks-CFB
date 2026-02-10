@@ -48,13 +48,19 @@ def persist_preaggregations(
 
     # Load games data for situational features
     games_records = raw_storage.read_index("games", {"year": year})
-    games_df = pd.DataFrame.from_records(games_records) if games_records else pd.DataFrame()
+    games_df = (
+        pd.DataFrame.from_records(games_records) if games_records else pd.DataFrame()
+    )
 
     # Load teams and venues data for travel distance calculation
     teams_records = raw_storage.read_index("teams", {"year": year})
-    teams_df = pd.DataFrame.from_records(teams_records) if teams_records else pd.DataFrame()
+    teams_df = (
+        pd.DataFrame.from_records(teams_records) if teams_records else pd.DataFrame()
+    )
     venues_records = raw_storage.read_index("venues", {"year": year})
-    venues_df = pd.DataFrame.from_records(venues_records) if venues_records else pd.DataFrame()
+    venues_df = (
+        pd.DataFrame.from_records(venues_records) if venues_records else pd.DataFrame()
+    )
 
     # Load weather data
     weather_df = load_weather_data(year, raw_storage.root().parent)

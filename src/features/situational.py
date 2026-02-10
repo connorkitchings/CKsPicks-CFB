@@ -3,6 +3,7 @@ Situational feature engineering.
 
 Functions for creating features based on game-level context, such as rest, travel, etc.
 """
+
 import pandas as pd
 from geopy.distance import geodesic
 
@@ -86,9 +87,9 @@ def merge_situational_features(
     venues_locations = venues_locations.dropna(subset=["latitude", "longitude"])
 
     # Merge game venue and home venue coordinates
-    merged_df = merged_df.merge(
-        venues_locations, on="venue_id", how="left"
-    ).rename(columns={"latitude": "game_lat", "longitude": "game_lon"})
+    merged_df = merged_df.merge(venues_locations, on="venue_id", how="left").rename(
+        columns={"latitude": "game_lat", "longitude": "game_lon"}
+    )
     merged_df = merged_df.merge(
         venues_locations,
         left_on="home_venue_id",
@@ -121,4 +122,3 @@ def merge_situational_features(
 
     # Drop intermediate columns and return
     return merged_df[final_cols]
-

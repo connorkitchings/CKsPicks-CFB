@@ -76,9 +76,7 @@ def build_preaggregation_pipeline(
 
     # Merge situational features if available
     if games_df is not None and not games_df.empty:
-        team_game = merge_situational_features(
-            team_game, games_df, teams_df, venues_df
-        )
+        team_game = merge_situational_features(team_game, games_df, teams_df, venues_df)
 
     # Merge weather features if available
     if weather_df is not None:
