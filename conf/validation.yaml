@@ -100,3 +100,141 @@ validation:
       #   - "Mountain West"
       #   - "Sun Belt"
       #   - "FBS Independents"
+
+  byplay:
+    required_columns:
+      - game_id
+      - drive_number
+      - play_number
+      - period
+      - offense
+      - defense
+      - down
+      - distance
+      - yards_gained
+      - play_type
+
+    uniqueness_columns:
+      - game_id
+      - drive_number
+      - play_number
+
+    null_checks:
+      critical_null_checks:
+        - game_id
+        - drive_number
+        - play_number
+        - offense
+        - defense
+      warning_null_checks:
+        yards_gained: 2.0
+        play_type: 1.0
+
+    range_checks:
+      period: {min: 1, max: 5}  # Regulation + OT
+      down: {min: 1, max: 4}
+      distance: {min: 0, max: 99}
+      yards_gained: {min: -99, max: 99}
+      yards_to_goal: {min: 0, max: 100}
+
+  drives:
+    required_columns:
+      - game_id
+      - drive_number
+      - offense
+      - defense
+      - plays
+      - yards
+      - drive_result
+
+    uniqueness_columns:
+      - game_id
+      - drive_number
+      - offense
+      - defense
+
+    null_checks:
+      critical_null_checks:
+        - game_id
+        - drive_number
+        - offense
+        - defense
+      warning_null_checks:
+        yards: 5.0
+        plays: 1.0
+
+    range_checks:
+      plays: {min: 1, max: 30}
+      yards: {min: -50, max: 150}
+      start_period: {min: 1, max: 5}
+      end_period: {min: 1, max: 5}
+
+  team_season:
+    required_columns:
+      - season
+      - team
+      - games
+      - n_off_plays
+      - off_sr
+      - off_ypp
+      - off_epa_pp
+      - def_sr
+      - def_ypp
+      - def_epa_pp
+
+    uniqueness_columns:
+      - season
+      - team
+
+    null_checks:
+      critical_null_checks:
+        - season
+        - team
+        - games
+      warning_null_checks:
+        off_epa_pp: 5.0
+        def_epa_pp: 5.0
+
+    range_checks:
+      games: {min: 1, max: 16}
+      n_off_plays: {min: 50, max: 1200}
+      off_sr: {min: 0.0, max: 1.0}
+      def_sr: {min: 0.0, max: 1.0}
+      off_ypp: {min: 0.0, max: 20.0}
+      def_ypp: {min: 0.0, max: 20.0}
+      off_epa_pp: {min: -2.0, max: 2.0}
+      def_epa_pp: {min: -2.0, max: 2.0}
+
+  team_season_adj:
+    required_columns:
+      - season
+      - team
+      - games
+      - adj_off_sr
+      - adj_off_ypp
+      - adj_off_epa_pp
+      - adj_def_sr
+      - adj_def_ypp
+      - adj_def_epa_pp
+
+    uniqueness_columns:
+      - season
+      - team
+
+    null_checks:
+      critical_null_checks:
+        - season
+        - team
+        - games
+      warning_null_checks:
+        adj_off_epa_pp: 5.0
+        adj_def_epa_pp: 5.0
+
+    range_checks:
+      games: {min: 1, max: 16}
+      adj_off_sr: {min: 0.0, max: 1.0}
+      adj_def_sr: {min: 0.0, max: 1.0}
+      adj_off_ypp: {min: 0.0, max: 20.0}
+      adj_def_ypp: {min: 0.0, max: 20.0}
+      adj_off_epa_pp: {min: -2.0, max: 2.0}
+      adj_def_epa_pp: {min: -2.0, max: 2.0}

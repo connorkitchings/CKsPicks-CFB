@@ -15,12 +15,15 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import yaml
 
+from src.config import get_repo_root
 from src.features.core import (
     aggregate_team_season,
     apply_iterative_opponent_adjustment,
 )
 from src.utils.local_storage import LocalStorage
+from src.utils.logging import DataLogger
 
 
 @dataclass
@@ -29,6 +32,361 @@ class ValidationIssue:
     message: str
     entity: str
     path: Path | None = None
+
+
+class DataValidationService:
+    """Configuration-driven validation service with structured logging.
+
+    Provides schema validation from YAML configuration files and integrates
+    with existing deep validation functions. Uses DataLogger for structured
+    event logging.
+
+    Args:
+        storage: LocalStorage instance for data access
+        config_path: Optional path to validation.yaml config file
+        logger: Optional DataLogger instance (creates default if not provided)
+    """
+
+    def __init__(
+        self,
+        storage: LocalStorage,
+        config_path: Path | None = None,
+        logger: DataLogger | None = None,
+    ):
+        self.storage = storage
+        self.logger = logger or DataLogger("validation", "data_pipeline.log")
+
+        # Load validation config
+        if config_path is None:
+            config_path = get_repo_root() / "conf" / "validation.yaml"
+        self.config_path = config_path
+        self.config = self._load_config()
+
+        self.logger.log_event(
+            "validation_service_initialized",
+            {
+                "config_path": str(config_path),
+                "storage_root": str(storage.root()),
+                "entities_configured": list(self.config.get("validation", {}).keys()),
+            },
+        )
+
+    def _load_config(self) -> dict[str, Any]:
+        """Load validation configuration from YAML file."""
+        if not self.config_path.exists():
+            self.logger.log_error(
+                "validation_config_missing",
+                f"Config file not found: {self.config_path}",
+                {"config_path": str(self.config_path)},
+            )
+            return {}
+
+        try:
+            with self.config_path.open("r") as f:
+                config = yaml.safe_load(f) or {}
+            return config
+        except Exception as e:
+            self.logger.log_error(
+                "validation_config_load_failed",
+                str(e),
+                {"config_path": str(self.config_path)},
+            )
+            return {}
+
+    def validate_schema(self, df: pd.DataFrame, entity: str) -> list[ValidationIssue]:
+        """Apply YAML-configured schema validation rules.
+
+        Validates:
+        - Required columns presence
+        - Null checks (critical = 0% nulls, warning = threshold-based)
+        - Range checks (min/max bounds for numeric columns)
+        - Uniqueness constraints
+
+        Args:
+            df: DataFrame to validate
+            entity: Entity name (must exist in validation config)
+
+        Returns:
+            List of ValidationIssue objects
+        """
+        issues: list[ValidationIssue] = []
+
+        # Get entity config
+        entity_config = self.config.get("validation", {}).get(entity, {})
+        if not entity_config:
+            issues.append(
+                ValidationIssue(
+                    "WARN",
+                    f"No validation config found for entity '{entity}'",
+                    entity=entity,
+                )
+            )
+            return issues
+
+        # 1. Required columns check
+        required_cols = entity_config.get("required_columns", [])
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            issues.append(
+                ValidationIssue(
+                    "ERROR",
+                    f"Missing required columns: {missing_cols}",
+                    entity=entity,
+                )
+            )
+            # Cannot continue with further checks if required columns missing
+            return issues
+
+        # 2. Null checks
+        null_config = entity_config.get("null_checks", {})
+
+        # Critical null checks (0% nulls allowed)
+        critical_nulls = null_config.get("critical_null_checks", [])
+        for col in critical_nulls:
+            if col not in df.columns:
+                continue
+            null_count = df[col].isna().sum()
+            if null_count > 0:
+                null_pct = (null_count / len(df)) * 100
+                issues.append(
+                    ValidationIssue(
+                        "ERROR",
+                        f"Column '{col}' has {null_count} nulls ({null_pct:.1f}%) - critical column must have 0% nulls",
+                        entity=entity,
+                    )
+                )
+
+        # Warning null checks (threshold-based)
+        warning_nulls = null_config.get("warning_null_checks", {})
+        for col, threshold_pct in warning_nulls.items():
+            if col not in df.columns:
+                continue
+            null_count = df[col].isna().sum()
+            if null_count > 0:
+                null_pct = (null_count / len(df)) * 100
+                if null_pct > threshold_pct:
+                    issues.append(
+                        ValidationIssue(
+                            "WARN",
+                            f"Column '{col}' has {null_count} nulls ({null_pct:.1f}%) - exceeds threshold of {threshold_pct}%",
+                            entity=entity,
+                        )
+                    )
+
+        # 3. Range checks
+        range_checks = entity_config.get("range_checks", {})
+        for col, bounds in range_checks.items():
+            if col not in df.columns:
+                continue
+            min_val = bounds.get("min")
+            max_val = bounds.get("max")
+
+            # Check min bound
+            if min_val is not None:
+                below_min = df[col] < min_val
+                if below_min.any():
+                    count = below_min.sum()
+                    actual_min = df[col].min()
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"Column '{col}' has {count} values below minimum {min_val} (actual min: {actual_min})",
+                            entity=entity,
+                        )
+                    )
+
+            # Check max bound
+            if max_val is not None:
+                above_max = df[col] > max_val
+                if above_max.any():
+                    count = above_max.sum()
+                    actual_max = df[col].max()
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"Column '{col}' has {count} values above maximum {max_val} (actual max: {actual_max})",
+                            entity=entity,
+                        )
+                    )
+
+        # 4. Uniqueness checks
+        unique_cols = entity_config.get("uniqueness_columns", [])
+        if unique_cols:
+            missing_unique_cols = [col for col in unique_cols if col not in df.columns]
+            if missing_unique_cols:
+                issues.append(
+                    ValidationIssue(
+                        "WARN",
+                        f"Cannot check uniqueness - missing columns: {missing_unique_cols}",
+                        entity=entity,
+                    )
+                )
+            else:
+                dup_mask = df.duplicated(subset=unique_cols, keep=False)
+                dup_count = dup_mask.sum()
+                if dup_count > 0:
+                    issues.append(
+                        ValidationIssue(
+                            "ERROR",
+                            f"Found {dup_count} duplicate rows on uniqueness key {unique_cols}",
+                            entity=entity,
+                        )
+                    )
+
+        return issues
+
+    def validate_entity(
+        self,
+        year: int,
+        entity: str,
+        key_columns: list[str],
+        partition_glob: str = "*/*/*",
+        schema_only: bool = False,
+    ) -> list[ValidationIssue]:
+        """Generic validator for a processed entity with structured logging.
+
+        Performs layered validation:
+        1. Schema validation (config-driven, fast)
+        2. Manifest/duplicate checks (existing validation)
+
+        Args:
+            year: Year to validate
+            entity: Entity name
+            key_columns: Columns that form uniqueness key
+            partition_glob: Glob pattern for discovering partitions
+            schema_only: If True, only run schema validation and skip deeper checks
+
+        Returns:
+            List of ValidationIssue objects
+        """
+        self.logger.log_event(
+            "validation_entity_start",
+            {
+                "year": year,
+                "entity": entity,
+                "key_columns": key_columns,
+                "schema_only": schema_only,
+            },
+        )
+
+        issues: list[ValidationIssue] = []
+
+        # Layer 1: Schema validation (fast, config-driven)
+        # Try to load entity data to validate schema
+        entity_root = self.storage.root() / entity
+        legacy_year_dir = entity_root / str(year)
+        kv_year_dir = entity_root / f"year={year}"
+
+        if legacy_year_dir.exists():
+            base_dir = legacy_year_dir
+        elif kv_year_dir.exists():
+            base_dir = kv_year_dir
+        else:
+            candidates = list(entity_root.glob(f"**/*{year}*"))
+            base_dir = candidates[0] if candidates else None
+
+        if base_dir and base_dir.exists():
+            # Find first partition with data for schema validation
+            for csv_path in base_dir.rglob("data.csv"):
+                try:
+                    df = pd.read_csv(csv_path, nrows=1000)  # Sample for schema check
+                    schema_issues = self.validate_schema(df, entity)
+                    issues.extend(schema_issues)
+                    break  # Only validate schema once per entity
+                except Exception as e:
+                    self.logger.log_error(
+                        "schema_validation_failed",
+                        str(e),
+                        {"entity": entity, "path": str(csv_path)},
+                    )
+
+        # Short-circuit if schema_only or if schema errors found
+        schema_errors = [iss for iss in issues if iss.level == "ERROR"]
+        if schema_only or schema_errors:
+            error_count = len(schema_errors)
+            warn_count = sum(1 for iss in issues if iss.level == "WARN")
+            self.logger.log_event(
+                "validation_entity_complete",
+                {
+                    "year": year,
+                    "entity": entity,
+                    "schema_only": schema_only,
+                    "total_issues": len(issues),
+                    "errors": error_count,
+                    "warnings": warn_count,
+                },
+            )
+            return issues
+
+        # Layer 2: Manifest/duplicate validation (existing checks)
+        deeper_issues = validate_entity(
+            self.storage, year, entity, key_columns, partition_glob, logger=self.logger
+        )
+        issues.extend(deeper_issues)
+
+        error_count = sum(1 for iss in issues if iss.level == "ERROR")
+        warn_count = sum(1 for iss in issues if iss.level == "WARN")
+
+        self.logger.log_event(
+            "validation_entity_complete",
+            {
+                "year": year,
+                "entity": entity,
+                "total_issues": len(issues),
+                "errors": error_count,
+                "warnings": warn_count,
+            },
+        )
+
+        return issues
+
+    def validate_processed_season(self, year: int) -> list[ValidationIssue]:
+        """Run all validations for a processed season with structured logging."""
+        self.logger.log_event(
+            "validation_season_start", {"year": year, "data_type": "processed"}
+        )
+
+        issues = validate_processed_season(self.storage, year, logger=self.logger)
+
+        error_count = sum(1 for iss in issues if iss.level == "ERROR")
+        warn_count = sum(1 for iss in issues if iss.level == "WARN")
+
+        self.logger.log_event(
+            "validation_season_complete",
+            {
+                "year": year,
+                "data_type": "processed",
+                "total_issues": len(issues),
+                "errors": error_count,
+                "warnings": warn_count,
+            },
+        )
+
+        return issues
+
+    def validate_raw_season(self, year: int) -> list[ValidationIssue]:
+        """Run all validations for a raw season with structured logging."""
+        self.logger.log_event(
+            "validation_season_start", {"year": year, "data_type": "raw"}
+        )
+
+        issues = validate_raw_season(self.storage, year, logger=self.logger)
+
+        error_count = sum(1 for iss in issues if iss.level == "ERROR")
+        warn_count = sum(1 for iss in issues if iss.level == "WARN")
+
+        self.logger.log_event(
+            "validation_season_complete",
+            {
+                "year": year,
+                "data_type": "raw",
+                "total_issues": len(issues),
+                "errors": error_count,
+                "warnings": warn_count,
+            },
+        )
+
+        return issues
 
 
 def _iter_csv_files(root: Path) -> Iterable[Path]:
@@ -153,11 +511,20 @@ def validate_entity(
     entity: str,
     key_columns: list[str],
     partition_glob: str = "*/*/*",
+    logger: DataLogger | None = None,
 ) -> list[ValidationIssue]:
     """Generic validator for a processed entity.
 
     Supports both legacy path style (entity/<year>/...) and key=value style
     (entity/year=<year>/...).
+
+    Args:
+        storage: LocalStorage instance
+        year: Year to validate
+        entity: Entity name (e.g., 'team_game', 'byplay')
+        key_columns: Columns that form uniqueness key
+        partition_glob: Glob pattern for discovering partitions
+        logger: Optional DataLogger for structured logging
     """
     issues: list[ValidationIssue] = []
     entity_root = storage.root() / entity
@@ -204,7 +571,14 @@ def validate_entity(
         )
         return issues
 
-    print(f"Validating {len(partition_dirs)} partitions for entity '{entity}'...")
+    if logger:
+        logger.log_event(
+            "validation_entity_partitions",
+            {"entity": entity, "partition_count": len(partition_dirs)},
+        )
+    else:
+        print(f"Validating {len(partition_dirs)} partitions for entity '{entity}'...")
+
     for part_dir in partition_dirs:
         issues.extend(validate_manifest_counts(part_dir, entity))
         issues.extend(validate_partition_duplicates(part_dir, entity, key_columns))
@@ -213,16 +587,31 @@ def validate_entity(
 
 
 def validate_processed_season(
-    storage: LocalStorage, year: int
+    storage: LocalStorage, year: int, logger: DataLogger | None = None
 ) -> list[ValidationIssue]:
-    """Run all validations for a processed season."""
+    """Run all validations for a processed season.
+
+    Args:
+        storage: LocalStorage instance
+        year: Year to validate
+        logger: Optional DataLogger for structured logging
+    """
     issues: list[ValidationIssue] = []
-    print(f"--- Validating Processed Data for Season {year} ---")
+
+    if logger:
+        logger.log_event("validation_processed_season_start", {"year": year})
+    else:
+        print(f"--- Validating Processed Data for Season {year} ---")
 
     # byplay: year/week/game
     issues.extend(
         validate_entity(
-            storage, year, "byplay", ["game_id", "drive_number", "play_number"], "*/*/*"
+            storage,
+            year,
+            "byplay",
+            ["game_id", "drive_number", "play_number"],
+            "*/*/*",
+            logger,
         )
     )
     # drives: year/week/game
@@ -233,25 +622,46 @@ def validate_processed_season(
             "drives",
             ["game_id", "drive_number", "offense", "defense"],
             "*/*/*",
+            logger,
         )
     )
     # team_game: year/week/team
     issues.extend(
-        validate_entity(storage, year, "team_game", ["game_id", "team"], "*/*/*")
+        validate_entity(
+            storage, year, "team_game", ["game_id", "team"], "*/*/*", logger
+        )
     )
     # team_season & team_season_adj: year/team/side
-    issues.extend(validate_entity(storage, year, "team_season", ["team"], "*/*/*"))
-    issues.extend(validate_entity(storage, year, "team_season_adj", ["team"], "*/*/*"))
+    issues.extend(
+        validate_entity(storage, year, "team_season", ["team"], "*/*/*", logger)
+    )
+    issues.extend(
+        validate_entity(storage, year, "team_season_adj", ["team"], "*/*/*", logger)
+    )
 
     return issues
 
 
 def validate_raw_season(
-    storage: LocalStorage, year: int, season_type: str = "regular"
+    storage: LocalStorage,
+    year: int,
+    season_type: str = "regular",
+    logger: DataLogger | None = None,
 ) -> list[ValidationIssue]:
-    """Run core validations for a raw data season."""
+    """Run core validations for a raw data season.
+
+    Args:
+        storage: LocalStorage instance
+        year: Year to validate
+        season_type: Season type (e.g., 'regular', 'postseason')
+        logger: Optional DataLogger for structured logging
+    """
     issues: list[ValidationIssue] = []
-    print(f"--- Validating Raw Data for Season {year} ---")
+
+    if logger:
+        logger.log_event("validation_raw_season_start", {"year": year})
+    else:
+        print(f"--- Validating Raw Data for Season {year} ---")
 
     # Simplified validation for raw data as an example
     games_dir = storage.root() / "games" / str(year)
@@ -1151,6 +1561,37 @@ def validate_team_game_vs_boxscore(
     return issues
 
 
+def get_validation_service(
+    data_root: Path | str | None = None,
+    data_type: str = "processed",
+    file_format: str = "csv",
+    config_path: Path | None = None,
+) -> DataValidationService:
+    """Factory function to create a DataValidationService instance.
+
+    Args:
+        data_root: Path to data root (defaults to CFB_MODEL_DATA_ROOT env var)
+        data_type: Type of data ('raw' or 'processed')
+        file_format: File format ('csv' or 'parquet')
+        config_path: Optional path to validation config (defaults to conf/validation.yaml)
+
+    Returns:
+        Configured DataValidationService instance
+    """
+    from src.config import get_data_root
+
+    if data_root is None:
+        data_root = get_data_root()
+
+    storage = LocalStorage(
+        data_root=data_root,
+        file_format=file_format,
+        data_type=data_type,
+    )
+
+    return DataValidationService(storage=storage, config_path=config_path)
+
+
 def main() -> None:
     import argparse
 
@@ -1177,6 +1618,11 @@ def main() -> None:
         action="store_true",
         help="Run deep semantic validations for drives, team_game, team_season, and opponent adjustment.",
     )
+    parser.add_argument(
+        "--schema-only",
+        action="store_true",
+        help="Run only schema validation (fast, config-driven checks).",
+    )
     args = parser.parse_args()
 
     data_root = args.data_root or get_data_root()
@@ -1185,7 +1631,30 @@ def main() -> None:
         data_root=data_root, file_format="csv", data_type=args.data_type
     )
 
-    if args.data_type == "processed":
+    # Use DataValidationService for schema-only validation
+    if args.schema_only:
+        print(f"--- Running Schema Validation for {args.year} ({args.data_type}) ---")
+        service = DataValidationService(storage=storage)
+
+        # Validate common entities with schema checks only
+        entities = {
+            "processed": [
+                ("team_game", ["game_id", "team"]),
+                ("byplay", ["game_id", "drive_number", "play_number"]),
+                ("drives", ["game_id", "drive_number", "offense", "defense"]),
+                ("team_season", ["team"]),
+            ],
+            "raw": [("games", ["id"])],
+        }
+
+        issues = []
+        for entity, keys in entities.get(args.data_type, []):
+            entity_issues = service.validate_entity(
+                args.year, entity, keys, schema_only=True
+            )
+            issues.extend(entity_issues)
+
+    elif args.data_type == "processed":
         issues = validate_processed_season(storage, args.year)
         if args.deep:
             print("\n--- Running deep semantic validations ---")
