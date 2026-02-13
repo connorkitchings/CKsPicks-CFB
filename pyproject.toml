@@ -34,6 +34,7 @@ dependencies = [
     "rich>=13.9.4",
     "fastapi>=0.116.1",
     "uvicorn[standard]>=0.35.0",
+    "boto3>=1.35.0", # AWS/R2 cloud storage
 ]
 
 [project.optional-dependencies]
