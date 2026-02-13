@@ -81,5 +81,6 @@ pythonpath = [
   "src"
 ]
 norecursedirs = [
-  "scripts/archive"
+  "scripts/archive",
+  "legacy"
 ]
