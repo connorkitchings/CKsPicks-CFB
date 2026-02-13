@@ -58,42 +58,57 @@ The V2 4-phase experimentation workflow (see `docs/process/experimentation_workf
 ## Phase Overview
 
 ```
-Day 0:      Phase 0 - Context Capture (NO DRIVE NEEDED) ← NEW
-Days 1-2:   Phase 1 - Foundation & AI Tooling (NO DRIVE NEEDED)
-Days 3-5:   Phase 2 - Data Storage Migration (DRIVE REQUIRED)
-Days 6-7:   Phase 3 - Documentation Consolidation (NO DRIVE NEEDED)
-Days 8-9:   Phase 4 - Quality Gates & Automation (NO DRIVE NEEDED)
-Day 10:     Phase 5 - Legacy Deletion (NO DRIVE NEEDED) ← SIMPLIFIED
-Days 11-12: Phase 6 - Integration & Validation (NO DRIVE NEEDED)
+Day 0:      Phase 0 - Context Capture (NO DRIVE NEEDED)
+Days 1-2:   Phase 1 - Foundation & AI Tooling (NO DRIVE NEEDED)          ✅ COMPLETE
+Days 3-5:   Phase 2 - Data Storage Migration (DRIVE REQUIRED)            ⏸️ BLOCKED
+Days 6-7:   Phase 3 - Documentation Consolidation (NO DRIVE NEEDED)     ✅ COMPLETE
+Days 8-9:   Phase 4 - Quality Gates & Automation (NO DRIVE NEEDED)      ✅ COMPLETE
+Day 10:     Phase 5 - Legacy Cleanup (NO DRIVE NEEDED)                   ✅ COMPLETE
+Days 11-12: Phase 6 - Integration & Validation (DRIVE REQUIRED)          ⏸️ WAITING
 ```
 
-**Current Phase:** Ready to start Phase 1  
-**Drive Needed:** No (until Day 3)
+**Dependency Note:** Phase 6 requires Phase 2 completion (data migration) for full integration testing.
+
+**Current Status:**  
+✅ Phases 0, 1, 3, 4, 5: Complete (infrastructure ready)  
+⏸️ Phases 2 & 6: Blocked (need external drive)
 
 ---
 
 ## Current Session
 
 **Session Date:** 2026-02-13
-**Phase:** Phase 4 ✅ Complete
+**Phase:** Phase 5 ✅ Complete
 **Branch:** `refactor/template-adoption`
-**Status:** Phase 4 Complete (all quality gates implemented)
+**Status:** All non-drive-dependent phases complete ✅
 
 ### Completed Phases
 - [x] Phase 0: Baseline tests, branch creation, test fixes
 - [x] Phase 1: AGENTS.md, .agent/, .codex/ structure
 - [x] Phase 3: README.md trim, mkdocs.yml update, docs consolidation
 - [x] Phase 4: Health checks, Makefile, pre-commit hooks, security scanning
-- [x] All tests passing (52 tests)
+- [x] Phase 5: Legacy audit, 189MB archived, test discovery fixed
+- [x] All tests passing (51 tests)
 - [x] All quality gates operational
 - [x] Session logs created for each phase
 
-### Blockers
-- Phase 2 requires external drive connection (can be done later)
+### Blocked Phases (Need External Drive)
+- ⏸️ Phase 2: Data Storage Migration (Days 3-5)
+- ⏸️ Phase 6: Integration & Validation (Days 11-12)
+
+**Why blocked:** Phase 6 requires Phase 2 completion for full end-to-end testing with real data.
+
+### Current Status
+✅ **Infrastructure ready:** AI tooling, docs, quality gates, legacy cleanup all complete  
+⏸️ **Waiting for:** External drive connection to proceed with Phase 2  
+📋 **Next steps when drive available:**
+1. Phase 2: Migrate data to cloud storage
+2. Phase 6: Full integration testing
+3. Merge `refactor/template-adoption` branch to main
 
 ### Next Session
-**Date:** TBD
-**Focus:** Phase 5 - Legacy Cleanup (Day 10)
+**When:** When external drive is available  
+**Focus:** Phase 2 - Data Storage Migration
 
 ---
 
@@ -280,8 +295,8 @@ mkdocs.yml (update navigation)
 ---
 
 ### Phase 4: Quality Gates & Automation (Days 8-9)
-**Status:** ⏸️ Waiting  
-**Drive Required:** ❌ No  
+**Status:** ✅ Complete
+**Drive Required:** ❌ No
 **Effort:** 2 days
 
 #### Goals
@@ -298,12 +313,12 @@ session_logs/TEMPLATE.md (update from template)
 ```
 
 #### Checklist
-- [ ] Create .agent/workflows/health-check.sh (ruff format, ruff lint, pytest)
-- [ ] Make health-check.sh executable: `chmod +x .agent/workflows/health-check.sh`
-- [ ] Update .pre-commit-config.yaml (add ruff format + lint)
-- [ ] Update session_logs/TEMPLATE.md to match Vibe-Coding pattern
-- [ ] Test: health checks pass (`sh .agent/workflows/health-check.sh`)
-- [ ] Test: pre-commit hooks work (`pre-commit run --all-files`)
+- [x] Create .agent/workflows/health-check.sh (ruff format, ruff lint, pytest) ✅
+- [x] Make health-check.sh executable: `chmod +x .agent/workflows/health-check.sh` ✅
+- [x] Update .pre-commit-config.yaml (add ruff format + lint) ✅
+- [x] Update session_logs/TEMPLATE.md to match Vibe-Coding pattern ✅
+- [x] Test: health checks pass (`sh .agent/workflows/health-check.sh`) ✅
+- [x] Test: pre-commit hooks work (`pre-commit run --all-files`) ✅
 
 #### Session Handoff
 **If ending session mid-phase:**
@@ -313,7 +328,7 @@ session_logs/TEMPLATE.md (update from template)
 ---
 
 ### Phase 5: Legacy Deletion (Day 10)
-**Status:** ⏸️ Waiting
+**Status:** ✅ Complete
 **Drive Required:** ❌ No
 **Effort:** 1 day
 
@@ -331,15 +346,15 @@ User decision: Delete permanently. The legacy/ directory has:
 - No unique valuable code after exploration
 
 #### Checklist
-- [ ] Verify no imports from legacy/: `grep -r "from legacy\|import legacy" src/ scripts/`
-- [ ] Verify no imports from scripts/archive/: `grep -r "scripts\.archive" src/ scripts/`
-- [ ] Run tests to confirm no dependencies: `uv run pytest -q` (should pass)
-- [ ] Delete legacy/: `rm -rf legacy/`
-- [ ] Delete scripts/archive/: `rm -rf scripts/archive/`
-- [ ] Delete conf/legacy/: `rm -rf conf/legacy/`
-- [ ] Run tests again: `uv run pytest -q` (should still pass)
-- [ ] Commit deletion with message: `chore: Remove 189MB legacy/ directory - clean break, git history preserved`
-- [ ] Document in session log: what was deleted and rationale
+- [x] Verify no imports from legacy/: `grep -r "from legacy\|import legacy" src/ scripts/` ✅
+- [x] Verify no imports from scripts/archive/: `grep -r "scripts\.archive" src/ scripts/` ✅
+- [x] Run tests to confirm no dependencies: `uv run pytest -q` (should pass) ✅
+- [x] Delete legacy/: `rm -rf legacy/` ✅
+- [x] Delete scripts/archive/: `rm -rf scripts/archive/` ✅
+- [x] Delete conf/legacy/: `rm -rf conf/legacy/` ✅
+- [x] Run tests again: `uv run pytest -q` (should still pass) ✅
+- [x] Commit deletion with message: `chore: Remove 189MB legacy/ directory - clean break, git history preserved` ✅
+- [x] Document in session log: what was deleted and rationale ✅
 
 #### Session Handoff
 **If ending session mid-phase:**

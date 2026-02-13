@@ -271,6 +271,9 @@ artifacts/analysis/*
 artifacts/archive/*
 !artifacts/archive/MANIFEST.md
 
+# Root-level archive folder (legacy archival)
+archive/
+
 # Hydra outputs (if used)
 artifacts/hydra_outputs/
 artifacts/outputs/
