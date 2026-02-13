@@ -3,47 +3,39 @@
 [![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An end-to-end pipeline for ingesting college-football data, engineering opponent-adjusted features,
-training models for spread and total edges, and publishing weekly ATS recommendations.
+An end-to-end machine learning pipeline for college football betting that predicts point spreads and over/unders using opponent-adjusted features and rigorous experimentation workflows.
 
-The project follows the **Vibe Coding** conventions for observability, reproducibility, and
-AI-assisted collaboration. It is designed so that humans and AI agents can safely iterate on the
-codebase, keep documentation in sync, and never lose critical experiment history.
+---
 
-## 🎯 V2 Experimentation Workflow (NEW - Dec 2025)
+## 🎯 Project Status
 
-The project now follows a rigorous **4-phase V2 workflow** for all modeling work:
+**V2 Modeling Workflow:** 🛑 **PAUSED** for infrastructure refactoring (as of Feb 2026)
 
-1. **Phase 1: Baseline Establishment** → Ridge regression with minimal features
-2. **Phase 2: Feature Engineering & Selection** → Test features, promote if +1.0% ROI
-3. **Phase 3: Model Selection** → Test complex models, promote if +1.5% ROI
-4. **Phase 4: Deployment & Monitoring** → Champion Model to production with monitoring
+The project is currently undergoing infrastructure modernization:
+- Migrating from external drive to cloud storage (Cloudflare R2)
+- Modernizing AI assistant tooling (AGENTS.md, .agent/, .codex/)
+- Consolidating documentation structure
 
-**Key Features**:
+**Modeling will resume after refactoring completes** (estimated: Phase 6 completion)
 
-- **5-Gate Promotion System**: Performance, volume, statistical significance, stability, no degradation
-- **Pure V2**: No legacy model fallback ("burn the boats")
-- **12-Week Timeline**: From Ridge baseline to Champion Model
-- **Manual Workflow**: User controls all steps, dashboard provides decision support
+For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 
-For deeper methodology and full documentation:
+---
 
-- **[📖 Documentation Guide](./docs/guide.md)** — Single source of truth for all project documentation
-- **[V2 Workflow](./docs/process/experimentation_workflow.md)** — **NEW:** Full 4-phase process
-- **[12-Week Plan](./docs/process/12_week_implementation_plan.md)** — **NEW:** Implementation roadmap
-- **[Promotion Framework](./docs/process/promotion_framework.md)** — **NEW:** 5-gate rigor system
-- [AI Assistant Protocols](./CLAUDE.md) — Session management and AI collaboration guidelines
+## 📚 Documentation
 
-### Quick Links
+**Start here:**
+- **[AGENTS.md](./AGENTS.md)** - Entry point for AI assistants (critical rules, workflows, troubleshooting)
+- **[docs/guide.md](./docs/guide.md)** - Documentation hub for humans
+- **[.codex/QUICKSTART.md](./.codex/QUICKSTART.md)** - Essential commands reference
 
-- **[V2 Baseline](./docs/modeling/baseline.md)** — Ridge regression with minimal features
-- [Weekly Pipeline](./docs/ops/weekly_pipeline.md) — Production workflow
-- [Monitoring Dashboard](./docs/ops/monitoring.md) — **NEW:** Performance tracking and rollback
-- [Feature Registry](./docs/project_org/feature_registry.md) — V2 feature sets
-- [ML Workflow](./docs/process/ml_workflow.md) — Train/Test/Deploy standards
-- [Decision Log](./docs/decisions/decision_log.md) — Major decisions and rationale
-
-> **Note**: Documentation reorganized on 2025-12-04, V2 workflow alignment on 2025-12-05. All docs now accessible from [docs/guide.md](./docs/guide.md).
+**Key documentation:**
+- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (paused)
+- [12-Week Implementation Plan](./docs/process/12_week_implementation_plan.md) - Roadmap
+- [Promotion Framework](./docs/process/promotion_framework.md) - 5-gate promotion system
+- [Feature Catalog](./docs/modeling/features.md) - Feature definitions
+- [Betting Policy](./docs/modeling/betting_policy.md) - Unit sizing rules
+- [Weekly Pipeline](./docs/ops/weekly_pipeline.md) - Production workflow
 
 ---
 
@@ -51,331 +43,180 @@ For deeper methodology and full documentation:
 
 ### Prerequisites
 
-- Python 3.12+
-- [uv](https://github.com/astral-sh/uv) for env and packaging
-- [Docker](https://www.docker.com/) for local experiment tracking and services
-- A valid [CollegeFootballData.com](https://collegefootballdata.com) API key
+- **Python 3.12+**
+- **[uv](https://github.com/astral-sh/uv)** - Fast Python package installer
+- **[Docker](https://www.docker.com/)** - For MLflow tracking UI
+- **[CollegeFootballData.com](https://collegefootballdata.com) API key**
 
 ### Installation
 
-1. **Clone the repository**
+1. **Clone the repository:**
 
    ```bash
    git clone https://github.com/connorkitchings/cfb_model.git
    cd cfb_model
    ```
 
-2. **Create and sync the virtual environment**
+2. **Install dependencies:**
 
    ```bash
    uv sync --extra dev
    ```
 
-   This installs runtime and dev dependencies defined in `pyproject.toml` into a `.venv/` managed by
-   `uv`.
-
-3. **Activate the environment**
-
-   On macOS/Linux:
+3. **Activate virtual environment:**
 
    ```bash
-   source .venv/bin/activate
+   source .venv/bin/activate  # macOS/Linux
+   # or
+   .venv\Scripts\Activate.ps1  # Windows PowerShell
    ```
 
-   On Windows (PowerShell):
+4. **Configure environment variables:**
 
-   ```powershell
-   .venv\Scripts\Activate.ps1
-   ```
-
-4. **Configure environment variables**
-
-   Copy the example environment file if present and edit it:
+   Create `.env` file:
 
    ```bash
-   cp .env.example .env
+   # Required: CollegeFootballData.com API key
+   CFBD_API_KEY=your_api_key_here
+
+   # Required: Data storage location
+   CFB_MODEL_DATA_ROOT=/path/to/your/data/directory
+   # Note: Currently external drive, migrating to cloud storage in Phase 2
    ```
 
-   At minimum, set:
+5. **Run health checks:**
 
-   - `CFBD_API_KEY` – your collegefootballdata.com API key
-   - `CFB_MODEL_DATA_ROOT` – absolute path to your local data directory, for example:
+   ```bash
+   # Format and lint
+   uv run ruff format . && uv run ruff check .
 
-     ```bash
-     CFB_MODEL_DATA_ROOT=/Users/<you>/cfb_model_data
-     ```
+   # Run tests
+   uv run pytest -q
+   ```
 
-   Other optional settings are documented in `development_standards.md` and the relevant docs.
+   If these pass, you're ready!
 
-### Quick Smoke Tests
+---
 
-After installation and env configuration, run quick checks:
+## 🏗️ Project Structure
+
+```
+cfb_model/
+├── AGENTS.md              # AI assistant entry point
+├── .agent/                # AI assistant workspace
+├── .codex/                # Quick reference guides
+├── src/                   # Source code
+│   ├── data/              # Data ingestion
+│   ├── features/          # Feature engineering
+│   ├── models/            # ML models
+│   └── utils/             # Utilities
+├── scripts/               # CLI scripts
+│   ├── pipeline/          # Production pipeline
+│   ├── analysis/          # Analysis tools
+│   └── experiments/       # Research scripts
+├── conf/                  # Hydra configuration
+├── docs/                  # Documentation
+├── tests/                 # Unit tests
+├── session_logs/          # Development logs
+└── artifacts/             # Outputs (git-ignored)
+```
+
+For detailed file locations, see [.codex/MAP.md](./.codex/MAP.md)
+
+---
+
+## 🧪 Quick Commands
+
+### Testing
 
 ```bash
-uv run ruff format . && uv run ruff check .
+# Run all tests
+uv run pytest
+
+# Run quietly
 uv run pytest -q
+
+# Format and lint
+uv run ruff format . && uv run ruff check .
 ```
 
-If these pass, you are ready to run the pipelines.
-
----
-
-## 🧱 Project Layout
-
-High-level directory structure (subject to change as the project evolves):
-
-```text
-.
-├── src/                    # Library code (features, models, pipelines, utilities)
-│   ├── config/             # Configuration (paths, experiments, champion models)
-│   ├── data/               # Data access and ingestion
-│   ├── features/           # Feature engineering pipelines
-│   ├── models/             # Training, evaluation, and prediction logic
-│   ├── inference/          # Prediction and reporting (predict.py, report.py)
-│   ├── training/           # Training workflows (train.py)
-│   └── utils/              # Utilities (MLflow, local storage, etc.)
-├── scripts/                # CLI entrypoints and organized utilities
-│   ├── pipeline/           # Production pipeline scripts
-│   ├── analysis/           # Analysis and validation scripts
-│   ├── experiments/        # Research and optimization scripts
-│   ├── debug/              # Debugging tools
-│   ├── utils/              # Helper scripts
-│   └── cli.py              # Main CLI entry point
-├── docs/                   # Project documentation (charter, roadmap, guides, etc.)
-├── session_logs/           # Chronological development session logs
-├── artifacts/              # Consolidated outputs (git-ignored)
-│   ├── mlruns/             # MLflow tracking data
-│   ├── outputs/            # Generated reports and predictions
-│   └── models/             # Saved model artifacts
-├── tests/                  # Unit and integration tests
-├── AI_GUIDE.md             # Front door instructions for AI agents and humans
-├── AGENTS.md               # Agent roles, handoffs, and guardrails
-├── pyproject.toml          # Project metadata, dependencies, and tooling config
-└── README.md               # You are here
-```
-
-For more detail on the docs structure and knowledge base, see `docs/kb_overview.md`.
-
----
-
-## 📊 Data, Features, and Pipelines
-
-The project builds season-long data products and weekly modeling inputs from public sources such as
-collegefootballdata.com.
-
-Key documents:
-
-- `docs/weekly_pipeline.md` – describes the weekly end-to-end run
-- `docs/feature_engineering_plan.md` and `docs/advanced_feature_engineering_overview.md`
-- `docs/feature_catalog.md` – authoritative mapping from feature families to concrete columns
-- `docs/points_for_model.md` – specification for spread/total modeling
-- `docs/data_partition_cleanup_summary.md` – decisions about data partitioning and filtering
-
-### Core Flow (High Level)
-
-1. **Raw ingest**
-   Fetch play-by-play, drives, games, and team data and normalize it into local tables under
-   `CFB_MODEL_DATA_ROOT`.
-
-2. **Aggregation and feature engineering**
-   Build drive-level, game-level, and season-level stats, including opponent-adjusted features and
-   rolling windows. The goal is to create rich **team-week** feature rows with clearly named
-   offensive and defensive columns.
-
-3. **Points-for modeling**
-   Train models that predict points scored and points allowed for each team in each matchup, then
-   transform these into edges vs. market spreads and totals. Details live in `docs/points_for_model.md`.
-
-4. **Bet selection and sizing**
-   Convert model edges into candidate bets and stake sizes subject to the rules in
-   `docs/betting_policy.md`. Policy is a hard constraint; models may propose edges, but the policy
-   decides which bets, if any, are valid.
-
-5. **Publishing**
-   Save weekly artifacts (predictions, bet slates, diagnostics) under `artifacts/` and, when
-   appropriate, export cleaned outputs for websites or dashboards.
-
-### Future Direction: Probabilistic Power Ratings
-
-In addition to the current points-for modeling, the project has a planned future track for
-**probabilistic power ratings**:
-
-- Maintain team-level ratings (overall, offense, defense, pace) as **distributions**, not just point
-  estimates.
-- Use these ratings as:
-
-  - A more interpretable backbone for spread and total projections
-  - A way to compare team strength across weeks and seasons on a schedule-adjusted basis
-  - A potential foundation for moneyline or derivative market modeling
-
-This work is in a **research-only** phase and will be fully specified in its own PRD before
-implementation begins.
-
----
-
-## 🧪 Modeling, Experiments, and MLOps
-
-The project uses **Hydra** for configuration management, **Optuna** for hyperparameter optimization, and **MLflow** for experiment tracking and model registry.
-
-### Quick Start
-
-**Train a model:**
+### Model Training
 
 ```bash
+# Basic training
 PYTHONPATH=. uv run python src/models/train_model.py
-```
 
-**Run hyperparameter optimization:**
+# Run experiment
+PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
 
-```bash
+# Hyperparameter optimization
 PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
 ```
 
-**Run a pre-configured experiment:**
+### MLflow Tracking
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
+# Start MLflow UI
+MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow
+
+# Access at http://localhost:5050
 ```
 
-### Core Principles
-
-- **Hydra-first:** All experiments are launched via Hydra configs in `conf/experiment/`
-- **Reproducibility:** Every model gets a standardized ID encoding model type, features, tuning, and data version
-- **Tracking:** MLflow automatically logs all runs, metrics, and model artifacts
-- **Registry:** Models are registered to MLflow with proper versioning and staging (Development → Staging → Production)
-
-For detailed instructions, see [MLOps and Experimentation Guide](docs/guides/mlops_experimentation.md).
+For complete command reference, see [.codex/QUICKSTART.md](./.codex/QUICKSTART.md)
 
 ---
 
-Each experiment produces a unique run under `artifacts/` and/or the tracking service. Runs are
-never overwritten.
+## 🤖 AI-Assisted Development
 
-- **Rich metadata:**
-  Each run logs, at minimum:
+This project is designed for AI-assisted development with clear guardrails:
 
-  - `run_id`
-  - `git_sha`
-  - `hydra_config_path`
-  - `dataset_snapshot_id`
-  - `feature_set_id`
-  - `model_name`
-  - `seed`
-  - Evaluation metrics
+**For AI assistants:**
+1. Read [AGENTS.md](./AGENTS.md) first - Contains critical rules
+2. Verify data root configuration before any data operations
+3. Review recent session logs (`session_logs/` last 3 days)
+4. Propose plan before implementing
+5. Create session log at end of work
 
-- **Feature-set discipline:**
-  Changes to feature selection or transformations must update a `feature_set_id` and be reflected in
-  the feature catalog and decision log when they affect “production” modeling.
+**For humans:**
+- AI assistants can help with code, but humans control git operations
+- All commits must be manually approved
+- Betting policy cannot be modified by AI
 
-- **Local-only tracking by default:**
-  Long-running services (tracking UIs, dashboards) are expected to run via Docker locally and are
-  not tied to any external SaaS tools by default.
-
-  To review MLflow runs or any future dashboards, start the Dockerized stack from the repo root:
-
-  ```bash
-  MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow
-  ```
-
-  Override `MLFLOW_PORT` if `5000` is in use. The tracker serves at
-  `http://localhost:${MLFLOW_PORT:-5000}` backed by `artifacts/mlruns/`, ensuring all experiment
-  reviews stay inside the repo-local artifacts tree.
-
-For concrete run commands and config patterns, see `docs/points_for_model.md`,
-`docs/advanced_feature_engineering_overview.md`, `docs/weekly_pipeline.md`, and
-`docs/operations/mlflow_mcp.md` (MCP hookup for MLflow dashboards).
-
-### Metric Definitions
-
-To avoid ambiguity, this project uses the following standard definitions:
-
-- **Straight-Up (SU) Win Accuracy:** The percentage of games where the model correctly predicted the winning team, regardless of the betting line.
-- **Against-The-Spread (ATS) Accuracy:** The percentage of games where the model correctly predicted the winner after adjusting for the spread (e.g., Home Score + Spread > Away Score).
-- **Betting Win Rate:** The ATS accuracy specifically for the subset of games where the model flagged a "betable" edge (i.e., edge > threshold).
-
----
-
-## 🎲 Betting Policy and Safety
-
-This repository includes logic for generating suggested bets based on model outputs. It does **not**
-guarantee profit or future performance.
-
-Key points:
-
-- The canonical policy lives in `docs/betting_policy.md`.
-- Any bet suggestions produced by code must:
-
-  - Obey bankroll, unit sizing, and exposure rules.
-  - Respect minimum sample sizes and stability checks.
-
-- The **Bets & Policy Checker** agent (described in `AGENTS.md`) is responsible for applying this
-  policy. It cannot change the policy, only enforce it.
-
-You are responsible for how (and whether) you use any outputs in real-world contexts. Treat this as
-a research and tooling project first.
-
----
-
-## 🤖 AI and Agent Workflows
-
-This project is explicitly designed to be used with AI coding tools (Gemini, ChatGPT, LM Studio, and
-others) under tight guardrails.
-
-Core docs:
-
-- `AI_GUIDE.md` – “front door” for agents and humans; defines read order and expectations.
-- `AGENTS.md` – defines agent roles (Navigator, Researcher, DataOps, Feature Engineer, Modeler,
-  Bets Checker, Docs Scribe, Guardian), handoffs, and session rules.
-- `docs/ai_session_templates.md` – kickoff and closing templates for AI-assisted sessions.
-- `docs/development_standards.md` – expectations for style, testing, and documentation.
-
-High-level rules:
-
-- Every AI session starts with a **planning prompt**, not immediate code changes.
-- Every session that changes code or docs ends with:
-
-  - A `session_logs/YYYY-MM-DD/NN.md` entry.
-  - A suggestion to run tests and checks.
-  - A reminder to commit and push changes.
-
-Humans remain in control of git operations, policy changes, and any real-world betting decisions.
+See [AGENTS.md](./AGENTS.md) for complete guidelines.
 
 ---
 
 ## 🧑‍💻 Contributing
 
-Contributions (issues, PRs, discussion) are welcome, especially on:
+Contributions are welcome! Before submitting a PR:
 
-- Data quality and ingestion improvements
-- New feature engineering ideas and diagnostics
-- Model architectures and evaluation criteria
-- MLOps, Hydra configs, and experiment management
-- Documentation clarity and examples
+1. Read [AGENTS.md](./AGENTS.md) for project conventions
+2. Run quality checks: `uv run ruff format . && uv run ruff check . && uv run pytest -q`
+3. Create session log in `session_logs/YYYY-MM-DD/NN.md`
+4. Update relevant documentation
 
-Before opening a PR:
-
-1. Read `docs/development_standards.md`.
-
-2. Run:
-
-   ```bash
-   uv run ruff format . && uv run ruff check .
-   uv run pytest -q
-   ```
-
-3. Update documentation (README, points-for model, feature catalog, decision log) as needed.
-
-For major changes (e.g., new model families, power-rating frameworks), open an issue or draft PR
-first to discuss design and impact.
+For major changes, open an issue first to discuss approach.
 
 ---
 
-## 📞 Contact
+## 📞 Contact & Support
 
-Have a question or a suggestion? Please [open an issue](https://github.com/connorkitchings/cfb_model/issues).
+- **Issues:** [GitHub Issues](https://github.com/connorkitchings/cfb_model/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/connorkitchings/cfb_model/discussions)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+---
+
+## ⚠️ Disclaimer
+
+This is a research and educational project. It does not guarantee profit or future performance. You are responsible for how you use any outputs. Sports betting involves risk - never bet more than you can afford to lose.
+
+---
+
+_Last Updated: 2026-02-13_
+_Currently undergoing Phase 3 refactoring - see REFACTORING_PLAN.md_

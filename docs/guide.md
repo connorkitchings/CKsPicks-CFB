@@ -32,7 +32,7 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 ### First Time Here?
 
 1. **Humans**: Read [Getting Started](#getting-started) below
-2. **AI Assistants**: Start with [CLAUDE.md](../CLAUDE.md) for session protocols, then return here for domain knowledge
+2. **AI Assistants**: Start with [AGENTS.md](../AGENTS.md) for session protocols, then return here for domain knowledge
 
 ### I Need To...
 
@@ -226,7 +226,8 @@ cfb_model/
 │   └── validation/           # Data quality, walk-forward validation
 ├── archive/                  # Unused scripts, configs, notebooks
 ├── session_logs/             # Development session history
-├── CLAUDE.md                 # AI assistant protocols
+├── AGENTS.md                 # Universal AI assistant entry point
+├── CLAUDE.md                 # Redirect to AGENTS.md
 └── README.md                 # Project overview
 ```
 
@@ -381,7 +382,7 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 
 ### AI Assistant
 
-1. Read [CLAUDE.md](../CLAUDE.md) for session protocols
+1. Read [AGENTS.md](../AGENTS.md) for session protocols
 2. Review this guide for navigation
 3. Check [AI Session Templates](process/ai_session_templates.md) for workflows
 4. Always verify data root before ANY data operations
