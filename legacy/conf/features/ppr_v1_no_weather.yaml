@@ -1,9 +1,0 @@
-name: ppr_v1_no_weather
-groups:
-  - off_def_stats
-  - pace_stats
-  - recency_stats
-  - luck_stats
-  # - weather_stats  <-- Excluded for ablation
-  - rating_stats
-recency_window: last_1

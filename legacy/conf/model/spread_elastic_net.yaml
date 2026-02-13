@@ -1,7 +1,0 @@
-name: elastic_net
-type: spread
-target: spread_target
-
-params:
-  alpha: 0.021253818629320218
-  l1_ratio: 0.8750471416387842

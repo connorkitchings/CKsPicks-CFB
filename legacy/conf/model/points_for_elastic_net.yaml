@@ -1,6 +1,0 @@
-name: elastic_net
-type: points_for
-
-params:
-  alpha: 0.1
-  l1_ratio: 0.5

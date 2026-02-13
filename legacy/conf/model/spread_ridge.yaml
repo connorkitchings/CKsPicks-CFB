@@ -1,6 +1,0 @@
-name: ridge
-type: spread
-target: spread_target
-
-params:
-  alpha: 9.298651606865729

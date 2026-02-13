@@ -1,5 +1,0 @@
-name: pace_v1
-groups:
-  - off_def_stats
-  - pace_stats  # Includes tempo_contrast, tempo_total, drives_contrast, etc.
-recency_window: last_3  # Use 3-game window for pace metrics

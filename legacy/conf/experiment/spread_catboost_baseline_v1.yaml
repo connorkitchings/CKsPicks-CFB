@@ -1,9 +1,0 @@
-# @package _global_
-defaults:
-  - override /model: catboost
-  - override /features: standard_v1
-
-experiment:
-  name: spread_catboost_baseline_v1
-
-target: spread_target

@@ -1,5 +1,0 @@
-name: ridge
-type: points_for
-
-params:
-  alpha: 0.1

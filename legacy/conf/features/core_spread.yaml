@@ -1,8 +1,0 @@
-packs:
-  - offense
-  - defense
-  - drive
-  - pace
-  - context
-min_variance: 0.0
-vif_threshold: 50.0

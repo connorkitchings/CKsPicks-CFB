@@ -1,6 +1,0 @@
-name: recency_v1
-groups:
-  - off_def_stats
-  - pace_stats
-  - recency_stats
-recency_window: last_1  # Focus on most recent game for maximum responsiveness

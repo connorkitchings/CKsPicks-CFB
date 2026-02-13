@@ -1,7 +1,0 @@
-name: huber
-type: spread
-target: spread_target
-
-params:
-  huber__epsilon: 1.35
-  huber__alpha: 0.1

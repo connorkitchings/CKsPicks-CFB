@@ -1,4 +1,0 @@
-type: ridge
-params:
-  alpha: 1.0
-  random_state: ${random_seed}
