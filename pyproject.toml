@@ -74,6 +74,7 @@ dev = [
     "matplotlib>=3.8.0",
     "seaborn>=0.13.0",
     "typer>=0.9.0",
+    "bandit>=1.9.3",
 ]
 
 [tool.pytest.ini_options]

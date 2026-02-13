@@ -1,0 +1,32 @@
+# Pre-commit Configuration
+# Ensures code quality before commits are allowed
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+default_install_hook_types: [pre-commit]
+
+repos:
+  # Health check - runs full validation suite
+  - repo: local
+    hooks:
+      - id: health-check
+        name: Health Check
+        entry: sh .agent/workflows/health-check.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+  # Prevent committing to main branch
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-json
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace

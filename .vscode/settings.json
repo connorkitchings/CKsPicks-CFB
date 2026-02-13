@@ -59,5 +59,10 @@
     "**/data/processed/**": true,
     "**/.venv/**": true
   },
-  "cursorpyright.analysis.extraPaths": ["./src"]
+  "cursorpyright.analysis.extraPaths": ["./src"],
+
+  // --- Testing ---
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["-q"],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true
 }
