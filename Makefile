@@ -23,10 +23,10 @@ lint:
 	@echo "🔍 Running linter..."
 	uv run ruff check .
 
-# Tests
+# Tests (with PYTHONPATH set for proper imports)
 test:
 	@echo "🧪 Running tests..."
-	uv run pytest -q
+	PYTHONPATH=. uv run pytest tests/ -q
 
 # Full health check
 health:

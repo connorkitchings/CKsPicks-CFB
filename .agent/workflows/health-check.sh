@@ -33,13 +33,13 @@ else
 fi
 echo ""
 
-# 3. Tests
+# 3. Tests (with PYTHONPATH for proper imports)
 echo "3️⃣  Running tests..."
-if uv run pytest -q > /dev/null 2>&1; then
+if PYTHONPATH=. uv run pytest tests/ -q > /dev/null 2>&1; then
     echo "   ✅ All tests passing"
 else
     echo "   ❌ Tests failed"
-    echo "   Run: uv run pytest -v for details"
+    echo "   Run: PYTHONPATH=. uv run pytest tests/ -v for details"
     FAILED=1
 fi
 echo ""
