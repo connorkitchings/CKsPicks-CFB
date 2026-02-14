@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils.base import Partition
-from utils.local_storage import LocalStorage
+from src.utils.base import Partition
+from src.utils.local_storage import LocalStorage as LegacyLocalStorage
 
 from .core import (
     aggregate_team_season,
@@ -26,7 +26,10 @@ from .weather import load_weather_data
 def persist_preaggregations(
     *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> dict[str, int]:
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
+    # Use legacy storage for raw data ( maintains compatibility with existing data structure )
+    raw_storage = LegacyLocalStorage(
+        data_root=data_root, file_format="csv", data_type="raw"
+    )
     records = raw_storage.read_index("plays", {"year": year})
     if not records:
         logging.info(f"No raw plays found for season {year} under {raw_storage.root()}")
@@ -76,7 +79,8 @@ def persist_preaggregations(
         team_season_df, team_game_df
     )
 
-    processed_storage = LocalStorage(
+    # Use legacy storage for processed data ( maintains compatibility )
+    processed_storage = LegacyLocalStorage(
         data_root=data_root, file_format="csv", data_type="processed"
     )
     totals: dict[str, int] = {
@@ -251,7 +255,9 @@ def persist_byplay_only(
     *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> int:
     """Build and persist only the byplay dataset from raw plays."""
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
+    raw_storage = LegacyLocalStorage(
+        data_root=data_root, file_format="csv", data_type="raw"
+    )
     records = raw_storage.read_index("plays", {"year": year})
     if not records:
         print(f"No raw plays found for season {year} under {raw_storage.root()}")
@@ -266,7 +272,7 @@ def persist_byplay_only(
     from .byplay import allplays_to_byplay
 
     byplay_df = allplays_to_byplay(plays_df)
-    processed_storage = LocalStorage(
+    processed_storage = LegacyLocalStorage(
         data_root=data_root, file_format="csv", data_type="processed"
     )
     total_written = 0
