@@ -228,10 +228,23 @@ This will:
 Expected time: ~30-45 minutes
 
 ### 6.4 Verify Migration
-Check the R2 dashboard:
-1. Go to your bucket in Cloudflare dashboard
-2. Browse objects - you should see `raw/` and `processed/` directories
-3. Verify file count and size match local data
+Run a deterministic local-vs-cloud reconciliation:
+
+```bash
+PYTHONPATH=. uv run python scripts/migration/verify_cloud_sync.py
+```
+
+Expected output shape:
+
+```text
+raw: local=<N> cloud=<N> missing_in_cloud=0 extra_in_cloud=0
+processed: local=<N> cloud=<N> missing_in_cloud=0 extra_in_cloud=0
+```
+
+Notes:
+- The verifier compares canonical `.csv` and `.parquet` files.
+- macOS metadata files (for example `._data.csv`) are ignored by default.
+- Reconciliation artifacts are written to `/tmp/cfb_cloud_sync_verify`.
 
 ---
 
@@ -241,7 +254,7 @@ Verify you can read data from R2:
 
 ### 7.1 Test Storage Abstraction
 ```bash
-python -c "
+PYTHONPATH=. uv run python -c "
 from src.data.storage import get_storage
 import pandas as pd
 
@@ -268,8 +281,8 @@ except Exception as e:
 Expected output:
 ```
 ✅ Using storage backend: R2Storage
-✅ Found 234 files in processed/
-✅ Successfully read processed/team_game/2024.parquet (5830 rows)
+✅ Found <many> files in processed/
+✅ Successfully read <sample-file> (<row-count> rows)
 ```
 
 ### 7.2 Test Without External Drive

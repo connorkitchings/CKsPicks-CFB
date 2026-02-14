@@ -178,12 +178,16 @@ class R2Storage(StorageBackend):
             endpoint_url=endpoint,
             aws_access_key_id=access_key,
             aws_secret_access_key=secret_key,
+            region_name="auto",  # R2 uses 'auto' region
         )
 
     def read_parquet(self, path: str) -> pd.DataFrame:
         """Read a parquet file from R2."""
+        import io
+
         obj = self.s3_client.get_object(Bucket=self.bucket, Key=path)
-        return pd.read_parquet(obj["Body"])
+        buffer = io.BytesIO(obj["Body"].read())
+        return pd.read_parquet(buffer)
 
     def write_parquet(self, df: pd.DataFrame, path: str) -> None:
         """Write a parquet file to R2."""
@@ -217,10 +221,23 @@ class R2Storage(StorageBackend):
 
     def list_files(self, prefix: str) -> list[str]:
         """List files with given prefix in R2."""
-        response = self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
-        if "Contents" not in response:
-            return []
-        return [obj["Key"] for obj in response["Contents"]]
+        files: list[str] = []
+        continuation_token: Optional[str] = None
+
+        while True:
+            kwargs = {"Bucket": self.bucket, "Prefix": prefix}
+            if continuation_token:
+                kwargs["ContinuationToken"] = continuation_token
+
+            response = self.s3_client.list_objects_v2(**kwargs)
+            files.extend(obj["Key"] for obj in response.get("Contents", []))
+
+            if response.get("IsTruncated"):
+                continuation_token = response.get("NextContinuationToken")
+            else:
+                break
+
+        return files
 
     def get_full_path(self, path: str) -> str:
         """Get the S3 URI for a file."""
@@ -302,10 +319,23 @@ class S3Storage(StorageBackend):
 
     def list_files(self, prefix: str) -> list[str]:
         """List files with given prefix in S3."""
-        response = self.s3_client.list_objects_v2(Bucket=self.bucket, Prefix=prefix)
-        if "Contents" not in response:
-            return []
-        return [obj["Key"] for obj in response["Contents"]]
+        files: list[str] = []
+        continuation_token: Optional[str] = None
+
+        while True:
+            kwargs = {"Bucket": self.bucket, "Prefix": prefix}
+            if continuation_token:
+                kwargs["ContinuationToken"] = continuation_token
+
+            response = self.s3_client.list_objects_v2(**kwargs)
+            files.extend(obj["Key"] for obj in response.get("Contents", []))
+
+            if response.get("IsTruncated"):
+                continuation_token = response.get("NextContinuationToken")
+            else:
+                break
+
+        return files
 
     def get_full_path(self, path: str) -> str:
         """Get the S3 URI for a file."""

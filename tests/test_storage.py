@@ -1,12 +1,9 @@
 """Tests for storage abstraction layer."""
 
-import os
-from pathlib import Path
-
 import pandas as pd
 import pytest
 
-from src.data.storage import LocalStorage, get_storage
+from src.data.storage import LocalStorage, R2Storage, S3Storage, get_storage
 
 
 class TestLocalStorage:
@@ -115,3 +112,81 @@ class TestGetStorage:
 
 # R2/S3 tests would require mocking boto3 or integration tests with actual cloud resources
 # For now, we test the local storage implementation which serves as the baseline
+
+
+class TestCloudListPagination:
+    """Test paginated file listing for cloud storage backends."""
+
+    class FakeS3Client:
+        """Minimal fake S3 client for list_objects_v2 pagination tests."""
+
+        def __init__(self, responses):
+            self.responses = responses
+            self.calls = []
+
+        def list_objects_v2(self, **kwargs):
+            self.calls.append(kwargs)
+            return self.responses[len(self.calls) - 1]
+
+    def test_r2_list_files_handles_pagination(self):
+        """R2 list_files should return all keys across all pages."""
+        fake_client = self.FakeS3Client(
+            [
+                {
+                    "Contents": [{"Key": "raw/a.csv"}, {"Key": "raw/b.csv"}],
+                    "IsTruncated": True,
+                    "NextContinuationToken": "token-1",
+                },
+                {
+                    "Contents": [{"Key": "raw/c.csv"}],
+                    "IsTruncated": False,
+                },
+            ]
+        )
+
+        storage = R2Storage.__new__(R2Storage)
+        storage.bucket = "cfb-model-data"
+        storage.s3_client = fake_client
+
+        files = storage.list_files("raw/")
+
+        assert files == ["raw/a.csv", "raw/b.csv", "raw/c.csv"]
+        assert fake_client.calls[0] == {"Bucket": "cfb-model-data", "Prefix": "raw/"}
+        assert fake_client.calls[1] == {
+            "Bucket": "cfb-model-data",
+            "Prefix": "raw/",
+            "ContinuationToken": "token-1",
+        }
+
+    def test_s3_list_files_handles_pagination(self):
+        """S3 list_files should return all keys across all pages."""
+        fake_client = self.FakeS3Client(
+            [
+                {
+                    "Contents": [{"Key": "processed/a.parquet"}],
+                    "IsTruncated": True,
+                    "NextContinuationToken": "token-2",
+                },
+                {
+                    "Contents": [{"Key": "processed/b.parquet"}],
+                    "IsTruncated": False,
+                },
+            ]
+        )
+
+        storage = S3Storage.__new__(S3Storage)
+        storage.bucket = "cfb-model-data"
+        storage.s3_client = fake_client
+
+        files = storage.list_files("processed/")
+
+        assert files == ["processed/a.parquet", "processed/b.parquet"]
+        assert fake_client.calls[0] == {
+            "Bucket": "cfb-model-data",
+            "Prefix": "processed/",
+        }
+        assert fake_client.calls[1] == {
+            "Bucket": "cfb-model-data",
+            "Prefix": "processed/",
+            "ContinuationToken": "token-2",
+        }

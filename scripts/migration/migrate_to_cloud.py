@@ -34,12 +34,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-# Add project root to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from src.data.storage import LocalStorage, get_storage
-
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
     """Set up logging configuration."""
@@ -98,6 +92,7 @@ def migrate_data(
         Dictionary with migration statistics
     """
     logger = setup_logging(verbose)
+    from src.data.storage import LocalStorage, get_storage
 
     # Verify we're migrating TO cloud (not from cloud to local)
     backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
@@ -128,9 +123,7 @@ def migrate_data(
 
     # Filter files based on patterns
     files_to_copy = [
-        f
-        for f in all_files
-        if should_copy_file(f, include_patterns, exclude_patterns)
+        f for f in all_files if should_copy_file(f, include_patterns, exclude_patterns)
     ]
 
     logger.info(f"Found {len(all_files)} total files")
@@ -155,7 +148,9 @@ def migrate_data(
             exists_in_cloud = cloud_storage.exists(file_path)
 
             if exists_in_cloud and not force:
-                logger.debug(f"⏭️  [{i}/{len(files_to_copy)}] Skipping {file_path} (already exists)")
+                logger.debug(
+                    f"⏭️  [{i}/{len(files_to_copy)}] Skipping {file_path} (already exists)"
+                )
                 stats["skipped"] += 1
                 continue
 
@@ -180,9 +175,7 @@ def migrate_data(
                 else:
                     # For other file types, read as binary and write
                     # This is a fallback - may need custom handling
-                    logger.warning(
-                        f"⚠️  Non-standard file type: {file_path}. Skipping."
-                    )
+                    logger.warning(f"⚠️  Non-standard file type: {file_path}. Skipping.")
                     stats["skipped"] += 1
                     continue
 
@@ -205,9 +198,7 @@ def migrate_data(
     logger.info(f"Copied: {stats['copied']}")
     logger.info(f"Skipped: {stats['skipped']}")
     logger.info(f"Errors: {stats['errors']}")
-    logger.info(
-        f"Total data: {stats['total_bytes'] / (1024**3):.2f} GB"
-    )
+    logger.info(f"Total data: {stats['total_bytes'] / (1024**3):.2f} GB")
 
     if dry_run:
         logger.info("\n🔍 This was a DRY RUN - no files were actually copied")
