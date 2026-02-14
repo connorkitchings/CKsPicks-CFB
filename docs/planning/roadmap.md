@@ -1,10 +1,10 @@
 # Implementation Schedule
 
 This document is the tactical plan for the **cfb_model** project. It translates the goals from the
-[Project Charter](../project_org/project_charter.md) into a high-level schedule of epics and tasks.
+[Project Charter](../planning/project_charter.md) into a high-level schedule of epics and tasks.
 
 > 📋 **Last Updated**: 2025-10-11 | **Next Review**: Weekly Wednesday sprint planning
-> 🔗 **Related**: [Open Decisions](../project_org/open_decisions.md) | [Decision Log](../decisions/decision_log.md)
+> 🔗 **Related**: [Open Decisions](../archive/open_decisions.md) | [Decision Log](../decisions/decision_log.md)
 
 ## Sprint Overview
 

@@ -1,6 +1,6 @@
 # CFB Model Refactoring Plan
 
-> **Status:** Ready to Implement | **Duration:** 12 Days | **Drive Access:** Needed only for Phase 2 (Days 3-5)
+> **Status:** Phase 2 Complete, Phase 6 Ready | **Duration:** 12 Days | **Drive Access:** Needed only during migration (completed)
 
 **Created:** 2026-02-13  
 **Goal:** Modernize cfb_model project using Vibe-Coding template patterns and migrate data to cloud storage
@@ -38,8 +38,8 @@ Transform cfb_model into a modern, cloud-native project with:
 - One-time migration: Free
 
 ### 🔴 Critical Requirements
-- [ ] Cloudflare or AWS account for Phase 2
-- [ ] External drive connected ONLY for Days 3-5
+- [x] Cloudflare or AWS account for Phase 2
+- [x] External drive connected for migration/cutover
 - [ ] Git branch: `refactor/template-adoption`
 
 ### ⚠️ V2 Modeling Workflow Status
@@ -60,27 +60,27 @@ The V2 4-phase experimentation workflow (see `docs/process/experimentation_workf
 ```
 Day 0:      Phase 0 - Context Capture (NO DRIVE NEEDED)
 Days 1-2:   Phase 1 - Foundation & AI Tooling (NO DRIVE NEEDED)          ✅ COMPLETE
-Days 3-5:   Phase 2 - Data Storage Migration (DRIVE REQUIRED)            ⏸️ BLOCKED
+Days 3-5:   Phase 2 - Data Storage Migration (DRIVE REQUIRED)            ✅ COMPLETE
 Days 6-7:   Phase 3 - Documentation Consolidation (NO DRIVE NEEDED)     ✅ COMPLETE
 Days 8-9:   Phase 4 - Quality Gates & Automation (NO DRIVE NEEDED)      ✅ COMPLETE
 Day 10:     Phase 5 - Legacy Cleanup (NO DRIVE NEEDED)                   ✅ COMPLETE
-Days 11-12: Phase 6 - Integration & Validation (DRIVE REQUIRED)          ⏸️ WAITING
+Days 11-12: Phase 6 - Integration & Validation (NO DRIVE NEEDED)         ▶️ READY
 ```
 
 **Dependency Note:** Phase 6 requires Phase 2 completion (data migration) for full integration testing.
 
 **Current Status:**  
-✅ Phases 0, 1, 3, 4, 5: Complete (infrastructure ready)  
-⏸️ Phases 2 & 6: Blocked (need external drive)
+✅ Phases 0-5: Complete (including Phase 2 cloud migration)  
+▶️ Phase 6: Ready to execute
 
 ---
 
 ## Current Session
 
-**Session Date:** 2026-02-13
-**Phase:** Phase 5 ✅ Complete
+**Session Date:** 2026-02-14
+**Phase:** Phase 2 ✅ Complete
 **Branch:** `refactor/template-adoption`
-**Status:** All non-drive-dependent phases complete ✅
+**Status:** Cloud migration verified; Phase 6 unblocked ✅
 
 ### Completed Phases
 - [x] Phase 0: Baseline tests, branch creation, test fixes
@@ -88,27 +88,30 @@ Days 11-12: Phase 6 - Integration & Validation (DRIVE REQUIRED)          ⏸️ 
 - [x] Phase 3: README.md trim, mkdocs.yml update, docs consolidation
 - [x] Phase 4: Health checks, Makefile, pre-commit hooks, security scanning
 - [x] Phase 5: Legacy audit, 189MB archived, test discovery fixed
+- [x] Phase 2: Cloud migration complete (raw/processed parity verified)
 - [x] All tests passing (51 tests)
 - [x] All quality gates operational
 - [x] Session logs created for each phase
 
-### Blocked Phases (Need External Drive)
-- ⏸️ Phase 2: Data Storage Migration (Days 3-5)
-- ⏸️ Phase 6: Integration & Validation (Days 11-12)
+### Migration Verification Notes (2026-02-14)
+- [x] Verified `raw/` parity: local=5300, cloud=5300, no diffs
+- [x] Verified `processed/` parity: local=26557, cloud=26557, no diffs
+- [x] Safe cleanup completed: removed 21,642 macOS `._*` files from external drive
+- [x] Preserved local manifests (`manifest.json`) by policy (local-only)
 
-**Why blocked:** Phase 6 requires Phase 2 completion for full end-to-end testing with real data.
+**Status update:** Phase 2 is complete. Phase 6 can proceed with cloud-backed validation.
 
 ### Current Status
 ✅ **Infrastructure ready:** AI tooling, docs, quality gates, legacy cleanup all complete  
-⏸️ **Waiting for:** External drive connection to proceed with Phase 2  
-📋 **Next steps when drive available:**
-1. Phase 2: Migrate data to cloud storage
-2. Phase 6: Full integration testing
+✅ **Cloud migration ready:** canonical data reconciled between local and R2  
+📋 **Next steps:**
+1. Phase 6: Full integration testing
+2. Final docs/cleanup pass
 3. Merge `refactor/template-adoption` branch to main
 
 ### Next Session
-**When:** When external drive is available  
-**Focus:** Phase 2 - Data Storage Migration
+**When:** Next integration session  
+**Focus:** Phase 6 - Integration & Validation
 
 ---
 
@@ -212,7 +215,7 @@ The current CLAUDE.md (822 lines) will be split across multiple files:
 ---
 
 ### Phase 2: Data Storage Migration (Days 3-5)
-**Status:** ⏸️ Blocked - Needs Drive  
+**Status:** ✅ Complete  
 **Drive Required:** ✅ Yes  
 **Effort:** 3 days
 
@@ -246,12 +249,14 @@ CFB_MODEL_DATA_ROOT=/Volumes/CK SSD/Coding Projects/cfb_model/
 3. **Day 5:** Implement dual-write, test reads
 
 #### Checklist
-- [ ] Create S3/R2 bucket with versioning
-- [ ] Set up lifecycle policies
-- [ ] Create storage abstraction class
-- [ ] Copy all raw/ data to cloud
-- [ ] Copy all processed/ data to cloud
-- [ ] Test: Can read data without external drive
+- [x] Create S3/R2 bucket with versioning
+- [x] Set up lifecycle policies
+- [x] Create storage abstraction class
+- [x] Copy all raw/ data to cloud
+- [x] Copy all processed/ data to cloud
+- [x] Test: Can read data without external drive
+- [x] Reconcile canonical files (`.csv`, `.parquet`) local vs cloud
+- [x] Remove macOS metadata (`._*`) from local source to simplify future sync
 
 ---
 
@@ -364,7 +369,7 @@ User decision: Delete permanently. The legacy/ directory has:
 ---
 
 ### Phase 6: Integration & Validation (Days 11-12)
-**Status:** ⏸️ Waiting  
+**Status:** ▶️ Ready  
 **Drive Required:** ❌ No  
 **Effort:** 2 days
 

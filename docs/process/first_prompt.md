@@ -20,7 +20,7 @@ All modeling work must follow the mandatory **4-phase V2 experimentation workflo
 
 ### Step 1: Understand the Documentation Structure
 
-Start with the **single source of truth**: [`docs/guide.md`](docs/guide.md)
+Start with the **single source of truth**: [Guide](../guide.md)
 
 This guide provides the complete navigation map for all project documentation. Use it to:
 
@@ -32,12 +32,12 @@ This guide provides the complete navigation map for all project documentation. U
 
 **As of Dec 2025, ALL modeling follows V2 workflow:**
 
-1. **[`docs/process/experimentation_workflow.md`](docs/process/experimentation_workflow.md)** — 4-phase V2 workflow
-2. **[`docs/process/promotion_framework.md`](docs/process/promotion_framework.md)** — 5-gate promotion criteria
-3. **[`docs/process/12_week_implementation_plan.md`](docs/process/12_week_implementation_plan.md)** — Week-by-week plan
-4. **[`docs/modeling/baseline.md`](docs/modeling/baseline.md)** — V2 Ridge baseline (Phase 1)
-5. **[`docs/project_org/feature_registry.md`](docs/project_org/feature_registry.md)** — V2 feature sets (minimal_unadjusted_v1 is current baseline)
-6. **[`docs/experiments/index.md`](docs/experiments/index.md)** — V2 experiment tracking
+1. **[Experimentation Workflow](experimentation_workflow.md)** — 4-phase V2 workflow
+2. **[Promotion Framework](promotion_framework.md)** — 5-gate promotion criteria
+3. **[12-Week Implementation Plan](12_week_implementation_plan.md)** — Week-by-week plan
+4. **[Modeling Baseline](../modeling/baseline.md)** — V2 Ridge baseline (Phase 1)
+5. **[Feature Registry](../project_org/feature_registry.md)** — V2 feature sets (minimal_unadjusted_v1 is current baseline)
+6. **[Experiments Index](../experiments/index.md)** — V2 experiment tracking
 
 **Current V2 Status** (as of 2025-12-05):
 
@@ -47,19 +47,19 @@ This guide provides the complete navigation map for all project documentation. U
 
 ### Step 3: Read Supporting Documents
 
-7. **[`README.md`](README.md)** — Project overview, V2 quick start
-8. **[`docs/ops/weekly_pipeline.md`](docs/ops/weekly_pipeline.md)** — Production workflow (manual)
-9. **[`docs/planning/roadmap.md`](docs/planning/roadmap.md)** — Sprint goals
-10. **[`docs/decisions/decision_log.md`](docs/decisions/decision_log.md)** — Recent V2 decisions (read last 6 entries from 2025-12-05)
+7. **Project README (`README.md` in repo root)** — Project overview, V2 quick start
+8. **[Weekly Pipeline](../ops/weekly_pipeline.md)** — Production workflow (manual)
+9. **[Roadmap](../planning/roadmap.md)** — Sprint goals
+10. **[Decision Log](../decisions/decision_log.md)** — Recent V2 decisions (read last 6 entries from 2025-12-05)
 
 ### Step 4: Review Supplemental Context (if needed)
 
 Based on the current sprint or recent session logs, review:
 
-- [`docs/modeling/evaluation.md`](docs/modeling/evaluation.md) — Evaluation framework
-- [`docs/modeling/betting_policy.md`](docs/modeling/betting_policy.md) — Betting constraints
-- [`docs/planning/adjustment_iteration_experiments.md`](docs/planning/adjustment_iteration_experiments.md) — Feature engineering research
-- [`docs/research/probabilistic_power_ratings_prd.md`](docs/research/probabilistic_power_ratings_prd.md) — Future direction
+- [Modeling Evaluation](../modeling/evaluation.md) — Evaluation framework
+- [Betting Policy](../modeling/betting_policy.md) — Betting constraints
+- [Adjustment Iteration Experiments](../research/adjustment_iteration_experiments.md) — Feature engineering research
+- [Probabilistic Power Ratings PRD](../research/probabilistic_power_ratings_prd.md) — Future direction
 
 ---
 
@@ -229,9 +229,9 @@ For each task:
 
 **Questions requiring clarification:**
 
-- [ ] [Question 1: e.g., Compute budget for this experiment?]
-- [ ] [Question 2: e.g., Preferred data window (2019-2024 vs. 2021-2024)?]
-- [ ] [Question 3: e.g., Target metric priority (hit rate vs. calibration)?]
+- [ ] Question 1: e.g., Compute budget for this experiment?
+- [ ] Question 2: e.g., Preferred data window (2019-2024 vs. 2021-2024)?
+- [ ] Question 3: e.g., Target metric priority (hit rate vs. calibration)?
 
 ---
 
@@ -267,4 +267,4 @@ Once approved, you will:
 ---
 
 _Last Updated: 2025-12-04_
-_Related: [`docs/guide.md`](docs/guide.md), [`CLAUDE.md`](CLAUDE.md)_
+_Related: [Guide](../guide.md), `CLAUDE.md` (repo root)_

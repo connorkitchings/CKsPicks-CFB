@@ -1,7 +1,7 @@
 # Project Charter
 
 This document defines the project goals, scope, and technical context for the **cfb_model** project.
-It is derived from the [Initial Project Prompt](../planning/initial_prompt.md) and will be updated
+It is derived from the [Initial Session Prompt](../process/first_prompt.md) and will be updated
 as the project evolves.
 
 > 📚 For a high-level entry point and links to all documentation, see the project README on GitHub

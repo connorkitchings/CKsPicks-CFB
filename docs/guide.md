@@ -32,7 +32,7 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 ### First Time Here?
 
 1. **Humans**: Read [Getting Started](#getting-started) below
-2. **AI Assistants**: Start with [AGENTS.md](../AGENTS.md) for session protocols, then return here for domain knowledge
+2. **AI Assistants**: Start with `AGENTS.md` (repo root) for session protocols, then return here for domain knowledge
 
 ### I Need To...
 
@@ -64,7 +64,7 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 - [Experimentation Workflow](process/experimentation_workflow.md) - The V2 process for all modeling.
 - [Data Quality Validation Workflow](process/data_quality_workflow.md) - Automated checks for data integrity.
 - [Opponent-Adjustment Analysis Workflow](process/adjustment_analysis_workflow.md) - Process for validating adjustment iterations.
-- [AI Session Templates](process/ai_session_templates.md) — Kickoff and closing templates
+- [Session Checklists](process/checklists.md) — Kickoff and closing workflows
 - [Session Logs](../session_logs/) — Chronological development history
 
 ### Data Pipeline Flow
@@ -83,8 +83,8 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 - [Modeling Baseline](modeling/baseline.md) — Current production architecture
 - [Feature Catalog](modeling/features.md) — All engineered features and definitions
 - [Generated Feature Dictionary](modeling/feature_dictionary.md) - Auto-generated dictionary of all available features.
-- [Feature Registry](../project_org/feature_registry.md) — Active feature groups (Hydra configs)
-- [Experiments Index](../experiments/index.md) — Experiment tracking and results
+- [Feature Registry](project_org/feature_registry.md) — Active feature groups (Hydra configs)
+- [Experiments Index](experiments/index.md) — Experiment tracking and results
 - [Betting Policy](modeling/betting_policy.md) — Unit sizing, exposure rules, risk management
 - [Calibration](modeling/calibration.md) — Model calibration and bias correction
 
@@ -120,7 +120,7 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 **Why we chose: decision history and rationale**
 
 - [Decision Log](decisions/decision_log.md) — All major modeling and architecture decisions
-- [Decision Log (Legacy Archive)](../archive/decision_log_legacy.md) — Pre-reorganization history
+- [Open Decisions (Archive)](archive/open_decisions.md) — Historical unresolved/planning decisions
 
 ---
 
@@ -334,7 +334,7 @@ mkdocs build --quiet
 - Spread: 50.1% hit rate (237-236-11) — Below breakeven ⚠️
 - Total: 51.4% hit rate (95-90-0) — Below breakeven ⚠️
 
-See [Experiments Index](../experiments/index.md) for detailed tracking.
+See [Experiments Index](experiments/index.md) for detailed tracking.
 
 ---
 
@@ -376,15 +376,15 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 ### Data Scientist / Researcher
 
 1. Start with [Modeling Baseline](modeling/baseline.md) and [Feature Catalog](modeling/features.md)
-2. Review [Experiments Index](../experiments/index.md) for current state
+2. Review [Experiments Index](experiments/index.md) for current state
 3. Check [Decision Log](decisions/decision_log.md) for recent changes
 4. Read [ML Workflow](process/ml_workflow.md) for train/test protocols
 
 ### AI Assistant
 
-1. Read [AGENTS.md](../AGENTS.md) for session protocols
+1. Read `AGENTS.md` for session protocols
 2. Review this guide for navigation
-3. Check [AI Session Templates](process/ai_session_templates.md) for workflows
+3. Check [Session Checklists](process/checklists.md) for workflows
 4. Always verify data root before ANY data operations
 
 ---

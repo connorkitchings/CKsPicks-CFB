@@ -30,7 +30,7 @@ Now we need to:
 
 ### Phase 1: Load & Aggregate Betting Lines
 
-#### [NEW] [load_betting_lines.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/analysis/load_betting_lines.py)
+#### [NEW] `load_betting_lines.py` (`scripts/analysis/load_betting_lines.py`)
 
 Utility to load betting lines data:
 
@@ -58,13 +58,13 @@ Utility to load betting lines data:
 
 ### Phase 2: Integration with Predictions
 
-#### [MODIFY] [walk_forward_validation.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/walk_forward_validation.py)
+#### [MODIFY] `walk_forward_validation.py` (`scripts/walk_forward_validation.py`)
 
 - Join predictions with betting lines at save time
 - Include line columns in output CSV
 - Add option to specify which line type (open vs. close)
 
-#### [NEW] [ats_performance.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/analysis/ats_performance.py)
+#### [NEW] `ats_performance.py` (`scripts/analysis/ats_performance.py`)
 
 Comprehensive ATS analysis:
 
@@ -77,7 +77,7 @@ Comprehensive ATS analysis:
 
 ### Phase 3: Backtesting & Reporting
 
-#### [NEW] [backtest_betting.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/backtest_betting.py)
+#### [NEW] `backtest_betting.py` (`scripts/backtest_betting.py`)
 
 Simulate betting strategy on historical data:
 
@@ -85,7 +85,7 @@ Simulate betting strategy on historical data:
 - Output: Week-by-week P&L, final ROI, max drawdown
 - Support multiple strategies (flat betting, Kelly, etc.)
 
-#### [MODIFY] [analyze_calibration.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/analyze_calibration.py)
+#### [MODIFY] `analyze_calibration.py` (`scripts/analyze_calibration.py`)
 
 Add ATS-specific visualizations:
 
@@ -97,7 +97,7 @@ Add ATS-specific visualizations:
 
 ### Phase 4: Weekly Production Pipeline
 
-#### [NEW] [weekly_predictions_pipeline.py](file:///Users/connorkitchings/Desktop/Repositories/cfb_model/scripts/production/weekly_predictions_pipeline.py)
+#### [NEW] `weekly_predictions_pipeline.py` (`scripts/production/weekly_predictions_pipeline.py`)
 
 Automated workflow:
 

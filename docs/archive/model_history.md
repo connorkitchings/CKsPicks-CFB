@@ -107,7 +107,7 @@ This document chronicles the modeling approaches, experiments, and key learnings
 - Intervals were overconfident initially
 - Recalibration improved betting decisions
 
-**Decision**: Integrated into betting policy (see [Betting Policy](../project_org/betting_policy.md)).
+**Decision**: Integrated into betting policy (see [Betting Policy](../modeling/betting_policy.md)).
 
 ---
 
@@ -159,6 +159,6 @@ This document chronicles the modeling approaches, experiments, and key learnings
 ## References
 
 - [Decision Log](../decisions/decision_log.md): Planning-level decisions
-- [Betting Policy](../project_org/betting_policy.md): Risk controls and thresholds
-- [Feature Catalog](../project_org/feature_catalog.md): Canonical feature definitions
-- [Modeling Baseline](../project_org/modeling_baseline.md): MVP approach
+- [Betting Policy](../modeling/betting_policy.md): Risk controls and thresholds
+- [Feature Catalog](../modeling/features.md): Canonical feature definitions
+- [Modeling Baseline](../modeling/baseline.md): MVP approach

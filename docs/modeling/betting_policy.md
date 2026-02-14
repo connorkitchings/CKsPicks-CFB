@@ -2,7 +2,7 @@
 
 This document establishes the comprehensive betting policy, unit sizing methodology, bankroll management, and risk controls for the cfb_model betting system.
 
-> 🔗 **Related**: [Open Decision OPEN-005](open_decisions.md#open-005-betting-unit-sizing-methodology) | [Model Evaluation](model_evaluation_criteria.md) | [Modeling Baseline](modeling_baseline.md)
+> 🔗 **Related**: [Open Decision OPEN-005](../archive/open_decisions.md#open-005-betting-unit-sizing-methodology) | [Model Evaluation](evaluation.md) | [Modeling Baseline](baseline.md)
 
 ---
 
