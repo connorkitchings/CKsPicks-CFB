@@ -1,8 +1,8 @@
 """Persistence layer for pre-aggregations.
 
 Reads raw plays for a season, builds byplay/drives/team-game/team-season
-artifacts, applies opponent adjustment, and writes partitioned CSV outputs to
-processed storage.
+artifacts, applies opponent adjustment, and writes partitioned outputs to
+processed storage (cloud or local).
 """
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.utils.base import Partition
-from src.utils.local_storage import LocalStorage as LegacyLocalStorage
+from src.data.storage import Partition, get_storage
 
 from .core import (
     aggregate_team_season,
@@ -26,13 +25,13 @@ from .weather import load_weather_data
 def persist_preaggregations(
     *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> dict[str, int]:
-    # Use legacy storage for raw data ( maintains compatibility with existing data structure )
-    raw_storage = LegacyLocalStorage(
-        data_root=data_root, file_format="csv", data_type="raw"
-    )
-    records = raw_storage.read_index("plays", {"year": year})
+    # Use storage abstraction layer for raw data (supports both local and cloud)
+    storage = get_storage()
+
+    # Read raw plays - use year partition key for raw data
+    records = storage.read_index("raw/plays", {"year": str(year)})
     if not records:
-        logging.info(f"No raw plays found for season {year} under {raw_storage.root()}")
+        logging.info(f"No raw plays found for season {year} under {storage.root()}")
         return {
             "byplay": 0,
             "drives": 0,
@@ -50,23 +49,23 @@ def persist_preaggregations(
         )
 
     # Load games data for situational features
-    games_records = raw_storage.read_index("games", {"year": year})
+    games_records = storage.read_index("raw/games", {"year": str(year)})
     games_df = (
         pd.DataFrame.from_records(games_records) if games_records else pd.DataFrame()
     )
 
     # Load teams and venues data for travel distance calculation
-    teams_records = raw_storage.read_index("teams", {"year": year})
+    teams_records = storage.read_index("raw/teams", {"year": str(year)})
     teams_df = (
         pd.DataFrame.from_records(teams_records) if teams_records else pd.DataFrame()
     )
-    venues_records = raw_storage.read_index("venues", {"year": year})
+    venues_records = storage.read_index("raw/venues", {"year": str(year)})
     venues_df = (
         pd.DataFrame.from_records(venues_records) if venues_records else pd.DataFrame()
     )
 
-    # Load weather data
-    weather_df = load_weather_data(year, raw_storage.root().parent)
+    # Load weather data (TODO: Update weather loader for cloud storage)
+    weather_df = load_weather_data(year, Path(storage.root()))
 
     byplay_df, drives_df, team_game_df, team_season_df = build_preaggregation_pipeline(
         plays_df,
@@ -79,10 +78,8 @@ def persist_preaggregations(
         team_season_df, team_game_df
     )
 
-    # Use legacy storage for processed data ( maintains compatibility )
-    processed_storage = LegacyLocalStorage(
-        data_root=data_root, file_format="csv", data_type="processed"
-    )
+    # Use storage abstraction layer for processed data (supports both local and cloud)
+    # Already have storage instance from raw data reading above
     totals: dict[str, int] = {
         "byplay": 0,
         "drives": 0,
@@ -114,8 +111,8 @@ def persist_preaggregations(
             {"year": str(year), "week": str(int(week)), "game_id": str(int(game_id))}
         )
         rows = group.to_dict(orient="records")
-        totals["byplay"] += processed_storage.write(
-            "byplay", rows, part, overwrite=True
+        totals["byplay"] += storage.write(
+            "processed/byplay", rows, part, overwrite=True
         )
 
     # Drives: partition by year/week/game_id (one folder per game, rows are per drive)
@@ -131,8 +128,8 @@ def persist_preaggregations(
             {"year": str(year), "week": str(int(week)), "game_id": str(int(game_id))}
         )
         rows = group.to_dict(orient="records")
-        totals["drives"] += processed_storage.write(
-            "drives", rows, part, overwrite=True
+        totals["drives"] += storage.write(
+            "processed/drives", rows, part, overwrite=True
         )
 
     # Team-game: partition by year/week/team
@@ -142,8 +139,8 @@ def persist_preaggregations(
             {"year": str(year), "week": str(int(week_val)), "team": str(team)}
         )
         rows = group.to_dict(orient="records")
-        totals["team_game"] += processed_storage.write(
-            "team_game", rows, part, overwrite=True
+        totals["team_game"] += storage.write(
+            "processed/team_game", rows, part, overwrite=True
         )
 
     # Team-season: partition by year/team, write offense and defense CSVs in side-specific subfolders
@@ -170,19 +167,25 @@ def persist_preaggregations(
         group_off = group[offense_cols].copy()
         group_def = group[defense_cols].copy()
         part_off = Partition({"year": str(year), "team": str(team), "side": "offense"})
-        totals["team_season"] += processed_storage.write(
-            "team_season", group_off.to_dict(orient="records"), part_off, overwrite=True
+        totals["team_season"] += storage.write(
+            "processed/team_season",
+            group_off.to_dict(orient="records"),
+            part_off,
+            overwrite=True,
         )
         part_def = Partition({"year": str(year), "team": str(team), "side": "defense"})
-        totals["team_season"] += processed_storage.write(
-            "team_season", group_def.to_dict(orient="records"), part_def, overwrite=True
+        totals["team_season"] += storage.write(
+            "processed/team_season",
+            group_def.to_dict(orient="records"),
+            part_def,
+            overwrite=True,
         )
 
     # Save the new long-format DataFrame with all adjustment iterations
     part = Partition({"year": str(year)})
     rows = team_season_adj_iterations_df.to_dict(orient="records")
-    totals["team_season_adj_iterations"] += processed_storage.write(
-        "team_season_adj_iterations", rows, part, overwrite=True
+    totals["team_season_adj_iterations"] += storage.write(
+        "processed/team_season_adj_iterations", rows, part, overwrite=True
     )
 
     # Team-week-adjusted: partition by year/week (for training)
@@ -233,14 +236,14 @@ def persist_preaggregations(
 
         part = Partition({"year": str(year), "week": str(week)})
         # Note: This total is not captured in the final summary, as it's part of the same conceptual dataset.
-        processed_storage.write(
-            "team_week_adj",
+        storage.write(
+            "processed/team_week_adj",
             std_adj_df.to_dict(orient="records"),
             part,
             overwrite=True,
         )
 
-    root = processed_storage.root()
+    root = storage.root()
     if verbose:
         logging.info(
             f"Pre-aggregations written under {root} for season {year}: "
@@ -255,12 +258,10 @@ def persist_byplay_only(
     *, year: int, data_root: str | None = None, verbose: bool = True
 ) -> int:
     """Build and persist only the byplay dataset from raw plays."""
-    raw_storage = LegacyLocalStorage(
-        data_root=data_root, file_format="csv", data_type="raw"
-    )
-    records = raw_storage.read_index("plays", {"year": year})
+    storage = get_storage()
+    records = storage.read_index("raw/plays", {"year": str(year)})
     if not records:
-        print(f"No raw plays found for season {year} under {raw_storage.root()}")
+        print(f"No raw plays found for season {year} under {storage.root()}")
         return 0
 
     plays_df = pd.DataFrame.from_records(records)
@@ -272,18 +273,15 @@ def persist_byplay_only(
     from .byplay import allplays_to_byplay
 
     byplay_df = allplays_to_byplay(plays_df)
-    processed_storage = LegacyLocalStorage(
-        data_root=data_root, file_format="csv", data_type="processed"
-    )
     total_written = 0
     for game_id, group in byplay_df.groupby(["game_id"], dropna=False):
         part = Partition({"year": str(year), "game_id": str(int(game_id))})
         rows = group.to_dict(orient="records")
-        total_written += processed_storage.write("byplay", rows, part, overwrite=True)
+        total_written += storage.write("processed/byplay", rows, part, overwrite=True)
 
     if verbose:
         print(
-            f"Byplay written under {processed_storage.root()} for season {year}: rows={total_written}"
+            f"Byplay written under {storage.root()} for season {year}: rows={total_written}"
         )
     return total_written
 
