@@ -26,7 +26,7 @@ lint:
 # Tests (with PYTHONPATH set for proper imports)
 test:
 	@echo "🧪 Running tests..."
-	PYTHONPATH=. uv run pytest tests/ -q
+	PYTHONPATH=src:. uv run pytest tests/ -q
 
 # Full health check
 health:
