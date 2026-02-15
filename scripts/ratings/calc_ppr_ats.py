@@ -7,8 +7,8 @@ import pandas as pd
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from src.config import get_data_root
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def load_lines_for_year(year):

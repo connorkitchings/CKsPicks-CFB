@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from src.data.storage import LocalStorage, R2Storage, S3Storage, get_storage
+from cks_picks_cfb.data.storage import LocalStorage, R2Storage, S3Storage, get_storage
 
 
 class TestLocalStorage:

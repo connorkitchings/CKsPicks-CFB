@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.utils.mlflow_tracking import get_tracking_uri
+from cks_picks_cfb.utils.mlflow_tracking import get_tracking_uri
 
 
 @hydra.main(config_path="../../conf", config_name="config", version_base=None)

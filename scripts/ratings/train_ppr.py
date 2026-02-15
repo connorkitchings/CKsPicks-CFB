@@ -9,13 +9,13 @@ import pymc as pm
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.config import ARTIFACTS_DIR, DATA_ROOT
+from cks_picks_cfb.config import ARTIFACTS_DIR, DATA_ROOT
 
 
 def load_data(year: int) -> pd.DataFrame:
     """Load game data for a specific year."""
     # The data is partitioned: raw/games/year=2024/data.csv
-    # DATA_ROOT is imported from src.config
+    # DATA_ROOT is imported from cks_picks_cfb.config
     raw_games_dir = DATA_ROOT / "raw" / "games" / f"year={year}"
     csv_path = raw_games_dir / "data.csv"
 

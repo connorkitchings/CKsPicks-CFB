@@ -9,7 +9,7 @@ from pathlib import Path
 
 import typer
 
-from src.config import MODELS_DIR, get_data_root
+from cks_picks_cfb.config import MODELS_DIR, get_data_root
 
 app = typer.Typer(help="Model training and tuning utilities.")
 

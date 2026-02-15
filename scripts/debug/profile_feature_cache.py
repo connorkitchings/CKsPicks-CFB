@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.config import get_data_root
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def _load_week_df(

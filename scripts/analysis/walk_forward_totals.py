@@ -1,7 +1,7 @@
 import pandas as pd
 
-from src.features.v2_recency import load_v2_recency_data
-from src.models.v1_baseline import V1BaselineModel
+from cks_picks_cfb.features.v2_recency import load_v2_recency_data
+from cks_picks_cfb.models.v1_baseline import V1BaselineModel
 
 
 def run_validation():

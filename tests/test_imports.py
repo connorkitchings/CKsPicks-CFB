@@ -9,12 +9,12 @@ import importlib
 import pytest
 
 MODULES = [
-    "features.byplay",
-    "features.core",
-    "features.pipeline",
-    "features.persist",
-    "models.v1_baseline",
-    "utils.logging",
+    "cks_picks_cfb.features.byplay",
+    "cks_picks_cfb.features.core",
+    "cks_picks_cfb.features.pipeline",
+    "cks_picks_cfb.features.persist",
+    "cks_picks_cfb.models.v1_baseline",
+    "cks_picks_cfb.utils.logging",
 ]
 
 

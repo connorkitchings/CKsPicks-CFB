@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.data.storage import LocalStorage, Partition, get_storage
+from cks_picks_cfb.data.storage import LocalStorage, Partition, get_storage
 
 
 class TestEntityPartitionAPI:

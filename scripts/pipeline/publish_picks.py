@@ -37,7 +37,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR
+from cks_picks_cfb.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR
 
 TEAM_LOGO_MAP = {
     "Sam Houston": "Sam Houston State",

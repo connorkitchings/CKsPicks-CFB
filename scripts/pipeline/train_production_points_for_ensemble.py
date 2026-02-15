@@ -28,11 +28,14 @@ load_dotenv()
 # Add src to path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 # noqa: E402
+from cks_picks_cfb.features.selector import (  # noqa: E402
+    get_feature_set_id,
+    select_features,
+)
+from cks_picks_cfb.models.features import load_point_in_time_data  # noqa: E402
+from cks_picks_cfb.models.train_model import _concat_years  # noqa: E402
+from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow  # noqa: E402
 from scripts.utils.model_registry import promote_to_production  # noqa: E402
-from src.features.selector import get_feature_set_id, select_features  # noqa: E402
-from src.models.features import load_point_in_time_data  # noqa: E402
-from src.models.train_model import _concat_years  # noqa: E402
-from src.utils.mlflow_tracking import setup_mlflow  # noqa: E402
 
 log = logging.getLogger(__name__)
 

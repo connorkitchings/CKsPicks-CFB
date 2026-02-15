@@ -10,10 +10,10 @@ from sklearn.metrics import accuracy_score, mean_squared_error
 sys.path.append(os.getcwd())
 from omegaconf import OmegaConf
 
-from src.config import get_data_root
-from src.features.selector import select_features
-from src.models.features import load_point_in_time_data
-from src.utils.mlflow_tracking import setup_mlflow
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.features.selector import select_features
+from cks_picks_cfb.models.features import load_point_in_time_data
+from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 
 def evaluate_models():

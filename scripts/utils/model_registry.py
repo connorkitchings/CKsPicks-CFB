@@ -12,7 +12,7 @@ from mlflow.tracking import MlflowClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.utils.mlflow_tracking import get_tracking_uri
+from cks_picks_cfb.utils.mlflow_tracking import get_tracking_uri
 
 
 def setup_model_registry():

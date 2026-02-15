@@ -8,8 +8,8 @@ import pandas as pd
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.config import get_data_root
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def load_week_scores(year, week):

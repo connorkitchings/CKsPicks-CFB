@@ -12,8 +12,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import get_data_root
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def _parse_weeks(raw: str | None) -> list[int] | None:

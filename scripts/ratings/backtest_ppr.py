@@ -8,8 +8,8 @@ import pandas as pd
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
+from cks_picks_cfb.config import ARTIFACTS_DIR
 from scripts.ratings.train_ppr import load_data, train_model
-from src.config import ARTIFACTS_DIR
 
 
 def run_backtest(

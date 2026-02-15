@@ -4,8 +4,8 @@ import warnings
 import optuna
 import pandas as pd
 
-from src.features.v1_pipeline import load_v1_data
-from src.models.v2_xgboost import V2XGBoostModel
+from cks_picks_cfb.features.v1_pipeline import load_v1_data
+from cks_picks_cfb.models.v2_xgboost import V2XGBoostModel
 
 # Suppress warnings
 warnings.filterwarnings("ignore")

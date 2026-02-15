@@ -14,8 +14,8 @@ from sklearn.base import clone
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import MODELS_DIR
-from src.models.train_model import _evaluate, points_for_models
+from cks_picks_cfb.config import MODELS_DIR
+from cks_picks_cfb.models.train_model import _evaluate, points_for_models
 
 POINTS_FOR_HOME_MODEL_NAME = "points_for_home.joblib"
 POINTS_FOR_AWAY_MODEL_NAME = "points_for_away.joblib"

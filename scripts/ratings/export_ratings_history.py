@@ -6,7 +6,7 @@ import pandas as pd
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from src.config import ARTIFACTS_DIR
+from cks_picks_cfb.config import ARTIFACTS_DIR
 
 
 def export_ratings():

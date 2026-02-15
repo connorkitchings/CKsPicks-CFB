@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.getcwd())
 from mlflow.tracking import MlflowClient
 
-from src.utils.mlflow_tracking import setup_mlflow
+from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 setup_mlflow()
 

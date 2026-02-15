@@ -5,7 +5,7 @@ import mlflow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.utils.mlflow_tracking import get_tracking_uri
+from cks_picks_cfb.utils.mlflow_tracking import get_tracking_uri
 
 mlflow.set_tracking_uri(get_tracking_uri())
 mlflow.set_experiment("MLflow Test")

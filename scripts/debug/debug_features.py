@@ -5,8 +5,8 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 
-from src.config import get_data_root  # noqa: E402
-from src.models.features import (  # noqa: E402
+from cks_picks_cfb.config import get_data_root  # noqa: E402
+from cks_picks_cfb.models.features import (  # noqa: E402
     load_point_in_time_data,
     load_weekly_team_features,
     prepare_team_features,

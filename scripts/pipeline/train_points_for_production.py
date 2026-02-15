@@ -19,11 +19,11 @@ from catboost import CatBoostRegressor
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
-from src.features.selector import select_features
-from src.models.ensemble import EnsembleModel
-from src.models.features import load_point_in_time_data
-from src.models.train_model import _concat_years
-from src.utils.mlflow_tracking import setup_mlflow
+from cks_picks_cfb.features.selector import select_features
+from cks_picks_cfb.models.ensemble import EnsembleModel
+from cks_picks_cfb.models.features import load_point_in_time_data
+from cks_picks_cfb.models.train_model import _concat_years
+from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 load_dotenv()
 

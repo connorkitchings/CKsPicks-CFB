@@ -1,6 +1,6 @@
 import pandas as pd
 
-from features.core import (
+from cks_picks_cfb.features.core import (
     aggregate_team_game,
     aggregate_team_season,
     apply_iterative_opponent_adjustment,

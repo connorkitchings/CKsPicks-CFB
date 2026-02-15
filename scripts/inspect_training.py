@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.features.v1_pipeline import load_v1_data
+from cks_picks_cfb.features.v1_pipeline import load_v1_data
 
 
 def inspect_training_data():

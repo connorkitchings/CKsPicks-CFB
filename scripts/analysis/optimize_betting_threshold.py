@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
-from src.train import get_model, load_and_prepare_data
+from cks_picks_cfb.train import get_model, load_and_prepare_data
 
 
 def run_threshold_analysis(model, df: pd.DataFrame, target: str):
@@ -120,7 +120,7 @@ def main(cfg: DictConfig):
     model = get_model(cfg, feature_override=features)
 
     print("Loading trained model weights...")
-    from src.config import get_repo_root
+    from cks_picks_cfb.config import get_repo_root
 
     # Use absolute path relative to repo root
     model_dir = get_repo_root() / "models"

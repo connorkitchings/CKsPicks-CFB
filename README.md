@@ -1,4 +1,4 @@
-# cfb_model – College Football Betting System
+# CKsPicks-CFB – College Football Betting System
 
 [![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,6 +12,7 @@ An end-to-end machine learning pipeline for college football betting that predic
 **V2 Modeling Workflow:** 🛑 **PAUSED** for infrastructure refactoring (as of Feb 2026)
 
 The project is currently undergoing infrastructure modernization:
+
 - Migrating from external drive to cloud storage (Cloudflare R2)
 - Modernizing AI assistant tooling (AGENTS.md, .agent/, .codex/)
 - Consolidating documentation structure
@@ -25,11 +26,13 @@ For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 ## 📚 Documentation
 
 **Start here:**
+
 - **[AGENTS.md](./AGENTS.md)** - Entry point for AI assistants (critical rules, workflows, troubleshooting)
 - **[docs/guide.md](./docs/guide.md)** - Documentation hub for humans
 - **[.codex/QUICKSTART.md](./.codex/QUICKSTART.md)** - Essential commands reference
 
 **Key documentation:**
+
 - [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (paused)
 - [12-Week Implementation Plan](./docs/process/12_week_implementation_plan.md) - Roadmap
 - [Promotion Framework](./docs/process/promotion_framework.md) - 5-gate promotion system
@@ -53,8 +56,8 @@ For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/connorkitchings/cfb_model.git
-   cd cfb_model
+   git clone https://github.com/connorkitchings/CKsPicks-CFB.git
+   cd CKsPicks-CFB
    ```
 
 2. **Install dependencies:**
@@ -101,7 +104,7 @@ For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 ## 🏗️ Project Structure
 
 ```
-cfb_model/
+CKsPicks-CFB/
 ├── AGENTS.md              # AI assistant entry point
 ├── .agent/                # AI assistant workspace
 ├── .codex/                # Quick reference guides
@@ -144,13 +147,13 @@ uv run ruff format . && uv run ruff check .
 
 ```bash
 # Basic training
-PYTHONPATH=. uv run python src/models/train_model.py
+PYTHONPATH=. uv run python -m cks_picks_cfb.train
 
 # Run experiment
-PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
+PYTHONPATH=. uv run python -m cks_picks_cfb.train experiment=spread_catboost_baseline_v1
 
 # Hyperparameter optimization
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=. uv run python -m cks_picks_cfb.train mode=optimize
 ```
 
 ### MLflow Tracking
@@ -171,6 +174,7 @@ For complete command reference, see [.codex/QUICKSTART.md](./.codex/QUICKSTART.m
 This project is designed for AI-assisted development with clear guardrails:
 
 **For AI assistants:**
+
 1. Read [AGENTS.md](./AGENTS.md) first - Contains critical rules
 2. Verify data root configuration before any data operations
 3. Review recent session logs (`session_logs/` last 3 days)
@@ -178,6 +182,7 @@ This project is designed for AI-assisted development with clear guardrails:
 5. Create session log at end of work
 
 **For humans:**
+
 - AI assistants can help with code, but humans control git operations
 - All commits must be manually approved
 - Betting policy cannot be modified by AI

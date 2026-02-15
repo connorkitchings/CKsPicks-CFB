@@ -12,8 +12,8 @@ import pandas as pd
 import pytest
 import yaml
 
-from src.utils.local_storage import LocalStorage
-from src.utils.validation import (
+from cks_picks_cfb.utils.local_storage import LocalStorage
+from cks_picks_cfb.utils.validation import (
     DataValidationService,
     ValidationIssue,
     get_validation_service,

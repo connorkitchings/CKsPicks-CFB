@@ -24,23 +24,23 @@ from typing import Iterable, Sequence
 import typer
 from typing_extensions import Annotated
 
-from scripts.analysis import analysis_cli
-from scripts.pipeline import training_cli
-from src.config import REPORTS_DIR, get_data_root
-from src.data.base import BaseIngester
-from src.data.betting_lines import BettingLinesIngester
-from src.data.coaches import CoachesIngester
-from src.data.game_stats import GameStatsIngester
-from src.data.games import GamesIngester
-from src.data.plays import PlaysIngester
-from src.data.rosters import RostersIngester
-from src.data.teams import TeamsIngester
-from src.data.venues import VenuesIngester
-from src.features.persist import (
+from cks_picks_cfb.config import REPORTS_DIR, get_data_root
+from cks_picks_cfb.data.base import BaseIngester
+from cks_picks_cfb.data.betting_lines import BettingLinesIngester
+from cks_picks_cfb.data.coaches import CoachesIngester
+from cks_picks_cfb.data.game_stats import GameStatsIngester
+from cks_picks_cfb.data.games import GamesIngester
+from cks_picks_cfb.data.plays import PlaysIngester
+from cks_picks_cfb.data.rosters import RostersIngester
+from cks_picks_cfb.data.teams import TeamsIngester
+from cks_picks_cfb.data.venues import VenuesIngester
+from cks_picks_cfb.features.persist import (
     persist_byplay_only,
     persist_preaggregations,
 )
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.utils.local_storage import LocalStorage
+from scripts.analysis import analysis_cli
+from scripts.pipeline import training_cli
 
 
 @dataclass(frozen=True)
@@ -361,9 +361,9 @@ def run_season(
     ] = 3.5,
 ):
     """Run model predictions and scoring for a full season using the champion model."""
-    from src.config.champion import get_champion_model_paths
-    from src.inference.predict import predict_week
-    from src.inference.report import generate_report
+    from cks_picks_cfb.config.champion import get_champion_model_paths
+    from cks_picks_cfb.inference.predict import predict_week
+    from cks_picks_cfb.inference.report import generate_report
 
     weeks_to_run = list(range(start_week, end_week + 1))
     print(f"Running champion model for {len(weeks_to_run)} weeks: {weeks_to_run}")

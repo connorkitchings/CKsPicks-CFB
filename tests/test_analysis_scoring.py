@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pandas as pd
 import pytest
 
-from scoring import settle_spread_bets, settle_total_bets
+from cks_picks_cfb.scoring import settle_spread_bets, settle_total_bets
 
 
 @pytest.fixture

@@ -60,7 +60,7 @@ def resume_migration(
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-    from src.data.storage import LocalStorage, get_storage
+    from cks_picks_cfb.data.storage import LocalStorage, get_storage
 
     # Get already uploaded files
     logger.info(f"📖 Reading uploaded files from {log_file}...")

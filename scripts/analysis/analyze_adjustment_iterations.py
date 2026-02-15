@@ -13,7 +13,7 @@ import seaborn as sns
 
 # Add project root to path to allow importing from src
 sys.path.append(os.getcwd())
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def plot_convergence(data: pd.DataFrame, metric: str, teams: list[str]):

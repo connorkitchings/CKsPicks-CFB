@@ -3,13 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from analysis.unadjusted import (
+from cks_picks_cfb.analysis.unadjusted import (
     build_leaderboard,
     load_running_season_snapshot,
     scatter_plot,
 )
-from utils.base import Partition
-from utils.local_storage import LocalStorage
+from cks_picks_cfb.utils.base import Partition
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 pd = pytest.importorskip("pandas")
 

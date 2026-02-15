@@ -38,7 +38,11 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from src.config import PREDICTIONS_SUBDIR, REPORTS_DIR, SCORED_SUBDIR  # noqa: E402
+from cks_picks_cfb.config import (  # noqa: E402
+    PREDICTIONS_SUBDIR,
+    REPORTS_DIR,
+    SCORED_SUBDIR,
+)
 
 TEAM_LOGO_MAP = {
     "Sam Houston": "Sam Houston State",

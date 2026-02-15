@@ -5,10 +5,10 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import get_data_root
-from src.features.byplay import allplays_to_byplay
-from src.features.core import aggregate_drives
-from src.utils.local_storage import LocalStorage
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.features.byplay import allplays_to_byplay
+from cks_picks_cfb.features.core import aggregate_drives
+from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def debug_aggregation(year: int, data_root: str | None):

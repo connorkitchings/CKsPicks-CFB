@@ -12,7 +12,7 @@ from sklearn.model_selection import TimeSeriesSplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.config import REPORTS_DIR
+from cks_picks_cfb.config import REPORTS_DIR
 
 
 def select_features(

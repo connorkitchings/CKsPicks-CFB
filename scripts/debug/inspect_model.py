@@ -6,7 +6,7 @@ import joblib
 # Add src to path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 # noqa: E402
-from src.models.ensemble import EnsembleModel
+from cks_picks_cfb.models.ensemble import EnsembleModel
 
 
 def inspect(path):

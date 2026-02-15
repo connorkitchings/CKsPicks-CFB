@@ -11,8 +11,8 @@ from omegaconf import OmegaConf
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.features.selector import select_features
-from src.utils.mlflow_tracking import setup_mlflow
+from cks_picks_cfb.features.selector import select_features
+from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 
 def main():
@@ -119,7 +119,7 @@ def main():
     try:
         if use_recency:
             print(f"Using V2 Recency Loading (alpha={alpha})...")
-            from src.features.v2_recency import load_v2_recency_data
+            from cks_picks_cfb.features.v2_recency import load_v2_recency_data
 
             # load_v2_recency_data loads the WHOLE YEAR. We filter for week.
             full_year_df = load_v2_recency_data(

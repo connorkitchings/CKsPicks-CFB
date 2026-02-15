@@ -155,7 +155,7 @@ def main():
     import sys
 
     sys.path.append(str(Path(__file__).resolve().parent.parent))
-    from src.config import get_data_root
+    from cks_picks_cfb.config import get_data_root
 
     parser = argparse.ArgumentParser()
     parser.add_argument(

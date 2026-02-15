@@ -2,8 +2,8 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path.cwd()))
-from src.config import get_data_root  # noqa: E402
-from src.models.features import load_point_in_time_data  # noqa: E402
+from cks_picks_cfb.config import get_data_root  # noqa: E402
+from cks_picks_cfb.models.features import load_point_in_time_data  # noqa: E402
 
 
 def main():

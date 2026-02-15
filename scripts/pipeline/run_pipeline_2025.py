@@ -4,8 +4,8 @@ import sys
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
-from src.config import get_data_root
-from src.features.persist import persist_preaggregations
+from cks_picks_cfb.config import get_data_root
+from cks_picks_cfb.features.persist import persist_preaggregations
 
 
 def main():

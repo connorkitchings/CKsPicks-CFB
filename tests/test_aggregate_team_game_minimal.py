@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import pandas as pd
 
-from features.core import aggregate_team_game
+from cks_picks_cfb.features.core import aggregate_team_game
 
 
 def test_aggregate_team_game_minimal():

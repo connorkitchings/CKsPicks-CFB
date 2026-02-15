@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-from src.features.v1_pipeline import load_v1_data
+from cks_picks_cfb.features.v1_pipeline import load_v1_data
 
 
 def validate_features(year: int):

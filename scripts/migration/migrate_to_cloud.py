@@ -92,7 +92,7 @@ def migrate_data(
         Dictionary with migration statistics
     """
     logger = setup_logging(verbose)
-    from src.data.storage import LocalStorage, get_storage
+    from cks_picks_cfb.data.storage import LocalStorage, get_storage
 
     # Verify we're migrating TO cloud (not from cloud to local)
     backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()

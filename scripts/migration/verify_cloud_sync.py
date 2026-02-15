@@ -53,7 +53,7 @@ def build_local_inventory(
 
 def build_cloud_inventory(prefix: str, include_dot_underscore: bool) -> set[str]:
     """Build cloud inventory for the given prefix using configured backend."""
-    from src.data.storage import get_storage
+    from cks_picks_cfb.data.storage import get_storage
 
     storage = get_storage()
     cloud_files = storage.list_files(f"{prefix}/")

@@ -8,9 +8,9 @@ import mlflow
 from omegaconf import DictConfig
 from sklearn.linear_model import Ridge
 
-from src.models.features import load_point_in_time_data
-from src.models.train_model import _build_feature_list, _concat_years
-from src.utils.mlflow_tracking import get_tracking_uri
+from cks_picks_cfb.models.features import load_point_in_time_data
+from cks_picks_cfb.models.train_model import _build_feature_list, _concat_years
+from cks_picks_cfb.utils.mlflow_tracking import get_tracking_uri
 
 
 @hydra.main(config_path="../../conf", config_name="config", version_base=None)
