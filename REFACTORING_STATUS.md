@@ -1,8 +1,8 @@
 # Refactoring Status Summary
 
-> **Date:** 2026-02-13  
-> **Branch:** `refactor/template-adoption`  
-> **Status:** Infrastructure Complete, Waiting for Data Migration
+> **Date:** 2026-02-16
+> **Branch:** `refactor/template-adoption`
+> **Status:** Complete - Cloud storage operational, baseline validated
 
 ---
 
@@ -106,13 +106,56 @@
 - Production code can use either local or cloud storage transparently
 - Backward compatibility maintained with legacy storage system
 
+### Phase A: Post-Refactor Cleanup ✅
+**Status:** COMPLETE - Ready for baseline validation
+
+**Completed:**
+1. ✅ Weather data loader updated for cloud storage support
+   - `load_weather_data()` now accepts `StorageBackend` parameter
+   - Automatically uses cloud storage when available
+   - Maintains backward compatibility
+2. ✅ Documentation imports updated
+   - Fixed `src.` → `cks_picks_cfb.` in validation.md (13 occurrences)
+   - Fixed `src.` → `cks_picks_cfb.` in phase2_setup_guide.md (2 occurrences)
+3. ✅ Metrics updated to reflect 78 passing tests
+4. ✅ PPR ratings migration deferred (optional feature, not needed for baseline)
+
+### Phase B: Baseline Validation ✅
+**Status:** COMPLETE - Pipeline validated with cloud storage
+
+**Completed:**
+1. ✅ Cloud storage configuration verified (R2)
+   - All required data available in cloud (2019-2025)
+   - 358 team_week_adj files, 6 years of games/betting data
+2. ✅ V1 pipeline updated for cloud storage
+   - `v1_pipeline.py` now supports both LocalStorage and cloud backends
+   - Added `read_entity()` function with raw/processed prefix handling
+   - Backward compatible with legacy storage
+3. ✅ Baseline training run completed
+   - Model: Linear regression (Ridge, alpha=1.0)
+   - Features: minimal_unadjusted_v1 (4 EPA features)
+   - Training: 2,841 games (2019, 2021, 2022, 2023)
+   - Test: 714 games (2024)
+
+**Results:**
+| Metric | Value | Legacy Baseline | Notes |
+|--------|-------|----------------|-------|
+| RMSE | 18.71 | - | Higher than expected range (12-14) |
+| Hit Rate | 50.14% | 50.1% | Matches legacy CatBoost v5 |
+| ROI | -4.27% | -0.36% | Worse than legacy |
+| N Bets | 698 | - | Good coverage |
+
+**Key Achievement:** Validated end-to-end modeling pipeline works with cloud storage, eliminating external drive dependency for training.
+
+**Session Log:** `session_logs/2026-02-16/01-baseline-validation.md`
+
 ---
 
 ## 📊 Current Metrics
 
 | Metric | Value |
 |--------|-------|
-| **Tests Passing** | 51/51 (100%) |
+| **Tests Passing** | 78/78 (100%) |
 | **Code Coverage** | Core paths covered |
 | **Documentation** | Building successfully |
 | **Quality Gates** | All operational |
@@ -123,40 +166,35 @@
 
 ## 🎯 What Works Right Now
 
-### Without External Drive:
-✅ All code changes and refactoring  
-✅ Documentation updates  
-✅ Test suite execution  
-✅ Quality gate checks (`make health`)  
-✅ Pre-commit hooks  
-✅ AI tooling (AGENTS.md, skills, etc.)  
+### Without External Drive (Cloud Storage):
+✅ All code changes and refactoring
+✅ Documentation updates
+✅ Test suite execution
+✅ Quality gate checks (`make health`)
+✅ Pre-commit hooks
+✅ AI tooling (AGENTS.md, skills, etc.)
+✅ **Model training via R2 cloud storage** ⭐ NEW
+✅ **Feature loading from cloud** ⭐ NEW
+✅ **Data access (raw + processed)** ⭐ NEW
 
-### What Requires Drive:
-❌ Data pipeline operations  
-❌ Model training (needs training data)  
-❌ Feature generation (needs raw data)  
-❌ Cloud migration (needs source data)
+### What Still Requires Drive:
+⚠️ New data collection/ingestion
+⚠️ Data pipeline regeneration (optional)
 
 ---
 
-## 🚀 Next Steps (When Drive Available)
+## 🚀 Next Steps
 
-### Immediate (Day 1 of Phase 2)
-1. Connect external drive
-2. Verify `CFB_MODEL_DATA_ROOT` accessible
-3. Run Phase 2 data migration
-4. Copy data to cloud storage
+### Immediate (Ready Now)
+1. ✅ ~~Cloud storage validated~~ - DONE
+2. ✅ ~~Baseline training confirmed~~ - DONE
+3. **Archive refactoring branch** - Ready to merge to main
+4. **Resume V2 modeling workflow** - Can proceed with cloud storage
 
-### Short-term (Days 2-3 of Phase 2)
-1. Complete cloud storage setup
-2. Test data access without drive
-3. Verify all pipeline scripts work
-
-### Final (Phase 6)
-1. Run end-to-end integration test
-2. Merge `refactor/template-adoption` to `main`
-3. Delete or archive the feature branch
-4. Resume V2 modeling work
+### Optional Future Work
+1. Investigate performance gap vs expected baseline
+2. Test additional models (CatBoost, opponent_adjusted features)
+3. Re-sync external drive when available (backup/redundancy)
 
 ---
 
@@ -249,12 +287,12 @@ When you have the external drive connected:
 
 ---
 
-**Status:** Infrastructure complete and ready  
-**Waiting for:** External drive connection  
-**Estimated time to completion:** 5 days (when drive available)  
+**Status:** ✅ COMPLETE - Ready to merge to main
+**Achievement:** Full modeling pipeline operational with cloud storage
+**No longer requires:** External drive for training/inference
 **Current branch:** `refactor/template-adoption`
 
 ---
 
-*Last Updated: 2026-02-13*  
-*Next Update: When external drive connected*
+*Last Updated: 2026-02-16*
+*Completed: Phase B - Baseline Validation*

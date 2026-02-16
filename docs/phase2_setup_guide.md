@@ -110,7 +110,7 @@ Test that credentials work:
 python -c "
 import os
 os.environ['CFB_STORAGE_BACKEND'] = 'r2'
-from src.data.storage import get_storage
+from cks_picks_cfb.data.storage import get_storage
 storage = get_storage()
 print('✅ R2 connection successful!')
 "
@@ -255,7 +255,7 @@ Verify you can read data from R2:
 ### 7.1 Test Storage Abstraction
 ```bash
 PYTHONPATH=. uv run python -c "
-from src.data.storage import get_storage
+from cks_picks_cfb.data.storage import get_storage
 import pandas as pd
 
 # Get storage instance (should use R2)

@@ -1,17 +1,27 @@
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
+if TYPE_CHECKING:
+    from cks_picks_cfb.data.storage import StorageBackend
 
-def load_weather_data(year: int, data_root: Path | str) -> pd.DataFrame:
-    """Load weather data for a specific year."""
-    weather_path = Path(data_root) / f"raw/weather/year={year}/data.csv"
-    if not weather_path.exists():
-        logging.warning(f"No weather data found for {year} at {weather_path}")
+
+def load_weather_data(
+    year: int, storage: "StorageBackend | None" = None
+) -> pd.DataFrame:
+    """Load weather data for a specific year using cloud-compatible storage."""
+    if storage is None:
+        from cks_picks_cfb.data.storage import get_storage
+
+        storage = get_storage()
+
+    weather_path = f"raw/weather/year={year}/data.csv"
+    if not storage.exists(weather_path):
+        logging.warning(f"No weather data found for {year}")
         return pd.DataFrame()
 
-    df = pd.read_csv(weather_path)
+    df = storage.read_csv(weather_path)
     # Ensure game_id is int
     if "game_id" in df.columns:
         df["game_id"] = pd.to_numeric(df["game_id"], errors="coerce")

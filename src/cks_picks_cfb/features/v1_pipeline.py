@@ -1,7 +1,8 @@
+import os
+
 import pandas as pd
 
 from cks_picks_cfb.config import get_data_root
-from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def load_v1_data(year: int, features: list[str] | None = None):
@@ -14,14 +15,45 @@ def load_v1_data(year: int, features: list[str] | None = None):
         features: List of feature names (e.g., ['home_off_epa_pp', ...]).
                   If None, defaults to legacy adj_ features.
     """
-    data_root = get_data_root()
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-    processed_storage = LocalStorage(
-        data_root=data_root, file_format="csv", data_type="processed"
-    )
+    # Use cloud storage if configured, otherwise fall back to LocalStorage
+    storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+
+    if storage_backend in ("r2", "s3"):
+        # Use cloud storage
+        from cks_picks_cfb.data.storage import get_storage
+
+        storage = get_storage()
+
+        # Cloud storage uses entity-based API with raw/processed prefix
+        def read_entity(entity: str, year: int):
+            if entity in ("games", "betting_lines"):
+                # Raw data
+                full_entity = f"raw/{entity}"
+            else:
+                # Processed data
+                full_entity = f"processed/{entity}"
+            return storage.read_index(full_entity, {"year": year})
+
+    else:
+        # Use legacy LocalStorage for local files
+        from cks_picks_cfb.utils.local_storage import LocalStorage
+
+        data_root = get_data_root()
+        raw_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="raw"
+        )
+        processed_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="processed"
+        )
+
+        def read_entity(entity: str, year: int):
+            if entity in ("games", "betting_lines"):
+                return raw_storage.read_index(entity, {"year": year})
+            else:
+                return processed_storage.read_index(entity, {"year": year})
 
     # Load Games
-    games = raw_storage.read_index("games", {"year": year})
+    games = read_entity("games", year)
     if not games:
         print(f"No games found for {year}")
         return None
@@ -44,7 +76,7 @@ def load_v1_data(year: int, features: list[str] | None = None):
         games_df["week"] = games_df["week"].astype(int)
 
     # Load Betting Lines (to get spread_line for evaluation)
-    betting = raw_storage.read_index("betting_lines", {"year": year})
+    betting = read_entity("betting_lines", year)
     if betting:
         bet_df = pd.DataFrame(betting)
         # Deduplicate: prefer Bovada, then Consensus, then whatever
@@ -71,7 +103,7 @@ def load_v1_data(year: int, features: list[str] | None = None):
     # We use 'team_week_adj' which contains PIT stats (both raw and adjusted)
     # Note: 'team_week_adj' is partitioned by year and week.
     # We'll load all weeks for the year.
-    team_stats = processed_storage.read_index("team_week_adj", {"year": year})
+    team_stats = read_entity("team_week_adj", year)
     if not team_stats:
         print(f"No team stats found for {year}")
         return None

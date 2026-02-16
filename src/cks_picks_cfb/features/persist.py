@@ -64,8 +64,8 @@ def persist_preaggregations(
         pd.DataFrame.from_records(venues_records) if venues_records else pd.DataFrame()
     )
 
-    # Load weather data (TODO: Update weather loader for cloud storage)
-    weather_df = load_weather_data(year, Path(storage.root()))
+    # Load weather data using cloud-compatible storage
+    weather_df = load_weather_data(year, storage)
 
     byplay_df, drives_df, team_game_df, team_season_df = build_preaggregation_pipeline(
         plays_df,

@@ -12,22 +12,22 @@ The `DataValidationService` provides configuration-driven data quality validatio
 
 ```bash
 # Basic validation for a season
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type processed
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type processed
 
 # Schema-only validation (fast)
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type processed --schema-only
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type processed --schema-only
 
 # Deep validation (includes semantic checks)
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type processed --deep
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type processed --deep
 
 # Validate raw data
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type raw
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type raw
 ```
 
 ### Using the Service in Code
 
 ```python
-from src.utils.validation import get_validation_service
+from cks_picks_cfb.utils.validation import get_validation_service
 
 # Create service instance
 service = get_validation_service(data_type="processed")
@@ -170,7 +170,7 @@ validation:
 2. **Test the configuration:**
 
 ```python
-from src.utils.validation import get_validation_service
+from cks_picks_cfb.utils.validation import get_validation_service
 import pandas as pd
 
 service = get_validation_service()
@@ -277,10 +277,10 @@ For rapid validation during development:
 
 ```bash
 # Fast: Schema validation only (~1s)
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --schema-only
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --schema-only
 
 # Slow: Full deep validation (~30s)
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --deep
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --deep
 ```
 
 ### Validate Incrementally
@@ -312,16 +312,16 @@ df = pd.read_csv(csv_path, nrows=1000)  # Sample for schema check
 
 ```bash
 # Validate newly ingested raw data
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type raw
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type raw
 
 # Validate processed aggregations
-PYTHONPATH=. uv run python -m src.utils.validation --year 2024 --data-type processed --schema-only
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation --year 2024 --data-type processed --schema-only
 ```
 
 ### Before Model Training
 
 ```python
-from src.utils.validation import get_validation_service
+from cks_picks_cfb.utils.validation import get_validation_service
 
 # Validate training data
 service = get_validation_service(data_type="processed")
@@ -345,7 +345,7 @@ set -e
 YEAR=${1:-2024}
 
 echo "Running schema validation for year $YEAR..."
-PYTHONPATH=. uv run python -m src.utils.validation \
+PYTHONPATH=. uv run python -m cks_picks_cfb.utils.validation \
     --year $YEAR \
     --data-type processed \
     --schema-only
@@ -367,7 +367,7 @@ echo "✅ Validation passed"
 **Solution:**
 ```python
 from pathlib import Path
-from src.utils.validation import DataValidationService
+from cks_picks_cfb.utils.validation import DataValidationService
 
 # Provide explicit config path
 config_path = Path("/custom/path/to/validation.yaml")
