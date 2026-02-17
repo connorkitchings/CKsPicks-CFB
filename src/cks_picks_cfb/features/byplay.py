@@ -461,6 +461,12 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         (df["play_type"] == "Penalty") & (df["yards_gained"] < 0)
     ).astype(int)
 
+    fumble_turnover_list = ["Fumble Recovery (Opponent)", "Fumble Return Touchdown"]
+    interception_turnover_list = [
+        "Interception",
+        "Interception Return Touchdown",
+        "Pass Interception Return",
+    ]
     binary_columns = {
         "st_kickoff": st_kickoffs,
         "st_punt": st_punts,
@@ -469,6 +475,8 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "endofdrive": endofdrive,
         "twopoint": twopoint_list,
         "turnover": turnover_list,
+        "fumble_turnover": fumble_turnover_list,
+        "interception_turnover": interception_turnover_list,
         "rush_attempt": rushattempt_list,
         "rush_result": rushresult_list,
         "dropback": dropback_list,
@@ -490,13 +498,111 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
     df["red_zone"] = (df["yards_to_goal"] <= 20).astype(int)
     df["eckel"] = ((df["yards_to_goal"] < 40) & (df["down"] == 1)).astype(int)
 
-    df["updated_yards_gained"] = df.apply(update_yards_gained, axis=1)
+    # Vectorized update_yards_gained: zero out yards for fumble plays
+    _pt_lower = df["play_type"].str.lower()
+    _fumble_td_zero = _pt_lower.str.contains(
+        "fumble recovery (touchdown)", regex=False
+    ) & (df["yards_gained"] != 0)
+    _fumble_opp_zero = _pt_lower.str.contains("fumble recovery (opponent)", regex=False)
+    df["updated_yards_gained"] = np.where(
+        _fumble_td_zero | _fumble_opp_zero, 0, df["yards_gained"]
+    )
+
     df["TFL"] = ((df["penalty"] == 0) & (df["updated_yards_gained"] < 0)).astype(int)
     df["sack"] = (df["play_type"] == "Sack").astype(int)
     df["completion"] = (df["play_type"].isin(completion_list)).astype(int)
 
-    df["success"] = df.apply(calculate_play_success, axis=1)
-    df["explosive"] = df.apply(calculate_explosive, axis=1)
+    # Vectorized calculate_play_success
+    _success_play_types = [
+        "Rush",
+        "Rushing Touchdown",
+        "Fumble Recovery (Own)",
+        "Pass",
+        "Pass Reception",
+        "Pass Incompletion",
+        "Passing Touchdown",
+        "Sack",
+        "Safety",
+    ]
+    _is_success_type = df["play_type"].isin(_success_play_types)
+    _ytf_zero = df["yards_to_first"] == 0
+    _ytf_pos = df["yards_to_first"] > 0
+
+    _success_zero = (
+        ((df["down"] == 1) & (df["updated_yards_gained"] >= 0.5 * df["yards_to_goal"]))
+        | (
+            (df["down"] == 2)
+            & (df["updated_yards_gained"] >= 0.7 * df["yards_to_goal"])
+        )
+        | (
+            df["down"].isin([3, 4])
+            & (df["updated_yards_gained"] >= df["yards_to_goal"])
+        )
+    )
+    _success_pos = (
+        ((df["down"] == 1) & (df["updated_yards_gained"] >= 0.5 * df["yards_to_first"]))
+        | (
+            (df["down"] == 2)
+            & (df["updated_yards_gained"] >= 0.7 * df["yards_to_first"])
+        )
+        | (
+            df["down"].isin([3, 4])
+            & (df["updated_yards_gained"] >= df["yards_to_first"])
+        )
+        | (
+            (df["down"] == 1)
+            & (df["updated_yards_gained"] >= 0.5 * df["yards_to_goal"])
+        )
+        | (
+            (df["down"] == 2)
+            & (df["updated_yards_gained"] >= 0.7 * df["yards_to_goal"])
+        )
+        | (
+            df["down"].isin([3, 4])
+            & (df["updated_yards_gained"] >= df["yards_to_goal"])
+        )
+    )
+    _is_successful = _is_success_type & (
+        (_ytf_zero & _success_zero) | (_ytf_pos & _success_pos)
+    )
+    df["success"] = np.select(
+        [_is_successful, _is_success_type, df["turnover"] == 1],
+        [1.0, 0.0, 0.0],
+        default=np.nan,
+    )
+
+    # Vectorized calculate_explosive
+    _explosive_play_types = [
+        "Rush",
+        "Rushing Touchdown",
+        "Fumble Recovery (Own)",
+        "Pass",
+        "Pass Reception",
+        "Pass Incompletion",
+        "Passing Touchdown",
+        "Sack",
+        "Safety",
+    ]
+    _explosive_zero_types = [
+        "Fumble Recovery (Opponent)",
+        "Fumble Return Touchdown",
+        "Pass Interception Return",
+        "Interception Return Touchdown",
+        "Safety",
+        "Interception",
+    ]
+    _is_expl_type = df["play_type"].isin(_explosive_play_types)
+    _is_expl_zero = df["play_type"].isin(_explosive_zero_types)
+    _explosive = np.full(len(df), np.nan)
+    _explosive[_is_expl_type] = 0.0
+    _explosive[
+        _is_expl_type & (df["rush_result"] == 1) & (df["updated_yards_gained"] >= 15)
+    ] = 1.0
+    _explosive[
+        _is_expl_type & (df["pass_attempt"] == 1) & (df["updated_yards_gained"] >= 20)
+    ] = 1.0
+    _explosive[_is_expl_zero] = 0.0
+    df["explosive"] = _explosive
     df["success_yards"] = np.where(df["success"] == 1, df["updated_yards_gained"], 0)
     df["explosive_yards"] = np.where(
         df["explosive"] == 1, df["updated_yards_gained"], 0
@@ -606,6 +712,8 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "endofdrive",
         "twopoint",
         "turnover",
+        "fumble_turnover",
+        "interception_turnover",
         "rush_attempt",
         "rush_result",
         "dropback",

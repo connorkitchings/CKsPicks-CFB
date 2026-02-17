@@ -17,11 +17,41 @@ from .weather import merge_weather_features
 def calculate_luck_factor(
     team_game_df: pd.DataFrame, byplay_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Calculate luck factor as actual margin minus expected margin from PPA."""
-    # For MVP, we'll add a simple placeholder luck factor
-    # In the future, this could compare actual vs expected score based on PPA
+    """Calculate turnover luck factor (turnovers gained minus turnovers lost).
+
+    Fumble recoveries are roughly 50/50 by chance, so net turnover margin
+    is a meaningful proxy for game-level luck. Positive values indicate
+    the team benefited from turnover luck.
+    """
     team_game_df = team_game_df.copy()
-    team_game_df["luck_factor"] = 0.0  # Placeholder for now
+    if "turnover" not in byplay_df.columns:
+        team_game_df["luck_factor"] = 0.0
+        return team_game_df
+
+    if "luck_factor" in team_game_df.columns:
+        team_game_df = team_game_df.drop(columns=["luck_factor"])
+
+    off_to = (
+        byplay_df.groupby(["game_id", "offense"])["turnover"]
+        .sum()
+        .reset_index()
+        .rename(columns={"offense": "team", "turnover": "turnovers_lost"})
+    )
+    def_to = (
+        byplay_df.groupby(["game_id", "defense"])["turnover"]
+        .sum()
+        .reset_index()
+        .rename(columns={"defense": "team", "turnover": "turnovers_gained"})
+    )
+    luck = off_to.merge(def_to, on=["game_id", "team"], how="outer").fillna(0)
+    luck["luck_factor"] = luck["turnovers_gained"] - luck["turnovers_lost"]
+
+    team_game_df = team_game_df.merge(
+        luck[["game_id", "team", "luck_factor"]],
+        on=["game_id", "team"],
+        how="left",
+    )
+    team_game_df["luck_factor"] = team_game_df["luck_factor"].fillna(0)
     return team_game_df
 
 

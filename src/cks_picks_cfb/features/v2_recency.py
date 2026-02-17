@@ -16,13 +16,6 @@ def _calculate_ewma(series, alpha):
     return series.ewm(alpha=alpha, min_periods=1).mean()
 
 
-def _augment_with_style_metrics(df):
-    # Simplified style metrics for on-the-fly generation
-    # We can skip complex rolling windows for now or implement if critical
-    # Just returning raw for speed, style metrics are usually secondary
-    return df
-
-
 def aggregate_team_season_ewma(team_game_df, alpha):
     """
     Aggregate team-game metrics using EWMA (Exponential Decay).
@@ -203,9 +196,6 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
             lower = team_season[col].quantile(0.005)
             upper = team_season[col].quantile(0.995)
             team_season[col] = team_season[col].clip(lower=lower, upper=upper)
-
-    # Ideally we'd augment style metrics here
-    # team_season = _augment_with_style_metrics(team_season)
 
     # Opponent Adjustment
     # We need an iterator because `apply_iterative_opponent_adjustment`

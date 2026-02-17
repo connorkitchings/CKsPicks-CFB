@@ -237,6 +237,41 @@ def aggregate_team_game(
                 "aggregate_team_game requires 'season' and 'week' columns on drives_df or plays_df"
             )
 
+    # Build optional aggregation specs based on available columns
+    _off_optional: dict = {}
+    if "turnover" in plays_df.columns:
+        _off_optional["off_turnover_rate"] = ("turnover", "mean")
+    if "fumble_turnover" in plays_df.columns:
+        _off_optional["off_fumble_rate"] = ("fumble_turnover", "mean")
+    if "interception_turnover" in plays_df.columns:
+        _off_optional["off_interception_rate"] = ("interception_turnover", "mean")
+    if "penalty" in plays_df.columns:
+        _off_optional["off_penalty_rate"] = ("penalty", "mean")
+    if "offensive_penalty" in plays_df.columns:
+        _off_optional["off_offensive_penalty_rate"] = ("offensive_penalty", "mean")
+    if "sack" in plays_df.columns and "dropback" in plays_df.columns:
+        _off_optional["_off_sacks"] = ("sack", "sum")
+        _off_optional["_off_dropbacks"] = ("dropback", "sum")
+    if "fourthdown_conversion" in plays_df.columns:
+        _off_optional["off_fourth_down_conversion_rate"] = (
+            "fourthdown_conversion",
+            lambda x: x.mean() if not x.empty else 0,
+        )
+    if "down" in plays_df.columns:
+        _off_optional["_off_fourth_down_attempts"] = (
+            "down",
+            lambda s: (plays_df.loc[s.index, "down"] == 4).sum(),
+        )
+    if "red_zone" in plays_df.columns and "success" in plays_df.columns:
+        _off_optional["off_red_zone_sr"] = (
+            "red_zone",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "red_zone"] == 1)
+                .mean()
+            ),
+        )
+
     off_grp = plays_df.groupby(["season", "week", "game_id", "offense"], as_index=False)
     off_agg = off_grp.agg(
         n_off_plays=("play_number", "count"),
@@ -304,15 +339,49 @@ def aggregate_team_game(
             "thirddown_conversion",
             lambda x: x.mean() if not x.empty else 0,
         ),
+        **_off_optional,
     )
     # Compute split YPP safely
     off_denom_rush = off_agg["n_rush_plays"].where(off_agg["n_rush_plays"] > 0, 1)
     off_denom_pass = off_agg["n_pass_plays"].where(off_agg["n_pass_plays"] > 0, 1)
     off_agg["off_rush_ypp"] = off_agg["_off_rush_yards"].astype(float) / off_denom_rush
     off_agg["off_pass_ypp"] = off_agg["_off_pass_yards"].astype(float) / off_denom_pass
-    off_agg = off_agg.drop(columns=["_off_rush_yards", "_off_pass_yards"]).rename(
-        columns={"offense": "team"}
-    )
+
+    # Compute sack rate (sacks per dropback) and fourth down attempt rate
+    _drop_cols = ["_off_rush_yards", "_off_pass_yards"]
+    if "_off_sacks" in off_agg.columns and "_off_dropbacks" in off_agg.columns:
+        off_agg["off_sack_rate"] = off_agg["_off_sacks"].astype(float) / off_agg[
+            "_off_dropbacks"
+        ].where(off_agg["_off_dropbacks"] > 0, 1)
+        _drop_cols += ["_off_sacks", "_off_dropbacks"]
+    if "_off_fourth_down_attempts" in off_agg.columns:
+        total_plays = off_agg["n_off_plays"].where(off_agg["n_off_plays"] > 0, 1)
+        off_agg["off_fourth_down_attempt_rate"] = (
+            off_agg["_off_fourth_down_attempts"].astype(float) / total_plays
+        )
+        _drop_cols.append("_off_fourth_down_attempts")
+
+    off_agg = off_agg.drop(columns=_drop_cols).rename(columns={"offense": "team"})
+
+    _def_optional: dict = {}
+    if "turnover" in plays_df.columns:
+        _def_optional["def_turnover_rate"] = ("turnover", "mean")
+    if "penalty" in plays_df.columns:
+        _def_optional["def_penalty_rate"] = ("penalty", "mean")
+    if "defensive_penalty" in plays_df.columns:
+        _def_optional["def_defensive_penalty_rate"] = ("defensive_penalty", "mean")
+    if "sack" in plays_df.columns and "dropback" in plays_df.columns:
+        _def_optional["_def_sacks"] = ("sack", "sum")
+        _def_optional["_def_dropbacks"] = ("dropback", "sum")
+    if "red_zone" in plays_df.columns and "success" in plays_df.columns:
+        _def_optional["def_red_zone_sr"] = (
+            "red_zone",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "red_zone"] == 1)
+                .mean()
+            ),
+        )
 
     def_grp = plays_df.groupby(["season", "week", "game_id", "defense"], as_index=False)
     def_agg = def_grp.agg(
@@ -354,7 +423,19 @@ def aggregate_team_game(
             "thirddown_conversion",
             lambda x: x.mean() if not x.empty else 0,
         ),
-    ).rename(columns={"defense": "team"})
+        **_def_optional,
+    )
+
+    # Compute defensive sack rate
+    _def_drop_cols: list[str] = []
+    if "_def_sacks" in def_agg.columns and "_def_dropbacks" in def_agg.columns:
+        def_agg["def_sack_rate"] = def_agg["_def_sacks"].astype(float) / def_agg[
+            "_def_dropbacks"
+        ].where(def_agg["_def_dropbacks"] > 0, 1)
+        _def_drop_cols += ["_def_sacks", "_def_dropbacks"]
+    if _def_drop_cols:
+        def_agg = def_agg.drop(columns=_def_drop_cols)
+    def_agg = def_agg.rename(columns={"defense": "team"})
 
     drv_grp = drives_df.groupby(
         ["season", "week", "game_id", "offense"], as_index=False
@@ -632,6 +713,25 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         "temperature",
         "precipitation",
         "wind_speed",
+        # Turnover metrics
+        "off_turnover_rate",
+        "off_fumble_rate",
+        "off_interception_rate",
+        "def_turnover_rate",
+        # Sack metrics
+        "off_sack_rate",
+        "def_sack_rate",
+        # Penalty metrics
+        "off_penalty_rate",
+        "off_offensive_penalty_rate",
+        "def_penalty_rate",
+        "def_defensive_penalty_rate",
+        # Fourth down metrics
+        "off_fourth_down_conversion_rate",
+        "off_fourth_down_attempt_rate",
+        # Red zone metrics
+        "off_red_zone_sr",
+        "def_red_zone_sr",
     ]
     present_metric_cols = [c for c in metric_cols if c in weighted.columns]
     special_team_prefixes = ("off_fg_", "off_avg_net_punt_yards", "off_avg_net_kick_")
@@ -784,6 +884,10 @@ def apply_iterative_opponent_adjustment(
         "fg_rate_short",
         "fg_rate_mid",
         "fg_rate_long",
+        "turnover_rate",
+        "sack_rate",
+        "fourth_down_conversion_rate",
+        "red_zone_sr",
     ]
     defensive_allowed_metrics = {
         "power_success_rate",
