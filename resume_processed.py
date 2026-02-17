@@ -3,12 +3,14 @@
 
 import subprocess
 import sys
+from pathlib import Path
 
-# Resume with same settings
+repo_root = Path(__file__).resolve().parent
+
 result = subprocess.run(
     [
         sys.executable,
-        "scripts/migration/migrate_to_cloud.py",
+        str(repo_root / "scripts/migration/migrate_to_cloud.py"),
         "--include",
         "processed/",
         "--exclude",
@@ -22,7 +24,7 @@ result = subprocess.run(
     ],
     capture_output=True,
     text=True,
-    cwd="/Users/connorkitchings/Desktop/Repositories/cfb_model",
+    cwd=str(repo_root),
 )
 
 print(result.stdout)

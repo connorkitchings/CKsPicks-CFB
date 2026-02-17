@@ -8,6 +8,7 @@ artifacts/models directory for use by the weekly prediction pipeline.
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from catboost import CatBoostRegressor
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
+from cks_picks_cfb.config import DATA_ROOT
 from cks_picks_cfb.features.selector import select_features
 from cks_picks_cfb.models.ensemble import EnsembleModel
 from cks_picks_cfb.models.features import load_point_in_time_data
@@ -28,12 +30,12 @@ from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 load_dotenv()
 
 sys.path.append(str(Path(__file__).resolve().parents[2]))
-# noqa: E402
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-# Configuration
-DATA_ROOT = "/Volumes/CK SSD/Coding Projects/cfb_model/"
+DATA_ROOT_PATH = (
+    os.getenv("CFB_DATA_ROOT") or os.getenv("CFB_MODEL_DATA_ROOT") or str(DATA_ROOT)
+)
 TRAIN_YEARS = [2019, 2021, 2022, 2023]
 TARGET_YEAR = 2024  # The "model year" we are deploying for
 ADJUSTMENT_ITERATION = 2
@@ -60,7 +62,7 @@ def load_data(years: list[int], depth: int) -> pd.DataFrame:
             continue
         for week in range(1, 16):
             df = load_point_in_time_data(
-                year, week, DATA_ROOT, adjustment_iteration=depth
+                year, week, DATA_ROOT_PATH, adjustment_iteration=depth
             )
             if df is not None:
                 all_data.append(df)

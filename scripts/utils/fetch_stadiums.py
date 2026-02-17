@@ -5,9 +5,8 @@ from pathlib import Path
 import cfbd
 import pandas as pd
 
-# Add project root to path
-sys.path.append(os.getcwd())
-# noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,8 +45,11 @@ def main():
 
     df = pd.DataFrame(data)
 
-    # Save to data root
-    data_root = Path("/Volumes/CK SSD/Coding Projects/cfb_model/")
+    from cks_picks_cfb.config import DATA_ROOT
+
+    data_root = Path(
+        os.getenv("CFB_DATA_ROOT") or os.getenv("CFB_MODEL_DATA_ROOT") or str(DATA_ROOT)
+    )
     out_path = data_root / "stadiums.csv"
 
     df.to_csv(out_path, index=False)
