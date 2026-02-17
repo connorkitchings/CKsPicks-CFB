@@ -1,0 +1,432 @@
+# Machine-readable feature catalog for CFB model
+
+# Schema: Each feature has name, level, dtype, description, stage, category, opponent_adjusted, recency_variants
+
+features:
+  # Tier 1 Features - Session 1 (2026-02-17)
+  - name: off_turnover_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Turnover rate (offense)
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_fumble_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Fumble rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_interception_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Interception rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_turnover_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Turnovers forced
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: def_fumble_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Fumbles forced
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: def_interception_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Interceptions forced
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_sack_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Sacks per dropback
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_sack_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Sack rate generated
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_penalty_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Offensive penalty rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_offensive_penalty_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Offensive-only penalty rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_defensive_penalty_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Defensive-only penalty rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_penalty_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Defensive penalty rate
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: def_defensive_penalty_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Defensive-only penalty rate
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_fourth_down_conversion_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Fourth down conversion %
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_fourth_down_attempt_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Fourth down attempt % per game
+    opponent_adjusted: true
+    recency_variants: false
+
+  - name: off_red_zone_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Red zone success rate (offense)
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_red_zone_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Red zone success rate (defense)
+    opponent_adjusted: false
+    recency_variants: true
+
+  # Tier 2 Features - Session 2 (2026-02-17)
+  - name: kickoff_touchback
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: special_teams
+    description: Touchback on kickoff play
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: kickoff_return
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: special_teams
+    description: Kick return play
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: fourth_quarter
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: game_state
+    description: In 4th quarter
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: close_game
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: game_state
+    description: Close game (Q4, score diff <=7)
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: td_play
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: outcome
+    description: Touchdown play
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: big_play_40
+    level: byplay
+    dtype: int
+    stage: transformation
+    category: explosive
+    description: 40+ yard play
+    opponent_adjusted: false
+    recency_variants: false
+
+  - name: off_non_garbage_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Success rate excluding garbage time
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_non_garbage_epa
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: EPA excluding garbage time
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_non_garbage_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Opponent non-garbage SR (defense POV)
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_fourth_quarter_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Success rate in 4th quarter
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_close_game_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Success rate in close games (Q4, <=7 pts)
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_fourth_quarter_sr
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: situational
+    description: Opponent 4th quarter SR (defense POV)
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_td_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: explosive
+    description: Touchdown rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_40_plus_yard_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: explosive
+    description: 40+ yard play rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_td_rate_allowed
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: explosive
+    description: TD rate allowed
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: def_40_plus_yard_rate_allowed
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: explosive
+    description: 40+ yard play rate allowed
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_touchback_rate
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: special_teams
+    description: Kickoff touchback rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: off_kick_return_avg_yards
+    level: team-game
+    dtype: float
+    stage: aggregation
+    category: special_teams
+    description: Avg yards on kick returns
+    opponent_adjusted: true
+    recency_variants: true
+
+  # Core features from baseline (abbreviated)
+  - name: off_epa_pp
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Season-to-date offensive EPA per play
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_epa_pp
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Season-to-date defensive EPA per play
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_sr
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Offensive success rate
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_sr
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Defensive success rate allowed
+    opponent_adjusted: false
+    recency_variants: true
+
+  - name: off_ypp
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Offensive yards per play
+    opponent_adjusted: true
+    recency_variants: true
+
+  - name: def_ypp
+    level: team-season
+    dtype: float
+    stage: aggregation
+    category: efficiency
+    description: Defensive yards per play allowed
+    opponent_adjusted: false
+    recency_variants: true
+
+# External data sources (for reference)
+data_sources:
+  - name: rankings
+    entity: rankings
+    source: CFBD API
+    partition_keys: [year, week]
+    description: AP and Coaches poll rankings
+
+  - name: recruiting
+    entity: recruiting
+    source: CFBD API
+    partition_keys: [year]
+    description: 247Sports team recruiting rankings
+
+  - name: external_ratings
+    entity: external_ratings
+    source: CFBD API
+    partition_keys: [year]
+    description: SP+, FPI, and SRS ratings
+    rating_types:
+      - sp
+      - fpi
+      - srs
+
+# Pipeline stages
+stages:
+  - name: byplay
+    level: play
+    description: Play-level enrichment from raw plays
+    input: raw/plays
+    output: byplay
+
+  - name: drives
+    level: drive
+    description: Drive segmentation and aggregation
+    input: byplay
+    output: drives
+
+  - name: team_game
+    level: game
+    description: Team-level game statistics
+    input: byplay, drives
+    output: team_game
+
+  - name: team_season
+    level: season
+    description: Season-to-date team statistics with recency weighting
+    input: team_game
+    output: team_season
+
+  - name: opponent_adjusted
+    level: season
+    description: Iterative opponent strength adjustment
+    input: team_season, team_game
+    output: team_season

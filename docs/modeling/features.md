@@ -269,3 +269,172 @@ Definitions:
 - Any material change to feature definitions must be recorded in
   `docs/decisions/decision_log.md` with rationale and effective date.
 - Keep this catalog up to date alongside code changes in `src/data/aggregations/`.
+
+## 9) Tier 1 Features - Session 1 (2026-02-17)
+
+### Turnover Metrics (team-game)
+| feature_name                  | level      | dtype | definition                                    | notes                         |
+| ----------------------------- | ---------- | ----- | --------------------------------------------- | ----------------------------- |
+| off_turnover_rate            | team-game  | float | Turnover rate (offense)                      | turnover / plays            |
+| off_fumble_rate             | team-game  | float | Fumble rate                                   | fumble_turnover / plays   |
+| off_interception_rate         | team-game  | float | Interception rate                               | interception_turnover / plays |
+| def_turnover_rate            | team-game  | float | Turnovers forced                                | turnover / plays_allowed   |
+| def_fumble_rate             | team-game  | float | Fumbles forced                                 | fumble_turnover / plays_allowed |
+| def_interception_rate         | team-game  | float | Interceptions forced                             | interception_turnover / plays_allowed |
+
+### Sack Metrics (team-game)
+| feature_name     | level      | dtype | definition                            | notes                         |
+| ---------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_sack_rate     | team-game  | float | Sacks per dropback                | sacks / dropbacks            |
+| def_sack_rate     | team-game  | float | Sack rate generated                 | sacks / dropbacks_allowed   |
+
+### Penalty Metrics (team-game)
+| feature_name                    | level      | dtype | definition                          | notes                         |
+| ----------------------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_penalty_rate                | team-game  | float | Offensive penalty rate               | penalty / plays            |
+| off_offensive_penalty_rate      | team-game  | float | Offensive-only penalty rate         | offensive_penalty / plays   |
+| off_defensive_penalty_rate      | team-game  | float | Defensive-only penalty rate         | defensive_penalty / plays    |
+| def_penalty_rate                | team-game  | float | Defensive penalty rate               | penalty / plays_allowed    |
+| def_defensive_penalty_rate      | team-game  | float | Defensive-only penalty rate         | defensive_penalty / plays_allowed |
+
+### Fourth Down Metrics (team-game)
+| feature_name                       | level      | dtype | definition                          | notes                         |
+| -------------------------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_fourth_down_conversion_rate     | team-game  | float | Fourth down conversion %            | 4th_conv / 4th_attempts |
+| off_fourth_down_attempt_rate       | team-game  | float | Fourth down attempt % per game      | 4th_attempts / total_plays |
+
+### Red Zone Metrics (team-game)
+| feature_name     | level      | dtype | definition                          | notes                         |
+| ---------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_red_zone_sr | team-game  | float | Red zone success rate (offense)       | success (when red_zone==1) / red_zone_plays |
+| def_red_zone_sr | team-game  | float | Red zone success rate (defense)       | success_allowed (when red_zone==1) / red_zone_plays_allowed |
+
+## 10) Tier 2 Features - Session 2 (2026-02-17)
+
+### New Byplay Indicators
+| feature_name    | level    | dtype | definition                                 | notes                         |
+| ------------- | -------- | ----- | ------------------------------------------ | ----------------------------- |
+| kickoff_touchback | byplay   | int    | Touchback on kickoff play                 | kickoff AND touchback       |
+| kickoff_return   | byplay   | int    | Kick return play                         | kickoff_return_types      |
+| fourth_quarter   | byplay   | int    | In 4th quarter                           | quarter == 4               |
+| close_game     | byplay   | int    | Close game (Q4, score diff <=7)         | quarter==4 AND |relative_score| <= 7 |
+| td_play        | byplay   | int    | Touchdown play                            | "Touchdown" in play_type   |
+| big_play_40    | byplay   | int    | 40+ yard play                            | yards_gained >= 40        |
+
+### Garbage Time Metrics (team-game)
+| feature_name          | level      | dtype | definition                               | notes                         |
+| ------------------- | ---------- | ----- | -------------------------------------- | ----------------------------- |
+| off_non_garbage_sr   | team-game  | float | Success rate excluding garbage time          | success (garbage==0) mean |
+| off_non_garbage_epa   | team-game  | float | EPA excluding garbage time                | ppa (garbage==0) mean |
+| def_non_garbage_sr   | team-game  | float | Opponent non-garbage SR (defense POV) | success_allowed (garbage==0) mean |
+
+### Late Game Metrics (team-game)
+| feature_name          | level      | dtype | definition                         | notes                         |
+| ------------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_fourth_quarter_sr | team-game  | float | Success rate in 4th quarter          | success (quarter==4) mean |
+| off_close_game_sr     | team-game  | float | Success rate in close games (Q4, <=7 pts) | success (close_game==1) mean |
+| def_fourth_quarter_sr | team-game  | float | Opponent 4th quarter SR (defense POV) | success_allowed (quarter==4) mean |
+
+### Big Play Metrics (team-game)
+| feature_name              | level      | dtype | definition                         | notes                         |
+| ----------------------- | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_td_rate              | team-game  | float | Touchdown rate                     | td_play / plays            |
+| off_40_plus_yard_rate    | team-game  | float | 40+ yard play rate                  | big_play_40 / plays         |
+| def_td_rate_allowed       | team-game  | float | TD rate allowed                      | td_play / plays_allowed    |
+| def_40_plus_yard_rate_allowed | team-game  | float | 40+ yard play rate allowed            | big_play_40 / plays_allowed |
+
+### Kickoff Metrics (team-game)
+| feature_name               | level      | dtype | definition                         | notes                         |
+| ------------------------ | ---------- | ----- | ------------------------------------ | ----------------------------- |
+| off_touchback_rate        | team-game  | float | Kickoff touchback rate              | kickoff_touchback / kickoffs |
+| off_kick_return_avg_yards | team-game  | float | Avg yards on kick returns           | return_yards (kickoff_return) / kick_returns |
+
+## 11) Data Ingesters - External Sources
+
+### RankingsIngester (src/cks_picks_cfb/data/rankings.py)
+Fetches AP and Coaches poll rankings from CFBD API.
+
+| column           | dtype   | description                                  |
+| ----------------- | ------- | -------------------------------------------- |
+| season           | int     | Season year                                |
+| week             | int     | Week number                                 |
+| poll             | str     | Poll name (AP, Coaches, etc.)             |
+| rank             | int     | Team rank                                   |
+| team             | str     | Team name                                   |
+| conference       | str     | Conference                                 |
+| first_place_votes | int     | First-place votes                           |
+| points           | int     | Poll points                                 |
+
+### RecruitingIngester (src/cks_picks_cfb/data/recruiting.py)
+Fetches team recruiting rankings from 247Sports composite via CFBD API.
+
+| column  | dtype   | description                   |
+| -------- | ------- | ----------------------------- |
+| season   | int     | Season year                  |
+| rank     | int     | Recruiting rank               |
+| team     | str     | Team name                   |
+| points   | float   | 247Sports composite points   |
+
+### ExternalRatingsIngester (src/cks_picks_cfb/data/external_ratings.py)
+Fetches SP+, FPI, and SRS ratings - predictive team strength metrics.
+
+| column          | dtype   | description                                         |
+| --------------- | ------- | -------------------------------------------------- |
+| season          | int     | Season year                                       |
+| rating_type    | str     | Rating system (sp, fpi, srs)                     |
+| team            | str     | Team name                                         |
+| conference      | str     | Conference                                       |
+| rating          | float   | Overall rating value                              |
+| offense_rating  | float   | Offensive rating (SP+/FPI)                       |
+| defense_rating  | float   | Defensive rating (SP+/FPI)                        |
+| special_teams_rating | float | Special teams rating (SP+ only)                |
+| second_order_wins | float | Second-order wins (SP+ only)                    |
+| fpi             | float | FPI value (FPI only)                           |
+| fpi_rk          | int     | FPI rank (FPI only)                              |
+| resume_ranks    | int     | Resume ranks (FPI only)                          |
+| mean_win_total   | float   | Mean wins total (FPI only)                       |
+| srs             | float   | SRS rating (SRS only)                             |
+
+## 12) Data Validation Utilities (src/cks_picks_cfb/utils/data_validation.py)
+
+Provides multi-layer validation for ingested and processed data:
+
+### Validation Layers
+1. Schema validation - Required columns, data types
+2. Completeness validation - Expected years/weeks present
+3. Statistical validation - Outlier detection with IQR (configurable thresholds)
+4. Integrity validation - Referential integrity, unique constraints
+
+### Key Functions
+| function                  | description                                     |
+| ------------------------- | ----------------------------------------------- |
+| validate_schema()        | Checks required columns present                     |
+| validate_completeness() | Verifies expected years/weeks in data           |
+| validate_statistical()   | Detects outliers using IQR method                  |
+| validate_integrity()      | Validates referential integrity and logical consistency |
+| validate_entity()        | Runs all validations on an entity                 |
+| print_validation_report()  | Prints formatted validation report                  |
+| detect_outliers_iqr()    | IQR-based outlier detection with configurable multiplier |
+
+### Usage Example
+```python
+from cks_picks_cfb.utils.data_validation import validate_entity
+
+report = validate_entity(
+    df=games_df,
+    entity_name="games",
+    schema_checks={"required_columns": ["id", "season", "week", "home_team", "away_team"]},
+    completeness_checks={
+        "year_column": "year",
+        "expected_years": [2019, 2021, 2022, 2023, 2024],
+    },
+    statistical_checks={
+        "week": {"min": 1, "max": 15, "allow_negative": False},
+    },
+    integrity_checks={
+        "unique_game_id": {"type": "unique", "column": "id"},
+    },
+)
+
+print_validation_report(report)
+```

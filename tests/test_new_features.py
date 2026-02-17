@@ -568,6 +568,61 @@ class TestNewAggregationMetrics:
         assert "off_fourth_down_attempt_rate" in team_game_df.columns
 
 
+class TestTier2Metrics:
+    """Verify Tier 2 metrics are defined in core.py for aggregation."""
+
+    def test_non_garbage_sr_in_metric_cols(self):
+        from cks_picks_cfb.features.core import aggregate_team_season
+
+        base_cols = aggregate_team_season.__code__.co_consts
+        assert any("non_garbage_sr" in str(c) for c in base_cols)
+
+    def test_fourth_quarter_sr_defined(self):
+        from cks_picks_cfb.features.core import aggregate_team_game
+
+        src = aggregate_team_game.__code__.co_consts
+        assert any("fourth_quarter_sr" in str(c) for c in src)
+
+    def test_close_game_sr_defined(self):
+        from cks_picks_cfb.features.core import aggregate_team_game
+
+        src = aggregate_team_game.__code__.co_consts
+        assert any("close_game_sr" in str(c) for c in src)
+
+    def test_td_rate_defined(self):
+        from cks_picks_cfb.features.core import aggregate_team_game
+
+        src = aggregate_team_game.__code__.co_consts
+        assert any("td_rate" in str(c) for c in src)
+
+    def test_40_plus_yard_rate_defined(self):
+        from cks_picks_cfb.features.core import aggregate_team_game
+
+        src = aggregate_team_game.__code__.co_consts
+        assert any("40_plus_yard_rate" in str(c) for c in src)
+
+    def test_kickoff_metrics_defined(self):
+        from cks_picks_cfb.features.core import aggregate_team_game
+
+        src = aggregate_team_game.__code__.co_consts
+        assert any("touchback_rate" in str(c) for c in src)
+        assert any("kick_return_avg_yards" in str(c) for c in src)
+
+
+class TestIngesters:
+    """Verify new ingester classes can be imported."""
+
+    def test_rankings_ingester_importable(self):
+        from cks_picks_cfb.data.rankings import RankingsIngester
+
+        assert RankingsIngester is not None
+
+    def test_recruiting_ingester_importable(self):
+        from cks_picks_cfb.data.recruiting import RecruitingIngester
+
+        assert RecruitingIngester is not None
+
+
 # ---------------------------------------------------------------------------
 # Luck factor
 # ---------------------------------------------------------------------------

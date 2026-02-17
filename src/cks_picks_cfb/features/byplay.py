@@ -660,6 +660,23 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
 
     df["garbage"] = calculate_garbage_time(df)
 
+    df["kickoff_touchback"] = (
+        (df["st_kickoff"] == 1)
+        & (df["play_type"].str.lower().str.contains("touchback"))
+    ).astype(int)
+    df["kickoff_return"] = (
+        (df["st_kickoff"] == 1)
+        & df["play_type"].isin(["Kickoff Return (Offense)", "Kickoff Return Touchdown"])
+    ).astype(int)
+    df["fourth_quarter"] = (df["quarter"] == 4).astype(int)
+    df["close_game"] = ((df["quarter"] == 4) & (abs(df["relative_score"]) <= 7)).astype(
+        int
+    )
+    df["td_play"] = (
+        df["play_type"].str.contains("Touchdown", case=False, na=False).astype(int)
+    )
+    df["big_play_40"] = (df["yards_gained"] >= 40).astype(int)
+
     df["field_position_bin"] = pd.cut(
         df["yard_line"],
         bins=[0, 20, 50, 80, 100],
@@ -684,6 +701,8 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "defense_score",
         "half",
         "quarter",
+        "fourth_quarter",
+        "close_game",
         "offense_timeouts",
         "defense_timeouts",
         "drive_id",
@@ -700,6 +719,8 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "red_zone",
         "eckel",
         "scoring",
+        "td_play",
+        "big_play_40",
         "play_type",
         "play_text",
         "penalty",
@@ -707,6 +728,8 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         "defensive_penalty",
         "st",
         "st_kickoff",
+        "kickoff_touchback",
+        "kickoff_return",
         "st_punt",
         "st_fg",
         "endofdrive",

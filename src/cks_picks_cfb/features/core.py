@@ -271,6 +271,59 @@ def aggregate_team_game(
                 .mean()
             ),
         )
+    if "garbage" in plays_df.columns and "success" in plays_df.columns:
+        _off_optional["off_non_garbage_sr"] = (
+            "garbage",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "garbage"] == 0)
+                .mean()
+            ),
+        )
+    if "garbage" in plays_df.columns and "ppa" in plays_df.columns:
+        _off_optional["off_non_garbage_epa"] = (
+            "garbage",
+            lambda s: (
+                plays_df.loc[s.index, "ppa"]
+                .where(plays_df.loc[s.index, "garbage"] == 0)
+                .mean()
+            ),
+        )
+    if "fourth_quarter" in plays_df.columns and "success" in plays_df.columns:
+        _off_optional["off_fourth_quarter_sr"] = (
+            "fourth_quarter",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "fourth_quarter"] == 1)
+                .mean()
+            ),
+        )
+    if "close_game" in plays_df.columns and "success" in plays_df.columns:
+        _off_optional["off_close_game_sr"] = (
+            "close_game",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "close_game"] == 1)
+                .mean()
+            ),
+        )
+    if "td_play" in plays_df.columns:
+        _off_optional["off_td_rate"] = ("td_play", "mean")
+    if "big_play_40" in plays_df.columns:
+        _off_optional["off_40_plus_yard_rate"] = ("big_play_40", "mean")
+    if "kickoff_touchback" in plays_df.columns and "st_kickoff" in plays_df.columns:
+        _off_optional["_off_kickoffs"] = ("st_kickoff", "sum")
+        _off_optional["_off_touchbacks"] = ("kickoff_touchback", "sum")
+    if "kickoff_return" in plays_df.columns and "yards_gained" in plays_df.columns:
+        _off_optional["_off_kickoff_return_yards"] = (
+            "kickoff_return",
+            lambda s: (
+                plays_df.loc[s.index, "yards_gained"]
+                .where(plays_df.loc[s.index, "kickoff_return"] == 1)
+                .sum()
+            ),
+        )
+        _off_optional["_off_kickoff_returns"] = ("kickoff_return", "sum")
 
     off_grp = plays_df.groupby(["season", "week", "game_id", "offense"], as_index=False)
     off_agg = off_grp.agg(
@@ -361,6 +414,20 @@ def aggregate_team_game(
         )
         _drop_cols.append("_off_fourth_down_attempts")
 
+    if "_off_kickoffs" in off_agg.columns and "_off_touchbacks" in off_agg.columns:
+        off_agg["off_touchback_rate"] = off_agg["_off_touchbacks"].astype(
+            float
+        ) / off_agg["_off_kickoffs"].where(off_agg["_off_kickoffs"] > 0, 1)
+        _drop_cols += ["_off_kickoffs", "_off_touchbacks"]
+    if "_off_kickoff_return_yards" in off_agg.columns:
+        off_returns = off_agg["_off_kickoff_returns"].where(
+            off_agg["_off_kickoff_returns"] > 0, 1
+        )
+        off_agg["off_kick_return_avg_yards"] = (
+            off_agg["_off_kickoff_return_yards"].astype(float) / off_returns
+        )
+        _drop_cols += ["_off_kickoff_return_yards", "_off_kickoff_returns"]
+
     off_agg = off_agg.drop(columns=_drop_cols).rename(columns={"offense": "team"})
 
     _def_optional: dict = {}
@@ -382,6 +449,28 @@ def aggregate_team_game(
                 .mean()
             ),
         )
+    if "garbage" in plays_df.columns and "success" in plays_df.columns:
+        _def_optional["def_non_garbage_sr"] = (
+            "garbage",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "garbage"] == 0)
+                .mean()
+            ),
+        )
+    if "fourth_quarter" in plays_df.columns and "success" in plays_df.columns:
+        _def_optional["def_fourth_quarter_sr"] = (
+            "fourth_quarter",
+            lambda s: (
+                plays_df.loc[s.index, "success"]
+                .where(plays_df.loc[s.index, "fourth_quarter"] == 1)
+                .mean()
+            ),
+        )
+    if "td_play" in plays_df.columns:
+        _def_optional["def_td_rate_allowed"] = ("td_play", "mean")
+    if "big_play_40" in plays_df.columns:
+        _def_optional["def_40_plus_yard_rate_allowed"] = ("big_play_40", "mean")
 
     def_grp = plays_df.groupby(["season", "week", "game_id", "defense"], as_index=False)
     def_agg = def_grp.agg(
@@ -732,6 +821,22 @@ def aggregate_team_season(team_game_df: pd.DataFrame) -> pd.DataFrame:
         # Red zone metrics
         "off_red_zone_sr",
         "def_red_zone_sr",
+        # Garbage time metrics
+        "off_non_garbage_sr",
+        "off_non_garbage_epa",
+        "def_non_garbage_sr",
+        # Fourth quarter / late game metrics
+        "off_fourth_quarter_sr",
+        "off_close_game_sr",
+        "def_fourth_quarter_sr",
+        # Big play metrics
+        "off_td_rate",
+        "off_40_plus_yard_rate",
+        "def_td_rate_allowed",
+        "def_40_plus_yard_rate_allowed",
+        # Kickoff metrics
+        "off_touchback_rate",
+        "off_kick_return_avg_yards",
     ]
     present_metric_cols = [c for c in metric_cols if c in weighted.columns]
     special_team_prefixes = ("off_fg_", "off_avg_net_punt_yards", "off_avg_net_kick_")
@@ -865,8 +970,8 @@ def apply_iterative_opponent_adjustment(
         "epa_pp",
         "sr",
         "ypp",
-        "rush_ypp",  # Added for matchup features
-        "pass_ypp",  # Added for matchup features
+        "rush_ypp",
+        "pass_ypp",
         "expl_rate_overall_10",
         "expl_rate_overall_20",
         "expl_rate_overall_30",
@@ -888,6 +993,12 @@ def apply_iterative_opponent_adjustment(
         "sack_rate",
         "fourth_down_conversion_rate",
         "red_zone_sr",
+        "non_garbage_sr",
+        "non_garbage_epa",
+        "fourth_quarter_sr",
+        "close_game_sr",
+        "td_rate",
+        "40_plus_yard_rate",
     ]
     defensive_allowed_metrics = {
         "power_success_rate",
@@ -898,6 +1009,8 @@ def apply_iterative_opponent_adjustment(
         "busted_drive_rate",
         "explosive_drive_rate",
         "avg_net_punt_yards",
+        "td_rate",
+        "40_plus_yard_rate",
     }
 
     # Initialize adj_ columns
