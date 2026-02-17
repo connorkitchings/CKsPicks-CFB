@@ -1,13 +1,11 @@
 """Tests for data validation utilities."""
 
 import pandas as pd
-import pytest
 
 from cks_picks_cfb.utils.data_validation import (
     ValidationReport,
     ValidationResult,
     detect_outliers_iqr,
-    print_validation_report,
     validate_completeness,
     validate_entity,
     validate_integrity,

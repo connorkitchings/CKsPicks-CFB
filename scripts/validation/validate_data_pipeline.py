@@ -183,7 +183,7 @@ def validate_no_nan_inf(df: pd.DataFrame, entity_name: str) -> bool:
 
 def run_validation(args: argparse.Namespace) -> int:
     """Run validation based on arguments."""
-    print(f"Validating CFB data pipeline")
+    print("Validating CFB data pipeline")
     print(f"Year: {args.year}, Week: {args.week}, Entity: {args.entity}\n")
 
     try:
@@ -213,8 +213,6 @@ def run_validation(args: argparse.Namespace) -> int:
         elif args.entity == "team_season":
             from cks_picks_cfb.features.core import (
                 aggregate_team_game,
-                aggregate_team_season,
-                apply_iterative_opponent_adjustment,
             )
 
             byplay_df = pd.read_parquet(

@@ -1,7 +1,8 @@
 """Tests for external ratings ingester."""
 
+from unittest.mock import MagicMock, Mock
+
 import pytest
-from unittest.mock import Mock, MagicMock
 
 from cks_picks_cfb.data.external_ratings import (
     ExternalRatingsIngester,
