@@ -1,0 +1,59 @@
+# @package _global_
+# V2 Champion Cross-Validation Configuration
+# Leave-one-season-out cross-validation across 2019, 2021-2023
+
+defaults:
+  - override /model: linear
+  - override /features: matchup_v1
+
+experiment:
+  name: v2_champion_crossval
+  phase: 4
+  description: "Cross-validation: Leave-one-season-out validation of champion model"
+  type: cross_validation
+
+# 4-fold leave-one-season-out configuration
+folds:
+  fold_2019:
+    name: "fold_2019"
+    train_years: [2021, 2022, 2023]
+    test_year: 2019
+  fold_2021:
+    name: "fold_2021"
+    train_years: [2019, 2022, 2023]
+    test_year: 2021
+  fold_2022:
+    name: "fold_2022"
+    train_years: [2019, 2021, 2023]
+    test_year: 2022
+  fold_2023:
+    name: "fold_2023"
+    train_years: [2019, 2021, 2022]
+    test_year: 2023
+
+# Final model: train on all years, predict 2025
+final_model:
+  name: "champion_final"
+  train_years: [2019, 2021, 2022, 2023]
+  deploy_year: 2025
+
+training:
+  train_years: [2019, 2021, 2022, 2023]  # Used as default
+  test_year: 2024  # Not used in CV
+  deploy_year: 2025
+
+# Champion model configuration with Phase 4 optimizations
+betting:
+  spread:
+    default_threshold: 0.0
+    high_confidence_threshold: 8.0
+  totals:
+    threshold: 1.5
+  bias_correction:
+    spread_offset: 1.14
+
+# Parallel execution settings
+parallel:
+  enabled: true
+  max_workers: 4
+  timeout_seconds: 3600  # 1 hour per fold
