@@ -1,0 +1,22 @@
+{
+  "rmse_mean": 0.0,
+  "rmse_std": 0.0,
+  "rmse_min": 0.0,
+  "rmse_max": 0.0,
+  "mae_mean": 0.0,
+  "mae_std": 0.0,
+  "mae_min": 0.0,
+  "mae_max": 0.0,
+  "hit_rate_mean": 0.49302087300368447,
+  "hit_rate_std": 0.018226603934375012,
+  "hit_rate_min": 0.4706766917293233,
+  "hit_rate_max": 0.5123076923076924,
+  "roi_mean": -0.05877878155739601,
+  "roi_std": 0.034796227305075964,
+  "roi_min": -0.10143583458646618,
+  "roi_max": -0.0219585076923077,
+  "n_bets_mean": 651.25,
+  "n_bets_std": 9.604686356149273,
+  "n_bets_min": 643.0,
+  "n_bets_max": 665.0
+}

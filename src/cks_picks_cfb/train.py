@@ -108,6 +108,12 @@ def get_model(cfg: DictConfig, feature_override=None):
         params = cfg.model.get("params", {})
         params = OmegaConf.to_container(params, resolve=True)
         return V2StackingModel(features=features, **params)
+    elif cfg.model.type == "catboost_classifier":
+        from cks_picks_cfb.models.v2_classifier import V2ClassifierModel
+
+        params = cfg.model.get("params", {})
+        params = OmegaConf.to_container(params, resolve=True)
+        return V2ClassifierModel(features=features, target=cfg.model.target, **params)
     else:
         raise ValueError(f"Unknown model type: {cfg.model.type}")
 
@@ -203,7 +209,7 @@ def main(cfg: DictConfig):
             ext = ".joblib"
             if cfg.model.type == "xgboost":
                 ext = ".json"
-            elif cfg.model.type == "catboost":
+            elif cfg.model.type in ("catboost", "catboost_classifier"):
                 ext = ".cbm"
 
             # Use absolute path relative to repo root

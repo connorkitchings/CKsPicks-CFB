@@ -1,0 +1,14 @@
+name: catboost_classifier
+type: catboost_classifier
+params:
+  iterations: 1000
+  learning_rate: 0.05
+  depth: 6
+  loss_function: Logloss
+  eval_metric: AUC
+  random_seed: 42
+  verbose: 100
+  allow_writing_files: false
+# target is ignored by V2ClassifierModel (always derived from spread_target + spread_line)
+# but kept here for interface compatibility with train.py save logic
+target: cover_target

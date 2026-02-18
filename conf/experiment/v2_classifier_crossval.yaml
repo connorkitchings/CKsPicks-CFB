@@ -1,0 +1,58 @@
+# @package _global_
+# V2 Classifier Cross-Validation Configuration
+# Predicts P(Home Covers) directly instead of point margin.
+# This realigns the training objective with the betting goal (maximize ROI).
+# Baseline comparison: Ridge regression ROI -5.22% ± 6.09%
+
+defaults:
+  - override /model: catboost_classifier
+  - override /features: cover_classifier_v1
+
+experiment:
+  name: v2_classifier_crossval
+  phase: 5
+  description: "Classification pivot: CatBoost predicts P(Cover) directly (ROI-aligned)"
+  type: cross_validation
+
+# 4-fold leave-one-season-out configuration (identical to champion CV)
+folds:
+  fold_2019:
+    name: "fold_2019"
+    train_years: [2021, 2022, 2023]
+    test_year: 2019
+  fold_2021:
+    name: "fold_2021"
+    train_years: [2019, 2022, 2023]
+    test_year: 2021
+  fold_2022:
+    name: "fold_2022"
+    train_years: [2019, 2021, 2023]
+    test_year: 2022
+  fold_2023:
+    name: "fold_2023"
+    train_years: [2019, 2021, 2022]
+    test_year: 2023
+
+# Final model: train on all years, predict 2025
+final_model:
+  name: "classifier_final"
+  train_years: [2019, 2021, 2022, 2023]
+  deploy_year: 2025
+
+training:
+  train_years: [2019, 2021, 2022, 2023]  # Used as default
+  test_year: 2024  # Not used in CV
+  deploy_year: 2025
+
+# Classifier betting: bet when P(Cover) deviates meaningfully from 50%
+# threshold=0.024 means bet when P(Cover) > 52.4% or < 47.6%
+betting:
+  classifier:
+    default_threshold: 0.024   # Minimum edge to place a bet
+    high_confidence_threshold: 0.05  # For selective high-confidence betting
+
+# Parallel execution settings
+parallel:
+  enabled: true
+  max_workers: 4
+  timeout_seconds: 3600  # 1 hour per fold

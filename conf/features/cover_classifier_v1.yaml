@@ -1,0 +1,31 @@
+# Cover Classifier V1 Feature Set
+# Same as matchup_v1 but adds spread_line as a market signal.
+# The market line is a powerful prior on game outcome - including it lets the
+# model learn *when* its efficiency metrics disagree with the market.
+name: cover_classifier_v1
+groups:
+  # Core efficiency features (same as matchup_v1)
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  # Rush/Pass specific YPP
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+  # Market signal: spread_line tells the model what Vegas thinks
+  # This enables learning patterns where our efficiency metrics
+  # systematically disagree with the market in profitable ways
+  - spread_line
+params:
+  type: recency
+  alpha: 0.3  # Same decay as matchup_v1

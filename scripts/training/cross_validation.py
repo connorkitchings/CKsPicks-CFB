@@ -18,7 +18,7 @@ import pandas as pd
 from omegaconf import OmegaConf
 
 
-def run_single_fold(fold_config, base_config_path, fold_index):
+def run_single_fold(fold_config, base_config_path, fold_index, experiment_name):
     """
     Train a single fold of cross-validation.
 
@@ -26,6 +26,7 @@ def run_single_fold(fold_config, base_config_path, fold_index):
         fold_config: Dictionary with train_years and test_year
         base_config_path: Path to base experiment config
         fold_index: Index of this fold (for logging)
+        experiment_name: Hydra experiment name to use for training
 
     Returns:
         Dictionary with fold results
@@ -46,7 +47,7 @@ def run_single_fold(fold_config, base_config_path, fold_index):
     cmd = [
         sys.executable,
         "src/cks_picks_cfb/train.py",
-        "experiment=v2_champion_crossval",
+        f"experiment={experiment_name}",
         f"training.train_years=[{train_years_str}]",
         f"training.test_year={test_year}",
         f"experiment.name=crossval_{fold_name}",
@@ -71,36 +72,6 @@ def run_single_fold(fold_config, base_config_path, fold_index):
                 "test_year": test_year,
             }
 
-        print(f"✓ Fold {fold_name} completed successfully")
-
-        return {
-            "fold": fold_name,
-            "status": "success",
-            "train_years": train_years,
-            "test_year": test_year,
-            "output": result.stdout,
-        }
-
-    except subprocess.TimeoutExpired:
-        print(f"TIMEOUT in {fold_name}: Exceeded 1 hour")
-        return {
-            "fold": fold_name,
-            "status": "timeout",
-            "train_years": train_years,
-            "test_year": test_year,
-        }
-    except Exception as e:
-        print(f"EXCEPTION in {fold_name}: {e}")
-        return {
-            "fold": fold_name,
-            "status": "error",
-            "error": str(e),
-            "train_years": train_years,
-            "test_year": test_year,
-        }
-
-        # Extract metrics from output (they're logged to MLflow)
-        # For now, we'll parse from stdout or re-run evaluation
         print(f"✓ Fold {fold_name} completed successfully")
 
         return {
@@ -171,34 +142,16 @@ def collect_mlflow_metrics(experiment_name, fold_name):
         print(f"Error collecting metrics for {fold_name}: {e}")
         return None
 
-        # Get latest run for this fold
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment.experiment_id],
-            filter_string=f"tags.fold = '{fold_name}'",
-            order_by=["start_time DESC"],
-            max_results=1,
-        )
 
-        if runs.empty:
-            return None
-
-        run = runs.iloc[0]
-        return {
-            "rmse": run.get("metrics.rmse"),
-            "mae": run.get("metrics.mae"),
-            "hit_rate": run.get("metrics.hit_rate"),
-            "roi": run.get("metrics.roi"),
-            "n_bets": run.get("metrics.n_bets"),
-            "run_id": run["run_id"],
-        }
-    except Exception as e:
-        print(f"Error collecting metrics for {fold_name}: {e}")
-        return None
-
-
-def train_final_model(all_years, deploy_year):
+def train_final_model(all_years, deploy_year, experiment_name, final_model_name):
     """
     Train final model on all training years.
+
+    Args:
+        all_years: List of years to train on
+        deploy_year: Year to deploy/predict on
+        experiment_name: Hydra experiment name to use
+        final_model_name: Name to give the final model experiment
 
     Returns:
         Result from training
@@ -213,10 +166,10 @@ def train_final_model(all_years, deploy_year):
     cmd = [
         sys.executable,
         "src/cks_picks_cfb/train.py",
-        "experiment=v2_champion_crossval",
+        f"experiment={experiment_name}",
         f"training.train_years=[{train_years_str}]",
         f"training.test_year={deploy_year}",
-        "experiment.name=v2_champion_final",
+        f"experiment.name={final_model_name}",
     ]
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
@@ -345,13 +298,19 @@ def aggregate_results(fold_results, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Cross-validation for V2 champion model"
+        description="Cross-validation for CFB model (supports any experiment config)"
     )
     parser.add_argument(
         "--config",
         type=str,
         default="conf/experiment/v2_champion_crossval.yaml",
         help="Path to cross-validation config",
+    )
+    parser.add_argument(
+        "--experiment",
+        type=str,
+        default=None,
+        help="Hydra experiment name to use for training (defaults to config filename stem)",
     )
     parser.add_argument(
         "--output-dir",
@@ -377,6 +336,13 @@ def main():
     print(f"Loading config from {args.config}")
     cfg = OmegaConf.load(args.config)
 
+    # Determine experiment name: CLI arg > config name > config filename stem
+    if args.experiment:
+        experiment_name = args.experiment
+    else:
+        experiment_name = cfg.get("experiment", {}).get("name", Path(args.config).stem)
+    print(f"Using experiment: {experiment_name}")
+
     # Extract fold configurations
     folds = []
     for fold_name, fold_cfg in cfg.folds.items():
@@ -400,12 +366,16 @@ def main():
         with mp.Pool(processes=args.workers) as pool:
             fold_results = pool.starmap(
                 run_single_fold,
-                [(fold, args.config, i) for i, fold in enumerate(folds)],
+                [
+                    (fold, args.config, i, experiment_name)
+                    for i, fold in enumerate(folds)
+                ],
             )
     else:
         # Sequential execution
         fold_results = [
-            run_single_fold(fold, args.config, i) for i, fold in enumerate(folds)
+            run_single_fold(fold, args.config, i, experiment_name)
+            for i, fold in enumerate(folds)
         ]
 
     # Collect metrics from MLflow
@@ -420,7 +390,13 @@ def main():
     results_df, agg_metrics = aggregate_results(fold_results, args.output_dir)
 
     # Train final model on all years
-    train_final_model(cfg.final_model.train_years, cfg.final_model.deploy_year)
+    final_model_name = f"{experiment_name}_final"
+    train_final_model(
+        cfg.final_model.train_years,
+        cfg.final_model.deploy_year,
+        experiment_name,
+        final_model_name,
+    )
 
     end_time = datetime.now()
     duration = end_time - start_time
