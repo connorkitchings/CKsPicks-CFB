@@ -230,8 +230,6 @@ def validate_statistical(
 
         min_val = values.min()
         max_val = values.max()
-        mean_val = values.mean()
-        std_val = values.std()
 
         if "min" in config and min_val < config["min"]:
             issues.append(f"{column}: min {min_val} < expected {config['min']}")

@@ -26,12 +26,12 @@ class TestDetectOutliersIQR:
         df = pd.DataFrame({"value": [1, 2, 3, 4, 100]})
         outliers = detect_outliers_iqr(df, "value", threshold_multiplier=3.0)
         assert outliers.sum() == 1
-        assert outliers.iloc[-1] == True
+        assert outliers.iloc[-1] is True
 
     def test_handles_missing_column(self):
         df = pd.DataFrame({"other": [1, 2, 3]})
         outliers = detect_outliers_iqr(df, "value")
-        assert (outliers == False).all()
+        assert not outliers.any()
 
     def test_handles_nans(self):
         df = pd.DataFrame({"value": [1, 2, 3, pd.NA, 5]})

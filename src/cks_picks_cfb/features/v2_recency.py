@@ -1,10 +1,11 @@
+import os
+
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
 from cks_picks_cfb.config import get_data_root
 from cks_picks_cfb.features.core import apply_iterative_opponent_adjustment
-from cks_picks_cfb.utils.local_storage import LocalStorage
 
 
 def _calculate_ewma(series, alpha):
@@ -70,17 +71,46 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     """
     Load raw team-game data, calculate EWMA stats, apply adjustment, and return training/test DF.
     """
-    data_root = get_data_root()
-    storage = LocalStorage(
-        data_root=data_root, file_format="csv", data_type="processed"
-    )
+    # Use cloud storage if configured, otherwise fall back to LocalStorage
+    storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+
+    if storage_backend in ("r2", "s3"):
+        # Use cloud storage
+        from cks_picks_cfb.data.storage import get_storage
+
+        storage = get_storage()
+
+        def read_entity(entity: str, year: int):
+            if entity in ("games", "betting_lines"):
+                full_entity = f"raw/{entity}"
+            else:
+                full_entity = f"processed/{entity}"
+            return storage.read_index(full_entity, {"year": year})
+
+    else:
+        # Use legacy LocalStorage for local files
+        from cks_picks_cfb.utils.local_storage import LocalStorage
+
+        data_root = get_data_root()
+        raw_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="raw"
+        )
+        processed_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="processed"
+        )
+
+        def read_entity(entity: str, year: int):
+            if entity in ("games", "betting_lines"):
+                return raw_storage.read_index(entity, {"year": year})
+            else:
+                return processed_storage.read_index(entity, {"year": year})
 
     # Load Team Game Data (Raw stats)
     # We need prior year data for early season continuity?
     # For now, let's just load the specific year. Cold start is a known issue.
     # To mitigate, maybe load year-1 and filter?
     # Let's simple start: load `year` data.
-    records = storage.read_index("team_game", {"year": year})
+    records = read_entity("team_game", year)
     if not records:
         print(f"No team_game data for {year}")
         return None
@@ -89,8 +119,7 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
 
     # Normalize Weeks for Postseason (Week 1 -> Week 16+)
     # We need to map game_id to season_type to identify postseason games
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-    games = raw_storage.read_index("games", {"year": year})
+    games = read_entity("games", year)
     games_df = pd.DataFrame(games)
     if "id" in games_df.columns:
         games_df = games_df.rename(columns={"id": "game_id"})
@@ -136,11 +165,7 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
 
     if for_prediction:
         # Load raw schedule to ensure future games are present
-        # We need LocalStorage initialized with raw
-        raw_storage = LocalStorage(
-            data_root=data_root, file_format="csv", data_type="raw"
-        )
-        games = raw_storage.read_index("games", {"year": year})
+        games = read_entity("games", year)
         games_df = pd.DataFrame(games)
 
         # Rename id to game_id if needed
@@ -299,9 +324,29 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
 
 def _merge_for_training(team_stats, year, for_prediction=False):
     # Load Games (Targets)
-    data_root = get_data_root()
-    raw_storage = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-    games = raw_storage.read_index("games", {"year": year})
+    # Use cloud storage if configured, otherwise fall back to LocalStorage
+    storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+
+    if storage_backend in ("r2", "s3"):
+        from cks_picks_cfb.data.storage import get_storage
+
+        storage = get_storage()
+
+        def read_entity(entity: str, year: int):
+            full_entity = f"raw/{entity}"
+            return storage.read_index(full_entity, {"year": year})
+    else:
+        from cks_picks_cfb.utils.local_storage import LocalStorage
+
+        data_root = get_data_root()
+        raw_storage = LocalStorage(
+            data_root=data_root, file_format="csv", data_type="raw"
+        )
+
+        def read_entity(entity: str, year: int):
+            return raw_storage.read_index(entity, {"year": year})
+
+    games = read_entity("games", year)
     games_df = pd.DataFrame(games)
 
     if "id" in games_df.columns:
@@ -318,7 +363,7 @@ def _merge_for_training(team_stats, year, for_prediction=False):
         )
 
     # Betting Lines
-    betting = raw_storage.read_index("betting_lines", {"year": year})
+    betting = read_entity("betting_lines", year)
     if betting:
         betting_df = pd.DataFrame(betting)
         if "id" in betting_df.columns:

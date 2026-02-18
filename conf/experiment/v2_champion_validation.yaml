@@ -1,0 +1,24 @@
+# @package _global_
+defaults:
+  - override /model: linear
+  - override /features: matchup_v1
+
+experiment:
+  name: v2_champion_validation
+  phase: 4
+  description: "Validate champion model (matchup_v1 + Ridge) post-refactoring. Expected: +0.78% ROI spread, +6.35% ROI totals"
+
+training:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+  deploy_year: 2025
+
+# Champion model configuration with Phase 4 optimizations
+betting:
+  spread:
+    default_threshold: 0.0
+    high_confidence_threshold: 8.0
+  totals:
+    threshold: 1.5
+  bias_correction:
+    spread_offset: 1.14

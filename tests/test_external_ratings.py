@@ -63,7 +63,7 @@ class TestExternalRatingsIngester:
         mock_api.get_srs.return_value = mock_srs
 
         ingester = ExternalRatingsIngester(year=2024, rating_type="all")
-        data = ingester.fetch_data()
+        ingester.fetch_data()
 
         assert mock_api.get_sp.called
         assert mock_api.get_fpi.called
@@ -76,7 +76,7 @@ class TestExternalRatingsIngester:
         mock_api.get_sp.return_value = mock_sp
 
         ingester = ExternalRatingsIngester(year=2024, rating_type="sp")
-        data = ingester.fetch_data()
+        ingester.fetch_data()
 
         assert mock_api.get_sp.called
         assert not mock_api.get_fpi.called
