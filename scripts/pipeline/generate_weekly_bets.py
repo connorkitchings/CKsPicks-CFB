@@ -40,10 +40,14 @@ def main():
     year = args.year if args.year is not None else cfg.year
     week = args.week if args.week is not None else cfg.week
     spread_threshold = cfg.spread_edge_threshold
+    # Support dual-threshold betting strategy (default + high confidence)
+    spread_threshold_high = cfg.get("spread_edge_threshold_high_conf", spread_threshold)
     total_threshold = cfg.total_edge_threshold
 
     print(f"Generating bets for {year} Week {week}")
-    print(f"Thresholds: Spread={spread_threshold}, Total={total_threshold}")
+    print(
+        f"Thresholds: Spread={spread_threshold} (default), {spread_threshold_high} (high conf), Total={total_threshold}"
+    )
 
     setup_mlflow()
 
@@ -264,18 +268,24 @@ def main():
             book_spread = row.get("home_team_spread_line")
             book_total = row.get("total_line")
 
-            # Spread Bet
+            # Spread Bet (Dual-Threshold Strategy)
             if pd.notna(book_spread):
                 # Spread Logic: Edge = abs(Pred - (-Line)) = abs(Pred + Line)
                 # Bet Home if Pred > -Line
                 edge = pred_spread + book_spread
+                edge_abs = abs(edge)
 
-                if edge > spread_threshold:
+                # Determine side and confidence based on dual thresholds
+                if edge > 0:
                     bet_side = "Home"
-                    bet_conf = "High"
-                elif edge < -spread_threshold:
+                else:
                     bet_side = "Away"
+
+                # Assign confidence based on which threshold is crossed
+                if edge_abs >= spread_threshold_high:
                     bet_conf = "High"
+                elif edge_abs >= spread_threshold:
+                    bet_conf = "Medium"
                 else:
                     bet_side = "No Bet"
                     bet_conf = ""

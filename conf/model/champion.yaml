@@ -1,0 +1,89 @@
+# Champion Model Configuration
+# V2 Production Model with Phase 4 Optimizations
+# Last Updated: 2026-02-18
+
+name: champion
+type: linear_regression
+
+description: |
+  V2 Champion Model - Linear Regression (Ridge) with matchup_v1 features
+  and Phase 4 optimizations (bias correction, threshold tuning).
+  
+  Performance (2024 Holdout):
+    - Spread ROI: +0.78% (default), +2.03% (high confidence)
+    - Totals ROI: +6.35% (at 1.5 threshold)
+    - Hit Rate: ~52-55%
+
+# Model parameters
+params:
+  alpha: 1.0  # Ridge regularization strength
+
+# Target configuration
+target: spread_target  # Primary target (also supports total_target)
+
+# Feature configuration
+features:
+  name: matchup_v1
+  type: recency
+  alpha: 0.3
+  groups:
+    # Core EPA and Success Rate features
+    - home_adj_off_epa_pp
+    - home_adj_def_epa_pp
+    - home_adj_off_sr
+    - home_adj_def_sr
+    - away_adj_off_epa_pp
+    - away_adj_def_epa_pp
+    - away_adj_off_sr
+    - away_adj_def_sr
+    # Rush/Pass specific features
+    - home_adj_off_rush_ypp
+    - home_adj_def_rush_ypp
+    - home_adj_off_pass_ypp
+    - home_adj_def_pass_ypp
+    - away_adj_off_rush_ypp
+    - away_adj_def_rush_ypp
+    - away_adj_off_pass_ypp
+    - away_adj_def_pass_ypp
+
+# Phase 4 Optimizations
+optimizations:
+  # Bias Correction (validated 2025-12-09)
+  # Adds +1.14 points to spread predictions to correct systematic under-prediction
+  bias_correction:
+    enabled: true
+    spread_offset: 1.14  # points
+    validation_date: "2025-12-09"
+    impact: "+25.83% ROI on selective bets"
+  
+  # Dual-Threshold Betting Strategy (validated 2025-12-08)
+  thresholds:
+    spread:
+      default: 0.0  # All bets, marginal +0.78% ROI
+      high_confidence: 8.0  # Selective bets, +2.03% ROI, 41.3% volume
+    totals:
+      default: 1.5  # Optimized for +6.35% ROI
+
+# Training configuration
+training:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+  deploy_year: 2025
+  min_games_required: 4
+
+# Evaluation metrics tracked
+tracking_metrics:
+  - rmse
+  - mae
+  - hit_rate
+  - roi
+  - calibration_error
+  - bets_placed
+
+# Model registry info
+registry:
+  experiment_name: "v2_champion"
+  model_type: "linear_regression"
+  feature_set: "matchup_v1"
+  status: "production"
+  promotion_date: "2025-12-08"
