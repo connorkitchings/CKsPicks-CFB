@@ -1,8 +1,8 @@
 # Refactoring Status Summary
 
-> **Date:** 2026-02-16
-> **Branch:** `refactor/template-adoption`
-> **Status:** Complete - Cloud storage operational, baseline validated
+> **Date:** 2026-02-18
+> **Branch:** `main`
+> **Status:** Complete - All phases merged to main, Phase 4 optimizations implemented
 
 ---
 
@@ -188,13 +188,22 @@
 ### Immediate (Ready Now)
 1. ✅ ~~Cloud storage validated~~ - DONE
 2. ✅ ~~Baseline training confirmed~~ - DONE
-3. **Archive refactoring branch** - Ready to merge to main
-4. **Resume V2 modeling workflow** - Can proceed with cloud storage
+3. ✅ ~~Refactoring branch merged to main~~ - DONE (2026-02-18)
+4. ✅ ~~V2 Phase 4 optimizations implemented~~ - DONE (bias correction, dual thresholds)
+5. **Monitor champion validation** - Currently running (ETA: 10-15 min)
+
+### V2 Modeling Status
+**Phase 1 (Baseline):** ✅ Complete - Ridge regression validated
+**Phase 2 (Features):** ✅ Complete - matchup_v1 promoted as champion
+**Phase 3 (Models):** ✅ Complete - Linear (Ridge) is champion
+**Phase 4 (Optimization):** ✅ Complete - Bias correction (+1.14), dual thresholds
+**Phase 5 (Deployment):** 🔄 Ready - Champion config created
 
 ### Optional Future Work
-1. Investigate performance gap vs expected baseline
-2. Test additional models (CatBoost, opponent_adjusted features)
-3. Re-sync external drive when available (backup/redundancy)
+1. Complete champion validation and verify performance matches expected
+2. Deploy optimized model to production
+3. Implement monitoring dashboard
+4. Re-sync external drive when available (backup/redundancy)
 
 ---
 
