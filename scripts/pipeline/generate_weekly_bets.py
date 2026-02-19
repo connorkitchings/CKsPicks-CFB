@@ -206,8 +206,6 @@ def main():
             "away_id",
             "venue_id",
             "attendance",
-            "home_pregame_elo",
-            "away_pregame_elo",
             "home_postgame_elo",
             "away_postgame_elo",
         ]

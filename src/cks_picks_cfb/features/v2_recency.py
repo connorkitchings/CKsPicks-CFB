@@ -405,6 +405,22 @@ def _merge_for_training(team_stats, year, for_prediction=False):
     # The suffixes above handle it mostly.
     # features will be columns in team_stats.
 
+    # Elo differential (pregame elo columns come from games_df)
+    if "home_pregame_elo" in merged.columns and "away_pregame_elo" in merged.columns:
+        merged["elo_diff"] = merged["home_pregame_elo"] - merged["away_pregame_elo"]
+
+    # External features: ratings, recruiting, rankings
+    from cks_picks_cfb.features.external import (
+        merge_external_ratings,
+        merge_rankings,
+        merge_recruiting_composite,
+    )
+
+    _storage = storage if storage_backend in ("r2", "s3") else None
+    merged = merge_external_ratings(merged, year, storage=_storage)
+    merged = merge_recruiting_composite(merged, year, storage=_storage)
+    merged = merge_rankings(merged, year, storage=_storage)
+
     # Calculate Target
     merged["spread_target"] = merged["home_points"] - merged["away_points"]
     merged["total_target"] = merged["home_points"] + merged["away_points"]

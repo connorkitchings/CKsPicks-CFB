@@ -1,0 +1,63 @@
+# Extended V1 Feature Set
+# Adds external data (elo, SP+/FPI/SRS, recruiting, rankings) and
+# enhanced situational features (timezone, altitude, dome) to matchup_v2.
+name: extended_v1
+groups:
+  # --- Core efficiency (opponent-adjusted) ---
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  # Rush/Pass YPP splits
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+
+  # --- Elo ratings ---
+  - home_pregame_elo
+  - away_pregame_elo
+  - elo_diff
+
+  # --- External ratings (SP+/FPI/SRS) ---
+  - home_sp_rating
+  - away_sp_rating
+  - sp_rating_diff
+  - home_fpi
+  - away_fpi
+  - fpi_diff
+  - home_srs
+  - away_srs
+  - srs_diff
+
+  # --- Recruiting talent ---
+  - home_talent_composite
+  - away_talent_composite
+  - talent_diff
+
+  # --- Rankings ---
+  - home_rank
+  - away_rank
+  - rank_diff
+  - is_ranked_home
+  - is_ranked_away
+
+  # --- Situational features ---
+  - neutral_site
+  - timezone_diff
+  - eastward_travel
+  - altitude_diff
+  - is_dome_game
+  - rest_travel_fatigue
+
+params:
+  type: recency
+  alpha: 0.3
