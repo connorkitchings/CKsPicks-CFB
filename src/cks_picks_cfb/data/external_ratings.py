@@ -55,100 +55,140 @@ class ExternalRatingsIngester(BaseIngester):
         """Partition keys for ratings data."""
         return ["year"]
 
-    def fetch_data(self) -> list[Any]:
+    def fetch_data(self) -> list[tuple[str, Any]]:
         """Fetch ratings data from the CFBD API.
 
         Returns:
-            List of rating objects from CFBD API (combined if fetching all types)
+            List of (rating_type, rating_object) tuples from CFBD API
         """
         ratings_api = cfbd.RatingsApi(cfbd.ApiClient(self.cfbd_config))
-        all_ratings = []
+        all_ratings: list[tuple[str, Any]] = []
 
         if self.rating_type in ("sp", "all"):
             sp_ratings = ratings_api.get_sp(year=self.year)
             for rating in sp_ratings:
-                rating._rating_type = "sp"
-            all_ratings.extend(sp_ratings)
+                all_ratings.append(("sp", rating))
             print(f"Found {len(sp_ratings)} SP+ ratings for {self.year}")
 
         if self.rating_type in ("fpi", "all"):
             fpi_ratings = ratings_api.get_fpi(year=self.year)
             for rating in fpi_ratings:
-                rating._rating_type = "fpi"
-            all_ratings.extend(fpi_ratings)
+                all_ratings.append(("fpi", rating))
             print(f"Found {len(fpi_ratings)} FPI ratings for {self.year}")
 
         if self.rating_type in ("srs", "all"):
             srs_ratings = ratings_api.get_srs(year=self.year)
             for rating in srs_ratings:
-                rating._rating_type = "srs"
-            all_ratings.extend(srs_ratings)
+                all_ratings.append(("srs", rating))
             print(f"Found {len(srs_ratings)} SRS ratings for {self.year}")
 
         return all_ratings
 
-    def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
+    def transform_data(self, data: list[tuple[str, Any]]) -> list[dict[str, Any]]:
         """Transform ratings data into storage format.
 
         Args:
-            data: List of rating objects from CFBD API
+            data: List of (rating_type, rating_object) tuples from CFBD API
 
         Returns:
             List of dictionaries ready for storage
         """
+        # Define unified schema with all possible columns
+        # This ensures PyArrow doesn't drop columns when combining record types
+        base_columns = {
+            "season": None,
+            "year": None,
+            "rating_type": None,
+            "team": None,
+            "conference": None,
+            "rating": None,
+            "ranking": None,
+            "offense_rating": None,
+            "defense_rating": None,
+            "special_teams_rating": None,
+            "second_order_wins": None,
+            "sos": None,
+            "fpi": None,
+            "fpi_rk": None,
+            "resume_ranks": None,
+            "mean_win_total": None,
+            "trend": None,
+            "srs": None,
+        }
+
         records = []
 
-        for rating in data:
-            rating_type = getattr(rating, "_rating_type", "unknown")
+        for rating_type, rating in data:
+            # Use Pydantic's dict() method to flatten nested models
+            if hasattr(rating, "dict"):
+                rating_dict = rating.dict()
+            else:
+                rating_dict = vars(rating)
 
-            base_record = {
-                "season": self.year,
-                "year": self.year,
-                "rating_type": rating_type,
-                "team": self.safe_getattr(rating, "team", None),
-                "conference": self.safe_getattr(rating, "conference", None),
-            }
+            # Start with base schema
+            record = dict(base_columns)
+
+            # Set base fields
+            record.update(
+                {
+                    "season": self.year,
+                    "year": self.year,
+                    "rating_type": rating_type,
+                    "team": rating_dict.get("team"),
+                    "conference": rating_dict.get("conference"),
+                }
+            )
 
             if rating_type == "sp":
-                record = {
-                    **base_record,
-                    "rating": self.safe_getattr(rating, "rating", None),
-                    "offense_rating": self.safe_getattr(rating, "offense", None),
-                    "defense_rating": self.safe_getattr(rating, "defense", None),
-                    "special_teams_rating": self.safe_getattr(
-                        rating, "special_teams", None
-                    ),
-                    "second_order_wins": self.safe_getattr(
-                        rating, "second_order_wins", None
-                    ),
-                    "srs": self.safe_getattr(rating, "srs", None),
-                    "sp_overall": self.safe_getattr(rating, "sp_overall", None),
-                    "sp_offense": self.safe_getattr(rating, "sp_offense", None),
-                    "sp_defense": self.safe_getattr(rating, "sp_defense", None),
-                    "sp_special_teams": self.safe_getattr(
-                        rating, "sp_special_teams", None
-                    ),
-                }
+                # Flatten nested offense/defense/special_teams
+                offense = rating_dict.get("offense") or {}
+                defense = rating_dict.get("defense") or {}
+                special_teams = rating_dict.get("special_teams") or {}
+
+                record.update(
+                    {
+                        "rating": rating_dict.get("rating"),
+                        "ranking": rating_dict.get("ranking"),
+                        "offense_rating": offense.get("rating")
+                        if isinstance(offense, dict)
+                        else getattr(offense, "rating", None),
+                        "defense_rating": defense.get("rating")
+                        if isinstance(defense, dict)
+                        else getattr(defense, "rating", None),
+                        "special_teams_rating": special_teams.get("rating")
+                        if isinstance(special_teams, dict)
+                        else getattr(special_teams, "rating", None),
+                        "second_order_wins": rating_dict.get("second_order_wins"),
+                        "sos": rating_dict.get("sos"),
+                    }
+                )
             elif rating_type == "fpi":
-                record = {
-                    **base_record,
-                    "rating": self.safe_getattr(rating, "fpi", None),
-                    "fpi": self.safe_getattr(rating, "fpi", None),
-                    "resume_ranks": self.safe_getattr(rating, "resume_ranks", None),
-                    "mean_win_total": self.safe_getattr(rating, "mean_win_total", None),
-                    "offense_rating": self.safe_getattr(rating, "offense", None),
-                    "defense_rating": self.safe_getattr(rating, "defense", None),
-                    "fpi_rk": self.safe_getattr(rating, "fpi_rk", None),
-                    "trend": self.safe_getattr(rating, "trend", None),
-                }
+                # FPI stores offense/defense in 'efficiencies' object
+                efficiencies = rating_dict.get("efficiencies") or {}
+
+                record.update(
+                    {
+                        "rating": rating_dict.get(
+                            "fpi"
+                        ),  # Use fpi as rating for consistency
+                        "fpi": rating_dict.get("fpi"),
+                        "fpi_rk": rating_dict.get("fpi_rk"),
+                        "resume_ranks": rating_dict.get("resume_ranks"),
+                        "mean_win_total": rating_dict.get("mean_win_total"),
+                        "trend": rating_dict.get("trend"),
+                        "offense_rating": efficiencies.get("offense"),
+                        "defense_rating": efficiencies.get("defense"),
+                        "special_teams_rating": efficiencies.get("special_teams"),
+                    }
+                )
             elif rating_type == "srs":
-                record = {
-                    **base_record,
-                    "rating": self.safe_getattr(rating, "rating", None),
-                    "srs": self.safe_getattr(rating, "rating", None),
-                }
-            else:
-                record = base_record
+                record.update(
+                    {
+                        "rating": rating_dict.get("rating"),
+                        "ranking": rating_dict.get("ranking"),
+                        "srs": rating_dict.get("rating"),
+                    }
+                )
 
             records.append(record)
 

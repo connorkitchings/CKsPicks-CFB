@@ -14,8 +14,10 @@ from cks_picks_cfb.utils.mlflow_tracking import (
 )
 
 
-def load_and_prepare_data(cfg: DictConfig):
-    """Load and concatenate data for configured years."""
+def load_and_prepare_data(cfg: DictConfig, max_workers: int = 3):
+    """Load and concatenate data for configured years with parallel loading."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     # Extract features list if available
     features = None
     if "features" in cfg:
@@ -24,9 +26,6 @@ def load_and_prepare_data(cfg: DictConfig):
         elif "features" in cfg.features:
             features = list(cfg.features.features)
 
-    # Load Training Data
-    train_dfs = []
-
     # Check for recency features
     use_recency = False
     if "features" in cfg and "params" in cfg.features:
@@ -34,36 +33,49 @@ def load_and_prepare_data(cfg: DictConfig):
             use_recency = True
             alpha = cfg.features.params.get("alpha", 0.5)
 
-    for year in cfg.training.train_years:
+    def load_year(year):
+        """Helper to load data for a single year."""
         if use_recency:
             from cks_picks_cfb.features.v2_recency import load_v2_recency_data
 
-            print(f"Loading Recency Weighted data for {year} (alpha={alpha})...")
             df = load_v2_recency_data(year, alpha=alpha)
         else:
             df = load_v1_data(year, features=features)
+        return year, df
 
-        if df is not None:
-            train_dfs.append(df)
+    # Load Training Data in parallel
+    print(
+        f"Loading training data for years {cfg.training.train_years} (parallel={max_workers} workers)..."
+    )
+    train_dfs = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_year = {
+            executor.submit(load_year, year): year for year in cfg.training.train_years
+        }
+        for future in as_completed(future_to_year):
+            year, df = future.result()
+            if df is not None:
+                print(f"  ✓ Loaded {year}: {len(df)} rows")
+                train_dfs.append((year, df))
+            else:
+                print(f"  ✗ Failed to load {year}")
 
     if not train_dfs:
         raise ValueError(f"No training data found for years {cfg.training.train_years}")
 
-    train_df = pd.concat(train_dfs, ignore_index=True)
+    # Sort by year to maintain order
+    train_dfs.sort(key=lambda x: x[0])
+    train_df = pd.concat([df for _, df in train_dfs], ignore_index=True)
+    print(f"Training data loaded: {len(train_df)} total rows")
 
     # Load Test Data
-    if use_recency:
-        from cks_picks_cfb.features.v2_recency import load_v2_recency_data
-
-        print(
-            f"Loading Recency Weighted data for {cfg.training.test_year} (alpha={alpha})..."
-        )
-        test_df = load_v2_recency_data(cfg.training.test_year, alpha=alpha)
-    else:
-        test_df = load_v1_data(cfg.training.test_year, features=features)
+    print(f"Loading test data for {cfg.training.test_year}...")
+    _, test_df = load_year(cfg.training.test_year)
 
     if test_df is None:
         raise ValueError(f"No test data found for year {cfg.training.test_year}")
+    print(f"Test data loaded: {len(test_df)} rows")
 
     return train_df, test_df
 

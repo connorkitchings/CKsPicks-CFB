@@ -347,7 +347,7 @@ class LocalStorage(StorageBackend):
 
 
 class R2Storage(StorageBackend):
-    """Cloudflare R2 storage (S3-compatible)."""
+    """Cloudflare R2 storage (S3-compatible) with local caching and parallel downloads."""
 
     def __init__(
         self,
@@ -356,6 +356,8 @@ class R2Storage(StorageBackend):
         access_key: str,
         secret_key: str,
         endpoint: Optional[str] = None,
+        cache_dir: Optional[str] = None,
+        max_workers: int = 8,
     ):
         """Initialize R2 storage.
 
@@ -365,6 +367,8 @@ class R2Storage(StorageBackend):
             access_key: R2 API access key
             secret_key: R2 API secret key
             endpoint: Optional custom endpoint URL
+            cache_dir: Local cache directory (default: ~/.cache/cfb_model/r2/)
+            max_workers: Max parallel download workers (default: 8)
         """
         try:
             import boto3
@@ -384,6 +388,21 @@ class R2Storage(StorageBackend):
             aws_secret_access_key=secret_key,
             region_name="auto",  # R2 uses 'auto' region
         )
+
+        # Setup local cache
+        if cache_dir is None:
+            cache_dir = os.path.expanduser("~/.cache/cfb_model/r2")
+        self.cache_dir = Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.max_workers = max_workers
+        self._cache_hits = 0
+        self._cache_misses = 0
+
+        # Setup memory cache for read_index (LRU cache with TTL)
+
+        self._memory_cache = {}
+        self._memory_cache_ttl = 300  # 5 minutes TTL
+        self._memory_cache_timestamps = {}
 
     def read_parquet(self, path: str) -> pd.DataFrame:
         """Read a parquet file from R2."""
@@ -451,59 +470,142 @@ class R2Storage(StorageBackend):
         """Get S3 prefix for entity partition."""
         return f"{entity}/{partition.path_suffix()}"
 
+    def _get_cache_path(self, file_key: str) -> Path:
+        """Get local cache path for an S3 file key."""
+        safe_name = file_key.replace("/", "__")
+        return self.cache_dir / safe_name
+
+    def _download_file(self, file_key: str, use_cache: bool = True) -> bytes:
+        """Download a file from R2 with caching support."""
+        cache_path = self._get_cache_path(file_key)
+        if use_cache and cache_path.exists():
+            self._cache_hits += 1
+            return cache_path.read_bytes()
+        obj = self.s3_client.get_object(Bucket=self.bucket, Key=file_key)
+        data = obj["Body"].read()
+        if use_cache:
+            cache_path.write_bytes(data)
+            self._cache_misses += 1
+        return data
+
+    def _download_files_parallel(
+        self, file_keys: list[str], use_cache: bool = True
+    ) -> dict[str, bytes]:
+        """Download multiple files in parallel."""
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        results: dict[str, bytes] = {}
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_key = {
+                executor.submit(self._download_file, key, use_cache): key
+                for key in file_keys
+            }
+            for future in as_completed(future_to_key):
+                key = future_to_key[future]
+                try:
+                    results[key] = future.result()
+                except Exception as e:
+                    print(f"Error downloading {key}: {e}")
+        return results
+
     def read_index(
-        self, entity: str, filters: Mapping[str, Any], columns: list[str] | None = None
+        self,
+        entity: str,
+        filters: Mapping[str, Any],
+        columns: list[str] | None = None,
+        *,
+        use_cache: bool = True,
+        parallel: bool = True,
     ) -> list[dict[str, Any]]:
-        """Read records by entity and partition filters."""
+        """Read records by entity and partition filters with caching and parallel downloads."""
         import io
+        import time
+
+        # Memory cache key
+        cache_key = (
+            entity,
+            tuple(sorted(filters.items())),
+            tuple(columns) if columns else None,
+        )
+
+        # Check memory cache
+        if cache_key in self._memory_cache:
+            cache_time = self._memory_cache_timestamps.get(cache_key, 0)
+            if time.time() - cache_time < self._memory_cache_ttl:
+                return self._memory_cache[cache_key]
+            else:
+                # Expired, remove from cache
+                del self._memory_cache[cache_key]
+                del self._memory_cache_timestamps[cache_key]
 
         partition_values = {k: str(v) for k, v in filters.items() if v is not None}
         partition = Partition(partition_values)
         prefix = self._get_entity_partition_prefix(entity, partition)
-
-        # List all files under this prefix
         files = self.list_files(prefix)
-
         if not files:
             return []
 
-        # Look for parquet files first
-        parquet_files = [f for f in files if f.endswith(".parquet")]
+        result: list[dict[str, Any]] = []
 
+        parquet_files = [f for f in files if f.endswith(".parquet")]
         if parquet_files:
             rows: list[dict[str, Any]] = []
-            for file_key in parquet_files:
-                try:
-                    obj = self.s3_client.get_object(Bucket=self.bucket, Key=file_key)
-                    buffer = io.BytesIO(obj["Body"].read())
-                    table = pq.read_table(buffer, columns=columns)
-                    rows.extend(table.to_pylist())
-                except Exception as e:
-                    print(f"Skipping unreadable file: {file_key} -> {e}")
-                    continue
-            return rows
+            if parallel and len(parquet_files) > 1:
+                file_contents = self._download_files_parallel(
+                    parquet_files, use_cache=use_cache
+                )
+                for file_key, data in file_contents.items():
+                    try:
+                        buffer = io.BytesIO(data)
+                        table = pq.read_table(buffer, columns=columns)
+                        rows.extend(table.to_pylist())
+                    except Exception as e:
+                        print(f"Skipping unreadable file: {file_key} -> {e}")
+            else:
+                for file_key in parquet_files:
+                    try:
+                        data = self._download_file(file_key, use_cache=use_cache)
+                        buffer = io.BytesIO(data)
+                        table = pq.read_table(buffer, columns=columns)
+                        rows.extend(table.to_pylist())
+                    except Exception as e:
+                        print(f"Skipping unreadable file: {file_key} -> {e}")
+            result = rows
+        else:
+            csv_files = [f for f in files if f.endswith("data.csv")]
+            if csv_files:
+                frames: list[pd.DataFrame] = []
+                if parallel and len(csv_files) > 1:
+                    file_contents = self._download_files_parallel(
+                        csv_files, use_cache=use_cache
+                    )
+                    for file_key, data in file_contents.items():
+                        try:
+                            df = pd.read_csv(io.BytesIO(data))
+                            if columns:
+                                df = df[columns]
+                            frames.append(df)
+                        except Exception as e:
+                            print(f"Skipping unreadable CSV: {file_key} -> {e}")
+                else:
+                    for file_key in csv_files:
+                        try:
+                            data = self._download_file(file_key, use_cache=use_cache)
+                            df = pd.read_csv(io.BytesIO(data))
+                            if columns:
+                                df = df[columns]
+                            frames.append(df)
+                        except Exception as e:
+                            print(f"Skipping unreadable CSV: {file_key} -> {e}")
+                if frames:
+                    df_all = pd.concat(frames, ignore_index=True)
+                    result = df_all.to_dict(orient="records")
 
-        # Fall back to CSV files
-        csv_files = [f for f in files if f.endswith("data.csv")]
+        # Store in memory cache
+        self._memory_cache[cache_key] = result
+        self._memory_cache_timestamps[cache_key] = time.time()
 
-        if csv_files:
-            frames: list[pd.DataFrame] = []
-            for file_key in csv_files:
-                try:
-                    obj = self.s3_client.get_object(Bucket=self.bucket, Key=file_key)
-                    df = pd.read_csv(obj["Body"])
-                    if columns:
-                        df = df[columns]
-                    frames.append(df)  # type: ignore[arg-type]
-                except Exception as e:
-                    print(f"Skipping unreadable CSV: {file_key} -> {e}")
-                    continue
-            if not frames:
-                return []
-            df_all = pd.concat(frames, ignore_index=True)
-            return df_all.to_dict(orient="records")
-
-        return []
+        return result
 
     def write(
         self,

@@ -164,13 +164,14 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
         team_game_df = team_game_df.merge(opp_map, on=["game_id", "team"], how="left")
 
     if for_prediction:
-        # Load raw schedule to ensure future games are present
-        games = read_entity("games", year)
-        games_df = pd.DataFrame(games)
-
-        # Rename id to game_id if needed
-        if "id" in games_df.columns:
-            games_df = games_df.rename(columns={"id": "game_id"})
+        # Reuse games_df loaded earlier to avoid redundant S3 call
+        # games_df already loaded at line 122 and renamed id->game_id at line 125
+        if "games_df" not in locals():
+            # Fallback: load games if not already loaded (shouldn't happen)
+            games = read_entity("games", year)
+            games_df = pd.DataFrame(games)
+            if "id" in games_df.columns:
+                games_df = games_df.rename(columns={"id": "game_id"})
 
         # Identify missing games in team_game_df
         existing_ids = set(team_game_df["game_id"].unique())
