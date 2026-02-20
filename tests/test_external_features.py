@@ -54,7 +54,7 @@ class TestMergeExternalRatings:
             {"rating_type": "srs", "team": "Alabama", "rating": 20.1, "year": year},
             {"rating_type": "srs", "team": "Georgia", "rating": 18.5, "year": year},
         ]
-        return _MockStorage({"raw/external_ratings/year=2023": ratings})
+        return _MockStorage({"external_ratings/year=2023": ratings})
 
     def test_sp_rating_columns_added(self):
         storage = self._make_storage()
@@ -113,7 +113,7 @@ class TestMergeRecruitingComposite:
     def _make_storage(self, years=(2020, 2021, 2022, 2023)):
         data = {}
         for y in years:
-            key = f"raw/recruiting/year={y}"
+            key = f"recruiting/year={y}"
             data[key] = [
                 {"team": "Alabama", "points": 300.0 + y - 2020, "year": y},
                 {"team": "Georgia", "points": 250.0 + y - 2020, "year": y},
@@ -202,7 +202,7 @@ class TestMergeRankings:
                 "year": year,
             },
         ]
-        return _MockStorage({"raw/rankings/year=2023": rankings})
+        return _MockStorage({"rankings/year=2023": rankings})
 
     def test_rank_columns_added(self):
         storage = self._make_storage()

@@ -18,7 +18,7 @@ def main():
     print(f"Using storage: {storage.root()}")
     print("=" * 60)
 
-    years = [2019, 2021, 2022, 2023, 2024]
+    years = [2019, 2021, 2022, 2023, 2024, 2025]
 
     # 1. Ingest external ratings (SP+/FPI/SRS)
     print("\n1. Ingesting External Ratings (SP+/FPI/SRS)...")

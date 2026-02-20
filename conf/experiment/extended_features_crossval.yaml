@@ -1,0 +1,54 @@
+# @package _global_
+# Cross-Validation Configuration for Extended Features
+
+defaults:
+  - override /model: linear
+  - override /features: extended_v1
+
+experiment:
+  name: extended_features_crossval
+  phase: 4
+  description: "Cross-validation: Leave-one-season-out validation with extended_v1 features"
+  type: cross_validation
+
+folds:
+  fold_2021:
+    name: "fold_2021"
+    train_years: [2022, 2023, 2024]
+    test_year: 2021
+  fold_2022:
+    name: "fold_2022"
+    train_years: [2021, 2023, 2024]
+    test_year: 2022
+  fold_2023:
+    name: "fold_2023"
+    train_years: [2021, 2022, 2024]
+    test_year: 2023
+  fold_2024:
+    name: "fold_2024"
+    train_years: [2021, 2022, 2023]
+    test_year: 2024
+
+final_model:
+  name: "extended_features_final"
+  train_years: [2021, 2022, 2023, 2024]
+  deploy_year: 2025
+
+training:
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2024
+  deploy_year: 2025
+
+betting:
+  spread:
+    default_threshold: 0.0
+    high_confidence_threshold: 8.0
+  totals:
+    threshold: 1.5
+  bias_correction:
+    spread_offset: 1.14
+
+parallel:
+  enabled: true
+  max_workers: 4
+  timeout_seconds: 3600

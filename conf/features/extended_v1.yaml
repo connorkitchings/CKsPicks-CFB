@@ -27,17 +27,6 @@ groups:
   - away_pregame_elo
   - elo_diff
 
-  # --- External ratings (SP+/FPI/SRS) ---
-  - home_sp_rating
-  - away_sp_rating
-  - sp_rating_diff
-  - home_fpi
-  - away_fpi
-  - fpi_diff
-  - home_srs
-  - away_srs
-  - srs_diff
-
   # --- Recruiting talent ---
   - home_talent_composite
   - away_talent_composite

@@ -13,6 +13,14 @@ from cks_picks_cfb.data.external_ratings import (
 class TestExternalRatingsIngester:
     """Verify ExternalRatingsIngester functionality."""
 
+    @pytest.fixture(autouse=True)
+    def mock_storage(self, tmp_path, monkeypatch):
+        """Mock data root to a temporary directory."""
+        monkeypatch.setenv("CFB_MODEL_DATA_ROOT", str(tmp_path))
+        (tmp_path / "raw").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "interim").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "processed").mkdir(parents=True, exist_ok=True)
+
     def test_init_with_all_rating_type(self):
         """Initialize with rating_type='all'."""
         ingester = ExternalRatingsIngester(year=2024, rating_type="all")
@@ -42,9 +50,11 @@ class TestExternalRatingsIngester:
     @pytest.fixture
     def mock_api(self):
         """Mock CFBD API client."""
-        with pytest.mock.patch("cks_picks_cfb.data.external_ratings.cfbd") as mock_cfbd:
+        from unittest.mock import patch
+
+        with patch("cks_picks_cfb.data.external_ratings.cfbd") as mock_cfbd:
             mock_api = MagicMock()
-            mock_cfbd.RatingsApi.return_value.ApiClient.return_value = mock_api
+            mock_cfbd.RatingsApi.return_value = mock_api
             mock_cfbd.ApiClient.return_value = MagicMock()
             yield mock_api
 
@@ -85,22 +95,25 @@ class TestExternalRatingsIngester:
     def test_transform_sp_ratings(self, mock_api):
         """Transform SP+ ratings correctly."""
         mock_rating = MagicMock()
-        mock_rating.team = "Test Team"
-        mock_rating.conference = "Test Conf"
-        mock_rating.rating = 25.5
-        mock_rating.offense = 30.0
-        mock_rating.defense = 20.0
-        mock_rating.special_teams = 22.0
-        mock_rating.second_order_wins = 5.0
-        mock_rating.srs = 24.0
-        mock_rating.sp_overall = 26.0
-        mock_rating.sp_offense = 28.0
-        mock_rating.sp_defense = 24.0
-        mock_rating.sp_special_teams = 25.0
+        mock_rating.dict.return_value = {
+            "team": "Test Team",
+            "conference": "Test Conf",
+            "rating": 25.5,
+            "offense": {"rating": 30.0},
+            "defense": {"rating": 20.0},
+            "special_teams": {"rating": 22.0},
+            "second_order_wins": 5.0,
+            "srs": 24.0,
+            "sp_overall": 26.0,
+            "sp_offense": 28.0,
+            "sp_defense": 24.0,
+            "sp_special_teams": 25.0,
+            "ranking": None,
+            "sos": None,
+        }
 
         ingester = ExternalRatingsIngester(year=2024)
-        mock_rating._rating_type = "sp"
-        records = ingester.transform_data([mock_rating])
+        records = ingester.transform_data([("sp", mock_rating)])
 
         assert len(records) == 1
         record = records[0]
@@ -115,19 +128,21 @@ class TestExternalRatingsIngester:
     def test_transform_fpi_ratings(self, mock_api):
         """Transform FPI ratings correctly."""
         mock_rating = MagicMock()
-        mock_rating.team = "Test Team"
-        mock_rating.conference = "Test Conf"
-        mock_rating.fpi = 18.5
-        mock_rating.resume_ranks = 15
-        mock_rating.mean_win_total = 8.2
-        mock_rating.offense = 20.0
-        mock_rating.defense = 18.0
-        mock_rating.fpi_rk = 25
-        mock_rating.trend = "+1.2"
+        mock_rating.dict.return_value = {
+            "team": "Test Team",
+            "conference": "Test Conf",
+            "fpi": 18.5,
+            "resume_ranks": 15,
+            "mean_win_total": 8.2,
+            "offense": 20.0,
+            "defense": 18.0,
+            "fpi_rk": 25,
+            "trend": "+1.2",
+            "efficiencies": {"offense": 20.0, "defense": 18.0, "special_teams": None},
+        }
 
         ingester = ExternalRatingsIngester(year=2024)
-        mock_rating._rating_type = "fpi"
-        records = ingester.transform_data([mock_rating])
+        records = ingester.transform_data([("fpi", mock_rating)])
 
         assert len(records) == 1
         record = records[0]
@@ -142,13 +157,15 @@ class TestExternalRatingsIngester:
     def test_transform_srs_ratings(self, mock_api):
         """Transform SRS ratings correctly."""
         mock_rating = MagicMock()
-        mock_rating.team = "Test Team"
-        mock_rating.conference = "Test Conf"
-        mock_rating.rating = 10.5
+        mock_rating.dict.return_value = {
+            "team": "Test Team",
+            "conference": "Test Conf",
+            "rating": 10.5,
+            "ranking": None,
+        }
 
         ingester = ExternalRatingsIngester(year=2024)
-        mock_rating._rating_type = "srs"
-        records = ingester.transform_data([mock_rating])
+        records = ingester.transform_data([("srs", mock_rating)])
 
         assert len(records) == 1
         record = records[0]
@@ -163,13 +180,15 @@ class TestIngestExternalRatings:
     @pytest.fixture
     def mock_ingester(self):
         """Mock ingester."""
-        with pytest.mock.patch(
+        from unittest.mock import patch
+
+        with patch(
             "cks_picks_cfb.data.external_ratings.ExternalRatingsIngester"
         ) as mock_class:
             mock_instance = MagicMock()
             mock_instance.fetch_data.return_value = []
-            mock_instance.transform_data.return_value = []
-            mock_instance.ingest_data.return_value = 5
+            mock_instance.transform_data.return_value = [1, 2, 3, 4, 5]
+            mock_instance.ingest_data.return_value = None
             mock_class.return_value = mock_instance
             yield mock_instance
 
