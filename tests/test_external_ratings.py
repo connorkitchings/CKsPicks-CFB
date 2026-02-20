@@ -1,6 +1,6 @@
 """Tests for external ratings ingester."""
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -43,135 +43,141 @@ class TestExternalRatingsIngester:
         assert ingester.entity_name == "external_ratings"
 
     def test_partition_keys(self):
-        """Partition keys are ['year']."""
-        ingester = ExternalRatingsIngester(year=2024)
-        assert ingester.partition_keys == ["year"]
+        """Partition keys are ['year', 'week']."""
+        ingester = ExternalRatingsIngester(year=2024, week=5)
+        assert ingester.partition_keys == ["year", "week"]
 
     @pytest.fixture
-    def mock_api(self):
-        """Mock CFBD API client."""
-        from unittest.mock import patch
+    def mock_csv_data(self, tmp_path):
+        """Create mock CSV files in the expected directory structure."""
+        import pandas as pd
 
-        with patch("cks_picks_cfb.data.external_ratings.cfbd") as mock_cfbd:
-            mock_api = MagicMock()
-            mock_cfbd.RatingsApi.return_value = mock_api
-            mock_cfbd.ApiClient.return_value = MagicMock()
-            yield mock_api
+        manual_dir = tmp_path / "raw" / "manual" / "ratings" / "year=2024" / "week=5"
+        manual_dir.mkdir(parents=True, exist_ok=True)
 
-    def test_fetch_data_all_ratings(self, mock_api):
-        """Fetch all rating types."""
-        mock_sp = MagicMock()
-        mock_sp.__iter__ = Mock(return_value=iter([]))
-        mock_api.get_sp.return_value = mock_sp
+        # SP+ Mock Data
+        pd.DataFrame(
+            [
+                {
+                    "team": "Alabama",
+                    "rating": 30.5,
+                    "offense": 40.2,
+                    "defense": 10.1,
+                    "special_teams": 0.4,
+                },
+                {
+                    "team": "Georgia",
+                    "rating": 29.8,
+                    "offense": 38.0,
+                    "defense": 9.0,
+                    "special_teams": 0.8,
+                },
+            ]
+        ).to_csv(manual_dir / "sp.csv", index=False)
 
-        mock_fpi = MagicMock()
-        mock_fpi.__iter__ = Mock(return_value=iter([]))
-        mock_api.get_fpi.return_value = mock_fpi
+        # FPI Mock Data
+        pd.DataFrame(
+            [
+                {
+                    "School": "Alabama",
+                    "FPI": 28.5,
+                    "OFF": 100.0,
+                    "DEF": 80.0,
+                    "ST": 50.0,
+                },
+                {
+                    "School": "Georgia",
+                    "FPI": 27.0,
+                    "OFF": 95.0,
+                    "DEF": 85.0,
+                    "ST": 55.0,
+                },
+            ]
+        ).to_csv(manual_dir / "fpi.csv", index=False)
 
-        mock_srs = MagicMock()
-        mock_srs.__iter__ = Mock(return_value=iter([]))
-        mock_api.get_srs.return_value = mock_srs
+        # FEI Mock Data
+        pd.DataFrame(
+            [
+                {
+                    "Team": "Alabama",
+                    "FEI": 1.25,
+                    "OFEI": 0.8,
+                    "DFEI": 0.25,
+                    "SFEI": 0.1,
+                },
+                {
+                    "Team": "Georgia",
+                    "FEI": 1.15,
+                    "OFEI": 0.7,
+                    "DFEI": 0.35,
+                    "SFEI": -0.1,
+                },
+            ]
+        ).to_csv(manual_dir / "fei.csv", index=False)
 
-        ingester = ExternalRatingsIngester(year=2024, rating_type="all")
-        ingester.fetch_data()
+        return manual_dir
 
-        assert mock_api.get_sp.called
-        assert mock_api.get_fpi.called
-        assert mock_api.get_srs.called
+    def test_fetch_data_all_ratings(self, mock_csv_data):
+        """Fetch all rating types from CSVs."""
+        ingester = ExternalRatingsIngester(year=2024, week=5, rating_type="all")
+        data = ingester.fetch_data()
 
-    def test_fetch_data_single_rating(self, mock_api):
+        types_fetched = [rt for rt, _ in data]
+        assert "sp" in types_fetched
+        assert "fpi" in types_fetched
+        assert "fei" in types_fetched
+
+        # each should have 2 records
+        for _, records in data:
+            assert len(records) == 2
+
+    def test_fetch_data_single_rating(self, mock_csv_data):
         """Fetch only SP+ ratings."""
-        mock_sp = MagicMock()
-        mock_sp.__iter__ = Mock(return_value=iter([]))
-        mock_api.get_sp.return_value = mock_sp
+        ingester = ExternalRatingsIngester(year=2024, week=5, rating_type="sp")
+        data = ingester.fetch_data()
 
-        ingester = ExternalRatingsIngester(year=2024, rating_type="sp")
-        ingester.fetch_data()
+        types_fetched = [rt for rt, _ in data]
+        assert types_fetched == ["sp"]
+        assert len(data[0][1]) == 2
 
-        assert mock_api.get_sp.called
-        assert not mock_api.get_fpi.called
-        assert not mock_api.get_srs.called
-
-    def test_transform_sp_ratings(self, mock_api):
+    def test_transform_sp_ratings(self, mock_csv_data):
         """Transform SP+ ratings correctly."""
-        mock_rating = MagicMock()
-        mock_rating.dict.return_value = {
-            "team": "Test Team",
-            "conference": "Test Conf",
-            "rating": 25.5,
-            "offense": {"rating": 30.0},
-            "defense": {"rating": 20.0},
-            "special_teams": {"rating": 22.0},
-            "second_order_wins": 5.0,
-            "srs": 24.0,
-            "sp_overall": 26.0,
-            "sp_offense": 28.0,
-            "sp_defense": 24.0,
-            "sp_special_teams": 25.0,
-            "ranking": None,
-            "sos": None,
-        }
+        ingester = ExternalRatingsIngester(year=2024, week=5, rating_type="sp")
+        data = ingester.fetch_data()
+        records = ingester.transform_data(data)
 
-        ingester = ExternalRatingsIngester(year=2024)
-        records = ingester.transform_data([("sp", mock_rating)])
+        assert len(records) == 2
+        alabama = next(r for r in records if r["team"] == "Alabama")
+        assert alabama["rating_type"] == "sp"
+        assert alabama["rating"] == 30.5
+        assert alabama["offense_rating"] == 40.2
+        assert alabama["defense_rating"] == 10.1
+        assert alabama["special_teams_rating"] == 0.4
+        assert alabama["season"] == 2024
+        assert alabama["week"] == 5
 
-        assert len(records) == 1
-        record = records[0]
-        assert record["rating_type"] == "sp"
-        assert record["team"] == "Test Team"
-        assert record["rating"] == 25.5
-        assert record["offense_rating"] == 30.0
-        assert record["defense_rating"] == 20.0
-        assert record["special_teams_rating"] == 22.0
-        assert record["second_order_wins"] == 5.0
+    def test_transform_fpi_ratings(self, mock_csv_data):
+        """Transform FPI ratings correctly using alias columns."""
+        ingester = ExternalRatingsIngester(year=2024, week=5, rating_type="fpi")
+        data = ingester.fetch_data()
+        records = ingester.transform_data(data)
 
-    def test_transform_fpi_ratings(self, mock_api):
-        """Transform FPI ratings correctly."""
-        mock_rating = MagicMock()
-        mock_rating.dict.return_value = {
-            "team": "Test Team",
-            "conference": "Test Conf",
-            "fpi": 18.5,
-            "resume_ranks": 15,
-            "mean_win_total": 8.2,
-            "offense": 20.0,
-            "defense": 18.0,
-            "fpi_rk": 25,
-            "trend": "+1.2",
-            "efficiencies": {"offense": 20.0, "defense": 18.0, "special_teams": None},
-        }
+        assert len(records) == 2
+        alabama = next(r for r in records if r["team"] == "Alabama")
+        assert alabama["rating_type"] == "fpi"
+        assert alabama["rating"] == 28.5  # Mapped from FPI
+        assert alabama["offense_rating"] == 100.0  # Mapped from OFF
 
-        ingester = ExternalRatingsIngester(year=2024)
-        records = ingester.transform_data([("fpi", mock_rating)])
+    def test_transform_fei_ratings(self, mock_csv_data):
+        """Transform FEI ratings correctly using alias columns."""
+        ingester = ExternalRatingsIngester(year=2024, week=5, rating_type="fei")
+        data = ingester.fetch_data()
+        records = ingester.transform_data(data)
 
-        assert len(records) == 1
-        record = records[0]
-        assert record["rating_type"] == "fpi"
-        assert record["rating"] == 18.5
-        assert record["fpi"] == 18.5
-        assert record["resume_ranks"] == 15
-        assert record["offense_rating"] == 20.0
-        assert record["defense_rating"] == 18.0
-        assert record["fpi_rk"] == 25
-
-    def test_transform_srs_ratings(self, mock_api):
-        """Transform SRS ratings correctly."""
-        mock_rating = MagicMock()
-        mock_rating.dict.return_value = {
-            "team": "Test Team",
-            "conference": "Test Conf",
-            "rating": 10.5,
-            "ranking": None,
-        }
-
-        ingester = ExternalRatingsIngester(year=2024)
-        records = ingester.transform_data([("srs", mock_rating)])
-
-        assert len(records) == 1
-        record = records[0]
-        assert record["rating_type"] == "srs"
-        assert record["rating"] == 10.5
-        assert record["srs"] == 10.5
+        assert len(records) == 2
+        alabama = next(r for r in records if r["team"] == "Alabama")
+        assert alabama["rating_type"] == "fei"
+        assert alabama["rating"] == 1.25  # Mapped from FEI
 
 
 class TestIngestExternalRatings:
@@ -187,16 +193,17 @@ class TestIngestExternalRatings:
         ) as mock_class:
             mock_instance = MagicMock()
             mock_instance.fetch_data.return_value = []
-            mock_instance.transform_data.return_value = [1, 2, 3, 4, 5]
+            # needs to be list of dicts or at least something with truthy len for if block
+            mock_instance.transform_data.return_value = [{"a": 1}, {"b": 2}]
             mock_instance.ingest_data.return_value = None
             mock_class.return_value = mock_instance
             yield mock_instance
 
     def test_calls_ingester_methods(self, mock_ingester):
         """Convenience function calls all ingester methods."""
-        count = ingest_external_ratings(year=2024, rating_type="sp")
+        count = ingest_external_ratings(year=2024, week=5, rating_type="sp")
 
         mock_ingester.fetch_data.assert_called_once()
         mock_ingester.transform_data.assert_called_once()
         mock_ingester.ingest_data.assert_called_once()
-        assert count == 5
+        assert count == 2

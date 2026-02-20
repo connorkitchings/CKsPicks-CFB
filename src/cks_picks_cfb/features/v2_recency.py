@@ -418,7 +418,22 @@ def _merge_for_training(team_stats, year, for_prediction=False):
     )
 
     _storage = storage if storage_backend in ("r2", "s3") else None
-    merged = merge_external_ratings(merged, year, storage=_storage)
+
+    # Merge external ratings week by week since they are now weekly snapshots
+    if "week" in merged.columns:
+        weeks = merged["week"].unique()
+        merged_chunks = []
+        for w in weeks:
+            chunk = merged[merged["week"] == w].copy()
+            chunk = merge_external_ratings(chunk, year, int(w), storage=_storage)
+            merged_chunks.append(chunk)
+        if merged_chunks:
+            # Reconstruct the merged dataframe with ratings joined
+            merged = pd.concat(merged_chunks, ignore_index=True)
+    else:
+        # Fallback if week is somehow missing (shouldn't happen for training data)
+        merged = merge_external_ratings(merged, year, 1, storage=_storage)
+
     merged = merge_recruiting_composite(merged, year, storage=_storage)
     merged = merge_rankings(merged, year, storage=_storage)
 

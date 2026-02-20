@@ -21,34 +21,41 @@ def _get_storage(storage=None):
 def merge_external_ratings(
     matchup_df: pd.DataFrame,
     year: int,
+    week: int,
     storage=None,
 ) -> pd.DataFrame:
-    """Merge SP+/FPI/SRS external ratings into matchup DataFrame.
+    """Merge SP+/FPI/FEI external ratings into matchup DataFrame.
 
     Adds home_sp_rating, away_sp_rating, sp_rating_diff, home_fpi, away_fpi,
-    fpi_diff, home_srs, away_srs, srs_diff columns.
+    fpi_diff, home_fei, away_fei, fei_diff columns.
     """
     storage = _get_storage(storage)
 
     try:
-        records = storage.read_index("external_ratings", {"year": year})
+        records = storage.read_index("external_ratings", {"year": year, "week": week})
         if not records:
-            logging.warning(f"No external ratings for {year}")
+            logging.warning(f"No external ratings for {year} week {week}")
             return matchup_df
         ratings_df = pd.DataFrame.from_records(records)
     except Exception as e:
-        logging.warning(f"Could not load external ratings for {year}: {e}")
+        logging.warning(f"Could not load external ratings for {year} week {week}: {e}")
         return matchup_df
 
     if "rating_type" not in ratings_df.columns or "team" not in ratings_df.columns:
         return matchup_df
 
     # Build one-row-per-team table with each rating type as a column.
-    # All record types have a "rating" field; FPI also has "fpi" field.
     rating_specs = [
         ("sp", "rating", "sp_rating"),
-        ("fpi", "fpi", "fpi"),
-        ("srs", "rating", "srs"),
+        ("fpi", "rating", "fpi"),
+        ("fei", "rating", "fei"),
+        # Offense/Defense splits
+        ("sp", "offense_rating", "sp_offense"),
+        ("sp", "defense_rating", "sp_defense"),
+        ("fpi", "offense_rating", "fpi_offense"),
+        ("fpi", "defense_rating", "fpi_defense"),
+        ("fei", "offense_rating", "fei_offense"),
+        ("fei", "defense_rating", "fei_defense"),
     ]
 
     team_ratings: pd.DataFrame | None = None
@@ -61,6 +68,10 @@ def merge_external_ratings(
             .rename(columns={src_col: dst_col})
             .drop_duplicates("team")
         )
+        # Drop if the column is entirely null
+        if piece[dst_col].isnull().all():
+            continue
+
         team_ratings = (
             piece
             if team_ratings is None
@@ -92,10 +103,12 @@ def merge_external_ratings(
         how="left",
     ).drop(columns=["_away_t"], errors="ignore")
 
-    # Compute home - away differentials
+    # Compute home - away differentials (positive = home is better)
     for col in rating_cols:
         h, a = f"home_{col}", f"away_{col}"
         if h in result.columns and a in result.columns:
+            # Note: For defensive efficiency like SP+ Defense and FEI Defense, lower is usually better,
+            # so the diff interpretation naturally flips. But we standard subtract h - a.
             result[f"{col}_diff"] = result[h] - result[a]
 
     return result

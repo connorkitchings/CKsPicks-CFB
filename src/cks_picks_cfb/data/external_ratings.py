@@ -3,27 +3,33 @@
 Fetches SP+, FPI, and SRS ratings - predictive team strength metrics.
 """
 
+from pathlib import Path
 from typing import Any
 
-import cfbd
+import pandas as pd
 
 from .base import BaseIngester
 
 
 class ExternalRatingsIngester(BaseIngester):
-    """Ingester for external rating systems (SP+, FPI, SRS).
+    """Ingester for external rating systems (SP+, FPI, FEI).
 
     These ratings provide predictive team strength metrics that are valuable
     features for game outcome prediction models.
 
+    Because historical weekly data is NOT available via the CFBD API,
+    this ingester expects to find manually downloaded CSVs in:
+    $CFB_MODEL_DATA_ROOT/raw/manual/ratings/year={year}/week={week}/{rating_type}.csv
+
     SP+ (Bill Connelly): Efficiency-based rating with offense/defense/ST splits
     FPI (ESPN): Predictive model incorporating recruiting, returning production
-    SRS (Simple Rating System): Margin-of-victory based rating
+    FEI (Fremeau): Possession-based efficiency index
     """
 
     def __init__(
         self,
         year: int = 2024,
+        week: int = 1,
         rating_type: str = "all",
         *,
         data_root: str | None = None,
@@ -33,16 +39,18 @@ class ExternalRatingsIngester(BaseIngester):
 
         Args:
             year: The year to ingest data for (default: 2024)
-            rating_type: Which ratings to fetch - "sp", "fpi", "srs", or "all" (default)
+            week: The week to ingest data for (default: 1)
+            rating_type: Which ratings to fetch - "sp", "fpi", "fei", or "all" (default)
             data_root: Root path for local data storage
             storage: Custom storage backend
         """
         super().__init__(year, data_root=data_root, storage=storage)
+        self.week = week
         self.rating_type = rating_type.lower()
 
-        if self.rating_type not in ("sp", "fpi", "srs", "all"):
+        if self.rating_type not in ("sp", "fpi", "fei", "all"):
             raise ValueError(
-                f"Invalid rating_type: {rating_type}. Must be sp, fpi, srs, or all"
+                f"Invalid rating_type: {rating_type}. Must be sp, fpi, fei, or all"
             )
 
     @property
@@ -53,165 +61,146 @@ class ExternalRatingsIngester(BaseIngester):
     @property
     def partition_keys(self) -> list[str]:
         """Partition keys for ratings data."""
-        return ["year"]
+        return ["year", "week"]
 
-    def fetch_data(self) -> list[tuple[str, Any]]:
-        """Fetch ratings data from the CFBD API.
+    def _get_manual_dir(self) -> Path:
+        """Get the directory containing manual CSV dumps."""
+        return (
+            self.storage.root().parent
+            / "raw"
+            / "manual"
+            / "ratings"
+            / f"year={self.year}"
+            / f"week={self.week}"
+        )
+
+    def fetch_data(self) -> list[tuple[str, list[dict[str, Any]]]]:
+        """Fetch ratings data from local manual CSV dumps.
 
         Returns:
-            List of (rating_type, rating_object) tuples from CFBD API
+            List of (rating_type, records) tuples
         """
-        ratings_api = cfbd.RatingsApi(cfbd.ApiClient(self.cfbd_config))
-        all_ratings: list[tuple[str, Any]] = []
+        all_ratings: list[tuple[str, list[dict[str, Any]]]] = []
+        manual_dir = self._get_manual_dir()
 
-        if self.rating_type in ("sp", "all"):
-            sp_ratings = ratings_api.get_sp(year=self.year)
-            for rating in sp_ratings:
-                all_ratings.append(("sp", rating))
-            print(f"Found {len(sp_ratings)} SP+ ratings for {self.year}")
+        if not manual_dir.exists():
+            print(f"Warning: Manual ratings directory not found: {manual_dir}")
+            return all_ratings
 
-        if self.rating_type in ("fpi", "all"):
-            fpi_ratings = ratings_api.get_fpi(year=self.year)
-            for rating in fpi_ratings:
-                all_ratings.append(("fpi", rating))
-            print(f"Found {len(fpi_ratings)} FPI ratings for {self.year}")
+        types_to_fetch = (
+            ["sp", "fpi", "fei"] if self.rating_type == "all" else [self.rating_type]
+        )
 
-        if self.rating_type in ("srs", "all"):
-            srs_ratings = ratings_api.get_srs(year=self.year)
-            for rating in srs_ratings:
-                all_ratings.append(("srs", rating))
-            print(f"Found {len(srs_ratings)} SRS ratings for {self.year}")
+        for rt in types_to_fetch:
+            csv_path = manual_dir / f"{rt}.csv"
+            if csv_path.exists():
+                try:
+                    df = pd.read_csv(csv_path)
+                    records = df.to_dict(orient="records")
+                    all_ratings.append((rt, records))
+                    print(
+                        f"Found {len(records)} {rt.upper()} ratings for {self.year} Week {self.week}"
+                    )
+                except Exception as e:
+                    print(f"Error reading {csv_path}: {e}")
+            else:
+                print(f"File not found: {csv_path}")
 
         return all_ratings
 
-    def transform_data(self, data: list[tuple[str, Any]]) -> list[dict[str, Any]]:
-        """Transform ratings data into storage format.
+    def transform_data(
+        self, data: list[tuple[str, list[dict[str, Any]]]]
+    ) -> list[dict[str, Any]]:
+        """Transform ratings data into unified storage format.
 
         Args:
-            data: List of (rating_type, rating_object) tuples from CFBD API
+            data: List of (rating_type, records) tuples
 
         Returns:
-            List of dictionaries ready for storage
+            List of dictionaries ready for Parquet storage
         """
-        # Define unified schema with all possible columns
-        # This ensures PyArrow doesn't drop columns when combining record types
+        # Unified schema compatible with SP+, FPI, and FEI
         base_columns = {
-            "season": None,
-            "year": None,
+            "season": self.year,
+            "year": self.year,
+            "week": self.week,
             "rating_type": None,
             "team": None,
-            "conference": None,
-            "rating": None,
-            "ranking": None,
+            "rating": None,  # Overall predictive rating (SP+, FPI, or FEI)
             "offense_rating": None,
             "defense_rating": None,
             "special_teams_rating": None,
-            "second_order_wins": None,
-            "sos": None,
-            "fpi": None,
-            "fpi_rk": None,
-            "resume_ranks": None,
-            "mean_win_total": None,
-            "trend": None,
-            "srs": None,
         }
 
-        records = []
+        transformed_records = []
 
-        for rating_type, rating in data:
-            # Use Pydantic's dict() method to flatten nested models
-            if hasattr(rating, "dict"):
-                rating_dict = rating.dict()
-            else:
-                rating_dict = vars(rating)
+        for rating_type, records in data:
+            for record in records:
+                row = dict(base_columns)
+                row["rating_type"] = rating_type
 
-            # Start with base schema
-            record = dict(base_columns)
-
-            # Set base fields
-            record.update(
-                {
-                    "season": self.year,
-                    "year": self.year,
-                    "rating_type": rating_type,
-                    "team": rating_dict.get("team"),
-                    "conference": rating_dict.get("conference"),
-                }
-            )
-
-            if rating_type == "sp":
-                # Flatten nested offense/defense/special_teams
-                offense = rating_dict.get("offense") or {}
-                defense = rating_dict.get("defense") or {}
-                special_teams = rating_dict.get("special_teams") or {}
-
-                record.update(
-                    {
-                        "rating": rating_dict.get("rating"),
-                        "ranking": rating_dict.get("ranking"),
-                        "offense_rating": offense.get("rating")
-                        if isinstance(offense, dict)
-                        else getattr(offense, "rating", None),
-                        "defense_rating": defense.get("rating")
-                        if isinstance(defense, dict)
-                        else getattr(defense, "rating", None),
-                        "special_teams_rating": special_teams.get("rating")
-                        if isinstance(special_teams, dict)
-                        else getattr(special_teams, "rating", None),
-                        "second_order_wins": rating_dict.get("second_order_wins"),
-                        "sos": rating_dict.get("sos"),
-                    }
+                # We expect manual CSVs to map to these exact keys if possible,
+                # or fallback to common aliases if they vary slightly in user dumps.
+                row["team"] = (
+                    record.get("team") or record.get("Team") or record.get("School")
                 )
-            elif rating_type == "fpi":
-                # FPI stores offense/defense in 'efficiencies' object
-                efficiencies = rating_dict.get("efficiencies") or {}
-
-                record.update(
-                    {
-                        "rating": rating_dict.get(
-                            "fpi"
-                        ),  # Use fpi as rating for consistency
-                        "fpi": rating_dict.get("fpi"),
-                        "fpi_rk": rating_dict.get("fpi_rk"),
-                        "resume_ranks": rating_dict.get("resume_ranks"),
-                        "mean_win_total": rating_dict.get("mean_win_total"),
-                        "trend": rating_dict.get("trend"),
-                        "offense_rating": efficiencies.get("offense"),
-                        "defense_rating": efficiencies.get("defense"),
-                        "special_teams_rating": efficiencies.get("special_teams"),
-                    }
-                )
-            elif rating_type == "srs":
-                record.update(
-                    {
-                        "rating": rating_dict.get("rating"),
-                        "ranking": rating_dict.get("ranking"),
-                        "srs": rating_dict.get("rating"),
-                    }
+                row["rating"] = (
+                    record.get("rating")
+                    or record.get(rating_type)
+                    or record.get(rating_type.upper())
                 )
 
-            records.append(record)
+                # Optional sub-components
+                row["offense_rating"] = (
+                    record.get("offense")
+                    or record.get("off")
+                    or record.get("offense_rating")
+                    or record.get("OFF")
+                    or record.get("OFEI")
+                )
+                row["defense_rating"] = (
+                    record.get("defense")
+                    or record.get("def")
+                    or record.get("defense_rating")
+                    or record.get("DEF")
+                    or record.get("DFEI")
+                )
+                row["special_teams_rating"] = (
+                    record.get("special_teams")
+                    or record.get("st")
+                    or record.get("special_teams_rating")
+                    or record.get("ST")
+                    or record.get("SFEI")
+                )
 
-        return records
+                # Only keep records that have at least a team name
+                if row["team"]:
+                    transformed_records.append(row)
+
+        return transformed_records
 
 
 def ingest_external_ratings(
-    year: int, rating_type: str = "all", data_root: str | None = None
+    year: int, week: int = 1, rating_type: str = "all", data_root: str | None = None
 ) -> int:
-    """Convenience function to ingest external ratings data.
+    """Convenience function to ingest external ratings data from manual CSVs.
 
     Args:
         year: Year to ingest
-        rating_type: Which ratings - "sp", "fpi", "srs", or "all"
+        week: Week to ingest
+        rating_type: Which ratings - "sp", "fpi", "fei", or "all"
         data_root: Root path for data storage
 
     Returns:
         Number of records written
     """
     ingester = ExternalRatingsIngester(
-        year=year, rating_type=rating_type, data_root=data_root
+        year=year, week=week, rating_type=rating_type, data_root=data_root
     )
     data = ingester.fetch_data()
     transformed = ingester.transform_data(data)
-    ingester.ingest_data(transformed)
+
+    if transformed:
+        ingester.ingest_data(transformed)
+
     return len(transformed)

@@ -35,7 +35,10 @@ class _MockStorage:
 
     def read_index(self, entity: str, filters: dict) -> list[dict]:
         year = filters.get("year", "")
+        week = filters.get("week")
         key = f"{entity}/year={year}"
+        if week is not None:
+            key += f"/week={week}"
         return self._data.get(key, [])
 
 
@@ -47,59 +50,97 @@ class _MockStorage:
 class TestMergeExternalRatings:
     def _make_storage(self, year=2023):
         ratings = [
-            {"rating_type": "sp", "team": "Alabama", "rating": 30.0, "year": year},
-            {"rating_type": "sp", "team": "Georgia", "rating": 28.5, "year": year},
-            {"rating_type": "fpi", "team": "Alabama", "fpi": 25.0, "year": year},
-            {"rating_type": "fpi", "team": "Georgia", "fpi": 22.0, "year": year},
-            {"rating_type": "srs", "team": "Alabama", "rating": 20.1, "year": year},
-            {"rating_type": "srs", "team": "Georgia", "rating": 18.5, "year": year},
+            {
+                "rating_type": "sp",
+                "team": "Alabama",
+                "rating": 30.0,
+                "year": year,
+                "week": 10,
+            },
+            {
+                "rating_type": "sp",
+                "team": "Georgia",
+                "rating": 28.5,
+                "year": year,
+                "week": 10,
+            },
+            {
+                "rating_type": "fpi",
+                "team": "Alabama",
+                "rating": 25.0,
+                "year": year,
+                "week": 10,
+            },
+            {
+                "rating_type": "fpi",
+                "team": "Georgia",
+                "rating": 22.0,
+                "year": year,
+                "week": 10,
+            },
+            {
+                "rating_type": "fei",
+                "team": "Alabama",
+                "rating": 20.1,
+                "year": year,
+                "week": 10,
+            },
+            {
+                "rating_type": "fei",
+                "team": "Georgia",
+                "rating": 18.5,
+                "year": year,
+                "week": 10,
+            },
         ]
-        return _MockStorage({"external_ratings/year=2023": ratings})
+        return _MockStorage({"external_ratings/year=2023/week=10": ratings})
 
     def test_sp_rating_columns_added(self):
         storage = self._make_storage()
-        result = merge_external_ratings(_matchup(), year=2023, storage=storage)
+        result = merge_external_ratings(_matchup(), year=2023, week=10, storage=storage)
         assert "home_sp_rating" in result.columns
         assert "away_sp_rating" in result.columns
 
     def test_sp_rating_values_correct(self):
         storage = self._make_storage()
-        result = merge_external_ratings(_matchup(), year=2023, storage=storage)
+        result = merge_external_ratings(_matchup(), year=2023, week=10, storage=storage)
         assert abs(result["home_sp_rating"].iloc[0] - 30.0) < 1e-6
         assert abs(result["away_sp_rating"].iloc[0] - 28.5) < 1e-6
 
     def test_sp_rating_diff_computed(self):
         storage = self._make_storage()
-        result = merge_external_ratings(_matchup(), year=2023, storage=storage)
+        result = merge_external_ratings(_matchup(), year=2023, week=10, storage=storage)
         assert "sp_rating_diff" in result.columns
         assert abs(result["sp_rating_diff"].iloc[0] - (30.0 - 28.5)) < 1e-6
 
     def test_fpi_columns_added(self):
         storage = self._make_storage()
-        result = merge_external_ratings(_matchup(), year=2023, storage=storage)
+        result = merge_external_ratings(_matchup(), year=2023, week=10, storage=storage)
         assert "home_fpi" in result.columns
         assert "away_fpi" in result.columns
         assert "fpi_diff" in result.columns
 
-    def test_srs_columns_added(self):
+    def test_fei_columns_added(self):
         storage = self._make_storage()
-        result = merge_external_ratings(_matchup(), year=2023, storage=storage)
-        assert "home_srs" in result.columns
-        assert "away_srs" in result.columns
-        assert "srs_diff" in result.columns
+        result = merge_external_ratings(_matchup(), year=2023, week=10, storage=storage)
+        assert "home_fei" in result.columns
+        assert "away_fei" in result.columns
+        assert "fei_diff" in result.columns
 
     def test_no_data_returns_unchanged(self):
         storage = _MockStorage({})
         original = _matchup()
-        result = merge_external_ratings(original.copy(), year=2023, storage=storage)
+        result = merge_external_ratings(
+            original.copy(), year=2023, week=10, storage=storage
+        )
         assert list(result.columns) == list(original.columns)
 
     def test_unknown_team_fills_nan(self):
         storage = self._make_storage()
         df = pd.DataFrame(
-            [{"game_id": 2, "home_team": "Unknown", "away_team": "Georgia", "week": 3}]
+            [{"game_id": 2, "home_team": "Unknown", "away_team": "Georgia", "week": 10}]
         )
-        result = merge_external_ratings(df, year=2023, storage=storage)
+        result = merge_external_ratings(df, year=2023, week=10, storage=storage)
         assert pd.isna(result["home_sp_rating"].iloc[0])
         assert abs(result["away_sp_rating"].iloc[0] - 28.5) < 1e-6
 
