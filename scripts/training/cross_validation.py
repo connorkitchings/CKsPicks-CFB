@@ -296,6 +296,55 @@ def aggregate_results(fold_results, output_dir):
     return df, agg_metrics
 
 
+def validate_temporal_folds(folds: list, cv_type: str) -> tuple[bool, list[str]]:
+    """
+    Validate that folds follow temporal constraints.
+
+    For walk-forward CV:
+    - All train_years must be < test_year (no future data)
+
+    For LOSO:
+    - Warn if future data is used (informational only)
+
+    Args:
+        folds: List of fold configurations
+        cv_type: Type of CV ("loso", "walk_forward", or "auto")
+
+    Returns:
+        Tuple of (is_valid, list_of_warnings)
+    """
+    warnings = []
+    is_valid = True
+
+    for fold in folds:
+        test_year = fold["test_year"]
+        train_years = fold["train_years"]
+
+        # Check for future data leak
+        future_years = [y for y in train_years if y > test_year]
+        if future_years:
+            if cv_type == "walk_forward":
+                warnings.append(
+                    f"  ❌ ERROR: {fold['name']} trains on future years {future_years} "
+                    f"(test_year={test_year})"
+                )
+                is_valid = False
+            elif cv_type == "loso":
+                warnings.append(
+                    f"  ⚠️  WARNING: {fold['name']} includes future data {future_years} "
+                    f"(LOSO uses non-temporal splits)"
+                )
+        else:
+            # Proper temporal fold
+            if cv_type == "walk_forward":
+                warnings.append(
+                    f"  ✓ {fold['name']}: temporal split verified "
+                    f"(train {train_years} < test {test_year})"
+                )
+
+    return is_valid, warnings
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Cross-validation for CFB model (supports any experiment config)"
@@ -330,6 +379,14 @@ def main():
         default=4,
         help="Number of parallel workers",
     )
+    parser.add_argument(
+        "--cv-type",
+        type=str,
+        choices=["loso", "walk_forward", "auto"],
+        default="auto",
+        help="CV type: 'loso' (leave-one-out), 'walk_forward' (expanding window), "
+        "'auto' (detect from config.experiment.type)",
+    )
     args = parser.parse_args()
 
     # Load config
@@ -343,6 +400,18 @@ def main():
         experiment_name = cfg.get("experiment", {}).get("name", Path(args.config).stem)
     print(f"Using experiment: {experiment_name}")
 
+    # Determine CV type: CLI arg > config type > default "loso"
+    if args.cv_type == "auto":
+        cv_type_raw = cfg.get("experiment", {}).get("type", "cross_validation")
+        # Detect walk-forward from config type
+        if cv_type_raw in ["walk_forward", "walk_forward_cv"]:
+            cv_type = "walk_forward"
+        else:
+            cv_type = "loso"
+    else:
+        cv_type = args.cv_type
+    print(f"CV Type: {cv_type}")
+
     # Extract fold configurations
     folds = []
     for fold_name, fold_cfg in cfg.folds.items():
@@ -354,9 +423,24 @@ def main():
             }
         )
 
+    # Validate temporal constraints
+    print("\nValidating temporal constraints...")
+    is_valid, warnings = validate_temporal_folds(folds, cv_type)
+    for warning in warnings:
+        print(warning)
+
+    if not is_valid and cv_type == "walk_forward":
+        print("\n❌ ERROR: Walk-forward CV requires strictly temporal folds.")
+        print("   Fix config or use --cv-type loso")
+        sys.exit(1)
+
+    # Update output directory to separate CV types
+    output_dir = Path(args.output_dir) / cv_type
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     print(f"\nStarting {len(folds)}-fold cross-validation")
     print(f"Parallel execution: {args.parallel} ({args.workers} workers)")
-    print(f"Output directory: {args.output_dir}\n")
+    print(f"Output directory: {output_dir}\n")
 
     start_time = datetime.now()
 
@@ -387,7 +471,7 @@ def main():
                 result.update(metrics)
 
     # Aggregate results
-    results_df, agg_metrics = aggregate_results(fold_results, args.output_dir)
+    results_df, agg_metrics = aggregate_results(fold_results, output_dir)
 
     # Train final model on all years
     final_model_name = f"{experiment_name}_final"
@@ -404,8 +488,9 @@ def main():
     print(f"\n{'=' * 60}")
     print("Cross-Validation Complete")
     print(f"{'=' * 60}")
+    print(f"CV Type: {cv_type}")
     print(f"Duration: {duration}")
-    print(f"Results: {args.output_dir}")
+    print(f"Results: {output_dir}")
     print()
 
     # Recommend deployment
