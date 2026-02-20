@@ -263,6 +263,12 @@ artifacts/production/monitoring/*.json
 artifacts/validation/**/*.csv
 !artifacts/validation/**/summary.json
 
+# Cross-validation (exclude fold details, keep summaries)
+artifacts/cross_validation/**/crossval_fold_results.csv
+!artifacts/cross_validation/**/crossval_aggregated.json
+!artifacts/cross_validation/**/*_report.txt
+!artifacts/cross_validation/**/*_comparison*.txt
+
 # Analysis (completely excluded, personal workspace)
 artifacts/analysis/*
 !artifacts/analysis/README.md
