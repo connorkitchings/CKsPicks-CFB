@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class DataLogger:
@@ -35,7 +35,7 @@ class DataLogger:
             metadata (dict): A dictionary of relevant metadata to log.
         """
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": "INFO",
             "event_type": event_type,
             "metadata": metadata,
@@ -52,7 +52,7 @@ class DataLogger:
             metadata (dict): A dictionary of relevant context.
         """
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": "ERROR",
             "event_type": event_type,
             "error": error_message,

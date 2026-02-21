@@ -9,6 +9,7 @@
 ## Purpose
 
 Systematically prepare for a new coding session by:
+
 - Loading critical project context
 - Verifying environment configuration
 - Understanding recent work
@@ -47,19 +48,25 @@ Systematically prepare for a new coding session by:
 **Check data root configuration:**
 
 ```bash
-# Verify environment variable is set
-echo $CFB_MODEL_DATA_ROOT
+# Verify environment variable is set for storage backend
+grep CFB_STORAGE_BACKEND .env
 
-# Check if external drive is mounted (or cloud storage configured)
-ls "$CFB_MODEL_DATA_ROOT"
-
-# Expected output: Lists raw/, processed/, features/, etc.
+# If local storage, verify external drive is mounted
+# If r2, verify cloud credentials are set
+if grep -q "CFB_STORAGE_BACKEND='local'" .env; then
+  echo $CFB_MODEL_DATA_ROOT
+  ls "$CFB_MODEL_DATA_ROOT"
+elif grep -q "CFB_STORAGE_BACKEND='r2'" .env; then
+  grep CFB_R2_BUCKET .env
+  grep CFB_R2_ACCESS_KEY .env
+fi
 ```
 
 **If verification fails:**
+
 - Alert user immediately
-- Request they verify drive is mounted
-- Confirm `CFB_MODEL_DATA_ROOT` is set in `.env`
+- Request they verify drive is mounted (local) or secrets are set (r2)
+- Confirm variables are set in `.env`
 - Do NOT proceed with data operations
 
 ### Step 3: Review Recent Work
@@ -72,12 +79,14 @@ find session_logs/ -name "*.md" -mtime -3 | sort
 ```
 
 **Look for:**
+
 - Recent changes and decisions
 - Blockers or issues
 - In-progress work
 - Context about current state
 
 **Summarize findings:**
+
 - What was worked on recently?
 - Any unresolved issues?
 - What's the current focus area?
@@ -96,6 +105,7 @@ git log --oneline -n 5
 ```
 
 **Note:**
+
 - Current branch (should not be `main` for work)
 - Uncommitted changes
 - Recent commits for context
@@ -103,6 +113,7 @@ git log --oneline -n 5
 ### Step 5: Understand the Task
 
 **Ask clarifying questions if needed:**
+
 - What is the specific goal?
 - Are there constraints or preferences?
 - What is the expected outcome?
@@ -128,6 +139,7 @@ git log --oneline -n 5
 [Summarize what user wants]
 
 **Approach:**
+
 1. Read current implementation in `src/features/core.py`
 2. Add new function `calculate_explosive_play_rate()`
 3. Update tests in `tests/test_aggregations_core.py`
@@ -135,6 +147,7 @@ git log --oneline -n 5
 5. Document in `docs/modeling/features.md`
 
 **Files to modify:**
+
 - `src/features/core.py` (+20 lines)
 - `tests/test_aggregations_core.py` (+30 lines)
 - `conf/features/standard_v1.yaml` (+1 line)
@@ -179,28 +192,34 @@ git log --oneline -n 5
 ## Session Start - [TASK]
 
 ### Context Loaded
+
 - [x] AGENTS.md reviewed
 - [x] Data root verified: $CFB_MODEL_DATA_ROOT
 - [x] Recent logs reviewed (last 3 days)
 - [x] Git status checked
 
 ### Recent Work Summary
+
 [Summary of last 3 session logs]
 
 ### Current State
+
 - Branch: [branch name]
 - Last commit: [commit message]
 - Uncommitted changes: [yes/no]
 
 ### Task Understanding
+
 [What you understand the task to be]
 
 ### Proposed Plan
+
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
 
 ### Files to Modify
+
 - [file 1]
 - [file 2]
 

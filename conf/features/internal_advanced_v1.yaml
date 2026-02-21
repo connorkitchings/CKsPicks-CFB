@@ -1,0 +1,57 @@
+# Internal Advanced V1 Feature Set
+# Merges matchup_v2 base features with Tier 1 and 2 internal features
+# Focuses on Pace, Variance/Luck, and Turnovers/Mistakes.
+name: internal_advanced_v1
+groups:
+  # --- Core efficiency (opponent-adjusted) ---
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+
+  # Rush/Pass YPP splits
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+
+  # --- Variance & Luck ---
+  - home_cumulative_luck_factor
+  - away_cumulative_luck_factor
+
+  # --- Turnovers & Mistakes ---
+  - home_off_turnover_rate
+  - home_def_turnover_rate
+  - away_off_turnover_rate
+  - away_def_turnover_rate
+
+  - home_off_penalty_rate
+  - home_def_penalty_rate
+  - away_off_penalty_rate
+  - away_def_penalty_rate
+
+  # --- Situational / Red Zone ---
+  - home_off_red_zone_sr
+  - home_def_red_zone_sr
+  - away_off_red_zone_sr
+  - away_def_red_zone_sr
+
+  # --- Pace & Tempo (team-week) ---
+  - tempo_ratio
+  - drives_ratio
+
+  # --- Pace Base Stats ---
+  - home_plays_per_game
+  - away_plays_per_game
+
+params:
+  type: recency
+  alpha: 0.3

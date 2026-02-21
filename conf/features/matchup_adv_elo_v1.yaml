@@ -1,0 +1,40 @@
+name: matchup_adv_elo_v1
+groups:
+  # Champion core (EPA/SR)
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  
+  # Rush/Pass YPP splits
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+
+  # Option 1: Valid Point-in-time Pre-Game Priors
+  - home_pregame_elo
+  - away_pregame_elo
+  - elo_diff
+  - home_talent_composite
+  - away_talent_composite
+  - talent_diff
+
+# Option 3: Interactions (Dynamically combined Off x Def)
+interactions:
+  - ["adj_off_epa_pp", "adj_def_epa_pp"]
+  - ["adj_off_sr", "adj_def_sr"]
+  - ["adj_off_rush_ypp", "adj_def_rush_ypp"]
+  - ["adj_off_pass_ypp", "adj_def_pass_ypp"]
+
+params:
+  type: recency
+  alpha: 0.3
