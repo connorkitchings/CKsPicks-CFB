@@ -1,0 +1,59 @@
+# @package _global_
+# CatBoost model using our zero-leakage Internal Power Ratings (Option 2)
+
+defaults:
+  - override /model: catboost_v1
+  - override /features: internal_power_rating_v1
+
+experiment:
+  name: "v2_catboost_internal_power"
+  description: "CatBoost evaluation using custom expected points margin ratings (Internal SP+)."
+  tags:
+    - "v2"
+    - "catboost"
+    - "internal-power-ratings"
+    - "walk-forward-cv"
+  type: "walk_forward_cv"
+
+betting:
+  spread:
+    default_threshold: 0.0
+    high_confidence_threshold: 8.0
+  totals:
+    threshold: 1.5
+  bias_correction:
+    spread_offset: 1.14
+
+data:
+  train_years: [2019]
+  test_year: 2024
+  adjustment_iteration: 2
+  min_games: 4
+
+folds:
+  fold_2021:
+    name: "fold_2021"
+    train_years: [2019]
+    test_year: 2021
+  fold_2022:
+    name: "fold_2022"
+    train_years: [2019, 2021]
+    test_year: 2022
+  fold_2023:
+    name: "fold_2023"
+    train_years: [2019, 2021, 2022]
+    test_year: 2023
+  fold_2024:
+    name: "fold_2024"
+    train_years: [2019, 2021, 2022, 2023]
+    test_year: 2024
+
+final_model:
+  name: "catboost_internal_power_final"
+  train_years: [2019, 2021, 2022, 2023, 2024]
+  deploy_year: 2025
+
+training:
+  train_years: [2019, 2021, 2022, 2023]
+  test_year: 2024
+  deploy_year: 2025

@@ -1,0 +1,28 @@
+name: internal_power_rating_v1
+groups:
+  # Option 2: Internal SP+
+  - internal_ratings_stats
+
+  # Champion core (EPA/SR residuals to capture things outside pure power)
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  
+  # Rush/Pass splits
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+
+params:
+  type: recency
+  alpha: 0.3

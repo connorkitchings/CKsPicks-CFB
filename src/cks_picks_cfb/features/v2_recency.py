@@ -318,6 +318,11 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     else:
         full_adj_df = pd.DataFrame()  # Should fallback or handle empty
 
+    # Inject Option 2: Internal SP+ Metrics
+    from cks_picks_cfb.features.internal_ratings import add_internal_power_ratings
+
+    full_adj_df = add_internal_power_ratings(full_adj_df)
+
     # Merge with Targets (Merge Home/Away for training)
     # Re-use v1_pipeline merge logic or implement simpler one here
     return _merge_for_training(full_adj_df, year, for_prediction=for_prediction)

@@ -87,6 +87,11 @@ def get_feature_groups() -> Dict[str, List[str]]:
         "luck_stats": ["cumulative_luck_factor"],
         "weather_stats": ["temperature", "precipitation", "wind_speed"],
         "rating_stats": ["ppr_rating"],
+        "internal_ratings_stats": [
+            "internal_power_rtg",
+            "internal_off_rtg",
+            "internal_def_rtg",
+        ],
     }
 
 
