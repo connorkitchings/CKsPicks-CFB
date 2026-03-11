@@ -1,0 +1,134 @@
+# Autoresearch-style ablation configuration
+# Defines the experiment space for autonomous feature ablation
+
+ablation:
+  name: "autonomous_ablation_v1"
+  description: "Systematic feature ablation on opponent-adjusted baseline"
+  
+  # Time budget per experiment (minutes)
+  time_budget_minutes: 15
+  
+  # Validation: single holdout year for speed (full CV after winners found)
+  validation:
+    train_years: [2019, 2021, 2022, 2023]
+    test_year: 2024
+  
+  # Baseline feature set
+  baseline_features: ablation_baseline
+  
+  # Feature groups to test adding (candidates)
+  candidates:
+    # Group A: Rushing/Passing efficiency (already computed in data)
+    group_a_ypp:
+      name: "ypp_efficiency"
+      description: "Add rushing and passing yards per play"
+      features:
+        - home_adj_off_rush_ypp
+        - home_adj_def_rush_ypp
+        - home_adj_off_pass_ypp
+        - home_adj_def_pass_ypp
+        - away_adj_off_rush_ypp
+        - away_adj_def_rush_ypp
+        - away_adj_off_pass_ypp
+        - away_adj_def_pass_ypp
+    
+    # Group B: Recency alpha sweep
+    group_b_alpha_03:
+      name: "recency_alpha_0.3"
+      description: "Stronger recency weighting (alpha=0.3)"
+      alpha: 0.3
+      
+    group_b_alpha_07:
+      name: "recency_alpha_0.7"
+      description: "Weaker recency weighting (alpha=0.7)"
+      alpha: 0.7
+    
+    # Group C: Third down conversion (exists in data as adj_)
+    group_c_third_down:
+      name: "third_down_conversion"
+      description: "Add third down conversion rates"
+      features:
+        - home_adj_off_third_down_conversion_rate
+        - home_adj_def_third_down_conversion_rate
+        - away_adj_off_third_down_conversion_rate
+        - away_adj_def_third_down_conversion_rate
+
+    # Group D: Opponent adjustment iterations
+    group_d_iter_4:
+      name: "adjustment_iterations_4"
+      description: "4 iterations instead of 2 for opponent adjustment"
+      adjustment_iterations: 4
+
+    # Group E: YPP only (replace EPA/SR with raw YPP)
+    group_e_ypp_only:
+      name: "ypp_only"
+      description: "Use raw YPP instead of EPA/SR"
+      features:
+        - home_off_rush_ypp
+        - home_def_rush_ypp
+        - home_off_pass_ypp
+        - home_def_pass_ypp
+        - away_off_rush_ypp
+        - away_def_rush_ypp
+        - away_off_pass_ypp
+        - away_def_pass_ypp
+
+    # Group F: More regularization
+    group_f_deeper_reg:
+      name: "deeper_regularization"
+      description: "Lower depth (4), higher L2 regularization"
+      model_override:
+        depth: 4
+        l2_leaf_reg: 5.0
+
+    # Group G: XGBoost model
+    group_g_xgboost:
+      name: "model_xgboost"
+      description: "Switch to XGBoost instead of CatBoost"
+      model_type: xgboost
+
+    # Group H: Raw (non-adjusted) features
+    group_h_raw:
+      name: "raw_no_adjustment"
+      description: "Use raw (non-adjusted) EPA and SR"
+      features:
+        - home_off_epa_pp
+        - home_def_epa_pp
+        - home_off_sr
+        - home_def_sr
+        - away_off_epa_pp
+        - away_def_epa_pp
+        - away_off_sr
+        - away_def_sr
+
+    # Group I: Home team only (simplified)
+    group_i_home_only:
+      name: "home_team_only"
+      description: "Only home team features (simplified model)"
+      features:
+        - home_adj_off_epa_pp
+        - home_adj_def_epa_pp
+        - home_adj_off_sr
+        - home_adj_def_sr
+
+  # Hyperparameter defaults to use
+  model:
+    type: catboost
+    params:
+      iterations: 1000
+      learning_rate: 0.05
+      depth: 6
+      l2_leaf_reg: 3.0
+      random_seed: 42
+  
+  # MLflow settings
+  mlflow:
+    experiment_name: "autonomous_ablation"
+    tracking_uri: "artifacts/mlruns"
+  
+  # Stopping criteria
+  early_stopping:
+    # Stop if no improvement after N experiments
+    patience: 3
+    # Minimum experiments to run before stopping
+    min_experiments: 4

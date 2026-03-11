@@ -1,0 +1,12 @@
+name: ablation_baseline
+description: "Minimal baseline for autonomous ablation - opponent-adjusted EPA and Success Rate only"
+groups:
+  # Core efficiency metrics - 8 features total
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
