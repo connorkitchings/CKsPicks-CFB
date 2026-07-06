@@ -37,7 +37,7 @@ class CoachesIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "coaches"
+        return "raw/coaches"
 
     def get_fbs_teams(self) -> list[str]:
         """Get list of FBS team names from local storage."""

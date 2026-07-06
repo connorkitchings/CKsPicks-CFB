@@ -22,7 +22,7 @@ class TeamsIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "teams"
+        return "raw/teams"
 
     def fetch_data(self) -> list[Any]:
         """Fetch teams data from the CFBD API.

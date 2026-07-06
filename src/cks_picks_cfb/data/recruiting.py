@@ -32,7 +32,7 @@ class RecruitingIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "recruiting"
+        return "raw/recruiting"
 
     @property
     def partition_keys(self) -> list[str]:

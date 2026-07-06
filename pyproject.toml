@@ -35,6 +35,7 @@ dependencies = [
     "fastapi>=0.116.1",
     "uvicorn[standard]>=0.35.0",
     "boto3>=1.35.0", # AWS/R2 cloud storage
+    "psycopg[binary]>=3.2", # Neon Postgres writes from publish_to_db
 ]
 
 [project.optional-dependencies]
@@ -87,5 +88,6 @@ pythonpath = [
 norecursedirs = [
   "scripts/archive",
   "legacy",
-  "archive"
+  "archive",
+  "web"
 ]

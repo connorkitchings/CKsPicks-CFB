@@ -1,0 +1,10 @@
+{
+  "schema": "./src/lib/schema.ts",
+  "out": "./db/migrations",
+  "dialect": "postgresql",
+  "dbCredentials": {
+    "url": "${DATABASE_URL}"
+  },
+  "verbose": true,
+  "strict": true
+}

@@ -1,248 +1,145 @@
-# Weekly Pipeline (Manual Workflow)
+# Weekly Pipeline — 2026 Season (Web App Deliverable)
 
-**Status**: V2-aligned as of 2025-12-05  
-**Workflow Type**: Manual (user-driven, not automated)
-
-This document defines the manual process for generating weekly betting recommendations using the V2 Champion Model.
+> **Goal:** Every week during the 2026 season, regenerate model predictions for the upcoming FBS slate and publish them to the Neon Postgres database that powers the Vercel web app.
 
 ---
 
-## Overview
+## Pipeline Overview
 
-**All steps are performed manually by the user.** There is no automated pipeline. The V2 workflow emphasizes:
-
-- Manual review at every stage
-- User judgment for all decisions
-- Dashboard as decision support (not automation trigger)
-
----
-
-## Prerequisites
-
-Before running the weekly pipeline:
-
-1. ✅ **CFB_MODEL_DATA_ROOT** environment variable is set
-2. ✅ **Champion Model** has been selected and registered in MLflow (Phase 4)
-3. ✅ **External drive** is mounted and accessible
-4. ✅ **Raw data** has been ingested for the current week
-
----
-
-## The Weekly Process
-
-### Step 1: Update Raw Data
-
-**When**: Tuesday after games are final (usually ~2 days after weekend)
-
-**Action**: Ingest latest games, plays, and betting lines
-
-```bash
-# Ingest raw data for current season
-uv run python scripts/ingestion/ingest_games.py --year 2025
-uv run python scripts/ingestion/ingest_plays.py --year 2025
-uv run python scripts/ingestion/ingest_betting_lines.py --year 2025
 ```
-
-**Verify**: Check that new games appear in `data/raw/games/year=2025/`
-
----
-
-### Step 2: Run Aggregation Pipeline
-
-**When**: After raw data is updated
-
-**Action**: Generate processed features (byplay, drives, team_game, team_season)
-
-```bash
-# Run pipeline for 2025
-uv run python scripts/pipeline/run_pipeline_generic.py --year 2025
-```
-
-**Verify**: Check `data/processed/team_season/year=2025/` has updated files
-
-**Data Quality** (Week 3+ after validation framework is built):
-
-```bash
-# Run validation checks
-uv run python scripts/validation/validate_aggregation.py --year 2025
+┌──────────────────────┐   ┌──────────────────────┐   ┌─────────────────────┐
+│  1. Ingest           │ ─►│  2. Generate Bets    │ ─►│  3. Publish to DB   │
+│  (CFBD API → R2)     │   │  (CSV artifact)      │   │  (Postgres upsert)  │
+└──────────────────────┘   └──────────────────────┘   └─────────────────────┘
+                                                                │
+                                                                ▼
+                                                    ┌─────────────────────┐
+                                                    │  4. Vercel App      │
+                                                    │  (reads via ISR)    │
+                                                    └─────────────────────┘
+                                                                │
+                                               After games finish:
+                                                                ▼
+                                                    ┌─────────────────────┐
+                                                    │  5. Score to DB     │
+                                                    │  (results + stats)  │
+                                                    └─────────────────────┘
 ```
 
 ---
 
-### Step 3: Generate Weekly Predictions
+## Prerequisites (one-time setup)
 
-**When**: After aggregation is complete, before games start
+1. **Neon Postgres** — create a project at https://console.neon.tech and copy the connection string (`DATABASE_URL`).
+2. **Apply the schema migration:**
+   ```bash
+   psql "$DATABASE_URL" -f web/db/migrations/0001_init.sql
+   ```
+3. **Set environment variables** in `.env`:
+   ```
+   DATABASE_URL=postgres://...?sslmode=require
+   CFBD_API_KEY=...
+   CFB_STORAGE_BACKEND=r2
+   ```
+4. **Vercel project** — import the repo at https://vercel.com/new, set:
+   - **Root Directory:** `web/`
+   - **Build Command:** `npm run build` (auto-detected)
+   - **Environment Variable:** `DATABASE_URL` (same Neon connection string)
 
-**Action**: Load Champion Model and generate predictions
+---
+
+## Weekly Workflow
+
+### Step 1: Ingest upcoming-week data
 
 ```bash
-# Generate predictions for upcoming week
-uv run python scripts/prediction/generate_weekly_bets.py \
-    --year 2025 \
-    --week <WEEK_NUMBER> \
-    --model-path artifacts/models/production/champion_current/
+PYTHONPATH=.:src uv run python scripts/data/ingest_plays.py --year 2026 --week N
+PYTHONPATH=.:src uv run python scripts/pipeline/cache_running_season_stats.py
 ```
 
-**Output**: `data/production/predictions/2025/CFB_week<WW>_bets.csv`
-
-**Manual Review**:
-
-1. Open the CSV in Excel/Numbers
-2. Review each prediction:
-   - Does the edge make sense?
-   - Are any matchups suspicious?
-   - Do the recommended bets align with your judgment?
-3. Make final bet selections manually
-
----
-
-### Step 4: Generate System Info & Publish Picks
-
-**When**: After generating predictions
-
-**Action**: Calculate historical system performance for the email report and send the picks email.
-
-1.  **Generate System Stats** (Backtest 2024 & Current YTD):
-
-    ```bash
-    uv run python -m scripts.pipeline.generate_system_stats --config conf/weekly_bets/v2_champion.yaml
-    ```
-
-    - **Output**: `data/production/system_stats.json`
-
-2.  **Publish Picks Email**:
-
-    ```bash
-    uv run python scripts/pipeline/publish_picks.py --year 2025 --week <WEEK_NUMBER>
-    # Add --mode test to send to yourself first
-    ```
-
-    - **Output**: HTML Email sent to subscribers (or test address)
-
----
-
-### Step 5: Place Bets
-
-**When**: Before game kickoffs (manual timing)
-
-**Action**: User places bets manually via sportsbook
-
-**Process**:
-
-1. Log into sportsbook
-2. For each selected bet from CSV:
-   - Find the game
-   - Check current line (confirm it's still within acceptable range)
-   - Place bet with appropriate unit size
-3. Record actual bets placed (if different from recommendations)
-
----
-
-### Step 6: Score Results
-
-**When**: After games are final (Tuesday/Wednesday)
-
-**Action**: Compare predictions to actual outcomes
+### Step 2: Generate weekly bets (existing pipeline)
 
 ```bash
-# Score the week's bets
-uv run python scripts/scoring/score_weekly_bets.py \
-    --predictions data/production/predictions/2025/CFB_week<WW>_bets.csv \
-    --output data/production/scored/2025/CFB_week<WW>_bets_scored.csv
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py \
+    --config conf/weekly_bets/v2_champion.yaml \
+    --year 2026 --week N
 ```
 
-**Output**: `data/production/scored/2025/CFB_week<WW>_bets_scored.csv`
+This writes `data/production/predictions/2026/CFB_weekN_bets.csv` — the canonical artifact for both the email publisher and the web app.
 
----
-
-### Step 7: Check Monitoring Dashboard
-
-**When**: After scoring, when convenient
-
-**Action**: Review Champion Model performance
+### Step 3: Publish to Postgres
 
 ```bash
-# Launch dashboard
-streamlit run dashboard/monitoring.py
+# Via Make (preferred):
+make db-publish YEAR=2026 WEEK=N
+
+# Or directly:
+PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
+    --year 2026 --week N \
+    --config conf/weekly_bets/v2_champion.yaml
 ```
 
-**Review**:
+This upserts every game into the `games` table and updates the `current_week` singleton. The Vercel app's ISR cache (5-minute revalidate) will pick up the new week automatically.
 
-1. Check alert status (🟢/🟡/🟠/🔴)
-2. Review rolling 4-week ROI
-3. Check hit rate trends
-4. Note any feature drift warnings
+### Step 4: (After games finish) Score results
 
-**Decision**: If 🔴 RED for 2+ weeks, consider rollback (see [Rollback SOP](./rollback_sop.md))
+```bash
+# Once the scored CSV is produced by score_weekly_bets.py:
+PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --season 2026 --week N
 
----
-
-## V2 Champion Model
-
-**Current Champions** (as of 2025-12-08):
-
-| Target | Model  | Features   | ROI (2024)                 | Thresholds                               | Config                              |
-| ------ | ------ | ---------- | -------------------------- | ---------------------------------------- | ----------------------------------- |
-| Spread | Linear | matchup_v1 | +0.78% (8.0 edge → +2.03%) | 0.0 pts default; 8.0 pts high-confidence | `conf/weekly_bets/v2_champion.yaml` |
-| Totals | Linear | matchup_v1 | +6.35% (1.5 edge → +6.81%) | 1.5 pts                                   | `conf/weekly_bets/v2_champion.yaml` |
-
-**Fallback (spread only)**: If numerical warnings spike, you can run with `preprocessing=robust_pass_ypp` to apply `RobustScaler` to pass YPP matchup features (`conf/preprocessing/robust_pass_ypp.yaml`). This is not promoted; use only to mitigate inference instability. High-edge (≥8.0) spread policy remains unchanged; avoid mid-edge 2.5–7.0 buckets.
-
-**Model Files**:
-
-- `models/linear_spread_target.joblib` (trained 2025-12-08)
-- `models/linear_total_target.joblib` (trained 2025-12-08)
-
-**Feature Config**: `conf/features/matchup_v1.yaml`
-
-- 16 features: EPA/SR + rush/pass YPP matchup splits (home/away)
-- EWMA decay: α=0.3
-- 4-iteration opponent adjustment
+# Then upsert results + refresh YTD system_stats:
+make db-score YEAR=2026 WEEK=N
+```
 
 ---
 
-## Frequency
+## Backfilling Historical Data (optional)
 
-**Weekly Cadence** (example for Week 10):
+To populate Postgres with 2024 / 2025 history (useful for the YTD banner on day one):
 
-- **Monday**: Check if new data is available
-- **Tuesday**: Ingest raw data, run aggregation pipeline
-- **Wednesday**: Generate predictions, review, make decisions
-- **Thursday**: Place bets (if needed before Thu games)
-- **Saturday**: Place remaining bets (before Sat games)
-- **Sunday-Tuesday**: Games complete, score results
-- **Wednesday**: Check dashboard, decide if action needed
+```bash
+# Predictions (do NOT update current_week singleton):
+for YEAR in 2024 2025; do
+    for CSV in data/production/predictions/$YEAR/CFB_week*_bets.csv; do
+        WEEK=$(echo "$CSV" | grep -oE 'week[0-9]+' | grep -oE '[0-9]+')
+        PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
+            --year $YEAR --week $WEEK --no-update-current
+    done
+done
 
-**No automation** — all steps require user initiation.
+# Results + YTD stats:
+make db-score YEAR=2024
+make db-score YEAR=2025
 
----
-
-## Emergency Procedures
-
-### If Pipeline Fails
-
-1. **Check CFB_MODEL_DATA_ROOT**: Ensure external drive is mounted
-2. **Review logs**: Check console output for errors
-3. **Manual fix**: Address specific error (missing data, schema changes, etc.)
-4. **Re-run step**: Once fixed, re-run the failed step
-
-### If Model Performance Degrades
-
-1. **Check dashboard**: Confirm it's not short-term variance
-2. **Review decision**: Use judgment + dashboard alerts
-3. **Rollback if needed**: Follow [Rollback SOP](./rollback_sop.md)
+# Finally, set the current week to the latest 2025 week:
+PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
+    --year 2025 --week 14
+```
 
 ---
 
-## Related Documentation
+## Health Checks
 
-- [Monitoring Dashboard](./monitoring.md) — Dashboard usage and alert interpretation
-- [Rollback SOP](./rollback_sop.md) — Model rollback procedure
-- [Data Quality](./data_quality.md) — Validation framework (Week 3+)
-- [V2 Workflow](../process/experimentation_workflow.md) — Overall 4-phase process
-- [Production Deployment](./production_deployment.md) — Phase 4 deployment criteria
+```bash
+# App health (from any environment with the Vercel URL):
+curl https://<your-vercel-domain>/api/health
+
+# DB row counts:
+psql "$DATABASE_URL" -c "SELECT season, week, COUNT(*) FROM games GROUP BY 1,2 ORDER BY 1,2;"
+psql "$DATABASE_URL" -c "SELECT * FROM current_week; SELECT * FROM system_stats;"
+```
 
 ---
 
-**Last Updated**: 2025-12-08  
-**Status**: V2-aligned, manual workflow
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| App shows "Database not connected" | `DATABASE_URL` missing in Vercel env | Add it in project settings, redeploy |
+| Page renders but "No active week published" | `current_week` row still at `(0, 0)` | Run `publish_to_db.py` without `--no-update-current` |
+| Logos broken for some teams | Team name in CFBD doesn't match logo filename | Extend `TEAM_LOGO_MAP` in both `scripts/pipeline/publish_picks.py` and `web/src/lib/teams.ts` |
+| YTD record shows 0-0 | `score_to_db.py` hasn't been run for this season | Run `make db-score YEAR=YYYY` |
+
+---
+
+_Last Updated: 2026-07-06_

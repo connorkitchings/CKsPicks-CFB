@@ -112,12 +112,32 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 
 ### Project Quick Facts
 
-- **What:** College football betting model predicting spreads and over/unders
-- **Tech Stack:** Python 3.12, Hydra, MLflow, Optuna, CatBoost/XGBoost
-- **Data:** 2019-2025 CFB data on external drive (50-100GB)
-- **Workflow:** V2 4-phase experimentation (currently PAUSED for infrastructure refactoring)
-- **Commands:** See `.codex/QUICKSTART.md`
-- **Architecture:** See `.agent/CONTEXT.md`
+- **What:** College football betting model that predicts spreads and over/unders, displayed as weekly leans in a Vercel web app
+- **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
+- **Data:** 2019-2025 CFB data in Cloudflare R2 (`CFB_STORAGE_BACKEND='r2'`)
+- **2026 Deliverable:** Vercel web app at `web/` showing every FBS game's spread + total lean (display only; auth/tracking is post-MVP)
+- **Commands:** See `.codex/QUICKSTART.md` (Python) and `web/README.md` (Next.js)
+- **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
+
+### Dual-Stack Architecture (2026)
+
+This is a **monorepo with two toolchains**:
+
+| Component | Location | Stack | Test/Build |
+|---|---|---|---|
+| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `make test` (pytest) |
+| Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `make web-build` (`npm run build`) |
+| Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
+| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `web/db/migrations/0001_init.sql` once |
+
+**Data flow:** Python pipeline writes CSV (`data/production/predictions/{year}/CFB_week{N}_bets.csv`) → `scripts/pipeline/publish_to_db.py` upserts to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate).
+
+**Conventions:**
+- Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
+- Next.js app is fully isolated in `web/` with its own `package.json` and `.gitignore`.
+- Team-name → logo mapping must stay in sync across three files:
+  `scripts/pipeline/publish_picks.py` (`TEAM_LOGO_MAP`), `scripts/pipeline/publish_to_db.py` (`TEAM_LOGO_MAP`), and `web/src/lib/teams.ts` (`TEAM_LOGO_MAP`).
+- Schema lives in `web/db/migrations/0001_init.sql` (canonical) and is mirrored by `web/src/lib/schema.ts` (Drizzle types). Edit both together.
 
 ---
 

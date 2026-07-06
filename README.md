@@ -1,25 +1,21 @@
 # CKsPicks-CFB – College Football Betting System
 
-[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
+[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.postatus.org/#alpha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An end-to-end machine learning pipeline for college football betting that predicts point spreads and over/unders using opponent-adjusted features and rigorous experimentation workflows.
+An end-to-end machine learning pipeline for college football betting that predicts point spreads and over/unders, displayed as weekly leans in a Vercel web app.
 
 ---
 
 ## 🎯 Project Status
 
-**V2 Modeling Workflow:** 🛑 **PAUSED** for infrastructure refactoring (as of Feb 2026)
+**Dual-stack monorepo (Python pipeline + Next.js web app).**
 
-The project is currently undergoing infrastructure modernization:
+- **ML pipeline** (root): Python 3.12, Hydra, MLflow, CatBoost/XGBoost. Cloud-backed by Cloudflare R2.
+- **Web app** (`web/`): Next.js 16 / React 19 / Tailwind v4. Reads from Neon Postgres. Deploys to Vercel.
+- **2026 MVP:** Web app showing every FBS game with the model's spread + total lean. Display only — no auth or bet tracking (post-MVP).
 
-- Migrating from external drive to cloud storage (Cloudflare R2)
-- Modernizing AI assistant tooling (AGENTS.md, .agent/, .codex/)
-- Consolidating documentation structure
-
-**Modeling will resume after refactoring completes** (estimated: Phase 6 completion)
-
-For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
+For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeline.md`](./docs/ops/weekly_pipeline.md).
 
 ---
 
@@ -28,17 +24,16 @@ For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 **Start here:**
 
 - **[AGENTS.md](./AGENTS.md)** - Entry point for AI assistants (critical rules, workflows, troubleshooting)
+- **[web/README.md](./web/README.md)** - Web app local-dev guide
+- **[docs/ops/weekly_pipeline.md](./docs/ops/weekly_pipeline.md)** - How predictions flow from Python → Postgres → Vercel
 - **[docs/guide.md](./docs/guide.md)** - Documentation hub for humans
-- **[.codex/QUICKSTART.md](./.codex/QUICKSTART.md)** - Essential commands reference
+- **[.codex/QUICKSTART.md](./.codex/QUICKSTART.md)** - Python commands reference
 
 **Key documentation:**
 
-- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (paused)
-- [12-Week Implementation Plan](./docs/process/12_week_implementation_plan.md) - Roadmap
-- [Promotion Framework](./docs/process/promotion_framework.md) - 5-gate promotion system
 - [Feature Catalog](./docs/modeling/features.md) - Feature definitions
 - [Betting Policy](./docs/modeling/betting_policy.md) - Unit sizing rules
-- [Weekly Pipeline](./docs/ops/weekly_pipeline.md) - Production workflow
+- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process
 
 ---
 
@@ -105,67 +100,66 @@ For current project status, see [`REFACTORING_PLAN.md`](./REFACTORING_PLAN.md)
 
 ```
 CKsPicks-CFB/
-├── AGENTS.md              # AI assistant entry point
+├── AGENTS.md              # AI assistant entry point (dual-stack guide)
 ├── .agent/                # AI assistant workspace
-├── .codex/                # Quick reference guides
-├── src/                   # Source code
+├── .codex/                # Quick reference guides (Python)
+├── src/                   # Python source code (pipeline)
 │   ├── data/              # Data ingestion
 │   ├── features/          # Feature engineering
 │   ├── models/            # ML models
 │   └── utils/             # Utilities
-├── scripts/               # CLI scripts
-│   ├── pipeline/          # Production pipeline
-│   ├── analysis/          # Analysis tools
-│   └── experiments/       # Research scripts
+├── scripts/
+│   └── pipeline/
+│       ├── generate_weekly_bets.py    # Predictions → CSV
+│       ├── publish_to_db.py           # CSV → Neon Postgres
+│       ├── score_to_db.py             # Results → Postgres + stats
+│       └── publish_picks.py           # Email publisher (legacy channel)
 ├── conf/                  # Hydra configuration
 ├── docs/                  # Documentation
-├── tests/                 # Unit tests
-├── session_logs/          # Development logs
-└── artifacts/             # Outputs (git-ignored)
+├── tests/                 # Python unit tests
+├── web/                   # Next.js app (Vercel deploy target)
+├── Logos/                 # Team logos (synced into web/ at build)
+└── session_logs/          # Development logs
 ```
 
-For detailed file locations, see [.codex/MAP.md](./.codex/MAP.md)
+For detailed file locations, see [.codex/MAP.md](./.codex/MAP.md). For the web app, see [web/README.md](./web/README.md).
 
 ---
 
 ## 🧪 Quick Commands
 
-### Testing
+### Python (pipeline)
 
 ```bash
-# Run all tests
-uv run pytest
+# Run tests
+make test                       # or: PYTHONPATH=.:src uv run pytest tests/ -q
 
-# Run quietly
-uv run pytest -q
+# Format + lint
+make format && make lint
 
-# Format and lint
-uv run ruff format . && uv run ruff check .
-```
-
-### Model Training
-
-```bash
-# Basic training
+# Train
 PYTHONPATH=. uv run python -m cks_picks_cfb.train
 
-# Run experiment
-PYTHONPATH=. uv run python -m cks_picks_cfb.train experiment=spread_catboost_baseline_v1
+# Generate predictions then publish to Postgres
+make db-publish YEAR=2026 WEEK=1
+```
 
-# Hyperparameter optimization
-PYTHONPATH=. uv run python -m cks_picks_cfb.train mode=optimize
+### Web app
+
+```bash
+make web-dev                    # cd web && npm run dev
+make web-build                  # cd web && npm run build (also syncs logos)
+make web-typecheck
 ```
 
 ### MLflow Tracking
 
 ```bash
-# Start MLflow UI
 MLFLOW_PORT=5050 docker compose -f docker/mlops/docker-compose.yml up mlflow
-
 # Access at http://localhost:5050
 ```
 
-For complete command reference, see [.codex/QUICKSTART.md](./.codex/QUICKSTART.md)
+For complete command references, see [.codex/QUICKSTART.md](./.codex/QUICKSTART.md) (Python) and [web/README.md](./web/README.md) (Next.js).
 
 ---
 
@@ -223,5 +217,5 @@ This is a research and educational project. It does not guarantee profit or futu
 
 ---
 
-_Last Updated: 2026-02-13_
-_Currently undergoing Phase 3 refactoring - see REFACTORING_PLAN.md_
+_Last Updated: 2026-07-06_
+_2026 reorg: Python pipeline + Next.js web app (Vercel) + Neon Postgres_

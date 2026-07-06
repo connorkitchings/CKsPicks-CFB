@@ -164,18 +164,20 @@ PYTHONPATH=. uv run python src/models/train_model.py --help
 
 ## Production Pipeline
 
-### Training Pipeline
+### Full Weekly Cycle (2026)
 
 ```bash
-# Train production points-for models
-PYTHONPATH=. uv run python scripts/pipeline/train_production_points_for.py
+# One command, end-to-end (ingest → preagg → predict → publish):
+make weekly YEAR=2026 WEEK=1
 
-# Train with specific config
-PYTHONPATH=. uv run python scripts/pipeline/train_production_points_for.py \
-    --config conf/production/points_for_v1.yaml
+# Or step by step:
+make ingest-week YEAR=2026 WEEK=1                          # 1. CFBD API → R2
+PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026  # 2. raw → processed
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1  # 3. model → CSV
+make db-publish YEAR=2026 WEEK=1                            # 4. CSV → Neon → Vercel
 ```
 
-### Weekly Predictions
+### Weekly Predictions (standalone)
 
 ```bash
 # Generate predictions for upcoming week
@@ -208,20 +210,27 @@ PYTHONPATH=. uv run python scripts/analysis/generate_performance_report.py \
 
 ## Data Management
 
-### Ingestion
+### Ingestion (CFBD API → cloud storage)
 
 ```bash
-# Ingest plays for specific week
-PYTHONPATH=. uv run python scripts/data/ingest_plays.py \
-    --year 2024 \
-    --week 12
+# Preseason: ingest season schedule + metadata
+make ingest-season YEAR=2026
+# Or specific entities:
+make ingest-season YEAR=2026 ENTITIES=teams,venues,games
 
-# Ingest all data for a season
-PYTHONPATH=. uv run python scripts/data/ingest_season.py \
-    --year 2024
+# Weekly: ingest plays + betting lines for a week
+make ingest-week YEAR=2026 WEEK=1
 
-# Cache running season stats
-PYTHONPATH=. uv run python scripts/pipeline/cache_running_season_stats.py
+# Direct scripts (no Make):
+PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026
+PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week 1
+```
+
+### Pre-Aggregation (raw → processed features)
+
+```bash
+# Run pre-aggregation pipeline (plays → team_game → team_season, etc.)
+PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
 ```
 
 ### Feature Generation

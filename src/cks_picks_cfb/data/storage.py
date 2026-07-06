@@ -34,6 +34,7 @@ Configuration:
 
 import json
 import os
+import re
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -44,6 +45,10 @@ from typing import Any, Optional
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+
+class StorageError(RuntimeError):
+    """Raised when storage operations fail."""
 
 
 @dataclass(frozen=True)
@@ -139,8 +144,60 @@ class StorageBackend(ABC):
 
     @abstractmethod
     def root(self) -> Path | str:
-        """Return the root path for the storage backend."""
+        """Return the root path for the storage backend.
+
+        Deprecated: prefer describe() for logging, list_partitions() for
+        partition discovery, and partition_exists() for existence checks.
+        """
         pass
+
+    # --- New entity/partition discovery API (replaces storage.root() / ... calls) ---
+
+    def list_partitions(
+        self, entity: str, parent_filters: Mapping[str, Any]
+    ) -> list[Partition]:
+        """Discover child partitions under entity/parent_partition_path.
+
+        For example, list_partitions("raw/plays", {"year": "2025"}) might return
+        [Partition({"year": "2025", "week": "1"}), Partition({"year": "2025", "week": "2"}), ...].
+
+        Default implementation uses list_files() + regex parsing — subclasses may override
+        for efficiency (e.g., S3 delimiter-based listing).
+        """
+        parent_suffix = "/".join(
+            f"{k}={v}" for k, v in parent_filters.items() if v is not None
+        )
+        prefix = f"{entity}/{parent_suffix}/" if parent_suffix else f"{entity}/"
+        files = self.list_files(prefix)
+
+        children: dict[frozenset, Partition] = {}
+        for fpath in files:
+            # Strip the prefix to get the relative path
+            rel = fpath[len(prefix) :] if fpath.startswith(prefix) else fpath
+            # Extract key=value segments
+            segments = re.findall(r"(\w+)=([^/]+)", rel)
+            if not segments:
+                continue
+            # Build partition values from parent + first child segment
+            combined = {k: str(v) for k, v in parent_filters.items() if v is not None}
+            key_name, key_val = segments[0]
+            combined[key_name] = key_val
+            key = frozenset(combined.items())
+            if key not in children:
+                children[key] = Partition(combined)
+        return list(children.values())
+
+    def partition_exists(self, entity: str, partition: Partition) -> bool:
+        """Check if any data exists for entity/partition.
+
+        Default implementation uses list_files() — subclasses may override for efficiency.
+        """
+        prefix = f"{entity}/{partition.path_suffix()}"
+        return len(self.list_files(prefix)) > 0
+
+    def describe(self) -> str:
+        """Return a backend-agnostic identifier for logging (e.g., 'r2:cfb-model-data')."""
+        return str(self.root())
 
 
 class LocalStorage(StorageBackend):
@@ -344,6 +401,9 @@ class LocalStorage(StorageBackend):
     def root(self) -> Path:
         """Return the root path for the storage backend."""
         return self.root_path
+
+    def describe(self) -> str:
+        return f"local:{self.root_path}"
 
 
 class R2Storage(StorageBackend):
@@ -693,6 +753,9 @@ class R2Storage(StorageBackend):
         """Return the root path for the storage backend."""
         return f"s3://{self.bucket}"
 
+    def describe(self) -> str:
+        return f"r2:{self.bucket}"
+
 
 class S3Storage(StorageBackend):
     """AWS S3 storage."""
@@ -934,6 +997,9 @@ class S3Storage(StorageBackend):
     def root(self) -> str:
         """Return the root path for the storage backend."""
         return f"s3://{self.bucket}"
+
+    def describe(self) -> str:
+        return f"s3:{self.bucket}"
 
 
 def get_storage() -> StorageBackend:

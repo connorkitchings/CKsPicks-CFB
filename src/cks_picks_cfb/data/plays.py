@@ -41,12 +41,12 @@ class PlaysIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "plays"
+        return "raw/plays"
 
     def get_fbs_game_ids(self) -> list[tuple[int, int]]:
         """Get list of FBS game IDs and weeks from local games index."""
         idx = self.storage.read_index(
-            "games", {"year": self.year}, columns=["id", "week"]
+            "raw/games", {"year": self.year}, columns=["id", "week"]
         )
         if not idx:
             raise RuntimeError(
@@ -93,26 +93,19 @@ class PlaysIngester(BaseIngester):
             weeks = [w for w in weeks if int(w) == int(self.only_week)]
 
         # Minimize API calls: skip weeks that are already present in raw storage
-        base_week_dir = self.storage.root() / "plays" / f"year={self.year}"
         weeks_to_fetch: list[int] = []
         for w in weeks:
-            week_dir = base_week_dir / f"week={int(w)}"
-            if week_dir.exists():
-                # Count existing game_id partitions under this week
-                try:
-                    existing_game_dirs = [
-                        d
-                        for d in week_dir.iterdir()
-                        if d.is_dir() and d.name.startswith("game_id=")
-                    ]
-                except FileNotFoundError:
-                    existing_game_dirs = []
-                expected_games = len(games_by_week.get(w, set()))
-                if existing_game_dirs and len(existing_game_dirs) >= expected_games:
-                    print(
-                        f"  Skipping week {w}: already ingested ({len(existing_game_dirs)}/{expected_games} games)."
-                    )
-                    continue
+            # Check if this week's partition has enough game_id sub-partitions
+            existing_parts = self.storage.list_partitions(
+                "raw/plays", {"year": str(self.year), "week": str(int(w))}
+            )
+            existing_count = len(existing_parts)
+            expected_games = len(games_by_week.get(w, set()))
+            if existing_count and existing_count >= expected_games:
+                print(
+                    f"  Skipping week {w}: already ingested ({existing_count}/{expected_games} games)."
+                )
+                continue
             weeks_to_fetch.append(w)
 
         workers = getattr(self, "workers", 1)
@@ -234,7 +227,7 @@ class PlaysIngester(BaseIngester):
 
         # Build game_id -> week map from games index to ensure correct partitioning
         idx = self.storage.read_index(
-            "games", {"year": self.year}, columns=["id", "week"]
+            "raw/games", {"year": self.year}, columns=["id", "week"]
         )
         game_week_map: dict[int, int] = {
             int(row["id"]): int(row.get("week"))

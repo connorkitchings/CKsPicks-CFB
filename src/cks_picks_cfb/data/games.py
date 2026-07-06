@@ -4,7 +4,6 @@ import argparse
 import json
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 import cfbd
@@ -43,7 +42,7 @@ class GamesIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "games"
+        return "raw/games"
 
     @property
     def partition_keys(self) -> list[str]:
@@ -202,12 +201,13 @@ class GamesIngester(BaseIngester):
         )
 
         # 2) Upsert into the year-level file so downstream reads get the latest scores.
-        year_dir = Path(self.storage.root()) / self.entity_name / f"year={self.year}"
-        year_file = year_dir / "data.csv"
-        if year_file.exists():
-            existing_df = pd.read_csv(year_file)
-        else:
-            existing_df = pd.DataFrame()
+        # Use storage.read_index() for both local and cloud compatibility.
+        existing_records = self.storage.read_index(
+            self.entity_name, {"year": str(self.year)}
+        )
+        existing_df = (
+            pd.DataFrame(existing_records) if existing_records else pd.DataFrame()
+        )
 
         def _normalize_record(record: dict[str, Any]) -> dict[str, Any]:
             normalized: dict[str, Any] = {}

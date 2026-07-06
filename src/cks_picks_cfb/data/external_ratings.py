@@ -56,7 +56,7 @@ class ExternalRatingsIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "external_ratings"
+        return "raw/external_ratings"
 
     @property
     def partition_keys(self) -> list[str]:
@@ -64,9 +64,15 @@ class ExternalRatingsIngester(BaseIngester):
         return ["year", "week"]
 
     def _get_manual_dir(self) -> Path:
-        """Get the directory containing manual CSV dumps."""
+        """Get the directory containing manual CSV dumps.
+
+        Looks for {storage_root}/raw/manual/ratings/year={Y}/week={W}/.
+        For cloud backends, Path(str) produces a meaningless path but
+        manual_dir.exists() returns False and fetch_data() handles it gracefully.
+        """
+        root = self.storage.root()
         return (
-            self.storage.root().parent
+            Path(root)
             / "raw"
             / "manual"
             / "ratings"

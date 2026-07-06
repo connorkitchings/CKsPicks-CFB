@@ -22,7 +22,7 @@ class VenuesIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "venues"
+        return "raw/venues"
 
     def get_fbs_team_names(self) -> set[str]:
         """Deprecated: no longer used; venues derive from local games index to avoid extra calls."""
@@ -31,7 +31,7 @@ class VenuesIngester(BaseIngester):
     def get_fbs_venue_ids(self) -> set[int]:
         """Get venue IDs used by FBS games using local games index to minimize API calls."""
         games_index = self.storage.read_index(
-            "games", {"year": self.year}, columns=["venue_id"]
+            "raw/games", {"year": self.year}, columns=["venue_id"]
         )
         ids: set[int] = set()
         for row in games_index:

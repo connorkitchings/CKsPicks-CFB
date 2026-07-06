@@ -31,7 +31,7 @@ class RostersIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "rosters"
+        return "raw/rosters"
 
     def get_fbs_teams(self) -> dict[str, int]:
         """Get FBS team names and IDs from local storage."""

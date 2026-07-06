@@ -3,6 +3,7 @@
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -10,7 +11,6 @@ import cfbd
 from dotenv import load_dotenv
 
 from cks_picks_cfb.utils.base import Partition, StorageBackend
-from cks_picks_cfb.utils.local_storage import LocalStorage
 
 load_dotenv()
 
@@ -49,10 +49,30 @@ class BaseIngester(ABC):
         # Initialize clients
         self.cfbd_config = cfbd.Configuration(access_token=self.cfbd_api_key)
 
-        # Initialize storage backend (hard-fail if path inaccessible)
-        self.storage: StorageBackend = storage or LocalStorage(
-            data_root=data_root, file_format="csv", data_type="raw"
-        )
+        # Initialize storage backend:
+        # - Use caller-provided storage if given
+        # - Auto-detect from CFB_STORAGE_BACKEND env var (r2/s3/local)
+        #
+        # Entity names include the tier prefix (e.g., "raw/games", "raw/plays"),
+        # so the storage backend root is the BASE data root — no "raw/" subdirectory
+        # is appended by the storage layer.
+        if storage is not None:
+            self.storage = storage
+        else:
+            backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+            if backend != "local":
+                from cks_picks_cfb.data.storage import get_storage
+
+                self.storage = get_storage()
+            else:
+                from cks_picks_cfb.data.storage import LocalStorage as DataLocalStorage
+
+                root = (
+                    data_root
+                    or os.getenv("CFB_MODEL_DATA_ROOT")
+                    or str(Path.cwd() / "data")
+                )
+                self.storage = DataLocalStorage(root)
 
         # Timezone for normalization (US/Eastern)
         self._eastern = ZoneInfo("America/New_York")
@@ -158,7 +178,7 @@ class BaseIngester(ABC):
         """Execute the complete ingestion process using local storage."""
         try:
             print(f"Starting {self.__class__.__name__} for {self.year}...")
-            print(f"  - Using data root: {self.storage.root()}")
+            print(f"  - Using storage: {self.storage.describe()}")
 
             # Fetch data from CFBD API
             raw_data = self.fetch_data()

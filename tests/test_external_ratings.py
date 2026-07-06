@@ -40,7 +40,7 @@ class TestExternalRatingsIngester:
     def test_entity_name(self):
         """Entity name is external_ratings."""
         ingester = ExternalRatingsIngester(year=2024)
-        assert ingester.entity_name == "external_ratings"
+        assert ingester.entity_name == "raw/external_ratings"
 
     def test_partition_keys(self):
         """Partition keys are ['year', 'week']."""

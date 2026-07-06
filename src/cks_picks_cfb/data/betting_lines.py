@@ -39,7 +39,7 @@ class BettingLinesIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
         """The logical entity name for storage."""
-        return "betting_lines"
+        return "raw/betting_lines"
 
     @property
     def partition_keys(self) -> list[str]:
@@ -49,16 +49,16 @@ class BettingLinesIngester(BaseIngester):
 
     def get_fbs_game_ids(self) -> list[int]:
         """Get list of FBS game IDs from local games index."""
-        index_filters = {"year": str(self.year)}
-        if self.week is not None:
-            index_filters["week"] = str(self.week)
+        # Read games at year level (games are year-level files, not week-partitioned)
         games_index = self.storage.read_index(
-            "games", filters=index_filters, columns=["id"]
+            "raw/games", filters={"year": str(self.year)}, columns=["id", "week"]
         )
+        if self.week is not None:
+            games_index = [g for g in games_index if int(g.get("week", 0)) == self.week]
 
         if not games_index:
             raise RuntimeError(
-                f"Games index not found for year {self.year}, week {self.week}. Please run the games ingester first."
+                f"Games index not found for year {self.year}. Please run the games ingester first."
             )
 
         game_ids = [game["id"] for game in games_index]

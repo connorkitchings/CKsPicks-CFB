@@ -31,7 +31,7 @@ def persist_preaggregations(
     # Read raw plays - use year partition key for raw data
     records = storage.read_index("raw/plays", {"year": str(year)})
     if not records:
-        logging.info(f"No raw plays found for season {year} under {storage.root()}")
+        logging.info(f"No raw plays found for season {year} under {storage.describe()}")
         return {
             "byplay": 0,
             "drives": 0,
@@ -243,7 +243,7 @@ def persist_preaggregations(
             overwrite=True,
         )
 
-    root = storage.root()
+    root = storage.describe()
     if verbose:
         logging.info(
             f"Pre-aggregations written under {root} for season {year}: "
@@ -261,7 +261,7 @@ def persist_byplay_only(
     storage = get_storage()
     records = storage.read_index("raw/plays", {"year": str(year)})
     if not records:
-        print(f"No raw plays found for season {year} under {storage.root()}")
+        print(f"No raw plays found for season {year} under {storage.describe()}")
         return 0
 
     plays_df = pd.DataFrame.from_records(records)
@@ -281,7 +281,7 @@ def persist_byplay_only(
 
     if verbose:
         print(
-            f"Byplay written under {storage.root()} for season {year}: rows={total_written}"
+            f"Byplay written under {storage.describe()} for season {year}: rows={total_written}"
         )
     return total_written
 

@@ -29,13 +29,13 @@ class GameStatsIngester(BaseIngester):
 
     @property
     def entity_name(self) -> str:
-        return "game_stats_raw"
+        return "raw/game_stats"
 
     def get_fbs_games_info(self) -> list[tuple[int, int]]:
         """Get list of (game ID, week) tuples from local games index."""
         index_filters = {"year": str(self.year)}
         games_index = self.storage.read_index(
-            "games", filters=index_filters, columns=["id", "week"]
+            "raw/games", filters=index_filters, columns=["id", "week"]
         )
         if not games_index:
             raise RuntimeError(
@@ -76,23 +76,13 @@ class GameStatsIngester(BaseIngester):
         weeks = sorted(games_by_week.keys())
 
         # Minimize API calls: skip weeks that are already present in raw storage
-        base_week_dir = self.storage.root() / "game_stats_raw" / f"year={self.year}"
         weeks_to_fetch: list[int] = []
         for w in weeks:
-            week_dir = base_week_dir / f"week={int(w)}"
             expected_games = len(games_by_week.get(w, set()))
-            existing = 0
-            if week_dir.exists():
-                try:
-                    existing = len(
-                        [
-                            d
-                            for d in week_dir.iterdir()
-                            if d.is_dir() and d.name.startswith("game_id=")
-                        ]
-                    )
-                except FileNotFoundError:
-                    existing = 0
+            existing_parts = self.storage.list_partitions(
+                "raw/game_stats", {"year": str(self.year), "week": str(int(w))}
+            )
+            existing = len(existing_parts)
             if existing >= expected_games and expected_games > 0:
                 print(
                     f"  Skipping team stats for week {w}: already ingested ({existing}/{expected_games} games)."
