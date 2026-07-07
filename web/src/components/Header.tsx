@@ -3,13 +3,13 @@ export function Header({
   week,
   systemName,
   modelId,
-  generatedAt,
+  updatedAt,
 }: {
   season: number | null;
   week: number | null;
   systemName: string | null;
   modelId: string | null;
-  generatedAt: Date;
+  updatedAt: Date | null;
 }) {
   return (
     <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -34,15 +34,17 @@ export function Header({
               id: <span className="text-zinc-500 dark:text-zinc-400">{modelId}</span>
             </span>
           )}
-          <span>
-            Updated{" "}
-            {generatedAt.toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </span>
+          {updatedAt && (
+            <span>
+              Predictions updated{" "}
+              {updatedAt.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
         </div>
       </div>
     </header>

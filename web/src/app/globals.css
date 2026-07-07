@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Drive `dark:` utilities off a `.dark` class on <html> instead of the
+   prefers-color-scheme media query. The init script in app/layout.tsx
+   sets the class before paint (no FOUC) and treats an unset preference
+   as "system", applying `.dark` whenever the user's OS prefers dark. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +18,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
