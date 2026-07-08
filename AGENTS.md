@@ -127,17 +127,18 @@ This is a **monorepo with two toolchains**:
 |---|---|---|---|
 | ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `make test` (pytest) |
 | Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `make web-build` (`npm run build`) |
+| Shared contracts | `contracts/` | SQL + TypeScript + Python | `make contracts-check` |
+| Research | `research/` | Python (analysis, tuning, experiments) | — |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
-| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `web/db/migrations/0001_init.sql` once |
+| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `contracts/schema.sql` once |
 
 **Data flow:** Python pipeline writes CSV (`data/production/predictions/{year}/CFB_week{N}_bets.csv`) → `scripts/pipeline/publish_to_db.py` upserts to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate).
 
 **Conventions:**
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
 - Next.js app is fully isolated in `web/` with its own `package.json` and `.gitignore`.
-- Team-name → logo mapping must stay in sync across three files:
-  `scripts/pipeline/publish_picks.py` (`TEAM_LOGO_MAP`), `scripts/pipeline/publish_to_db.py` (`TEAM_LOGO_MAP`), and `web/src/lib/teams.ts` (`TEAM_LOGO_MAP`).
-- Schema lives in `web/db/migrations/0001_init.sql` (canonical) and is mirrored by `web/src/lib/schema.ts` (Drizzle types). Edit both together.
+- **Single source of truth:** `contracts/` holds the canonical DB schema (`schema.sql`, `schema.ts`) and team-name mapping (`teams.py`, `teams.ts`). The web app has local copies in `web/src/lib/` that must stay in sync. Run `make contracts-check` to validate sync.
+- Production scripts live in `scripts/pipeline/` and `scripts/data/`. Research/exploration scripts live in `research/`.
 
 ---
 
@@ -284,7 +285,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 ### What NOT to Read Automatically
 
 - `artifacts/**`, `.venv/**`, `.git/**`, `**__pycache__/`
-- `notebooks/**` (only when debugging)
+- `research/**` (only when actively debugging or experimenting)
 - `session_logs/` older than 3 days
 - Files > 200 KB
 - Files unchanged in last 30 days
@@ -301,6 +302,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 - **Architecture:** `.agent/CONTEXT.md` - Project structure and domain knowledge
 - **Config Guide:** `.codex/HYDRA.md` - Hydra configuration system
 - **File Map:** `.codex/MAP.md` - Project file locations
+- **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
 - **Session Skills:** `.agent/skills/` - Start/end session workflows
 
 ### Documentation
@@ -324,6 +326,8 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 - **Features:** `src/features/pipeline.py` - Feature engineering
 - **Training:** `src/models/train_model.py` - Model training
 - **Inference:** `scripts/pipeline/generate_weekly_bets.py` - Predictions
+- **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
+- **Research:** `research/` - Analysis, tuning, debugging, experiments
 
 ---
 

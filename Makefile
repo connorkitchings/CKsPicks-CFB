@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week weekly
+.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week weekly
 
 # Default target
 help:
@@ -12,6 +12,7 @@ help:
 	@echo "  make check     - Format + lint + test (alias for 'all')"
 	@echo "  make all       - Run all quality checks"
 	@echo "  make clean     - Clean cache files"
+	@echo "  make contracts-check - Validate contracts/ files are in sync"
 	@echo ""
 	@echo "Web app (web/):"
 	@echo "  make web-dev       - Start Next.js dev server"
@@ -49,13 +50,21 @@ health:
 	@echo "🏥 Running health checks..."
 	sh .agent/workflows/health-check.sh
 
-# Run all checks (format, lint, test)
-all: format lint test
+# Run all checks (format, lint, test, contracts)
+all: format lint test contracts-check
 	@echo ""
 	@echo "✅ All checks complete!"
 
 # Alias for 'all'
 check: all
+
+# ---------------------------------------------------------------------------
+# Contracts validation
+# ---------------------------------------------------------------------------
+
+contracts-check:
+	@echo "📋 Validating contracts..."
+	@uv run python contracts/validation.py
 
 # ---------------------------------------------------------------------------
 # Web app (web/)

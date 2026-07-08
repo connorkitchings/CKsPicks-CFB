@@ -52,8 +52,11 @@ TEAM_LOGO_MAP = {
     "San José State": "San Jose State",
     "UTSA": "UT San Antonio",
     "Hawai'i": "Hawai_i",
+    "Hawaii": "Hawai_i",
+    "Hawai i": "Hawai_i",
     "UConn": "Connecticut",
     "Southern Miss": "Southern Mississippi",
+    "Texas A&M": "Texas A&M",
 }
 
 

@@ -1,5 +1,5 @@
 /**
- * Copy team logos from ../Logos/ into ./public/logos/ so they're served
+ * Copy team logos from ../assets/logos/ into ./public/logos/ so they're served
  * statically by Next.js at /logos/<Team>.png.
  *
  * Runs automatically via the `predev` and `prebuild` npm scripts.
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const SOURCE = path.resolve(__dirname, "..", "..", "Logos");
+const SOURCE = path.resolve(__dirname, "..", "..", "assets", "logos");
 const DEST = path.resolve(__dirname, "..", "public", "logos");
 
 if (!fs.existsSync(SOURCE)) {
