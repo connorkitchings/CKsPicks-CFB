@@ -42,7 +42,7 @@ class CoachesIngester(BaseIngester):
     def get_fbs_teams(self) -> list[str]:
         """Get list of FBS team names from local storage."""
         teams_index = self.storage.read_index(
-            "teams",
+            "raw/teams",
             filters={"year": str(self.year)},
             columns=["school"],
         )

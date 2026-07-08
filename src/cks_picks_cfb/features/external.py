@@ -32,7 +32,9 @@ def merge_external_ratings(
     storage = _get_storage(storage)
 
     try:
-        records = storage.read_index("external_ratings", {"year": year, "week": week})
+        records = storage.read_index(
+            "raw/external_ratings", {"year": year, "week": week}
+        )
         if not records:
             logging.warning(f"No external ratings for {year} week {week}")
             return matchup_df
@@ -131,7 +133,7 @@ def merge_recruiting_composite(
     frames = []
     for recruit_year in range(year - n_years + 1, year + 1):
         try:
-            records = storage.read_index("recruiting", {"year": recruit_year})
+            records = storage.read_index("raw/recruiting", {"year": recruit_year})
             if records:
                 frames.append(pd.DataFrame.from_records(records))
         except Exception:
@@ -193,7 +195,7 @@ def merge_rankings(
     storage = _get_storage(storage)
 
     try:
-        records = storage.read_index("rankings", {"year": year})
+        records = storage.read_index("raw/rankings", {"year": year})
         if not records:
             logging.warning(f"No rankings data for {year}")
             return matchup_df
