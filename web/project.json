@@ -1,0 +1,56 @@
+{
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "name": "web",
+  "projectType": "application",
+  "sourceRoot": "web/src",
+  "tags": ["type:app", "scope:frontend"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/.next"],
+      "inputs": [
+        "production",
+        "{projectRoot}/public/**/*",
+        "{workspaceRoot}/contracts/schema.ts",
+        "{workspaceRoot}/contracts/teams.ts",
+        "{workspaceRoot}/assets/logos/**/*"
+      ],
+      "options": {
+        "command": "npm run build",
+        "cwd": "web"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run dev",
+        "cwd": "web"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run start",
+        "cwd": "web"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "options": {
+        "command": "npm run lint",
+        "cwd": "web"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "cache": true,
+      "inputs": ["default", "{projectRoot}/tsconfig.json"],
+      "options": {
+        "command": "npm run typecheck",
+        "cwd": "web"
+      }
+    }
+  }
+}

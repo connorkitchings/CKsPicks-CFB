@@ -91,7 +91,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 **Ending a Session:**
 1. Create session log in `session_logs/YYYY-MM-DD/NN.md`
 2. Run health checks: `uv run ruff format . && uv run ruff check .`
-3. Run tests: `uv run pytest -q`
+3. Run tests: `uv run pytest -q` (or `npx nx run-many -t lint typecheck test`)
 4. Propose commit message (user executes manually)
 5. Update docs if behavior changed
 
@@ -116,7 +116,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 - **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
 - **Data:** 2019-2025 CFB data in Cloudflare R2 (`CFB_STORAGE_BACKEND='r2'`)
 - **2026 Deliverable:** Vercel web app at `web/` showing every FBS game's spread + total lean (display only; auth/tracking is post-MVP)
-- **Commands:** See `.codex/QUICKSTART.md` (Python) and `web/README.md` (Next.js)
+- **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
 - **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
 
 ### Dual-Stack Architecture (2026)
@@ -125,10 +125,11 @@ This is a **monorepo with two toolchains**:
 
 | Component | Location | Stack | Test/Build |
 |---|---|---|---|
-| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `make test` (pytest) |
-| Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `make web-build` (`npm run build`) |
+| ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `npx nx run pipeline:test` or `make test` |
+| Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `npx nx run web:build` or `make web-build` |
 | Shared contracts | `contracts/` | SQL + TypeScript + Python | `make contracts-check` |
 | Research | `research/` | Python (analysis, tuning, experiments) | — |
+| Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
 | Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `contracts/schema.sql` once |
 

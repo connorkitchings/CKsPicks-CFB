@@ -1,0 +1,9 @@
+{
+  "name": "ckspicks-cfb",
+  "version": "0.0.0",
+  "private": true,
+  "description": "College football betting model — Python ML pipeline + Next.js web app. Nx provides cached task orchestration across both stacks.",
+  "devDependencies": {
+    "nx": "^20.0.0"
+  }
+}

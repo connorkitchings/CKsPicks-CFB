@@ -522,6 +522,63 @@ uv pip freeze > requirements.txt
 
 ---
 
+## Nx Task Runner (cross-stack caching)
+
+The repo uses [Nx](https://nx.dev) for cached task orchestration across both the
+Python pipeline and the Next.js web app. Nx is installed at the repo root.
+
+### Setup
+
+```bash
+npm install        # installs nx at root (one-time)
+```
+
+### Available targets
+
+| Project | Target | Command | Cached |
+|---|---|---|---|
+| `pipeline` | `test` | `uv run pytest -q` | ✅ |
+| `pipeline` | `lint` | `uv run ruff check .` | ✅ |
+| `pipeline` | `format` | `uv run ruff format .` | ❌ |
+| `web` | `build` | `npm run build` (in `web/`) | ✅ |
+| `web` | `lint` | `npm run lint` (in `web/`) | ✅ |
+| `web` | `typecheck` | `npm run typecheck` (in `web/`) | ✅ |
+| `web` | `dev` | `npm run dev` (in `web/`) | ❌ |
+
+### Usage
+
+```bash
+# Run a single target
+npx nx run pipeline:test
+npx nx run web:build
+
+# Run a target across all projects that have it
+npx nx run-many -t lint
+npx nx run-many -t test typecheck
+
+# Run everything (all targets, all projects)
+npx nx run-many -t lint typecheck test build
+
+# Skip the cache (force re-run)
+npx nx run pipeline:test --skip-nx-cache
+
+# Show the project graph
+npx nx show projects
+```
+
+### How caching works
+
+Nx hashes the target's `inputs` (scoped to each project's source files — see
+`project.json` and `nx.json`). If the hash matches a prior run, the command is
+skipped and cached `outputs` are restored. The cache lives in `.nx/cache/`
+(gitignored). Example: after `npx nx run web:build`, a second run with no
+changed files completes instantly from cache.
+
+> **Note:** The Makefile remains the source of truth for multi-step production
+> workflows (e.g., `make weekly`). Nx wraps individual tasks with caching.
+
+---
+
 ## Common Command Chains
 
 ### Full Quality Check

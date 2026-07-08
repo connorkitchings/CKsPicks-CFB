@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/nx/schemas/project-schema.json",
+  "name": "pipeline",
+  "projectType": "application",
+  "sourceRoot": "src",
+  "root": ".",
+  "tags": ["type:ml", "scope:backend"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/tests/**/*",
+        "{projectRoot}/scripts/**/*",
+        "{projectRoot}/conf/**/*",
+        "{projectRoot}/contracts/**/*",
+        "{projectRoot}/pyproject.toml",
+        "{projectRoot}/uv.lock"
+      ],
+      "options": {
+        "command": "uv run pytest -q",
+        "env": {
+          "CFB_STORAGE_BACKEND": "local"
+        }
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "cache": true,
+      "inputs": [
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/tests/**/*",
+        "{projectRoot}/scripts/**/*",
+        "{projectRoot}/pyproject.toml"
+      ],
+      "options": {
+        "command": "uv run ruff check ."
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "inputs": [
+        "{projectRoot}/src/**/*",
+        "{projectRoot}/tests/**/*",
+        "{projectRoot}/scripts/**/*",
+        "{projectRoot}/pyproject.toml"
+      ],
+      "options": {
+        "command": "uv run ruff format ."
+      }
+    }
+  }
+}

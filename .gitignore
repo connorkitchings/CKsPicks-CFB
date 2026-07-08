@@ -296,5 +296,8 @@ conf/local.yaml
 *.pt
 *.safetensors
 
-# Nx cache
-.nx/cache
+# Nx cache and runtime data
+.nx/
+
+# Node (root workspace; web/ has its own .gitignore)
+node_modules/
