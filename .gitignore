@@ -229,9 +229,8 @@ site/
 # Keep: directory structure, READMEs, metadata files
 # Exclude: model binaries, large CSVs, plots, personal workspace
 
-# MLflow tracking (exclude all run data, keep only meta.yaml files for structure)
-artifacts/mlruns/[0-9]*/
-artifacts/mlruns/.trash/
+# MLflow tracking (all run data is regenerable; do not version-control it)
+artifacts/mlruns/
 
 # Top-level MLflow and models (created during training, should be in artifacts/)
 /mlruns/
@@ -286,3 +285,16 @@ artifacts/outputs/
 
 # Local config overrides
 conf/local.yaml
+
+# Binary artifacts — defense in depth (model files, traces, pickles)
+# These should never be committed; they are regenerable from training.
+*.nc
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.safetensors
+
+# Nx cache
+.nx/cache

@@ -1,1 +1,0 @@
-{'name': 'linear', 'type': 'linear_regression', 'params': {'alpha': 1.0}, 'target': 'spread_target'}
