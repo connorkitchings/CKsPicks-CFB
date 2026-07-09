@@ -24,11 +24,19 @@ uv pip list | grep cfb-model
 ### Environment Variables
 
 ```bash
-# Required: Data root location
-export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
+# 2026 MVP cloud path
+export CFB_STORAGE_BACKEND='r2'
+export CFB_R2_BUCKET='your_bucket'
+export CFB_R2_ACCOUNT_ID='your_account_id'
+export CFB_R2_ACCESS_KEY='your_access_key'
+export CFB_R2_SECRET_KEY='your_secret_key'
+export DATABASE_URL='postgres://...?sslmode=require'
 
-# Optional: API keys
+# Required for ingestion
 export CFBD_API_KEY='your_api_key_here'
+
+# Local-only development when CFB_STORAGE_BACKEND=local
+export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 
 # Optional: MLflow tracking
 export MLFLOW_TRACKING_URI='file:///path/to/mlruns'
@@ -38,7 +46,12 @@ export MLFLOW_TRACKING_URI='file:///path/to/mlruns'
 
 ```bash
 # .env file
-CFB_MODEL_DATA_ROOT=/Volumes/CK SSD/Coding Projects/cfb_model/
+CFB_STORAGE_BACKEND=r2
+CFB_R2_BUCKET=your_bucket
+CFB_R2_ACCOUNT_ID=your_account_id
+CFB_R2_ACCESS_KEY=your_access_key
+CFB_R2_SECRET_KEY=your_secret_key
+DATABASE_URL=postgres://...?sslmode=require
 CFBD_API_KEY=your_api_key
 ```
 
@@ -167,14 +180,17 @@ PYTHONPATH=. uv run python src/models/train_model.py --help
 ### Full Weekly Cycle (2026)
 
 ```bash
-# One command, end-to-end (ingest → preagg → predict → publish):
+# Validate env, R2, Neon schema, artifact paths, and deploy assumptions
+make preflight YEAR=2026 WEEK=1
+
+# One command, end-to-end (ingest → preagg → predict → R2 artifact → Neon):
 make weekly YEAR=2026 WEEK=1
 
-# Or step by step:
+# Recovery commands:
 make ingest-week YEAR=2026 WEEK=1                          # 1. CFBD API → R2
 PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026  # 2. raw → processed
-PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1  # 3. model → CSV
-make db-publish YEAR=2026 WEEK=1                            # 4. CSV → Neon → Vercel
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1 --upload-artifact  # 3. model → local CSV + R2 artifact
+PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week 1 --from-artifact  # 4. R2 artifact → Neon → Vercel
 ```
 
 ### Weekly Predictions (standalone)
@@ -185,12 +201,14 @@ PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py
 
 # Generate for specific week
 PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py \
-    --season 2024 \
+    --year 2024 \
     --week 12
 
-# Generate with custom threshold
+# Generate and upload durable R2/S3 artifact
 PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py \
-    --min-edge 0.03
+    --year 2026 \
+    --week 1 \
+    --upload-artifact
 ```
 
 ### Performance Scoring
@@ -198,12 +216,16 @@ PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py \
 ```bash
 # Score all bets for a week
 PYTHONPATH=. uv run python scripts/pipeline/score_weekly_bets.py \
-    --season 2024 \
-    --week 12
+    --year 2024 \
+    --week 12 \
+    --from-artifact \
+    --upload-artifact
 
-# Generate performance report
-PYTHONPATH=. uv run python scripts/analysis/generate_performance_report.py \
-    --season 2024
+# Upsert scored artifact into Neon and refresh YTD stats
+PYTHONPATH=. uv run python scripts/pipeline/score_to_db.py \
+    --year 2024 \
+    --week 12 \
+    --from-artifact
 ```
 
 ---
@@ -380,17 +402,11 @@ uv run pytest -s
 ### Data Inspection
 
 ```bash
-# Check data root
+# Check the configured storage backend and weekly artifact paths
+PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year 2026 --week 1 --skip-db
+
+# Local-only data root inspection
 ls -lh "$CFB_MODEL_DATA_ROOT"
-
-# Check specific year/week data
-ls -lh "$CFB_MODEL_DATA_ROOT/raw/plays/year=2024/week=12/"
-
-# View parquet file schema
-python -c "import pandas as pd; print(pd.read_parquet('$CFB_MODEL_DATA_ROOT/raw/plays/year=2024/week=12/data.parquet').dtypes)"
-
-# Quick row count
-python -c "import pandas as pd; print(len(pd.read_parquet('$CFB_MODEL_DATA_ROOT/raw/plays/year=2024/week=12/data.parquet')))"
 ```
 
 ### Environment Debugging

@@ -7,24 +7,25 @@
 ## Pipeline Overview
 
 ```
-┌──────────────────────┐   ┌──────────────────────┐   ┌─────────────────────┐
-│  1. Ingest           │ ─►│  2. Generate Bets    │ ─►│  3. Publish to DB   │
-│  (CFBD API → R2)     │   │  (CSV artifact)      │   │  (Postgres upsert)  │
-└──────────────────────┘   └──────────────────────┘   └─────────────────────┘
-                                                                │
-                                                                ▼
-                                                    ┌─────────────────────┐
-                                                    │  4. Vercel App      │
-                                                    │  (reads via ISR)    │
-                                                    └─────────────────────┘
-                                                                │
-                                               After games finish:
-                                                                ▼
-                                                    ┌─────────────────────┐
-                                                    │  5. Score to DB     │
-                                                    │  (results + stats)  │
-                                                    └─────────────────────┘
+┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
+│  1. Preflight        │ ─►│  2. Ingest + Preagg  │ ─►│  3. Generate Picks   │
+│  (env/R2/Neon)       │   │  (CFBD API → R2)     │   │  (local CSV + R2)    │
+└──────────────────────┘   └──────────────────────┘   └──────────────────────┘
+                                                                  │
+                                                                  ▼
+                                                    ┌──────────────────────────┐
+                                                    │  4. Publish R2 → Neon    │
+                                                    │  (derived serving copy)  │
+                                                    └──────────────────────────┘
+                                                                  │
+                                                                  ▼
+                                                    ┌──────────────────────────┐
+                                                    │  5. Vercel App          │
+                                                    │  (reads Neon via ISR)   │
+                                                    └──────────────────────────┘
 ```
+
+**Source-of-truth boundary:** R2 is durable storage for raw data, processed features, and weekly prediction/scored artifacts. Neon is a derived serving database for the web app (`games`, `game_results`, `system_stats`, `current_week`).
 
 ---
 
@@ -40,55 +41,75 @@
    DATABASE_URL=postgres://...?sslmode=require
    CFBD_API_KEY=...
    CFB_STORAGE_BACKEND=r2
+   CFB_R2_BUCKET=...
+   CFB_R2_ACCOUNT_ID=...
+   CFB_R2_ACCESS_KEY=...
+   CFB_R2_SECRET_KEY=...
    ```
 4. **Vercel project** — import the repo at https://vercel.com/new, set:
    - **Root Directory:** `web/`
    - **Build Command:** `npm run build` (auto-detected)
-   - **Environment Variable:** `DATABASE_URL` (same Neon connection string)
+   - **Environment Variable:** `DATABASE_URL` (same Neon connection string; only required web runtime variable)
 
 ---
 
 ## Weekly Workflow
 
-### Step 1: Ingest upcoming-week data
+### Supported path
 
 ```bash
-PYTHONPATH=.:src uv run python scripts/data/ingest_plays.py --year 2026 --week N
-PYTHONPATH=.:src uv run python scripts/pipeline/cache_running_season_stats.py
+# Validate config before a weekly run:
+make preflight YEAR=2026 WEEK=N
+
+# Full weekly cycle:
+make weekly YEAR=2026 WEEK=N
 ```
 
-### Step 2: Generate weekly bets (existing pipeline)
+`make weekly` runs:
+
+1. Preflight checks for R2, Neon schema, artifact paths, and Vercel config assumptions.
+2. `scripts/data/ingest_week.py` for raw week data.
+3. `scripts/pipeline/run_pipeline_generic.py` for raw → processed pre-aggregations.
+4. `scripts/pipeline/generate_weekly_bets.py --upload-artifact` to write a local working CSV and durable R2 artifact.
+5. `scripts/pipeline/publish_to_db.py --from-artifact` to publish the durable R2 artifact into Neon.
+
+### Recovery commands
 
 ```bash
+# Re-run only ingestion:
+make ingest-week YEAR=2026 WEEK=N
+
+# Re-run pre-aggregation:
+PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
+
+# Regenerate predictions and upload the durable artifact:
 PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py \
     --config conf/weekly_bets/v2_champion.yaml \
-    --year 2026 --week N
-```
+    --year 2026 --week N \
+    --upload-artifact
 
-This writes `data/production/predictions/2026/CFB_weekN_bets.csv` — the canonical artifact for both the email publisher and the web app.
-
-### Step 3: Publish to Postgres
-
-```bash
-# Via Make (preferred):
-make db-publish YEAR=2026 WEEK=N
-
-# Or directly:
+# Publish the durable artifact into Neon:
 PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
     --year 2026 --week N \
-    --config conf/weekly_bets/v2_champion.yaml
+    --config conf/weekly_bets/v2_champion.yaml \
+    --from-artifact
 ```
 
-This upserts every game into the `games` table and updates the `current_week` singleton. The Vercel app's ISR cache (5-minute revalidate) will pick up the new week automatically.
+Local `data/production/...` CSVs are working copies for debugging and legacy scripts. The durable prediction artifact path is `artifacts/production/predictions/year=YYYY/CFB_weekN_bets.csv` in R2.
 
-### Step 4: (After games finish) Score results
+### After games finish
 
 ```bash
-# Once the scored CSV is produced by score_weekly_bets.py:
-PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --season 2026 --week N
+# Produce local scored CSV and upload durable scored artifact:
+PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py \
+    --year 2026 --week N \
+    --from-artifact \
+    --upload-artifact
 
-# Then upsert results + refresh YTD system_stats:
-make db-score YEAR=2026 WEEK=N
+# Upsert durable scored artifact into Neon and refresh YTD system_stats:
+PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py \
+    --year 2026 --week N \
+    --from-artifact
 ```
 
 ---
@@ -98,18 +119,17 @@ make db-score YEAR=2026 WEEK=N
 To populate Postgres with 2024 / 2025 history (useful for the YTD banner on day one):
 
 ```bash
-# Predictions (do NOT update current_week singleton):
+# Predictions from durable R2 artifacts (do NOT update current_week singleton):
 for YEAR in 2024 2025; do
-    for CSV in data/production/predictions/$YEAR/CFB_week*_bets.csv; do
-        WEEK=$(echo "$CSV" | grep -oE 'week[0-9]+' | grep -oE '[0-9]+')
+    for WEEK in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
         PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
-            --year $YEAR --week $WEEK --no-update-current
+            --year $YEAR --week $WEEK --from-artifact --no-update-current
     done
 done
 
-# Results + YTD stats:
-make db-score YEAR=2024
-make db-score YEAR=2025
+# Results + YTD stats from durable R2 artifacts:
+PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2024 --backfill-season --from-artifact
+PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2025 --backfill-season --from-artifact
 
 # Finally, set the current week to the latest 2025 week:
 PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
@@ -137,8 +157,8 @@ psql "$DATABASE_URL" -c "SELECT * FROM current_week; SELECT * FROM system_stats;
 |---|---|---|
 | App shows "Database not connected" | `DATABASE_URL` missing in Vercel env | Add it in project settings, redeploy |
 | Page renders but "No active week published" | `current_week` row still at `(0, 0)` | Run `publish_to_db.py` without `--no-update-current` |
-| Logos broken for some teams | Team name in CFBD doesn't match logo filename | Extend `TEAM_LOGO_MAP` in both `scripts/pipeline/publish_picks.py` and `web/src/lib/teams.ts` |
-| YTD record shows 0-0 | `score_to_db.py` hasn't been run for this season | Run `make db-score YEAR=YYYY` |
+| Logos broken for some teams | Team name in CFBD doesn't match logo filename | Extend `TEAM_LOGO_MAP` in `contracts/teams.py` + `contracts/teams.ts`, sync local copies, then run `make contracts-check` |
+| YTD record shows 0-0 | `score_to_db.py` hasn't been run for this season | Run `PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year YYYY --backfill-season --from-artifact` |
 
 ---
 

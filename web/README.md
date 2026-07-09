@@ -7,7 +7,7 @@ Next.js 16 / React 19 / Tailwind CSS v4 app that displays the model's weekly lea
 - **Framework:** Next.js 16 (App Router, TypeScript)
 - **DB:** Neon Postgres serverless, accessed via `@neondatabase/serverless` + Drizzle ORM
 - **Styling:** Tailwind CSS v4
-- **Logos:** Synced from `../Logos/` into `public/logos/` on every `predev` / `prebuild`
+- **Logos:** Synced from `../assets/logos/` into `public/logos/` on every `predev` / `prebuild`
 
 ## Local Development
 
@@ -51,7 +51,7 @@ web/
 │       └── 0001_init.sql    # Schema (apply once to Neon)
 ├── drizzle.config.json
 ├── public/
-│   └── logos/               # Auto-synced from ../Logos/ on build
+│   └── logos/               # Auto-synced from ../assets/logos/ on build
 ├── scripts/
 │   └── sync-logos.mjs       # predev/prebuild hook
 └── src/
@@ -76,8 +76,8 @@ web/
 
 1. Push the repo to GitHub.
 2. Import the project at https://vercel.com/new.
-3. **Set Root Directory to `web/`** (Vercel will detect Next.js automatically).
-4. Add `DATABASE_URL` to Environment Variables (Vercel → Project → Settings → Environment Variables).
+3. **Set Root Directory to `web/`**. Do not deploy from the repository root.
+4. Add `DATABASE_URL` to Environment Variables (Vercel → Project → Settings → Environment Variables). This is the only required web-app runtime variable.
 5. Deploy. Subsequent `git push` to `main` auto-deploys.
 
 The home page is ISR-cached with a 5-minute revalidation window, so new predictions published by the Python pipeline appear within ~5 minutes on the live site.

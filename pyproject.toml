@@ -56,7 +56,13 @@ dev = [
 
 [tool.ruff]
 line-length = 88
-extend-exclude = ["*.ipynb", "**/*.ipynb", "research/**", "archive/**"]
+extend-exclude = [
+    "*.ipynb",
+    "**/*.ipynb",
+    "research/**",
+    "archive/**",
+    "scripts/archive/**",
+]
 force-exclude = true
 
 [tool.ruff.lint]
@@ -88,6 +94,7 @@ pythonpath = [
 norecursedirs = [
   "research",
   "archive",
+  "scripts/archive",
   "web",
   "artifacts",
   "contracts",

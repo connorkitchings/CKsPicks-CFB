@@ -2,7 +2,8 @@
 """
 Backfill game results from scored CSVs into Postgres and refresh system_stats.
 
-Reads:  data/production/scored/{year}/CFB_week{N}_bets_scored.csv
+Reads:  local data/production scored working CSVs by default, or durable
+        artifacts/production/scored/... when --from-artifact is used.
 Writes: game_results table (upsert), system_stats table (recompute from results)
 
 Usage:
@@ -26,6 +27,14 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
+
+from cks_picks_cfb.artifacts import (
+    local_scored_path,
+    read_csv_artifact,
+    scored_artifact_path,
+    scored_artifact_prefix,
+)
+from cks_picks_cfb.data.storage import get_storage
 
 try:
     import psycopg
@@ -53,7 +62,15 @@ def _normalize_result(val) -> str | None:
 def load_scored(csv_path: Path) -> pd.DataFrame:
     if not csv_path.exists():
         raise FileNotFoundError(f"Scored CSV not found: {csv_path}")
-    df = pd.read_csv(csv_path)
+    return prepare_scored(pd.read_csv(csv_path))
+
+
+def load_scored_artifact(artifact_path: str) -> pd.DataFrame:
+    return prepare_scored(read_csv_artifact(artifact_path))
+
+
+def prepare_scored(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize a scored bets dataframe for DB upsert."""
 
     for col in ["game_id", "home_points", "away_points"]:
         if col in df.columns:
@@ -200,6 +217,17 @@ def _find_scored_csvs(season: int) -> list[tuple[int, Path]]:
     return out
 
 
+def _find_scored_artifacts(season: int) -> list[tuple[int, str]]:
+    storage = get_storage()
+    prefix = scored_artifact_prefix(season)
+    out: list[tuple[int, str]] = []
+    for path in sorted(storage.list_files(prefix)):
+        m = WEEK_RE.search(Path(path).name)
+        if m:
+            out.append((int(m.group(1)), path))
+    return out
+
+
 def main() -> None:
     load_dotenv()
 
@@ -220,30 +248,56 @@ def main() -> None:
         action="store_true",
         help="Skip game_results upsert; just recompute system_stats",
     )
+    parser.add_argument(
+        "--from-artifact",
+        action="store_true",
+        help="Read scored CSVs from durable storage instead of local working copies.",
+    )
+    parser.add_argument(
+        "--artifact-path",
+        type=str,
+        default=None,
+        help="Durable storage path to scored CSV. Defaults to artifacts/production/scored/year={year}/CFB_week{week}_bets_scored.csv for --week.",
+    )
     args = parser.parse_args()
 
     conn_url = os.environ.get("DATABASE_URL")
     if not conn_url:
         raise SystemExit("DATABASE_URL not set. Add it to .env.")
 
+    use_artifact = args.from_artifact or args.artifact_path is not None
+
     if args.backfill_season:
-        targets = _find_scored_csvs(args.year)
+        targets = (
+            _find_scored_artifacts(args.year)
+            if use_artifact
+            else _find_scored_csvs(args.year)
+        )
         if not targets:
             print(f"No scored CSVs found for {args.year}")
             return
         print(f"Backfilling {len(targets)} weeks for {args.year}")
-        for week, csv_path in targets:
-            df = load_scored(csv_path)
+        for week, source_path in targets:
+            df = (
+                load_scored_artifact(source_path)
+                if use_artifact
+                else load_scored(source_path)
+            )
             n = upsert_results(df, conn_url) if not args.refresh_stats_only else 0
-            print(f"  week {week}: {n} results upserted from {csv_path.name}")
+            source_name = Path(source_path).name
+            print(f"  week {week}: {n} results upserted from {source_name}")
     elif args.week:
-        csv_path = Path(
-            f"data/production/scored/{args.year}/CFB_week{args.week}_bets_scored.csv"
-        )
+        csv_path = local_scored_path(args.year, args.week)
+        artifact_path = args.artifact_path or scored_artifact_path(args.year, args.week)
         if not args.refresh_stats_only:
-            df = load_scored(csv_path)
+            df = (
+                load_scored_artifact(artifact_path)
+                if use_artifact
+                else load_scored(csv_path)
+            )
             n = upsert_results(df, conn_url)
-            print(f"Upserted {n} results from {csv_path.name}")
+            source_name = Path(artifact_path if use_artifact else csv_path).name
+            print(f"Upserted {n} results from {source_name}")
         else:
             print("--refresh-stats-only: skipping game_results")
     else:

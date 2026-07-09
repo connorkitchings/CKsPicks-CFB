@@ -3,7 +3,15 @@
 import pandas as pd
 import pytest
 
-from cks_picks_cfb.data.storage import LocalStorage, R2Storage, S3Storage, get_storage
+from cks_picks_cfb.data.base import BaseIngester
+from cks_picks_cfb.data.storage import (
+    LocalStorage,
+    R2Storage,
+    S3Storage,
+    StorageError,
+    get_storage,
+)
+from cks_picks_cfb.utils.local_storage import LocalStorage as LegacyLocalStorage
 
 
 class TestLocalStorage:
@@ -108,6 +116,49 @@ class TestGetStorage:
 
         storage = get_storage()
         assert isinstance(storage, LocalStorage)
+
+
+class TestBaseIngesterStorage:
+    """Test BaseIngester storage initialization guardrails."""
+
+    class DummyIngester(BaseIngester):
+        @property
+        def entity_name(self) -> str:
+            return "raw/dummy"
+
+        def fetch_data(self):
+            return []
+
+        def transform_data(self, data):
+            return []
+
+    def test_local_backend_requires_data_root(self, monkeypatch):
+        monkeypatch.setenv("CFBD_API_KEY", "test-key")
+        monkeypatch.setenv("CFB_STORAGE_BACKEND", "local")
+        monkeypatch.delenv("CFB_MODEL_DATA_ROOT", raising=False)
+        monkeypatch.delenv("CFB_DATA_ROOT", raising=False)
+
+        with pytest.raises(ValueError, match="CFB_MODEL_DATA_ROOT must be set"):
+            self.DummyIngester(year=2026)
+
+    def test_local_backend_uses_explicit_data_root(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("CFBD_API_KEY", "test-key")
+        monkeypatch.setenv("CFB_STORAGE_BACKEND", "local")
+        monkeypatch.delenv("CFB_MODEL_DATA_ROOT", raising=False)
+
+        ingester = self.DummyIngester(year=2026, data_root=str(tmp_path))
+        assert isinstance(ingester.storage, LocalStorage)
+        assert ingester.storage.root_path == tmp_path
+
+
+class TestLegacyLocalStorage:
+    """Test backward-compatible LocalStorage shim guardrails."""
+
+    def test_missing_data_root_fails_loudly(self, monkeypatch):
+        monkeypatch.delenv("CFB_MODEL_DATA_ROOT", raising=False)
+
+        with pytest.raises(StorageError, match="CFB_MODEL_DATA_ROOT must be set"):
+            LegacyLocalStorage()
 
 
 # R2/S3 tests would require mocking boto3 or integration tests with actual cloud resources

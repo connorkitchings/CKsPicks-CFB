@@ -29,13 +29,15 @@ class LocalStorage(_storage_mod.LocalStorage):
         file_format: Literal["parquet", "csv"] = "parquet",
         data_type: Literal["raw", "interim", "processed"] = "raw",
     ) -> None:
-        base_root = (
-            Path(data_root)
-            if data_root is not None
-            else Path(os.getenv("CFB_MODEL_DATA_ROOT"))
-            if os.getenv("CFB_MODEL_DATA_ROOT")
-            else (Path.cwd() / "data")
-        )
+        env_root = os.getenv("CFB_MODEL_DATA_ROOT")
+        if data_root is None and not env_root:
+            from cks_picks_cfb.data.storage import StorageError
+
+            raise StorageError(
+                "CFB_MODEL_DATA_ROOT must be set for local storage backend. "
+                "Set CFB_STORAGE_BACKEND=r2 for the 2026 MVP cloud path."
+            )
+        base_root = Path(data_root) if data_root is not None else Path(env_root)
         # Old LocalStorage appended data_type to root (e.g., /data/raw, /data/processed).
         # Preserve this behavior for backward compat with existing callers.
         root_path = Path(base_root) / data_type

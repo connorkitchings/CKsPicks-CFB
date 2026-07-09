@@ -85,33 +85,17 @@ src/
 
 ```
 scripts/
-├── pipeline/                    # Production pipeline
-│   ├── train_production_points_for.py
+├── pipeline/                    # Supported weekly production path
+│   ├── preflight.py
+│   ├── run_pipeline_generic.py
 │   ├── generate_weekly_bets.py
+│   ├── publish_to_db.py
 │   ├── score_weekly_bets.py
-│   └── cache_running_season_stats.py
+│   └── score_to_db.py
 │
-├── analysis/                    # Analysis tools
-│   ├── compare_models.py
-│   ├── run_shap_analysis.py
-│   ├── analyze_calibration.py
-│   └── generate_performance_report.py
-│
-├── experiments/                 # Research scripts
-│   ├── optimize_hyperparameters.py
-│   ├── run_points_for_experiment.py
-│   └── run_feature_selection.py
-│
-├── debug/                       # Debugging utilities
-│   ├── debug_features.py
-│   ├── inspect_model.py
-│   ├── list_models.py
-│   └── check_data_columns.py
-│
-└── data/                        # Data management
-    ├── ingest_plays.py
-    ├── ingest_season.py
-    └── regenerate_features.py
+└── data/                        # Supported CFBD ingestion CLIs
+    ├── ingest_week.py
+    └── ingest_season.py
 ```
 
 ---
@@ -228,10 +212,10 @@ artifacts/
 
 ---
 
-## Data (External Drive/Cloud)
+## Data and Artifacts (R2 by default; local backend for development)
 
 ```
-$CFB_MODEL_DATA_ROOT/
+Configured storage backend root (R2 bucket or $CFB_MODEL_DATA_ROOT)
 ├── raw/                        # Raw API responses
 │   ├── plays/
 │   │   └── year=YYYY/
@@ -252,8 +236,13 @@ $CFB_MODEL_DATA_ROOT/
 │   ├── adj_iter_4/
 │   └── weekly_features/
 │
-└── models/                     # Production models
-    └── home_points_catboost_v1.joblib
+├── models/                     # Production models
+│   └── home_points_catboost_v1.joblib
+│
+└── artifacts/                  # Durable weekly artifacts
+    └── production/
+        ├── predictions/year=YYYY/CFB_weekWW_bets.csv
+        └── scored/year=YYYY/CFB_weekWW_bets_scored.csv
 ```
 
 ---

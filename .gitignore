@@ -215,9 +215,8 @@ __marimo__/
 .gemini/
 gha-creds-*.json
 
-# Local data directory (actual data is on external drive)
+# Local data directory (working copies only; durable data/artifacts live in R2)
 /data/
-!/data/production/
 
 # Generated project outputs
 catboost_info/

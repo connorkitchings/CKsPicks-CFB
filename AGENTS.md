@@ -133,7 +133,7 @@ This is a **monorepo with two toolchains**:
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
 | Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `contracts/schema.sql` once |
 
-**Data flow:** Python pipeline writes CSV (`data/production/predictions/{year}/CFB_week{N}_bets.csv`) → `scripts/pipeline/publish_to_db.py` upserts to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate).
+**Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
 
 **Conventions:**
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.

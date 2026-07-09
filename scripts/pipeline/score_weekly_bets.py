@@ -8,6 +8,14 @@ import pandas as pd
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
+from cks_picks_cfb.artifacts import (
+    local_prediction_path,
+    local_scored_path,
+    prediction_artifact_path,
+    read_csv_artifact,
+    scored_artifact_path,
+    write_csv_artifact,
+)
 from cks_picks_cfb.config import get_data_root
 from cks_picks_cfb.utils.local_storage import LocalStorage
 
@@ -135,6 +143,34 @@ def main():
     parser = argparse.ArgumentParser(description="Score Weekly Bets")
     parser.add_argument("--year", type=int, required=True, help="Season year")
     parser.add_argument("--week", type=int, required=True, help="Week number")
+    parser.add_argument(
+        "--predictions-csv",
+        type=Path,
+        default=None,
+        help="Working-copy predictions CSV path. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
+    )
+    parser.add_argument(
+        "--from-artifact",
+        action="store_true",
+        help="Read predictions from durable storage instead of local working-copy CSV.",
+    )
+    parser.add_argument(
+        "--prediction-artifact-path",
+        type=str,
+        default=None,
+        help="Durable storage path to predictions CSV. Defaults to artifacts/production/predictions/year={year}/CFB_week{week}_bets.csv.",
+    )
+    parser.add_argument(
+        "--output-csv",
+        type=Path,
+        default=None,
+        help="Working-copy scored CSV path. Defaults to data/production/scored/{year}/CFB_week{week}_bets_scored.csv",
+    )
+    parser.add_argument(
+        "--upload-artifact",
+        action="store_true",
+        help="Also write the scored CSV to durable storage (R2/S3/local backend).",
+    )
     args = parser.parse_args()
 
     year = args.year
@@ -143,14 +179,19 @@ def main():
     print(f"Scoring bets for {year} Week {week}...")
 
     # Load Bets
-    bets_dir = Path(f"data/production/predictions/{year}")
-    bets_path = bets_dir / f"CFB_week{week}_bets.csv"
+    bets_path = args.predictions_csv or local_prediction_path(year, week)
+    artifact_path = args.prediction_artifact_path or prediction_artifact_path(
+        year, week
+    )
 
-    if not bets_path.exists():
-        print(f"No bets file found at {bets_path}")
-        return
-
-    bets_df = pd.read_csv(bets_path)
+    if args.from_artifact or args.prediction_artifact_path:
+        bets_df = read_csv_artifact(artifact_path)
+        print(f"Loaded predictions from durable artifact {artifact_path}")
+    else:
+        if not bets_path.exists():
+            print(f"No bets file found at {bets_path}")
+            return
+        bets_df = pd.read_csv(bets_path)
 
     # Load Scores
     scores_df = load_week_scores(year, week)
@@ -162,12 +203,17 @@ def main():
     scored_df = score_bets(bets_df, scores_df)
 
     # Save
-    output_dir = Path(f"data/production/scored/{year}")
+    output_path = args.output_csv or local_scored_path(year, week)
+    output_dir = output_path.parent
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"CFB_week{week}_bets_scored.csv"
 
     scored_df.to_csv(output_path, index=False)
     print(f"Saved scored bets to {output_path}")
+
+    if args.upload_artifact:
+        scored_path = scored_artifact_path(year, week)
+        write_csv_artifact(scored_df, scored_path)
+        print(f"Uploaded durable scored artifact to {scored_path}")
 
 
 if __name__ == "__main__":

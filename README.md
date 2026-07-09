@@ -77,9 +77,18 @@ For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeli
    # Required: CollegeFootballData.com API key
    CFBD_API_KEY=your_api_key_here
 
-   # Required: Data storage location
-   CFB_MODEL_DATA_ROOT=/path/to/your/data/directory
-   # Note: Currently external drive, migrating to cloud storage in Phase 2
+   # Required for the 2026 MVP cloud path
+   CFB_STORAGE_BACKEND=r2
+   CFB_R2_BUCKET=your_bucket
+   CFB_R2_ACCOUNT_ID=your_account_id
+   CFB_R2_ACCESS_KEY=your_access_key
+   CFB_R2_SECRET_KEY=your_secret_key
+
+   # Required for local-only development when CFB_STORAGE_BACKEND=local
+   CFB_MODEL_DATA_ROOT=/absolute/path/to/local/data
+
+   # Required for publishing to the web app
+   DATABASE_URL=postgres://...?sslmode=require
    ```
 
 5. **Run health checks:**
@@ -109,16 +118,20 @@ CKsPicks-CFB/
 │   ├── models/            # ML models
 │   └── utils/             # Utilities
 ├── scripts/
+│   ├── data/                           # CFBD → R2/local ingestion CLIs
 │   └── pipeline/
+│       ├── preflight.py                # Weekly env/storage/DB checks
 │       ├── generate_weekly_bets.py    # Predictions → CSV
 │       ├── publish_to_db.py           # CSV → Neon Postgres
 │       ├── score_to_db.py             # Results → Postgres + stats
 │       └── publish_picks.py           # Email publisher (legacy channel)
+├── assets/
+│   └── logos/                # Team logos (synced into web/ at build)
+├── contracts/                # Canonical DB schema + team mappings
 ├── conf/                  # Hydra configuration
 ├── docs/                  # Documentation
 ├── tests/                 # Python unit tests
 ├── web/                   # Next.js app (Vercel deploy target)
-├── Logos/                 # Team logos (synced into web/ at build)
 └── session_logs/          # Development logs
 ```
 
@@ -140,8 +153,11 @@ make format && make lint
 # Train
 PYTHONPATH=. uv run python -m cks_picks_cfb.train
 
-# Generate predictions then publish to Postgres
-make db-publish YEAR=2026 WEEK=1
+# Validate the weekly operating path
+make preflight YEAR=2026 WEEK=1
+
+# Full weekly cycle: ingest → preaggregate → predict → R2 artifact → Neon
+make weekly YEAR=2026 WEEK=1
 ```
 
 ### Web app
@@ -151,6 +167,8 @@ make web-dev                    # cd web && npm run dev
 make web-build                  # cd web && npm run build (also syncs logos)
 make web-typecheck
 ```
+
+Operational model: R2 is the durable source of truth for raw data, processed features, and weekly prediction/scored artifacts. Neon Postgres is a derived serving database for the Vercel app.
 
 ### MLflow Tracking
 

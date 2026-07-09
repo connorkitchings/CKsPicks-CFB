@@ -10,34 +10,43 @@ ROOT = CONTRACTS_DIR.parent
 
 
 def extract_python_map_keys(filepath: Path) -> set[str]:
-    content = filepath.read_text()
-    match = re.search(r"TEAM_LOGO_MAP\s*=\s*\{([^}]+)\}", content, re.DOTALL)
-    if not match:
-        return set()
-    keys = re.findall(r'"([^"]+)"\s*:', match.group(1))
-    return set(keys)
+    return set(extract_python_map(filepath))
 
 
 def extract_ts_map_keys(filepath: Path) -> set[str]:
+    return set(extract_ts_map(filepath))
+
+
+def extract_python_map(filepath: Path) -> dict[str, str]:
+    content = filepath.read_text()
+    match = re.search(r"TEAM_LOGO_MAP\s*=\s*\{([^}]+)\}", content, re.DOTALL)
+    if not match:
+        return {}
+    return dict(re.findall(r'"([^"]+)"\s*:\s*"([^"]+)"', match.group(1)))
+
+
+def extract_ts_map(filepath: Path) -> dict[str, str]:
     content = filepath.read_text()
     match = re.search(r"TEAM_LOGO_MAP[^{]*\{([^}]+)\}", content, re.DOTALL)
     if not match:
-        return set()
-    keys = re.findall(r'"([^"]+)"\s*:', match.group(1))
-    unquoted = re.findall(r'(?<!["\w])(\w+)\s*:', match.group(1))
-    return set(keys) | set(unquoted)
+        return {}
+    quoted = dict(re.findall(r'"([^"]+)"\s*:\s*"([^"]+)"', match.group(1)))
+    unquoted = dict(re.findall(r'(?<!["\w])(\w+)\s*:\s*"([^"]+)"', match.group(1)))
+    return quoted | unquoted
 
 
 def check_teams_sync() -> list[str]:
     errors = []
-    canonical_py = extract_python_map_keys(CONTRACTS_DIR / "teams.py")
-    canonical_ts = extract_ts_map_keys(CONTRACTS_DIR / "teams.ts")
+    canonical_py = extract_python_map(CONTRACTS_DIR / "teams.py")
+    canonical_ts = extract_ts_map(CONTRACTS_DIR / "teams.ts")
 
     if canonical_py != canonical_ts:
         errors.append(
-            f"contracts/teams.py keys != contracts/teams.ts keys\n"
-            f"  Python only: {canonical_py - canonical_ts}\n"
-            f"  TS only: {canonical_ts - canonical_py}"
+            f"contracts/teams.py != contracts/teams.ts\n"
+            f"  Python only: {set(canonical_py) - set(canonical_ts)}\n"
+            f"  TS only: {set(canonical_ts) - set(canonical_py)}\n"
+            f"  Value mismatches: "
+            f"{ {k for k in canonical_py.keys() & canonical_ts.keys() if canonical_py[k] != canonical_ts[k]} }"
         )
 
     for script in [
@@ -47,22 +56,26 @@ def check_teams_sync() -> list[str]:
     ]:
         path = ROOT / script
         if path.exists():
-            script_keys = extract_python_map_keys(path)
-            if script_keys and script_keys != canonical_py:
+            script_map = extract_python_map(path)
+            if script_map and script_map != canonical_py:
                 errors.append(
                     f"{script} TEAM_LOGO_MAP out of sync with contracts/teams.py\n"
-                    f"  Script only: {script_keys - canonical_py}\n"
-                    f"  Missing: {canonical_py - script_keys}"
+                    f"  Script only: {set(script_map) - set(canonical_py)}\n"
+                    f"  Missing: {set(canonical_py) - set(script_map)}\n"
+                    f"  Value mismatches: "
+                    f"{ {k for k in script_map.keys() & canonical_py.keys() if script_map[k] != canonical_py[k]} }"
                 )
 
     web_teams = ROOT / "web" / "src" / "lib" / "teams.ts"
     if web_teams.exists():
-        web_keys = extract_ts_map_keys(web_teams)
-        if web_keys and web_keys != canonical_ts:
+        web_map = extract_ts_map(web_teams)
+        if web_map and web_map != canonical_ts:
             errors.append(
                 f"web/src/lib/teams.ts out of sync with contracts/teams.ts\n"
-                f"  Web only: {web_keys - canonical_ts}\n"
-                f"  Missing: {canonical_ts - web_keys}"
+                f"  Web only: {set(web_map) - set(canonical_ts)}\n"
+                f"  Missing: {set(canonical_ts) - set(web_map)}\n"
+                f"  Value mismatches: "
+                f"{ {k for k in web_map.keys() & canonical_ts.keys() if web_map[k] != canonical_ts[k]} }"
             )
 
     return errors

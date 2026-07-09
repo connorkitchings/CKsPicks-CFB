@@ -11,6 +11,11 @@ from omegaconf import OmegaConf
 # Add project root to path
 sys.path.append(os.getcwd())
 # noqa: E402
+from cks_picks_cfb.artifacts import (
+    local_prediction_path,
+    prediction_artifact_path,
+    write_csv_artifact,
+)
 from cks_picks_cfb.features.selector import select_features
 from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
@@ -31,6 +36,17 @@ def main():
     )
     parser.add_argument("--year", type=int, help="Override year from config")
     parser.add_argument("--week", type=int, help="Override week from config")
+    parser.add_argument(
+        "--output-csv",
+        type=Path,
+        default=None,
+        help="Working-copy CSV path. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
+    )
+    parser.add_argument(
+        "--upload-artifact",
+        action="store_true",
+        help="Also write the predictions CSV to durable storage (R2/S3/local backend).",
+    )
     args = parser.parse_args()
 
     # Load Config
@@ -355,11 +371,16 @@ def main():
         bets_df["predicted_spread_std_dev"] = np.nan
         bets_df["predicted_total_std_dev"] = np.nan
 
-        output_dir = Path(f"data/production/predictions/{year}")
+        output_path = args.output_csv or local_prediction_path(year, week)
+        output_dir = output_path.parent
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"CFB_week{week}_bets.csv"
         bets_df.to_csv(output_path, index=False)
         print(f"Saved bets to {output_path}")
+
+        if args.upload_artifact:
+            artifact_path = prediction_artifact_path(year, week)
+            write_csv_artifact(bets_df, artifact_path)
+            print(f"Uploaded durable predictions artifact to {artifact_path}")
 
     except Exception as e:
         print(f"Error processing week {week}: {e}")

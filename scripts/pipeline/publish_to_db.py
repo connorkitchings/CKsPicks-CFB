@@ -3,7 +3,8 @@
 Publish weekly predictions from CSV into the Neon Postgres database
 that powers the Vercel web app.
 
-Reads:  data/production/predictions/{year}/CFB_week{N}_bets.csv
+Reads:  local data/production working CSV by default, or durable
+        artifacts/production/predictions/... when --from-artifact is used.
 Writes: games table (upsert), current_week table (singleton update)
 
 Requires DATABASE_URL environment variable (Neon connection string).
@@ -24,6 +25,12 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
+
+from cks_picks_cfb.artifacts import (
+    local_prediction_path,
+    prediction_artifact_path,
+    read_csv_artifact,
+)
 
 try:
     import psycopg
@@ -97,13 +104,8 @@ def _derive_total_lean(row: pd.Series) -> tuple[str | None, float | None]:
     return lean, edge
 
 
-def load_predictions(csv_path: Path) -> pd.DataFrame:
-    """Load the weekly predictions CSV and add derived columns."""
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Predictions CSV not found: {csv_path}")
-
-    df = pd.read_csv(csv_path)
-
+def prepare_predictions(df: pd.DataFrame) -> pd.DataFrame:
+    """Add canonical derived columns to a predictions dataframe."""
     # Coerce numeric columns
     for col in [
         "home_team_spread_line",
@@ -139,6 +141,19 @@ def load_predictions(csv_path: Path) -> pd.DataFrame:
     df = pd.concat([df, total_lean_edge], axis=1)
 
     return df
+
+
+def load_predictions(csv_path: Path) -> pd.DataFrame:
+    """Load the weekly predictions CSV and add derived columns."""
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Predictions CSV not found: {csv_path}")
+
+    return prepare_predictions(pd.read_csv(csv_path))
+
+
+def load_predictions_artifact(artifact_path: str) -> pd.DataFrame:
+    """Load predictions from durable storage and add derived columns."""
+    return prepare_predictions(read_csv_artifact(artifact_path))
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +344,17 @@ def main() -> None:
         help="Override path to predictions CSV. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
     )
     parser.add_argument(
+        "--from-artifact",
+        action="store_true",
+        help="Read predictions from durable storage instead of local working-copy CSV.",
+    )
+    parser.add_argument(
+        "--artifact-path",
+        type=str,
+        default=None,
+        help="Durable storage path to predictions CSV. Defaults to artifacts/production/predictions/year={year}/CFB_week{week}_bets.csv when --from-artifact is used.",
+    )
+    parser.add_argument(
         "--config",
         type=Path,
         default=Path("conf/weekly_bets/v2_champion.yaml"),
@@ -347,21 +373,24 @@ def main() -> None:
             "DATABASE_URL not set. Add it to .env (see web/.env.example for format)."
         )
 
-    csv_path = args.csv or Path(
-        f"data/production/predictions/{args.year}/CFB_week{args.week}_bets.csv"
-    )
+    csv_path = args.csv or local_prediction_path(args.year, args.week)
+    artifact_path = args.artifact_path or prediction_artifact_path(args.year, args.week)
 
     source_config, system_name, model_id, high_conf_threshold = _load_provenance(
         args.config
     )
 
-    print(f"Publishing {args.year} week {args.week} from {csv_path}")
+    source = artifact_path if args.from_artifact or args.artifact_path else csv_path
+    print(f"Publishing {args.year} week {args.week} from {source}")
     print(f"  source_config       = {source_config}")
     print(f"  system_name         = {system_name}")
     print(f"  model_id            = {model_id}")
     print(f"  high_conf_threshold = {high_conf_threshold} pts")
 
-    df = load_predictions(csv_path)
+    if args.from_artifact or args.artifact_path:
+        df = load_predictions_artifact(artifact_path)
+    else:
+        df = load_predictions(csv_path)
     print(f"  loaded {len(df)} rows from CSV")
 
     count = publish_week(

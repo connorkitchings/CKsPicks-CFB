@@ -36,7 +36,7 @@ PROCESSED_DATA_DIR = DATA_ROOT / "processed"
 REPO_ROOT = get_repo_root()
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 MODELS_DIR = ARTIFACTS_DIR / "models"
-LOGOS_DIR = REPO_ROOT / "Logos"
+LOGOS_DIR = REPO_ROOT / "assets" / "logos"
 REPORTS_DIR = ARTIFACTS_DIR / "reports"
 OUTPUTS_DIR = ARTIFACTS_DIR / "outputs"
 

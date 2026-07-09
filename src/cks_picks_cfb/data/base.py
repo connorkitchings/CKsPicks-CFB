@@ -3,7 +3,6 @@
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -67,11 +66,12 @@ class BaseIngester(ABC):
             else:
                 from cks_picks_cfb.data.storage import LocalStorage as DataLocalStorage
 
-                root = (
-                    data_root
-                    or os.getenv("CFB_MODEL_DATA_ROOT")
-                    or str(Path.cwd() / "data")
-                )
+                root = data_root or os.getenv("CFB_MODEL_DATA_ROOT")
+                if not root:
+                    raise ValueError(
+                        "CFB_MODEL_DATA_ROOT must be set for local storage backend. "
+                        "Set CFB_STORAGE_BACKEND=r2 for the 2026 MVP cloud path."
+                    )
                 self.storage = DataLocalStorage(root)
 
         # Timezone for normalization (US/Eastern)

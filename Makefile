@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week weekly
+.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week preflight weekly
 
 # Default target
 help:
@@ -23,6 +23,7 @@ help:
 	@echo "Data ingestion (requires CFB_STORAGE_BACKEND + CFBD_API_KEY in .env):"
 	@echo "  make ingest-season YEAR=2026  - Ingest teams+venues+games for a season"
 	@echo "  make ingest-week YEAR=2026 WEEK=1  - Ingest plays+betting_lines for a week"
+	@echo "  make preflight YEAR=2026 WEEK=1  - Validate R2, Neon, artifact paths, deploy config"
 	@echo "  make weekly YEAR=2026 WEEK=1  - Full weekly cycle (ingest → preagg → predict → publish)"
 	@echo ""
 	@echo "Database (requires DATABASE_URL):"
@@ -108,23 +109,33 @@ ingest-week:
 # Full weekly cycle (ingest → preagg → predict → publish)
 # ---------------------------------------------------------------------------
 
+preflight:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
+		echo "Usage: make preflight YEAR=2026 WEEK=1"; exit 1; \
+	fi
+	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
+
 weekly:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
 		echo "Usage: make weekly YEAR=2026 WEEK=1"; exit 1; \
 	fi
 	@echo "🔄 Starting weekly cycle for $(YEAR) week $(WEEK)..."
 	@echo ""
-	@echo "Step 1/4: Ingesting raw data..."
+	@echo "Step 1/5: Preflight checks..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
+	@echo ""
+	@echo "Step 2/5: Ingesting raw data..."
 	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK)
 	@echo ""
-	@echo "Step 2/4: Running pre-aggregation (raw → processed/team_game)..."
+	@echo "Step 3/5: Running pre-aggregation (raw → processed/team_game)..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
 	@echo ""
-	@echo "Step 3/4: Generating predictions..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year $(YEAR) --week $(WEEK)
+	@echo "Step 4/5: Generating predictions and uploading durable artifact..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year $(YEAR) --week $(WEEK) --upload-artifact
 	@echo ""
-	@echo "Step 4/4: Publishing to Neon..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK)
+	@echo "Step 5/5: Publishing durable artifact to Neon..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
 	@echo ""
 	@echo "✅ Weekly cycle complete! Vercel ISR will refresh within 5 minutes."
 
