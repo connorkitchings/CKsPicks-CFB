@@ -39,8 +39,6 @@ from cks_picks_cfb.features.persist import (
     persist_preaggregations,
 )
 from cks_picks_cfb.utils.local_storage import LocalStorage
-from scripts.analysis import analysis_cli
-from scripts.pipeline import training_cli
 
 
 @dataclass(frozen=True)
@@ -166,8 +164,6 @@ def run_ingester(task: IngestionTask, **kwargs) -> None:
 
 
 app = typer.Typer(help="CFB Model CLI for data ingestion and processing.")
-app.add_typer(analysis_cli.app, name="analysis")
-app.add_typer(training_cli.app, name="training")
 
 
 @app.command()

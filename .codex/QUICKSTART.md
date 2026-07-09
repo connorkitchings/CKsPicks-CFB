@@ -118,26 +118,26 @@ pre-commit autoupdate
 
 ```bash
 # Train with default config
-PYTHONPATH=. uv run python src/models/train_model.py
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 
 # Train with specific model
-PYTHONPATH=. uv run python src/models/train_model.py model=catboost
+PYTHONPATH=src uv run python -m cks_picks_cfb.train model=catboost
 
 # Train with specific feature set
-PYTHONPATH=. uv run python src/models/train_model.py features=recency_v1
+PYTHONPATH=src uv run python -m cks_picks_cfb.train features=recency_v1
 
 # Train on different test year
-PYTHONPATH=. uv run python src/models/train_model.py data.test_year=2025
+PYTHONPATH=src uv run python -m cks_picks_cfb.train data.test_year=2025
 ```
 
 ### Experiment Configs
 
 ```bash
 # Run pre-configured experiment
-PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=spread_catboost_baseline_v1
 
 # Override experiment parameters
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     experiment=spread_catboost_baseline_v1 \
     data.test_year=2025
 ```
@@ -146,16 +146,16 @@ PYTHONPATH=. uv run python src/models/train_model.py \
 
 ```bash
 # Run Optuna optimization
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
 
 # Optimize specific model
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     model=catboost \
     tuning=catboost_optuna
 
 # Optimize with custom trials
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     optuna.n_trials=100
 ```
@@ -164,13 +164,13 @@ PYTHONPATH=. uv run python src/models/train_model.py \
 
 ```bash
 # See composed config (before running)
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job
 
 # See config with interpolations resolved
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 # Validate config only (no training)
-PYTHONPATH=. uv run python src/models/train_model.py --help
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --help
 ```
 
 ---
@@ -351,7 +351,7 @@ git branch -d feature/your-feature-name
 
 ```bash
 # Stage specific files
-git add src/models/train_model.py tests/test_models.py
+git add src/cks_picks_cfb/train.py tests/test_models.py
 
 # Stage all changes
 git add -A
@@ -390,7 +390,7 @@ git push --force-with-lease origin feature/your-feature-name
 
 ```bash
 # Run script with debugger
-python -m pdb src/models/train_model.py
+PYTHONPATH=src python -m pdb -m cks_picks_cfb.train
 
 # Run pytest with debugger (drops into pdb on failure)
 uv run pytest --pdb
@@ -610,7 +610,7 @@ uv run pytest -q
 
 ```bash
 # Train model and generate predictions
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     experiment=spread_catboost_baseline_v1 && \
 PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py
 ```

@@ -47,36 +47,47 @@ cfb_model/
 
 ```
 src/
-├── __init__.py
-├── config.py                    # Path configuration and constants
-│
-├── data/                        # Data ingestion
-│   ├── ingest_api.py           # Core API client
-│   ├── plays.py                # Play-by-play data
-│   ├── games.py                # Game results
-│   ├── teams.py                # Team metadata
-│   └── betting_lines.py        # Market lines
-│
-├── features/                    # Feature engineering
-│   ├── pipeline.py             # Main aggregation pipeline
-│   ├── core.py                 # Core aggregation functions
-│   ├── byplay.py               # Play-level transformations
-│   ├── weather.py              # Weather integration
-│   ├── selector.py             # Feature selection
-│   └── persist.py              # Caching layer
-│
-├── models/                      # ML models
-│   ├── train_model.py          # Main training script (Hydra)
-│   ├── features.py             # Feature loading
-│   ├── betting.py              # Bet generation
-│   ├── calibration.py          # Model calibration
-│   └── ensemble.py             # Ensemble management
-│
-└── utils/                       # Utilities
-    ├── __init__.py             # Package init
-    ├── logging.py              # Structured logging
-    ├── validation.py           # Data validation
-    └── local_storage.py        # Storage abstraction
+├── __init__.py                  # Root package init
+└── cks_picks_cfb/               # Main package directory
+    ├── __init__.py
+    ├── artifacts.py             # Durable/local prediction and score path constants
+    ├── loader.py                # Dataset loaders
+    ├── scoring.py               # Betting performance scoring core
+    ├── train.py                 # Main training script (Hydra + MLflow)
+    │
+    ├── config/                  # Configuration helpers
+    │   ├── __init__.py          # Path helpers and constants
+    │   ├── champion.py          # Champion model metadata
+    │   └── experiments.py       # Experiment logging configs
+    │
+    ├── data/                    # Storage and Ingestion core
+    │   ├── __init__.py
+    │   ├── base.py              # Base class for ingesters
+    │   ├── storage.py           # Local/R2/S3 storage abstraction layer
+    │   ├── games.py             # Games API ingester
+    │   ├── plays.py             # Play-by-play API ingester
+    │   └── ...                  # Teams, Venues, Rosters, Coaches, Lines ingesters
+    │
+    ├── features/                # Feature engineering pipelines
+    │   ├── __init__.py
+    │   ├── core.py              # Raw stats aggregation functions
+    │   ├── byplay.py            # Play-level feature transformations
+    │   ├── v1_pipeline.py       # Feature compilation pipeline (legacy)
+    │   ├── v2_recency.py        # EWMA recency-weighted adjustments pipeline
+    │   └── selector.py          # Feature selection helper
+    │
+    ├── models/                  # ML models definitions (V1 & V2)
+    │   ├── __init__.py
+    │   ├── v1_baseline.py       # Ridge regression baseline
+    │   ├── v2_catboost.py       # CatBoost regressor wrapper
+    │   ├── v2_xgboost.py        # XGBoost regressor wrapper
+    │   └── v2_ensemble.py       # Combined ensemble models
+    │
+    └── utils/                   # Shared utility modules
+        ├── __init__.py
+        ├── logging.py           # Structured logger
+        ├── mlflow_tracking.py   # MLflow experiment setup
+        └── validation.py        # Data schema validation
 ```
 
 ---
@@ -85,17 +96,20 @@ src/
 
 ```
 scripts/
-├── pipeline/                    # Supported weekly production path
-│   ├── preflight.py
-│   ├── run_pipeline_generic.py
-│   ├── generate_weekly_bets.py
-│   ├── publish_to_db.py
-│   ├── score_weekly_bets.py
-│   └── score_to_db.py
+├── cli.py                       # Main CLI entry point for ingestion and aggregation
 │
-└── data/                        # Supported CFBD ingestion CLIs
-    ├── ingest_week.py
-    └── ingest_season.py
+├── pipeline/                    # Weekly production execution pipeline
+│   ├── preflight.py             # Preflight check runner
+│   ├── run_pipeline_generic.py  # Generic data aggregation pipeline wrapper
+│   ├── generate_weekly_bets.py  # Predictions generation script
+│   ├── publish_review.py        # Prediction visual check before DB write
+│   ├── publish_to_db.py         # Upsert predictions and current week to Neon
+│   ├── score_weekly_bets.py     # Results evaluator
+│   └── score_to_db.py           # Upsert results and update system stats in Neon
+│
+└── data/                        # Season and week ingestion wrappers
+    ├── ingest_season.py         # Seasonal batch ingestion runner
+    └── ingest_week.py           # Weekly update ingestion runner
 ```
 
 ---

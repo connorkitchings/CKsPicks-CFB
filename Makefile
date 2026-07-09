@@ -147,18 +147,23 @@ db-publish:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
 		echo "Usage: make db-publish YEAR=2026 WEEK=1"; exit 1; \
 	fi
-	@echo "📤 Publishing $(YEAR) week $(WEEK) predictions to Postgres..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK)
+	@echo "📤 Publishing $(YEAR) week $(WEEK) predictions to Postgres from durable R2 artifact..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
 
 db-score:
 	@if [ -z "$(YEAR)" ]; then \
 		echo "Usage: make db-score YEAR=2026 [WEEK=1]"; exit 1; \
 	fi
 	@if [ -n "$(WEEK)" ]; then \
-		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --week $(WEEK); \
+		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact; \
 	else \
-		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --backfill-season; \
+		PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --backfill-season --from-artifact; \
 	fi
+
+train-champion:
+	@echo "🏋️ Training champion spread and total models..."
+	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=spread_target
+	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=total_target
 
 # Clean cache files
 clean:
