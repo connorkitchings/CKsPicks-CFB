@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 
 # Add project root to path
 sys.path.append(os.getcwd())
@@ -16,16 +17,16 @@ from cks_picks_cfb.artifacts import (
     scored_artifact_path,
     write_csv_artifact,
 )
-from cks_picks_cfb.config import get_data_root
-from cks_picks_cfb.utils.local_storage import LocalStorage
+from cks_picks_cfb.data.storage import get_storage
 
 
 def load_week_scores(year, week):
-    data_root = get_data_root()
-    raw = LocalStorage(data_root=data_root, file_format="csv", data_type="raw")
-
-    # Load games to get scores
-    games = pd.DataFrame.from_records(raw.read_index("games", {"year": year}))
+    storage = get_storage()
+    games = pd.DataFrame.from_records(storage.read_index("raw/games", {"year": year}))
+    if games.empty:
+        return games
+    if "id" not in games.columns and "game_id" in games.columns:
+        games = games.rename(columns={"game_id": "id"})
     week_games = games[games["week"] == week].copy()
 
     # Ensure we have scores
@@ -140,6 +141,8 @@ def score_bets(bets_df, scores_df):
 
 
 def main():
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description="Score Weekly Bets")
     parser.add_argument("--year", type=int, required=True, help="Season year")
     parser.add_argument("--week", type=int, required=True, help="Week number")
@@ -185,19 +188,25 @@ def main():
     )
 
     if args.from_artifact or args.prediction_artifact_path:
-        bets_df = read_csv_artifact(artifact_path)
+        try:
+            bets_df = read_csv_artifact(artifact_path)
+        except Exception as exc:
+            raise SystemExit(
+                f"Could not load prediction artifact {artifact_path}: {exc}"
+            ) from exc
         print(f"Loaded predictions from durable artifact {artifact_path}")
     else:
         if not bets_path.exists():
-            print(f"No bets file found at {bets_path}")
-            return
+            raise SystemExit(f"No bets file found at {bets_path}")
         bets_df = pd.read_csv(bets_path)
+
+    if bets_df.empty:
+        raise SystemExit(f"No bets available for {year} Week {week}")
 
     # Load Scores
     scores_df = load_week_scores(year, week)
     if scores_df.empty:
-        print(f"No scores available for Week {week}")
-        return
+        raise SystemExit(f"No completed scores available for {year} Week {week}")
 
     # Score
     scored_df = score_bets(bets_df, scores_df)

@@ -1,43 +1,13 @@
-# Weekly Pipeline — 2026 Season (Web App Deliverable)
+# Weekly Pipeline - 2026 Season
 
-> **Goal:** Every week during the 2026 season, regenerate model predictions for the upcoming FBS slate and publish them to the Neon Postgres database that powers the Vercel web app.
+Goal: publish every FBS game for the active 2026 week to the Vercel web app, then close the week after finals are available.
 
----
+R2 is the durable source of truth for raw data, processed features, prediction artifacts, and scored artifacts. Neon Postgres is a derived serving database for the web app tables: `games`, `game_results`, `system_stats`, and `current_week`.
 
-## Pipeline Overview
+## One-Time Setup
 
-```
-┌──────────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│  1. Preflight        │ ─►│  2. Ingest + Preagg  │ ─►│  3. Generate Picks   │
-│  (env/R2/Neon)       │   │  (CFBD API → R2)     │   │  (local CSV + R2)    │
-└──────────────────────┘   └──────────────────────┘   └──────────────────────┘
-                                                                  │
-                                                                  ▼
-                                                    ┌──────────────────────────┐
-                                                    │  4. Publish R2 → Neon    │
-                                                    │  (derived serving copy)  │
-                                                    └──────────────────────────┘
-                                                                  │
-                                                                  ▼
-                                                    ┌──────────────────────────┐
-                                                    │  5. Vercel App          │
-                                                    │  (reads Neon via ISR)   │
-                                                    └──────────────────────────┘
-```
-
-**Source-of-truth boundary:** R2 is durable storage for raw data, processed features, and weekly prediction/scored artifacts. Neon is a derived serving database for the web app (`games`, `game_results`, `system_stats`, `current_week`).
-
----
-
-## Prerequisites (one-time setup)
-
-1. **Neon Postgres** — create a project at https://console.neon.tech and copy the connection string (`DATABASE_URL`).
-2. **Apply the schema migration:**
+1. Set required environment variables in `.env`:
    ```bash
-   psql "$DATABASE_URL" -f web/db/migrations/0001_init.sql
-   ```
-3. **Set environment variables** in `.env`:
-   ```
    DATABASE_URL=postgres://...?sslmode=require
    CFBD_API_KEY=...
    CFB_STORAGE_BACKEND=r2
@@ -46,120 +16,124 @@
    CFB_R2_ACCESS_KEY=...
    CFB_R2_SECRET_KEY=...
    ```
-4. **Vercel project** — import the repo at https://vercel.com/new, set:
-   - **Root Directory:** `web/`
-   - **Build Command:** `npm run build` (auto-detected)
-   - **Environment Variable:** `DATABASE_URL` (same Neon connection string; only required web runtime variable)
+2. Apply the database schema if Neon is new:
+   ```bash
+   psql "$DATABASE_URL" -f contracts/schema.sql
+   ```
+3. Configure Vercel with Root Directory `web/` and runtime env `DATABASE_URL`.
+4. Verify the active path:
+   ```bash
+   make preflight YEAR=2026 WEEK=1
+   ```
 
----
+## Preseason Refresh
 
-## Weekly Workflow
-
-### Supported path
+Run this in mid-August and again before Week 1 if CFBD publishes updated data:
 
 ```bash
-# Validate config before a weekly run:
+make ingest-season YEAR=2026 ENTITIES=rosters,coaches,recruiting,rankings,games
+make preflight YEAR=2026 WEEK=1
+```
+
+Known availability gates:
+- 2026 teams, venues, and games are already present in R2.
+- Rosters, coaches, recruiting, rankings, external ratings, betting lines, plays, and game stats depend on CFBD/API/provider publication timing.
+- Early-season predictions use latest prior-season `processed/team_week_adj` features when teams have fewer than 4 current-season games. These rows are display-eligible but not high-confidence eligible.
+
+## Pregame Publish
+
+Run before each slate and rerun after meaningful line changes:
+
+```bash
+make publish-week YEAR=2026 WEEK=N
+```
+
+This target:
+1. Runs preflight.
+2. Refreshes the season schedule and the target week's betting lines.
+3. Runs pre-aggregation for completed raw data already in R2.
+4. Generates predictions and uploads `artifacts/production/predictions/year=YYYY/CFB_weekN_bets.csv`.
+5. Publishes that durable artifact into Neon and updates `current_week`.
+
+`make weekly YEAR=2026 WEEK=N` is an alias for `make publish-week`.
+
+## Postgame Close
+
+Run after finals are available:
+
+```bash
+make close-week YEAR=2026 WEEK=N
+```
+
+This target:
+1. Refreshes final scores plus completed plays, betting lines, and game stats.
+2. Runs pre-aggregation with completed plays.
+3. Scores the durable prediction artifact and uploads `artifacts/production/scored/year=YYYY/CFB_weekN_bets_scored.csv`.
+4. Upserts scored results into Neon and recomputes `system_stats`.
+
+## Recovery Commands
+
+Use these when a single step needs to be rerun:
+
+```bash
+# Preflight only
 make preflight YEAR=2026 WEEK=N
 
-# Full weekly cycle:
-make weekly YEAR=2026 WEEK=N
-```
+# Refresh schedule only
+PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026 --entities games
 
-`make weekly` runs:
+# Refresh week lines only
+PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week N --entities betting_lines
 
-1. Preflight checks for R2, Neon schema, artifact paths, and Vercel config assumptions.
-2. `scripts/data/ingest_week.py` for raw week data.
-3. `scripts/pipeline/run_pipeline_generic.py` for raw → processed pre-aggregations.
-4. `scripts/pipeline/generate_weekly_bets.py --upload-artifact` to write a local working CSV and durable R2 artifact.
-5. `scripts/pipeline/publish_to_db.py --from-artifact` to publish the durable R2 artifact into Neon.
+# Refresh completed week data only
+PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week N --entities plays,betting_lines,game_stats
 
-### Recovery commands
-
-```bash
-# Re-run only ingestion:
-make ingest-week YEAR=2026 WEEK=N
-
-# Re-run pre-aggregation:
+# Rebuild processed features
 PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
 
-# Regenerate predictions and upload the durable artifact:
-PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py \
-    --config conf/weekly_bets/v2_champion.yaml \
-    --year 2026 --week N \
-    --upload-artifact
+# Regenerate and upload prediction artifact
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week N --upload-artifact
 
-# Publish the durable artifact into Neon:
-PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
-    --year 2026 --week N \
-    --config conf/weekly_bets/v2_champion.yaml \
-    --from-artifact
+# Publish prediction artifact to Neon
+PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week N --from-artifact
+
+# Score and upload scored artifact
+PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --year 2026 --week N --from-artifact --upload-artifact
+
+# Publish scored artifact to Neon
+PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2026 --week N --from-artifact
 ```
-
-Local `data/production/...` CSVs are working copies for debugging and legacy scripts. The durable prediction artifact path is `artifacts/production/predictions/year=YYYY/CFB_weekN_bets.csv` in R2.
-
-### After games finish
-
-```bash
-# Produce local scored CSV and upload durable scored artifact:
-PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py \
-    --year 2026 --week N \
-    --from-artifact \
-    --upload-artifact
-
-# Upsert durable scored artifact into Neon and refresh YTD system_stats:
-PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py \
-    --year 2026 --week N \
-    --from-artifact
-```
-
----
-
-## Backfilling Historical Data (optional)
-
-To populate Postgres with 2024 / 2025 history (useful for the YTD banner on day one):
-
-```bash
-# Predictions from durable R2 artifacts (do NOT update current_week singleton):
-for YEAR in 2024 2025; do
-    for WEEK in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
-        PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
-            --year $YEAR --week $WEEK --from-artifact --no-update-current
-    done
-done
-
-# Results + YTD stats from durable R2 artifacts:
-PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2024 --backfill-season --from-artifact
-PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2025 --backfill-season --from-artifact
-
-# Finally, set the current week to the latest 2025 week:
-PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py \
-    --year 2025 --week 14
-```
-
----
 
 ## Health Checks
 
 ```bash
-# App health (from any environment with the Vercel URL):
+# App health
 curl https://<your-vercel-domain>/api/health
 
-# DB row counts:
+# DB serving state
+psql "$DATABASE_URL" -c "SELECT season, week FROM current_week;"
+psql "$DATABASE_URL" -c "SELECT season, as_of_week, spread_wins, spread_losses, total_wins, total_losses FROM system_stats ORDER BY season;"
 psql "$DATABASE_URL" -c "SELECT season, week, COUNT(*) FROM games GROUP BY 1,2 ORDER BY 1,2;"
-psql "$DATABASE_URL" -c "SELECT * FROM current_week; SELECT * FROM system_stats;"
 ```
 
----
+## Modeling Track
+
+The current `conf/weekly_bets/v2_champion.yaml` model is a 2026 display fallback. It should not be treated as a trusted betting edge. Modeling work resumes after the ops path is stable:
+
+```bash
+PYTHONPATH=.:src uv run python research/training/cross_validation.py --config conf/experiment/v2_walk_forward_cv.yaml
+PYTHONPATH=.:src uv run python research/training/cross_validation.py --config conf/experiment/v2_catboost_walk_forward.yaml
+PYTHONPATH=.:src uv run python research/analysis/shap_stability.py --output artifacts/analysis/shap_stability_report.md
+```
+
+Promotion requirements remain: no 2020 training data, no target leakage, positive stable ROI across walk-forward folds, and enough bet volume to matter.
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
+| Symptom | Likely Cause | Fix |
 |---|---|---|
-| App shows "Database not connected" | `DATABASE_URL` missing in Vercel env | Add it in project settings, redeploy |
-| Page renders but "No active week published" | `current_week` row still at `(0, 0)` | Run `publish_to_db.py` without `--no-update-current` |
-| Logos broken for some teams | Team name in CFBD doesn't match logo filename | Extend `TEAM_LOGO_MAP` in `contracts/teams.py` + `contracts/teams.ts`, sync local copies, then run `make contracts-check` |
-| YTD record shows 0-0 | `score_to_db.py` hasn't been run for this season | Run `PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year YYYY --backfill-season --from-artifact` |
-
----
-
-_Last Updated: 2026-07-06_
+| App shows database error | `DATABASE_URL` missing in Vercel | Add env var and redeploy |
+| No active week | `current_week` was not updated | Run `publish_to_db.py --from-artifact` without `--no-update-current` |
+| Week 1 has predictions but no high-confidence games | Cold-start eligibility suppresses high confidence before 4 games/team | Expected early-season behavior |
+| Scoring says no completed scores | CFBD games refresh has not published finals yet | Re-run `ingest_season --entities games` later |
+| Logos missing | Team map mismatch | Update `contracts/teams.py`, `contracts/teams.ts`, web copies, then run `make contracts-check` |

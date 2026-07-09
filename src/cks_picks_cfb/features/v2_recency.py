@@ -7,6 +7,8 @@ from tqdm import tqdm
 from cks_picks_cfb.config import get_data_root
 from cks_picks_cfb.features.core import apply_iterative_opponent_adjustment
 
+MIN_CURRENT_SEASON_GAMES = 4
+
 
 def _calculate_ewma(series, alpha):
     """
@@ -67,6 +69,133 @@ def aggregate_team_season_ewma(team_game_df, alpha):
     return team_season
 
 
+def _normalize_games_df(records) -> pd.DataFrame:
+    games_df = pd.DataFrame(records)
+    if games_df.empty:
+        return games_df
+    if "id" in games_df.columns:
+        games_df = games_df.rename(columns={"id": "game_id"})
+    if "season_type" in games_df.columns:
+        games_df["season_type"] = games_df["season_type"].fillna("regular")
+        games_df["week"] = np.where(
+            games_df["season_type"] == "postseason",
+            games_df["week"] + 15,
+            games_df["week"],
+        )
+    return games_df
+
+
+def _current_game_counts(team_game_df: pd.DataFrame, week: int) -> pd.Series:
+    if team_game_df.empty or "week" not in team_game_df or "team" not in team_game_df:
+        return pd.Series(dtype="int64")
+    prior_games = team_game_df[team_game_df["week"] < week]
+    if prior_games.empty:
+        return pd.Series(dtype="int64")
+    return prior_games.groupby("team")["game_id"].nunique()
+
+
+def _latest_prior_team_snapshot(read_entity, year: int) -> pd.DataFrame:
+    prior_year = year - 1
+    records = read_entity("team_week_adj", prior_year)
+    if not records:
+        return pd.DataFrame()
+
+    snapshot = pd.DataFrame.from_records(records)
+    if snapshot.empty or "team" not in snapshot or "week" not in snapshot:
+        return pd.DataFrame()
+
+    snapshot = snapshot.sort_values(["team", "week"])
+    return snapshot.groupby("team", as_index=False).tail(1).reset_index(drop=True)
+
+
+def _prior_seed_rows(
+    games_df: pd.DataFrame,
+    read_entity,
+    year: int,
+    *,
+    team_game_df: pd.DataFrame | None = None,
+    min_current_games: int = MIN_CURRENT_SEASON_GAMES,
+) -> pd.DataFrame:
+    """Build prediction stats from prior-season snapshots for cold-start teams."""
+    if games_df.empty:
+        return pd.DataFrame()
+
+    snapshot = _latest_prior_team_snapshot(read_entity, year)
+    if snapshot.empty:
+        return pd.DataFrame()
+
+    snapshot_by_team = {row["team"]: row for _, row in snapshot.iterrows()}
+    numeric_means = snapshot.select_dtypes(include=["number"]).mean(numeric_only=True)
+
+    def base_row(team: str) -> dict:
+        if team in snapshot_by_team:
+            return snapshot_by_team[team].to_dict()
+        row = numeric_means.to_dict()
+        row["team"] = team
+        return row
+
+    rows = []
+    current_df = team_game_df if team_game_df is not None else pd.DataFrame()
+    for _, game in games_df.iterrows():
+        if pd.isna(game.get("game_id")) or pd.isna(game.get("week")):
+            continue
+        week = int(game["week"])
+        counts = _current_game_counts(current_df, week)
+        for team_col, opponent_col, side in (
+            ("home_team", "away_team", "home"),
+            ("away_team", "home_team", "away"),
+        ):
+            team = game.get(team_col)
+            opponent = game.get(opponent_col)
+            if not isinstance(team, str) or not isinstance(opponent, str):
+                continue
+            current_games = int(counts.get(team, 0))
+            if current_games >= min_current_games:
+                continue
+            row = base_row(team)
+            row.update(
+                {
+                    "season": year,
+                    "week": week,
+                    "game_id": int(game["game_id"]),
+                    "team": team,
+                    "opponent": opponent,
+                    "home_away": side,
+                    "date": game.get("start_date"),
+                    "current_season_games": current_games,
+                    "seeded_from_prior_season": True,
+                }
+            )
+            rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+def _merge_seeded_prediction_rows(
+    full_adj_df: pd.DataFrame,
+    games_df: pd.DataFrame,
+    team_game_df: pd.DataFrame,
+    read_entity,
+    year: int,
+) -> pd.DataFrame:
+    seed_df = _prior_seed_rows(
+        games_df,
+        read_entity,
+        year,
+        team_game_df=team_game_df,
+    )
+    if seed_df.empty:
+        return full_adj_df
+
+    if full_adj_df.empty:
+        return seed_df
+
+    seed_keys = set(zip(seed_df["game_id"], seed_df["team"]))
+    existing_keys = list(zip(full_adj_df["game_id"], full_adj_df["team"]))
+    full_adj_df = full_adj_df[[key not in seed_keys for key in existing_keys]].copy()
+    return pd.concat([full_adj_df, seed_df], ignore_index=True, sort=False)
+
+
 def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
     """
     Load raw team-game data, calculate EWMA stats, apply adjustment, and return training/test DF.
@@ -105,39 +234,32 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
             else:
                 return processed_storage.read_index(entity, {"year": year})
 
-    # Load Team Game Data (Raw stats)
-    # We need prior year data for early season continuity?
-    # For now, let's just load the specific year. Cold start is a known issue.
-    # To mitigate, maybe load year-1 and filter?
-    # Let's simple start: load `year` data.
+    games = read_entity("games", year)
+    games_df = _normalize_games_df(games)
+
     records = read_entity("team_game", year)
     if not records:
         print(f"No team_game data for {year}")
+        if for_prediction:
+            seeded_df = _prior_seed_rows(games_df, read_entity, year)
+            if not seeded_df.empty:
+                print(
+                    f"Using prior-season cold-start features for {len(seeded_df)} team-game rows."
+                )
+                from cks_picks_cfb.features.internal_ratings import (
+                    add_internal_power_ratings,
+                )
+
+                seeded_df = add_internal_power_ratings(seeded_df)
+                return _merge_for_training(
+                    seeded_df, year, for_prediction=for_prediction
+                )
         return None
 
     team_game_df = pd.DataFrame.from_records(records)
 
-    # Normalize Weeks for Postseason (Week 1 -> Week 16+)
-    # We need to map game_id to season_type to identify postseason games
-    games = read_entity("games", year)
-    games_df = pd.DataFrame(games)
-    if "id" in games_df.columns:
-        games_df = games_df.rename(columns={"id": "game_id"})
-
     # Create mapping: game_id -> season_type
     if "season_type" in games_df.columns:
-        # Fill missing season_type with regular
-        games_df["season_type"] = games_df["season_type"].fillna("regular")
-
-        # Adjust week in games_df first
-        # Assuming regular season max week is 15. Postseason week 1 becomes 16.
-        # Check specific values
-        games_df["week"] = np.where(
-            games_df["season_type"] == "postseason",
-            games_df["week"] + 15,
-            games_df["week"],
-        )
-
         # Map back to team_game_df
         # We can merge on game_id
         week_map = games_df[["game_id", "week"]].set_index("game_id")["week"]
@@ -304,6 +426,11 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
         )
         # Only keep the final iteration for training
         adj_df = adj_df[adj_df["iteration"] == iterations]
+        current_counts = prior_games.groupby("team")["game_id"].nunique()
+        adj_df["current_season_games"] = (
+            adj_df["team"].map(current_counts).fillna(0).astype(int)
+        )
+        adj_df["seeded_from_prior_season"] = False
         adj_dfs.append(adj_df)
 
     if not adj_dfs:
@@ -317,6 +444,15 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
         full_adj_df = pd.concat(adj_dfs, ignore_index=True)
     else:
         full_adj_df = pd.DataFrame()  # Should fallback or handle empty
+
+    if for_prediction:
+        full_adj_df = _merge_seeded_prediction_rows(
+            full_adj_df,
+            games_df,
+            team_game_df,
+            read_entity,
+            year,
+        )
 
     # Inject Option 2: Internal SP+ Metrics
     from cks_picks_cfb.features.internal_ratings import add_internal_power_ratings
@@ -461,5 +597,19 @@ def _merge_for_training(team_stats, year, for_prediction=False):
         rename_map[f"{c}_away"] = f"away_{c}"
 
     merged = merged.rename(columns=rename_map)
+
+    if for_prediction:
+        home_games = merged.get("home_current_season_games")
+        away_games = merged.get("away_current_season_games")
+        if home_games is not None and away_games is not None:
+            merged["high_confidence_eligible"] = (
+                pd.to_numeric(home_games, errors="coerce").fillna(0)
+                >= MIN_CURRENT_SEASON_GAMES
+            ) & (
+                pd.to_numeric(away_games, errors="coerce").fillna(0)
+                >= MIN_CURRENT_SEASON_GAMES
+            )
+        else:
+            merged["high_confidence_eligible"] = True
 
     return merged

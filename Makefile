@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week preflight weekly
+.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week preflight publish-week close-week weekly
 
 # Default target
 help:
@@ -24,7 +24,9 @@ help:
 	@echo "  make ingest-season YEAR=2026  - Ingest teams+venues+games for a season"
 	@echo "  make ingest-week YEAR=2026 WEEK=1  - Ingest plays+betting_lines for a week"
 	@echo "  make preflight YEAR=2026 WEEK=1  - Validate R2, Neon, artifact paths, deploy config"
-	@echo "  make weekly YEAR=2026 WEEK=1  - Full weekly cycle (ingest → preagg → predict → publish)"
+	@echo "  make publish-week YEAR=2026 WEEK=1  - Pregame publish (refresh lines → predict → publish)"
+	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
+	@echo "  make weekly YEAR=2026 WEEK=1  - Alias for publish-week"
 	@echo ""
 	@echo "Database (requires DATABASE_URL):"
 	@echo "  make db-publish YEAR=2026 WEEK=1  - Publish predictions CSV to Postgres"
@@ -106,7 +108,7 @@ ingest-week:
 	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK)
 
 # ---------------------------------------------------------------------------
-# Full weekly cycle (ingest → preagg → predict → publish)
+# Weekly operating cycle
 # ---------------------------------------------------------------------------
 
 preflight:
@@ -116,19 +118,20 @@ preflight:
 	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
 
-weekly:
+publish-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make weekly YEAR=2026 WEEK=1"; exit 1; \
+		echo "Usage: make publish-week YEAR=2026 WEEK=1"; exit 1; \
 	fi
-	@echo "🔄 Starting weekly cycle for $(YEAR) week $(WEEK)..."
+	@echo "🔄 Publishing pregame slate for $(YEAR) week $(WEEK)..."
 	@echo ""
 	@echo "Step 1/5: Preflight checks..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
 	@echo ""
-	@echo "Step 2/5: Ingesting raw data..."
-	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK)
+	@echo "Step 2/5: Refreshing schedule and market lines..."
+	PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year $(YEAR) --entities games
+	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities betting_lines
 	@echo ""
-	@echo "Step 3/5: Running pre-aggregation (raw → processed/team_game)..."
+	@echo "Step 3/5: Running pre-aggregation for completed raw data..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
 	@echo ""
 	@echo "Step 4/5: Generating predictions and uploading durable artifact..."
@@ -137,7 +140,30 @@ weekly:
 	@echo "Step 5/5: Publishing durable artifact to Neon..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
 	@echo ""
-	@echo "✅ Weekly cycle complete! Vercel ISR will refresh within 5 minutes."
+	@echo "✅ Pregame publish complete! Vercel ISR will refresh within 5 minutes."
+
+close-week:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
+		echo "Usage: make close-week YEAR=2026 WEEK=1"; exit 1; \
+	fi
+	@echo "🏁 Closing completed week $(YEAR)-$(WEEK)..."
+	@echo ""
+	@echo "Step 1/4: Refreshing final scores and completed-game data..."
+	PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year $(YEAR) --entities games
+	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities plays,betting_lines,game_stats
+	@echo ""
+	@echo "Step 2/4: Running pre-aggregation with completed plays..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
+	@echo ""
+	@echo "Step 3/4: Scoring durable prediction artifact and uploading scored artifact..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --year $(YEAR) --week $(WEEK) --from-artifact --upload-artifact
+	@echo ""
+	@echo "Step 4/4: Publishing scored artifact to Neon and refreshing YTD stats..."
+	PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
+	@echo ""
+	@echo "✅ Week close complete! Vercel ISR will refresh within 5 minutes."
+
+weekly: publish-week
 
 # ---------------------------------------------------------------------------
 # Database publish (Python → Postgres)

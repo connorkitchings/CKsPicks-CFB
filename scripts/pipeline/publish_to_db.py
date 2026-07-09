@@ -75,6 +75,21 @@ def _safe_float(val) -> float | None:
         return None
 
 
+def _safe_bool(val, *, default: bool = True) -> bool:
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return default
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        return bool(val)
+    s = str(val).strip().lower()
+    if s in {"1", "true", "t", "yes", "y"}:
+        return True
+    if s in {"0", "false", "f", "no", "n"}:
+        return False
+    return default
+
+
 def _derive_lean(row: pd.Series) -> tuple[str | None, float | None]:
     """
     Return (spread_lean, edge_spread) for a prediction row.
@@ -230,7 +245,10 @@ def _row_to_record(
         start_dt = start_dt.to_pydatetime()
 
     edge_spread = _safe_float(row.get("edge_spread"))
-    high_conf = bool(edge_spread is not None and edge_spread >= high_conf_threshold)
+    eligible = _safe_bool(row.get("high_confidence_eligible"), default=True)
+    high_conf = bool(
+        eligible and edge_spread is not None and edge_spread >= high_conf_threshold
+    )
 
     return {
         "game_id": int(row["game_id"]),

@@ -177,20 +177,27 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --help
 
 ## Production Pipeline
 
-### Full Weekly Cycle (2026)
+### Weekly Operating Cycle (2026)
 
 ```bash
 # Validate env, R2, Neon schema, artifact paths, and deploy assumptions
 make preflight YEAR=2026 WEEK=1
 
-# One command, end-to-end (ingest → preagg → predict → R2 artifact → Neon):
+# Pregame publish (refresh schedule/lines → predict → R2 artifact → Neon):
+make publish-week YEAR=2026 WEEK=1
+
+# Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
+make close-week YEAR=2026 WEEK=1
+
+# Alias for pregame publish:
 make weekly YEAR=2026 WEEK=1
 
 # Recovery commands:
-make ingest-week YEAR=2026 WEEK=1                          # 1. CFBD API → R2
-PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026  # 2. raw → processed
-PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1 --upload-artifact  # 3. model → local CSV + R2 artifact
-PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week 1 --from-artifact  # 4. R2 artifact → Neon → Vercel
+PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026 --entities games
+PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week 1 --entities betting_lines
+PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1 --upload-artifact
+PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week 1 --from-artifact
 ```
 
 ### Weekly Predictions (standalone)

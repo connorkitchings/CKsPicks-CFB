@@ -1,11 +1,12 @@
 # V2 Weekly Bets Configuration
-# Uses V2 Champion Models (Linear + Recency Weighted Features)
+# Uses legacy champion models as the 2026 display fallback until a new model
+# passes walk-forward validation gates.
 system_name: "Trench Warfare V2"
-model_id: "TW-V2-2025"
+model_id: "TW-V2-2026-display-fallback"
 
 # Season and week settings
-year: 2025
-week: 16  # CFP Quarterfinals (update as needed)
+year: 2026
+week: 1
 
 # Betting thresholds (Dec 8 optimization)
 # Dual approach for spreads:
@@ -34,8 +35,9 @@ features:
   type: recency
   alpha: 0.3  # EWMA decay parameter
 
-# Training data reference (for context, not used in prediction)
+# Training data reference (for context, not used in prediction).
+# Do not promote a new production model until it clears walk-forward ROI gates.
 training:
   train_years: [2019, 2021, 2022, 2023]
   test_year: 2024
-  deploy_year: 2025
+  deploy_year: 2026

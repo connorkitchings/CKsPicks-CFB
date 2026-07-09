@@ -156,8 +156,11 @@ PYTHONPATH=. uv run python -m cks_picks_cfb.train
 # Validate the weekly operating path
 make preflight YEAR=2026 WEEK=1
 
-# Full weekly cycle: ingest → preaggregate → predict → R2 artifact → Neon
-make weekly YEAR=2026 WEEK=1
+# Pregame publish: refresh schedule/lines → predict → R2 artifact → Neon
+make publish-week YEAR=2026 WEEK=1
+
+# Postgame close: refresh finals → score → scored R2 artifact → Neon stats
+make close-week YEAR=2026 WEEK=1
 ```
 
 ### Web app

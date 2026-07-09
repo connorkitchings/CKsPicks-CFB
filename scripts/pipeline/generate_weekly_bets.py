@@ -149,8 +149,7 @@ def main():
                 for_prediction=True,
             )
             if full_year_df is None or full_year_df.empty:
-                print("No data found via V2 Recency loader.")
-                return
+                raise SystemExit("No data found via V2 Recency loader.")
 
             # Filter for requested week
             data_df = full_year_df[full_year_df["week"] == week].copy()
@@ -173,8 +172,7 @@ def main():
             raise NotImplementedError("Legacy loading not supported in V2 pipeline.")
 
         if data_df.empty:
-            print(f"No games found for Week {week}. Exiting.")
-            return
+            raise SystemExit(f"No games found for Week {week}.")
 
         # Calculate missing tempo features (needed only for V1 models usually, but checking anyway)
         if (
@@ -281,6 +279,7 @@ def main():
 
             book_spread = row.get("home_team_spread_line")
             book_total = row.get("total_line")
+            high_confidence_eligible = bool(row.get("high_confidence_eligible", True))
 
             # Spread Bet (Dual-Threshold Strategy)
             if pd.notna(book_spread):
@@ -317,6 +316,7 @@ def main():
                         "Total Prediction": pred_total,
                         "edge_total": 0.0,  # Placeholder
                         "Total Bet": "No Bet",  # Placeholder
+                        "high_confidence_eligible": high_confidence_eligible,
                     }
                 )
             else:
@@ -333,6 +333,7 @@ def main():
                         "Total Prediction": pred_total,
                         "edge_total": 0.0,
                         "Total Bet": "No Bet",
+                        "high_confidence_eligible": high_confidence_eligible,
                     }
                 )
 

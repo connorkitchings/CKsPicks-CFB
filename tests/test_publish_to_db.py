@@ -217,3 +217,33 @@ def test_row_to_record_low_confidence_flag():
     )
     assert rec["high_confidence"] is False
     assert rec["predicted_spread_std_dev"] is None
+
+
+def test_row_to_record_honors_high_confidence_eligibility():
+    row = pd.Series(
+        {
+            "game_id": 125,
+            "home_team": "HomeU",
+            "away_team": "AwayU",
+            "start_date_dt": pd.Timestamp("2026-09-05 12:00:00", tz="UTC"),
+            "home_team_spread_line": 14.0,
+            "total_line": 50.0,
+            "Spread Prediction": -3.0,
+            "Total Prediction": 55.0,
+            "spread_lean": "home",
+            "total_lean": "over",
+            "edge_spread": 11.0,
+            "edge_total": 5.0,
+            "high_confidence_eligible": False,
+        }
+    )
+    rec = publish_to_db._row_to_record(
+        row,
+        season=2026,
+        week=1,
+        high_conf_threshold=8.0,
+        source_config="conf/x.yaml",
+        system_name="t",
+        model_id="t",
+    )
+    assert rec["high_confidence"] is False
