@@ -2,7 +2,7 @@
 
 ## TL;DR
 - **Worked On:** Added continuous integration for the Python pipeline, shared contracts, and Next.js web app.
-- **Completed:** Added a two-job GitHub Actions workflow, verified a clean web build without environment secrets, corrected the root ignore rule so required web library modules are tracked, and restored Vercel's `web` Root Directory plus its `npm ci` install override.
+- **Completed:** Added a two-job GitHub Actions workflow, verified a clean web build without environment secrets, corrected the root ignore rule so required web library modules are tracked, and restored Vercel's web-scoped build settings.
 - **Blockers:** Nx plugin workers cannot start in the local sandbox; the underlying web commands pass directly and CI disables the Nx daemon.
 - **Next:** Review and merge the readiness PR, then run the 2026 preseason refresh when provider data is available in mid-August.
 
@@ -10,7 +10,7 @@
 - `.github/workflows/ci.yml`: Added Python 3.12 and Node 22 CI jobs for pull requests and pushes to `main`.
 - `.gitignore`: Narrowly unignored `web/src/lib/`, which the generic Python `lib/` rule had excluded.
 - `web/src/lib/`: Added the existing database, query, schema, and team contract modules to version control so clean checkouts can build.
-- Vercel project settings: Restored Root Directory to `web` and Install Command to `npm ci` after the preview check exposed configuration drift and an incompatible Nx auto-detection override.
+- Vercel project settings: Restored Root Directory `web`, Install Command `npm ci`, and Build Command `npm run build` after the preview check exposed configuration drift and incompatible Nx auto-detection overrides.
 
 ## Testing
 - [x] CI workflow YAML parses successfully
@@ -23,7 +23,7 @@
 - [x] Clean-checkout `npm run typecheck`
 - [x] `make preflight YEAR=2026 WEEK=1` - R2 and Neon passed
 - [x] Live GitHub Actions web job; Python tests use a non-secret placeholder API key required by ingester constructors
-- [x] Vercel project verified with Root Directory `web` and Install Command `npm ci`
+- [x] Vercel project verified with Root Directory `web`, Install Command `npm ci`, and Build Command `npm run build`
 
 ## Notes for Next Session
 CI intentionally requires no R2, Neon, CFBD, or database secrets. Production preflight remains a separate live operational check. Keep modeling paused until the weekly path is validated with real 2026 season data.
