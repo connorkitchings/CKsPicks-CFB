@@ -21,6 +21,7 @@
 - [x] Clean-checkout `npm run build` without `.env` or `DATABASE_URL`
 - [x] Clean-checkout `npm run typecheck`
 - [x] `make preflight YEAR=2026 WEEK=1` - R2 and Neon passed
+- [x] Live GitHub Actions web job; Python tests use a non-secret placeholder API key required by ingester constructors
 
 ## Notes for Next Session
 CI intentionally requires no R2, Neon, CFBD, or database secrets. Production preflight remains a separate live operational check. Keep modeling paused until the weekly path is validated with real 2026 season data.

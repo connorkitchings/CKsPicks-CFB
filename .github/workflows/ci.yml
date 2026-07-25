@@ -47,6 +47,8 @@ jobs:
 
       - name: Test
         run: PYTHONPATH=src:. uv run pytest tests/ -q
+        env:
+          CFBD_API_KEY: ci-placeholder
 
       - name: Validate shared contracts
         run: uv run python contracts/validation.py
