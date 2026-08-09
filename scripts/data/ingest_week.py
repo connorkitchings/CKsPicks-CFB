@@ -17,7 +17,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from cks_picks_cfb.data.betting_lines import BettingLinesIngester
+from cks_picks_cfb.data.base import DataUnavailableError
+from cks_picks_cfb.data.betting_lines import (
+    BettingLineCoverageError,
+    BettingLinesIngester,
+)
 from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.plays import PlaysIngester
 
@@ -50,6 +54,14 @@ def main():
         default="regular",
         help="Season type (regular/postseason/both)",
     )
+    parser.add_argument(
+        "--require-full-line-coverage",
+        action="store_true",
+        help=(
+            "Fail before writing when any scheduled FBS game lacks a sportsbook "
+            "line. Intended for a pregame publish."
+        ),
+    )
     args = parser.parse_args()
 
     requested = [e.strip().lower() for e in args.entities.split(",")]
@@ -68,11 +80,19 @@ def main():
 
         kwargs = {"year": args.year, "season_type": args.season_type}
         kwargs[kwarg_name] = args.week
+        if entity_key == "betting_lines":
+            kwargs["require_full_coverage"] = args.require_full_line_coverage
 
         try:
             ingester = cls(**kwargs)
             ingester.run()
             print(f"  ✅ {entity_key} done")
+        except DataUnavailableError as exc:
+            print(f"  ⏳ {entity_key} unavailable: {exc}")
+            sys.exit(1)
+        except BettingLineCoverageError as exc:
+            print(f"  ⛔ {entity_key} coverage incomplete: {exc}")
+            sys.exit(1)
         except Exception as exc:
             print(f"  ❌ {entity_key} failed: {exc}")
             sys.exit(1)

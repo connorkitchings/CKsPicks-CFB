@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+from cks_picks_cfb.data.base import DataUnavailableError
 from cks_picks_cfb.data.betting_lines import BettingLinesIngester
 from cks_picks_cfb.data.coaches import CoachesIngester
 from cks_picks_cfb.data.games import GamesIngester
@@ -66,6 +67,9 @@ def main():
         print(f"Unknown entities: {unknown}")
         sys.exit(1)
 
+    unavailable: list[str] = []
+    failed: list[str] = []
+
     for entity_key in requested:
         if entity_key == "external_ratings":
             print("⏭  Skipping external_ratings (requires offline CSVs)")
@@ -84,10 +88,21 @@ def main():
             ingester = cls(**kwargs)
             ingester.run()
             print(f"  ✅ {entity_key} done")
+        except DataUnavailableError as exc:
+            unavailable.append(entity_key)
+            print(f"  ⏳ {entity_key} unavailable: {exc}")
         except Exception as exc:
+            failed.append(entity_key)
             print(f"  ❌ {entity_key} failed: {exc}")
-            # Continue with next entity (non-fatal)
-            continue
+        # Continue through all requested entities so source availability is
+        # reported together instead of hiding later failures.
+
+    if unavailable or failed:
+        if unavailable:
+            print(f"\n⏳ Unavailable CFBD entities: {', '.join(unavailable)}")
+        if failed:
+            print(f"❌ Failed CFBD entities: {', '.join(failed)}")
+        raise SystemExit(1)
 
     print(f"\n✅ Full-season ingestion complete for {args.year}")
 

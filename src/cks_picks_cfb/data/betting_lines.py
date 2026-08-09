@@ -9,6 +9,19 @@ from cks_picks_cfb.utils.base import Partition
 from .base import BaseIngester
 
 
+class BettingLineCoverageError(RuntimeError):
+    """Raised when a publish requires lines for every scheduled FBS game."""
+
+    def __init__(self, *, year: int, week: int, missing_game_ids: set[int]):
+        super().__init__(
+            f"CFBD betting-line coverage is incomplete for {year} week {week}: "
+            f"{len(missing_game_ids)} scheduled FBS games have no sportsbook line."
+        )
+        self.year = year
+        self.week = week
+        self.missing_game_ids = missing_game_ids
+
+
 class BettingLinesIngester(BaseIngester):
     """Ingester for college football betting lines data."""
 
@@ -19,6 +32,7 @@ class BettingLinesIngester(BaseIngester):
         season_type: str = "regular",
         week: int | None = None,
         limit_games: int = None,
+        require_full_coverage: bool = False,
         data_root: str | None = None,
         storage=None,
     ):
@@ -30,11 +44,14 @@ class BettingLinesIngester(BaseIngester):
             season_type: Season type to ingest (default: "regular")
             week: Optional specific week to ingest data for.
             limit_games: Limit number of games for testing (default: None)
+            require_full_coverage: Fail before writing when any scheduled FBS
+                game lacks a sportsbook line. Use for a pregame publish.
         """
         super().__init__(year, classification, data_root=data_root, storage=storage)
         self.season_type = season_type
         self.week = week
         self.limit_games = limit_games
+        self.require_full_coverage = require_full_coverage
 
     @property
     def entity_name(self) -> str:
@@ -101,6 +118,20 @@ class BettingLinesIngester(BaseIngester):
                     )
 
         print(f"Filtered to {len(all_lines)} betting lines from FBS games.")
+        if self.require_full_coverage:
+            if self.week is None:
+                raise ValueError(
+                    "require_full_coverage requires a specific week so coverage "
+                    "can be evaluated against that slate."
+                )
+            covered_game_ids = {row["game_id"] for row in all_lines}
+            missing_game_ids = set(fbs_game_ids) - covered_game_ids
+            if missing_game_ids:
+                raise BettingLineCoverageError(
+                    year=self.year,
+                    week=self.week,
+                    missing_game_ids=missing_game_ids,
+                )
         return all_lines
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:

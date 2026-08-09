@@ -14,6 +14,18 @@ from cks_picks_cfb.utils.base import Partition, StorageBackend
 load_dotenv()
 
 
+class DataUnavailableError(RuntimeError):
+    """Raised when CFBD accepts a request but has not published rows yet."""
+
+    def __init__(self, entity_name: str, year: int):
+        super().__init__(
+            f"CFBD returned no {entity_name} rows for {year}; "
+            "treat this as source availability, not a successful ingestion."
+        )
+        self.entity_name = entity_name
+        self.year = year
+
+
 class BaseIngester(ABC):
     """Base class for CFBD data ingestion with common functionality.
 
@@ -183,6 +195,8 @@ class BaseIngester(ABC):
             # Fetch data from CFBD API
             raw_data = self.fetch_data()
             print(f"Fetched {len(raw_data)} records from CFBD API.")
+            if not raw_data:
+                raise DataUnavailableError(self.entity_name, self.year)
 
             # Transform data for storage
             transformed_data = self.transform_data(raw_data)

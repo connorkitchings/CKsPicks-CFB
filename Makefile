@@ -129,7 +129,7 @@ publish-week:
 	@echo ""
 	@echo "Step 2/5: Refreshing schedule and market lines..."
 	PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year $(YEAR) --entities games
-	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities betting_lines
+	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities betting_lines --require-full-line-coverage
 	@echo ""
 	@echo "Step 3/5: Running pre-aggregation for completed raw data..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
