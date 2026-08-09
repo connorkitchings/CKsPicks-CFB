@@ -4,9 +4,21 @@
 system_name: "Trench Warfare V2"
 model_id: "TW-V2-2026-display-fallback"
 
+# Production cutover contract. Until this is populated, the two durable models
+# below remain the compatibility path and readiness intentionally fails on null
+# artifact metadata. A populated bundle requires all ten target/regime routes.
+model_bundle_v2: null
+# Example entry:
+# model_bundle_v2:
+#   artifact_uri: artifacts/production/models/<bundle_id>/manifest.json
+#   sha256: <64-char-sha256>
+
+# Weekly Silver/Gold refs are selected by the catalog and frozen in each
+# pipeline-run manifest. They must not be placed in this static configuration.
+
 # Season and week settings
 year: 2026
-week: 1
+week: 0
 
 # Betting thresholds (Dec 8 optimization)
 # Dual approach for spreads:
@@ -22,11 +34,25 @@ total_edge_threshold: 1.5
 models:
   spread:
     path: models/linear_spread_target.joblib
+    artifact_uri: null  # Set to immutable R2 model URI before readiness.
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
     features: conf/features/matchup_v1.yaml
     target: spread_target
     calibration_offset: 1.14  # Bias correction (+1.14 pts) validated 2025-12-09
   total:
     path: models/linear_total_target.joblib
+    artifact_uri: null  # Set to immutable R2 model URI before readiness.
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
     features: conf/features/matchup_v1.yaml
     target: total_target
 
@@ -41,13 +67,14 @@ preseason:
   enabled: false
   as_of: null
   model_path: models/preseason_v1.joblib
-  # Weights for the preseason model when the less-experienced team has one
-  # or two completed games. Fill only from select_blend_weights output.
-  blend_weights: {}
+  # Monotone weights for one, two, or three completed games. Fill only from
+  # training-only select_blend_weights output.
+  spread_blend_weights: {}
+  total_blend_weights: {}
 
 # Training data reference (for context, not used in prediction).
 # Do not promote a new production model until it clears walk-forward ROI gates.
 training:
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
   deploy_year: 2026

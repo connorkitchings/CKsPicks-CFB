@@ -426,7 +426,7 @@ report = validate_entity(
     schema_checks={"required_columns": ["id", "season", "week", "home_team", "away_team"]},
     completeness_checks={
         "year_column": "year",
-        "expected_years": [2019, 2021, 2022, 2023, 2024],
+        "expected_years": [2021, 2022, 2023, 2024, 2025],
     },
     statistical_checks={
         "week": {"min": 1, "max": 15, "allow_negative": False},

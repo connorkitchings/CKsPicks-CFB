@@ -65,6 +65,68 @@ class Partition:
         return Path(*parts)
 
 
+@dataclass(frozen=True)
+class StorageSettings:
+    """Explicit storage configuration for cross-environment pipeline operations."""
+
+    backend: str
+    environment: str = "production"
+    data_root: str | None = None
+    bucket: str | None = None
+    account_id: str | None = None
+    access_key: str | None = None
+    secret_key: str | None = None
+    endpoint: str | None = None
+    region: str = "us-east-1"
+    read_only: bool = False
+
+    @classmethod
+    def from_env(cls, *, environment: str | None = None) -> "StorageSettings":
+        backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+        selected = (environment or os.getenv("CFB_ARTIFACT_ENV", "production")).lower()
+        if backend == "local":
+            return cls(
+                backend=backend,
+                environment=selected,
+                data_root=os.getenv("CFB_MODEL_DATA_ROOT"),
+            )
+        if backend == "r2":
+            prefix = "CFB_R2_PREVIEW" if selected == "preview" else "CFB_R2"
+            return cls(
+                backend=backend,
+                environment=selected,
+                bucket=os.getenv(f"{prefix}_BUCKET"),
+                account_id=os.getenv(f"{prefix}_ACCOUNT_ID"),
+                access_key=os.getenv(f"{prefix}_ACCESS_KEY"),
+                secret_key=os.getenv(f"{prefix}_SECRET_KEY"),
+                endpoint=os.getenv(f"{prefix}_ENDPOINT"),
+            )
+        if backend == "s3":
+            return cls(
+                backend=backend,
+                environment=selected,
+                bucket=os.getenv("CFB_S3_BUCKET"),
+                access_key=os.getenv("AWS_ACCESS_KEY_ID"),
+                secret_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                region=os.getenv("CFB_S3_REGION", "us-east-1"),
+            )
+        return cls(backend=backend, environment=selected)
+
+    @classmethod
+    def source_from_env(cls) -> "StorageSettings":
+        """Load the separately scoped, read-only historical R2 source."""
+        return cls(
+            backend="r2",
+            environment="source",
+            bucket=os.getenv("CFB_R2_SOURCE_BUCKET"),
+            account_id=os.getenv("CFB_R2_SOURCE_ACCOUNT_ID"),
+            access_key=os.getenv("CFB_R2_SOURCE_ACCESS_KEY"),
+            secret_key=os.getenv("CFB_R2_SOURCE_SECRET_KEY"),
+            endpoint=os.getenv("CFB_R2_SOURCE_ENDPOINT"),
+            read_only=True,
+        )
+
+
 class StorageBackend(ABC):
     """Abstract base class for storage backends."""
 
@@ -86,6 +148,16 @@ class StorageBackend(ABC):
     @abstractmethod
     def write_csv(self, df: pd.DataFrame, path: str, **kwargs) -> None:
         """Write a CSV file."""
+        pass
+
+    @abstractmethod
+    def read_bytes(self, path: str) -> bytes:
+        """Read an opaque binary object."""
+        pass
+
+    @abstractmethod
+    def write_bytes(self, data: bytes, path: str) -> None:
+        """Write an opaque binary object."""
         pass
 
     @abstractmethod
@@ -199,6 +271,46 @@ class StorageBackend(ABC):
         """Return a backend-agnostic identifier for logging (e.g., 'r2:cfb-model-data')."""
         return str(self.root())
 
+    def object_metadata(self, path: str) -> Mapping[str, Any]:
+        """Return stable source metadata when the backend exposes it."""
+        payload = self.read_bytes(path)
+        return {"size": len(payload)}
+
+    def list_object_metadata(self, prefix: str) -> Mapping[str, Mapping[str, Any]]:
+        """List object keys and metadata.
+
+        The default is intentionally portable. Cloud backends override this to reuse
+        metadata returned by their paginated list API instead of issuing one HEAD
+        request per object.
+        """
+        return {path: self.object_metadata(path) for path in self.list_files(prefix)}
+
+    def quarantine_object(self, path: str, error: Exception) -> str:
+        """Copy an unreadable object and diagnostic metadata to quarantine."""
+        payload = self.read_bytes(path)
+        content_sha = __import__("hashlib").sha256(payload).hexdigest()
+        basename = Path(path).name
+        prefix = f"lake/quarantine/content_sha={content_sha}"
+        object_uri = f"{prefix}/{basename}"
+        metadata_uri = f"{prefix}/error.json"
+        if not self.exists(object_uri):
+            self.write_bytes(payload, object_uri)
+        if not self.exists(metadata_uri):
+            self.write_bytes(
+                json.dumps(
+                    {
+                        "source_uri": path,
+                        "content_sha": content_sha,
+                        "error_type": type(error).__name__,
+                        "error": str(error),
+                        "quarantined_at": datetime.now().astimezone().isoformat(),
+                    },
+                    sort_keys=True,
+                ).encode("utf-8"),
+                metadata_uri,
+            )
+        return object_uri
+
 
 class LocalStorage(StorageBackend):
     """Local filesystem storage (external drive)."""
@@ -239,6 +351,16 @@ class LocalStorage(StorageBackend):
         full_path.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(full_path, **kwargs)
 
+    def read_bytes(self, path: str) -> bytes:
+        """Read bytes from local storage."""
+        return self._get_path(path).read_bytes()
+
+    def write_bytes(self, data: bytes, path: str) -> None:
+        """Write bytes to local storage."""
+        full_path = self._get_path(path)
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.write_bytes(data)
+
     def exists(self, path: str) -> bool:
         """Check if a file exists."""
         return self._get_path(path).exists()
@@ -264,6 +386,15 @@ class LocalStorage(StorageBackend):
     def get_full_path(self, path: str) -> str:
         """Get the full local path."""
         return str(self._get_path(path))
+
+    def object_metadata(self, path: str) -> Mapping[str, Any]:
+        stat = self._get_path(path).stat()
+        return {
+            "size": stat.st_size,
+            "last_modified": datetime.fromtimestamp(stat.st_mtime)
+            .astimezone()
+            .isoformat(),
+        }
 
     def _get_entity_partition_path(self, entity: str, partition: Partition) -> Path:
         """Get path for entity partition."""
@@ -292,8 +423,9 @@ class LocalStorage(StorageBackend):
                     table = pq.read_table(fpath, columns=columns)
                     rows.extend(table.to_pylist())
                 except Exception as e:
-                    print(f"Skipping unreadable file: {fpath} -> {e}")
-                    continue
+                    relative = str(fpath.relative_to(self.root_path))
+                    self.quarantine_object(relative, e)
+                    raise StorageError(f"Unreadable parquet object: {fpath}") from e
             return rows
 
         # Fall back to CSV
@@ -314,8 +446,9 @@ class LocalStorage(StorageBackend):
                         df = df[columns]
                     frames.append(df)  # type: ignore[arg-type]
                 except Exception as e:
-                    print(f"Skipping unreadable CSV: {fpath} -> {e}")
-                    continue
+                    relative = str(fpath.relative_to(self.root_path))
+                    self.quarantine_object(relative, e)
+                    raise StorageError(f"Unreadable CSV object: {fpath}") from e
             if not frames:
                 return []
             df_all = pd.concat(frames, ignore_index=True)
@@ -480,6 +613,7 @@ class R2Storage(StorageBackend):
         df.to_parquet(buffer)
         buffer.seek(0)
         self.s3_client.put_object(Bucket=self.bucket, Key=path, Body=buffer.getvalue())
+        self._invalidate_cache(path)
 
     def read_csv(self, path: str, **kwargs) -> pd.DataFrame:
         """Read a CSV file from R2."""
@@ -493,6 +627,29 @@ class R2Storage(StorageBackend):
         buffer = io.StringIO()
         df.to_csv(buffer, **kwargs)
         self.s3_client.put_object(Bucket=self.bucket, Key=path, Body=buffer.getvalue())
+        self._invalidate_cache(path)
+
+    def read_bytes(self, path: str) -> bytes:
+        """Read bytes from R2."""
+        obj = self.s3_client.get_object(Bucket=self.bucket, Key=path)
+        return obj["Body"].read()
+
+    def write_bytes(self, data: bytes, path: str) -> None:
+        """Write bytes to R2."""
+        self.s3_client.put_object(Bucket=self.bucket, Key=path, Body=data)
+        self._invalidate_cache(path)
+
+    def _invalidate_cache(self, path: str | None = None) -> None:
+        """Invalidate disk and query caches after a write.
+
+        Immutable lake objects normally never change, but legacy partitions still do.
+        A write must therefore never leave a stale local object or stale ``read_index``
+        result visible to a subsequent pipeline step.
+        """
+        self._memory_cache.clear()
+        self._memory_cache_timestamps.clear()
+        if path is not None:
+            self._get_cache_path(path).unlink(missing_ok=True)
 
     def exists(self, path: str) -> bool:
         """Check if a file exists in R2."""
@@ -504,7 +661,11 @@ class R2Storage(StorageBackend):
 
     def list_files(self, prefix: str) -> list[str]:
         """List files with given prefix in R2."""
-        files: list[str] = []
+        return list(self.list_object_metadata(prefix))
+
+    def list_object_metadata(self, prefix: str) -> Mapping[str, Mapping[str, Any]]:
+        """List R2 keys using metadata already present in ListObjectsV2 pages."""
+        objects: dict[str, Mapping[str, Any]] = {}
         continuation_token: Optional[str] = None
 
         while True:
@@ -513,18 +674,36 @@ class R2Storage(StorageBackend):
                 kwargs["ContinuationToken"] = continuation_token
 
             response = self.s3_client.list_objects_v2(**kwargs)
-            files.extend(obj["Key"] for obj in response.get("Contents", []))
+            for obj in response.get("Contents", []):
+                modified = obj.get("LastModified")
+                objects[str(obj["Key"])] = {
+                    "size": int(obj.get("Size", 0)),
+                    "etag": str(obj.get("ETag", "")).strip('"') or None,
+                    "last_modified": modified.isoformat() if modified else None,
+                    "storage_class": obj.get("StorageClass"),
+                }
 
             if response.get("IsTruncated"):
                 continuation_token = response.get("NextContinuationToken")
             else:
                 break
 
-        return files
+        return objects
 
     def get_full_path(self, path: str) -> str:
         """Get the S3 URI for a file."""
         return f"s3://{self.bucket}/{path}"
+
+    def object_metadata(self, path: str) -> Mapping[str, Any]:
+        response = self.s3_client.head_object(Bucket=self.bucket, Key=path)
+        modified = response.get("LastModified")
+        return {
+            "size": int(response.get("ContentLength", 0)),
+            "etag": str(response.get("ETag", "")).strip('"') or None,
+            "last_modified": modified.isoformat() if modified else None,
+            "version_id": response.get("VersionId"),
+            "content_type": response.get("ContentType"),
+        }
 
     def _get_entity_partition_prefix(self, entity: str, partition: Partition) -> str:
         """Get S3 prefix for entity partition."""
@@ -565,7 +744,7 @@ class R2Storage(StorageBackend):
                 try:
                     results[key] = future.result()
                 except Exception as e:
-                    print(f"Error downloading {key}: {e}")
+                    raise StorageError(f"Failed to download object: {key}") from e
         return results
 
     def read_index(
@@ -620,7 +799,10 @@ class R2Storage(StorageBackend):
                         table = pq.read_table(buffer, columns=columns)
                         rows.extend(table.to_pylist())
                     except Exception as e:
-                        print(f"Skipping unreadable file: {file_key} -> {e}")
+                        self.quarantine_object(file_key, e)
+                        raise StorageError(
+                            f"Unreadable parquet object: {file_key}"
+                        ) from e
             else:
                 for file_key in parquet_files:
                     try:
@@ -629,7 +811,10 @@ class R2Storage(StorageBackend):
                         table = pq.read_table(buffer, columns=columns)
                         rows.extend(table.to_pylist())
                     except Exception as e:
-                        print(f"Skipping unreadable file: {file_key} -> {e}")
+                        self.quarantine_object(file_key, e)
+                        raise StorageError(
+                            f"Unreadable parquet object: {file_key}"
+                        ) from e
             result = rows
         else:
             csv_files = [f for f in files if f.endswith("data.csv")]
@@ -646,7 +831,10 @@ class R2Storage(StorageBackend):
                                 df = df[columns]
                             frames.append(df)
                         except Exception as e:
-                            print(f"Skipping unreadable CSV: {file_key} -> {e}")
+                            self.quarantine_object(file_key, e)
+                            raise StorageError(
+                                f"Unreadable CSV object: {file_key}"
+                            ) from e
                 else:
                     for file_key in csv_files:
                         try:
@@ -656,7 +844,10 @@ class R2Storage(StorageBackend):
                                 df = df[columns]
                             frames.append(df)
                         except Exception as e:
-                            print(f"Skipping unreadable CSV: {file_key} -> {e}")
+                            self.quarantine_object(file_key, e)
+                            raise StorageError(
+                                f"Unreadable CSV object: {file_key}"
+                            ) from e
                 if frames:
                     df_all = pd.concat(frames, ignore_index=True)
                     result = df_all.to_dict(orient="records")
@@ -822,6 +1013,15 @@ class S3Storage(StorageBackend):
         df.to_csv(buffer, **kwargs)
         self.s3_client.put_object(Bucket=self.bucket, Key=path, Body=buffer.getvalue())
 
+    def read_bytes(self, path: str) -> bytes:
+        """Read bytes from S3."""
+        obj = self.s3_client.get_object(Bucket=self.bucket, Key=path)
+        return obj["Body"].read()
+
+    def write_bytes(self, data: bytes, path: str) -> None:
+        """Write bytes to S3."""
+        self.s3_client.put_object(Bucket=self.bucket, Key=path, Body=data)
+
     def exists(self, path: str) -> bool:
         """Check if a file exists in S3."""
         try:
@@ -832,7 +1032,11 @@ class S3Storage(StorageBackend):
 
     def list_files(self, prefix: str) -> list[str]:
         """List files with given prefix in S3."""
-        files: list[str] = []
+        return list(self.list_object_metadata(prefix))
+
+    def list_object_metadata(self, prefix: str) -> Mapping[str, Mapping[str, Any]]:
+        """List S3 keys using metadata already present in ListObjectsV2 pages."""
+        objects: dict[str, Mapping[str, Any]] = {}
         continuation_token: Optional[str] = None
 
         while True:
@@ -841,14 +1045,21 @@ class S3Storage(StorageBackend):
                 kwargs["ContinuationToken"] = continuation_token
 
             response = self.s3_client.list_objects_v2(**kwargs)
-            files.extend(obj["Key"] for obj in response.get("Contents", []))
+            for obj in response.get("Contents", []):
+                modified = obj.get("LastModified")
+                objects[str(obj["Key"])] = {
+                    "size": int(obj.get("Size", 0)),
+                    "etag": str(obj.get("ETag", "")).strip('"') or None,
+                    "last_modified": modified.isoformat() if modified else None,
+                    "storage_class": obj.get("StorageClass"),
+                }
 
             if response.get("IsTruncated"):
                 continuation_token = response.get("NextContinuationToken")
             else:
                 break
 
-        return files
+        return objects
 
     def get_full_path(self, path: str) -> str:
         """Get the S3 URI for a file."""
@@ -886,8 +1097,8 @@ class S3Storage(StorageBackend):
                     table = pq.read_table(buffer, columns=columns)
                     rows.extend(table.to_pylist())
                 except Exception as e:
-                    print(f"Skipping unreadable file: {file_key} -> {e}")
-                    continue
+                    self.quarantine_object(file_key, e)
+                    raise StorageError(f"Unreadable parquet object: {file_key}") from e
             return rows
 
         # Fall back to CSV files
@@ -903,8 +1114,8 @@ class S3Storage(StorageBackend):
                         df = df[columns]
                     frames.append(df)  # type: ignore[arg-type]
                 except Exception as e:
-                    print(f"Skipping unreadable CSV: {file_key} -> {e}")
-                    continue
+                    self.quarantine_object(file_key, e)
+                    raise StorageError(f"Unreadable CSV object: {file_key}") from e
             if not frames:
                 return []
             df_all = pd.concat(frames, ignore_index=True)
@@ -1002,7 +1213,97 @@ class S3Storage(StorageBackend):
         return f"s3:{self.bucket}"
 
 
-def get_storage() -> StorageBackend:
+class ReadOnlyStorage(StorageBackend):
+    """Capability wrapper that prevents source-bucket mutation in process."""
+
+    def __init__(self, backend: StorageBackend) -> None:
+        self.backend = backend
+
+    def read_parquet(self, path: str) -> pd.DataFrame:
+        return self.backend.read_parquet(path)
+
+    def read_csv(self, path: str, **kwargs) -> pd.DataFrame:
+        return self.backend.read_csv(path, **kwargs)
+
+    def read_bytes(self, path: str) -> bytes:
+        return self.backend.read_bytes(path)
+
+    def exists(self, path: str) -> bool:
+        return self.backend.exists(path)
+
+    def list_files(self, prefix: str) -> list[str]:
+        return self.backend.list_files(prefix)
+
+    def list_object_metadata(self, prefix: str) -> Mapping[str, Mapping[str, Any]]:
+        return self.backend.list_object_metadata(prefix)
+
+    def get_full_path(self, path: str) -> str:
+        return self.backend.get_full_path(path)
+
+    def object_metadata(self, path: str) -> Mapping[str, Any]:
+        return self.backend.object_metadata(path)
+
+    def root(self) -> Path | str:
+        return self.backend.root()
+
+    def describe(self) -> str:
+        return f"read-only:{self.backend.describe()}"
+
+    def read_index(
+        self, entity: str, filters: Mapping[str, Any], columns: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        raise StorageError(
+            "read_index is disabled for read-only sources because legacy error "
+            "handling can quarantine into the source bucket; read objects directly"
+        )
+
+    @staticmethod
+    def _deny() -> None:
+        raise StorageError("read-only source storage cannot be mutated")
+
+    def write_parquet(self, df: pd.DataFrame, path: str) -> None:
+        self._deny()
+
+    def write_csv(self, df: pd.DataFrame, path: str, **kwargs) -> None:
+        self._deny()
+
+    def write_bytes(self, data: bytes, path: str) -> None:
+        self._deny()
+
+    def write(
+        self,
+        entity: str,
+        records: Sequence[Mapping[str, Any]],
+        partition: Partition,
+        *,
+        overwrite: bool = True,
+    ) -> int:
+        self._deny()
+        return 0
+
+
+def get_source_storage() -> ReadOnlyStorage:
+    """Return the separately configured historical source as read-only."""
+    settings = StorageSettings.source_from_env()
+    missing = [
+        name
+        for name, value in {
+            "CFB_R2_SOURCE_BUCKET": settings.bucket,
+            "CFB_R2_SOURCE_ACCOUNT_ID": settings.account_id,
+            "CFB_R2_SOURCE_ACCESS_KEY": settings.access_key,
+            "CFB_R2_SOURCE_SECRET_KEY": settings.secret_key,
+        }.items()
+        if not value
+    ]
+    if missing:
+        raise ValueError(f"Historical source storage requires: {', '.join(missing)}")
+    backend = get_storage(settings)
+    return ReadOnlyStorage(backend)
+
+
+def get_storage(
+    settings: StorageSettings | None = None, *, environment: str | None = None
+) -> StorageBackend:
     """Get storage instance based on environment configuration.
 
     Returns:
@@ -1011,10 +1312,11 @@ def get_storage() -> StorageBackend:
     Raises:
         ValueError: If storage backend is not configured or invalid
     """
-    backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+    settings = settings or StorageSettings.from_env(environment=environment)
+    backend = settings.backend.lower()
 
     if backend == "local":
-        data_root = os.getenv("CFB_MODEL_DATA_ROOT")
+        data_root = settings.data_root
         if not data_root:
             raise ValueError(
                 "CFB_MODEL_DATA_ROOT must be set for local storage backend"
@@ -1022,16 +1324,24 @@ def get_storage() -> StorageBackend:
         return LocalStorage(data_root)
 
     elif backend == "r2":
-        bucket = os.getenv("CFB_R2_BUCKET")
-        account_id = os.getenv("CFB_R2_ACCOUNT_ID")
-        access_key = os.getenv("CFB_R2_ACCESS_KEY")
-        secret_key = os.getenv("CFB_R2_SECRET_KEY")
-        endpoint = os.getenv("CFB_R2_ENDPOINT")
+        selected = settings.environment
+        prefix = (
+            "CFB_R2_PREVIEW"
+            if selected == "preview"
+            else "CFB_R2_SOURCE"
+            if selected == "source"
+            else "CFB_R2"
+        )
+        bucket = settings.bucket
+        account_id = settings.account_id
+        access_key = settings.access_key
+        secret_key = settings.secret_key
+        endpoint = settings.endpoint
 
         if not all([bucket, account_id, access_key, secret_key]):
             raise ValueError(
-                "R2 storage requires: CFB_R2_BUCKET, CFB_R2_ACCOUNT_ID, "
-                "CFB_R2_ACCESS_KEY, CFB_R2_SECRET_KEY"
+                f"R2 {selected} storage requires: {prefix}_BUCKET, "
+                f"{prefix}_ACCOUNT_ID, {prefix}_ACCESS_KEY, {prefix}_SECRET_KEY"
             )
 
         assert (
@@ -1043,10 +1353,10 @@ def get_storage() -> StorageBackend:
         return R2Storage(bucket, account_id, access_key, secret_key, endpoint)
 
     elif backend == "s3":
-        bucket = os.getenv("CFB_S3_BUCKET")
-        region = os.getenv("CFB_S3_REGION", "us-east-1")
-        access_key = os.getenv("AWS_ACCESS_KEY_ID")
-        secret_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        bucket = settings.bucket
+        region = settings.region
+        access_key = settings.access_key
+        secret_key = settings.secret_key
 
         if not bucket:
             raise ValueError("S3 storage requires: CFB_S3_BUCKET")

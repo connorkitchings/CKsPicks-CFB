@@ -7,6 +7,7 @@ Single source of truth for shared contracts between the Python pipeline and the 
 | File | Purpose |
 |---|---|
 | `schema.sql` | Canonical database schema (Postgres) |
+| `migrations/` | Sole append-only upgrade history for existing databases |
 | `schema.ts` | Drizzle ORM types (must match `schema.sql`) |
 | `teams.py` | Python `TEAM_LOGO_MAP` for team name normalization |
 | `teams.ts` | TypeScript `TEAM_LOGO_MAP` (must match `teams.py`) |
@@ -25,6 +26,16 @@ Or via Makefile:
 ```bash
 make contracts-check
 ```
+
+### Apply migrations
+
+```bash
+make migrate-db
+```
+
+An empty database is bootstrapped from the reconstructed `schema.sql` snapshot.
+An existing database applies each checksummed migration exactly once and rejects
+edited migration history.
 
 ### Import in Python scripts
 
@@ -45,3 +56,4 @@ The validation script ensures these stay in sync with `contracts/`.
 1. **Always edit files in `contracts/` first** -- they are canonical.
 2. Run `make contracts-check` after any edit.
 3. If the web app local copies (`web/src/lib/schema.ts`, `web/src/lib/teams.ts`) differ, copy from `contracts/` to sync them.
+4. Never add migrations under `web/db/migrations/`; that directory is legacy-only.

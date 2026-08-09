@@ -31,6 +31,8 @@ export CFB_R2_ACCOUNT_ID='your_account_id'
 export CFB_R2_ACCESS_KEY='your_access_key'
 export CFB_R2_SECRET_KEY='your_secret_key'
 export DATABASE_URL='postgres://...?sslmode=require'
+export PREVIEW_DATABASE_URL='postgres://isolated-preview...?sslmode=require'
+export CFB_R2_PREVIEW_BUCKET='your_preview_bucket'
 
 # Required for ingestion
 export CFBD_API_KEY='your_api_key_here'
@@ -120,6 +122,9 @@ pre-commit autoupdate
 # Train with default config
 PYTHONPATH=src uv run python -m cks_picks_cfb.train
 
+# Generate the 2022-2024 OOF + locked-2025 Week 0 candidate tournament
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
+
 # Train with specific model
 PYTHONPATH=src uv run python -m cks_picks_cfb.train model=catboost
 
@@ -181,23 +186,31 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --help
 
 ```bash
 # Validate env, R2, Neon schema, artifact paths, and deploy assumptions
-make preflight YEAR=2026 WEEK=1
+make audit-data YEAR=2026 ENV=preview
+make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
+
+# Apply append-only contracts/migrations to the configured Neon branch
+make migrate-db
 
 # Pregame publish (refresh schedule/lines → predict → R2 artifact → Neon):
-make publish-week YEAR=2026 WEEK=1
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD
+
+# Freeze the exact artifact that will later be scored
+make freeze-week YEAR=2026 WEEK=0
 
 # Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
-make close-week YEAR=2026 WEEK=1
+make close-week YEAR=2026 WEEK=0
+
+# Discover registered/orphaned immutable artifacts
+make reconcile YEAR=2026 ENV=preview
 
 # Alias for pregame publish:
-make weekly YEAR=2026 WEEK=1
+make weekly YEAR=2026 WEEK=0
 
-# Recovery commands:
-PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026 --entities games
-PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week 1 --entities betting_lines
-PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
-PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week 1 --upload-artifact
-PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week 1 --from-artifact
+# Durable recovery: resume the same recorded state-machine run
+PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week \
+  --year 2026 --week 1 --as-of YYYY-MM-DD --environment preview \
+  --pipeline-run-id <existing-pipeline-run-id>
 ```
 
 ### Weekly Predictions (standalone)
@@ -247,19 +260,44 @@ make ingest-season YEAR=2026
 # Or specific entities:
 make ingest-season YEAR=2026 ENTITIES=teams,venues,games
 
-# Weekly: ingest plays + betting lines for a week
-make ingest-week YEAR=2026 WEEK=1
+# Request-level Bronze capture (Week 0 is valid)
+make fetch-source YEAR=2026 WEEK=0 ENTITY=games ENV=preview
+
+# Build source-neutral Silver from an explicit capture observation
+make build-silver YEAR=2026 DATASET=games CAPTURE_ID=<capture-id> \
+  AS_OF=2026-08-20T00:00:00Z ENV=preview \
+  OUTPUT_REF_URI=artifacts/preview/refs/games-2026.json
+
+# Legacy compatibility command; not an authoritative production input
+make ingest-week YEAR=2026 WEEK=0
 
 # Direct scripts (no Make):
 PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026
 PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week 1
 ```
 
-### Pre-Aggregation (raw → processed features)
+### Versioned aggregation and features
 
 ```bash
-# Run pre-aggregation pipeline (plays → team_game → team_season, etc.)
-PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
+# Inventory and import production history through read-only source storage.
+make inventory-source
+make import-history
+
+# Build reconciled team-game data from explicit Silver refs
+make build-team-game YEAR=2026 AS_OF=2026-08-20T00:00:00Z ENV=preview \
+  PLAYS_REF_URI=... GAMES_REF_URI=... CORRECTIONS_REF_URI=... \
+  OUTPUT_REF_URI=...
+
+# Build canonical team-side Gold and deterministic wide model features
+make build-features YEAR=2026 AS_OF=2026-08-20T00:00:00Z ENV=preview \
+  MATCHUPS_REF_URI=... SCHEDULE_REF_URI=... \
+  OUTPUT_REF_URI=...
+
+# Generate temporal OOF baselines and assemble market-aware model-ready Gold.
+make build-baselines YEAR=2026 AS_OF=2026-08-20T00:00:00Z ENV=preview \
+  CORE_REF_URI=... OUTPUT_REF_URI=...
+make assemble-model-ready YEAR=2026 AS_OF=2026-08-20T00:00:00Z ENV=preview \
+  CORE_REF_URI=... BASELINES_REF_URI=... MARKETS_REF_URI=... OUTPUT_REF_URI=...
 ```
 
 ### Feature Generation
@@ -625,10 +663,8 @@ PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py
 ### Weekly Production Pipeline
 
 ```bash
-# Complete weekly workflow
-PYTHONPATH=. uv run python scripts/pipeline/cache_running_season_stats.py && \
-PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py && \
-PYTHONPATH=. uv run python scripts/pipeline/publish_picks.py
+# Complete resumable weekly workflow
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production
 ```
 
 ---

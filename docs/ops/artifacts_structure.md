@@ -1,5 +1,10 @@
 # Artifacts Directory Structure
 
+> This local artifact layout is retained for research compatibility only. The
+> authoritative 2026 layout is the immutable R2 lake and run structure documented
+> in [2026 Data Platform](../architecture/data_platform_2026.md). Production must not
+> use `champion_current`, local MLflow registry state, or mutable latest files.
+
 **Version**: V2 (2025-12-05)  
 **Status**: Active
 
@@ -350,7 +355,7 @@ artifacts/mlruns/*/artifacts/
 
 ```bash
 # Train
-PYTHONPATH=. uv run python src/train.py experiment=v2-001
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2-001
 
 # Creates:
 # - artifacts/mlruns/1/                        (MLflow run)
@@ -362,7 +367,7 @@ PYTHONPATH=. uv run python src/train.py experiment=v2-001
 
 ```bash
 # Train with new features
-PYTHONPATH=. uv run python src/train.py experiment=v2-002 features=opponent_adjusted
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2-002 features=opponent_adjusted
 
 # Creates:
 # - artifacts/experiments/phase2_features/v2-002/
@@ -379,7 +384,7 @@ uv run python scripts/test_promotion.py \
 
 ```bash
 # Train CatBoost
-PYTHONPATH=. uv run python src/train.py experiment=v2-006 model=catboost
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2-006 model=catboost
 
 # Creates:
 # - artifacts/experiments/phase3_models/v2-006/

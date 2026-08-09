@@ -1,5 +1,10 @@
 # System Stats Generation Workflow
 
+> Retired for 2026 production. `system_stats` is now derived transactionally from
+> run-specific `prediction_grades` by `python -m cks_picks_cfb.ops close-week`.
+> This document describes the legacy email workflow only; do not run
+> `generate_system_stats.py` or use `data/production/system_stats.json`.
+
 ## Overview
 
 The **System Info** table in the weekly betting email requires accurate, historical performance data for the currently deployed model system. This data includes:

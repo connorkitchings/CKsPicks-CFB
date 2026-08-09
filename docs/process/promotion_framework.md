@@ -1,8 +1,8 @@
 # Promotion Framework — V2 Workflow
 
 **Status**: Active  
-**Version**: 1.0  
-**Date**: 2025-12-05
+**Version**: 2.0
+**Date**: 2026-08-09
 
 ---
 
@@ -17,6 +17,15 @@ The **Promotion Framework** defines the rigorous criteria that all features and 
 ## 5-Gate System
 
 Every candidate (feature set or model) must pass **ALL gates** to be promoted:
+
+For 2026 this framework is applied independently to spread and total within
+each completed-game regime. See
+[`docs/modeling/early_season_regimes.md`](../modeling/early_season_regimes.md).
+The chronology is fixed: expanding 2022–2024 selection folds, a locked 2025
+test trained on 2021–2024, then a final 2021–2025 refit only after the design
+is frozen. 2019 is allowed only as the prior source for early 2021; 2020 is
+excluded entirely. A failed cell remains
+display-only and is not eligible for high-confidence branding.
 
 ### Gate 1: Performance Threshold
 
@@ -42,7 +51,7 @@ Every candidate (feature set or model) must pass **ALL gates** to be promoted:
 
 **Threshold**:
 
-- Holdout year (2024): ≥ 100 bets flagged by model
+- Pooled 2022–2024 OOF selection rows: ≥ 100 bets flagged by model/regime
 - If <100 bets: **REJECT** (insufficient evidence)
 
 **Rationale**:
@@ -61,7 +70,7 @@ Every candidate (feature set or model) must pass **ALL gates** to be promoted:
 
 **Method**:
 
-1. Resample bets with replacement from 2024 holdout
+1. Resample bets with replacement from pooled 2022–2024 OOF predictions
 2. Calculate ROI for baseline vs candidate
 3. Repeat 1000 times
 4. Count: P(candidate > baseline)
@@ -101,17 +110,17 @@ def test_statistical_significance(baseline_bets, candidate_bets, n_bootstrap=100
 
 **Requirement**: Performance is consistent across time periods
 
-**Test**: Walk-Forward Quarterly Validation
+**Test**: Walk-forward seasonal validation
 
 **Method**:
 
-1. Split 2024 holdout into 4 quarters (Q1, Q2, Q3, Q4)
-2. Calculate ROI for each quarter (baseline vs candidate)
-3. Count quarters where candidate > baseline
+1. Evaluate the 2022, 2023, and 2024 temporal folds independently.
+2. Calculate MAE, calibration, ROI, and drawdown for each fold.
+3. Require stability in at least 75% of evaluated periods.
 
 **Threshold**:
 
-- Must win ≥ 3 of 4 quarters\*
+- Must meet the frozen stability rule before the locked 2025 test.
 
 **Rationale**:
 
@@ -230,11 +239,11 @@ VERDICT: ✅ PROMOTE
 
 ```bash
 # Baseline
-PYTHONPATH=. uv run python src/train.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=linear features=minimal_unadjusted_v1 experiment.name=baseline
 
 # Candidate
-PYTHONPATH=. uv run python src/train.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=linear features=opponent_adjusted_v1 experiment.name=candidate
 
 # Test promotion
@@ -264,11 +273,11 @@ uv run python scripts/evaluation/test_feature_promotion.py \
 
 ```bash
 # Baseline (Ridge with promoted features)
-PYTHONPATH=. uv run python src/train.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=linear features=combined_v1 experiment.name=baseline_v2
 
 # Candidate (CatBoost)
-PYTHONPATH=. uv run python src/train.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=catboost_v1 features=combined_v1 experiment.name=catboost_candidate
 
 # Test promotion

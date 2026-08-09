@@ -1,158 +1,109 @@
-# Weekly Pipeline - 2026 Season
+# Weekly Pipeline — 2026 Season
 
-Goal: publish every FBS game for the active 2026 week to the Vercel web app, then close the week after finals are available.
+R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads only the selected immutable prediction run. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md).
 
-R2 is the durable source of truth for raw data, processed features, prediction artifacts, and scored artifacts. Neon Postgres is a derived serving database for the web app tables: `games`, `game_results`, `system_stats`, and `current_week`.
+## Required setup
 
-## One-Time Setup
+Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the environment-specific R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay both use `PREVIEW_DATABASE_URL`; it must differ from production. Apply the checksummed history to an isolated Neon branch with `make migrate-db`.
 
-1. Set required environment variables in `.env`:
-   ```bash
-   DATABASE_URL=postgres://...?sslmode=require
-   CFBD_API_KEY=...
-   CFB_STORAGE_BACKEND=r2
-   CFB_R2_BUCKET=...
-   CFB_R2_ACCOUNT_ID=...
-   CFB_R2_ACCESS_KEY=...
-   CFB_R2_SECRET_KEY=...
-   ```
-2. Apply the database schema if Neon is new:
-   ```bash
-   psql "$DATABASE_URL" -f contracts/schema.sql
-   ```
-3. Configure Vercel with Root Directory `web/` and runtime env `DATABASE_URL`.
-4. Verify the active path:
-   ```bash
-   make preflight YEAR=2026 WEEK=1
-   ```
+Upload route artifacts and configure the ten-cell manifest URI/checksum in `conf/weekly_bets/v2_champion.yaml`. Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.
 
-## Preseason Refresh
+For rehearsal, point `PREVIEW_DATABASE_URL` at an isolated Neon branch and connect that branch to a Vercel Preview deployment.
 
-Run this in mid-August and again before Week 1 if CFBD publishes updated data:
+## Data-ready trigger
 
-```bash
-make ingest-season YEAR=2026 ENTITIES=rosters,coaches,recruiting,rankings,games
-make preflight YEAR=2026 WEEK=1
-```
-
-Known availability gates:
-- 2026 teams, venues, and games are already present in R2.
-- Rosters, coaches, recruiting, rankings, external ratings, betting lines, plays, and game stats depend on CFBD/API/provider publication timing.
-- Early-season predictions use latest prior-season `processed/team_week_adj` features when teams have fewer than 4 current-season games. These rows are display-eligible but not high-confidence eligible.
-
-### Optional Preseason Candidate
-
-The Week 1 preseason candidate is disabled by default and does not alter the
-publish contract. Capture each provider source once under an immutable date;
-the same `--year` and `--as-of` combination must never be rerun:
+Capture the immutable preseason sources once:
 
 ```bash
 PYTHONPATH=.:src uv run python scripts/data/ingest_preseason.py \
   --year 2026 --as-of YYYY-MM-DD
 ```
 
-Backfill the required historical snapshots before training. The trainer
-enforces 2019/2021-2023 training, 2024 locked holdout, and optional 2025
-shadow validation. Select Week 2-3 weights from training-only rows, attach
-them to the model bundle, and enable `preseason` in
-`conf/weekly_bets/v2_champion.yaml` only when its embedded promotion result is
-passing and the 2026 snapshot is complete. Otherwise the normal recency
-fallback remains active.
-
-## Pregame Publish
-
-Run before each slate and rerun after meaningful line changes:
+Then run the complete readiness gate:
 
 ```bash
-make publish-week YEAR=2026 WEEK=N
+make audit-data YEAR=2026 ENV=preview
+make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 ```
 
-This target:
-1. Runs preflight.
-2. Refreshes the season schedule and the target week's betting lines.
-3. Runs pre-aggregation for completed raw data already in R2.
-4. Generates predictions and uploads `artifacts/production/predictions/year=YYYY/CFB_weekN_bets.csv`.
-5. Publishes that durable artifact into Neon and updates `current_week`.
+Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS-vs-FBS schedule has unique game IDs, the point-in-time snapshot is complete, both promoted model checksums load, contracts match, and the web app lints, typechecks, and builds.
 
-`make weekly YEAR=2026 WEEK=N` is an alias for `make publish-week`.
+## Progressive publish and freeze
 
-## Postgame Close
+Publish and rerun as lines arrive:
 
-Run after finals are available:
+```bash
+make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DD
+```
+
+Each invocation runs through `python -m cks_picks_cfb.ops`, creates a new run-specific R2 prefix, and records resumable steps in `ops.pipeline_steps`. Neon activation occurs in one transaction only after predictions validate. Missing lines are allowed; the site shows the model output with “Line unavailable—model prediction shown, no lean.”
+
+Before kickoff, freeze the active run:
+
+```bash
+make freeze-week YEAR=2026 WEEK=N
+```
+
+Freeze requires predictions and both line types for every eligible game. A genuine provider exception can be recorded explicitly:
+
+```bash
+make freeze-week YEAR=2026 WEEK=N WAIVER="provider did not list total for game 123"
+```
+
+Frozen runs are immutable. Historical pages select the newest frozen/scored run, while the active week selects `current_week.active_run_id`.
+
+## Close and replay
+
+After finals:
 
 ```bash
 make close-week YEAR=2026 WEEK=N
 ```
 
-This target:
-1. Refreshes final scores plus completed plays, betting lines, and game stats.
-2. Runs pre-aggregation with completed plays.
-3. Scores the durable prediction artifact and uploads `artifacts/production/scored/year=YYYY/CFB_weekN_bets_scored.csv`.
-4. Upserts scored results into Neon and recomputes `system_stats`.
+Scoring resolves the frozen run from Neon, verifies that run's immutable R2 artifact, and writes run-specific `prediction_grades`. It cannot score a mutable preview or a global game grade.
 
-## Recovery Commands
-
-Use these when a single step needs to be rerun:
+Rehearse a historical season against an isolated preview database:
 
 ```bash
-# Preflight only
-make preflight YEAR=2026 WEEK=N
-
-# Refresh schedule only
-PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026 --entities games
-
-# Refresh week lines only
-PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week N --entities betting_lines
-
-# Refresh completed week data only
-PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year 2026 --week N --entities plays,betting_lines,game_stats
-
-# Rebuild processed features
-PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year 2026
-
-# Regenerate and upload prediction artifact
-PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year 2026 --week N --upload-artifact
-
-# Publish prediction artifact to Neon
-PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year 2026 --week N --from-artifact
-
-# Score and upload scored artifact
-PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --year 2026 --week N --from-artifact --upload-artifact
-
-# Publish scored artifact to Neon
-PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year 2026 --week N --from-artifact
+make replay-season YEAR=2025 ENV=preview
 ```
 
-## Health Checks
+The replay command refuses to run unless `PREVIEW_DATABASE_URL` is set and differs from `DATABASE_URL`.
+
+## Early-season routing
+
+Completed games are counted per team. The matchup regime label uses the lesser count:
+
+| Completed games | Route |
+|---:|---|
+| 0 | Preseason/prior model |
+| 1 | Direct Ridge, direct CatBoost, or monotone blend champion |
+| 2 | Direct Ridge, direct CatBoost, or monotone blend champion |
+| 3 | Direct Ridge, direct CatBoost, or monotone blend champion |
+| 4+ | Current-season model only |
+
+Weights must be selected from training-year out-of-fold predictions and decrease monotonically. The preseason snapshot builder supports any scheduled week, so byes do not force an established route. A regime that has not passed promotion remains display-only and cannot receive high-confidence branding.
+
+The only supported general training entry point is:
 
 ```bash
-# App health
-curl https://<your-vercel-domain>/api/health
-
-# DB serving state
-psql "$DATABASE_URL" -c "SELECT season, week FROM current_week;"
-psql "$DATABASE_URL" -c "SELECT season, as_of_week, spread_wins, spread_losses, total_wins, total_losses FROM system_stats ORDER BY season;"
-psql "$DATABASE_URL" -c "SELECT season, week, COUNT(*) FROM games GROUP BY 1,2 ORDER BY 1,2;"
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 ```
 
-## Modeling Track
+Generate candidates with `experiment=week0_regimes`. Selection uses temporal 2022–2024 OOF predictions, 2025 is the locked test, and the unchanged production design refits on 2021–2025. Early 2021 may use 2019 only as its prior source; 2020 remains entirely excluded.
 
-The current `conf/weekly_bets/v2_champion.yaml` model is a 2026 display fallback. It should not be treated as a trusted betting edge. Modeling work resumes after the ops path is stable:
+## Health and recovery
+
+`/api/health` reports the schema version, active run/state, expected/predicted/lined coverage, artifact freshness, and last successful publish. It never returns database error details.
+
+Useful checks:
 
 ```bash
-PYTHONPATH=.:src uv run python research/training/cross_validation.py --config conf/experiment/v2_walk_forward_cv.yaml
-PYTHONPATH=.:src uv run python research/training/cross_validation.py --config conf/experiment/v2_catboost_walk_forward.yaml
-PYTHONPATH=.:src uv run python research/analysis/shap_stability.py --output artifacts/analysis/shap_stability_report.md
+psql "$DATABASE_URL" -c "SELECT run_id, season, week, state, expected_games, predicted_games, lined_games FROM prediction_runs ORDER BY created_at DESC;"
+psql "$DATABASE_URL" -c "SELECT season, week, active_run_id FROM current_week WHERE id = 1;"
+curl https://<preview-domain>/api/health
 ```
 
-Promotion requirements remain: no 2020 training data, no target leakage, positive stable ROI across walk-forward folds, and enough bet volume to matter.
+Any prediction, upload, validation, or database failure exits nonzero. Do not continue manually to activation after a failed step; correct the failure and create a new run.
 
-## Troubleshooting
-
-| Symptom | Likely Cause | Fix |
-|---|---|---|
-| App shows database error | `DATABASE_URL` missing in Vercel | Add env var and redeploy |
-| No active week | `current_week` was not updated | Run `publish_to_db.py --from-artifact` without `--no-update-current` |
-| Week 1 has predictions but no high-confidence games | Cold-start eligibility suppresses high confidence before 4 games/team | Expected early-season behavior |
-| Scoring says no completed scores | CFBD games refresh has not published finals yet | Re-run `ingest_season --entities games` later |
-| Logos missing | Team map mismatch | Update `contracts/teams.py`, `contracts/teams.ts`, web copies, then run `make contracts-check` |
+Resume an interrupted operation with the same `--pipeline-run-id` through the Python CLI. Use `make reconcile YEAR=2026 ENV=preview` to catalog inactive/orphaned artifacts.

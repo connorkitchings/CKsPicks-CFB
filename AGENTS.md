@@ -54,9 +54,11 @@ print(f"✅ Data root verified: {data_root}")
 - Use `load_point_in_time_data()` to avoid future data leakage
 
 **Training Windows:**
-- Train: 2019, 2021-2023 (skip 2020 COVID year)
-- Holdout: 2024
-- Minimum games: 4 games required for adjusted stats & betting eligibility
+- Selection: expanding temporal folds validated in 2022-2024
+- Locked test: train 2021-2024, evaluate 2025 once
+- Production refit: unchanged design on 2021-2025 for 2026
+- 2019 is prior-feature lineage for early 2021 only; skip 2020 entirely
+- Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
 **Column Conventions:**
 - Maintain: `season`, `week`, `game_id`, `team` keys
@@ -196,16 +198,16 @@ uv run ruff format . && uv run ruff check .
 
 ```bash
 # Basic training with defaults
-PYTHONPATH=. uv run python src/models/train_model.py
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 
 # Run specific experiment
-PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_baseline_v1
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
 
 # Hyperparameter optimization
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
 
 # Debug configuration
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 ```
 
 **See `.codex/QUICKSTART.md` for complete command reference.**
@@ -227,7 +229,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 4. Check script uses environment variable, not hardcoded paths
 
 **Hydra Config Errors:**
-- Debug with: `PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve`
+- Debug with: `PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve`
 - Check `conf/config.yaml` and experiment configs
 
 **MLflow Tracking Issues:**
@@ -258,7 +260,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 
 **Training on 2020 Data:**
 - ❌ Problem: Including COVID-disrupted 2020 season
-- ✅ Solution: Use `train_years: [2019, 2021, 2022, 2023]`
+- ✅ Solution: use the versioned `conf/training/week0_2026.yaml` chronology
 
 **Future Data Leakage:**
 - ❌ Problem: Using future data in historical analysis
@@ -325,7 +327,7 @@ PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
 
 - **Config:** `src/config.py` - Path configuration
 - **Features:** `src/features/pipeline.py` - Feature engineering
-- **Training:** `src/models/train_model.py` - Model training
+- **Training:** `src/cks_picks_cfb/train.py` - Canonical model training
 - **Inference:** `scripts/pipeline/generate_weekly_bets.py` - Predictions
 - **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
 - **Research:** `research/` - Analysis, tuning, debugging, experiments

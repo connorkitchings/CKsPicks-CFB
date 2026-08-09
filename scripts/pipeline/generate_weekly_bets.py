@@ -1,7 +1,12 @@
 import argparse
+import hashlib
+import json
 import os
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 import mlflow
 import numpy as np
@@ -12,11 +17,21 @@ from omegaconf import OmegaConf
 sys.path.append(os.getcwd())
 # noqa: E402
 from cks_picks_cfb.artifacts import (
+    dataframe_csv_bytes,
     local_prediction_path,
-    prediction_artifact_path,
-    write_csv_artifact,
+    prediction_run_features_path,
+    sha256_bytes,
+    write_prediction_run,
 )
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.features.point_in_time import build_point_in_time_matchups
 from cks_picks_cfb.features.selector import select_features
+from cks_picks_cfb.model_bundle import (
+    load_model_artifact,
+    load_model_bundle_v2,
+    predict_with_model_bundle_v2,
+)
 from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 
@@ -37,15 +52,35 @@ def main():
     parser.add_argument("--year", type=int, help="Override year from config")
     parser.add_argument("--week", type=int, help="Override week from config")
     parser.add_argument(
+        "--as-of",
+        default=None,
+        help="Point-in-time data cutoff recorded in the run manifest (ISO-8601).",
+    )
+    parser.add_argument(
         "--output-csv",
         type=Path,
         default=None,
-        help="Working-copy CSV path. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
+        help="Ephemeral working CSV path (defaults under CFB_WORK_ROOT or the OS temp directory).",
     )
     parser.add_argument(
         "--upload-artifact",
         action="store_true",
         help="Also write the predictions CSV to durable storage (R2/S3/local backend).",
+    )
+    parser.add_argument(
+        "--run-id",
+        default=None,
+        help="Immutable run identifier. Defaults to a UTC timestamp plus random suffix.",
+    )
+    parser.add_argument(
+        "--run-state",
+        choices=("preview", "published"),
+        default="preview",
+        help="Initial durable run state.",
+    )
+    parser.add_argument(
+        "--dataset-refs-uri",
+        help="Immutable JSON list of exact DatasetRefs selected by orchestration.",
     )
     args = parser.parse_args()
 
@@ -55,6 +90,10 @@ def main():
 
     year = args.year if args.year is not None else cfg.year
     week = args.week if args.week is not None else cfg.week
+    run_id = args.run_id or (
+        f"{year}w{week}-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{uuid4().hex[:8]}"
+    )
+    production_mode = os.getenv("CFB_ARTIFACT_ENV", "production") == "production"
     spread_threshold = cfg.spread_edge_threshold
     # Support dual-threshold betting strategy (default + high confidence)
     spread_threshold_high = cfg.get("spread_edge_threshold_high_conf", spread_threshold)
@@ -66,25 +105,96 @@ def main():
     )
 
     setup_mlflow()
+    storage = get_storage()
+    routing_bundle = None
+    input_dataset_refs: list[dict] = []
+    explicit_reader = None
+    gold_inference_df = None
+    market_snapshots_df = None
+    if cfg.get("model_bundle_v2"):
+        routing_bundle = load_model_bundle_v2(cfg.model_bundle_v2, storage=storage)
+        if args.dataset_refs_uri:
+            configured_refs = json.loads(
+                storage.read_bytes(args.dataset_refs_uri).decode("utf-8")
+            )
+        else:
+            raise ValueError(
+                "model_bundle_v2 inference requires --dataset-refs-uri selected "
+                "for this pipeline run"
+            )
+        ref_map: dict[tuple[str, int], DatasetRef] = {}
+        frame_cache: dict[str, list[dict]] = {}
+        for item in configured_refs:
+            ref = DatasetRef(
+                dataset=str(item["dataset"]),
+                version_id=str(item["version_id"]),
+                schema_version=str(item["schema_version"]),
+                content_sha=str(item["content_sha"]),
+                uri=str(item["uri"]),
+            )
+            entity = str(item["entity"])
+            ref_year = int(item["year"])
+            ref_map[(entity, ref_year)] = ref
+            input_dataset_refs.append(
+                {
+                    "entity": entity,
+                    "year": ref_year,
+                    "dataset": ref.dataset,
+                    "version_id": ref.version_id,
+                    "schema_version": ref.schema_version,
+                    "content_sha": ref.content_sha,
+                    "uri": ref.uri,
+                }
+            )
+            if entity == "point_in_time_matchups" and ref_year == year:
+                gold_inference_df = read_dataset(storage, ref)
+            if entity == "betting_lines" and ref_year == year:
+                market_snapshots_df = read_dataset(storage, ref)
+
+        def explicit_reader(entity: str, ref_year: int):
+            key = (entity, ref_year)
+            if key not in ref_map:
+                raise KeyError(f"No explicit dataset reference for {entity}/{ref_year}")
+            ref = ref_map[key]
+            if ref.version_id not in frame_cache:
+                frame_cache[ref.version_id] = read_dataset(storage, ref).to_dict(
+                    "records"
+                )
+            return frame_cache[ref.version_id]
 
     # Load Models and Feature Configs
     # Support both MLflow registry (legacy) and local paths (V2)
 
-    # Spread
-    if "models" in cfg and "spread" in cfg.models and "path" in cfg.models.spread:
-        print(f"Loading Spread Model from local path: {cfg.models.spread.path}")
-        from joblib import load
-
-        spread_model = load(cfg.models.spread.path)
+    # Spread compatibility model is not loaded when the frozen bundle is active.
+    if routing_bundle is not None:
+        spread_model = None
+        spread_model_sha = routing_bundle.manifest_sha256
+        spread_feat_path = "conf/features/matchup_v1.yaml"
+    elif (
+        "models" in cfg
+        and "spread" in cfg.models
+        and (cfg.models.spread.get("artifact_uri") or cfg.models.spread.get("path"))
+    ):
+        print("Loading checksummed spread model artifact")
+        spread_model, spread_model_sha = load_model_artifact(
+            cfg.models.spread, require_durable=production_mode
+        )
         spread_feat_path = cfg.models.spread.get(
             "features", "conf/features/ppr_v1.yaml"
         )
     else:
+        if production_mode:
+            raise ValueError(
+                "Production inference requires a checksummed durable spread artifact"
+            )
         spread_model_name = cfg.model_registry.spread_models[0]
         print(f"Loading Spread Model from MLflow: {spread_model_name}")
         spread_model = mlflow.pyfunc.load_model(
             f"models:/{spread_model_name}/Production"
         )
+        spread_model_sha = hashlib.sha256(
+            f"mlflow:{spread_model_name}:Production".encode()
+        ).hexdigest()
         spread_feat_path = "conf/features/ppr_v1.yaml"
 
     print(f"Loading Spread Features from: {spread_feat_path}")
@@ -95,19 +205,34 @@ def main():
         if "params" in cfg.features:
             spread_feat_cfg["params"] = cfg.features.params
 
-    # Total
-    if "models" in cfg and "total" in cfg.models and "path" in cfg.models.total:
-        print(f"Loading Total Model from local path: {cfg.models.total.path}")
-        from joblib import load
-
-        total_model = load(cfg.models.total.path)
+    # Total compatibility model is not loaded when the frozen bundle is active.
+    if routing_bundle is not None:
+        total_model = None
+        total_model_sha = routing_bundle.manifest_sha256
+        total_feat_path = "conf/features/matchup_v1.yaml"
+    elif (
+        "models" in cfg
+        and "total" in cfg.models
+        and (cfg.models.total.get("artifact_uri") or cfg.models.total.get("path"))
+    ):
+        print("Loading checksummed total model artifact")
+        total_model, total_model_sha = load_model_artifact(
+            cfg.models.total, require_durable=production_mode
+        )
         total_feat_path = cfg.models.total.get(
             "features", "conf/features/standard_v1.yaml"
         )
     else:
+        if production_mode:
+            raise ValueError(
+                "Production inference requires a checksummed durable total artifact"
+            )
         total_model_name = cfg.model_registry.total_models[0]
         print(f"Loading Total Model from MLflow: {total_model_name}")
         total_model = mlflow.pyfunc.load_model(f"models:/{total_model_name}/Production")
+        total_model_sha = hashlib.sha256(
+            f"mlflow:{total_model_name}:Production".encode()
+        ).hexdigest()
         total_feat_path = "conf/features/standard_v1.yaml"
 
     print(f"Loading Total Features from: {total_feat_path}")
@@ -117,6 +242,13 @@ def main():
 
     spread_full_cfg = OmegaConf.create({"features": spread_feat_cfg})
     total_full_cfg = OmegaConf.create({"features": total_feat_cfg})
+    model_bundle_sha = (
+        routing_bundle.manifest_sha256
+        if routing_bundle is not None
+        else hashlib.sha256(
+            f"{spread_model_sha}:{total_model_sha}".encode("utf-8")
+        ).hexdigest()
+    )
 
     # Load Data
     # For V2, we might need to pass feature params (alpha, type) to load function
@@ -137,7 +269,49 @@ def main():
         alpha = cfg.features.get("alpha", 0.5)
 
     try:
-        if use_recency:
+        if gold_inference_df is not None:
+            print("Using explicit point-in-time Gold feature dataset...")
+            data_df = gold_inference_df[
+                (gold_inference_df["season"].astype(int) == int(year))
+                & (gold_inference_df["week"].astype(int) == int(week))
+            ].copy()
+            if data_df.empty:
+                raise SystemExit(f"Gold dataset has no rows for {year} week {week}")
+            if market_snapshots_df is not None and not market_snapshots_df.empty:
+                market = market_snapshots_df.copy()
+                market = market.sort_values(
+                    [
+                        column
+                        for column in ("market_captured_at", "captured_at")
+                        if column in market
+                    ]
+                ).drop_duplicates("game_id", keep="last")
+                market = market.rename(
+                    columns={
+                        "spread_line": "home_team_spread_line",
+                        "spread": "home_team_spread_line",
+                        "total": "total_line",
+                    }
+                )
+                market_columns = [
+                    column
+                    for column in (
+                        "game_id",
+                        "home_team_spread_line",
+                        "total_line",
+                        "market_snapshot_id",
+                    )
+                    if column in market
+                ]
+                data_df = data_df.drop(
+                    columns=[
+                        column for column in market_columns if column != "game_id"
+                    ],
+                    errors="ignore",
+                ).merge(market[market_columns], on="game_id", how="left")
+            if "id" not in data_df and "game_id" in data_df:
+                data_df = data_df.rename(columns={"game_id": "id"})
+        elif use_recency:
             print(f"Using V2 Recency Loading (alpha={alpha})...")
             from cks_picks_cfb.features.v2_recency import load_v2_recency_data
 
@@ -147,6 +321,7 @@ def main():
                 alpha=alpha,
                 iterations=args.adjustment_iteration,
                 for_prediction=True,
+                dataset_reader=explicit_reader,
             )
             if full_year_df is None or full_year_df.empty:
                 raise SystemExit("No data found via V2 Recency loader.")
@@ -170,6 +345,33 @@ def main():
 
         else:
             raise NotImplementedError("Legacy loading not supported in V2 pipeline.")
+
+        storage = get_storage()
+        team_rows = storage.read_index("raw/teams", {"year": year})
+        fbs_teams = {
+            str(record.get("school"))
+            for record in team_rows
+            if str(record.get("classification", "")).lower() == "fbs"
+        }
+        schedule_rows = storage.read_index("raw/games", {"year": year})
+        expected_ids = {
+            int(record.get("id", record.get("game_id")))
+            for record in schedule_rows
+            if int(record.get("week", -1)) == week
+            and record.get("home_team") in fbs_teams
+            and record.get("away_team") in fbs_teams
+        }
+        data_df = data_df[
+            data_df["home_team"].isin(fbs_teams) & data_df["away_team"].isin(fbs_teams)
+        ].copy()
+        actual_ids = set(pd.to_numeric(data_df["id"], errors="raise").astype(int))
+        if actual_ids != expected_ids:
+            missing = sorted(expected_ids - actual_ids)
+            unexpected = sorted(actual_ids - expected_ids)
+            raise RuntimeError(
+                "FBS-vs-FBS prediction coverage mismatch: "
+                f"missing={missing[:10]} unexpected={unexpected[:10]}"
+            )
 
         if data_df.empty:
             raise SystemExit(f"No games found for Week {week}.")
@@ -246,34 +448,53 @@ def main():
 
         _log_feature_magnitudes(feature_df, "raw_clipped")
 
-        # Predict Spread
-        # For V2 models (linear), we need to ensure features match exactly
-        x_spread = select_features(feature_df, spread_full_cfg)
-        _log_feature_magnitudes(x_spread, "spread_features")
-        spread_preds = spread_model.predict(x_spread)
-
-        # Apply Calibration Offset
-        if (
-            "models" in cfg
-            and "spread" in cfg.models
-            and "calibration_offset" in cfg.models.spread
-        ):
-            offset = cfg.models.spread.calibration_offset
-            print(f"Applying Spread Calibration Offset: {offset}")
-            spread_preds = spread_preds + offset
-
-        # Predict Total
-        x_total = select_features(feature_df, total_full_cfg)
-        _log_feature_magnitudes(x_total, "total_features")
-        total_preds = total_model.predict(x_total)
+        spread_model_versions = pd.Series(
+            cfg.get("model_id", "unknown"), index=feature_df.index
+        )
+        total_model_versions = spread_model_versions.copy()
+        route_high_confidence = pd.Series(True, index=feature_df.index)
+        if routing_bundle is not None:
+            routed = predict_with_model_bundle_v2(
+                routing_bundle, feature_df, storage=storage
+            )
+            spread_preds = routed["predicted_spread"].to_numpy()
+            total_preds = routed["predicted_total"].to_numpy()
+            spread_model_versions = routed["spread_model_version"]
+            total_model_versions = routed["total_model_version"]
+            route_high_confidence = (
+                routed["spread_high_confidence_eligible"]
+                & routed["total_high_confidence_eligible"]
+            )
+        else:
+            # Legacy development fallback. Production bundle inference never
+            # loads or executes these repository-local/MLflow models.
+            x_spread = select_features(feature_df, spread_full_cfg)
+            _log_feature_magnitudes(x_spread, "spread_features")
+            assert spread_model is not None
+            spread_preds = spread_model.predict(x_spread)
+            if (
+                "models" in cfg
+                and "spread" in cfg.models
+                and "calibration_offset" in cfg.models.spread
+            ):
+                offset = cfg.models.spread.calibration_offset
+                print(f"Applying Spread Calibration Offset: {offset}")
+                spread_preds = spread_preds + offset
+            x_total = select_features(feature_df, total_full_cfg)
+            _log_feature_magnitudes(x_total, "total_features")
+            assert total_model is not None
+            total_preds = total_model.predict(x_total)
 
         # The preseason model is opt-in.  It can only affect output when a
         # complete, immutable source snapshot and validated model bundle exist.
         # Any issue leaves the established recency fallback untouched.
         preseason_cfg = cfg.get("preseason")
-        if preseason_cfg and preseason_cfg.get("enabled", False):
+        if (
+            routing_bundle is None
+            and preseason_cfg
+            and preseason_cfg.get("enabled", False)
+        ):
             try:
-                from cks_picks_cfb.data.storage import get_storage
                 from cks_picks_cfb.preseason import (
                     blend_early_season_predictions,
                     build_preseason_matchups,
@@ -292,6 +513,10 @@ def main():
                 if not snapshot_is_complete(storage, year, str(as_of)):
                     raise RuntimeError(
                         f"Preseason snapshot {year}/{as_of} is incomplete; using recency fallback"
+                    )
+                if production_mode:
+                    raise ValueError(
+                        "Production preseason routing must come from model_bundle_v2"
                     )
                 if not Path(model_path).exists():
                     raise FileNotFoundError(
@@ -326,11 +551,18 @@ def main():
                 preseason_spread, preseason_total = predict_preseason(
                     preseason_bundle, preseason_df
                 )
-                weights = {
+                spread_weights = {
                     int(key): float(value)
                     for key, value in (
-                        preseason_cfg.get("blend_weights")
-                        or preseason_bundle.get("blend_weights", {})
+                        preseason_cfg.get("spread_blend_weights")
+                        or preseason_bundle.get("spread_blend_weights", {})
+                    ).items()
+                }
+                total_weights = {
+                    int(key): float(value)
+                    for key, value in (
+                        preseason_cfg.get("total_blend_weights")
+                        or preseason_bundle.get("total_blend_weights", {})
                     ).items()
                 }
                 spread_preds = blend_early_season_predictions(
@@ -342,7 +574,7 @@ def main():
                     data_df.get(
                         "away_current_season_games", pd.Series(0, index=data_df.index)
                     ),
-                    weights,
+                    spread_weights,
                 )
                 total_preds = blend_early_season_predictions(
                     preseason_total,
@@ -353,7 +585,7 @@ def main():
                     data_df.get(
                         "away_current_season_games", pd.Series(0, index=data_df.index)
                     ),
-                    weights,
+                    total_weights,
                 )
                 print(
                     f"Applied guarded preseason model for {year} Week {week} "
@@ -374,7 +606,15 @@ def main():
 
             book_spread = row.get("home_team_spread_line")
             book_total = row.get("total_line")
-            high_confidence_eligible = bool(row.get("high_confidence_eligible", True))
+            high_confidence_eligible = bool(route_high_confidence.iloc[idx])
+            home_count = pd.to_numeric(
+                row.get("home_current_season_games", 0), errors="coerce"
+            )
+            away_count = pd.to_numeric(
+                row.get("away_current_season_games", 0), errors="coerce"
+            )
+            home_count = 0 if pd.isna(home_count) else int(home_count)
+            away_count = 0 if pd.isna(away_count) else int(away_count)
 
             # Spread Bet (Dual-Threshold Strategy)
             if pd.notna(book_spread):
@@ -412,6 +652,22 @@ def main():
                         "edge_total": 0.0,  # Placeholder
                         "Total Bet": "No Bet",  # Placeholder
                         "high_confidence_eligible": high_confidence_eligible,
+                        "home_completed_games": home_count,
+                        "away_completed_games": away_count,
+                        "prediction_regime": row.get(
+                            "prediction_regime", "established"
+                        ),
+                        "spread_model_version": spread_model_versions.iloc[idx],
+                        "total_model_version": total_model_versions.iloc[idx],
+                        "market_snapshot_id": row.get("market_snapshot_id"),
+                        "market_policy_version": row.get("market_policy_version"),
+                        "spread_selection_rule": row.get("spread_selection_rule"),
+                        "total_selection_rule": row.get("total_selection_rule"),
+                        "spread_provider_count": row.get("spread_provider_count", 0),
+                        "total_provider_count": row.get("total_provider_count", 0),
+                        "source_quote_ids": row.get("source_quote_ids", "[]"),
+                        "market_captured_at": row.get("market_captured_at"),
+                        "run_id": run_id,
                     }
                 )
             else:
@@ -429,6 +685,22 @@ def main():
                         "edge_total": 0.0,
                         "Total Bet": "No Bet",
                         "high_confidence_eligible": high_confidence_eligible,
+                        "home_completed_games": home_count,
+                        "away_completed_games": away_count,
+                        "prediction_regime": row.get(
+                            "prediction_regime", "established"
+                        ),
+                        "spread_model_version": spread_model_versions.iloc[idx],
+                        "total_model_version": total_model_versions.iloc[idx],
+                        "market_snapshot_id": row.get("market_snapshot_id"),
+                        "market_policy_version": row.get("market_policy_version"),
+                        "spread_selection_rule": row.get("spread_selection_rule"),
+                        "total_selection_rule": row.get("total_selection_rule"),
+                        "spread_provider_count": row.get("spread_provider_count", 0),
+                        "total_provider_count": row.get("total_provider_count", 0),
+                        "source_quote_ids": row.get("source_quote_ids", "[]"),
+                        "market_captured_at": row.get("market_captured_at"),
+                        "run_id": run_id,
                     }
                 )
 
@@ -474,15 +746,96 @@ def main():
         print(f"Saved bets to {output_path}")
 
         if args.upload_artifact:
-            artifact_path = prediction_artifact_path(year, week)
-            write_csv_artifact(bets_df, artifact_path)
-            print(f"Uploaded durable predictions artifact to {artifact_path}")
+            try:
+                code_sha = subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+            except (OSError, subprocess.CalledProcessError):
+                code_sha = os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown")
+            config_bytes = Path(args.config).read_bytes()
+            data_as_of = (
+                args.as_of
+                or pd.to_datetime(data_df["start_date"], utc=True).min().isoformat()
+            )
+            feature_snapshot = build_point_in_time_matchups(
+                data_df,
+                season=year,
+                as_of=data_as_of,
+                provenance={
+                    "feature_config": str(spread_feat_path),
+                    "adjustment_iteration": str(args.adjustment_iteration),
+                    "code_sha": code_sha,
+                },
+            )
+            feature_bytes = dataframe_csv_bytes(feature_snapshot)
+            feature_uri = prediction_run_features_path(year, week, run_id)
+            storage = get_storage()
+            if storage.exists(feature_uri):
+                if storage.read_bytes(feature_uri) != feature_bytes:
+                    raise FileExistsError(
+                        f"Immutable feature snapshot collision: {feature_uri}"
+                    )
+            else:
+                storage.write_bytes(feature_bytes, feature_uri)
+            lined_games = int(
+                bets_df[["home_team_spread_line", "total_line"]]
+                .notna()
+                .all(axis=1)
+                .sum()
+            )
+            payload = write_prediction_run(
+                bets_df,
+                year=year,
+                week=week,
+                run_id=run_id,
+                manifest={
+                    "state": args.run_state,
+                    "data_as_of": data_as_of,
+                    "feature_snapshot_uri": feature_uri,
+                    "feature_snapshot_sha256": sha256_bytes(feature_bytes),
+                    "expected_games": int(len(data_df)),
+                    "predicted_games": int(
+                        bets_df[["Spread Prediction", "Total Prediction"]]
+                        .notna()
+                        .all(axis=1)
+                        .sum()
+                    ),
+                    "lined_games": lined_games,
+                    "code_sha": code_sha,
+                    "config_sha": hashlib.sha256(config_bytes).hexdigest(),
+                    "model_bundle_sha256": (
+                        routing_bundle.manifest_sha256
+                        if routing_bundle is not None
+                        else model_bundle_sha
+                    ),
+                    "input_dataset_refs": input_dataset_refs,
+                    "source_config": str(args.config),
+                    "system_name": cfg.get("system_name", "CKsPicks Model"),
+                    "model_id": cfg.get("model_id", "unknown"),
+                    "validation": {
+                        "all_predictions_present": bool(
+                            bets_df[["Spread Prediction", "Total Prediction"]]
+                            .notna()
+                            .all(axis=None)
+                        ),
+                        "line_coverage_complete": lined_games == len(data_df),
+                    },
+                },
+            )
+            print(
+                "Uploaded immutable prediction run "
+                f"{run_id} to {payload['artifact_uri']}"
+            )
 
     except Exception as e:
         print(f"Error processing week {week}: {e}")
         import traceback
 
         traceback.print_exc()
+        raise SystemExit(1) from e
 
 
 if __name__ == "__main__":

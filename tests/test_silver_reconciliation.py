@@ -1,0 +1,177 @@
+from datetime import datetime, timezone
+
+import pandas as pd
+import pytest
+
+from cks_picks_cfb.data.lake import capture_provider_records
+from cks_picks_cfb.data.reconciliation import (
+    ReconciliationError,
+    reconcile_completed_games,
+    require_reconciled,
+)
+from cks_picks_cfb.data.silver import (
+    SilverValidationError,
+    build_silver_version,
+    normalize_games,
+    normalize_market_quotes,
+    normalize_plays,
+    normalize_team_game_stats,
+)
+from cks_picks_cfb.data.storage import LocalStorage
+
+
+def test_silver_games_enforces_both_sides_are_fbs():
+    games = normalize_games(
+        [
+            {
+                "id": 1,
+                "season": 2026,
+                "week": 0,
+                "start_date": "2026-08-22T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "home_classification": "fbs",
+                "away_classification": "fbs",
+            },
+            {
+                "id": 2,
+                "season": 2026,
+                "week": 0,
+                "start_date": "2026-08-22T20:00:00Z",
+                "home_team": "A",
+                "away_team": "C",
+                "home_classification": "fbs",
+                "away_classification": "fcs",
+            },
+        ]
+    )
+    assert games["game_id"].tolist() == [1]
+    assert games["week"].tolist() == [0]
+
+
+def test_silver_plays_rejects_duplicates_and_unknown_games():
+    games = pd.DataFrame([{"game_id": 1}])
+    records = [
+        {"id": "p1", "season": 2026, "week": 0, "game_id": 1},
+        {"id": "p1", "season": 2026, "week": 0, "game_id": 1},
+    ]
+    with pytest.raises(SilverValidationError, match="duplicate"):
+        normalize_plays(records, games=games)
+
+    with pytest.raises(SilverValidationError, match="unknown games"):
+        normalize_plays(
+            [{"id": "p2", "season": 2026, "week": 0, "game_id": 2}],
+            games=games,
+        )
+
+
+def test_silver_version_requires_and_records_bronze_capture(tmp_path):
+    storage = LocalStorage(tmp_path)
+    now = datetime.now(timezone.utc)
+    records = [
+        {
+            "id": 1,
+            "season": 2026,
+            "week": 0,
+            "start_date": "2026-08-22T16:00:00Z",
+            "home_team": "A",
+            "away_team": "B",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        }
+    ]
+    capture = capture_provider_records(
+        storage,
+        provider="cfbd",
+        entity="games",
+        records=records,
+        captured_at=now,
+        effective_at=None,
+        request={"week": 0},
+    )
+    _, manifest = build_silver_version(
+        storage,
+        dataset="games",
+        records=records,
+        source_captures=[capture],
+        as_of=now,
+        code_sha="code",
+        config_sha="config",
+    )
+    assert manifest.source_capture_ids == (capture.capture_id,)
+
+
+def test_reconciliation_blocks_team_or_score_conflicts():
+    schedule = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "home_team": "A",
+                "away_team": "B",
+                "home_points": 21,
+                "away_points": 17,
+                "completed": True,
+            }
+        ]
+    )
+    aggregate = pd.DataFrame(
+        [
+            {"game_id": 1, "team": "A", "points": 20},
+            {"game_id": 1, "team": "B", "points": 17},
+        ]
+    )
+    result = reconcile_completed_games(schedule, aggregate)
+    assert result.iloc[0]["classification"] == "blocking_conflict"
+    with pytest.raises(ReconciliationError, match=r"games: \[1\]"):
+        require_reconciled(result)
+
+
+def test_team_game_stats_flatten_to_exact_team_game_rows():
+    result = normalize_team_game_stats(
+        [
+            {
+                "request_week": 0,
+                "season": 2026,
+                "provider_record": {
+                    "id": 10,
+                    "teams": [
+                        {
+                            "teamId": 1,
+                            "team": "A",
+                            "homeAway": "home",
+                            "points": 21,
+                            "stats": [{"category": "totalYards", "stat": "400"}],
+                        },
+                        {
+                            "teamId": 2,
+                            "team": "B",
+                            "homeAway": "away",
+                            "points": 17,
+                            "stats": [{"category": "totalYards", "stat": "350"}],
+                        },
+                    ],
+                },
+            }
+        ]
+    )
+    assert result[["game_id", "team"]].to_dict("records") == [
+        {"game_id": 10, "team": "A"},
+        {"game_id": 10, "team": "B"},
+    ]
+    assert result["total_yards"].tolist() == ["400", "350"]
+
+
+def test_legacy_market_quote_requires_authentic_capture_timestamp():
+    with pytest.raises(SilverValidationError, match="captured_at"):
+        normalize_market_quotes(
+            [
+                {
+                    "game_id": 1,
+                    "provider": "Consensus",
+                    "spread": -3.5,
+                    "__captured_at": "2026-08-09T00:00:00Z",
+                    "__capture_provider": "legacy_cfbd_export",
+                }
+            ]
+        )

@@ -67,9 +67,10 @@ export default async function Home({
   let dbError: string | null = null;
   let systemName: string | null = null;
   let modelId: string | null = null;
+  let runState: string | null = null;
 
   try {
-    if (season && week) {
+    if (season > 0 && week >= 0) {
       [games, stats] = await Promise.all([
         getGamesForWeek(season, week),
         getSystemStats(season),
@@ -77,11 +78,12 @@ export default async function Home({
       if (games.length > 0) {
         systemName = games[0].systemName;
         modelId = games[0].modelId;
+        runState = games[0].runState;
       }
     }
   } catch (err) {
-    dbError =
-      err instanceof Error ? err.message : "Unknown error connecting to database.";
+    console.error("Weekly data query failed", err);
+    dbError = "Weekly data is temporarily unavailable.";
   }
 
   // Most-recent updatedAt among the games in view, falling back to the
@@ -97,11 +99,12 @@ export default async function Home({
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-100">
       <Header
-        season={season || null}
-        week={week || null}
+        season={season > 0 ? season : null}
+        week={season > 0 ? week : null}
         systemName={systemName}
         modelId={modelId}
         updatedAt={updatedAt}
+        runState={runState}
       />
 
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
@@ -111,9 +114,7 @@ export default async function Home({
             (see <code>web/.env.example</code>) and run the migration in{" "}
             <code>web/db/migrations/0001_init.sql</code>. Then publish a week with{" "}
             <code>scripts/pipeline/publish_to_db.py</code>.
-            <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[11px]">
-              {dbError}
-            </pre>
+            <p className="mt-2">{dbError}</p>
           </div>
         )}
 

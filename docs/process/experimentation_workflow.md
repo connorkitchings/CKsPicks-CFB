@@ -28,7 +28,7 @@ The foundation of all experimentation is a stable baseline.
 
 1.  **Model**: A simple, interpretable model. **Initial choice: Ridge Regression.**
 2.  **Features**: A minimal, robust set of core features. **Initial choice: Unadjusted, season-to-date team-game statistics.**
-3.  **Benchmark**: This model is trained on the standard training set (e.g., 2019, 2021-2023) and evaluated on the holdout set (e.g., 2024). Its performance metrics (RMSE, Hit Rate, ROI) become the **official benchmark**.
+3.  **Benchmark**: Candidates are selected only from expanding 2022–2024 temporal folds. The frozen winner is evaluated once on 2025, then refit unchanged on 2021–2025 for 2026.
 4.  **Process**:
     - The baseline model is defined in `conf/model/baseline.yaml`.
     - It is trained and evaluated using the main training script (`src/train.py`).

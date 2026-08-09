@@ -6,7 +6,6 @@
  * reload. `reset` is provided by Next.js and re-runs the segment.
  */
 export default function Error({
-  error,
   reset,
 }: {
   error: Error & { digest?: string };
@@ -20,10 +19,6 @@ export default function Error({
           The database query failed. This is usually transient (Neon cold start
           or a blip). Try again in a moment.
         </p>
-        <pre className="mb-3 overflow-x-auto whitespace-pre-wrap rounded-md bg-white/60 p-2 text-[11px] dark:bg-black/40">
-          {error.message || "Unknown error"}
-          {error.digest ? `\ndigest: ${error.digest}` : ""}
-        </pre>
         <button
           type="button"
           onClick={reset}

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import hydra
@@ -12,6 +13,104 @@ from cks_picks_cfb.utils.mlflow_tracking import (
     get_or_create_experiment,
     get_tracking_uri,
 )
+
+
+def train_preseason_regimes(cfg: DictConfig) -> dict:
+    """Train preseason candidates through the canonical training entry point."""
+    from cks_picks_cfb.data.storage import get_storage
+    from cks_picks_cfb.preseason import (
+        build_preseason_matchups,
+        evaluate_preseason_candidate,
+        save_preseason_models,
+    )
+
+    spec = cfg.experiment
+    snapshots = [(int(item.year), str(item.as_of)) for item in spec.snapshots]
+    if {year for year, _ in snapshots} != {2021, 2022, 2023, 2024}:
+        raise ValueError("Preseason training snapshots must cover 2021-2024")
+    if int(spec.holdout.year) != 2025:
+        raise ValueError("The locked promotion test must be 2025")
+    storage = get_storage()
+    train = pd.concat(
+        [
+            build_preseason_matchups(
+                storage, year=year, as_of=as_of, include_targets=True
+            )
+            for year, as_of in snapshots
+        ],
+        ignore_index=True,
+    )
+    holdout = build_preseason_matchups(
+        storage,
+        year=2025,
+        as_of=str(spec.holdout.as_of),
+        include_targets=True,
+    )
+    bundle, metrics = evaluate_preseason_candidate(
+        train, holdout, None, alpha=float(spec.get("alpha", 10.0))
+    )
+    output = Path(str(spec.output))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    save_preseason_models(bundle, output)
+    mlflow.log_metrics(
+        {
+            key: value
+            for key, value in metrics.items()
+            if isinstance(value, (int, float))
+        }
+    )
+    mlflow.log_artifact(str(output))
+    print(json.dumps(metrics, indent=2, sort_keys=True))
+    return metrics
+
+
+def train_early_season_tournament(cfg: DictConfig) -> dict:
+    """Generate strict temporal candidate predictions from one Gold dataset."""
+    from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+    from cks_picks_cfb.data.storage import get_storage
+    from cks_picks_cfb.models.regime_training import (
+        generate_temporal_candidate_predictions,
+    )
+    from cks_picks_cfb.models.training_policy import policy_from_mapping
+
+    spec = cfg.experiment
+    if not spec.get("feature_dataset_ref"):
+        raise ValueError(
+            "week0 regime training requires an immutable Gold feature_dataset_ref"
+        )
+    ref = DatasetRef(**OmegaConf.to_container(spec.feature_dataset_ref, resolve=True))
+    frame = read_dataset(get_storage(), ref)
+    policy_raw = OmegaConf.to_container(
+        OmegaConf.load(str(spec.training_policy)), resolve=True
+    )
+    policy = policy_from_mapping(policy_raw)
+    predictions, weights = generate_temporal_candidate_predictions(
+        frame,
+        policy=policy,
+        prior_features=list(spec.prior_features),
+        current_features=list(spec.current_features),
+        baseline_columns=OmegaConf.to_container(spec.baseline_columns, resolve=True),
+        market_line_columns=OmegaConf.to_container(
+            spec.market_line_columns, resolve=True
+        ),
+        random_seed=int(cfg.get("random_seed", 42)),
+    )
+    output = Path(str(spec.output))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(output, index=False)
+    weights_path = output.with_suffix(".weights.json")
+    weights_path.write_text(json.dumps(weights, indent=2, sort_keys=True))
+    mlflow.log_artifact(str(output))
+    mlflow.log_artifact(str(weights_path))
+    result = {
+        "rows": len(predictions),
+        "feature_dataset_version": ref.version_id,
+        "selection_years": [2022, 2023, 2024],
+        "locked_test_year": 2025,
+        "blend_weights": weights,
+    }
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return result
 
 
 def load_and_prepare_data(cfg: DictConfig, max_workers: int = 3):
@@ -145,6 +244,16 @@ def main(cfg: DictConfig):
     with mlflow.start_run(experiment_id=experiment_id, run_name=cfg.model.name):
         # Log Config
         mlflow.log_params(OmegaConf.to_container(cfg, resolve=True))
+
+        if cfg.get("experiment") and cfg.experiment.get("workflow") == "preseason":
+            train_preseason_regimes(cfg)
+            return
+        if (
+            cfg.get("experiment")
+            and cfg.experiment.get("workflow") == "early_season_tournament"
+        ):
+            train_early_season_tournament(cfg)
+            return
 
         # Load Data
         print("Loading Data...")

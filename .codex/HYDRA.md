@@ -61,8 +61,8 @@ defaults:
 
 data:
   adjustment_iteration: 2
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
 
 mode: train                   # train | optimize
 ```
@@ -129,13 +129,13 @@ experiment_name: spread_catboost_baseline_v1
 
 ```bash
 # General pattern
-PYTHONPATH=. uv run python src/models/train_model.py key=value
+PYTHONPATH=src uv run python -m cks_picks_cfb.train key=value
 
 # Nested keys
-PYTHONPATH=. uv run python src/models/train_model.py model.params.depth=8
+PYTHONPATH=src uv run python -m cks_picks_cfb.train model.params.depth=8
 
 # Multiple overrides
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=xgboost \
     data.test_year=2025 \
     mode=optimize
@@ -252,26 +252,26 @@ data.test_year=2025
 
 ```bash
 # See final composed config
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job
 
 # See with interpolations resolved
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 # Pretty print
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job | less
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job | less
 ```
 
 ### Validate Config
 
 ```bash
 # Show help (lists all options)
-PYTHONPATH=. uv run python src/models/train_model.py --help
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --help
 
 # Show config options
-PYTHONPATH=. uv run python src/models/train_model.py --cfg hydra
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg hydra
 
 # List available config groups
-PYTHONPATH=. uv run python src/models/train_model.py --help | grep -A 10 "Config groups"
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --help | grep -A 10 "Config groups"
 ```
 
 ---
@@ -308,18 +308,18 @@ optuna:
 
 ```bash
 # Run Optuna sweep
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     model=catboost \
     tuning=catboost_optuna
 
 # Custom trials
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     optuna.n_trials=50
 
 # Different metric
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     optuna.direction=maximize
 ```

@@ -1,5 +1,23 @@
 # Decision Log
 
+## 2026-08-09: Preserve Untimestamped Lines as Legacy References and Canonicalize Week 0
+
+- **Context**: The read-only production R2 inventory found 7,156 eligible
+  historical objects covering 2019 and 2021-2026. Historical betting-line exports
+  contain no authentic quote timestamps, and CFBD labels the August 29, 2026
+  opening slate as provider Week 1 rather than Week 0.
+- **Decision**: Import untimestamped lines into a separate immutable
+  `legacy_market_references` dataset. They are ineligible for canonical market
+  snapshots, leans, grades, ROI, model selection, and high-confidence labels.
+  Preserve CFBD's provider week and apply Week 0 through a versioned canonical
+  schedule policy keyed by game ID and kickoff.
+- **Impact**: Outcome-based model development can proceed without inventing
+  market chronology. Exact historical market replay remains blocked until
+  authentic point-in-time quotes exist. Live 2026 quotes will be captured under
+  the canonical timestamped policy.
+- **Plan**: See
+  `docs/planning/2026_historical_bootstrap_week0_execution.md`.
+
 ## 2025-12-09: Spread Bias Correction Validated
 
 - **Context**: Analysis of 2024 holdout data revealed a systematic bias of -1.14 points (under-prediction) in the spread model, particularly affecting the mid-range edge bucket (2.5-7.0).

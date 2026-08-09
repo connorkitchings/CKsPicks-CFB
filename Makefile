@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week preflight publish-week close-week weekly
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly
 
 # Default target
 help:
@@ -13,6 +13,7 @@ help:
 	@echo "  make all       - Run all quality checks"
 	@echo "  make clean     - Clean cache files"
 	@echo "  make contracts-check - Validate contracts/ files are in sync"
+	@echo "  make migrate-db - Apply checksummed contracts/migrations"
 	@echo ""
 	@echo "Web app (web/):"
 	@echo "  make web-dev       - Start Next.js dev server"
@@ -23,9 +24,17 @@ help:
 	@echo "Data ingestion (requires CFB_STORAGE_BACKEND + CFBD_API_KEY in .env):"
 	@echo "  make ingest-season YEAR=2026  - Ingest teams+venues+games for a season"
 	@echo "  make ingest-week YEAR=2026 WEEK=1  - Ingest plays+betting_lines for a week"
-	@echo "  make preflight YEAR=2026 WEEK=1  - Validate R2, Neon, artifact paths, deploy config"
+	@echo "  make fetch-source YEAR=2026 WEEK=0 ENTITY=games ENV=preview"
+	@echo "  make build-silver YEAR=2026 DATASET=games CAPTURE_ID=... AS_OF=... ENV=preview"
+	@echo "  make readiness YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview"
 	@echo "  make publish-week YEAR=2026 WEEK=1  - Pregame publish (refresh lines → predict → publish)"
+	@echo "  make freeze-week YEAR=2026 WEEK=1  - Freeze the active run before kickoff"
 	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
+	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
+	@echo "  make audit-data YEAR=2026 ENV=preview - Audit Gold training data and lineage"
+	@echo "  make train-week0 - Generate temporal regime candidate predictions"
+	@echo "  make evaluate-week0 OOF=... WEIGHTS=... REPORT_URI=..."
+	@echo "  make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
 	@echo "  make weekly YEAR=2026 WEEK=1  - Alias for publish-week"
 	@echo ""
 	@echo "Database (requires DATABASE_URL):"
@@ -69,6 +78,10 @@ contracts-check:
 	@echo "📋 Validating contracts..."
 	@uv run python contracts/validation.py
 
+migrate-db:
+	@echo "📋 Applying checksummed database migrations..."
+	PYTHONPATH=src uv run python scripts/pipeline/migrate_db.py
+
 # ---------------------------------------------------------------------------
 # Web app (web/)
 # ---------------------------------------------------------------------------
@@ -107,63 +120,99 @@ ingest-week:
 	@echo "📥 Ingesting $(YEAR) week $(WEEK)..."
 	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK)
 
+fetch-source:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops fetch-source --year $(YEAR) $(if $(WEEK),--week $(WEEK),) --entity $(ENTITY) --environment $(ENV)
+
+inventory-source:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops inventory-source --year 2026 --environment preview $(if $(PREFIX),--prefix $(PREFIX),)
+
+import-history:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops import-history --year 2026 --environment preview $(if $(PREFIX),--prefix $(PREFIX),)
+
+build-silver:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-silver --year $(YEAR) --dataset $(DATASET) --capture-id $(CAPTURE_ID) --as-of $(AS_OF) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(GAMES_REF_URI),--games-ref-uri $(GAMES_REF_URI),)
+
+build-team-game:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-team-game --year $(YEAR) --as-of $(AS_OF) --plays-ref-uri $(PLAYS_REF_URI) --games-ref-uri $(GAMES_REF_URI) --corrections-ref-uri $(CORRECTIONS_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(TEAMS_REF_URI),--teams-ref-uri $(TEAMS_REF_URI),) $(if $(VENUES_REF_URI),--venues-ref-uri $(VENUES_REF_URI),) $(if $(WEATHER_REF_URI),--weather-ref-uri $(WEATHER_REF_URI),) $(if $(GAME_STATS_REF_URI),--game-stats-ref-uri $(GAME_STATS_REF_URI),)
+
+build-features:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-features --year $(YEAR) --as-of $(AS_OF) --matchups-ref-uri $(MATCHUPS_REF_URI) --schedule-ref-uri $(SCHEDULE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(BASELINES_REF_URI),--baselines-ref-uri $(BASELINES_REF_URI),)
+
+build-baselines:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-baselines --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(FROZEN_DESIGN_SHA),--include-locked-2025 --frozen-design-sha $(FROZEN_DESIGN_SHA),)
+
+assemble-model-ready:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops assemble-model-ready --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --baselines-ref-uri $(BASELINES_REF_URI) --markets-ref-uri $(MARKETS_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV)
+
 # ---------------------------------------------------------------------------
 # Weekly operating cycle
 # ---------------------------------------------------------------------------
 
 preflight:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make preflight YEAR=2026 WEEK=1"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
+		echo "Usage: make preflight YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
 	fi
 	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
+	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK) --as-of $(AS_OF)
+
+readiness:
+	@if [ "$(ENV)" != "preview" ]; then \
+		echo "Usage: make readiness YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DD ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV)
 
 publish-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make publish-week YEAR=2026 WEEK=1"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
+		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
 	fi
-	@echo "🔄 Publishing pregame slate for $(YEAR) week $(WEEK)..."
-	@echo ""
-	@echo "Step 1/5: Preflight checks..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK)
-	@echo ""
-	@echo "Step 2/5: Refreshing schedule and market lines..."
-	PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year $(YEAR) --entities games
-	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities betting_lines --require-full-line-coverage
-	@echo ""
-	@echo "Step 3/5: Running pre-aggregation for completed raw data..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
-	@echo ""
-	@echo "Step 4/5: Generating predictions and uploading durable artifact..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/generate_weekly_bets.py --year $(YEAR) --week $(WEEK) --upload-artifact
-	@echo ""
-	@echo "Step 5/5: Publishing durable artifact to Neon..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/publish_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
-	@echo ""
-	@echo "✅ Pregame publish complete! Vercel ISR will refresh within 5 minutes."
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(or $(ENV),production)
+
+freeze-week:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
+		echo "Usage: make freeze-week YEAR=2026 WEEK=1 [WAIVER='reason']"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(or $(ENV),production) $(if $(WAIVER),--waiver "$(WAIVER)",)
 
 close-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
 		echo "Usage: make close-week YEAR=2026 WEEK=1"; exit 1; \
 	fi
-	@echo "🏁 Closing completed week $(YEAR)-$(WEEK)..."
-	@echo ""
-	@echo "Step 1/4: Refreshing final scores and completed-game data..."
-	PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year $(YEAR) --entities games
-	PYTHONPATH=.:src uv run python scripts/data/ingest_week.py --year $(YEAR) --week $(WEEK) --entities plays,betting_lines,game_stats
-	@echo ""
-	@echo "Step 2/4: Running pre-aggregation with completed plays..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/run_pipeline_generic.py --year $(YEAR)
-	@echo ""
-	@echo "Step 3/4: Scoring durable prediction artifact and uploading scored artifact..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/score_weekly_bets.py --year $(YEAR) --week $(WEEK) --from-artifact --upload-artifact
-	@echo ""
-	@echo "Step 4/4: Publishing scored artifact to Neon and refreshing YTD stats..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/score_to_db.py --year $(YEAR) --week $(WEEK) --from-artifact
-	@echo ""
-	@echo "✅ Week close complete! Vercel ISR will refresh within 5 minutes."
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --environment $(or $(ENV),production)
 
 weekly: publish-week
+
+replay-season:
+	@if [ -z "$(YEAR)" ] || [ "$(ENV)" != "preview" ]; then \
+		echo "Usage: make replay-season YEAR=2025 ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops replay-season --year $(YEAR) --environment preview
+
+reconcile:
+	@if [ -z "$(YEAR)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make reconcile YEAR=2026 ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops reconcile --year $(YEAR) --environment $(ENV)
+
+audit-data:
+	@if [ -z "$(YEAR)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make audit-data YEAR=2026 ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops audit-data --year $(YEAR) --environment $(ENV) $(if $(MODE),--mode $(MODE),)
+
+train-week0:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
+
+evaluate-week0:
+	@if [ -z "$(OOF)" ] || [ -z "$(WEIGHTS)" ] || [ -z "$(REPORT_URI)" ]; then \
+		echo "Usage: make evaluate-week0 OOF=/path/candidates.csv WEIGHTS=/path/weights.json REPORT_URI=artifacts/preview/models/report.json"; exit 1; \
+	fi
+	PYTHONPATH=.:src uv run python scripts/pipeline/evaluate_regimes.py --oof-csv $(OOF) --blend-weights-json $(WEIGHTS) --output-uri $(REPORT_URI)
+
+refit-week0-bundle:
+	@if [ -z "$(FEATURE_REF_URI)" ] || [ -z "$(REPORT_URI)" ] || [ -z "$(BUNDLE_ID)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=.:src uv run python scripts/pipeline/refit_regime_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
 
 # ---------------------------------------------------------------------------
 # Database publish (Python → Postgres)

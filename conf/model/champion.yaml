@@ -9,7 +9,7 @@ description: |
   V2 Champion Model - Linear Regression (Ridge) with matchup_v1 features
   and Phase 4 optimizations (bias correction, threshold tuning).
   
-  Performance (2024 Holdout):
+  Historical performance (legacy 2024 holdout):
     - Spread ROI: +0.78% (default), +2.03% (high confidence)
     - Totals ROI: +6.35% (at 1.5 threshold)
     - Hit Rate: ~52-55%
@@ -66,9 +66,9 @@ optimizations:
 
 # Training configuration
 training:
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026
   min_games_required: 4
 
 # Evaluation metrics tracked

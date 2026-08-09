@@ -9,6 +9,7 @@ the provider later revises a roster or recruiting record.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from itertools import product
 from pathlib import Path
 from runpy import run_path
 from typing import Any, Iterable, Mapping, Sequence
@@ -225,7 +226,12 @@ def _snapshot_source(
 
 
 def _prior_quality(storage: StorageBackend, year: int) -> pd.DataFrame:
-    prior = _records(storage, "processed/team_week_adj", {"year": year - 1})
+    if year == 2020:
+        raise ValueError("2020 is excluded from preseason feature construction")
+    prior_year = 2019 if year == 2021 else year - 1
+    if prior_year == 2020:
+        raise ValueError("2020 cannot be used as prior-season feature lineage")
+    prior = _records(storage, "processed/team_week_adj", {"year": prior_year})
     columns = [
         "team",
         *[feature.removeprefix("prior_") for feature in TEAM_FEATURES[:5]],
@@ -376,7 +382,7 @@ def _schedule(
         return games
     games = games.rename(columns={"id": "game_id", "start_date": "start_date"}).copy()
     games["week"] = pd.to_numeric(games.get("week"), errors="coerce")
-    games = games[games["week"].between(0, 3)].copy()
+    games = games[games["week"].ge(0)].copy()
     for side in ("home", "away"):
         games[f"{side}_team"] = games[f"{side}_team"].map(canonical_team)
     teams = _records(storage, "raw/teams", {"year": year})
@@ -444,7 +450,7 @@ def build_preseason_matchups(
     include_targets: bool,
     require_complete_snapshot: bool = True,
 ) -> pd.DataFrame:
-    """Build Week 0-3 matchup features from one immutable preseason snapshot."""
+    """Build preseason features for any scheduled week from one snapshot."""
     if require_complete_snapshot and not snapshot_is_complete(storage, year, as_of):
         raise RuntimeError(f"Preseason snapshot {year}/{as_of} is incomplete")
 
@@ -478,6 +484,10 @@ def build_preseason_matchups(
     matchups = _schedule(storage, year, include_targets)
     if matchups.empty:
         return matchups
+    prior_source_year = 2019 if year == 2021 else year - 1
+    matchups["prior_source_season"] = prior_source_year
+    matchups["prior_season_gap"] = year - prior_source_year
+    matchups["feature_as_of"] = as_of
     for side in ("home", "away"):
         matchups = _merge_side(matchups, team_features[["team", *TEAM_FEATURES]], side)
         for feature in TEAM_FEATURES:
@@ -506,7 +516,7 @@ def _fit_models(
             [
                 ("imputer", SimpleImputer(strategy="median", add_indicator=True)),
                 ("scaler", StandardScaler()),
-                ("ridge", Ridge(alpha=alpha)),
+                ("ridge", Ridge(alpha=alpha, solver="lsqr")),
             ]
         )
         model.fit(rows[list(features)], rows[target])
@@ -541,9 +551,21 @@ def predict_preseason(
     if missing:
         raise ValueError(f"Preseason matchup schema missing features: {missing}")
     x = matchups[features]
+
+    def predict(model: Pipeline) -> np.ndarray:
+        transformed = np.asarray(model[:-1].transform(x), dtype=float)
+        ridge = model.named_steps["ridge"]
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            values = transformed @ np.asarray(ridge.coef_, dtype=float) + float(
+                ridge.intercept_
+            )
+        if not np.isfinite(values).all():
+            raise ValueError("Preseason model produced non-finite predictions")
+        return np.asarray(values, dtype=float)
+
     return (
-        bundle["models"]["spread_target"].predict(x),
-        bundle["models"]["total_target"].predict(x),
+        predict(bundle["models"]["spread_target"]),
+        predict(bundle["models"]["total_target"]),
     )
 
 
@@ -620,9 +642,12 @@ def evaluate_preseason_candidate(
 def select_blend_weights(
     validation_df: pd.DataFrame,
     *,
+    target: str | None = None,
     grid: Sequence[float] = tuple(np.linspace(0.0, 1.0, 21)),
 ) -> dict[int, float]:
-    """Select frozen Week 2-3 weights from precomputed, training-only rows."""
+    """Select training-only monotone weights for spread or total predictions."""
+    if target not in {None, "spread", "total"}:
+        raise ValueError("target must be 'spread', 'total', or None")
     required = {
         "home_current_season_games",
         "away_current_season_games",
@@ -652,39 +677,44 @@ def select_blend_weights(
         .fillna(0)
         .astype(int)
     )
-    weights: dict[int, float] = {}
-    for games in (1, 2):
+    rows_by_count = {}
+    for games in (1, 2, 3):
         rows = validation_df[counts == games]
         if rows.empty:
             raise ValueError(
                 f"Blend validation has no rows with {games} completed games"
             )
-        best_weight = min(
-            grid,
-            key=lambda weight: (
-                mean_absolute_error(
-                    rows["spread_target"],
-                    weight * rows["preseason_spread"]
-                    + (1.0 - weight) * rows["recency_spread"],
+        rows_by_count[games] = rows
+
+    def loss(candidate: tuple[float, float, float]) -> float:
+        total = 0.0
+        for games, weight in zip((1, 2, 3), candidate, strict=True):
+            rows = rows_by_count[games]
+            targets = (target,) if target else ("spread", "total")
+            for selected_target in targets:
+                total += mean_absolute_error(
+                    rows[f"{selected_target}_target"],
+                    weight * rows[f"preseason_{selected_target}"]
+                    + (1.0 - weight) * rows[f"recency_{selected_target}"],
                 )
-                + mean_absolute_error(
-                    rows["total_target"],
-                    weight * rows["preseason_total"]
-                    + (1.0 - weight) * rows["recency_total"],
-                )
-            ),
-        )
-        weights[games] = float(best_weight)
-    return weights
+        return float(total)
+
+    candidates = (
+        candidate
+        for candidate in product(grid, repeat=3)
+        if candidate[0] >= candidate[1] >= candidate[2]
+    )
+    selected = min(candidates, key=loss)
+    return {games: float(weight) for games, weight in zip((1, 2, 3), selected)}
 
 
 def preseason_blend_weight(
     min_current_games: int, weights: Mapping[int, float]
 ) -> float:
-    """Use preseason alone at zero games and recency alone after three games."""
+    """Use preseason alone at zero games and recency alone after four games."""
     if min_current_games <= 0:
         return 1.0
-    if min_current_games >= 3:
+    if min_current_games >= 4:
         return 0.0
     return float(weights.get(min_current_games, 0.0))
 

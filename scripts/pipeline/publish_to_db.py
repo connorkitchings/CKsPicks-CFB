@@ -3,9 +3,9 @@
 Publish weekly predictions from CSV into the Neon Postgres database
 that powers the Vercel web app.
 
-Reads:  local data/production working CSV by default, or durable
-        artifacts/production/predictions/... when --from-artifact is used.
-Writes: games table (upsert), current_week table (singleton update)
+Reads: an ephemeral working CSV, or the active immutable run manifest in R2.
+Writes: immutable prediction_runs/predictions plus compatibility games rows;
+        activation updates current_week in the same database transaction.
 
 Requires DATABASE_URL environment variable (Neon connection string).
 
@@ -19,17 +19,24 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import hmac
+import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 
 from cks_picks_cfb.artifacts import (
     local_prediction_path,
-    prediction_artifact_path,
+    prediction_run_manifest_path,
     read_csv_artifact,
+    read_json_artifact,
+    read_verified_csv_artifact,
 )
 
 try:
@@ -219,12 +226,71 @@ ON CONFLICT (game_id) DO UPDATE SET
 """
 
 UPDATE_CURRENT_WEEK_SQL = """
-INSERT INTO current_week (id, season, week, updated_at)
-VALUES (1, %(season)s, %(week)s, NOW())
+INSERT INTO current_week (id, season, week, active_run_id, updated_at)
+VALUES (1, %(season)s, %(week)s, %(run_id)s, NOW())
 ON CONFLICT (id) DO UPDATE SET
     season = EXCLUDED.season,
     week = EXCLUDED.week,
+    active_run_id = EXCLUDED.active_run_id,
     updated_at = NOW()
+"""
+
+INSERT_RUN_SQL = """
+INSERT INTO prediction_runs (
+    run_id, season, week, state,
+    expected_games, predicted_games, lined_games,
+    data_as_of, source_config, system_name, model_id,
+    code_sha, config_sha, model_bundle_sha256,
+    artifact_uri, artifact_sha256, input_dataset_refs, validation,
+    published_at
+) VALUES (
+    %(run_id)s, %(season)s, %(week)s, %(state)s,
+    %(expected_games)s, %(predicted_games)s, %(lined_games)s,
+    %(data_as_of)s, %(source_config)s, %(system_name)s, %(model_id)s,
+    %(code_sha)s, %(config_sha)s, %(model_bundle_sha256)s,
+    %(artifact_uri)s, %(artifact_sha256)s, %(input_dataset_refs)s::jsonb,
+    %(validation)s::jsonb,
+    CASE WHEN %(state)s = 'published' THEN NOW() ELSE NULL END
+)
+ON CONFLICT (run_id) DO NOTHING
+"""
+
+INSERT_PREDICTION_SQL = """
+INSERT INTO predictions (
+    run_id, game_id,
+    home_team_spread_line, total_line,
+    predicted_spread, predicted_total,
+    predicted_spread_std_dev, predicted_total_std_dev,
+    spread_lean, total_lean, edge_spread, edge_total,
+    high_confidence, high_confidence_eligible,
+    home_completed_games, away_completed_games, regime,
+    spread_model_version, total_model_version, market_snapshot_id
+) VALUES (
+    %(run_id)s, %(game_id)s,
+    %(home_team_spread_line)s, %(total_line)s,
+    %(predicted_spread)s, %(predicted_total)s,
+    %(predicted_spread_std_dev)s, %(predicted_total_std_dev)s,
+    %(spread_lean)s, %(total_lean)s, %(edge_spread)s, %(edge_total)s,
+    %(high_confidence)s, %(high_confidence_eligible)s,
+    %(home_completed_games)s, %(away_completed_games)s, %(regime)s,
+    %(spread_model_version)s, %(total_model_version)s, %(market_snapshot_id)s
+)
+ON CONFLICT (run_id, game_id) DO NOTHING
+"""
+
+INSERT_MARKET_SNAPSHOT_SQL = """
+INSERT INTO market_snapshots (
+    snapshot_id, game_id, captured_at, spread, total,
+    spread_rule, total_rule, spread_provider_count, total_provider_count,
+    source_quote_ids, policy_version
+) VALUES (
+    %(market_snapshot_id)s, %(game_id)s, %(market_captured_at)s,
+    %(home_team_spread_line)s, %(total_line)s, %(spread_selection_rule)s,
+    %(total_selection_rule)s, %(spread_provider_count)s,
+    %(total_provider_count)s, %(source_quote_ids)s::jsonb,
+    %(market_policy_version)s
+)
+ON CONFLICT (snapshot_id) DO NOTHING
 """
 
 
@@ -250,6 +316,35 @@ def _row_to_record(
         eligible and edge_spread is not None and edge_spread >= high_conf_threshold
     )
 
+    home_completed = int(_safe_float(row.get("home_completed_games")) or 0)
+    away_completed = int(_safe_float(row.get("away_completed_games")) or 0)
+    market_snapshot_id = row.get("market_snapshot_id")
+    if pd.isna(market_snapshot_id):
+        market_snapshot_id = None
+    source_quote_ids = row.get("source_quote_ids", "[]")
+    if isinstance(source_quote_ids, str):
+        source_quote_ids = json.loads(source_quote_ids)
+    if not isinstance(source_quote_ids, list) or not all(
+        isinstance(quote_id, str) for quote_id in source_quote_ids
+    ):
+        raise ValueError("source_quote_ids must be a JSON array of strings")
+    market_captured_at = pd.to_datetime(
+        row.get("market_captured_at"), utc=True, errors="coerce"
+    )
+    if pd.isna(market_captured_at):
+        market_captured_at = datetime.now(timezone.utc)
+    else:
+        market_captured_at = market_captured_at.to_pydatetime()
+    regime = str(row.get("prediction_regime") or "established")
+    if regime not in {
+        "preseason",
+        "one_game",
+        "two_games",
+        "three_games",
+        "established",
+    }:
+        raise ValueError(f"Unsupported prediction regime: {regime}")
+
     return {
         "game_id": int(row["game_id"]),
         "season": season,
@@ -268,6 +363,23 @@ def _row_to_record(
         "edge_spread": edge_spread,
         "edge_total": _safe_float(row.get("edge_total")),
         "high_confidence": high_conf,
+        "high_confidence_eligible": eligible,
+        "home_completed_games": home_completed,
+        "away_completed_games": away_completed,
+        "regime": regime,
+        "spread_model_version": row.get("spread_model_version") or model_id,
+        "total_model_version": row.get("total_model_version") or model_id,
+        "market_snapshot_id": market_snapshot_id,
+        "market_captured_at": market_captured_at,
+        "market_policy_version": row.get("market_policy_version")
+        or "consensus_then_median_v1",
+        "spread_selection_rule": row.get("spread_selection_rule"),
+        "total_selection_rule": row.get("total_selection_rule"),
+        "spread_provider_count": int(
+            _safe_float(row.get("spread_provider_count")) or 0
+        ),
+        "total_provider_count": int(_safe_float(row.get("total_provider_count")) or 0),
+        "source_quote_ids": json.dumps(source_quote_ids),
         "source_config": source_config,
         "system_name": system_name,
         "model_id": model_id,
@@ -285,10 +397,76 @@ def publish_week(
     system_name: str,
     model_id: str,
     update_current: bool,
+    run_manifest: dict | None = None,
+    state: str = "published",
 ) -> int:
-    """Upsert all rows for a week. Returns count of upserted games."""
+    """Transactionally insert an immutable run and optionally activate it."""
+    if state not in {"preview", "published"}:
+        raise ValueError(f"Unsupported initial run state: {state}")
+    manifest = dict(run_manifest or {})
+    run_id = str(manifest.get("run_id") or f"legacy-{season}-w{week}")
+    if df["game_id"].isna().any() or df["game_id"].duplicated().any():
+        raise ValueError("Prediction run has missing or duplicate game IDs")
+    if manifest:
+        if int(manifest.get("row_count", -1)) != len(df):
+            raise ValueError(
+                "Prediction artifact row count does not match its manifest"
+            )
+        if int(manifest.get("expected_games", -1)) != len(df):
+            raise ValueError("Prediction run does not cover the expected schedule")
+        if int(manifest.get("predicted_games", -1)) != len(df):
+            raise ValueError("Prediction run has missing model outputs")
+        validation = manifest.get("validation", {})
+        if validation.get("all_predictions_present") is not True:
+            raise ValueError("Prediction run failed output validation")
+        if "run_id" in df and set(df["run_id"].astype(str)) != {run_id}:
+            raise ValueError("Prediction rows do not match the manifest run ID")
+    run_record = {
+        "run_id": run_id,
+        "season": season,
+        "week": week,
+        "state": state,
+        "expected_games": int(manifest.get("expected_games", len(df))),
+        "predicted_games": int(manifest.get("predicted_games", len(df))),
+        "lined_games": int(
+            manifest.get(
+                "lined_games",
+                df[["home_team_spread_line", "total_line"]].notna().all(axis=1).sum(),
+            )
+        ),
+        "data_as_of": manifest.get("data_as_of")
+        or datetime.now(timezone.utc).isoformat(),
+        "source_config": source_config,
+        "system_name": system_name,
+        "model_id": model_id,
+        "code_sha": manifest.get("code_sha"),
+        "config_sha": manifest.get("config_sha"),
+        "model_bundle_sha256": manifest.get("model_bundle_sha256"),
+        "artifact_uri": manifest.get("artifact_uri", "legacy-local"),
+        "artifact_sha256": manifest.get("artifact_sha256", "legacy"),
+        "input_dataset_refs": json.dumps(manifest.get("input_dataset_refs", [])),
+        "validation": json.dumps(manifest.get("validation", {})),
+    }
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            cur.execute(
+                "SELECT state FROM prediction_runs WHERE run_id = %s", (run_id,)
+            )
+            existing = cur.fetchone()
+            if existing and existing[0] in {"frozen", "scored"}:
+                raise RuntimeError(
+                    f"Prediction run {run_id} is immutable ({existing[0]})"
+                )
+            cur.execute(INSERT_RUN_SQL, run_record)
+            if existing and existing[0] == "preview" and state == "published":
+                cur.execute(
+                    """
+                    UPDATE prediction_runs
+                    SET state = 'published', published_at = NOW()
+                    WHERE run_id = %s AND state = 'preview'
+                    """,
+                    (run_id,),
+                )
             count = 0
             for _, row in df.iterrows():
                 if pd.isna(row.get("game_id")):
@@ -303,13 +481,54 @@ def publish_week(
                     model_id=model_id,
                 )
                 cur.execute(UPSERT_SQL, record)
+                if record["market_snapshot_id"]:
+                    cur.execute(INSERT_MARKET_SNAPSHOT_SQL, record)
+                cur.execute(INSERT_PREDICTION_SQL, {**record, "run_id": run_id})
                 count += 1
 
             if update_current:
-                cur.execute(UPDATE_CURRENT_WEEK_SQL, {"season": season, "week": week})
+                cur.execute(
+                    UPDATE_CURRENT_WEEK_SQL,
+                    {"season": season, "week": week, "run_id": run_id},
+                )
+                cur.execute(
+                    "INSERT INTO ops.activation_history "
+                    "(environment, season, week, run_id, action, metadata) "
+                    "VALUES (%s, %s, %s, %s, 'publish', %s::jsonb) "
+                    "ON CONFLICT (run_id, action) DO NOTHING",
+                    (
+                        os.getenv("CFB_ARTIFACT_ENV", "production"),
+                        season,
+                        week,
+                        run_id,
+                        json.dumps({"state": state}),
+                    ),
+                )
 
             conn.commit()
     return count
+
+
+def request_site_revalidation() -> None:
+    """Trigger signed on-demand revalidation; five-minute ISR remains fallback."""
+    url = os.getenv("CFB_REVALIDATION_URL")
+    secret = os.getenv("REVALIDATION_SECRET")
+    if not url or not secret:
+        return
+    payload = json.dumps(
+        {"timestamp": int(time.time() * 1000), "path": "/"}, separators=(",", ":")
+    ).encode("utf-8")
+    signature = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).hexdigest()
+    response = requests.post(
+        url,
+        data=payload,
+        headers={
+            "content-type": "application/json",
+            "x-cks-signature": signature,
+        },
+        timeout=10,
+    )
+    response.raise_for_status()
 
 
 # ---------------------------------------------------------------------------
@@ -359,7 +578,7 @@ def main() -> None:
         "--csv",
         type=Path,
         default=None,
-        help="Override path to predictions CSV. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
+        help="Override ephemeral working-copy CSV path.",
     )
     parser.add_argument(
         "--from-artifact",
@@ -370,7 +589,11 @@ def main() -> None:
         "--artifact-path",
         type=str,
         default=None,
-        help="Durable storage path to predictions CSV. Defaults to artifacts/production/predictions/year={year}/CFB_week{week}_bets.csv when --from-artifact is used.",
+        help="Explicit durable prediction CSV path (legacy/backfill only).",
+    )
+    parser.add_argument(
+        "--run-id",
+        help="Explicit immutable prediction run ID (required with --from-artifact).",
     )
     parser.add_argument(
         "--config",
@@ -383,6 +606,12 @@ def main() -> None:
         action="store_true",
         help="Do not update the current_week singleton (useful for backfills)",
     )
+    parser.add_argument(
+        "--state",
+        choices=("preview", "published"),
+        default="published",
+        help="Initial database run state.",
+    )
     args = parser.parse_args()
 
     conn_url = os.environ.get("DATABASE_URL")
@@ -392,7 +621,15 @@ def main() -> None:
         )
 
     csv_path = args.csv or local_prediction_path(args.year, args.week)
-    artifact_path = args.artifact_path or prediction_artifact_path(args.year, args.week)
+    run_manifest = None
+    if args.from_artifact and not args.artifact_path:
+        if not args.run_id:
+            raise SystemExit("--run-id is required with --from-artifact")
+        manifest_path = prediction_run_manifest_path(args.year, args.week, args.run_id)
+        run_manifest = read_json_artifact(manifest_path)
+        artifact_path = str(run_manifest["artifact_uri"])
+    else:
+        artifact_path = args.artifact_path or ""
 
     source_config, system_name, model_id, high_conf_threshold = _load_provenance(
         args.config
@@ -405,7 +642,9 @@ def main() -> None:
     print(f"  model_id            = {model_id}")
     print(f"  high_conf_threshold = {high_conf_threshold} pts")
 
-    if args.from_artifact or args.artifact_path:
+    if run_manifest:
+        df = prepare_predictions(read_verified_csv_artifact(run_manifest))
+    elif args.from_artifact or args.artifact_path:
         df = load_predictions_artifact(artifact_path)
     else:
         df = load_predictions(csv_path)
@@ -421,8 +660,16 @@ def main() -> None:
         system_name=system_name,
         model_id=model_id,
         update_current=not args.no_update_current,
+        run_manifest=run_manifest,
+        state=args.state,
     )
-
+    if not args.no_update_current:
+        try:
+            request_site_revalidation()
+        except requests.RequestException as exc:
+            print(
+                f"WARNING: on-demand revalidation failed; ISR fallback remains: {exc}"
+            )
     verb = "Published" if not args.no_update_current else "Backfilled"
     print(
         f"✅ {verb} {count} games for {args.year} week {args.week} "

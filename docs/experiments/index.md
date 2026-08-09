@@ -111,7 +111,7 @@ experiment:
 
 **Critical Rule**: Never change this split without explicit approval
 
-- **Training**: 2019, 2021, 2022, 2023 (exclude 2020)
+- **2026 policy**: select with 2022–2024 temporal OOF, lock 2025 for testing, and refit on 2021–2025
 - **Test (Holdout)**: 2024 (locked for all V2 experiments)
 - **Deployment**: 2025 (live production)
 

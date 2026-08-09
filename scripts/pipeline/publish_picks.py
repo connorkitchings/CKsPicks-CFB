@@ -780,6 +780,10 @@ def send_email(
 
 
 def main() -> None:
+    raise SystemExit(
+        "Retired for production: publish the immutable run with "
+        "`python -m cks_picks_cfb.ops publish-week`."
+    )
     # Load environment variables from .env file
     load_dotenv()
 
@@ -1089,7 +1093,7 @@ def main() -> None:
     )
 
     # Load Validation History (Last Year)
-    history_file = Path("data/production/system_stats.json")
+    history_file = Path(os.environ["CFB_WORK_ROOT"]) / "system_stats.json"
     history_data = {}
     if history_file.exists():
         try:

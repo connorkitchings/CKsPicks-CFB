@@ -1,5 +1,6 @@
 """Betting lines data ingestion from CFBD API."""
 
+import hashlib
 from typing import Any
 
 import cfbd
@@ -12,14 +13,25 @@ from .base import BaseIngester
 class BettingLineCoverageError(RuntimeError):
     """Raised when a publish requires lines for every scheduled FBS game."""
 
-    def __init__(self, *, year: int, week: int, missing_game_ids: set[int]):
+    def __init__(
+        self,
+        *,
+        year: int,
+        week: int,
+        missing_spread_game_ids: set[int],
+        missing_total_game_ids: set[int],
+    ):
+        missing_game_ids = missing_spread_game_ids | missing_total_game_ids
         super().__init__(
             f"CFBD betting-line coverage is incomplete for {year} week {week}: "
-            f"{len(missing_game_ids)} scheduled FBS games have no sportsbook line."
+            f"{len(missing_spread_game_ids)} games lack a spread and "
+            f"{len(missing_total_game_ids)} games lack a total."
         )
         self.year = year
         self.week = week
         self.missing_game_ids = missing_game_ids
+        self.missing_spread_game_ids = missing_spread_game_ids
+        self.missing_total_game_ids = missing_total_game_ids
 
 
 class BettingLinesIngester(BaseIngester):
@@ -57,6 +69,21 @@ class BettingLinesIngester(BaseIngester):
     def entity_name(self) -> str:
         """The logical entity name for storage."""
         return "raw/betting_lines"
+
+    @property
+    def source_endpoint(self) -> str:
+        return "BettingApi.get_lines"
+
+    def source_parameters(self) -> dict[str, Any]:
+        parameters: dict[str, Any] = {
+            "year": self.year,
+            "season_type": self.season_type,
+            "classification": self.classification,
+            "require_full_coverage": self.require_full_coverage,
+        }
+        if self.week is not None:
+            parameters["week"] = self.week
+        return parameters
 
     @property
     def partition_keys(self) -> list[str]:
@@ -124,13 +151,24 @@ class BettingLinesIngester(BaseIngester):
                     "require_full_coverage requires a specific week so coverage "
                     "can be evaluated against that slate."
                 )
-            covered_game_ids = {row["game_id"] for row in all_lines}
-            missing_game_ids = set(fbs_game_ids) - covered_game_ids
-            if missing_game_ids:
+            spread_game_ids = {
+                row["game_id"]
+                for row in all_lines
+                if self.safe_getattr(row["line_data"], "spread") is not None
+            }
+            total_game_ids = {
+                row["game_id"]
+                for row in all_lines
+                if self.safe_getattr(row["line_data"], "over_under") is not None
+            }
+            missing_spread_game_ids = set(fbs_game_ids) - spread_game_ids
+            missing_total_game_ids = set(fbs_game_ids) - total_game_ids
+            if missing_spread_game_ids or missing_total_game_ids:
                 raise BettingLineCoverageError(
                     year=self.year,
                     week=self.week,
-                    missing_game_ids=missing_game_ids,
+                    missing_spread_game_ids=missing_spread_game_ids,
+                    missing_total_game_ids=missing_total_game_ids,
                 )
         return all_lines
 
@@ -157,7 +195,15 @@ class BettingLinesIngester(BaseIngester):
                 "over_under_open": self.safe_getattr(line, "over_under_open"),
                 "home_moneyline": self.safe_getattr(line, "home_moneyline"),
                 "away_moneyline": self.safe_getattr(line, "away_moneyline"),
+                "captured_at": self.capture_time.isoformat(),
             }
+            quote_identity = (
+                f"cfbd:{game_id}:{record['provider']}:{record['spread']}:"
+                f"{record['over_under']}:{record['captured_at']}"
+            )
+            record["quote_id"] = hashlib.sha256(
+                quote_identity.encode("utf-8")
+            ).hexdigest()[:32]
             lines_to_insert.append(record)
         return lines_to_insert
 

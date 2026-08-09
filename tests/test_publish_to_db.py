@@ -10,6 +10,7 @@ Covers the pure-Python pieces of scripts/pipeline/publish_to_db.py:
 from __future__ import annotations
 
 import sys
+from io import StringIO
 from pathlib import Path
 
 import pandas as pd
@@ -143,6 +144,29 @@ def test_load_predictions_derives_columns(tmp_path):
 def test_load_predictions_missing_file_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         publish_to_db.load_predictions(tmp_path / "nope.csv")
+
+
+def test_publish_rejects_invalid_manifest_before_database():
+    df = publish_to_db.prepare_predictions(pd.read_csv(StringIO(SAMPLE_CSV)))
+    with pytest.raises(ValueError, match="expected schedule"):
+        publish_to_db.publish_week(
+            df,
+            "unused",
+            season=2026,
+            week=1,
+            high_conf_threshold=8.0,
+            source_config="config.yaml",
+            system_name="system",
+            model_id="model",
+            update_current=True,
+            run_manifest={
+                "run_id": "run-1",
+                "row_count": len(df),
+                "expected_games": len(df) + 1,
+                "predicted_games": len(df),
+                "validation": {"all_predictions_present": True},
+            },
+        )
 
 
 # ---------------------------------------------------------------------------

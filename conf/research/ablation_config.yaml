@@ -8,10 +8,10 @@ ablation:
   # Time budget per experiment (minutes)
   time_budget_minutes: 15
   
-  # Validation: single holdout year for speed (full CV after winners found)
+  # Locked 2025 evaluation; candidate selection must still use 2022-2024 OOF.
   validation:
-    train_years: [2019, 2021, 2022, 2023]
-    test_year: 2024
+    train_years: [2021, 2022, 2023, 2024]
+    test_year: 2025
   
   # Baseline feature set
   baseline_features: ablation_baseline

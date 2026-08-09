@@ -160,7 +160,7 @@ mlflow ui --backend-store-uri file:///Users/connorkitchings/Desktop/Repositories
 | Generate bets | `PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py` |
 | Score results | `PYTHONPATH=. uv run python scripts/pipeline/score_weekly_bets.py --year 2025 --week X` |
 | View dashboard | `streamlit run dashboard/monitoring.py` |
-| Run validation | `PYTHONPATH=. uv run python src/cks_picks_cfb/train.py experiment=v2_champion_validation` |
+| Run validation | `PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2_champion_validation` |
 | Health check | `make health` |
 
 ---

@@ -7,11 +7,13 @@ processed storage (cloud or local).
 
 from __future__ import annotations
 
+import json
 import logging
-from pathlib import Path
+import os
 
 import pandas as pd
 
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import Partition, get_storage
 
 from .core import (
@@ -193,18 +195,22 @@ def persist_preaggregations(
     # For now, we will extract the final iteration for the point-in-time calculation.
     logging.info(f"Generating team_week_adj for {year}...")
 
-    # Load PPR ratings for this year
-    ppr_path = Path("artifacts/features/ppr_ratings.parquet")
+    # Optional PPR ratings must be supplied as an immutable dataset reference.
     ppr_year_df = pd.DataFrame()
-    if ppr_path.exists():
-        logging.info(f"Loading PPR ratings for {year} from {ppr_path}...")
-        ppr_df = pd.read_parquet(ppr_path)
+    ppr_ref_json = os.getenv("CFB_PPR_DATASET_REF")
+    if ppr_ref_json:
+        raw_ref = json.loads(ppr_ref_json)
+        ppr_ref = DatasetRef(**raw_ref)
+        logging.info(
+            "Loading PPR ratings for %s from dataset version %s...",
+            year,
+            ppr_ref.version_id,
+        )
+        ppr_df = read_dataset(storage, ppr_ref)
         ppr_year_df = ppr_df[ppr_df["year"] == int(year)].copy()
         logging.info(f"Loaded {len(ppr_year_df)} ratings for {year}.")
     else:
-        logging.warning(
-            f"PPR ratings file not found at {ppr_path.absolute()}. Skipping injection."
-        )
+        logging.info("No immutable CFB_PPR_DATASET_REF configured; skipping PPR.")
 
     max_week = team_game_df["week"].max()
     for week in range(1, int(max_week) + 2):

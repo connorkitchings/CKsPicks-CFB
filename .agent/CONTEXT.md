@@ -204,8 +204,8 @@ defaults:
 
 data:
   adjustment_iteration: 2
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
 ```
 
 ### Override Patterns
@@ -239,7 +239,7 @@ model.params.depth=8
 ### Standard Training
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     model=catboost \
     data.test_year=2024 \
     experiment=null
@@ -248,7 +248,7 @@ PYTHONPATH=. uv run python src/models/train_model.py \
 ### Hyperparameter Optimization
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
     model=catboost \
     tuning=catboost_optuna
@@ -346,7 +346,7 @@ tests/
 - Limited/no fans (home field advantage distorted)
 - Inconsistent COVID protocols
 
-**Use:** `train_years: [2019, 2021, 2022, 2023]`
+**Use:** selection folds through 2024, locked test in 2025, then refit on `2021-2025`.
 
 ### Adjustment Iterations
 

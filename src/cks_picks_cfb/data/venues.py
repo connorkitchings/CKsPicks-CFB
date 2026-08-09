@@ -24,6 +24,10 @@ class VenuesIngester(BaseIngester):
         """The logical entity name for storage."""
         return "raw/venues"
 
+    @property
+    def source_endpoint(self) -> str:
+        return "VenuesApi.get_venues"
+
     def get_fbs_team_names(self) -> set[str]:
         """Deprecated: no longer used; venues derive from local games index to avoid extra calls."""
         return set()

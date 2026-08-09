@@ -33,4 +33,18 @@ uv run python scripts/cli.py ingest games --year 2025 --week 15 --season-type re
 
 - Always export `CFB_MODEL_DATA_ROOT` and ensure the drive is mounted before running.
 - Do **not** write to `./data/` in project root.
-- Season split policy (Train: 2019, 2021-2023; Test: 2024; Deploy: 2025) is fixed unless explicitly overridden.
+- Season policy is versioned in `conf/training/week0_2026.yaml`: 2022–2024 temporal selection, locked 2025 testing, and a 2021–2025 production refit. 2019 is prior-only for early 2021; 2020 is excluded.
+- Production ingestion uses request-level `CFBDSourceAdapter` captures. Each
+  request is validated and written to immutable Bronze storage before any
+  compatibility projection can change.
+- Week `0` is valid; a missing week is a contract failure. Partial multiweek
+  responses and serialization failures return nonzero.
+- Build Silver, reconciliation, and Gold data only from explicit capture or
+  dataset references. See
+  `docs/architecture/cfbd_point_in_time_pipeline.md` for the current flow.
+- Historical production R2 is configured only through read-only
+  `CFB_R2_SOURCE_*` credentials. Run `make inventory-source` before
+  `make import-history`.
+- `make import-history` is preview-only and resumes per source object and dataset
+  step. It rejects 2020, restricts 2019 to prior inputs, and stops when legacy
+  market rows lack authentic quote capture timestamps.

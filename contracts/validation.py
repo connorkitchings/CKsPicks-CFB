@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+from cks_picks_cfb.db.migrations import MigrationError, discover_migrations
+
 CONTRACTS_DIR = Path(__file__).parent
 ROOT = CONTRACTS_DIR.parent
 
@@ -86,7 +88,14 @@ def check_schema_sync() -> list[str]:
     sql_canonical = (CONTRACTS_DIR / "schema.sql").read_text()
     ts_canonical = (CONTRACTS_DIR / "schema.ts").read_text()
 
-    sql_tables = set(re.findall(r"CREATE TABLE IF NOT EXISTS (\w+)", sql_canonical))
+    sql_matches = re.findall(
+        r"CREATE TABLE IF NOT EXISTS (?:(\w+)\.)?(\w+)", sql_canonical
+    )
+    sql_tables = {
+        table
+        for schema, table in sql_matches
+        if not schema and table != "schema_migrations"
+    }
     ts_tables = set(re.findall(r'pgTable\(\s*"(\w+)"', ts_canonical))
 
     if sql_tables != ts_tables:
@@ -95,14 +104,6 @@ def check_schema_sync() -> list[str]:
             f"  SQL only: {sql_tables - ts_tables}\n"
             f"  TS only: {ts_tables - sql_tables}"
         )
-
-    web_migration = ROOT / "web" / "db" / "migrations" / "0001_init.sql"
-    if web_migration.exists():
-        web_sql = web_migration.read_text()
-        if web_sql.strip() != sql_canonical.strip():
-            errors.append(
-                "web/db/migrations/0001_init.sql differs from contracts/schema.sql"
-            )
 
     web_schema = ROOT / "web" / "src" / "lib" / "schema.ts"
     if web_schema.exists():
@@ -113,10 +114,27 @@ def check_schema_sync() -> list[str]:
     return errors
 
 
+def check_migration_history() -> list[str]:
+    errors = []
+    migration_dir = CONTRACTS_DIR / "migrations"
+    if not migration_dir.is_dir():
+        return ["contracts/migrations directory is missing"]
+    try:
+        migrations = discover_migrations(migration_dir)
+    except MigrationError as exc:
+        return [str(exc)]
+    if not migrations:
+        errors.append("contracts/migrations contains no append-only migrations")
+    if any(not migration.sql.strip() for migration in migrations):
+        errors.append("Empty SQL migration found")
+    return errors
+
+
 def main():
     all_errors = []
     all_errors.extend(check_teams_sync())
     all_errors.extend(check_schema_sync())
+    all_errors.extend(check_migration_history())
 
     if all_errors:
         print("Contracts validation FAILED:")

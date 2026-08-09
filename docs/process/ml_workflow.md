@@ -6,7 +6,7 @@ This document defines the **standard machine learning workflow** for the CFB mod
 
 ## Data Split Strategy
 
-### Training Years: 2019, 2021-2023
+### Selection Years: 2022–2024 temporal folds
 
 - **Purpose:** Train all models on historical data
 - **Note:** 2020 is excluded (COVID-impacted season)
@@ -29,11 +29,11 @@ This document defines the **standard machine learning workflow** for the CFB mod
 
 ## Workflow Steps
 
-### 1. Model Development (Train on 2019, 2021-2023)
+### 1. Model Development (expanding 2021–2023 training windows)
 
 ```bash
 # Train PPR ratings (FBS only)
-for year in 2019 2021 2022 2023; do
+for year in 2021 2022 2023 2024 2025; do
     uv run python scripts/ratings/train_ppr.py --year $year
 done
 
@@ -41,7 +41,7 @@ done
 uv run python scripts/ratings/export_ratings_history.py
 
 # Regenerate features with PPR ratings
-for year in 2019 2021 2022 2023; do
+for year in 2021 2022 2023 2024 2025; do
     uv run python scripts/pipeline/run_pipeline_generic.py --year $year
 done
 
@@ -99,7 +99,7 @@ uv run python scripts/pipeline/generate_weekly_bets.py
 
 ### ✅ ALWAYS Do This
 
-- Train only on 2019, 2021-2023
+- Select only from temporal 2022–2024 OOF predictions
 - Evaluate on 2024 before deploying
 - Use FBS vs FBS games only
 - Document model selection rationale
@@ -119,7 +119,7 @@ This allows fair comparison between test and live performance using the same mod
 
 Production models should be tagged with:
 
-- Training years: `[2019, 2021, 2022, 2023]`
+- Locked-test training years: `[2021, 2022, 2023, 2024]`
 - Test year performance: 2024 metrics
 - Feature set: PPR, standard, etc.
 - Hyperparameters: seed, learning rate, etc.
@@ -136,7 +136,7 @@ Models should be retrained:
 
 When 2026 arrives:
 
-1. **Train:** 2019, 2021-2024 (add 2024 to training set)
+1. **Refit:** 2021–2025 only after the 2025 locked result is frozen
 2. **Test:** 2025 (new hold-out year)
 3. **Deploy:** 2026 (live betting)
 

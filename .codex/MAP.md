@@ -286,7 +286,7 @@ Configured storage backend root (R2 bucket or $CFB_MODEL_DATA_ROOT)
 |------|---------|
 | `src/config.py` | Path configuration |
 | `src/features/pipeline.py` | Feature engineering pipeline |
-| `src/models/train_model.py` | Model training entry point |
+| `src/cks_picks_cfb/train.py` | Model training entry point |
 | `src/models/betting.py` | Bet generation logic |
 
 ### Scripts
@@ -318,7 +318,7 @@ Configured storage backend root (R2 bucket or $CFB_MODEL_DATA_ROOT)
 - Docs: `docs/modeling/features.md`
 
 **Training a model:**
-- Entry point: `src/models/train_model.py`
+- Entry point: `src/cks_picks_cfb/train.py`
 - Model config: `conf/model/catboost.yaml`
 - Feature config: `conf/features/standard_v1.yaml`
 - Experiment: `conf/experiment/my_experiment.yaml`

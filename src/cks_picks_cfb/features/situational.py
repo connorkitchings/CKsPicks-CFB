@@ -4,25 +4,10 @@ Situational feature engineering.
 Functions for creating features based on game-level context, such as rest, travel, etc.
 """
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 import pandas as pd
 from geopy.distance import geodesic
-
-# IANA timezone string → approximate standard UTC hour offset (ignores DST)
-_TZ_OFFSET = {
-    "America/New_York": -5,
-    "America/Indiana/Indianapolis": -5,
-    "America/Detroit": -5,
-    "America/Kentucky/Louisville": -5,
-    "America/Chicago": -6,
-    "America/Menominee": -6,
-    "America/Denver": -7,
-    "America/Boise": -7,
-    "America/Phoenix": -7,
-    "America/Los_Angeles": -8,
-    "America/Anchorage": -9,
-    "Pacific/Honolulu": -10,
-    "America/Honolulu": -10,
-}
 
 
 def merge_situational_features(
@@ -69,13 +54,17 @@ def merge_situational_features(
     merged_df["days_of_rest"] = (
         merged_df["start_date"] - merged_df["previous_game_date"]
     ).dt.days
+    merged_df["days_of_rest_missing"] = merged_df["days_of_rest"].isna()
     merged_df["days_of_rest"] = merged_df["days_of_rest"].fillna(7.0)
-    merged_df = merged_df.drop(columns=["start_date", "previous_game_date"])
+    merged_df = merged_df.drop(columns=["previous_game_date"])
 
     # --- Part 2: Travel Distance & Neutral Site ---
     if venues_df is None or venues_df.empty:
         merged_df["travel_distance_km"] = 0.0
+        merged_df["travel_distance_missing"] = True
         merged_df["neutral_site"] = False  # Assume not neutral if no venue data
+        merged_df["neutral_site_missing"] = True
+        merged_df = merged_df.drop(columns=["start_date"], errors="ignore")
         return merged_df
 
     travel_df = games_df[
@@ -85,16 +74,24 @@ def merge_situational_features(
     # Merge this info into our main df
     merged_df = merged_df.merge(travel_df, on="game_id", how="left")
 
-    # Derive each team's home venue
-    home_venues = (
-        games_df[~games_df["neutral_site"]]
-        .groupby("home_team")["venue_id"]
-        .agg(lambda x: x.mode().iloc[0] if not x.mode().empty else None)
-        .dropna()
-        .to_frame()
-        .reset_index()
-        .rename(columns={"home_team": "team", "venue_id": "home_venue_id"})
-    )
+    # Team metadata is the authority for a home venue. Inferring it from the
+    # season schedule leaks venue changes and mishandles neutral-site slates.
+    home_venues = pd.DataFrame(columns=["team", "home_venue_id"])
+    if teams_df is not None and not teams_df.empty:
+        team_column = next(
+            (column for column in ("team", "school") if column in teams_df), None
+        )
+        venue_column = next(
+            (column for column in ("home_venue_id", "venue_id") if column in teams_df),
+            None,
+        )
+        if team_column and venue_column:
+            home_venues = (
+                teams_df[[team_column, venue_column]]
+                .dropna()
+                .drop_duplicates(team_column, keep="last")
+                .rename(columns={team_column: "team", venue_column: "home_venue_id"})
+            )
     merged_df = merged_df.merge(home_venues, on="team", how="left")
 
     # Get venue coordinates
@@ -117,15 +114,20 @@ def merge_situational_features(
 
     # Calculate distance
     def calculate_distance(row):
-        if row["team"] == row["home_team"] or row["neutral_site"]:
+        if row["team"] == row["home_team"] and not bool(row["neutral_site"]):
             return 0.0
-        if pd.notna(row["game_lat"]) and pd.notna(row["home_lat"]):
+        coordinates = ("game_lat", "game_lon", "home_lat", "home_lon")
+        if all(pd.notna(row[column]) for column in coordinates):
             return geodesic(
                 (row["game_lat"], row["game_lon"]), (row["home_lat"], row["home_lon"])
             ).kilometers
-        return 0.0  # Default to 0 if we can't calculate
+        return float("nan")
 
     merged_df["travel_distance_km"] = merged_df.apply(calculate_distance, axis=1)
+    merged_df["travel_distance_missing"] = merged_df["travel_distance_km"].isna()
+    merged_df["travel_distance_km"] = merged_df["travel_distance_km"].fillna(0.0)
+    merged_df["neutral_site_missing"] = merged_df["neutral_site"].isna()
+    merged_df["neutral_site"] = merged_df["neutral_site"].fillna(False).astype(bool)
 
     # --- Part 3: Enhanced Venue Features (timezone, elevation, dome) ---
     extra_venue_cols = [
@@ -146,18 +148,41 @@ def merge_situational_features(
             merged_df["home_timezone"] = merged_df["home_venue_id"].map(
                 lambda vid: venue_lookup.get(vid, {}).get("timezone")
             )
-            merged_df["_game_tz_off"] = (
-                merged_df["game_timezone"].map(_TZ_OFFSET).fillna(0)
+
+            def utc_offset_hours(row, column):
+                timezone_name = row.get(column)
+                kickoff = row.get("start_date")
+                if not timezone_name or pd.isna(kickoff):
+                    return float("nan")
+                try:
+                    timestamp = pd.Timestamp(kickoff).to_pydatetime()
+                    return (
+                        timestamp.astimezone(ZoneInfo(str(timezone_name)))
+                        .utcoffset()
+                        .total_seconds()
+                        / 3600
+                    )
+                except (ZoneInfoNotFoundError, ValueError, AttributeError):
+                    return float("nan")
+
+            merged_df["_game_tz_off"] = merged_df.apply(
+                lambda row: utc_offset_hours(row, "game_timezone"), axis=1
             )
-            merged_df["_home_tz_off"] = (
-                merged_df["home_timezone"].map(_TZ_OFFSET).fillna(0)
+            merged_df["_home_tz_off"] = merged_df.apply(
+                lambda row: utc_offset_hours(row, "home_timezone"), axis=1
+            )
+            merged_df["timezone_missing"] = (
+                merged_df[["_game_tz_off", "_home_tz_off"]].isna().any(axis=1)
             )
             merged_df["timezone_diff"] = (
                 merged_df["_game_tz_off"] - merged_df["_home_tz_off"]
             )
-            merged_df["eastward_travel"] = (merged_df["timezone_diff"] < 0).astype(int)
+            merged_df["eastward_travel"] = (merged_df["timezone_diff"] > 0).astype(int)
+            merged_df["timezone_diff"] = merged_df["timezone_diff"].fillna(0.0)
             # Home team: no timezone crossing
-            home_mask = merged_df["team"] == merged_df["home_team"]
+            home_mask = (merged_df["team"] == merged_df["home_team"]) & ~merged_df[
+                "neutral_site"
+            ]
             merged_df.loc[home_mask, "timezone_diff"] = 0.0
             merged_df.loc[home_mask, "eastward_travel"] = 0
             merged_df = merged_df.drop(
@@ -180,8 +205,13 @@ def merge_situational_features(
             merged_df["altitude_diff"] = merged_df["game_elevation"].fillna(
                 0
             ) - merged_df["home_elevation"].fillna(0)
+            merged_df["altitude_missing"] = (
+                merged_df[["game_elevation", "home_elevation"]].isna().any(axis=1)
+            )
             # Home team plays at their home venue, no altitude differential
-            home_mask = merged_df["team"] == merged_df["home_team"]
+            home_mask = (merged_df["team"] == merged_df["home_team"]) & ~merged_df[
+                "neutral_site"
+            ]
             merged_df.loc[home_mask, "altitude_diff"] = 0.0
             merged_df = merged_df.drop(
                 columns=["game_elevation", "home_elevation"], errors="ignore"
@@ -207,8 +237,18 @@ def merge_situational_features(
         "travel_distance_km",
         "neutral_site",
         "rest_travel_fatigue",
+        "days_of_rest_missing",
+        "travel_distance_missing",
+        "neutral_site_missing",
     ]
-    for col in ["timezone_diff", "eastward_travel", "altitude_diff", "is_dome_game"]:
+    for col in [
+        "timezone_diff",
+        "eastward_travel",
+        "timezone_missing",
+        "altitude_diff",
+        "altitude_missing",
+        "is_dome_game",
+    ]:
         if col in merged_df.columns:
             new_situational_cols.append(col)
 
@@ -217,4 +257,5 @@ def merge_situational_features(
     final_cols = list(dict.fromkeys(final_cols))
 
     # Drop intermediate columns and return
-    return merged_df[final_cols]
+    result = merged_df.drop(columns=["start_date"], errors="ignore")
+    return result[[column for column in final_cols if column in result]]

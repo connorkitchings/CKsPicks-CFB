@@ -254,7 +254,7 @@ See [Weekly Pipeline](ops/weekly_pipeline.md) for production workflow.
 
 **Key Configuration**:
 
-- Train Years: 2019, 2021, 2022, 2023 (exclude 2020 COVID year)
+- Selection Years: 2022–2024 temporal OOF; locked test 2025; production refit 2021–2025
 - Test Year: 2024 (locked holdout)
 - Deploy Year: 2025 (live production)
 - Adjustment Iteration: 2 (opponent adjustment depth)
@@ -283,13 +283,13 @@ uv run python scripts/pipeline/score_weekly_bets.py --year 2025 --week 16
 
 ```bash
 # Train with Hydra experiment config
-PYTHONPATH=. uv run python src/models/train_model.py experiment=spread_catboost_ppr_v1
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=spread_catboost_ppr_v1
 
 # Hyperparameter optimization
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
 
 # Debug configuration
-PYTHONPATH=. uv run python src/models/train_model.py --cfg job --resolve
+PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 ```
 
 ### Running Analysis
@@ -348,7 +348,7 @@ See [Experiments Index](experiments/index.md) for detailed tracking.
 ### 2. Train/Test Data Leakage
 
 **Problem**: Including test year in training data
-**Solution**: Use locked split: Train on 2019/2021-2023, Test on 2024, Deploy on 2025
+**Solution**: Use expanding 2022–2024 selection folds, locked 2025 testing, then refit the frozen design on 2021–2025 for 2026.
 
 ### 3. Hardcoded Paths
 

@@ -9,9 +9,9 @@ experiment:
   description: "Validate champion model (matchup_v1 + Ridge) post-refactoring. Expected: +0.78% ROI spread, +6.35% ROI totals"
 
 training:
-  train_years: [2019, 2021, 2022, 2023]
-  test_year: 2024
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026
 
 # Champion model configuration with Phase 4 optimizations
 betting:

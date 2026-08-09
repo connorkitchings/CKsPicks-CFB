@@ -61,9 +61,9 @@ This document establishes the comprehensive betting policy, unit sizing methodol
 
 - **Algorithm**: Ridge Regression (sklearn)
 - **Features**: `matchup_v1` (recency-weighted α=0.3 opponent-adjusted EPA/SR with rush/pass YPP matchup splits; 16 features)
-- **Training Data**: 2019, 2021-2023 (excludes 2020 COVID year)
-- **Test Data**: 2024 (locked holdout)
-- **Deployment**: 2025 season (including CFP)
+- **2026 selection**: expanding temporal folds validated in 2022–2024
+- **Locked test**: 2025, trained on 2021–2024
+- **Production refit**: unchanged design trained on 2021–2025
 
 ## Unit Sizing Methodology
 

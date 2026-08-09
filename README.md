@@ -154,13 +154,15 @@ make format && make lint
 PYTHONPATH=. uv run python -m cks_picks_cfb.train
 
 # Validate the weekly operating path
-make preflight YEAR=2026 WEEK=1
+make audit-data YEAR=2026 ENV=preview
+make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 
 # Pregame publish: refresh schedule/lines → predict → R2 artifact → Neon
-make publish-week YEAR=2026 WEEK=1
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD
+make freeze-week YEAR=2026 WEEK=0
 
 # Postgame close: refresh finals → score → scored R2 artifact → Neon stats
-make close-week YEAR=2026 WEEK=1
+make close-week YEAR=2026 WEEK=0
 ```
 
 ### Web app

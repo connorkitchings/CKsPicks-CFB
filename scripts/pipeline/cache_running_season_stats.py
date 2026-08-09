@@ -89,7 +89,7 @@ def main():
         "--data-root",
         type=str,
         default=None,
-        help="Absolute path to the root directory for data storage. Defaults to env var or ./data.",
+        help="External data root override; otherwise requires CFB_MODEL_DATA_ROOT.",
     )
     args = parser.parse_args()
 

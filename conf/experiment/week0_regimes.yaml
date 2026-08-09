@@ -1,0 +1,48 @@
+name: week0-regime-tournament-2026
+workflow: early_season_tournament
+training_policy: conf/training/week0_2026.yaml
+
+# Populate with one immutable Gold point-in-time matchup dataset before training.
+feature_dataset_ref: null
+
+prior_features:
+  - home_prior_adj_off_epa_pp
+  - home_prior_adj_def_epa_pp
+  - home_prior_adj_off_sr
+  - home_prior_adj_def_sr
+  - away_prior_adj_off_epa_pp
+  - away_prior_adj_def_epa_pp
+  - away_prior_adj_off_sr
+  - away_prior_adj_def_sr
+  - home_prior_season_gap
+  - away_prior_season_gap
+  - neutral_site
+  - same_conference
+
+current_features:
+  - home_adj_off_epa_pp
+  - home_adj_def_epa_pp
+  - home_adj_off_sr
+  - home_adj_def_sr
+  - away_adj_off_epa_pp
+  - away_adj_def_epa_pp
+  - away_adj_off_sr
+  - away_adj_def_sr
+  - home_adj_off_rush_ypp
+  - home_adj_def_rush_ypp
+  - home_adj_off_pass_ypp
+  - home_adj_def_pass_ypp
+  - away_adj_off_rush_ypp
+  - away_adj_def_rush_ypp
+  - away_adj_off_pass_ypp
+  - away_adj_def_pass_ypp
+  - home_completed_games
+  - away_completed_games
+
+baseline_columns:
+  spread: baseline_spread_prediction
+  total: baseline_total_prediction
+market_line_columns:
+  spread: home_team_spread_line
+  total: total_line
+output: ${oc.env:CFB_WORK_ROOT,/tmp/cks-picks-cfb}/training/week0-regime-candidates.csv

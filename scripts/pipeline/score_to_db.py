@@ -2,8 +2,8 @@
 """
 Backfill game results from scored CSVs into Postgres and refresh system_stats.
 
-Reads:  local data/production scored working CSVs by default, or durable
-        artifacts/production/scored/... when --from-artifact is used.
+Reads:  ephemeral scored working CSVs, or immutable checksummed artifacts when
+        --from-artifact is used.
 Writes: game_results table (upsert), system_stats table (recompute from results)
 
 Usage:
@@ -31,8 +31,11 @@ from dotenv import load_dotenv
 from cks_picks_cfb.artifacts import (
     local_scored_path,
     read_csv_artifact,
+    read_json_artifact,
+    read_verified_csv_artifact,
     scored_artifact_path,
     scored_artifact_prefix,
+    scored_run_manifest_path,
 )
 from cks_picks_cfb.data.storage import get_storage
 
@@ -94,6 +97,10 @@ def prepare_scored(df: pd.DataFrame) -> pd.DataFrame:
     df["total_result_norm"] = (
         df[total_result_col].apply(_normalize_result) if total_result_col else None
     )
+    if "spread_lean" not in df.columns and "Spread Bet" in df.columns:
+        df["spread_lean"] = df["Spread Bet"].astype(str).str.lower()
+    if "total_lean" not in df.columns and "Total Bet" in df.columns:
+        df["total_lean"] = df["Total Bet"].astype(str).str.lower()
     return df
 
 
@@ -116,25 +123,48 @@ ON CONFLICT (game_id) DO UPDATE SET
     scored_at = NOW()
 """
 
+UPSERT_OBJECTIVE_RESULT_SQL = """
+INSERT INTO game_results (
+    game_id, home_points, away_points, completion_state, scored_at
+) VALUES (
+    %(game_id)s, %(home_points)s, %(away_points)s, 'completed', NOW()
+)
+ON CONFLICT (game_id) DO UPDATE SET
+    home_points = EXCLUDED.home_points,
+    away_points = EXCLUDED.away_points,
+    completion_state = 'completed',
+    scored_at = NOW()
+"""
+
 RECOMPUTE_STATS_SQL = """
+WITH selected_runs AS (
+    SELECT DISTINCT ON (season, week) run_id
+    FROM prediction_runs
+    WHERE season = %(season)s AND state = 'scored'
+    ORDER BY season, week, scored_at DESC NULLS LAST, created_at DESC
+)
 INSERT INTO system_stats (
     season, as_of_week,
     spread_wins, spread_losses, spread_pushes,
     total_wins, total_losses, total_pushes,
+    spread_profit_units, total_profit_units,
     updated_at
 )
 SELECT
     %(season)s AS season,
     COALESCE(MAX(g.week), 0) AS as_of_week,
-    COUNT(DISTINCT CASE WHEN gr.spread_result = 'win'  THEN g.game_id END) AS spread_wins,
-    COUNT(DISTINCT CASE WHEN gr.spread_result = 'loss' THEN g.game_id END) AS spread_losses,
-    COUNT(DISTINCT CASE WHEN gr.spread_result = 'push' THEN g.game_id END) AS spread_pushes,
-    COUNT(DISTINCT CASE WHEN gr.total_result  = 'win'  THEN g.game_id END) AS total_wins,
-    COUNT(DISTINCT CASE WHEN gr.total_result  = 'loss' THEN g.game_id END) AS total_losses,
-    COUNT(DISTINCT CASE WHEN gr.total_result  = 'push' THEN g.game_id END) AS total_pushes,
+    COUNT(*) FILTER (WHERE pg.target = 'spread' AND pg.result = 'win') AS spread_wins,
+    COUNT(*) FILTER (WHERE pg.target = 'spread' AND pg.result = 'loss') AS spread_losses,
+    COUNT(*) FILTER (WHERE pg.target = 'spread' AND pg.result = 'push') AS spread_pushes,
+    COUNT(*) FILTER (WHERE pg.target = 'total' AND pg.result = 'win') AS total_wins,
+    COUNT(*) FILTER (WHERE pg.target = 'total' AND pg.result = 'loss') AS total_losses,
+    COUNT(*) FILTER (WHERE pg.target = 'total' AND pg.result = 'push') AS total_pushes,
+    COALESCE(SUM(pg.profit_units) FILTER (WHERE pg.target = 'spread'), 0) AS spread_profit_units,
+    COALESCE(SUM(pg.profit_units) FILTER (WHERE pg.target = 'total'), 0) AS total_profit_units,
     NOW()
 FROM games g
-JOIN game_results gr ON g.game_id = gr.game_id
+JOIN prediction_grades pg ON g.game_id = pg.game_id
+JOIN selected_runs sr ON sr.run_id = pg.run_id
 WHERE g.season = %(season)s
 ON CONFLICT (season) DO UPDATE SET
     as_of_week    = EXCLUDED.as_of_week,
@@ -144,8 +174,60 @@ ON CONFLICT (season) DO UPDATE SET
     total_wins    = EXCLUDED.total_wins,
     total_losses  = EXCLUDED.total_losses,
     total_pushes  = EXCLUDED.total_pushes,
+    spread_profit_units = EXCLUDED.spread_profit_units,
+    total_profit_units = EXCLUDED.total_profit_units,
     updated_at    = NOW()
 """
+
+UPSERT_GRADE_SQL = """
+INSERT INTO prediction_grades (
+    run_id, game_id, target, market_snapshot_id, side, result,
+    profit_units, grading_version, graded_at
+) VALUES (
+    %(run_id)s, %(game_id)s, %(target)s, %(market_snapshot_id)s,
+    %(side)s, %(result)s, %(profit_units)s, %(grading_version)s, NOW()
+)
+ON CONFLICT (run_id, game_id, target) DO UPDATE SET
+    market_snapshot_id = EXCLUDED.market_snapshot_id,
+    side = EXCLUDED.side,
+    result = EXCLUDED.result,
+    profit_units = EXCLUDED.profit_units,
+    grading_version = EXCLUDED.grading_version,
+    graded_at = NOW()
+"""
+
+
+def _profit(result: str) -> float:
+    return {"win": 1.0, "loss": -1.1, "push": 0.0}[result]
+
+
+def _upsert_run_grades(cur, scored: pd.Series, *, run_id: str) -> None:
+    """Store spread and total outcomes against the exact frozen run."""
+    game_id = int(scored["game_id"])
+    for target, result_column, side_column in (
+        ("spread", "spread_result_norm", "spread_lean"),
+        ("total", "total_result_norm", "total_lean"),
+    ):
+        result = scored.get(result_column)
+        side = scored.get(side_column)
+        if result is None or pd.isna(side):
+            continue
+        snapshot_id = scored.get("market_snapshot_id")
+        if pd.isna(snapshot_id):
+            snapshot_id = None
+        cur.execute(
+            UPSERT_GRADE_SQL,
+            {
+                "run_id": run_id,
+                "game_id": game_id,
+                "target": target,
+                "market_snapshot_id": snapshot_id,
+                "side": str(side).lower(),
+                "result": result,
+                "profit_units": _profit(result),
+                "grading_version": "frozen_line_v2",
+            },
+        )
 
 
 def upsert_results(df: pd.DataFrame, conn_url: str) -> int:
@@ -173,6 +255,107 @@ def upsert_results(df: pd.DataFrame, conn_url: str) -> int:
                 count += 1
             conn.commit()
     return count
+
+
+def mark_run_scored(conn_url: str, run_id: str) -> None:
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE prediction_runs
+                SET state = 'scored', scored_at = NOW()
+                WHERE run_id = %s AND state = 'frozen'
+                """,
+                (run_id,),
+            )
+            if cur.rowcount != 1:
+                raise RuntimeError(
+                    f"Run {run_id} must exist and be frozen before scoring"
+                )
+            conn.commit()
+
+
+def publish_scored_run(
+    df: pd.DataFrame, conn_url: str, *, run_id: str, season: int
+) -> tuple[int, dict]:
+    """Atomically publish results, refresh stats, and mark the frozen run scored."""
+    count = 0
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT state FROM prediction_runs WHERE run_id = %s FOR UPDATE",
+                (run_id,),
+            )
+            row = cur.fetchone()
+            if not row or row[0] not in {"frozen", "scored"}:
+                raise RuntimeError(
+                    f"Run {run_id} must exist and be frozen before scoring"
+                )
+            already_scored = row[0] == "scored"
+            if already_scored:
+                cur.execute(
+                    "SELECT COUNT(DISTINCT game_id) FROM prediction_grades "
+                    "WHERE run_id = %s",
+                    (run_id,),
+                )
+                count = int(cur.fetchone()[0])
+            else:
+                for _, scored in df.iterrows():
+                    if pd.isna(scored.get("game_id")):
+                        continue
+                    home_pts = scored.get("home_points")
+                    away_pts = scored.get("away_points")
+                    if pd.isna(home_pts) or pd.isna(away_pts):
+                        continue
+                    cur.execute(
+                        UPSERT_OBJECTIVE_RESULT_SQL,
+                        {
+                            "game_id": int(scored["game_id"]),
+                            "home_points": int(home_pts),
+                            "away_points": int(away_pts),
+                        },
+                    )
+                    _upsert_run_grades(cur, scored, run_id=run_id)
+                    count += 1
+                cur.execute(
+                    "UPDATE prediction_runs SET state = 'scored', scored_at = NOW() "
+                    "WHERE run_id = %s AND state = 'frozen'",
+                    (run_id,),
+                )
+                if cur.rowcount != 1:
+                    raise RuntimeError(f"Run {run_id} changed state during scoring")
+                cur.execute(
+                    "INSERT INTO ops.activation_history "
+                    "(environment, season, week, run_id, action, metadata) "
+                    "SELECT %s, "
+                    "season, week, run_id, 'score', '{}'::jsonb "
+                    "FROM prediction_runs WHERE run_id = %s "
+                    "ON CONFLICT (run_id, action) DO NOTHING",
+                    (os.getenv("CFB_ARTIFACT_ENV", "production"), run_id),
+                )
+            cur.execute(RECOMPUTE_STATS_SQL, {"season": season})
+            cur.execute(
+                "SELECT season, as_of_week, spread_wins, spread_losses, spread_pushes, "
+                "total_wins, total_losses, total_pushes FROM system_stats WHERE season = %s",
+                (season,),
+            )
+            stats_row = cur.fetchone()
+            conn.commit()
+    stats = (
+        {
+            "season": stats_row[0],
+            "as_of_week": stats_row[1],
+            "spread_wins": stats_row[2],
+            "spread_losses": stats_row[3],
+            "spread_pushes": stats_row[4],
+            "total_wins": stats_row[5],
+            "total_losses": stats_row[6],
+            "total_pushes": stats_row[7],
+        }
+        if stats_row
+        else {}
+    )
+    return count, stats
 
 
 def recompute_stats(conn_url: str, season: int) -> dict:
@@ -205,10 +388,11 @@ def recompute_stats(conn_url: str, season: int) -> dict:
 # ---------------------------------------------------------------------------
 
 WEEK_RE = re.compile(r"week(\d+)", re.IGNORECASE)
+WEEK_PARTITION_RE = re.compile(r"week=(\d+)", re.IGNORECASE)
 
 
 def _find_scored_csvs(season: int) -> list[tuple[int, Path]]:
-    pattern = f"data/production/scored/{season}/CFB_week*_bets_scored.csv"
+    pattern = str(local_scored_path(season, 1).parent / "CFB_week*_bets_scored.csv")
     out: list[tuple[int, Path]] = []
     for p in sorted(glob.glob(pattern)):
         m = WEEK_RE.search(Path(p).name)
@@ -222,6 +406,10 @@ def _find_scored_artifacts(season: int) -> list[tuple[int, str]]:
     prefix = scored_artifact_prefix(season)
     out: list[tuple[int, str]] = []
     for path in sorted(storage.list_files(prefix)):
+        m = WEEK_PARTITION_RE.search(path)
+        if m and path.endswith("/scored.json"):
+            out.append((int(m.group(1)), path))
+            continue
         m = WEEK_RE.search(Path(path).name)
         if m:
             out.append((int(m.group(1)), path))
@@ -257,8 +445,9 @@ def main() -> None:
         "--artifact-path",
         type=str,
         default=None,
-        help="Durable storage path to scored CSV. Defaults to artifacts/production/scored/year={year}/CFB_week{week}_bets_scored.csv for --week.",
+        help="Explicit durable scored CSV path (legacy/backfill only).",
     )
+    parser.add_argument("--run-id", help="Exact frozen run ID to publish grades for.")
     args = parser.parse_args()
 
     conn_url = os.environ.get("DATABASE_URL")
@@ -278,24 +467,49 @@ def main() -> None:
             return
         print(f"Backfilling {len(targets)} weeks for {args.year}")
         for week, source_path in targets:
-            df = (
-                load_scored_artifact(source_path)
-                if use_artifact
-                else load_scored(source_path)
-            )
+            if use_artifact and str(source_path).endswith("/scored.json"):
+                manifest = read_json_artifact(str(source_path))
+                df = prepare_scored(read_verified_csv_artifact(manifest))
+            else:
+                df = (
+                    load_scored_artifact(source_path)
+                    if use_artifact
+                    else load_scored(source_path)
+                )
             n = upsert_results(df, conn_url) if not args.refresh_stats_only else 0
             source_name = Path(source_path).name
             print(f"  week {week}: {n} results upserted from {source_name}")
     elif args.week:
         csv_path = local_scored_path(args.year, args.week)
-        artifact_path = args.artifact_path or scored_artifact_path(args.year, args.week)
-        if not args.refresh_stats_only:
-            df = (
-                load_scored_artifact(artifact_path)
-                if use_artifact
-                else load_scored(csv_path)
+        scored_manifest = None
+        if use_artifact and not args.artifact_path:
+            if not args.run_id:
+                raise SystemExit("--run-id is required with --from-artifact")
+            scored_manifest = read_json_artifact(
+                scored_run_manifest_path(args.year, args.week, args.run_id)
             )
-            n = upsert_results(df, conn_url)
+            artifact_path = str(scored_manifest["artifact_uri"])
+        else:
+            artifact_path = args.artifact_path or scored_artifact_path(
+                args.year, args.week
+            )
+        stats = None
+        if not args.refresh_stats_only:
+            if scored_manifest:
+                df = prepare_scored(read_verified_csv_artifact(scored_manifest))
+            elif use_artifact:
+                df = load_scored_artifact(artifact_path)
+            else:
+                df = load_scored(csv_path)
+            if scored_manifest:
+                n, stats = publish_scored_run(
+                    df,
+                    conn_url,
+                    run_id=str(scored_manifest["run_id"]),
+                    season=args.year,
+                )
+            else:
+                n = upsert_results(df, conn_url)
             source_name = Path(artifact_path if use_artifact else csv_path).name
             print(f"Upserted {n} results from {source_name}")
         else:
@@ -303,7 +517,8 @@ def main() -> None:
     else:
         raise SystemExit("Must pass either --week or --backfill-season")
 
-    stats = recompute_stats(conn_url, args.year)
+    if "stats" not in locals() or stats is None:
+        stats = recompute_stats(conn_url, args.year)
     if stats:
         print(
             f"✅ {args.year} YTD through week {stats['as_of_week']}: "

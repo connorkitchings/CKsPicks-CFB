@@ -9,7 +9,7 @@ This guide explains how to run experiments, tune hyperparameters, and manage mod
 Train a model with default configuration:
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 ```
 
 ### Run a Pre-Configured Experiment
@@ -17,7 +17,7 @@ PYTHONPATH=. uv run python src/models/train_model.py
 Use an experiment config from `conf/experiment/`:
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py experiment=debug_dry_run
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=debug_dry_run
 ```
 
 ### Hyperparameter Optimization
@@ -25,7 +25,7 @@ PYTHONPATH=. uv run python src/models/train_model.py experiment=debug_dry_run
 Run an Optuna study to find the best parameters:
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
 ```
 
 ## Configuration System (Hydra)
@@ -58,13 +58,13 @@ Override specific values via command line:
 
 ```bash
 # Override model type
-PYTHONPATH=. uv run python src/models/train_model.py model=ridge
+PYTHONPATH=src uv run python -m cks_picks_cfb.train model=ridge
 
 # Override data year
-PYTHONPATH=. uv run python src/models/train_model.py data.test_year=2025
+PYTHONPATH=src uv run python -m cks_picks_cfb.train data.test_year=2025
 
 # Override multiple values
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
   model=catboost \
   data.test_year=2025 \
   model.params.depth=8
@@ -96,7 +96,7 @@ params:
 ### Run Optimization
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
 ```
 
 Best parameters are automatically saved to `conf/model/params/catboost_best.yaml`.
@@ -106,7 +106,7 @@ Best parameters are automatically saved to `conf/model/params/catboost_best.yaml
 ```bash
 # Manually edit conf/model/catboost.yaml to include the best params
 # OR use Hydra to merge them at runtime
-PYTHONPATH=. uv run python src/models/train_model.py \
+PYTHONPATH=src uv run python -m cks_picks_cfb.train \
   +model.params=@params/catboost_best.yaml
 ```
 
@@ -175,7 +175,7 @@ model:
 ### 2. Run The Experiment
 
 ```bash
-PYTHONPATH=. uv run python src/models/train_model.py experiment=my_experiment
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=my_experiment
 ```
 
 ### 3. Compare Results
@@ -205,7 +205,7 @@ Ensure `PYTHONPATH=.` is set:
 
 ```bash
 export PYTHONPATH=.
-uv run python src/models/train_model.py
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 ```
 
 ### Hydra Output Directory

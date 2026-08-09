@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict
 
@@ -110,6 +111,10 @@ def calculate_betting_stats(
 
 
 def main():
+    raise SystemExit(
+        "Retired: system_stats is derived transactionally from prediction_grades "
+        "by `python -m cks_picks_cfb.ops close-week`."
+    )
     parser = argparse.ArgumentParser(description="Generate System Betting Stats")
     parser.add_argument(
         "--config",
@@ -239,7 +244,7 @@ def main():
         output_data[f"{deploy_year}_ytd"] = stats_curr_ytd
 
     # Save Results
-    output_path = Path("data/production/system_stats.json")
+    output_path = Path(os.environ["CFB_WORK_ROOT"]) / "system_stats.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "w") as f:

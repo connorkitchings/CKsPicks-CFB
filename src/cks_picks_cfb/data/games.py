@@ -45,6 +45,20 @@ class GamesIngester(BaseIngester):
         return "raw/games"
 
     @property
+    def source_endpoint(self) -> str:
+        return "GamesApi.get_games"
+
+    def source_parameters(self) -> dict[str, Any]:
+        parameters: dict[str, Any] = {
+            "year": self.year,
+            "season_type": self.season_type,
+            "classification": self.classification,
+        }
+        if self.week is not None:
+            parameters["week"] = self.week
+        return parameters
+
+    @property
     def partition_keys(self) -> list[str]:
         # If fetching for a specific week, partition by week as well
         if self.week is not None:

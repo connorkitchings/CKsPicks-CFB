@@ -7,12 +7,15 @@ CFBD inconsistencies.
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 import numpy as np
 import pandas as pd
 
 
-def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply a list of hardcoded data corrections for known errors in raw data."""
+def legacy_data_fixes() -> list[tuple[tuple[int, ...], dict[str, object]]]:
+    """Return the legacy correction definitions for one-time dataset seeding."""
     conditions_and_updates = [
         ((400937467, 1, 5), {"yards_gained": 15, "play_type": "Penalty"}),
         ((400547851, 11, 6), {"yards_gained": 15, "play_type": "Penalty"}),
@@ -95,7 +98,44 @@ def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
             },
         ),
     ]
-    for condition, updates in conditions_and_updates:
+    return conditions_and_updates
+
+
+def legacy_data_correction_records() -> list[dict[str, object]]:
+    """Convert legacy fixes into the canonical approved correction contract."""
+    records = []
+    for condition, updates in legacy_data_fixes():
+        game_id, drive_number, *play_number = condition
+        record_key = {"game_id": game_id, "drive_number": drive_number}
+        if play_number:
+            record_key["play_number"] = play_number[0]
+        for field, new_value in updates.items():
+            identity = json.dumps(
+                {"record_key": record_key, "field": field, "value": new_value},
+                sort_keys=True,
+            )
+            records.append(
+                {
+                    "correction_id": hashlib.sha256(identity.encode()).hexdigest()[:32],
+                    "dataset": "plays",
+                    "record_key": record_key,
+                    "changed_field": field,
+                    "old_value": None,
+                    "new_value": new_value,
+                    "reason": "Migrated from the reviewed legacy correction set",
+                    "source": "legacy_manual_data_fixes",
+                    "effective_from": None,
+                    "effective_to": None,
+                    "approved_by": "repository_legacy_policy",
+                    "approved_at": "2026-08-09T00:00:00+00:00",
+                }
+            )
+    return records
+
+
+def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
+    """Apply legacy hardcoded corrections for compatibility readers only."""
+    for condition, updates in legacy_data_fixes():
         game_id, drive_number, *play_number_list = condition
         play_number = play_number_list[0] if play_number_list else None
 
@@ -113,6 +153,57 @@ def apply_manual_data_fixes(df: pd.DataFrame) -> pd.DataFrame:
             for col, value in updates.items():
                 df.loc[condition_mask, col] = value
     return df
+
+
+def apply_data_corrections(df: pd.DataFrame, corrections: pd.DataFrame) -> pd.DataFrame:
+    """Apply an explicit, versioned long-form correction dataset.
+
+    Corrections are keyed by game and optional drive/play number. Each row changes
+    exactly one field, making the old/new values and approval metadata catalogable.
+    """
+    required = {"record_key", "changed_field", "new_value"}
+    missing = required - set(corrections.columns)
+    if missing:
+        raise ValueError(f"Data corrections are missing fields: {sorted(missing)}")
+    result = df.copy()
+    for row in corrections.to_dict("records"):
+        field = str(row["changed_field"])
+        if field not in result.columns:
+            raise ValueError(f"Correction references unknown play field: {field}")
+        record_key = row.get("record_key", {})
+        if isinstance(record_key, str):
+            record_key = json.loads(record_key)
+        if not isinstance(record_key, dict):
+            raise ValueError("Correction record_key must be an object")
+        keys = {
+            key: row.get(key, record_key.get(key))
+            for key in ("game_id", "drive_number", "play_number", "play_id")
+        }
+        if keys["game_id"] is None:
+            raise ValueError("Correction record_key is missing game_id")
+        mask = result["game_id"].eq(keys["game_id"])
+        for key in ("drive_number", "play_number", "play_id"):
+            value = keys[key]
+            if value is not None and not pd.isna(value):
+                if key not in result.columns:
+                    raise ValueError(f"Correction references unavailable key: {key}")
+                mask &= result[key].eq(value)
+        matches = int(mask.sum())
+        if matches != 1:
+            raise ValueError(
+                f"Correction for game {keys['game_id']} field {field} matched "
+                f"{matches} rows; expected exactly one"
+            )
+        old_value = row.get("old_value")
+        if old_value is not None and not pd.isna(old_value):
+            actual = result.loc[mask, field].iloc[0]
+            if str(actual) != str(old_value):
+                raise ValueError(
+                    f"Correction old-value mismatch for game {keys['game_id']} "
+                    f"field {field}: expected {old_value!r}, got {actual!r}"
+                )
+        result.loc[mask, field] = row["new_value"]
+    return result
 
 
 def update_yards_gained(row: pd.Series) -> int | float:
@@ -331,7 +422,9 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
     return df_copy
 
 
-def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
+def allplays_to_byplay(
+    data: pd.DataFrame, corrections: pd.DataFrame | None = None
+) -> pd.DataFrame:
     """Transform raw plays into enriched by-play dataset."""
     df = data.copy()
     df = df.drop_duplicates(
@@ -489,7 +582,11 @@ def allplays_to_byplay(data: pd.DataFrame) -> pd.DataFrame:
         df = assign_drive_numbers(
             df, kickoff_types=st_kickoffs, end_of_drive_types=endofdrive
         )
-    df = apply_manual_data_fixes(df)
+    df = (
+        apply_manual_data_fixes(df)
+        if corrections is None
+        else apply_data_corrections(df, corrections)
+    )
     if "drive_id" not in df.columns:
         df["drive_id"] = (
             df["game_id"].astype(str) + "-" + df["drive_number"].astype(int).astype(str)

@@ -12,36 +12,32 @@ experiment:
   description: "Walk-Forward CV: CatBoost with expanding window (no future data leak)"
   type: walk_forward_cv
 
-# 4-fold walk-forward configuration (strictly temporal)
+# 3-fold selection configuration (strictly temporal)
 # Each fold trains only on years BEFORE test year
 folds:
-  fold_2021:
-    name: "fold_2021"
-    train_years: [2019]              # 1 year training
-    test_year: 2021
   fold_2022:
     name: "fold_2022"
-    train_years: [2019, 2021]        # 2 years training (expanding window)
+    train_years: [2021]
     test_year: 2022
   fold_2023:
     name: "fold_2023"
-    train_years: [2019, 2021, 2022]  # 3 years training (expanding window)
+    train_years: [2021, 2022]
     test_year: 2023
   fold_2024:
     name: "fold_2024"
-    train_years: [2019, 2021, 2022, 2023]  # 4 years training (full past data)
+    train_years: [2021, 2022, 2023]
     test_year: 2024
 
-# Final model: train on all available years, predict 2025
+# Production refit occurs only after the locked 2025 test.
 final_model:
   name: "catboost_walk_forward_final"
-  train_years: [2019, 2021, 2022, 2023, 2024]
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024, 2025]
+  deploy_year: 2026
 
 training:
-  train_years: [2019, 2021, 2022, 2023]  # Used as default
-  test_year: 2024  # Not used in CV
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026
 
 # Same betting config as champion for fair comparison
 betting:

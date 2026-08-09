@@ -213,7 +213,7 @@ flowchart TD
 
 ## Evaluation Metrics Implementation
 
-### Training Metrics (`src/models/train_model.py`)
+### Training Metrics (`python -m cks_picks_cfb.train`)
 
 - Each training invocation logs RMSE/MAE for both the training window and the configured holdout season into MLflow (`artifacts/mlruns/`).
 - The script also writes a metrics CSV to `<model_dir>/<test_year>/metrics/metrics.csv`, capturing spread/total RMSE, MAE, and ensemble variance statistics that map directly to the success thresholds outlined above.

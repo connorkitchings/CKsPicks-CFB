@@ -61,6 +61,7 @@ def build_preaggregation_pipeline(
     teams_df: pd.DataFrame | None = None,
     venues_df: pd.DataFrame | None = None,
     weather_df: pd.DataFrame | None = None,
+    corrections_df: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run plays → byplay → drives → team-game → team-season pipeline.
 
@@ -94,7 +95,7 @@ def build_preaggregation_pipeline(
             "Input DataFrame to pipeline is missing required 'week' column."
         )
 
-    byplay = allplays_to_byplay(plays_raw_df)
+    byplay = allplays_to_byplay(plays_raw_df, corrections=corrections_df)
     drives = aggregate_drives(byplay)
     if "season" not in drives.columns or "week" not in drives.columns:
         drives = drives.merge(
@@ -109,8 +110,9 @@ def build_preaggregation_pipeline(
         team_game = merge_situational_features(team_game, games_df, teams_df, venues_df)
 
     # Merge weather features if available
-    if weather_df is not None:
-        team_game = merge_weather_features(team_game, weather_df)
+    team_game = merge_weather_features(
+        team_game, weather_df if weather_df is not None else pd.DataFrame()
+    )
 
     # Add simple luck factor calculation if needed
     team_game = calculate_luck_factor(team_game, byplay)

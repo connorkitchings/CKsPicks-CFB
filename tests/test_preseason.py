@@ -219,6 +219,26 @@ def test_build_matchups_uses_snapshot_data_and_excludes_lines(storage: LocalStor
     assert not any("line" in feature for feature in PRESEASON_FEATURES)
 
 
+def test_build_matchups_keeps_week_five_for_teams_with_byes(storage: LocalStorage):
+    _write_base_data(storage)
+    _write_complete_snapshot(storage)
+    games = storage.read_index("raw/games", {"year": 2024})
+    games[0]["week"] = 5
+    games[0].pop("year", None)
+    storage.write(
+        "raw/games",
+        games,
+        Partition({"year": "2024"}),
+        overwrite=True,
+    )
+
+    result = build_preseason_matchups(
+        storage, year=2024, as_of=AS_OF, include_targets=False
+    )
+
+    assert result["week"].tolist() == [5]
+
+
 def test_preseason_pipeline_imputes_and_predicts_without_market_features():
     rng = np.random.default_rng(7)
     frame = pd.DataFrame(
@@ -250,17 +270,28 @@ def test_blend_routes_by_less_experienced_team():
 def test_select_blend_weights_uses_training_only_predictions():
     validation = pd.DataFrame(
         {
-            "home_current_season_games": [1, 1, 2, 2],
-            "away_current_season_games": [1, 2, 2, 3],
-            "spread_target": [10.0, 10.0, 3.0, 3.0],
-            "total_target": [50.0, 50.0, 40.0, 40.0],
-            "preseason_spread": [10.0, 10.0, 9.0, 9.0],
-            "recency_spread": [1.0, 1.0, 3.0, 3.0],
-            "preseason_total": [50.0, 50.0, 60.0, 60.0],
-            "recency_total": [20.0, 20.0, 40.0, 40.0],
+            "home_current_season_games": [1, 1, 2, 2, 3, 3],
+            "away_current_season_games": [1, 2, 2, 3, 3, 4],
+            "spread_target": [10.0, 10.0, 3.0, 3.0, 7.0, 7.0],
+            "total_target": [50.0, 50.0, 40.0, 40.0, 44.0, 44.0],
+            "preseason_spread": [10.0, 10.0, 9.0, 9.0, 12.0, 12.0],
+            "recency_spread": [1.0, 1.0, 3.0, 3.0, 7.0, 7.0],
+            "preseason_total": [50.0, 50.0, 60.0, 60.0, 55.0, 55.0],
+            "recency_total": [20.0, 20.0, 40.0, 40.0, 44.0, 44.0],
         }
     )
     assert select_blend_weights(validation, grid=(0.0, 0.5, 1.0)) == {
         1: 1.0,
         2: 0.0,
+        3: 0.0,
+    }
+    assert select_blend_weights(validation, target="spread", grid=(0.0, 0.5, 1.0)) == {
+        1: 1.0,
+        2: 0.0,
+        3: 0.0,
+    }
+    assert select_blend_weights(validation, target="total", grid=(0.0, 0.5, 1.0)) == {
+        1: 1.0,
+        2: 0.0,
+        3: 0.0,
     }

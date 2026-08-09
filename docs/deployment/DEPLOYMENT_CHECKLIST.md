@@ -38,7 +38,7 @@
 ## Deployment Steps
 
 ### Step 1: Final Validation
-- [ ] Run champion validation: `PYTHONPATH=. uv run python src/cks_picks_cfb/train.py experiment=v2_champion_validation`
+- [ ] Run champion validation: `PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2_champion_validation`
 - [ ] Verify metrics in MLflow
 - [ ] Compare to expected performance
 - [ ] Document any deviations

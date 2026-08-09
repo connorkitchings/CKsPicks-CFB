@@ -86,7 +86,9 @@ def test_full_line_coverage_is_required_before_write(monkeypatch):
     with pytest.raises(BettingLineCoverageError) as error:
         ingester.run()
 
-    assert error.value.missing_game_ids == {2}
+    assert error.value.missing_game_ids == {1, 2}
+    assert error.value.missing_spread_game_ids == {2}
+    assert error.value.missing_total_game_ids == {1, 2}
     assert "raw/betting_lines" not in storage.records
 
 
@@ -112,19 +114,21 @@ def test_partial_lines_can_be_saved_outside_publish_gate(monkeypatch):
     ingester.run()
 
     rows = storage.records["raw/betting_lines"]
-    assert rows == [
-        {
-            "year": 2026,
-            "season_type": "regular",
-            "week": 1,
-            "game_id": 1,
-            "provider": "Book",
-            "spread": -3.5,
-            "formatted_spread": None,
-            "spread_open": None,
-            "over_under": None,
-            "over_under_open": None,
-            "home_moneyline": None,
-            "away_moneyline": None,
-        }
-    ]
+    assert len(rows) == 1
+    expected = {
+        "year": 2026,
+        "season_type": "regular",
+        "week": 1,
+        "game_id": 1,
+        "provider": "Book",
+        "spread": -3.5,
+        "formatted_spread": None,
+        "spread_open": None,
+        "over_under": None,
+        "over_under_open": None,
+        "home_moneyline": None,
+        "away_moneyline": None,
+    }
+    assert {key: rows[0][key] for key in expected} == expected
+    assert rows[0]["captured_at"]
+    assert rows[0]["quote_id"]

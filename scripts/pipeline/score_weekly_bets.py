@@ -10,14 +10,42 @@ from dotenv import load_dotenv
 sys.path.append(os.getcwd())
 # noqa: E402
 from cks_picks_cfb.artifacts import (
+    dataframe_csv_bytes,
     local_prediction_path,
     local_scored_path,
-    prediction_artifact_path,
+    prediction_run_manifest_path,
     read_csv_artifact,
-    scored_artifact_path,
-    write_csv_artifact,
+    read_json_artifact,
+    read_verified_csv_artifact,
+    scored_run_artifact_path,
+    scored_run_manifest_path,
+    sha256_bytes,
+    write_json_artifact,
 )
 from cks_picks_cfb.data.storage import get_storage
+
+try:
+    import psycopg
+except ImportError:  # pragma: no cover
+    psycopg = None
+
+
+def resolve_frozen_run(conn_url: str, year: int, week: int) -> str:
+    """Resolve the sole frozen/scored run from the Neon control plane."""
+    if psycopg is None:
+        raise RuntimeError("psycopg is required to resolve the frozen run")
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT run_id FROM prediction_runs "
+                "WHERE season = %s AND week = %s AND state IN ('frozen', 'scored') "
+                "ORDER BY frozen_at DESC NULLS LAST LIMIT 1",
+                (year, week),
+            )
+            row = cur.fetchone()
+    if not row:
+        raise RuntimeError(f"No frozen prediction run for {year} week {week}")
+    return str(row[0])
 
 
 def load_week_scores(year, week):
@@ -150,7 +178,7 @@ def main():
         "--predictions-csv",
         type=Path,
         default=None,
-        help="Working-copy predictions CSV path. Defaults to data/production/predictions/{year}/CFB_week{week}_bets.csv",
+        help="Override ephemeral working-copy predictions CSV path.",
     )
     parser.add_argument(
         "--from-artifact",
@@ -161,13 +189,14 @@ def main():
         "--prediction-artifact-path",
         type=str,
         default=None,
-        help="Durable storage path to predictions CSV. Defaults to artifacts/production/predictions/year={year}/CFB_week{week}_bets.csv.",
+        help="Explicit durable prediction path; otherwise --from-artifact requires the frozen manifest.",
     )
+    parser.add_argument("--run-id", help="Explicit frozen run ID override.")
     parser.add_argument(
         "--output-csv",
         type=Path,
         default=None,
-        help="Working-copy scored CSV path. Defaults to data/production/scored/{year}/CFB_week{week}_bets_scored.csv",
+        help="Override ephemeral working-copy scored CSV path.",
     )
     parser.add_argument(
         "--upload-artifact",
@@ -183,11 +212,32 @@ def main():
 
     # Load Bets
     bets_path = args.predictions_csv or local_prediction_path(year, week)
-    artifact_path = args.prediction_artifact_path or prediction_artifact_path(
-        year, week
-    )
+    frozen_manifest = None
+    if args.from_artifact and not args.prediction_artifact_path:
+        try:
+            run_id = args.run_id or resolve_frozen_run(
+                os.environ.get("DATABASE_URL", ""), year, week
+            )
+            frozen_manifest = read_json_artifact(
+                prediction_run_manifest_path(year, week, run_id)
+            )
+            artifact_path = str(frozen_manifest["artifact_uri"])
+        except Exception as exc:
+            raise SystemExit(
+                f"No frozen prediction manifest for {year} week {week}: {exc}"
+            ) from exc
+    else:
+        artifact_path = args.prediction_artifact_path or ""
 
-    if args.from_artifact or args.prediction_artifact_path:
+    if frozen_manifest:
+        try:
+            bets_df = read_verified_csv_artifact(frozen_manifest)
+        except Exception as exc:
+            raise SystemExit(
+                f"Could not verify frozen artifact {artifact_path}: {exc}"
+            ) from exc
+        print(f"Loaded verified frozen artifact {artifact_path}")
+    elif args.from_artifact or args.prediction_artifact_path:
         try:
             bets_df = read_csv_artifact(artifact_path)
         except Exception as exc:
@@ -220,8 +270,39 @@ def main():
     print(f"Saved scored bets to {output_path}")
 
     if args.upload_artifact:
-        scored_path = scored_artifact_path(year, week)
-        write_csv_artifact(scored_df, scored_path)
+        run_id = (
+            str(frozen_manifest["run_id"])
+            if frozen_manifest
+            else str(scored_df.get("run_id", pd.Series(["legacy"])).iloc[0])
+        )
+        scored_path = scored_run_artifact_path(year, week, run_id)
+        manifest_path = scored_run_manifest_path(year, week, run_id)
+        storage = get_storage()
+        scored_bytes = dataframe_csv_bytes(scored_df)
+        manifest_payload = {
+            "schema_version": "scored_run_v1",
+            "run_id": run_id,
+            "season": year,
+            "week": week,
+            "artifact_uri": scored_path,
+            "artifact_sha256": sha256_bytes(scored_bytes),
+            "source_prediction_artifact": artifact_path,
+        }
+        artifact_exists = storage.exists(scored_path)
+        manifest_exists = storage.exists(manifest_path)
+        if artifact_exists != manifest_exists:
+            raise FileExistsError(
+                f"Partial scored run requires reconciliation: {run_id}"
+            )
+        if artifact_exists:
+            if (
+                storage.read_bytes(scored_path) != scored_bytes
+                or read_json_artifact(manifest_path, storage) != manifest_payload
+            ):
+                raise FileExistsError(f"Immutable scored run collision: {run_id}")
+        else:
+            storage.write_bytes(scored_bytes, scored_path)
+            write_json_artifact(manifest_payload, manifest_path, storage)
         print(f"Uploaded durable scored artifact to {scored_path}")
 
 

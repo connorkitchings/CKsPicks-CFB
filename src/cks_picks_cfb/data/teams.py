@@ -24,6 +24,10 @@ class TeamsIngester(BaseIngester):
         """The logical entity name for storage."""
         return "raw/teams"
 
+    @property
+    def source_endpoint(self) -> str:
+        return "TeamsApi.get_teams"
+
     def fetch_data(self) -> list[Any]:
         """Fetch teams data from the CFBD API.
 
@@ -58,6 +62,7 @@ class TeamsIngester(BaseIngester):
             if alternate_names:
                 alternate_names = [alternate_names]  # Convert to array format
 
+            location = self.safe_getattr(team, "location", None)
             teams_to_insert.append(
                 {
                     "id": team.id,
@@ -72,6 +77,7 @@ class TeamsIngester(BaseIngester):
                     "division": self.safe_getattr(team, "division", None),
                     "classification": self.safe_getattr(team, "classification", None),
                     "twitter": self.safe_getattr(team, "twitter", None),
+                    "venue_id": self.safe_getattr(location, "venue_id", None),
                     "year": self.year,
                 }
             )

@@ -28,6 +28,14 @@ function marketSpreadLabel(homeTeam: string, line: number | null): string {
 
 export function GameRow({ game }: { game: Game }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
+  const hasAnyLine = game.homeTeamSpreadLine !== null || game.totalLine !== null;
+  const regimeLabel = {
+    preseason: "Preseason",
+    one_game: "1 game",
+    two_games: "2 games",
+    three_games: "3 games",
+    established: "Established",
+  }[game.regime ?? "established"];
 
   return (
     <li
@@ -40,12 +48,25 @@ export function GameRow({ game }: { game: Game }) {
       {/* Header row: time + confidence marker */}
       <div className="mb-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
         <span>{formatKickoff(game.startDate)}</span>
-        {game.highConfidence && (
-          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-            ★ High Confidence
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {game.regime && (
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+              {regimeLabel}
+            </span>
+          )}
+          {game.highConfidence && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              ★ High Confidence
+            </span>
+          )}
+        </div>
       </div>
+
+      {!hasAnyLine && (
+        <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+          Line unavailable—model prediction shown, no lean.
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
         {/* Teams + logos */}
@@ -139,6 +160,11 @@ export function GameRow({ game }: { game: Game }) {
               total {game.totalResult}
             </span>
           )}
+        </div>
+      )}
+      {(game.spreadModelVersion || game.totalModelVersion) && (
+        <div className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-600">
+          Spread {game.spreadModelVersion ?? "—"} · Total {game.totalModelVersion ?? "—"}
         </div>
       )}
     </li>

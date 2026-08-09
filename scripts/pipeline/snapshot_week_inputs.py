@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""Freeze mutable compatibility partitions into explicit immutable dataset refs."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from dataclasses import asdict
+from datetime import datetime, time, timezone
+
+from dotenv import load_dotenv
+
+from cks_picks_cfb.data.catalog import dataset_ref_for_partition_as_of
+from cks_picks_cfb.data.storage import get_storage
+
+
+def main() -> None:
+    load_dotenv()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--year", type=int, required=True)
+    parser.add_argument("--week", type=int, required=True)
+    parser.add_argument("--as-of", required=True)
+    parser.add_argument("--pipeline-run-id", required=True)
+    args = parser.parse_args()
+    cutoff = datetime.fromisoformat(args.as_of)
+    if "T" not in args.as_of:
+        cutoff = datetime.combine(cutoff.date(), time.max)
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=timezone.utc)
+    storage = get_storage()
+    conn_url = os.getenv("DATABASE_URL")
+    if not conn_url:
+        raise SystemExit("DATABASE_URL is not set")
+    cutoff_iso = cutoff.astimezone(timezone.utc).isoformat()
+    inputs = (
+        ("games", "games"),
+        ("betting_lines", "market_snapshots"),
+        ("team_game", "reconciled_team_game"),
+        ("point_in_time_matchups", "point_in_time_matchups"),
+    )
+    refs = []
+    for entity, dataset in inputs:
+        ref = dataset_ref_for_partition_as_of(
+            conn_url,
+            dataset,
+            cutoff_iso,
+            partitions={"seasons": [args.year]},
+        )
+        refs.append(
+            {
+                "entity": entity,
+                "year": args.year,
+                **asdict(ref),
+            }
+        )
+    output_uri = (
+        f"artifacts/{os.getenv('CFB_ARTIFACT_ENV', 'production')}/"
+        f"pipeline-runs/{args.pipeline_run_id}/input_refs.json"
+    )
+    payload = json.dumps(refs, indent=2, sort_keys=True).encode("utf-8")
+    if storage.exists(output_uri):
+        if storage.read_bytes(output_uri) != payload:
+            raise FileExistsError(f"Input ref set changed for {args.pipeline_run_id}")
+    else:
+        storage.write_bytes(payload, output_uri)
+    print(output_uri)
+
+
+if __name__ == "__main__":
+    main()

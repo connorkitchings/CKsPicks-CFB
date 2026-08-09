@@ -1,0 +1,8 @@
+name: preseason-regimes
+workflow: preseason
+alpha: 10.0
+snapshots: []  # Exactly 2021-2024 with immutable pre-kickoff as_of dates.
+holdout:
+  year: 2025
+  as_of: null
+output: ${oc.env:CFB_WORK_ROOT,/tmp/cks-picks-cfb}/models/preseason-regimes.joblib

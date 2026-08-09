@@ -29,7 +29,7 @@ Weeks 11-12: Monitoring Dashboard & Final Polish
 - [ ] Verify `CFB_MODEL_DATA_ROOT` is set correctly
 - [ ] Generate processed data for all years:
   ```bash
-  for year in 2019 2021 2022 2023 2024; do
+  for year in 2021 2022 2023 2024 2025; do
       uv run python scripts/pipeline/run_pipeline_generic.py --year $year
   done
   ```
@@ -56,11 +56,11 @@ Weeks 11-12: Monitoring Dashboard & Final Polish
 - [ ] Update `src/features/v1_pipeline.py` to load from `team_season` (not `team_season_adj`)
 - [ ] Train Ridge baseline:
   ```bash
-  PYTHONPATH=. uv run python src/train.py \
+  PYTHONPATH=src uv run python -m cks_picks_cfb.train \
       model=linear \
       features=minimal_unadjusted_v1 \
-      training.train_years=[2019,2021,2022,2023] \
-      training.test_year=2024
+      training.train_years=[2021,2022,2023,2024] \
+      training.test_year=2025
   ```
 - [ ] Log to MLflow experiment `v2_baseline`
 - [ ] Document metrics in decision log

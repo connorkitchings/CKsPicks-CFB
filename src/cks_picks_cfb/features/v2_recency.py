@@ -10,6 +10,17 @@ from cks_picks_cfb.features.core import apply_iterative_opponent_adjustment
 MIN_CURRENT_SEASON_GAMES = 4
 
 
+def completed_game_regime(games: int | float | None) -> str:
+    """Return the public routing label for a completed-game count."""
+    count = 0 if games is None or pd.isna(games) else max(0, int(games))
+    return {
+        0: "preseason",
+        1: "one_game",
+        2: "two_games",
+        3: "three_games",
+    }.get(count, "established")
+
+
 def _calculate_ewma(series, alpha):
     """
     Calculate Exponentially Weighted Moving Average.
@@ -23,8 +34,26 @@ def aggregate_team_season_ewma(team_game_df, alpha):
     """
     Aggregate team-game metrics using EWMA (Exponential Decay).
     """
-    # Sort by date/week
-    team_game_df = team_game_df.sort_values(["season", "week"])
+    team_game_df = team_game_df.copy()
+    date_column = next(
+        (
+            column
+            for column in ("kickoff_utc", "start_date", "date")
+            if column in team_game_df
+        ),
+        None,
+    )
+    sort_columns = ["season", "team"]
+    if date_column:
+        team_game_df[date_column] = pd.to_datetime(
+            team_game_df[date_column], utc=True, errors="raise"
+        )
+        sort_columns.append(date_column)
+    else:
+        sort_columns.append("week")
+    if "game_id" in team_game_df:
+        sort_columns.append("game_id")
+    team_game_df = team_game_df.sort_values(sort_columns)
 
     # Columns to aggregate (excluding identifiers)
     exclude_cols = [
@@ -42,28 +71,11 @@ def aggregate_team_season_ewma(team_game_df, alpha):
         if c not in exclude_cols and pd.api.types.is_numeric_dtype(team_game_df[c])
     ]
 
-    # helper for groupby apply
-    def _apply_ewma(g):
-        # We want the EWMA of *past* games at the start of the current week.
-        # shift(1) means row[i] gets stats from 0..i-1
-        # ewm().mean() calculates usage including current row.
-        # So we ewm() then shift(1).
-
-        # Note: We need to handle weeks. If a team plays multiple times (rare) or gaps.
-        # Assuming one row per game per team.
-        ewma = g[metric_cols].ewm(alpha=alpha, min_periods=1).mean().shift(1)
-        ewma["season"] = g["season"]
-        ewma["week"] = g["week"]
-        ewma["team"] = g["team"]
-        ewma["game_id"] = g["game_id"]  # Join key
-        return ewma
-
-    # Apply per team
-    team_season = team_game_df.groupby(["season", "team"], group_keys=False).apply(
-        _apply_ewma
+    ewma = team_game_df.groupby(["season", "team"], sort=False)[metric_cols].transform(
+        lambda series: series.ewm(alpha=alpha, min_periods=1).mean().shift(1)
     )
-
-    # Drop first game (NaNs)
+    team_season = team_game_df[["season", "week", "team", "game_id"]].copy()
+    team_season[metric_cols] = ewma
     team_season = team_season.dropna(subset=metric_cols, how="all")
 
     return team_season
@@ -85,17 +97,30 @@ def _normalize_games_df(records) -> pd.DataFrame:
     return games_df
 
 
-def _current_game_counts(team_game_df: pd.DataFrame, week: int) -> pd.Series:
+def _current_game_counts(
+    team_game_df: pd.DataFrame, week: int, kickoff: object | None = None
+) -> pd.Series:
     if team_game_df.empty or "week" not in team_game_df or "team" not in team_game_df:
         return pd.Series(dtype="int64")
-    prior_games = team_game_df[team_game_df["week"] < week]
+    date_column = next(
+        (column for column in ("start_date", "date") if column in team_game_df), None
+    )
+    if date_column and kickoff is not None and pd.notna(kickoff):
+        dates = pd.to_datetime(team_game_df[date_column], utc=True, errors="coerce")
+        prior_games = team_game_df[dates < pd.to_datetime(kickoff, utc=True)]
+    else:
+        prior_games = team_game_df[team_game_df["week"] < week]
     if prior_games.empty:
         return pd.Series(dtype="int64")
     return prior_games.groupby("team")["game_id"].nunique()
 
 
 def _latest_prior_team_snapshot(read_entity, year: int) -> pd.DataFrame:
-    prior_year = year - 1
+    if year == 2020:
+        raise ValueError("2020 is excluded from feature construction")
+    prior_year = 2019 if year == 2021 else year - 1
+    if prior_year == 2020:
+        raise ValueError("2020 cannot be used as prior-season feature lineage")
     records = read_entity("team_week_adj", prior_year)
     if not records:
         return pd.DataFrame()
@@ -140,7 +165,8 @@ def _prior_seed_rows(
         if pd.isna(game.get("game_id")) or pd.isna(game.get("week")):
             continue
         week = int(game["week"])
-        counts = _current_game_counts(current_df, week)
+        counts = _current_game_counts(current_df, week, game.get("start_date"))
+        prior_source_year = 2019 if year == 2021 else year - 1
         for team_col, opponent_col, side in (
             ("home_team", "away_team", "home"),
             ("away_team", "home_team", "away"),
@@ -164,6 +190,8 @@ def _prior_seed_rows(
                     "date": game.get("start_date"),
                     "current_season_games": current_games,
                     "seeded_from_prior_season": True,
+                    "prior_source_season": prior_source_year,
+                    "prior_season_gap": year - prior_source_year,
                 }
             )
             rows.append(row)
@@ -178,6 +206,12 @@ def _merge_seeded_prediction_rows(
     read_entity,
     year: int,
 ) -> pd.DataFrame:
+    """Keep prior and current feature blocks separate for model-level routing.
+
+    This function retains its historical name for compatibility.  It no longer
+    applies fixed shrinkage weights: direct hybrid models consume both blocks,
+    while prediction blends are selected later from temporal OOF predictions.
+    """
     seed_df = _prior_seed_rows(
         games_df,
         read_entity,
@@ -185,25 +219,100 @@ def _merge_seeded_prediction_rows(
         team_game_df=team_game_df,
     )
     if seed_df.empty:
-        return full_adj_df
+        result = full_adj_df.copy()
+        if not result.empty:
+            counts = pd.to_numeric(
+                result.get("current_season_games", 0), errors="coerce"
+            ).fillna(0)
+            result["prediction_regime"] = counts.map(completed_game_regime)
+            result["prior_features_missing"] = True
+        return result
 
-    if full_adj_df.empty:
-        return seed_df
+    key_columns = ["game_id", "team"]
+    seed_by_key = seed_df.set_index(key_columns, drop=False)
+    current_by_key = (
+        full_adj_df.set_index(key_columns, drop=False)
+        if not full_adj_df.empty
+        else pd.DataFrame(columns=key_columns).set_index(key_columns, drop=False)
+    )
+    all_columns = list(dict.fromkeys([*full_adj_df.columns, *seed_df.columns]))
+    metadata_columns = {
+        "season",
+        "week",
+        "game_id",
+        "iteration",
+        "current_season_games",
+        "prior_source_season",
+        "prior_season_gap",
+        "team",
+        "opponent",
+        "home_away",
+        "date",
+        "seeded_from_prior_season",
+        "prediction_regime",
+    }
+    rows: list[dict] = []
 
-    seed_keys = set(zip(seed_df["game_id"], seed_df["team"]))
-    existing_keys = list(zip(full_adj_df["game_id"], full_adj_df["team"]))
-    full_adj_df = full_adj_df[[key not in seed_keys for key in existing_keys]].copy()
-    return pd.concat([full_adj_df, seed_df], ignore_index=True, sort=False)
+    for key in current_by_key.index.union(seed_by_key.index):
+        has_current = key in current_by_key.index
+        has_prior = key in seed_by_key.index
+        current = current_by_key.loc[key].to_dict() if has_current else {}
+        prior = seed_by_key.loc[key].to_dict() if has_prior else {}
+        # Duplicate keys should not occur, but fail loudly instead of blending
+        # an ambiguous Series/DataFrame shape.
+        if has_current and isinstance(current_by_key.loc[key], pd.DataFrame):
+            raise ValueError(f"Duplicate current feature key: {key}")
+        if has_prior and isinstance(seed_by_key.loc[key], pd.DataFrame):
+            raise ValueError(f"Duplicate prior feature key: {key}")
+
+        raw_count = prior.get(
+            "current_season_games", current.get("current_season_games", 0)
+        )
+        count = pd.to_numeric(raw_count, errors="coerce")
+        count = 0 if pd.isna(count) else int(count)
+        row = dict(current or prior)
+        for column in ("prior_source_season", "prior_season_gap"):
+            if column in prior:
+                row[column] = prior[column]
+
+        for column in all_columns:
+            if column in metadata_columns or column.startswith("prior_"):
+                continue
+            prior_value = prior.get(column)
+            if prior_value is not None:
+                row[f"prior_{column}"] = prior_value
+            if not current and column in row:
+                # Week 0 has no current observation.  Keep the prior only in its
+                # explicit block so downstream code cannot accidentally use it as
+                # a current-season measurement.
+                row[column] = pd.NA
+
+        row["current_season_games"] = count
+        row["seeded_from_prior_season"] = bool(prior)
+        row["prior_features_missing"] = not bool(prior)
+        row["current_features_missing"] = not bool(current)
+        row["prediction_regime"] = completed_game_regime(count)
+        rows.append(row)
+
+    return pd.DataFrame(rows).reset_index(drop=True)
 
 
-def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
+def load_v2_recency_data(
+    year,
+    alpha=0.5,
+    iterations=4,
+    for_prediction=False,
+    dataset_reader=None,
+):
     """
     Load raw team-game data, calculate EWMA stats, apply adjustment, and return training/test DF.
     """
     # Use cloud storage if configured, otherwise fall back to LocalStorage
     storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
 
-    if storage_backend in ("r2", "s3"):
+    if dataset_reader is not None:
+        read_entity = dataset_reader
+    elif storage_backend in ("r2", "s3"):
         # Use cloud storage
         from cks_picks_cfb.data.storage import get_storage
 
@@ -252,7 +361,10 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
 
                 seeded_df = add_internal_power_ratings(seeded_df)
                 return _merge_for_training(
-                    seeded_df, year, for_prediction=for_prediction
+                    seeded_df,
+                    year,
+                    for_prediction=for_prediction,
+                    dataset_reader=read_entity,
                 )
         return None
 
@@ -461,15 +573,22 @@ def load_v2_recency_data(year, alpha=0.5, iterations=4, for_prediction=False):
 
     # Merge with Targets (Merge Home/Away for training)
     # Re-use v1_pipeline merge logic or implement simpler one here
-    return _merge_for_training(full_adj_df, year, for_prediction=for_prediction)
+    return _merge_for_training(
+        full_adj_df,
+        year,
+        for_prediction=for_prediction,
+        dataset_reader=read_entity,
+    )
 
 
-def _merge_for_training(team_stats, year, for_prediction=False):
+def _merge_for_training(team_stats, year, for_prediction=False, dataset_reader=None):
     # Load Games (Targets)
     # Use cloud storage if configured, otherwise fall back to LocalStorage
     storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
 
-    if storage_backend in ("r2", "s3"):
+    if dataset_reader is not None:
+        read_entity = dataset_reader
+    elif storage_backend in ("r2", "s3"):
         from cks_picks_cfb.data.storage import get_storage
 
         storage = get_storage()
@@ -510,13 +629,9 @@ def _merge_for_training(team_stats, year, for_prediction=False):
         betting_df = pd.DataFrame(betting)
         if "id" in betting_df.columns:
             betting_df = betting_df.rename(columns={"id": "game_id"})
-        # Take mean line
-        betting_df = (
-            betting_df.groupby("game_id")
-            .agg({"spread": "mean", "over_under": "mean"})
-            .reset_index()
-            .rename(columns={"spread": "spread_line", "over_under": "total_line"})
-        )
+        from cks_picks_cfb.data.lake import canonicalize_market_quotes_frame
+
+        betting_df = canonicalize_market_quotes_frame(betting_df)
         games_df = games_df.merge(betting_df, on="game_id", how="left")
 
     # Merge Home/Away Stats
@@ -609,7 +724,16 @@ def _merge_for_training(team_stats, year, for_prediction=False):
                 pd.to_numeric(away_games, errors="coerce").fillna(0)
                 >= MIN_CURRENT_SEASON_GAMES
             )
+            min_games = pd.concat(
+                [
+                    pd.to_numeric(home_games, errors="coerce").fillna(0),
+                    pd.to_numeric(away_games, errors="coerce").fillna(0),
+                ],
+                axis=1,
+            ).min(axis=1)
+            merged["prediction_regime"] = min_games.map(completed_game_regime)
         else:
             merged["high_confidence_eligible"] = True
+            merged["prediction_regime"] = "established"
 
     return merged

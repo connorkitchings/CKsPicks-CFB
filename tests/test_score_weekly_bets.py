@@ -46,3 +46,23 @@ def test_load_week_scores_uses_configured_storage(monkeypatch):
 
     expected = pd.DataFrame([{"id": 1, "home_points": 28.0, "away_points": 24.0}])
     pd.testing.assert_frame_equal(scores.reset_index(drop=True), expected)
+
+
+def test_same_game_can_grade_differently_for_two_frozen_lines():
+    scores = pd.DataFrame([{"id": 1, "home_points": 24, "away_points": 21}])
+    common = {
+        "game_id": 1,
+        "Spread Bet": "Home",
+        "Total Bet": "Under",
+        "total_line": 50.0,
+    }
+    early = score_weekly_bets.score_bets(
+        pd.DataFrame([{**common, "run_id": "early", "home_team_spread_line": -2.5}]),
+        scores,
+    )
+    late = score_weekly_bets.score_bets(
+        pd.DataFrame([{**common, "run_id": "late", "home_team_spread_line": -3.5}]),
+        scores,
+    )
+    assert early.iloc[0]["Spread Bet Result"] == "Win"
+    assert late.iloc[0]["Spread Bet Result"] == "Loss"

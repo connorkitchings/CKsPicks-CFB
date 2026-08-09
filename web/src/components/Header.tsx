@@ -4,12 +4,14 @@ export function Header({
   systemName,
   modelId,
   updatedAt,
+  runState,
 }: {
   season: number | null;
   week: number | null;
   systemName: string | null;
   modelId: string | null;
   updatedAt: Date | null;
+  runState: string | null;
 }) {
   return (
     <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
@@ -29,6 +31,11 @@ export function Header({
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400 dark:text-zinc-500">
           {systemName && <span>Model: {systemName}</span>}
+          {runState && (
+            <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+              {runState}
+            </span>
+          )}
           {modelId && (
             <span className="font-mono">
               id: <span className="text-zinc-500 dark:text-zinc-400">{modelId}</span>

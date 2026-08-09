@@ -1,7 +1,7 @@
 """Plays data ingestion from CFBD API."""
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from typing import Any
 
 import cfbd
@@ -9,6 +9,7 @@ import cfbd
 from cks_picks_cfb.utils.base import Partition
 
 from .base import BaseIngester
+from .sources import SourceRequest
 
 
 class PlaysIngester(BaseIngester):
@@ -43,6 +44,10 @@ class PlaysIngester(BaseIngester):
         """The logical entity name for storage."""
         return "raw/plays"
 
+    @property
+    def source_endpoint(self) -> str:
+        return "PlaysApi.get_plays"
+
     def get_fbs_game_ids(self) -> list[tuple[int, int]]:
         """Get list of FBS game IDs and weeks from local games index."""
         idx = self.storage.read_index(
@@ -59,12 +64,8 @@ class PlaysIngester(BaseIngester):
             print(f"Limited to first {self.limit_games} games for testing.")
         return games_data
 
-    def fetch_data(self) -> list[Any]:
-        """Fetch plays data from the CFBD API.
-
-        Returns:
-            List of play objects from CFBD API
-        """
+    def source_requests(self) -> list[SourceRequest]:
+        """Create one independently retryable/capturable request per week."""
         print(
             f"Getting FBS game IDs from database for {self.year} {self.season_type} season..."
         )
@@ -78,72 +79,53 @@ class PlaysIngester(BaseIngester):
                 continue
             games_by_week.setdefault(int(week), set()).add(int(gid))
 
-        def fetch_week(year: int, season_type: str, week: int) -> list[Any]:
-            try:
-                api = cfbd.PlaysApi(cfbd.ApiClient(self.cfbd_config))
-                return api.get_plays(year=year, season_type=season_type, week=week)
-            except Exception as e:
-                print(f"    Error fetching plays for week {week}: {e}")
-                return []
-
-        all_plays: list[Any] = []
-        # Optionally narrow to a single week
         weeks = sorted(games_by_week.keys())
         if self.only_week is not None:
             weeks = [w for w in weeks if int(w) == int(self.only_week)]
-
-        # Minimize API calls: skip weeks that are already present in raw storage
-        weeks_to_fetch: list[int] = []
-        for w in weeks:
-            # Check if this week's partition has enough game_id sub-partitions
-            existing_parts = self.storage.list_partitions(
-                "raw/plays", {"year": str(self.year), "week": str(int(w))}
+        if not weeks:
+            raise RuntimeError(
+                f"No scheduled games found for {self.year} week {self.only_week}"
             )
-            existing_count = len(existing_parts)
-            expected_games = len(games_by_week.get(w, set()))
-            if existing_count and existing_count >= expected_games:
-                print(
-                    f"  Skipping week {w}: already ingested ({existing_count}/{expected_games} games)."
-                )
-                continue
-            weeks_to_fetch.append(w)
-
-        workers = getattr(self, "workers", 1)
-        if workers and workers > 1 and weeks_to_fetch:
-            print(
-                f"Fetching plays concurrently with {workers} workers across {len(weeks_to_fetch)} weeks..."
+        requested_at = datetime.now(timezone.utc)
+        return [
+            SourceRequest(
+                provider="cfbd",
+                entity="plays",
+                endpoint=self.source_endpoint,
+                parameters={
+                    "year": self.year,
+                    "season_type": self.season_type,
+                    "week": week,
+                    "classification": self.classification,
+                    "expected_game_ids": sorted(games_by_week[week]),
+                },
+                requested_at=requested_at,
             )
-            with ThreadPoolExecutor(max_workers=workers) as ex:
-                futures = {
-                    ex.submit(fetch_week, self.year, self.season_type, w): w
-                    for w in weeks_to_fetch
-                }
-                for fut in as_completed(futures):
-                    w = futures[fut]
-                    week_plays = fut.result() or []
-                    game_ids_in_week = games_by_week[w]
-                    fbs_plays = [
-                        p
-                        for p in week_plays
-                        if self.safe_getattr(p, "game_id", None) in game_ids_in_week
-                    ]
-                    all_plays.extend(fbs_plays)
-                    print(f"  Week {w}: {len(fbs_plays)} FBS plays")
-        else:
-            for w in weeks_to_fetch:
-                print(f"  Fetching plays for week {w}...")
-                week_plays = fetch_week(self.year, self.season_type, w)
-                game_ids_in_week = games_by_week[w]
-                fbs_plays = [
-                    p
-                    for p in week_plays
-                    if self.safe_getattr(p, "game_id", None) in game_ids_in_week
-                ]
-                all_plays.extend(fbs_plays)
-                print(f"    Week {w}: {len(fbs_plays)} FBS plays")
+            for week in weeks
+        ]
 
-        print(f"Total plays collected: {len(all_plays)}")
-        return all_plays
+    def fetch_source_request(self, request: dict[str, Any]) -> list[Any]:
+        api = cfbd.PlaysApi(cfbd.ApiClient(self.cfbd_config))
+        plays = api.get_plays(
+            year=int(request["year"]),
+            season_type=str(request["season_type"]),
+            week=int(request["week"]),
+            classification=str(request["classification"]),
+        )
+        expected = {int(game_id) for game_id in request["expected_game_ids"]}
+        return [
+            play
+            for play in plays
+            if self.safe_getattr(play, "game_id", None) in expected
+        ]
+
+    def fetch_data(self) -> list[Any]:
+        """Backward-compatible direct fetch; ``run`` uses request-level fetching."""
+        return [
+            record
+            for request in self.source_requests()
+            for record in self.fetch_source_request(dict(request.parameters))
+        ]
 
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
         """Transform plays data into storage format.
@@ -230,22 +212,26 @@ class PlaysIngester(BaseIngester):
             "raw/games", {"year": self.year}, columns=["id", "week"]
         )
         game_week_map: dict[int, int] = {
-            int(row["id"]): int(row.get("week"))
+            int(row["id"]): int(row["week"])
             for row in idx
-            if row.get("id") is not None
+            if row.get("id") is not None and row.get("week") is not None
         }
 
         by_key: dict[tuple[int, int], list[dict[str, Any]]] = defaultdict(list)
         for row in data:
             gid_val = row.get("game_id")
-            game_id = int(gid_val) if gid_val is not None else -1
+            if gid_val is None:
+                raise ValueError("Play record is missing game_id")
+            game_id = int(gid_val)
             # Determine week: prefer explicit row value; else look up from games index
             week_val = row.get("week")
             if week_val is None and game_id in game_week_map:
                 week_val = game_week_map[game_id]
-            week = int(week_val) if week_val is not None else 0
-            if game_id == -1:
-                continue
+            if week_val is None:
+                raise ValueError(
+                    f"Play {row.get('id')} for game {game_id} has no resolvable week"
+                )
+            week = int(week_val)
             # Ensure week field is present for downstream pathing; if missing, we will try to infer later
             if "week" not in row or row["week"] is None:
                 row["week"] = week

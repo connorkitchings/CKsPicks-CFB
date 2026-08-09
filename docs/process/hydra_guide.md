@@ -169,7 +169,7 @@ Helpful overrides:
 - `model=<name>` switches the model configuration under `conf/model/`.
 - `hydra/sweeper/params=<name>` swaps in a different Optuna search space.
 - `hydra.sweeper.n_trials=40` increases trial budget; `hydra.sweeper.n_jobs=-1` parallelizes locally.
-- `data.train_years=[2018,2019,2021,2022,2023]` provides explicit year lists (pay attention to YAML list syntax).
+- `training.train_years=[2021,2022,2023,2024]` trains the locked-2025 candidate; use the versioned Week 0 policy for temporal selection.
 
 Run `uv run python scripts/optimize_hyperparameters.py --cfg job --resolve` to inspect the composed config before launching the sweep.
 

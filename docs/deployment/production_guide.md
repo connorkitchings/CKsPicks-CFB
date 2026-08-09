@@ -50,7 +50,7 @@ Before deploying to production, ensure:
 Run the champion validation experiment to verify post-refactoring performance:
 
 ```bash
-PYTHONPATH=. uv run python src/cks_picks_cfb/train.py experiment=v2_champion_validation
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=v2_champion_validation
 ```
 
 **Expected Results:**

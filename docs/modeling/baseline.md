@@ -1,4 +1,8 @@
-# V2 Baseline Model (Ridge Regression)
+# Legacy V2 Baseline Model (Ridge Regression)
+
+> Historical reference only. The active 2026 chronology and regime contract is
+> defined in [Early-Season Regimes](early_season_regimes.md): 2022–2024 temporal
+> selection, locked 2025 testing, and an unchanged 2021–2025 production refit.
 
 **Status**: Phase 1 — Baseline Establishment  
 **Model**: Ridge Regression (sklearn)  
@@ -94,11 +98,11 @@ total_target = home_final_points + away_final_points
 
 | Year(s)         | Purpose        | Usage                                        |
 | --------------- | -------------- | -------------------------------------------- |
-| 2019, 2021-2023 | Training       | Fit Ridge regression                         |
-| 2024            | Test (Holdout) | Evaluate performance, never used in training |
-| 2025            | Deployment     | Live predictions                             |
+| 2021–2024 | Locked-test training | Fit the frozen candidate for 2025 evaluation |
+| 2025 | Locked test | Evaluate once before production refit |
+| 2021–2025 | Production refit | Fit the unchanged design for 2026 |
 
-**Critical Rule**: **Never** include 2024 data in training. This is the locked holdout for all V2 experiments.
+**Critical Rule**: Candidate selection uses only temporal 2022–2024 OOF predictions. The locked 2025 test cannot influence feature, threshold, or model selection.
 
 **COVID Exclusion**: 2020 excluded due to season disruptions (shortened schedule, opt-outs).
 
@@ -110,17 +114,17 @@ total_target = home_final_points + away_final_points
 
    ```bash
    uv run python src/features/v1_pipeline.py \
-       --years 2019,2021,2022,2023,2024
+       --years 2021,2022,2023,2024,2025
    ```
 
 2. **Train Model**:
 
    ```bash
-   PYTHONPATH=. uv run python src/train.py \
+   PYTHONPATH=src uv run python -m cks_picks_cfb.train \
        model=linear \
        features=minimal_unadjusted_v1 \
-       training.train_years=[2019,2021,2022,2023] \
-       training.test_year=2024
+       training.train_years=[2021,2022,2023,2024] \
+       training.test_year=2025
    ```
 
 3. **Log to MLflow**:
@@ -240,9 +244,9 @@ features:
 **Training**: `conf/training/default.yaml`
 
 ```yaml
-train_years: [2019, 2021, 2022, 2023]
-test_year: 2024
-deploy_year: 2025
+train_years: [2021, 2022, 2023, 2024]
+test_year: 2025
+deploy_year: 2026
 ```
 
 ---
@@ -277,7 +281,7 @@ Related decisions:
 
 1. **Immediate** (Week 1):
 
-   - [ ] Generate processed data for 2019, 2021-2024
+   - [ ] Generate immutable processed data for 2021–2025
    - [ ] Create `conf/features/minimal_unadjusted_v1.yaml`
    - [ ] Train Ridge baseline and log to MLflow
    - [ ] Document metrics in decision log

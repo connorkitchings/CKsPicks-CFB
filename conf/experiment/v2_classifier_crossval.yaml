@@ -16,33 +16,29 @@ experiment:
 
 # 4-fold leave-one-season-out configuration (identical to champion CV)
 folds:
-  fold_2019:
-    name: "fold_2019"
-    train_years: [2021, 2022, 2023]
-    test_year: 2019
-  fold_2021:
-    name: "fold_2021"
-    train_years: [2019, 2022, 2023]
-    test_year: 2021
   fold_2022:
     name: "fold_2022"
-    train_years: [2019, 2021, 2023]
+    train_years: [2021]
     test_year: 2022
   fold_2023:
     name: "fold_2023"
-    train_years: [2019, 2021, 2022]
+    train_years: [2021, 2022]
     test_year: 2023
+  fold_2024:
+    name: "fold_2024"
+    train_years: [2021, 2022, 2023]
+    test_year: 2024
 
 # Final model: train on all years, predict 2025
 final_model:
   name: "classifier_final"
-  train_years: [2019, 2021, 2022, 2023]
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024, 2025]
+  deploy_year: 2026
 
 training:
-  train_years: [2019, 2021, 2022, 2023]  # Used as default
-  test_year: 2024  # Not used in CV
-  deploy_year: 2025
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026
 
 # Classifier betting: bet when P(Cover) deviates meaningfully from 50%
 # threshold=0.024 means bet when P(Cover) > 52.4% or < 47.6%

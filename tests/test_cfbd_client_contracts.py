@@ -6,7 +6,7 @@ import cfbd
 
 
 def test_cfbd_client_is_on_the_validated_release_series():
-    assert (5, 16, 0) <= tuple(map(int, version("cfbd").split(".")[:3])) < (5, 17, 0)
+    assert tuple(map(int, version("cfbd").split(".")[:3])) == (5, 20, 1)
 
 
 def test_current_recruit_and_live_game_contract_shapes_parse():

@@ -33,7 +33,15 @@ def merge_weather_features(
 ) -> pd.DataFrame:
     """Merge weather features into team-game DataFrame."""
     if weather_df.empty:
-        return team_game_df
+        result = team_game_df.copy()
+        result["weather_missing"] = True
+        result["temperature_missing"] = True
+        result["precipitation_missing"] = True
+        result["wind_speed_missing"] = True
+        result["temperature"] = 70.0
+        result["precipitation"] = 0.0
+        result["wind_speed"] = 0.0
+        return result
 
     # Weather is per game, so we merge on game_id
     # We want to add weather cols to both teams in the game
@@ -50,6 +58,13 @@ def merge_weather_features(
     )
 
     merged = team_game_df.merge(weather_subset, on="game_id", how="left")
+    for column in weather_cols:
+        if column not in merged:
+            merged[column] = pd.NA
+        merged[f"{column}_missing"] = merged[column].isna()
+    merged["weather_missing"] = merged[
+        [f"{column}_missing" for column in weather_cols]
+    ].all(axis=1)
 
     # Fill missing weather with defaults? Or leave as NaN?
     # For now, fill with mean or 0?

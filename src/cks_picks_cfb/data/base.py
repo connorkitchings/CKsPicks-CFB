@@ -2,8 +2,11 @@
 
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace
+from datetime import datetime, timezone
 from typing import Any
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import cfbd
@@ -51,6 +54,8 @@ class BaseIngester(ABC):
         """
         self.year = year
         self.classification = classification.lower()
+        self.storage_backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+        self.capture_time = datetime.now(timezone.utc)
 
         # Environment
         self.cfbd_api_key = os.getenv("CFBD_API_KEY")
@@ -70,7 +75,7 @@ class BaseIngester(ABC):
         if storage is not None:
             self.storage = storage
         else:
-            backend = os.getenv("CFB_STORAGE_BACKEND", "local").lower()
+            backend = self.storage_backend
             if backend != "local":
                 from cks_picks_cfb.data.storage import get_storage
 
@@ -142,24 +147,130 @@ class BaseIngester(ABC):
         Returns:
             Attribute value or default
         """
+        if isinstance(obj, dict):
+            return obj.get(attr, default)
         return getattr(obj, attr, default)
+
+    @property
+    def source_endpoint(self) -> str:
+        """Provider endpoint recorded in request lineage."""
+        return self.entity_name.removeprefix("raw/")
+
+    def source_parameters(self) -> dict[str, Any]:
+        """Provider-facing parameters for the default single request."""
+        return {"year": self.year, "classification": self.classification}
+
+    def source_requests(self):
+        """Return independently retryable and capturable provider requests."""
+        from cks_picks_cfb.data.sources import SourceRequest
+
+        return [
+            SourceRequest(
+                provider="cfbd",
+                entity=self.entity_name.removeprefix("raw/"),
+                endpoint=self.source_endpoint,
+                parameters=self.source_parameters(),
+                requested_at=datetime.now(timezone.utc),
+            )
+        ]
+
+    def fetch_source_request(self, request: dict[str, Any]) -> list[Any]:
+        """Fetch one request. Subclasses with multiple requests override this."""
+        return self.fetch_data()
+
+    def fetch_source_responses(self, requests=None):
+        """Fetch every request through the canonical retrying CFBD adapter."""
+        from cks_picks_cfb.data.sources import (
+            CFBDSourceAdapter,
+            RetryPolicy,
+            fetch_with_retry,
+        )
+
+        requests = list(requests or self.source_requests())
+        adapter = CFBDSourceAdapter(
+            {self.entity_name.removeprefix("raw/"): self.fetch_source_request},
+            api_version=getattr(cfbd, "__version__", None),
+        )
+        policy = RetryPolicy(
+            max_attempts=int(os.getenv("CFB_SOURCE_MAX_ATTEMPTS", "4")),
+            base_delay_seconds=float(os.getenv("CFB_SOURCE_RETRY_BASE_SECONDS", "0.5")),
+            max_delay_seconds=float(os.getenv("CFB_SOURCE_RETRY_MAX_SECONDS", "8")),
+        )
+
+        def fetch_one(source_request):
+            from cks_picks_cfb.data.sources import FailureCategory, SourceError
+
+            try:
+                response = fetch_with_retry(
+                    adapter,
+                    source_request.entity,
+                    source_request.parameters,
+                    policy=policy,
+                )
+            except SourceError as exc:
+                if exc.category == FailureCategory.DATA_UNAVAILABLE:
+                    raise DataUnavailableError(self.entity_name, self.year) from exc
+                raise
+            return replace(response, request=source_request.manifest())
+
+        max_workers = max(
+            1,
+            min(
+                len(requests),
+                int(os.getenv("CFB_CFBD_MAX_CONCURRENCY", "2")),
+            ),
+        )
+        if max_workers == 1:
+            return [fetch_one(request) for request in requests]
+        responses = []
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(fetch_one, request): request for request in requests
+            }
+            for future in as_completed(futures):
+                responses.append(future.result())
+        return sorted(
+            responses,
+            key=lambda response: str(response.request.get("parameters", {})),
+        )
+
+    @staticmethod
+    def provider_value(value: Any) -> Any:
+        """Convert a generated SDK value into canonical JSON-compatible data."""
+        if hasattr(value, "to_dict"):
+            return BaseIngester.provider_value(value.to_dict())
+        if isinstance(value, dict):
+            return {
+                str(key): BaseIngester.provider_value(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, (list, tuple)):
+            return [BaseIngester.provider_value(item) for item in value]
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if hasattr(value, "__dict__"):
+            return BaseIngester.provider_value(vars(value))
+        return str(value)
 
     def normalize_to_eastern(self, dt: Any) -> datetime | None:
         """Normalize a datetime to US/Eastern timezone.
 
         Accepts datetime or ISO-like string; returns aware datetime in Eastern.
-        Returns None if input is falsy.
+        Missing values remain missing, but malformed timestamps fail closed.
         """
-        if not dt:
+        if dt is None or dt == "":
             return None
         if isinstance(dt, str):
             try:
-                # Attempt fromisoformat; if it fails, return None
-                parsed = datetime.fromisoformat(dt)
-            except ValueError:
-                return None
+                parsed = datetime.fromisoformat(dt.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ValueError(f"Invalid provider timestamp: {dt!r}") from exc
         else:
             parsed = dt
+        if not isinstance(parsed, datetime):
+            raise TypeError(f"Expected datetime provider timestamp, got {type(dt)!r}")
         if parsed.tzinfo is None:
             # Assume UTC if tz-naive; CFBD typically provides tz-aware, but be safe
             parsed = parsed.replace(tzinfo=ZoneInfo("UTC"))
@@ -187,13 +298,37 @@ class BaseIngester(ABC):
         )
 
     def run(self) -> None:
-        """Execute the complete ingestion process using local storage."""
+        """Fetch, capture, catalog, and finally update compatibility storage."""
+        dual_write_default = (
+            "1" if self.storage.describe().casefold().startswith("r2:") else "0"
+        )
+        dual_write = os.getenv("CFB_LAKE_DUAL_WRITE", dual_write_default) == "1"
+        conn_url = os.getenv("DATABASE_URL")
+        if dual_write and not conn_url and os.getenv("CFB_REQUIRE_CATALOG", "0") == "1":
+            raise ValueError("DATABASE_URL is required when CFB_REQUIRE_CATALOG=1")
+        requests = self.source_requests()
+        ingestion_run_id = (
+            (os.getenv("CFB_INGESTION_RUN_ID") or uuid4().hex)
+            if dual_write and conn_url
+            else None
+        )
+        if ingestion_run_id and conn_url:
+            from cks_picks_cfb.data.catalog import begin_ingestion_run
+
+            begin_ingestion_run(
+                conn_url,
+                ingestion_run_id=ingestion_run_id,
+                provider="cfbd",
+                entity=self.entity_name.removeprefix("raw/"),
+                request={"requests": [request.manifest() for request in requests]},
+            )
         try:
             print(f"Starting {self.__class__.__name__} for {self.year}...")
             print(f"  - Using storage: {self.storage.describe()}")
 
-            # Fetch data from CFBD API
-            raw_data = self.fetch_data()
+            responses = self.fetch_source_responses(requests)
+            raw_data = [record for response in responses for record in response.records]
+            self.capture_time = max(response.captured_at for response in responses)
             print(f"Fetched {len(raw_data)} records from CFBD API.")
             if not raw_data:
                 raise DataUnavailableError(self.entity_name, self.year)
@@ -201,16 +336,61 @@ class BaseIngester(ABC):
             # Transform data for storage
             transformed_data = self.transform_data(raw_data)
             print(f"Transformed {len(transformed_data)} records for ingestion.")
+            if not transformed_data:
+                raise ValueError(
+                    f"{self.entity_name} produced no valid rows after transformation"
+                )
 
-            # Diagnostic check
-            if transformed_data:
-                print(f"First transformed record: {transformed_data[0]}")
+            # Dual-write an immutable Bronze capture.  Repeated provider payloads
+            # reuse the same Parquet object while preserving a new observation.
+            if dual_write:
+                from cks_picks_cfb.data.catalog import (
+                    finish_ingestion_run,
+                    register_source_capture,
+                )
+                from cks_picks_cfb.data.lake import capture_provider_records
 
-            # Persist locally
+                for response in responses:
+                    capture = capture_provider_records(
+                        self.storage,
+                        provider=response.provider,
+                        entity=response.entity,
+                        records=[
+                            self.provider_value(record) for record in response.records
+                        ],
+                        captured_at=response.captured_at,
+                        effective_at=response.effective_at,
+                        request=response.request,
+                        provider_api_version=response.provider_api_version,
+                        response_metadata=response.response_metadata,
+                    )
+                    if conn_url:
+                        register_source_capture(
+                            conn_url,
+                            capture,
+                            ingestion_run_id=ingestion_run_id,
+                        )
+
+            # Compatibility storage is deliberately last: failures above cannot
+            # mutate the legacy projection without a durable capture/catalog row.
             self.ingest_data(transformed_data)
+            if ingestion_run_id and conn_url:
+                from cks_picks_cfb.data.catalog import finish_ingestion_run
+
+                finish_ingestion_run(conn_url, ingestion_run_id, succeeded=True)
 
             print(f"Completed {self.__class__.__name__} successfully.")
 
         except Exception as e:
+            if ingestion_run_id and conn_url:
+                from cks_picks_cfb.data.catalog import finish_ingestion_run
+
+                finish_ingestion_run(
+                    conn_url,
+                    ingestion_run_id,
+                    succeeded=False,
+                    error_category=type(e).__name__,
+                    error_detail=str(e),
+                )
             print(f"Error in {self.__class__.__name__}: {e}")
             raise

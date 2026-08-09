@@ -13,7 +13,7 @@ dependencies = [
     "python-dotenv>=1.0",
     # "prefect>=2.19.0",
     "shap>=0.50.0",
-    "cfbd>=5.16.0,<5.17.0", # CollegeFootballData API access; validated against REST 5.17
+    "cfbd==5.20.1", # Generated client pinned to the audited CFBD API contract
     "pyarrow>=15.0", # Parquet IO
     "jinja2>=3.1", # Email template rendering
     "mlflow>=2.0",
