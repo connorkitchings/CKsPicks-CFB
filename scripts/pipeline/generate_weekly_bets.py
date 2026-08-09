@@ -267,6 +267,101 @@ def main():
         _log_feature_magnitudes(x_total, "total_features")
         total_preds = total_model.predict(x_total)
 
+        # The preseason model is opt-in.  It can only affect output when a
+        # complete, immutable source snapshot and validated model bundle exist.
+        # Any issue leaves the established recency fallback untouched.
+        preseason_cfg = cfg.get("preseason")
+        if preseason_cfg and preseason_cfg.get("enabled", False):
+            try:
+                from cks_picks_cfb.data.storage import get_storage
+                from cks_picks_cfb.preseason import (
+                    blend_early_season_predictions,
+                    build_preseason_matchups,
+                    load_preseason_models,
+                    predict_preseason,
+                    snapshot_is_complete,
+                )
+
+                as_of = preseason_cfg.get("as_of")
+                model_path = preseason_cfg.get("model_path")
+                if not as_of or not model_path:
+                    raise ValueError(
+                        "preseason.as_of and preseason.model_path are required"
+                    )
+                storage = get_storage()
+                if not snapshot_is_complete(storage, year, str(as_of)):
+                    raise RuntimeError(
+                        f"Preseason snapshot {year}/{as_of} is incomplete; using recency fallback"
+                    )
+                if not Path(model_path).exists():
+                    raise FileNotFoundError(
+                        f"Preseason model bundle not found: {model_path}"
+                    )
+
+                preseason_df = build_preseason_matchups(
+                    storage,
+                    year=year,
+                    as_of=str(as_of),
+                    include_targets=False,
+                )
+                preseason_df = preseason_df[preseason_df["week"] == week].copy()
+                if "game_id" not in preseason_df:
+                    raise ValueError("Preseason matchups have no game_id column")
+                preseason_df = preseason_df.set_index("game_id")
+                game_ids = data_df["id"].tolist()
+                missing_games = [
+                    game_id for game_id in game_ids if game_id not in preseason_df.index
+                ]
+                if missing_games:
+                    raise ValueError(
+                        f"Preseason snapshot has no matchup rows for {len(missing_games)} games"
+                    )
+                preseason_df = preseason_df.loc[game_ids].reset_index()
+                preseason_bundle = load_preseason_models(model_path)
+                validation = preseason_bundle.get("validation", {})
+                if not validation.get("promotion_pass", False):
+                    raise RuntimeError(
+                        "Preseason model has not passed its locked-holdout promotion gate"
+                    )
+                preseason_spread, preseason_total = predict_preseason(
+                    preseason_bundle, preseason_df
+                )
+                weights = {
+                    int(key): float(value)
+                    for key, value in (
+                        preseason_cfg.get("blend_weights")
+                        or preseason_bundle.get("blend_weights", {})
+                    ).items()
+                }
+                spread_preds = blend_early_season_predictions(
+                    preseason_spread,
+                    spread_preds,
+                    data_df.get(
+                        "home_current_season_games", pd.Series(0, index=data_df.index)
+                    ),
+                    data_df.get(
+                        "away_current_season_games", pd.Series(0, index=data_df.index)
+                    ),
+                    weights,
+                )
+                total_preds = blend_early_season_predictions(
+                    preseason_total,
+                    total_preds,
+                    data_df.get(
+                        "home_current_season_games", pd.Series(0, index=data_df.index)
+                    ),
+                    data_df.get(
+                        "away_current_season_games", pd.Series(0, index=data_df.index)
+                    ),
+                    weights,
+                )
+                print(
+                    f"Applied guarded preseason model for {year} Week {week} "
+                    f"(snapshot {as_of})."
+                )
+            except Exception as exc:
+                print(f"Preseason model unavailable; using recency fallback: {exc}")
+
         # Construct Bets DataFrame
         bets = []
         for idx, row in data_df.iterrows():

@@ -35,6 +35,16 @@ features:
   type: recency
   alpha: 0.3  # EWMA decay parameter
 
+# Guarded preseason candidate. Set enabled only after immutable source
+# snapshots and the locked-holdout promotion gate both pass.
+preseason:
+  enabled: false
+  as_of: null
+  model_path: models/preseason_v1.joblib
+  # Weights for the preseason model when the less-experienced team has one
+  # or two completed games. Fill only from select_blend_weights output.
+  blend_weights: {}
+
 # Training data reference (for context, not used in prediction).
 # Do not promote a new production model until it clears walk-forward ROI gates.
 training:

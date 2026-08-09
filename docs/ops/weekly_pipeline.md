@@ -40,6 +40,25 @@ Known availability gates:
 - Rosters, coaches, recruiting, rankings, external ratings, betting lines, plays, and game stats depend on CFBD/API/provider publication timing.
 - Early-season predictions use latest prior-season `processed/team_week_adj` features when teams have fewer than 4 current-season games. These rows are display-eligible but not high-confidence eligible.
 
+### Optional Preseason Candidate
+
+The Week 1 preseason candidate is disabled by default and does not alter the
+publish contract. Capture each provider source once under an immutable date;
+the same `--year` and `--as-of` combination must never be rerun:
+
+```bash
+PYTHONPATH=.:src uv run python scripts/data/ingest_preseason.py \
+  --year 2026 --as-of YYYY-MM-DD
+```
+
+Backfill the required historical snapshots before training. The trainer
+enforces 2019/2021-2023 training, 2024 locked holdout, and optional 2025
+shadow validation. Select Week 2-3 weights from training-only rows, attach
+them to the model bundle, and enable `preseason` in
+`conf/weekly_bets/v2_champion.yaml` only when its embedded promotion result is
+passing and the 2026 snapshot is complete. Otherwise the normal recency
+fallback remains active.
+
 ## Pregame Publish
 
 Run before each slate and rerun after meaningful line changes:
