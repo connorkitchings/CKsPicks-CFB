@@ -61,6 +61,7 @@ nav:
   - "CollegeFootballData":
       - "Quickstart": "cfbd/quickstart.md"
       - "Data Ingestion": "cfbd/data_ingestion.md"
+      - "2026 Provider Audit": "cfbd/2026_provider_audit.md"
 
   - "Project Organization":
       - "Feature Registry": "project_org/feature_registry.md"

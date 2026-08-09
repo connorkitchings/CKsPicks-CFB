@@ -1,108 +1,95 @@
-# CollegeFootballData.com (CFBD) API Quickstart Guide
+# CollegeFootballData.com (CFBD) Quickstart
 
-This guide summarizes how to collect college football data using the CFBD API and its official
-Python client, following the Vibe Coding System and project standards.
+This repository uses the official CFBD REST API as a raw-data provider. The
+current contract audit is the source of truth for provider behavior, access,
+and compatibility: [2026 Provider Audit](2026_provider_audit.md).
 
----
+## Current baseline
 
-## 1. API Overview
+- **REST base and interactive documentation:** <https://api.collegefootballdata.com>
+- **Installed Python client:** `cfbd` 5.16.0
+- **Live REST catalog observed on 2026-08-04:** 5.17.0
+- **Configured account:** Patreon Tier 2 (30,000 monthly calls)
+- **Storage path:** R2 is the production source of truth; Neon serves the web
+  app. Do not create a project-local `data/` tree for production ingestion.
 
-- **Base URL:** <https://api.collegefootballdata.com>
-- **Swagger Docs:** [https://apinext.collegefootballdata.com/](https://apinext.collegefootballdata.com/)
-- **Python Client:** [cfbd-python](https://github.com/CFBD/cfbd-python)
+`apinext.collegefootballdata.com` and the local-CSV workflow shown in older
+project material are not operational references for this repository.
 
----
+## Authentication
 
-## 2. Authentication
+Set the key only in the local `.env` file:
 
-- All requests require a Bearer API key.
-- Store your API key in your `.env` file as `CFBD_API_KEY`.
-- Example (Python):
-
-  ```python
-  import os
-  import cfbd
-  from cfbd.rest import ApiException
-
-  configuration = cfbd.Configuration(
-      access_token=os.environ["CFBD_API_KEY"]
-  )
-  ```
-
----
-
-## 3. Python Client Installation
-
-```bash
-pip install cfbd
+```dotenv
+CFBD_API_KEY=...
+CFB_STORAGE_BACKEND=r2
+CFB_R2_BUCKET=...
+CFB_R2_ACCOUNT_ID=...
+CFB_R2_ACCESS_KEY=...
+CFB_R2_SECRET_KEY=...
 ```
 
----
-
-## 4. Example Usage
+The client authenticates with a bearer token:
 
 ```python
-import cfbd
-from cfbd.rest import ApiException
-from pprint import pprint
 import os
 
-configuration = cfbd.Configuration(
-    access_token=os.environ["CFBD_API_KEY"]
-)
+import cfbd
 
-with cfbd.ApiClient(configuration) as api_client:
-    api_instance = cfbd.GamesApi(api_client)
-    try:
-        games = api_instance.get_games(year=2024, season_type="regular")
-        pprint(games)
-    except ApiException as e:
-        print(f"Exception when calling GamesApi->get_games: {e}")
+client = cfbd.ApiClient(
+    cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"])
+)
+games = cfbd.GamesApi(client).get_games(
+    year=2026, week=1, season_type="regular", classification="fbs"
+)
 ```
 
----
+Never print, commit, or send the API key to a client application.
 
-## 5. Key API Endpoints (Python Methods)
+## Operational commands
 
-- **Games:** `GamesApi.get_games`, `GamesApi.get_advanced_box_score`,
-  `GamesApi.get_game_player_stats`, `GamesApi.get_game_team_stats`
-- **Plays:** `PlaysApi.get_plays`, `PlaysApi.get_play_stats`, `PlaysApi.get_play_types`
-- **Teams:** `TeamsApi.get_teams`, `TeamsApi.get_roster`, `TeamsApi.get_team_talent`
-- **Players:** `PlayersApi.search_players`, `PlayersApi.get_player_usage`, `PlayersApi.get_returning_production`
-- **Betting:** `BettingApi.get_lines`
-- **Recruiting:** `RecruitingApi.get_recruits`, `RecruitingApi.get_aggregated_team_recruiting_ratings`
-- **Rankings:** `RankingsApi.get_rankings`
-- **Conferences:** `ConferencesApi.get_conferences`
-- **Metrics:** `MetricsApi.get_predicted_points`, `MetricsApi.get_win_probability`
+All write commands use the configured R2 backend. Run a preflight before a
+weekly operation:
 
-See [cfbd-python API docs](https://github.com/CFBD/cfbd-python#documentation-for-api-endpoints) for
-the full list.
+```bash
+make preflight YEAR=2026 WEEK=1
+```
 
----
+Refresh only the raw entity that is needed:
 
-## 6. Data Models
+```bash
+# Season-level data. Order matters when an entity has a dependency.
+PYTHONPATH=.:src uv run python scripts/data/ingest_season.py \
+  --year 2026 --entities teams,games,venues,coaches,recruiting
 
-- Each endpoint returns Python objects or lists of objects (see [cfbd-python models](https://github.com/CFBD/cfbd-python#documentation-for-models)).
-- Example models: `Game`, `Play`, `Team`, `Player`, `BettingGame`, `AdvancedBoxScore`, etc.
+# Week-level market data.
+PYTHONPATH=.:src uv run python scripts/data/ingest_week.py \
+  --year 2026 --week 1 --entities betting_lines
+```
 
----
+`make publish-week` is intentionally broader: it refreshes schedule and
+lines, generates a prediction artifact, and writes to Neon. Do not use it for
+a raw-data-only refresh. It also now fails before publication when any
+scheduled FBS game lacks a sportsbook line.
 
-## 7. References
+## Access and availability
 
-- [Swagger API Docs](https://apinext.collegefootballdata.com/)
-- [cfbd-python GitHub](https://github.com/CFBD/cfbd-python)
-- [cfbd-python API Endpoints](https://github.com/CFBD/cfbd-python#documentation-for-api-endpoints)
-- [cfbd-python Models](https://github.com/CFBD/cfbd-python#documentation-for-models)
+Tier 2 supports REST, historical data, advanced metrics, weather, the live
+scoreboard, and live play-by-play. GraphQL queries and subscriptions require
+Tier 3 or above and are not part of this deployment. The provider can return a
+valid empty collection before a seasonal feed is published; treat that as an
+availability state rather than a successful data refresh.
 
----
+On 2026-08-08, CFBD had the full 2026 schedule, Week 1 line envelopes, rosters
+(15,171 FBS players), and returning production (136 teams). Rosters and the
+preseason Coaches Poll were ingested to R2 on that date. Talent remains empty
+and still gates the immutable preseason snapshot. See the audit for the current
+availability matrix and the explicit line-coverage caveat.
 
-## 8. Next Steps
+## References
 
-- Review the endpoints and models relevant to your project’s data needs.
-- Prototype data pulls using the Python client.
-- Document any custom queries or data transformations for your workflow.
-
----
-
-_This file is maintained according to the Vibe Coding System. Link to this guide from your session
-logs or planning docs as [CFBD-guide:Quickstart]._
+- [2026 Provider Audit](2026_provider_audit.md)
+- [Weekly operating runbook](../ops/weekly_pipeline.md)
+- [Canonical ingestion guide](../data/ingestion_guide.md)
+- [REST API documentation](https://api.collegefootballdata.com/)
+- [CFBD API tiers](https://collegefootballdata.com/api-tiers)

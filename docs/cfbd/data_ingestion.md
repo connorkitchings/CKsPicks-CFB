@@ -1,12 +1,10 @@
 # CFBD Data Ingestion
 
-This page has moved. For the canonical ingestion guide, see:
+The canonical repository guide is [Data Ingestion Guide](../data/ingestion_guide.md).
 
-- Data Ingestion Guide: ../data/ingestion_guide.md
-- Raw API Schemas: ../data/raw_api/README.md (plus subpages)
-- Transformed Schemas: ../data/transformed/README.md
+For provider capabilities, client compatibility, source availability, and the
+2026 migration roadmap, see [2026 CFBD Provider and Integration Audit](2026_provider_audit.md).
 
-Notes:
-
-- The project ingests seasons 2014–2024, excluding 2020.
-- Data are stored locally as partitioned CSVs with per-partition manifests.
+The production workflow stores raw and processed datasets in configured R2
+storage. Historical references to project-local CSV storage and 2014–2024-only
+scope are obsolete.
