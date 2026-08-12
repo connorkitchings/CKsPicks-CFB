@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import pytest
 
-from cks_picks_cfb.data.lake import capture_provider_records
+from cks_picks_cfb.data.lake import capture_provider_records, require_dataset
 from cks_picks_cfb.data.reconciliation import (
     ReconciliationError,
     reconcile_completed_games,
@@ -13,8 +13,10 @@ from cks_picks_cfb.data.silver import (
     SilverValidationError,
     build_silver_version,
     normalize_games,
+    normalize_legacy_market_references,
     normalize_market_quotes,
     normalize_plays,
+    normalize_schedule_week_policy,
     normalize_team_game_stats,
 )
 from cks_picks_cfb.data.storage import LocalStorage
@@ -58,9 +60,20 @@ def test_silver_plays_rejects_duplicates_and_unknown_games():
     with pytest.raises(SilverValidationError, match="duplicate"):
         normalize_plays(records, games=games)
 
+    # Plays referencing non-FBS games are filtered, not fatal
+    mixed = normalize_plays(
+        [
+            {"id": "p2", "season": 2026, "week": 0, "game_id": 1},
+            {"id": "p3", "season": 2026, "week": 0, "game_id": 2},
+        ],
+        games=games,
+    )
+    assert mixed["game_id"].tolist() == [1]
+
+    # But ALL-unknown plays still raise (complete data mismatch)
     with pytest.raises(SilverValidationError, match="unknown games"):
         normalize_plays(
-            [{"id": "p2", "season": 2026, "week": 0, "game_id": 2}],
+            [{"id": "p4", "season": 2026, "week": 0, "game_id": 3}],
             games=games,
         )
 
@@ -175,3 +188,198 @@ def test_legacy_market_quote_requires_authentic_capture_timestamp():
                 }
             ]
         )
+
+
+def _legacy_record(**overrides):
+    record = {
+        "year": 2021,
+        "week": 1,
+        "game_id": 12345,
+        "provider": "Bovada",
+        "spread": -7.0,
+        "over_under": 48.5,
+        "spread_open": -6.5,
+        "over_under_open": 50.0,
+        "formatted_spread": "Team A -7.0",
+        "home_moneyline": -285.0,
+        "away_moneyline": 230.0,
+        "season_type": "regular",
+        "__capture_id": "capture-abc",
+        "__capture_provider": "legacy_cfbd_export",
+        "__source_uri": "raw/betting_lines/year=2021/week=1/data.csv",
+        "__source_sha256": "sha256-xyz",
+    }
+    record.update(overrides)
+    return record
+
+
+def test_legacy_market_references_stamps_quarantine_flags():
+    frame = normalize_legacy_market_references([_legacy_record()])
+    assert len(frame) == 1
+    row = frame.iloc[0]
+    assert row["timestamp_status"] == "missing_authentic_timestamp"
+    assert row["exact_replay_eligible"] is False or row["exact_replay_eligible"] == 0
+    assert row["grading_eligible"] is False or row["grading_eligible"] == 0
+    assert row["lean_eligible"] is False or row["lean_eligible"] == 0
+    assert row["provider_week"] == 1
+    assert row["source_capture_id"] == "capture-abc"
+    assert row["source_uri"] == "raw/betting_lines/year=2021/week=1/data.csv"
+    assert row["source_sha256"] == "sha256-xyz"
+    assert row["spread"] == -7.0
+    assert row["total"] == 48.5
+
+
+def test_legacy_market_references_rejects_non_legacy_provider():
+    with pytest.raises(SilverValidationError, match="legacy_cfbd_export"):
+        normalize_legacy_market_references([_legacy_record(__capture_provider="cfbd")])
+
+
+def test_legacy_market_references_rejects_authentic_timestamp():
+    with pytest.raises(SilverValidationError, match="authentic"):
+        normalize_legacy_market_references(
+            [_legacy_record(captured_at="2021-09-04T18:00:00Z")]
+        )
+
+
+def test_legacy_market_references_requires_provenance():
+    with pytest.raises(SilverValidationError, match="provenance"):
+        normalize_legacy_market_references([_legacy_record(__source_uri=None)])
+
+
+def test_legacy_market_references_skips_rows_without_spread_or_total():
+    frame = normalize_legacy_market_references(
+        [
+            _legacy_record(spread=None, over_under=None),
+            _legacy_record(spread=-3.5, over_under=51.0),
+        ]
+    )
+    assert len(frame) == 1
+    assert frame.iloc[0]["spread"] == -3.5
+
+
+def test_require_dataset_rejects_wrong_dataset():
+    from cks_picks_cfb.data.lake import DatasetRef
+
+    ref = DatasetRef("legacy_market_references", "v1", "legacy_v1", "sha", "uri")
+    with pytest.raises(ValueError, match="market_snapshots"):
+        require_dataset(ref, "market_snapshots")
+
+
+def test_normalize_games_preserves_provider_week_without_policy():
+    games = normalize_games(
+        [
+            {
+                "id": 1,
+                "season": 2026,
+                "week": 1,
+                "start_date": "2026-08-29T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "home_classification": "fbs",
+                "away_classification": "fbs",
+            }
+        ]
+    )
+    row = games.iloc[0]
+    assert row["week"] == 1
+    assert row["provider_week"] == 1
+
+
+def test_normalize_games_applies_week_policy():
+    games_records = [
+        {
+            "id": 1,
+            "season": 2026,
+            "week": 1,
+            "start_date": "2026-08-29T16:00:00Z",
+            "home_team": "A",
+            "away_team": "B",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+        {
+            "id": 2,
+            "season": 2026,
+            "week": 2,
+            "start_date": "2026-09-05T16:00:00Z",
+            "home_team": "C",
+            "away_team": "D",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+    ]
+    policy = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "game_id": 1,
+                "provider_week": 1,
+                "canonical_week": 0,
+                "kickoff_utc": "2026-08-29T16:00:00Z",
+            },
+            {
+                "season": 2026,
+                "game_id": 2,
+                "provider_week": 2,
+                "canonical_week": 1,
+                "kickoff_utc": "2026-09-05T16:00:00Z",
+            },
+        ]
+    )
+    games = normalize_games(games_records, week_policy=policy)
+    assert games.iloc[0]["week"] == 0
+    assert games.iloc[0]["provider_week"] == 1
+    assert games.iloc[1]["week"] == 1
+    assert games.iloc[1]["provider_week"] == 2
+
+
+def test_normalize_games_rejects_incomplete_policy():
+    games_records = [
+        {
+            "id": 1,
+            "season": 2026,
+            "week": 1,
+            "start_date": "2026-08-29T16:00:00Z",
+            "home_team": "A",
+            "away_team": "B",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+        {
+            "id": 2,
+            "season": 2026,
+            "week": 1,
+            "start_date": "2026-08-29T19:00:00Z",
+            "home_team": "C",
+            "away_team": "D",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+    ]
+    policy = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "game_id": 1,
+                "provider_week": 1,
+                "canonical_week": 0,
+                "kickoff_utc": "2026-08-29T16:00:00Z",
+            }
+        ]
+    )
+    with pytest.raises(SilverValidationError, match="does not cover"):
+        normalize_games(games_records, week_policy=policy)
+
+
+def test_schedule_week_policy_validates_coverage():
+    policy_rows = [
+        {
+            "season": 2026,
+            "game_id": 1,
+            "provider_week": 1,
+            "canonical_week": 0,
+            "kickoff_utc": "2026-08-29T16:00:00Z",
+        }
+    ]
+    frame = normalize_schedule_week_policy(policy_rows)
+    assert frame.iloc[0]["canonical_week"] == 0

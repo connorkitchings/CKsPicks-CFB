@@ -116,7 +116,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 
 - **What:** College football betting model that predicts spreads and over/unders, displayed as weekly leans in a Vercel web app
 - **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
-- **Data:** 2019-2025 CFB data in Cloudflare R2 (`CFB_STORAGE_BACKEND='r2'`)
+- **Data:** 2019, 2021–2025 CFB data in Cloudflare R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
 - **2026 Deliverable:** Vercel web app at `web/` showing every FBS game's spread + total lean (display only; auth/tracking is post-MVP)
 - **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
 - **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
@@ -145,25 +145,29 @@ This is a **monorepo with two toolchains**:
 
 ---
 
-## 🎯 V2 Modeling Workflow Status
+## 🎯 2026 Season Execution Status
 
-**Status:** 🛑 PAUSED for Infrastructure Refactoring
+**Status:** 🏗️ Active — Phase 1 complete, Phase 2 next
 
-The V2 4-phase experimentation workflow (detailed in `docs/process/experimentation_workflow.md`) is temporarily suspended while we modernize infrastructure:
+The 2026 season launch follows a 6-phase execution plan
+(`docs/planning/2026_historical_bootstrap_week0_execution.md`)
+with the goal of a live Vercel web app showing every FBS game's spread + total
+lean by the August 29 opening slate.
 
-**Phase 1:** Baseline Establishment
-**Phase 2:** Feature Engineering & Selection
-**Phase 3:** Model Selection
-**Phase 4:** Deployment & Monitoring
+**Current focus:**
+- ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
+- ✅ Week 0 regime modeling (5 routes × 2 targets, temporal folds)
+- ✅ Phase 1: Legacy market adjudication + canonical Week 0 policy encoded
+- ⬜ Phase 2: Historical bootstrap import (`make import-history`)
+- ⬜ Phases 3–5: Silver reconciliation → Gold baselines → model selection
+- ⬜ Phase 6: Week 0 readiness, preseason snapshot, live rehearsal
 
-**Modeling will resume after:**
-- ✅ Cloud storage migration complete (Phase 2)
-- ✅ AI tooling modernization complete (Phase 1)
-- ✅ Integration validation complete (Phase 6)
+**Roadmap:** `docs/planning/roadmap.md`
 
-**Next modeling milestone:** Post-refactoring baseline validation
-
-**Reference:** `docs/process/experimentation_workflow.md`, `docs/process/promotion_framework.md`
+**Historical reference:** The V2 4-phase experimentation workflow
+(`docs/process/experimentation_workflow.md`) is retained as a modeling-process
+reference but is not the current operating framework. The 2026 execution plan
+supersedes it for the 2026 season.
 
 ---
 
@@ -375,5 +379,5 @@ See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-02-13_
+_Last Updated: 2026-08-09_
 _Universal entry point for all AI coding assistants_

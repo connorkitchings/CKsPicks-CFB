@@ -1,0 +1,37 @@
+# Versioned canonical-week policy for the 2026 season.
+#
+# CFBD reports the August 29, 2026 opening slate as provider week 1 and exposes
+# no provider Week 0 partition. This policy explicitly assigns canonical Week 0
+# to those games by game ID and kickoff timestamp. Every other 2026 game
+# retains its provider week as its canonical week.
+#
+# Game IDs and kickoffs verified against the production source object
+# raw/games/year=2026/part-0.parquet (last_modified 2026-08-04T13:49:48Z).
+# Any schedule revision to these games requires a new policy version.
+policy_version: canonical_week_2026_v1
+season: 2026
+assignments:
+  - game_id: 401856766 # TCU vs North Carolina (neutral site)
+    kickoff_utc: "2026-08-29T16:00:00Z"
+    canonical_week: 0
+  - game_id: 401864494 # USC vs San José State
+    kickoff_utc: "2026-08-29T19:00:00Z"
+    canonical_week: 0
+  - game_id: 401858202 # Virginia vs NC State
+    kickoff_utc: "2026-08-29T19:30:00Z"
+    canonical_week: 0
+  - game_id: 401864577 # North Dakota State vs Jacksonville State
+    kickoff_utc: "2026-08-29T21:30:00Z"
+    canonical_week: 0
+  - game_id: 401866408 # Eastern Michigan vs Sacramento State
+    kickoff_utc: "2026-08-29T22:30:00Z"
+    canonical_week: 0
+  - game_id: 401858201 # Stanford vs Hawai'i
+    kickoff_utc: "2026-08-29T23:00:00Z"
+    canonical_week: 0
+  - game_id: 401864570 # Florida State vs New Mexico State
+    kickoff_utc: "2026-08-29T23:00:00Z"
+    canonical_week: 0
+  - game_id: 401862693 # UNLV vs Memphis
+    kickoff_utc: "2026-08-30T02:00:00Z"
+    canonical_week: 0

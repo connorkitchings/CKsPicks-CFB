@@ -45,6 +45,22 @@ valid CFBD Consensus first, otherwise the median of each provider's newest valid
 quote. Every quote remains in Bronze; the selected quote IDs, rule, provider counts,
 and deterministic snapshot ID travel with the prediction.
 
+Historical betting-line exports lack authentic quote timestamps. They are
+preserved as a separate `legacy_market_references` Silver dataset stamped with
+`exact_replay_eligible=false`, `grading_eligible=false`,
+`lean_eligible=false`, and `timestamp_status=missing_authentic_timestamp`. They
+may not enter canonical `market_quotes`, model features, leans, grades, ROI,
+or model selection. Provider routing (`DATASET_PROVIDERS`) ensures canonical
+market datasets only consume `cfbd` captures while `legacy_market_references`
+only consumes `legacy_cfbd_export` captures. Use `make audit-data MODE=exact-market`
+to verify quarantine and lineage purity.
+
+Silver schedules preserve `provider_week` exactly. A versioned
+`schedule_week_policy` dataset assigns `canonical_week` by explicit game-ID
+assignments (e.g. `conf/policy/canonical_week_2026_v1.yaml` assigns the August 29
+opening slate to canonical Week 0). The site and operational commands use
+canonical weeks; source lineage and provider reconciliation retain provider weeks.
+
 ## ML inputs and bundles
 
 Production `model_bundle_v2` inference requires:

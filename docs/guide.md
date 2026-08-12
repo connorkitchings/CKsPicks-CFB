@@ -1,27 +1,44 @@
 # CFB Model Guide — Single Source of Truth
 
-**Last Updated**: 2025-12-05  
-**Status**: Active (V2 Workflow Aligned)
+**Last Updated**: 2026-08-09  
+**Status**: Active — 2026 Season Execution
 
 This is the canonical entry point for all project documentation. All other docs link here or are linked from here.
 
 ---
 
-## 🎯 V2 Experimentation Workflow (NEW)
+## 🎯 2026 Season Execution
 
-**Status**: Implementation starting Week 1 (Dec 9, 2025)
+**Status**: Phase 1 complete, Phase 2 next — see [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md) and [Roadmap](planning/roadmap.md).
 
-The project follows a **4-phase V2 workflow** for all modeling work:
+The 2026 season follows a 6-phase execution plan to launch a live Vercel web app
+showing every FBS game's spread + total lean by August 29 Week 0:
 
-1. **Phase 1: Baseline Establishment** → Ridge regression with minimal features
-2. **Phase 2: Feature Engineering & Selection** → Test features with baseline model
-3. **Phase 3: Model Selection** → Test complex models with promot features
-4. **Phase 4: Deployment & Monitoring** → Champion Model to production
+1. **Phase 1: Encode Adjudications** ✅ — Legacy market quarantine + canonical Week 0 policy
+2. **Phase 2: Historical Bootstrap** ⬜ — Import 2021–2025 data to preview R2/Neon
+3. **Phase 3: Silver Reconciliation** ⬜ — Reconcile games across sources
+4. **Phase 4: Gold + Baselines** ⬜ — Temporal OOF predictions for 2022–2024
+5. **Phase 5: Model Selection** ⬜ — Ten-route bundle for 2026
+6. **Phase 6: Week 0 Readiness** ⬜ — Preseason snapshot + live rehearsal
 
 **Key Documents**:
 
-- [V2 Workflow](process/experimentation_workflow.md) — Full 4-phase process
-- [12-Week Plan](process/12_week_implementation_plan.md) — Week-by-week roadmap
+- [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md) — 6-phase plan with exit gates
+- [Roadmap](planning/roadmap.md) — Timeline and status
+- [2026 Data Platform](architecture/data_platform_2026.md) — Immutable lake/catalog architecture
+- [Early-Season Regimes](modeling/early_season_regimes.md) — Five completed-game routing contract
+- [Weekly Pipeline](ops/weekly_pipeline.md) — Publish/freeze/close operations
+- [Decision Log](decisions/decision_log.md) — Historical decisions
+
+---
+
+## 📖 Modeling Process Reference
+
+The V2 4-phase experimentation workflow is retained as a modeling-process
+reference. It is **not** the current operating framework — the 2026 execution
+plan supersedes it for the 2026 season.
+
+- [V2 Workflow](process/experimentation_workflow.md) — 4-phase modeling process (reference)
 - [Promotion Framework](process/promotion_framework.md) — 5-gate rigor system
 - [V2 Baseline](modeling/baseline.md) — Ridge regression philosophy
 
@@ -38,11 +55,11 @@ The project follows a **4-phase V2 workflow** for all modeling work:
 
 | Task                           | Go To                                                                                             |
 | ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| **Understand V2 workflow**     | [V2 Workflow](process/experimentation_workflow.md)                                                |
-| **See 12-week plan**           | [12-Week Plan](process/12_week_implementation_plan.md)                                            |
+| **Understand 2026 execution**  | [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md)                           |
+| **See current roadmap**        | [Roadmap](planning/roadmap.md)                                                                    |
 | Set up development environment | [Getting Started](#getting-started)                                                               |
 | Run the weekly pipeline        | [Weekly Pipeline](ops/weekly_pipeline.md)                                                         |
-| Understand current baseline    | [V2 Baseline](modeling/baseline.md)                                                               |
+| Understand model routing       | [Early-Season Regimes](modeling/early_season_regimes.md)                                          |
 | Run an experiment              | [Experiments](experiments/index.md) + [Promotion Framework](process/promotion_framework.md)       |
 | Add a new feature              | [Feature Engineering](modeling/features.md) + [Feature Registry](project_org/feature_registry.md) |
 | Review betting policy          | [Betting Policy](modeling/betting_policy.md)                                                      |

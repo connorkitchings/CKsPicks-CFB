@@ -26,6 +26,16 @@ class SilverValidationError(ValueError):
     """Raised when provider data cannot satisfy a canonical Silver contract."""
 
 
+# Canonical market datasets may only consume provider-native (timestamped)
+# captures. legacy_market_references only consumes legacy exports. Every other
+# dataset may consume both providers.
+DATASET_PROVIDERS: dict[str, tuple[str, ...]] = {
+    "market_quotes": ("cfbd",),
+    "market_snapshots": ("cfbd",),
+    "legacy_market_references": ("legacy_cfbd_export",),
+}
+
+
 @dataclass(frozen=True)
 class SilverContract:
     dataset: str
@@ -55,9 +65,25 @@ SILVER_CONTRACTS: dict[str, SilverContract] = {
     ),
     "games": SilverContract(
         "games",
-        "games_v1",
+        "games_v2",
         frozenset(
-            {"season", "game_id", "week", "kickoff_utc", "home_team", "away_team"}
+            {
+                "season",
+                "game_id",
+                "week",
+                "provider_week",
+                "kickoff_utc",
+                "home_team",
+                "away_team",
+            }
+        ),
+        ("season", "game_id"),
+    ),
+    "schedule_week_policy": SilverContract(
+        "schedule_week_policy",
+        "schedule_week_policy_v1",
+        frozenset(
+            {"season", "game_id", "provider_week", "canonical_week", "kickoff_utc"}
         ),
         ("season", "game_id"),
     ),
@@ -105,6 +131,26 @@ SILVER_CONTRACTS: dict[str, SilverContract] = {
         frozenset({"market_snapshot_id", "game_id", "market_captured_at"}),
         ("market_snapshot_id",),
     ),
+    "legacy_market_references": SilverContract(
+        "legacy_market_references",
+        "legacy_market_references_v1",
+        frozenset(
+            {
+                "season",
+                "game_id",
+                "provider",
+                "provider_week",
+                "source_capture_id",
+                "source_uri",
+                "source_sha256",
+                "timestamp_status",
+                "exact_replay_eligible",
+                "grading_eligible",
+                "lean_eligible",
+            }
+        ),
+        ("game_id", "provider", "source_capture_id"),
+    ),
     "weather_observations": SilverContract(
         "weather_observations",
         "weather_v1",
@@ -151,13 +197,21 @@ def _rename_common(frame: pd.DataFrame) -> pd.DataFrame:
     return result.rename(columns=renames)
 
 
-def normalize_games(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
+def normalize_games(
+    records: Sequence[Mapping[str, Any]], *, week_policy: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """Normalize provider games, preserving provider week and applying policy.
+
+    ``provider_week`` always retains the provider-reported value. ``week`` is
+    the canonical week: identical to the provider week unless a versioned
+    ``schedule_week_policy`` frame supplies an explicit ``canonical_week``.
+    """
     frame = _rename_common(pd.DataFrame.from_records(records))
     required = SILVER_CONTRACTS["games"].required_columns | {
         "home_classification",
         "away_classification",
     }
-    missing = sorted(required - set(frame.columns))
+    missing = sorted(required - (set(frame.columns) | {"provider_week"}))
     if missing:
         raise SilverValidationError(f"games missing columns: {missing}")
     frame["kickoff_utc"] = pd.to_datetime(
@@ -165,12 +219,43 @@ def normalize_games(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
     )
     frame["week"] = pd.to_numeric(frame["week"], errors="raise").astype(int)
     frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
+    frame["provider_week"] = frame["week"]
     fbs = frame["home_classification"].astype(str).str.casefold().eq("fbs") & frame[
         "away_classification"
     ].astype(str).str.casefold().eq("fbs")
     frame = frame[fbs].copy()
     if frame.empty:
         raise SilverValidationError("games contains no FBS-vs-FBS rows")
+    if week_policy is not None:
+        policy = week_policy[
+            ["season", "game_id", "provider_week", "canonical_week"]
+        ].copy()
+        if policy.duplicated(["season", "game_id"]).any():
+            raise SilverValidationError(
+                "schedule week policy contains duplicate season/game_id rows"
+            )
+        merged = frame.merge(
+            policy,
+            on=["season", "game_id"],
+            how="left",
+            suffixes=("", "_policy"),
+            validate="many_to_one",
+        )
+        unmatched = merged["canonical_week"].isna()
+        if unmatched.any():
+            missing_ids = sorted(merged.loc[unmatched, "game_id"].astype(int))
+            raise SilverValidationError(
+                f"schedule week policy does not cover games: {missing_ids[:10]}"
+            )
+        mismatched = merged["provider_week"] != merged["provider_week_policy"]
+        if mismatched.any():
+            conflict_ids = sorted(merged.loc[mismatched, "game_id"].astype(int))
+            raise SilverValidationError(
+                "schedule week policy provider_week conflicts for games: "
+                f"{conflict_ids[:10]}"
+            )
+        merged["week"] = merged["canonical_week"].astype(int)
+        frame = merged.drop(columns=["canonical_week", "provider_week_policy"])
     return frame.sort_values(["season", "kickoff_utc", "game_id"]).reset_index(
         drop=True
     )
@@ -194,11 +279,14 @@ def normalize_plays(
     if frame.duplicated(["game_id", "play_id"]).any():
         raise SilverValidationError("plays contains duplicate game_id/play_id keys")
     if games is not None:
-        unknown = set(frame["game_id"]) - set(games["game_id"])
+        known = set(games["game_id"])
+        unknown = set(frame["game_id"]) - known
         if unknown:
-            raise SilverValidationError(
-                f"plays reference unknown games: {sorted(unknown)[:10]}"
-            )
+            if not (set(frame["game_id"]) & known):
+                raise SilverValidationError(
+                    f"plays reference unknown games: {sorted(unknown)[:10]}"
+                )
+            frame = frame[frame["game_id"].isin(known)].copy()
     return frame.sort_values(["season", "week", "game_id", "play_id"]).reset_index(
         drop=True
     )
@@ -279,6 +367,143 @@ def normalize_market_snapshots(
             frame["market_captured_at"], utc=True, errors="raise"
         )
     return frame
+
+
+LEGACY_TIMESTAMP_STATUS = "missing_authentic_timestamp"
+
+
+def normalize_legacy_market_references(
+    records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """Preserve untimestamped legacy betting-line exports as inert references.
+
+    Every row is stamped with the adjudicated flags that keep it out of
+    canonical markets, leans, grades, ROI, model selection, and features.
+    """
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        row = dict(record)
+        line = row.pop("line_data", None)
+        if isinstance(line, Mapping):
+            row.update(line)
+        if row.get("__capture_provider") != "legacy_cfbd_export":
+            raise SilverValidationError(
+                "legacy_market_references only accepts legacy_cfbd_export "
+                f"captures, got {row.get('__capture_provider')!r}"
+            )
+        if row.get("captured_at") is not None:
+            raise SilverValidationError(
+                "record carries an authentic captured_at and is eligible for "
+                "canonical market_quotes; refusing to quarantine it as legacy"
+            )
+        if not row.get("__capture_id"):
+            raise SilverValidationError(
+                "legacy market row lacks source capture provenance"
+            )
+        if not row.get("__source_uri") or not row.get("__source_sha256"):
+            raise SilverValidationError(
+                "legacy market row lacks source object/checksum provenance"
+            )
+        flattened = _rename_common(pd.DataFrame.from_records([row])).iloc[0].to_dict()
+        spread = flattened.get("spread")
+        total = flattened.get("total", flattened.get("over_under"))
+        if spread is None and total is None:
+            continue
+        rows.append(
+            {
+                "season": flattened.get("season"),
+                "provider_week": flattened.get("week"),
+                "game_id": flattened.get("game_id"),
+                "provider": flattened.get("provider"),
+                "spread": spread,
+                "total": total,
+                "spread_open": flattened.get("spread_open"),
+                "total_open": flattened.get("over_under_open"),
+                "home_moneyline": flattened.get("home_moneyline"),
+                "away_moneyline": flattened.get("away_moneyline"),
+                "formatted_spread": flattened.get("formatted_spread"),
+                "season_type": flattened.get("season_type"),
+                "source_capture_id": row["__capture_id"],
+                "source_uri": row["__source_uri"],
+                "source_sha256": row["__source_sha256"],
+                "timestamp_status": LEGACY_TIMESTAMP_STATUS,
+                "exact_replay_eligible": False,
+                "grading_eligible": False,
+                "lean_eligible": False,
+            }
+        )
+    frame = pd.DataFrame.from_records(rows)
+    if frame.empty:
+        raise SilverValidationError("legacy_market_references contains no rows")
+    frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
+    frame["provider_week"] = pd.to_numeric(
+        frame["provider_week"], errors="raise"
+    ).astype(int)
+    if games is not None:
+        unknown = set(frame["game_id"]) - set(games["game_id"])
+        if unknown:
+            raise SilverValidationError(
+                f"legacy market rows reference unknown games: {sorted(unknown)[:10]}"
+            )
+    return frame.sort_values(
+        ["season", "provider_week", "game_id", "provider"]
+    ).reset_index(drop=True)
+
+
+def normalize_schedule_week_policy(
+    records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """Validate a versioned canonical-week assignment for every scheduled game."""
+    frame = pd.DataFrame.from_records(records)
+    required = SILVER_CONTRACTS["schedule_week_policy"].required_columns
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise SilverValidationError(f"schedule_week_policy missing columns: {missing}")
+    frame["kickoff_utc"] = pd.to_datetime(
+        frame["kickoff_utc"], utc=True, errors="raise"
+    )
+    for column in ("season", "provider_week", "canonical_week"):
+        frame[column] = pd.to_numeric(frame[column], errors="raise").astype(int)
+    if (frame["canonical_week"] < 0).any() or (frame["provider_week"] < 0).any():
+        raise SilverValidationError("schedule weeks must be non-negative")
+    if frame.duplicated(["season", "game_id"]).any():
+        raise SilverValidationError(
+            "schedule_week_policy contains duplicate season/game_id rows"
+        )
+    if games is not None:
+        schedule = games[["season", "game_id", "provider_week"]].drop_duplicates()
+        merged = frame.merge(
+            schedule,
+            on=["season", "game_id"],
+            how="left",
+            suffixes=("", "_schedule"),
+            validate="one_to_one",
+        )
+        unknown = merged["provider_week_schedule"].isna()
+        if unknown.any():
+            unknown_ids = sorted(merged.loc[unknown, "game_id"].astype(int))
+            raise SilverValidationError(
+                f"schedule week policy references unknown games: {unknown_ids[:10]}"
+            )
+        mismatch = merged["provider_week"] != merged["provider_week_schedule"]
+        if mismatch.any():
+            conflict_ids = sorted(merged.loc[mismatch, "game_id"].astype(int))
+            raise SilverValidationError(
+                "schedule week policy provider_week conflicts with schedule: "
+                f"{conflict_ids[:10]}"
+            )
+        uncovered = set(map(tuple, schedule[["season", "game_id"]].to_numpy()))
+        covered = set(map(tuple, frame[["season", "game_id"]].to_numpy()))
+        missing_games = sorted(uncovered - covered)
+        if missing_games:
+            raise SilverValidationError(
+                "schedule week policy must assign a canonical week to every "
+                f"game; missing: {missing_games[:10]}"
+            )
+        frame = merged.drop(columns=["provider_week_schedule"])
+    return frame.sort_values(["season", "kickoff_utc", "game_id"]).reset_index(
+        drop=True
+    )
 
 
 def normalize_teams(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
@@ -451,6 +676,8 @@ NORMALIZERS: dict[str, Callable[..., pd.DataFrame]] = {
     "team_game_stats": normalize_team_game_stats,
     "market_quotes": normalize_market_quotes,
     "market_snapshots": normalize_market_snapshots,
+    "legacy_market_references": normalize_legacy_market_references,
+    "schedule_week_policy": normalize_schedule_week_policy,
     "weather_observations": normalize_weather,
     "preseason_team_inputs": normalize_preseason_inputs,
     "data_corrections": normalize_data_corrections,
@@ -507,11 +734,16 @@ def build_silver_version(
                 how="left",
             )
     else:
-        frame = (
-            normalizer(records, **kwargs)
-            if normalizer
-            else pd.DataFrame.from_records(records)
-        )
+        if normalizer:
+            import inspect
+
+            sig = inspect.signature(normalizer)
+            filtered = {
+                key: value for key, value in kwargs.items() if key in sig.parameters
+            }
+            frame = normalizer(records, **filtered)
+        else:
+            frame = pd.DataFrame.from_records(records)
     if dataset == "schedule_revisions" and "captured_at" not in frame:
         frame["captured_at"] = max(
             capture.captured_at for capture in source_captures

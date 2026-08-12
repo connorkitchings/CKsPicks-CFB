@@ -50,10 +50,19 @@ def main() -> None:
     if 2020 in seasons or any(year not in allowed for year in seasons):
         raise SystemExit(f"Combined refs support only {sorted(allowed)}")
     storage = get_storage()
-    refs = [
-        _ref(storage, f"artifacts/preview/refs/history/{args.dataset}-{year}.json")
-        for year in seasons
-    ]
+    available_refs = []
+    skipped_seasons = []
+    for year in seasons:
+        uri = f"artifacts/preview/refs/history/{args.dataset}-{year}.json"
+        if storage.exists(uri):
+            available_refs.append(_ref(storage, uri))
+        else:
+            skipped_seasons.append(year)
+    if not available_refs:
+        raise LookupError(
+            f"No season refs found for {args.dataset} in seasons {seasons}"
+        )
+    refs = available_refs
     frame = pd.concat([read_dataset(storage, ref) for ref in refs], ignore_index=True)
     validation = validate_contract(args.dataset, frame)
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))

@@ -118,3 +118,15 @@ def test_import_is_idempotent_and_records_source_provenance(tmp_path, monkeypatc
     assert first.provider == "legacy_cfbd_export"
     assert first.response_metadata["source_sha256"]
     assert len(registered) == 2
+
+
+def test_dataset_provider_routing_separates_canonical_and_legacy():
+    """Canonical market builds must only consume native captures;
+    legacy_market_references must only consume legacy captures."""
+    from cks_picks_cfb.data.silver import DATASET_PROVIDERS
+
+    assert DATASET_PROVIDERS["market_quotes"] == ("cfbd",)
+    assert DATASET_PROVIDERS["market_snapshots"] == ("cfbd",)
+    assert DATASET_PROVIDERS["legacy_market_references"] == ("legacy_cfbd_export",)
+    assert DATASET_PROVIDERS.get("games") is None
+    assert DATASET_PROVIDERS.get("plays") is None

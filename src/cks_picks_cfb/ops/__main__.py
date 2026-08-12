@@ -192,7 +192,14 @@ def _history_silver_steps() -> list[PipelineStep]:
     as_of = "2026-08-09T23:59:59Z"
     steps: list[PipelineStep] = []
 
-    def add(dataset: str, season: int, *, games: bool = False, optional: bool = False):
+    def add(
+        dataset: str,
+        season: int,
+        *,
+        games: bool = False,
+        optional: bool = False,
+        week_policy: bool = False,
+    ):
         output = f"artifacts/preview/refs/history/{dataset}-{season}.json"
         argv = _python(
             "scripts/pipeline/build_history_silver.py",
@@ -212,12 +219,39 @@ def _history_silver_steps() -> list[PipelineStep]:
                     f"artifacts/preview/refs/history/games-{season}.json",
                 ]
             )
+        if week_policy:
+            argv.extend(
+                [
+                    "--week-policy-ref-uri",
+                    f"artifacts/preview/refs/history/schedule_week_policy-{season}.json",
+                ]
+            )
         if optional:
             argv.append("--optional")
         steps.append(subprocess_step(f"silver_{dataset}_{season}", argv))
 
+    def add_policy(season: int):
+        steps.append(
+            subprocess_step(
+                f"silver_schedule_week_policy_{season}",
+                _python(
+                    "scripts/pipeline/build_schedule_week_policy.py",
+                    "--season",
+                    season,
+                    "--assignments",
+                    f"conf/policy/canonical_week_{season}_v1.yaml",
+                    "--as-of",
+                    as_of,
+                    "--output-ref-uri",
+                    f"artifacts/preview/refs/history/schedule_week_policy-{season}.json",
+                ),
+            )
+        )
+
     add("preseason_team_inputs", 2019)
     for season in (2021, 2022, 2023, 2024, 2025, 2026):
+        if season == 2026:
+            add_policy(2026)
         for dataset in (
             "teams",
             "team_aliases",
@@ -226,13 +260,19 @@ def _history_silver_steps() -> list[PipelineStep]:
             "schedule_revisions",
             "game_outcomes",
         ):
-            add(dataset, season)
+            if season == 2026 and dataset in {"games", "schedule_revisions"}:
+                add(dataset, season, week_policy=True)
+            elif dataset in {"venues", "team_aliases"}:
+                add(dataset, season, optional=True)
+            else:
+                add(dataset, season)
         if season <= 2025:
             add("plays", season, games=True)
-            add("team_game_stats", season)
-        add("market_quotes", season, games=True, optional=season == 2026)
-        add("market_snapshots", season, games=True, optional=season == 2026)
-        add("weather_observations", season, games=True, optional=True)
+            add("team_game_stats", season, optional=True)
+        add("legacy_market_references", season)
+        add("market_quotes", season, games=True, optional=True)
+        add("market_snapshots", season, games=True, optional=True)
+        add("weather_observations", season, optional=True)
         add("preseason_team_inputs", season, optional=True)
     for season in (2021, 2022, 2023, 2024, 2025):
         steps.append(
@@ -265,8 +305,7 @@ def _history_silver_steps() -> list[PipelineStep]:
         "game_outcomes",
         "plays",
         "team_game_stats",
-        "market_quotes",
-        "market_snapshots",
+        "legacy_market_references",
         "reconciled_team_game",
     ):
         argv = _python(
@@ -279,7 +318,7 @@ def _history_silver_steps() -> list[PipelineStep]:
             f"artifacts/preview/refs/history/{dataset}-2021-2025.json",
         )
         for season in (2021, 2022, 2023, 2024, 2025):
-            argv.extend(["--season", season])
+            argv.extend(["--season", str(season)])
         steps.append(subprocess_step(f"combine_{dataset}_2021_2025", argv))
     schedule_argv = _python(
         "scripts/pipeline/combine_history_versions.py",
@@ -292,7 +331,7 @@ def _history_silver_steps() -> list[PipelineStep]:
         "artifacts/preview/refs/history/games-2021-2026.json",
     )
     for season in (2021, 2022, 2023, 2024, 2025, 2026):
-        schedule_argv.extend(["--season", season])
+        schedule_argv.extend(["--season", str(season)])
     steps.append(subprocess_step("combine_games_2021_2026", schedule_argv))
     steps.extend(
         [
@@ -346,8 +385,6 @@ def _history_silver_steps() -> list[PipelineStep]:
                     "artifacts/preview/refs/history/point-in-time-core.json",
                     "--baselines-ref-uri",
                     "artifacts/preview/refs/history/baselines-selection.json",
-                    "--markets-ref-uri",
-                    "artifacts/preview/refs/history/market_snapshots-2021-2025.json",
                     "--as-of",
                     as_of,
                     "--output-ref-uri",
@@ -449,6 +486,8 @@ def build_steps(
             argv.extend(["--capture-id", capture_id])
         if options.games_ref_uri:
             argv.extend(["--games-ref-uri", options.games_ref_uri])
+        if options.week_policy_ref_uri:
+            argv.extend(["--week-policy-ref-uri", options.week_policy_ref_uri])
         return [subprocess_step("build_silver", argv)]
     if context.command == "build-team-game":
         assert options is not None and as_of is not None
@@ -781,8 +820,26 @@ def _reconcile_action(conn_url: str):
 def _audit_data_action(conn_url: str, *, mode: str):
     def action(_: OperationContext) -> Sequence[Mapping[str, Any]]:
         from cks_picks_cfb.models.training_policy import policy_from_mapping
-        from cks_picks_cfb.ops.data_audit import audit_catalog, result_json
+        from cks_picks_cfb.ops.data_audit import (
+            audit_catalog,
+            audit_exact_markets,
+            result_json,
+        )
 
+        if mode == "exact-market":
+            ref, result = audit_exact_markets(conn_url, get_storage())
+            print(result_json(ref, result))
+            if not result.passed:
+                raise RuntimeError(
+                    "Exact-market audit failed: " + "; ".join(result.errors)
+                )
+            return [
+                {
+                    "dataset": ref.dataset,
+                    "checks": dict(result.checks),
+                    "coverage": dict(result.coverage),
+                }
+            ]
         policy = policy_from_mapping(
             OmegaConf.to_container(
                 OmegaConf.load(Path("conf/training/week0_2026.yaml")), resolve=True
@@ -863,12 +920,15 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--prefix", default="")
         if command == "audit-data":
             sub.add_argument(
-                "--mode", choices=("structural", "model-ready"), default="model-ready"
+                "--mode",
+                choices=("structural", "model-ready", "exact-market"),
+                default="model-ready",
             )
         if command == "build-silver":
             sub.add_argument("--dataset", required=True)
             sub.add_argument("--capture-id", action="append", required=True)
             sub.add_argument("--games-ref-uri")
+            sub.add_argument("--week-policy-ref-uri")
             sub.add_argument("--output-ref-uri", required=True)
         if command == "build-team-game":
             sub.add_argument("--plays-ref-uri", required=True)

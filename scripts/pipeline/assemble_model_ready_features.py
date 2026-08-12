@@ -19,6 +19,7 @@ from cks_picks_cfb.data.lake import (
     DatasetRef,
     build_dataset_version,
     read_dataset,
+    require_dataset,
 )
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.features.point_in_time import attach_baseline_predictions
@@ -40,50 +41,68 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core-ref-uri", required=True)
     parser.add_argument("--baselines-ref-uri", required=True)
-    parser.add_argument("--markets-ref-uri", required=True)
+    parser.add_argument("--markets-ref-uri")
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     args = parser.parse_args()
     storage = get_storage()
     core_ref = _ref(storage, args.core_ref_uri)
     baselines_ref = _ref(storage, args.baselines_ref_uri)
-    markets_ref = _ref(storage, args.markets_ref_uri)
     core = read_dataset(storage, core_ref)
     baselines = read_dataset(storage, baselines_ref)
     required_seasons = set(baselines["season"].astype(int))
     result = attach_baseline_predictions(
         core, baselines, required_seasons=required_seasons
     )
-    markets = read_dataset(storage, markets_ref).rename(
-        columns={"spread_line": "home_team_spread_line"}
-    )
-    market_columns = [
-        column
-        for column in (
-            "season",
-            "game_id",
-            "market_snapshot_id",
-            "market_captured_at",
-            "home_team_spread_line",
-            "total_line",
-            "source_quote_ids",
+    markets_ref: DatasetRef | None = None
+    markets_joined = False
+    if args.markets_ref_uri:
+        markets_ref = _ref(storage, args.markets_ref_uri)
+        require_dataset(markets_ref, "market_snapshots")
+        markets = read_dataset(storage, markets_ref).rename(
+            columns={"spread_line": "home_team_spread_line"}
         )
-        if column in markets
-    ]
-    result = result.merge(
-        markets[market_columns].drop_duplicates(["season", "game_id"], keep="last"),
-        on=["season", "game_id"],
-        how="left",
-        validate="one_to_one",
-    )
+        market_columns = [
+            column
+            for column in (
+                "season",
+                "game_id",
+                "market_snapshot_id",
+                "market_captured_at",
+                "home_team_spread_line",
+                "total_line",
+                "source_quote_ids",
+            )
+            if column in markets
+        ]
+        result = result.merge(
+            markets[market_columns].drop_duplicates(["season", "game_id"], keep="last"),
+            on=["season", "game_id"],
+            how="left",
+            validate="one_to_one",
+        )
+        markets_joined = True
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
+    parent_refs = tuple(r for r in (core_ref, baselines_ref, markets_ref) if r)
+    if markets_joined:
+        timestamp_check = (
+            "market_captured_at" in result
+            and not result.loc[
+                result["home_team_spread_line"].notna() | result["total_line"].notna(),
+                "market_captured_at",
+            ]
+            .isna()
+            .any()
+        )
+    else:
+        timestamp_check = True
     ref, manifest = build_dataset_version(
         storage,
         build=BuildRequest(
             dataset="point_in_time_matchups",
-            parent_refs=(core_ref, baselines_ref, markets_ref),
+            parent_refs=parent_refs,
             code_sha=_code_sha(),
             config_sha=hashlib.sha256(b"model_ready_gold_v1").hexdigest(),
             as_of=cutoff,
@@ -102,16 +121,8 @@ def main() -> None:
             .any()
             .any(),
             "excludes_2020": 2020 not in set(result["season"].astype(int)),
-            "market_timestamps_authentic": (
-                "market_captured_at" in result
-                and not result.loc[
-                    result["home_team_spread_line"].notna()
-                    | result["total_line"].notna(),
-                    "market_captured_at",
-                ]
-                .isna()
-                .any()
-            ),
+            "markets_joined": markets_joined,
+            "market_timestamps_authentic": timestamp_check,
         },
     )
     if manifest.state != "validated":

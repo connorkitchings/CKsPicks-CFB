@@ -78,7 +78,12 @@ class StateStore(Protocol):
 
 
 class PostgresStateStore:
-    """Neon-backed workflow state using one connection for advisory lock lifetime."""
+    """Neon-backed workflow state with automatic reconnection.
+
+    Long subprocess steps (e.g. plays Silver builds) can outlive a single
+    Neon connection.  The ``conn`` property transparently reconnects when
+    the previous connection was closed by the server.
+    """
 
     def __init__(self, conn_url: str) -> None:
         self.conn_url = conn_url
@@ -95,8 +100,8 @@ class PostgresStateStore:
 
     @property
     def conn(self) -> psycopg.Connection:
-        if self._conn is None:
-            raise RuntimeError("PostgresStateStore must be used as a context manager")
+        if self._conn is None or self._conn.closed:
+            self._conn = psycopg.connect(self.conn_url)
         return self._conn
 
     @contextmanager

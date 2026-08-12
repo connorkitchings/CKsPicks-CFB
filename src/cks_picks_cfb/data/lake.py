@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Literal, Mapping, Sequence
@@ -30,10 +31,22 @@ def _utc(value: datetime) -> datetime:
     return value.astimezone(timezone.utc)
 
 
+def _sanitize_json(value: Any) -> Any:
+    """Convert non-finite floats (NaN, Infinity) to None for deterministic JSON."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {key: _sanitize_json(val) for key, val in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_json(item) for item in value]
+    return value
+
+
 def _canonical_json(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode(
-        "utf-8"
-    )
+    sanitized = _sanitize_json(value)
+    return json.dumps(
+        sanitized, sort_keys=True, separators=(",", ":"), default=str
+    ).encode("utf-8")
 
 
 def _sha256(payload: bytes) -> str:
@@ -138,7 +151,10 @@ class DatasetManifest:
 
 def parquet_bytes(records: Sequence[Mapping[str, Any]]) -> bytes:
     """Serialize records deterministically enough for content addressing."""
-    table = pa.Table.from_pylist(list(records))
+    df = pd.DataFrame.from_records(list(records))
+    for col in df.select_dtypes(include=["object"]).columns:
+        df[col] = df[col].apply(lambda v: str(v) if v is not None else None)
+    table = pa.Table.from_pandas(df, preserve_index=False)
     sink = io.BytesIO()
     pq.write_table(table, sink, compression="snappy")
     return sink.getvalue()
@@ -335,6 +351,15 @@ def select_capture_as_of(
     if not eligible:
         raise LookupError(f"No source capture exists at or before {cutoff.isoformat()}")
     return max(eligible, key=lambda capture: _utc(capture.captured_at))
+
+
+def require_dataset(ref: DatasetRef, expected: str) -> None:
+    """Fail closed if an immutable dataset reference is the wrong dataset."""
+    if ref.dataset != expected:
+        raise ValueError(
+            f"Expected dataset {expected!r} but reference resolves to "
+            f"{ref.dataset!r}; refusing to consume an incompatible dataset"
+        )
 
 
 def select_market_snapshot(

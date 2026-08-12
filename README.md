@@ -15,6 +15,9 @@ An end-to-end machine learning pipeline for college football betting that predic
 - **Web app** (`web/`): Next.js 16 / React 19 / Tailwind v4. Reads from Neon Postgres. Deploys to Vercel.
 - **2026 MVP:** Web app showing every FBS game with the model's spread + total lean. Display only — no auth or bet tracking (post-MVP).
 
+**Current execution phase:** Phase 1 complete (legacy market quarantine + canonical Week 0 policy).
+See [`docs/planning/roadmap.md`](./docs/planning/roadmap.md) for the full 6-phase execution plan and timeline.
+
 For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeline.md`](./docs/ops/weekly_pipeline.md).
 
 ---
@@ -33,7 +36,8 @@ For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeli
 
 - [Feature Catalog](./docs/modeling/features.md) - Feature definitions
 - [Betting Policy](./docs/modeling/betting_policy.md) - Unit sizing rules
-- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process
+- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (reference)
+- [2026 Execution Plan](./docs/planning/2026_historical_bootstrap_week0_execution.md) - Current operating plan
 
 ---
 
@@ -240,5 +244,5 @@ This is a research and educational project. It does not guarantee profit or futu
 
 ---
 
-_Last Updated: 2026-07-06_
+_Last Updated: 2026-08-09_
 _2026 reorg: Python pipeline + Next.js web app (Vercel) + Neon Postgres_

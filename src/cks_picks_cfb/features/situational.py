@@ -59,6 +59,11 @@ def merge_situational_features(
     merged_df = merged_df.drop(columns=["previous_game_date"])
 
     # --- Part 2: Travel Distance & Neutral Site ---
+    if venues_df is not None and not venues_df.empty:
+        venues_df = venues_df.copy()
+        if "id" not in venues_df.columns and "venue_id" in venues_df.columns:
+            venues_df = venues_df.rename(columns={"venue_id": "id"})
+
     if venues_df is None or venues_df.empty:
         merged_df["travel_distance_km"] = 0.0
         merged_df["travel_distance_missing"] = True

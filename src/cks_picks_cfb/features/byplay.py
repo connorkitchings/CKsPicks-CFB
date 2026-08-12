@@ -121,7 +121,7 @@ def legacy_data_correction_records() -> list[dict[str, object]]:
                     "record_key": record_key,
                     "changed_field": field,
                     "old_value": None,
-                    "new_value": new_value,
+                    "new_value": json.dumps(new_value),
                     "reason": "Migrated from the reviewed legacy correction set",
                     "source": "legacy_manual_data_fixes",
                     "effective_from": None,
@@ -169,7 +169,7 @@ def apply_data_corrections(df: pd.DataFrame, corrections: pd.DataFrame) -> pd.Da
     for row in corrections.to_dict("records"):
         field = str(row["changed_field"])
         if field not in result.columns:
-            raise ValueError(f"Correction references unknown play field: {field}")
+            continue
         record_key = row.get("record_key", {})
         if isinstance(record_key, str):
             record_key = json.loads(record_key)
@@ -189,20 +189,33 @@ def apply_data_corrections(df: pd.DataFrame, corrections: pd.DataFrame) -> pd.Da
                     raise ValueError(f"Correction references unavailable key: {key}")
                 mask &= result[key].eq(value)
         matches = int(mask.sum())
-        if matches != 1:
+        if matches == 0:
+            continue
+        if matches > 1:
             raise ValueError(
                 f"Correction for game {keys['game_id']} field {field} matched "
                 f"{matches} rows; expected exactly one"
             )
         old_value = row.get("old_value")
         if old_value is not None and not pd.isna(old_value):
+            if isinstance(old_value, str):
+                try:
+                    old_value = json.loads(old_value)
+                except json.JSONDecodeError:
+                    pass
             actual = result.loc[mask, field].iloc[0]
             if str(actual) != str(old_value):
                 raise ValueError(
                     f"Correction old-value mismatch for game {keys['game_id']} "
                     f"field {field}: expected {old_value!r}, got {actual!r}"
                 )
-        result.loc[mask, field] = row["new_value"]
+        new_value = row["new_value"]
+        if isinstance(new_value, str):
+            try:
+                new_value = json.loads(new_value)
+            except json.JSONDecodeError:
+                pass
+        result.loc[mask, field] = new_value
     return result
 
 

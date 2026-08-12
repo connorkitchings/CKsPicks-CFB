@@ -63,7 +63,7 @@ def main() -> None:
     optional = {}
     for name in ("teams", "venues", "weather", "game_stats", "corrections"):
         uri = getattr(args, f"{name}_ref_uri", None)
-        if uri:
+        if uri and storage.exists(uri):
             optional[name] = _ref(storage, uri)
             refs.append(optional[name])
     frames = {ref.dataset: read_dataset(storage, ref) for ref in refs}

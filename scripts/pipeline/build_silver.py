@@ -41,6 +41,7 @@ def main() -> None:
     parser.add_argument("--capture-id", action="append", required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--games-ref-uri")
+    parser.add_argument("--week-policy-ref-uri")
     parser.add_argument("--output-ref-uri", required=True)
     args = parser.parse_args()
     conn_url = os.getenv("DATABASE_URL")
@@ -51,14 +52,26 @@ def main() -> None:
     records = []
     for capture in captures:
         capture_records = read_source_capture(storage, capture).to_dict("records")
+        source_uri = capture.request.get("source_uri") if capture.request else None
+        source_sha = None
+        if capture.response_metadata:
+            source_sha = capture.response_metadata.get("source_sha256")
         for record in capture_records:
             record.setdefault("__capture_id", capture.capture_id)
             record.setdefault("__captured_at", capture.captured_at.isoformat())
             record.setdefault("__capture_provider", capture.provider)
+            if source_uri:
+                record.setdefault("__source_uri", source_uri)
+            if source_sha:
+                record.setdefault("__source_sha256", source_sha)
         records.extend(capture_records)
     context = {}
     if args.games_ref_uri:
         context["games"] = read_dataset(storage, _ref(storage, args.games_ref_uri))
+    if args.week_policy_ref_uri:
+        context["week_policy"] = read_dataset(
+            storage, _ref(storage, args.week_policy_ref_uri)
+        )
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)

@@ -14,7 +14,7 @@ This is a college football betting model system that predicts point spreads and 
 **Sport:** NCAA Division I FBS College Football
 **Prediction Targets:** Point spreads, over/under totals
 **Data Source:** CollegeFootballData.com API
-**Time Period:** 2019-2025 seasons (excluding 2020 COVID year)
+**Time Period:** 2019, 2021–2025 seasons (2020 excluded; 2019 prior-only for early-2021 lineage)
 
 ---
 
@@ -69,9 +69,13 @@ Then derives betting targets:
 - Provides more flexibility for ensemble strategies
 - Allows separate optimization for offense/defense
 
-**Current Production Models (as of Nov 2024):**
-- Spreads: CatBoost with recency features
-- Totals: XGBoost optimized via Optuna
+**2026 Season Model Architecture:**
+The 2026 design evaluates spread and total independently for each of five
+completed-game regimes (`preseason`, `one_game`, `two_games`, `three_games`,
+`established`). Each cell compares direct Ridge, direct CatBoost, and a
+preseason/current blend. Selection uses 2022–2024 OOF artifacts only; the
+unchanged design is then refit on 2021–2025 for production. See
+`docs/modeling/early_season_regimes.md` for the full contract.
 
 ---
 
@@ -476,5 +480,5 @@ Where:
 
 ---
 
-_Last Updated: 2026-02-13_
+_Last Updated: 2026-08-09_
 _Domain knowledge and architecture reference_

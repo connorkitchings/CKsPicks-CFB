@@ -88,17 +88,20 @@ provider reconciliation retain `provider_week`.
 
 ## Execution Plan
 
-### Phase 1: Encode the adjudications
+### Phase 1: Encode the adjudications — ✅ COMPLETE
 
-1. Add the `legacy_market_references` contract and builder.
-2. Keep authentic timestamps mandatory in canonical `market_quotes` and
-   `market_snapshots`.
-3. Add exact-market audit mode and ensure structural audits report legacy market
-   blockage without treating it as a structural-data failure.
-4. Add the versioned canonical-week policy and the explicit 2026 Week 0 game-ID
-   assignments.
-5. Add contract tests proving legacy lines cannot produce leans, grades, ROI, or
-   model features.
+1. ✅ Added the `legacy_market_references` contract, normalizer, and provider
+   routing (`DATASET_PROVIDERS`). Legacy captures cannot enter canonical
+   `market_quotes` or `market_snapshots`.
+2. ✅ Authentic timestamps remain mandatory in canonical market contracts.
+3. ✅ Added exact-market audit mode (`make audit-data MODE=exact-market`) and
+   adjusted structural audits to report legacy market blockage as coverage
+   rather than a structural-data failure.
+4. ✅ Added the versioned canonical-week policy dataset, the
+   `build_schedule_week_policy.py` builder, and the explicit 2026 Week 0
+   game-ID assignments (`conf/policy/canonical_week_2026_v1.yaml`).
+5. ✅ Added 17 contract tests proving legacy lines cannot produce leans,
+   grades, ROI, or model features, and that the Week 0 policy is correct.
 
 **Exit gate:** The historical import can preserve legacy lines without weakening
 canonical markets, and all Week 0 tests pass while provider weeks remain intact.
@@ -207,7 +210,7 @@ Stop rather than infer or silently degrade if:
 
 ## Next Session Resume Point
 
-Begin with Phase 1. Implement the legacy-market-reference contract and canonical
-2026 Week 0 policy before running `make import-history`. No additional user
+Begin with Phase 2. Run `make import-history` in preview. No additional user
 credential setup is currently required; read-only source R2, preview R2, and
-preview Neon connectivity have been verified.
+preview Neon connectivity have been verified. Phase 1 contracts and the
+canonical Week 0 policy are implemented and tested.

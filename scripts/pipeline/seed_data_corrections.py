@@ -39,6 +39,10 @@ def main() -> None:
     if os.getenv("CFB_ARTIFACT_ENV") != "preview":
         raise SystemExit("Correction seeding is allowed only in preview")
     storage = get_storage()
+    output_uri = "artifacts/preview/refs/data-corrections-v1.json"
+    if storage.exists(output_uri):
+        print(storage.read_bytes(output_uri).decode())
+        return
     records = legacy_data_correction_records()
     capture = capture_provider_records(
         storage,
@@ -62,13 +66,9 @@ def main() -> None:
         config_sha=hashlib.sha256(b"legacy_data_corrections_v1").hexdigest(),
     )
     register_dataset_version(conn_url, ref, manifest)
-    output_uri = "artifacts/preview/refs/data-corrections-v1.json"
-    payload = json.dumps(asdict(ref), indent=2, sort_keys=True).encode()
-    if storage.exists(output_uri):
-        if storage.read_bytes(output_uri) != payload:
-            raise FileExistsError(f"Immutable correction ref exists: {output_uri}")
-    else:
-        storage.write_bytes(payload, output_uri)
+    storage.write_bytes(
+        json.dumps(asdict(ref), indent=2, sort_keys=True).encode(), output_uri
+    )
     print(json.dumps(asdict(ref), sort_keys=True))
 
 

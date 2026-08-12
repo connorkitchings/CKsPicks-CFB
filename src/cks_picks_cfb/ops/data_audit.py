@@ -194,6 +194,21 @@ def audit_catalog(
         and 0
         in set(pd.to_numeric(schedule["week"], errors="coerce").dropna().astype(int))
     )
+    required_silver = {
+        "games",
+        "plays",
+        "team_game_stats",
+    }
+    legacy_query = (
+        "SELECT COALESCE(SUM(dv.row_count), 0) FROM catalog.dataset_versions dv "
+        "WHERE dv.dataset = 'legacy_market_references' AND dv.tier = 'silver' "
+        "AND dv.state = 'validated'"
+    )
+    canonical_market_query = (
+        "SELECT COUNT(*) FROM catalog.dataset_versions dv "
+        "WHERE dv.dataset IN ('market_quotes', 'market_snapshots') "
+        "AND dv.tier = 'silver' AND dv.state = 'validated'"
+    )
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -201,6 +216,10 @@ def audit_catalog(
                 "WHERE tier = 'silver' AND state = 'validated'"
             )
             silver_datasets = {str(row[0]) for row in cur.fetchall()}
+            cur.execute(legacy_query)
+            legacy_reference_rows = int(cur.fetchone()[0])
+            cur.execute(canonical_market_query)
+            canonical_market_versions = int(cur.fetchone()[0])
             cur.execute(
                 "SELECT COUNT(*) FROM catalog.source_captures "
                 "WHERE state IN ('failed', 'quarantined')"
@@ -217,17 +236,11 @@ def audit_catalog(
                 "WHERE dcd.child_version_id = dv.version_id)"
             )
             unlinked_silver_versions = int(cur.fetchone()[0])
-    required_silver = {
-        "games",
-        "plays",
-        "team_game_stats",
-        "market_quotes",
-        "market_snapshots",
-    }
     checks = {
         **result.checks,
         "schedule_2026_week0": schedule_ok,
         "required_silver_datasets": required_silver.issubset(silver_datasets),
+        "legacy_market_references_preserved": legacy_reference_rows > 0,
         "source_capture_health": invalid_capture_count == 0,
         "reconciliation_clear": blocking_reconciliations == 0,
         "silver_bronze_lineage": unlinked_silver_versions == 0,
@@ -242,6 +255,9 @@ def audit_catalog(
         "schedule_2026_rows": len(schedule),
         "schedule_2026_week0_rows": int((schedule_weeks == 0).sum()),
         "silver_datasets": sorted(silver_datasets),
+        "legacy_market_reference_rows": legacy_reference_rows,
+        "canonical_market_versions": canonical_market_versions,
+        "exact_historical_market_replay_blocked": True,
         "invalid_source_captures": invalid_capture_count,
         "blocking_reconciliations": blocking_reconciliations,
         "unlinked_silver_versions": unlinked_silver_versions,
@@ -262,6 +278,110 @@ def audit_catalog(
             f"Silver versions without Bronze lineage: {unlinked_silver_versions}"
         )
     return ref, AuditResult(all(checks.values()), checks, coverage, tuple(errors))
+
+
+def audit_exact_markets(
+    conn_url: str, storage: StorageBackend
+) -> tuple[DatasetRef, AuditResult]:
+    """Report legacy market quarantine without treating it as a data failure."""
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT version_id, schema_version, content_sha, uri, row_count "
+                "FROM catalog.dataset_versions "
+                "WHERE dataset = 'legacy_market_references' AND tier = 'silver' "
+                "AND state = 'validated' "
+                "ORDER BY as_of DESC, created_at DESC LIMIT 1"
+            )
+            legacy_row = cur.fetchone()
+            cur.execute(
+                "SELECT COUNT(*) FROM catalog.dataset_versions dv "
+                "WHERE dv.dataset IN ('market_quotes', 'market_snapshots') "
+                "AND dv.tier = 'silver' AND dv.state = 'validated'"
+            )
+            canonical_market_versions = int(cur.fetchone()[0])
+            cur.execute(
+                "SELECT COUNT(*) FROM catalog.dataset_versions dv "
+                "JOIN catalog.dataset_capture_dependencies dcd "
+                "ON dcd.child_version_id = dv.version_id "
+                "JOIN catalog.source_captures sc "
+                "ON sc.capture_id = dcd.capture_id "
+                "WHERE dv.dataset IN ('market_quotes', 'market_snapshots') "
+                "AND dv.tier = 'silver' AND dv.state = 'validated' "
+                "AND sc.provider = 'legacy_cfbd_export'"
+            )
+            legacy_in_canonical = int(cur.fetchone()[0])
+            cur.execute(
+                "SELECT COUNT(*) FROM catalog.dataset_versions dv "
+                "JOIN catalog.dataset_capture_dependencies dcd "
+                "ON dcd.child_version_id = dv.version_id "
+                "JOIN catalog.source_captures sc "
+                "ON sc.capture_id = dcd.capture_id "
+                "WHERE dv.dataset = 'legacy_market_references' "
+                "AND dv.tier = 'silver' AND dv.state = 'validated' "
+                "AND sc.provider != 'legacy_cfbd_export'"
+            )
+            non_legacy_in_legacy = int(cur.fetchone()[0])
+    checks: dict[str, bool] = {
+        "legacy_references_preserved": legacy_row is not None,
+        "canonical_markets_exclude_legacy": legacy_in_canonical == 0,
+        "legacy_lineage_pure": non_legacy_in_legacy == 0,
+    }
+    errors: list[str] = []
+    coverage: dict[str, object] = {
+        "canonical_market_versions": canonical_market_versions,
+        "legacy_in_canonical_capture_links": legacy_in_canonical,
+        "non_legacy_in_legacy_capture_links": non_legacy_in_legacy,
+        "exact_replay_available": False,
+        "grading_available": False,
+        "lean_available": False,
+        "market_promotion_gate": "blocked_until_authentic_quotes",
+    }
+    if not checks["legacy_references_preserved"]:
+        errors.append("no validated legacy_market_references dataset exists")
+    if not checks["canonical_markets_exclude_legacy"]:
+        errors.append(
+            f"canonical market datasets depend on {legacy_in_canonical} "
+            "legacy_cfbd_export captures"
+        )
+    if not checks["legacy_lineage_pure"]:
+        errors.append(
+            f"legacy_market_references depends on {non_legacy_in_legacy} "
+            "non-legacy captures"
+        )
+    if legacy_row is not None:
+        legacy_ref = DatasetRef(
+            "legacy_market_references",
+            str(legacy_row[0]),
+            str(legacy_row[1]),
+            str(legacy_row[2]),
+            str(legacy_row[3]),
+        )
+        frame = read_dataset(storage, legacy_ref)
+        legacy_row_count = int(legacy_row[4])
+        flags_ok = bool(
+            not frame["exact_replay_eligible"].any()
+            and not frame["grading_eligible"].any()
+            and not frame["lean_eligible"].any()
+            and (frame["timestamp_status"] == "missing_authentic_timestamp").all()
+        )
+        checks["legacy_flags_constant"] = flags_ok
+        coverage["legacy_rows"] = legacy_row_count
+        coverage["legacy_seasons"] = sorted(
+            frame["season"].astype(int).unique().tolist()
+        )
+        coverage["legacy_games"] = int(frame["game_id"].nunique())
+        if not flags_ok:
+            errors.append(
+                "legacy market reference flags are not the constant quarantine"
+            )
+    else:
+        legacy_ref = DatasetRef(
+            "legacy_market_references", "none", "legacy_market_references_v1", "", ""
+        )
+    return legacy_ref, AuditResult(
+        all(checks.values()), checks, coverage, tuple(errors)
+    )
 
 
 def result_json(ref: DatasetRef, result: AuditResult) -> str:

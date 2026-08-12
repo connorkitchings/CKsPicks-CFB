@@ -12,11 +12,13 @@ from pathlib import PurePosixPath
 from typing import Any, Mapping, Sequence
 
 import pandas as pd
+import psycopg
 
 from cks_picks_cfb.data.catalog import (
     begin_ingestion_run,
     finish_ingestion_run,
     register_source_capture,
+    source_capture_by_id,
 )
 from cks_picks_cfb.data.lake import SourceCapture, capture_provider_records
 from cks_picks_cfb.data.storage import StorageBackend
@@ -227,6 +229,16 @@ def import_historical_object(
         sort_keys=True,
     )
     capture_id = hashlib.sha256(identity.encode()).hexdigest()[:32]
+    try:
+        capture = source_capture_by_id(conn_url, capture_id)
+        return capture
+    except LookupError:
+        pass
+    except psycopg.OperationalError:
+        # If the catalog is unreachable for the idempotency probe, fall through
+        # to the normal ingestion path so transient DB issues don't block import.
+        pass
+
     ingestion_run_id = f"history-{capture_id}"
     request = {
         "operation": "historical_r2_import",
