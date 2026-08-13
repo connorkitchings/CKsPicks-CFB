@@ -54,11 +54,19 @@ def main() -> None:
     parser.add_argument("--baselines-ref-uri")
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument(
+        "--environment",
+        choices=["production", "preview"],
+        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+    )
     args = parser.parse_args()
-    cutoff = datetime.fromisoformat(args.as_of)
+    cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
-    storage = get_storage()
+    storage = get_storage(environment=args.environment)
+    if storage.exists(args.output_ref_uri):
+        print(storage.read_bytes(args.output_ref_uri).decode())
+        return
     matchup_ref = _ref(storage, args.matchups_ref_uri)
     schedule_ref = _ref(storage, args.schedule_ref_uri)
     baselines_ref = (
@@ -66,6 +74,8 @@ def main() -> None:
     )
     matchups = read_dataset(storage, matchup_ref)
     schedule = read_dataset(storage, schedule_ref)
+    if "kickoff_utc" in schedule.columns and "start_date" not in schedule.columns:
+        schedule = schedule.rename(columns={"kickoff_utc": "start_date"})
     team_side = build_team_side_gold(
         matchups,
         schedule,
@@ -186,7 +196,10 @@ def main() -> None:
     )
     if not all(manifest.validation.values()):
         raise RuntimeError(f"Gold dataset validation failed: {manifest.validation}")
-    conn_url = os.getenv("DATABASE_URL")
+    if args.environment == "preview":
+        conn_url = os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
+    else:
+        conn_url = os.getenv("DATABASE_URL")
     if not conn_url:
         raise SystemExit("DATABASE_URL is required for catalog registration")
     register_dataset_version(conn_url, team_ref, team_manifest)

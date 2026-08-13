@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly export-pickem
 
 # Default target
 help:
@@ -129,6 +129,9 @@ inventory-source:
 import-history:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops import-history --year 2026 --environment preview $(if $(PREFIX),--prefix $(PREFIX),)
 
+import-history-silver:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops import-history --year 2026 --environment preview --skip-imports $(if $(PREFIX),--prefix $(PREFIX),)
+
 build-silver:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-silver --year $(YEAR) --dataset $(DATASET) --capture-id $(CAPTURE_ID) --as-of $(AS_OF) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(GAMES_REF_URI),--games-ref-uri $(GAMES_REF_URI),)
 
@@ -239,6 +242,12 @@ train-champion:
 	@echo "🏋️ Training champion spread and total models..."
 	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=spread_target
 	PYTHONPATH=src uv run python -m cks_picks_cfb.train model=linear model.target=total_target
+
+export-pickem:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
+		echo "Usage: make export-pickem YEAR=2026 WEEK=0 [SUBMIT=1]"; exit 1; \
+	fi
+	PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py --year $(YEAR) --week $(WEEK) $(if $(SUBMIT),--submit-api,)
 
 # Clean cache files
 clean:

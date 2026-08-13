@@ -256,11 +256,14 @@ def build_dataset_version(
     manifest_uri = f"{prefix}/manifest.json"
     if storage.exists(manifest_uri):
         existing = json.loads(storage.read_bytes(manifest_uri).decode("utf-8"))
-        if existing.get("content_sha") != content_sha:
-            raise StorageError(f"Dataset manifest collision at {manifest_uri}")
-        existing["parent_versions"] = tuple(existing.get("parent_versions", ()))
-        existing["source_capture_ids"] = tuple(existing.get("source_capture_ids", ()))
-        return ref, DatasetManifest(**existing)
+        if existing.get("state") != "failed":
+            if existing.get("content_sha") != content_sha:
+                raise StorageError(f"Dataset manifest collision at {manifest_uri}")
+            existing["parent_versions"] = tuple(existing.get("parent_versions", ()))
+            existing["source_capture_ids"] = tuple(
+                existing.get("source_capture_ids", ())
+            )
+            return ref, DatasetManifest(**existing)
 
     frame = pd.DataFrame.from_records(records)
     missingness = {
@@ -306,7 +309,10 @@ def build_dataset_version(
         validation=validation_results,
         state=state,
     )
-    _write_immutable(storage, manifest_uri, _canonical_json(asdict(manifest)))
+    if storage.exists(manifest_uri):
+        storage.write_bytes(_canonical_json(asdict(manifest)), manifest_uri)
+    else:
+        _write_immutable(storage, manifest_uri, _canonical_json(asdict(manifest)))
     return ref, manifest
 
 

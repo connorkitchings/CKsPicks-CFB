@@ -43,10 +43,18 @@ def main() -> None:
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument("--include-locked-2025", action="store_true")
     parser.add_argument("--frozen-design-sha")
+    parser.add_argument(
+        "--environment",
+        choices=["production", "preview"],
+        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+    )
     args = parser.parse_args()
     if args.include_locked_2025 and not args.frozen_design_sha:
         raise SystemExit("--include-locked-2025 requires --frozen-design-sha")
-    storage = get_storage()
+    storage = get_storage(environment=args.environment)
+    if storage.exists(args.output_ref_uri):
+        print(storage.read_bytes(args.output_ref_uri).decode())
+        return
     core_ref = _ref(storage, args.core_ref_uri)
     if core_ref.dataset != "point_in_time_matchups_core":
         raise ValueError("Baselines require point_in_time_matchups_core")
@@ -89,7 +97,10 @@ def main() -> None:
     )
     if manifest.state != "validated":
         raise RuntimeError(f"Baseline validation failed: {manifest.validation}")
-    conn_url = os.getenv("DATABASE_URL")
+    if args.environment == "preview":
+        conn_url = os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
+    else:
+        conn_url = os.getenv("DATABASE_URL")
     if not conn_url:
         raise SystemExit("DATABASE_URL is required")
     register_dataset_version(conn_url, ref, manifest)

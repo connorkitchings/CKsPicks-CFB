@@ -44,12 +44,21 @@ def main() -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument("--allow-2026", action="store_true")
+    parser.add_argument(
+        "--environment",
+        choices=["production", "preview"],
+        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+    )
+    parser.add_argument("--optional", action="store_true")
     args = parser.parse_args()
     seasons = sorted(set(args.season))
     allowed = set(range(2021, 2027 if args.allow_2026 else 2026))
     if 2020 in seasons or any(year not in allowed for year in seasons):
         raise SystemExit(f"Combined refs support only {sorted(allowed)}")
-    storage = get_storage()
+    storage = get_storage(environment=args.environment)
+    if storage.exists(args.output_ref_uri):
+        print(storage.read_bytes(args.output_ref_uri).decode())
+        return
     available_refs = []
     skipped_seasons = []
     for year in seasons:
@@ -59,6 +68,18 @@ def main() -> None:
         else:
             skipped_seasons.append(year)
     if not available_refs:
+        if args.optional:
+            print(
+                json.dumps(
+                    {
+                        "state": "unavailable",
+                        "dataset": args.dataset,
+                        "seasons": seasons,
+                    },
+                    sort_keys=True,
+                )
+            )
+            return
         raise LookupError(
             f"No season refs found for {args.dataset} in seasons {seasons}"
         )

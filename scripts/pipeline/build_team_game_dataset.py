@@ -54,11 +54,22 @@ def main() -> None:
     parser.add_argument("--corrections-ref-uri", required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument(
+        "--environment",
+        choices=["production", "preview"],
+        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+    )
     args = parser.parse_args()
-    conn_url = os.getenv("DATABASE_URL")
+    if args.environment == "preview":
+        conn_url = os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
+    else:
+        conn_url = os.getenv("DATABASE_URL")
     if not conn_url:
         raise SystemExit("DATABASE_URL is required")
-    storage = get_storage()
+    storage = get_storage(environment=args.environment)
+    if storage.exists(args.output_ref_uri):
+        print(storage.read_bytes(args.output_ref_uri).decode())
+        return
     refs = [_ref(storage, args.plays_ref_uri), _ref(storage, args.games_ref_uri)]
     optional = {}
     for name in ("teams", "venues", "weather", "game_stats", "corrections"):

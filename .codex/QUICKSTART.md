@@ -231,6 +231,22 @@ PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py \
     --upload-artifact
 ```
 
+### CFBD Model Pick'em Export & API Submission
+
+```bash
+# Export weekly predictions to CFBD Model Pick'em CSV format
+make export-pickem YEAR=2026 WEEK=0
+
+# Export and submit picks directly to CFBD Pick'em API (requires CFBD_API_KEY)
+make export-pickem YEAR=2026 WEEK=0 SUBMIT=1
+
+# Standalone CLI execution
+PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py \
+    --year 2026 \
+    --week 0 \
+    --submit-api
+```
+
 ### Performance Scoring
 
 ```bash

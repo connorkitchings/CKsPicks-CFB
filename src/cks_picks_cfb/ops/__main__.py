@@ -187,7 +187,7 @@ def _import_history_action(conn_url: str, source, destination, item):
     return action
 
 
-def _history_silver_steps() -> list[PipelineStep]:
+def _history_silver_steps(environment: str = "preview") -> list[PipelineStep]:
     """Return the deterministic all-years Silver build sequence."""
     as_of = "2026-08-09T23:59:59Z"
     steps: list[PipelineStep] = []
@@ -206,11 +206,13 @@ def _history_silver_steps() -> list[PipelineStep]:
             "--dataset",
             dataset,
             "--season",
-            season,
+            str(season),
             "--as-of",
             as_of,
             "--output-ref-uri",
             output,
+            "--environment",
+            environment,
         )
         if games:
             argv.extend(
@@ -237,13 +239,15 @@ def _history_silver_steps() -> list[PipelineStep]:
                 _python(
                     "scripts/pipeline/build_schedule_week_policy.py",
                     "--season",
-                    season,
+                    str(season),
                     "--assignments",
                     f"conf/policy/canonical_week_{season}_v1.yaml",
                     "--as-of",
                     as_of,
                     "--output-ref-uri",
                     f"artifacts/preview/refs/history/schedule_week_policy-{season}.json",
+                    "--environment",
+                    environment,
                 ),
             )
         )
@@ -296,6 +300,8 @@ def _history_silver_steps() -> list[PipelineStep]:
                     as_of,
                     "--output-ref-uri",
                     f"artifacts/preview/refs/history/reconciled_team_game-{season}.json",
+                    "--environment",
+                    environment,
                 ),
             )
         )
@@ -316,7 +322,15 @@ def _history_silver_steps() -> list[PipelineStep]:
             as_of,
             "--output-ref-uri",
             f"artifacts/preview/refs/history/{dataset}-2021-2025.json",
+            "--environment",
+            environment,
         )
+        if dataset in {
+            "team_game_stats",
+            "weather_observations",
+            "preseason_team_inputs",
+        }:
+            argv.append("--optional")
         for season in (2021, 2022, 2023, 2024, 2025):
             argv.extend(["--season", str(season)])
         steps.append(subprocess_step(f"combine_{dataset}_2021_2025", argv))
@@ -329,6 +343,8 @@ def _history_silver_steps() -> list[PipelineStep]:
         "--allow-2026",
         "--output-ref-uri",
         "artifacts/preview/refs/history/games-2021-2026.json",
+        "--environment",
+        environment,
     )
     for season in (2021, 2022, 2023, 2024, 2025, 2026):
         schedule_argv.extend(["--season", str(season)])
@@ -349,6 +365,8 @@ def _history_silver_steps() -> list[PipelineStep]:
                     as_of,
                     "--output-ref-uri",
                     "artifacts/preview/refs/history/temporal-matchup-inputs.json",
+                    "--environment",
+                    environment,
                 ),
             ),
             subprocess_step(
@@ -363,6 +381,8 @@ def _history_silver_steps() -> list[PipelineStep]:
                     as_of,
                     "--output-ref-uri",
                     "artifacts/preview/refs/history/point-in-time-core.json",
+                    "--environment",
+                    environment,
                 ),
             ),
             subprocess_step(
@@ -375,6 +395,8 @@ def _history_silver_steps() -> list[PipelineStep]:
                     as_of,
                     "--output-ref-uri",
                     "artifacts/preview/refs/history/baselines-selection.json",
+                    "--environment",
+                    environment,
                 ),
             ),
             subprocess_step(
@@ -388,7 +410,9 @@ def _history_silver_steps() -> list[PipelineStep]:
                     "--as-of",
                     as_of,
                     "--output-ref-uri",
-                    "artifacts/preview/refs/history/point-in-time-model-ready.json",
+                    "artifacts/preview/refs/history/model-ready-selection.json",
+                    "--environment",
+                    environment,
                 ),
             ),
         ]
@@ -406,6 +430,7 @@ def build_steps(
     year = context.season
     week = context.week
     as_of = context.as_of
+    environment = context.environment
     if context.command in {"inventory-source", "import-history"}:
         assert options is not None
         prefix = options.prefix or ""
@@ -418,15 +443,16 @@ def build_steps(
                     _python("scripts/pipeline/seed_data_corrections.py"),
                 )
             )
-            for item in eligible:
-                suffix = hashlib.sha256(item.uri.encode()).hexdigest()[:16]
-                steps.append(
-                    PipelineStep(
-                        f"import_{suffix}",
-                        _import_history_action(conn_url, source, destination, item),
+            if not getattr(options, "skip_imports", False):
+                for item in eligible:
+                    suffix = hashlib.sha256(item.uri.encode()).hexdigest()[:16]
+                    steps.append(
+                        PipelineStep(
+                            f"import_{suffix}",
+                            _import_history_action(conn_url, source, destination, item),
+                        )
                     )
-                )
-            steps.extend(_history_silver_steps())
+            steps.extend(_history_silver_steps(environment))
             steps.extend(
                 [
                     PipelineStep(
@@ -918,6 +944,12 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--week", type=int)
         if command in {"inventory-source", "import-history"}:
             sub.add_argument("--prefix", default="")
+            if command == "import-history":
+                sub.add_argument(
+                    "--skip-imports",
+                    action="store_true",
+                    help="Skip raw capture imports and run downstream Silver/Gold steps",
+                )
         if command == "audit-data":
             sub.add_argument(
                 "--mode",

@@ -43,8 +43,16 @@ def main() -> None:
     parser.add_argument("--prior-2019-ref-uri", required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument(
+        "--environment",
+        choices=["production", "preview"],
+        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+    )
     args = parser.parse_args()
-    storage = get_storage()
+    storage = get_storage(environment=args.environment)
+    if storage.exists(args.output_ref_uri):
+        print(storage.read_bytes(args.output_ref_uri).decode())
+        return
     team_game_ref = _ref(storage, args.team_game_ref_uri)
     schedule_ref = _ref(storage, args.schedule_ref_uri)
     prior_ref = _ref(storage, args.prior_2019_ref_uri)
@@ -84,7 +92,10 @@ def main() -> None:
     )
     if manifest.state != "validated":
         raise RuntimeError(f"Temporal matchup validation failed: {manifest.validation}")
-    conn_url = os.getenv("DATABASE_URL")
+    if args.environment == "preview":
+        conn_url = os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
+    else:
+        conn_url = os.getenv("DATABASE_URL")
     if not conn_url:
         raise SystemExit("DATABASE_URL is required")
     register_dataset_version(conn_url, ref, manifest)
