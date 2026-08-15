@@ -1,6 +1,7 @@
 """Betting lines data ingestion from CFBD API."""
 
 import hashlib
+import time
 from typing import Any
 
 import cfbd
@@ -8,6 +9,7 @@ import cfbd
 from cks_picks_cfb.utils.base import Partition
 
 from .base import BaseIngester
+from .week_policy import canonical_week_overrides_for_season
 
 
 class BettingLineCoverageError(RuntimeError):
@@ -64,6 +66,7 @@ class BettingLinesIngester(BaseIngester):
         self.week = week
         self.limit_games = limit_games
         self.require_full_coverage = require_full_coverage
+        self._provider_weeks: set[int] = set()
 
     @property
     def entity_name(self) -> str:
@@ -82,7 +85,15 @@ class BettingLinesIngester(BaseIngester):
             "require_full_coverage": self.require_full_coverage,
         }
         if self.week is not None:
-            parameters["week"] = self.week
+            # Resolve the provider week before the immutable request manifest is
+            # created so lineage describes the actual CFBD request as well as
+            # the canonical partition requested by the operator.
+            self.get_fbs_game_ids()
+            parameters["canonical_week"] = self.week
+            if len(self._provider_weeks) == 1:
+                parameters["week"] = next(iter(self._provider_weeks))
+            else:
+                parameters["provider_weeks"] = sorted(self._provider_weeks)
         return parameters
 
     @property
@@ -92,13 +103,31 @@ class BettingLinesIngester(BaseIngester):
         return ["year"]
 
     def get_fbs_game_ids(self) -> list[int]:
-        """Get list of FBS game IDs from local games index."""
+        """Get FBS game IDs, tolerating brief object-index visibility lag."""
+        self._provider_weeks = set()
         # Read games at year level (games are year-level files, not week-partitioned)
-        games_index = self.storage.read_index(
-            "raw/games", filters={"year": str(self.year)}, columns=["id", "week"]
-        )
+        games_index = []
+        for attempt in range(4):
+            games_index = self.storage.read_index(
+                "raw/games",
+                filters={"year": str(self.year)},
+                columns=["id", "week"],
+            )
+            if games_index:
+                break
+            if attempt < 3:
+                time.sleep(0.5 * (2**attempt))
         if self.week is not None:
-            games_index = [g for g in games_index if int(g.get("week", 0)) == self.week]
+            overrides = canonical_week_overrides_for_season(self.year)
+            selected = []
+            for game in games_index:
+                game_id = int(game["id"])
+                provider_week = int(game.get("week", 0))
+                canonical_week = overrides.get(game_id, provider_week)
+                if canonical_week == self.week:
+                    selected.append(game)
+                    self._provider_weeks.add(provider_week)
+            games_index = selected
 
         if not games_index:
             raise RuntimeError(
@@ -124,8 +153,11 @@ class BettingLinesIngester(BaseIngester):
         print(f"Found {len(fbs_game_ids)} FBS games to process.")
 
         lines_params = {"year": self.year, "season_type": self.season_type}
-        if self.week is not None:
-            lines_params["week"] = self.week
+        if self.week is not None and len(self._provider_weeks) == 1:
+            # CFBD labels some opening slates as provider Week 1 while the
+            # checked-in policy assigns canonical Week 0. Query the provider's
+            # label, then filter to the canonical slate by game ID below.
+            lines_params["week"] = next(iter(self._provider_weeks))
 
         year_lines = betting_api.get_lines(**lines_params)
         print(f"Fetched {len(year_lines)} total games with betting lines from API.")
@@ -139,7 +171,10 @@ class BettingLinesIngester(BaseIngester):
                     all_lines.append(
                         {
                             "game_id": self.safe_getattr(game_line, "id"),
-                            "week": self.safe_getattr(game_line, "week"),
+                            "provider_week": self.safe_getattr(game_line, "week"),
+                            "week": self.week
+                            if self.week is not None
+                            else self.safe_getattr(game_line, "week"),
                             "line_data": sportsbook_line,
                         }
                     )
@@ -178,6 +213,7 @@ class BettingLinesIngester(BaseIngester):
         for item in data:
             game_id = item.get("game_id")
             week = item.get("week")
+            provider_week = item.get("provider_week", week)
             line = item.get("line_data")
             if not line:
                 continue
@@ -186,6 +222,7 @@ class BettingLinesIngester(BaseIngester):
                 "year": self.year,
                 "season_type": self.season_type,
                 "week": week,
+                "provider_week": provider_week,
                 "game_id": game_id,
                 "provider": self.safe_getattr(line, "provider"),
                 "spread": self.safe_getattr(line, "spread"),

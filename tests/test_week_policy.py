@@ -8,6 +8,7 @@ from cks_picks_cfb.data.week_policy import (
     WeekAssignment,
     WeekPolicySpec,
     build_policy_rows,
+    canonical_week_overrides_for_season,
     load_week_policy_spec,
 )
 
@@ -37,6 +38,15 @@ def test_load_week_policy_spec_validates(tmp_path):
     assert len(spec.assignments) == 1
     assert spec.assignments[0].game_id == 100
     assert spec.assignments[0].canonical_week == 0
+
+
+def test_canonical_week_overrides_are_loaded_from_versioned_policy(tmp_path):
+    path = _write_policy(tmp_path)
+    path.rename(tmp_path / "canonical_week_2026_v1.yaml")
+
+    assert canonical_week_overrides_for_season(2026, policy_directory=tmp_path) == {
+        100: 0
+    }
 
 
 def test_load_week_policy_spec_rejects_duplicate_game(tmp_path):

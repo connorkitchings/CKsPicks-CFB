@@ -74,15 +74,26 @@ def train_early_season_tournament(cfg: DictConfig) -> dict:
     from cks_picks_cfb.models.training_policy import policy_from_mapping
 
     spec = cfg.experiment
-    if not spec.get("feature_dataset_ref"):
-        raise ValueError(
-            "week0 regime training requires an immutable Gold feature_dataset_ref"
+    storage = get_storage()
+    if spec.get("feature_dataset_ref"):
+        ref = DatasetRef(
+            **OmegaConf.to_container(spec.feature_dataset_ref, resolve=True)
         )
-    ref = DatasetRef(**OmegaConf.to_container(spec.feature_dataset_ref, resolve=True))
-    frame = read_dataset(get_storage(), ref)
-    policy_raw = OmegaConf.to_container(
-        OmegaConf.load(str(spec.training_policy)), resolve=True
-    )
+    elif spec.get("feature_dataset_ref_uri"):
+        raw_ref = json.loads(
+            storage.read_bytes(str(spec.feature_dataset_ref_uri)).decode("utf-8")
+        )
+        ref = DatasetRef(**raw_ref)
+    else:
+        raise ValueError(
+            "week0 regime training requires an immutable Gold feature_dataset_ref "
+            "or feature_dataset_ref_uri"
+        )
+    frame = read_dataset(storage, ref)
+    policy_path = Path(str(spec.training_policy))
+    if not policy_path.is_absolute():
+        policy_path = Path(hydra.utils.get_original_cwd()) / policy_path
+    policy_raw = OmegaConf.to_container(OmegaConf.load(policy_path), resolve=True)
     policy = policy_from_mapping(policy_raw)
     predictions, weights = generate_temporal_candidate_predictions(
         frame,

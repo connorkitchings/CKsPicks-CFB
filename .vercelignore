@@ -1,0 +1,13 @@
+# The Vercel project builds from web/ (its configured Root Directory). Upload
+# only that application; the Python pipeline and its local state never belong
+# in a web deployment.
+*
+!web
+!web/**
+
+# Local build and credential state must not be part of the source archive.
+web/node_modules/
+web/.next/
+web/.vercel/
+web/.env
+web/.env.local

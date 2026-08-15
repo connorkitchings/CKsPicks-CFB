@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "psql \"$DATABASE_URL\" -f db/migrations/0001_init.sql && echo 'migration applied'",
     "db:studio": "drizzle-kit studio"

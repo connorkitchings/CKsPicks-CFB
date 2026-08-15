@@ -1,6 +1,6 @@
 # CK's Picks — Web App
 
-Next.js 16 / React 19 / Tailwind CSS v4 app that displays the model's weekly leans for every FBS game. Deployed to Vercel; reads predictions from Neon Postgres.
+Next.js 16 / React 19 / Tailwind CSS v4 app for the explicitly configured public release scope. It defaults to schedule and market lines; model output requires a separate server-side opt-in. Deployed to Vercel and backed by Neon Postgres.
 
 ## Stack
 
@@ -38,6 +38,7 @@ Open http://localhost:3000.
 | `npm run start` | Run the production build locally |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript typecheck (no emit) |
+| `npm run test:publication` | Verify the fail-closed public prediction boundary |
 | `npm run db:migrate` | Apply `0001_init.sql` to `$DATABASE_URL` |
 | `npm run db:generate` | Regenerate Drizzle migration from `schema.ts` |
 | `npm run db:studio` | Open Drizzle Studio (DB browser) |
@@ -77,18 +78,45 @@ web/
 1. Push the repo to GitHub.
 2. Import the project at https://vercel.com/new.
 3. **Set Root Directory to `web/`**. Do not deploy from the repository root.
-4. Add `DATABASE_URL` to Environment Variables (Vercel → Project → Settings → Environment Variables). This is the only required web-app runtime variable.
+4. Add `DATABASE_URL` and the `CFB_PUBLICATION_*` release variables to Vercel Environment Variables.
 5. Deploy. Subsequent `git push` to `main` auto-deploys.
 
-The home page is ISR-cached with a 5-minute revalidation window, so new predictions published by the Python pipeline appear within ~5 minutes on the live site.
+The home page is ISR-cached with a 5-minute revalidation window, so newly published schedule, market, or approved prediction data appears within about five minutes.
+
+## 2026 launch scope
+
+The public site defaults to **2026 Week 0 only**. It is a server-side
+allowlist, so URL parameters cannot reveal historical weeks or an unapproved
+future slate. Configure these Vercel environment variables for a controlled
+expansion after the next week has passed preview readiness:
+
+```bash
+CFB_PUBLICATION_SEASON=2026
+CFB_PUBLICATION_WEEKS=0       # Week 0 launch
+CFB_PUBLICATION_MODE=market   # Fail-closed default: no model output
+# CFB_PUBLICATION_WEEKS=0,1   # Enable only after Week 1 approval
+# CFB_PUBLICATION_MODE=predictions  # Requires explicit release approval
+```
+
+`market` mode uses a dedicated database projection containing only matchup,
+kickoff, market-line, score, and freshness fields. It does not select or render
+model predictions, leans, edges, confidence, regime, model identity, or the
+prediction-derived record banner. Any value other than the exact string
+`predictions` remains market-only.
+
+Deploy previews from the repository root, where the Vercel project is linked;
+the project's configured Root Directory remains `web`. The root
+`.vercelignore` uploads only the web application, not pipeline artifacts or
+local data. Preview deployments must use the isolated preview Neon database.
 
 ## Data Flow
 
 ```
 Python pipeline                 Neon Postgres                Vercel
 ─────────────                   ─────────────                ──────
-generate_weekly_bets.py   →     games table           →     page.tsx (ISR 5m)
-publish_to_db.py          →     current_week table    →     RecordBanner
+generate_weekly_bets.py   →     prediction_runs,      →     page.tsx (ISR 5m)
+publish_to_db.py          →     predictions, games    →     market-only or approved
+                                current_week                 prediction view
 score_to_db.py            →     game_results,         →     (after games finish)
                                  system_stats
 ```

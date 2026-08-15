@@ -82,6 +82,81 @@ def test_temporal_inputs_use_only_prior_games_and_keep_2019_prior():
     assert second["home_current_adj_off_epa"] == 1.5
 
 
+def test_temporal_inputs_overlay_outcomes_and_exclude_cancelled_training_games():
+    schedule = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "week": 4,
+                "game_id": 1,
+                "kickoff_utc": "2025-09-20T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "completed": False,
+                "home_points": None,
+                "away_points": None,
+            },
+            {
+                "season": 2025,
+                "week": 5,
+                "game_id": 2,
+                "kickoff_utc": "2025-09-27T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "completed": False,
+                "home_points": None,
+                "away_points": None,
+            },
+            {
+                "season": 2026,
+                "week": 0,
+                "game_id": 3,
+                "kickoff_utc": "2026-08-29T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "completed": False,
+                "home_points": None,
+                "away_points": None,
+            },
+        ]
+    )
+    team_game = pd.DataFrame(
+        [
+            {"season": 2025, "week": 4, "game_id": 1, "team": "A", "off_epa": 1.0},
+            {"season": 2025, "week": 4, "game_id": 1, "team": "B", "off_epa": 1.0},
+            {"season": 2025, "week": 5, "game_id": 2, "team": "A", "off_epa": 1.0},
+            {"season": 2025, "week": 5, "game_id": 2, "team": "B", "off_epa": 1.0},
+        ]
+    )
+    outcomes = pd.DataFrame(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "completed": True,
+                "home_points": 17,
+                "away_points": 16,
+            },
+            {
+                "season": 2025,
+                "game_id": 2,
+                "completed": False,
+                "home_points": None,
+                "away_points": None,
+            },
+        ]
+    )
+    result = build_temporal_matchup_inputs(
+        schedule,
+        team_game,
+        prior_2019=pd.DataFrame(),
+        outcomes=outcomes,
+        inference_seasons=frozenset({2026}),
+    )
+    assert result["game_id"].tolist() == [1, 3]
+    assert result.loc[result["game_id"] == 1, "spread_target"].item() == 1
+
+
 def test_baselines_are_strictly_temporal_and_2025_is_guarded():
     rows = []
     for season in range(2021, 2026):

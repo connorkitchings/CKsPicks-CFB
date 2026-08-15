@@ -1,0 +1,69 @@
+# Durable Week 0 Preview configuration. This is deliberately separate from
+# v2_champion.yaml: wiring the Preview bundle must never promote it to production.
+system_name: "Trench Warfare V2 Preview"
+model_id: "week0-2026-preview-20260814"
+
+model_bundle_v2:
+  artifact_uri: artifacts/preview/models/week0-2026-preview-20260814/manifest.json
+  sha256: c151a5b635d333839c2cfa940c45d2fdc18c40dac28c094859c63137f5bb4066
+
+year: 2026
+week: 0
+
+spread_edge_threshold: 0.0
+spread_edge_threshold_high_conf: 8.0
+total_edge_threshold: 1.5
+
+models:
+  spread:
+    path: models/linear_spread_target.joblib
+    artifact_uri: null
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
+    features: conf/features/matchup_v1.yaml
+    target: spread_target
+    calibration_offset: 1.14
+  total:
+    path: models/linear_total_target.joblib
+    artifact_uri: null
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
+    features: conf/features/matchup_v1.yaml
+    target: total_target
+
+features:
+  type: recency
+  alpha: 0.3
+
+preseason:
+  enabled: false
+  input_policy: prior_only_fallback
+  prior_only_required_features:
+    - home_prior_off_epa_pp
+    - home_prior_def_epa_pp
+    - home_prior_off_sr
+    - home_prior_def_sr
+    - away_prior_off_epa_pp
+    - away_prior_def_epa_pp
+    - away_prior_off_sr
+    - away_prior_def_sr
+    - prior_season_gap
+    - home_neutral_site
+    - home_conference_game
+  as_of: null
+  model_path: models/preseason_v1.joblib
+  spread_blend_weights: {}
+  total_blend_weights: {}
+
+training:
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026

@@ -1,44 +1,38 @@
 # Session: [Brief Description]
 
 ## TL;DR
-- **Attempted:** [what was tried]
-- **Outcome:** [what happened]
-- **Blockers/IDs:** [any issues, MLflow run IDs]
-- **Next Actions:** [what's next]
-- **Owner/Date:** [your name, date]
+
+- **Worked On:** [what was done]
+- **Outcome:** [what changed or was decided]
+- **Plan Contract:** [`docs/plans/YYYY-MM-DD/slug.md`](../../docs/plans/YYYY-MM-DD/slug.md) or `N/A (fast path)`
+- **Approval / Status:** [approval source and contract lifecycle state, if applicable]
+- **Blockers:** [issues, IDs, or `None`]
+- **Next:** [precise next action]
 
 **tags:** ["category1", "category2"]
 
----
+## Context and Decisions
 
-## Context
-[What we knew at session start - background, previous work, current state]
+- [Relevant starting state, architectural choice, or constraint]
 
 ## Work Completed
-- [ ] Task 1
-- [ ] Task 2
-- [ ] Task 3
 
-## Decisions Made
-1. **Decision 1:** [What was decided and why]
-
-## Issues & Blockers
-- [Issue description and status]
-
-## Testing
-- [ ] Health checks pass: `sh .agent/workflows/health-check.sh`
-- [ ] Tests pass: `uv run pytest -q`
-- [ ] Code formatted: `uv run ruff format .`
-- [ ] Documentation updated (if applicable)
+- [Completed task and outcome]
 
 ## Files Modified
-- `path/to/file1` - [description of changes]
-- `path/to/file2` - [description of changes]
 
-## Next Steps
-1. **Immediate** (next session)
-2. **Short-term** (this week)
-3. **Long-term** (future)
+- `path/to/file` — [description]
+
+## Validation
+
+- [ ] [Focused test, build, lint, documentation validation, or manual check]
+- [ ] `git diff --check`
+
+## Amendments and Blockers
+
+- [Link or summarize a safe plan amendment, material conflict, or `None`]
 
 ## Handoff Notes
-[Context for the next AI assistant or your future self]
+
+- **Resume at:** [specific task or `Session complete`]
+- **Watch out for:** [important constraint]

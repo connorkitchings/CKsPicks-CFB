@@ -25,6 +25,7 @@ from cks_picks_cfb.artifacts import (
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.features.point_in_time import build_point_in_time_matchups
 from cks_picks_cfb.features.selector import select_features
 from cks_picks_cfb.model_bundle import (
@@ -111,6 +112,7 @@ def main():
     explicit_reader = None
     gold_inference_df = None
     market_snapshots_df = None
+    schedule_snapshot_df = None
     if cfg.get("model_bundle_v2"):
         routing_bundle = load_model_bundle_v2(cfg.model_bundle_v2, storage=storage)
         if args.dataset_refs_uri:
@@ -150,6 +152,8 @@ def main():
                 gold_inference_df = read_dataset(storage, ref)
             if entity == "betting_lines" and ref_year == year:
                 market_snapshots_df = read_dataset(storage, ref)
+            if entity == "games" and ref_year == year:
+                schedule_snapshot_df = read_dataset(storage, ref)
 
         def explicit_reader(entity: str, ref_year: int):
             key = (entity, ref_year)
@@ -346,24 +350,35 @@ def main():
         else:
             raise NotImplementedError("Legacy loading not supported in V2 pipeline.")
 
-        storage = get_storage()
-        team_rows = storage.read_index("raw/teams", {"year": year})
-        fbs_teams = {
-            str(record.get("school"))
-            for record in team_rows
-            if str(record.get("classification", "")).lower() == "fbs"
-        }
-        schedule_rows = storage.read_index("raw/games", {"year": year})
-        expected_ids = {
-            int(record.get("id", record.get("game_id")))
-            for record in schedule_rows
-            if int(record.get("week", -1)) == week
-            and record.get("home_team") in fbs_teams
-            and record.get("away_team") in fbs_teams
-        }
-        data_df = data_df[
-            data_df["home_team"].isin(fbs_teams) & data_df["away_team"].isin(fbs_teams)
-        ].copy()
+        if schedule_snapshot_df is not None:
+            schedule_week = schedule_snapshot_df[
+                (schedule_snapshot_df["season"].astype(int) == int(year))
+                & (schedule_snapshot_df["week"].astype(int) == int(week))
+            ]
+            expected_ids = set(
+                pd.to_numeric(schedule_week["game_id"], errors="raise").astype(int)
+            )
+        else:
+            storage = get_storage()
+            team_rows = storage.read_index("raw/teams", {"year": year})
+            fbs_teams = {
+                str(record.get("school"))
+                for record in team_rows
+                if str(record.get("classification", "")).lower() == "fbs"
+            }
+            schedule_rows = storage.read_index("raw/games", {"year": year})
+            canonical_week = canonical_week_overrides_for_season(year)
+            expected_ids = {
+                int(record.get("id", record.get("game_id")))
+                for record in schedule_rows
+                if canonical_week.get(
+                    int(record.get("id", record.get("game_id", -1))),
+                    int(record.get("week", -1)),
+                )
+                == week
+                and record.get("home_team") in fbs_teams
+                and record.get("away_team") in fbs_teams
+            }
         actual_ids = set(pd.to_numeric(data_df["id"], errors="raise").astype(int))
         if actual_ids != expected_ids:
             missing = sorted(expected_ids - actual_ids)

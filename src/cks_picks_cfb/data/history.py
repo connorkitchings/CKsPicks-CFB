@@ -18,6 +18,7 @@ from cks_picks_cfb.data.catalog import (
     begin_ingestion_run,
     finish_ingestion_run,
     register_source_capture,
+    register_source_captures,
     source_capture_by_id,
 )
 from cks_picks_cfb.data.lake import SourceCapture, capture_provider_records
@@ -282,6 +283,82 @@ def import_historical_object(
             error_detail=str(exc),
         )
         raise
+
+
+def _capture_from_observation(raw: Mapping[str, Any]) -> SourceCapture:
+    """Parse an existing immutable Bronze observation without rewriting it."""
+    captured_at = datetime.fromisoformat(str(raw["captured_at"]).replace("Z", "+00:00"))
+    effective_raw = raw.get("effective_at")
+    effective_at = (
+        datetime.fromisoformat(str(effective_raw).replace("Z", "+00:00"))
+        if effective_raw
+        else None
+    )
+    return SourceCapture(
+        capture_id=str(raw["capture_id"]),
+        provider=str(raw["provider"]),
+        entity=str(raw["entity"]),
+        captured_at=captured_at,
+        effective_at=effective_at,
+        request=dict(raw["request"]),
+        content_sha=str(raw["content_sha"]),
+        object_sha=str(raw["object_sha"]),
+        uri=str(raw["uri"]),
+        row_count=int(raw["row_count"]),
+        provider_api_version=raw.get("provider_api_version"),
+        response_metadata=dict(raw.get("response_metadata") or {}),
+        state=str(raw.get("state") or "registered"),
+    )
+
+
+def hydrate_historical_catalog(
+    *,
+    destination: StorageBackend,
+    conn_url: str,
+    eligible: Sequence[HistoricalObjectRef],
+    ingestion_run_id: str,
+    batch_size: int = 500,
+) -> dict[str, int]:
+    """Register existing Preview Bronze observations without recopying source data."""
+    by_source_uri = {item.uri: item for item in eligible}
+    captures: list[SourceCapture] = []
+    seen_sources: set[str] = set()
+    for observation_uri in destination.list_files("lake/bronze/"):
+        if "/observations/" not in observation_uri or not observation_uri.endswith(
+            ".json"
+        ):
+            continue
+        raw = json.loads(destination.read_bytes(observation_uri))
+        request = raw.get("request") or {}
+        source_uri = request.get("source_uri")
+        item = by_source_uri.get(str(source_uri))
+        if item is None:
+            continue
+        capture = _capture_from_observation(raw)
+        expected_prefix = (
+            f"lake/bronze/provider={item.provider}/entity={item.entity}/"
+            f"content_sha={capture.content_sha}/data.parquet"
+        )
+        if capture.provider != item.provider or capture.entity != item.entity:
+            raise ValueError(f"Observation does not match inventory: {observation_uri}")
+        if capture.uri != expected_prefix or not destination.exists(capture.uri):
+            raise ValueError(f"Invalid immutable observation: {observation_uri}")
+        if len(capture.content_sha) != 64 or len(capture.object_sha) != 64:
+            raise ValueError(f"Invalid observation checksum: {observation_uri}")
+        captures.append(capture)
+        seen_sources.add(item.uri)
+    missing = len(by_source_uri) - len(seen_sources)
+    if missing:
+        raise LookupError(
+            f"Preview R2 is missing {missing} eligible source observations"
+        )
+    for start in range(0, len(captures), batch_size):
+        register_source_captures(
+            conn_url,
+            captures[start : start + batch_size],
+            ingestion_run_id=ingestion_run_id,
+        )
+    return {"eligible": len(eligible), "registered": len(captures), "missing": missing}
 
 
 def object_json(item: HistoricalObjectRef) -> dict[str, Any]:

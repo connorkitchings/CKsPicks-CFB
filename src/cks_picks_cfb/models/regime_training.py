@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 from cks_picks_cfb.model_bundle import validate_model_feature_allowlist
 from cks_picks_cfb.models.training_policy import (
     TrainingPolicy,
-    validate_feature_lineage,
+    labeled_training_frame,
 )
 
 REGIMES = ("preseason", "one_game", "two_games", "three_games", "established")
@@ -154,7 +154,7 @@ def generate_temporal_candidate_predictions(
     The returned frame is long by target and is the sole accepted input to the
     regime evaluator. Production refitting happens only after that report is frozen.
     """
-    validate_feature_lineage(frame, policy)
+    frame = labeled_training_frame(frame, policy)
     for features in (prior_features, current_features):
         validate_model_feature_allowlist(tuple(features))
     required = {
@@ -167,7 +167,6 @@ def generate_temporal_candidate_predictions(
         *prior_features,
         *current_features,
         *baseline_columns.values(),
-        *market_line_columns.values(),
     }
     missing = sorted(required - set(frame.columns))
     if missing:
@@ -239,7 +238,12 @@ def generate_temporal_candidate_predictions(
                 valid_regime["baseline_prediction"] = valid_regime[
                     baseline_columns[target]
                 ]
-                valid_regime["market_line"] = valid_regime[market_line_columns[target]]
+                market_column = market_line_columns[target]
+                valid_regime["market_line"] = (
+                    valid_regime[market_column]
+                    if market_column in valid_regime
+                    else np.nan
+                )
                 valid_regime["training_max_year"] = max(fold.train_years)
                 outputs.append(valid_regime)
     predictions = pd.concat(outputs, ignore_index=True)

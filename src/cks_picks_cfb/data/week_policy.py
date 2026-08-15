@@ -77,6 +77,26 @@ def load_week_policy_spec(path: str | Path) -> WeekPolicySpec:
     )
 
 
+def canonical_week_overrides_for_season(
+    season: int, *, policy_directory: str | Path = "conf/policy"
+) -> dict[int, int]:
+    """Return checked-in canonical-week overrides for a live schedule.
+
+    Source captures preserve provider weeks. Operational checks and inference use
+    this versioned map until the equivalent Silver policy dataset is selected
+    through the catalog.
+    """
+    path = Path(policy_directory) / f"canonical_week_{season}_v1.yaml"
+    if not path.is_file():
+        return {}
+    spec = load_week_policy_spec(path)
+    if spec.season != season:
+        raise ValueError(f"Week policy {path} targets {spec.season}, not {season}")
+    return {
+        assignment.game_id: assignment.canonical_week for assignment in spec.assignments
+    }
+
+
 def build_policy_rows(
     games: pd.DataFrame, spec: WeekPolicySpec, *, season: int
 ) -> pd.DataFrame:

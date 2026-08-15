@@ -302,3 +302,8 @@ conf/local.yaml
 
 # Node (root workspace; web/ has its own .gitignore)
 node_modules/
+
+# Antigravity CLI
+.antigravitycli/
+.vercel
+.env*

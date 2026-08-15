@@ -1,7 +1,10 @@
+import json
+
 import pandas as pd
 
+from cks_picks_cfb.data.lake import DatasetRef
 from cks_picks_cfb.models.training_policy import policy_from_mapping
-from cks_picks_cfb.ops.data_audit import audit_feature_frame
+from cks_picks_cfb.ops.data_audit import audit_feature_frame, result_json
 
 
 def _policy():
@@ -88,3 +91,50 @@ def test_data_audit_fails_for_2020_lineage_and_duplicate_game():
     assert not result.passed
     assert not result.checks["temporal_lineage"]
     assert not result.checks["unique_game_keys"]
+
+
+def test_data_audit_allows_2026_inference_rows():
+    frame = pd.DataFrame(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "spread_target": 1.0,
+                "total_target": 50.0,
+                "prior_source_season": 2019,
+                "prior_season_gap": 2,
+                "home_completed_games": 0,
+                "away_completed_games": 0,
+                "prediction_regime": "preseason",
+                "baseline_spread_prediction": 0.0,
+                "baseline_total_prediction": 50.0,
+                "home_prior_adj_off_epa_pp": 0.1,
+                "away_prior_adj_off_epa_pp": 0.1,
+                "home_adj_off_epa_pp": 0.2,
+                "away_adj_off_epa_pp": 0.2,
+            },
+            {
+                "season": 2026,
+                "game_id": 2,
+                "spread_target": None,
+                "total_target": None,
+                "prior_source_season": 2025,
+                "prior_season_gap": 1,
+                "home_completed_games": 0,
+                "away_completed_games": 0,
+                "prediction_regime": "preseason",
+                "baseline_spread_prediction": None,
+                "baseline_total_prediction": None,
+                "home_prior_adj_off_epa_pp": 0.1,
+                "away_prior_adj_off_epa_pp": 0.1,
+                "home_adj_off_epa_pp": None,
+                "away_adj_off_epa_pp": None,
+            },
+        ]
+    )
+    result = audit_feature_frame(frame, _policy(), mode="structural")
+    assert result.checks["temporal_lineage"]
+    payload = json.loads(
+        result_json(DatasetRef("test", "v1", "1", "abc", "test.parquet"), result)
+    )
+    assert payload["checks"]["temporal_lineage"] is True

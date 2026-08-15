@@ -15,6 +15,32 @@ from uuid import uuid4
 import psycopg
 
 
+class _NumpySafeEncoder(json.JSONEncoder):
+    """Serialize numpy scalar types that the default encoder rejects."""
+
+    def default(self, obj: Any) -> Any:
+        # Import lazily so numpy is optional at import time.
+        try:
+            import numpy as np  # noqa: PLC0415
+
+            if isinstance(obj, np.bool_):
+                return bool(obj)
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+        except ImportError:
+            pass
+        return super().default(obj)
+
+
+def _json_dumps(value: Any) -> str:
+    """json.dumps with numpy scalar support."""
+    return json.dumps(value, cls=_NumpySafeEncoder)
+
+
 class StepState(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
@@ -174,13 +200,13 @@ class PostgresStateStore:
                 "UPDATE ops.pipeline_steps SET state = 'succeeded', "
                 "output_refs = %s::jsonb, finished_at = NOW() "
                 "WHERE pipeline_run_id = %s AND step_name = %s",
-                (json.dumps(list(outputs)), context.pipeline_run_id, step.name),
+                (_json_dumps(list(outputs)), context.pipeline_run_id, step.name),
             )
             if step.name == "snapshot_inputs":
                 cur.execute(
                     "UPDATE ops.pipeline_runs SET input_refs = %s::jsonb "
                     "WHERE pipeline_run_id = %s",
-                    (json.dumps(list(outputs)), context.pipeline_run_id),
+                    (_json_dumps(list(outputs)), context.pipeline_run_id),
                 )
         self.conn.commit()
 
@@ -331,7 +357,7 @@ class StateMachine:
         **extra: Any,
     ) -> None:
         self.logger(
-            json.dumps(
+            _json_dumps(
                 {
                     "timestamp": self._clock().isoformat(),
                     "pipeline_run_id": context.pipeline_run_id,
@@ -340,8 +366,7 @@ class StateMachine:
                     "step": step,
                     "state": state,
                     **extra,
-                },
-                sort_keys=True,
+                }
             )
         )
 

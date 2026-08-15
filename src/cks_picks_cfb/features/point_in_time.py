@@ -29,6 +29,8 @@ def build_temporal_matchup_inputs(
     team_game: pd.DataFrame,
     *,
     prior_2019: pd.DataFrame,
+    outcomes: pd.DataFrame | None = None,
+    inference_seasons: frozenset[int] = frozenset(),
     alpha: float = 0.5,
 ) -> pd.DataFrame:
     """Build deterministic pre-kickoff current/prior matchup feature blocks."""
@@ -46,6 +48,39 @@ def build_temporal_matchup_inputs(
     games["start_date"] = pd.to_datetime(games["start_date"], utc=True, errors="raise")
     if 2020 in set(games["season"].astype(int)):
         raise ValueError("2020 is excluded from temporal matchup inputs")
+    if outcomes is not None:
+        outcome_required = {
+            "season",
+            "game_id",
+            "completed",
+            "home_points",
+            "away_points",
+        }
+        if missing := sorted(outcome_required - set(outcomes.columns)):
+            raise ValueError(f"Outcomes are missing temporal fields: {missing}")
+        outcome_values = outcomes[list(outcome_required)].copy()
+        if outcome_values.duplicated(["season", "game_id"]).any():
+            raise ValueError("Outcomes contain duplicate season/game_id keys")
+        games = games.drop(
+            columns=[
+                column
+                for column in outcome_required - {"season", "game_id"}
+                if column in games
+            ]
+        ).merge(
+            outcome_values,
+            on=["season", "game_id"],
+            how="left",
+            validate="one_to_one",
+        )
+    if inference_seasons:
+        historical = ~games["season"].astype(int).isin(inference_seasons)
+        completed = games.get("completed", pd.Series(False, index=games.index))
+        scores_present = games.get("home_points", pd.Series(index=games.index)).notna()
+        scores_present &= games.get("away_points", pd.Series(index=games.index)).notna()
+        games = games.loc[
+            ~historical | (completed.eq(True).fillna(False) & scores_present)
+        ].copy()
     sides = pd.concat(
         [
             games[

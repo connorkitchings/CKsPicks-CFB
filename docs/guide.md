@@ -123,6 +123,7 @@ plan supersedes it for the 2026 season.
 
 - [Project Roadmap](planning/roadmap.md) — High-level strategy and timeline
 - [Active Initiatives](planning/) — Current research and development tracks
+- [Implementation Contracts](plans/index.md) — Approved task-level Sol-to-Terra handoffs
 - [Points-For Model (Archive)](archive/points_for_model.md) — Historical: rejected architecture
 
 ### Research

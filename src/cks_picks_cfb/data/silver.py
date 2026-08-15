@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import re
@@ -299,6 +300,28 @@ def normalize_market_quotes(
     for record in records:
         row = dict(record)
         line = row.pop("line_data", None)
+        if isinstance(line, str):
+            try:
+                decoded = ast.literal_eval(line)
+            except (SyntaxError, ValueError) as exc:
+                raise SilverValidationError(
+                    "market quote line_data is not a valid mapping"
+                ) from exc
+            if not isinstance(decoded, Mapping):
+                raise SilverValidationError("market quote line_data is not a mapping")
+            line = decoded
+        nested_lines = row.pop("lines", None)
+        if isinstance(nested_lines, Sequence) and not isinstance(
+            nested_lines, (str, bytes)
+        ):
+            for nested_line in nested_lines:
+                if not isinstance(nested_line, Mapping):
+                    continue
+                nested_row = dict(row)
+                nested_row.update(nested_line)
+                nested_row.setdefault("game_id", nested_row.get("id"))
+                flattened.append(nested_row)
+            continue
         if isinstance(line, Mapping):
             row.update(line)
         if (
@@ -322,6 +345,16 @@ def normalize_market_quotes(
             row["quote_id"] = hashlib.sha256(identity.encode()).hexdigest()[:32]
         flattened.append(row)
     frame = _rename_common(pd.DataFrame.from_records(flattened))
+    frame = frame.rename(
+        columns={
+            "formattedSpread": "formatted_spread",
+            "spreadOpen": "spread_open",
+            "overUnder": "over_under",
+            "overUnderOpen": "over_under_open",
+            "homeMoneyline": "home_moneyline",
+            "awayMoneyline": "away_moneyline",
+        }
+    )
     required = SILVER_CONTRACTS["market_quotes"].required_columns
     missing = sorted(required - set(frame.columns))
     if missing:
@@ -332,7 +365,7 @@ def normalize_market_quotes(
         frame["captured_at"], utc=True, errors="raise"
     )
     if "over_under" in frame and "total" not in frame:
-        frame = frame.rename(columns={"over_under": "total"})
+        frame["total"] = frame["over_under"]
     if games is not None and "season" not in frame:
         frame = frame.merge(
             games[["game_id", "season", "week"]].drop_duplicates("game_id"),

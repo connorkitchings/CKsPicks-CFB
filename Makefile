@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly export-pickem
 
 # Default target
 help:
@@ -129,6 +129,9 @@ inventory-source:
 import-history:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops import-history --year 2026 --environment preview $(if $(PREFIX),--prefix $(PREFIX),)
 
+hydrate-history:
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops hydrate-history --year 2026 --environment preview $(if $(PREFIX),--prefix $(PREFIX),)
+
 import-history-silver:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops import-history --year 2026 --environment preview --skip-imports $(if $(PREFIX),--prefix $(PREFIX),)
 
@@ -156,19 +159,19 @@ preflight:
 		echo "Usage: make preflight YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
 	fi
 	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
-	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK) --as-of $(AS_OF)
+	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) $(if $(CONFIG),--config $(CONFIG),)
 
 readiness:
 	@if [ "$(ENV)" != "preview" ]; then \
-		echo "Usage: make readiness YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DD ENV=preview"; exit 1; \
+		echo "Usage: make readiness YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview [CONFIG=conf/weekly_bets/v2_preview_2026.yaml]"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
 
 publish-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
 		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(or $(ENV),production)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(or $(ENV),production) $(if $(CONFIG),--config $(CONFIG),)
 
 freeze-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
@@ -245,9 +248,9 @@ train-champion:
 
 export-pickem:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make export-pickem YEAR=2026 WEEK=0 [SUBMIT=1]"; exit 1; \
+		echo "Usage: make export-pickem YEAR=2026 WEEK=0 [VALIDATE=1] [DRY_RUN=1] [SUBMIT=1]"; exit 1; \
 	fi
-	PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py --year $(YEAR) --week $(WEEK) $(if $(SUBMIT),--submit-api,)
+	PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py --year $(YEAR) --week $(WEEK) $(if $(VALIDATE),--validate-api,) $(if $(DRY_RUN),--dry-run,) $(if $(SUBMIT),--submit-api,)
 
 # Clean cache files
 clean:

@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import (
     register_dataset_version,
+    register_existing_dataset_ref,
     source_capture_by_id,
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset, read_source_capture
@@ -107,6 +108,7 @@ def main() -> None:
         raise SystemExit("DATABASE_URL is required")
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
+        register_existing_dataset_ref(conn_url, storage, args.output_ref_uri)
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     source_entity = SOURCE_ENTITIES[args.dataset]

@@ -22,6 +22,7 @@ def main() -> None:
     parser.add_argument("--week", type=int, required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--pipeline-run-id", required=True)
+    parser.add_argument("--market-ref-uri")
     args = parser.parse_args()
     cutoff = datetime.fromisoformat(args.as_of)
     if "T" not in args.as_of:
@@ -36,17 +37,22 @@ def main() -> None:
     inputs = (
         ("games", "games"),
         ("betting_lines", "market_snapshots"),
-        ("team_game", "reconciled_team_game"),
         ("point_in_time_matchups", "point_in_time_matchups"),
     )
     refs = []
     for entity, dataset in inputs:
-        ref = dataset_ref_for_partition_as_of(
-            conn_url,
-            dataset,
-            cutoff_iso,
-            partitions={"seasons": [args.year]},
-        )
+        if dataset == "market_snapshots" and args.market_ref_uri:
+            raw_ref = json.loads(storage.read_bytes(args.market_ref_uri).decode())
+            from cks_picks_cfb.data.lake import DatasetRef
+
+            ref = DatasetRef(**raw_ref)
+        else:
+            ref = dataset_ref_for_partition_as_of(
+                conn_url,
+                dataset,
+                cutoff_iso,
+                partitions={"seasons": [args.year]},
+            )
         refs.append(
             {
                 "entity": entity,

@@ -13,7 +13,7 @@ from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import StorageBackend
 from cks_picks_cfb.models.training_policy import (
     TrainingPolicy,
-    validate_feature_lineage,
+    labeled_training_frame,
 )
 
 
@@ -56,17 +56,22 @@ def audit_feature_frame(
         errors.append(f"missing columns: {missing}")
         return AuditResult(False, checks, {}, tuple(errors))
     try:
-        validate_feature_lineage(frame, policy)
+        # Validate live inference rows without labeling them, then apply the
+        # stricter 2021-2025 contract only to the training slice.
+        labeled = labeled_training_frame(frame, policy)
         checks["temporal_lineage"] = True
     except ValueError as exc:
         checks["temporal_lineage"] = False
         errors.append(str(exc))
-    labeled = frame[frame["season"].isin(policy.labeled_years)]
+        labeled = frame.iloc[0:0].copy()
     observed_years = tuple(sorted(labeled["season"].astype(int).unique()))
     checks["labeled_year_coverage"] = observed_years == policy.labeled_years
     if not checks["labeled_year_coverage"]:
         errors.append(f"labeled season coverage is {observed_years}")
-    duplicates = labeled.duplicated(["season", "game_id"]).sum()
+    # Key uniqueness is a dataset-level invariant, including future inference
+    # rows. Target/reproducibility checks below intentionally only use labeled
+    # historical rows.
+    duplicates = frame.duplicated(["season", "game_id"]).sum()
     checks["unique_game_keys"] = duplicates == 0
     if duplicates:
         errors.append(f"duplicate season/game_id rows: {duplicates}")
@@ -194,11 +199,7 @@ def audit_catalog(
         and 0
         in set(pd.to_numeric(schedule["week"], errors="coerce").dropna().astype(int))
     )
-    required_silver = {
-        "games",
-        "plays",
-        "team_game_stats",
-    }
+    required_silver = {"games", "plays", "reconciled_team_game"}
     legacy_query = (
         "SELECT COALESCE(SUM(dv.row_count), 0) FROM catalog.dataset_versions dv "
         "WHERE dv.dataset = 'legacy_market_references' AND dv.tier = 'silver' "
@@ -230,10 +231,26 @@ def audit_catalog(
             )
             blocking_reconciliations = int(cur.fetchone()[0])
             cur.execute(
+                "WITH RECURSIVE ancestry(child_version_id, ancestor_version_id) AS ("
+                "  SELECT dv.version_id, dv.version_id "
+                "  FROM catalog.dataset_versions dv "
+                "  WHERE dv.tier = 'silver' AND dv.state = 'validated' "
+                "  UNION "
+                "  SELECT ancestry.child_version_id, dependency.parent_version_id "
+                "  FROM ancestry "
+                "  JOIN catalog.dataset_dependencies dependency "
+                "    ON dependency.child_version_id = ancestry.ancestor_version_id"
+                "), linked AS ("
+                "  SELECT DISTINCT ancestry.child_version_id "
+                "  FROM ancestry "
+                "  JOIN catalog.dataset_capture_dependencies capture_dependency "
+                "    ON capture_dependency.child_version_id = ancestry.ancestor_version_id"
+                ") "
                 "SELECT COUNT(*) FROM catalog.dataset_versions dv "
                 "WHERE dv.tier = 'silver' AND dv.state = 'validated' "
-                "AND NOT EXISTS (SELECT 1 FROM catalog.dataset_capture_dependencies dcd "
-                "WHERE dcd.child_version_id = dv.version_id)"
+                "AND NOT EXISTS ("
+                "  SELECT 1 FROM linked WHERE linked.child_version_id = dv.version_id"
+                ")"
             )
             unlinked_silver_versions = int(cur.fetchone()[0])
     checks = {
@@ -385,8 +402,17 @@ def audit_exact_markets(
 
 
 def result_json(ref: DatasetRef, result: AuditResult) -> str:
+    def json_default(value: object) -> object:
+        """Convert scalar values returned by pandas/numpy to JSON primitives."""
+        if hasattr(value, "item"):
+            return value.item()  # type: ignore[no-any-return]
+        raise TypeError(
+            f"Object of type {type(value).__name__} is not JSON serializable"
+        )
+
     return json.dumps(
         {"dataset_ref": asdict(ref), **result.to_dict()},
         indent=2,
         sort_keys=True,
+        default=json_default,
     )

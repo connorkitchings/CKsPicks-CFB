@@ -13,7 +13,11 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
-from cks_picks_cfb.data.catalog import register_dataset_version
+from cks_picks_cfb.data.catalog import (
+    catalog_connection_url,
+    register_dataset_version,
+    register_existing_dataset_ref,
+)
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
@@ -41,6 +45,14 @@ def main() -> None:
     parser.add_argument("--team-game-ref-uri", required=True)
     parser.add_argument("--schedule-ref-uri", required=True)
     parser.add_argument("--prior-2019-ref-uri", required=True)
+    parser.add_argument("--outcomes-ref-uri")
+    parser.add_argument(
+        "--inference-season",
+        action="append",
+        type=int,
+        default=[],
+        help="Season retained without completed historical outcomes (repeatable).",
+    )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument(
@@ -51,15 +63,23 @@ def main() -> None:
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
+        register_existing_dataset_ref(
+            catalog_connection_url(args.environment), storage, args.output_ref_uri
+        )
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     team_game_ref = _ref(storage, args.team_game_ref_uri)
     schedule_ref = _ref(storage, args.schedule_ref_uri)
     prior_ref = _ref(storage, args.prior_2019_ref_uri)
+    outcomes_ref = (
+        _ref(storage, args.outcomes_ref_uri) if args.outcomes_ref_uri else None
+    )
     result = build_temporal_matchup_inputs(
         read_dataset(storage, schedule_ref),
         read_dataset(storage, team_game_ref),
         prior_2019=read_dataset(storage, prior_ref),
+        outcomes=(read_dataset(storage, outcomes_ref) if outcomes_ref else None),
+        inference_seasons=frozenset(args.inference_season),
     )
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
@@ -68,7 +88,12 @@ def main() -> None:
         storage,
         build=BuildRequest(
             dataset="temporal_matchup_inputs",
-            parent_refs=(team_game_ref, schedule_ref, prior_ref),
+            parent_refs=(
+                team_game_ref,
+                schedule_ref,
+                prior_ref,
+                *((outcomes_ref,) if outcomes_ref else ()),
+            ),
             code_sha=_code_sha(),
             config_sha=hashlib.sha256(
                 b"temporal_matchup_inputs_alpha_0.5_v1"

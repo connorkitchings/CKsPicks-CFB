@@ -187,6 +187,41 @@ def _import_history_action(conn_url: str, source, destination, item):
     return action
 
 
+def _hydrate_history_action(conn_url: str, destination, eligible):
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        from cks_picks_cfb.data.catalog import begin_ingestion_run, finish_ingestion_run
+        from cks_picks_cfb.data.history import hydrate_historical_catalog
+
+        ingestion_run_id = f"hydrate-history-{context.pipeline_run_id}"
+        begin_ingestion_run(
+            conn_url,
+            ingestion_run_id=ingestion_run_id,
+            provider="preview_r2",
+            entity="historical_catalog",
+            request={"operation": "hydrate_existing_preview_observations"},
+        )
+        try:
+            result = hydrate_historical_catalog(
+                destination=destination,
+                conn_url=conn_url,
+                eligible=eligible,
+                ingestion_run_id=ingestion_run_id,
+            )
+            finish_ingestion_run(conn_url, ingestion_run_id, succeeded=True)
+            return (result,)
+        except Exception as exc:
+            finish_ingestion_run(
+                conn_url,
+                ingestion_run_id,
+                succeeded=False,
+                error_category=type(exc).__name__,
+                error_detail=str(exc),
+            )
+            raise
+
+    return action
+
+
 def _history_silver_steps(environment: str = "preview") -> list[PipelineStep]:
     """Return the deterministic all-years Silver build sequence."""
     as_of = "2026-08-09T23:59:59Z"
@@ -431,11 +466,18 @@ def build_steps(
     week = context.week
     as_of = context.as_of
     environment = context.environment
-    if context.command in {"inventory-source", "import-history"}:
+    if context.command in {"inventory-source", "import-history", "hydrate-history"}:
         assert options is not None
         prefix = options.prefix or ""
         source, destination, _, eligible = _history_objects(prefix)
         steps = [PipelineStep("inventory_source", _inventory_source_action(prefix))]
+        if context.command == "hydrate-history":
+            return [
+                PipelineStep(
+                    "hydrate_existing_preview_observations",
+                    _hydrate_history_action(conn_url, destination, eligible),
+                )
+            ]
         if context.command == "import-history":
             steps.append(
                 subprocess_step(
@@ -596,6 +638,7 @@ def build_steps(
         ]
     if context.command == "readiness":
         assert week is not None and as_of is not None
+        config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
         return [
             subprocess_step(
                 "preflight",
@@ -607,6 +650,8 @@ def build_steps(
                     week,
                     "--as-of",
                     as_of,
+                    "--config",
+                    config,
                 ),
             ),
             subprocess_step("contracts", _python("contracts/validation.py")),
@@ -622,6 +667,11 @@ def build_steps(
             f"artifacts/{context.environment}/pipeline-runs/"
             f"{context.pipeline_run_id}/input_refs.json"
         )
+        market_ref_uri = (
+            f"artifacts/{context.environment}/pipeline-runs/"
+            f"{context.pipeline_run_id}/market_snapshots_ref.json"
+        )
+        config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
         return [
             subprocess_step(
                 "preflight",
@@ -633,6 +683,8 @@ def build_steps(
                     week,
                     "--as-of",
                     as_of,
+                    "--config",
+                    config,
                 ),
             ),
             PipelineStep(
@@ -648,9 +700,9 @@ def build_steps(
                     "games",
                 ),
             ),
-            subprocess_step(
-                "ingest_market",
-                _python(
+            _fetch_source_step(
+                name="ingest_market",
+                argv=_python(
                     "scripts/data/ingest_week.py",
                     "--year",
                     year,
@@ -658,6 +710,24 @@ def build_steps(
                     week,
                     "--entities",
                     "betting_lines",
+                ),
+                conn_url=conn_url,
+                entity="betting_lines",
+            ),
+            subprocess_step(
+                "build_market_snapshot",
+                _python(
+                    "scripts/pipeline/build_week_market_snapshot.py",
+                    "--year",
+                    year,
+                    "--week",
+                    week,
+                    "--as-of",
+                    as_of,
+                    "--pipeline-run-id",
+                    context.pipeline_run_id,
+                    "--output-ref-uri",
+                    market_ref_uri,
                 ),
             ),
             _snapshot_inputs_step(
@@ -671,6 +741,8 @@ def build_steps(
                     as_of,
                     "--pipeline-run-id",
                     context.pipeline_run_id,
+                    "--market-ref-uri",
+                    market_ref_uri,
                 ),
                 dataset_refs_uri,
             ),
@@ -688,6 +760,8 @@ def build_steps(
                     context.prediction_run_id,
                     "--run-state",
                     "preview",
+                    "--config",
+                    config,
                     "--dataset-refs-uri",
                     dataset_refs_uri,
                     "--upload-artifact",
@@ -706,6 +780,8 @@ def build_steps(
                     "--state",
                     "published",
                     "--from-artifact",
+                    "--config",
+                    config,
                 ),
             ),
         ]
@@ -862,7 +938,7 @@ def _audit_data_action(conn_url: str, *, mode: str):
             return [
                 {
                     "dataset": ref.dataset,
-                    "checks": dict(result.checks),
+                    "checks": {k: bool(v) for k, v in result.checks.items()},
                     "coverage": dict(result.coverage),
                 }
             ]
@@ -879,7 +955,7 @@ def _audit_data_action(conn_url: str, *, mode: str):
             {
                 "dataset": ref.dataset,
                 "version_id": ref.version_id,
-                "checks": dict(result.checks),
+                "checks": {k: bool(v) for k, v in result.checks.items()},
             }
         ]
 
@@ -892,6 +968,7 @@ def parse_args() -> argparse.Namespace:
     for command in (
         "inventory-source",
         "import-history",
+        "hydrate-history",
         "fetch-source",
         "build-silver",
         "build-team-game",
@@ -911,6 +988,7 @@ def parse_args() -> argparse.Namespace:
         if command not in {
             "inventory-source",
             "import-history",
+            "hydrate-history",
             "replay-season",
             "reconcile",
             "audit-data",
@@ -932,6 +1010,12 @@ def parse_args() -> argparse.Namespace:
             "assemble-model-ready",
         }:
             sub.add_argument("--as-of", required=True)
+        if command in {"readiness", "publish-week"}:
+            sub.add_argument(
+                "--config",
+                default="conf/weekly_bets/v2_champion.yaml",
+                help="Weekly model configuration used by preflight and publication.",
+            )
         sub.add_argument(
             "--environment", choices=("preview", "production"), required=True
         )
@@ -942,7 +1026,7 @@ def parse_args() -> argparse.Namespace:
         if command == "fetch-source":
             sub.add_argument("--entity", required=True)
             sub.add_argument("--week", type=int)
-        if command in {"inventory-source", "import-history"}:
+        if command in {"inventory-source", "import-history", "hydrate-history"}:
             sub.add_argument("--prefix", default="")
             if command == "import-history":
                 sub.add_argument(
@@ -1006,7 +1090,7 @@ def main() -> None:
     if args.environment == "preview" and conn_url == production_url:
         raise SystemExit("PREVIEW_DATABASE_URL must differ from DATABASE_URL")
     if (
-        args.command in {"inventory-source", "import-history"}
+        args.command in {"inventory-source", "import-history", "hydrate-history"}
         and args.environment != "preview"
     ):
         raise SystemExit(

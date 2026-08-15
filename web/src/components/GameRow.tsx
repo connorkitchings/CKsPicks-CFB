@@ -27,6 +27,9 @@ function marketSpreadLabel(homeTeam: string, line: number | null): string {
 }
 
 export function GameRow({ game }: { game: Game }) {
+  if (game.publicationMode === "market") {
+    return <MarketGameRow game={game} />;
+  }
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const hasAnyLine = game.homeTeamSpreadLine !== null || game.totalLine !== null;
   const regimeLabel = {
@@ -165,6 +168,40 @@ export function GameRow({ game }: { game: Game }) {
       {(game.spreadModelVersion || game.totalModelVersion) && (
         <div className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-600">
           Spread {game.spreadModelVersion ?? "—"} · Total {game.totalModelVersion ?? "—"}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function MarketGameRow({ game }: { game: Extract<Game, { publicationMode: "market" }> }) {
+  const hasResults = game.homePoints !== null && game.awayPoints !== null;
+  return (
+    <li className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+        {formatKickoff(game.startDate)}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+        <div className="space-y-2">
+          <TeamLine name={game.awayTeam} role="away" highlighted={false} />
+          <TeamLine name={game.homeTeam} role="home" highlighted={false} />
+        </div>
+        <div className="text-right text-xs">
+          <div className="text-zinc-400 dark:text-zinc-500">Market</div>
+          <div className="font-mono text-zinc-700 dark:text-zinc-300">
+            {marketSpreadLabel(game.homeTeam, game.homeTeamSpreadLine)}
+          </div>
+          <div className="font-mono text-zinc-700 dark:text-zinc-300">
+            {game.totalLine === null ? "O/U unavailable" : `O/U ${game.totalLine.toFixed(1)}`}
+          </div>
+        </div>
+      </div>
+      {hasResults && (
+        <div className="mt-3 border-t border-zinc-100 pt-3 text-xs dark:border-zinc-900">
+          <span className="text-zinc-500 dark:text-zinc-400">Final: </span>
+          <span className="font-mono font-semibold">
+            {game.awayPoints}–{game.homePoints}
+          </span>
         </div>
       )}
     </li>

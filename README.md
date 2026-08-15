@@ -197,10 +197,13 @@ This project is designed for AI-assisted development with clear guardrails:
 **For AI assistants:**
 
 1. Read [AGENTS.md](./AGENTS.md) first - Contains critical rules
-2. Verify data root configuration before any data operations
+2. Verify the task-relevant storage configuration before any data operations
 3. Review recent session logs (`session_logs/` last 3 days)
-4. Propose plan before implementing
-5. Create session log at end of work
+4. Use a Sol implementation contract for architectural, data/model, schema, production, security, or multi-component work
+5. Use a fresh Terra task to implement an approved contract; use the fast path for established localized changes
+6. Create a session log at the end of every planning or implementation session
+
+Task-level implementation contracts live in [`docs/plans/`](./docs/plans/); strategic roadmaps remain in [`docs/planning/`](./docs/planning/). See [AGENTS.md](./AGENTS.md) for the lifecycle and handoff rules.
 
 **For humans:**
 

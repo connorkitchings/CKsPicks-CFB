@@ -2,10 +2,7 @@ import { desc, eq, asc, and, inArray, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 
-/** Shape of a game row returned by getGamesForWeek (prediction + optional result). */
-export type Game = {
-  runId: string | null;
-  runState: "preview" | "published" | "frozen" | "scored" | "legacy";
+type BaseGame = {
   gameId: number;
   season: number;
   week: number;
@@ -14,6 +11,21 @@ export type Game = {
   awayTeam: string;
   homeTeamSpreadLine: number | null;
   totalLine: number | null;
+  updatedAt: Date;
+  homePoints: number | null;
+  awayPoints: number | null;
+};
+
+/** Public-safe schedule and market projection with no model-only fields. */
+export type MarketGame = BaseGame & {
+  publicationMode: "market";
+};
+
+/** Prediction-bearing projection, selected only after explicit publication opt-in. */
+export type PredictionGame = BaseGame & {
+  publicationMode: "predictions";
+  runId: string | null;
+  runState: "preview" | "published" | "frozen" | "scored" | "legacy";
   predictedSpread: number | null;
   predictedTotal: number | null;
   predictedSpreadStdDev: number | null;
@@ -30,12 +42,11 @@ export type Game = {
   awayCompletedGames: number;
   spreadModelVersion: string | null;
   totalModelVersion: string | null;
-  updatedAt: Date;
-  homePoints: number | null;
-  awayPoints: number | null;
   spreadResult: "win" | "loss" | "push" | null;
   totalResult: "win" | "loss" | "push" | null;
 };
+
+export type Game = MarketGame | PredictionGame;
 
 /** YTD system record shape. */
 export type Stats = {
@@ -174,7 +185,11 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
       .where(eq(schema.predictions.runId, run.runId))
       .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
-    return rows.map((row) => ({ ...row, runState: run.state })) as Game[];
+    return rows.map((row) => ({
+      ...row,
+      publicationMode: "predictions" as const,
+      runState: run.state,
+    })) as PredictionGame[];
   }
 
   // Temporary compatibility path for rows published before run versioning.
@@ -220,6 +235,7 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
     .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
   return rows.map((row) => ({
     ...row,
+    publicationMode: "predictions" as const,
     runId: null,
     runState: "legacy" as const,
     regime: null,
@@ -227,7 +243,34 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
     awayCompletedGames: 0,
     spreadModelVersion: null,
     totalModelVersion: null,
-  })) as Game[];
+  })) as PredictionGame[];
+}
+
+/** Schedule + current published market lines without selecting model output. */
+export async function getMarketGamesForWeek(
+  season: number,
+  week: number,
+): Promise<MarketGame[]> {
+  const rows = await db
+    .select({
+      gameId: schema.games.gameId,
+      season: schema.games.season,
+      week: schema.games.week,
+      startDate: schema.games.startDate,
+      homeTeam: schema.games.homeTeam,
+      awayTeam: schema.games.awayTeam,
+      homeTeamSpreadLine: schema.games.homeTeamSpreadLine,
+      totalLine: schema.games.totalLine,
+      updatedAt: schema.games.updatedAt,
+      homePoints: schema.gameResults.homePoints,
+      awayPoints: schema.gameResults.awayPoints,
+    })
+    .from(schema.games)
+    .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+    .where(and(eq(schema.games.season, season), eq(schema.games.week, week)))
+    .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
+
+  return rows.map((row) => ({ ...row, publicationMode: "market" as const }));
 }
 
 /** YTD system record for a season (win/loss/push for spreads and totals). */

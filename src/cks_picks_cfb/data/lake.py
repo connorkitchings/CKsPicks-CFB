@@ -189,12 +189,33 @@ def capture_provider_records(
     canonical_records = json.loads(canonical_payload.decode("utf-8"))
     payload = parquet_bytes(canonical_records)
     content_sha = _sha256(canonical_payload)
-    object_sha = _sha256(payload)
     prefix = (
         f"lake/bronze/provider={provider}/entity={entity}/content_sha={content_sha}"
     )
     data_uri = f"{prefix}/data.parquet"
-    _write_immutable(storage, data_uri, payload)
+    object_sha = _sha256(payload)
+    if storage.exists(data_uri):
+        existing = storage.read_bytes(data_uri)
+        object_sha = _sha256(existing)
+        if existing != payload:
+            # Parquet bytes are not stable across library versions, while this
+            # prefix is keyed by the canonical record payload. A prior capture
+            # that records the same canonical content is therefore safe to
+            # reuse during a catalog-only bootstrap of a schema-only branch.
+            observations = storage.list_files(f"{prefix}/observations")
+            matching_observation = False
+            for observation_uri in observations:
+                try:
+                    observation = json.loads(storage.read_bytes(observation_uri))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
+                if observation.get("content_sha") == content_sha:
+                    matching_observation = True
+                    break
+            if not matching_observation:
+                raise StorageError(f"Immutable object collision at {data_uri}")
+    else:
+        storage.write_bytes(payload, data_uri)
 
     capture = SourceCapture(
         capture_id=capture_id or uuid4().hex,
@@ -214,7 +235,12 @@ def capture_provider_records(
     observation = asdict(capture)
     observation["captured_at"] = captured_at.isoformat()
     observation["effective_at"] = effective_at.isoformat() if effective_at else None
-    _write_immutable(storage, observation_uri, _canonical_json(observation))
+    if storage.exists(observation_uri):
+        existing_observation = json.loads(storage.read_bytes(observation_uri))
+        if existing_observation.get("content_sha") != content_sha:
+            raise StorageError(f"Immutable object collision at {observation_uri}")
+    else:
+        _write_immutable(storage, observation_uri, _canonical_json(observation))
     return capture
 
 
@@ -461,7 +487,8 @@ def canonicalize_market_quotes_frame(quotes: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for game_id, group in quotes.sort_index().groupby("game_id", sort=True):
         spread, spread_rule, spread_count, spread_ids = choose(group, "spread")
-        total, total_rule, total_count, total_ids = choose(group, "over_under")
+        total_column = "over_under" if "over_under" in group else "total"
+        total, total_rule, total_count, total_ids = choose(group, total_column)
         quote_ids = list(dict.fromkeys(spread_ids + total_ids))
         snapshot_payload = {
             "game_id": int(game_id),

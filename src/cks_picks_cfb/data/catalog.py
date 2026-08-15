@@ -3,12 +3,135 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict
 from typing import Any, Mapping
 
 import psycopg
 
 from cks_picks_cfb.data.lake import DatasetManifest, DatasetRef, SourceCapture
+from cks_picks_cfb.data.storage import StorageBackend
+
+
+def catalog_connection_url(environment: str) -> str:
+    """Resolve the catalog connection without allowing Preview to fall into production."""
+    if environment == "preview":
+        conn_url = os.getenv("PREVIEW_DATABASE_URL")
+        if not conn_url:
+            raise RuntimeError("PREVIEW_DATABASE_URL is required for Preview catalog access")
+        return conn_url
+    if environment != "production":
+        raise ValueError(f"Unsupported catalog environment: {environment}")
+    conn_url = os.getenv("DATABASE_URL")
+    if not conn_url:
+        raise RuntimeError("DATABASE_URL is required for production catalog access")
+    return conn_url
+
+
+def register_existing_dataset_ref(
+    conn_url: str,
+    storage: StorageBackend,
+    ref_uri: str,
+) -> DatasetRef:
+    """Verify and register an immutable dataset that was built in an earlier run."""
+    raw_ref = json.loads(storage.read_bytes(ref_uri).decode("utf-8"))
+    ref = DatasetRef(
+        dataset=str(raw_ref["dataset"]),
+        version_id=str(raw_ref["version_id"]),
+        schema_version=str(raw_ref["schema_version"]),
+        content_sha=str(raw_ref["content_sha"]),
+        uri=str(raw_ref["uri"]),
+    )
+    manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
+    raw_manifest = json.loads(storage.read_bytes(manifest_uri).decode("utf-8"))
+    manifest = _dataset_manifest(raw_manifest)
+    _verify_ref_manifest(ref, manifest, ref_uri)
+
+    manifest_paths = {
+        path.rsplit("/version=", 1)[-1].split("/", 1)[0]: path
+        for path in storage.list_files("lake/")
+        if path.endswith("/manifest.json") and "/version=" in path
+    }
+    _register_manifest_ancestry(
+        conn_url,
+        storage,
+        ref,
+        manifest,
+        manifest_paths=manifest_paths,
+        registered=set(),
+    )
+    return ref
+
+
+def _dataset_manifest(raw_manifest: Mapping[str, Any]) -> DatasetManifest:
+    raw_manifest = dict(raw_manifest)
+    raw_manifest["parent_versions"] = tuple(raw_manifest.get("parent_versions", ()))
+    raw_manifest["source_capture_ids"] = tuple(
+        raw_manifest.get("source_capture_ids", ())
+    )
+    return DatasetManifest(**raw_manifest)
+
+
+def _verify_ref_manifest(
+    ref: DatasetRef, manifest: DatasetManifest, ref_uri: str
+) -> None:
+    identity = {
+        "dataset": (ref.dataset, manifest.dataset),
+        "version_id": (ref.version_id, manifest.version_id),
+        "schema_version": (ref.schema_version, manifest.schema_version),
+        "content_sha": (ref.content_sha, manifest.content_sha),
+        "uri": (ref.uri, manifest.uri),
+    }
+    mismatches = [name for name, values in identity.items() if values[0] != values[1]]
+    if mismatches:
+        raise ValueError(
+            f"Dataset ref and manifest disagree for {ref_uri}: {', '.join(mismatches)}"
+        )
+
+
+def _register_manifest_ancestry(
+    conn_url: str,
+    storage: StorageBackend,
+    ref: DatasetRef,
+    manifest: DatasetManifest,
+    *,
+    manifest_paths: Mapping[str, str],
+    registered: set[str],
+) -> None:
+    if ref.version_id in registered:
+        return
+    for parent_version in manifest.parent_versions:
+        if parent_version in registered:
+            continue
+        parent_manifest_uri = manifest_paths.get(parent_version)
+        if not parent_manifest_uri:
+            raise LookupError(
+                f"No immutable manifest found for parent version {parent_version}"
+            )
+        parent_manifest = _dataset_manifest(
+            json.loads(storage.read_bytes(parent_manifest_uri).decode("utf-8"))
+        )
+        parent_ref = DatasetRef(
+            dataset=parent_manifest.dataset,
+            version_id=parent_manifest.version_id,
+            schema_version=parent_manifest.schema_version,
+            content_sha=parent_manifest.content_sha,
+            uri=parent_manifest.uri,
+        )
+        if parent_ref.version_id != parent_version:
+            raise ValueError(
+                f"Parent manifest {parent_manifest_uri} does not match {parent_version}"
+            )
+        _register_manifest_ancestry(
+            conn_url,
+            storage,
+            parent_ref,
+            parent_manifest,
+            manifest_paths=manifest_paths,
+            registered=registered,
+        )
+    register_dataset_version(conn_url, ref, manifest)
+    registered.add(ref.version_id)
 
 
 def begin_ingestion_run(
@@ -88,6 +211,49 @@ def register_source_capture(
                 ),
             )
         conn.commit()
+
+
+def register_source_captures(
+    conn_url: str,
+    captures: list[SourceCapture],
+    *,
+    ingestion_run_id: str | None = None,
+) -> int:
+    """Register immutable observations in one transaction for catalog recovery."""
+    if not captures:
+        return 0
+    rows = [
+        (
+            capture.capture_id,
+            ingestion_run_id,
+            capture.provider,
+            capture.entity,
+            capture.captured_at,
+            capture.effective_at,
+            json.dumps(dict(capture.request)),
+            capture.content_sha,
+            capture.object_sha,
+            capture.uri,
+            capture.row_count,
+            capture.provider_api_version,
+            json.dumps(dict(capture.response_metadata)),
+        )
+        for capture in captures
+    ]
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO catalog.source_captures "
+                "(capture_id, ingestion_run_id, provider, entity, captured_at, "
+                "effective_at, request, content_sha, object_sha, uri, row_count, "
+                "provider_api_version, response_metadata, state) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, "
+                "%s, %s::jsonb, 'registered') "
+                "ON CONFLICT (capture_id) DO NOTHING",
+                rows,
+            )
+        conn.commit()
+    return len(captures)
 
 
 def register_dataset_version(

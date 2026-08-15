@@ -8,6 +8,7 @@ import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
@@ -18,7 +19,9 @@ from cks_picks_cfb.artifacts import (
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.model_bundle import load_model_artifact, load_model_bundle_v2
+from cks_picks_cfb.ops.data_audit import latest_gold_feature_ref
 from cks_picks_cfb.preseason import snapshot_is_complete
 
 REQUIRED_DB_TABLES = [
@@ -143,6 +146,26 @@ def check_deploy_config(failures: list[str]) -> None:
         _ok("web/package.json found.")
 
 
+def _parse_as_of(as_of: str) -> tuple[date, datetime]:
+    """Return the snapshot date and an inclusive UTC timestamp cutoff."""
+    if "T" not in as_of and " " not in as_of:
+        try:
+            snapshot_date = date.fromisoformat(as_of)
+        except ValueError as exc:
+            raise ValueError("AS_OF must be an ISO date or timestamp.") from exc
+        return snapshot_date, datetime.combine(
+            snapshot_date, datetime.max.time(), tzinfo=timezone.utc
+        )
+    normalized = as_of.removesuffix("Z") + ("+00:00" if as_of.endswith("Z") else "")
+    try:
+        cutoff = datetime.fromisoformat(normalized)
+    except ValueError:
+        raise ValueError("AS_OF must be an ISO date or timestamp.") from None
+    if cutoff.tzinfo is None:
+        cutoff = cutoff.replace(tzinfo=timezone.utc)
+    return cutoff.date(), cutoff.astimezone(timezone.utc)
+
+
 def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> None:
     if not config_path.is_file():
         _fail(f"Weekly configuration is missing: {config_path}", failures)
@@ -163,10 +186,10 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
                 read_dataset(storage, ref)
                 manifest_path = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
                 manifest = read_json_artifact(manifest_path, storage)
-                cutoff = datetime.fromisoformat(as_of)
-                if cutoff.tzinfo is None:
-                    cutoff = cutoff.replace(tzinfo=timezone.utc)
+                _, cutoff = _parse_as_of(as_of)
                 manifest_as_of = datetime.fromisoformat(str(manifest["as_of"]))
+                if manifest_as_of.tzinfo is None:
+                    manifest_as_of = manifest_as_of.replace(tzinfo=timezone.utc)
                 if manifest_as_of > cutoff:
                     raise ValueError(
                         f"Dataset {ref.version_id} is later than the configured cutoff"
@@ -225,16 +248,65 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
         _fail(f"Durable model bundle check failed: {exc}", failures)
 
 
-def check_week_data(year: int, week: int, as_of: str, failures: list[str]) -> None:
+def _prior_only_fallback_is_ready(
+    *, year: int, week: int, config_path: Path, failures: list[str]
+) -> bool:
+    """Verify an explicit prior-only fallback against immutable Gold inputs."""
+    cfg = OmegaConf.load(config_path)
+    preseason = cfg.get("preseason") or {}
+    if preseason.get("input_policy") != "prior_only_fallback":
+        return False
+    required = [
+        str(column) for column in preseason.get("prior_only_required_features", [])
+    ]
+    if not required:
+        _fail("prior_only_fallback has no required feature list.", failures)
+        return False
+    conn_url = os.getenv("DATABASE_URL")
+    if not conn_url:
+        _fail("DATABASE_URL is required to validate prior_only_fallback.", failures)
+        return False
     try:
-        date.fromisoformat(as_of)
-    except ValueError:
-        _fail("AS_OF must be an ISO date (YYYY-MM-DD).", failures)
+        ref = latest_gold_feature_ref(conn_url, mode="model-ready")
+        frame = read_dataset(get_storage(), ref)
+        season = pd.to_numeric(frame["season"], errors="coerce")
+        weeks = pd.to_numeric(frame["week"], errors="coerce")
+        rows = frame.loc[(season == year) & (weeks == week)]
+        missing_columns = sorted(set(required) - set(rows.columns))
+        if missing_columns or rows.empty:
+            _fail(
+                "prior_only_fallback is missing Week "
+                f"{week} Gold inputs: {missing_columns or 'no schedule rows'}",
+                failures,
+            )
+            return False
+        incomplete = rows[required].isna().any(axis=1).sum()
+        if incomplete:
+            _warn(
+                "prior_only_fallback has "
+                f"{int(incomplete)} rows requiring the frozen model imputer; "
+                "they must remain display-only."
+            )
+    except Exception as exc:
+        _fail(f"prior_only_fallback validation failed: {exc}", failures)
+        return False
+    _warn("Using explicit prior_only_fallback; high confidence must remain disabled.")
+    return True
+
+
+def check_week_data(
+    year: int, week: int, as_of: str, config_path: Path, failures: list[str]
+) -> None:
+    try:
+        snapshot_date, _ = _parse_as_of(as_of)
+    except ValueError as exc:
+        _fail(str(exc), failures)
         return
     try:
         storage = get_storage()
         teams = storage.read_index("raw/teams", {"year": year})
         games = storage.read_index("raw/games", {"year": year})
+        canonical_week = canonical_week_overrides_for_season(year)
         fbs = {
             str(row.get("school"))
             for row in teams
@@ -243,7 +315,11 @@ def check_week_data(year: int, week: int, as_of: str, failures: list[str]) -> No
         week_games = [
             row
             for row in games
-            if int(row.get("week", -1)) == week
+            if canonical_week.get(
+                int(row.get("id", row.get("game_id", -1))),
+                int(row.get("week", -1)),
+            )
+            == week
             and row.get("home_team") in fbs
             and row.get("away_team") in fbs
         ]
@@ -257,13 +333,19 @@ def check_week_data(year: int, week: int, as_of: str, failures: list[str]) -> No
                 _fail("Schedule has missing or duplicate game IDs.", failures)
             else:
                 _ok(f"Schedule has {len(week_games)} unique FBS-vs-FBS games.")
-        if not snapshot_is_complete(storage, year, as_of):
-            _fail(
-                f"Point-in-time preseason snapshot is incomplete: {year}/{as_of}",
-                failures,
-            )
+        snapshot_as_of = snapshot_date.isoformat()
+        if not snapshot_is_complete(storage, year, snapshot_as_of):
+            if not _prior_only_fallback_is_ready(
+                year=year, week=week, config_path=config_path, failures=failures
+            ):
+                _fail(
+                    f"Point-in-time preseason snapshot is incomplete: {year}/{snapshot_as_of}",
+                    failures,
+                )
         else:
-            _ok(f"Point-in-time preseason snapshot is complete: {year}/{as_of}")
+            _ok(
+                f"Point-in-time preseason snapshot is complete: {year}/{snapshot_as_of}"
+            )
     except Exception as exc:
         _fail(f"Week data readiness check failed: {exc}", failures)
 
@@ -286,7 +368,7 @@ def main() -> None:
     parser.add_argument("--year", type=int, required=True, help="Season year")
     parser.add_argument("--week", type=int, required=True, help="Week number")
     parser.add_argument(
-        "--as-of", required=True, help="Point-in-time cutoff (YYYY-MM-DD)"
+        "--as-of", required=True, help="Point-in-time cutoff (ISO date or timestamp)"
     )
     parser.add_argument(
         "--config",
@@ -311,7 +393,7 @@ def main() -> None:
     check_database(skip_db=args.skip_db, failures=failures)
     check_deploy_config(failures)
     check_model_bundle(args.config, args.as_of, failures)
-    check_week_data(args.year, args.week, args.as_of, failures)
+    check_week_data(args.year, args.week, args.as_of, args.config, failures)
     report_artifact_paths(args.year, args.week)
 
     if failures:

@@ -24,8 +24,8 @@ from cks_picks_cfb.models.regime_training import (
     fit_candidate_model,
 )
 from cks_picks_cfb.models.training_policy import (
+    labeled_training_frame,
     policy_from_mapping,
-    validate_feature_lineage,
 )
 
 
@@ -85,7 +85,7 @@ def main() -> None:
             OmegaConf.load(str(experiment.training_policy)), resolve=True
         )
     )
-    validate_feature_lineage(frame, policy)
+    frame = labeled_training_frame(frame, policy)
     if tuple(sorted(frame["season"].astype(int).unique())) != policy.labeled_years:
         raise ValueError("Production refit dataset must contain exactly 2021-2025")
     report = json.loads(storage.read_bytes(args.routing_report_uri).decode("utf-8"))

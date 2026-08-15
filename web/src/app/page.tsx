@@ -1,6 +1,7 @@
 import {
   getCurrentWeek,
   getGamesForWeek,
+  getMarketGamesForWeek,
   getSystemStats,
   getAvailableWeeks,
   type Game,
@@ -10,13 +11,17 @@ import { Header, Footer } from "@/components/Header";
 import { RecordBanner } from "@/components/RecordBanner";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
+import { publicationScope } from "@/lib/publication";
 
 // Revalidate every 5 minutes (ISR).
 export const revalidate = 300;
 
 type SearchParams = Promise<{ season?: string; week?: string }>;
 
-/** Parse ?season= / ?week= query params; fall back to the active week. */
+/**
+ * Resolve only the server-configured public release scope. Query parameters
+ * can choose an allowed week, but cannot expose another season or week.
+ */
 async function resolveTarget(
   searchParams: SearchParams,
 ): Promise<{
@@ -29,27 +34,34 @@ async function resolveTarget(
 }> {
   const params = await searchParams;
   const current = await getCurrentWeek();
-  const activeSeason = current?.season ?? null;
-  const activeWeek = current?.week ?? null;
-
-  const season = params.season ? Number(params.season) : activeSeason;
+  const activeSeason = current?.season === publicationScope.season
+    ? current.season
+    : null;
+  const activeWeek = activeSeason !== null
+    && current !== null
+    && publicationScope.weeks.includes(current.week)
+    ? current.week
+    : null;
+  const season = publicationScope.season;
+  const availableWeeks = (await getAvailableWeeks(season))
+    .filter((week) => publicationScope.weeks.includes(week));
   const requestedWeek = params.week ? Number(params.week) : activeWeek;
 
-  const weeks = season ? await getAvailableWeeks(season) : [];
-
-  // If the requested week has no data, clamp to the most recent available week.
-  let week = requestedWeek ?? 0;
-  if (weeks.length > 0 && !weeks.includes(week)) {
-    week = weeks[weeks.length - 1];
+  // Invalid URLs and unready future weeks stay within the release boundary.
+  let week = publicationScope.weeks.includes(requestedWeek ?? -1)
+    ? requestedWeek!
+    : activeWeek ?? availableWeeks[availableWeeks.length - 1] ?? publicationScope.weeks[0];
+  if (availableWeeks.length > 0 && !availableWeeks.includes(week)) {
+    week = availableWeeks[availableWeeks.length - 1];
   }
 
   return {
     season: season ?? 0,
     week,
-    weeks,
+    weeks: availableWeeks,
     activeSeason,
     activeWeek,
-    currentUpdatedAt: current?.updatedAt ?? null,
+    currentUpdatedAt: activeWeek !== null ? current?.updatedAt ?? null : null,
   };
 }
 
@@ -71,11 +83,15 @@ export default async function Home({
 
   try {
     if (season > 0 && week >= 0) {
-      [games, stats] = await Promise.all([
-        getGamesForWeek(season, week),
-        getSystemStats(season),
-      ]);
-      if (games.length > 0) {
+      if (publicationScope.mode === "predictions") {
+        [games, stats] = await Promise.all([
+          getGamesForWeek(season, week),
+          getSystemStats(season),
+        ]);
+      } else {
+        games = await getMarketGamesForWeek(season, week);
+      }
+      if (games.length > 0 && games[0].publicationMode === "predictions") {
         systemName = games[0].systemName;
         modelId = games[0].modelId;
         runState = games[0].runState;
@@ -105,6 +121,7 @@ export default async function Home({
         modelId={modelId}
         updatedAt={updatedAt}
         runState={runState}
+        publicationMode={publicationScope.mode}
       />
 
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
@@ -120,11 +137,8 @@ export default async function Home({
 
         {!dbError && !season && (
           <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
-            No active week has been published yet. Run{" "}
-            <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono dark:bg-zinc-900">
-              publish_to_db.py --year 2026 --week 1
-            </code>{" "}
-            after generating predictions.
+            No active week has been published yet. Complete the Week 0
+            publication workflow to load the approved schedule and market data.
           </div>
         )}
 
@@ -134,7 +148,7 @@ export default async function Home({
               <RecordBanner season={season} stats={stats} />
             )}
 
-            {weeks.length > 0 && (
+            {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />
             )}
 
@@ -149,7 +163,7 @@ export default async function Home({
         )}
       </main>
 
-      <Footer />
+      <Footer publicationMode={publicationScope.mode} />
     </div>
   );
 }

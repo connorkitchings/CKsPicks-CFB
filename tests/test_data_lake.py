@@ -1,3 +1,5 @@
+import hashlib
+import io
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -42,6 +44,73 @@ def test_identical_capture_reuses_content_and_preserves_observations(tmp_path):
     )
     assert first.content_sha == second.content_sha
     assert first.uri == second.uri
+    observations = storage.list_files(first.uri.rsplit("/", 1)[0] + "/observations")
+    assert len(observations) == 2
+
+
+def test_capture_reuses_existing_observation_when_parquet_is_reserialized(tmp_path):
+    storage = LocalStorage(tmp_path)
+    now = datetime.now(timezone.utc)
+    first = capture_provider_records(
+        storage,
+        provider="cfbd",
+        entity="games",
+        records=[{"id": 1, "week": 1}],
+        captured_at=now,
+        effective_at=None,
+        request={"year": 2026},
+        capture_id="capture-1",
+    )
+    buffer = io.BytesIO()
+    pd.DataFrame([{"id": 1, "week": 1}]).to_parquet(buffer, compression="gzip")
+    storage.write_bytes(buffer.getvalue(), first.uri)
+
+    repeated = capture_provider_records(
+        storage,
+        provider="cfbd",
+        entity="games",
+        records=[{"id": 1, "week": 1}],
+        captured_at=now,
+        effective_at=None,
+        request={"year": 2026},
+        capture_id="capture-1",
+    )
+
+    assert repeated.object_sha != first.object_sha
+    assert repeated.object_sha == hashlib.sha256(buffer.getvalue()).hexdigest()
+
+
+def test_capture_reuses_existing_content_addressed_parquet_after_reserialization(
+    tmp_path,
+):
+    storage = LocalStorage(tmp_path)
+    now = datetime.now(timezone.utc)
+    first = capture_provider_records(
+        storage,
+        provider="cfbd",
+        entity="games",
+        records=[{"id": 1, "week": 1}],
+        captured_at=now,
+        effective_at=None,
+        request={"year": 2026},
+        capture_id="capture-1",
+    )
+    buffer = io.BytesIO()
+    pd.DataFrame([{"id": 1, "week": 1}]).to_parquet(buffer, compression="gzip")
+    storage.write_bytes(buffer.getvalue(), first.uri)
+
+    second = capture_provider_records(
+        storage,
+        provider="cfbd",
+        entity="games",
+        records=[{"id": 1, "week": 1}],
+        captured_at=now + timedelta(minutes=1),
+        effective_at=None,
+        request={"year": 2026},
+        capture_id="capture-2",
+    )
+
+    assert second.uri == first.uri
     observations = storage.list_files(first.uri.rsplit("/", 1)[0] + "/observations")
     assert len(observations) == 2
 

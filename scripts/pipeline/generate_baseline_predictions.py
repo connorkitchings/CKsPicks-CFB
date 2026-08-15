@@ -13,7 +13,11 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
-from cks_picks_cfb.data.catalog import register_dataset_version
+from cks_picks_cfb.data.catalog import (
+    catalog_connection_url,
+    register_dataset_version,
+    register_existing_dataset_ref,
+)
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
@@ -53,6 +57,9 @@ def main() -> None:
         raise SystemExit("--include-locked-2025 requires --frozen-design-sha")
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
+        register_existing_dataset_ref(
+            catalog_connection_url(args.environment), storage, args.output_ref_uri
+        )
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     core_ref = _ref(storage, args.core_ref_uri)

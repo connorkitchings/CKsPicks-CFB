@@ -22,6 +22,7 @@ export function GamesList({ games }: { games: Game[] }) {
   const [query, setQuery] = useState("");
   const [hcOnly, setHcOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("kickoff");
+  const predictionsVisible = games[0]?.publicationMode === "predictions";
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -33,20 +34,28 @@ export function GamesList({ games }: { games: Game[] }) {
           g.awayTeam.toLowerCase().includes(q),
       );
     }
-    if (hcOnly) rows = rows.filter((g) => g.highConfidence);
+    if (hcOnly && predictionsVisible) {
+      rows = rows.filter(
+        (g) => g.publicationMode === "predictions" && g.highConfidence,
+      );
+    }
 
     const sorted = [...rows];
     sorted.sort((a, b) => {
-      if (sort === "kickoff") {
+      if (sort === "kickoff" || !predictionsVisible) {
         return a.startDate.getTime() - b.startDate.getTime();
       }
       if (sort === "spreadEdge") {
-        return (b.edgeSpread ?? -Infinity) - (a.edgeSpread ?? -Infinity);
+        const aEdge = a.publicationMode === "predictions" ? a.edgeSpread : null;
+        const bEdge = b.publicationMode === "predictions" ? b.edgeSpread : null;
+        return (bEdge ?? -Infinity) - (aEdge ?? -Infinity);
       }
-      return (b.edgeTotal ?? -Infinity) - (a.edgeTotal ?? -Infinity);
+      const aEdge = a.publicationMode === "predictions" ? a.edgeTotal : null;
+      const bEdge = b.publicationMode === "predictions" ? b.edgeTotal : null;
+      return (bEdge ?? -Infinity) - (aEdge ?? -Infinity);
     });
     return sorted;
-  }, [games, query, hcOnly, sort]);
+  }, [games, query, hcOnly, predictionsVisible, sort]);
 
   const inputCls =
     "w-full rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
@@ -68,7 +77,7 @@ export function GamesList({ games }: { games: Game[] }) {
             className={inputCls}
           />
         </div>
-        <div className="flex items-center gap-2">
+        {predictionsVisible && <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setHcOnly((v) => !v)}
@@ -98,7 +107,7 @@ export function GamesList({ games }: { games: Game[] }) {
               </option>
             ))}
           </select>
-        </div>
+        </div>}
       </div>
 
       <div className="px-1 text-xs text-zinc-400 dark:text-zinc-500">

@@ -1,6 +1,6 @@
 # Weekly Pipeline — 2026 Season
 
-R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads only the selected immutable prediction run. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md).
+R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when prediction publication is explicitly enabled; the default market-only mode uses a model-free schedule and market projection. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md).
 
 ## Required setup
 
@@ -9,6 +9,23 @@ Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the environment-specific R2 
 Upload route artifacts and configure the ten-cell manifest URI/checksum in `conf/weekly_bets/v2_champion.yaml`. Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.
 
 For rehearsal, point `PREVIEW_DATABASE_URL` at an isolated Neon branch and connect that branch to a Vercel Preview deployment.
+
+## Local Preview credentials
+
+`preview-2026` is the durable 2026 Preview branch. Its pipeline and migration
+credentials live only in the local macOS Keychain; Vercel receives the separate
+read-only web credential. Run Preview operations through the wrapper so the
+legacy `.env` values cannot target the wrong branch:
+
+```bash
+zsh scripts/ops/with_preview_env.sh make migrate-db
+zsh scripts/ops/with_preview_env.sh make readiness \
+  YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
+```
+
+The wrapper injects `PREVIEW_DATABASE_URL` for Preview pipeline operations and
+the migration-only `DATABASE_URL` for `make migrate-db`. Never use the
+`cks_preview_migrator` or `cks_preview_pipeline` connection in Vercel.
 
 ## Data-ready trigger
 
@@ -26,17 +43,41 @@ make audit-data YEAR=2026 ENV=preview
 make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 ```
 
-Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS-vs-FBS schedule has unique game IDs, the point-in-time snapshot is complete, both promoted model checksums load, contracts match, and the web app lints, typechecks, and builds.
+Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS-vs-FBS schedule has unique game IDs, the point-in-time snapshot is complete (or the explicit display-only prior fallback has its required inputs), both promoted model checksums load, contracts match, and the web app lints, typechecks, and builds.
 
 ## Progressive publish and freeze
 
-Publish and rerun as lines arrive:
+Publish and rerun as lines arrive. Rehearsals must name Preview explicitly; the
+Make target defaults to production when `ENV` is omitted:
 
 ```bash
-make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DD
+make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview \
+  CONFIG=conf/weekly_bets/v2_preview_2026.yaml
 ```
 
 Each invocation runs through `python -m cks_picks_cfb.ops`, creates a new run-specific R2 prefix, and records resumable steps in `ops.pipeline_steps`. Neon activation occurs in one transaction only after predictions validate. Missing lines are allowed; the site shows the model output with “Line unavailable—model prediction shown, no lean.”
+
+The market step maps the checked-in canonical-week policy to CFBD's provider
+week, records both week values, binds the Bronze capture to the pipeline run,
+and builds immutable `market_quotes` and `market_snapshots` before freezing the
+input ref set. For example, the August 29, 2026 slate is canonical Week 0 but
+provider Week 1. The requested `AS_OF` must follow the market capture time;
+the build fails closed rather than backdating a late capture.
+
+For the Week 0 public launch, keep Vercel fail-closed while the fallback run is
+used privately for rehearsal and Pick'em:
+
+```bash
+CFB_PUBLICATION_SEASON=2026
+CFB_PUBLICATION_WEEKS=0
+CFB_PUBLICATION_MODE=market
+```
+
+Market-only mode shows matchup, kickoff, current published spread/total, and
+freshness without selecting prediction columns. Change the mode to the exact
+value `predictions` only after explicit approval of the identified immutable
+run, then redeploy and smoke-test the public page. No other value enables model
+output.
 
 Before kickoff, freeze the active run:
 
@@ -92,9 +133,25 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train
 
 Generate candidates with `experiment=week0_regimes`. Selection uses temporal 2022–2024 OOF predictions, 2025 is the locked test, and the unchanged production design refits on 2021–2025. Early 2021 may use 2019 only as its prior source; 2020 remains entirely excluded.
 
+## CFBD Model Pick'em
+
+Model Pick'em uses a separate, short-lived `CFBD_PREDICTION_TOKEN`; the regular `CFBD_API_KEY` cannot submit contest picks. Always reconcile the authenticated contest slate before submission:
+
+```bash
+make export-pickem YEAR=2026 WEEK=0 VALIDATE=1
+make export-pickem YEAR=2026 WEEK=0 DRY_RUN=1
+```
+
+The exporter submits one `{gameId, pick}` request per matched FBS-vs-FBS game and deliberately excludes totals. Do not use `SUBMIT=1` until the user has supplied a current prediction token and approved the final slate.
+
+For launch operations, pass the exact private run CSV with `--input-csv` rather
+than relying on fallback path discovery. Record the run ID, artifact checksum,
+contest reconciliation, and final payload together. Refresh/export/reconcile
+may be automated; the POST remains a separate approval-gated command.
+
 ## Health and recovery
 
-`/api/health` reports the schema version, active run/state, expected/predicted/lined coverage, artifact freshness, and last successful publish. It never returns database error details.
+`/api/health` reports the schema version, active run/state, expected/predicted/lined coverage, artifact freshness, data cutoff, and last successful publish. It never returns database error details.
 
 Useful checks:
 

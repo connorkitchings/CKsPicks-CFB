@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
+import { publicationScope } from "@/lib/publication";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,11 @@ export async function GET() {
     return NextResponse.json({
       status: "ok",
       schemaVersion: "data_platform_v1",
+      publication: {
+        season: publicationScope.season,
+        weeks: publicationScope.weeks,
+        mode: publicationScope.mode,
+      },
       activeRun: run ? {
         runId: run.runId,
         season: run.season,
@@ -30,6 +36,7 @@ export async function GET() {
         lined: run.linedGames,
       } : null,
       artifactFreshness: run ? run.createdAt.toISOString() : null,
+      dataAsOf: run?.dataAsOf.toISOString() ?? null,
       lastSuccessfulPublish: run?.publishedAt?.toISOString() ?? null,
       latencyMs: Date.now() - start,
     });

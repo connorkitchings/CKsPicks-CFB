@@ -109,6 +109,22 @@ def validate_feature_lineage(
         raise ValueError("prior_season_gap does not match prior source lineage")
 
 
+def labeled_training_frame(frame: pd.DataFrame, policy: TrainingPolicy) -> pd.DataFrame:
+    """Return the policy-approved labeled rows from a mixed training/live frame.
+
+    Gold datasets intentionally include future scheduled games for inference.  Those
+    rows still need lineage validation, but must never be treated as labeled model
+    training data simply because they share the same immutable dataset version.
+    """
+    if "season" not in frame:
+        raise ValueError("Feature dataset is missing season")
+    validate_feature_lineage(frame, policy, labeled=False)
+    seasons = pd.to_numeric(frame["season"], errors="raise").astype(int)
+    labeled = frame.loc[seasons.isin(policy.labeled_years)].copy()
+    validate_feature_lineage(labeled, policy)
+    return labeled
+
+
 def selection_years(policy: TrainingPolicy) -> tuple[int, ...]:
     return tuple(fold.validation_year for fold in policy.selection_folds)
 

@@ -2,7 +2,7 @@
 # Skills Catalog
 # Index of all available skills for AI assistants working on CFB Model
 
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-08-15
 
 ---
 
@@ -31,11 +31,34 @@ Skills are reusable, documented workflows for common tasks. Each skill lives in 
 
 **Key Steps:**
 1. Load critical context (AGENTS.md, .codex/QUICKSTART.md)
-2. Verify environment (CFB_MODEL_DATA_ROOT)
+2. Verify task-relevant local or R2 storage without exposing secrets
 3. Review recent work (last 3 days of session logs)
 4. Check git status
-5. Propose plan before implementation
-6. Wait for user approval
+5. Route to a planning contract, contract implementation, or fast path
+
+---
+
+#### plan-session
+**Purpose:** Investigate substantial changes and persist a Sol-to-Terra implementation contract
+**Location:** `.agent/skills/plan-session/SKILL.md`
+**Use When:** The request affects architecture, data/model lineage, schemas, production, security, or multiple subsystems.
+
+**Key Steps:**
+1. Investigate in Sol Plan Mode
+2. Persist the approved contract at `docs/plans/YYYY-MM-DD/`
+3. Create the planning session log and a copy-ready Terra prompt
+
+---
+
+#### implement-plan
+**Purpose:** Execute an approved implementation contract in a fresh Terra task
+**Location:** `.agent/skills/implement-plan/SKILL.md`
+**Use When:** The user supplies an Approved plan path, or explicitly authorizes implementation of an exact Draft-plan path.
+
+**Key Steps:**
+1. Reconcile the contract against the current worktree
+2. Execute tasks and validation sequentially
+3. Record safe amendments or stop for material conflicts
 
 ---
 
@@ -49,7 +72,7 @@ Skills are reusable, documented workflows for common tasks. Each skill lives in 
 
 **Key Steps:**
 1. Create session log
-2. Run health checks
+2. Run session-scoped health checks
 3. Update documentation
 4. Prepare commit message
 5. Document handoff notes

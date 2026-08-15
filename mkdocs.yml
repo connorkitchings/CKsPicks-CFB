@@ -68,6 +68,7 @@ nav:
 
   - "Planning":
       - "Roadmap": "planning/roadmap.md"
+      - "Implementation Contracts": "plans/index.md"
 
   - "Decisions":
       - "Decision Log": "decisions/decision_log.md"

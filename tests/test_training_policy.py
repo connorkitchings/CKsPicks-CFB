@@ -6,6 +6,7 @@ import pytest
 from omegaconf import OmegaConf
 
 from cks_picks_cfb.models.training_policy import (
+    labeled_training_frame,
     policy_from_mapping,
     selection_years,
     validate_feature_lineage,
@@ -52,6 +53,19 @@ def test_lineage_rejects_2019_labels_and_2020_priors():
             ),
             policy,
         )
+
+
+def test_labeled_training_frame_allows_2026_inference_rows_without_training_them():
+    policy = _policy()
+    frame = pd.DataFrame(
+        {
+            "season": [2021, 2026],
+            "prior_source_season": [2019, 2025],
+            "prior_season_gap": [2, 1],
+        }
+    )
+    labeled = labeled_training_frame(frame, policy)
+    assert labeled["season"].tolist() == [2021]
     with pytest.raises(ValueError, match="excluded 2020"):
         validate_feature_lineage(
             pd.DataFrame(

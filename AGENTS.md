@@ -85,17 +85,36 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 
 **Starting a Session:**
 1. Read this file (AGENTS.md) first
-2. Verify data root configuration
+2. Verify only the storage configuration required by the task; never expose secrets
 3. Review recent session logs (`session_logs/` last 3 days)
-4. Propose a plan before implementation
-5. Wait for user approval before executing
+4. Route substantial work through the Sol planning → Terra implementation workflow
+5. Use the fast path only for established, localized changes
 
 **Ending a Session:**
 1. Create session log in `session_logs/YYYY-MM-DD/NN.md`
-2. Run health checks: `uv run ruff format . && uv run ruff check .`
-3. Run tests: `uv run pytest -q` (or `npx nx run-many -t lint typecheck test`)
-4. Propose commit message (user executes manually)
-5. Update docs if behavior changed
+2. Run validation scoped to the session and changed components
+3. Do not broad-format a dirty worktree without explicit authorization
+4. Propose a commit message; the user executes git operations manually
+5. Update docs and the implementation contract when behavior changed
+
+### Sol Planning → Terra Implementation
+
+Use the durable contract workflow for architecture, data/model lineage, database
+contracts or migrations, production/deployment behavior, security-sensitive work,
+or changes spanning multiple subsystems.
+
+1. **Sol:** Use `.agent/skills/plan-session/` to investigate and produce a
+   decision-complete plan in Plan Mode.
+2. **Persist:** After approval, switch the same Sol task to Code mode only to
+   save `docs/plans/YYYY-MM-DD/<descriptive-slug>.md` and the planning session
+   log. Sol must not edit implementation files in this step.
+3. **Terra:** Open a fresh task and use `.agent/skills/implement-plan/` with
+   the exact plan path. Terra executes an `Approved` plan, or a `Draft` plan
+   explicitly authorized by the user for that exact path.
+
+`docs/planning/` remains the home of strategic roadmaps. `docs/plans/` holds
+task-level execution contracts. See `docs/plans/index.md` for lifecycle,
+amendment, and commit-policy rules.
 
 ---
 
@@ -177,7 +196,7 @@ supersedes it for the 2026 season.
 
 1. **Create feature branch:** `git checkout -b feature/your-feature`
 2. **Make changes:** Edit code, add tests
-3. **Run quality gates:** `uv run ruff format . && uv run ruff check . && uv run pytest -q`
+3. **Run scoped quality gates:** follow the active implementation contract or affected components
 4. **Create session log:** Document work in `session_logs/`
 5. **Commit:** User executes proposed commit
 6. **Create PR:** When ready for review
@@ -347,21 +366,31 @@ Create logs in `session_logs/YYYY-MM-DD/NN.md`:
 
 ## TL;DR
 - **Worked On:** [what was done]
-- **Completed:** [what was finished]
-- **Blockers:** [any issues]
+- **Outcome:** [what changed or was decided]
+- **Plan Contract:** [plan path or `N/A (fast path)`]
+- **Approval / Status:** [approval source and contract lifecycle state, if applicable]
+- **Blockers:** [any issues or `None`]
 - **Next:** [what's next]
 
-## Changes Made
-- File 1: [description]
-- File 2: [description]
+## Context and Decisions
+- [important context or decision]
 
-## Testing
-- [ ] Health checks pass
-- [ ] Tests pass
-- [ ] Documentation updated
+## Work Completed
+- [completed task]
 
-## Notes for Next Session
-[Context to carry forward]
+## Files Modified
+- `path/to/file` - [description]
+
+## Validation
+- [ ] [required focused checks]
+- [ ] `git diff --check`
+
+## Amendments and Blockers
+- [amendment, material conflict, or `None`]
+
+## Handoff Notes
+- **Resume at:** [precise next action]
+- **Watch out for:** [important constraint]
 
 **tags:** ["modeling", "features", "pipeline", etc.]
 ```
@@ -373,11 +402,13 @@ Create logs in `session_logs/YYYY-MM-DD/NN.md`:
 Skills are workflows for common tasks. Invoke via `.agent/skills/` directory:
 
 - **start-session** - Session initialization workflow
+- **plan-session** - Sol investigation and implementation-contract workflow
+- **implement-plan** - Terra contract execution workflow
 - **end-session** - Session cleanup and documentation
 
 See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-08-09_
+_Last Updated: 2026-08-15_
 _Universal entry point for all AI coding assistants_

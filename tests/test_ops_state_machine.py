@@ -58,6 +58,7 @@ def test_publish_pipeline_accepts_live_week_zero():
         "audit_data",
         "ingest_schedule",
         "ingest_market",
+        "build_market_snapshot",
         "snapshot_inputs",
         "predict",
         "activate",

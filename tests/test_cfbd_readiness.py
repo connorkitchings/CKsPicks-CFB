@@ -12,6 +12,55 @@ from cks_picks_cfb.data.betting_lines import (
 from cks_picks_cfb.data.storage import Partition
 
 
+class EventuallyConsistentGamesStorage:
+    def __init__(self):
+        self.calls = 0
+
+    def read_index(self, *_args, **_kwargs):
+        self.calls += 1
+        return [] if self.calls < 3 else [{"id": 10, "week": 0}]
+
+
+def test_betting_lines_retries_games_index_visibility(monkeypatch):
+    storage = EventuallyConsistentGamesStorage()
+    monkeypatch.setattr("cks_picks_cfb.data.betting_lines.time.sleep", lambda _: None)
+    ingester = BettingLinesIngester(year=2026, week=0, storage=storage)
+
+    assert ingester.get_fbs_game_ids() == [10]
+    assert storage.calls == 3
+
+
+class GamesIndexStorage:
+    def read_index(self, *_args, **_kwargs):
+        return [
+            {"id": 10, "week": 1},
+            {"id": 11, "week": 1},
+            {"id": 12, "week": 2},
+        ]
+
+
+def test_betting_lines_maps_canonical_week_to_provider_week(monkeypatch):
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.betting_lines.canonical_week_overrides_for_season",
+        lambda _year: {10: 0},
+    )
+    ingester = BettingLinesIngester(year=2026, week=0, storage=GamesIndexStorage())
+
+    assert ingester.get_fbs_game_ids() == [10]
+    assert ingester._provider_weeks == {1}
+
+
+def test_betting_lines_excludes_canonical_week_zero_from_week_one(monkeypatch):
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.betting_lines.canonical_week_overrides_for_season",
+        lambda _year: {10: 0},
+    )
+    ingester = BettingLinesIngester(year=2026, week=1, storage=GamesIndexStorage())
+
+    assert ingester.get_fbs_game_ids() == [11]
+    assert ingester._provider_weeks == {1}
+
+
 class EmptyIngester(BaseIngester):
     @property
     def entity_name(self) -> str:
@@ -119,6 +168,7 @@ def test_partial_lines_can_be_saved_outside_publish_gate(monkeypatch):
         "year": 2026,
         "season_type": "regular",
         "week": 1,
+        "provider_week": 1,
         "game_id": 1,
         "provider": "Book",
         "spread": -3.5,

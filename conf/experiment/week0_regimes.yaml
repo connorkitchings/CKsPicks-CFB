@@ -4,20 +4,22 @@ training_policy: conf/training/week0_2026.yaml
 
 # Populate with one immutable Gold point-in-time matchup dataset before training.
 feature_dataset_ref: null
+# Preferred for environment-specific runs: an immutable R2 JSON DatasetRef.
+# This avoids embedding preview artifact identities in the committed config.
+feature_dataset_ref_uri: null
 
 prior_features:
-  - home_prior_adj_off_epa_pp
-  - home_prior_adj_def_epa_pp
-  - home_prior_adj_off_sr
-  - home_prior_adj_def_sr
-  - away_prior_adj_off_epa_pp
-  - away_prior_adj_def_epa_pp
-  - away_prior_adj_off_sr
-  - away_prior_adj_def_sr
-  - home_prior_season_gap
-  - away_prior_season_gap
-  - neutral_site
-  - same_conference
+  - home_prior_off_epa_pp
+  - home_prior_def_epa_pp
+  - home_prior_off_sr
+  - home_prior_def_sr
+  - away_prior_off_epa_pp
+  - away_prior_def_epa_pp
+  - away_prior_off_sr
+  - away_prior_def_sr
+  - prior_season_gap
+  - home_neutral_site
+  - home_conference_game
 
 current_features:
   - home_adj_off_epa_pp

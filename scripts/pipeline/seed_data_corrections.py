@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import (
     register_dataset_version,
+    register_existing_dataset_ref,
     register_source_capture,
 )
 from cks_picks_cfb.data.lake import capture_provider_records
@@ -40,9 +41,6 @@ def main() -> None:
         raise SystemExit("Correction seeding is allowed only in preview")
     storage = get_storage()
     output_uri = "artifacts/preview/refs/data-corrections-v1.json"
-    if storage.exists(output_uri):
-        print(storage.read_bytes(output_uri).decode())
-        return
     records = legacy_data_correction_records()
     capture = capture_provider_records(
         storage,
@@ -56,6 +54,10 @@ def main() -> None:
         capture_id=hashlib.sha256(b"legacy_data_corrections_v1").hexdigest()[:32],
     )
     register_source_capture(conn_url, capture)
+    if storage.exists(output_uri):
+        register_existing_dataset_ref(conn_url, storage, output_uri)
+        print(storage.read_bytes(output_uri).decode())
+        return
     ref, manifest = build_silver_version(
         storage,
         dataset="data_corrections",
