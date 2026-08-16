@@ -31,6 +31,9 @@ const REGIME_LABEL = {
   one_game: "1 game",
   two_games: "2 games",
   three_games: "3 games",
+  game_1: "Game 1",
+  game_2: "Game 2",
+  game_3: "Game 3",
   established: "Established",
 } as const;
 

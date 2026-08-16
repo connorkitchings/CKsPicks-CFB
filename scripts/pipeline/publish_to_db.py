@@ -342,6 +342,9 @@ def _row_to_record(
         "one_game",
         "two_games",
         "three_games",
+        "game_1",
+        "game_2",
+        "game_3",
         "established",
     }:
         raise ValueError(f"Unsupported prediction regime: {regime}")

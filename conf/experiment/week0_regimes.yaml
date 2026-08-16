@@ -1,5 +1,5 @@
-name: week0-regime-tournament-2026
-workflow: early_season_tournament
+name: game-ordinal-predictive-tournament-2026
+workflow: game_ordinal_tournament
 training_policy: conf/training/week0_2026.yaml
 
 # Populate with one immutable Gold point-in-time matchup dataset before training.
@@ -8,20 +8,21 @@ feature_dataset_ref: null
 # This avoids embedding preview artifact identities in the committed config.
 feature_dataset_ref_uri: null
 
-prior_features:
-  - home_prior_off_epa_pp
-  - home_prior_def_epa_pp
-  - home_prior_off_sr
-  - home_prior_def_sr
-  - away_prior_off_epa_pp
-  - away_prior_def_epa_pp
-  - away_prior_off_sr
-  - away_prior_def_sr
+prior_strengths:
+  plays: 100
+  drives: 20
+  games: 4
+# The canonical selection command evaluates the complete reviewed 4×4×4 grid
+# with Ridge, then runs CatBoost only on the per-route/formulation finalist.
+prior_strength_search: staged_ridge_grid_then_catboost
+
+context_features:
   - prior_season_gap
   - home_neutral_site
   - home_conference_game
 
-current_features:
+# Compatibility design of the established Preview v2 direct-Ridge routes.
+established_features:
   - home_adj_off_epa_pp
   - home_adj_def_epa_pp
   - home_adj_off_sr
@@ -44,7 +45,4 @@ current_features:
 baseline_columns:
   spread: baseline_spread_prediction
   total: baseline_total_prediction
-market_line_columns:
-  spread: home_team_spread_line
-  total: total_line
 output: ${oc.env:CFB_WORK_ROOT,/tmp/cks-picks-cfb}/training/week0-regime-candidates.csv

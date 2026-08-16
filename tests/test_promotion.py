@@ -4,6 +4,7 @@ import pandas as pd
 from cks_picks_cfb.models.promotion import (
     evaluate_promotion,
     locked_test_anti_regression,
+    select_nested_temporal_thresholds,
     select_regime_candidate,
     select_simplest_passing_candidate,
 )
@@ -80,3 +81,35 @@ def test_locked_test_does_not_require_one_hundred_single_year_bets():
         }
     }
     assert locked_test_anti_regression(report)
+
+
+def test_nested_thresholds_do_not_use_a_seasons_own_returns():
+    frame = pd.DataFrame(
+        {
+            "season": [2022] * 30 + [2023] * 30 + [2024] * 30,
+            "edge": [1.0] * 30 + [4.0] * 30 + [4.0] * 30,
+            "return": [0.1] * 30 + [0.1] * 30 + [0.1] * 30,
+        }
+    )
+    result = select_nested_temporal_thresholds(frame, min_tuning_bets=30)
+    assert result.loc[result["season"] == 2022, "selected_edge_threshold"].isna().all()
+    assert set(result.loc[result["season"] == 2023, "selected_edge_threshold"]) == {0.0}
+    assert result.loc[result["season"] == 2024, "threshold_eligible"].all()
+
+
+def test_promotion_uses_actual_prices_and_counts_pushes_in_volume():
+    frame = pd.DataFrame(
+        {
+            "season": [2022] * 100,
+            "actual": [3.0] * 99 + [0.0],
+            "candidate_prediction": [3.0] * 100,
+            "baseline_prediction": [0.0] * 100,
+            "market_line": [-2.5] * 99 + [0.0],
+            "candidate_price": [100] * 100,
+        }
+    )
+    report = evaluate_promotion(
+        frame, target="spread", regime="game_1", n_bootstrap=50
+    )
+    assert report["metrics"]["candidate_volume"] == 100
+    assert report["metrics"]["candidate_roi"] > 0.9

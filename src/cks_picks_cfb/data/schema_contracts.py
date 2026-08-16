@@ -257,6 +257,11 @@ def validate_frame(frame: pd.DataFrame, schema: DatasetSchema) -> dict[str, Any]
             "opponent",
             "regime",
             "as_of",
+            "prediction_regime",
+            "feature_as_of",
+            "feature_provenance",
+            "home_line_scores",
+            "away_line_scores",
         }
         dynamic = [column for column in frame.columns if column not in metadata]
         nonnumeric = [

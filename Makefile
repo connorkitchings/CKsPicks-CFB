@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 evaluate-week0 refit-week0-bundle weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -35,6 +35,9 @@ help:
 	@echo "  make train-week0 - Generate temporal regime candidate predictions"
 	@echo "  make evaluate-week0 OOF=... WEIGHTS=... REPORT_URI=..."
 	@echo "  make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
+	@echo "  make generate-game-ordinal STAGE=selection|locked FEATURE_REF_URI=... OUTPUT=... ENV=preview"
+	@echo "  make evaluate-game-ordinal STAGE=selection|locked CANDIDATES=... REPORT_URI=... ENV=preview"
+	@echo "  make refit-game-ordinal FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"
 	@echo "  make weekly YEAR=2026 WEEK=1  - Alias for publish-week"
 	@echo ""
 	@echo "Database (requires DATABASE_URL):"
@@ -219,6 +222,21 @@ refit-week0-bundle:
 		echo "Usage: make refit-week0-bundle FEATURE_REF_URI=... REPORT_URI=... BUNDLE_ID=... ENV=preview"; exit 1; \
 	fi
 	PYTHONPATH=.:src uv run python scripts/pipeline/refit_regime_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
+
+evaluate-game-ordinal:
+	@if [ -z "$(STAGE)" ] || [ -z "$(CANDIDATES)" ] || [ -z "$(REPORT_URI)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make evaluate-game-ordinal STAGE=selection|locked CANDIDATES=... REPORT_URI=... ENV=preview"; exit 1; \
+	fi
+	PYTHONPATH=.:src uv run python scripts/pipeline/evaluate_game_ordinal_predictions.py --stage $(STAGE) --candidates-csv $(CANDIDATES) --output-uri $(REPORT_URI) --environment $(ENV) $(if $(FEATURE_REF_URI),--feature-ref-uri $(FEATURE_REF_URI),) $(if $(SELECTION_REPORT_URI),--selection-report-uri $(SELECTION_REPORT_URI),) $(if $(BLEND_WEIGHTS),--blend-weights-json $(BLEND_WEIGHTS),)
+
+generate-game-ordinal:
+	@if [ -z "$(STAGE)" ] || [ -z "$(FEATURE_REF_URI)" ] || [ -z "$(OUTPUT)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make generate-game-ordinal STAGE=selection|locked FEATURE_REF_URI=... OUTPUT=... ENV=preview [SELECTION_REPORT_URI=...]"; exit 1; \
+	fi
+	PYTHONPATH=.:src uv run python scripts/pipeline/generate_game_ordinal_candidates.py --stage $(STAGE) --feature-ref-uri $(FEATURE_REF_URI) --output-csv $(OUTPUT) --environment $(ENV) $(if $(SELECTION_REPORT_URI),--selection-report-uri $(SELECTION_REPORT_URI),)
+
+refit-game-ordinal:
+	PYTHONPATH=.:src uv run python scripts/pipeline/refit_game_ordinal_bundle.py --feature-ref-uri $(FEATURE_REF_URI) --routing-report-uri $(REPORT_URI) --bundle-id $(BUNDLE_ID) --environment $(ENV)
 
 # ---------------------------------------------------------------------------
 # Database publish (Python → Postgres)

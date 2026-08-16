@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS predictions (
     high_confidence_eligible  BOOLEAN NOT NULL DEFAULT FALSE,
     home_completed_games      INTEGER NOT NULL DEFAULT 0 CHECK (home_completed_games >= 0),
     away_completed_games      INTEGER NOT NULL DEFAULT 0 CHECK (away_completed_games >= 0),
-    regime                    TEXT NOT NULL CHECK (regime IN ('preseason', 'one_game', 'two_games', 'three_games', 'established')),
+    regime                    TEXT NOT NULL CHECK (regime IN ('preseason', 'one_game', 'two_games', 'three_games', 'game_1', 'game_2', 'game_3', 'established')),
     spread_model_version      TEXT,
     total_model_version       TEXT,
     created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),

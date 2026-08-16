@@ -4,7 +4,9 @@ import pandas as pd
 
 from cks_picks_cfb.features.v2_recency import (
     _merge_seeded_prediction_rows,
+    canonical_prediction_regime,
     completed_game_regime,
+    upcoming_game_regime,
 )
 
 
@@ -17,6 +19,19 @@ def test_completed_game_regimes_cover_zero_through_established():
         "established",
         "established",
     ]
+
+
+def test_upcoming_game_routes_cover_the_first_three_scheduled_games():
+    assert [upcoming_game_regime(value) for value in range(5)] == [
+        "game_1",
+        "game_2",
+        "game_3",
+        "established",
+        "established",
+    ]
+    assert canonical_prediction_regime("preseason") == "game_1"
+    assert canonical_prediction_regime("one_game") == "game_2"
+    assert canonical_prediction_regime("two_games") == "game_3"
 
 
 def test_current_and_prior_features_remain_separate():

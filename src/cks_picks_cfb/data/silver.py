@@ -32,8 +32,8 @@ class SilverValidationError(ValueError):
 # captures. legacy_market_references only consumes legacy exports. Every other
 # dataset may consume both providers.
 DATASET_PROVIDERS: dict[str, tuple[str, ...]] = {
-    "market_quotes": ("cfbd",),
-    "market_snapshots": ("cfbd",),
+    "market_quotes": ("cfbd", "the_odds_api"),
+    "market_snapshots": ("cfbd", "the_odds_api"),
     "legacy_market_references": ("legacy_cfbd_export",),
 }
 

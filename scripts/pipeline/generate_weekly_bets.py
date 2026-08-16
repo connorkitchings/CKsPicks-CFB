@@ -28,10 +28,15 @@ from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.features.point_in_time import build_point_in_time_matchups
 from cks_picks_cfb.features.selector import select_features
+from cks_picks_cfb.features.v2_recency import canonical_prediction_regime
 from cks_picks_cfb.model_bundle import (
     load_model_artifact,
     load_model_bundle_v2,
     predict_with_model_bundle_v2,
+)
+from cks_picks_cfb.model_bundle_v3 import (
+    load_model_bundle_v3,
+    predict_with_model_bundle_v3,
 )
 from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
@@ -113,15 +118,25 @@ def main():
     gold_inference_df = None
     market_snapshots_df = None
     schedule_snapshot_df = None
-    if cfg.get("model_bundle_v2"):
+    bundle_version = None
+    if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
+        raise ValueError(
+            "Weekly configuration may select only one model bundle version"
+        )
+    if cfg.get("model_bundle_v3"):
+        routing_bundle = load_model_bundle_v3(cfg.model_bundle_v3, storage=storage)
+        bundle_version = "v3"
+    elif cfg.get("model_bundle_v2"):
         routing_bundle = load_model_bundle_v2(cfg.model_bundle_v2, storage=storage)
+        bundle_version = "v2"
+    if routing_bundle is not None:
         if args.dataset_refs_uri:
             configured_refs = json.loads(
                 storage.read_bytes(args.dataset_refs_uri).decode("utf-8")
             )
         else:
             raise ValueError(
-                "model_bundle_v2 inference requires --dataset-refs-uri selected "
+                "model-bundle inference requires --dataset-refs-uri selected "
                 "for this pipeline run"
             )
         ref_map: dict[tuple[str, int], DatasetRef] = {}
@@ -469,8 +484,20 @@ def main():
         total_model_versions = spread_model_versions.copy()
         route_high_confidence = pd.Series(True, index=feature_df.index)
         if routing_bundle is not None:
-            routed = predict_with_model_bundle_v2(
-                routing_bundle, feature_df, storage=storage
+            if bundle_version == "v3":
+                feature_df = feature_df.assign(
+                    prediction_regime=feature_df["prediction_regime"].map(
+                        canonical_prediction_regime
+                    )
+                )
+            routed = (
+                predict_with_model_bundle_v3(
+                    routing_bundle, feature_df, storage=storage
+                )
+                if bundle_version == "v3"
+                else predict_with_model_bundle_v2(
+                    routing_bundle, feature_df, storage=storage
+                )
             )
             spread_preds = routed["predicted_spread"].to_numpy()
             total_preds = routed["predicted_total"].to_numpy()

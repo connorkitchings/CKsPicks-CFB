@@ -82,15 +82,18 @@ def audit_feature_frame(
     if missing_targets:
         errors.append(f"rows with missing outcomes: {missing_targets}")
     regimes = set(labeled["prediction_regime"].dropna().astype(str))
-    expected_regimes = {
+    legacy_regimes = {
         "preseason",
         "one_game",
         "two_games",
         "three_games",
         "established",
     }
-    checks["five_regimes"] = regimes == expected_regimes
-    if not checks["five_regimes"]:
+    canonical_regimes = {"game_1", "game_2", "game_3", "established"}
+    checks["route_coverage"] = (
+        regimes == legacy_regimes or regimes == canonical_regimes
+    )
+    if not checks["route_coverage"]:
         errors.append(f"regime coverage is {sorted(regimes)}")
     baseline_columns = {
         "baseline_spread_prediction",

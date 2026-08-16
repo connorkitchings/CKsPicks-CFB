@@ -6,6 +6,7 @@ model_id: "week0-2026-preview-20260814"
 model_bundle_v2:
   artifact_uri: artifacts/preview/models/week0-2026-preview-20260814/manifest.json
   sha256: c151a5b635d333839c2cfa940c45d2fdc18c40dac28c094859c63137f5bb4066
+model_bundle_v3: null
 
 year: 2026
 week: 0

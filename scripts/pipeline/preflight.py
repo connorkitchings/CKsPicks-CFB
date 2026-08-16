@@ -21,6 +21,7 @@ from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.model_bundle import load_model_artifact, load_model_bundle_v2
+from cks_picks_cfb.model_bundle_v3 import load_model_bundle_v3
 from cks_picks_cfb.ops.data_audit import latest_gold_feature_ref
 from cks_picks_cfb.preseason import snapshot_is_complete
 
@@ -173,8 +174,18 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
     try:
         cfg = OmegaConf.load(config_path)
         storage = get_storage()
-        if cfg.get("model_bundle_v2"):
+        if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
+            raise ValueError("Weekly configuration may select only one model bundle version")
+        if cfg.get("model_bundle_v3"):
+            bundle = load_model_bundle_v3(cfg.model_bundle_v3, storage=storage)
+            bundle_label = "model_bundle_v3"
+        elif cfg.get("model_bundle_v2"):
             bundle = load_model_bundle_v2(cfg.model_bundle_v2, storage=storage)
+            bundle_label = "model_bundle_v2"
+        else:
+            bundle = None
+            bundle_label = ""
+        if bundle is not None:
             for item in bundle.feature_dataset_refs:
                 ref = DatasetRef(
                     dataset=str(item["dataset"]),
@@ -195,7 +206,7 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
                         f"Dataset {ref.version_id} is later than the configured cutoff"
                     )
             _ok(
-                f"model_bundle_v2 verified ({len(bundle.routes)} routes; "
+                f"{bundle_label} verified ({len(bundle.routes)} routes; "
                 f"{len(bundle.feature_dataset_refs)} training feature datasets)."
             )
             return

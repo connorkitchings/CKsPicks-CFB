@@ -113,7 +113,7 @@ def test_completed_counts_use_kickoff_order_and_ignore_cancelled_games():
     result = add_completed_game_routing(matchups, schedule)
     assert result.loc[result.index[0], "home_completed_games"] == 1
     assert result.loc[result.index[0], "away_completed_games"] == 0
-    assert result.loc[result.index[0], "prediction_regime"] == "preseason"
+    assert result.loc[result.index[0], "prediction_regime"] == "game_1"
 
 
 def test_gold_keeps_prior_and_current_blocks_and_builds_wide_view():

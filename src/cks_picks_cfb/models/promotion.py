@@ -8,6 +8,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.models.market_grading import american_profit_per_unit
+
 
 def _bet_returns(
     actual: np.ndarray,
@@ -16,13 +18,62 @@ def _bet_returns(
     *,
     target: str,
     edge_threshold: float,
+    prices: np.ndarray | None = None,
 ) -> np.ndarray:
     market = -line if target == "spread" else line
     edge = prediction - market
     outcome = actual - market
-    eligible = np.isfinite(line) & (np.abs(edge) >= edge_threshold) & (outcome != 0)
-    wins = np.sign(edge[eligible]) == np.sign(outcome[eligible])
-    return np.where(wins, 1.0 / 1.1, -1.0)
+    eligible = np.isfinite(line) & (np.abs(edge) >= edge_threshold)
+    returns = np.zeros(int(eligible.sum()), dtype=float)
+    settled_outcome = outcome[eligible]
+    wins = np.sign(edge[eligible]) == np.sign(settled_outcome)
+    prices = prices[eligible] if prices is not None else np.full(len(returns), np.nan)
+    returns[wins] = [american_profit_per_unit(price) for price in prices[wins]]
+    returns[(~wins) & (settled_outcome != 0)] = -1.0
+    return returns
+
+
+def select_nested_temporal_thresholds(
+    frame: pd.DataFrame,
+    *,
+    edge_column: str = "edge",
+    return_column: str = "return",
+    threshold_grid: tuple[float, ...] = tuple(np.arange(0.0, 10.5, 0.5)),
+    min_tuning_bets: int = 30,
+    years: tuple[int, ...] = (2022, 2023, 2024),
+) -> pd.DataFrame:
+    """Cross-fit edge thresholds without using a season's own outcomes.
+
+    The first selection season remains ungraded because no preceding OOF
+    history exists.  Each later season uses all prior selection seasons to
+    choose the threshold by net units, then volume, then lower threshold.
+    """
+    required = {"season", edge_column, return_column}
+    missing = sorted(required - set(frame.columns))
+    if missing:
+        raise ValueError(f"Threshold frame is missing columns: {missing}")
+    result = frame.copy()
+    result["selected_edge_threshold"] = np.nan
+    result["threshold_eligible"] = False
+    for year in years:
+        history = result[result["season"].astype(int).isin([item for item in years if item < year])]
+        current = result[result["season"].astype(int) == year]
+        if history.empty or current.empty:
+            continue
+        candidates: list[tuple[float, float, int]] = []
+        for threshold in threshold_grid:
+            rows = history[history[edge_column].abs() >= threshold]
+            if len(rows) < min_tuning_bets:
+                continue
+            candidates.append((float(rows[return_column].sum()), float(threshold), len(rows)))
+        if not candidates:
+            continue
+        # Net units desc, volume desc, threshold asc.
+        _, threshold, _ = sorted(candidates, key=lambda item: (-item[0], -item[2], item[1]))[0]
+        mask = result["season"].astype(int) == year
+        result.loc[mask, "selected_edge_threshold"] = threshold
+        result.loc[mask, "threshold_eligible"] = result.loc[mask, edge_column].abs() >= threshold
+    return result
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
@@ -69,14 +120,30 @@ def evaluate_promotion(
     candidate = rows["candidate_prediction"].to_numpy(dtype=float)
     baseline = rows["baseline_prediction"].to_numpy(dtype=float)
     lines = pd.to_numeric(rows["market_line"], errors="coerce").to_numpy(dtype=float)
+    candidate_prices = pd.to_numeric(
+        rows.get("candidate_price", pd.Series(np.nan, index=rows.index)), errors="coerce"
+    ).to_numpy(dtype=float)
+    baseline_prices = pd.to_numeric(
+        rows.get("baseline_price", pd.Series(np.nan, index=rows.index)), errors="coerce"
+    ).to_numpy(dtype=float)
 
     candidate_error = np.abs(candidate - actual)
     baseline_error = np.abs(baseline - actual)
     candidate_returns = _bet_returns(
-        actual, candidate, lines, target=target, edge_threshold=edge_threshold
+        actual,
+        candidate,
+        lines,
+        target=target,
+        edge_threshold=edge_threshold,
+        prices=candidate_prices,
     )
     baseline_returns = _bet_returns(
-        actual, baseline, lines, target=target, edge_threshold=edge_threshold
+        actual,
+        baseline,
+        lines,
+        target=target,
+        edge_threshold=edge_threshold,
+        prices=baseline_prices,
     )
     candidate_mae = float(candidate_error.mean())
     baseline_mae = float(baseline_error.mean())
@@ -99,6 +166,15 @@ def evaluate_promotion(
             baseline_error[sample].mean() - candidate_error[sample].mean()
         )
     bootstrap_confidence = float((bootstrap_lifts > 0).mean())
+    candidate_roi_lower_95 = 0.0
+    if candidate_returns.size:
+        roi_samples = np.array(
+            [
+                candidate_returns[rng.integers(0, candidate_returns.size, candidate_returns.size)].mean()
+                for _ in range(n_bootstrap)
+            ]
+        )
+        candidate_roi_lower_95 = float(np.quantile(roi_samples, 0.025))
 
     seasonal = (
         rows.assign(candidate_error=candidate_error, baseline_error=baseline_error)
@@ -130,6 +206,7 @@ def evaluate_promotion(
         ),
         "minimum_volume": candidate_returns.size >= 100,
         "bootstrap_95": bootstrap_confidence >= 0.95,
+        "roi_bootstrap_95": candidate_roi_lower_95 > 0.0,
         "temporal_stability": temporal_stability,
         "no_degradation": no_degradation,
     }
@@ -152,6 +229,7 @@ def evaluate_promotion(
             "candidate_max_drawdown": candidate_drawdown,
             "baseline_max_drawdown": baseline_drawdown,
             "bootstrap_confidence": bootstrap_confidence,
+            "candidate_roi_lower_95": candidate_roi_lower_95,
             "stable_seasons": stable_seasons,
             "season_count": int(len(seasonal)),
         },
@@ -207,7 +285,13 @@ def select_regime_candidate(
         for name, report in passing.items()
         if float(report["metrics"]["candidate_mae"]) <= best_mae + mae_tolerance
     }
-    for name in ("direct_ridge", "blend", "direct_catboost"):
+    for name in (
+        "direct_ridge",
+        "points_ridge",
+        "blend",
+        "direct_catboost",
+        "points_catboost",
+    ):
         if name in tied:
             return name
     return min(tied)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from datetime import datetime
 from typing import Any, Mapping
 
 import psycopg
@@ -21,6 +22,13 @@ def catalog_connection_url(environment: str) -> str:
 
 def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _catalog_timestamp(value: str | None) -> datetime | str | None:
+    """Match Postgres TIMESTAMPTZ values when verifying legacy manifests."""
+    if value is None:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 def register_existing_dataset_ref(
@@ -333,7 +341,7 @@ def register_dataset_version(
                 manifest_uri,
                 manifest.row_count,
                 dict(manifest.partitions),
-                manifest.as_of,
+                _catalog_timestamp(manifest.as_of),
                 manifest.code_sha,
                 manifest.config_sha,
                 manifest.state,

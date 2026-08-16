@@ -10,6 +10,7 @@ import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
 
+import pandas as pd
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import (
@@ -46,6 +47,7 @@ def main() -> None:
     parser.add_argument("--core-ref-uri", required=True)
     parser.add_argument("--baselines-ref-uri", required=True)
     parser.add_argument("--markets-ref-uri")
+    parser.add_argument("--skip-catalog-registration", action="store_true")
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument(
@@ -69,6 +71,15 @@ def main() -> None:
     result = attach_baseline_predictions(
         core, baselines, required_seasons=required_seasons
     )
+    # Historical all-null boolean-like prior fields arrive from Parquet as
+    # object dtype.  Keep them as usable numeric missingness features rather
+    # than letting the Gold schema treat them as undeclared string metadata.
+    for column in result.columns:
+        if (
+            column.endswith(("_missing", "_neutral_site"))
+            and result[column].dtype == object
+        ):
+            result[column] = pd.to_numeric(result[column], errors="coerce")
     markets_ref: DatasetRef | None = None
     markets_joined = False
     if args.markets_ref_uri:
@@ -142,8 +153,9 @@ def main() -> None:
     )
     if manifest.state != "validated":
         raise RuntimeError(f"Model-ready Gold validation failed: {manifest.validation}")
-    conn_url = resolve_runtime_target(args.environment).database_url
-    register_dataset_version(conn_url, ref, manifest)
+    if not args.skip_catalog_registration:
+        conn_url = resolve_runtime_target(args.environment).database_url
+        register_dataset_version(conn_url, ref, manifest)
     payload = json.dumps(asdict(ref), indent=2, sort_keys=True).encode()
     if storage.exists(args.output_ref_uri):
         if storage.read_bytes(args.output_ref_uri) != payload:

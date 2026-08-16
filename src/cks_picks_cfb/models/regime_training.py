@@ -19,6 +19,21 @@ from cks_picks_cfb.models.training_policy import (
     labeled_training_frame,
 )
 
+# Football rate/count features should be small. Values outside this envelope
+# are malformed upstream values (for example, a sentinel leaking into a rate),
+# not meaningful model evidence. Handle them exactly like missing data before
+# fold-local imputation so they cannot overflow linear algebra.
+MAX_ABS_MODEL_FEATURE = 1_000_000.0
+
+
+def _model_values(frame: pd.DataFrame, features: Sequence[str]) -> pd.DataFrame:
+    values = frame.loc[:, list(features)].replace([np.inf, -np.inf], np.nan).copy()
+    numeric = values.select_dtypes(include=[np.number]).columns
+    values.loc[:, numeric] = values.loc[:, numeric].mask(
+        values.loc[:, numeric].abs() > MAX_ABS_MODEL_FEATURE
+    )
+    return values
+
 REGIMES = ("preseason", "one_game", "two_games", "three_games", "established")
 EARLY_REGIMES = ("one_game", "two_games", "three_games")
 TARGET_COLUMNS = {"spread": "spread_target", "total": "total_target"}
@@ -29,7 +44,10 @@ def _candidate(kind: str, random_seed: int):
         estimator = Ridge(alpha=10.0)
         return Pipeline(
             [
-                ("imputer", SimpleImputer(strategy="median")),
+                # Game 1 legitimately has feature columns with no current-season
+                # observations in a fold.  Retaining empty columns makes the
+                # serialized feature schema stable between train and inference.
+                ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
                 ("scale", StandardScaler()),
                 ("model", estimator),
             ]
@@ -37,7 +55,7 @@ def _candidate(kind: str, random_seed: int):
     if kind == "direct_catboost":
         return Pipeline(
             [
-                ("imputer", SimpleImputer(strategy="median")),
+                ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
                 (
                     "model",
                     CatBoostRegressor(
@@ -66,8 +84,13 @@ def _fit_predict(
     if train.empty or validation.empty:
         raise ValueError(f"No rows available for {kind}/{target_column}")
     model = _candidate(kind, random_seed)
-    model.fit(train[list(features)], train[target_column])
-    return np.asarray(model.predict(validation[list(features)]), dtype=float)
+    train_features = _model_values(train, features)
+    validation_features = _model_values(validation, features)
+    model.fit(train_features, train[target_column])
+    prediction = np.asarray(model.predict(validation_features), dtype=float)
+    if not np.isfinite(prediction).all():
+        raise ValueError(f"{kind}/{target_column} produced non-finite predictions")
+    return prediction
 
 
 def fit_candidate_model(
@@ -83,7 +106,8 @@ def fit_candidate_model(
         raise ValueError(f"No production refit rows for {kind}/{target_column}")
     validate_model_feature_allowlist(tuple(features))
     model = _candidate(kind, random_seed)
-    model.fit(frame[list(features)], frame[target_column])
+    values = _model_values(frame, features)
+    model.fit(values, frame[target_column])
     return model
 
 

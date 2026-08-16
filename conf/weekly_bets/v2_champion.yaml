@@ -8,6 +8,7 @@ model_id: "TW-V2-2026-display-fallback"
 # below remain the compatibility path and readiness intentionally fails on null
 # artifact metadata. A populated bundle requires all ten target/regime routes.
 model_bundle_v2: null
+model_bundle_v3: null
 # Example entry:
 # model_bundle_v2:
 #   artifact_uri: artifacts/production/models/<bundle_id>/manifest.json

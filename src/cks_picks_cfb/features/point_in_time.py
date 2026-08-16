@@ -10,6 +10,7 @@ import pandas as pd
 from cks_picks_cfb.features.v2_recency import (
     aggregate_team_season_ewma,
     completed_game_regime,
+    upcoming_game_regime,
 )
 
 IDENTITY_COLUMNS = {
@@ -269,7 +270,7 @@ def add_completed_game_routing(
         result["season"].astype(int) - result["prior_source_season"]
     )
     minimum = result[["home_completed_games", "away_completed_games"]].min(axis=1)
-    result["prediction_regime"] = minimum.map(completed_game_regime)
+    result["prediction_regime"] = minimum.map(upcoming_game_regime)
     if "feature_as_of" in result:
         feature_as_of = pd.to_datetime(
             result["feature_as_of"], utc=True, errors="raise"
@@ -547,8 +548,18 @@ def attach_baseline_predictions(
         raise ValueError(f"Baseline predictions are missing columns: {missing}")
     if baselines.duplicated(["season", "game_id"]).any():
         raise ValueError("Baseline prediction keys are not unique")
+    # Preserve the two temporal components as well as the selected baseline.
+    # The canonical blend is an evaluation-only candidate and must be rebuilt
+    # from immutable OOF components, never reverse-engineered from a final
+    # baseline prediction.
+    component_columns = [
+        column
+        for column in baselines.columns
+        if column in {"season", "game_id", "training_max_year"}
+        or column.endswith("_prediction")
+    ]
     result = matchups.merge(
-        baselines[list(required)], on=["season", "game_id"], how="left"
+        baselines[component_columns], on=["season", "game_id"], how="left"
     )
     missing_rows = (
         result[["baseline_spread_prediction", "baseline_total_prediction"]]

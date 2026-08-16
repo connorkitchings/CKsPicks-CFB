@@ -124,6 +124,60 @@ def train_early_season_tournament(cfg: DictConfig) -> dict:
     return result
 
 
+def train_game_ordinal_tournament(cfg: DictConfig) -> dict:
+    """Generate canonical Games 1–3 candidates without market inputs."""
+    from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+    from cks_picks_cfb.data.storage import get_storage
+    from cks_picks_cfb.features.v2_recency import canonical_prediction_regime
+    from cks_picks_cfb.models.early_season import add_ordinal_shrinkage_features
+    from cks_picks_cfb.models.game_ordinal_training import (
+        generate_game_ordinal_candidate_predictions,
+    )
+    from cks_picks_cfb.models.training_policy import policy_from_mapping
+
+    spec = cfg.experiment
+    storage = get_storage()
+    if spec.get("feature_dataset_ref"):
+        ref = DatasetRef(**OmegaConf.to_container(spec.feature_dataset_ref, resolve=True))
+    elif spec.get("feature_dataset_ref_uri"):
+        ref = DatasetRef(**json.loads(storage.read_bytes(str(spec.feature_dataset_ref_uri)).decode()))
+    else:
+        raise ValueError("game ordinal training requires an immutable Gold feature ref")
+    policy_path = Path(str(spec.training_policy))
+    if not policy_path.is_absolute():
+        policy_path = Path(hydra.utils.get_original_cwd()) / policy_path
+    policy = policy_from_mapping(
+        OmegaConf.to_container(OmegaConf.load(policy_path), resolve=True)
+    )
+    raw_frame = read_dataset(storage, ref)
+    raw_frame = raw_frame.assign(
+        prediction_regime=raw_frame["prediction_regime"].map(canonical_prediction_regime)
+    )
+    frame, shrunk_features = add_ordinal_shrinkage_features(
+        raw_frame,
+        prior_strengths=OmegaConf.to_container(spec.prior_strengths, resolve=True),
+    )
+    context_features = list(spec.context_features)
+    predictions = generate_game_ordinal_candidate_predictions(
+        frame,
+        policy=policy,
+        features=[*shrunk_features, *context_features],
+        baseline_columns=OmegaConf.to_container(spec.baseline_columns, resolve=True),
+        random_seed=int(cfg.get("random_seed", 42)),
+    )
+    output = Path(str(spec.output))
+    output.parent.mkdir(parents=True, exist_ok=True)
+    predictions.to_csv(output, index=False)
+    result = {
+        "rows": len(predictions),
+        "feature_dataset_version": ref.version_id,
+        "selection_basis": "predictive_results_only",
+        "prior_strengths": OmegaConf.to_container(spec.prior_strengths, resolve=True),
+    }
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return result
+
+
 def load_and_prepare_data(cfg: DictConfig, max_workers: int = 3):
     """Load and concatenate data for configured years with parallel loading."""
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -264,6 +318,12 @@ def main(cfg: DictConfig):
             and cfg.experiment.get("workflow") == "early_season_tournament"
         ):
             train_early_season_tournament(cfg)
+            return
+        if (
+            cfg.get("experiment")
+            and cfg.experiment.get("workflow") == "game_ordinal_tournament"
+        ):
+            train_game_ordinal_tournament(cfg)
             return
 
         # Load Data
