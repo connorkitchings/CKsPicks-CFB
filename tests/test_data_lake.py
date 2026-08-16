@@ -173,6 +173,70 @@ def test_dataset_ref_is_checksum_verified(tmp_path):
         read_dataset(storage, ref)
 
 
+def test_v2_dataset_identity_includes_cutoff_and_partitions(tmp_path):
+    storage = LocalStorage(tmp_path)
+    parent = DatasetRef("schedule", "v1", "1", "a" * 64, "unused")
+    first, _ = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="matchup_features",
+            parent_refs=(parent,),
+            code_sha="code",
+            config_sha="config",
+            as_of=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            tier="gold",
+        ),
+        records=[{"game_id": 1, "feature": 2.0}],
+        partitions={"seasons": [2026]},
+    )
+    later, _ = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="matchup_features",
+            parent_refs=(parent,),
+            code_sha="code",
+            config_sha="config",
+            as_of=datetime(2026, 8, 2, tzinfo=timezone.utc),
+            tier="gold",
+        ),
+        records=[{"game_id": 1, "feature": 2.0}],
+        partitions={"seasons": [2026]},
+    )
+    other_partition, _ = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="matchup_features",
+            parent_refs=(parent,),
+            code_sha="code",
+            config_sha="config",
+            as_of=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            tier="gold",
+        ),
+        records=[{"game_id": 1, "feature": 2.0}],
+        partitions={"seasons": [2025]},
+    )
+    assert len({first.version_id, later.version_id, other_partition.version_id}) == 3
+
+
+def test_failed_v2_validation_does_not_write_canonical_dataset(tmp_path):
+    storage = LocalStorage(tmp_path)
+    with pytest.raises(StorageError, match="validation failed"):
+        build_dataset_version(
+            storage,
+            build=BuildRequest(
+                dataset="matchup_features",
+                parent_refs=(),
+                code_sha="code",
+                config_sha="config",
+                as_of=datetime.now(timezone.utc),
+                tier="gold",
+            ),
+            records=[{"game_id": 1}],
+            validation={"valid": False},
+        )
+    assert storage.list_files("lake/") == []
+
+
 def test_consensus_then_median_is_independent_by_target():
     now = datetime.now(timezone.utc)
     quotes = [

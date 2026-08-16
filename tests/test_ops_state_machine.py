@@ -10,7 +10,7 @@ from cks_picks_cfb.ops.state_machine import (
 )
 
 
-def test_pipeline_resumes_after_forced_crash_without_repeating_completed_steps():
+def test_pipeline_reruns_unverified_step_after_forced_crash():
     store = InMemoryStateStore()
     calls = []
     context = new_context(
@@ -30,8 +30,49 @@ def test_pipeline_resumes_after_forced_crash_without_repeating_completed_steps()
             context, steps
         )
     StateMachine(store, logger=lambda _: None).run(context, steps)
-    assert calls == ["one", "two"]
+    assert calls == ["one", "one", "two"]
     assert store.runs["pipeline-1"] == "succeeded"
+    assert context.lease_epoch == 0
+
+
+def test_pipeline_rejects_changed_step_definition_on_resume():
+    store = InMemoryStateStore()
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of="2026-08-20T00:00:00Z",
+        pipeline_run_id="pipeline-definition",
+    )
+    StateMachine(store, logger=lambda _: None).run(
+        context, [PipelineStep("one", lambda _: [], definition={"version": 1})]
+    )
+    with pytest.raises(RuntimeError, match="definition"):
+        StateMachine(store, logger=lambda _: None).run(
+            context, [PipelineStep("one", lambda _: [], definition={"version": 2})]
+        )
+
+
+def test_pipeline_skips_step_only_when_output_validator_passes():
+    store = InMemoryStateStore()
+    calls = []
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of="2026-08-20T00:00:00Z",
+        pipeline_run_id="pipeline-verified",
+    )
+    step = PipelineStep(
+        "one",
+        lambda _: calls.append("one") or [{"uri": "immutable"}],
+        resume_validator=lambda _, outputs: outputs == [{"uri": "immutable"}],
+    )
+    StateMachine(store, logger=lambda _: None).run(context, [step])
+    StateMachine(store, logger=lambda _: None).run(context, [step])
+    assert calls == ["one"]
 
 
 def test_week_lock_rejects_concurrent_owner():

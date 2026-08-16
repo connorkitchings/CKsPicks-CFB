@@ -193,13 +193,13 @@ make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 make migrate-db
 
 # Pregame publish (refresh schedule/lines → predict → R2 artifact → Neon):
-make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 
 # Freeze the exact artifact that will later be scored
-make freeze-week YEAR=2026 WEEK=0
+make freeze-week YEAR=2026 WEEK=0 ENV=preview
 
 # Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
-make close-week YEAR=2026 WEEK=0
+make close-week YEAR=2026 WEEK=0 ENV=preview
 
 # Discover registered/orphaned immutable artifacts
 make reconcile YEAR=2026 ENV=preview

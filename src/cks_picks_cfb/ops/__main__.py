@@ -15,6 +15,7 @@ import psycopg
 from dotenv import load_dotenv
 from omegaconf import OmegaConf
 
+from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ops.state_machine import (
     OperationContext,
@@ -48,7 +49,22 @@ def _snapshot_inputs_step(argv: Sequence[str], output_uri: str) -> PipelineStep:
         refs = json.loads(get_storage().read_bytes(output_uri).decode("utf-8"))
         return list(refs)
 
-    return PipelineStep("snapshot_inputs", action)
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        try:
+            storage = get_storage()
+            persisted = json.loads(storage.read_bytes(output_uri).decode("utf-8"))
+        except Exception:
+            return False
+        return list(outputs) == persisted
+
+    return PipelineStep(
+        "snapshot_inputs",
+        action,
+        definition={"argv": list(argv), "output_uri": output_uri},
+        resume_validator=resume_validator,
+    )
 
 
 def _fetch_source_step(
@@ -86,7 +102,40 @@ def _fetch_source_step(
             for row in rows
         )
 
-    return PipelineStep(name, action)
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        if not outputs:
+            return False
+        try:
+            with psycopg.connect(conn_url) as conn:
+                rows = conn.execute(
+                    "SELECT capture_id, content_sha, uri, row_count "
+                    "FROM catalog.source_captures WHERE capture_id = ANY(%s)",
+                    ([str(output["capture_id"]) for output in outputs],),
+                ).fetchall()
+        except Exception:
+            return False
+        actual = {
+            str(row[0]): {
+                "capture_id": str(row[0]),
+                "content_sha": str(row[1]),
+                "uri": str(row[2]),
+                "row_count": int(row[3]),
+            }
+            for row in rows
+        }
+        return all(
+            actual.get(str(output.get("capture_id"))) == dict(output)
+            for output in outputs
+        )
+
+    return PipelineStep(
+        name,
+        action,
+        definition={"argv": list(argv), "entity": entity},
+        resume_validator=resume_validator,
+    )
 
 
 def _resolve_frozen_run(conn_url: str, season: int, week: int) -> str:
@@ -1076,19 +1125,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     load_dotenv()
     args = parse_args()
-    production_url = os.getenv("DATABASE_URL")
-    conn_url = (
-        os.getenv("PREVIEW_DATABASE_URL")
-        if args.environment == "preview"
-        else production_url
-    )
-    if not conn_url:
-        required = (
-            "PREVIEW_DATABASE_URL" if args.environment == "preview" else "DATABASE_URL"
-        )
-        raise SystemExit(f"{required} is not set")
-    if args.environment == "preview" and conn_url == production_url:
-        raise SystemExit("PREVIEW_DATABASE_URL must differ from DATABASE_URL")
+    try:
+        conn_url = resolve_runtime_target(args.environment).database_url
+    except (RuntimeError, ValueError) as exc:
+        raise SystemExit(str(exc)) from exc
     if (
         args.command in {"inventory-source", "import-history", "hydrate-history"}
         and args.environment != "preview"

@@ -168,22 +168,22 @@ readiness:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops readiness --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
 
 publish-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ]; then \
-		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview|production"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(or $(ENV),production) $(if $(CONFIG),--config $(CONFIG),)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
 
 freeze-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make freeze-week YEAR=2026 WEEK=1 [WAIVER='reason']"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make freeze-week YEAR=2026 WEEK=1 ENV=preview|production [WAIVER='reason']"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(or $(ENV),production) $(if $(WAIVER),--waiver "$(WAIVER)",)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(ENV) $(if $(WAIVER),--waiver "$(WAIVER)",)
 
 close-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ]; then \
-		echo "Usage: make close-week YEAR=2026 WEEK=1"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make close-week YEAR=2026 WEEK=1 ENV=preview|production"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --environment $(or $(ENV),production)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --environment $(ENV)
 
 weekly: publish-week
 

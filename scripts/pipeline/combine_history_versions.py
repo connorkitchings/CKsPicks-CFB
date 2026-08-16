@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -51,7 +50,7 @@ def main() -> None:
     parser.add_argument(
         "--environment",
         choices=["production", "preview"],
-        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+        required=True,
     )
     parser.add_argument("--optional", action="store_true")
     args = parser.parse_args()
@@ -113,7 +112,7 @@ def main() -> None:
         partitions={"seasons": seasons},
         validation=validation,
     )
-    register_dataset_version(os.environ["DATABASE_URL"], ref, manifest)
+    register_dataset_version(catalog_connection_url(args.environment), ref, manifest)
     payload = json.dumps(asdict(ref), indent=2, sort_keys=True).encode()
     if storage.exists(args.output_ref_uri):
         if storage.read_bytes(args.output_ref_uri) != payload:

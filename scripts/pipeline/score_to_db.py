@@ -38,6 +38,7 @@ from cks_picks_cfb.artifacts import (
     scored_run_manifest_path,
 )
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
 
 try:
     import psycopg
@@ -234,6 +235,7 @@ def upsert_results(df: pd.DataFrame, conn_url: str) -> int:
     count = 0
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            assert_active_pipeline_lease(cur)
             for _, row in df.iterrows():
                 if pd.isna(row.get("game_id")):
                     continue
@@ -260,6 +262,7 @@ def upsert_results(df: pd.DataFrame, conn_url: str) -> int:
 def mark_run_scored(conn_url: str, run_id: str) -> None:
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            assert_active_pipeline_lease(cur)
             cur.execute(
                 """
                 UPDATE prediction_runs
@@ -282,6 +285,7 @@ def publish_scored_run(
     count = 0
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            assert_active_pipeline_lease(cur)
             cur.execute(
                 "SELECT state FROM prediction_runs WHERE run_id = %s FOR UPDATE",
                 (run_id,),

@@ -20,6 +20,7 @@ from cks_picks_cfb.data.lake import (
     build_dataset_version,
     canonicalize_market_quotes_frame,
 )
+from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import StorageBackend
 
 
@@ -781,8 +782,10 @@ def build_silver_version(
         frame["captured_at"] = max(
             capture.captured_at for capture in source_captures
         ).isoformat()
-    validation = validate_contract(dataset, frame)
     contract = SILVER_CONTRACTS[dataset]
+    validation = validate_contract(dataset, frame)
+    schema = schema_for(dataset, contract.schema_version)
+    validation.update(validate_frame(frame, schema))
     return build_dataset_version(
         storage,
         build=BuildRequest(
@@ -794,6 +797,7 @@ def build_silver_version(
             as_of=as_of,
             schema_version=contract.schema_version,
             tier="silver",
+            schema_sha=schema.sha256,
         ),
         records=frame.to_dict("records"),
         partitions={

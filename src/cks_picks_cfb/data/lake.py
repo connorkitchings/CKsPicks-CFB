@@ -96,6 +96,8 @@ class BuildRequest:
     source_capture_ids: tuple[str, ...] = ()
     schema_version: str = "1"
     tier: Literal["silver", "gold"] = "silver"
+    identity_version: str = "dataset_identity_v2"
+    schema_sha: str | None = None
 
 
 @dataclass(frozen=True)
@@ -147,6 +149,8 @@ class DatasetManifest:
     coverage: Mapping[str, Any] = field(default_factory=dict)
     validation: Mapping[str, Any] = field(default_factory=dict)
     state: str = "validated"
+    identity_version: str = "v1"
+    schema_sha: str | None = None
 
 
 def parquet_bytes(records: Sequence[Mapping[str, Any]]) -> bytes:
@@ -256,18 +260,62 @@ def build_dataset_version(
 ) -> tuple[DatasetRef, DatasetManifest]:
     """Create an immutable Silver/Gold dataset from explicit parent versions."""
     as_of = _utc(build.as_of)
+    frame = pd.DataFrame.from_records(records)
+    validation_results = dict(validation or {"valid": True})
+    schema_sha = build.schema_sha
+    if build.identity_version == "dataset_identity_v2" and schema_sha is None:
+        from cks_picks_cfb.data.schema_contracts import (
+            DatasetSchemaError,
+            schema_for,
+            validate_frame,
+        )
+
+        try:
+            schema = schema_for(build.dataset, build.schema_version)
+        except DatasetSchemaError:
+            schema = None
+        if schema is not None:
+            validation_results.update(validate_frame(frame, schema))
+            schema_sha = schema.sha256
+    if not all(
+        value for value in validation_results.values() if isinstance(value, bool)
+    ):
+        raise StorageError(
+            f"Dataset validation failed for {build.dataset}: {validation_results}"
+        )
     payload = parquet_bytes(records)
     content_sha = _sha256(payload)
-    identity = {
+    identity: dict[str, Any] = {
         "dataset": build.dataset,
         "tier": build.tier,
         "schema_version": build.schema_version,
         "content_sha": content_sha,
-        "parents": [asdict(parent) for parent in build.parent_refs],
+        "parents": [
+            {
+                "dataset": parent.dataset,
+                "version_id": parent.version_id,
+                "schema_version": parent.schema_version,
+                "content_sha": parent.content_sha,
+            }
+            for parent in build.parent_refs
+        ],
         "source_captures": list(build.source_capture_ids),
         "code_sha": build.code_sha,
         "config_sha": build.config_sha,
     }
+    if build.identity_version == "dataset_identity_v2":
+        identity.update(
+            {
+                "identity_version": build.identity_version,
+                "as_of": as_of.isoformat(),
+                "partitions": dict(partitions or {}),
+                "schema_sha": schema_sha,
+            }
+        )
+    elif build.identity_version != "v1":
+        raise ValueError(
+            f"Unsupported dataset identity version: {build.identity_version}"
+        )
     version_id = _sha256(_canonical_json(identity))[:24]
     prefix = f"lake/{build.tier}/dataset={build.dataset}/version={version_id}"
     uri = f"{prefix}/data.parquet"
@@ -282,16 +330,22 @@ def build_dataset_version(
     manifest_uri = f"{prefix}/manifest.json"
     if storage.exists(manifest_uri):
         existing = json.loads(storage.read_bytes(manifest_uri).decode("utf-8"))
-        if existing.get("state") != "failed":
-            if existing.get("content_sha") != content_sha:
-                raise StorageError(f"Dataset manifest collision at {manifest_uri}")
-            existing["parent_versions"] = tuple(existing.get("parent_versions", ()))
-            existing["source_capture_ids"] = tuple(
-                existing.get("source_capture_ids", ())
-            )
-            return ref, DatasetManifest(**existing)
+        if existing.get("content_sha") != content_sha:
+            raise StorageError(f"Dataset manifest collision at {manifest_uri}")
+        existing["parent_versions"] = tuple(existing.get("parent_versions", ()))
+        existing["source_capture_ids"] = tuple(existing.get("source_capture_ids", ()))
+        existing.setdefault("identity_version", "v1")
+        existing.setdefault("schema_sha", None)
+        manifest = DatasetManifest(**existing)
+        if build.identity_version == "dataset_identity_v2" and (
+            manifest.identity_version != build.identity_version
+            or manifest.as_of != as_of.isoformat()
+            or dict(manifest.partitions) != dict(partitions or {})
+            or manifest.schema_sha != schema_sha
+        ):
+            raise StorageError(f"Dataset manifest identity collision at {manifest_uri}")
+        return ref, manifest
 
-    frame = pd.DataFrame.from_records(records)
     missingness = {
         str(column): float(frame[column].isna().mean()) for column in frame.columns
     }
@@ -305,14 +359,6 @@ def build_dataset_version(
             min_event_at = valid.min().isoformat()
             max_event_at = valid.max().isoformat()
 
-    validation_results = dict(validation or {"valid": True})
-    state = (
-        "validated"
-        if all(
-            value for value in validation_results.values() if isinstance(value, bool)
-        )
-        else "failed"
-    )
     manifest = DatasetManifest(
         dataset=build.dataset,
         version_id=version_id,
@@ -333,12 +379,11 @@ def build_dataset_version(
         missingness=missingness,
         coverage=dict(coverage or {}),
         validation=validation_results,
-        state=state,
+        state="validated",
+        identity_version=build.identity_version,
+        schema_sha=schema_sha,
     )
-    if storage.exists(manifest_uri):
-        storage.write_bytes(_canonical_json(asdict(manifest)), manifest_uri)
-    else:
-        _write_immutable(storage, manifest_uri, _canonical_json(asdict(manifest)))
+    _write_immutable(storage, manifest_uri, _canonical_json(asdict(manifest)))
     return ref, manifest
 
 

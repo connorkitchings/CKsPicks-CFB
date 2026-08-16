@@ -26,6 +26,7 @@ from cks_picks_cfb.data.catalog import (
     register_source_capture,
 )
 from cks_picks_cfb.data.lake import capture_provider_records
+from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.silver import build_silver_version
 from cks_picks_cfb.data.storage import get_storage
 
@@ -52,13 +53,7 @@ def main() -> None:
     token = os.getenv("CFBD_API_KEY")
     if not token:
         raise SystemExit("CFBD_API_KEY is required")
-    conn_url = (
-        os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
-        if args.environment == "preview"
-        else os.getenv("DATABASE_URL")
-    )
-    if not conn_url:
-        raise SystemExit("DATABASE_URL is required")
+    conn_url = resolve_runtime_target(args.environment).database_url
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
         register_existing_dataset_ref(conn_url, storage, args.output_ref_uri)

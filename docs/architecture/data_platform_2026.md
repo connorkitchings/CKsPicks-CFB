@@ -26,8 +26,11 @@ artifacts/<environment>/scored/year=<year>/week=<week>/run_id=<run>/
 ```
 
 Identical provider payloads reuse one content object but create distinct observation
-records. Silver and Gold version IDs include content, explicit parent refs, cutoff,
-schema, code SHA, and config SHA. A rebuild with identical inputs reuses the version.
+records. New v2 Silver and Gold version IDs include content, explicit parent
+identities, normalized cutoff, partitions, schema SHA, code SHA, and config SHA;
+parent URIs are deliberately excluded. V1 manifests remain readable historical
+evidence. A v2 rebuild with identical inputs reuses the version; failed validation
+writes no canonical lake object or manifest.
 
 ## Data contracts
 
@@ -104,9 +107,10 @@ python -m cks_picks_cfb.ops reconcile ...
 python -m cks_picks_cfb.ops audit-data ...
 ```
 
-Each command takes one advisory lock per environment/season/week and records durable
-step attempts. Resume with the same `--pipeline-run-id`; completed idempotent steps
-are skipped. Prediction run IDs are chosen before generation and passed through every
+Each command uses a durable database lease per environment/season/week and records
+durable step attempts. Resume with the same `--pipeline-run-id` requires an exact
+operation/step-definition match; completed steps skip only after their outputs
+validate. Prediction run IDs are chosen before generation and passed through every
 later step. R2 objects are staged first, and activation is a Neon transaction.
 
 Set `CFB_REVALIDATION_URL` and `REVALIDATION_SECRET` for signed on-demand Vercel

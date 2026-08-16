@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -19,6 +18,7 @@ from cks_picks_cfb.data.catalog import (
     source_capture_by_id,
 )
 from cks_picks_cfb.data.lake import read_source_capture
+from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.silver import build_silver_version, normalize_games
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.data.week_policy import (
@@ -63,15 +63,10 @@ def main() -> None:
     parser.add_argument(
         "--environment",
         choices=["production", "preview"],
-        default=os.getenv("CFB_ARTIFACT_ENV", "production"),
+        required=True,
     )
     args = parser.parse_args()
-    if args.environment == "preview":
-        conn_url = os.getenv("PREVIEW_DATABASE_URL") or os.getenv("DATABASE_URL")
-    else:
-        conn_url = os.getenv("DATABASE_URL")
-    if not conn_url:
-        raise SystemExit("DATABASE_URL is required")
+    conn_url = resolve_runtime_target(args.environment).database_url
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
         register_existing_dataset_ref(conn_url, storage, args.output_ref_uri)

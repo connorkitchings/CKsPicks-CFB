@@ -314,6 +314,7 @@ CREATE TABLE IF NOT EXISTS catalog.schema_versions (
     dataset        TEXT NOT NULL,
     schema_version TEXT NOT NULL,
     schema_json    JSONB NOT NULL CHECK (jsonb_typeof(schema_json) = 'object'),
+    schema_sha     TEXT,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (dataset, schema_version)
 );
@@ -331,6 +332,9 @@ CREATE TABLE IF NOT EXISTS catalog.dataset_versions (
     as_of            TIMESTAMPTZ NOT NULL,
     code_sha         TEXT,
     config_sha       TEXT,
+    identity_version TEXT NOT NULL DEFAULT 'v1'
+        CHECK (identity_version IN ('v1', 'dataset_identity_v2')),
+    schema_sha       TEXT,
     state            TEXT NOT NULL CHECK (state IN ('staged', 'validated', 'failed', 'quarantined')),
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (dataset, version_id)
@@ -338,6 +342,8 @@ CREATE TABLE IF NOT EXISTS catalog.dataset_versions (
 
 CREATE INDEX IF NOT EXISTS idx_dataset_versions_as_of
     ON catalog.dataset_versions (dataset, as_of DESC);
+CREATE INDEX IF NOT EXISTS idx_dataset_versions_schema
+    ON catalog.dataset_versions (dataset, schema_version, schema_sha);
 
 CREATE TABLE IF NOT EXISTS catalog.dataset_dependencies (
     child_version_id  TEXT NOT NULL REFERENCES catalog.dataset_versions(version_id) ON DELETE RESTRICT,
@@ -407,11 +413,19 @@ CREATE TABLE IF NOT EXISTS ops.pipeline_runs (
     started_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     finished_at     TIMESTAMPTZ,
     error_category  TEXT,
-    error_detail    TEXT
+    error_detail    TEXT,
+    definition_json JSONB,
+    definition_sha  TEXT,
+    lease_owner     TEXT,
+    lease_epoch     BIGINT NOT NULL DEFAULT 0,
+    lease_expires_at TIMESTAMPTZ,
+    heartbeat_at    TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_scope
     ON ops.pipeline_runs (environment, season, week, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pipeline_runs_lease
+    ON ops.pipeline_runs (environment, season, week, lease_expires_at);
 
 CREATE TABLE IF NOT EXISTS ops.pipeline_steps (
     pipeline_run_id TEXT NOT NULL REFERENCES ops.pipeline_runs(pipeline_run_id) ON DELETE RESTRICT,
@@ -425,6 +439,8 @@ CREATE TABLE IF NOT EXISTS ops.pipeline_steps (
     finished_at     TIMESTAMPTZ,
     error_category  TEXT,
     error_detail    TEXT,
+    definition_sha  TEXT,
+    lease_epoch     BIGINT,
     PRIMARY KEY (pipeline_run_id, step_name),
     UNIQUE (pipeline_run_id, ordinal)
 );
@@ -567,7 +583,26 @@ SELECT
     g.start_date,
     g.home_team,
     g.away_team,
-    p.*,
+    p.run_id,
+    p.home_team_spread_line,
+    p.total_line,
+    p.predicted_spread,
+    p.predicted_total,
+    p.predicted_spread_std_dev,
+    p.predicted_total_std_dev,
+    p.spread_lean,
+    p.total_lean,
+    p.edge_spread,
+    p.edge_total,
+    p.high_confidence,
+    p.high_confidence_eligible,
+    p.home_completed_games,
+    p.away_completed_games,
+    p.regime,
+    p.spread_model_version,
+    p.total_model_version,
+    p.market_snapshot_id,
+    p.created_at AS prediction_created_at,
     sr.state AS run_state,
     sr.created_at AS run_created_at
 FROM selected_runs sr

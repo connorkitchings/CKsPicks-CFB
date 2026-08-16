@@ -3,29 +3,24 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import asdict
 from typing import Any, Mapping
 
 import psycopg
 
 from cks_picks_cfb.data.lake import DatasetManifest, DatasetRef, SourceCapture
+from cks_picks_cfb.data.runtime import resolve_runtime_target
+from cks_picks_cfb.data.schema_contracts import schema_for
 from cks_picks_cfb.data.storage import StorageBackend
 
 
 def catalog_connection_url(environment: str) -> str:
     """Resolve the catalog connection without allowing Preview to fall into production."""
-    if environment == "preview":
-        conn_url = os.getenv("PREVIEW_DATABASE_URL")
-        if not conn_url:
-            raise RuntimeError("PREVIEW_DATABASE_URL is required for Preview catalog access")
-        return conn_url
-    if environment != "production":
-        raise ValueError(f"Unsupported catalog environment: {environment}")
-    conn_url = os.getenv("DATABASE_URL")
-    if not conn_url:
-        raise RuntimeError("DATABASE_URL is required for production catalog access")
-    return conn_url
+    return resolve_runtime_target(environment).database_url
+
+
+def _canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
 
 
 def register_existing_dataset_ref(
@@ -145,6 +140,20 @@ def begin_ingestion_run(
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
+                "SELECT provider, entity, request FROM catalog.ingestion_runs "
+                "WHERE ingestion_run_id = %s",
+                (ingestion_run_id,),
+            )
+            existing = cur.fetchone()
+            expected = (provider, entity, dict(request))
+            if (
+                existing
+                and (str(existing[0]), str(existing[1]), dict(existing[2])) != expected
+            ):
+                raise ValueError(
+                    f"Immutable ingestion run conflict: {ingestion_run_id}"
+                )
+            cur.execute(
                 "INSERT INTO catalog.ingestion_runs "
                 "(ingestion_run_id, provider, entity, state, request) "
                 "VALUES (%s, %s, %s, 'running', %s::jsonb) "
@@ -186,43 +195,45 @@ def register_source_capture(
     """Register a provider observation; content SHA may repeat by design."""
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO catalog.source_captures "
-                "(capture_id, ingestion_run_id, provider, entity, captured_at, "
-                "effective_at, request, content_sha, object_sha, uri, row_count, provider_api_version, "
-                "response_metadata, state) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, "
-                "%s, %s::jsonb, 'registered') "
-                "ON CONFLICT (capture_id) DO NOTHING",
-                (
-                    capture.capture_id,
-                    ingestion_run_id,
-                    capture.provider,
-                    capture.entity,
-                    capture.captured_at,
-                    capture.effective_at,
-                    json.dumps(dict(capture.request)),
-                    capture.content_sha,
-                    capture.object_sha,
-                    capture.uri,
-                    capture.row_count,
-                    capture.provider_api_version,
-                    json.dumps(dict(capture.response_metadata)),
-                ),
-            )
+            _register_source_capture_cursor(cur, capture, ingestion_run_id)
         conn.commit()
 
 
-def register_source_captures(
-    conn_url: str,
-    captures: list[SourceCapture],
-    *,
-    ingestion_run_id: str | None = None,
-) -> int:
-    """Register immutable observations in one transaction for catalog recovery."""
-    if not captures:
-        return 0
-    rows = [
+def _register_source_capture_cursor(
+    cur: psycopg.Cursor,
+    capture: SourceCapture,
+    ingestion_run_id: str | None,
+) -> None:
+    cur.execute(
+        "SELECT provider, entity, captured_at, effective_at, request, content_sha, "
+        "object_sha, uri, row_count, provider_api_version, response_metadata "
+        "FROM catalog.source_captures WHERE capture_id = %s",
+        (capture.capture_id,),
+    )
+    existing = cur.fetchone()
+    expected = (
+        capture.provider,
+        capture.entity,
+        capture.captured_at,
+        capture.effective_at,
+        dict(capture.request),
+        capture.content_sha,
+        capture.object_sha,
+        capture.uri,
+        capture.row_count,
+        capture.provider_api_version,
+        dict(capture.response_metadata),
+    )
+    if existing and _canonical(tuple(existing)) != _canonical(expected):
+        raise ValueError(f"Immutable source capture conflict: {capture.capture_id}")
+    cur.execute(
+        "INSERT INTO catalog.source_captures "
+        "(capture_id, ingestion_run_id, provider, entity, captured_at, "
+        "effective_at, request, content_sha, object_sha, uri, row_count, provider_api_version, "
+        "response_metadata, state) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, "
+        "%s, %s::jsonb, 'registered') "
+        "ON CONFLICT (capture_id) DO NOTHING",
         (
             capture.capture_id,
             ingestion_run_id,
@@ -237,23 +248,56 @@ def register_source_captures(
             capture.row_count,
             capture.provider_api_version,
             json.dumps(dict(capture.response_metadata)),
-        )
-        for capture in captures
-    ]
+        ),
+    )
+
+
+def register_source_captures(
+    conn_url: str,
+    captures: list[SourceCapture],
+    *,
+    ingestion_run_id: str | None = None,
+) -> int:
+    """Register immutable observations in one transaction for catalog recovery."""
+    if not captures:
+        return 0
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
-            cur.executemany(
-                "INSERT INTO catalog.source_captures "
-                "(capture_id, ingestion_run_id, provider, entity, captured_at, "
-                "effective_at, request, content_sha, object_sha, uri, row_count, "
-                "provider_api_version, response_metadata, state) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, "
-                "%s, %s::jsonb, 'registered') "
-                "ON CONFLICT (capture_id) DO NOTHING",
-                rows,
-            )
+            for capture in captures:
+                _register_source_capture_cursor(cur, capture, ingestion_run_id)
         conn.commit()
     return len(captures)
+
+
+def register_schema_version(conn_url: str, dataset: str, schema_version: str) -> str:
+    """Register an executable schema once and reject same-name drift."""
+    schema = schema_for(dataset, schema_version)
+    schema_json = schema.json()
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT schema_json, schema_sha FROM catalog.schema_versions "
+                "WHERE dataset = %s AND schema_version = %s",
+                (dataset, schema_version),
+            )
+            existing = cur.fetchone()
+            if existing:
+                existing_json, existing_sha = dict(existing[0]), existing[1]
+                if _canonical(existing_json) != _canonical(schema_json) or (
+                    existing_sha is not None and str(existing_sha) != schema.sha256
+                ):
+                    raise ValueError(
+                        f"Immutable schema conflict: {dataset}/{schema_version}"
+                    )
+            else:
+                cur.execute(
+                    "INSERT INTO catalog.schema_versions "
+                    "(dataset, schema_version, schema_json, schema_sha) "
+                    "VALUES (%s, %s, %s::jsonb, %s)",
+                    (dataset, schema_version, _canonical(schema_json), schema.sha256),
+                )
+        conn.commit()
+    return schema.sha256
 
 
 def register_dataset_version(
@@ -263,13 +307,49 @@ def register_dataset_version(
 ) -> None:
     """Register a validated dataset and its complete dependency edges atomically."""
     manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
+    if manifest.identity_version == "dataset_identity_v2":
+        registered_schema_sha = register_schema_version(
+            conn_url, ref.dataset, ref.schema_version
+        )
+        if manifest.schema_sha != registered_schema_sha:
+            raise ValueError(
+                f"Dataset schema SHA mismatch for {ref.dataset}/{ref.version_id}"
+            )
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
+                "SELECT dataset, tier, schema_version, content_sha, uri, manifest_uri, "
+                "row_count, partitions, as_of, code_sha, config_sha, state, identity_version, "
+                "schema_sha FROM catalog.dataset_versions WHERE version_id = %s",
+                (ref.version_id,),
+            )
+            existing = cur.fetchone()
+            expected = (
+                ref.dataset,
+                manifest.tier,
+                ref.schema_version,
+                ref.content_sha,
+                ref.uri,
+                manifest_uri,
+                manifest.row_count,
+                dict(manifest.partitions),
+                manifest.as_of,
+                manifest.code_sha,
+                manifest.config_sha,
+                manifest.state,
+                manifest.identity_version,
+                manifest.schema_sha,
+            )
+            if existing and _canonical(tuple(existing)) != _canonical(expected):
+                raise ValueError(
+                    f"Immutable dataset version conflict: {ref.version_id}"
+                )
+            cur.execute(
                 "INSERT INTO catalog.dataset_versions "
                 "(version_id, dataset, tier, schema_version, content_sha, uri, "
-                "manifest_uri, row_count, partitions, as_of, code_sha, config_sha, state) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s) "
+                "manifest_uri, row_count, partitions, as_of, code_sha, config_sha, state, "
+                "identity_version, schema_sha) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, %s, %s) "
                 "ON CONFLICT (version_id) DO NOTHING",
                 (
                     ref.version_id,
@@ -285,14 +365,48 @@ def register_dataset_version(
                     manifest.code_sha,
                     manifest.config_sha,
                     manifest.state,
+                    manifest.identity_version,
+                    manifest.schema_sha,
                 ),
             )
+            cur.execute(
+                "SELECT parent_version_id, ordinal FROM catalog.dataset_dependencies "
+                "WHERE child_version_id = %s ORDER BY ordinal",
+                (ref.version_id,),
+            )
+            existing_parents = tuple(
+                (str(row[0]), int(row[1])) for row in cur.fetchall()
+            )
+            expected_parents = tuple(enumerate(manifest.parent_versions))
+            normalized_expected_parents = tuple(
+                (parent, ordinal) for ordinal, parent in expected_parents
+            )
+            if existing_parents and existing_parents != normalized_expected_parents:
+                raise ValueError(
+                    f"Immutable dataset dependency conflict: {ref.version_id}"
+                )
             for ordinal, parent_version in enumerate(manifest.parent_versions):
                 cur.execute(
                     "INSERT INTO catalog.dataset_dependencies "
                     "(child_version_id, parent_version_id, ordinal) VALUES (%s, %s, %s) "
                     "ON CONFLICT (child_version_id, parent_version_id) DO NOTHING",
                     (ref.version_id, parent_version, ordinal),
+                )
+            cur.execute(
+                "SELECT capture_id, ordinal FROM catalog.dataset_capture_dependencies "
+                "WHERE child_version_id = %s ORDER BY ordinal",
+                (ref.version_id,),
+            )
+            existing_captures = tuple(
+                (str(row[0]), int(row[1])) for row in cur.fetchall()
+            )
+            expected_captures = tuple(
+                (capture_id, ordinal)
+                for ordinal, capture_id in enumerate(manifest.source_capture_ids)
+            )
+            if existing_captures and existing_captures != expected_captures:
+                raise ValueError(
+                    f"Immutable capture dependency conflict: {ref.version_id}"
                 )
             for ordinal, capture_id in enumerate(manifest.source_capture_ids):
                 cur.execute(
@@ -303,16 +417,29 @@ def register_dataset_version(
                 )
             for check_name, value in manifest.validation.items():
                 passed = bool(value) if isinstance(value, bool) else True
+                details = {"value": value}
+                cur.execute(
+                    "SELECT passed, details FROM catalog.quality_results "
+                    "WHERE version_id = %s AND check_name = %s",
+                    (ref.version_id, str(check_name)),
+                )
+                existing_quality = cur.fetchone()
+                if existing_quality and (
+                    bool(existing_quality[0]) != passed
+                    or _canonical(dict(existing_quality[1])) != _canonical(details)
+                ):
+                    raise ValueError(
+                        f"Immutable quality result conflict: {ref.version_id}/{check_name}"
+                    )
                 cur.execute(
                     "INSERT INTO catalog.quality_results "
                     "(version_id, check_name, passed, details) VALUES (%s, %s, %s, %s::jsonb) "
-                    "ON CONFLICT (version_id, check_name) DO UPDATE SET "
-                    "passed = EXCLUDED.passed, details = EXCLUDED.details, checked_at = NOW()",
+                    "ON CONFLICT (version_id, check_name) DO NOTHING",
                     (
                         ref.version_id,
                         str(check_name),
                         passed,
-                        json.dumps({"value": value}, default=str),
+                        json.dumps(details, default=str),
                     ),
                 )
         conn.commit()

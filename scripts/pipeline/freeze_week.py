@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 
+from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
+
 try:
     import psycopg
 except ImportError as exc:  # pragma: no cover
@@ -26,6 +28,7 @@ def freeze_run(
     """Freeze the active run transactionally and return its metadata."""
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            assert_active_pipeline_lease(cur)
             cur.execute(
                 """
                 SELECT pr.run_id, pr.state, pr.expected_games,

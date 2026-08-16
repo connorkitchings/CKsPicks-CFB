@@ -38,6 +38,7 @@ from cks_picks_cfb.artifacts import (
     read_json_artifact,
     read_verified_csv_artifact,
 )
+from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
 
 try:
     import psycopg
@@ -449,6 +450,7 @@ def publish_week(
     }
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
+            assert_active_pipeline_lease(cur)
             cur.execute(
                 "SELECT state FROM prediction_runs WHERE run_id = %s", (run_id,)
             )

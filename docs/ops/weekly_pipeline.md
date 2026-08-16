@@ -48,7 +48,8 @@ Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS
 ## Progressive publish and freeze
 
 Publish and rerun as lines arrive. Rehearsals must name Preview explicitly; the
-Make target defaults to production when `ENV` is omitted:
+Every mutating Make target requires an explicit `ENV`; there is no implicit
+production default:
 
 ```bash
 make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview \
@@ -82,13 +83,13 @@ output.
 Before kickoff, freeze the active run:
 
 ```bash
-make freeze-week YEAR=2026 WEEK=N
+make freeze-week YEAR=2026 WEEK=N ENV=preview
 ```
 
 Freeze requires predictions and both line types for every eligible game. A genuine provider exception can be recorded explicitly:
 
 ```bash
-make freeze-week YEAR=2026 WEEK=N WAIVER="provider did not list total for game 123"
+make freeze-week YEAR=2026 WEEK=N ENV=preview WAIVER="provider did not list total for game 123"
 ```
 
 Frozen runs are immutable. Historical pages select the newest frozen/scored run, while the active week selects `current_week.active_run_id`.
@@ -98,7 +99,7 @@ Frozen runs are immutable. Historical pages select the newest frozen/scored run,
 After finals:
 
 ```bash
-make close-week YEAR=2026 WEEK=N
+make close-week YEAR=2026 WEEK=N ENV=preview
 ```
 
 Scoring resolves the frozen run from Neon, verifies that run's immutable R2 artifact, and writes run-specific `prediction_grades`. It cannot score a mutable preview or a global game grade.
