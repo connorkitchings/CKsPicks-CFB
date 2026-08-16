@@ -26,204 +26,182 @@ function marketSpreadLabel(homeTeam: string, line: number | null): string {
   return `${homeTeam} ${signedSpread(line)}`;
 }
 
+const REGIME_LABEL = {
+  preseason: "Preseason",
+  one_game: "1 game",
+  two_games: "2 games",
+  three_games: "3 games",
+  established: "Established",
+} as const;
+
+/**
+ * Matchup-centric game card. One shell serves both publication modes:
+ * the matchup block (logos, names, big final scores) is always present;
+ * predictions mode adds a lean rail and a market-vs-model footer, while
+ * market mode shows the current lines in the same rail position.
+ */
 export function GameRow({ game }: { game: Game }) {
   if (game.publicationMode === "market") {
     return <MarketGameRow game={game} />;
   }
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
-  const hasAnyLine = game.homeTeamSpreadLine !== null || game.totalLine !== null;
-  const regimeLabel = {
-    preseason: "Preseason",
-    one_game: "1 game",
-    two_games: "2 games",
-    three_games: "3 games",
-    established: "Established",
-  }[game.regime ?? "established"];
+  const hasAnyLine =
+    game.homeTeamSpreadLine !== null || game.totalLine !== null;
+  const regimeLabel = game.regime ? REGIME_LABEL[game.regime] : null;
 
   return (
-    <li
-      className={clsx(
-        "rounded-xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-950",
-        game.highConfidence &&
-          "ring-2 ring-blue-500/40 dark:ring-blue-400/30",
-      )}
-    >
-      {/* Header row: time + confidence marker */}
-      <div className="mb-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+    <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+      {/* Meta row: kickoff + context markers */}
+      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
         <span>{formatKickoff(game.startDate)}</span>
         <div className="flex items-center gap-2">
-          {game.regime && (
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          {regimeLabel && (
+            <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
               {regimeLabel}
             </span>
           )}
           {game.highConfidence && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              ★ High Confidence
+            <span
+              className="text-sm leading-none text-accent"
+              title="High confidence lean"
+              aria-label="High confidence lean"
+            >
+              ★
             </span>
           )}
         </div>
       </div>
 
-      {!hasAnyLine && (
-        <div className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-          Line unavailable—model prediction shown, no lean.
-        </div>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
-        {/* Teams + logos */}
-        <div className="space-y-2">
+      {/* Matchup + lean rail */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1 space-y-1.5">
           <TeamLine
             name={game.awayTeam}
-            role="away"
+            score={game.awayPoints}
             highlighted={game.spreadLean === "away"}
           />
           <TeamLine
             name={game.homeTeam}
-            role="home"
+            home
+            score={game.homePoints}
             highlighted={game.spreadLean === "home"}
           />
         </div>
-
-        {/* Model output + leans */}
-        <div className="flex flex-col items-end gap-2 text-right">
-          <LeanBadge
-            lean={game.spreadLean}
-            edge={game.edgeSpread}
-            homeTeam={game.homeTeam}
-            awayTeam={game.awayTeam}
-          />
-          <TotalLeanChip
-            lean={game.totalLean}
-            edge={game.edgeTotal}
-            totalLine={game.totalLine}
-          />
-        </div>
+        {hasAnyLine ? (
+          <div className="flex shrink-0 gap-6 sm:flex-col sm:gap-1.5 sm:text-right">
+            <LeanBadge
+              lean={game.spreadLean}
+              edge={game.edgeSpread}
+              homeTeam={game.homeTeam}
+              awayTeam={game.awayTeam}
+              homeLine={game.homeTeamSpreadLine}
+            />
+            <TotalLeanChip
+              lean={game.totalLean}
+              edge={game.edgeTotal}
+              totalLine={game.totalLine}
+            />
+          </div>
+        ) : (
+          <p className="shrink-0 text-xs text-ink-faint sm:max-w-40 sm:text-right">
+            No market line — model prediction shown, no lean.
+          </p>
+        )}
       </div>
 
-      {/* Market lines + model predictions */}
-      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-3 text-xs dark:border-zinc-900">
+      {/* Market vs model comparison */}
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3 text-xs">
         <div>
-          <div className="text-zinc-400 dark:text-zinc-500">Market</div>
-          <div className="font-mono text-zinc-700 dark:text-zinc-300">
+          <div className="text-ink-faint">Market</div>
+          <div className="font-mono tabular-nums text-ink-muted">
             {marketSpreadLabel(game.homeTeam, game.homeTeamSpreadLine)}
           </div>
           {game.totalLine !== null && (
-            <div className="font-mono text-zinc-700 dark:text-zinc-300">
+            <div className="font-mono tabular-nums text-ink-muted">
               O/U {game.totalLine.toFixed(1)}
             </div>
           )}
         </div>
         <div className="text-right">
-          <div className="text-zinc-400 dark:text-zinc-500">Model says</div>
-          <div className="font-mono text-zinc-700 dark:text-zinc-300">
-            pred spread {signedSpread(game.predictedSpread)}
+          <div className="text-ink-faint">Model</div>
+          <div className="font-mono tabular-nums text-ink-muted">
+            spread {signedSpread(game.predictedSpread)}
           </div>
           {game.predictedTotal !== null && (
-            <div className="font-mono text-zinc-700 dark:text-zinc-300">
-              pred total {game.predictedTotal.toFixed(1)}
+            <div className="font-mono tabular-nums text-ink-muted">
+              total {game.predictedTotal.toFixed(1)}
             </div>
           )}
         </div>
       </div>
 
-      {/* Score (if game has been played) */}
-      {hasResults && (
-        <div className="mt-2 flex items-center gap-3 text-xs">
-          <span className="text-zinc-500 dark:text-zinc-400">Final:</span>
-          <span className="font-mono font-semibold">
-            {game.awayPoints}–{game.homePoints}
-          </span>
+      {/* Grades (once the game is scored) */}
+      {hasResults && (game.spreadResult || game.totalResult) && (
+        <div className="mt-2 flex items-center gap-2">
           {game.spreadResult && (
-            <span
-              className={clsx(
-                "rounded px-1.5 py-0.5 font-medium",
-                game.spreadResult === "win"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                  : game.spreadResult === "loss"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
-              )}
-            >
-              spread {game.spreadResult}
-            </span>
+            <ResultChip label="Spread" result={game.spreadResult} />
           )}
           {game.totalResult && (
-            <span
-              className={clsx(
-                "rounded px-1.5 py-0.5 font-medium",
-                game.totalResult === "win"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                  : game.totalResult === "loss"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
-              )}
-            >
-              total {game.totalResult}
-            </span>
+            <ResultChip label="Total" result={game.totalResult} />
           )}
         </div>
       )}
+
       {(game.spreadModelVersion || game.totalModelVersion) && (
-        <div className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-600">
-          Spread {game.spreadModelVersion ?? "—"} · Total {game.totalModelVersion ?? "—"}
+        <div className="mt-2 text-[10px] text-ink-faint">
+          Spread {game.spreadModelVersion ?? "—"} · Total{" "}
+          {game.totalModelVersion ?? "—"}
         </div>
       )}
     </li>
   );
 }
 
-function MarketGameRow({ game }: { game: Extract<Game, { publicationMode: "market" }> }) {
-  const hasResults = game.homePoints !== null && game.awayPoints !== null;
+/** Market-mode card: same shell, with current lines in the rail position. */
+function MarketGameRow({
+  game,
+}: {
+  game: Extract<Game, { publicationMode: "market" }>;
+}) {
   return (
-    <li className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+    <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+      <div className="mb-3 text-xs text-ink-faint">
         {formatKickoff(game.startDate)}
       </div>
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
-        <div className="space-y-2">
-          <TeamLine name={game.awayTeam} role="away" highlighted={false} />
-          <TeamLine name={game.homeTeam} role="home" highlighted={false} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <TeamLine name={game.awayTeam} score={game.awayPoints} highlighted={false} />
+          <TeamLine name={game.homeTeam} home score={game.homePoints} highlighted={false} />
         </div>
-        <div className="text-right text-xs">
-          <div className="text-zinc-400 dark:text-zinc-500">Market</div>
-          <div className="font-mono text-zinc-700 dark:text-zinc-300">
+        <div className="shrink-0 sm:text-right">
+          <div className="text-xs text-ink-faint">Market</div>
+          <div className="font-mono text-sm tabular-nums text-ink">
             {marketSpreadLabel(game.homeTeam, game.homeTeamSpreadLine)}
           </div>
-          <div className="font-mono text-zinc-700 dark:text-zinc-300">
-            {game.totalLine === null ? "O/U unavailable" : `O/U ${game.totalLine.toFixed(1)}`}
+          <div className="font-mono text-sm tabular-nums text-ink">
+            {game.totalLine === null
+              ? "O/U —"
+              : `O/U ${game.totalLine.toFixed(1)}`}
           </div>
         </div>
       </div>
-      {hasResults && (
-        <div className="mt-3 border-t border-zinc-100 pt-3 text-xs dark:border-zinc-900">
-          <span className="text-zinc-500 dark:text-zinc-400">Final: </span>
-          <span className="font-mono font-semibold">
-            {game.awayPoints}–{game.homePoints}
-          </span>
-        </div>
-      )}
     </li>
   );
 }
 
 function TeamLine({
   name,
-  role,
+  home = false,
+  score,
   highlighted,
 }: {
   name: string;
-  role: "home" | "away";
+  home?: boolean;
+  score: number | null;
   highlighted: boolean;
 }) {
   return (
-    <div
-      className={clsx(
-        "flex items-center gap-2.5",
-        highlighted && "font-semibold",
-      )}
-    >
+    <div className="flex items-center gap-2.5">
       <Image
         src={logoUrl(name)}
         alt={name}
@@ -232,14 +210,45 @@ function TeamLine({
         className="h-7 w-7 shrink-0 object-contain"
         unoptimized
       />
-      <span className="text-sm text-zinc-900 dark:text-zinc-100">
+      <span
+        className={clsx(
+          "truncate text-sm text-ink",
+          highlighted && "font-semibold",
+        )}
+      >
         {name}
       </span>
-      {role === "home" && (
-        <span className="text-[10px] uppercase tracking-wide text-zinc-400">
+      {home && (
+        <span className="text-[10px] uppercase tracking-wide text-ink-faint">
           home
         </span>
       )}
+      {score !== null && (
+        <span className="ml-auto font-mono text-base font-semibold tabular-nums text-ink">
+          {score}
+        </span>
+      )}
     </div>
+  );
+}
+
+function ResultChip({
+  label,
+  result,
+}: {
+  label: string;
+  result: "win" | "loss" | "push";
+}) {
+  return (
+    <span
+      className={clsx(
+        "rounded px-1.5 py-0.5 text-[11px] font-medium",
+        result === "win" && "bg-win-soft text-win",
+        result === "loss" && "bg-loss-soft text-loss",
+        result === "push" && "bg-surface-inset text-ink-muted",
+      )}
+    >
+      {label} {result}
+    </span>
   );
 }

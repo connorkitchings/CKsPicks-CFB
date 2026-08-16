@@ -80,7 +80,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       aria-label={`Theme: ${LABEL[theme]}. Click to change.`}
       title={`Theme: ${LABEL[theme]}`}
       className={clsx(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 bg-white text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800",
+        "inline-flex h-8 w-8 items-center justify-center rounded-md border border-line bg-surface-card text-sm text-ink-muted transition-colors hover:bg-surface-inset",
         className,
       )}
     >

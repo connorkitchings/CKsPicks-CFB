@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const siteUrl = "https://ckspicks-cfb.vercel.app";
 
@@ -56,14 +55,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col">
-        {children}
-        <div className="pointer-events-none fixed bottom-4 right-4 z-50">
-          <div className="pointer-events-auto">
-            <ThemeToggle />
-          </div>
-        </div>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

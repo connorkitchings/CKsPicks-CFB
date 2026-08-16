@@ -1,4 +1,5 @@
 import type { PublicationMode } from "@/lib/publication";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Header({
   season,
@@ -18,67 +19,76 @@ export function Header({
   publicationMode: PublicationMode;
 }) {
   return (
-    <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-      <div className="mx-auto flex max-w-4xl flex-col gap-1 px-4 py-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <header className="border-b border-line bg-surface-card/80 backdrop-blur">
+      <div className="mx-auto flex max-w-4xl items-start justify-between gap-3 px-4 py-4">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="text-xl font-bold tracking-tight text-ink">
             CK&rsquo;s Picks
-            <span className="ml-2 text-sm font-normal text-zinc-500 dark:text-zinc-400">
+            <span className="ml-2 text-sm font-normal text-ink-faint">
               CFB
             </span>
           </h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-faint">
+            {publicationMode === "predictions" && systemName && (
+              <span>Model: {systemName}</span>
+            )}
+            {publicationMode === "predictions" && runState && (
+              <span className="rounded bg-surface-inset px-1.5 py-0.5 font-semibold uppercase tracking-wide text-ink-muted">
+                {runState}
+              </span>
+            )}
+            {publicationMode === "predictions" && modelId && (
+              <span className="font-mono">
+                id: <span className="text-ink-muted">{modelId}</span>
+              </span>
+            )}
+            {updatedAt && (
+              <span>
+                {publicationMode === "predictions" ? "Predictions" : "Markets"}{" "}
+                updated{" "}
+                {updatedAt.toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
           {season !== null && week !== null && (
-            <div className="text-sm text-zinc-600 dark:text-zinc-300">
+            <div className="text-sm font-medium tabular-nums text-ink-muted">
               {season} · Week {week}
             </div>
           )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400 dark:text-zinc-500">
-          {publicationMode === "predictions" && systemName && (
-            <span>Model: {systemName}</span>
-          )}
-          {publicationMode === "predictions" && runState && (
-            <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold uppercase tracking-wide text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-              {runState}
-            </span>
-          )}
-          {publicationMode === "predictions" && modelId && (
-            <span className="font-mono">
-              id: <span className="text-zinc-500 dark:text-zinc-400">{modelId}</span>
-            </span>
-          )}
-          {updatedAt && (
-            <span>
-              {publicationMode === "predictions" ? "Predictions" : "Markets"} updated{" "}
-              {updatedAt.toLocaleString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
+          <ThemeToggle />
         </div>
       </div>
     </header>
   );
 }
 
-export function Footer({ publicationMode }: { publicationMode: PublicationMode }) {
+export function Footer({
+  publicationMode,
+}: {
+  publicationMode: PublicationMode;
+}) {
   return (
-    <footer className="mx-auto mt-12 max-w-4xl px-4 pb-8 text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-600">
+    <footer className="mx-auto mt-12 max-w-4xl px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint">
       <p className="mb-1">
         Display only &mdash; not betting advice. CK&rsquo;s Picks is a research
-        project that shows {publicationMode === "predictions"
+        project that shows{" "}
+        {publicationMode === "predictions"
           ? "model leans against market lines"
-          : "college football schedules and market lines"}; nothing here is a
-        recommendation or guarantee.
+          : "college football schedules and market lines"}
+        ; nothing here is a recommendation or guarantee.
       </p>
       <p>
         Source:{" "}
         <a
           href="https://github.com/connorkitchings/CKsPicks-CFB"
-          className="underline hover:text-zinc-600 dark:hover:text-zinc-400"
+          className="underline hover:text-ink-muted"
           target="_blank"
           rel="noopener noreferrer"
         >

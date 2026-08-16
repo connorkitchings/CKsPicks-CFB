@@ -43,12 +43,12 @@ export function WeekNav({
   }
 
   const arrow =
-    "inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-white text-base text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
+    "inline-flex h-9 w-9 items-center justify-center rounded-md border border-line bg-surface-card text-base text-ink-muted transition-colors hover:bg-surface-inset disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <nav
       aria-label="Week navigation"
-      className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+      className="flex items-center justify-between gap-2 rounded-xl border border-line bg-surface-card p-2 shadow-sm"
     >
       <a
         href={prev !== null ? hrefFor(prev) : undefined}
@@ -67,7 +67,7 @@ export function WeekNav({
           id="week-select"
           value={week}
           onChange={onSelect}
-          className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm font-medium text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="rounded-md border border-line bg-surface-card px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent"
         >
           {weeks.map((w) => (
             <option key={w} value={w}>
@@ -75,7 +75,7 @@ export function WeekNav({
             </option>
           ))}
         </select>
-        <span className="text-xs text-zinc-400 dark:text-zinc-500">
+        <span className="text-xs tabular-nums text-ink-faint">
           {safeIdx + 1} / {weeks.length}
         </span>
       </div>

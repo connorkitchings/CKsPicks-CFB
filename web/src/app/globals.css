@@ -6,25 +6,94 @@
    as "system", applying `.dark` whenever the user's OS prefers dark. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Semantic design tokens — the single source of truth for color in the app.
+ * Components consume these tokens (bg-surface-card, text-ink-muted, …) and
+ * never raw palette classes, so light/dark theming lives here alone.
+ *
+ *   surface-*   page / card / inset backgrounds
+ *   line*       hairline borders
+ *   ink*        text, three emphasis levels
+ *   accent*     the one interactive/lean hue (blue family)
+ *   win / loss  reserved exclusively for graded results
+ *   warn        advisory states (missing line, db unreachable)
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --surface-page: #fafafa; /* zinc-50 */
+  --surface-card: #ffffff;
+  --surface-inset: #f4f4f5; /* zinc-100 — chips, hover fills */
+  --line: #e4e4e7; /* zinc-200 */
+  --line-strong: #d4d4d8; /* zinc-300 */
+  --ink: #18181b; /* zinc-900 */
+  --ink-muted: #52525b; /* zinc-600 */
+  --ink-faint: #a1a1aa; /* zinc-400 */
+  --accent: #2563eb; /* blue-600 */
+  --accent-ink: #1d4ed8; /* blue-700 */
+  --accent-soft: #eff6ff; /* blue-50 */
+  --accent-line: #bfdbfe; /* blue-200 */
+  --win: #047857; /* emerald-700 */
+  --win-soft: #ecfdf5; /* emerald-50 */
+  --win-line: #a7f3d0; /* emerald-200 */
+  --loss: #be123c; /* rose-700 */
+  --loss-soft: #fff1f2; /* rose-50 */
+  --loss-line: #fecdd3; /* rose-200 */
+  --warn: #b45309; /* amber-700 */
+  --warn-soft: #fffbeb; /* amber-50 */
+  --warn-line: #fcd34d; /* amber-300 */
+}
+
+html.dark {
+  --surface-page: #000000;
+  --surface-card: #09090b; /* zinc-950 */
+  --surface-inset: #18181b; /* zinc-900 */
+  --line: #27272a; /* zinc-800 */
+  --line-strong: #3f3f46; /* zinc-700 */
+  --ink: #f4f4f5; /* zinc-100 */
+  --ink-muted: #a1a1aa; /* zinc-400 */
+  --ink-faint: #52525b; /* zinc-600 */
+  --accent: #3b82f6; /* blue-500 */
+  --accent-ink: #93c5fd; /* blue-300 */
+  --accent-soft: #172554; /* blue-950 */
+  --accent-line: #1e3a8a; /* blue-900 */
+  --win: #34d399; /* emerald-400 */
+  --win-soft: #022c22; /* emerald-950 */
+  --win-line: #064e3b; /* emerald-900 */
+  --loss: #fb7185; /* rose-400 */
+  --loss-soft: #4c0519; /* rose-950 */
+  --loss-line: #881337; /* rose-900 */
+  --warn: #fcd34d; /* amber-300 */
+  --warn-soft: #451a03; /* amber-950 */
+  --warn-line: #78350f; /* amber-900 */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-inset: var(--surface-inset);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+  --color-win: var(--win);
+  --color-win-soft: var(--win-soft);
+  --color-win-line: var(--win-line);
+  --color-loss: var(--loss);
+  --color-loss-soft: var(--loss-soft);
+  --color-loss-line: var(--loss-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-html.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--surface-page);
+  color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

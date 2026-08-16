@@ -58,12 +58,12 @@ export function GamesList({ games }: { games: Game[] }) {
   }, [games, query, hcOnly, predictionsVisible, sort]);
 
   const inputCls =
-    "w-full rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+    "w-full rounded-md border border-line bg-surface-card px-2 py-1.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent";
 
   return (
     <div className="space-y-3">
       {/* Controls */}
-      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-card p-3 shadow-sm sm:flex-row sm:items-center">
         <div className="flex-1">
           <label htmlFor="team-search" className="sr-only">
             Filter by team
@@ -85,8 +85,8 @@ export function GamesList({ games }: { games: Game[] }) {
             className={clsx(
               "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
               hcOnly
-                ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950 dark:text-blue-200"
-                : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800",
+                ? "border-accent bg-accent-soft text-accent-ink"
+                : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
             )}
           >
             <span aria-hidden>{hcOnly ? "\u2605" : "\u2606"}</span>
@@ -99,7 +99,7 @@ export function GamesList({ games }: { games: Game[] }) {
             id="sort-select"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200"
+            className="rounded-md border border-line bg-surface-card px-2 py-1.5 text-xs font-medium text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
           >
             {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
               <option key={k} value={k}>
@@ -110,12 +110,12 @@ export function GamesList({ games }: { games: Game[] }) {
         </div>}
       </div>
 
-      <div className="px-1 text-xs text-zinc-400 dark:text-zinc-500">
+      <div className="px-1 text-xs text-ink-faint">
         Showing {visible.length} of {games.length} games
       </div>
 
       {visible.length === 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+        <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
           No games match these filters.
         </div>
       ) : (

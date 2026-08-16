@@ -113,7 +113,7 @@ export default async function Home({
       : currentUpdatedAt;
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-100">
+    <div className="flex min-h-screen flex-col">
       <Header
         season={season > 0 ? season : null}
         week={season > 0 ? week : null}
@@ -126,7 +126,7 @@ export default async function Home({
 
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
         {dbError && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
             <strong>Database not connected.</strong> Set <code>DATABASE_URL</code>{" "}
             (see <code>web/.env.example</code>) and run the migration in{" "}
             <code>web/db/migrations/0001_init.sql</code>. Then publish a week with{" "}
@@ -136,7 +136,7 @@ export default async function Home({
         )}
 
         {!dbError && !season && (
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
             No active week has been published yet. Complete the Week 0
             publication workflow to load the approved schedule and market data.
           </div>
@@ -153,7 +153,7 @@ export default async function Home({
             )}
 
             {games.length === 0 ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
+              <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
                 No games loaded for {season} week {week}.
               </div>
             ) : (
