@@ -1,0 +1,71 @@
+# V4 2026 launch configuration. The ten-route V4 bundle is the first model to
+# pass sealed 2022-2024 OOF selection and locked-2025 anti-regression gates.
+# V2 remains the fallback if readiness fails to load this bundle.
+system_name: "Trench Warfare V4"
+model_id: "week0-2026-v4-strict-20260818-r2"
+
+model_bundle_v2: null
+model_bundle_v3:
+  artifact_uri: artifacts/preview/models/week0-2026-v4-strict-20260818-r2/manifest.json
+  sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+
+year: 2026
+week: 0
+
+spread_edge_threshold: 0.0
+spread_edge_threshold_high_conf: 8.0
+total_edge_threshold: 1.5
+
+models:
+  spread:
+    path: models/linear_spread_target.joblib
+    artifact_uri: null
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
+    features: conf/features/matchup_v1.yaml
+    target: spread_target
+    calibration_offset: 1.14
+  total:
+    path: models/linear_total_target.joblib
+    artifact_uri: null
+    sha256: null
+    schema_version: null
+    feature_version: null
+    training_years: null
+    code_sha: null
+    promotion_report: null
+    features: conf/features/matchup_v1.yaml
+    target: total_target
+
+features:
+  type: recency
+  alpha: 0.3
+
+preseason:
+  enabled: false
+  input_policy: prior_only_fallback
+  prior_only_required_features:
+    - home_prior_off_epa_pp
+    - home_prior_def_epa_pp
+    - home_prior_off_sr
+    - home_prior_def_sr
+    - away_prior_off_epa_pp
+    - away_prior_def_epa_pp
+    - away_prior_off_sr
+    - away_prior_def_sr
+    - prior_season_gap
+    - home_neutral_site
+    - home_conference_game
+  as_of: null
+  model_path: models/preseason_v1.joblib
+  spread_blend_weights: {}
+  total_blend_weights: {}
+
+training:
+  train_years: [2021, 2022, 2023, 2024]
+  test_year: 2025
+  deploy_year: 2026
