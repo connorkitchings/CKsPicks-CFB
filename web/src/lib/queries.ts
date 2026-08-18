@@ -37,7 +37,7 @@ export type PredictionGame = BaseGame & {
   highConfidence: boolean;
   systemName: string | null;
   modelId: string | null;
-  regime: "preseason" | "one_game" | "two_games" | "three_games" | "game_1" | "game_2" | "game_3" | "established" | null;
+  regime: "preseason" | "one_game" | "two_games" | "three_games" | "game_1" | "game_2" | "game_3" | "game_4" | "established" | null;
   homeCompletedGames: number;
   awayCompletedGames: number;
   spreadModelVersion: string | null;
