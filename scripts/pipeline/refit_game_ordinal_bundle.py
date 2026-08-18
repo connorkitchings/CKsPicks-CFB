@@ -90,8 +90,17 @@ def _selection_report(report: dict[str, Any]) -> dict[str, Any]:
     return selection
 
 
-def _weights(selection: dict[str, Any], target: str, regime: str) -> float:
-    weights = selection.get("blend_weights", {}).get(target, {})
+def _weights(
+    selection: dict[str, Any], target: str, regime: str, candidate: str
+) -> float:
+    raw_weights = selection.get("blend_weights", {})
+    if target in raw_weights and regime in raw_weights[target]:
+        # Legacy flat shape: blend_weights[target][regime].
+        return float(raw_weights[target][regime])
+    # V4 shape: blend_weights[feature_variant][target][regime], resolved
+    # through the frozen variant of this route's blend candidate.
+    variant = _variant(selection, target, regime, candidate)
+    weights = raw_weights.get(variant, {}).get(target, {})
     if regime not in weights:
         raise ValueError(f"Frozen blend weight missing for {target}/{regime}")
     return float(weights[regime])
@@ -269,7 +278,7 @@ def main() -> None:
                     {
                         **common,
                         "strategy": "blend",
-                        "prior_weight": _weights(selection, target, regime),
+                        "prior_weight": _weights(selection, target, regime, candidate),
                         "prior": {**prior, "features": prior_features},
                         "current": {**current, "features": current_features},
                     }

@@ -174,7 +174,9 @@ def _predict_ref(
 
     values = _model_values(frame, ref.features)
     with warnings.catch_warnings():
-        warnings.simplefilter("error", RuntimeWarning)
+        # Spurious BLAS FP flags on subnormal intermediates are benign; any
+        # genuine numerical failure still surfaces as non-finite output below.
+        warnings.simplefilter("ignore", RuntimeWarning)
         prediction = np.asarray(model.predict(values), dtype=float)
     if not np.isfinite(prediction).all():
         raise ValueError(

@@ -566,6 +566,14 @@ def attach_baseline_predictions(
         .isna()
         .any(axis=1)
     )
+    # A labeled-season game without a final result (canceled or unreported)
+    # cannot carry a baseline or a target; it is unlabeled exactly like a
+    # future scheduled game and must not fail the join.
+    resultless = pd.Series(False, index=result.index)
+    for target_column in ("spread_target", "total_target"):
+        if target_column in result.columns:
+            resultless |= result[target_column].isna()
+    missing_rows &= ~resultless
     if required_seasons is not None:
         missing_rows &= result["season"].astype(int).isin(required_seasons)
     if missing_rows.any():

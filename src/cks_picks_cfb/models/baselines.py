@@ -53,6 +53,13 @@ def generate_baselines(
     """Generate selection OOF components and optionally the guarded 2025 fold."""
     if 2020 in set(frame["season"].astype(int)):
         raise ValueError("2020 is excluded from baseline generation")
+    target_columns = [
+        column for column in TARGETS.values() if column in frame.columns
+    ]
+    if target_columns:
+        # A labeled-season row without a final result (canceled or unreported
+        # game) is not trainable; exclude it exactly like inference-only rows.
+        frame = frame.loc[~frame[target_columns].isna().any(axis=1)].copy()
     prior_features = _feature_columns(frame, prior=True)
     current_features = _feature_columns(frame, prior=False)
     folds = list(SELECTION_FOLDS)

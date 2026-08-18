@@ -223,8 +223,12 @@ def main() -> None:
         event_time_column="start_date",
         validation={
             "unique_game_keys": not result.duplicated(["season", "game_id"]).any(),
+            # Resultless labeled-season games (canceled or unreported) carry no
+            # baseline and no target; they are unlabeled like future games.
             "baseline_complete_for_oof_seasons": not result[
                 result["season"].astype(int).isin(required_seasons)
+                & result["spread_target"].notna()
+                & result["total_target"].notna()
             ][["baseline_spread_prediction", "baseline_total_prediction"]]
             .isna()
             .any()

@@ -8,6 +8,8 @@ from typing import Literal
 
 RuntimeEnvironment = Literal["preview", "production"]
 
+RESOLVED_TARGET_MARKER = "CFB_RUNTIME_TARGET_RESOLVED"
+
 
 @dataclass(frozen=True)
 class RuntimeTarget:
@@ -26,9 +28,16 @@ def resolve_runtime_target(environment: str) -> RuntimeTarget:
     if not database_url:
         raise RuntimeError(f"{variable} is required for {environment} operations")
     if environment == "preview":
-        production_url = os.getenv("DATABASE_URL")
-        if production_url and database_url == production_url:
-            raise RuntimeError("PREVIEW_DATABASE_URL must differ from DATABASE_URL")
+        # The ops state machine verifies the Preview/production separation once
+        # and then rewrites DATABASE_URL to the resolved Preview URL for its
+        # child steps. Children must trust that verified marker instead of
+        # comparing against the already-rewritten variable.
+        if os.getenv(RESOLVED_TARGET_MARKER) != "preview":
+            production_url = os.getenv("DATABASE_URL")
+            if production_url and database_url == production_url:
+                raise RuntimeError(
+                    "PREVIEW_DATABASE_URL must differ from DATABASE_URL"
+                )
     return RuntimeTarget(environment=environment, database_url=database_url)
 
 

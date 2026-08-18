@@ -664,6 +664,7 @@ def build_steps(
                     options.frozen_design_sha,
                 ]
             )
+        argv.extend(["--environment", environment])
         return [subprocess_step("build_baselines", argv)]
     if context.command == "assemble-model-ready":
         assert options is not None and as_of is not None
@@ -1149,6 +1150,7 @@ def main() -> None:
         )
     os.environ["DATABASE_URL"] = conn_url
     os.environ["CFB_ARTIFACT_ENV"] = args.environment
+    os.environ["CFB_RUNTIME_TARGET_RESOLVED"] = args.environment
     context = new_context(
         command=args.command,
         environment=args.environment,

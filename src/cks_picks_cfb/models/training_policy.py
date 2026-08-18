@@ -115,12 +115,23 @@ def labeled_training_frame(frame: pd.DataFrame, policy: TrainingPolicy) -> pd.Da
     Gold datasets intentionally include future scheduled games for inference.  Those
     rows still need lineage validation, but must never be treated as labeled model
     training data simply because they share the same immutable dataset version.
+    A labeled-season row without a final result (a canceled or unreported game)
+    is likewise not labeled training data; it is excluded rather than imputed.
     """
     if "season" not in frame:
         raise ValueError("Feature dataset is missing season")
     validate_feature_lineage(frame, policy, labeled=False)
     seasons = pd.to_numeric(frame["season"], errors="raise").astype(int)
     labeled = frame.loc[seasons.isin(policy.labeled_years)].copy()
+    target_columns = [
+        column
+        for column in ("spread_target", "total_target")
+        if column in labeled.columns
+    ]
+    if target_columns:
+        unlabeled = labeled[target_columns].isna().any(axis=1)
+        if unlabeled.any():
+            labeled = labeled.loc[~unlabeled].copy()
     validate_feature_lineage(labeled, policy)
     return labeled
 

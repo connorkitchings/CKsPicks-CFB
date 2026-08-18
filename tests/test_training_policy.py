@@ -79,6 +79,23 @@ def test_labeled_training_frame_allows_2026_inference_rows_without_training_them
         )
 
 
+def test_labeled_training_frame_excludes_resultless_labeled_season_rows():
+    policy = _policy()
+    frame = pd.DataFrame(
+        {
+            "season": [2024, 2024, 2025],
+            "prior_source_season": [2023, 2023, 2024],
+            "prior_season_gap": [1, 1, 1],
+            "spread_target": [3.0, float("nan"), 7.0],
+            "total_target": [51.0, float("nan"), 55.0],
+        }
+    )
+    labeled = labeled_training_frame(frame, policy)
+    # The canceled/unreported 2024 row cannot be labeled training data.
+    assert labeled["season"].tolist() == [2024, 2025]
+    assert labeled["spread_target"].notna().all()
+
+
 def test_active_training_configs_do_not_label_2019_or_2020():
     pattern = re.compile(r"train_years:\s*\[([^]]*)\]")
     violations = []
