@@ -37,6 +37,10 @@ REQUIRED_SNAPSHOT_SOURCES = (
     "coaches",
     "talent",
 )
+OPTIONAL_V4_SNAPSHOT_SOURCES = ("talent",)
+V4_REQUIRED_SNAPSHOT_SOURCES = tuple(
+    source for source in REQUIRED_SNAPSHOT_SOURCES if source not in OPTIONAL_V4_SNAPSHOT_SOURCES
+)
 
 TEAM_FEATURES = (
     "prior_adj_off_epa_pp",
@@ -158,6 +162,64 @@ def snapshot_is_complete(storage: StorageBackend, year: int, as_of: str) -> bool
         if not records or int(records[0].get("rows", 0)) <= 0:
             return False
     return True
+
+
+def snapshot_sources_available(
+    storage: StorageBackend, year: int, as_of: str
+) -> frozenset[str]:
+    """Return non-empty immutable snapshot sources without treating talent as inferred."""
+    partition = _snapshot_partition(year, as_of)
+    available = set()
+    for source in REQUIRED_SNAPSHOT_SOURCES:
+        records = storage.read_index(
+            f"raw/preseason_manifest/{source}", partition.values
+        )
+        if records and int(records[0].get("rows", 0)) > 0:
+            available.add(source)
+    return frozenset(available)
+
+
+def v4_snapshot_is_usable(storage: StorageBackend, year: int, as_of: str) -> bool:
+    """V4 requires every reproducible source except seasonally optional talent."""
+    return set(V4_REQUIRED_SNAPSHOT_SOURCES) <= snapshot_sources_available(
+        storage, year, as_of
+    )
+
+
+def v4_preseason_feature_variants(matchups: pd.DataFrame) -> dict[str, tuple[str, ...]]:
+    """Return only complete, point-in-time V4 preseason feature families.
+
+    A family is all-or-nothing across the supplied rows.  This prevents a
+    partially available source (notably CFBD talent) from being silently
+    imputed into an otherwise reproducible candidate.
+    """
+    families = {
+        "prior_quality": PRIOR_QUALITY_FEATURES,
+        "returning_and_transfers": tuple(
+            feature
+            for feature in PRESEASON_FEATURES
+            if any(token in feature for token in ("_return_", "_transfer_"))
+        ),
+        "recruiting_and_coaches": tuple(
+            feature
+            for feature in PRESEASON_FEATURES
+            if any(token in feature for token in ("_recruiting_", "_coach_"))
+        ),
+        "talent": tuple(
+            feature for feature in PRESEASON_FEATURES if "_talent" in feature
+        ),
+    }
+    result: dict[str, tuple[str, ...]] = {}
+    selected: list[str] = []
+    for name, features in families.items():
+        if not features or not set(features).issubset(matchups.columns):
+            continue
+        values = matchups.loc[:, list(features)].apply(pd.to_numeric, errors="coerce")
+        if values.isna().any().any() or not np.isfinite(values.to_numpy(dtype=float)).all():
+            continue
+        selected.extend(features)
+        result[name] = tuple(selected)
+    return result
 
 
 class PreseasonSnapshotIngester:
@@ -449,9 +511,15 @@ def build_preseason_matchups(
     as_of: str,
     include_targets: bool,
     require_complete_snapshot: bool = True,
+    allow_optional_talent: bool = False,
 ) -> pd.DataFrame:
     """Build preseason features for any scheduled week from one snapshot."""
-    if require_complete_snapshot and not snapshot_is_complete(storage, year, as_of):
+    complete = (
+        v4_snapshot_is_usable(storage, year, as_of)
+        if allow_optional_talent
+        else snapshot_is_complete(storage, year, as_of)
+    )
+    if require_complete_snapshot and not complete:
         raise RuntimeError(f"Preseason snapshot {year}/{as_of} is incomplete")
 
     tables = [

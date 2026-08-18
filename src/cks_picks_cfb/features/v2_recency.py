@@ -12,12 +12,12 @@ MIN_CURRENT_SEASON_GAMES = 4
 # Historic datasets and model_bundle_v2 use completed-game labels. New model
 # artifacts use the ordinal of the upcoming team game so a team's first game
 # cannot be mistaken for a preseason exhibition.
-CANONICAL_EARLY_REGIMES = ("game_1", "game_2", "game_3", "established")
+CANONICAL_EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4", "established")
 LEGACY_TO_CANONICAL_REGIME = {
     "preseason": "game_1",
     "one_game": "game_2",
     "two_games": "game_3",
-    "three_games": "established",
+    "three_games": "game_4",
     "established": "established",
 }
 
@@ -40,7 +40,7 @@ def upcoming_game_regime(completed_games: int | float | None) -> str:
         if completed_games is None or pd.isna(completed_games)
         else max(0, int(completed_games))
     )
-    return {0: "game_1", 1: "game_2", 2: "game_3"}.get(
+    return {0: "game_1", 1: "game_2", 2: "game_3", 3: "game_4"}.get(
         count, "established"
     )
 

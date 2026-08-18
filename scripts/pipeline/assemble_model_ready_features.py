@@ -47,6 +47,8 @@ def main() -> None:
     parser.add_argument("--core-ref-uri", required=True)
     parser.add_argument("--baselines-ref-uri", required=True)
     parser.add_argument("--markets-ref-uri")
+    parser.add_argument("--preseason-features-ref-uri")
+    parser.add_argument("--feature-track", choices=("strict", "reconstructed"))
     parser.add_argument("--skip-catalog-registration", action="store_true")
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
@@ -71,6 +73,68 @@ def main() -> None:
     result = attach_baseline_predictions(
         core, baselines, required_seasons=required_seasons
     )
+    preseason_ref: DatasetRef | None = None
+    feature_track: str | None = None
+    activation_eligible = True
+    if args.preseason_features_ref_uri:
+        if not args.feature_track:
+            raise ValueError("--feature-track is required with V4 preseason features")
+        preseason_ref = _ref(storage, args.preseason_features_ref_uri)
+        if preseason_ref.dataset != "v4_preseason_team_features":
+            raise ValueError("V4 model-ready Gold requires v4_preseason_team_features")
+        preseason = read_dataset(storage, preseason_ref)
+        required_preseason = {
+            "season",
+            "team",
+            "v4_feature_track",
+            "v4_activation_eligible",
+            "v4_reference_sha",
+        }
+        if missing := sorted(required_preseason - set(preseason.columns)):
+            raise ValueError(f"V4 preseason reference is missing columns: {missing}")
+        if preseason.duplicated(["season", "team"]).any():
+            raise ValueError("V4 preseason reference has duplicate season/team keys")
+        tracks = set(preseason["v4_feature_track"].dropna().astype(str))
+        if tracks != {args.feature_track}:
+            raise ValueError(
+                f"V4 preseason track mismatch: expected {args.feature_track}, found {sorted(tracks)}"
+            )
+        feature_track = args.feature_track
+        activation_eligible = bool(preseason["v4_activation_eligible"].all())
+        if feature_track == "strict" and not activation_eligible:
+            raise ValueError("Strict V4 feature reference is not activation eligible")
+        feature_columns = [
+            column
+            for column in preseason.columns
+            if column
+            not in {
+                "season",
+                "team",
+                "v4_feature_track",
+                "v4_activation_eligible",
+                "v4_reference_sha",
+            }
+        ]
+        for side in ("home", "away"):
+            renamed = preseason[["season", "team", *feature_columns]].rename(
+                columns={
+                    "team": f"{side}_team",
+                    **{column: f"{side}_{column}" for column in feature_columns},
+                }
+            )
+            result = result.merge(
+                renamed,
+                on=["season", f"{side}_team"],
+                how="left",
+                validate="many_to_one",
+            )
+        if feature_columns and result[
+            [f"home_{column}" for column in feature_columns]
+        ].isna().all(axis=1).any():
+            raise ValueError("V4 preseason reference does not cover every home team")
+        result["v4_feature_track"] = feature_track
+        result["v4_activation_eligible"] = activation_eligible
+        result["v4_reference_sha"] = preseason["v4_reference_sha"].iloc[0]
     # Historical all-null boolean-like prior fields arrive from Parquet as
     # object dtype.  Keep them as usable numeric missingness features rather
     # than letting the Gold schema treat them as undeclared string metadata.
@@ -111,7 +175,9 @@ def main() -> None:
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
-    parent_refs = tuple(r for r in (core_ref, baselines_ref, markets_ref) if r)
+    parent_refs = tuple(
+        r for r in (core_ref, baselines_ref, preseason_ref, markets_ref) if r
+    )
     if markets_joined:
         timestamp_check = (
             "market_captured_at" in result
@@ -127,12 +193,29 @@ def main() -> None:
     ref, manifest = build_dataset_version(
         storage,
         build=BuildRequest(
-            dataset="point_in_time_matchups",
+            dataset=(
+                "point_in_time_matchups_v5"
+                if preseason_ref
+                else "point_in_time_matchups"
+            ),
             parent_refs=parent_refs,
             code_sha=_code_sha(),
-            config_sha=hashlib.sha256(b"model_ready_gold_v1").hexdigest(),
+            config_sha=hashlib.sha256(
+                json.dumps(
+                    {
+                        "model_ready_gold": "v5" if preseason_ref else "v4",
+                        "feature_track": feature_track,
+                        "activation_eligible": activation_eligible,
+                    },
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest(),
             as_of=cutoff,
-            schema_version="point_in_time_matchups_v4",
+            schema_version=(
+                "point_in_time_matchups_v5"
+                if preseason_ref
+                else "point_in_time_matchups_v4"
+            ),
             tier="gold",
         ),
         records=result.to_dict("records"),
@@ -149,6 +232,14 @@ def main() -> None:
             "excludes_2020": 2020 not in set(result["season"].astype(int)),
             "markets_joined": markets_joined if args.markets_ref_uri else True,
             "market_timestamps_authentic": timestamp_check,
+            "strict_track_activation_eligible": (
+                activation_eligible if feature_track == "strict" else True
+            ),
+        },
+        coverage={
+            "feature_track": feature_track,
+            "activation_eligible": activation_eligible,
+            "preseason_feature_ref": asdict(preseason_ref) if preseason_ref else None,
         },
     )
     if manifest.state != "validated":

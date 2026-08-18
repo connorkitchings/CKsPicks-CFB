@@ -4,6 +4,7 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.dummy import DummyRegressor
 
 from cks_picks_cfb.data.storage import LocalStorage
@@ -161,3 +162,24 @@ def test_v3_bundle_executes_a_frozen_blend_route(tmp_path):
         storage=storage,
     )
     assert result.loc[0, "predicted_spread"] == 15.0
+
+
+def test_v3_bundle_rejects_reconstructed_research_manifest(tmp_path):
+    storage_root = tmp_path / "storage"
+    storage_root.mkdir()
+    storage = LocalStorage(storage_root)
+    raw = {
+        "schema_version": "model_bundle_v3",
+        "feature_track": "reconstructed",
+        "activation_eligible": False,
+    }
+    payload = json.dumps(raw).encode()
+    storage.write_bytes(payload, "models/reconstructed.json")
+    with pytest.raises(ValueError, match="Reconstructed research"):
+        load_model_bundle_v3(
+            {
+                "artifact_uri": "models/reconstructed.json",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            },
+            storage=storage,
+        )

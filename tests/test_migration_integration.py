@@ -21,6 +21,7 @@ def test_fresh_database_applies_snapshot_and_hardening_migration():
             cur.execute("CREATE SCHEMA public")
     applied = apply_migrations(conn_url, Path("contracts/migrations"))
     assert "0006" in applied
+    assert "0008" in applied
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -33,8 +34,14 @@ def test_fresh_database_applies_snapshot_and_hardening_migration():
                 "WHERE table_schema = 'catalog' AND table_name = 'dataset_versions'"
             )
             dataset_columns = {row[0] for row in cur.fetchall()}
+            cur.execute(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                "WHERE conname = 'predictions_regime_check'"
+            )
+            regime_constraint = cur.fetchone()[0]
     assert {"definition_sha", "lease_epoch", "lease_expires_at"} <= pipeline_columns
     assert {"identity_version", "schema_sha"} <= dataset_columns
+    assert "game_4" in regime_constraint
 
 
 @pytest.mark.skipif(

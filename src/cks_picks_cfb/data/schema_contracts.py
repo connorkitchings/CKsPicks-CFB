@@ -130,6 +130,8 @@ _GOLD_REQUIRED: dict[str, tuple[str, ...]] = {
     "point_in_time_team_features": ("season", "game_id", "team"),
     "point_in_time_matchups": ("season", "game_id"),
     "baseline_predictions_oof": ("season", "game_id"),
+    "v4_preseason_team_features": ("season", "team"),
+    "point_in_time_matchups_v5": ("season", "game_id"),
 }
 
 
@@ -193,7 +195,7 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             schema_version,
             required,
             required,
-            ("season", "game_id"),
+            ("season",) if dataset == "v4_preseason_team_features" else ("season", "game_id"),
             (),
             (),
             required,
@@ -262,6 +264,8 @@ def validate_frame(frame: pd.DataFrame, schema: DatasetSchema) -> dict[str, Any]
             "feature_provenance",
             "home_line_scores",
             "away_line_scores",
+            "v4_feature_track",
+            "v4_reference_sha",
         }
         dynamic = [column for column in frame.columns if column not in metadata]
         nonnumeric = [

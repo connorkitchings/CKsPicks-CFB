@@ -151,7 +151,7 @@ build-baselines:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops build-baselines --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV) $(if $(FROZEN_DESIGN_SHA),--include-locked-2025 --frozen-design-sha $(FROZEN_DESIGN_SHA),)
 
 assemble-model-ready:
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops assemble-model-ready --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --baselines-ref-uri $(BASELINES_REF_URI) --markets-ref-uri $(MARKETS_REF_URI) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops assemble-model-ready --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --baselines-ref-uri $(BASELINES_REF_URI) $(if $(MARKETS_REF_URI),--markets-ref-uri $(MARKETS_REF_URI),) $(if $(PRESEASON_FEATURES_REF_URI),--preseason-features-ref-uri $(PRESEASON_FEATURES_REF_URI) --feature-track $(FEATURE_TRACK),) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV)
 
 # ---------------------------------------------------------------------------
 # Weekly operating cycle

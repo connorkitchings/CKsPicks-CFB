@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refit sealed Games 1–3 routes and compatibility-refit established Ridge."""
+"""Refit sealed Games 1–4 routes and compatibility-refit established Ridge."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import pandas as pd
 from omegaconf import OmegaConf
 
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
@@ -24,8 +25,9 @@ from cks_picks_cfb.models.training_policy import (
     labeled_training_frame,
     policy_from_mapping,
 )
+from cks_picks_cfb.models.v4_feature_variants import selected_variant_features
 
-EARLY_REGIMES = ("game_1", "game_2", "game_3")
+EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4")
 TARGET_COLUMNS = {"spread": "spread_target", "total": "total_target"}
 
 
@@ -111,6 +113,21 @@ def _strengths(
     return {key: float(value) for key, value in raw.items()}
 
 
+def _variant(
+    selection: dict[str, Any], target: str, regime: str, candidate: str
+) -> str:
+    try:
+        return str(
+            selection["reports"][target][regime][candidate][
+                "selected_feature_variant"
+            ]
+        )
+    except KeyError as exc:
+        raise ValueError(
+            f"Frozen V4 feature variant missing for {target}/{regime}/{candidate}"
+        ) from exc
+
+
 def _compatibility_features(
     spec, source: dict[str, Any] | None, target: str
 ) -> list[str]:
@@ -158,6 +175,8 @@ def main() -> None:
         or report.get("selection_basis") != "predictive_results_only"
     ):
         raise ValueError("Refit requires a finalized result-only routing report")
+    if report.get("feature_track", "strict") != "strict":
+        raise ValueError("Reconstructed research reports cannot refit a V4 bundle")
     selection = _selection_report(report)
     source = (
         json.loads(storage.read_bytes(args.established_source_bundle_uri).decode())
@@ -169,6 +188,11 @@ def main() -> None:
             canonical_prediction_regime
         )
     )
+    tracks = set(raw.get("v4_feature_track", pd.Series("legacy")).dropna().astype(str))
+    if tracks == {"reconstructed"}:
+        raise ValueError("Reconstructed V4 feature references cannot refit a bundle")
+    if tracks == {"strict"} and not bool(raw["v4_activation_eligible"].all()):
+        raise ValueError("Strict V4 feature reference is not activation eligible")
     frame = labeled_training_frame(raw, policy)
     frame = frame[frame["season"].isin(policy.production_refit_years)].copy()
     if {"home_points", "away_points"} - set(frame.columns):
@@ -251,15 +275,45 @@ def main() -> None:
                     }
                 )
                 continue
+            if candidate == "established":
+                features = _compatibility_features(spec, source, target)
+                artifact = _write_model(
+                    storage,
+                    fit_candidate_model(
+                        frame[frame["prediction_regime"] == "established"],
+                        features=features,
+                        target_column=target_column,
+                        kind="direct_ridge",
+                    ),
+                    f"{prefix}/routes/{target}-{regime}-established.joblib",
+                )
+                routes.append(
+                    {
+                        **common,
+                        "strategy": "direct",
+                        "direct": {**artifact, "features": features},
+                        "handoff_source": "established",
+                    }
+                )
+                continue
             strengths = _strengths(selection, target, regime, candidate)
-            cache_key = json.dumps(strengths, sort_keys=True)
+            variant = _variant(selection, target, regime, candidate)
+            cache_key = json.dumps({"strengths": strengths, "variant": variant}, sort_keys=True)
             if cache_key not in shrunk_cache:
                 values, features = add_ordinal_shrinkage_features(
                     frame, prior_strengths=strengths
                 )
                 shrunk_cache[cache_key] = (
                     values,
-                    [*features, *list(spec.context_features)],
+                    [
+                        *features,
+                        *selected_variant_features(
+                            frame,
+                            family_order=list(spec.preseason_feature_variants),
+                            context_features=list(spec.context_features),
+                            variant=variant,
+                        ),
+                    ],
                 )
             shrunk, features = shrunk_cache[cache_key]
             route_frame = shrunk[shrunk["prediction_regime"] == regime]
@@ -294,6 +348,7 @@ def main() -> None:
                         "home_points": {**home, "features": features},
                         "away_points": {**away, "features": features},
                         "prior_strengths": strengths,
+                        "feature_variant": variant,
                     }
                 )
             else:
@@ -313,6 +368,7 @@ def main() -> None:
                         "strategy": "direct",
                         "direct": {**artifact, "features": features},
                         "prior_strengths": strengths,
+                        "feature_variant": variant,
                     }
                 )
         features = _compatibility_features(spec, source, target)
@@ -349,6 +405,8 @@ def main() -> None:
         "feature_dataset_refs": [asdict(ref)],
         "prior_source_policy": {"2021": 2019, "excluded_years": [2020]},
         "selection_basis": "predictive_results_only",
+        "feature_track": "strict",
+        "activation_eligible": True,
         "betting_validation_status": "not_evaluated",
         "promotion_reports": {
             "game_ordinal_predictive_routing": args.routing_report_uri,

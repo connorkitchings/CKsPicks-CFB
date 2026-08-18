@@ -9,7 +9,7 @@ from cks_picks_cfb.models.training_policy import policy_from_mapping
 def test_ordinal_candidates_are_temporal_and_include_both_formulations():
     rows = []
     for season in (2021, 2022, 2023, 2024, 2025):
-        for route_index, regime in enumerate(("game_1", "game_2", "game_3"), start=1):
+        for route_index, regime in enumerate(("game_1", "game_2", "game_3", "game_4"), start=1):
             for sample in range(4):
                 rows.append(
                     {
@@ -60,3 +60,54 @@ def test_ordinal_candidates_are_temporal_and_include_both_formulations():
     assert (result["training_max_year"] == result["season"] - 1).all()
     assert set(result["season"].astype(int)) == {2022, 2023, 2024}
     assert set(result["candidate_stage"]) == {"selection"}
+
+
+def test_game_four_candidates_include_the_established_handoff_model():
+    rows = []
+    for season in (2021, 2022, 2023):
+        for index, regime in enumerate(("game_4", "established"), start=1):
+            for sample in range(3):
+                rows.append(
+                    {
+                        "season": season,
+                        "game_id": season * 100 + index * 10 + sample,
+                        "prediction_regime": regime,
+                        "prior_source_season": 2019 if season == 2021 else season - 1,
+                        "prior_season_gap": 2 if season == 2021 else 1,
+                        "feature": float(sample + index),
+                        "home_points": 24.0 + sample,
+                        "away_points": 17.0 + sample,
+                        "spread_target": 7.0,
+                        "total_target": 41.0 + sample,
+                        "baseline_spread_prediction": 6.0,
+                        "baseline_total_prediction": 40.0,
+                    }
+                )
+    policy = policy_from_mapping(
+        {
+            "schema_version": "training_policy_2026_v1",
+            "labeled_years": [2021, 2022, 2023, 2024, 2025],
+            "selection_folds": [
+                {"train_years": [2021], "validation_year": 2022},
+                {"train_years": [2021, 2022], "validation_year": 2023},
+                {"train_years": [2021, 2022, 2023], "validation_year": 2024},
+            ],
+            "locked_test": {"train_years": [2021, 2022, 2023, 2024], "test_year": 2025},
+            "production_refit_years": [2021, 2022, 2023, 2024, 2025],
+            "prior_source_overrides": {"2021": 2019},
+            "excluded_years": [2020],
+        }
+    )
+    result = generate_game_ordinal_candidate_predictions(
+        pd.DataFrame(rows),
+        policy=policy,
+        features=["feature"],
+        established_features=["feature"],
+        candidate_kinds=("direct_ridge",),
+        baseline_columns={
+            "spread": "baseline_spread_prediction",
+            "total": "baseline_total_prediction",
+        },
+    )
+    game_four = result[result["regime"] == "game_4"]
+    assert game_four["established_prediction"].notna().all()

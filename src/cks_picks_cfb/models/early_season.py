@@ -1,4 +1,4 @@
-"""Leakage-safe primitives for the first three scheduled team games."""
+"""Leakage-safe primitives for the first four scheduled team games."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate sealed staged candidates for the canonical Games 1–3 tournament."""
+"""Generate sealed staged candidates for the canonical Games 1–4 tournament."""
 
 from __future__ import annotations
 
@@ -23,8 +23,17 @@ from cks_picks_cfb.models.game_ordinal_training import (
 )
 from cks_picks_cfb.models.predictive_evaluation import evaluate_predictive_candidate
 from cks_picks_cfb.models.training_policy import policy_from_mapping
+from cks_picks_cfb.models.v4_feature_variants import additive_feature_variants
 
-EARLY = ("game_1", "game_2", "game_3")
+EARLY = ("game_1", "game_2", "game_3", "game_4")
+
+
+def _context_feature_variants(raw: pd.DataFrame, spec) -> dict[str, list[str]]:
+    return additive_feature_variants(
+        raw,
+        family_order=list(spec.preseason_feature_variants),
+        context_features=list(spec.context_features),
+    )
 
 
 def _feature_ref(storage, uri: str) -> DatasetRef:
@@ -33,35 +42,38 @@ def _feature_ref(storage, uri: str) -> DatasetRef:
 
 def _best_strengths(
     rows: pd.DataFrame, candidate: str
-) -> dict[tuple[str, str], dict[str, float]]:
+) -> dict[tuple[str, str, str], dict[str, float]]:
     column = f"{candidate}_prediction"
-    result: dict[tuple[str, str], dict[str, float]] = {}
+    result: dict[tuple[str, str, str], dict[str, float]] = {}
     for target in ("spread", "total"):
         for regime in EARLY:
             route = rows[(rows["target"] == target) & (rows["regime"] == regime)]
-            scored = []
-            for strength_json, values in route.groupby(
-                "prior_strengths_json", observed=True
-            ):
-                report = evaluate_predictive_candidate(
-                    values.rename(columns={column: "candidate_prediction"}),
-                    target=target,
-                    regime=regime,
-                    n_bootstrap=1,
+            for variant, variant_rows in route.groupby("feature_variant", observed=True):
+                scored = []
+                for strength_json, values in variant_rows.groupby(
+                    "prior_strengths_json", observed=True
+                ):
+                    report = evaluate_predictive_candidate(
+                        values.rename(columns={column: "candidate_prediction"}),
+                        target=target,
+                        regime=regime,
+                        n_bootstrap=1,
+                    )
+                    scored.append((strength_json, report))
+                if not scored:
+                    raise ValueError(
+                        f"No Ridge designs for {target}/{regime}/{candidate}/{variant}"
+                    )
+                strength_json, _ = min(
+                    scored,
+                    key=lambda item: (
+                        item[1]["metrics"]["candidate_mae"],
+                        item[1]["metrics"]["candidate_rmse"],
+                        abs(item[1]["metrics"]["candidate_bias"]),
+                        item[0],
+                    ),
                 )
-                scored.append((strength_json, report))
-            if not scored:
-                raise ValueError(f"No Ridge designs for {target}/{regime}/{candidate}")
-            strength_json, _ = min(
-                scored,
-                key=lambda item: (
-                    item[1]["metrics"]["candidate_mae"],
-                    item[1]["metrics"]["candidate_rmse"],
-                    abs(item[1]["metrics"]["candidate_bias"]),
-                    item[0],
-                ),
-            )
-            result[(target, regime)] = json.loads(strength_json)
+                result[(target, regime, str(variant))] = json.loads(strength_json)
     return result
 
 
@@ -75,23 +87,24 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
         current_column = f"current_{target}_prediction"
         if {prior_column, current_column} - set(target_rows):
             raise ValueError("Canonical blend requires baseline component predictions")
-        selected: tuple[float, float] | None = None
+        selected: tuple[float, float, float] | None = None
         best_loss = float("inf")
         for game_2 in np.linspace(0.0, 1.0, 21):
             for game_3 in np.linspace(0.0, game_2, int(round(game_2 * 20)) + 1):
-                candidate = target_rows.copy()
-                route_weight = candidate["regime"].map(
-                    {"game_1": 1.0, "game_2": game_2, "game_3": game_3}
-                )
-                prediction = (
-                    route_weight * candidate[prior_column]
-                    + (1.0 - route_weight) * candidate[current_column]
-                )
-                loss = float((prediction - candidate["actual"]).abs().mean())
-                if loss < best_loss:
-                    best_loss, selected = loss, (float(game_2), float(game_3))
+                for game_4 in np.linspace(0.0, game_3, int(round(game_3 * 20)) + 1):
+                    candidate = target_rows.copy()
+                    route_weight = candidate["regime"].map(
+                        {"game_1": 1.0, "game_2": game_2, "game_3": game_3, "game_4": game_4}
+                    )
+                    prediction = (
+                        route_weight * candidate[prior_column]
+                        + (1.0 - route_weight) * candidate[current_column]
+                    )
+                    loss = float((prediction - candidate["actual"]).abs().mean())
+                    if loss < best_loss:
+                        best_loss, selected = loss, (float(game_2), float(game_3), float(game_4))
         assert selected is not None
-        weights[target] = {"game_1": 1.0, "game_2": selected[0], "game_3": selected[1]}
+        weights[target] = {"game_1": 1.0, "game_2": selected[0], "game_3": selected[1], "game_4": selected[2]}
         target_rows["blend_prediction"] = (
             target_rows["regime"].map(weights[target]) * target_rows[prior_column]
             + (1.0 - target_rows["regime"].map(weights[target]))
@@ -104,24 +117,30 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
 
 def _selection(
     raw: pd.DataFrame, policy, spec, seed: int
-) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
+) -> tuple[pd.DataFrame, dict[str, dict[str, dict[str, float]]]]:
+    variants = _context_feature_variants(raw, spec)
     ridge_rows = []
-    for strengths in prior_strength_designs():
-        frame, features = add_ordinal_shrinkage_features(raw, prior_strengths=strengths)
-        ridge_rows.append(
-            generate_game_ordinal_candidate_predictions(
-                frame,
-                policy=policy,
-                features=[*features, *list(spec.context_features)],
-                baseline_columns=OmegaConf.to_container(
-                    spec.baseline_columns, resolve=True
-                ),
-                random_seed=seed,
-                stage="selection",
-                candidate_kinds=("direct_ridge", "points_ridge"),
-                prior_strengths=strengths,
+    for feature_variant, context_features in variants.items():
+        for strengths in prior_strength_designs():
+            frame, features = add_ordinal_shrinkage_features(
+                raw, prior_strengths=strengths
             )
-        )
+            ridge_rows.append(
+                generate_game_ordinal_candidate_predictions(
+                    frame,
+                    policy=policy,
+                    features=[*features, *context_features],
+                    baseline_columns=OmegaConf.to_container(
+                        spec.baseline_columns, resolve=True
+                    ),
+                    random_seed=seed,
+                    stage="selection",
+                    candidate_kinds=("direct_ridge", "points_ridge"),
+                    prior_strengths=strengths,
+                    established_features=list(spec.established_features),
+                    feature_variant=feature_variant,
+                )
+            )
     ridge = pd.concat(ridge_rows, ignore_index=True)
     selected = {
         candidate: _best_strengths(ridge, candidate)
@@ -129,8 +148,9 @@ def _selection(
     }
     cat_rows = []
     for candidate, designs in selected.items():
-        for strengths in {
-            json.dumps(value, sort_keys=True) for value in designs.values()
+        for feature_variant, strengths in {
+            (variant, json.dumps(value, sort_keys=True))
+            for (_, _, variant), value in designs.items()
         }:
             values = json.loads(strengths)
             frame, features = add_ordinal_shrinkage_features(
@@ -140,7 +160,7 @@ def _selection(
                 generate_game_ordinal_candidate_predictions(
                     frame,
                     policy=policy,
-                    features=[*features, *list(spec.context_features)],
+                    features=[*features, *variants[feature_variant]],
                     baseline_columns=OmegaConf.to_container(
                         spec.baseline_columns, resolve=True
                     ),
@@ -148,18 +168,26 @@ def _selection(
                     stage="selection",
                     candidate_kinds=(candidate.replace("ridge", "catboost"),),
                     prior_strengths=values,
+                    established_features=list(spec.established_features),
+                    feature_variant=feature_variant,
                 )
             )
-    # Use one Ridge design's rows to avoid duplicate baseline-component OOF rows.
-    blend, weights = _blend_rows(
-        ridge[ridge["prior_strengths_json"] == ridge["prior_strengths_json"].iloc[0]]
-    )
-    return pd.concat([ridge, *cat_rows, blend], ignore_index=True), weights
+    blends = []
+    weights = {}
+    for feature_variant, values in ridge.groupby("feature_variant", observed=True):
+        first_strength = values["prior_strengths_json"].iloc[0]
+        blend, variant_weights = _blend_rows(
+            values[values["prior_strengths_json"] == first_strength]
+        )
+        blends.append(blend)
+        weights[str(feature_variant)] = variant_weights
+    return pd.concat([ridge, *cat_rows, *blends], ignore_index=True), weights
 
 
 def _locked(
     raw: pd.DataFrame, policy, spec, selection: dict, seed: int
 ) -> pd.DataFrame:
+    variants = _context_feature_variants(raw, spec)
     default_strengths = {"plays": 100.0, "drives": 20.0, "games": 4.0}
     default_frame, default_features = add_ordinal_shrinkage_features(
         raw, prior_strengths=default_strengths
@@ -167,12 +195,14 @@ def _locked(
     baseline_rows = generate_game_ordinal_candidate_predictions(
         default_frame,
         policy=policy,
-        features=[*default_features, *list(spec.context_features)],
+        features=[*default_features, *variants["prior_core"]],
         baseline_columns=OmegaConf.to_container(spec.baseline_columns, resolve=True),
         random_seed=seed,
         stage="locked",
         candidate_kinds=("direct_ridge",),
         prior_strengths=default_strengths,
+        established_features=list(spec.established_features),
+        feature_variant="prior_core",
     )
     rows = []
     for target in ("spread", "total"):
@@ -193,6 +223,13 @@ def _locked(
                 strengths = selection["reports"][target][regime][candidate][
                     "selected_prior_strengths"
                 ]
+            feature_variant = selection["reports"][target][regime][candidate][
+                "selected_feature_variant"
+            ]
+            if feature_variant not in variants:
+                raise ValueError(
+                    f"Locked Gold cannot reproduce selected V4 variant: {feature_variant}"
+                )
             frame, features = add_ordinal_shrinkage_features(
                 raw, prior_strengths=strengths
             )
@@ -200,7 +237,7 @@ def _locked(
             candidate_rows = generate_game_ordinal_candidate_predictions(
                 frame,
                 policy=policy,
-                features=[*features, *list(spec.context_features)],
+                features=[*features, *variants[feature_variant]],
                 baseline_columns=OmegaConf.to_container(
                     spec.baseline_columns, resolve=True
                 ),
@@ -208,13 +245,17 @@ def _locked(
                 stage="locked",
                 candidate_kinds=kinds,
                 prior_strengths=strengths,
+                established_features=list(spec.established_features),
+                feature_variant=feature_variant,
             )
             candidate_rows = candidate_rows[
                 (candidate_rows["target"] == target)
                 & (candidate_rows["regime"] == regime)
             ].copy()
             if candidate == "blend":
-                weight = float(selection["blend_weights"][target][regime])
+                weight = float(
+                    selection["blend_weights"][feature_variant][target][regime]
+                )
                 candidate_rows["blend_prediction"] = (
                     weight * candidate_rows[f"preseason_{target}_prediction"]
                     + (1.0 - weight) * candidate_rows[f"current_{target}_prediction"]
@@ -229,6 +270,7 @@ def main() -> None:
     parser.add_argument("--feature-ref-uri", required=True)
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--selection-report-uri")
+    parser.add_argument("--research-only", action="store_true")
     parser.add_argument(
         "--environment", choices=("preview", "production"), required=True
     )
@@ -247,6 +289,12 @@ def main() -> None:
             canonical_prediction_regime
         )
     )
+    tracks = set(raw.get("v4_feature_track", pd.Series("legacy")).dropna().astype(str))
+    if tracks == {"reconstructed"} and not args.research_only:
+        raise ValueError("Reconstructed V4 references require --research-only")
+    if args.research_only and tracks != {"reconstructed"}:
+        raise ValueError("--research-only accepts only a reconstructed V4 reference")
+    raw["feature_track"] = next(iter(tracks)) if tracks else "legacy"
     if args.stage == "selection":
         result, weights = _selection(raw, policy, spec, args.random_seed)
         result.attrs["blend_weights"] = weights
@@ -260,6 +308,8 @@ def main() -> None:
             "selection_design_sha"
         ):
             raise ValueError("Locked generation requires a sealed selection report")
+        if selection.get("feature_track", "strict") != "strict":
+            raise ValueError("Locked generation requires a strict selection report")
         result = _locked(raw, policy, spec, selection, args.random_seed)
     args.output_csv.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(args.output_csv, index=False)

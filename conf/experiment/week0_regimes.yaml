@@ -21,6 +21,19 @@ context_features:
   - home_neutral_site
   - home_conference_game
 
+# V4 evaluates all-or-nothing point-in-time source families.  A family enters
+# a candidate only when it is complete in every required historical fold and
+# in the deployment snapshot; CFBD talent remains optional.
+preseason_feature_variants:
+  - prior_core
+  - returning_production
+  - transfer_portal
+  - recruiting
+  - coaching
+  - roster_continuity
+  - preseason_rankings
+  - talent
+
 # Compatibility design of the established Preview v2 direct-Ridge routes.
 established_features:
   - home_adj_off_epa_pp

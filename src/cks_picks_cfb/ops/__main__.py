@@ -667,24 +667,31 @@ def build_steps(
         return [subprocess_step("build_baselines", argv)]
     if context.command == "assemble-model-ready":
         assert options is not None and as_of is not None
-        return [
-            subprocess_step(
-                "assemble_model_ready",
-                _python(
-                    "scripts/pipeline/assemble_model_ready_features.py",
-                    "--core-ref-uri",
-                    options.core_ref_uri,
-                    "--baselines-ref-uri",
-                    options.baselines_ref_uri,
-                    "--markets-ref-uri",
-                    options.markets_ref_uri,
-                    "--as-of",
-                    as_of,
-                    "--output-ref-uri",
-                    options.output_ref_uri,
-                ),
+        argv = _python(
+            "scripts/pipeline/assemble_model_ready_features.py",
+            "--core-ref-uri",
+            options.core_ref_uri,
+            "--baselines-ref-uri",
+            options.baselines_ref_uri,
+            "--as-of",
+            as_of,
+            "--output-ref-uri",
+            options.output_ref_uri,
+            "--environment",
+            environment,
+        )
+        if options.markets_ref_uri:
+            argv.extend(["--markets-ref-uri", options.markets_ref_uri])
+        if options.preseason_features_ref_uri:
+            argv.extend(
+                [
+                    "--preseason-features-ref-uri",
+                    options.preseason_features_ref_uri,
+                    "--feature-track",
+                    options.feature_track,
+                ]
             )
-        ]
+        return [subprocess_step("assemble_model_ready", argv)]
     if context.command == "readiness":
         assert week is not None and as_of is not None
         config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
@@ -1117,7 +1124,11 @@ def parse_args() -> argparse.Namespace:
         if command == "assemble-model-ready":
             sub.add_argument("--core-ref-uri", required=True)
             sub.add_argument("--baselines-ref-uri", required=True)
-            sub.add_argument("--markets-ref-uri", required=True)
+            sub.add_argument("--markets-ref-uri")
+            sub.add_argument("--preseason-features-ref-uri")
+            sub.add_argument(
+                "--feature-track", choices=("strict", "reconstructed")
+            )
             sub.add_argument("--output-ref-uri", required=True)
     return parser.parse_args()
 

@@ -21,17 +21,19 @@ def test_completed_game_regimes_cover_zero_through_established():
     ]
 
 
-def test_upcoming_game_routes_cover_the_first_three_scheduled_games():
-    assert [upcoming_game_regime(value) for value in range(5)] == [
+def test_upcoming_game_routes_cover_the_first_four_scheduled_games():
+    assert [upcoming_game_regime(value) for value in range(6)] == [
         "game_1",
         "game_2",
         "game_3",
+        "game_4",
         "established",
         "established",
     ]
     assert canonical_prediction_regime("preseason") == "game_1"
     assert canonical_prediction_regime("one_game") == "game_2"
     assert canonical_prediction_regime("two_games") == "game_3"
+    assert canonical_prediction_regime("three_games") == "game_4"
 
 
 def test_current_and_prior_features_remain_separate():

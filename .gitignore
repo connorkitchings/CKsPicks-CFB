@@ -253,6 +253,9 @@ artifacts/experiments/**/*.pkl
 !artifacts/experiments/**/summary.json
 !artifacts/experiments/**/config.yaml
 
+# Preview operational state (user-owned R2/Neon rehearsal artifacts; never committed)
+artifacts/preview/
+
 # Production (keep predictions, exclude scored & monitoring)
 artifacts/production/scored/
 artifacts/production/monitoring/*.csv

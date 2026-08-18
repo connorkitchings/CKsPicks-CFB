@@ -11,7 +11,7 @@ import pandas as pd
 from cks_picks_cfb.models.regime_training import TARGET_COLUMNS, _fit_predict
 from cks_picks_cfb.models.training_policy import TrainingPolicy, labeled_training_frame
 
-EARLY_REGIMES = ("game_1", "game_2", "game_3")
+EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4")
 POINT_TARGETS = {"home": "home_points", "away": "away_points"}
 CANDIDATE_KINDS = (
     "direct_ridge",
@@ -31,6 +31,8 @@ def generate_game_ordinal_candidate_predictions(
     stage: str = "selection",
     candidate_kinds: Sequence[str] = CANDIDATE_KINDS,
     prior_strengths: Mapping[str, float] | None = None,
+    established_features: Sequence[str] | None = None,
+    feature_variant: str = "prior_quality",
 ) -> pd.DataFrame:
     """Generate one sealed stage of direct and points-derived candidates.
 
@@ -72,6 +74,12 @@ def generate_game_ordinal_candidate_predictions(
         raise ValueError(
             f"Unsupported ordinal candidate kinds: {sorted(unknown_kinds)}"
         )
+    if established_features:
+        missing_established = sorted(set(established_features) - set(frame.columns))
+        if missing_established:
+            raise ValueError(
+                f"Ordinal candidate frame is missing established features: {missing_established}"
+            )
     if stage == "selection":
         folds = list(policy.selection_folds)
     elif stage == "locked":
@@ -135,8 +143,21 @@ def generate_game_ordinal_candidate_predictions(
                 validation_route["baseline_prediction"] = validation_route[
                     baseline_columns[target]
                 ]
+                if regime == "game_4" and established_features:
+                    established_train = train[
+                        train["prediction_regime"] == "established"
+                    ]
+                    validation_route["established_prediction"] = _fit_predict(
+                        established_train,
+                        validation_route,
+                        features=established_features,
+                        target_column=target_column,
+                        kind="direct_ridge",
+                        random_seed=random_seed,
+                    )
                 validation_route["training_max_year"] = max(fold.train_years)
                 validation_route["candidate_stage"] = stage
+                validation_route["feature_variant"] = feature_variant
                 validation_route["prior_strengths_json"] = json.dumps(
                     dict(prior_strengths or {}), sort_keys=True
                 )

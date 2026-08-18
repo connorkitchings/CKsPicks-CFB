@@ -17,6 +17,8 @@ from cks_picks_cfb.preseason import (
     predict_preseason,
     select_blend_weights,
     snapshot_is_complete,
+    v4_preseason_feature_variants,
+    v4_snapshot_is_usable,
     write_snapshot_source,
 )
 
@@ -295,3 +297,32 @@ def test_select_blend_weights_uses_training_only_predictions():
         2: 0.0,
         3: 0.0,
     }
+
+
+def test_v4_snapshot_allows_missing_talent_but_not_other_sources(storage: LocalStorage):
+    for source in REQUIRED_SNAPSHOT_SOURCES:
+        if source != "talent":
+            write_snapshot_source(
+                storage,
+                year=2024,
+                as_of=AS_OF,
+                source=source,
+                records=_snapshot_records(source),
+            )
+    assert not snapshot_is_complete(storage, 2024, AS_OF)
+    assert v4_snapshot_is_usable(storage, 2024, AS_OF)
+
+
+def test_v4_feature_variants_exclude_incomplete_talent_family():
+    frame = pd.DataFrame(
+        {
+            feature: [1.0, 2.0]
+            for feature in PRESEASON_FEATURES
+            if not feature.endswith("_missing")
+        }
+    )
+    frame["home_talent"] = np.nan
+    frame["away_talent"] = np.nan
+    variants = v4_preseason_feature_variants(frame)
+    assert "prior_quality" in variants
+    assert "talent" not in variants

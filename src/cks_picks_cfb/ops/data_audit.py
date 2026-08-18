@@ -89,7 +89,7 @@ def audit_feature_frame(
         "three_games",
         "established",
     }
-    canonical_regimes = {"game_1", "game_2", "game_3", "established"}
+    canonical_regimes = {"game_1", "game_2", "game_3", "game_4", "established"}
     checks["route_coverage"] = (
         regimes == legacy_regimes or regimes == canonical_regimes
     )

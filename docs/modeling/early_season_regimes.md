@@ -1,7 +1,7 @@
 # 2026 Week 0 and Early-Season Evaluation Contract
 
 The canonical production design evaluates spread and total independently for a
-team's upcoming `game_1`, `game_2`, `game_3`, and `established` route. The
+team's upcoming `game_1`, `game_2`, `game_3`, `game_4`, and `established` route. The
 first game has zero completed-game observations; it is not a preseason game.
 A matchup uses the route of its least-experienced team, while each team keeps
 its own completed-game count and shrinkage weight. Legacy labels
@@ -18,7 +18,7 @@ Model features must be reproducible before kickoff and cannot include spreads, t
 - 2019 is not a labeled season; it is allowed only as the last normal prior-quality source for early 2021.
 - 2020 is excluded from labeled rows, features, lineage, tuning, testing, and refitting.
 
-For games one through three, the tournament compares direct Ridge, direct
+For games one through four, the tournament compares direct Ridge, direct
 CatBoost, points-derived Ridge, and points-derived CatBoost. Team-side current
 metrics are empirically shrunk to prior values using that team's own play,
 drive, or completed-game exposure. The reviewed prior-strength grids are plays
@@ -28,6 +28,35 @@ Historical quote data is optional betting research. It is never a model input
 and it is not required to select, refit, or activate a Games 1–3 prediction
 route. When quote data is later used for betting evaluation, it must be
 timestamped; untimestamped legacy CFBD references remain ineligible.
+
+## V4 immutable feature references
+
+V4 covers feature lineage for 2021–2026: 2021 supplies the first OOF training
+fold, 2022–2024 select the design, 2025 remains locked until selection is
+sealed, 2021–2025 refit the winner, and 2026 is inference-only.
+
+The strict reference is activation-eligible and starts with verified prior
+performance plus current-season shrinkage. Returning production, transfers,
+recruiting, coaching, roster continuity, preseason rankings, and talent are
+additive candidate families only when every required team-season has immutable
+source provenance with an effective time before that season's first kickoff.
+Talent is all-or-nothing. Historic data retrieved later without that evidence
+belongs to a separate `reconstructed` research reference; its reports cannot
+select routes, refit bundles, pass readiness, or publish predictions.
+
+```bash
+PYTHONPATH=src uv run python scripts/pipeline/build_v4_preseason_feature_reference.py \
+  --core-ref-uri artifacts/preview/refs/history/point-in-time-core.json \
+  --track strict --as-of 2026-08-17T16:00:00Z \
+  --output-ref-uri artifacts/preview/refs/v4/strict-preseason-team.json \
+  --manifest-uri artifacts/preview/refs/v4/strict-preseason-team.manifest.json \
+  --environment preview
+
+make assemble-model-ready YEAR=2026 ENV=preview AS_OF=2026-08-17T16:00:00Z \
+  CORE_REF_URI=... BASELINES_REF_URI=... \
+  PRESEASON_FEATURES_REF_URI=artifacts/preview/refs/v4/strict-preseason-team.json \
+  FEATURE_TRACK=strict OUTPUT_REF_URI=artifacts/preview/refs/v4/model-ready-strict.json
+```
 
 ## Required promotion report
 
@@ -51,8 +80,9 @@ predictive validation only; it is not a profitability claim.
 Selection and locked validation are deliberately separate commands. Selection
 must contain only 2022–2024 rows; its report SHA is a required input to the
 guarded 2025 baseline and candidate stages. The resulting final report contains
-eight canonical v3 routes (two targets × Games 1–3 plus established), not the
-legacy ten completed-game routes.
+ten canonical V4 routes (two targets × Games 1–4 plus established).  The
+Game 4 tournament includes the unchanged established model as an explicit
+candidate; it is not retournamented.
 
 ```bash
 make generate-game-ordinal \

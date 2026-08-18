@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 from dataclasses import dataclass
 from typing import Any, Mapping
 
@@ -18,7 +19,7 @@ from cks_picks_cfb.model_bundle import (
 )
 
 TARGETS = ("spread", "total")
-REGIMES = ("game_1", "game_2", "game_3", "established")
+REGIMES = ("game_1", "game_2", "game_3", "game_4", "established")
 
 
 @dataclass(frozen=True)
@@ -58,7 +59,7 @@ class ModelBundleV3:
 def load_model_bundle_v3(
     spec: Mapping[str, Any], *, storage: StorageBackend | None = None
 ) -> ModelBundleV3:
-    """Load a checksummed eight-route canonical early-season bundle."""
+    """Load a checksummed ten-route canonical early-season bundle."""
     uri = str(spec.get("artifact_uri") or "")
     expected_sha = str(spec.get("sha256") or "")
     if not uri or len(expected_sha) != 64:
@@ -71,6 +72,10 @@ def load_model_bundle_v3(
     raw = json.loads(payload.decode("utf-8"))
     if raw.get("schema_version") != "model_bundle_v3":
         raise ValueError("Unsupported model bundle schema")
+    if raw.get("feature_track") == "reconstructed" or raw.get(
+        "activation_eligible"
+    ) is False:
+        raise ValueError("Reconstructed research bundles cannot be loaded for inference")
     routes: dict[tuple[str, str], RouteSpecV3] = {}
     for item in raw.get("routes") or ():
         target, regime = str(item["target"]), str(item["regime"])
@@ -124,7 +129,7 @@ def load_model_bundle_v3(
     expected = {(target, regime) for target in TARGETS for regime in REGIMES}
     if set(routes) != expected:
         raise ValueError(
-            f"model_bundle_v3 requires eight routes; missing={sorted(expected - set(routes))}"
+            f"model_bundle_v3 requires ten routes; missing={sorted(expected - set(routes))}"
         )
     years = tuple(int(year) for year in raw.get("training_years") or ())
     if years != (2021, 2022, 2023, 2024, 2025):
@@ -168,7 +173,9 @@ def _predict_ref(
     from cks_picks_cfb.models.regime_training import _model_values
 
     values = _model_values(frame, ref.features)
-    prediction = np.asarray(model.predict(values), dtype=float)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        prediction = np.asarray(model.predict(values), dtype=float)
     if not np.isfinite(prediction).all():
         raise ValueError(
             f"Model artifact {ref.artifact_uri} produced non-finite predictions"

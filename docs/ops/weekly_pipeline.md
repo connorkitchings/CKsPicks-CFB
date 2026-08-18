@@ -118,11 +118,11 @@ Completed games are counted per team. The matchup regime label uses the lesser c
 
 | Completed games | Route |
 |---:|---|
-| 0 | Preseason/prior model |
-| 1 | Direct Ridge, direct CatBoost, or monotone blend champion |
-| 2 | Direct Ridge, direct CatBoost, or monotone blend champion |
-| 3 | Direct Ridge, direct CatBoost, or monotone blend champion |
-| 4+ | Current-season model only |
+| 0 | Game 1 prior/preseason route |
+| 1 | Game 2 direct, points-derived, or monotone blend champion |
+| 2 | Game 3 direct, points-derived, or monotone blend champion |
+| 3 | Game 4 route, evaluated against the established model |
+| 4+ | Established current-season model |
 
 Weights must be selected from training-year out-of-fold predictions and decrease monotonically. The preseason snapshot builder supports any scheduled week, so byes do not force an established route. A regime that has not passed promotion remains display-only and cannot receive high-confidence branding.
 
@@ -133,6 +133,11 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train
 ```
 
 Generate candidates with `experiment=week0_regimes`. Selection uses temporal 2022–2024 OOF predictions, 2025 is the locked test, and the unchanged production design refits on 2021–2025. Early 2021 may use 2019 only as its prior source; 2020 remains entirely excluded.
+
+V4 activation requires a strict immutable feature reference. A reconstructed
+historical reference is research-only and the candidate evaluator/refitter
+reject it unless the evaluation is explicitly invoked with `--research-only`;
+no reconstructed report can create a loadable prediction bundle.
 
 ## CFBD Model Pick'em
 

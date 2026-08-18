@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from itertools import product
 from typing import Mapping, Sequence
 
@@ -86,8 +87,10 @@ def _fit_predict(
     model = _candidate(kind, random_seed)
     train_features = _model_values(train, features)
     validation_features = _model_values(validation, features)
-    model.fit(train_features, train[target_column])
-    prediction = np.asarray(model.predict(validation_features), dtype=float)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        model.fit(train_features, train[target_column])
+        prediction = np.asarray(model.predict(validation_features), dtype=float)
     if not np.isfinite(prediction).all():
         raise ValueError(f"{kind}/{target_column} produced non-finite predictions")
     return prediction
@@ -107,7 +110,9 @@ def fit_candidate_model(
     validate_model_feature_allowlist(tuple(features))
     model = _candidate(kind, random_seed)
     values = _model_values(frame, features)
-    model.fit(values, frame[target_column])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        model.fit(values, frame[target_column])
     return model
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Seal result-only Games 1–3 selection, then validate it on locked 2025."""
+"""Seal result-only Games 1–4 selection, then validate it on locked 2025."""
 
 from __future__ import annotations
 
@@ -24,8 +24,9 @@ from cks_picks_cfb.models.training_policy import (
     validate_feature_lineage,
 )
 
-EARLY_REGIMES = ("game_1", "game_2", "game_3")
+EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4")
 CANDIDATE_COLUMNS = {
+    "established": "established_prediction",
     "blend": "blend_prediction",
     "direct_ridge": "direct_ridge_prediction",
     "points_ridge": "points_ridge_prediction",
@@ -75,13 +76,20 @@ def _candidate_reports(
         if complete.empty:
             continue
         by_design = []
+        if "feature_variant" not in complete:
+            complete = complete.assign(feature_variant="prior_core")
         if "prior_strengths_json" in complete and candidate != "blend":
             groups = complete.groupby(
-                "prior_strengths_json", dropna=False, observed=True
+                ["feature_variant", "prior_strengths_json"],
+                dropna=False,
+                observed=True,
             )
         else:
-            groups = [("{}", complete)]
-        for design, values in groups:
+            groups = [
+                ((str(variant), "{}"), values)
+                for variant, values in complete.groupby("feature_variant", observed=True)
+            ]
+        for (variant, design), values in groups:
             report = _report_for_rows(
                 values,
                 target=target,
@@ -89,19 +97,21 @@ def _candidate_reports(
                 prediction_column=column,
                 bootstrap=bootstrap,
             )
-            by_design.append((str(design), report))
-        design, report = min(
+            by_design.append((str(variant), str(design), report))
+        variant, design, report = min(
             by_design,
             key=lambda item: (
-                float(item[1]["metrics"]["candidate_mae"]),
-                float(item[1]["metrics"]["candidate_rmse"]),
-                abs(float(item[1]["metrics"]["candidate_bias"])),
+                float(item[2]["metrics"]["candidate_mae"]),
+                float(item[2]["metrics"]["candidate_rmse"]),
+                abs(float(item[2]["metrics"]["candidate_bias"])),
                 item[0],
+                item[1],
             ),
         )
         reports[candidate] = {
             **report,
             "selected_prior_strengths": json.loads(design),
+            "selected_feature_variant": variant,
             "design_count": len(by_design),
         }
     return reports
@@ -159,7 +169,11 @@ def _selection(
         "prior_source_overrides": {"2021": 2019},
         "excluded_years": [2020],
         "feature_ref_uri": feature_ref_uri,
+        "feature_track": str(
+            frame.get("feature_track", pd.Series("strict")).iloc[0]
+        ),
         "blend_weights": blend_weights or {},
+        "feature_variants": sorted(frame.get("feature_variant", pd.Series("prior_quality")).dropna().astype(str).unique()),
         "proposed_routing": proposed_routing,
         "reports": reports,
     }
@@ -174,6 +188,8 @@ def _locked(
         "selection_design_sha"
     ):
         raise ValueError("Locked validation requires an immutable selection report")
+    if selection.get("feature_track", "strict") != "strict":
+        raise ValueError("Locked validation requires a strict selection report")
     if set(frame["season"].astype(int)) != {policy.locked_test_year}:
         raise ValueError("Locked candidates must contain only the locked 2025 season")
     routing: dict[str, dict[str, str]] = {target: {} for target in ("spread", "total")}
@@ -221,6 +237,7 @@ def _locked(
         "training_policy": policy.schema_version,
         "selection_report_sha": selection["selection_design_sha"],
         "selection_report": selection,
+        "feature_track": "strict",
         "routing": routing,
         "locked_2025_reports": locked_reports,
         "production_refit_years": list(policy.production_refit_years),
@@ -237,6 +254,7 @@ def main() -> None:
     parser.add_argument("--selection-report-uri")
     parser.add_argument("--feature-ref-uri")
     parser.add_argument("--blend-weights-json", type=Path)
+    parser.add_argument("--research-only", action="store_true")
     parser.add_argument(
         "--environment", choices=("preview", "production"), default="preview"
     )
@@ -264,12 +282,44 @@ def main() -> None:
         raise ValueError(f"Candidate file is missing columns: {missing}")
     validate_feature_lineage(frame, policy)
     if set(frame["regime"].dropna()) - set(EARLY_REGIMES):
-        raise ValueError("Ordinal evaluator accepts only game_1 through game_3")
+        raise ValueError("Ordinal evaluator accepts only game_1 through game_4")
     if (frame["training_max_year"].astype(int) >= frame["season"].astype(int)).any():
         raise ValueError(
             "Candidate predictions must train strictly before their season"
         )
     storage = get_storage(environment=args.environment)
+    tracks = set(frame.get("feature_track", pd.Series("strict")).dropna().astype(str))
+    if tracks == {"reconstructed"} and not args.research_only:
+        raise ValueError("Reconstructed V4 candidates require --research-only")
+    if args.research_only:
+        if tracks != {"reconstructed"}:
+            raise ValueError("--research-only accepts only reconstructed V4 candidates")
+        if args.stage != "selection":
+            raise ValueError("Reconstructed research reports support selection rows only")
+        reports = {
+            target: {
+                regime: _candidate_reports(
+                    frame[(frame["target"] == target) & (frame["regime"] == regime)],
+                    target=target,
+                    regime=regime,
+                    bootstrap=args.bootstrap,
+                )
+                for regime in EARLY_REGIMES
+            }
+            for target in ("spread", "total")
+        }
+        payload = {
+            "schema_version": "game_ordinal_reconstructed_research_v1",
+            "stage": "research",
+            "feature_track": "reconstructed",
+            "activation_eligible": False,
+            "selection_basis": "research_only",
+            "feature_ref_uri": args.feature_ref_uri,
+            "reports": reports,
+        }
+        _write_immutable(storage, args.output_uri, payload)
+        print(json.dumps({"stage": "research", "activation_eligible": False}, indent=2))
+        return
     if args.stage == "selection":
         blend_weights = (
             json.loads(args.blend_weights_json.read_text())
@@ -287,6 +337,8 @@ def main() -> None:
         if not args.selection_report_uri:
             raise ValueError("--selection-report-uri is required for locked validation")
         selection = _read(storage, args.selection_report_uri)
+        if selection.get("feature_track", "strict") != "strict":
+            raise ValueError("Locked validation requires a strict selection report")
         payload = _locked(
             frame, selection=selection, policy=policy, bootstrap=args.bootstrap
         )

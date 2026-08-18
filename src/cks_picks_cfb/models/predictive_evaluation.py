@@ -16,6 +16,7 @@ import pandas as pd
 PREDICTIVE_TIE_MAE = 0.10
 PREDICTIVE_CANDIDATE_ORDER = (
     "baseline",
+    "established",
     "blend",
     "direct_ridge",
     "points_ridge",
