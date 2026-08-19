@@ -50,9 +50,10 @@ def additive_feature_variants(
         if not columns:
             continue
         values = frame.loc[:, columns].apply(pd.to_numeric, errors="coerce")
-        if values.isna().any().any() or not np.isfinite(
-            values.to_numpy(dtype=float)
-        ).all():
+        if (
+            values.isna().any().any()
+            or not np.isfinite(values.to_numpy(dtype=float)).all()
+        ):
             continue
         selected.extend(column for column in columns if column not in selected)
         variants[family] = list(selected)

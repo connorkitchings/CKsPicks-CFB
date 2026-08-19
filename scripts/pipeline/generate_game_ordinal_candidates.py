@@ -48,7 +48,9 @@ def _best_strengths(
     for target in ("spread", "total"):
         for regime in EARLY:
             route = rows[(rows["target"] == target) & (rows["regime"] == regime)]
-            for variant, variant_rows in route.groupby("feature_variant", observed=True):
+            for variant, variant_rows in route.groupby(
+                "feature_variant", observed=True
+            ):
                 scored = []
                 for strength_json, values in variant_rows.groupby(
                     "prior_strengths_json", observed=True
@@ -94,7 +96,12 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
                 for game_4 in np.linspace(0.0, game_3, int(round(game_3 * 20)) + 1):
                     candidate = target_rows.copy()
                     route_weight = candidate["regime"].map(
-                        {"game_1": 1.0, "game_2": game_2, "game_3": game_3, "game_4": game_4}
+                        {
+                            "game_1": 1.0,
+                            "game_2": game_2,
+                            "game_3": game_3,
+                            "game_4": game_4,
+                        }
                     )
                     prediction = (
                         route_weight * candidate[prior_column]
@@ -102,9 +109,17 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
                     )
                     loss = float((prediction - candidate["actual"]).abs().mean())
                     if loss < best_loss:
-                        best_loss, selected = loss, (float(game_2), float(game_3), float(game_4))
+                        best_loss, selected = (
+                            loss,
+                            (float(game_2), float(game_3), float(game_4)),
+                        )
         assert selected is not None
-        weights[target] = {"game_1": 1.0, "game_2": selected[0], "game_3": selected[1], "game_4": selected[2]}
+        weights[target] = {
+            "game_1": 1.0,
+            "game_2": selected[0],
+            "game_3": selected[1],
+            "game_4": selected[2],
+        }
         target_rows["blend_prediction"] = (
             target_rows["regime"].map(weights[target]) * target_rows[prior_column]
             + (1.0 - target_rows["regime"].map(weights[target]))

@@ -76,7 +76,9 @@ def _code_sha() -> str:
 
 
 def _canonical(payload: object) -> bytes:
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
+    return json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), default=str
+    ).encode()
 
 
 def _parse_family_refs(values: list[str]) -> dict[str, str]:
@@ -133,20 +135,28 @@ def _family_frame(
         return None, {"eligible": False, "reason": f"missing columns: {missing}"}
     frame = source[["season", "team", "effective_at", "retrieved_at", *features]].copy()
     frame["season"] = pd.to_numeric(frame["season"], errors="coerce")
-    frame["effective_at"] = pd.to_datetime(frame["effective_at"], utc=True, errors="coerce")
-    frame["retrieved_at"] = pd.to_datetime(frame["retrieved_at"], utc=True, errors="coerce")
+    frame["effective_at"] = pd.to_datetime(
+        frame["effective_at"], utc=True, errors="coerce"
+    )
+    frame["retrieved_at"] = pd.to_datetime(
+        frame["retrieved_at"], utc=True, errors="coerce"
+    )
     for feature in features:
         frame[feature] = pd.to_numeric(frame[feature], errors="coerce")
     if frame.duplicated(["season", "team"]).any():
         return None, {"eligible": False, "reason": "duplicate season/team rows"}
-    merged = universe.merge(frame, on=["season", "team"], how="left", validate="one_to_one")
+    merged = universe.merge(
+        frame, on=["season", "team"], how="left", validate="one_to_one"
+    )
     values_complete = not merged[features].isna().any().any()
     evidence_complete = not merged[["effective_at", "retrieved_at"]].isna().any().any()
     effective_before_kickoff = bool(
         (merged["effective_at"] < merged["season_first_kickoff_utc"]).all()
     )
-    eligible = values_complete and evidence_complete and (
-        effective_before_kickoff if strict else True
+    eligible = (
+        values_complete
+        and evidence_complete
+        and (effective_before_kickoff if strict else True)
     )
     reason = None
     if not values_complete:
@@ -175,7 +185,9 @@ def main() -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument("--manifest-uri", required=True)
-    parser.add_argument("--environment", choices=("preview", "production"), required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
@@ -282,12 +294,16 @@ def main() -> None:
         },
     )
     if manifest.state != "validated":
-        raise RuntimeError(f"V4 preseason feature validation failed: {manifest.validation}")
+        raise RuntimeError(
+            f"V4 preseason feature validation failed: {manifest.validation}"
+        )
     register_dataset_version(catalog_connection_url(args.environment), ref, manifest)
     encoded_manifest = json.dumps(manifest_payload, indent=2, sort_keys=True).encode()
     if storage.exists(args.manifest_uri):
         if storage.read_bytes(args.manifest_uri) != encoded_manifest:
-            raise FileExistsError(f"Immutable V4 reference manifest exists: {args.manifest_uri}")
+            raise FileExistsError(
+                f"Immutable V4 reference manifest exists: {args.manifest_uri}"
+            )
     else:
         storage.write_bytes(encoded_manifest, args.manifest_uri)
     payload = json.dumps(asdict(ref), indent=2, sort_keys=True).encode()

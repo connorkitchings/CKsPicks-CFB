@@ -90,9 +90,7 @@ def audit_feature_frame(
         "established",
     }
     canonical_regimes = {"game_1", "game_2", "game_3", "game_4", "established"}
-    checks["route_coverage"] = (
-        regimes == legacy_regimes or regimes == canonical_regimes
-    )
+    checks["route_coverage"] = regimes == legacy_regimes or regimes == canonical_regimes
     if not checks["route_coverage"]:
         errors.append(f"regime coverage is {sorted(regimes)}")
     baseline_columns = {

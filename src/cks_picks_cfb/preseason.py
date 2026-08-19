@@ -39,7 +39,9 @@ REQUIRED_SNAPSHOT_SOURCES = (
 )
 OPTIONAL_V4_SNAPSHOT_SOURCES = ("talent",)
 V4_REQUIRED_SNAPSHOT_SOURCES = tuple(
-    source for source in REQUIRED_SNAPSHOT_SOURCES if source not in OPTIONAL_V4_SNAPSHOT_SOURCES
+    source
+    for source in REQUIRED_SNAPSHOT_SOURCES
+    if source not in OPTIONAL_V4_SNAPSHOT_SOURCES
 )
 
 TEAM_FEATURES = (
@@ -215,7 +217,10 @@ def v4_preseason_feature_variants(matchups: pd.DataFrame) -> dict[str, tuple[str
         if not features or not set(features).issubset(matchups.columns):
             continue
         values = matchups.loc[:, list(features)].apply(pd.to_numeric, errors="coerce")
-        if values.isna().any().any() or not np.isfinite(values.to_numpy(dtype=float)).all():
+        if (
+            values.isna().any().any()
+            or not np.isfinite(values.to_numpy(dtype=float)).all()
+        ):
             continue
         selected.extend(features)
         result[name] = tuple(selected)

@@ -138,9 +138,13 @@ def train_game_ordinal_tournament(cfg: DictConfig) -> dict:
     spec = cfg.experiment
     storage = get_storage()
     if spec.get("feature_dataset_ref"):
-        ref = DatasetRef(**OmegaConf.to_container(spec.feature_dataset_ref, resolve=True))
+        ref = DatasetRef(
+            **OmegaConf.to_container(spec.feature_dataset_ref, resolve=True)
+        )
     elif spec.get("feature_dataset_ref_uri"):
-        ref = DatasetRef(**json.loads(storage.read_bytes(str(spec.feature_dataset_ref_uri)).decode()))
+        ref = DatasetRef(
+            **json.loads(storage.read_bytes(str(spec.feature_dataset_ref_uri)).decode())
+        )
     else:
         raise ValueError("game ordinal training requires an immutable Gold feature ref")
     policy_path = Path(str(spec.training_policy))
@@ -151,7 +155,9 @@ def train_game_ordinal_tournament(cfg: DictConfig) -> dict:
     )
     raw_frame = read_dataset(storage, ref)
     raw_frame = raw_frame.assign(
-        prediction_regime=raw_frame["prediction_regime"].map(canonical_prediction_regime)
+        prediction_regime=raw_frame["prediction_regime"].map(
+            canonical_prediction_regime
+        )
     )
     frame, shrunk_features = add_ordinal_shrinkage_features(
         raw_frame,

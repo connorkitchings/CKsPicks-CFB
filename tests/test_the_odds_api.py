@@ -66,9 +66,7 @@ def test_adapter_flattens_pre_kick_spread_total_and_prices():
         http_get=lambda _: payload,
         now=lambda: datetime(2026, 8, 15, tzinfo=timezone.utc),
     )
-    response = adapter.fetch(
-        "market_quotes", {"snapshot_at": "2024-09-01T15:59:59Z"}
-    )
+    response = adapter.fetch("market_quotes", {"snapshot_at": "2024-09-01T15:59:59Z"})
     assert response.provider == "the_odds_api"
     assert response.effective_at == datetime(2024, 9, 1, 15, 55, tzinfo=timezone.utc)
     assert response.records[0]["spread"] == -3.5

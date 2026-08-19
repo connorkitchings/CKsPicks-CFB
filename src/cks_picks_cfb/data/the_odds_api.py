@@ -20,8 +20,7 @@ from cks_picks_cfb.data.sources import (
 )
 
 HISTORICAL_NCAAF_ENDPOINT = (
-    "https://api.the-odds-api.com/v4/historical/sports/"
-    "americanfootball_ncaaf/odds"
+    "https://api.the-odds-api.com/v4/historical/sports/americanfootball_ncaaf/odds"
 )
 HISTORICAL_CREDITS_PER_SNAPSHOT = 20  # US region × spreads + totals.
 
@@ -73,8 +72,14 @@ def match_odds_events_to_schedule(
         if not event_id or pd.isna(kickoff):
             continue
         matched = schedule_rows[
-            (schedule_rows["home_team"].map(normalized) == normalized(event.get("home_team")))
-            & (schedule_rows["away_team"].map(normalized) == normalized(event.get("away_team")))
+            (
+                schedule_rows["home_team"].map(normalized)
+                == normalized(event.get("home_team"))
+            )
+            & (
+                schedule_rows["away_team"].map(normalized)
+                == normalized(event.get("away_team"))
+            )
             & ((schedule_rows["start_date"] - kickoff).abs() <= tolerance)
         ]
         if len(matched) > 1:
@@ -162,7 +167,9 @@ class TheOddsAPIAdapter:
             provider=self.provider,
             entity=entity,
             records=records,
-            request={key: value for key, value in parameters.items() if key != "apiKey"},
+            request={
+                key: value for key, value in parameters.items() if key != "apiKey"
+            },
             captured_at=self._now(),
             effective_at=response_timestamp.to_pydatetime(),
             provider_api_version="v4",
@@ -188,8 +195,14 @@ class TheOddsAPIAdapter:
                     update = market.get("last_update") or bookmaker.get("last_update")
                     if update:
                         updated_at = pd.Timestamp(update, tz="UTC")
-                        latest_update = max(latest_update, updated_at) if latest_update else updated_at
-                    outcomes = {item.get("name"): item for item in market.get("outcomes") or ()}
+                        latest_update = (
+                            max(latest_update, updated_at)
+                            if latest_update
+                            else updated_at
+                        )
+                    outcomes = {
+                        item.get("name"): item for item in market.get("outcomes") or ()
+                    }
                     if market.get("key") == "spreads":
                         home = outcomes.get(event.get("home_team"))
                         away = outcomes.get(event.get("away_team"))
@@ -219,7 +232,9 @@ class TheOddsAPIAdapter:
                         "provider": bookmaker.get("key"),
                         "captured_at": snapshot_at.isoformat(),
                         "quote_updated_at": (
-                            latest_update.isoformat() if latest_update else snapshot_at.isoformat()
+                            latest_update.isoformat()
+                            if latest_update
+                            else snapshot_at.isoformat()
                         ),
                         **lines,
                     }

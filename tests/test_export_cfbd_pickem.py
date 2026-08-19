@@ -25,7 +25,9 @@ def test_format_pickem_uses_documented_game_id_and_pick_fields():
 
 
 def test_build_payload_excludes_non_contest_fields():
-    payload = build_api_payload(pd.DataFrame([{"gameId": 1, "pick": -3.5, "total": 52.0}]))
+    payload = build_api_payload(
+        pd.DataFrame([{"gameId": 1, "pick": -3.5, "total": 52.0}])
+    )
     assert payload == [{"gameId": 1, "pick": -3.5}]
 
 

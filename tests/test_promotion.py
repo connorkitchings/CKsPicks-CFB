@@ -108,8 +108,6 @@ def test_promotion_uses_actual_prices_and_counts_pushes_in_volume():
             "candidate_price": [100] * 100,
         }
     )
-    report = evaluate_promotion(
-        frame, target="spread", regime="game_1", n_bootstrap=50
-    )
+    report = evaluate_promotion(frame, target="spread", regime="game_1", n_bootstrap=50)
     assert report["metrics"]["candidate_volume"] == 100
     assert report["metrics"]["candidate_roi"] > 0.9

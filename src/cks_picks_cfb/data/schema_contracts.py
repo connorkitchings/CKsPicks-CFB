@@ -195,7 +195,9 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             schema_version,
             required,
             required,
-            ("season",) if dataset == "v4_preseason_team_features" else ("season", "game_id"),
+            ("season",)
+            if dataset == "v4_preseason_team_features"
+            else ("season", "game_id"),
             (),
             (),
             required,

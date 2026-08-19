@@ -127,9 +127,7 @@ def _variant(
 ) -> str:
     try:
         return str(
-            selection["reports"][target][regime][candidate][
-                "selected_feature_variant"
-            ]
+            selection["reports"][target][regime][candidate]["selected_feature_variant"]
         )
     except KeyError as exc:
         raise ValueError(
@@ -205,12 +203,8 @@ def main() -> None:
     frame = labeled_training_frame(raw, policy)
     frame = frame[frame["season"].isin(policy.production_refit_years)].copy()
     if {"home_points", "away_points"} - set(frame.columns):
-        frame["home_points"] = (
-            frame["total_target"] + frame["spread_target"]
-        ) / 2.0
-        frame["away_points"] = (
-            frame["total_target"] - frame["spread_target"]
-        ) / 2.0
+        frame["home_points"] = (frame["total_target"] + frame["spread_target"]) / 2.0
+        frame["away_points"] = (frame["total_target"] - frame["spread_target"]) / 2.0
     prior_features = _prior_features(frame)
     current_features = _current_features(frame)
     prefix = f"artifacts/{args.environment}/models/{args.bundle_id}"
@@ -307,7 +301,9 @@ def main() -> None:
                 continue
             strengths = _strengths(selection, target, regime, candidate)
             variant = _variant(selection, target, regime, candidate)
-            cache_key = json.dumps({"strengths": strengths, "variant": variant}, sort_keys=True)
+            cache_key = json.dumps(
+                {"strengths": strengths, "variant": variant}, sort_keys=True
+            )
             if cache_key not in shrunk_cache:
                 values, features = add_ordinal_shrinkage_features(
                     frame, prior_strengths=strengths

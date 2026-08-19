@@ -1127,9 +1127,7 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--baselines-ref-uri", required=True)
             sub.add_argument("--markets-ref-uri")
             sub.add_argument("--preseason-features-ref-uri")
-            sub.add_argument(
-                "--feature-track", choices=("strict", "reconstructed")
-            )
+            sub.add_argument("--feature-track", choices=("strict", "reconstructed"))
             sub.add_argument("--output-ref-uri", required=True)
     return parser.parse_args()
 

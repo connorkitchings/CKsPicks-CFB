@@ -147,8 +147,7 @@ def test_market_quotes_decode_captured_sdk_mapping_string():
                 "game_id": 10,
                 "week": 0,
                 "line_data": (
-                    "{'provider': 'Consensus', 'spread': -8.5, "
-                    "'overUnder': 47.5}"
+                    "{'provider': 'Consensus', 'spread': -8.5, 'overUnder': 47.5}"
                 ),
                 "__capture_id": "capture-1",
                 "__captured_at": "2026-08-15T14:53:00+00:00",

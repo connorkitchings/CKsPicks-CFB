@@ -87,7 +87,9 @@ def _candidate_reports(
         else:
             groups = [
                 ((str(variant), "{}"), values)
-                for variant, values in complete.groupby("feature_variant", observed=True)
+                for variant, values in complete.groupby(
+                    "feature_variant", observed=True
+                )
             ]
         for (variant, design), values in groups:
             report = _report_for_rows(
@@ -169,11 +171,14 @@ def _selection(
         "prior_source_overrides": {"2021": 2019},
         "excluded_years": [2020],
         "feature_ref_uri": feature_ref_uri,
-        "feature_track": str(
-            frame.get("feature_track", pd.Series("strict")).iloc[0]
-        ),
+        "feature_track": str(frame.get("feature_track", pd.Series("strict")).iloc[0]),
         "blend_weights": blend_weights or {},
-        "feature_variants": sorted(frame.get("feature_variant", pd.Series("prior_quality")).dropna().astype(str).unique()),
+        "feature_variants": sorted(
+            frame.get("feature_variant", pd.Series("prior_quality"))
+            .dropna()
+            .astype(str)
+            .unique()
+        ),
         "proposed_routing": proposed_routing,
         "reports": reports,
     }
@@ -295,7 +300,9 @@ def main() -> None:
         if tracks != {"reconstructed"}:
             raise ValueError("--research-only accepts only reconstructed V4 candidates")
         if args.stage != "selection":
-            raise ValueError("Reconstructed research reports support selection rows only")
+            raise ValueError(
+                "Reconstructed research reports support selection rows only"
+            )
         reports = {
             target: {
                 regime: _candidate_reports(

@@ -43,6 +43,7 @@ def _model_values(frame: pd.DataFrame, features: Sequence[str]) -> pd.DataFrame:
     )
     return values
 
+
 REGIMES = ("preseason", "one_game", "two_games", "three_games", "established")
 EARLY_REGIMES = ("one_game", "two_games", "three_games")
 TARGET_COLUMNS = {"spread": "spread_target", "total": "total_target"}
@@ -128,7 +129,9 @@ def fit_candidate_model(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         model.fit(values, frame[target_column])
-    if not np.isfinite(np.asarray(getattr(model[-1], "coef_", [0.0]), dtype=float)).all():
+    if not np.isfinite(
+        np.asarray(getattr(model[-1], "coef_", [0.0]), dtype=float)
+    ).all():
         raise ValueError(
             f"{kind}/{target_column} produced non-finite coefficients; "
             "refusing the production refit"

@@ -46,12 +46,24 @@ def main() -> None:
         suffixes=("_v2", "_v3"),
         validate="one_to_one",
     )
-    comparison["spread_prediction_delta"] = comparison["Spread Prediction_v3"] - comparison["Spread Prediction_v2"]
-    comparison["total_prediction_delta"] = comparison["Total Prediction_v3"] - comparison["Total Prediction_v2"]
-    comparison["spread_edge_delta"] = comparison["edge_spread_v3"] - comparison["edge_spread_v2"]
-    comparison["total_edge_delta"] = comparison["edge_total_v3"] - comparison["edge_total_v2"]
-    comparison["spread_lean_changed"] = comparison["Spread Bet_v2"] != comparison["Spread Bet_v3"]
-    comparison["total_lean_changed"] = comparison["Total Bet_v2"] != comparison["Total Bet_v3"]
+    comparison["spread_prediction_delta"] = (
+        comparison["Spread Prediction_v3"] - comparison["Spread Prediction_v2"]
+    )
+    comparison["total_prediction_delta"] = (
+        comparison["Total Prediction_v3"] - comparison["Total Prediction_v2"]
+    )
+    comparison["spread_edge_delta"] = (
+        comparison["edge_spread_v3"] - comparison["edge_spread_v2"]
+    )
+    comparison["total_edge_delta"] = (
+        comparison["edge_total_v3"] - comparison["edge_total_v2"]
+    )
+    comparison["spread_lean_changed"] = (
+        comparison["Spread Bet_v2"] != comparison["Spread Bet_v3"]
+    )
+    comparison["total_lean_changed"] = (
+        comparison["Total Bet_v2"] != comparison["Total Bet_v3"]
+    )
     if "v4" in frames:
         comparison = comparison.merge(
             frames["v4"][columns], on="game_id", validate="one_to_one"

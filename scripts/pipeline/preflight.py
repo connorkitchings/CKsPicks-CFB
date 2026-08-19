@@ -175,7 +175,9 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
         cfg = OmegaConf.load(config_path)
         storage = get_storage()
         if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
-            raise ValueError("Weekly configuration may select only one model bundle version")
+            raise ValueError(
+                "Weekly configuration may select only one model bundle version"
+            )
         if cfg.get("model_bundle_v3"):
             bundle = load_model_bundle_v3(cfg.model_bundle_v3, storage=storage)
             bundle_label = "model_bundle_v3"

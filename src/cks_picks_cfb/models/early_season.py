@@ -73,7 +73,9 @@ def add_ordinal_shrinkage_features(
     features: list[str] = []
     for side in ("home", "away"):
         for metric in ORDINAL_SHRINKAGE_FEATURES["plays"]:
-            exposure = f"{side}_n_off_plays" if "_off_" in metric else f"{side}_n_def_plays"
+            exposure = (
+                f"{side}_n_off_plays" if "_off_" in metric else f"{side}_n_def_plays"
+            )
             result = add_team_side_shrinkage(
                 result,
                 side=side,
@@ -81,9 +83,15 @@ def add_ordinal_shrinkage_features(
                 exposure_column=exposure,
                 prior_strength=float(prior_strengths["plays"]),
             )
-            features.extend((f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight"))
+            features.extend(
+                (f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight")
+            )
         for metric in ORDINAL_SHRINKAGE_FEATURES["drives"]:
-            exposure = f"{side}_off_drives" if metric.startswith("off_") else f"{side}_def_drives_allowed"
+            exposure = (
+                f"{side}_off_drives"
+                if metric.startswith("off_")
+                else f"{side}_def_drives_allowed"
+            )
             result = add_team_side_shrinkage(
                 result,
                 side=side,
@@ -91,7 +99,9 @@ def add_ordinal_shrinkage_features(
                 exposure_column=exposure,
                 prior_strength=float(prior_strengths["drives"]),
             )
-            features.extend((f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight"))
+            features.extend(
+                (f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight")
+            )
         for metric in ORDINAL_SHRINKAGE_FEATURES["games"]:
             result = add_team_side_shrinkage(
                 result,
@@ -100,7 +110,9 @@ def add_ordinal_shrinkage_features(
                 exposure_column=f"{side}_completed_games",
                 prior_strength=float(prior_strengths["games"]),
             )
-            features.extend((f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight"))
+            features.extend(
+                (f"{side}_shrunk_{metric}", f"{side}_{metric}_current_weight")
+            )
     return result, tuple(features)
 
 
@@ -156,9 +168,7 @@ def add_team_side_shrinkage(
         if prior_column not in result and metric.startswith("adj_"):
             prior_column = f"{side}_prior_{metric.removeprefix('adj_')}"
         missing = [
-            column
-            for column in (current_column, prior_column)
-            if column not in result
+            column for column in (current_column, prior_column) if column not in result
         ]
         if missing:
             raise ValueError(f"Missing shrinkage columns: {missing}")

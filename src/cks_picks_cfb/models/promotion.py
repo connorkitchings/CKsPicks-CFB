@@ -56,7 +56,9 @@ def select_nested_temporal_thresholds(
     result["selected_edge_threshold"] = np.nan
     result["threshold_eligible"] = False
     for year in years:
-        history = result[result["season"].astype(int).isin([item for item in years if item < year])]
+        history = result[
+            result["season"].astype(int).isin([item for item in years if item < year])
+        ]
         current = result[result["season"].astype(int) == year]
         if history.empty or current.empty:
             continue
@@ -65,14 +67,20 @@ def select_nested_temporal_thresholds(
             rows = history[history[edge_column].abs() >= threshold]
             if len(rows) < min_tuning_bets:
                 continue
-            candidates.append((float(rows[return_column].sum()), float(threshold), len(rows)))
+            candidates.append(
+                (float(rows[return_column].sum()), float(threshold), len(rows))
+            )
         if not candidates:
             continue
         # Net units desc, volume desc, threshold asc.
-        _, threshold, _ = sorted(candidates, key=lambda item: (-item[0], -item[2], item[1]))[0]
+        _, threshold, _ = sorted(
+            candidates, key=lambda item: (-item[0], -item[2], item[1])
+        )[0]
         mask = result["season"].astype(int) == year
         result.loc[mask, "selected_edge_threshold"] = threshold
-        result.loc[mask, "threshold_eligible"] = result.loc[mask, edge_column].abs() >= threshold
+        result.loc[mask, "threshold_eligible"] = (
+            result.loc[mask, edge_column].abs() >= threshold
+        )
     return result
 
 
@@ -121,7 +129,8 @@ def evaluate_promotion(
     baseline = rows["baseline_prediction"].to_numpy(dtype=float)
     lines = pd.to_numeric(rows["market_line"], errors="coerce").to_numpy(dtype=float)
     candidate_prices = pd.to_numeric(
-        rows.get("candidate_price", pd.Series(np.nan, index=rows.index)), errors="coerce"
+        rows.get("candidate_price", pd.Series(np.nan, index=rows.index)),
+        errors="coerce",
     ).to_numpy(dtype=float)
     baseline_prices = pd.to_numeric(
         rows.get("baseline_price", pd.Series(np.nan, index=rows.index)), errors="coerce"
@@ -170,7 +179,9 @@ def evaluate_promotion(
     if candidate_returns.size:
         roi_samples = np.array(
             [
-                candidate_returns[rng.integers(0, candidate_returns.size, candidate_returns.size)].mean()
+                candidate_returns[
+                    rng.integers(0, candidate_returns.size, candidate_returns.size)
+                ].mean()
                 for _ in range(n_bootstrap)
             ]
         )

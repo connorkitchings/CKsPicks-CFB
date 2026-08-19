@@ -35,9 +35,7 @@ def resolve_runtime_target(environment: str) -> RuntimeTarget:
         if os.getenv(RESOLVED_TARGET_MARKER) != "preview":
             production_url = os.getenv("DATABASE_URL")
             if production_url and database_url == production_url:
-                raise RuntimeError(
-                    "PREVIEW_DATABASE_URL must differ from DATABASE_URL"
-                )
+                raise RuntimeError("PREVIEW_DATABASE_URL must differ from DATABASE_URL")
     return RuntimeTarget(environment=environment, database_url=database_url)
 
 

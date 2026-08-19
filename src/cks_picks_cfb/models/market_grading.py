@@ -68,7 +68,9 @@ def settle_quote(
     if target == "spread":
         if actual_spread is None or direction not in {"home", "away"}:
             raise ValueError("Spread settlement requires home/away and actual_spread")
-        signed_actual = float(actual_spread) if direction == "home" else -float(actual_spread)
+        signed_actual = (
+            float(actual_spread) if direction == "home" else -float(actual_spread)
+        )
         margin = signed_actual + float(point)
     elif target == "total":
         if actual_total is None or direction not in {"over", "under"}:

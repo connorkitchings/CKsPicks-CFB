@@ -72,10 +72,13 @@ def load_model_bundle_v3(
     raw = json.loads(payload.decode("utf-8"))
     if raw.get("schema_version") != "model_bundle_v3":
         raise ValueError("Unsupported model bundle schema")
-    if raw.get("feature_track") == "reconstructed" or raw.get(
-        "activation_eligible"
-    ) is False:
-        raise ValueError("Reconstructed research bundles cannot be loaded for inference")
+    if (
+        raw.get("feature_track") == "reconstructed"
+        or raw.get("activation_eligible") is False
+    ):
+        raise ValueError(
+            "Reconstructed research bundles cannot be loaded for inference"
+        )
     routes: dict[tuple[str, str], RouteSpecV3] = {}
     for item in raw.get("routes") or ():
         target, regime = str(item["target"]), str(item["regime"])

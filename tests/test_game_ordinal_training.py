@@ -9,7 +9,9 @@ from cks_picks_cfb.models.training_policy import policy_from_mapping
 def test_ordinal_candidates_are_temporal_and_include_both_formulations():
     rows = []
     for season in (2021, 2022, 2023, 2024, 2025):
-        for route_index, regime in enumerate(("game_1", "game_2", "game_3", "game_4"), start=1):
+        for route_index, regime in enumerate(
+            ("game_1", "game_2", "game_3", "game_4"), start=1
+        ):
             for sample in range(4):
                 rows.append(
                     {

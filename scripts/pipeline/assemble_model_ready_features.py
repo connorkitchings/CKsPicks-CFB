@@ -128,9 +128,13 @@ def main() -> None:
                 how="left",
                 validate="many_to_one",
             )
-        if feature_columns and result[
-            [f"home_{column}" for column in feature_columns]
-        ].isna().all(axis=1).any():
+        if (
+            feature_columns
+            and result[[f"home_{column}" for column in feature_columns]]
+            .isna()
+            .all(axis=1)
+            .any()
+        ):
             raise ValueError("V4 preseason reference does not cover every home team")
         result["v4_feature_track"] = feature_track
         result["v4_activation_eligible"] = activation_eligible
