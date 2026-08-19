@@ -2,6 +2,8 @@
 
 Next.js 16 / React 19 / Tailwind CSS v4 app for the explicitly configured public release scope. It defaults to schedule and market lines; model output requires a separate server-side opt-in. Deployed to Vercel and backed by Neon Postgres.
 
+**Production:** https://c-ks-picks-cfb.vercel.app (fail-closed `market` mode; published run `2026w0-79ec2aebcb00`, 8/8 Week 0 games, 8/8 lined, 0 high-confidence).
+
 ## Stack
 
 - **Framework:** Next.js 16 (App Router, TypeScript)
@@ -17,8 +19,9 @@ cp .env.example .env
 #   then edit .env:
 #   DATABASE_URL=postgres://user:password@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
 
-# 2. Apply the schema migration (one-time)
-psql "$DATABASE_URL" -f db/migrations/0001_init.sql
+# 2. Apply database migrations (from the repo root — canonical history is
+#    contracts/migrations/, currently 0001–0008; never edit applied migrations)
+make migrate-db ENV=preview   # or run scripts/pipeline/migrate_db.py directly
 
 # 3. Install deps + run dev server
 npm install
@@ -39,9 +42,14 @@ Open http://localhost:3000.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript typecheck (no emit) |
 | `npm run test:publication` | Verify the fail-closed public prediction boundary |
-| `npm run db:migrate` | Apply `0001_init.sql` to `$DATABASE_URL` |
 | `npm run db:generate` | Regenerate Drizzle migration from `schema.ts` |
 | `npm run db:studio` | Open Drizzle Studio (DB browser) |
+
+> Schema provenance: `contracts/schema.ts` is the single source of truth; the
+> local copy in `src/lib/schema.ts` must stay in sync (`make contracts-check`
+> from the repo root). `npm run db:migrate` applies only the legacy
+> `0001_init.sql` baseline — use the repo-root migration flow for the current
+> append-only history.
 
 ## Project Structure
 
@@ -49,7 +57,9 @@ Open http://localhost:3000.
 web/
 ├── db/
 │   └── migrations/
-│       └── 0001_init.sql    # Schema (apply once to Neon)
+│       ├── 0001_init.sql           # Baseline schema (legacy location)
+│       ├── 0002_prediction_runs.sql
+│       └── README.md               # Deprecated location — see contracts/migrations/
 ├── drizzle.config.json
 ├── public/
 │   └── logos/               # Auto-synced from ../assets/logos/ on build
@@ -60,7 +70,7 @@ web/
     │   ├── layout.tsx        # Root layout, metadata
     │   ├── page.tsx          # Home: current-week dashboard
     │   ├── globals.css
-    │   └── api/health/route.ts  # Health endpoint
+    │   └── api/health/route.ts  # Health endpoint (run state + coverage)
     ├── components/
     │   ├── Header.tsx        # Header + Footer
     │   ├── GameRow.tsx       # Per-game row with leans
@@ -68,7 +78,8 @@ web/
     │   └── RecordBanner.tsx  # YTD spread/total record
     └── lib/
         ├── db.ts             # Drizzle client (lazy, build-safe)
-        ├── schema.ts         # Drizzle schema (mirrors 0001_init.sql)
+        ├── schema.ts         # Drizzle schema (synced copy of contracts/schema.ts)
+        ├── publication.ts    # Fail-closed publication-mode boundary
         ├── queries.ts        # getCurrentWeek / getGamesForWeek / etc.
         └── teams.ts          # Team-name → logo URL mapping
 ```
@@ -78,7 +89,9 @@ web/
 1. Push the repo to GitHub.
 2. Import the project at https://vercel.com/new.
 3. **Set Root Directory to `web/`**. Do not deploy from the repository root.
-4. Add `DATABASE_URL` and the `CFB_PUBLICATION_*` release variables to Vercel Environment Variables.
+4. Add the production `DATABASE_URL` (read-only `cks_prod_web` role on the
+   production Neon branch) and the `CFB_PUBLICATION_*` release variables to
+   Vercel Environment Variables.
 5. Deploy. Subsequent `git push` to `main` auto-deploys.
 
 The home page is ISR-cached with a 5-minute revalidation window, so newly published schedule, market, or approved prediction data appears within about five minutes.

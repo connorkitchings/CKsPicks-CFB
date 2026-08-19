@@ -1,8 +1,12 @@
 # V2 Production Deployment Guide
 
+> **⚠️ SUPERSEDED (historical reference).** Describes the retired
+> local-joblib/MLflow deployment. Production is Vercel + Neon + R2 — see the
+> [Production Runbook](../ops/production_runbook.md).
+
 **Version:** 2.0  
 **Last Updated:** 2026-02-18  
-**Status:** Ready for deployment (pending validation results)
+**Status:** Superseded
 
 ---
 

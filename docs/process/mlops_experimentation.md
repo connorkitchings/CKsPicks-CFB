@@ -17,7 +17,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train
 Use an experiment config from `conf/experiment/`:
 
 ```bash
-PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=debug_dry_run
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
 ```
 
 ### Hyperparameter Optimization
@@ -36,18 +36,17 @@ The project uses [Hydra](https://hydra.cc/) for hierarchical configuration manag
 
 ```
 conf/
-├── config.yaml              # Main config (defaults)
+├── config.yaml              # Main config (defaults: model=linear, features=matchup_v1)
 ├── model/                   # Model-specific configs
-│   ├── catboost.yaml
-│   └── ridge.yaml
+│   ├── linear.yaml
+│   ├── catboost_v1.yaml
+│   └── xgboost_v1.yaml
 ├── features/                # Feature set configs
-│   └── standard_v1.yaml
-├── tuning/                  # Optuna search spaces
-│   └── catboost_optuna.yaml
+│   └── matchup_v1.yaml (and matchup_v2*, opponent_adjusted_v1, recency_weighted_v1, ...)
 ├── experiment/              # Pre-configured experiments
-│   ├── debug_dry_run.yaml
-│   ├── spread_catboost_baseline_v1.yaml
-│   └── totals_pace_interaction_v1.yaml
+│   ├── week0_regimes.yaml
+│   ├── preseason_regimes.yaml
+│   └── v2_*.yaml (historical) + legacy/
 └── paths/
     └── default.yaml         # Path overrides
 ```

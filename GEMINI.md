@@ -14,9 +14,9 @@ For AI assistant guidance when working with this repository, please refer to **A
 
 ## What's in AGENTS.md
 
-- 🚨 **Critical Rules** - External data root configuration, data guardrails
+- 🚨 **Critical Rules** - Data storage configuration, data guardrails
 - 📚 **Getting Started** - Quick onboarding guide
-- 🎯 **V2 Workflow Status** - Modeling workflow (currently paused)
+- 🎯 **2026 Season Execution Status** - Current phase and launch state
 - 🔄 **Key Workflows** - Development, testing, training
 - 🚨 **Troubleshooting** - Common issues and solutions
 - 🧠 **Context Management** - Reading strategy for AI assistants
@@ -32,5 +32,5 @@ For AI assistant guidance when working with this repository, please refer to **A
 
 ---
 
-_Last Updated: 2026-02-13_
+_Last Updated: 2026-08-19_
 _This file now redirects to AGENTS.md as the universal entry point_

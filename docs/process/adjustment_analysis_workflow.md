@@ -1,10 +1,14 @@
 # Opponent-Adjustment Analysis Workflow
 
-**Status**: Proposed | **Version**: 1.0 | **Date**: 2025-12-05
+> **⚠️ Proposed, never implemented as written.** The
+> `scripts/analysis/analyze_adjustment_iterations.py` script below was never
+> created. The iteration-depth question was settled by research (see
+> [adjustment iteration experiments](../research/adjustment_iteration_experiments.md))
+> and the parameter lives in feature configs. Retained as a design reference.
+
+**Status**: Proposed (superseded in practice) | **Version**: 1.0 | **Date**: 2025-12-05
 
 This document specifies the process for analyzing, validating, and selecting the optimal number of iterations for the opponent-adjustment feature engineering step. Its goal is to make the adjustment process transparent and data-driven rather than relying on a fixed, unvalidated number of iterations.
-
-This is a supplemental process to the main [Experimentation Workflow](./experimentation_workflow.md).
 
 ---
 

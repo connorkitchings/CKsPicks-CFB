@@ -18,24 +18,38 @@ nav:
   - "Home": "index.md"
   - "Documentation Guide": "guide.md"
 
-  - "V2 Workflow (Paused)":
+  - "2026 Season":
+      - "Roadmap": "planning/roadmap.md"
+      - "Execution Plan (Complete)": "planning/2026_historical_bootstrap_week0_execution.md"
+      - "Data Platform 2026": "architecture/data_platform_2026.md"
+      - "CFBD Point-in-Time Pipeline": "architecture/cfbd_point_in_time_pipeline.md"
+      - "Early-Season Regimes": "modeling/early_season_regimes.md"
+      - "Implementation Contracts": "plans/index.md"
+
+  - "Modeling":
+      - "Early-Season Regimes": "modeling/early_season_regimes.md"
+      - "Features": "modeling/features.md"
+      - "Betting Policy": "modeling/betting_policy.md"
+      - "Advanced Features": "modeling/advanced_features.md"
+      - "Evaluation": "modeling/evaluation.md"
+      - "V2 Baseline (Historical)": "modeling/baseline.md"
+
+  - "Operations":
+      - "Weekly Pipeline": "ops/weekly_pipeline.md"
+      - "Production Runbook": "ops/production_runbook.md"
+      - "Validation": "ops/validation.md"
+      - "Data Paths (Historical)": "ops/data_paths.md"
+      - "Legacy V2 Ops (Historical)":
+          - "Monitoring": "ops/monitoring.md"
+          - "Rollback SOP": "ops/rollback_sop.md"
+          - "Data Quality": "ops/data_quality.md"
+          - "Production Deployment": "ops/production_deployment.md"
+
+  - "V2 Workflow (Historical)":
       - "Experimentation Workflow": "process/experimentation_workflow.md"
       - "12-Week Plan": "process/12_week_implementation_plan.md"
       - "Promotion Framework": "process/promotion_framework.md"
       - "ML Workflow": "process/ml_workflow.md"
-
-  - "Modeling":
-      - "V2 Baseline": "modeling/baseline.md"
-      - "Features": "modeling/features.md"
-      - "Betting Policy": "modeling/betting_policy.md"
-      - "Advanced Features": "modeling/advanced_features.md"
-
-  - "Operations":
-      - "Weekly Pipeline": "ops/weekly_pipeline.md"
-      - "Data Paths": "ops/data_paths.md"
-      - "Data Quality": "ops/data_quality.md"
-      - "Monitoring": "ops/monitoring.md"
-      - "Rollback SOP": "ops/rollback_sop.md"
 
   - "Data":
       - "Overview": "data/README.md"
@@ -65,10 +79,6 @@ nav:
 
   - "Project Organization":
       - "Feature Registry": "project_org/feature_registry.md"
-
-  - "Planning":
-      - "Roadmap": "planning/roadmap.md"
-      - "Implementation Contracts": "plans/index.md"
 
   - "Decisions":
       - "Decision Log": "decisions/decision_log.md"

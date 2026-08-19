@@ -1,5 +1,11 @@
 # 12-Week V2 Implementation Plan
 
+> **⚠️ HISTORICAL (elapsed).** This V2 plan ran Dec 2025 – Feb 2026 and is
+> complete as a record. The 2026 season is governed by the
+> [Roadmap](../planning/roadmap.md) and the
+> [Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md).
+> Unchecked items below were superseded, not abandoned mid-flight.
+
 **Start Date**: 2025-12-09 (Week 1)  
 **End Date**: 2026-02-27 (Week 12)  
 **Goal**: Operationalize V2 workflow from Ridge baseline to Champion Model

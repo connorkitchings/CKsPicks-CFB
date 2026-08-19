@@ -1,5 +1,12 @@
 # Data Partition Standardization Cleanup Summary
 
+> **Historical record (December 2024).** This documents a local-drive-era
+> cleanup. The durable data store is now the Cloudflare R2 immutable lake
+> (`CFB_STORAGE_BACKEND='r2'`); the local backend
+> (`CFB_STORAGE_BACKEND='local'` + `CFB_MODEL_DATA_ROOT`) is a dev fallback.
+> See [2026 Data Platform](../architecture/data_platform_2026.md) for current
+> storage authority and paths. The locations below are not current.
+
 **Date:** December 2024  
 **Scope:** Complete standardization of partition naming across all raw and processed data entities
 

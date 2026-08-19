@@ -8,23 +8,27 @@
 
 ## 🚨 CRITICAL RULES - READ FIRST 🚨
 
-### 1. External Data Root Configuration
+### 1. Data Storage Configuration
 
 **THE MOST COMMON MISTAKE: The data does NOT live in the project directory!**
 
-All raw and processed data resides on an external hard drive (or cloud storage after Phase 2 migration). The path is configured via environment variable:
+The durable data store is the Cloudflare R2 immutable lake
+(`CFB_STORAGE_BACKEND='r2'`). The local backend
+(`CFB_STORAGE_BACKEND='local'`) reads/writes an external drive configured via
+environment variable:
 
 ```bash
 CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 ```
 
-**Before ANY data operation, ALWAYS verify:**
+**Before ANY data operation, ALWAYS verify (per the backend the task uses):**
 
-1. ✅ `CFB_MODEL_DATA_ROOT` environment variable is set
-2. ✅ The external drive is mounted and accessible (or cloud storage configured)
-3. ✅ You're reading from/writing to the external path, NOT `./data/` in project root
+1. ✅ `CFB_STORAGE_BACKEND` matches the task's backend (`r2` or `local`)
+2. ✅ For `r2`: the relevant `CFB_R2_*` (or `CFB_R2_PREVIEW_*`) credentials are present
+3. ✅ For `local`: `CFB_MODEL_DATA_ROOT` is set and the drive is mounted
+4. ✅ You're never reading from/writing to `./data/` in project root
 
-**Quick Validation:**
+**Quick Validation (local backend):**
 
 ```python
 import os
@@ -44,8 +48,8 @@ print(f"✅ Data root verified: {data_root}")
 ### 2. Data & Modeling Guardrails
 
 **Storage Location:**
-- All raw and processed data resides on external drive at `CFB_MODEL_DATA_ROOT`
-- Validate this path exists before any I/O operation
+- Durable data store: Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND='r2'`) — Bronze/Silver/Gold datasets with SHA-256 checksums
+- Local dev fallback: external drive at `CFB_MODEL_DATA_ROOT` (`CFB_STORAGE_BACKEND='local'`)
 - Never create `./data/` in project root
 
 **Data Leakage Prevention:**
@@ -152,7 +156,7 @@ This is a **monorepo with two toolchains**:
 | Research | `research/` | Python (analysis, tuning, experiments) | — |
 | Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
-| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` | Apply `contracts/schema.sql` once |
+| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `make migrate-db` (append-only migrations 0002–0008) |
 
 **Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
 
@@ -166,22 +170,28 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏗️ Active — Phase 1 complete, Phase 2 next
+**Status:** 🚀 Launch in progress — buildout complete, production live, game-week operations remain
 
-The 2026 season launch follows a 6-phase execution plan
-(`docs/planning/2026_historical_bootstrap_week0_execution.md`)
-with the goal of a live Vercel web app showing every FBS game's spread + total
-lean by the August 29 opening slate.
+The 2026 buildout (6-phase execution plan,
+`docs/planning/2026_historical_bootstrap_week0_execution.md`) is complete.
+Production is live at `https://c-ks-picks-cfb.vercel.app` in fail-closed
+`market` publication mode. Active work is governed by the Week 0 launch
+contract (`docs/plans/2026-08-18/week0-launch-execution.md`, Stages 4–5
+pending game week).
 
 **Current focus:**
 - ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
 - ✅ Week 0 regime modeling (5 routes × 2 targets, temporal folds)
 - ✅ Phase 1: Legacy market adjudication + canonical Week 0 policy encoded
-- ⬜ Phase 2: Historical bootstrap import (`make import-history`)
-- ⬜ Phases 3–5: Silver reconciliation → Gold baselines → model selection
-- ⬜ Phase 6: Week 0 readiness, preseason snapshot, live rehearsal
+- ✅ Phase 2: Historical bootstrap import (7,156 eligible objects, checksums verified)
+- ✅ Phases 3–4: Silver reconciliation + Gold with 2022–2024 OOF baselines
+- ✅ Phase 5: V4 tournament — sealed selection, locked-2025 pass, refit on 2021–2025
+  (bundle `week0-2026-v4-strict-20260818-r2`, config `conf/weekly_bets/v4_2026.yaml`)
+- 🟡 Phase 6: Production deployed 2026-08-18 (run `2026w0-79ec2aebcb00`, 8/8 games,
+  market mode); game-week publishes + freeze + predictions flip remain (Aug 25–29)
 
-**Roadmap:** `docs/planning/roadmap.md`
+**Roadmap:** `docs/planning/roadmap.md` · **Launch contract:**
+`docs/plans/2026-08-18/week0-launch-execution.md`
 
 **Historical reference:** The V2 4-phase experimentation workflow
 (`docs/process/experimentation_workflow.md`) is retained as a modeling-process
@@ -348,9 +358,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 ### Core Code
 
-- **Config:** `src/config.py` - Path configuration
-- **Features:** `src/features/pipeline.py` - Feature engineering
+- **Config:** `src/cks_picks_cfb/config/` - Path configuration
+- **Features:** `src/cks_picks_cfb/features/pipeline.py` - Feature engineering
 - **Training:** `src/cks_picks_cfb/train.py` - Canonical model training
+- **Ops state machine:** `src/cks_picks_cfb/ops/` - Publish/freeze/close/replay orchestration
 - **Inference:** `scripts/pipeline/generate_weekly_bets.py` - Predictions
 - **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
 - **Research:** `research/` - Analysis, tuning, debugging, experiments
@@ -410,5 +421,5 @@ See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-08-15_
+_Last Updated: 2026-08-19_
 _Universal entry point for all AI coding assistants_

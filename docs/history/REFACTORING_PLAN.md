@@ -1,5 +1,10 @@
 # CFB Model Refactoring Plan
 
+> **⚠️ HISTORICAL (complete).** This Feb 2026 refactoring finished — see the
+> sibling [REFACTORING_STATUS.md](REFACTORING_STATUS.md) (Status: Complete,
+> 2026-02-18). The "Phase 2 Complete, Phase 6 Ready" line below is a frozen
+> mid-flight snapshot, not the final state. Retained as history.
+
 > **Status:** Phase 2 Complete, Phase 6 Ready | **Duration:** 12 Days | **Drive Access:** Needed only during migration (completed)
 
 **Created:** 2026-02-13  

@@ -1,8 +1,13 @@
 # Rollback Standard Operating Procedure (SOP)
 
+> **⚠️ SUPERSEDED (historical reference).** There is no MLflow/joblib
+> champion in production. Rollback today is frozen-run reselection via
+> `current_week.active_run_id` — see the
+> [Production Runbook](production_runbook.md#rollback--recovery).
+
 **Purpose**: Guide for reverting to a previous Champion Model when performance degrades  
 **Trigger**: Manual decision after reviewing monitoring dashboard  
-**Status**: Active
+**Status**: Superseded
 
 ---
 

@@ -1,17 +1,19 @@
 # Data Pipeline Overview
 
+> **Note:** This is the aggregation-flow overview. For current ingestion
+> (R2 lake, immutable Bronze captures), see the canonical
+> [Ingestion Guide](ingestion_guide.md) and
+> [2026 Data Platform](../architecture/data_platform_2026.md).
+
 This document provides a comprehensive overview of the data ingestion and processing pipeline for the CFB Model. It details how data flows from the CollegeFootballData (CFBD) API through our ingestion layer, into raw storage, and finally through the feature engineering pipeline to produce modeling datasets.
 
 ## High-Level Flow
 
 ```mermaid
 graph TD
-    API[CFBD API] -->|Ingest CLI| Raw[Raw Storage (CSV)]
-    Raw -->|Aggregate CLI| Pipeline[Feature Pipeline]
-
-    subgraph "Ingestion Layer"
-        Raw
-    end
+    API[CFBD / Odds API] -->|Hardened ingest CLI| Bronze[Immutable Bronze captures, R2 Parquet]
+    Bronze -->|Silver builders| Silver[Reconciled Silver datasets]
+    Silver -->|Gold builders| Pipeline[Feature Pipeline]
 
     subgraph "Feature Processing"
         Pipeline --> ByPlay[By-Play]
@@ -29,7 +31,7 @@ graph TD
 
 ## 1. Ingestion Layer
 
-The ingestion layer is responsible for fetching data from the CFBD API and storing it in a standardized raw format.
+The ingestion layer is responsible for fetching data from the CFBD API and storing it in an immutable, checksummed format.
 
 ### Entry Point
 
@@ -42,11 +44,11 @@ python scripts/cli.py ingest [ENTITY] --year [YEAR]
 ### Key Components
 
 - **CLI (`scripts/cli.py`)**: Handles argument parsing and dispatches tasks based on the `INGESTION_REGISTRY`.
-- **Ingesters (`src/data/*.py`)**: Specialized classes (e.g., `GamesIngester`, `PlaysIngester`) that inherit from `BaseIngester`. They handle:
+- **Ingesters (`src/cks_picks_cfb/data/*.py`)**: Specialized modules (games, plays, teams, venues, betting lines, weather, the Odds API) behind the hardened `ingest_api.py` client. They handle:
   - API authentication and fetching.
   - Data transformation and normalization.
-  - Partitioning logic.
-- **Storage (`src/utils/local_storage.py`)**: Manages file I/O, ensuring data is saved in a partitioned structure (e.g., `data/raw/games/year=2024/week=1/`).
+  - Immutable capture registration (Bronze, SHA-256, catalog).
+- **Storage (`src/cks_picks_cfb/data/storage.py`)**: R2/local backend abstraction; local storage helpers live in `src/cks_picks_cfb/utils/local_storage.py`.
 
 ### Entities
 

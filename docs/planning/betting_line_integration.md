@@ -1,5 +1,14 @@
 # Betting Line Integration Implementation Plan
 
+> **⚠️ SUPERSEDED — policy-prohibited (historical reference).** The
+> untimestamped local betting-line exports this plan targeted were adjudicated
+> on 2026-08-09 into the quarantined `legacy_market_references` dataset. The
+> ATS/ROI/backtest objective below may **not** be executed on those lines.
+> Canonical market work now uses timestamped The Odds API captures; see the
+> [decision log](../decisions/decision_log.md) (2026-08-09) and
+> [2026 Data Platform](../architecture/data_platform_2026.md). None of the
+> scripts below were built.
+
 ## Objective
 
 **Good News**: Betting lines data already exists in `CFB_MODEL_DATA_ROOT` for 2023-2025!

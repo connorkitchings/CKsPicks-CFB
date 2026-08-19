@@ -1,5 +1,10 @@
 # V2 Quick Start Guide for Operators
 
+> **⚠️ SUPERSEDED (historical reference).** Weekly operations now run through
+> the ops state machine (`make publish-week` / `freeze-week` / `close-week`)
+> — see the [Production Runbook](../ops/production_runbook.md). This guide's
+> sportsbook/bankroll workflow does not reflect the display-only 2026 product.
+
 **Purpose:** Step-by-step guide for weekly betting operations  
 **Time Required:** ~30 minutes per week  
 **Prerequisites:** Repository cloned, environment configured

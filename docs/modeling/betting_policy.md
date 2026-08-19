@@ -6,6 +6,29 @@ This document establishes the comprehensive betting policy, unit sizing methodol
 
 ---
 
+## 2026 Current Posture — Display Only, Fail-Closed
+
+> **This section governs the live 2026 product.** The Kelly/threshold rules
+> below it are retained as **post-MVP reference** for when authentication and
+> bet-tracking ship.
+
+- The public site (https://c-ks-picks-cfb.vercel.app) is **display-only**.
+  There is no auth, no bet placement, no bankroll, and no tracking.
+- Publication is **fail-closed `market` mode** (`CFB_PUBLICATION_MODE=market`):
+  the site shows matchups, kickoffs, and market lines only. Model output
+  (leans, edges, confidence, regime, record banner) is hidden until the user
+  explicitly approves flipping the mode to `predictions`.
+- The 2026 launch shipped with **0 high-confidence rows** (all 8 Week 0 games
+  route to `game_1`; totals use the prior-quality baseline fallback). Missing
+  lines stay visible without a lean.
+- Market-dependent promotion gates are recorded as **unavailable — not passed —**
+  wherever authentic historical quotes do not exist (legacy lines are
+  quarantined as `legacy_market_references`).
+- The Kelly unit sizing and thresholds in the V2 sections below describe the
+  **intended post-MVP real-money policy** and are not active in production.
+
+---
+
 ## Betting Policy Overview
 
 ### Core Principles
@@ -26,9 +49,13 @@ This document establishes the comprehensive betting policy, unit sizing methodol
 
 ---
 
-## V2 Champion Models (Active as of Dec 2025)
+## V2 Champion Models (Historical reference — Dec 2025)
 
-> **Note**: V2 workflow established profitable models through rigorous experimentation. See [Experiments Index](../experiments/index.md) for full history.
+> **Note**: The V2 champion was the pre-2026 lineage. The 2026 production
+> model is the V4 ten-route bundle (`week0-2026-v4-strict-20260818-r2`,
+> `prior_core` features only, fail-closed display). See [Experiments
+> Index](../experiments/index.md) and [Early-Season Regimes](early_season_regimes.md).
+> The thresholds below are not active in the display-only 2026 product.
 
 ### Current Champions
 

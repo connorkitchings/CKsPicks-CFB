@@ -1,10 +1,11 @@
 # Early-Season V4 Modeling and Game-4 Handoff
 
-- **Status:** In Progress
+- **Status:** Implemented (2026-08-18, via the Week 0 launch contract)
 - **Created:** 2026-08-17
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this Codex task on 2026-08-17.
-- **Implementation log:** `session_logs/2026-08-17/01-early-season-v4-modeling.md`
+- **Implementation log:** `session_logs/2026-08-17/01-early-season-v4-modeling.md`,
+  `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`
 - **Commit policy:** Separate plan commit; implementation commits remain user-controlled.
 
 ## Goal
@@ -151,10 +152,10 @@ promotion, and activation.
 
 ## Definition of Done
 
-- [ ] All implementation tasks and acceptance criteria are complete.
-- [ ] Required validation passes.
-- [ ] Documentation and implementation session log are updated.
-- [ ] Plan status is updated to `Implemented`.
+- [x] All implementation tasks and acceptance criteria are complete.
+- [x] Required validation passes.
+- [x] Documentation and implementation session log are updated.
+- [x] Plan status is updated to `Implemented`.
 
 ## Amendments
 
@@ -187,3 +188,31 @@ The next safe operation, assembling the strict V5 selection Gold reference,
 was blocked by the Codex environment usage limit before it ran. The remaining
 selection → locked 2025 → refit → private Preview rehearsal is therefore
 explicitly incomplete. The active V2 Preview run is unchanged.
+
+### Amendment 3 — Completion via the Week 0 launch contract (2026-08-18)
+
+The remaining tournament work was executed as Stages 1–3 of
+[`docs/plans/2026-08-18/week0-launch-execution.md`](../2026-08-18/week0-launch-execution.md)
+(recorded in `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`):
+
+- Migration `0008` applied; strict V5 model-ready Gold assembled
+  (version `e6ebb94b…`); guarded 2025 baselines built under frozen design SHA
+  `ae34ddc7…`.
+- Sealed 2022–2024 selection: 4 of 8 challenger routes beat baseline
+  (spread/game_1 direct_catboost −1.43 MAE; total/game_2–4 blends −0.5 to
+  −1.5 MAE).
+- Locked 2025: all 8 routes passed anti-regression.
+- Refit on 2021–2025 produced the ten-route bundle
+  `week0-2026-v4-strict-20260818-r2` (SHA
+  `72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c`).
+- Private rehearsal, V2/V3/V4 comparison, and 2025 betting simulation
+  (+17.9 units, research only) completed.
+- V4 passed Preview readiness, was published/activated in Preview
+  (run `2026w0-3e4fa1b07d`), and was deployed to production in `market` mode
+  (run `2026w0-79ec2aebcb00`).
+- The strict reference shipped `prior_core` features only: all additive
+  preseason families lacked pre-kickoff effective-time evidence (CFBD talent
+  feed empty), matching the `prior_only_fallback` launch posture.
+
+Four latent pipeline bugs were fixed during execution (commit `33432e8`);
+see the launch contract Amendment 1 for details.

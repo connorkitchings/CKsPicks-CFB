@@ -8,7 +8,7 @@ This repository manages dependencies with `uv`. Hydra (and the Optuna sweeper pl
 
 ```bash
 uv sync --extra dev
-source .venv/bin/activate  # required while the environment investigates the `uv run` panic
+source .venv/bin/activate
 ```
 
 After activation, all Hydra-aware scripts can be launched with `uv run` or the Python executable in `.venv/bin/python`. Avoid mixing in ad-hoc `pip install hydra-core`, which can create duplicate site-packages and drift from the lockfile.
@@ -32,9 +32,9 @@ conf/
 
 Hydra entrypoints live in `scripts/`:
 
-- `scripts/optimize_hyperparameters.py` tunes a selected model with Optuna + MLflow logging.
-- `scripts/walk_forward_validation.py` performs walk-forward evaluation using the current defaults, logging metrics to MLflow.
-- Traditional CLI wrappers (`scripts/training_cli.py`, etc.) keep argparse semantics for operations that are not yet Hydra-native.
+- The canonical training entry point is `PYTHONPATH=src uv run python -m cks_picks_cfb.train` (see `.codex/QUICKSTART.md`).
+- Some non-Hydra pipeline CLIs retain argparse semantics (e.g., `scripts/pipeline/training_cli.py`).
+- Historical logs referencing `scripts/optimize_hyperparameters.py` or `scripts/walk_forward_validation.py` predate the current layout; those entry points were folded into the Hydra training module.
 
 ## Your First Hydra App
 

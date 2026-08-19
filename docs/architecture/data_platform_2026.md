@@ -66,7 +66,9 @@ canonical weeks; source lineage and provider reconciliation retain provider week
 
 ## ML inputs and bundles
 
-Production `model_bundle_v2` inference requires:
+Production `model_bundle_v3` inference (the config key; V4-era bundles such as
+`week0-2026-v4-strict-20260818-r2` use it — `model_bundle_v2` is the
+legacy/readable predecessor) requires:
 
 - All ten spread/total × 0/1/2/3/4+ routes.
 - Durable artifact URIs and checksums for every route.
@@ -116,16 +118,30 @@ later step. R2 objects are staged first, and activation is a Neon transaction.
 Set `CFB_REVALIDATION_URL` and `REVALIDATION_SECRET` for signed on-demand Vercel
 revalidation. The site's five-minute ISR remains the fallback.
 
-## Deployment sequence
+## Deployment sequence — executed 2026-08-18
 
-1. Apply migrations on an isolated Neon branch with `make migrate-db`.
-2. Enable R2 dual-write and compare Bronze/Silver/Gold keys, schemas, counts, and
-   hashes for 2021–2026.
-3. Publish a complete preview `model_bundle_v2`; each run selects its own dataset refs.
-4. Rehearse Weeks 0–5 for 2021–2025, then all of 2025, using the preview bucket,
-   Neon branch, and Vercel Preview.
-5. Promote credentials/configuration only after row/grade equivalence and crash,
-   resume, freeze, waiver, and reconciliation tests pass.
+1. ✅ Migrations 0002–0008 applied on the isolated Neon branch
+   (`preview-2026`) with `make migrate-db`.
+2. ✅ R2 dual-write verified; Bronze/Silver/Gold history for 2019, 2021–2026
+   imported from the read-only source (7,156 eligible objects, checksums
+   verified; no 2020 lineage).
+3. ✅ Complete preview bundles published and rehearsed (V2 preview → V3 → V4);
+   each run selects its own dataset refs.
+4. ✅ 2025 preview replay + Week 0 readiness/publish/freeze rehearsed on the
+   preview bucket, Neon branch, and Vercel Preview.
+5. ✅ Production promoted 2026-08-18: Neon production branch (0002–0008,
+   catalog hydrated from Preview via COPY — 7,163 source captures, 85 dataset
+   versions), `cks_prod_web` read-only login role for Vercel, production R2
+   credentials on the shared `cks-picks-cfb-preview` bucket (immutable
+   artifacts are environment-neutral; separation is by Neon branch), Vercel
+   production deployed in `market` mode with published run
+   `2026w0-79ec2aebcb00` (8/8 games, 8/8 lined, 0 high-confidence) and a
+   green `/api/health`.
+
+Game-week operations (progressive publishes, freeze, predictions-mode flip,
+close-out) are tracked by the
+[Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md) and
+the [Production Runbook](../ops/production_runbook.md).
 
 Legacy serving columns/views remain available through the first successfully closed
 2026 week. No new production run may depend on them.

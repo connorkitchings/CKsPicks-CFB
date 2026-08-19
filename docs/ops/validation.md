@@ -419,11 +419,10 @@ issues = [iss for iss in issues if "No validation config" not in iss.message]
 
 ## Related Documentation
 
-- `src/utils/validation.py` - Implementation
+- `src/cks_picks_cfb/utils/validation.py` - Implementation
 - `conf/validation.yaml` - Configuration
 - `tests/test_validation.py` - Test examples
 - [Data Pipeline Overview](../data/pipeline_overview.md) - Upstream data flow
-- [Monitoring Dashboard](./monitoring.md) - Operational observability
 
 ---
 

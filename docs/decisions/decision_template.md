@@ -1,9 +1,21 @@
-# Decision Log
+# Decision Template
 
-This document records the architectural decisions made for the `cfb_model` project.
+Use this structure when adding entries to `docs/decisions/decision_log.md`
+(newest entries go at the top of the log):
 
-- **[YYYY-MM-DD]** - Initial project setup and tooling choices (e.g., `uv`, `prefect`).
-- **[2025-08-10]** - Pivot storage backend from Supabase Postgres to local CSV with
-  per-partition manifests and validation utilities. See [LOG:2025-08-10].
-- **[2025-08-10]** - Standardize Python baseline to 3.12+ and adopt `uv` for environment and
-  tooling. See [LOG:2025-08-10].
+```markdown
+## YYYY-MM-DD: Short Decision Title
+
+- **Context**: The situation or evidence that forced a decision.
+- **Decision**: What was decided, stated precisely (include identifiers,
+  config paths, or flags when they anchor the decision).
+- **Impact**: What changed or is now permitted/blocked as a result.
+- **Source**: Plan contract, session log, or experiment that records it.
+```
+
+Notes:
+
+- One decision per entry; split coupled-but-distinct decisions.
+- Record irreversible or governance-relevant choices (architecture, data
+  policy, model selection, production posture), not routine task completion.
+- Link related docs with `[LOG:YYYY-MM-DD]` or a relative path.

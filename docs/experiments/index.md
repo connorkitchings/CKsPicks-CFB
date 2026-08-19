@@ -1,18 +1,35 @@
-# V2 Experiments Index
+# Experiments Index
 
-**Status**: Active  
-**Started**: 2025-12-06  
-**Current Champion**: Linear + `matchup_v1` (Spread +0.78% ROI, Totals +6.35% ROI)
-
----
-
-## Purpose
-
-Track all V2 modeling experiments (Phases 1-4). Each experiment must align with a feature group in [`feature_registry.md`](../project_org/feature_registry.md) and follow the [V2 workflow](../process/experimentation_workflow.md).
+**Status**: V2 log closed (historical); 2026 selection runs through sealed tournaments  
+**Started**: 2025-12-06 (V2) · 2026-08-14 (2026 lineage)  
+**Current Champion**: V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (2026-08-18)
 
 ---
 
-## Experiment Log
+## 2026 Model Lineage (Authoritative)
+
+Selection for the 2026 season ran through sealed, result-only tournaments
+(2022–2024 temporal OOF → locked 2025 → unchanged refit on 2021–2025), not the
+V2 phase workflow. Historical market data is quarantined and never influences
+selection or promotion.
+
+| Bundle | Date | Basis | Outcome |
+| --- | --- | --- | --- |
+| `week0-2026-preview-20260814` (V2 preview) | 2026-08-14 | Display-fallback ten-route preview | First frozen Preview run (`2026w0-a0edb9e72cb1`); later fallback |
+| `week0-2026-games-ordinal-v3-20260816-r2` (V3) | 2026-08-16 | Games-ordinal early routes, prediction-only | Rehearsed privately; 2 spread / 7 total lean diffs vs V2; became baseline lineage |
+| **`week0-2026-v4-strict-20260818-r2` (V4)** | 2026-08-18 | Strict point-in-time reference, `prior_core` only | 🏆 **Champion** — sealed selection won 4/8 challenger routes (spread/game_1 direct_catboost −1.43 MAE; total/game_2–4 blends −0.5 to −1.5 MAE); locked 2025 passed all 8 routes; production activated (run `2026w0-79ec2aebcb00`) |
+
+Key references: [Early-Season Regimes](../modeling/early_season_regimes.md) ·
+[Week 0 Launch Contract](../plans/2026-08-18/week0-launch-execution.md) ·
+[Decision Log](../decisions/decision_log.md) (2026-08-16/17/18 entries).
+
+---
+
+## V2 Experiment Log (Historical, Dec 2025)
+
+The V2 4-phase workflow concluded with the Linear + `matchup_v1` champion
+(spread +0.78% ROI, totals +6.35% ROI on the 2024 holdout). It is retained
+below as a modeling-process reference; the 2026 execution superseded it.
 
 ### Spread Target
 
@@ -111,15 +128,15 @@ experiment:
 
 **Critical Rule**: Never change this split without explicit approval
 
-- **2026 policy**: select with 2022–2024 temporal OOF, lock 2025 for testing, and refit on 2021–2025
-- **Test (Holdout)**: 2024 (locked for all V2 experiments)
-- **Deployment**: 2025 (live production)
+- **2026 policy (authoritative)**: select with 2022–2024 temporal OOF, lock
+  2025 for one anti-regression test, refit the unchanged design on 2021–2025
+- **V2 policy (historical)**: test on 2024 (locked holdout); deployed 2025
 
 **Rationale**:
 
 - 2020 excluded due to COVID (shortened season, opt-outs)
-- 2024 provides stable, recent holdout
-- 2025 is current live season
+- 2019 serves only as prior-quality lineage for early 2021
+- No result from the locked test year may influence design selection
 
 ---
 
@@ -133,5 +150,5 @@ experiment:
 
 ---
 
-**Last Updated**: 2025-12-08  
-**Next Experiment**: Further feature engineering (matchup-specific, alpha tuning) or CFP deployment
+**Last Updated**: 2026-08-19  
+**Next**: 2026 season game-week operations; post-season tournament review

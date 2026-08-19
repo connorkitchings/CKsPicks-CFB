@@ -1,7 +1,7 @@
 # CFB Model Guide — Single Source of Truth
 
-**Last Updated**: 2026-08-09  
-**Status**: Active — 2026 Season Execution
+**Last Updated**: 2026-08-19  
+**Status**: Active — 2026 Week 0 launch (production live)
 
 This is the canonical entry point for all project documentation. All other docs link here or are linked from here.
 
@@ -9,25 +9,30 @@ This is the canonical entry point for all project documentation. All other docs 
 
 ## 🎯 2026 Season Execution
 
-**Status**: Phase 1 complete, Phase 2 next — see [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md) and [Roadmap](planning/roadmap.md).
+**Status**: Buildout complete — production live; game-week operations remain.
+See [Roadmap](planning/roadmap.md) and the active
+[Week 0 Launch Contract](../plans/2026-08-18/week0-launch-execution.md)
+(Stages 4–5 pending game week).
 
-The 2026 season follows a 6-phase execution plan to launch a live Vercel web app
-showing every FBS game's spread + total lean by August 29 Week 0:
+The 2026 season followed a 6-phase execution plan to launch a live Vercel web
+app showing every FBS game's spread + total lean by August 29 Week 0:
 
 1. **Phase 1: Encode Adjudications** ✅ — Legacy market quarantine + canonical Week 0 policy
-2. **Phase 2: Historical Bootstrap** ⬜ — Import 2021–2025 data to preview R2/Neon
-3. **Phase 3: Silver Reconciliation** ⬜ — Reconcile games across sources
-4. **Phase 4: Gold + Baselines** ⬜ — Temporal OOF predictions for 2022–2024
-5. **Phase 5: Model Selection** ⬜ — Ten-route bundle for 2026
-6. **Phase 6: Week 0 Readiness** ⬜ — Preseason snapshot + live rehearsal
+2. **Phase 2: Historical Bootstrap** ✅ — 7,156 eligible objects imported to preview R2/Neon (2026-08-13)
+3. **Phase 3: Silver Reconciliation** ✅ — Games reconciled across sources (2026-08-14)
+4. **Phase 4: Gold + Baselines** ✅ — Temporal OOF predictions for 2022–2024 (2026-08-14)
+5. **Phase 5: Model Selection** ✅ — V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (2026-08-18)
+6. **Phase 6: Week 0 Launch** 🟡 — Production live 2026-08-18 (`market` mode); game-week ops Aug 25–29
 
 **Key Documents**:
 
-- [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md) — 6-phase plan with exit gates
+- [Week 0 Launch Contract](../plans/2026-08-18/week0-launch-execution.md) — **Active** operations (Stages 4–5)
+- [Execution Plan](planning/2026_historical_bootstrap_week0_execution.md) — 6-phase buildout (complete)
 - [Roadmap](planning/roadmap.md) — Timeline and status
 - [2026 Data Platform](architecture/data_platform_2026.md) — Immutable lake/catalog architecture
 - [Early-Season Regimes](modeling/early_season_regimes.md) — Five completed-game routing contract
 - [Weekly Pipeline](ops/weekly_pipeline.md) — Publish/freeze/close operations
+- [Production Runbook](ops/production_runbook.md) — As-built production operations
 - [Decision Log](decisions/decision_log.md) — Historical decisions
 
 ---
@@ -64,9 +69,9 @@ plan supersedes it for the 2026 season.
 | Add a new feature              | [Feature Engineering](modeling/features.md) + [Feature Registry](project_org/feature_registry.md) |
 | Review betting policy          | [Betting Policy](modeling/betting_policy.md)                                                      |
 | Check recent decisions         | [Decision Log](decisions/decision_log.md)                                                         |
-| Troubleshoot data issues       | [Data & Paths](ops/data_paths.md) + [Data Quality](ops/data_quality.md)                           |
-| Monitor model performance      | [Monitoring Dashboard](ops/monitoring.md)                                                         |
-| Rollback a model               | [Rollback SOP](ops/rollback_sop.md)                                                               |
+| Troubleshoot data issues       | [Data & Paths](ops/data_paths.md) + [Data Validation](ops/validation.md)                           |
+| Run production operations      | [Production Runbook](ops/production_runbook.md)                                                  |
+| Rollback a model               | [Production Runbook](ops/production_runbook.md) (frozen-run reselection)                          |
 
 ---
 
@@ -86,12 +91,11 @@ plan supersedes it for the 2026 season.
 
 ### Data Pipeline Flow
 
-1.  **Raw Ingestion** → Fetch from CollegeFootballData.com API into local raw storage.
-2.  **Aggregation** → Run `scripts/pipeline/run_pipeline_generic.py` to transform raw plays into aggregated `byplay`, `drives`, and `team_game` datasets in processed storage.
-3.  **Validation** → Run `scripts/pipeline/validate_data.py` to verify the quality and integrity of the aggregated data.
-4.  **Feature Engineering** → Generate point-in-time, opponent-adjusted features for modeling (`team_week_adj`).
-5.  **Modeling** → Train models using the V2 Experimentation Workflow.
-6.  **Inference** → Derive spreads/totals, calculate edges, and apply betting policy.
+1.  **Raw Ingestion** → Fetch from CollegeFootballData.com / The Odds API into immutable Bronze captures (R2 lake).
+2.  **Silver Reconciliation** → Season-scoped teams, venues, schedules, games, plays, outcomes, weather, market quotes.
+3.  **Gold Features** → Kickoff-ordered point-in-time, opponent-adjusted features with completed-game regime routing.
+4.  **Modeling** → Ten-route V4 bundle (5 regimes × 2 targets), sealed selection + locked 2025 + 2021–2025 refit.
+5.  **Inference & Publishing** → Weekly runs publish via the ops state machine → Neon → Vercel (fail-closed publication modes).
 
 ### Modeling & Features
 
@@ -110,12 +114,13 @@ plan supersedes it for the 2026 season.
 **How we run: pipelines, deployment, data management, monitoring**
 
 - [Weekly Pipeline](ops/weekly_pipeline.md) — 5-step production workflow
-- [Production Deployment](ops/production_deployment.md) — Champion Model deployment (Phase 4)
-- **[Monitoring Dashboard](ops/monitoring.md)** — **NEW:** Streamlit dashboard for performance tracking
-- **[Rollback SOP](ops/rollback_sop.md)** — **NEW:** Model rollback procedure
-- **[Data Quality](ops/data_quality.md)** — **NEW:** 3-layer validation system
-- [Data Paths & Storage](ops/data_paths.md) — External drive configuration, partitioning
-- [MLflow Usage](ops/mlflow_mcp.md) — Experiment tracking, model registry
+- [Production Runbook](ops/production_runbook.md) — As-built production operations (Vercel/Neon/R2)
+- [Production Deployment](ops/production_deployment.md) — Legacy V2 deployment doc (superseded)
+- [Rollback SOP](ops/rollback_sop.md) — Legacy V2 rollback (superseded — see runbook)
+- [Data Quality](ops/data_quality.md) — Legacy validation doc (superseded — see validation.md)
+- [Data Validation](ops/validation.md) — `DataValidationService` usage
+- [Data Paths & Storage](ops/data_paths.md) — Historical cleanup record; current storage is the R2 lake
+- [MLflow Usage](ops/mlflow_mcp.md) — Experiment tracking (development only)
 
 ### Planning & Roadmap
 
@@ -130,8 +135,8 @@ plan supersedes it for the 2026 season.
 
 **Exploratory work: PRDs, prototypes, investigations**
 
-- [Probabilistic Power Ratings](research/ppr_prd.md) — Bayesian team ratings (active research)
-- [Research Archive](research/archive/) — Completed or abandoned investigations
+- [Probabilistic Power Ratings](research/ppr_prd.md) — Bayesian team ratings (research; not adopted for 2026)
+- [Power Ratings](research/power_ratings.md) — PPR overview (research; not adopted)
 
 ### Decisions
 
@@ -148,16 +153,16 @@ plan supersedes it for the 2026 season.
 
 - Python 3.12+
 - [uv](https://github.com/astral-sh/uv) for dependency management
-- [Docker](https://www.docker.com/) for MLflow and dashboard services
+- [Docker](https://www.docker.com/) for the MLflow tracking UI (development only)
 - CollegeFootballData.com API key
-- External storage drive (for data)
+- Cloudflare R2 credentials (production data path) or a local data drive (fallback)
 
 ### Installation
 
 ```bash
 # Clone repository
-git clone https://github.com/connorkitchings/cfb_model.git
-cd cfb_model
+git clone https://github.com/connorkitchings/CKsPicks-CFB.git
+cd CKsPicks-CFB
 
 # Install dependencies
 uv sync --extra dev
@@ -168,7 +173,7 @@ source .venv/bin/activate
 # Configure environment
 cp .env.example .env
 # Edit .env and set:
-#   CFB_MODEL_DATA_ROOT='/path/to/external/drive'
+#   CFB_STORAGE_BACKEND='r2' + CFB_R2_* credentials (or 'local' + CFB_MODEL_DATA_ROOT)
 #   CFBD_API_KEY='your_api_key'
 
 # Verify installation
@@ -178,25 +183,22 @@ uv run ruff check .
 
 ### Essential Environment Variables
 
-**CRITICAL**: All raw and processed data lives on an external drive, NOT in the project directory.
+**CRITICAL**: Durable data lives in the Cloudflare R2 immutable lake
+(`CFB_STORAGE_BACKEND='r2'`). The local backend
+(`CFB_STORAGE_BACKEND='local'`) reads/writes an external drive and must never
+create `./data/` in the project root.
 
 ```bash
-# Required
-CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'  # External drive path
-CFBD_API_KEY='your_api_key_here'                                   # API access
+# R2 backend (production path)
+CFB_STORAGE_BACKEND='r2'
+CFB_R2_BUCKET / CFB_R2_PREVIEW_BUCKET='your_bucket'
+CFB_R2_ACCOUNT_ID / CFB_R2_ACCESS_KEY / CFB_R2_SECRET_KEY=...
 
-# Optional
-MLFLOW_TRACKING_URI='file://./artifacts/mlruns'                    # MLflow storage
-```
+# Local backend (dev fallback)
+CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 
-**Always verify before ANY data operation**:
-
-```python
-import os
-from pathlib import Path
-
-data_root = os.getenv("CFB_MODEL_DATA_ROOT")
-assert data_root and Path(data_root).exists(), f"Data root not accessible: {data_root}"
+# API access
+CFBD_API_KEY='your_api_key_here'
 ```
 
 ---
@@ -206,8 +208,8 @@ assert data_root and Path(data_root).exists(), f"Data root not accessible: {data
 ### Directory Structure
 
 ```
-cfb_model/
-├── src/                      # Library code
+CKsPicks-CFB/
+├── src/                      # Library code (package: cks_picks_cfb)
 │   ├── config/               # Path configuration, constants
 │   ├── data/                 # Data ingestion and access
 │   ├── features/             # Feature engineering pipeline
@@ -251,34 +253,36 @@ cfb_model/
 
 ### Data Pipeline Flow
 
-1. **Raw Ingestion** → Fetch from CollegeFootballData.com API
-2. **Aggregation** → Plays → Drives → Team-Game → Team-Season
-3. **Feature Engineering** → Opponent adjustment, recency weighting, interactions
-4. **Modeling** → Points-For architecture (predict home/away scores)
-5. **Inference** → Derive spreads/totals, calculate edges, apply policy
+1. **Raw Ingestion** → Immutable Bronze captures (CFBD + The Odds API) in the R2 lake
+2. **Silver Reconciliation** → Season-scoped canonical datasets
+3. **Gold Features** → Point-in-time, opponent-adjusted, regime-routed
+4. **Modeling** → Ten-route V4 bundle (sealed selection → locked 2025 → refit)
+5. **Inference** → Weekly runs publish via the ops state machine → Neon → Vercel
 
 See [Weekly Pipeline](ops/weekly_pipeline.md) for production workflow.
 
 ---
 
-## 🎲 Current Production Models
+## 🎲 Current Production Model
 
-**As of December 2025 (v5 models)**:
+**As of 2026-08-18**: the V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
+(config `conf/weekly_bets/v4_2026.yaml`, design SHA `ae34ddc7…`).
 
-| Model                    | Target | Architecture                | Features    | Performance (2024 Test)    |
-| ------------------------ | ------ | --------------------------- | ----------- | -------------------------- |
-| `spread_catboost_ppr` v5 | Spread | CatBoost ensemble (5 seeds) | ppr_v1      | 52.2% hit rate (226-207-8) |
-| `totals_xgboost_ppr` v5  | Total  | XGBoost ensemble (5 seeds)  | standard_v1 | 58.6% hit rate (112-79-4)  |
+| Property | Value |
+| --- | --- |
+| Routes | 10 (game_1–game_4 regimes × spread/total, plus established anchor) |
+| Selection | Sealed 2022–2024 temporal OOF tournament |
+| Locked test | 2025 (all 8 challenger routes passed anti-regression) |
+| Production refit | 2021–2025 (unchanged design) |
+| Features | `prior_core` only (`prior_only_fallback`; CFBD talent feed empty) |
+| Week 0 routing | All 8 games → `game_1` (spread: direct CatBoost; total: prior-quality baseline) |
 
-**Key Configuration**:
+2025 betting simulation (research only, legacy quarantined lines): +17.9 units
+combined (+3.1% ROI). Production is display-only in fail-closed `market` mode —
+no high-confidence leans are published.
 
-- Selection Years: 2022–2024 temporal OOF; locked test 2025; production refit 2021–2025
-- Test Year: 2024 (locked holdout)
-- Deploy Year: 2025 (live production)
-- Adjustment Iteration: 2 (opponent adjustment depth)
-- Thresholds: 5.0 (spread), 7.5 (total)
-
-See [Modeling Baseline](modeling/baseline.md) for full details.
+See [Early-Season Regimes](modeling/early_season_regimes.md) and the
+[launch contract](../plans/2026-08-18/week0-launch-execution.md) for details.
 
 ---
 
@@ -287,40 +291,27 @@ See [Modeling Baseline](modeling/baseline.md) for full details.
 ### Weekly Production Pipeline
 
 ```bash
-# 1. Ingest latest week data
-uv run python scripts/pipeline/cache_weekly_stats.py --year 2025
+# 1. Pregame publish: refresh schedule/lines → predict → R2 artifact → Neon
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml
 
-# 2. Generate predictions
-uv run python scripts/pipeline/generate_weekly_bets.py --year 2025 --week 16
+# 2. Freeze before kickoff
+make freeze-week YEAR=2026 WEEK=0 ENV=production
 
-# 3. After games: Score performance
-uv run python scripts/pipeline/score_weekly_bets.py --year 2025 --week 16
+# 3. After games: score + stats
+make close-week YEAR=2026 WEEK=0 ENV=production
 ```
+
+See [Weekly Pipeline](ops/weekly_pipeline.md) and the
+[Production Runbook](ops/production_runbook.md).
 
 ### Training a New Model
 
 ```bash
 # Train with Hydra experiment config
-PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=spread_catboost_ppr_v1
-
-# Hyperparameter optimization
-PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
 
 # Debug configuration
 PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
-```
-
-### Running Analysis
-
-```bash
-# Verify baseline performance
-uv run python scripts/analysis/verify_baseline_2024.py
-
-# Threshold optimization
-uv run python scripts/analysis/optimize_thresholds.py --year 2024
-
-# SHAP feature importance
-uv run python scripts/analysis/run_shap_analysis.py
 ```
 
 ### Health Checks
@@ -347,12 +338,14 @@ mkdocs build --quiet
 - **ROI**: Return on investment assuming -110 juice
 - **Volume**: Number of bets meeting threshold criteria
 
-**Current Status (2025 Live Performance)**:
+**Historical status (2025 V2 live performance — legacy models, reference only)**:
 
 - Spread: 50.1% hit rate (237-236-11) — Below breakeven ⚠️
 - Total: 51.4% hit rate (95-90-0) — Below breakeven ⚠️
 
-See [Experiments Index](experiments/index.md) for detailed tracking.
+The 2026 V4 system is evaluated on predictive gates (MAE vs baseline) and
+anti-regression, not market ROI (historical lines are quarantined). See
+[Experiments Index](experiments/index.md).
 
 ---
 
@@ -409,7 +402,7 @@ See [Data Paths](ops/data_paths.md) for full troubleshooting.
 
 ## 🔗 External Resources
 
-- [Project Repository](https://github.com/connorkitchings/cfb_model)
+- [Project Repository](https://github.com/connorkitchings/CKsPicks-CFB)
 - [CollegeFootballData.com API](https://collegefootballdata.com/exporter)
 - [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
 - [Hydra Configuration](https://hydra.cc/docs/intro/)

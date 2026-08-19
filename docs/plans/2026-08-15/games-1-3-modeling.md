@@ -1,6 +1,11 @@
 # Games 1–3 Modeling and Branch Consolidation
 
-- **Status:** In Progress
+- **Status:** Superseded (2026-08-18) — the early-route methodology was redesigned and executed by
+  [`docs/plans/2026-08-17/early-season-v4-modeling.md`](../2026-08-17/early-season-v4-modeling.md)
+  (V4) under the
+  [Week 0 launch contract](../2026-08-18/week0-launch-execution.md). This plan's
+  deliverables (games-ordinal routing, timestamped market adapter, prediction-only
+  promotion basis) shipped and were carried forward into V4/V5 lineage.
 - **Created:** 2026-08-15
 - **Planner:** Sol
 - **Approval source:** User authorized implementation in this task on 2026-08-15.
@@ -205,7 +210,10 @@ that pass both predictive and betting gates.
 - [x] Preview-only refit/readiness is validated or the precise external blocker is documented.
 - [x] All required validation passes.
 - [x] Documentation and implementation session log are updated.
-- [ ] Plan status is updated to `Implemented`.
+- [x] Plan status is updated to `Superseded` (2026-08-18): work concluded under
+  the V4 plan rather than reaching `Implemented` here; its V3 bundle
+  (`week0-2026-games-ordinal-v3-20260816-r2`) served as the tournament baseline
+  lineage for V4.
 
 ## Amendments
 

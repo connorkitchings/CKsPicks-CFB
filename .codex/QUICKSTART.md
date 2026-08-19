@@ -37,8 +37,16 @@ export CFB_R2_PREVIEW_BUCKET='your_preview_bucket'
 # Required for ingestion
 export CFBD_API_KEY='your_api_key_here'
 
+# Required for CFBD Model Pick'em API submission (optional path)
+export CFBD_PREDICTION_TOKEN='your_prediction_token_here'
+
 # Local-only development when CFB_STORAGE_BACKEND=local
 export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
+
+# Vercel publication scope (web app)
+export CFB_PUBLICATION_MODE='market'      # fail-closed default; 'predictions' requires explicit approval
+export CFB_PUBLICATION_SEASON='2026'
+export CFB_PUBLICATION_WEEKS='0'
 
 # Optional: MLflow tracking
 export MLFLOW_TRACKING_URI='file:///path/to/mlruns'
@@ -126,10 +134,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train
 PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
 
 # Train with specific model
-PYTHONPATH=src uv run python -m cks_picks_cfb.train model=catboost
+PYTHONPATH=src uv run python -m cks_picks_cfb.train model=catboost_v1
 
 # Train with specific feature set
-PYTHONPATH=src uv run python -m cks_picks_cfb.train features=recency_v1
+PYTHONPATH=src uv run python -m cks_picks_cfb.train features=matchup_v2
 
 # Train on different test year
 PYTHONPATH=src uv run python -m cks_picks_cfb.train data.test_year=2025
@@ -138,12 +146,15 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train data.test_year=2025
 ### Experiment Configs
 
 ```bash
-# Run pre-configured experiment
-PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=spread_catboost_baseline_v1
+# Run pre-configured experiment (2026 regime tournament)
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
+
+# Preseason-regime experiment
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=preseason_regimes
 
 # Override experiment parameters
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    experiment=spread_catboost_baseline_v1 \
+    experiment=week0_regimes \
     data.test_year=2025
 ```
 
@@ -152,12 +163,6 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train \
 ```bash
 # Run Optuna optimization
 PYTHONPATH=src uv run python -m cks_picks_cfb.train mode=optimize
-
-# Optimize specific model
-PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    mode=optimize \
-    model=catboost \
-    tuning=catboost_optuna
 
 # Optimize with custom trials
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
@@ -193,7 +198,10 @@ make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 make migrate-db
 
 # Pregame publish (refresh schedule/lines → predict → R2 artifact → Neon):
+# Use ENV=production and CONFIG=conf/weekly_bets/v4_2026.yaml for the launch model
 make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
+make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production \
+     CONFIG=conf/weekly_bets/v4_2026.yaml
 
 # Freeze the exact artifact that will later be scored
 make freeze-week YEAR=2026 WEEK=0 ENV=preview
@@ -237,14 +245,16 @@ PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py \
 # Export weekly predictions to CFBD Model Pick'em CSV format
 make export-pickem YEAR=2026 WEEK=0
 
-# Export and submit picks directly to CFBD Pick'em API (requires CFBD_API_KEY)
+# Export and submit picks directly to CFBD Pick'em API (requires CFBD_PREDICTION_TOKEN;
+# submission additionally requires explicit user approval of game IDs and margins)
 make export-pickem YEAR=2026 WEEK=0 SUBMIT=1
 
-# Standalone CLI execution
+# Standalone CLI execution (validate without submitting)
 PYTHONPATH=.:src uv run python scripts/pipeline/export_cfbd_pickem.py \
     --year 2026 \
     --week 0 \
-    --submit-api
+    --validate-api \
+    --dry-run
 ```
 
 ### Performance Scoring
@@ -318,16 +328,9 @@ make assemble-model-ready YEAR=2026 AS_OF=2026-08-20T00:00:00Z ENV=preview \
 
 ### Feature Generation
 
-```bash
-# Generate features for specific week
-PYTHONPATH=. uv run python scripts/features/generate_weekly_features.py \
-    --year 2024 \
-    --week 12
-
-# Regenerate all features with new adjustment
-PYTHONPATH=. uv run python scripts/features/regenerate_features.py \
-    --adjustment-iteration 4
-```
+Weekly features are built through the versioned Gold pipeline above
+(`make build-features`, `make assemble-model-ready`) rather than standalone
+scripts. See `.codex/MAP.md` and `docs/ops/weekly_pipeline.md`.
 
 ---
 
@@ -347,42 +350,19 @@ mlflow ui --backend-store-uri file:///path/to/mlruns --port 5050
 
 ### Model Registry
 
+> MLflow is a development-time tracker only. Production models are checksummed
+> bundles in R2 (`artifacts/preview|production/models/...`) activated through
+> the ops state machine — not the MLflow registry.
+
 ```bash
-# List registered models
+# List registered models (development experiments)
 mlflow models list
 
-# Get model details
-mlflow models get-model-versions --name "home_points_catboost"
-
-# Promote model to staging
+# Promote a dev model to staging
 mlflow models update-model-version \
-    --name "home_points_catboost" \
+    --name "my_dev_model" \
     --version 1 \
     --stage Staging
-
-# Promote to production
-mlflow models update-model-version \
-    --name "home_points_catboost" \
-    --version 1 \
-    --stage Production
-```
-
----
-
-## Dashboard
-
-### Local Development
-
-```bash
-# Run dashboard (Docker)
-cd dashboard
-docker compose up
-
-# Access at http://localhost:8501
-
-# Run dashboard (local Streamlit)
-cd dashboard
-streamlit run app.py
 ```
 
 ---
@@ -522,41 +502,16 @@ mkdocs gh-deploy
 
 ## Analysis & Experiments
 
-### Feature Importance
+Exploratory analysis lives in `research/` and MLflow (development only). For
+2026 model comparison, use the sealed tournament tooling:
 
 ```bash
-# Run SHAP analysis
-PYTHONPATH=. uv run python scripts/analysis/run_shap_analysis.py \
-    --model-path artifacts/models/home_points_catboost.joblib
-
-# Generate feature importance plot
-PYTHONPATH=. uv run python scripts/analysis/plot_feature_importance.py \
-    --run-id abc123
+# Compare preview model bundles (V2/V3/V4 style diffs)
+PYTHONPATH=.:src uv run python scripts/pipeline/compare_preview_model_bundles.py --help
 ```
 
-### Model Comparison
-
-```bash
-# Compare multiple models
-PYTHONPATH=. uv run python scripts/analysis/compare_models.py \
-    --run-ids abc123,def456,ghi789
-
-# Generate comparison report
-PYTHONPATH=. uv run python scripts/analysis/generate_comparison_report.py \
-    --season 2024
-```
-
-### Calibration Analysis
-
-```bash
-# Analyze model calibration
-PYTHONPATH=. uv run python scripts/analysis/analyze_calibration.py \
-    --model-path artifacts/models/home_points_catboost.joblib
-
-# Plot calibration curves
-PYTHONPATH=. uv run python scripts/analysis/plot_calibration.py \
-    --run-id abc123
-```
+See `docs/modeling/early_season_regimes.md` for the tournament/evaluation
+contract and `docs/experiments/index.md` for the experiment lineage.
 
 ---
 
@@ -670,9 +625,9 @@ uv run pytest -q
 ### Training + Evaluation
 
 ```bash
-# Train model and generate predictions
+# Train regime experiment, then generate weekly predictions
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    experiment=spread_catboost_baseline_v1 && \
+    experiment=week0_regimes && \
 PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py
 ```
 
@@ -705,5 +660,5 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production
 
 ---
 
-_Last Updated: 2026-02-13_
-_Quick command reference for CFB Model_
+_Last Updated: 2026-08-19_
+_Quick command reference for CKsPicks-CFB_

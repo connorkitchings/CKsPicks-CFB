@@ -1,5 +1,13 @@
 # Project Charter
 
+> **⚠️ SUPERSEDED (historical reference, ~Aug 2025).** This charter describes
+> the pre-V2 era (Streamlit UI, Prefect, local CSV, 2014–2024 data). The
+> project is now CKsPicks-CFB: a Python 3.12 pipeline + Next.js 16 web app on
+> Vercel with Neon Postgres and a Cloudflare R2 immutable lake (2019,
+> 2021–2025). See [README](../../README.md), the [2026 Data
+> Platform](../architecture/data_platform_2026.md), and the
+> [Roadmap](roadmap.md). Goals/non-goals prose below is retained for history.
+
 This document defines the project goals, scope, and technical context for the **cfb_model** project.
 It is derived from the [Initial Session Prompt](../process/first_prompt.md) and will be updated
 as the project evolves.

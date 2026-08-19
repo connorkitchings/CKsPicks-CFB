@@ -2,6 +2,34 @@
 
 Track feature groups and their modeling status. Update this table whenever adding, deprecating, or toggling feature groups in `conf/features/`. Use explicit allow-lists; avoid wildcards.
 
+## 2026 V4 Feature Families (authoritative)
+
+The 2026 production model is the V4 ten-route bundle
+`week0-2026-v4-strict-20260818-r2` (config `conf/weekly_bets/v4_2026.yaml`).
+The strict point-in-time reference shipped **`prior_core` only**
+(`prior_only_fallback`) — every additive preseason family lacked pre-kickoff
+effective-time evidence for all required 2021–2026 team-seasons (CFBD talent
+feed empty). Additive families remain defined as candidate variants but are
+**not activated** for the 2026 launch.
+
+| family               | module / config                                      | status (2026-08-18)     | notes                                                                                  |
+| -------------------- | ---------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
+| prior_core            | `src/cks_picks_cfb/models/v4_feature_variants.py`   | ✅ **active** (launch)   | Activation-eligible prior performance + current-season shrinkage.                       |
+| returning_production  | V4 additive candidate                                | ⛔ unavailable (strict)  | No pre-kickoff effective-time evidence across required team-seasons.                  |
+| transfer_portal       | V4 additive candidate                                | ⛔ unavailable (strict)  | Same — not admitted to the strict reference.                                          |
+| recruiting            | V4 additive candidate                                | ⛔ unavailable (strict)  | Same.                                                                                  |
+| coaching             | V4 additive candidate                                | ⛔ unavailable (strict)  | Same.                                                                                  |
+| roster_continuity     | V4 additive candidate                                | ⛔ unavailable (strict)  | Same.                                                                                  |
+| preseason_rankings    | V4 additive candidate                                | ⛔ unavailable (strict)  | Same.                                                                                  |
+| talent               | V4 additive candidate (CFBD)                         | ⛔ unavailable (strict)  | CFBD talent feed empty; all-or-nothing. No further rechecks this season.              |
+
+A separate **reconstructed** reference track holds later-backfilled provider
+data for research reports only — it cannot select routes, refit bundles, pass
+readiness, or publish predictions. See
+[`docs/modeling/early_season_regimes.md`](../modeling/early_season_regimes.md).
+
+## V2 Feature Groups (Historical, Dec 2025)
+
 | feature_group           | hydra_config                                 | status                   | phase   | promotion_date | baseline_vs | notes                                                                                            |
 | ----------------------- | -------------------------------------------- | ------------------------ | ------- | -------------- | ----------- | ------------------------------------------------------------------------------------------------ |
 | **V2 Active**           |                                              |                          |         |                |             |                                                                                                  |

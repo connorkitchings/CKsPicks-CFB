@@ -1,5 +1,9 @@
 # PRD: Probabilistic Power Ratings Engine
 
+> **⚠️ Research record (not adopted).** The "Points-For CatBoost/XGBoost"
+> baseline referenced below was rejected; the 2026 system uses the V4
+> ten-route regime bundle. PPR was not built. Retained as research history.
+
 ## 1. Overview
 
 The **Probabilistic Power Ratings (PPR)** engine is a new component in the `cfb_model` ecosystem designed to estimate team strength as a probability distribution rather than a point estimate. This enables calibrated uncertainty quantification for spread and total predictions.

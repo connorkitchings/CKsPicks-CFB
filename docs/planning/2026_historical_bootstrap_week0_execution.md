@@ -1,8 +1,11 @@
 # 2026 Historical Bootstrap and Week 0 Execution Plan
 
-- **Status:** Approved for implementation
+- **Status:** Phases 1–5 complete; Phase 6 superseded by the launch contract
+  ([`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md),
+  Stages 4–5 pending game week)
 - **Decision date:** 2026-08-09
 - **Execution environment:** Preview only until every promotion gate passes
+  (production promotion executed 2026-08-18 under the launch contract)
 
 **Source inventory:**
 `artifacts/preview/history-inventory/4eaf0c1b394b43769fe5c2500b1782be.json`
@@ -106,7 +109,13 @@ provider reconciliation retain `provider_week`.
 **Exit gate:** The historical import can preserve legacy lines without weakening
 canonical markets, and all Week 0 tests pass while provider weeks remain intact.
 
-### Phase 2: Run the resumable historical bootstrap
+### Phase 2: Run the resumable historical bootstrap — ✅ COMPLETE (2026-08-13)
+
+All 7,156 eligible objects imported to Preview Bronze with verified source
+SHA-256 checksums (2019 prior inputs + 2021–2026; 2020 rejected). The import
+pipeline was modularized (`--skip-imports`, `make import-history-silver`) after
+six root-cause fixes; it completed end-to-end and is resumable within a
+pipeline-run ID.
 
 1. Run `make inventory-source` again only if the source has changed.
 2. Run `make import-history` against read-only `cfb-model-data`, writing only to
@@ -119,7 +128,7 @@ canonical markets, and all Week 0 tests pass while provider weeks remain intact.
 **Exit gate:** Every eligible object is imported or explicitly classified, all
 checksums match, no production write is possible, and no 2020 lineage exists.
 
-### Phase 3: Build and reconcile canonical Silver
+### Phase 3: Build and reconcile canonical Silver — ✅ COMPLETE (2026-08-14)
 
 1. Build season-scoped teams, aliases, venues, schedule revisions, games, plays,
    outcomes, weather, preseason inputs, and legacy market references.
@@ -135,7 +144,7 @@ checksums match, no production write is possible, and no 2020 lineage exists.
 eligible game keys and targets, and explicit coverage/missingness for every
 required source.
 
-### Phase 4: Build structural and model-ready Gold
+### Phase 4: Build structural and model-ready Gold — ✅ COMPLETE (2026-08-14)
 
 1. Build kickoff-ordered team-side features with independent completed-game
    counts and separate prior/current blocks.
@@ -150,7 +159,7 @@ required source.
 approved early-2021 prior lineage, and every 2022-2024 row has eligible OOF
 baselines.
 
-### Phase 5: Select, lock, test, and refit models
+### Phase 5: Select, lock, test, and refit models — ✅ COMPLETE (2026-08-18, V4 tournament)
 
 1. Run Ridge, CatBoost, and blend candidates independently for spread and total
    in regimes 0, 1, 2, 3, and 4+.
@@ -164,9 +173,17 @@ baselines.
 
 **Exit gate:** All ten routes exist, predictive gates and locked-test reporting
 are reproducible, failures are encoded as display fallbacks, and no result from
-2025 influenced design selection.
+2025 influenced design selection. — **Met 2026-08-18:** sealed 2022–2024
+selection froze design SHA `ae34ddc7…`; locked 2025 passed anti-regression on
+all 8 challenger routes; the unchanged design was refit on 2021–2025 as the
+ten-route V4 bundle `week0-2026-v4-strict-20260818-r2`
+(`conf/weekly_bets/v4_2026.yaml`). Market-dependent gates were correctly marked
+unavailable (legacy lines are quarantined); a research-only 2025 betting
+simulation reported +17.9 units (+3.1% ROI). See
+[`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md)
+Amendment 3.
 
-### Phase 6: Capture and rehearse live 2026 Week 0
+### Phase 6: Capture and rehearse live 2026 Week 0 — 🟡 IN PROGRESS (superseded by the launch contract)
 
 1. Refresh the 2026 schedule and capture one immutable preseason snapshot before
    the first kickoff.
@@ -182,7 +199,13 @@ are reproducible, failures are encoded as display fallbacks, and no result from
 
 **Exit gate:** Every opening-slate FBS-vs-FBS game appears; the run is reproducible
 from its ID; current quotes are authentic; failed steps activate nothing; and the
-site clearly distinguishes preview, published, and frozen state.
+site clearly distinguishes preview, published, and frozen state. — **Partially
+met (2026-08-18):** production is live at `https://c-ks-picks-cfb.vercel.app`
+in `market` mode with run `2026w0-79ec2aebcb00` (8/8 games, 8/8 lined, 0
+high-confidence; `/api/health` green). The preseason snapshot shipped in the
+`prior_only_fallback` posture (CFBD talent empty; user decision 2026-08-18).
+Remaining game-week operations (progressive publishes, freeze, predictions-mode
+flip, optional Pick'em, close-out) are tracked by the launch contract.
 
 ## Required Quality Gates
 
@@ -210,7 +233,14 @@ Stop rather than infer or silently degrade if:
 
 ## Next Session Resume Point
 
-Begin with Phase 2. Run `make import-history` in preview. No additional user
-credential setup is currently required; read-only source R2, preview R2, and
-preview Neon connectivity have been verified. Phase 1 contracts and the
-canonical Week 0 policy are implemented and tested.
+The 6-phase buildout is complete. Current work is governed by the Week 0 launch
+contract,
+[`docs/plans/2026-08-18/week0-launch-execution.md`](../plans/2026-08-18/week0-launch-execution.md)
+(Stages 1–3 complete):
+
+- **Stage 4 (game week, Aug 25–29):** rerun `publish-week ENV=production` as
+  lines update; freeze before Aug 29 kickoff; flip `CFB_PUBLICATION_MODE` to
+  `predictions` on Vercel only after user approval; optional Pick'em submission
+  (requires `CFBD_PREDICTION_TOKEN`).
+- **Stage 5 (post-slate):** `close-week` + scoring, health freshness checks,
+  retrospective, Week 1 cadence.

@@ -1,6 +1,11 @@
 # Data Quality Framework
 
-**Status**: Active (Week 3 Implementation)  
+> **⚠️ SUPERSEDED (historical reference).** The `scripts/validation/*` scripts
+> referenced below were never created. Current data quality runs through the
+> `DataValidationService` ([validation.md](validation.md)) and
+> `make audit-data` over the R2 lake.
+
+**Status**: Superseded (Week 3 Implementation)  
 **Owners**: Ops Team
 
 The Data Quality Framework ensures that all data feeding into the V2 modeling pipeline is valid, complete, and reliable. It consists of a 3-layer validation system implemented in Python scripts.

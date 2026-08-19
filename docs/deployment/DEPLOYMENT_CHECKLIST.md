@@ -1,8 +1,13 @@
 # V2 Deployment Checklist
 
+> **⚠️ SUPERSEDED (historical reference).** The production cutover happened
+> 2026-08-18 on a different architecture (Vercel + Neon + R2, V4 bundle). See
+> the [Production Runbook](../ops/production_runbook.md) for as-built
+> operations. This checklist was never executed as written.
+
 **Date:** 2026-02-18  
 **Deploying:** V2 Champion Model with Phase 4 Optimizations  
-**Status:** ⏳ In Progress
+**Status:** Superseded
 
 ---
 

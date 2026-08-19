@@ -15,8 +15,12 @@ An end-to-end machine learning pipeline for college football betting that predic
 - **Web app** (`web/`): Next.js 16 / React 19 / Tailwind v4. Reads from Neon Postgres. Deploys to Vercel.
 - **2026 MVP:** Web app showing every FBS game with the model's spread + total lean. Display only — no auth or bet tracking (post-MVP).
 
-**Current execution phase:** Phase 1 complete (legacy market quarantine + canonical Week 0 policy).
-See [`docs/planning/roadmap.md`](./docs/planning/roadmap.md) for the full 6-phase execution plan and timeline.
+**Current execution phase:** 2026 buildout complete (Phases 1–5). Production is live at
+https://c-ks-picks-cfb.vercel.app in fail-closed `market` mode with the V4 ten-route
+bundle (`week0-2026-v4-strict-20260818-r2`). Remaining: game-week operations
+(Aug 25–29 progressive publishes, freeze, predictions-mode flip) under the
+[Week 0 launch contract](./docs/plans/2026-08-18/week0-launch-execution.md).
+See [`docs/planning/roadmap.md`](./docs/planning/roadmap.md) for the full status.
 
 For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeline.md`](./docs/ops/weekly_pipeline.md).
 
@@ -36,8 +40,10 @@ For the full data-flow diagram and weekly workflow, see [`docs/ops/weekly_pipeli
 
 - [Feature Catalog](./docs/modeling/features.md) - Feature definitions
 - [Betting Policy](./docs/modeling/betting_policy.md) - Unit sizing rules
-- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (reference)
-- [2026 Execution Plan](./docs/planning/2026_historical_bootstrap_week0_execution.md) - Current operating plan
+- [V2 Experimentation Workflow](./docs/process/experimentation_workflow.md) - 4-phase modeling process (historical reference)
+- [2026 Execution Plan](./docs/planning/2026_historical_bootstrap_week0_execution.md) - 6-phase buildout plan (complete)
+- [Week 0 Launch Contract](./docs/plans/2026-08-18/week0-launch-execution.md) - Active launch operations (Stages 4–5)
+- [Production Runbook](./docs/ops/production_runbook.md) - As-built production operations
 
 ---
 
@@ -230,8 +236,8 @@ For major changes, open an issue first to discuss approach.
 
 ## 📞 Contact & Support
 
-- **Issues:** [GitHub Issues](https://github.com/connorkitchings/cfb_model/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/connorkitchings/cfb_model/discussions)
+- **Issues:** [GitHub Issues](https://github.com/connorkitchings/CKsPicks-CFB/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/connorkitchings/CKsPicks-CFB/discussions)
 
 ---
 
@@ -247,5 +253,5 @@ This is a research and educational project. It does not guarantee profit or futu
 
 ---
 
-_Last Updated: 2026-08-09_
+_Last Updated: 2026-08-19_
 _2026 reorg: Python pipeline + Next.js web app (Vercel) + Neon Postgres_

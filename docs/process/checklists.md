@@ -5,14 +5,14 @@ and secure work throughout the development process.
 
 ## Definition of Done (DoD) {#definition-of-done}
 
-This is the global standard for any task to be marked as "Done" in the `implementation_schedule.md`.
+This is the global standard for any task to be marked "Done" (tracked via session logs and, for contracted work, the plan's Definition of Done in `docs/plans/`).
 
 A task is considered Done only when:
 
 - All code has been merged into the `main` branch
 - All checks in the [Pre-Merge Checklist](#pre-merge) are complete
 - The feature has been deployed to a staging or production environment
-- The corresponding task in `implementation_schedule.md` is marked as ✅ Done
+- The session log (and plan contract, if applicable) records completion
 
 ## Pre-Commit Checklist {#pre-commit}
 
@@ -38,8 +38,8 @@ Run this more thorough checklist before merging a feature branch into main.
 - [ ] **Model performance validated:** Metrics meet criteria in the PRD/experiment plan
 - [ ] **Security scan passed:** `uv run bandit -r src/` finds no high-severity issues
 - [ ] **Security Review Checklist reviewed:** See [Security Review](#security-review) below
-- [ ] **No "TODO" comments remain:** All temporary todos have been resolved or converted to tasks in
-      implementation_schedule.md
+- [ ] **No "TODO" comments remain:** All temporary todos have been resolved or converted into
+      session-log/plan-contract follow-ups
 
 ## Security Review Checklist {#security-review}
 

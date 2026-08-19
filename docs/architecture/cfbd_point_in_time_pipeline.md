@@ -38,8 +38,9 @@ python -m cks_picks_cfb.ops audit-data
 ```
 
 All commands require an explicit preview or production environment. Preview is
-the default rollout target; production promotion remains a separate validated
-operation.
+the default rollout target; production promotion completed 2026-08-18 under the
+[Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md) and
+remains a separately validated operation for future changes.
 
 ## Historical bootstrap
 

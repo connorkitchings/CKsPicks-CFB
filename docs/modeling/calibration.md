@@ -1,5 +1,11 @@
 # Weekly Calibration Monitoring
 
+> **⚠️ SUPERSEDED (historical reference).** `scripts/monitor_calibration.py`
+> does not exist in the current tree; this V2-era tooling was removed with the
+> points-for/MLflow production path. Calibration/bias evaluation for the 2026
+> system is part of the sealed tournament reports
+> ([early-season regimes](early_season_regimes.md)) and `close-week` scoring.
+
 ## Overview
 
 The calibration monitoring script (`scripts/monitor_calibration.py`) tracks model prediction bias, drift, and calibration quality to ensure production models remain accurate over time.

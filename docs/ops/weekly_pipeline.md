@@ -1,12 +1,12 @@
 # Weekly Pipeline — 2026 Season
 
-R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when prediction publication is explicitly enabled; the default market-only mode uses a model-free schedule and market projection. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md).
+R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when prediction publication is explicitly enabled; the default market-only mode uses a model-free schedule and market projection. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md) and the [Production Runbook](production_runbook.md).
 
 ## Required setup
 
-Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the environment-specific R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay both use `PREVIEW_DATABASE_URL`; it must differ from production. Apply the checksummed history to an isolated Neon branch with `make migrate-db`.
+Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations 0002–0008).
 
-Upload route artifacts and configure the ten-cell manifest URI/checksum in `conf/weekly_bets/v2_champion.yaml`. Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.
+Upload route artifacts and configure the ten-cell manifest URI/checksum in the launch config `conf/weekly_bets/v4_2026.yaml` (V4 bundle `week0-2026-v4-strict-20260818-r2`; `conf/weekly_bets/v2_preview_2026.yaml` remains the wired fallback). Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.
 
 For rehearsal, point `PREVIEW_DATABASE_URL` at an isolated Neon branch and connect that branch to a Vercel Preview deployment.
 
@@ -43,18 +43,25 @@ make audit-data YEAR=2026 ENV=preview
 make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 ```
 
-Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS-vs-FBS schedule has unique game IDs, the point-in-time snapshot is complete (or the explicit display-only prior fallback has its required inputs), both promoted model checksums load, contracts match, and the web app lints, typechecks, and builds.
+Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS-vs-FBS schedule has unique game IDs, the point-in-time snapshot is complete (or the explicit display-only prior fallback has its required inputs), all ten route cells of the promoted model bundle load with matching checksums, contracts match, and the web app lints, typechecks, and builds.
 
 ## Progressive publish and freeze
 
-Publish and rerun as lines arrive. Rehearsals must name Preview explicitly; the
-Every mutating Make target requires an explicit `ENV`; there is no implicit
-production default:
+Publish and rerun as lines arrive. Every mutating Make target requires an
+explicit `ENV`; there is no implicit production default:
 
 ```bash
+# Preview rehearsal
 make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview \
   CONFIG=conf/weekly_bets/v2_preview_2026.yaml
+
+# Production (launch model)
+make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=production \
+  CONFIG=conf/weekly_bets/v4_2026.yaml
 ```
+
+Set the requested `AS_OF` roughly five minutes ahead of the publish run so the
+market capture falls before the cutoff.
 
 Each invocation runs through `python -m cks_picks_cfb.ops`, creates a new run-specific R2 prefix, and records resumable steps in `ops.pipeline_steps`. Neon activation occurs in one transaction only after predictions validate. Missing lines are allowed; the site shows the model output with “Line unavailable—model prediction shown, no lean.”
 
@@ -165,6 +172,7 @@ Useful checks:
 psql "$DATABASE_URL" -c "SELECT run_id, season, week, state, expected_games, predicted_games, lined_games FROM prediction_runs ORDER BY created_at DESC;"
 psql "$DATABASE_URL" -c "SELECT season, week, active_run_id FROM current_week WHERE id = 1;"
 curl https://<preview-domain>/api/health
+curl https://c-ks-picks-cfb.vercel.app/api/health   # production
 ```
 
 Any prediction, upload, validation, or database failure exits nonzero. Do not continue manually to activation after a failed step; correct the failure and create a new run.

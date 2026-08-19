@@ -1,10 +1,17 @@
 # Experimentation Workflow (v2)
 
-**Status**: Proposed | **Version**: 2.0 | **Date**: 2025-12-05
+> **⚠️ SUPERSEDED (historical reference).** The 2026 execution plan
+> supersedes this V2 4-phase workflow for the 2026 season. Model selection
+> now runs through sealed regime tournaments (2022–2024 OOF → locked 2025 →
+> 2021–2025 refit). See [Roadmap](../planning/roadmap.md) and
+> [Early-Season Regimes](../modeling/early_season_regimes.md). Retained as a
+> modeling-process reference.
+
+**Status**: Superseded | **Version**: 2.0 | **Date**: 2025-12-05
 
 This document outlines the standardized workflow for all feature engineering, modeling, and experimentation. It is designed to enforce rigor, prevent performance regressions, and ensure that complexity is only added when justified by a significant and measurable improvement in performance.
 
-This workflow supersedes all previous modeling processes.
+~~This workflow supersedes all previous modeling processes.~~ (Historical; superseded by the 2026 execution plan for the 2026 season.)
 
 ---
 

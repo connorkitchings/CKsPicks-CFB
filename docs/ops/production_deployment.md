@@ -1,6 +1,11 @@
 # Production Deployment Strategy
 
-**Status**: V2-aligned as of 2025-12-05
+> **⚠️ SUPERSEDED (historical reference).** The recommended "Option A/B"
+> below was never built. Production launched 2026-08-18 on Vercel + Neon +
+> Cloudflare R2 — see the [Production Runbook](production_runbook.md) and
+> [2026 Data Platform](../architecture/data_platform_2026.md).
+
+**Status**: Superseded (V2-aligned as of 2025-12-05)
 
 This document outlines the production deployment options for the cfb_model system, covering hosting, monitoring, backup, and security considerations.
 

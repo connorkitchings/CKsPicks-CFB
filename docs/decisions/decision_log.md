@@ -1,5 +1,89 @@
 # Decision Log
 
+## 2026-08-18: Production Deployment and Fail-Closed Publication Gating
+
+- **Context**: Stage 3 of the Week 0 launch contract required a production
+  environment distinct from Preview while reusing the verified immutable
+  artifact history.
+- **Decision**: Deploy production as: Neon production branch (migrations
+  0002–0008; catalog hydrated from Preview via COPY — 7,163 source captures,
+  85 dataset versions) with a least-privilege read-only `cks_prod_web` LOGIN
+  role for Vercel; production R2 credentials pointing at the same
+  `cks-picks-cfb-preview` bucket as Preview (immutable artifacts are
+  checksummed and environment-neutral; separation is enforced by Neon branch,
+  not bucket); Vercel production deploy at
+  `https://c-ks-picks-cfb.vercel.app` in fail-closed `market` publication mode
+  (`CFB_PUBLICATION_MODE=market`, `CFB_PUBLICATION_SEASON=2026`,
+  `CFB_PUBLICATION_WEEKS=0`). Model output stays hidden until the user
+  explicitly approves flipping to `predictions` mode after the Week 0 freeze.
+- **Impact**: Production published run `2026w0-79ec2aebcb00` (8/8 games
+  predicted, 8/8 lined, 0 high-confidence) with a green `/api/health`. No
+  model lean can reach the public site without an explicit user-approved
+  publication-mode change.
+- **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stage 3,
+  Amendments 2–3); `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`.
+
+## 2026-08-18: V4 Selected as 2026 Launch Model; prior_only_fallback Posture
+
+- **Context**: The V4 tournament (sealed 2022–2024 OOF selection, locked-2025
+  validation, 2021–2025 refit) ran under an Aug 18–20 timebox with V2 as the
+  proven fallback. CFBD's talent feed remained empty, blocking all additive
+  preseason feature families in the strict point-in-time reference.
+- **Decision**: Select the V4 ten-route bundle
+  `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`) as the 2026
+  launch model (config `conf/weekly_bets/v4_2026.yaml`; V2 remains wired as
+  fallback). Launch with `prior_core` features only
+  (`prior_only_fallback`) and stop rechecking the CFBD talent feed for the
+  rest of the season. Market-dependent promotion gates are recorded as
+  unavailable — not passed — wherever authentic historical quotes do not
+  exist.
+- **Impact**: Sealed selection won 4 of 8 challenger routes (spread/game_1
+  direct_catboost −1.43 MAE; total/game_2–4 blends −0.5 to −1.5 MAE); locked
+  2025 passed anti-regression on all 8 routes. Research-only 2025 betting
+  simulation (quarantined legacy lines): +17.9 units (+3.1% ROI). All 8 Week 0
+  games route to `game_1` (spread: direct CatBoost; total: prior-quality
+  baseline).
+- **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stages 1–2,
+  Amendment 3); `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`.
+
+## 2026-08-17: V4 Strict vs. Reconstructed Point-in-Time Feature References
+
+- **Context**: Historical `preseason_team_inputs` artifacts carry 2026 capture
+  timestamps and end-of-season fields, so they cannot serve as historical
+  preseason inputs. Additive preseason families (recruiting, coaches, rosters,
+  returning production, rankings, talent) lacked pre-kickoff effective-time
+  evidence across all required 2021–2026 team-seasons.
+- **Decision**: Split V4 feature references into two immutable tracks.
+  **Strict**: activation-eligible prior performance plus current-season
+  shrinkage, admitting an additive family only when every required team-season
+  has source-specific pre-kickoff effective-time evidence. **Reconstructed**:
+  later-backfilled provider data, explicitly marked non-point-in-time and
+  restricted to research reports — it cannot select routes, refit bundles,
+  pass readiness, or publish predictions.
+- **Impact**: The strict tournament proceeded without waiting on any additive
+  family and ultimately shipped `prior_core` only; the reconstructed track
+  remains available for research without activation risk.
+- **Source**: `docs/plans/2026-08-17/early-season-v4-modeling.md` (Amendment 1);
+  `session_logs/2026-08-17/02-v4-immutable-feature-reference.md`.
+
+## 2026-08-16: Games 1–3 Prediction-Only Promotion Basis
+
+- **Context**: The Games 1–3 redesign needed a promotion criterion while
+  historical odds remained quarantined (untimestamped) and the external
+  historical-odds execution was deferred.
+- **Decision**: Authorize Games 1–3 selection, refitting, and 2026 activation
+  using historical game results alone (`selection_basis=predictive_results_only`,
+  `betting_validation_status=not_evaluated`). Historical odds remain an
+  optional, decoupled module — never an input feature nor a readiness,
+  promotion, or refit dependency. Result-only promotion uses 2022–2024 OOF
+  MAE, RMSE, bias, season stability, and paired-bootstrap evidence, with 2025
+  sealed for anti-regression.
+- **Impact**: Established the result-only promotion basis inherited by the V4
+  tournament; V3 (`week0-2026-games-ordinal-v3-20260816-r2`) became the
+  baseline lineage for V4 selection.
+- **Source**: `docs/plans/2026-08-15/games-1-3-modeling.md` (Amendment
+  2026-08-16); `session_logs/2026-08-16/01-preview-readiness-repair.md`.
+
 ## 2026-08-09: Preserve Untimestamped Lines as Legacy References and Canonicalize Week 0
 
 - **Context**: The read-only production R2 inventory found 7,156 eligible
@@ -236,3 +320,17 @@
   - Hit Rate: 50.6%
   - ROI: -3.35%
 - **Decision**: All future models must beat this ROI to be considered.
+
+## 2025-08-10: Storage Pivot to Local CSV; Python 3.12 + uv Baseline
+
+- **Context**: Early infrastructure choices for the `cfb_model` project
+  (recorded in the decision template; reconciled into the log 2026-08-19).
+- **Decision**: Pivot the storage backend from Supabase Postgres to local CSV
+  with per-partition manifests and validation utilities; standardize the
+  Python baseline on 3.12+ and adopt `uv` for environment and tooling.
+- **Impact**: Both choices carried forward — `uv` remains the toolchain, and
+  the storage lineage later evolved from local CSV (2025) to the local
+  Parquet drive to the 2026 Cloudflare R2 immutable lake
+  (`CFB_STORAGE_BACKEND='r2'`).
+- **Source**: `docs/decisions/decision_template.md`; session logs from
+  2025-08-10.

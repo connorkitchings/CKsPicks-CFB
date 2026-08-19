@@ -1,10 +1,14 @@
 # Data Quality Validation Workflow
 
-**Status**: Proposed | **Version**: 1.0 | **Date**: 2025-12-05
+> **⚠️ Proposed, never implemented as written.** The
+> `scripts/pipeline/validate_data.py` script below was never created. Data
+> quality today runs through the `DataValidationService`
+> ([ops/validation.md](../ops/validation.md)) and `make audit-data` over the
+> R2 lake, plus readiness gates. Retained as a design reference.
+
+**Status**: Proposed (superseded in practice) | **Version**: 1.0 | **Date**: 2025-12-05
 
 This document specifies the automated process for validating the quality, correctness, and integrity of the aggregated datasets before they are used for feature engineering or modeling. Its goal is to catch data issues early and prevent corrupted data from silently degrading model performance.
-
-This workflow is a prerequisite for all other processes in the [Experimentation Workflow](./experimentation_workflow.md).
 
 ---
 

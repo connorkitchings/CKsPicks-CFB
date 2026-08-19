@@ -24,25 +24,38 @@ Hydra allows us to:
 conf/
 ├── config.yaml              # Main entry point
 ├── model/                   # Model configurations
-│   ├── catboost.yaml
-│   ├── xgboost.yaml
-│   ├── ridge.yaml
-│   └── lgbm.yaml
+│   ├── linear.yaml          # Ridge/linear (default family)
+│   ├── elastic_net.yaml
+│   ├── catboost_v1.yaml
+│   ├── xgboost_v1.yaml
+│   ├── champion.yaml        # Legacy V2 champion reference
+│   ├── ensemble_v1.yaml
+│   ├── stacking_v1.yaml
+│   └── catboost_classifier.yaml
 ├── features/                # Feature set definitions
-│   ├── standard_v1.yaml
-│   ├── recency_v1.yaml
-│   ├── pace_v1.yaml
-│   └── spread_shap_pruned.yaml
+│   ├── matchup_v1.yaml      # (default) 16-feature matchup set
+│   ├── matchup_v2.yaml / matchup_v2_pruned.yaml
+│   ├── opponent_adjusted_v1.yaml
+│   ├── recency_weighted_v1.yaml
+│   ├── extended_v1.yaml
+│   ├── interaction_v1.yaml
+│   ├── internal_advanced_v1.yaml / internal_power_rating_v1.yaml
+│   ├── cover_classifier_v1.yaml
+│   └── ablation_baseline.yaml
 ├── experiment/              # Pre-packaged experiments
-│   ├── spread_catboost_baseline_v1.yaml
-│   └── total_xgboost_v1.yaml
-├── tuning/                  # Optuna search spaces
-│   ├── catboost_optuna.yaml
-│   └── xgboost_optuna.yaml
-├── paths/                   # Data path overrides
-│   └── default.yaml
-└── weekly_bets/            # Betting policy configs
-    └── default.yaml
+│   ├── week0_regimes.yaml   # 2026 regime tournament
+│   ├── preseason_regimes.yaml
+│   └── v2_*.yaml            # V2-era history (+ legacy/)
+├── training/                # Chronology contracts
+│   ├── default.yaml
+│   └── week0_2026.yaml      # Frozen 2026 temporal windows
+├── weekly_bets/             # Weekly publish configs
+│   ├── v4_2026.yaml         # LAUNCH (V4 bundle)
+│   ├── v3_preview_games_ordinal_2026.yaml
+│   ├── v2_preview_2026.yaml
+│   └── v2_champion.yaml
+├── policy/                  # canonical_week_2026_v1.yaml
+├── preprocessing/ paths/ hydra/ sweeper/ research/ legacy/ validation.yaml
 ```
 
 ---
@@ -55,22 +68,20 @@ conf/
 defaults:
   - _self_                    # Load this file first
   - paths: default            # Load conf/paths/default.yaml
-  - model: catboost           # Load conf/model/catboost.yaml
-  - features: standard_v1     # Load conf/features/standard_v1.yaml
+  - model: linear             # Load conf/model/linear.yaml
+  - features: matchup_v1      # Load conf/features/matchup_v1.yaml
+  - training: default         # Load conf/training/default.yaml
+  - preprocessing: none
+  - hydra: default
   - experiment: null          # Optional experiment override
 
-data:
-  adjustment_iteration: 2
-  train_years: [2021, 2022, 2023, 2024]
-  test_year: 2025
-
-mode: train                   # train | optimize
+random_seed: 42
 ```
 
-### Model Config (`conf/model/catboost.yaml`)
+### Model Config (example: `conf/model/catboost_v1.yaml`)
 
 ```yaml
-name: catboost
+name: catboost_v1
 params:
   iterations: 1000
   depth: 6
@@ -82,10 +93,10 @@ early_stopping_rounds: 50
 verbose: False
 ```
 
-### Feature Config (`conf/features/standard_v1.yaml`)
+### Feature Config (example shape: `conf/features/matchup_v1.yaml`)
 
 ```yaml
-feature_set_id: standard_v1
+feature_set_id: matchup_v1
 
 allow_list:
   - home_off_yards_per_play_adj2
@@ -97,17 +108,16 @@ allow_list:
 feature_groups:
   - efficiency
   - situational
-  - pace
 ```
 
-### Experiment Config (`conf/experiment/spread_catboost_baseline_v1.yaml`)
+### Experiment Config (example: `conf/experiment/week0_regimes.yaml`)
 
 ```yaml
 # @package _global_
 
 defaults:
-  - override /model: catboost
-  - override /features: standard_v1
+  - override /model: catboost_v1
+  - override /features: matchup_v1
 
 data:
   adjustment_iteration: 2
@@ -118,7 +128,7 @@ model:
     iterations: 500
     depth: 4
 
-experiment_name: spread_catboost_baseline_v1
+experiment_name: week0_regimes
 ```
 
 ---
@@ -136,7 +146,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train model.params.depth=8
 
 # Multiple overrides
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    model=xgboost \
+    model=xgboost_v1 \
     data.test_year=2025 \
     mode=optimize
 ```
@@ -145,13 +155,13 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train \
 
 ```bash
 # Use different model config
-model=xgboost              # Uses conf/model/xgboost.yaml
+model=xgboost_v1            # Uses conf/model/xgboost_v1.yaml
 
 # Use different feature set
-features=recency_v1        # Uses conf/features/recency_v1.yaml
+features=recency_weighted_v1  # Uses conf/features/recency_weighted_v1.yaml
 
 # Load experiment (overrides all)
-experiment=spread_catboost_baseline_v1
+experiment=week0_regimes
 ```
 
 ### Parameter Overrides
@@ -190,34 +200,34 @@ data.train_years=[2021,2022,2023]
 # Train on 2023, test on 2024
 data.test_year=2024
 
-# Train on different years
-data.train_years=[2020,2021,2022]
+# Train on different years (never include 2020)
+data.train_years=[2021,2022,2023]
 ```
 
 ### Model Selection
 
 ```bash
 # Use CatBoost
-model=catboost
+model=catboost_v1
 
 # Use XGBoost
-model=xgboost
+model=xgboost_v1
 
-# Use Ridge (baseline)
-model=ridge
+# Use linear/Ridge (baseline family)
+model=linear
 ```
 
 ### Feature Sets
 
 ```bash
-# Standard features
-features=standard_v1
+# Matchup features (default)
+features=matchup_v1
+
+# Pruned matchup set
+features=matchup_v2_pruned
 
 # With recency weighting
-features=recency_v1
-
-# SHAP-pruned features
-features=spread_shap_pruned
+features=recency_weighted_v1
 ```
 
 ### Hyperparameter Tuning
@@ -237,10 +247,10 @@ model.params.l2_leaf_reg=5
 
 ```bash
 # Load full experiment config
-experiment=spread_catboost_baseline_v1
+experiment=week0_regimes
 
 # Load experiment and override
-experiment=spread_catboost_baseline_v1 \
+experiment=week0_regimes \
 data.test_year=2025
 ```
 
@@ -278,31 +288,9 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --help | grep -A 10 "Config 
 
 ## Optuna Integration
 
-### Tuning Config (`conf/tuning/catboost_optuna.yaml`)
-
-```yaml
-search_space:
-  iterations:
-    type: int
-    low: 100
-    high: 2000
-
-  depth:
-    type: int
-    low: 3
-    high: 10
-
-  learning_rate:
-    type: float
-    low: 0.01
-    high: 0.3
-    log: true
-
-optuna:
-  n_trials: 100
-  direction: minimize
-  study_name: catboost_spread
-```
+Legacy Optuna search spaces live under `conf/legacy/tuning/`. Optimization is
+driven through `mode=optimize` (see `.codex/QUICKSTART.md`); sweep behavior is
+configured in `conf/sweeper/`.
 
 ### Running Optimization
 
@@ -310,8 +298,7 @@ optuna:
 # Run Optuna sweep
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
     mode=optimize \
-    model=catboost \
-    tuning=catboost_optuna
+    model=catboost_v1
 
 # Custom trials
 PYTHONPATH=src uv run python -m cks_picks_cfb.train \
@@ -331,12 +318,11 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train \
 ### Variable Interpolation
 
 ```yaml
-# conf/config.yaml
-data_root: /Volumes/CK SSD/Coding Projects/cfb_model/
-raw_data_path: ${data_root}/raw
-processed_data_path: ${data_root}/processed
+# conf/config.yaml (illustrative)
+raw_data_path: ${paths.data_root}/raw
+processed_data_path: ${paths.data_root}/processed
 
-# ${data_root} will be replaced with the actual value
+# ${paths.data_root} will be replaced with the actual value
 ```
 
 ### Resolver Functions
@@ -442,7 +428,7 @@ feature_groups:
 # @package _global_
 
 defaults:
-  - override /model: catboost
+  - override /model: catboost_v1
   - override /features: my_features_v1
 
 data:
@@ -463,10 +449,10 @@ experiment_name: my_experiment
 ### Common Errors
 
 **Error:** `MissingMandatoryValue: Missing mandatory value: model`
-- **Fix:** Ensure `conf/config.yaml` has `defaults: - model: catboost`
+- **Fix:** Ensure `conf/config.yaml` has `defaults: - model: linear`
 
 **Error:** `ConfigCompositionException: Could not find 'model/xgboost'`
-- **Fix:** Check that `conf/model/xgboost.yaml` exists
+- **Fix:** Check that the config exists — the current name is `model=xgboost_v1`
 
 **Error:** `InterpolationResolutionError: Could not resolve ${data_root}`
 - **Fix:** Ensure variable is defined or use `oc.env:VAR_NAME`
@@ -477,7 +463,7 @@ experiment_name: my_experiment
 ### Debug Checklist
 
 1. **View composed config:** `--cfg job --resolve`
-2. **Check file exists:** `ls conf/model/catboost.yaml`
+2. **Check file exists:** `ls conf/model/catboost_v1.yaml`
 3. **Validate syntax:** YAML indentation (2 spaces, no tabs)
 4. **Check interpolation:** Ensure referenced variables exist
 5. **Test overrides:** Try with minimal overrides first
@@ -516,5 +502,5 @@ experiment_name: my_experiment
 
 ---
 
-_Last Updated: 2026-02-13_
+_Last Updated: 2026-08-19_
 _Hydra configuration system reference_

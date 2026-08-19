@@ -100,14 +100,40 @@ After the selection report is immutable, generate the guarded 2025 baseline,
 assemble a new model-ready Gold ref, and run the locked candidate/evaluation
 commands with `SELECTION_REPORT_URI` set to that immutable report.
 
-The compatibility refit then produces an eight-route bundle:
+The refit then produces the ten-route bundle (two targets × Games 1–4 plus the
+established anchor; V3-era bundles produced an eight-route compatibility
+bundle):
 
 ```bash
 make refit-game-ordinal \
   FEATURE_REF_URI=artifacts/preview/features/week0-training-ref.json \
   REPORT_URI=artifacts/preview/models/game-ordinal-routing-v2.json \
-  BUNDLE_ID=week0-2026-v3-preview ENV=preview
+  BUNDLE_ID=week0-2026-v4-strict ENV=preview
 ```
 
 The refitter substitutes the exact prior-only Ridge baseline for fallback cells
 and marks only those routes ineligible for high-confidence presentation.
+
+## Sealed outcome (2026-08-18)
+
+The V4 tournament completed under the
+[Week 0 launch contract](../plans/2026-08-18/week0-launch-execution.md):
+
+- **Strict reference shipped `prior_core` only** — every additive preseason
+  family (returning production, transfers, recruiting, coaching, roster
+  continuity, rankings, talent) lacked pre-kickoff effective-time evidence for
+  all required team-seasons; talent remains empty at the provider. This is the
+  accepted `prior_only_fallback` launch posture (no further rechecks).
+- **Sealed 2022–2024 selection** (design SHA `ae34ddc7…`): 4 of 8 challenger
+  routes beat baseline — spread/game_1 direct_catboost (−1.43 MAE) and
+  total/game_2–4 blends (−0.5 to −1.5 MAE).
+- **Locked 2025:** all 8 challenger routes passed the anti-regression guard
+  (spread/game_1 +0.61 MAE, within tolerance).
+- **Refit on 2021–2025** produced the ten-route bundle
+  `week0-2026-v4-strict-20260818-r2` (config `conf/weekly_bets/v4_2026.yaml`).
+- **Week 0 routing:** all 8 opening-slate games route to `game_1` —
+  spread/game_1 = direct CatBoost; total/game_1 = prior-quality baseline
+  fallback (the failed-challenger case above).
+- Research-only 2025 betting simulation on quarantined legacy lines: +17.9
+  units combined (+3.1% ROI); no market-dependent promotion gate was treated
+  as passed.

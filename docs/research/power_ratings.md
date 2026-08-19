@@ -1,11 +1,16 @@
 # Probabilistic Power Ratings (Research)
 
+> **⚠️ NOT ADOPTED.** PPR was a research direction; the 2026 season shipped
+> on the V4 ten-route regime bundle (`prior_core` features), not PPR. The
+> "Points-For" architecture referenced below was also rejected/archived.
+> Retained as research record.
+
 ## Overview
 
 **Probabilistic Power Ratings (PPR)** represent the next generation of modeling for the CFB project. While the current "Points-For" architecture relies on regression against game-level features, PPR aims to learn a latent "strength" distribution for each team that evolves over time.
 
-> **Status**: Research / Prototype Phase
-> **Target Deployment**: 2026 Season
+> **Status**: Research / Prototype Phase (not adopted for 2026)
+> ~~**Target Deployment**: 2026 Season~~ — 2026 launched on the V4 regime bundle instead
 
 ## Core Concept
 

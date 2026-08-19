@@ -1,5 +1,14 @@
 # Phase 2: Data Storage Migration - Setup Guide
 
+> **⚠️ HISTORICAL (completed).** This "Phase 2" belongs to the Feb 2026
+> refactoring, not the 2026-season Phase 2. The migration completed long ago
+> — durable data now lives in the Cloudflare R2 immutable lake
+> (`CFB_STORAGE_BACKEND='r2'`). The `scripts/migration/migrate_to_cloud.py`
+> script below no longer exists. See
+> [2026 Data Platform](architecture/data_platform_2026.md). The "Phase 2"
+> title collides with 2026-season phase language; read it as refactoring-era
+> only.
+
 > **Goal:** Migrate ~15GB of CFB model data from external drive to Cloudflare R2 cloud storage
 
 ## Overview

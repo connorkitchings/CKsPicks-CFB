@@ -1,484 +1,211 @@
 # Project Context
 
-> **Domain Knowledge and Architecture for CFB Model**
+> **Domain Knowledge and Architecture for CKsPicks-CFB**
 >
-> This file contains project-specific context that AI assistants should understand when working on this codebase.
+> This file contains project-specific context that AI assistants should understand when working with this codebase.
 
 ---
 
 ## Project Overview
 
-This is a college football betting model system that predicts point spreads and over/unders using machine learning.
+A college football betting model that predicts point spreads and over/under
+totals, published as weekly leans on a public Vercel web app.
 
 **Domain:** Sports betting / predictive analytics
 **Sport:** NCAA Division I FBS College Football
-**Prediction Targets:** Point spreads, over/under totals
-**Data Source:** CollegeFootballData.com API
-**Time Period:** 2019, 2021–2025 seasons (2020 excluded; 2019 prior-only for early-2021 lineage)
+**Prediction Targets:** Point spreads, over/under totals (per completed-game regime)
+**Data Sources:** CollegeFootballData.com API (games/plays/stats/preseason) + The Odds API (timestamped market quotes) + weather ingestion
+**Time Period:** 2019, 2021–2025 training data in the R2 lake (2020 excluded; 2019 prior-only for early-2021 lineage); 2026 is inference-only
+**Production:** https://c-ks-picks-cfb.vercel.app (Neon Postgres + Cloudflare R2)
 
 ---
 
-## Architecture Overview
+## Architecture Overview (2026, as built)
 
-### Data Pipeline Flow
-
-The system follows a hierarchical aggregation pipeline:
+### Data Platform: immutable Bronze/Silver/Gold lake
 
 ```
-Raw API Data
-    ↓
-1. Raw Ingestion (src/data/)
-    ├── plays.py → Play-by-play data
-    ├── games.py → Game results
-    ├── teams.py → Team metadata
-    └── betting_lines.py → Market lines
-    ↓
-2. Aggregation (src/features/pipeline.py)
-    ├── byplay → Play-level features
-    ├── drives → Drive-level aggregations
-    ├── team_game → Game-level team stats
-    └── team_season → Season-level metrics
-    ↓
-3. Feature Engineering (src/features/)
-    ├── core.py → Aggregation functions
-    ├── byplay.py → Play-level transforms
-    ├── weather.py → Weather integration
-    └── selector.py → Feature selection
-    ↓
-4. Modeling (src/models/)
-    ├── train_model.py → Training pipeline
-    ├── features.py → Point-in-time data loading
-    └── betting.py → Bet generation
-    ↓
-Production Predictions
+CFBD / The Odds API / weather
+    ↓ hardened, fail-closed ingestion (point-in-time captures)
+Bronze (src/cks_picks_cfb/data/) — immutable request-level captures,
+    SHA-256 checksums, Neon catalog registry (7,163 captures)
+    ↓ resumable builders (make build-silver / import-history)
+Silver (src/cks_picks_cfb/data/silver.py, history.py) — reconciled
+    season-scoped teams/venues/schedules/games/plays/outcomes/weather/
+    market_quotes + quarantined legacy_market_references
+    ↓ kickoff-ordered point-in-time assembly
+Gold / model-ready (scripts/pipeline/assemble_model_ready_features.py,
+    build_temporal_matchups.py, build_v4_preseason_feature_reference.py)
+    — regime-routed features + 2022–2024 OOF baselines
+    ↓ sealed tournament → locked 2025 → unchanged refit
+Model bundles (model_bundle.py, model_bundle_v3.py) — checksummed
+    ten-route manifests in R2 (artifacts/preview|production/models/...)
+    ↓ ops state machine (publish → freeze → close)
+Neon Postgres (prediction_runs, predictions, games, game_results,
+    system_stats, current_week + catalog/ops schemas) → Vercel (ISR 5-min)
 ```
 
-### Points-For Modeling Approach
+Key invariants:
 
-**Unlike traditional spread models**, this system predicts:
+- R2 is the durable source of truth; Neon is the derived web-serving DB.
+- `CFB_STORAGE_BACKEND='r2'` is the production path; `'local'` + `CFB_MODEL_DATA_ROOT` is the dev fallback. Never `./data/`.
+- Untimestamped legacy betting lines live in `legacy_market_references` and can never produce leans, grades, ROI, model features, or selection input.
+- 2020 is excluded from everything; 2019 is prior-quality lineage only.
+- Every mutating operation goes through `python -m cks_picks_cfb.ops` with an explicit `ENV`; failed steps activate nothing.
 
-1. **Home team points** (e.g., 28.5)
-2. **Away team points** (e.g., 24.3)
+### Modeling: ten-route regime design
 
-Then derives betting targets:
-- `predicted_spread = home_points - away_points` (e.g., +4.2)
-- `predicted_total = home_points + away_points` (e.g., 52.8)
+The production model evaluates spread and total **independently per
+completed-game regime**: `game_1`, `game_2`, `game_3`, `game_4`, and
+`established` (4+ completed games). A matchup uses the route of its
+least-experienced team; each team keeps its own exposure count and
+empirical-Bayes shrinkage weight. Legacy labels (`preseason`, `one_game`,
+`two_games`, `three_games`) remain readable for historic artifacts only.
 
-**Why this approach?**
-- Better captures asymmetric matchups
-- Provides more flexibility for ensemble strategies
-- Allows separate optimization for offense/defense
+Chronology (frozen):
 
-**2026 Season Model Architecture:**
-The 2026 design evaluates spread and total independently for each of five
-completed-game regimes (`preseason`, `one_game`, `two_games`, `three_games`,
-`established`). Each cell compares direct Ridge, direct CatBoost, and a
-preseason/current blend. Selection uses 2022–2024 OOF artifacts only; the
-unchanged design is then refit on 2021–2025 for production. See
-`docs/modeling/early_season_regimes.md` for the full contract.
+- Selection folds: train 2021→test 2022, 2021–2022→2023, 2021–2023→2024 (OOF).
+- Locked test: train 2021–2024, evaluate 2025 once after the design SHA freezes.
+- Production refit: unchanged design on 2021–2025.
+
+Candidate families per route: prior-only baseline, direct Ridge, direct
+CatBoost, points-derived Ridge/CatBoost, and frozen blends. Lowest OOF MAE
+wins inside a 0.10 MAE tie ordered by simplicity; failed challengers revert
+to the prior-only baseline. Market data never enters features or selection.
+
+**Current production bundle (V4):** `week0-2026-v4-strict-20260818-r2`
+(design SHA `ae34ddc7…`, config `conf/weekly_bets/v4_2026.yaml`). Selected
+2026-08-18 via sealed tournament (4/8 challenger routes beat baseline);
+locked-2025 anti-regression passed on all 8 routes. Uses the strict
+point-in-time reference with `prior_core` features only
+(`prior_only_fallback` — additive preseason families lacked pre-kickoff
+effective-time evidence). All 8 Week 0 games route to `game_1`
+(spread: direct CatBoost; total: prior-quality baseline fallback).
+Model lineage: V2 preview (`week0-2026-preview-20260814`) → V3 games-ordinal
+(`week0-2026-games-ordinal-v3-20260816-r2`) → V4 strict.
+
+### Feature Engineering
+
+- **Opponent adjustment:** iterative additive normalization (`adjustment_iteration`, typically 2–4) with league-mean centering.
+- **Point-in-time correctness:** `src/cks_picks_cfb/features/point_in_time.py` — kickoff-ordered team-side views; no future leakage.
+- **Regime routing:** completed-game counts per team; separate prior (preseason) and current-season blocks; empirical-Bayes shrinkage toward prior by exposure (plays/drives/games grids).
+- **Naming:** `{home|away}_{off|def}_{metric}[_adj{N}][_last{M}]`; keep `season`, `week`, `game_id`, `team` keys.
+- **Weather:** outdoor-game integrations via `features/weather.py`.
+- Full catalog: `docs/modeling/features.md`; registry: `docs/project_org/feature_registry.md`.
+
+### Configuration (Hydra)
+
+```
+conf/
+├── config.yaml            # defaults: model=linear, features=matchup_v1,
+│                          #   training=default, preprocessing=none, hydra=default
+├── model/                 # linear, elastic_net, catboost_v1, xgboost_v1,
+│                          #   champion, ensemble_v1, stacking_v1, catboost_classifier
+├── features/              # matchup_v1/v2*, opponent_adjusted_v1, recency_weighted_v1,
+│                          #   extended_v1, interaction_v1, internal_*, cover_classifier_v1
+├── experiment/            # week0_regimes, preseason_regimes, v2_* (history), legacy/
+├── training/              # default, week0_2026 (frozen chronology)
+├── weekly_bets/           # v4_2026 (launch), v3_preview_games_ordinal_2026,
+│                          #   v2_preview_2026, v2_champion
+├── policy/                # canonical_week_2026_v1 (Week 0 game-ID assignments)
+├── preprocessing/ paths/ hydra/ sweeper/ research/ legacy/
+└── validation.yaml
+```
+
+Override patterns: `model=catboost_v1`, `features=matchup_v2`,
+`experiment=week0_regimes`, `+key=value` to add, `~key` to delete. Debug with
+`PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve`.
+See `.codex/HYDRA.md` for the full guide.
 
 ---
 
 ## Data Storage
 
-### Directory Structure
+### Durable store: Cloudflare R2 immutable lake (`CFB_STORAGE_BACKEND='r2'`)
 
-```
-$CFB_MODEL_DATA_ROOT/  (external drive or cloud)
-├── raw/                    # Raw API responses
-│   ├── plays/             # Play-by-play data
-│   ├── games/             # Game results
-│   ├── teams/             # Team metadata
-│   └── betting_lines/     # Market lines
-├── aggregated/            # Aggregated products
-│   ├── byplay/            # Play-level features
-│   ├── drives/            # Drive-level stats
-│   ├── team_game/         # Game-level stats
-│   └── team_season/       # Season-level metrics
-├── features/              # Feature caches
-│   ├── adj_iter_2/        # Adjusted features (2 iterations)
-│   ├── adj_iter_4/        # Adjusted features (4 iterations)
-│   └── weekly_features/   # Running season features
-└── models/                # Serialized models
-```
+- Bronze/Silver/Gold datasets as Parquet with SHA-256 checksums, registered in the Neon `catalog` schema with dataset versions.
+- Buckets: preview `cks-picks-cfb-preview` (production R2 credentials point at the same bucket — immutable artifacts are environment-neutral; environment separation is by Neon branch).
+- Weekly run artifacts: `artifacts/{preview|production}/...` (predictions, scored runs, refs, model bundles) — reproducible from run IDs.
+- Local `artifacts/preview/` holds only working copies; durable refs live in R2.
 
-### Data Format
+### Dev fallback: local backend (`CFB_STORAGE_BACKEND='local'`)
 
-All data stored as **Parquet files** with partitioning:
-- `year=YYYY/week=WW/data.parquet` - For time-series data
-- `data.parquet` - For static data (teams, venues)
+Reads/writes the external drive at `CFB_MODEL_DATA_ROOT`
+(`/Volumes/CK SSD/Coding Projects/cfb_model/`). Legacy layout
+(`raw/`, `aggregated/`, `features/adj_iter_*`) is research-compat only.
 
-**Key columns:**
-- `season` (int) - Year (e.g., 2024)
-- `week` (int) - Week number (1-15, conference championship, bowls)
-- `game_id` (int) - Unique game identifier
-- `team` (str) - Team name
-- `opponent` (str) - Opponent team name
+### Web-serving: Neon Postgres
+
+`games`, `game_results`, `system_stats`, `current_week` (web schema) +
+`catalog`/`ops` schemas + `prediction_runs`/`predictions`. Append-only
+migrations `contracts/migrations/0002`–`0008` via `make migrate-db ENV=...`.
+Branches: `preview-2026` and production. Web access uses the read-only
+`cks_prod_web` role.
 
 ---
 
-## Feature Engineering Principles
+## Key Modules (actual paths)
 
-### Opponent Adjustment
+| Area | Path |
+|---|---|
+| Ingestion adapters (CFBD, Odds API, weather) | `src/cks_picks_cfb/data/` (`ingest_api.py`, `the_odds_api.py`, `sources.py`, `runtime.py`) |
+| Lake/catalog/reconciliation | `src/cks_picks_cfb/data/` (`lake.py`, `catalog.py`, `history.py`, `silver.py`, `reconciliation.py`, `week_policy.py`) |
+| Features | `src/cks_picks_cfb/features/` (`pipeline.py`, `point_in_time.py`, `core.py`, `byplay.py`, `weather.py`, `situational.py`) |
+| Regime/game-ordinal training | `src/cks_picks_cfb/models/` (`regime_training.py`, `game_ordinal_training.py`, `early_season.py`, `v4_feature_variants.py`, `baselines.py`, `training_policy.py`, `promotion.py`) |
+| Market grading / evaluation | `src/cks_picks_cfb/models/` (`market_grading.py`, `predictive_evaluation.py`) |
+| Bundles | `src/cks_picks_cfb/model_bundle.py`, `model_bundle_v3.py` |
+| Ops state machine | `src/cks_picks_cfb/ops/` (`__main__.py`, `state_machine.py`, `lease.py`, `data_audit.py`) |
+| Inference | `src/cks_picks_cfb/inference/` (`predict.py`, `report.py`) |
+| Canonical training entry | `src/cks_picks_cfb/train.py` (Hydra) |
+| Migrations | `src/cks_picks_cfb/db/migrations.py` + `contracts/migrations/` |
+| Pipeline CLIs | `scripts/pipeline/` (~40 scripts: preflight, publish/freeze/close, silver/gold builders, tournament, refit, pickem export) |
+| Validation service | `src/cks_picks_cfb/utils/validation.py` (`conf/validation.yaml`) |
 
-The system uses **iterative opponent adjustment** to normalize raw stats against opponent quality.
-
-**Example:** Team A averages 7.0 yards/play, but played weak defenses. After adjustment:
-- Iteration 1: 6.8 yards/play (adjusted for opponent avg)
-- Iteration 2: 6.7 yards/play (adjusted for opponent's adjusted avg)
-- Iteration 3: 6.65 yards/play (convergence)
-
-**Parameter:** `adjustment_iteration` (typically 2-4)
-
-### Feature Categories
-
-1. **Offensive Efficiency**
-   - Yards per play
-   - Success rate (gaining ≥50% of yards needed)
-   - Explosiveness (plays ≥10 yards)
-   - Red zone scoring rate
-
-2. **Defensive Efficiency**
-   - Same metrics, from defense perspective
-   - "Allowed" versions (e.g., `yards_per_play_allowed`)
-
-3. **Situational Performance**
-   - Third down conversion rate
-   - Red zone efficiency
-   - Turnover margin
-
-4. **Pace Metrics**
-   - Plays per game
-   - Seconds per play
-   - Tempo adjustments
-
-5. **Recency Features**
-   - Last 3-4 games weighted higher
-   - Exponential decay weighting
-
-6. **Weather Features** (outdoor games only)
-   - Temperature
-   - Wind speed
-   - Precipitation
-
-7. **Mismatch Features**
-   - Offense vs defense interactions
-   - Calculated as offense_metric × defense_metric_allowed
-
-### Feature Naming Convention
-
-```
-{home|away}_{off|def}_{metric}[_adj{N}][_last{M}]
-```
-
-Examples:
-- `home_off_yards_per_play` - Home offense yards/play (raw)
-- `home_off_yards_per_play_adj2` - Adjusted (2 iterations)
-- `away_def_success_rate_last3` - Away defense success rate (last 3 games)
-
-**See `docs/modeling/features.md` for complete feature catalog.**
+Legacy V2-era model variants (`v1_baseline.py`, `v2_*.py`) are retained for
+experiment history under `conf/experiment/v2_*` and `conf/legacy/`.
 
 ---
 
-## Configuration System (Hydra)
+## Testing
 
-### Structure
+- 54 test files; full suite `uv run pytest -q` → **355 passed, 2 skipped** (2026-08-19).
+- Coverage of: routing/edge cases (byes, cancellations, legacy labels), lake immutability + checksums, legacy-market quarantine (17 contract tests), migrations (empty + legacy schemas), publication fail-closed boundary (`web`), ops state machine, bundle loading.
+- Quality gates: `uv run ruff format . && uv run ruff check .`, `uv run python contracts/validation.py`, `uv run mkdocs build --quiet`, `make contracts-check`, web lint/typecheck/build.
+- Pattern: minimal fixtures, edge cases (empty DataFrames, single rows, missing columns); see existing tests in `tests/` for templates.
 
-```
-conf/
-├── config.yaml              # Top-level defaults
-├── model/                   # Model configs (catboost, xgboost, ridge)
-├── features/                # Feature set definitions
-├── experiment/              # Pre-packaged experiments
-├── tuning/                  # Optuna search spaces
-├── paths/                   # Data path overrides
-└── weekly_bets/            # Betting policy configs
-```
+---
 
-### Composition
-
-Hydra composes configs hierarchically:
-
-```yaml
-# conf/config.yaml
-defaults:
-  - model: catboost           # Use conf/model/catboost.yaml
-  - features: standard_v1     # Use conf/features/standard_v1.yaml
-  - experiment: null          # Optional experiment override
-
-data:
-  adjustment_iteration: 2
-  train_years: [2021, 2022, 2023, 2024]
-  test_year: 2025
-```
-
-### Override Patterns
+## Production Workflow (weekly cycle)
 
 ```bash
-# Switch model type
-model=xgboost
+# Pregame: refresh schedule/lines → capture markets → predict → R2 artifact → Neon
+make publish-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml
 
-# Change test year
-data.test_year=2025
+# Freeze the validated active run before kickoff (grades freeze against it)
+make freeze-week YEAR=2026 WEEK=0 ENV=production
 
-# Load experiment (overrides all)
-experiment=spread_catboost_baseline_v1
-
-# Add new parameter
-+new_param=value
-
-# Delete parameter
-~old_param
-
-# Override nested parameter
-model.params.depth=8
+# Postgame: refresh finals → score → scored artifact → system_stats
+make close-week YEAR=2026 WEEK=0 ENV=production
 ```
 
-**See `.codex/HYDRA.md` for detailed guide.**
-
----
-
-## Model Training Workflow
-
-### Standard Training
-
-```bash
-PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    model=catboost \
-    data.test_year=2024 \
-    experiment=null
-```
-
-### Hyperparameter Optimization
-
-```bash
-PYTHONPATH=src uv run python -m cks_picks_cfb.train \
-    mode=optimize \
-    model=catboost \
-    tuning=catboost_optuna
-```
-
-### Walk-Forward Validation
-
-Train on multiple holdout years sequentially:
-
-```python
-test_years = [2021, 2022, 2023, 2024]
-for year in test_years:
-    train(test_year=year)
-```
-
----
-
-## MLflow Integration
-
-### Tracking
-
-All training runs automatically logged to MLflow:
-
-**Tracked:**
-- **Metrics:** RMSE, MAE, calibration error, betting ROI
-- **Parameters:** All Hydra config values
-- **Artifacts:** Trained models, feature lists, predictions
-- **Tags:** git_sha, model_type, feature_set, experiment
-
-**Location:** `artifacts/mlruns/` (file-based backend)
-
-### Model Registry
-
-Production models promoted through stages:
-
-1. `None` → `Development`
-2. `Development` → `Staging`
-3. `Staging` → `Production`
-
-**Model ID Convention:**
-```
-{target}_{model_type}_{feature_set}_{tuning}_{data_version}
-```
-
-Example: `home_points_catboost_standard_v1_optuna_2024_adj2`
-
----
-
-## Testing Philosophy
-
-### Test Patterns
-
-1. **Minimal Fixtures** - Small, focused test data
-2. **Edge Cases** - Empty DataFrames, single rows, missing columns
-3. **Aggregation Validation** - Verify calculations match expected values
-4. **Schema Validation** - Check column presence and types
-
-### Test Organization
-
-```
-tests/
-├── test_aggregations_core.py        # Core aggregation functions
-├── test_aggregate_drives_minimal.py # Drive-level aggregations
-├── test_validation.py               # Schema validation
-└── fixtures/                        # Shared test data
-```
-
-**Pattern:** Use `tests/test_aggregate_drives_minimal.py` as template for new tests.
-
----
-
-## Betting Policy
-
-**Location:** `docs/modeling/betting_policy.md`
-
-### Key Rules
-
-1. **Kelly Criterion** for bet sizing
-2. **Minimum edge threshold:** 2.5% for spreads, 3% for totals
-3. **Maximum bet size:** 5% of bankroll
-4. **Game minimums:** Teams must have ≥4 games for adjusted stats
-5. **No betting on:** Teams without sufficient data, games with missing lines
-
-**IMPORTANT:** Policy is defined in documentation, NOT in code. Scripts only **apply** policy rules, never modify them.
-
----
-
-## Project-Specific Details
-
-### Year 2020 Exclusion
-
-**COVID-affected 2020 season is excluded from training** due to:
-- Schedule disruptions
-- Roster changes (opt-outs, transfers)
-- Limited/no fans (home field advantage distorted)
-- Inconsistent COVID protocols
-
-**Use:** selection folds through 2024, locked test in 2025, then refit on `2021-2025`.
-
-### Adjustment Iterations
-
-Different depths for offense/defense:
-
-```yaml
-adjustment_iteration: 2              # Default for both
-adjustment_iteration_offense: 3      # Override for offense
-adjustment_iteration_defense: 2      # Override for defense
-```
-
-**Typical values:** 2-4 iterations (more iterations = more convergence, but diminishing returns)
-
-### Feature Set IDs
-
-- `standard_v1` - Core efficiency metrics
-- `recency_v1` - Standard + recency-weighted features
-- `pace_v1` - Standard + tempo/pace features
-- `spread_shap_pruned` - Pruned via SHAP analysis (best for spreads)
-
----
-
-## Development Standards
-
-### Code Style
-
-- **Formatter:** ruff format
-- **Linter:** ruff check
-- **Line length:** 88 characters (Black-compatible)
-- **Type hints:** Encouraged but not required
-- **Docstrings:** Required for public functions
-
-### Testing Requirements
-
-- All aggregation functions must have unit tests
-- Test edge cases (empty data, single row, missing columns)
-- Minimum 80% coverage on critical paths
-
-### Feature Development
-
-1. Add feature computation to `src/features/core.py` or `byplay.py`
-2. Create feature config in `conf/features/new_feature_v1.yaml`
-3. Add unit tests
-4. Run ablation study to validate impact
-5. Update `docs/modeling/features.md`
-
----
-
-## Common Workflows
-
-### Adding a New Feature
-
-1. **Define computation** in `src/features/core.py`
-2. **Add to config** in `conf/features/`
-3. **Test** with minimal fixture
-4. **Validate impact** with ablation study
-5. **Document** in `docs/modeling/features.md`
-
-### Training a New Model
-
-1. **Create config** in `conf/model/new_model.yaml`
-2. **Create Optuna space** in `conf/tuning/new_model_optuna.yaml`
-3. **Run optimization** with `mode=optimize`
-4. **Evaluate** on walk-forward validation
-5. **Document** findings in decision log
-
-### Production Deployment
-
-1. **Train production models:**
-   ```bash
-   PYTHONPATH=. uv run python scripts/pipeline/train_production_points_for.py
-   ```
-
-2. **Generate weekly predictions:**
-   ```bash
-   PYTHONPATH=. uv run python scripts/pipeline/generate_weekly_bets.py
-   ```
-
-3. **Review predictions** (manual step)
-
-4. **Place bets** (manual step)
-
-5. **Score performance:**
-   ```bash
-   PYTHONPATH=. uv run python scripts/pipeline/score_weekly_bets.py
-   ```
+- Every mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.
+- `AS_OF` must be set ~5 minutes ahead of the publish run so the market capture falls before the cutoff.
+- Publication modes: `market` (fail-closed, no model output — current production default) vs `predictions` (requires explicit user approval).
+- Health: `GET /api/health` (schema version, active run state, predicted/lined coverage, freshness).
+- Pick'em export: `make export-pickem` (submission needs `CFBD_PREDICTION_TOKEN` + explicit approval).
+- Rollback: frozen runs are immutable; reselect `current_week.active_run_id` to a prior frozen run. See `docs/ops/production_runbook.md`.
 
 ---
 
 ## Key Concepts
 
-### Point-in-Time Data
-
-**Problem:** When training on historical data, only use information that was available at prediction time.
-
-**Solution:** `load_point_in_time_data()` ensures:
-- Training data precedes test data
-- No future information leaks into features
-- Strict temporal separation
-
-### Opponent-Adjusted Stats
-
-**Raw stats are misleading** - a team averaging 35 points/game against weak defenses is different from 35 points/game against strong defenses.
-
-**Adjustment process:**
-1. Calculate team averages (raw)
-2. Calculate opponent averages (what they typically allow)
-3. Adjust team stats based on opponent quality
-4. Iterate 2-4 times until convergence
-
-### Kelly Criterion
-
-**Bet sizing formula:**
-```
-fraction = (edge × odds) / (odds - 1)
-```
-
-Where:
-- `edge` = model probability - implied market probability
-- `odds` = decimal odds
-
-**Example:**
-- Model: 55% win probability
-- Line: -110 (52.38% implied probability)
-- Edge: 2.62%
-- Kelly: ~2.6% of bankroll
+- **Point-in-time correctness:** only information available before kickoff may produce features; strict vs. reconstructed V4 reference tracks encode this (`docs/modeling/early_season_regimes.md`).
+- **Opponent-adjusted stats:** raw stats are normalized against opponent quality via iterative additive adjustment.
+- **Sealed selection:** candidates are chosen on 2022–2024 OOF only; the 2025 locked test runs once against a frozen design SHA; the unchanged design is refit on 2021–2025.
+- **Fail-closed publication:** missing data, failed gates, or unapproved modes must degrade to display-only, never to inferred or leaked model output.
+- **Kelly criterion / betting policy:** policy is documentation-first (`docs/modeling/betting_policy.md`); the 2026 site is display-only (post-MVP: auth/tracking).
 
 ---
 
-_Last Updated: 2026-08-09_
+_Last Updated: 2026-08-19_
 _Domain knowledge and architecture reference_

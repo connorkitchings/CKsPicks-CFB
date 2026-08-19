@@ -1,5 +1,13 @@
 # CFB Model ML Workflow
 
+> **⚠️ Historical V2-era workflow.** The split description below (test 2024 /
+> deploy 2025) was the V2 policy. The authoritative 2026 policy: select on
+> 2022–2024 temporal OOF, one locked 2025 anti-regression test, refit the
+> unchanged design on 2021–2025. See
+> [Early-Season Regimes](../modeling/early_season_regimes.md). The scripts
+> referenced in the commands below (`scripts/ratings/*`,
+> `train_and_register.py`) no longer exist.
+
 ## Standard Training Process
 
 This document defines the **standard machine learning workflow** for the CFB modeling project. All model development should follow this process to ensure rigorous evaluation and prevent data leakage.
@@ -32,26 +40,19 @@ This document defines the **standard machine learning workflow** for the CFB mod
 ### 1. Model Development (expanding 2021–2023 training windows)
 
 ```bash
-# Train PPR ratings (FBS only)
-for year in 2021 2022 2023 2024 2025; do
-    uv run python scripts/ratings/train_ppr.py --year $year
-done
+# Canonical training entry point (current)
+PYTHONPATH=src uv run python -m cks_picks_cfb.train
 
-# Export consolidated ratings
-uv run python scripts/ratings/export_ratings_history.py
+# 2026 regime tournament experiment
+PYTHONPATH=src uv run python -m cks_picks_cfb.train experiment=week0_regimes
 
-# Regenerate features with PPR ratings
-for year in 2021 2022 2023 2024 2025; do
-    uv run python scripts/pipeline/run_pipeline_generic.py --year $year
-done
-
-# Train models
-uv run python scripts/pipeline/train_and_register.py \
-    --config-name=config experiment=spread_catboost_ppr_v1
-
-uv run python scripts/pipeline/train_and_register.py \
-    --config-name=config experiment=totals_xgboost_ppr_v1
+# Versioned feature builds (current)
+make build-team-game YEAR=<Y> AS_OF=<ts> ENV=preview ...
+make build-features YEAR=<Y> AS_OF=<ts> ENV=preview ...
 ```
+
+(Historical V2-era commands referencing `scripts/ratings/train_ppr.py` and
+`scripts/pipeline/train_and_register.py` were removed with those scripts.)
 
 ### 2. Model Evaluation (Test on 2024)
 

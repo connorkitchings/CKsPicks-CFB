@@ -1,10 +1,10 @@
 # Model Evaluation Criteria
 
-**V2 Status** (as of 2025-12-05): This document defines evaluation metrics for general model development. For **V2 promotion-specific criteria**, see [`promotion_framework.md`](../process/promotion_framework.md) which defines the 5-gate system.
+**Status** (2026-08-19): General evaluation metrics + V2-era promotion thresholds (historical). The 2026 system selects models on predictive gates (OOF MAE lift, bootstrap intervals, season stability) with 2025 locked for anti-regression — see [`early_season_regimes.md`](early_season_regimes.md); the 5-gate V2 framework is retained at [`promotion_framework.md`](../process/promotion_framework.md).
 
 This document defines the success thresholds, performance metrics, and model selection criteria for the cfb_model betting system.
 
-> 🔗 **Related**: [V2 Promotion Framework](../process/promotion_framework.md) | [Modeling Baseline](baseline.md) | [Feature Catalog](features.md)
+> 🔗 **Related**: [Promotion Framework](../process/promotion_framework.md) | [Early-Season Regimes](early_season_regimes.md) | [Feature Catalog](features.md)
 
 ---
 

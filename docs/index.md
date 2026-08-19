@@ -1,27 +1,32 @@
-# cfb_model Documentation
+# CKsPicks-CFB Documentation
 
-[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.repostatus.org/#alpha)
+[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.postatus.org/#alpha)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Welcome to the central documentation hub for the **cfb_model** project. This site provides in-depth
-information on the project's architecture, development standards, and usage guides.
+Welcome to the central documentation hub for the **CKsPicks-CFB** project — a
+college football betting model (Python pipeline) with a Next.js web app on
+Vercel, backed by Neon Postgres and a Cloudflare R2 immutable data lake.
 
 > **📖 Start Here:** [Documentation Guide](./guide.md) — Single source of truth for all project documentation
+
+## 2026 Season Status
+
+The 6-phase buildout is complete and **production is live** at
+`https://c-ks-picks-cfb.vercel.app` (fail-closed `market` mode, V4 bundle
+`week0-2026-v4-strict-20260818-r2`). Remaining: game-week operations under the
+[Week 0 Launch Contract](./plans/2026-08-18/week0-launch-execution.md).
 
 ## Quick Navigation
 
 - **[📖 Documentation Guide](./guide.md)** — Main hub with complete navigation
-- **[V2 Workflow](./process/experimentation_workflow.md)** — **NEW:** 4-phase modeling process (Baseline → Features → Models → Deployment)
-- **[12-Week Plan](./process/12_week_implementation_plan.md)** — **NEW:** V2 implementation roadmap
-- **[Promotion Framework](./process/promotion_framework.md)** — **NEW:** 5-gate rigor system
-- **[Process & Workflow](./process/ml_workflow.md)** — How we work (ML workflow, dev standards, AI templates)
-- **[Modeling & Features](./modeling/baseline.md)** — What we build (V2 Ridge baseline, features, betting policy)
-- **[Operations](./ops/weekly_pipeline.md)** — How we run (manual weekly workflow, production deployment, data paths)
-- **[Monitoring](./ops/monitoring.md)** — **NEW:** Dashboard and rollback procedures
-- **[Planning & Roadmap](./planning/roadmap.md)** — Where we're going (roadmap, initiatives)
-- **[Research](./research/ppr_prd.md)** — Exploratory work (PPR prototypes)
-- **[Decisions](./decisions/decision_log.md)** — Decision history and rationale
-- **[Experiments](./experiments/index.md)** — Experiment tracking and results (V2 format)
+- **[Week 0 Launch Contract](./plans/2026-08-18/week0-launch-execution.md)** — Active operations (Stages 4–5)
+- **[Roadmap](./planning/roadmap.md)** — 2026 status and timeline
+- **[Production Runbook](./ops/production_runbook.md)** — As-built production operations
+- **[Weekly Pipeline](./ops/weekly_pipeline.md)** — Publish/freeze/close workflow
+- **[Early-Season Regimes](./modeling/early_season_regimes.md)** — Five completed-game routing contract
+- **[2026 Data Platform](./architecture/data_platform_2026.md)** — Immutable lake/catalog architecture
+- **[Decision Log](./decisions/decision_log.md)** — Decision history and rationale
+- **[Experiments](./experiments/index.md)** — Experiment tracking (V2 history + 2026 tournament)
 - **Session Logs:** See `session_logs/` folder for daily development logs
 
-> **Note:** Documentation reorganized on 2025-12-04, V2 workflow alignment on 2025-12-05. All docs now accessible from [guide.md](./guide.md).
+> **Note:** Documentation reorganized 2025-12-04; realigned to the 2026 dual-stack architecture on 2026-08-19. All docs are accessible from [guide.md](./guide.md).

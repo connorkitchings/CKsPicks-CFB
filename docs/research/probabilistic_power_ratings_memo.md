@@ -1,5 +1,8 @@
 # Research Memo: Probabilistic Power Ratings
 
+> **⚠️ Research record (not adopted).** PPR was not built; the 2026 system
+> ships the V4 ten-route regime bundle. Retained as research history.
+
 ## Objective
 
 Develop a "Probabilistic Power Ratings" engine that estimates a _distribution_ of team strength rather than a single point estimate. This will allow us to:

@@ -1,7 +1,12 @@
 # Operations: Monitoring Dashboard
 
-**Status**: V2-aligned as of 2025-12-09
-**Tool**: Streamlit
+> **⚠️ SUPERSEDED (historical reference).** The `dashboard/` Streamlit app no
+> longer exists. Current monitoring is the production `/api/health` endpoint
+> (run state, coverage, freshness) plus `prediction_runs`/`prediction_grades`
+> queries — see the [Production Runbook](production_runbook.md#health-checks).
+
+**Status**: Superseded (V2-aligned as of 2025-12-09)  
+**Tool**: Streamlit (removed)
 
 This document describes how to use the V2 Monitoring Dashboard to track the performance of the champion model.
 

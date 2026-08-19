@@ -15,16 +15,16 @@ Then, read the following in order (or the closest equivalents if paths differ):
 1. **README.md**
    - Focus on Getting Started, project layout, and any sections describing modeling and MLOps.
 
-2. **docs/project_org/modeling_baseline.md**
-   - Understand the current baseline architecture (e.g., points-for CatBoost ensembles or similar), how spreads/totals are derived, and what "baseline" means in practice.
+2. **docs/modeling/early_season_regimes.md**
+   - Understand the current production architecture (V4 ten-route regime bundle), how spreads/totals are routed by completed-game count, and what "baseline" means in practice. `docs/modeling/baseline.md` holds the historical V2 baseline.
 
-3. **docs/planning/points_for_model.md**
-   - Capture the intent of the points-for system, current productionization status, and any documented performance targets or gaps.
+3. **docs/planning/roadmap.md**
+   - Capture current season status, model lineage (V2 → V3 → V4), and documented gaps or watch items.
 
-4. **docs/project_org/feature_catalog.md**
-   - Review how features are engineered, naming conventions, and which features are actually fed into the current models (especially opponent-adjusted, recency-weighted, and team_week_adj-based features).
+4. **docs/modeling/features.md** (+ **docs/project_org/feature_registry.md**)
+   - Review how features are engineered, naming conventions, and which features are actually fed into the current models (point-in-time prior core, opponent-adjusted, regime-routed features).
 
-5. **docs/operations/weekly_pipeline.md**
+5. **docs/ops/weekly_pipeline.md**
    - Understand how data flows through the weekly pipeline, when caches are refreshed, and where modeling hooks into the pipeline (training vs inference).
 
 6. **docs/decisions/decision_log.md**

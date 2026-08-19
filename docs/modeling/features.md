@@ -1,11 +1,11 @@
 # Feature Catalog
 
-**V2 Status** (as of 2025-12-05): This catalog contains definitions for all available features. For V2-specific feature sets and their promotion status, see [`feature_registry.md`](../project_org/feature_registry.md). The V2 baseline uses `minimal_unadjusted_v1` (4 features only).
+**Status** (2026-08-19): Definitions for all available features. Feature-group promotion status: [`feature_registry.md`](../project_org/feature_registry.md). The 2026 production model uses the V4 strict reference (`prior_core`); V2-era groups below remain as lineage/history.
 
 This catalog defines the engineered features and fields used by the modeling pipeline.
-It complements the V2 baseline documentation in [`docs/modeling/baseline.md`](baseline.md) and the weekly pipeline in [`docs/ops/weekly_pipeline.md`](../ops/weekly_pipeline.md).
+It complements the regime contract in [`docs/modeling/early_season_regimes.md`](early_season_regimes.md) and the weekly pipeline in [`docs/ops/weekly_pipeline.md`](../ops/weekly_pipeline.md).
 
-> NOTE (2025-10-20): Feature requirements may change for the points-for modeling initiative. Track updates in `docs/planning/points_for_model.md`.
+> NOTE (2025-10-20, historical): The points-for modeling initiative referenced here was later rejected and archived; see `docs/archive/points_for_model.md`.
 > FOLLOW-UP (2025-12-08): We observed sklearn runtime warnings during inference traced to large identifier/metadata columns present in prediction frames. Current feature configs (e.g., `matchup_v1`) do not consume these columns, but we should 1) keep non-informative IDs out of model inputs and 2) consider standardized/normalized feature pipelines in a future iteration to improve numerical stability.
 
 ## Conventions
@@ -13,8 +13,8 @@ It complements the V2 baseline documentation in [`docs/modeling/baseline.md`](ba
 - Level: team-season, team-week, game-level, or team-game.
 - Types: numeric (int/float), categorical, boolean, datetime, string.
 - Naming: snake*case; prefixes encouraged (e.g., `off*`, `def*`, `adj*`).
-- All features should be reproducible from source CSV and deterministic given a seed.
-- Use `scripts/profile_feature_cache.py --year <Y> --week <W>` to inspect coverage/missingness for the cached `team_week_adj` partitions before introducing new downstream transforms.
+- All features should be reproducible from the immutable lake (Parquet) and deterministic given a seed.
+- Inspect coverage/missingness of cached team-week partitions via the lake catalog (`make audit-data`) before introducing new downstream transforms.
 
 ### Play filters and definitions
 
@@ -46,7 +46,7 @@ It complements the V2 baseline documentation in [`docs/modeling/baseline.md`](ba
     (half/score-based), `red_zone`, `eckel`
   - Conversions: `thirddown_conversion`, `fourthdown_conversion`
 - Source/implementation notes:
-  - Canonicalization and by-play enrichment are implemented in `src/data/aggregations/byplay.py`
+  - Canonicalization and by-play enrichment are implemented in `src/cks_picks_cfb/features/byplay.py`
     (function `allplays_to_byplay`) and related helpers.
   - Standardize yards on fumbles and sacks; treat sacks as passes for split metrics.
 

@@ -1,5 +1,11 @@
 # V2 Deployment Documentation
 
+> **⚠️ SUPERSEDED (historical reference).** These V2-era docs describe a
+> local-joblib/MLflow/email deployment that predates the live 2026 system.
+> Production today is Vercel + Neon + Cloudflare R2 with the V4 bundle — see
+> the [Production Runbook](../ops/production_runbook.md) and
+> [Weekly Pipeline](../ops/weekly_pipeline.md).
+
 Welcome to the V2 deployment documentation. This section contains everything needed to deploy, operate, and maintain the V2 champion model in production.
 
 ---

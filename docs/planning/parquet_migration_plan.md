@@ -1,6 +1,11 @@
 # Parquet Migration Plan
 
-**Status**: Proposed
+> **⚠️ SUPERSEDED (historical reference).** Parquet persistence was achieved
+> through a larger redesign — the 2026 Cloudflare R2 immutable lake — not this
+> plan. The paths and scripts below reference a code layout that no longer
+> exists. See [2026 Data Platform](../architecture/data_platform_2026.md).
+
+**Status**: Superseded — outcome achieved via the R2 lake redesign
 **Goal**: Transition the `cfb_model` data persistence layer from CSV to Parquet.
 **Rationale**: Parquet offers significant advantages over CSV for this project:
 -   **Type Safety**: Preserves column types (int, float, datetime), eliminating the need for repetitive `pd.to_numeric` and `pd.to_datetime` casting during loading.
