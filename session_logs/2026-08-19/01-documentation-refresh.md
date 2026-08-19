@@ -155,8 +155,26 @@ changes.
 
 ## Amendments and Blockers
 
-- None. One editing slip during `mkdocs.yml` nav editing was immediately
-  reverted (verified by subsequent build).
+- None in the documentation work. One editing slip during `mkdocs.yml` nav
+  editing was immediately reverted (verified by subsequent build).
+
+### Addendum (2026-08-19, post-commit): production logo 404 fix
+
+- **Symptom:** every team logo 404'd on the live site while `favicon.ico`
+  and static chunks served fine.
+- **Root cause (via Vercel build logs):** `.vercelignore` strips
+  `assets/logos/*` but the empty source dir survives in the build workspace,
+  so `web/scripts/sync-logos.mjs` wiped the 338 git-tracked
+  `web/public/logos/` PNGs and copied 0 files — the deployment shipped
+  without logos. Local builds worked because the source was populated.
+- **Fix (commit `1a92717`):** sync-logos now stages the copy and swaps only
+  when the source contains PNGs; missing/empty source keeps the checked-in
+  `public/logos/` fallback. Added `public/logos.staging/` to `web/.gitignore`.
+- **Validation:** sandbox tests for empty-source/missing-source (fallback
+  preserved), happy path (338 copied), full `npm run build`, and post-deploy:
+  build log shows `source has no PNGs — keeping existing public/logos/`;
+  `/logos/USC.png` and `/logos/North%20Carolina.png` now return 200;
+  `/api/health` 200.
 
 ## Handoff Notes
 

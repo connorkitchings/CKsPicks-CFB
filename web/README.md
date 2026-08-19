@@ -9,7 +9,7 @@ Next.js 16 / React 19 / Tailwind CSS v4 app for the explicitly configured public
 - **Framework:** Next.js 16 (App Router, TypeScript)
 - **DB:** Neon Postgres serverless, accessed via `@neondatabase/serverless` + Drizzle ORM
 - **Styling:** Tailwind CSS v4
-- **Logos:** Synced from `../assets/logos/` into `public/logos/` on every `predev` / `prebuild`
+- **Logos:** Synced from `../assets/logos/` into `public/logos/` on every `predev` / `prebuild` (the checked-in `public/logos/` is the deployment fallback when the source is unavailable, e.g. Vercel builds)
 
 ## Local Development
 
