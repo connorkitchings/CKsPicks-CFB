@@ -176,6 +176,15 @@ changes.
   `/logos/USC.png` and `/logos/North%20Carolina.png` now return 200;
   `/api/health` 200.
 
+### Addendum (2026-08-19, post-commit): CI formatting failure
+
+- Both post-merge CI runs failed at `ruff format --check .`: the 2026-08-17/18
+  V4 tournament commits were validated with scoped ruff invocations while CI
+  enforces repo-wide formatting — 27 files had drifted.
+- Fix (commit `4f986d7`): applied `uv run ruff format .` (formatting-only).
+  Verified the full CI gate suite locally: lint clean, 355 passed / 2 skipped,
+  contracts validation pass. CI run `32288166755` green (both jobs).
+
 ## Handoff Notes
 
 - **Resume at:** Stage 4 game-week ops — progressive
