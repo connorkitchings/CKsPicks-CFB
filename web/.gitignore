@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# logo sync staging directory (web/scripts/sync-logos.mjs)
+public/logos.staging/
+
 # production
 /build
 
