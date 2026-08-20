@@ -1,0 +1,151 @@
+{
+  "schema_version": "model_accuracy_v1",
+  "generated_at": "2026-08-20T17:45:53Z",
+  "bundle_id": "week0-2026-v4-strict-20260818-r2",
+  "manifest_sha256": "72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c",
+  "routing_report_uri": "artifacts/preview/refs/v4/locked-report-strict-20260818.json",
+  "selection_design_sha": "ae34ddc7fc98d2693e278478b54f42ee0f896ba78768903ec81e3907457b555c",
+  "methodology": "Backtest accuracy is the average points between the prediction and the final result (mean absolute error) for each in-season route. 2022-2024 pooled out-of-sample selection; 2025 is a held-out season checked once. Evaluation predates the final 2021-2025 refit. Not betting results.",
+  "routes": {
+    "game_1": {
+      "label": "First game of the season",
+      "spread": {
+        "champion": "direct_catboost",
+        "selection": {
+          "mae": 15.98,
+          "n": 243,
+          "seasons": {
+            "2022": 16.74,
+            "2023": 14.66,
+            "2024": 16.51
+          }
+        },
+        "locked_2025": {
+          "mae": 15.16,
+          "n": 83
+        }
+      },
+      "total": {
+        "champion": "baseline",
+        "selection": {
+          "mae": 15.16,
+          "n": 243,
+          "seasons": {
+            "2022": 13.55,
+            "2023": 18.52,
+            "2024": 13.52
+          }
+        },
+        "locked_2025": {
+          "mae": 15.73,
+          "n": 83
+        }
+      }
+    },
+    "game_2": {
+      "label": "Second game of the season",
+      "spread": {
+        "champion": "baseline",
+        "selection": {
+          "mae": 16.06,
+          "n": 208,
+          "seasons": {
+            "2022": 17.0,
+            "2023": 15.13,
+            "2024": 16.09
+          }
+        },
+        "locked_2025": {
+          "mae": 17.11,
+          "n": 72
+        }
+      },
+      "total": {
+        "champion": "blend",
+        "selection": {
+          "mae": 12.9,
+          "n": 208,
+          "seasons": {
+            "2022": 12.32,
+            "2023": 14.43,
+            "2024": 11.89
+          }
+        },
+        "locked_2025": {
+          "mae": 13.6,
+          "n": 72
+        }
+      }
+    },
+    "game_3": {
+      "label": "Third game of the season",
+      "spread": {
+        "champion": "baseline",
+        "selection": {
+          "mae": 16.48,
+          "n": 195,
+          "seasons": {
+            "2022": 16.92,
+            "2023": 15.87,
+            "2024": 16.63
+          }
+        },
+        "locked_2025": {
+          "mae": 13.11,
+          "n": 66
+        }
+      },
+      "total": {
+        "champion": "blend",
+        "selection": {
+          "mae": 14.43,
+          "n": 195,
+          "seasons": {
+            "2022": 14.78,
+            "2023": 15.3,
+            "2024": 13.33
+          }
+        },
+        "locked_2025": {
+          "mae": 12.41,
+          "n": 66
+        }
+      }
+    },
+    "game_4": {
+      "label": "Fourth game of the season",
+      "spread": {
+        "champion": "baseline",
+        "selection": {
+          "mae": 15.19,
+          "n": 201,
+          "seasons": {
+            "2022": 13.78,
+            "2023": 15.49,
+            "2024": 16.25
+          }
+        },
+        "locked_2025": {
+          "mae": 15.02,
+          "n": 67
+        }
+      },
+      "total": {
+        "champion": "blend",
+        "selection": {
+          "mae": 12.58,
+          "n": 201,
+          "seasons": {
+            "2022": 10.6,
+            "2023": 12.23,
+            "2024": 14.79
+          }
+        },
+        "locked_2025": {
+          "mae": 11.36,
+          "n": 67
+        }
+      }
+    }
+  }
+}

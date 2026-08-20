@@ -11,6 +11,7 @@ import { Header, Footer } from "@/components/Header";
 import { RecordBanner } from "@/components/RecordBanner";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
+import { ModelAccuracyPanel } from "@/components/ModelAccuracyPanel";
 import { publicationScope } from "@/lib/publication";
 
 // Revalidate every 5 minutes (ISR).
@@ -112,6 +113,13 @@ export default async function Home({
       ? new Date(gamesUpdatedAt)
       : currentUpdatedAt;
 
+  // Backtest context renders only with model output (fail-closed boundary).
+  const regimesInPlay = games
+    .map((g) =>
+      g.publicationMode === "predictions" && g.regime ? g.regime : null,
+    )
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header
@@ -150,6 +158,10 @@ export default async function Home({
 
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />
+            )}
+
+            {publicationScope.mode === "predictions" && regimesInPlay.length > 0 && (
+              <ModelAccuracyPanel regimes={regimesInPlay} />
             )}
 
             {games.length === 0 ? (

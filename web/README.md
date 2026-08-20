@@ -75,7 +75,9 @@ web/
     │   ├── Header.tsx        # Header + Footer
     │   ├── GameRow.tsx       # Per-game row with leans
     │   ├── LeanBadge.tsx     # Spread + total visual chips
-    │   └── RecordBanner.tsx  # YTD spread/total record
+    │   ├── RecordBanner.tsx  # YTD spread/total record
+    │   ├── ModelAccuracyPanel.tsx  # Backtest MAE context (predictions mode only)
+    │   └── ...
     └── lib/
         ├── db.ts             # Drizzle client (lazy, build-safe)
         ├── schema.ts         # Drizzle schema (synced copy of contracts/schema.ts)
@@ -83,6 +85,13 @@ web/
         ├── queries.ts        # getCurrentWeek / getGamesForWeek / etc.
         └── teams.ts          # Team-name → logo URL mapping
 ```
+
+**Backtest accuracy panel:** `src/data/model-accuracy.json` is generated from the
+frozen V4 tournament reports by
+`PYTHONPATH=src:. uv run python scripts/pipeline/extract_model_accuracy.py`
+(bundle manifest + routing report from R2; champion routing decisions are read
+from the report, never hardcoded). Regenerate only when a new tournament
+produces a new bundle.
 
 ## Deploying to Vercel
 
