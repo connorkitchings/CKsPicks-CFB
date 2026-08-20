@@ -104,9 +104,12 @@ psql "$DATABASE_URL" -c "SELECT season, week, active_run_id FROM current_week WH
 ```
 
 Freshness expectations: predictions republish as lines arrive pregame; after
-freeze the run must not change. `catalog.quality_results` in production was
-truncated at hydration (preview-specific data) and repopulates as production
-audits run — this is expected.
+freeze the run must not change. Each publish/activation fires a signed
+on-demand ISR revalidation (`CFB_REVALIDATION_URL` + `REVALIDATION_SECRET`,
+configured 2026-08-20), so the homepage refreshes immediately; the five-minute
+ISR remains the fallback if the signed call fails. `catalog.quality_results`
+in production was truncated at hydration (preview-specific data) and
+repopulates as production audits run — this is expected.
 
 ## Rollback / recovery
 
@@ -134,7 +137,8 @@ Never mutate a frozen run or its R2 artifacts. Create a new run instead.
 ## Environment / credential notes
 
 - Production credentials live in `.env` / macOS Keychain per the preview pattern; never commit them.
-- Preview operations use `zsh scripts/ops/with_preview_env.sh <cmd>` so legacy `.env` values cannot target the wrong branch. The stale `PREVIEW_DATABASE_URL` entry in `.env` (pointing at the deleted `ep-delicate-sun` branch) should be removed.
+- Preview operations use `zsh scripts/ops/with_preview_env.sh <cmd>` so legacy `.env` values cannot target the wrong branch. (The stale `PREVIEW_DATABASE_URL` entry pointing at the deleted `ep-delicate-sun` branch was removed from `.env` on 2026-08-20; duplicate lines were collapsed.)
+- On-demand revalidation (2026-08-20): `REVALIDATION_SECRET` is set in Vercel (production) and `.env` (`CFB_REVALIDATION_URL=https://c-ks-picks-cfb.vercel.app/api/revalidate`); the route rejects missing/invalid signatures (401) and stale timestamps (>5 min). Rotating the secret requires updating both sides and redeploying.
 - R2 source/destination separation guard still applies to import workflows; the shared preview/production artifact bucket is an explicit, approved exception (launch contract Amendment 2).
 
 ---

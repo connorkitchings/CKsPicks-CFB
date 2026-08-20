@@ -189,3 +189,27 @@ the 7,163 source captures and 85 dataset versions needed by preflight.
 - V4 bundle: `week0-2026-v4-strict-20260818-r2`, SHA
   `72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c`.
 - Production run: `2026w0-79ec2aebcb00` (published, 8/8 games, market mode).
+
+### Amendment 4 — Stage 4 game-week readiness rehearsal (2026-08-20)
+
+User-approved pre-game-week de-risking executed one week before kickoff:
+
+- **First production readiness pass** (`python -m cks_picks_cfb.ops readiness
+  --environment production`): preflight, contracts, and the model-ready audit
+  all passed against the production target (`make readiness` blocks
+  `ENV=production`, so the CLI was used directly).
+- **Rehearsal publish**: full 8-step production run succeeded in ~35s —
+  new immutable run `2026w0-55de0317120d` activated with fresh Aug-20 lines
+  (8/8 predicted, 8/8 lined, market mode unchanged). The prior run
+  `2026w0-79ec2aebcb00` remains in history, untouched.
+- **On-demand ISR revalidation enabled**: `REVALIDATION_SECRET` added to
+  Vercel (production) and `.env` alongside
+  `CFB_REVALIDATION_URL=https://c-ks-picks-cfb.vercel.app/api/revalidate`;
+  verified live (valid HMAC → `revalidated`, forged signature → 401).
+  Publishes now refresh the site immediately; 5-min ISR remains fallback.
+- **`.env` hygiene**: stale `PREVIEW_DATABASE_URL` (deleted `ep-delicate-sun`
+  branch) removed; duplicate lines collapsed.
+- **Pick'em decision (user)**: skipped for Week 0; revisit for Week 1.
+- **Game-week plan confirmed**: daily publishes Aug 25–27 (assistant-run
+  sessions), Aug 28 final publish → user review → freeze → same-evening
+  `predictions` flip → smoke test; no publishes after freeze.
