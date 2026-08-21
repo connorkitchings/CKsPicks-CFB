@@ -53,7 +53,6 @@ def check_teams_sync() -> list[str]:
 
     for script in [
         "scripts/pipeline/publish_to_db.py",
-        "scripts/pipeline/publish_picks.py",
         "scripts/pipeline/publish_review.py",
     ]:
         path = ROOT / script

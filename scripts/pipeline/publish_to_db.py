@@ -49,7 +49,7 @@ except ImportError as exc:  # pragma: no cover
 
 
 # ---------------------------------------------------------------------------
-# Team name normalization (must match publish_picks.py / web app)
+# Team name normalization (must match contracts/teams.py and web app; publish_picks.py archived)
 # ---------------------------------------------------------------------------
 
 TEAM_LOGO_MAP = {

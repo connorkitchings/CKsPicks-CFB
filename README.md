@@ -129,12 +129,12 @@ CKsPicks-CFB/
 │   └── utils/             # Utilities
 ├── scripts/
 │   ├── data/                           # CFBD → R2/local ingestion CLIs
+│   ├── archive/                        # Archived legacy scripts
 │   └── pipeline/
 │       ├── preflight.py                # Weekly env/storage/DB checks
 │       ├── generate_weekly_bets.py    # Predictions → CSV
 │       ├── publish_to_db.py           # CSV → Neon Postgres
-│       ├── score_to_db.py             # Results → Postgres + stats
-│       └── publish_picks.py           # Email publisher (legacy channel)
+│       └── score_to_db.py             # Results → Postgres + stats
 ├── assets/
 │   └── logos/                # Team logos (synced into web/ at build)
 ├── contracts/                # Canonical DB schema + team mappings

@@ -1,7 +1,7 @@
 # 2026 Season Execution Roadmap
 
-> **Last Updated**: 2026-08-19 | **Status**: Week 0 launch in progress — production is live; game-week operations (Aug 25–29) remain
-> **Related**: [Execution Plan](2026_historical_bootstrap_week0_execution.md) | [Active Launch Contract](../plans/2026-08-18/week0-launch-execution.md) | [Decision Log](../decisions/decision_log.md)
+> **Last Updated**: 2026-08-21 | **Status**: Week 0 launch in progress — production is live; game-week operations (Aug 25–29) remain
+> **Related**: [Modernization & Refactoring Plan](2026_codebase_modernization_and_refactoring_plan.md) | [Execution Plan](2026_historical_bootstrap_week0_execution.md) | [Active Launch Contract](../plans/2026-08-18/week0-launch-execution.md) | [Decision Log](../decisions/decision_log.md)
 
 The 2026 season buildout is complete. The authoritative remaining-work document is the
 Week 0 launch contract,

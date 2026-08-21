@@ -20,6 +20,7 @@ nav:
 
   - "2026 Season":
       - "Roadmap": "planning/roadmap.md"
+      - "Modernization & Refactoring Plan": "planning/2026_codebase_modernization_and_refactoring_plan.md"
       - "Execution Plan (Complete)": "planning/2026_historical_bootstrap_week0_execution.md"
       - "Data Platform 2026": "architecture/data_platform_2026.md"
       - "CFBD Point-in-Time Pipeline": "architecture/cfbd_point_in_time_pipeline.md"

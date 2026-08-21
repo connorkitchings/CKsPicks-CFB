@@ -17,14 +17,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import os
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
 import typer
 from typing_extensions import Annotated
 
-from cks_picks_cfb.config import REPORTS_DIR, get_data_root
+from cks_picks_cfb.config import get_data_root
 from cks_picks_cfb.data.base import BaseIngester
 from cks_picks_cfb.data.betting_lines import BettingLinesIngester
 from cks_picks_cfb.data.coaches import CoachesIngester
@@ -334,73 +333,6 @@ def ingest_year(
             print(f)
     else:
         print(f"--- Successfully completed full data ingestion for year {year} ---")
-
-
-@app.command()
-def run_season(
-    data_root: Annotated[
-        str,
-        typer.Option(help="Path to data root directory", default_factory=get_data_root),
-    ],
-    year: Annotated[int, typer.Option(help="Season year to process")] = 2024,
-    start_week: Annotated[int, typer.Option(help="Starting week (inclusive)")] = 5,
-    end_week: Annotated[int, typer.Option(help="Ending week (inclusive)")] = 16,
-    bankroll: Annotated[
-        float,
-        typer.Option(help="Current bankroll used for bet sizing and exposure caps"),
-    ] = 10000.0,
-    spread_threshold: Annotated[
-        float, typer.Option(help="Spread edge threshold for betting")
-    ] = 3.5,
-    total_threshold: Annotated[
-        float, typer.Option(help="Total edge threshold for betting")
-    ] = 3.5,
-):
-    """Run model predictions and scoring for a full season using the champion model."""
-    from cks_picks_cfb.config.champion import get_champion_model_paths
-    from cks_picks_cfb.inference.predict import predict_week
-    from cks_picks_cfb.inference.report import generate_report
-
-    weeks_to_run = list(range(start_week, end_week + 1))
-    print(f"Running champion model for {len(weeks_to_run)} weeks: {weeks_to_run}")
-
-    champion_paths = get_champion_model_paths()
-    spread_model_path = str(champion_paths["spread"])
-    # total_model_path = str(champion_paths["total"]) # TODO: Add total support
-
-    for week in weeks_to_run:
-        print(f"\n=== Processing Week {week} ===")
-        try:
-            # 1. Predict
-            # For now, we only predict spread. Total needs to be added.
-            predictions_path = f"predictions_week_{week}.csv"
-            predict_week(
-                year=year,
-                week=week,
-                model_path=spread_model_path,
-                output_path=predictions_path,
-                data_root=data_root,
-                use_subprocess=True,
-            )
-
-            # 2. Report
-            generate_report(
-                predictions_path=predictions_path,
-                year=year,
-                week=week,
-                bankroll=bankroll,
-                spread_threshold=spread_threshold,
-                total_threshold=total_threshold,
-                output_dir=str(REPORTS_DIR / str(year)),
-            )
-
-            # Cleanup temp file
-            if os.path.exists(predictions_path):
-                os.remove(predictions_path)
-
-        except Exception as e:
-            print(f"ERROR processing week {week}: {e}")
-            continue
 
 
 if __name__ == "__main__":
