@@ -10,6 +10,7 @@ from cks_picks_cfb.utils.base import Partition
 
 from .base import BaseIngester
 from .sources import SourceRequest
+from .week_policy import select_canonical_week_games
 
 
 class PlaysIngester(BaseIngester):
@@ -58,7 +59,13 @@ class PlaysIngester(BaseIngester):
                 f"Games index not found for year {self.year}. Please run the games ingester first."
             )
 
-        games_data = [(g["id"], g.get("week")) for g in idx]
+        if self.only_week is not None:
+            selected = select_canonical_week_games(
+                idx, season=self.year, canonical_week=self.only_week
+            )
+            games_data = [(item.game_id, item.provider_week) for item in selected]
+        else:
+            games_data = [(g["id"], g.get("week")) for g in idx]
         if self.limit_games:
             games_data = games_data[: self.limit_games]
             print(f"Limited to first {self.limit_games} games for testing.")
@@ -80,8 +87,6 @@ class PlaysIngester(BaseIngester):
             games_by_week.setdefault(int(week), set()).add(int(gid))
 
         weeks = sorted(games_by_week.keys())
-        if self.only_week is not None:
-            weeks = [w for w in weeks if int(w) == int(self.only_week)]
         if not weeks:
             raise RuntimeError(
                 f"No scheduled games found for {self.year} week {self.only_week}"
@@ -96,6 +101,11 @@ class PlaysIngester(BaseIngester):
                     "year": self.year,
                     "season_type": self.season_type,
                     "week": week,
+                    **(
+                        {"canonical_week": self.only_week}
+                        if self.only_week is not None
+                        else {}
+                    ),
                     "classification": self.classification,
                     "expected_game_ids": sorted(games_by_week[week]),
                 },
@@ -114,7 +124,16 @@ class PlaysIngester(BaseIngester):
         )
         expected = {int(game_id) for game_id in request["expected_game_ids"]}
         return [
-            play
+            {
+                "provider_record": play,
+                "provider_week": int(request["week"]),
+                "canonical_week": int(
+                    request.get(
+                        "canonical_week",
+                        self.safe_getattr(play, "week", request["week"]),
+                    )
+                ),
+            }
             for play in plays
             if self.safe_getattr(play, "game_id", None) in expected
         ]
@@ -138,7 +157,17 @@ class PlaysIngester(BaseIngester):
         """
         plays_to_insert = []
 
-        for play in data:
+        for source in data:
+            if isinstance(source, dict) and "provider_record" in source:
+                play = source["provider_record"]
+                provider_week = int(source["provider_week"])
+                canonical_week = int(source["canonical_week"])
+            else:
+                play = source
+                provider_week = int(self.safe_getattr(play, "week", self.only_week))
+                canonical_week = (
+                    int(self.only_week) if self.only_week is not None else provider_week
+                )
             # Handle clock data - extract minutes and seconds from clock object
             clock = self.safe_getattr(play, "clock", None)
             clock_minutes = None
@@ -155,9 +184,8 @@ class PlaysIngester(BaseIngester):
             # Add season and week to the record
             record = {
                 "season": self.year,
-                "week": self.safe_getattr(
-                    play, "week", None
-                ),  # Get week from play object if available
+                "week": canonical_week,
+                "provider_week": provider_week,
                 "id": self.safe_getattr(play, "id", None),
                 "game_id": self.safe_getattr(play, "game_id", None),
                 "drive_id": self.safe_getattr(play, "drive_id", None),

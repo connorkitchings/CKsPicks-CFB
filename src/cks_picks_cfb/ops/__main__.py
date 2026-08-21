@@ -138,6 +138,122 @@ def _fetch_source_step(
     )
 
 
+def _silver_from_ingestion_step(
+    *,
+    name: str,
+    dataset: str,
+    entity: str,
+    conn_url: str,
+    output_ref_uri: str,
+    as_of: str,
+    games_ref_uri: str | None = None,
+    week_policy_ref_uri: str | None = None,
+) -> PipelineStep:
+    """Materialize one immutable Silver ref from this run's captured source rows."""
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        ingestion_run_id = f"{context.pipeline_run_id}:{entity}"
+        with psycopg.connect(conn_url) as conn:
+            rows = conn.execute(
+                "SELECT capture_id FROM catalog.source_captures "
+                "WHERE ingestion_run_id = %s ORDER BY captured_at, capture_id",
+                (ingestion_run_id,),
+            ).fetchall()
+        if not rows:
+            raise RuntimeError(f"No captures available for {entity} Silver build")
+        argv = _python(
+            "scripts/pipeline/build_silver.py",
+            "--dataset",
+            dataset,
+            "--as-of",
+            as_of,
+            "--output-ref-uri",
+            output_ref_uri,
+        )
+        if games_ref_uri:
+            argv.extend(["--games-ref-uri", games_ref_uri])
+        if week_policy_ref_uri:
+            argv.extend(["--week-policy-ref-uri", week_policy_ref_uri])
+        for row in rows:
+            argv.extend(["--capture-id", str(row[0])])
+        completed = subprocess.run(
+            argv, check=False, env={**os.environ, "PYTHONPATH": ".:src"}
+        )
+        if completed.returncode != 0:
+            raise subprocess.CalledProcessError(completed.returncode, argv)
+        ref = json.loads(get_storage().read_bytes(output_ref_uri).decode("utf-8"))
+        return (
+            {
+                "ref_uri": output_ref_uri,
+                "capture_ids": [str(row[0]) for row in rows],
+                **ref,
+            },
+        )
+
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        return bool(outputs) and get_storage().exists(output_ref_uri)
+
+    return PipelineStep(
+        name,
+        action,
+        definition={
+            "dataset": dataset,
+            "entity": entity,
+            "output_ref_uri": output_ref_uri,
+            "as_of": as_of,
+        },
+        resume_validator=resume_validator,
+    )
+
+
+def _week_policy_from_ingestion_step(
+    *, conn_url: str, output_ref_uri: str, as_of: str
+) -> PipelineStep:
+    """Build Week 0 policy using only this operation's schedule capture."""
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        with psycopg.connect(conn_url) as conn:
+            rows = conn.execute(
+                "SELECT capture_id FROM catalog.source_captures "
+                "WHERE ingestion_run_id = %s ORDER BY captured_at, capture_id",
+                (f"{context.pipeline_run_id}:games",),
+            ).fetchall()
+        if not rows:
+            raise RuntimeError("No schedule captures available for week policy")
+        argv = _python(
+            "scripts/pipeline/build_schedule_week_policy.py",
+            "--season",
+            context.season,
+            "--assignments",
+            f"conf/policy/canonical_week_{context.season}_v1.yaml",
+            "--as-of",
+            as_of,
+            "--output-ref-uri",
+            output_ref_uri,
+            "--environment",
+            context.environment,
+        )
+        for row in rows:
+            argv.extend(["--capture-id", str(row[0])])
+        completed = subprocess.run(
+            argv, check=False, env={**os.environ, "PYTHONPATH": ".:src"}
+        )
+        if completed.returncode != 0:
+            raise subprocess.CalledProcessError(completed.returncode, argv)
+        ref = json.loads(get_storage().read_bytes(output_ref_uri).decode("utf-8"))
+        return ({"ref_uri": output_ref_uri, **ref},)
+
+    return PipelineStep(
+        "build_week_policy",
+        action,
+        definition={"output_ref_uri": output_ref_uri, "as_of": as_of},
+        resume_validator=lambda _, outputs: bool(outputs)
+        and get_storage().exists(output_ref_uri),
+    )
+
+
 def _resolve_frozen_run(conn_url: str, season: int, week: int) -> str:
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
@@ -693,6 +809,211 @@ def build_steps(
                 ]
             )
         return [subprocess_step("assemble_model_ready", argv)]
+    if context.command == "prepare-week":
+        assert week is not None and as_of is not None
+        root = f"artifacts/{environment}/pipeline-runs/{context.pipeline_run_id}"
+        history = f"artifacts/{environment}/refs/history"
+        refs = {
+            "policy": f"{root}/schedule_week_policy_ref.json",
+            "games": f"{root}/games_ref.json",
+            "outcomes": f"{root}/game_outcomes_ref.json",
+            "plays": f"{root}/plays_ref.json",
+            "stats": f"{root}/team_game_stats_ref.json",
+            "team_game": f"{root}/reconciled_team_game_ref.json",
+            "schedule": f"{root}/schedule_2021_2026_ref.json",
+            "all_outcomes": f"{root}/outcomes_2021_2026_ref.json",
+            "all_team_game": f"{root}/team_game_2021_2026_ref.json",
+            "temporal": f"{root}/temporal_matchups_ref.json",
+            "gold": f"{root}/point_in_time_matchups_ref.json",
+        }
+        steps: list[PipelineStep] = [
+            _fetch_source_step(
+                name="ingest_schedule",
+                argv=_python(
+                    "scripts/data/ingest_season.py",
+                    "--year",
+                    year,
+                    "--entities",
+                    "games",
+                ),
+                conn_url=conn_url,
+                entity="games",
+            ),
+        ]
+        for completed_week in range(0, week):
+            for entity in ("plays", "game_stats"):
+                steps.append(
+                    _fetch_source_step(
+                        name=f"ingest_{entity}_week_{completed_week}",
+                        argv=_python(
+                            "scripts/data/ingest_week.py",
+                            "--year",
+                            year,
+                            "--week",
+                            completed_week,
+                            "--entities",
+                            entity,
+                        ),
+                        conn_url=conn_url,
+                        entity=entity,
+                    )
+                )
+        steps.extend(
+            [
+                _week_policy_from_ingestion_step(
+                    conn_url=conn_url, output_ref_uri=refs["policy"], as_of=as_of
+                ),
+                _silver_from_ingestion_step(
+                    name="build_games",
+                    dataset="games",
+                    entity="games",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["games"],
+                    as_of=as_of,
+                    week_policy_ref_uri=refs["policy"],
+                ),
+                _silver_from_ingestion_step(
+                    name="build_outcomes",
+                    dataset="game_outcomes",
+                    entity="games",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["outcomes"],
+                    as_of=as_of,
+                ),
+                _silver_from_ingestion_step(
+                    name="build_plays",
+                    dataset="plays",
+                    entity="plays",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["plays"],
+                    as_of=as_of,
+                    games_ref_uri=refs["games"],
+                ),
+                _silver_from_ingestion_step(
+                    name="build_team_game_stats",
+                    dataset="team_game_stats",
+                    entity="game_stats",
+                    conn_url=conn_url,
+                    output_ref_uri=refs["stats"],
+                    as_of=as_of,
+                    games_ref_uri=refs["games"],
+                ),
+                subprocess_step(
+                    "build_current_team_game",
+                    _python(
+                        "scripts/pipeline/build_team_game_dataset.py",
+                        "--plays-ref-uri",
+                        refs["plays"],
+                        "--games-ref-uri",
+                        refs["games"],
+                        "--teams-ref-uri",
+                        f"{history}/teams-{year}.json",
+                        "--game-stats-ref-uri",
+                        refs["stats"],
+                        "--corrections-ref-uri",
+                        f"{history}/data-corrections-v1.json",
+                        "--as-of",
+                        as_of,
+                        "--output-ref-uri",
+                        refs["team_game"],
+                        "--environment",
+                        environment,
+                    ),
+                ),
+            ]
+        )
+        for name, dataset, current_ref in (
+            ("combine_schedule", "games", refs["games"]),
+            ("combine_outcomes", "game_outcomes", refs["outcomes"]),
+            ("combine_team_game", "reconciled_team_game", refs["team_game"]),
+        ):
+            output_ref = {
+                "games": refs["schedule"],
+                "game_outcomes": refs["all_outcomes"],
+                "reconciled_team_game": refs["all_team_game"],
+            }[dataset]
+            argv = _python(
+                "scripts/pipeline/combine_history_versions.py",
+                "--dataset",
+                dataset,
+                "--as-of",
+                as_of,
+                "--output-ref-uri",
+                output_ref,
+                "--allow-2026",
+                "--ref-uri",
+                current_ref,
+                "--environment",
+                environment,
+            )
+            for historic_year in range(2021, 2026):
+                argv.extend(["--season", historic_year])
+            steps.append(subprocess_step(name, argv))
+        steps.extend(
+            [
+                subprocess_step(
+                    "build_temporal_matchups",
+                    _python(
+                        "scripts/pipeline/build_temporal_matchups.py",
+                        "--team-game-ref-uri",
+                        refs["all_team_game"],
+                        "--schedule-ref-uri",
+                        refs["schedule"],
+                        "--prior-2019-ref-uri",
+                        f"{history}/preseason_team_inputs-2019.json",
+                        "--outcomes-ref-uri",
+                        refs["all_outcomes"],
+                        "--inference-season",
+                        year,
+                        "--as-of",
+                        as_of,
+                        "--output-ref-uri",
+                        refs["temporal"],
+                        "--environment",
+                        environment,
+                    ),
+                ),
+                subprocess_step(
+                    "build_gold",
+                    _python(
+                        "scripts/pipeline/build_regime_features.py",
+                        "--matchups-ref-uri",
+                        refs["temporal"],
+                        "--schedule-ref-uri",
+                        refs["schedule"],
+                        "--baselines-ref-uri",
+                        f"{history}/baselines-selection.json",
+                        "--as-of",
+                        as_of,
+                        "--output-ref-uri",
+                        refs["gold"],
+                        "--environment",
+                        environment,
+                    ),
+                ),
+                subprocess_step(
+                    "target_week_readiness",
+                    _python(
+                        "scripts/pipeline/check_prepared_week.py",
+                        "--year",
+                        year,
+                        "--week",
+                        week,
+                        "--as-of",
+                        as_of,
+                        "--games-ref-uri",
+                        refs["games"],
+                        "--outcomes-ref-uri",
+                        refs["outcomes"],
+                        "--gold-ref-uri",
+                        refs["gold"],
+                        "--environment",
+                        environment,
+                    ),
+                ),
+            ]
+        )
+        return steps
     if context.command == "readiness":
         assert week is not None and as_of is not None
         config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
@@ -729,6 +1050,11 @@ def build_steps(
             f"{context.pipeline_run_id}/market_snapshots_ref.json"
         )
         config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
+        prepared_gold_ref_uri = getattr(options, "prepared_gold_ref_uri", None)
+        if week > 0 and not prepared_gold_ref_uri:
+            raise ValueError(
+                "publish-week after Week 0 requires --prepared-gold-ref-uri from prepare-week"
+            )
         return [
             subprocess_step(
                 "preflight",
@@ -800,6 +1126,11 @@ def build_steps(
                     context.pipeline_run_id,
                     "--market-ref-uri",
                     market_ref_uri,
+                )
+                + (
+                    ["--prepared-gold-ref-uri", prepared_gold_ref_uri]
+                    if prepared_gold_ref_uri
+                    else []
                 ),
                 dataset_refs_uri,
             ),
@@ -851,18 +1182,32 @@ def build_steps(
             argv.extend(["--waiver", waiver])
         return [subprocess_step("freeze", argv)]
     if context.command == "close-week":
-        assert week is not None
+        assert week is not None and as_of is not None
         run_id = _resolve_frozen_run(conn_url, year, week)
+        outcomes_ref_uri = (
+            f"artifacts/{context.environment}/pipeline-runs/"
+            f"{context.pipeline_run_id}/game_outcomes_ref.json"
+        )
         return [
-            subprocess_step(
-                "ingest_finals",
-                _python(
+            _fetch_source_step(
+                name="ingest_finals",
+                argv=_python(
                     "scripts/data/ingest_season.py",
                     "--year",
                     year,
                     "--entities",
                     "games",
                 ),
+                conn_url=conn_url,
+                entity="games",
+            ),
+            _silver_from_ingestion_step(
+                name="build_game_outcomes",
+                dataset="game_outcomes",
+                entity="games",
+                conn_url=conn_url,
+                output_ref_uri=outcomes_ref_uri,
+                as_of=as_of,
             ),
             subprocess_step(
                 "ingest_completed_week",
@@ -887,8 +1232,15 @@ def build_steps(
                     "--run-id",
                     run_id,
                     "--from-artifact",
+                    "--outcomes-ref-uri",
+                    outcomes_ref_uri,
                     "--upload-artifact",
-                ),
+                )
+                + [
+                    item
+                    for value in getattr(options, "cancellation_waiver", [])
+                    for item in ("--cancellation-waiver", value)
+                ],
             ),
             subprocess_step(
                 "publish_grades",
@@ -1032,6 +1384,7 @@ def parse_args() -> argparse.Namespace:
         "build-features",
         "build-baselines",
         "assemble-model-ready",
+        "prepare-week",
         "readiness",
         "publish-week",
         "freeze-week",
@@ -1065,6 +1418,8 @@ def parse_args() -> argparse.Namespace:
             "build-features",
             "build-baselines",
             "assemble-model-ready",
+            "prepare-week",
+            "close-week",
         }:
             sub.add_argument("--as-of", required=True)
         if command in {"readiness", "publish-week"}:
@@ -1073,6 +1428,8 @@ def parse_args() -> argparse.Namespace:
                 default="conf/weekly_bets/v2_champion.yaml",
                 help="Weekly model configuration used by preflight and publication.",
             )
+        if command == "publish-week":
+            sub.add_argument("--prepared-gold-ref-uri")
         sub.add_argument(
             "--environment", choices=("preview", "production"), required=True
         )
@@ -1080,6 +1437,13 @@ def parse_args() -> argparse.Namespace:
         sub.add_argument("--crash-after-step", help=argparse.SUPPRESS)
         if command == "freeze-week":
             sub.add_argument("--waiver")
+        if command == "close-week":
+            sub.add_argument(
+                "--cancellation-waiver",
+                action="append",
+                default=[],
+                metavar="GAME_ID:REASON",
+            )
         if command == "fetch-source":
             sub.add_argument("--entity", required=True)
             sub.add_argument("--week", type=int)

@@ -12,7 +12,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 import pandas as pd
 import yaml
@@ -36,6 +36,15 @@ class WeekPolicySpec:
     @property
     def by_game(self) -> dict[int, WeekAssignment]:
         return {assignment.game_id: assignment for assignment in self.assignments}
+
+
+@dataclass(frozen=True)
+class CanonicalWeekGame:
+    """One provider-schedule game selected for an operational canonical week."""
+
+    game_id: int
+    provider_week: int
+    canonical_week: int
 
 
 def load_week_policy_spec(path: str | Path) -> WeekPolicySpec:
@@ -95,6 +104,48 @@ def canonical_week_overrides_for_season(
     return {
         assignment.game_id: assignment.canonical_week for assignment in spec.assignments
     }
+
+
+def select_canonical_week_games(
+    games: Iterable[Mapping[str, Any]],
+    *,
+    season: int,
+    canonical_week: int,
+    policy_directory: str | Path = "conf/policy",
+) -> tuple[CanonicalWeekGame, ...]:
+    """Select exact game IDs while retaining the provider week used for API calls.
+
+    Raw captures intentionally preserve provider week labels. Operational callers
+    use this helper before fetching a weekly endpoint so a canonical override (for
+    example 2026 Week 0 -> provider Week 1) never broadens into the rest of the
+    provider slate.
+    """
+    overrides = canonical_week_overrides_for_season(
+        season, policy_directory=policy_directory
+    )
+    selected: list[CanonicalWeekGame] = []
+    seen: set[int] = set()
+    for raw in games:
+        game_id = raw.get("id", raw.get("game_id"))
+        provider_week = raw.get("provider_week", raw.get("week"))
+        if game_id is None or provider_week is None:
+            raise ValueError("Schedule row is missing game ID or provider week")
+        game_id = int(game_id)
+        provider_week = int(provider_week)
+        resolved = int(overrides.get(game_id, provider_week))
+        if resolved != int(canonical_week):
+            continue
+        if game_id in seen:
+            raise ValueError(f"Duplicate schedule game ID: {game_id}")
+        seen.add(game_id)
+        selected.append(
+            CanonicalWeekGame(
+                game_id=game_id,
+                provider_week=provider_week,
+                canonical_week=resolved,
+            )
+        )
+    return tuple(sorted(selected, key=lambda item: item.game_id))
 
 
 def build_policy_rows(

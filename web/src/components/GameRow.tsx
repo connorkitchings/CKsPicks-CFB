@@ -26,6 +26,23 @@ function marketSpreadLabel(homeTeam: string, line: number | null): string {
   return `${homeTeam} ${signedSpread(line)}`;
 }
 
+function modelProjectionLabel(
+  homeTeam: string,
+  awayTeam: string,
+  predictedSpread: number | null,
+  predictedTotal: number | null,
+): string {
+  const spread =
+    predictedSpread === null
+      ? "spread unavailable"
+      : predictedSpread === 0
+        ? "pick ’em"
+        : `${predictedSpread > 0 ? homeTeam : awayTeam} by ${Math.abs(predictedSpread).toFixed(1)}`;
+  const total =
+    predictedTotal === null ? null : `${predictedTotal.toFixed(1)} total`;
+  return total ? `${spread} · ${total}` : spread;
+}
+
 const REGIME_LABEL = {
   preseason: "Preseason",
   one_game: "1 game",
@@ -41,7 +58,7 @@ const REGIME_LABEL = {
 /**
  * Matchup-centric game card. One shell serves both publication modes:
  * the matchup block (logos, names, big final scores) is always present;
- * predictions mode adds a lean rail and a market-vs-model footer, while
+ * predictions mode adds a lean rail and a compact model projection, while
  * market mode shows the current lines in the same rail position.
  */
 export function GameRow({ game }: { game: Game }) {
@@ -92,19 +109,24 @@ export function GameRow({ game }: { game: Game }) {
           />
         </div>
         {hasAnyLine ? (
-          <div className="flex shrink-0 gap-6 sm:flex-col sm:gap-1.5 sm:text-right">
-            <LeanBadge
-              lean={game.spreadLean}
-              edge={game.edgeSpread}
-              homeTeam={game.homeTeam}
-              awayTeam={game.awayTeam}
-              homeLine={game.homeTeamSpreadLine}
-            />
-            <TotalLeanChip
-              lean={game.totalLean}
-              edge={game.edgeTotal}
-              totalLine={game.totalLine}
-            />
+          <div className="shrink-0 sm:text-right">
+            <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
+              Market Consensus
+            </div>
+            <div className="flex gap-6 sm:flex-col sm:gap-1.5">
+              <LeanBadge
+                lean={game.spreadLean}
+                edge={game.edgeSpread}
+                homeTeam={game.homeTeam}
+                awayTeam={game.awayTeam}
+                homeLine={game.homeTeamSpreadLine}
+              />
+              <TotalLeanChip
+                lean={game.totalLean}
+                edge={game.edgeTotal}
+                totalLine={game.totalLine}
+              />
+            </div>
           </div>
         ) : (
           <p className="shrink-0 text-xs text-ink-faint sm:max-w-40 sm:text-right">
@@ -113,30 +135,17 @@ export function GameRow({ game }: { game: Game }) {
         )}
       </div>
 
-      {/* Market vs model comparison */}
-      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3 text-xs">
-        <div>
-          <div className="text-ink-faint">Market</div>
-          <div className="font-mono tabular-nums text-ink-muted">
-            {marketSpreadLabel(game.homeTeam, game.homeTeamSpreadLine)}
-          </div>
-          {game.totalLine !== null && (
-            <div className="font-mono tabular-nums text-ink-muted">
-              O/U {game.totalLine.toFixed(1)}
-            </div>
+      {/* Lines already appear in the lean rail. Keep the projection once, in plain language. */}
+      <div className="mt-2 text-xs text-ink-muted">
+        <span className="text-ink-faint">Model projection: </span>
+        <span className="font-mono tabular-nums">
+          {modelProjectionLabel(
+            game.homeTeam,
+            game.awayTeam,
+            game.predictedSpread,
+            game.predictedTotal,
           )}
-        </div>
-        <div className="text-right">
-          <div className="text-ink-faint">Model</div>
-          <div className="font-mono tabular-nums text-ink-muted">
-            spread {signedSpread(game.predictedSpread)}
-          </div>
-          {game.predictedTotal !== null && (
-            <div className="font-mono tabular-nums text-ink-muted">
-              total {game.predictedTotal.toFixed(1)}
-            </div>
-          )}
-        </div>
+        </span>
       </div>
 
       {/* Grades (once the game is scored) */}
@@ -151,12 +160,6 @@ export function GameRow({ game }: { game: Game }) {
         </div>
       )}
 
-      {(game.spreadModelVersion || game.totalModelVersion) && (
-        <div className="mt-2 text-[10px] text-ink-faint">
-          Spread {game.spreadModelVersion ?? "—"} · Total{" "}
-          {game.totalModelVersion ?? "—"}
-        </div>
-      )}
     </li>
   );
 }
@@ -178,7 +181,7 @@ function MarketGameRow({
           <TeamLine name={game.homeTeam} home score={game.homePoints} highlighted={false} />
         </div>
         <div className="shrink-0 sm:text-right">
-          <div className="text-xs text-ink-faint">Market</div>
+          <div className="text-xs text-ink-faint">Market Consensus</div>
           <div className="font-mono text-sm tabular-nums text-ink">
             {marketSpreadLabel(game.homeTeam, game.homeTeamSpreadLine)}
           </div>

@@ -10,6 +10,7 @@ from cks_picks_cfb.utils.base import Partition
 
 from .base import BaseIngester
 from .sources import SourceRequest
+from .week_policy import select_canonical_week_games
 
 
 class GameStatsIngester(BaseIngester):
@@ -48,12 +49,17 @@ class GameStatsIngester(BaseIngester):
             raise RuntimeError(
                 f"Games index not found for year {self.year}. Please run the games ingester first."
             )
-        games_info = []
-        for game in games_index:
-            if game.get("id") is not None and game.get("week") is not None:
-                if self.week is not None and int(game["week"]) != self.week:
-                    continue
-                games_info.append((game["id"], game["week"]))
+        if self.week is not None:
+            selected = select_canonical_week_games(
+                games_index, season=self.year, canonical_week=self.week
+            )
+            games_info = [(item.game_id, item.provider_week) for item in selected]
+        else:
+            games_info = [
+                (game["id"], game["week"])
+                for game in games_index
+                if game.get("id") is not None and game.get("week") is not None
+            ]
 
         if self.limit_games:
             games_info = games_info[: self.limit_games]
@@ -84,6 +90,7 @@ class GameStatsIngester(BaseIngester):
                 parameters={
                     "year": self.year,
                     "week": week,
+                    **({"canonical_week": self.week} if self.week is not None else {}),
                     "season_type": self.season_type,
                     "classification": self.classification,
                     "expected_game_ids": sorted(games_by_week[week]),
@@ -104,7 +111,11 @@ class GameStatsIngester(BaseIngester):
             classification=str(request["classification"]),
         )
         return [
-            {"request_week": week, "provider_record": stat}
+            {
+                "request_week": week,
+                "canonical_week": int(request.get("canonical_week", week)),
+                "provider_record": stat,
+            }
             for stat in stats
             if self.safe_getattr(stat, "game_id", None) in wanted
         ]
@@ -124,8 +135,10 @@ class GameStatsIngester(BaseIngester):
         records = []
         for tup in data:
             try:
+                provider_week: int | None = None
                 if isinstance(tup, dict) and "provider_record" in tup:
-                    week = tup["request_week"]
+                    provider_week = int(tup["request_week"])
+                    week = int(tup.get("canonical_week", provider_week))
                     item = tup["provider_record"]
                     gid = None
                 # Support (week, item) or (week, gid, item)
@@ -152,6 +165,7 @@ class GameStatsIngester(BaseIngester):
                         "game_id": int(game_id),
                         "year": self.year,
                         "week": int(week),
+                        "provider_week": int(provider_week or week),
                         "raw_data": raw_json,
                     }
                 )

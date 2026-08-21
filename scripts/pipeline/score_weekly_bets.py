@@ -22,6 +22,7 @@ from cks_picks_cfb.artifacts import (
     sha256_bytes,
     write_json_artifact,
 )
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 
 try:
@@ -69,6 +70,54 @@ def load_week_scores(year, week):
     week_games = week_games.dropna(subset=["home_points", "away_points"])
 
     return week_games[["id", "home_points", "away_points"]]
+
+
+def load_outcome_scores(outcomes_ref_uri: str) -> tuple[pd.DataFrame, dict]:
+    """Load outcomes from an immutable, checksummed Silver dataset reference."""
+    storage = get_storage()
+    raw_ref = read_json_artifact(outcomes_ref_uri, storage)
+    ref = DatasetRef(**raw_ref)
+    outcomes = read_dataset(storage, ref)
+    required = {"game_id", "completed", "home_points", "away_points"}
+    missing = sorted(required - set(outcomes.columns))
+    if missing:
+        raise ValueError(f"Outcome dataset is missing columns: {missing}")
+    completed = outcomes["completed"].fillna(False).astype(bool)
+    scores = outcomes.loc[completed, ["game_id", "home_points", "away_points"]].copy()
+    scores = scores.dropna(subset=["home_points", "away_points"])
+    if scores.duplicated("game_id").any():
+        raise ValueError("Outcome dataset has duplicate completed game IDs")
+    return scores.rename(columns={"game_id": "id"}), raw_ref
+
+
+def parse_cancellation_waivers(values: list[str]) -> dict[int, str]:
+    waivers: dict[int, str] = {}
+    for value in values:
+        game_id, separator, reason = value.partition(":")
+        if not separator or not game_id.isdigit() or not reason.strip():
+            raise ValueError("Cancellation waivers must use GAME_ID:reason")
+        parsed = int(game_id)
+        if parsed in waivers:
+            raise ValueError(f"Duplicate cancellation waiver for game {parsed}")
+        waivers[parsed] = reason.strip()
+    return waivers
+
+
+def require_complete_scores(
+    bets: pd.DataFrame, scores: pd.DataFrame, *, waivers: dict[int, str]
+) -> None:
+    expected = {int(game_id) for game_id in bets["game_id"].dropna()}
+    unknown_waivers = set(waivers) - expected
+    if unknown_waivers:
+        raise ValueError(
+            f"Cancellation waivers reference unknown games: {sorted(unknown_waivers)}"
+        )
+    completed = {int(game_id) for game_id in scores["id"].dropna()}
+    missing = expected - completed - set(waivers)
+    if missing:
+        raise ValueError(
+            f"Frozen run has incomplete outcomes for games: {sorted(missing)}"
+        )
 
 
 def score_bets(bets_df, scores_df):
@@ -203,6 +252,16 @@ def main():
         action="store_true",
         help="Also write the scored CSV to durable storage (R2/S3/local backend).",
     )
+    parser.add_argument(
+        "--outcomes-ref-uri",
+        help="Immutable Silver game_outcomes DatasetRef used by the ops path.",
+    )
+    parser.add_argument(
+        "--cancellation-waiver",
+        action="append",
+        default=[],
+        metavar="GAME_ID:REASON",
+    )
     args = parser.parse_args()
 
     year = args.year
@@ -253,9 +312,17 @@ def main():
     if bets_df.empty:
         raise SystemExit(f"No bets available for {year} Week {week}")
 
-    # Load Scores
-    scores_df = load_week_scores(year, week)
-    if scores_df.empty:
+    waivers = parse_cancellation_waivers(args.cancellation_waiver)
+    outcomes_ref = None
+    # Ops scoring is immutable and run-bound; the legacy fallback remains for
+    # manual historical compatibility only.
+    if args.outcomes_ref_uri:
+        scores_df, outcomes_ref = load_outcome_scores(args.outcomes_ref_uri)
+    else:
+        scores_df = load_week_scores(year, week)
+    if args.outcomes_ref_uri:
+        require_complete_scores(bets_df, scores_df, waivers=waivers)
+    elif scores_df.empty:
         raise SystemExit(f"No completed scores available for {year} Week {week}")
 
     # Score
@@ -280,13 +347,16 @@ def main():
         storage = get_storage()
         scored_bytes = dataframe_csv_bytes(scored_df)
         manifest_payload = {
-            "schema_version": "scored_run_v1",
+            "schema_version": "scored_run_v2",
             "run_id": run_id,
             "season": year,
             "week": week,
             "artifact_uri": scored_path,
             "artifact_sha256": sha256_bytes(scored_bytes),
             "source_prediction_artifact": artifact_path,
+            "outcomes_ref_uri": args.outcomes_ref_uri,
+            "outcomes_ref": outcomes_ref,
+            "cancellation_waivers": waivers,
         }
         artifact_exists = storage.exists(scored_path)
         manifest_exists = storage.exists(manifest_path)

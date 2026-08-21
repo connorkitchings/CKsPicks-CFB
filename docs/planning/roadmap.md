@@ -29,8 +29,9 @@ Week 0 launch contract,
 
 **Production is live.** The Vercel app at
 `https://c-ks-picks-cfb.vercel.app` is deployed in fail-closed `market`
-publication mode with published run `2026w0-79ec2aebcb00` (8/8 opening-slate
-games predicted, 8/8 lined, 0 high-confidence). `/api/health` is verified green.
+publication mode. The active immutable run is authoritative only through
+`/api/health` and `current_week.active_run_id`; progressive publishes replace
+that pointer without mutating prior runs.
 
 **Launch model:** the V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 (design SHA `ae34ddc7…`), selected via sealed 2022–2024 OOF tournament, validated

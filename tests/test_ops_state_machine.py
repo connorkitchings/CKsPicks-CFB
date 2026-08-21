@@ -104,3 +104,47 @@ def test_publish_pipeline_accepts_live_week_zero():
         "predict",
         "activate",
     ]
+
+
+def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
+    context = new_context(
+        command="prepare-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of="2026-09-01T12:00:00Z",
+        pipeline_run_id="prepare-week-one",
+    )
+
+    steps = build_steps(context, conn_url="postgresql://unused")
+
+    names = [step.name for step in steps]
+    assert names[:3] == [
+        "ingest_schedule",
+        "ingest_plays_week_0",
+        "ingest_game_stats_week_0",
+    ]
+    assert names[-4:] == [
+        "combine_team_game",
+        "build_temporal_matchups",
+        "build_gold",
+        "target_week_readiness",
+    ]
+    gold = next(step for step in steps if step.name == "build_gold")
+    assert any(
+        value.endswith("baselines-selection.json") for value in gold.definition["argv"]
+    )
+
+
+def test_publish_after_week_zero_requires_explicit_prepared_gold():
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of="2026-09-01T12:00:00Z",
+        pipeline_run_id="publish-week-one",
+    )
+
+    with pytest.raises(ValueError, match="prepared-gold-ref-uri"):
+        build_steps(context, conn_url="postgresql://unused")

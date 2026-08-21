@@ -44,6 +44,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", choices=sorted(SILVER_CONTRACTS), required=True)
     parser.add_argument("--season", action="append", type=int, required=True)
+    parser.add_argument(
+        "--ref-uri",
+        action="append",
+        default=[],
+        help="Additional explicit immutable dataset ref to combine (repeatable).",
+    )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument("--allow-2026", action="store_true")
@@ -73,6 +79,15 @@ def main() -> None:
             available_refs.append(_ref(storage, uri))
         else:
             skipped_seasons.append(year)
+    for uri in args.ref_uri:
+        if not storage.exists(uri):
+            raise LookupError(f"Explicit dataset ref does not exist: {uri}")
+        candidate = _ref(storage, uri)
+        if candidate.dataset != args.dataset:
+            raise ValueError(
+                f"Explicit ref {uri} is {candidate.dataset}, expected {args.dataset}"
+            )
+        available_refs.append(candidate)
     if not available_refs:
         if args.optional:
             print(

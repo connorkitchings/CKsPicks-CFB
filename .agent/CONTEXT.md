@@ -184,8 +184,11 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production CONFIG=conf/weekly_
 # Freeze the validated active run before kickoff (grades freeze against it)
 make freeze-week YEAR=2026 WEEK=0 ENV=production
 
-# Postgame: refresh finals → score → scored artifact → system_stats
-make close-week YEAR=2026 WEEK=0 ENV=production
+# Postgame: refresh finals → immutable outcomes → scored artifact → system_stats
+make close-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production
+
+# Before a later week, rebuild cumulative 2026 Silver/Gold in Preview first
+make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 ```
 
 - Every mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.

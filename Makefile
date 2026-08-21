@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -28,6 +28,7 @@ help:
 	@echo "  make build-silver YEAR=2026 DATASET=games CAPTURE_ID=... AS_OF=... ENV=preview"
 	@echo "  make readiness YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview"
 	@echo "  make publish-week YEAR=2026 WEEK=1  - Pregame publish (refresh lines → predict → publish)"
+	@echo "  make prepare-week YEAR=2026 WEEK=1 - Rebuild cumulative Silver/Gold before publish"
 	@echo "  make freeze-week YEAR=2026 WEEK=1  - Freeze the active run before kickoff"
 	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
 	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
@@ -153,6 +154,12 @@ build-baselines:
 assemble-model-ready:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops assemble-model-ready --year $(YEAR) --as-of $(AS_OF) --core-ref-uri $(CORE_REF_URI) --baselines-ref-uri $(BASELINES_REF_URI) $(if $(MARKETS_REF_URI),--markets-ref-uri $(MARKETS_REF_URI),) $(if $(PRESEASON_FEATURES_REF_URI),--preseason-features-ref-uri $(PRESEASON_FEATURES_REF_URI) --feature-track $(FEATURE_TRACK),) --output-ref-uri $(OUTPUT_REF_URI) --environment $(ENV)
 
+prepare-week:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make prepare-week YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview|production"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops prepare-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV)
+
 # ---------------------------------------------------------------------------
 # Weekly operating cycle
 # ---------------------------------------------------------------------------
@@ -174,7 +181,7 @@ publish-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
 		echo "Usage: make publish-week YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview|production"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(if $(CONFIG),--config $(CONFIG),) $(if $(PREPARED_GOLD_REF_URI),--prepared-gold-ref-uri $(PREPARED_GOLD_REF_URI),)
 
 freeze-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
@@ -183,10 +190,10 @@ freeze-week:
 	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(ENV) $(if $(WAIVER),--waiver "$(WAIVER)",)
 
 close-week:
-	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make close-week YEAR=2026 WEEK=1 ENV=preview|production"; exit 1; \
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make close-week YEAR=2026 WEEK=1 AS_OF=ISO-8601 ENV=preview|production"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --environment $(ENV)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops close-week --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) --environment $(ENV) $(foreach WAIVER,$(CANCELLATION_WAIVERS),--cancellation-waiver "$(WAIVER)")
 
 weekly: publish-week
 

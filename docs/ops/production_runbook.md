@@ -13,14 +13,14 @@
 | Component | Value |
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
-| Publication mode | `CFB_PUBLICATION_MODE=market` (fail-closed), `CFB_PUBLICATION_SEASON=2026`, `CFB_PUBLICATION_WEEKS=0` |
+| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`, `CFB_PUBLICATION_WEEKS=0` |
 | Database | Neon **production branch** (separate from `preview-2026`); migrations 0002–0008 applied |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
 | Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |
 | Launch model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml` |
 | Fallback | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
-| Active run | `2026w0-79ec2aebcb00` (published 2026-08-18; 8/8 games predicted, 8/8 lined, 0 high-confidence) |
+| Active run | Query `/api/health` or `current_week.active_run_id`; each progressive publish activates a new immutable run. |
 
 Invariant: a failed or partial pipeline step never activates anything. Every
 mutating command runs through `python -m cks_picks_cfb.ops` with an explicit
@@ -41,7 +41,26 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
 - Missing lines are allowed — the site shows the game without a lean ("Line unavailable—model prediction shown, no lean").
 - During game week (e.g. Aug 25–28) rerun daily or as lines move; verify coverage each time (see Health).
 
-### 2. Final publish + freeze (before kickoff)
+### 2. Manual snapshot ledger and final freeze (before kickoff)
+
+Every progressive publish is a durable timing observation, not a replacement
+for an earlier one. After each successful manual publish, record the run ID,
+prediction artifact checksum, market capture time, requested `AS_OF`, and
+8/8/8 health coverage in the current session log or launch ledger. The public
+site deliberately advances to the newest published run; the immutable R2
+artifacts preserve the full captured history for later edge analysis.
+
+The first public Week 0 snapshot is:
+
+| Run | Prediction checksum | Market capture | `AS_OF` |
+| --- | --- | --- | --- |
+| `2026w0-55de0317120d` | `47dbbd55b62172d0c8cd52162c0070774afcf5ca829223b166298fb767398dc8` | `2026-08-20T13:17:39Z` | `2026-08-20T13:19:14Z` |
+
+No scheduler is configured for Week 0. The timing record contains only
+manually published captures; it must not be described as a continuous
+best-time-to-bet feed.
+
+Before kickoff, make one final progressive publish, review it, then freeze it:
 
 ```bash
 # Final publish (Aug 28 pattern)
@@ -58,20 +77,19 @@ make freeze-week YEAR=2026 WEEK=0 ENV=production \
 Freeze requires predictions and both line types for every eligible game.
 Frozen runs are immutable and are what scoring later resolves.
 
-### 3. Predictions flip (approval-gated)
+### 3. Public predictions reveal (completed 2026-08-21)
 
-Only after the user explicitly approves:
-
-1. Change the Vercel environment variable `CFB_PUBLICATION_MODE` from `market` to exactly `predictions`.
-2. Redeploy (push or manual).
-3. Smoke-test `/` and `/api/health`; confirm leans render and no unapproved week leaked.
-
-No other value enables model output; anything ≠ `predictions` stays market-only.
+The reviewed `2026w0-55de0317120d` run is public in `predictions` mode while
+its state remains `published`; it is not the final grading authority. The
+homepage shows the latest immutable model-vs-market snapshot, numeric edges,
+and the model-accuracy panel. `CFB_PUBLICATION_MODE` is fail-closed: only the
+exact value `predictions` exposes model fields; every other value remains
+market-only.
 
 ### 4. Postgame close (after finals)
 
 ```bash
-make close-week YEAR=2026 WEEK=0 ENV=production
+make close-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=production
 ```
 
 Scoring resolves the frozen run from Neon, verifies that run's immutable R2

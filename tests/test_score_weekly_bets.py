@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "pipeline"
 sys.path.insert(0, str(SCRIPTS_DIR))
@@ -66,3 +67,21 @@ def test_same_game_can_grade_differently_for_two_frozen_lines():
     )
     assert early.iloc[0]["Spread Bet Result"] == "Win"
     assert late.iloc[0]["Spread Bet Result"] == "Loss"
+
+
+def test_complete_scores_rejects_partial_frozen_slate():
+    bets = pd.DataFrame([{"game_id": 1}, {"game_id": 2}])
+    scores = pd.DataFrame([{"id": 1, "home_points": 24, "away_points": 21}])
+
+    with pytest.raises(ValueError, match="incomplete outcomes"):
+        score_weekly_bets.require_complete_scores(bets, scores, waivers={})
+
+
+def test_cancellation_waiver_is_explicit_and_limited_to_frozen_games():
+    bets = pd.DataFrame([{"game_id": 1}, {"game_id": 2}])
+    scores = pd.DataFrame([{"id": 1, "home_points": 24, "away_points": 21}])
+
+    waivers = score_weekly_bets.parse_cancellation_waivers(["2:weather cancellation"])
+    score_weekly_bets.require_complete_scores(bets, scores, waivers=waivers)
+    with pytest.raises(ValueError, match="unknown games"):
+        score_weekly_bets.require_complete_scores(bets, scores, waivers={3: "wrong"})

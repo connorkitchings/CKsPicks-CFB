@@ -104,8 +104,10 @@ green health endpoint.
 
 1. Progressive `publish-week` reruns in production as lines arrive; each rerun
    creates a new immutable run and moves `current_week` on activation.
-2. August 28: final publish → user review → `freeze-week` before kickoff →
-   user flips `CFB_PUBLICATION_MODE=predictions` → redeploy → smoke test.
+2. Predictions were revealed from the reviewed published run on August 21.
+   Continue manual progressive publishes; August 28 remains final publish →
+   user review → `freeze-week` before kickoff → smoke test. Do not publish
+   after freeze.
 3. Pick'em: user supplies `CFBD_PREDICTION_TOKEN`; run `--validate-api
    --dry-run` reconciliation against the exact final CSV; submission
    (`--submit-api`) only after a separate explicit approval of game IDs and
@@ -140,7 +142,7 @@ production write without explicit ENV and credential verification; no locked
 - [x] Stage 1 exit gate reached (V4 validated or documented stop).
 - [x] Stage 2 launch-model decision recorded.
 - [x] Stage 3 production deploy green in market mode.
-- [ ] Stage 4 frozen launch run; predictions flip only on approval.
+- [ ] Stage 4 final frozen launch run; public predictions revealed 2026-08-21.
 - [ ] Session logs updated; plan status maintained.
 
 ## Amendments
@@ -213,3 +215,17 @@ User-approved pre-game-week de-risking executed one week before kickoff:
 - **Game-week plan confirmed**: daily publishes Aug 25–27 (assistant-run
   sessions), Aug 28 final publish → user review → freeze → same-evening
   `predictions` flip → smoke test; no publishes after freeze.
+
+### Amendment 5 — Public predictions reveal and manual snapshot policy (2026-08-21)
+
+- User explicitly approved public Week 0 prediction display after review of
+  run `2026w0-55de0317120d`. The run is `published`, covers 8/8 predicted and
+  lined games, has finite lines/predictions/edges/leads, and contains zero
+  high-confidence rows.
+- Vercel production now has `CFB_PUBLICATION_MODE=predictions`; deployment
+  `dpl_3knBcQJMQSt3fQCBgKLqQJowySfw` is Ready and aliased to the production
+  domain. Health confirms predictions mode and 8/8/8 coverage.
+- Week 0 retains manual-only progressive publishing. Every resulting
+  immutable run is a retained timing observation; the public UI remains
+  latest-snapshot-only. No scheduler or public history UI was authorized.
+- The final freeze requirement is unchanged. No publish may follow freeze.

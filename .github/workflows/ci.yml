@@ -98,3 +98,6 @@ jobs:
 
       - name: Typecheck
         run: npx nx run web:typecheck
+
+      - name: Test publication boundary
+        run: npx nx run web:test-publication

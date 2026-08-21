@@ -79,7 +79,6 @@ export default async function Home({
   let stats: Stats | null = null;
   let dbError: string | null = null;
   let systemName: string | null = null;
-  let modelId: string | null = null;
   let runState: string | null = null;
 
   try {
@@ -94,7 +93,6 @@ export default async function Home({
       }
       if (games.length > 0 && games[0].publicationMode === "predictions") {
         systemName = games[0].systemName;
-        modelId = games[0].modelId;
         runState = games[0].runState;
       }
     }
@@ -126,7 +124,6 @@ export default async function Home({
         season={season > 0 ? season : null}
         week={season > 0 ? week : null}
         systemName={systemName}
-        modelId={modelId}
         updatedAt={updatedAt}
         runState={runState}
         publicationMode={publicationScope.mode}
@@ -161,7 +158,14 @@ export default async function Home({
             )}
 
             {publicationScope.mode === "predictions" && regimesInPlay.length > 0 && (
-              <ModelAccuracyPanel regimes={regimesInPlay} />
+              <>
+                <ModelAccuracyPanel regimes={regimesInPlay} />
+                <p className="px-1 text-xs text-ink-faint">
+                  Market lines are consensus snapshots; your sportsbook may
+                  differ. Edge shows how far the model and market disagree. It
+                  is not a confidence score or a promise of profit.
+                </p>
+              </>
             )}
 
             {games.length === 0 ? (

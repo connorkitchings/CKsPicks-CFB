@@ -5,7 +5,6 @@ export function Header({
   season,
   week,
   systemName,
-  modelId,
   updatedAt,
   runState,
   publicationMode,
@@ -13,7 +12,6 @@ export function Header({
   season: number | null;
   week: number | null;
   systemName: string | null;
-  modelId: string | null;
   updatedAt: Date | null;
   runState: string | null;
   publicationMode: PublicationMode;
@@ -28,24 +26,18 @@ export function Header({
               CFB
             </span>
           </h1>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-faint">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
             {publicationMode === "predictions" && systemName && (
-              <span>Model: {systemName}</span>
+              <span className="font-medium text-ink-muted">{systemName}</span>
             )}
             {publicationMode === "predictions" && runState && (
               <span className="rounded bg-surface-inset px-1.5 py-0.5 font-semibold uppercase tracking-wide text-ink-muted">
                 {runState}
               </span>
             )}
-            {publicationMode === "predictions" && modelId && (
-              <span className="font-mono">
-                id: <span className="text-ink-muted">{modelId}</span>
-              </span>
-            )}
             {updatedAt && (
               <span>
-                {publicationMode === "predictions" ? "Predictions" : "Markets"}{" "}
-                updated{" "}
+                Updated{" "}
                 {updatedAt.toLocaleString("en-US", {
                   month: "short",
                   day: "numeric",

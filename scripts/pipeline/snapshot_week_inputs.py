@@ -12,6 +12,7 @@ from datetime import datetime, time, timezone
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import dataset_ref_for_partition_as_of
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 
 
@@ -23,6 +24,10 @@ def main() -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--pipeline-run-id", required=True)
     parser.add_argument("--market-ref-uri")
+    parser.add_argument(
+        "--prepared-gold-ref-uri",
+        help="Explicit immutable Gold ref produced by prepare-week.",
+    )
     args = parser.parse_args()
     cutoff = datetime.fromisoformat(args.as_of)
     if "T" not in args.as_of:
@@ -43,9 +48,14 @@ def main() -> None:
     for entity, dataset in inputs:
         if dataset == "market_snapshots" and args.market_ref_uri:
             raw_ref = json.loads(storage.read_bytes(args.market_ref_uri).decode())
-            from cks_picks_cfb.data.lake import DatasetRef
-
             ref = DatasetRef(**raw_ref)
+        elif dataset == "point_in_time_matchups" and args.prepared_gold_ref_uri:
+            raw_ref = json.loads(
+                storage.read_bytes(args.prepared_gold_ref_uri).decode()
+            )
+            ref = DatasetRef(**raw_ref)
+            if ref.dataset != "point_in_time_matchups":
+                raise SystemExit(f"Prepared Gold has wrong dataset: {ref.dataset}")
         else:
             ref = dataset_ref_for_partition_as_of(
                 conn_url,
@@ -60,6 +70,28 @@ def main() -> None:
                 **asdict(ref),
             }
         )
+    gold = next(ref for ref in refs if ref["entity"] == "point_in_time_matchups")
+    gold_frame = read_dataset(
+        storage,
+        DatasetRef(
+            **{
+                field: gold[field]
+                for field in (
+                    "dataset",
+                    "version_id",
+                    "schema_version",
+                    "content_sha",
+                    "uri",
+                )
+            }
+        ),
+    )
+    target = gold_frame[
+        (gold_frame["season"].astype(int) == args.year)
+        & (gold_frame["week"].astype(int) == args.week)
+    ]
+    if target.empty:
+        raise SystemExit("Selected Gold contains no target-week rows")
     output_uri = (
         f"artifacts/{os.getenv('CFB_ARTIFACT_ENV', 'production')}/"
         f"pipeline-runs/{args.pipeline_run_id}/input_refs.json"

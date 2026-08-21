@@ -47,6 +47,20 @@ Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS
 
 ## Progressive publish and freeze
 
+Before publishing a week after any completed games, rebuild the cumulative
+current-season inputs in the intended environment. `prepare-week` is resumable
+and captures its own source lineage; it preserves the frozen 2021–2025
+baseline rather than rerunning model selection.
+
+```bash
+make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+make readiness YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+```
+
+It fails if Gold is stale for the requested cutoff, target-week rows do not
+cover the canonical schedule, outcomes disagree with completed schedule games,
+or a team with completed 2026 games lacks current-season features.
+
 Publish and rerun as lines arrive. Every mutating Make target requires an
 explicit `ENV`; there is no implicit production default:
 
@@ -72,20 +86,21 @@ input ref set. For example, the August 29, 2026 slate is canonical Week 0 but
 provider Week 1. The requested `AS_OF` must follow the market capture time;
 the build fails closed rather than backdating a late capture.
 
-For the Week 0 public launch, keep Vercel fail-closed while the fallback run is
-used privately for rehearsal and Pick'em:
+For Week 0, Vercel now exposes the reviewed active run in predictions mode:
 
 ```bash
 CFB_PUBLICATION_SEASON=2026
 CFB_PUBLICATION_WEEKS=0
-CFB_PUBLICATION_MODE=market
+CFB_PUBLICATION_MODE=predictions
 ```
 
-Market-only mode shows matchup, kickoff, current published spread/total, and
-freshness without selecting prediction columns. Change the mode to the exact
-value `predictions` only after explicit approval of the identified immutable
-run, then redeploy and smoke-test the public page. No other value enables model
-output.
+Each progressive manual publish remains a separate immutable market/prediction
+snapshot. Record its run ID, checksum, market-capture time, and cutoff after a
+successful health check; a later publish does not overwrite the earlier one.
+The public page shows only the latest snapshot. No Week 0 scheduler is active,
+so this history represents manual observations rather than continuous market
+coverage. Only the exact `predictions` value enables model output; every other
+value remains market-only.
 
 Before kickoff, freeze the active run:
 
@@ -106,10 +121,10 @@ Frozen runs are immutable. Historical pages select the newest frozen/scored run,
 After finals:
 
 ```bash
-make close-week YEAR=2026 WEEK=N ENV=preview
+make close-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 ```
 
-Scoring resolves the frozen run from Neon, verifies that run's immutable R2 artifact, and writes run-specific `prediction_grades`. It cannot score a mutable preview or a global game grade.
+Scoring resolves the frozen run from Neon, verifies that run's immutable R2 artifact, and writes run-specific `prediction_grades`. It requires an immutable `game_outcomes` reference with a completed outcome for every frozen eligible game. Cancellations require explicit game-ID/reason waivers and are retained in the scored manifest without a grade.
 
 Rehearse a historical season against an isolated preview database:
 

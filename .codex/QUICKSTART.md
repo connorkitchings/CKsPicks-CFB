@@ -207,7 +207,10 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production \
 make freeze-week YEAR=2026 WEEK=0 ENV=preview
 
 # Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
-make close-week YEAR=2026 WEEK=0 ENV=preview
+make close-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+
+# Rebuild current-season Gold before a Week 1 rehearsal:
+make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 
 # Discover registered/orphaned immutable artifacts
 make reconcile YEAR=2026 ENV=preview

@@ -5,6 +5,7 @@ import pytest
 
 from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.plays import PlaysIngester
+from cks_picks_cfb.data.week_policy import CanonicalWeekGame
 from cks_picks_cfb.features.byplay import apply_data_corrections
 
 
@@ -45,6 +46,69 @@ def test_game_stats_accepts_and_preserves_week_zero(monkeypatch):
     ingester = GameStatsIngester(year=2026, week=0, storage=storage)
 
     assert ingester.get_fbs_games_info() == [(10, 0)]
+
+
+def test_week_zero_uses_provider_week_one_and_exact_games(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    storage = MemoryIndexStorage(
+        [{"id": 10, "week": 1}, {"id": 11, "week": 1}, {"id": 12, "week": 2}]
+    )
+    selected = (CanonicalWeekGame(game_id=10, provider_week=1, canonical_week=0),)
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.plays.select_canonical_week_games",
+        lambda *_args, **_kwargs: selected,
+    )
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.game_stats.select_canonical_week_games",
+        lambda *_args, **_kwargs: selected,
+    )
+    plays = PlaysIngester(year=2026, only_week=0, storage=storage)
+    stats = GameStatsIngester(year=2026, week=0, storage=storage)
+
+    assert plays.source_requests()[0].parameters["week"] == 1
+    assert plays.source_requests()[0].parameters["expected_game_ids"] == [10]
+    assert stats.source_requests()[0].parameters["week"] == 1
+    assert stats.source_requests()[0].parameters["expected_game_ids"] == [10]
+
+
+def test_week_zero_source_responses_filter_provider_week_one(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    storage = MemoryIndexStorage([{"id": 10, "week": 1}])
+
+    class FakePlaysApi:
+        def get_plays(self, **_kwargs):
+            return [
+                SimpleNamespace(id="p10", game_id=10),
+                SimpleNamespace(id="p11", game_id=11),
+            ]
+
+    class FakeStatsApi:
+        def get_game_team_stats(self, **_kwargs):
+            return [SimpleNamespace(game_id=10), SimpleNamespace(game_id=11)]
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.plays.cfbd.PlaysApi", lambda _client: FakePlaysApi()
+    )
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.game_stats.cfbd.GamesApi", lambda _client: FakeStatsApi()
+    )
+    plays = PlaysIngester(year=2026, only_week=0, storage=storage)
+    stats = GameStatsIngester(year=2026, week=0, storage=storage)
+    request = {
+        "year": 2026,
+        "season_type": "regular",
+        "week": 1,
+        "canonical_week": 0,
+        "classification": "fbs",
+        "expected_game_ids": [10],
+    }
+
+    assert [
+        row["provider_record"].game_id for row in plays.fetch_source_request(request)
+    ] == [10]
+    assert [
+        row["provider_record"].game_id for row in stats.fetch_source_request(request)
+    ] == [10]
 
 
 def test_unknown_play_week_fails_instead_of_becoming_week_zero(monkeypatch):

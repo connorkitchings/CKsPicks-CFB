@@ -23,6 +23,11 @@ export function GamesList({ games }: { games: Game[] }) {
   const [hcOnly, setHcOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("kickoff");
   const predictionsVisible = games[0]?.publicationMode === "predictions";
+  const hasHighConfidence =
+    predictionsVisible &&
+    games.some(
+      (game) => game.publicationMode === "predictions" && game.highConfidence,
+    );
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,20 +83,22 @@ export function GamesList({ games }: { games: Game[] }) {
           />
         </div>
         {predictionsVisible && <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setHcOnly((v) => !v)}
-            aria-pressed={hcOnly}
-            className={clsx(
-              "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
-              hcOnly
-                ? "border-accent bg-accent-soft text-accent-ink"
-                : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
-            )}
-          >
-            <span aria-hidden>{hcOnly ? "\u2605" : "\u2606"}</span>
-            High confidence
-          </button>
+          {hasHighConfidence && (
+            <button
+              type="button"
+              onClick={() => setHcOnly((v) => !v)}
+              aria-pressed={hcOnly}
+              className={clsx(
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                hcOnly
+                  ? "border-accent bg-accent-soft text-accent-ink"
+                  : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+              )}
+            >
+              <span aria-hidden>{hcOnly ? "\u2605" : "\u2606"}</span>
+              High confidence
+            </button>
+          )}
           <label htmlFor="sort-select" className="sr-only">
             Sort by
           </label>
