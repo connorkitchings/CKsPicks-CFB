@@ -19,6 +19,15 @@ from cks_picks_cfb.data.silver import (
     normalize_schedule_week_policy,
     normalize_team_game_stats,
 )
+from cks_picks_cfb.data.silver.builders import (
+    normalize_data_corrections,
+    normalize_game_outcomes,
+    normalize_market_snapshots,
+    normalize_preseason_inputs,
+    normalize_team_aliases,
+    normalize_weather,
+    validate_contract,
+)
 from cks_picks_cfb.data.storage import LocalStorage
 
 
@@ -405,3 +414,60 @@ def test_schedule_week_policy_validates_coverage():
     ]
     frame = normalize_schedule_week_policy(policy_rows)
     assert frame.iloc[0]["canonical_week"] == 0
+
+
+def test_silver_auxiliary_normalizers_preserve_provider_meaning():
+    aliases = normalize_team_aliases(
+        [{"school": "Miami", "alternate_names": ["Miami (FL)"], "alt_name_1": "UM"}]
+    )
+    assert aliases["provider_name"].tolist() == ["Miami", "Miami (FL)", "UM"]
+
+    weather = normalize_weather(
+        [{"id": 1, "year": 2026, "forecast_at": "2026-08-23T12:00:00Z"}]
+    )
+    assert weather.loc[0, "game_id"] == 1
+    assert str(weather.loc[0, "observed_at"].tz) == "UTC"
+
+    preseason = normalize_preseason_inputs(
+        [
+            {
+                "year": 2026,
+                "school": "A",
+                "__captured_at": "2026-08-01T00:00:00Z",
+                "rating": 12.0,
+            },
+            {
+                "year": 2026,
+                "school": "A",
+                "__captured_at": "2026-08-01T00:00:00Z",
+                "rating": 13.0,
+            },
+        ]
+    )
+    assert preseason.to_dict("records")[0]["rating"] == 12.0
+
+
+def test_silver_auxiliary_normalizers_reject_malformed_records():
+    with pytest.raises(SilverValidationError, match="canonical team"):
+        normalize_team_aliases([{"alternate_names": ["Alias"]}])
+    with pytest.raises(SilverValidationError, match="invalid JSON"):
+        normalize_data_corrections([{"record_key": "not-json"}])
+    with pytest.raises(SilverValidationError, match="record_key must be an object"):
+        normalize_data_corrections([{"record_key": ["not", "an object"]}])
+    with pytest.raises(SilverValidationError, match="game outcomes missing"):
+        normalize_game_outcomes([{"id": 1}])
+
+
+def test_market_snapshots_context_and_contract_validation():
+    games = pd.DataFrame([{"game_id": 1, "season": 2026, "week": 0}])
+    snapshots = normalize_market_snapshots(
+        [{"snapshot_id": "s1", "game_id": 1, "captured_at": "2026-08-20T00:00:00Z"}],
+        games=games,
+    )
+    assert snapshots.loc[0, "market_snapshot_id"] == "s1"
+    assert snapshots.loc[0, "season"] == 2026
+
+    with pytest.raises(SilverValidationError, match="Unknown Silver dataset"):
+        validate_contract("missing", pd.DataFrame())
+    with pytest.raises(SilverValidationError, match="contract failed"):
+        validate_contract("games", pd.DataFrame())

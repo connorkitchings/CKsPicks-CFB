@@ -13,11 +13,12 @@ import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
 import { ModelAccuracyPanel } from "@/components/ModelAccuracyPanel";
 import { publicationScope } from "@/lib/publication";
+import { uiFixture } from "@/test/fixtures/publication";
 
 // Revalidate every 5 minutes (ISR).
 export const revalidate = 300;
 
-type SearchParams = Promise<{ season?: string; week?: string }>;
+type SearchParams = Promise<{ season?: string; week?: string; mode?: string }>;
 
 /**
  * Resolve only the server-configured public release scope. Query parameters
@@ -34,6 +35,17 @@ async function resolveTarget(
   currentUpdatedAt: Date | null;
 }> {
   const params = await searchParams;
+  if (process.env.CFB_UI_TEST_MODE === "1") {
+    const week = params.week === "1" ? 1 : 0;
+    return {
+      season: 2026,
+      week,
+      weeks: [0, 1],
+      activeSeason: 2026,
+      activeWeek: 0,
+      currentUpdatedAt: new Date("2026-08-29T19:30:00.000Z"),
+    };
+  }
   const current = await getCurrentWeek();
   const activeSeason = current?.season === publicationScope.season
     ? current.season
@@ -71,8 +83,15 @@ export default async function Home({
 }: {
   searchParams: SearchParams;
 }) {
+  const params = await searchParams;
+  // Test fixtures are opt-in at process start; production ignores this query
+  // parameter and remains governed exclusively by server environment values.
+  const publicationMode = process.env.CFB_UI_TEST_MODE === "1"
+    && params.mode === "predictions"
+    ? "predictions"
+    : publicationScope.mode;
   const { season, week, weeks, currentUpdatedAt } = await resolveTarget(
-    searchParams,
+    Promise.resolve(params),
   );
 
   let games: Game[] = [];
@@ -81,24 +100,34 @@ export default async function Home({
   let systemName: string | null = null;
   let runState: string | null = null;
 
-  try {
-    if (season > 0 && week >= 0) {
-      if (publicationScope.mode === "predictions") {
+  if (process.env.CFB_UI_TEST_MODE === "1") {
+    const fixture = uiFixture(publicationMode, week);
+    games = fixture.games;
+    stats = fixture.stats;
+    if (games[0]?.publicationMode === "predictions") {
+      systemName = games[0].systemName;
+      runState = games[0].runState;
+    }
+  } else {
+    try {
+      if (season > 0 && week >= 0) {
+        if (publicationMode === "predictions") {
         [games, stats] = await Promise.all([
           getGamesForWeek(season, week),
           getSystemStats(season),
         ]);
-      } else {
-        games = await getMarketGamesForWeek(season, week);
+        } else {
+          games = await getMarketGamesForWeek(season, week);
+        }
+        if (games.length > 0 && games[0].publicationMode === "predictions") {
+          systemName = games[0].systemName;
+          runState = games[0].runState;
+        }
       }
-      if (games.length > 0 && games[0].publicationMode === "predictions") {
-        systemName = games[0].systemName;
-        runState = games[0].runState;
-      }
+    } catch (err) {
+      console.error("Weekly data query failed", err);
+      dbError = "Weekly data is temporarily unavailable.";
     }
-  } catch (err) {
-    console.error("Weekly data query failed", err);
-    dbError = "Weekly data is temporarily unavailable.";
   }
 
   // Most-recent updatedAt among the games in view, falling back to the
@@ -126,7 +155,7 @@ export default async function Home({
         systemName={systemName}
         updatedAt={updatedAt}
         runState={runState}
-        publicationMode={publicationScope.mode}
+        publicationMode={publicationMode}
       />
 
       <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
@@ -157,7 +186,7 @@ export default async function Home({
               <WeekNav season={season} week={week} weeks={weeks} />
             )}
 
-            {publicationScope.mode === "predictions" && regimesInPlay.length > 0 && (
+            {publicationMode === "predictions" && regimesInPlay.length > 0 && (
               <>
                 <ModelAccuracyPanel regimes={regimesInPlay} />
                 <p className="px-1 text-xs text-ink-faint">
@@ -179,7 +208,7 @@ export default async function Home({
         )}
       </main>
 
-      <Footer publicationMode={publicationScope.mode} />
+      <Footer publicationMode={publicationMode} />
     </div>
   );
 }

@@ -26,13 +26,14 @@ from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.features.point_in_time import build_point_in_time_matchups
-from cks_picks_cfb.features.regimes import canonical_prediction_regime
 from cks_picks_cfb.features.selector import select_features
 from cks_picks_cfb.inference.weekly import (
     PreparedInferenceInputs,
     build_publication_manifest,
     calculate_edges_and_leans,
+    execute_regime_routing,
     load_inference_model_context,
+    prepare_inference_features,
 )
 from cks_picks_cfb.model_bundle import (
     load_model_artifact,
@@ -46,7 +47,8 @@ from cks_picks_cfb.model_bundle_v3 import (
 from cks_picks_cfb.utils.mlflow_tracking import setup_mlflow
 
 
-def main():
+def build_parser() -> argparse.ArgumentParser:
+    """Build the stable weekly CLI parser without performing any I/O."""
     parser = argparse.ArgumentParser(description="Generate Weekly Bets")
     parser.add_argument(
         "--config",
@@ -93,7 +95,21 @@ def main():
         "--dataset-refs-uri",
         help="Immutable JSON list of exact DatasetRefs selected by orchestration.",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    """CLI entrypoint; accepts argv so callers and tests avoid global mutation."""
+    run_weekly_bets(build_parser().parse_args(argv))
+
+
+def run_weekly_bets(args: argparse.Namespace) -> None:
+    """Execute one weekly run from already-parsed arguments.
+
+    The command line layer intentionally stops at parser construction.  This
+    boundary makes all workflow dependencies patchable in zero-network tests
+    while retaining the established CLI contract.
+    """
 
     # Load Config
     cfg = OmegaConf.load(args.config)
@@ -123,6 +139,7 @@ def main():
     gold_inference_df = None
     market_snapshots_df = None
     schedule_snapshot_df = None
+    prepared_inputs: PreparedInferenceInputs | None = None
     bundle_version = None
     if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
         raise ValueError(
@@ -287,46 +304,15 @@ def main():
     try:
         if gold_inference_df is not None:
             print("Using explicit point-in-time Gold feature dataset...")
-            data_df = gold_inference_df[
-                (gold_inference_df["season"].astype(int) == int(year))
-                & (gold_inference_df["week"].astype(int) == int(week))
-            ].copy()
-            if data_df.empty:
-                raise SystemExit(f"Gold dataset has no rows for {year} week {week}")
-            if market_snapshots_df is not None and not market_snapshots_df.empty:
-                market = market_snapshots_df.copy()
-                market = market.sort_values(
-                    [
-                        column
-                        for column in ("market_captured_at", "captured_at")
-                        if column in market
-                    ]
-                ).drop_duplicates("game_id", keep="last")
-                market = market.rename(
-                    columns={
-                        "spread_line": "home_team_spread_line",
-                        "spread": "home_team_spread_line",
-                        "total": "total_line",
-                    }
-                )
-                market_columns = [
-                    column
-                    for column in (
-                        "game_id",
-                        "home_team_spread_line",
-                        "total_line",
-                        "market_snapshot_id",
-                    )
-                    if column in market
-                ]
-                data_df = data_df.drop(
-                    columns=[
-                        column for column in market_columns if column != "game_id"
-                    ],
-                    errors="ignore",
-                ).merge(market[market_columns], on="game_id", how="left")
-            if "id" not in data_df and "game_id" in data_df:
-                data_df = data_df.rename(columns={"game_id": "id"})
+            prepared_inputs = prepare_inference_features(
+                gold_inference_df,
+                year=year,
+                week=week,
+                market_snapshot=market_snapshots_df,
+                schedule_snapshot=schedule_snapshot_df,
+                dataset_refs=input_dataset_refs,
+            )
+            data_df = prepared_inputs.features
         elif use_recency:
             print(f"Using V2 Recency Loading (alpha={alpha})...")
             from cks_picks_cfb.features.v2_recency import load_v2_recency_data
@@ -481,48 +467,66 @@ def main():
         total_model_versions = spread_model_versions.copy()
         route_high_confidence = pd.Series(True, index=feature_df.index)
         if routing_bundle is not None:
-            if bundle_version == "v3":
-                feature_df = feature_df.assign(
-                    prediction_regime=feature_df["prediction_regime"].map(
-                        canonical_prediction_regime
+            model_context = load_inference_model_context(
+                bundle=routing_bundle,
+                bundle_version=bundle_version,
+                spread_model_version=str(spread_model_sha),
+                total_model_version=str(total_model_sha),
+            )
+            routed = execute_regime_routing(
+                model_context,
+                PreparedInferenceInputs(features=feature_df),
+                bundle_predictor=(
+                    lambda bundle, features: predict_with_model_bundle_v3(
+                        bundle, features, storage=storage
                     )
-                )
-            routed = (
-                predict_with_model_bundle_v3(
-                    routing_bundle, feature_df, storage=storage
-                )
-                if bundle_version == "v3"
-                else predict_with_model_bundle_v2(
-                    routing_bundle, feature_df, storage=storage
-                )
+                    if bundle_version == "v3"
+                    else predict_with_model_bundle_v2(bundle, features, storage=storage)
+                ),
             )
             spread_preds = routed["predicted_spread"].to_numpy()
             total_preds = routed["predicted_total"].to_numpy()
             spread_model_versions = routed["spread_model_version"]
             total_model_versions = routed["total_model_version"]
-            route_high_confidence = (
-                routed["spread_high_confidence_eligible"]
-                & routed["total_high_confidence_eligible"]
-            )
+            route_high_confidence = routed["high_confidence_eligible"]
         else:
             # Legacy development fallback. Production bundle inference never
             # loads or executes these repository-local/MLflow models.
-            x_spread = select_features(feature_df, spread_full_cfg)
-            _log_feature_magnitudes(x_spread, "spread_features")
-            assert spread_model is not None
-            spread_preds = spread_model.predict(x_spread)
-            if (
-                "models" in cfg
-                and "spread" in cfg.models
-                and "calibration_offset" in cfg.models.spread
-            ):
-                offset = cfg.models.spread.calibration_offset
-                print(f"Applying Spread Calibration Offset: {offset}")
-                spread_preds = spread_preds + offset
-            x_total = select_features(feature_df, total_full_cfg)
-            _log_feature_magnitudes(x_total, "total_features")
-            assert total_model is not None
-            total_preds = total_model.predict(x_total)
+            def legacy_predictor(features: pd.DataFrame):
+                x_spread = select_features(features, spread_full_cfg)
+                _log_feature_magnitudes(x_spread, "spread_features")
+                assert spread_model is not None
+                spread = spread_model.predict(x_spread)
+                if (
+                    "models" in cfg
+                    and "spread" in cfg.models
+                    and "calibration_offset" in cfg.models.spread
+                ):
+                    offset = cfg.models.spread.calibration_offset
+                    print(f"Applying Spread Calibration Offset: {offset}")
+                    spread = spread + offset
+                x_total = select_features(features, total_full_cfg)
+                _log_feature_magnitudes(x_total, "total_features")
+                assert total_model is not None
+                return spread, total_model.predict(x_total)
+
+            routed = execute_regime_routing(
+                load_inference_model_context(
+                    bundle=None,
+                    bundle_version=None,
+                    spread_model=spread_model,
+                    total_model=total_model,
+                    spread_model_version=str(spread_model_sha),
+                    total_model_version=str(total_model_sha),
+                ),
+                PreparedInferenceInputs(features=feature_df),
+                legacy_predictor=legacy_predictor,
+            )
+            spread_preds = routed["predicted_spread"].to_numpy()
+            total_preds = routed["predicted_total"].to_numpy()
+            spread_model_versions = routed["spread_model_version"]
+            total_model_versions = routed["total_model_version"]
+            route_high_confidence = routed["high_confidence_eligible"]
 
         # The preseason model is opt-in.  It can only affect output when a
         # complete, immutable source snapshot and validated model bundle exist.
@@ -708,7 +712,8 @@ def main():
                     spread_model_version=str(spread_model_sha),
                     total_model_version=str(total_model_sha),
                 ),
-                prepared_inputs=PreparedInferenceInputs(
+                prepared_inputs=prepared_inputs
+                or PreparedInferenceInputs(
                     features=data_df,
                     market_snapshot=market_snapshots_df,
                     schedule_snapshot=schedule_snapshot_df,

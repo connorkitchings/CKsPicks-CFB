@@ -1,15 +1,18 @@
 import json
+from types import SimpleNamespace
 
 import pytest
 
-from cks_picks_cfb.ops.__main__ import build_steps
+from cks_picks_cfb.ops.__main__ import _history_silver_steps, build_steps
 from cks_picks_cfb.ops.state_machine import (
     InjectedCrashError,
     InMemoryStateStore,
     PipelineStep,
+    PostgresStateStore,
     StateMachine,
     WebhookFailureNotifier,
     new_context,
+    subprocess_step,
 )
 
 
@@ -167,7 +170,7 @@ def test_webhook_notifier_is_optional_and_truncates_detail(monkeypatch):
         captured["timeout"] = timeout
         return Response()
 
-    monkeypatch.setattr("cks_picks_cfb.ops.state_machine.urlopen", fake_urlopen)
+    monkeypatch.setattr("cks_picks_cfb.ops.notifier.urlopen", fake_urlopen)
     notifier = WebhookFailureNotifier("https://example.invalid/hook", timeout_seconds=2)
     context = new_context(
         command="close-week",
@@ -278,3 +281,258 @@ def test_publish_after_week_zero_requires_explicit_prepared_gold():
 
     with pytest.raises(ValueError, match="prepared-gold-ref-uri"):
         build_steps(context, conn_url="postgresql://unused")
+
+
+def test_command_builders_preserve_optional_arguments_and_scoped_commands(monkeypatch):
+    """Every direct CLI command composes its deterministic subprocess contract."""
+    options = SimpleNamespace(
+        entity="plays",
+        dataset="games",
+        output_ref_uri="artifacts/preview/fixture.json",
+        capture_id=["capture-a", "capture-b"],
+        games_ref_uri="games.json",
+        week_policy_ref_uri="policy.json",
+        plays_ref_uri="plays.json",
+        teams_ref_uri="teams.json",
+        venues_ref_uri="venues.json",
+        weather_ref_uri="weather.json",
+        game_stats_ref_uri="stats.json",
+        corrections_ref_uri="corrections.json",
+        matchups_ref_uri="matchups.json",
+        schedule_ref_uri="schedule.json",
+        baselines_ref_uri="baselines.json",
+        core_ref_uri="core.json",
+        include_locked_2025=True,
+        frozen_design_sha="sealed",
+        markets_ref_uri="markets.json",
+        preseason_features_ref_uri="preseason.json",
+        feature_track="strict",
+        cancellation_waiver=["weather", "cancelled"],
+        mode="structural",
+        config="conf/fixture.yaml",
+        prepared_gold_ref_uri="prepared.json",
+    )
+    commands = {
+        "fetch-source": 1,
+        "build-silver": 1,
+        "build-team-game": 1,
+        "build-features": 1,
+        "build-baselines": 1,
+        "assemble-model-ready": 1,
+        "readiness": 3,
+        "replay-season": 1,
+        "reconcile": 1,
+        "audit-data": 1,
+    }
+    for command, expected_count in commands.items():
+        context = new_context(
+            command=command,
+            environment="preview",
+            season=2026,
+            week=1,
+            as_of="2026-09-01T12:00:00Z",
+            pipeline_run_id=f"builder-{command}",
+        )
+        steps = build_steps(context, conn_url="postgresql://unused", options=options)
+        assert len(steps) == expected_count
+
+    freeze = build_steps(
+        new_context(
+            command="freeze-week",
+            environment="preview",
+            season=2026,
+            week=1,
+            as_of=None,
+            pipeline_run_id="builder-freeze",
+        ),
+        conn_url="postgresql://unused",
+        waiver="operator-approved",
+    )
+    assert "--waiver" in freeze[0].definition["argv"]
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.ops.__main__._resolve_frozen_run", lambda *_: "run"
+    )
+    close = build_steps(
+        new_context(
+            command="close-week",
+            environment="preview",
+            season=2026,
+            week=1,
+            as_of="2026-09-01T12:00:00Z",
+            pipeline_run_id="builder-close",
+        ),
+        conn_url="postgresql://unused",
+        options=options,
+    )
+    assert [step.name for step in close] == [
+        "ingest_finals",
+        "build_game_outcomes",
+        "ingest_completed_week",
+        "score",
+        "publish_grades",
+    ]
+    assert "--cancellation-waiver" in close[3].definition["argv"]
+
+
+def test_fetch_source_requires_a_week_only_for_weekly_entities():
+    season_context = new_context(
+        command="fetch-source",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of=None,
+        pipeline_run_id="season-source",
+    )
+    assert (
+        build_steps(
+            season_context,
+            conn_url="postgresql://unused",
+            options=SimpleNamespace(entity="teams"),
+        )[0].name
+        == "fetch_teams"
+    )
+    with pytest.raises(ValueError, match="requires --week"):
+        build_steps(
+            season_context,
+            conn_url="postgresql://unused",
+            options=SimpleNamespace(entity="plays"),
+        )
+
+
+def test_historical_silver_composition_covers_all_allowed_seasons_and_dependencies():
+    steps = _history_silver_steps("preview")
+    names = [step.name for step in steps]
+
+    assert "silver_preseason_team_inputs_2019" in names
+    assert "silver_schedule_week_policy_2026" in names
+    assert "silver_games_2026" in names
+    assert "combine_games_2021_2026" in names
+    assert "build_temporal_matchups" in names
+    assert "assemble_selection_gold" in names
+    assert not any("_2020" in name for name in names)
+
+    games_2026 = next(step for step in steps if step.name == "silver_games_2026")
+    assert "--week-policy-ref-uri" in games_2026.definition["argv"]
+    team_aliases = next(
+        step for step in steps if step.name == "silver_team_aliases_2025"
+    )
+    assert "--optional" in team_aliases.definition["argv"]
+
+
+def test_postgres_state_store_preserves_lease_and_step_semantics_with_fake_connection(
+    monkeypatch,
+):
+    class Cursor:
+        rowcount = 1
+
+        def __init__(self):
+            self.executed = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def execute(self, sql, params=()):
+            self.executed.append((sql, params))
+
+        def fetchone(self):
+            sql = self.executed[-1][0]
+            if "pg_try_advisory_lock" in sql:
+                return (True,)
+            if "RETURNING lease_epoch" in sql:
+                return (7,)
+            if "SELECT 1 FROM ops.pipeline_runs" in sql:
+                return (1,)
+            return None
+
+        def fetchall(self):
+            return [("prior", [{"uri": "immutable"}])]
+
+    class Connection:
+        closed = False
+
+        def __init__(self):
+            self.cursor_instance = Cursor()
+            self.commits = 0
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def cursor(self):
+            return self.cursor_instance
+
+        def commit(self):
+            self.commits += 1
+
+        def close(self):
+            self.closed = True
+
+    connections = []
+
+    def connect(_url):
+        connection = Connection()
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr("cks_picks_cfb.ops.state_machine.psycopg.connect", connect)
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of="2026-08-23T00:00:00Z",
+        pipeline_run_id="postgres-fixture",
+    )
+    step = PipelineStep("snapshot_inputs", lambda _: [], definition={"kind": "fixture"})
+    with PostgresStateStore("postgresql://fixture") as store:
+        store.begin_run(context, {"steps": ["snapshot_inputs"]})
+        assert store.acquire_lease(context) == 7
+        store.heartbeat(context)
+        assert store.successful_steps(context.pipeline_run_id) == {
+            "prior": [{"uri": "immutable"}]
+        }
+        store.begin_step(context, step, 0)
+        store.finish_step(context, step, outputs=[{"uri": "immutable"}])
+        store.fail_step(context, step, category="ValueError", detail="x" * 5000)
+        store.finish_run(context)
+        with store.advisory_lock(context.lock_key):
+            pass
+        store.release_lease(context)
+    assert any(connection.commits for connection in connections)
+
+
+def test_subprocess_step_scopes_pythonpath_and_propagates_command_failure(monkeypatch):
+    calls = []
+
+    def successful(argv, check, env):
+        calls.append((argv, check, env))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("cks_picks_cfb.ops.state_machine.subprocess.run", successful)
+    context = new_context(
+        command="readiness",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of=None,
+        pipeline_run_id="subprocess-fixture",
+    )
+    step = subprocess_step("fixture", ["python", "fixture.py"])
+    assert step.action(context) == (
+        {"argv": ["python", "fixture.py"], "returncode": 0},
+    )
+    assert calls[0][1] is False
+    assert calls[0][2]["PYTHONPATH"] == ".:src"
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.ops.state_machine.subprocess.run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=9),
+    )
+    with pytest.raises(Exception, match="9"):
+        step.action(context)

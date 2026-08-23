@@ -59,8 +59,8 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
-      - name: Test
-        run: PYTHONPATH=src:. uv run pytest tests/ -q
+      - name: Test with coverage and warnings as errors
+        run: PYTHONPATH=src:. uv run pytest tests/ -q -W error --cov=cks_picks_cfb --cov-report=term-missing:skip-covered
         env:
           CFBD_API_KEY: ci-placeholder
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cks_picks_test
@@ -101,3 +101,9 @@ jobs:
 
       - name: Test publication boundary
         run: npx nx run web:test-publication
+
+      - name: Install browser test runtime
+        run: npm --prefix web exec playwright install --with-deps chromium
+
+      - name: Test browser fixtures
+        run: npm --prefix web run test:ui

@@ -15,6 +15,7 @@ from cks_picks_cfb.artifacts import (
     scored_artifact_path,
     scored_artifact_prefix,
     sha256_bytes,
+    write_prediction_run,
 )
 from cks_picks_cfb.data.storage import LocalStorage
 
@@ -66,3 +67,39 @@ def test_verified_csv_rejects_changed_artifact(tmp_path):
     storage.write_bytes(b"changed", "runs/predictions.csv")
     with pytest.raises(ValueError, match="checksum mismatch"):
         read_verified_csv_artifact(manifest, storage)
+
+
+def test_prediction_runs_are_idempotent_but_reject_immutable_collision(tmp_path):
+    storage = LocalStorage(tmp_path)
+    first = pd.DataFrame({"game_id": [1], "prediction": [2.5]})
+    manifest = {"state": "preview"}
+
+    payload = write_prediction_run(
+        first,
+        year=2026,
+        week=0,
+        run_id="fixture",
+        manifest=manifest,
+        storage=storage,
+    )
+    assert (
+        write_prediction_run(
+            first,
+            year=2026,
+            week=0,
+            run_id="fixture",
+            manifest=manifest,
+            storage=storage,
+        )
+        == payload
+    )
+
+    with pytest.raises(FileExistsError, match="Immutable prediction run collision"):
+        write_prediction_run(
+            pd.DataFrame({"game_id": [1], "prediction": [3.5]}),
+            year=2026,
+            week=0,
+            run_id="fixture",
+            manifest=manifest,
+            storage=storage,
+        )

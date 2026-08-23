@@ -2,6 +2,7 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "predev": "node scripts/sync-logos.mjs",
     "prebuild": "node scripts/sync-logos.mjs",
@@ -11,6 +12,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts",
+    "test:ui": "NO_COLOR= FORCE_COLOR= playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "psql \"$DATABASE_URL\" -f db/migrations/0001_init.sql && echo 'migration applied'",
     "db:studio": "drizzle-kit studio"
@@ -26,6 +28,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.43",
     "@types/react": "^19",

@@ -20,7 +20,7 @@
         "{projectRoot}/uv.lock"
       ],
       "options": {
-        "command": "uv run pytest -q",
+        "command": "uv run pytest -q -W error --cov=cks_picks_cfb --cov-report=term-missing:skip-covered",
         "env": {
           "CFB_STORAGE_BACKEND": "local"
         }

@@ -1,7 +1,13 @@
+import pickle
+
+import numpy as np
 import pandas as pd
 import pytest
 
-from cks_picks_cfb.models.regime_training import select_monotone_blend_weights
+from cks_picks_cfb.models.regime_training import (
+    fit_candidate_model,
+    select_monotone_blend_weights,
+)
 
 
 def test_blend_weight_search_is_selection_only_and_monotone():
@@ -38,3 +44,26 @@ def test_blend_weight_search_rejects_locked_test_rows():
     )
     with pytest.raises(ValueError, match="2022-2024"):
         select_monotone_blend_weights(frame, target="spread")
+
+
+def test_catboost_candidate_is_sklearn_pipeline_compatible_and_serializable():
+    """CatBoost must keep working inside sklearn Pipeline as sklearn evolves."""
+    frame = pd.DataFrame(
+        {
+            "off_epa_play_mean": [0.1, 0.2, 0.4, 0.3, 0.5, 0.7],
+            "spread_target": [1.0, 1.5, 3.0, 2.5, 4.0, 5.0],
+        }
+    )
+
+    model = fit_candidate_model(
+        frame,
+        features=["off_epa_play_mean"],
+        target_column="spread_target",
+        kind="direct_catboost",
+        random_seed=7,
+    )
+    restored = pickle.loads(pickle.dumps(model))
+    prediction = np.asarray(restored.predict(frame[["off_epa_play_mean"]]), dtype=float)
+
+    assert prediction.shape == (len(frame),)
+    assert np.isfinite(prediction).all()

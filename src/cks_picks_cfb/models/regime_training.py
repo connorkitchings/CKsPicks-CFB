@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from itertools import product
 from typing import Mapping, Sequence
 
@@ -96,16 +95,8 @@ def _fit_predict(
     model = _candidate(kind, random_seed)
     train_features = _model_values(train, features)
     validation_features = _model_values(validation, features)
-    with warnings.catch_warnings():
-        # Numerical RuntimeWarnings are suppressed rather than raised: macOS
-        # Accelerate BLAS emits spurious FP flags on subnormal intermediates
-        # even when every value is finite. Genuine numerical breakdown always
-        # surfaces as non-finite output, which stays fatal below.
-        warnings.simplefilter("ignore", RuntimeWarning)
-        warnings.simplefilter("ignore", UserWarning)
-        warnings.simplefilter("ignore", FutureWarning)
-        model.fit(train_features, train[target_column])
-        prediction = np.asarray(model.predict(validation_features), dtype=float)
+    model.fit(train_features, train[target_column])
+    prediction = np.asarray(model.predict(validation_features), dtype=float)
     if not np.isfinite(prediction).all():
         raise ValueError(
             f"{kind}/{target_column} produced non-finite predictions "
@@ -128,11 +119,7 @@ def fit_candidate_model(
     validate_model_feature_allowlist(tuple(features))
     model = _candidate(kind, random_seed)
     values = _model_values(frame, features)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        warnings.simplefilter("ignore", UserWarning)
-        warnings.simplefilter("ignore", FutureWarning)
-        model.fit(values, frame[target_column])
+    model.fit(values, frame[target_column])
     if not np.isfinite(
         np.asarray(getattr(model[-1], "coef_", [0.0]), dtype=float)
     ).all():

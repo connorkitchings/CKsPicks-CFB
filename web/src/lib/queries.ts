@@ -19,6 +19,9 @@ type BaseGame = {
 /** Public-safe schedule and market projection with no model-only fields. */
 export type MarketGame = BaseGame & {
   publicationMode: "market";
+  /** Settled outcomes are public-safe; predictions and model metadata are not. */
+  spreadResult: "win" | "loss" | "push" | null;
+  totalResult: "win" | "loss" | "push" | null;
 };
 
 /** Prediction-bearing projection, selected only after explicit publication opt-in. */
@@ -251,6 +254,27 @@ export async function getMarketGamesForWeek(
   season: number,
   week: number,
 ): Promise<MarketGame[]> {
+  // A settled grade is safe to disclose, but it must remain tied to the exact
+  // versioned run selected for this week. Legacy rows have no run identity.
+  const run = await getRunForWeek(season, week);
+  const spreadResult = run
+    ? sql<"win" | "loss" | "push" | null>`(
+        SELECT pg.result FROM prediction_grades pg
+        WHERE pg.run_id = ${run.runId}
+          AND pg.game_id = ${schema.games.gameId}
+          AND pg.target = 'spread'
+        LIMIT 1
+      )`
+    : schema.gameResults.spreadResult;
+  const totalResult = run
+    ? sql<"win" | "loss" | "push" | null>`(
+        SELECT pg.result FROM prediction_grades pg
+        WHERE pg.run_id = ${run.runId}
+          AND pg.game_id = ${schema.games.gameId}
+          AND pg.target = 'total'
+        LIMIT 1
+      )`
+    : schema.gameResults.totalResult;
   const rows = await db
     .select({
       gameId: schema.games.gameId,
@@ -264,6 +288,8 @@ export async function getMarketGamesForWeek(
       updatedAt: schema.games.updatedAt,
       homePoints: schema.gameResults.homePoints,
       awayPoints: schema.gameResults.awayPoints,
+      spreadResult,
+      totalResult,
     })
     .from(schema.games)
     .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))

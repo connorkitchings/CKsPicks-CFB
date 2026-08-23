@@ -198,6 +198,16 @@ function MarketGameRow({
           </div>
         </div>
       </div>
+      {hasResults && (game.spreadResult || game.totalResult) && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          {game.spreadResult && (
+            <ResultChip label="Spread" result={game.spreadResult} />
+          )}
+          {game.totalResult && (
+            <ResultChip label="Total" result={game.totalResult} />
+          )}
+        </div>
+      )}
     </li>
   );
 }
