@@ -84,7 +84,7 @@ graph TD
 
 - **Data Processing**: Local machine with external drive storage, executed via `scripts/cli.py`.
 - **Output**: Standard `_bets.csv` report.
-- **Publishing**: A new script (`scripts/publish_picks.py`) formats the CSV into a clean HTML table and emails it to a configured address.
+- **Publishing**: `make publish-week` writes the immutable prediction artifact and derived Neon rows; `scripts/pipeline/publish_review.py` remains the optional HTML email review utility.
 
 **Pros**:
 

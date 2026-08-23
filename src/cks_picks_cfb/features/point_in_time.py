@@ -7,11 +7,8 @@ from collections.abc import Mapping
 
 import pandas as pd
 
-from cks_picks_cfb.features.v2_recency import (
-    aggregate_team_season_ewma,
-    completed_game_regime,
-    upcoming_game_regime,
-)
+from cks_picks_cfb.features.regimes import completed_game_regime, upcoming_game_regime
+from cks_picks_cfb.features.rolling_ewma import aggregate_team_season_ewma
 
 IDENTITY_COLUMNS = {
     "id",

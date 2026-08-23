@@ -35,9 +35,8 @@ Weeks 11-12: Monitoring Dashboard & Final Polish
 - [ ] Verify `CFB_MODEL_DATA_ROOT` is set correctly
 - [ ] Generate processed data for all years:
   ```bash
-  for year in 2021 2022 2023 2024 2025; do
-      uv run python scripts/pipeline/run_pipeline_generic.py --year $year
-  done
+  # Historical command retired. Use the current immutable-lake workflow:
+  make prepare-week YEAR=2026 WEEK=<week> AS_OF=<timestamp> ENV=preview
   ```
 - [ ] Verify data quality (no missing files, schemas match)
 - [ ] Confirm MLflow tracking URI configured
@@ -126,7 +125,7 @@ Weeks 11-12: Monitoring Dashboard & Final Polish
 
 **Tasks**:
 
-- [ ] Add validation calls to `scripts/pipeline/run_pipeline_generic.py`
+- [ ] Historical task superseded by the current `make prepare-week` validation gates.
 - [ ] Re-run pipeline for all years with validation
 - [ ] Fix any data quality issues discovered
 - [ ] Create validation report template for future runs

@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from cks_picks_cfb.ops.__main__ import build_steps
@@ -6,8 +8,20 @@ from cks_picks_cfb.ops.state_machine import (
     InMemoryStateStore,
     PipelineStep,
     StateMachine,
+    WebhookFailureNotifier,
     new_context,
 )
+
+
+class RecordingNotifier:
+    def __init__(self, error: Exception | None = None):
+        self.calls = []
+        self.error = error
+
+    def notify(self, context, step, *, category, detail):
+        self.calls.append((context, step, category, detail))
+        if self.error:
+            raise self.error
 
 
 def test_pipeline_reruns_unverified_step_after_forced_crash():
@@ -52,6 +66,122 @@ def test_pipeline_rejects_changed_step_definition_on_resume():
         StateMachine(store, logger=lambda _: None).run(
             context, [PipelineStep("one", lambda _: [], definition={"version": 2})]
         )
+
+
+def test_failed_publish_step_records_then_notifies_without_masking_error():
+    store = InMemoryStateStore()
+    notifier = RecordingNotifier()
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of=None,
+        pipeline_run_id="notify-publish",
+    )
+
+    with pytest.raises(ValueError, match="original failure"):
+        StateMachine(store, notifier=notifier, logger=lambda _: None).run(
+            context,
+            [
+                PipelineStep(
+                    "predict",
+                    lambda _: (_ for _ in ()).throw(ValueError("original failure")),
+                )
+            ],
+        )
+
+    assert store.runs[context.pipeline_run_id] == "failed"
+    assert [
+        (step, category, detail) for _, step, category, detail in notifier.calls
+    ] == [("predict", "ValueError", "original failure")]
+
+
+def test_alert_delivery_failure_preserves_original_pipeline_error():
+    store = InMemoryStateStore()
+    messages = []
+    context = new_context(
+        command="freeze-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of=None,
+        pipeline_run_id="notify-error",
+    )
+    with pytest.raises(RuntimeError, match="pipeline failure"):
+        StateMachine(
+            store,
+            notifier=RecordingNotifier(RuntimeError("webhook down")),
+            logger=messages.append,
+        ).run(
+            context,
+            [
+                PipelineStep(
+                    "freeze",
+                    lambda _: (_ for _ in ()).throw(RuntimeError("pipeline failure")),
+                )
+            ],
+        )
+    assert any("alert_delivery_failed" in message for message in messages)
+
+
+def test_alerts_are_scoped_to_publication_commands():
+    store = InMemoryStateStore()
+    notifier = RecordingNotifier()
+    context = new_context(
+        command="prepare-week",
+        environment="preview",
+        season=2026,
+        week=1,
+        as_of=None,
+        pipeline_run_id="no-notify",
+    )
+    with pytest.raises(ValueError):
+        StateMachine(store, notifier=notifier, logger=lambda _: None).run(
+            context,
+            [
+                PipelineStep(
+                    "prepare", lambda _: (_ for _ in ()).throw(ValueError("fail"))
+                )
+            ],
+        )
+    assert notifier.calls == []
+
+
+def test_webhook_notifier_is_optional_and_truncates_detail(monkeypatch):
+    monkeypatch.delenv("CFB_OPS_ALERT_WEBHOOK_URL", raising=False)
+    assert WebhookFailureNotifier.from_env() is None
+    captured = {}
+
+    class Response:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    def fake_urlopen(request, timeout):
+        captured["payload"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("cks_picks_cfb.ops.state_machine.urlopen", fake_urlopen)
+    notifier = WebhookFailureNotifier("https://example.invalid/hook", timeout_seconds=2)
+    context = new_context(
+        command="close-week",
+        environment="production",
+        season=2026,
+        week=2,
+        as_of=None,
+        pipeline_run_id="payload",
+    )
+    notifier.notify(context, "close", category="ValueError", detail="x" * 3000)
+    assert captured["timeout"] == 2
+    assert captured["payload"]["event"] == "pipeline_step_failed"
+    assert captured["payload"]["error_detail"] == "x" * 2000
+    assert "url" not in captured["payload"]
 
 
 def test_pipeline_skips_step_only_when_output_validator_passes():

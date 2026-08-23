@@ -113,7 +113,7 @@ export function GameRow({ game }: { game: Game }) {
             <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint">
               Market Consensus
             </div>
-            <div className="flex gap-6 sm:flex-col sm:gap-1.5">
+            <div className="flex flex-wrap gap-4 sm:flex-col sm:gap-1.5">
               <LeanBadge
                 lean={game.spreadLean}
                 edge={game.edgeSpread}
@@ -170,10 +170,16 @@ function MarketGameRow({
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
 }) {
+  const hasResults = game.homePoints !== null && game.awayPoints !== null;
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      <div className="mb-3 text-xs text-ink-faint">
-        {formatKickoff(game.startDate)}
+      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
+        <span>{formatKickoff(game.startDate)}</span>
+        {hasResults && (
+          <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+            Final
+          </span>
+        )}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1 space-y-1.5">

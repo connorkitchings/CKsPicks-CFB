@@ -22,6 +22,7 @@ from cks_picks_cfb.ops.state_machine import (
     PipelineStep,
     PostgresStateStore,
     StateMachine,
+    WebhookFailureNotifier,
     new_context,
     subprocess_step,
 )
@@ -1529,7 +1530,9 @@ def main() -> None:
     )
     with PostgresStateStore(conn_url) as store:
         StateMachine(
-            store, crash_after_step=getattr(args, "crash_after_step", None)
+            store,
+            crash_after_step=getattr(args, "crash_after_step", None),
+            notifier=WebhookFailureNotifier.from_env(),
         ).run(context, steps)
 
 

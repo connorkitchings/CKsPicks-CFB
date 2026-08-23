@@ -33,7 +33,7 @@ conf/
 Hydra entrypoints live in `scripts/`:
 
 - The canonical training entry point is `PYTHONPATH=src uv run python -m cks_picks_cfb.train` (see `.codex/QUICKSTART.md`).
-- Some non-Hydra pipeline CLIs retain argparse semantics (e.g., `scripts/pipeline/training_cli.py`).
+- Non-Hydra pipeline CLIs retain argparse semantics; model training itself uses the canonical `PYTHONPATH=src uv run python -m cks_picks_cfb.train` entry point.
 - Historical logs referencing `scripts/optimize_hyperparameters.py` or `scripts/walk_forward_validation.py` predate the current layout; those entry points were folded into the Hydra training module.
 
 ## Your First Hydra App

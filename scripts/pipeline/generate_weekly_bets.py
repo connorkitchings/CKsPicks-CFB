@@ -9,7 +9,6 @@ from pathlib import Path
 from uuid import uuid4
 
 import mlflow
-import numpy as np
 import pandas as pd
 from omegaconf import OmegaConf
 
@@ -27,8 +26,14 @@ from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.data.week_policy import canonical_week_overrides_for_season
 from cks_picks_cfb.features.point_in_time import build_point_in_time_matchups
+from cks_picks_cfb.features.regimes import canonical_prediction_regime
 from cks_picks_cfb.features.selector import select_features
-from cks_picks_cfb.features.v2_recency import canonical_prediction_regime
+from cks_picks_cfb.inference.weekly import (
+    PreparedInferenceInputs,
+    build_publication_manifest,
+    calculate_edges_and_leans,
+    load_inference_model_context,
+)
 from cks_picks_cfb.model_bundle import (
     load_model_artifact,
     load_model_bundle_v2,
@@ -261,14 +266,6 @@ def main():
 
     spread_full_cfg = OmegaConf.create({"features": spread_feat_cfg})
     total_full_cfg = OmegaConf.create({"features": total_feat_cfg})
-    model_bundle_sha = (
-        routing_bundle.manifest_sha256
-        if routing_bundle is not None
-        else hashlib.sha256(
-            f"{spread_model_sha}:{total_model_sha}".encode("utf-8")
-        ).hexdigest()
-    )
-
     # Load Data
     # For V2, we might need to pass feature params (alpha, type) to load function
     # load_week_data currently doesn't support alpha...
@@ -636,150 +633,23 @@ def main():
             except Exception as exc:
                 print(f"Preseason model unavailable; using recency fallback: {exc}")
 
-        # Construct Bets DataFrame
-        bets = []
-        for idx, row in data_df.iterrows():
-            game_id = row["id"]
-            home = row["home_team"]
-            away = row["away_team"]
-
-            pred_spread = spread_preds[idx]
-            pred_total = total_preds[idx]
-
-            book_spread = row.get("home_team_spread_line")
-            book_total = row.get("total_line")
-            high_confidence_eligible = bool(route_high_confidence.iloc[idx])
-            home_count = pd.to_numeric(
-                row.get("home_current_season_games", 0), errors="coerce"
-            )
-            away_count = pd.to_numeric(
-                row.get("away_current_season_games", 0), errors="coerce"
-            )
-            home_count = 0 if pd.isna(home_count) else int(home_count)
-            away_count = 0 if pd.isna(away_count) else int(away_count)
-
-            # Spread Bet (Dual-Threshold Strategy)
-            if pd.notna(book_spread):
-                # Spread Logic: Edge = abs(Pred - (-Line)) = abs(Pred + Line)
-                # Bet Home if Pred > -Line
-                edge = pred_spread + book_spread
-                edge_abs = abs(edge)
-
-                # Determine side and confidence based on dual thresholds
-                if edge > 0:
-                    bet_side = "Home"
-                else:
-                    bet_side = "Away"
-
-                # Assign confidence based on which threshold is crossed
-                if edge_abs >= spread_threshold_high:
-                    bet_conf = "High"
-                elif edge_abs >= spread_threshold:
-                    bet_conf = "Medium"
-                else:
-                    bet_side = "No Bet"
-                    bet_conf = ""
-
-                bets.append(
-                    {
-                        "game_id": game_id,
-                        "Game": f"{away} @ {home}",
-                        "Spread Bet": bet_side,
-                        "home_team_spread_line": book_spread,
-                        "Spread Prediction": pred_spread,
-                        "edge_spread": abs(edge),
-                        "Spread Confidence": bet_conf,
-                        "total_line": book_total,
-                        "Total Prediction": pred_total,
-                        "edge_total": 0.0,  # Placeholder
-                        "Total Bet": "No Bet",  # Placeholder
-                        "high_confidence_eligible": high_confidence_eligible,
-                        "home_completed_games": home_count,
-                        "away_completed_games": away_count,
-                        "prediction_regime": row.get(
-                            "prediction_regime", "established"
-                        ),
-                        "spread_model_version": spread_model_versions.iloc[idx],
-                        "total_model_version": total_model_versions.iloc[idx],
-                        "market_snapshot_id": row.get("market_snapshot_id"),
-                        "market_policy_version": row.get("market_policy_version"),
-                        "spread_selection_rule": row.get("spread_selection_rule"),
-                        "total_selection_rule": row.get("total_selection_rule"),
-                        "spread_provider_count": row.get("spread_provider_count", 0),
-                        "total_provider_count": row.get("total_provider_count", 0),
-                        "source_quote_ids": row.get("source_quote_ids", "[]"),
-                        "market_captured_at": row.get("market_captured_at"),
-                        "run_id": run_id,
-                    }
-                )
-            else:
-                bets.append(
-                    {
-                        "game_id": game_id,
-                        "Game": f"{away} @ {home}",
-                        "Spread Bet": "No Bet",
-                        "home_team_spread_line": None,
-                        "Spread Prediction": pred_spread,
-                        "edge_spread": 0.0,
-                        "Spread Confidence": "",
-                        "total_line": book_total,
-                        "Total Prediction": pred_total,
-                        "edge_total": 0.0,
-                        "Total Bet": "No Bet",
-                        "high_confidence_eligible": high_confidence_eligible,
-                        "home_completed_games": home_count,
-                        "away_completed_games": away_count,
-                        "prediction_regime": row.get(
-                            "prediction_regime", "established"
-                        ),
-                        "spread_model_version": spread_model_versions.iloc[idx],
-                        "total_model_version": total_model_versions.iloc[idx],
-                        "market_snapshot_id": row.get("market_snapshot_id"),
-                        "market_policy_version": row.get("market_policy_version"),
-                        "spread_selection_rule": row.get("spread_selection_rule"),
-                        "total_selection_rule": row.get("total_selection_rule"),
-                        "spread_provider_count": row.get("spread_provider_count", 0),
-                        "total_provider_count": row.get("total_provider_count", 0),
-                        "source_quote_ids": row.get("source_quote_ids", "[]"),
-                        "market_captured_at": row.get("market_captured_at"),
-                        "run_id": run_id,
-                    }
-                )
-
-            # Total Bet
-            if pd.notna(book_total):
-                # Total Logic: Edge = abs(Pred - Line)
-                # Bet Over if Pred > Line
-                edge_t = pred_total - book_total
-
-                last_bet = bets[-1]
-                last_bet["edge_total"] = abs(edge_t)
-
-                if edge_t > total_threshold:
-                    last_bet["Total Bet"] = "Over"
-                elif edge_t < -total_threshold:
-                    last_bet["Total Bet"] = "Under"
-                else:
-                    last_bet["Total Bet"] = "No Bet"
-
-        # Save
-        bets_df = pd.DataFrame(bets)
-
-        # Add extra cols
-        bets_df = bets_df.merge(
-            data_df[["id", "start_date", "home_team", "away_team"]],
-            left_on="game_id",
-            right_on="id",
-            how="left",
+        # Apply edge thresholds and public-output formatting in the reusable module.
+        bets_df = calculate_edges_and_leans(
+            pd.DataFrame(
+                {
+                    "predicted_spread": spread_preds,
+                    "predicted_total": total_preds,
+                    "spread_model_version": spread_model_versions,
+                    "total_model_version": total_model_versions,
+                    "high_confidence_eligible": route_high_confidence,
+                }
+            ),
+            data_df,
+            spread_threshold=spread_threshold,
+            spread_threshold_high=spread_threshold_high,
+            total_threshold=total_threshold,
+            run_id=run_id,
         )
-        bets_df["Date"] = pd.to_datetime(bets_df["start_date"]).dt.strftime("%Y-%m-%d")
-        bets_df["Time"] = pd.to_datetime(bets_df["start_date"]).dt.strftime("%H:%M:%S")
-        bets_df["Home Team"] = bets_df["home_team"]
-        bets_df["Away Team"] = bets_df["away_team"]
-
-        # Add std dev columns if available (placeholder for now as models don't output it yet)
-        bets_df["predicted_spread_std_dev"] = np.nan
-        bets_df["predicted_total_std_dev"] = np.nan
 
         output_path = args.output_csv or local_prediction_path(year, week)
         output_dir = output_path.parent
@@ -822,50 +692,38 @@ def main():
                     )
             else:
                 storage.write_bytes(feature_bytes, feature_uri)
-            lined_games = int(
-                bets_df[["home_team_spread_line", "total_line"]]
-                .notna()
-                .all(axis=1)
-                .sum()
+            manifest = build_publication_manifest(
+                bets_df,
+                state=args.run_state,
+                data_as_of=data_as_of,
+                feature_snapshot_uri=feature_uri,
+                feature_snapshot_sha256=sha256_bytes(feature_bytes),
+                code_sha=code_sha,
+                config_bytes=config_bytes,
+                model_context=load_inference_model_context(
+                    bundle=routing_bundle,
+                    bundle_version=bundle_version,
+                    spread_model=spread_model,
+                    total_model=total_model,
+                    spread_model_version=str(spread_model_sha),
+                    total_model_version=str(total_model_sha),
+                ),
+                prepared_inputs=PreparedInferenceInputs(
+                    features=data_df,
+                    market_snapshot=market_snapshots_df,
+                    schedule_snapshot=schedule_snapshot_df,
+                    dataset_refs=tuple(input_dataset_refs),
+                ),
+                source_config=str(args.config),
+                system_name=cfg.get("system_name", "CKsPicks Model"),
+                model_id=cfg.get("model_id", "unknown"),
             )
             payload = write_prediction_run(
                 bets_df,
                 year=year,
                 week=week,
                 run_id=run_id,
-                manifest={
-                    "state": args.run_state,
-                    "data_as_of": data_as_of,
-                    "feature_snapshot_uri": feature_uri,
-                    "feature_snapshot_sha256": sha256_bytes(feature_bytes),
-                    "expected_games": int(len(data_df)),
-                    "predicted_games": int(
-                        bets_df[["Spread Prediction", "Total Prediction"]]
-                        .notna()
-                        .all(axis=1)
-                        .sum()
-                    ),
-                    "lined_games": lined_games,
-                    "code_sha": code_sha,
-                    "config_sha": hashlib.sha256(config_bytes).hexdigest(),
-                    "model_bundle_sha256": (
-                        routing_bundle.manifest_sha256
-                        if routing_bundle is not None
-                        else model_bundle_sha
-                    ),
-                    "input_dataset_refs": input_dataset_refs,
-                    "source_config": str(args.config),
-                    "system_name": cfg.get("system_name", "CKsPicks Model"),
-                    "model_id": cfg.get("model_id", "unknown"),
-                    "validation": {
-                        "all_predictions_present": bool(
-                            bets_df[["Spread Prediction", "Total Prediction"]]
-                            .notna()
-                            .all(axis=None)
-                        ),
-                        "line_coverage_complete": lined_games == len(data_df),
-                    },
-                },
+                manifest=manifest,
             )
             print(
                 "Uploaded immutable prediction run "

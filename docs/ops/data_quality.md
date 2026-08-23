@@ -71,5 +71,5 @@ PYTHONPATH=. uv run python scripts/validation/validate_features.py --year 2024
 | Error                              | Common Cause                | Fix                                                |
 | :--------------------------------- | :-------------------------- | :------------------------------------------------- |
 | `[Games] Negative scores detected` | Bad CFBD data               | Check specific game ID, exclude or patch data.     |
-| `[Aggregation] Missing columns`    | Pipeline aggregation failed | Re-run `scripts/pipeline/run_pipeline_generic.py`. |
+| `[Aggregation] Missing columns`    | Pipeline aggregation failed | Rebuild the affected preview week with `make prepare-week YEAR=<year> WEEK=<week> AS_OF=<timestamp> ENV=preview`. |
 | `[Features] NaN or Infinite`       | Division by zero in stats   | Check play-by-play data for empty drives.          |

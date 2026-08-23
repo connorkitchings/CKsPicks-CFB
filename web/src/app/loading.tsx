@@ -22,6 +22,8 @@ export default function Loading() {
           <div className="h-14 animate-pulse rounded bg-surface-inset" />
         </div>
 
+        <div className="h-13 animate-pulse rounded-xl border border-line bg-surface-card p-2" />
+
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div

@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any, Callable, ContextManager, Iterator, Mapping, Protocol, Sequence
+from urllib.error import URLError
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 import psycopg
@@ -67,6 +69,74 @@ class OperationContext:
 
 
 StepAction = Callable[[OperationContext], Sequence[Mapping[str, Any]] | None]
+
+
+class FailureNotifier(Protocol):
+    """Best-effort observer for a durably recorded failed pipeline step."""
+
+    def notify(
+        self,
+        context: OperationContext,
+        step: str,
+        *,
+        category: str,
+        detail: str,
+    ) -> None: ...
+
+
+@dataclass(frozen=True)
+class WebhookFailureNotifier:
+    """Optional generic JSON webhook notifier configured entirely by environment."""
+
+    url: str
+    timeout_seconds: float = 5.0
+
+    @classmethod
+    def from_env(cls) -> "WebhookFailureNotifier | None":
+        url = os.getenv("CFB_OPS_ALERT_WEBHOOK_URL")
+        if not url:
+            return None
+        try:
+            timeout_seconds = float(os.getenv("CFB_OPS_ALERT_TIMEOUT_SECONDS", "5"))
+        except ValueError as exc:
+            raise ValueError("CFB_OPS_ALERT_TIMEOUT_SECONDS must be numeric") from exc
+        if timeout_seconds <= 0:
+            raise ValueError("CFB_OPS_ALERT_TIMEOUT_SECONDS must be positive")
+        return cls(url=url, timeout_seconds=timeout_seconds)
+
+    def notify(
+        self,
+        context: OperationContext,
+        step: str,
+        *,
+        category: str,
+        detail: str,
+    ) -> None:
+        payload = {
+            "event": "pipeline_step_failed",
+            "pipeline_run_id": context.pipeline_run_id,
+            "prediction_run_id": context.prediction_run_id,
+            "command": context.command,
+            "environment": context.environment,
+            "season": context.season,
+            "week": context.week,
+            "step": step,
+            "error_category": category,
+            "error_detail": detail[:2000],
+            "occurred_at": datetime.now(timezone.utc).isoformat(),
+        }
+        request = Request(
+            self.url,
+            data=_json_dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=self.timeout_seconds) as response:  # noqa: S310
+                if not 200 <= response.status < 300:
+                    raise RuntimeError(f"Webhook returned HTTP {response.status}")
+        except (OSError, URLError) as exc:
+            raise RuntimeError(f"Webhook delivery failed: {exc}") from exc
 
 
 @dataclass(frozen=True)
@@ -450,6 +520,7 @@ class StateMachine:
     store: StateStore
     crash_after_step: str | None = None
     logger: Callable[[str], None] = print
+    notifier: FailureNotifier | None = None
     _clock: Callable[[], datetime] = field(
         default=lambda: datetime.now(timezone.utc), repr=False
     )
@@ -494,13 +565,18 @@ class StateMachine:
                         self.store.finish_step(context, step, outputs=outputs)
                         self._log(context, step.name, "succeeded")
                     except Exception as exc:
+                        category = type(exc).__name__
+                        detail = str(exc)
                         self.store.fail_step(
                             context,
                             step,
-                            category=type(exc).__name__,
-                            detail=str(exc),
+                            category=category,
+                            detail=detail,
                         )
-                        self._log(context, step.name, "failed", error=str(exc))
+                        self._log(context, step.name, "failed", error=detail)
+                        self._notify_failure(
+                            context, step.name, category=category, detail=detail
+                        )
                         raise
                     if self.crash_after_step == step.name:
                         raise InjectedCrashError(f"Injected crash after {step.name}")
@@ -532,6 +608,31 @@ class StateMachine:
                 }
             )
         )
+
+    def _notify_failure(
+        self,
+        context: OperationContext,
+        step: str,
+        *,
+        category: str,
+        detail: str,
+    ) -> None:
+        if self.notifier is None or context.command not in {
+            "publish-week",
+            "freeze-week",
+            "close-week",
+        }:
+            return
+        try:
+            self.notifier.notify(context, step, category=category, detail=detail)
+        except Exception as exc:  # Alerting must never mask the failed pipeline step.
+            self._log(
+                context,
+                step,
+                "alert_delivery_failed",
+                error=type(exc).__name__,
+                detail=str(exc)[:2000],
+            )
 
 
 class InjectedCrashError(RuntimeError):

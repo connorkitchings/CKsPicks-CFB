@@ -154,6 +154,14 @@ Never mutate a frozen run or its R2 artifacts. Create a new run instead.
 
 ## Environment / credential notes
 
+### Optional failed-step alerts
+
+Set `CFB_OPS_ALERT_WEBHOOK_URL` to receive a best-effort JSON notification when
+a `publish-week`, `freeze-week`, or `close-week` step fails after its failure is
+recorded in Neon. `CFB_OPS_ALERT_TIMEOUT_SECONDS` defaults to `5`. Alert delivery
+is observability only: a missing, slow, or failing webhook never changes the
+pipeline's original failure or activation boundary.
+
 - Production credentials live in `.env` / macOS Keychain per the preview pattern; never commit them.
 - Preview operations use `zsh scripts/ops/with_preview_env.sh <cmd>` so legacy `.env` values cannot target the wrong branch. (The stale `PREVIEW_DATABASE_URL` entry pointing at the deleted `ep-delicate-sun` branch was removed from `.env` on 2026-08-20; duplicate lines were collapsed.)
 - On-demand revalidation (2026-08-20): `REVALIDATION_SECRET` is set in Vercel (production) and `.env` (`CFB_REVALIDATION_URL=https://c-ks-picks-cfb.vercel.app/api/revalidate`); the route rejects missing/invalid signatures (401) and stale timestamps (>5 min). Rotating the secret requires updating both sides and redeploying.

@@ -86,6 +86,7 @@ dev = [
     "bandit>=1.9.3",
     "pytest>=8.4.1",
     "pytest-mock>=3.15.1",
+    "pytest-cov>=5.0",
 ]
 
 [tool.pytest.ini_options]
@@ -101,3 +102,12 @@ norecursedirs = [
   "contracts",
   "assets",
 ]
+
+[tool.coverage.run]
+source = ["src/cks_picks_cfb"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 0

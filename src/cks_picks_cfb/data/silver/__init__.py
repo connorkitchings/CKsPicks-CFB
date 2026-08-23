@@ -1,0 +1,53 @@
+"""Provider-neutral Silver contracts and fail-closed dataset builders."""
+
+from cks_picks_cfb.data.silver.builders import (
+    NORMALIZERS,
+    build_silver_version,
+    normalize_data_corrections,
+    normalize_game_outcomes,
+    normalize_games,
+    normalize_legacy_market_references,
+    normalize_market_quotes,
+    normalize_market_snapshots,
+    normalize_plays,
+    normalize_preseason_inputs,
+    normalize_schedule_week_policy,
+    normalize_team_aliases,
+    normalize_team_game_stats,
+    normalize_teams,
+    normalize_venues,
+    normalize_weather,
+    validate_contract,
+)
+from cks_picks_cfb.data.silver.contracts import (
+    DATASET_PROVIDERS,
+    LEGACY_TIMESTAMP_STATUS,
+    SILVER_CONTRACTS,
+    SilverContract,
+    SilverValidationError,
+)
+
+__all__ = [
+    "DATASET_PROVIDERS",
+    "LEGACY_TIMESTAMP_STATUS",
+    "NORMALIZERS",
+    "SILVER_CONTRACTS",
+    "SilverContract",
+    "SilverValidationError",
+    "build_silver_version",
+    "normalize_data_corrections",
+    "normalize_game_outcomes",
+    "normalize_games",
+    "normalize_legacy_market_references",
+    "normalize_market_quotes",
+    "normalize_market_snapshots",
+    "normalize_plays",
+    "normalize_preseason_inputs",
+    "normalize_schedule_week_policy",
+    "normalize_team_aliases",
+    "normalize_team_game_stats",
+    "normalize_teams",
+    "normalize_venues",
+    "normalize_weather",
+    "validate_contract",
+]

@@ -54,18 +54,20 @@ CKsPicks-CFB/
 src/cks_picks_cfb/
 ├── train.py                     # Canonical Hydra training entry point
 ├── model_bundle.py / model_bundle_v3.py   # Bundle manifests, loading, validation
-├── preseason.py / scoring.py / loader.py / artifacts.py
+├── preseason.py                 # Compatibility facade for focused preseason modules
+├── preseason_features.py / preseason_matchups.py / preseason_blends.py
+├── scoring.py / loader.py / artifacts.py
 ├── config/                      # champion.py, experiments.py
 ├── data/                        # Ingestion + lake
-│   ├── ingest_api.py            # Hardened CFBD client (fail-closed)
+│   ├── storage/                 # Storage abstraction (base, local, r2, factory)
+│   ├── silver/                  # Silver layer (contracts, builders)
 │   ├── the_odds_api.py          # Timestamped market quotes (canonical)
 │   ├── sources.py / schema_contracts.py    # Typed source contracts
 │   ├── lake.py / catalog.py     # Immutable Bronze/Silver/Gold + catalog registry
-│   ├── history.py / silver.py   # Historical bootstrap + Silver builders
+│   ├── history.py               # Historical bootstrap
 │   ├── reconciliation.py        # Cross-source game reconciliation
 │   ├── week_policy.py           # Canonical Week policy routing
 │   ├── runtime.py               # ENV resolution + guards
-│   ├── storage.py               # R2/local backends
 │   └── games.py, plays.py, teams.py, venues.py, game_stats.py,
 │       betting_lines.py, weather (ingest at scripts/pipeline/ingest_weather.py),
 │       coaches.py, rosters.py, recruiting.py, rankings.py, ratings.py,
@@ -73,7 +75,10 @@ src/cks_picks_cfb/
 ├── features/
 │   ├── pipeline.py              # Feature engineering pipeline
 │   ├── point_in_time.py         # Kickoff-ordered PIT loading + regime routing
-│   ├── core.py / byplay.py      # Aggregations (team_game, season, play-level)
+│   ├── aggregations/            # Aggregations (drives, team_game, team_season, opponent_adj)
+│   ├── byplay/                  # Play enrichment & data corrections (enrichment, corrections)
+│   ├── core.py                  # Backward-compatible shim -> aggregations
+│   ├── regimes.py / rolling_ewma.py  # Pure routing + point-in-time EWMA helpers
 │   ├── weather.py / situational.py / external.py
 │   ├── selector.py / persist.py
 │   └── internal_ratings.py
@@ -85,10 +90,10 @@ src/cks_picks_cfb/
 │   ├── promotion.py             # Predictive gates
 │   ├── market_grading.py / predictive_evaluation.py
 │   └── v1_baseline.py, v2_*.py  # Legacy V2-era variants (history)
-├── inference/                   # predict.py, report.py
 ├── ops/                         # Resumable state machine
 │   ├── __main__.py              # python -m cks_picks_cfb.ops (publish/freeze/close/replay)
 │   ├── state_machine.py / lease.py / data_audit.py
+├── inference/                   # Weekly input, routing, edge, and manifest helpers
 ├── training/                    # train.py (regime training internals)
 ├── db/                          # migrations.py (applies contracts/migrations)
 ├── analysis/                    # unadjusted.py
@@ -120,7 +125,7 @@ scripts/
 │   ├── generate_game_ordinal_candidates.py, evaluate_game_ordinal_predictions.py,
 │   │   refit_game_ordinal_bundle.py, refit_regime_bundle.py,
 │   │   generate_baseline_predictions.py, evaluate_regimes.py,
-│   │   select_preseason_blend.py, train_preseason_model.py
+│   │   select_preseason_blend.py
 │   ├── generate_weekly_bets.py  # Weekly predictions
 │   ├── publish_to_db.py         # R2 artifact → Neon (--from-artifact)
 │   ├── publish_model_artifact.py, publish_model_bundle_v2.py
@@ -129,8 +134,8 @@ scripts/
 │   ├── export_cfbd_pickem.py    # CFBD Model Pick'em exporter
 │   ├── ingest_weather.py, snapshot_week_inputs.py, cache_running_season_stats.py,
 │   │   cache_weekly_stats.py, combine_history_versions.py, seed_data_corrections.py
-│   ├── compare_preview_model_bundles.py, publish_review.py, publish_picks.py (legacy email)
-│   └── run_pipeline_generic.py, training_cli.py
+│   └── compare_preview_model_bundles.py, publish_review.py
+│       # Archived wrappers and legacy publishers live in scripts/archive/.
 └── archive/                     # points_for, tests (historical)
 ```
 

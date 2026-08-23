@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from cks_picks_cfb.data.sources import (
+    CFBDSourceAdapter,
     FailureCategory,
     RetryPolicy,
     SourceError,
@@ -95,3 +96,11 @@ def test_rate_limit_honors_retry_after_header():
         sleep=delays.append,
     )
     assert delays == [3.0]
+
+
+def test_cfbd_adapter_fails_closed_on_zero_records():
+    adapter = CFBDSourceAdapter({"games": lambda _: []})
+    with pytest.raises(SourceError) as error:
+        fetch_with_retry(adapter, "games", {"year": 2026})
+    assert error.value.category == FailureCategory.DATA_UNAVAILABLE
+    assert not error.value.retryable

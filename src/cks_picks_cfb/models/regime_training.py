@@ -102,6 +102,8 @@ def _fit_predict(
         # even when every value is finite. Genuine numerical breakdown always
         # surfaces as non-finite output, which stays fatal below.
         warnings.simplefilter("ignore", RuntimeWarning)
+        warnings.simplefilter("ignore", UserWarning)
+        warnings.simplefilter("ignore", FutureWarning)
         model.fit(train_features, train[target_column])
         prediction = np.asarray(model.predict(validation_features), dtype=float)
     if not np.isfinite(prediction).all():
@@ -128,6 +130,8 @@ def fit_candidate_model(
     values = _model_values(frame, features)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
+        warnings.simplefilter("ignore", UserWarning)
+        warnings.simplefilter("ignore", FutureWarning)
         model.fit(values, frame[target_column])
     if not np.isfinite(
         np.asarray(getattr(model[-1], "coef_", [0.0]), dtype=float)

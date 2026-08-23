@@ -82,7 +82,7 @@ The validation workflow is designed to be run from the command line after the da
 ### Prerequisites
 
 1.  **Environment Variables**: Ensure your `.env` file is configured with the `CFB_MODEL_DATA_ROOT` variable pointing to your data directory. The validation script uses this to find the data.
-2.  **Aggregated Data**: You must have already run the aggregation pipeline (e.g., via `uv run python scripts/pipeline/run_pipeline_generic.py --year YYYY`) to generate the `processed` data.
+2.  **Aggregated Data**: Rebuild the applicable Silver/Gold inputs through the current preview workflow (for example, `make prepare-week YEAR=YYYY WEEK=WEEK AS_OF=TIMESTAMP ENV=preview`). Do not use the archived generic pipeline wrapper.
 3.  **Consolidated Data File**: The validation script runs on a single data file. You may need to consolidate the partitioned data first using a helper script like `scripts/consolidate_data.py`.
 
 ### Running the Validator
@@ -100,4 +100,3 @@ uv run python scripts/pipeline/validate_data.py \
 ```
 
 If validation succeeds, the script will exit with a code 0. If it fails, it will print a descriptive error message and exit with a code 1, which can be used to halt an automated pipeline.
-

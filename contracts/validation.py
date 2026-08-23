@@ -129,11 +129,31 @@ def check_migration_history() -> list[str]:
     return errors
 
 
+def check_python_contracts() -> list[str]:
+    errors = []
+    try:
+        from cks_picks_cfb.data.schema_contracts import schema_for
+        schema = schema_for("games", "v1")
+        if not schema.required:
+            errors.append("schema_for('games', 'v1') returned empty required columns")
+    except Exception as exc:
+        errors.append(f"Failed to import or validate schema_for: {exc}")
+
+    try:
+        from cks_picks_cfb.model_bundle import validate_model_feature_allowlist
+        validate_model_feature_allowlist(("off_epa_play_mean",))
+    except Exception as exc:
+        errors.append(f"Failed to import or validate validate_model_feature_allowlist: {exc}")
+
+    return errors
+
+
 def main():
     all_errors = []
     all_errors.extend(check_teams_sync())
     all_errors.extend(check_schema_sync())
     all_errors.extend(check_migration_history())
+    all_errors.extend(check_python_contracts())
 
     if all_errors:
         print("Contracts validation FAILED:")

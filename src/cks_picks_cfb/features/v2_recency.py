@@ -6,113 +6,29 @@ from tqdm import tqdm
 
 from cks_picks_cfb.config import get_data_root
 from cks_picks_cfb.features.core import apply_iterative_opponent_adjustment
+from cks_picks_cfb.features.regimes import (
+    CANONICAL_EARLY_REGIMES,
+    LEGACY_TO_CANONICAL_REGIME,
+    canonical_prediction_regime,
+    completed_game_regime,
+    upcoming_game_regime,
+)
+from cks_picks_cfb.features.rolling_ewma import (
+    _calculate_ewma,
+    aggregate_team_season_ewma,
+)
+
+__all__ = [
+    "CANONICAL_EARLY_REGIMES",
+    "LEGACY_TO_CANONICAL_REGIME",
+    "_calculate_ewma",
+    "aggregate_team_season_ewma",
+    "canonical_prediction_regime",
+    "completed_game_regime",
+    "upcoming_game_regime",
+]
 
 MIN_CURRENT_SEASON_GAMES = 4
-
-# Historic datasets and model_bundle_v2 use completed-game labels. New model
-# artifacts use the ordinal of the upcoming team game so a team's first game
-# cannot be mistaken for a preseason exhibition.
-CANONICAL_EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4", "established")
-LEGACY_TO_CANONICAL_REGIME = {
-    "preseason": "game_1",
-    "one_game": "game_2",
-    "two_games": "game_3",
-    "three_games": "game_4",
-    "established": "established",
-}
-
-
-def completed_game_regime(games: int | float | None) -> str:
-    """Return the legacy completed-game routing label."""
-    count = 0 if games is None or pd.isna(games) else max(0, int(games))
-    return {
-        0: "preseason",
-        1: "one_game",
-        2: "two_games",
-        3: "three_games",
-    }.get(count, "established")
-
-
-def upcoming_game_regime(completed_games: int | float | None) -> str:
-    """Return the canonical route for a team's next scheduled game."""
-    count = (
-        0
-        if completed_games is None or pd.isna(completed_games)
-        else max(0, int(completed_games))
-    )
-    return {0: "game_1", 1: "game_2", 2: "game_3", 3: "game_4"}.get(
-        count, "established"
-    )
-
-
-def canonical_prediction_regime(value: str | None) -> str:
-    """Normalize a legacy or canonical route value to the new contract."""
-    if value in CANONICAL_EARLY_REGIMES:
-        return str(value)
-    try:
-        return LEGACY_TO_CANONICAL_REGIME[str(value)]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported prediction regime: {value!r}") from exc
-
-
-def _calculate_ewma(series, alpha):
-    """
-    Calculate Exponentially Weighted Moving Average.
-    pandas ewm uses alpha=alpha, adjust=True/False.
-    If adjust=True, uses weights (1-alpha)**i.
-    """
-    return series.ewm(alpha=alpha, min_periods=1).mean()
-
-
-def aggregate_team_season_ewma(team_game_df, alpha):
-    """
-    Aggregate team-game metrics using EWMA (Exponential Decay).
-    """
-    team_game_df = team_game_df.copy()
-    date_column = next(
-        (
-            column
-            for column in ("kickoff_utc", "start_date", "date")
-            if column in team_game_df
-        ),
-        None,
-    )
-    sort_columns = ["season", "team"]
-    if date_column:
-        team_game_df[date_column] = pd.to_datetime(
-            team_game_df[date_column], utc=True, errors="raise"
-        )
-        sort_columns.append(date_column)
-    else:
-        sort_columns.append("week")
-    if "game_id" in team_game_df:
-        sort_columns.append("game_id")
-    team_game_df = team_game_df.sort_values(sort_columns)
-
-    # Columns to aggregate (excluding identifiers)
-    exclude_cols = [
-        "season",
-        "week",
-        "game_id",
-        "team",
-        "opponent",
-        "home_away",
-        "date",
-    ]
-    metric_cols = [
-        c
-        for c in team_game_df.columns
-        if c not in exclude_cols and pd.api.types.is_numeric_dtype(team_game_df[c])
-    ]
-
-    ewma = team_game_df.groupby(["season", "team"], sort=False)[metric_cols].transform(
-        lambda series: series.ewm(alpha=alpha, min_periods=1).mean().shift(1)
-    )
-    team_season = team_game_df[["season", "week", "team", "game_id"]].copy()
-    team_season[metric_cols] = ewma
-    team_season = team_season.dropna(subset=metric_cols, how="all")
-
-    return team_season
 
 
 def _normalize_games_df(records) -> pd.DataFrame:
