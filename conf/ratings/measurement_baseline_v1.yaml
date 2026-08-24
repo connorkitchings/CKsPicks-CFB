@@ -1,0 +1,88 @@
+measurement_config_version: measurement_baseline_v2
+catalog_version: 2
+description: >-
+  Frozen Phase 1 rating measurement catalog and adjustment baseline. Raw
+  team-game observations carry exact numerators and denominators; pregame
+  snapshots apply opponent adjustment exactly once at the measurement layer.
+  Approved by the Phase 1 contract on 2026-08-24.
+
+eligible_play:
+  is_drive_play_rederived: true
+  requires_garbage_zero: true
+
+eligible_drive:
+  requires_eligible_play: true
+
+seasons:
+  historical_development: [2021, 2022, 2023, 2024, 2025]
+  protected: [2026]
+  forbidden: [2020]
+  out_of_scope: [2019]
+
+schedule_policy:
+  require_completed: true
+  excluded_statuses: [cancelled, canceled, postponed]
+  require_reconciled_team_game: true
+
+temporal_policy:
+  reconstructed_seasons: [2021, 2022, 2023, 2024, 2025]
+  authentic_seasons: [2026]
+  authentic_timestamp_columns: [effective_at, captured_at, observed_at, __captured_at]
+
+measurements:
+  - measurement_id: epa_per_play
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: sum of eligible-play PPA
+    denominator: eligible scrimmage plays
+  - measurement_id: success_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: successful eligible plays
+    denominator: eligible scrimmage plays
+  - measurement_id: explosive_rate_20
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: eligible plays gaining at least 20 yards
+    denominator: eligible scrimmage plays
+  - measurement_id: points_per_scoring_opportunity
+    source: drives
+    roles: [offense, defense]
+    exposure_unit: opportunities
+    adjustment: iterative_additive
+    numerator: points on eligible scoring-opportunity drives
+    denominator: eligible scoring-opportunity drives
+  - measurement_id: average_start_field_position
+    source: drives
+    roles: [offense, defense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: sum of own-goal distance at eligible drive start
+    denominator: eligible drives
+  - measurement_id: plays_per_drive
+    source: byplay
+    roles: [offense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: eligible scrimmage plays
+    denominator: eligible offensive drives
+  - measurement_id: turnover_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: none
+    numerator: eligible-play turnovers
+    denominator: eligible scrimmage plays
+
+adjustment:
+  method: iterative_additive_league_centered
+  iterations: 4
+  retained_iterations: [0, 4]
+
+research_prefix: artifacts/research/rating-successor/measurements

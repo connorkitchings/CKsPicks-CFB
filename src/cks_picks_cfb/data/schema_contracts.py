@@ -9,6 +9,28 @@ from typing import Any, Mapping
 
 import pandas as pd
 
+from cks_picks_cfb.ratings.contracts import (
+    OBSERVATION_COLUMNS,
+    OBSERVATION_KEYS,
+    OBSERVATION_SCHEMA_VERSION,
+    SNAPSHOT_COLUMNS,
+    SNAPSHOT_KEYS,
+    SNAPSHOT_SCHEMA_VERSION,
+    TERMINAL_SNAPSHOT_COLUMNS,
+    TERMINAL_SNAPSHOT_KEYS,
+    TERMINAL_SNAPSHOT_SCHEMA_VERSION,
+)
+from cks_picks_cfb.ratings.state_contracts import (
+    MEASUREMENT_STATE_COLUMNS,
+    MEASUREMENT_STATE_DATASET,
+    MEASUREMENT_STATE_KEYS,
+    MEASUREMENT_STATE_SCHEMA_VERSION,
+    TEAM_STATE_COLUMNS,
+    TEAM_STATE_DATASET,
+    TEAM_STATE_KEYS,
+    TEAM_STATE_SCHEMA_VERSION,
+)
+
 
 class DatasetSchemaError(ValueError):
     """Raised when a frame does not satisfy its published schema contract."""
@@ -134,6 +156,142 @@ _GOLD_REQUIRED: dict[str, tuple[str, ...]] = {
     "point_in_time_matchups_v5": ("season", "game_id"),
 }
 
+_RATING_SCHEMAS: dict[str, DatasetSchema] = {
+    "rating_measurement_observations": DatasetSchema(
+        dataset="rating_measurement_observations",
+        schema_version=OBSERVATION_SCHEMA_VERSION,
+        required=OBSERVATION_COLUMNS,
+        keys=OBSERVATION_KEYS,
+        integer_columns=("season", "week", "game_id"),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "kickoff_utc",
+            "team",
+            "opponent",
+            "side",
+            "measurement_id",
+            "unit_role",
+            "numerator",
+            "denominator",
+            "exposure_unit",
+            "temporal_status",
+            "coverage_status",
+            "measurement_schema_version",
+            "measurement_design_id",
+            "parent_ref_shas",
+            "code_sha",
+            "config_sha",
+        ),
+        allowed_values={
+            "side": ("home", "away"),
+            "unit_role": ("offense", "defense"),
+            "temporal_status": ("reconstructed", "authentic"),
+            "coverage_status": ("observed", "missing"),
+            "exposure_unit": ("plays", "drives", "opportunities"),
+        },
+    ),
+    "rating_adjusted_measurement_snapshots": DatasetSchema(
+        dataset="rating_adjusted_measurement_snapshots",
+        schema_version=SNAPSHOT_SCHEMA_VERSION,
+        required=SNAPSHOT_COLUMNS,
+        keys=SNAPSHOT_KEYS,
+        integer_columns=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "games_exposure",
+            "included_observations",
+            "adjustment_iteration",
+        ),
+        timestamp_columns=("as_of_kickoff_utc",),
+        nonnullable=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "as_of_kickoff_utc",
+            "team",
+            "measurement_id",
+            "unit_role",
+            "games_exposure",
+            "primary_exposure",
+            "included_observations",
+            "adjustment_method",
+            "adjustment_iteration",
+            "coverage_status",
+            "measurement_schema_version",
+            "measurement_design_id",
+            "parent_observation_version_id",
+            "parent_ref_shas",
+            "code_sha",
+            "config_sha",
+        ),
+        allowed_values={
+            "unit_role": ("offense", "defense"),
+            "coverage_status": ("observed", "missing"),
+            "adjustment_method": (
+                "iterative_additive_league_centered",
+                "none",
+            ),
+        },
+    ),
+    "rating_adjusted_measurement_terminal_snapshots": DatasetSchema(
+        dataset="rating_adjusted_measurement_terminal_snapshots",
+        schema_version=TERMINAL_SNAPSHOT_SCHEMA_VERSION,
+        required=TERMINAL_SNAPSHOT_COLUMNS,
+        keys=TERMINAL_SNAPSHOT_KEYS,
+        integer_columns=("season", "games_exposure", "included_observations", "adjustment_iteration"),
+        timestamp_columns=("terminal_at_utc",),
+        nonnullable=(
+            "season", "terminal_at_utc", "team", "measurement_id", "unit_role",
+            "games_exposure", "primary_exposure", "included_observations",
+            "adjustment_method", "adjustment_iteration", "coverage_status",
+            "measurement_schema_version", "measurement_design_id",
+            "parent_observation_version_id", "parent_ref_shas", "code_sha", "config_sha",
+        ),
+        allowed_values={
+            "unit_role": ("offense", "defense"),
+            "coverage_status": ("observed", "missing"),
+            "adjustment_method": ("iterative_additive_league_centered", "none"),
+        },
+    ),
+    MEASUREMENT_STATE_DATASET: DatasetSchema(
+        dataset=MEASUREMENT_STATE_DATASET,
+        schema_version=MEASUREMENT_STATE_SCHEMA_VERSION,
+        required=MEASUREMENT_STATE_COLUMNS,
+        keys=MEASUREMENT_STATE_KEYS,
+        integer_columns=("season", "week", "completed_games"),
+        timestamp_columns=("as_of_utc",),
+        nonnullable=(
+            "state_id", "state_kind", "season", "week", "as_of_utc", "team",
+            "measurement_id", "unit_role", "standardization_center", "standardization_scale",
+            "primary_exposure", "completed_games", "prior_mean", "prior_variance",
+            "prior_precision", "observation_precision", "prior_weight", "observed_weight",
+            "posterior_mean", "posterior_variance", "posterior_sd", "state_schema_version",
+            "state_design_id", "parent_measurement_refs", "code_sha", "config_sha",
+        ),
+        allowed_values={"state_kind": ("pregame", "season_terminal"), "unit_role": ("offense", "defense")},
+    ),
+    TEAM_STATE_DATASET: DatasetSchema(
+        dataset=TEAM_STATE_DATASET,
+        schema_version=TEAM_STATE_SCHEMA_VERSION,
+        required=TEAM_STATE_COLUMNS,
+        keys=TEAM_STATE_KEYS,
+        integer_columns=("season", "week", "completed_games", "component_count"),
+        timestamp_columns=("as_of_utc",),
+        nonnullable=(
+            "state_id", "state_kind", "season", "week", "as_of_utc", "team",
+            "offense_mean", "offense_sd", "defense_mean", "defense_sd", "overall_mean",
+            "overall_sd", "completed_games", "offense_observed_weight", "defense_observed_weight",
+            "component_count", "state_schema_version", "state_design_id",
+            "parent_measurement_refs", "code_sha", "config_sha",
+        ),
+        allowed_values={"state_kind": ("pregame", "season_terminal")},
+    ),
+}
+
 
 def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
     """Return the executable contract for every active immutable dataset."""
@@ -204,6 +362,14 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             {},
             True,
         )
+    if dataset in _RATING_SCHEMAS:
+        schema = _RATING_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, "
+                f"got {schema_version}"
+            )
+        return schema
     raise DatasetSchemaError(
         f"No executable schema registered for {dataset}/{schema_version}"
     )

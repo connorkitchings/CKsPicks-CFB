@@ -1,0 +1,34 @@
+team_state_config_version: team_state_baseline_v1
+measurement_config_version: measurement_baseline_v2
+research_prefix: artifacts/research/rating-successor/states
+
+core_measurements:
+  epa_per_play:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.00
+    fallback_scale: 0.15
+    scale_floor: 0.05
+  success_rate:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.42
+    fallback_scale: 0.06
+    scale_floor: 0.02
+  explosive_rate_20:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.10
+    fallback_scale: 0.04
+    scale_floor: 0.01
+  points_per_scoring_opportunity:
+    weight: 0.25
+    equivalent_prior_exposure: 8.0
+    fallback_center: 4.00
+    fallback_scale: 0.75
+    scale_floor: 0.25
+
+prior:
+  offseason_rho: 0.60
+  neutral_mean: 0.0
+  neutral_variance: 1.0

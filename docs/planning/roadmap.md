@@ -1,6 +1,6 @@
 # 2026 Season and Rating-Centric Transition Roadmap
 
-> **Last updated:** 2026-08-23
+> **Last updated:** 2026-08-24
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 ## Direction
@@ -53,46 +53,100 @@ and both V4 and candidate predictions frozen before its first kickoff.
 
 Do not change V4 weights, routes, bundles, publication policy, weekly workflow,
 or rollback behavior as part of rating research. V4 is the production benchmark
-for every challenger.
+for every challenger. Rating work has no path to Neon activation, public
+publication, or production rollback selection before a separate promotion
+contract is approved.
 
-### 1. Requirements before Week 0
+### 1. Measurement and opponent-adjustment foundation
 
-Complete the as-built responsibility audit and publish measurement, provenance,
-opponent-adjustment, state, uncertainty, prediction, and shadow-isolation
-requirements. The estimator, scale, priors, and artifact schema stay open.
+Audit the actual 2021–2026 Gold fields and formalize a deliberately small,
+versioned team-game measurement interface. Every selected measurement carries
+its exposure, effective-time status, immutable source lineage, missingness, and
+quality flags. The baseline performs schedule adjustment once at the
+measurement layer and records which contexts are already represented.
 
-### 2. Measurement and adjustment contracts
+The phase exits only when adjusted measurements are reproducible and pass
+coverage, redundancy, point-in-time, and schedule-strength double-counting
+checks. No rating estimator is introduced before this gate.
 
-Formalize selected measurement families, coverage, exposure, redundancy, and
-point-in-time behavior. The baseline applies schedule adjustment at the
-measurement layer. Rating-assisted adjustment is a separately attributable
-future challenger.
+**Current disposition:** The initial implementation is retained as immutable
+research history but is under corrective v2 remediation before it can satisfy
+this gate. See `docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`.
 
-### 3. Minimum viable rating baseline
+### 2. Minimum viable team-state baseline
 
-Under a new implementation contract, produce offense, defense, overall, and
-uncertainty-bearing state snapshots before each game. Translate those states
-into margin and total predictions without residual ML. Emit immutable shadow
-artifacts only.
+Select the simplest viable estimator under a dedicated implementation contract.
+Produce pregame offense, defense, overall-quality, and uncertainty-bearing team
+states whose meaning remains stable throughout the season. Preseason priors
+lose influence smoothly as credible exposure accumulates. Historical state
+snapshots retain exact input, configuration, code, and cutoff lineage.
 
-### 4. Candidate research
+### 3. Structured margin and total prediction
 
-Compare regularized, empirical-Bayes, hierarchical, state-space, and related
-candidates only against the same temporal lineage and V4 baseline. Preseason
-priors, special teams, uncertainty, and residual ML are independently
-attributable decisions.
+Map two frozen team states plus legitimate venue and game context directly to
+expected margin and total, with non-null predictive uncertainty for both. The
+first baseline excludes residual ML and market inputs. Historical expanding
+temporal evaluation compares the candidate to V4 on identical games, and all
+prospective gates are registered before the candidate identity freezes.
 
-### 5. Protected prospective evidence and promotion
+### 4. Isolated shadow operations
+
+Add a research-only weekly workflow that builds states, generates predictions,
+validates schedule coverage, and freezes immutable artifacts before kickoff.
+Postgame scoring pairs candidate and V4 outputs for the same games and cutoff.
+Missing data, partial coverage, duplicates, late execution, or checksum failure
+must fail closed. Week 1 is the first target only if Phases 1–4 pass without
+weakening a gate.
+
+### 5. Protected prospective evidence
 
 2021–2025 supports historical temporal development; it is not a new untouched
 test set for this architecture. Each 2026 candidate must freeze its identity,
 lineage, configuration, cutoff, and predictions before eligible outcomes are
-observed. After six full shadow slates, promotion requires a separate approved
-contract and evidence of rating quality, prediction quality, calibration,
-operational readiness, rollback, and no material regression versus V4.
+observed. Run the unchanged baseline through normal-coverage slates and evaluate
+rating behavior, prediction quality, uncertainty calibration, and only then
+authentic timestamped market value. Week 0 does not count.
+
+### 6. Attributable challenger research
+
+After the simple baseline freezes, investigate estimator families, priors,
+special teams, alternative uncertainty methods, rating-assisted adjustment,
+and optional residual ML as separately attributable changes. Every revision
+receives a new candidate identity and later untouched prospective window; it
+cannot alter the baseline evidence lane.
+
+### 7. Promotion review and operationalization
+
+After one unchanged candidate accumulates six eligible full slates, a separate
+approved contract may review paired V4 results, calibration, reproducibility,
+operational rehearsal, fail-closed behavior, and rollback proof. Promotion is
+never automatic, and V4 remains the fallback.
 
 Authentic timestamped market evaluation follows football-model evaluation. A
 failed gate cannot be bypassed for schedule reasons.
+
+## Planning and execution protocol
+
+- This roadmap controls sequencing; it does not authorize implementation of all
+  phases as one change.
+- Each phase receives a decision-complete Sol contract and a fresh Terra
+  implementation task. A phase cannot begin implementation before its prior
+  exit gate is satisfied or an approved amendment explicitly changes the order.
+- The initial baseline is deliberately end-to-end and simple. Richer research
+  begins only after the first candidate identity is frozen so prospective
+  evidence is not delayed or contaminated.
+- Week 1 is a conditional target. Production Week 0 operations and evidence
+  integrity take precedence over the date.
+
+## Phase contract queue
+
+- [Approved high-level roadmap](../plans/2026-08-24/rating-centric-successor-high-level-roadmap.md)
+  — sequencing and governance authority; not a single Terra implementation task.
+- [Phase 1 measurement foundation](../plans/2026-08-24/phase1-rating-measurement-foundation.md)
+  — Approved documentation and planning contract. Its seven-measurement
+  catalog, four-iteration adjustment, temporal-status policy, and Preview-only
+  registration policy are frozen; implementation remains a separate Terra task.
+- Phases 2–7 remain pending until the preceding exit gate and detailed Sol review.
 
 ## Invariants and open decisions
 
@@ -100,6 +154,7 @@ All work preserves immutable lineage, strict point-in-time provenance, temporal
 validation, 2020 exclusion, market separation, sealed/frozen evaluation,
 research-production isolation, and fail-closed operations.
 
-The final estimator, rating scale, prior model, uncertainty mechanism,
-special-teams treatment, residual model, and artifact schema are intentionally
-deferred to later approved contracts.
+The exact baseline estimator, rating scale, prior model, uncertainty mechanism,
+and artifact schema are selected in their phase contracts. Special-teams
+treatment, rating-assisted adjustment, and residual ML remain deferred
+challenger decisions.

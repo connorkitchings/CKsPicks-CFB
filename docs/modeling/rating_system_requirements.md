@@ -48,6 +48,34 @@ prior, uncertainty method, and artifact format remain open.
 - **Market decision** receives timestamped prices only after football
   prediction, uncertainty, and provenance exist.
 
+### Phase 1 remediation and Phase 2 baseline (in progress)
+
+The original Phase 1 implementation is retained as research history but is not
+an authorized Phase 2 input. Its corrective contract is
+`docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`; it replaces
+the prior refs with v2 observations, season-to-date snapshots, and terminal
+snapshots. Phase 2 is implemented only from that passing handoff under
+`docs/plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
+
+The baseline contains EPA/play, success rate,
+20-yard explosive rate, points per scoring opportunity, average starting
+field position, plays per drive, and turnover rate. Only the first four are
+adjustment-eligible; field position, pace, and turnovers remain contextual
+until a later contract says otherwise.
+
+The adjustment is four fixed, league-centered additive iterations over
+strictly prior evidence, with iteration zero and four retained for audit.
+Zero exposure stays null with a quality reason; play eligibility is
+`is_drive_play == 1` and `garbage == 0`. Reconstructed 2021–2025 timing is
+valid for historical development only; protected 2026 evidence requires
+authentic source timing. The implementation lives in the isolated
+`cks_picks_cfb.ratings` namespace with the Preview-only CLI
+`scripts/pipeline/build_rating_measurements.py`; V4 paths are untouched.
+Phase 2 consumes exactly the replacement refs and checksums recorded in the
+corrected [measurement catalog](measurement_catalog.md). It produces only
+Preview research component and team-state artifacts; no catalog registration
+occurs unless explicitly requested.
+
 ### Data and lineage
 
 - Use immutable Bronze/Silver/Gold lineage, stable team/game keys, and strict
@@ -93,6 +121,9 @@ is mandatory.
 3. Structured rating-to-game prediction and shadow artifact contract.
 4. Candidate-estimator, special-teams, uncertainty, and residual-ML research.
 5. Evidence-gated promotion, rehearsal, and rollback contract.
+
+Each follow-on contract requires a fresh Terra task before its estimator
+code, artifacts, Preview catalog registration, or audit execution occurs.
 
 ## Deferred decisions
 
