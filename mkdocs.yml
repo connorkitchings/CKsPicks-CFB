@@ -1,100 +1,45 @@
 site_name: CKsPicks-CFB
-site_description: An end-to-end college football betting model that predicts point spreads and over/unders.
+site_description: College-football prediction system documentation.
 
 theme:
   name: material
   features:
     - navigation.tabs
     - navigation.sections
-    - toc.integrate
     - navigation.top
     - search.suggest
     - search.highlight
-    - content.tabs.link
-    - content.code.annotate
     - content.code.copy
 
 nav:
-  - "Home": "index.md"
-  - "Documentation Guide": "guide.md"
+  - Home: index.md
+  - 2026 Direction:
+      - Roadmap: planning/roadmap.md
+      - Rating-System Requirements: modeling/rating_system_requirements.md
+      - Measurement Catalog: modeling/measurement_catalog.md
+      - Evaluation: modeling/evaluation.md
+      - V4 Regime Contract: modeling/early_season_regimes.md
+  - Data Platform:
+      - Data Platform 2026: architecture/data_platform_2026.md
+      - Point-in-Time Pipeline: architecture/cfbd_point_in_time_pipeline.md
+      - Ingestion Guide: data/ingestion_guide.md
+      - Provider Audit: cfbd/2026_provider_audit.md
+  - Operations:
+      - Weekly Pipeline: ops/weekly_pipeline.md
+      - Production Runbook: ops/production_runbook.md
+      - Validation: ops/validation.md
+      - MLflow Development Tooling: ops/mlflow_mcp.md
+  - Model and Experiment Lineage:
+      - Feature Registry: project_org/feature_registry.md
+      - Experiment Index: experiments/index.md
+      - Betting Policy: modeling/betting_policy.md
+  - Decisions and Contracts:
+      - Decision Log: decisions/decision_log.md
+      - Implementation Contracts: plans/index.md
+  - Archive: archive.md
 
-  - "2026 Season":
-      - "Roadmap": "planning/roadmap.md"
-      - "Modernization & Refactoring Plan": "planning/2026_codebase_modernization_and_refactoring_plan.md"
-      - "Execution Plan (Complete)": "planning/2026_historical_bootstrap_week0_execution.md"
-      - "Data Platform 2026": "architecture/data_platform_2026.md"
-      - "CFBD Point-in-Time Pipeline": "architecture/cfbd_point_in_time_pipeline.md"
-      - "Early-Season Regimes": "modeling/early_season_regimes.md"
-      - "Implementation Contracts": "plans/index.md"
-
-  - "Modeling":
-      - "Early-Season Regimes": "modeling/early_season_regimes.md"
-      - "Features": "modeling/features.md"
-      - "Betting Policy": "modeling/betting_policy.md"
-      - "Advanced Features": "modeling/advanced_features.md"
-      - "Evaluation": "modeling/evaluation.md"
-      - "V2 Baseline (Historical)": "modeling/baseline.md"
-
-  - "Operations":
-      - "Weekly Pipeline": "ops/weekly_pipeline.md"
-      - "Production Runbook": "ops/production_runbook.md"
-      - "Validation": "ops/validation.md"
-      - "Data Paths (Historical)": "ops/data_paths.md"
-      - "Legacy V2 Ops (Historical)":
-          - "Monitoring": "ops/monitoring.md"
-          - "Rollback SOP": "ops/rollback_sop.md"
-          - "Data Quality": "ops/data_quality.md"
-          - "Production Deployment": "ops/production_deployment.md"
-
-  - "V2 Workflow (Historical)":
-      - "Experimentation Workflow": "process/experimentation_workflow.md"
-      - "12-Week Plan": "process/12_week_implementation_plan.md"
-      - "Promotion Framework": "process/promotion_framework.md"
-      - "ML Workflow": "process/ml_workflow.md"
-
-  - "Data":
-      - "Overview": "data/README.md"
-      - "Ingestion Guide": "data/ingestion_guide.md"
-      - "Pipeline Overview": "data/pipeline_overview.md"
-      - "Raw API Schemas":
-          - "Overview": "data/raw_api/README.md"
-          - "Games": "data/raw_api/games.md"
-          - "Plays": "data/raw_api/plays.md"
-          - "Betting": "data/raw_api/betting.md"
-          - "Teams": "data/raw_api/teams.md"
-          - "Venues": "data/raw_api/venues.md"
-          - "Rosters": "data/raw_api/rosters.md"
-          - "Coaches": "data/raw_api/coaches.md"
-      - "Transformed Schemas":
-          - "Overview": "data/transformed/README.md"
-          - "Plays": "data/transformed/plays.md"
-          - "Drives": "data/transformed/drives.md"
-          - "Team Game": "data/transformed/team_game.md"
-          - "Team Season": "data/transformed/team_season.md"
-          - "Opponent Adjusted": "data/transformed/opponent_adjusted.md"
-
-  - "CollegeFootballData":
-      - "Quickstart": "cfbd/quickstart.md"
-      - "Data Ingestion": "cfbd/data_ingestion.md"
-      - "2026 Provider Audit": "cfbd/2026_provider_audit.md"
-
-  - "Project Organization":
-      - "Feature Registry": "project_org/feature_registry.md"
-
-  - "Decisions":
-      - "Decision Log": "decisions/decision_log.md"
-      - "About Decisions": "decisions/README.md"
-
-  - "Experiments":
-      - "Overview": "experiments/index.md"
-
-  - "Research":
-      - "Power Ratings": "research/power_ratings.md"
-      - "PPR PRD": "research/ppr_prd.md"
-
-  - "Archive":
-      - "Legacy Experiments": "archive/experiments_legacy.md"
-      - "Model History": "archive/model_history.md"
+exclude_docs: |
+  archive/**
 
 plugins:
   - search

@@ -64,6 +64,15 @@ print(f"✅ Data root verified: {data_root}")
 - 2019 is prior-feature lineage for early 2021 only; skip 2020 entirely
 - Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
+**2026 Rating-Centric Transition:**
+- V4 remains the unchanged 2026 production champion and benchmark
+- Approved target flow: measurements → opponent adjustment → team ratings/state → structured prediction → optional ML residual → market decision
+- Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
+- Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
+- Treat eligible 2026 outcomes as protected prospective evidence: freeze a candidate design before inspecting those outcomes, and never tune repeatedly on a protected test
+- Complete initial requirements before Week 0. A first promotion review requires six completed, normal-coverage slates with V4 and candidate predictions frozen before kickoff; Week 0 does not count.
+- Rating research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved
+
 **Column Conventions:**
 - Maintain: `season`, `week`, `game_id`, `team` keys
 - Prefix: `off_*`, `def_*`, `adj_*` consistently
@@ -172,10 +181,10 @@ This is a **monorepo with two toolchains**:
 
 **Status:** 🚀 Launch in progress — buildout complete, production live, game-week operations remain
 
-The 2026 buildout (6-phase execution plan,
-`docs/planning/2026_historical_bootstrap_week0_execution.md`) is complete.
-Production is live at `https://c-ks-picks-cfb.vercel.app` in fail-closed
-`market` publication mode. Active work is governed by the Week 0 launch
+The 2026 buildout is complete; its strategic execution record is archived at
+`docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
+Production is live at `https://c-ks-picks-cfb.vercel.app` in approval-gated
+`predictions` publication mode (revealed 2026-08-21). Active work is governed by the Week 0 launch
 contract (`docs/plans/2026-08-18/week0-launch-execution.md`, Stages 4–5
 pending game week).
 
@@ -187,16 +196,18 @@ pending game week).
 - ✅ Phases 3–4: Silver reconciliation + Gold with 2022–2024 OOF baselines
 - ✅ Phase 5: V4 tournament — sealed selection, locked-2025 pass, refit on 2021–2025
   (bundle `week0-2026-v4-strict-20260818-r2`, config `conf/weekly_bets/v4_2026.yaml`)
-- 🟡 Phase 6: Production deployed 2026-08-18 (run `2026w0-79ec2aebcb00`, 8/8 games,
-  market mode); game-week publishes + freeze + predictions flip remain (Aug 25–29)
+- 🟡 Phase 6: Production deployed 2026-08-18; predictions revealed from reviewed
+  run `2026w0-55de0317120d` on 2026-08-21; progressive publishes + final freeze
+  remain (Aug 25–29)
+- 🧭 2026 rating transition: initial requirements are due before Week 0; V4
+  remains production while measurement, rating, and shadow-evaluation contracts
+  are developed in isolation
 
-**Roadmap:** `docs/planning/roadmap.md` · **Launch contract:**
+**Roadmap (launch + 2026 transition):** `docs/planning/roadmap.md` · **Launch contract:**
 `docs/plans/2026-08-18/week0-launch-execution.md`
 
-**Historical reference:** The V2 4-phase experimentation workflow
-(`docs/process/experimentation_workflow.md`) is retained as a modeling-process
-reference but is not the current operating framework. The 2026 execution plan
-supersedes it for the 2026 season.
+**Historical reference:** V2 workflow and prior rating research are retained in
+`docs/archive/`; they are evidence, not current operating authority.
 
 ---
 
@@ -344,8 +355,9 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 ### Documentation
 
 - **User Guide:** `README.md` - Project overview and setup
-- **V2 Workflow:** `docs/process/experimentation_workflow.md` - Modeling process (paused)
-- **Features:** `docs/modeling/features.md` - Feature definitions
+- **Documentation home:** `docs/index.md` - Current authority map
+- **Rating requirements:** `docs/modeling/rating_system_requirements.md` - Approved successor requirements
+- **Measurement catalog:** `docs/modeling/measurement_catalog.md` - Football measurements and provenance
 - **Betting Policy:** `docs/modeling/betting_policy.md` - Unit sizing rules
 - **Decision Log:** `docs/decisions/decision_log.md` - Historical decisions
 
@@ -421,5 +433,5 @@ See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-08-23_
 _Universal entry point for all AI coding assistants_

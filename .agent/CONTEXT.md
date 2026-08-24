@@ -30,7 +30,7 @@ CFBD / The Odds API / weather
 Bronze (src/cks_picks_cfb/data/) — immutable request-level captures,
     SHA-256 checksums, Neon catalog registry (7,163 captures)
     ↓ resumable builders (make build-silver / import-history)
-Silver (src/cks_picks_cfb/data/silver.py, history.py) — reconciled
+Silver (src/cks_picks_cfb/data/silver/, history.py) — reconciled
     season-scoped teams/venues/schedules/games/plays/outcomes/weather/
     market_quotes + quarantined legacy_market_references
     ↓ kickoff-ordered point-in-time assembly
@@ -84,6 +84,48 @@ effective-time evidence). All 8 Week 0 games route to `game_1`
 Model lineage: V2 preview (`week0-2026-preview-20260814`) → V3 games-ordinal
 (`week0-2026-games-ordinal-v3-20260816-r2`) → V4 strict.
 
+The as-built modeling flow is:
+
+```text
+immutable canonical data → team-game measurements → recency aggregation
+→ iterative opponent adjustment → point-in-time matchup features
+→ empirical-Bayes shrinkage → V4 regime routing → spread/total prediction
+→ market edge and publication
+```
+
+These foundations are reusable, but team quality is implicit across adjusted
+measurements, priors, shrinkage, and route-specific prediction models. The
+canonical intermediate product is a matchup feature row rather than a durable
+team-state estimate. Predictive uncertainty is not yet modeled; weekly
+inference emits null spread and total standard-deviation fields.
+
+### Approved 2026 direction: rating-centric hybrid
+
+V4 remains the unchanged 2026 production champion and benchmark. The approved
+target architecture is:
+
+```text
+source data → canonical Bronze/Silver/Gold → football measurements
+→ measurement-level opponent adjustment → team ratings/state
+→ structured game prediction → optional ML residual → probabilistic output
+→ market decision
+```
+
+Ratings will become the canonical offense, defense, overall-quality, and
+uncertainty-bearing representation of team strength. Priors dominate when
+evidence is sparse and observed performance gains credibility continuously;
+the long-term design does not change modeling philosophy at hard completed-game
+boundaries. Initial opponent adjustment remains upstream of rating estimation,
+and later rating-assisted adjustment is a separately attributable challenger.
+
+Development remains isolated from production activation. Each candidate must
+freeze its design before inspecting the eligible 2026 outcomes used as protected
+prospective evidence. Exact estimator, scale, prior model, uncertainty method,
+special-teams component, residual model, and artifact schema remain open for
+later contracts. The first promotion review requires six completed full slates
+with V4 and candidate predictions frozen before kickoff; Week 0 does not count.
+See `docs/planning/roadmap.md` and the modeling authority docs.
+
 ### Feature Engineering
 
 - **Opponent adjustment:** iterative additive normalization (`adjustment_iteration`, typically 2–4) with league-mean centering.
@@ -91,7 +133,9 @@ Model lineage: V2 preview (`week0-2026-preview-20260814`) → V3 games-ordinal
 - **Regime routing:** completed-game counts per team; separate prior (preseason) and current-season blocks; empirical-Bayes shrinkage toward prior by exposure (plays/drives/games grids).
 - **Naming:** `{home|away}_{off|def}_{metric}[_adj{N}][_last{M}]`; keep `season`, `week`, `game_id`, `team` keys.
 - **Weather:** outdoor-game integrations via `features/weather.py`.
-- Full catalog: `docs/modeling/features.md`; registry: `docs/project_org/feature_registry.md`.
+- Full catalog: `docs/modeling/measurement_catalog.md`; requirements:
+  `docs/modeling/rating_system_requirements.md`; registry:
+  `docs/project_org/feature_registry.md`.
 
 ### Configuration (Hydra)
 
@@ -148,14 +192,14 @@ Branches: `preview-2026` and production. Web access uses the read-only
 
 | Area | Path |
 |---|---|
-| Ingestion adapters (CFBD, Odds API, weather) | `src/cks_picks_cfb/data/` (`ingest_api.py`, `the_odds_api.py`, `sources.py`, `runtime.py`) |
-| Lake/catalog/reconciliation | `src/cks_picks_cfb/data/` (`lake.py`, `catalog.py`, `history.py`, `silver.py`, `reconciliation.py`, `week_policy.py`) |
-| Features | `src/cks_picks_cfb/features/` (`pipeline.py`, `point_in_time.py`, `core.py`, `byplay.py`, `weather.py`, `situational.py`) |
+| Ingestion adapters (CFBD, Odds API, weather) | `src/cks_picks_cfb/data/` (`sources.py`, `the_odds_api.py`, `runtime.py`) |
+| Lake/catalog/reconciliation | `src/cks_picks_cfb/data/` (`lake.py`, `catalog.py`, `history.py`, `silver/`, `reconciliation.py`, `week_policy.py`) |
+| Features | `src/cks_picks_cfb/features/` (`pipeline.py`, `point_in_time.py`, `aggregations/`, `byplay/`, `weather.py`, `situational.py`) |
 | Regime/game-ordinal training | `src/cks_picks_cfb/models/` (`regime_training.py`, `game_ordinal_training.py`, `early_season.py`, `v4_feature_variants.py`, `baselines.py`, `training_policy.py`, `promotion.py`) |
 | Market grading / evaluation | `src/cks_picks_cfb/models/` (`market_grading.py`, `predictive_evaluation.py`) |
 | Bundles | `src/cks_picks_cfb/model_bundle.py`, `model_bundle_v3.py` |
-| Ops state machine | `src/cks_picks_cfb/ops/` (`__main__.py`, `state_machine.py`, `lease.py`, `data_audit.py`) |
-| Inference | `src/cks_picks_cfb/inference/` (`predict.py`, `report.py`) |
+| Ops state machine | `src/cks_picks_cfb/ops/` (`__main__.py`, `state_machine.py`, `contracts.py`, `notifier.py`, `lease.py`, `data_audit.py`) |
+| Inference | `src/cks_picks_cfb/inference/weekly.py` + `scripts/pipeline/generate_weekly_bets.py` |
 | Canonical training entry | `src/cks_picks_cfb/train.py` (Hydra) |
 | Migrations | `src/cks_picks_cfb/db/migrations.py` + `contracts/migrations/` |
 | Pipeline CLIs | `scripts/pipeline/` (~40 scripts: preflight, publish/freeze/close, silver/gold builders, tournament, refit, pickem export) |
@@ -168,7 +212,8 @@ experiment history under `conf/experiment/v2_*` and `conf/legacy/`.
 
 ## Testing
 
-- 54 test files; full suite `uv run pytest -q` → **355 passed, 2 skipped** (2026-08-19).
+- Full source-scope, branch-aware coverage gate is **60%**; the latest verified
+  closure run recorded **414 passed, 2 skipped** and 60.02% coverage (2026-08-23).
 - Coverage of: routing/edge cases (byes, cancellations, legacy labels), lake immutability + checksums, legacy-market quarantine (17 contract tests), migrations (empty + legacy schemas), publication fail-closed boundary (`web`), ops state machine, bundle loading.
 - Quality gates: `uv run ruff format . && uv run ruff check .`, `uv run python contracts/validation.py`, `uv run mkdocs build --quiet`, `make contracts-check`, web lint/typecheck/build.
 - Pattern: minimal fixtures, edge cases (empty DataFrames, single rows, missing columns); see existing tests in `tests/` for templates.
@@ -210,5 +255,5 @@ make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-08-23_
 _Domain knowledge and architecture reference_

@@ -283,6 +283,12 @@ artifacts/archive/*
 # Root-level archive folder (legacy archival)
 archive/
 
+# Repository documentation and session-log archives are durable history.
+!docs/archive/
+!docs/archive/**
+!session_logs/archive/
+!session_logs/archive/**
+
 # Hydra outputs (if used)
 artifacts/hydra_outputs/
 artifacts/outputs/

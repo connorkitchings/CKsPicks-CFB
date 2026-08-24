@@ -1,6 +1,6 @@
 # Weekly Pipeline — 2026 Season
 
-R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when prediction publication is explicitly enabled; the default market-only mode uses a model-free schedule and market projection. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md) and the [Production Runbook](production_runbook.md).
+R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when the explicit publication policy permits it; any non-`predictions` mode is fail-closed market-only rendering. Production never depends on repository-local data, model files, or mutable R2 pointers. V4 remains the active production/rollback bundle while rating work is isolated in shadow artifacts. See [2026 Data Platform](../architecture/data_platform_2026.md), the [Production Runbook](production_runbook.md), and the [2026 roadmap](../planning/roadmap.md).
 
 ## Required setup
 

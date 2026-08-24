@@ -44,7 +44,7 @@ export CFBD_PREDICTION_TOKEN='your_prediction_token_here'
 export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 
 # Vercel publication scope (web app)
-export CFB_PUBLICATION_MODE='market'      # fail-closed default; 'predictions' requires explicit approval
+export CFB_PUBLICATION_MODE='predictions' # current approved release mode; all other values fail closed to market-only
 export CFB_PUBLICATION_SEASON='2026'
 export CFB_PUBLICATION_WEEKS='0'
 

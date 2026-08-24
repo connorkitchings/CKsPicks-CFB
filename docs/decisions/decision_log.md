@@ -1,5 +1,35 @@
 # Decision Log
 
+## 2026-08-23: Adopt Rating-Centric Hybrid Architecture for 2026
+
+- **Context**: V4 provides strong point-in-time lineage, temporal validation,
+  opponent-adjusted football features, reproducible bundles, and fail-closed
+  operations. Its central modeling product is nevertheless a matchup feature
+  row: team quality remains implicit across measurements, priors, shrinkage,
+  and ten route-specific spread/total models, and predictive uncertainty is not
+  represented.
+- **Decision**: Make offense, defense, overall quality, and uncertainty-bearing
+  team ratings/state the canonical future representation of team strength. The
+  initial flow is football measurements → measurement-level opponent adjustment
+  → team ratings/state → structured game prediction → optional ML residual →
+  probabilistic output → market decision. Use one season-long rating meaning
+  whose prior/evidence credibility changes continuously rather than permanent
+  hard completed-game philosophies. Keep opponent adjustment primarily before
+  rating estimation and prohibit untracked schedule-strength double-counting.
+- **Evaluation**: V4 remains the unchanged 2026 production champion and
+  benchmark. Rating candidates stay isolated in research/shadow artifacts and
+  freeze their design before inspecting eligible 2026 outcomes. Protected
+  outcomes cannot be reused for iterative tuning. A first promotion review is
+  possible only after six completed full slates with frozen predictions, and
+  requires a separate approved contract and operational rehearsal.
+- **Deferred**: Exact estimator, rating scale, prior model, uncertainty method,
+  special-teams component, residual architecture, and artifact schema. Begin
+  with requirements and a simple baseline under later contracts rather than
+  choosing a sophisticated method here.
+- **Source**:
+  `docs/plans/2026-08-23/repository-documentation-and-2026-ratings-realignment.md`;
+  `docs/modeling/rating_system_requirements.md`.
+
 ## 2026-08-18: Production Deployment and Fail-Closed Publication Gating
 
 - **Context**: Stage 3 of the Week 0 launch contract required a production
@@ -99,8 +129,8 @@
   market chronology. Exact historical market replay remains blocked until
   authentic point-in-time quotes exist. Live 2026 quotes will be captured under
   the canonical timestamped policy.
-- **Plan**: See
-  `docs/planning/2026_historical_bootstrap_week0_execution.md`.
+- **Plan**: See the archived execution record at
+  `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
 
 ## 2025-12-09: Spread Bias Correction Validated
 

@@ -17,4 +17,4 @@ For V2 experiments, create new configs in `conf/experiment/` following the V2 na
 - `v2-002_feature_name.yaml`
 - etc.
 
-**Related**: [V2 Workflow](../../../docs/process/experimentation_workflow.md)
+**Related**: [Historical archive](../../../docs/archive.md)

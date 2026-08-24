@@ -17,6 +17,6 @@ For V2 feature sets, create new configs in `conf/features/` following V2 naming:
 - `opponent_adjusted_v1.yaml` - Phase 2 candidate
 - etc.
 
-See [`docs/project_org/feature_registry.md`](../../../docs/project_org/feature_registry.md) for active V2 feature sets.
+See [`docs/project_org/feature_registry.md`](../../../docs/project_org/feature_registry.md) for the current V4 and measurement-registry boundary.
 
-**Related**: [V2 Workflow](../../../docs/process/experimentation_workflow.md) | [Feature Registry](../../../docs/project_org/feature_registry.md)
+**Related**: [Historical archive](../../../docs/archive.md) | [Feature Registry](../../../docs/project_org/feature_registry.md)

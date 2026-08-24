@@ -1,6 +1,6 @@
 # Implementation Contracts
 
-`docs/plans/` holds task-level implementation contracts prepared by Sol and executed by a fresh Terra task. It is distinct from [`docs/planning/`](../planning/), which holds strategic roadmaps and long-lived initiatives.
+`docs/plans/` holds task-level implementation contracts prepared by Sol and executed by a fresh Terra task. It is distinct from `docs/planning/`, which holds strategic roadmaps and long-lived initiatives.
 
 ## Location and naming
 

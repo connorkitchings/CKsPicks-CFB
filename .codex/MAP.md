@@ -215,23 +215,21 @@ web/
 
 ```
 docs/
-├── guide.md / index.md          # Documentation hub + MkDocs landing
+├── index.md                     # Documentation hub + MkDocs landing
 ├── architecture/                # data_platform_2026.md, cfbd_point_in_time_pipeline.md
 ├── ops/                         # weekly_pipeline.md, production_runbook.md,
-│                                #   validation.md, data_paths.md, monitoring.md (legacy), ...
-├── modeling/                    # early_season_regimes.md (regime contract),
-│                                #   features.md, betting_policy.md, baseline.md (legacy), ...
-├── planning/                    # roadmap.md (status), 2026_historical_bootstrap_week0_execution.md,
-│                                #   project_charter.md (legacy)
+│                                #   validation.md, mlflow_mcp.md
+├── modeling/                    # rating_system_requirements.md,
+│                                #   measurement_catalog.md, evaluation.md, V4 regime contract
+├── planning/                    # roadmap.md (current 2026 transition)
 ├── plans/                       # 👈 Task-level Sol→Terra implementation contracts
 │   ├── index.md                 # Lifecycle rules
 │   └── 2026-08-18/week0-launch-execution.md   # ACTIVE (Stages 4–5)
 ├── decisions/                   # decision_log.md (read for rationale)
-├── cfbd/                        # Provider audit + ingestion docs
-├── data/                        # raw_api/ + transformed/ schema catalogs
-├── process/                     # Development standards, workflows (V2 historical)
-├── research/ project_org/ experiments/ reports/ history/ archive/
-├── legacy_audit.md / phase2_setup_guide.md    # Historical records
+├── cfbd/                        # Provider audit
+├── data/                        # Current ingestion/data orientation
+├── project_org/ experiments/    # V4 feature and experiment lineage
+├── archive/                     # Historical V2, research, plans, schemas
 ```
 
 ---
@@ -252,7 +250,7 @@ docs/
 | Weekly publish/freeze/close | `make publish-week` / `freeze-week` / `close-week` → `src/cks_picks_cfb/ops/` |
 | Add a pipeline step | `scripts/pipeline/` + `Makefile` target |
 | Change DB schema | `contracts/migrations/` (append-only) + `contracts/schema.{sql,ts}` → `make contracts-check` |
-| Modify features | `src/cks_picks_cfb/features/` + `conf/features/` + `docs/modeling/features.md` |
+| Modify measurements | `src/cks_picks_cfb/features/` + `conf/features/` + `docs/modeling/measurement_catalog.md` |
 | Train/tune models | `PYTHONPATH=src uv run python -m cks_picks_cfb.train` (`conf/experiment/`) |
 | Regime/tournament logic | `src/cks_picks_cfb/models/regime_training.py`, `game_ordinal_training.py` |
 | Model bundles | `src/cks_picks_cfb/model_bundle*.py`, `conf/weekly_bets/v4_2026.yaml` |

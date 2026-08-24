@@ -422,7 +422,7 @@ issues = [iss for iss in issues if "No validation config" not in iss.message]
 - `src/cks_picks_cfb/utils/validation.py` - Implementation
 - `conf/validation.yaml` - Configuration
 - `tests/test_validation.py` - Test examples
-- [Data Pipeline Overview](../data/pipeline_overview.md) - Upstream data flow
+- [2026 data platform](../architecture/data_platform_2026.md) - Upstream data flow
 
 ---
 

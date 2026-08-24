@@ -1,32 +1,48 @@
 # CKsPicks-CFB Documentation
 
-[![Project Status: Alpha](https://www.repostatus.org/badges/latest/alpha.svg)](https://www.postatus.org/#alpha)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+CKsPicks-CFB is a college-football prediction system with a Python pipeline,
+an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-Welcome to the central documentation hub for the **CKsPicks-CFB** project — a
-college football betting model (Python pipeline) with a Next.js web app on
-Vercel, backed by Neon Postgres and a Cloudflare R2 immutable data lake.
+## Current posture
 
-> **📖 Start Here:** [Documentation Guide](./guide.md) — Single source of truth for all project documentation
+**V4 is the live 2026 production champion.** It publishes spread and total
+predictions through the fail-closed weekly operations workflow. The approved
+successor is a rating-centric hybrid architecture, developed only in isolated
+research and shadow paths until it earns promotion.
 
-## 2026 Season Status
+The target flow is:
 
-The 6-phase buildout is complete and **production is live** at
-`https://c-ks-picks-cfb.vercel.app` (fail-closed `market` mode, V4 bundle
-`week0-2026-v4-strict-20260818-r2`). Remaining: game-week operations under the
-[Week 0 Launch Contract](./plans/2026-08-18/week0-launch-execution.md).
+```text
+source data → canonical Bronze/Silver/Gold → football measurements
+→ measurement-level opponent adjustment → team ratings/state
+→ structured game prediction → optional ML residual → probabilistic output
+→ market decision
+```
 
-## Quick Navigation
+Markets never inform football measurements, ratings, or prediction selection.
+They are joined only after a football prediction exists.
 
-- **[📖 Documentation Guide](./guide.md)** — Main hub with complete navigation
-- **[Week 0 Launch Contract](./plans/2026-08-18/week0-launch-execution.md)** — Active operations (Stages 4–5)
-- **[Roadmap](./planning/roadmap.md)** — 2026 status and timeline
-- **[Production Runbook](./ops/production_runbook.md)** — As-built production operations
-- **[Weekly Pipeline](./ops/weekly_pipeline.md)** — Publish/freeze/close workflow
-- **[Early-Season Regimes](./modeling/early_season_regimes.md)** — Five completed-game routing contract
-- **[2026 Data Platform](./architecture/data_platform_2026.md)** — Immutable lake/catalog architecture
-- **[Decision Log](./decisions/decision_log.md)** — Decision history and rationale
-- **[Experiments](./experiments/index.md)** — Experiment tracking (V2 history + 2026 tournament)
-- **Session Logs:** See `session_logs/` folder for daily development logs
+## Start here
 
-> **Note:** Documentation reorganized 2025-12-04; realigned to the 2026 dual-stack architecture on 2026-08-19. All docs are accessible from [guide.md](./guide.md).
+- [2026 roadmap](planning/roadmap.md) — current work, milestones, and the
+  evidence-gated transition.
+- [Rating-system requirements](modeling/rating_system_requirements.md) — the
+  approved successor’s initial requirements and deferred decisions.
+- [Measurement catalog](modeling/measurement_catalog.md) — football
+  measurements, provenance, and rating eligibility.
+- [V4 regime contract](modeling/early_season_regimes.md) — live production
+  benchmark and early-season routing.
+- [Evaluation](modeling/evaluation.md) — historical validation and protected
+  2026 shadow evidence policy.
+- [Weekly pipeline](ops/weekly_pipeline.md) and
+  [production runbook](ops/production_runbook.md) — live operations.
+- [Implementation contracts](plans/index.md) — durable Sol-to-Terra handoffs.
+- [Decision log](decisions/decision_log.md) — architectural decisions.
+
+## Documentation policy
+
+Current operating and architectural authority lives in the pages above.
+Completed work, V2 documentation, prior rating research, and schema snapshots
+are retained as [historical archive](archive.md) evidence. Session logs
+are chronological records under `session_logs/`; see that directory’s README
+for the active-window policy.

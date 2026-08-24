@@ -2,9 +2,9 @@
 
 > **As-built operations for the live system** (deployed 2026-08-18).
 > This runbook reflects production reality: Vercel + Neon + Cloudflare R2 with
-> the V4 launch bundle. It supersedes the V2-era deployment docs
-> (`docs/deployment/*`, `ops/production_deployment.md`, `ops/rollback_sop.md`,
-> `ops/monitoring.md`), which are retained as historical reference.
+> the V4 launch bundle. Superseded V2 deployment and rollback material is in
+> the [documentation archive](../archive.md). The rating successor is
+> shadow-only until separately promoted.
 > Authoritative remaining-work tracker:
 > [Week 0 Launch Contract](../plans/2026-08-18/week0-launch-execution.md).
 
