@@ -1,0 +1,26 @@
+foundation_review_config_version: rating_foundation_review_v1
+research_prefix: artifacts/research/rating-successor/foundation-review
+measurement_config_path: conf/ratings/measurement_baseline_v1.yaml
+team_state_config_path: conf/ratings/team_state_baseline_v1.yaml
+adjustment_sample_targets_per_season: 1
+
+phase1:
+  audit_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T2000Z-bounded/audit-report.json
+  observations_ref_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T2000Z-bounded/observations-ref.json
+  snapshots_ref_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T2000Z-bounded/snapshots-ref.json
+  terminal_ref_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T2000Z-bounded/terminal-snapshots-ref.json
+  expected_observations_version: 2d167baa0be6f79eb3fad0ed
+  expected_observations_sha: 2e288b06ba016e3ba1db89536cd61d7f2aeed624a2b0be21f8a5097551b430a3
+  expected_snapshots_version: 3163c5e6a18cc01a30542cb2
+  expected_snapshots_sha: 13116ea96f1b72a117e7db1c633a13a0ab2af464bd58dfec526e57862f23966e
+  expected_terminal_version: 8ccf480cb367e3124086cd69
+  expected_terminal_sha: fbe7f3a4b9a596f23466a37b6abb4235b1202fa5314ee146ebf15e53415f02e2
+
+phase2:
+  audit_uri: artifacts/research/rating-successor/states/ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d/runs/2026-08-25T1153Z/audit-report.json
+  measurement_states_ref_uri: artifacts/research/rating-successor/states/ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d/runs/2026-08-25T1153Z/measurement-states-ref.json
+  team_states_ref_uri: artifacts/research/rating-successor/states/ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d/runs/2026-08-25T1153Z/team-states-ref.json
+  expected_measurement_states_version: 69965b6a3eb6856f86ed554d
+  expected_measurement_states_sha: e43135aa281eefee7e61f7dd04c7a61e1720b64ebfed3f21c7c1849d37111247
+  expected_team_states_version: 1fdcb1ca6d235bf2ecf87414
+  expected_team_states_sha: e4355c14c87d90b9c15ec8d1282649a7ed04939d2e93b790f5a4e21fb6ba454b
