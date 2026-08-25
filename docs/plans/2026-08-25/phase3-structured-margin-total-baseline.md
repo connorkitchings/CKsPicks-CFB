@@ -5,7 +5,8 @@
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
 - **Implementation logs:** `session_logs/2026-08-25/01-phase3-structured-prediction.md`,
-  `session_logs/2026-08-25/04-phase3-foundation-certification.md`
+  `session_logs/2026-08-25/04-phase3-foundation-certification.md`,
+  `session_logs/2026-08-25/05-phase3-structured-prediction.md`
 - **Commit policy:** Commit code/configuration before joining outcomes or writing Preview artifacts.
 
 ## Goal
@@ -74,6 +75,16 @@ coverage. The same-stamp rerun produced the identical report SHA.
 This clears only the certification gate. Phase 3 may now implement the frozen
 structured margin/total baseline; no predictions, outcomes-based evaluation,
 markets, production, Neon, or public state were touched by this review.
+
+### Implementation Record -- Pending Preview materialization (2026-08-25)
+
+The isolated OLS baseline, deterministic pace context, Normal uncertainty,
+paired V4 evaluation, immutable configuration, and Preview-only CLI are
+implemented locally. The CLI is explicitly commit-identity-gated and has not
+read historical outcomes or written Preview artifacts. Its code and
+configuration must be committed before materialization; Phase 3 remains `In
+Progress` until the immutable historical evaluation and candidate-freeze gates
+pass.
 
 ## Validation
 
