@@ -1,22 +1,23 @@
-# Session: Phase 1 Bounded-Memory Materialization Fix
+# Session: Phase 1 Bounded-Memory Materialization Fix and Phase 2 Completion
 
 ## TL;DR
 
 - **Worked On:** Replaced the Phase 1 Preview measurement builder's
   all-history raw-frame load with a season-scoped observation build after the
-  materialization terminated as a raw-data resource failure.
-- **Outcome:** Phase 1 v2 now materializes with bounded memory from committed
-  code (`48c0f11`); the authoritative bounded build passed every audit check
-  and reproduced byte-for-byte on rerun. Phase 2 remains unchanged and is
-  unblocked for its own Task 4 run.
+  materialization terminated as a raw-data resource failure; then materialized
+  and verified the Phase 2 team-state artifacts from the bounded handoff.
+- **Outcome:** Phase 1 v2 materializes with bounded memory from committed
+  code (`48c0f11`), and Phase 2 is Implemented — state artifacts pass all
+  seven audit gates with a byte-identical rerun. Phase 3 is the next Sol
+  contract.
 - **Plan Contract:** `docs/plans/2026-08-24/phase1-phase2-completion.md`
-  (Task 3 completed via Amendment 1)
-- **Approval / Status:** User authorized the bounded-materialization fix on
-  2026-08-25, including committing the builder and tests before the next
-  Preview write.
+  (Tasks 3–5 closed; Amendment 1 covers the bounded materialization)
+- **Approval / Status:** User authorized the bounded-memory fix on 2026-08-25
+  and the Phase 2 completion plan (bounded refs, Phase 1 cutoff, two docs
+  commits) the same day.
 - **Blockers:** None.
-- **Next:** Run Phase 2 `build_rating_team_states.py` in Preview against the
-  bounded Phase 1 refs (completion-contract Task 4), then close records.
+- **Next:** Fresh Sol contract for Phase 3 (structured margin/total
+  prediction) when authorized.
 
 ## Context and Decisions
 
@@ -97,12 +98,37 @@
 - Completion-contract Amendment 1 (bounded materialization) recorded; no
   material deviation from the fix's scope.
 
+## Phase 2 Completion (2026-08-25, completion-contract Tasks 4–5)
+
+Verified no prior state artifacts existed and the Phase 2 contract was
+`In Progress`; prerequisites (passing bounded Phase 1 audit
+`rating_measurement_audit_v2`, matching lineage refs, state design ID
+`ddd60338…` matching the completion contract, clean RELEVANT code paths)
+were confirmed before the run.
+
+- Materialized with `build_rating_team_states.py --environment preview
+  --as-of 2026-08-24T18:30:00Z` from exactly the bounded Phase 1 refs;
+  outputs under `states/ddd60338…/runs/2026-08-25T1153Z/` with no catalog
+  registration.
+- Measurement states `rating_measurement_states_v1` version
+  `69965b6a3eb6856f86ed554d` (77,184 component rows); team states
+  `rating_team_states_v1` version `1fdcb1ca6d235bf2ecf87414` (8,984 pregame
+  team rows 2021–2026, 664 season-terminal team rows); audit report SHA
+  `5b4dc230128a6a930f85b8534626532df550dc1c716c92e04c04b887b87adc44`.
+- All seven checks pass; behavior audit shows uncertainty contraction 0.839 →
+  0.341 by completed games, observed weight 0.00 → 0.845, EPA/success
+  Spearman 0.75–0.81. Same-stamp rerun byte-identical.
+- Records closed: Phase 2 plan → `Implemented` with Implementation Record;
+  completion contract → `Implemented` with DoD checked; requirements and
+  roadmap updated to the implemented Phase 2 baseline.
+
 ## Handoff Notes
 
-- **Resume at:** Completion-contract Task 4 — Phase 2 state build in Preview
-  consuming exactly the bounded Phase 1 refs above.
-- **Watch out for:** Phase 2 must not consume superseded v1 or all-at-once
-  1830Z refs; Week 0 production operations take precedence over any research
-  run; no production, Neon, V4, market, or public change is authorized.
+- **Resume at:** Phase 3 planning (Sol) when authorized — consume only
+  `pregame` rows of team states `1fdcb1ca6d235bf2ecf87414`.
+- **Watch out for:** Phase 3 must not consume terminal rows or superseded
+  v1/1830Z refs; Week 0 production operations take precedence over any
+  research run; no production, Neon, V4, market, or public change is
+  authorized.
 
 **tags:** ["ratings", "phase1", "materialization", "preview", "bounded-memory"]

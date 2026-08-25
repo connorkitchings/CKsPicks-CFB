@@ -146,7 +146,11 @@ failed gate cannot be bypassed for schedule reasons.
   — Approved documentation and planning contract. Its seven-measurement
   catalog, four-iteration adjustment, temporal-status policy, and Preview-only
   registration policy are frozen; implementation remains a separate Terra task.
-- Phases 2–7 remain pending until the preceding exit gate and detailed Sol review.
+- [Phase 2 minimum viable team-state baseline](../plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md)
+  — Implemented 2026-08-25 from the bounded Phase 1 v2 handoff
+  ([completion contract](../plans/2026-08-24/phase1-phase2-completion.md));
+  Preview state artifacts pass all audit gates with byte-identical reruns.
+  Phase 3 (structured margin/total prediction) is the next Sol contract.
 
 ## Invariants and open decisions
 

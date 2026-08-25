@@ -1,6 +1,6 @@
 # Phase 2 — Minimum Viable Team-State Baseline
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact plan on 2026-08-24.
@@ -71,3 +71,41 @@ is introduced.
 - Phase 2 is implemented only when the corrected Phase 1 artifact gate passes
   and state artifacts reproduce from the committed source. Otherwise this plan
   remains In Progress and no Phase 3 work begins.
+
+## Implementation Record
+
+Executed on 2026-08-25 (session log
+`session_logs/2026-08-24/04-phase1-phase2-completion.md`).
+
+- Code (committed at `cba1577`/`fed8c68`): `src/cks_picks_cfb/ratings/`
+  (`state_contracts.py`, `states.py`, `state_audit.py`),
+  `conf/ratings/team_state_baseline_v1.yaml` (state design ID
+  `ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d`),
+  Preview-only CLI `scripts/pipeline/build_rating_team_states.py`.
+- Inputs: exactly the bounded Phase 1 v2 authoritative refs
+  (observations `2d167baa0be6f79eb3fad0ed`, snapshots
+  `3163c5e6a18cc01a30542cb2`, terminal `8ccf480cb367e3124086cd69`) and the
+  passing audit at
+  `artifacts/research/rating-successor/measurements/340091b6…/runs/2026-08-24T2000Z-bounded/`,
+  at cutoff `2026-08-24T18:30:00Z` from code commit `4a31a4f` (relevant
+  paths identical to `48c0f11`).
+- Outputs under
+  `artifacts/research/rating-successor/states/ddd60338…/runs/2026-08-25T1153Z/`:
+  measurement states `rating_measurement_states_v1` version
+  `69965b6a3eb6856f86ed554d` (content SHA-256
+  `e43135aa281eefee7e61f7dd04c7a61e1720b64ebfed3f21c7c1849d37111247`;
+  77,184 component rows) and team states `rating_team_states_v1` version
+  `1fdcb1ca6d235bf2ecf87414` (content SHA-256
+  `e4355c14c87d90b9c15ec8d1282649a7ed04939d2e93b790f5a4e21fb6ba454b`;
+  8,984 pregame team rows across 2021–2026 and 664 season-terminal team
+  rows). Audit report SHA-256
+  `5b4dc230128a6a930f85b8534626532df550dc1c716c92e04c04b887b87adc44`.
+- Exit gate: all seven audit checks pass (schedule coverage against Phase 1
+  pregame snapshot triples, non-null states, eight-component attribution,
+  positive uncertainty, terminal identity, market-free, forbidden seasons).
+  Behavior is as designed: mean overall uncertainty contracts 0.839 → 0.341
+  from zero to twelve completed games while mean observed-evidence weight
+  rises 0.00 → 0.845; EPA/success Spearman is 0.75–0.81 across roles. A
+  same-stamp rerun reproduced both version IDs and the report SHA
+  byte-for-byte. No catalog registration occurred; only `pregame` rows are
+  eligible Phase 3 inputs.

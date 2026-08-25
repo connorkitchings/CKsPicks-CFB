@@ -1,6 +1,6 @@
 # Phase 1 and Phase 2 Completion Contract
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-24.
@@ -102,11 +102,20 @@ the recovered cutoff; authentic timing enforcement remains mandatory.
 
 ## Definition of Done
 
-- [ ] Hardened audits and terminal identity pass all tests.
-- [ ] Phase 1 v2 artifacts reproduce from the recovered parent lineage and pass.
-- [ ] Phase 2 artifacts reproduce from exactly those Phase 1 refs and pass.
-- [ ] Reruns are byte-identical; no production, Neon, V4, market, or public change occurred.
-- [ ] Docs, session log, and phase statuses are updated; Phase 3 has not begun.
+- [x] Hardened audits and terminal identity pass all tests.
+- [x] Phase 1 v2 artifacts reproduce from the recovered parent lineage and pass.
+- [x] Phase 2 artifacts reproduce from exactly those Phase 1 refs and pass.
+- [x] Reruns are byte-identical; no production, Neon, V4, market, or public change occurred.
+- [x] Docs, session log, and phase statuses are updated; Phase 3 has not begun.
+
+Task 4 closed 2026-08-25: Phase 2 states materialized in Preview from the
+bounded Phase 1 refs (measurement states `69965b6a3eb6856f86ed554d`, team
+states `1fdcb1ca6d235bf2ecf87414`, audit SHA
+`5b4dc230128a6a930f85b8534626532df550dc1c716c92e04c04b887b87adc44` under
+`states/ddd60338…/runs/2026-08-25T1153Z/`) with all seven checks passing and
+a byte-identical rerun. Task 5 closed by this contract's checked items, the
+Phase 2 plan's Implementation Record, updated requirements/roadmap/catalog
+docs, and session log 04. This contract is complete.
 
 ## Amendments
 

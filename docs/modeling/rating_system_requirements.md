@@ -48,16 +48,33 @@ prior, uncertainty method, and artifact format remain open.
 - **Market decision** receives timestamped prices only after football
   prediction, uncertainty, and provenance exist.
 
-### Phase 1 remediation and Phase 2 baseline (in progress)
+### Phase 1 remediation and Phase 2 baseline (implemented)
 
 The original Phase 1 implementation is retained as research history but is not
 an authorized Phase 2 input. Its corrective contract is
 `docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`; it replaces
 the prior refs with v2 observations, season-to-date snapshots, and terminal
-snapshots. Phase 2 is implemented only from that passing handoff under
+snapshots, materialized with bounded season-scoped reads under
+`docs/plans/2026-08-24/phase1-phase2-completion.md`. Phase 2 is implemented
+from that passing handoff under
 `docs/plans/2026-08-24/phase2-minimum-viable-team-state-baseline.md`.
 
-The baseline contains EPA/play, success rate,
+The Phase 2 baseline (state design ID
+`ddd6033824909620aa381527dba202a06c65155de53403849b59ffcaaae7092d`) blends
+the four adjustment-eligible measurements — EPA/play, success rate, 20-yard
+explosive rate, and points per scoring opportunity, each weighted 25% — into
+pregame and season-terminal offense/defense/overall states with non-null
+posterior uncertainty: prior-season terminal carryover at `rho = 0.60`,
+preceding-season team-equal standardization with frozen floors, precision
+weighting by equivalent prior exposure, and reversed defensive direction.
+Artifacts live under
+`artifacts/research/rating-successor/states/ddd60338…/runs/2026-08-25T1153Z/`
+(measurement states `69965b6a3eb6856f86ed554d`, team states
+`1fdcb1ca6d235bf2ecf87414`) with all audit checks passing and a
+byte-identical rerun; only `pregame` rows are eligible Phase 3 inputs. No
+catalog registration occurred.
+
+The measurement baseline contains EPA/play, success rate,
 20-yard explosive rate, points per scoring opportunity, average starting
 field position, plays per drive, and turnover rate. Only the first four are
 adjustment-eligible; field position, pace, and turnovers remain contextual
@@ -69,10 +86,11 @@ Zero exposure stays null with a quality reason; play eligibility is
 `is_drive_play == 1` and `garbage == 0`. Reconstructed 2021–2025 timing is
 valid for historical development only; protected 2026 evidence requires
 authentic source timing. The implementation lives in the isolated
-`cks_picks_cfb.ratings` namespace with the Preview-only CLI
-`scripts/pipeline/build_rating_measurements.py`; V4 paths are untouched.
-Phase 2 consumes exactly the replacement refs and checksums recorded in the
-corrected [measurement catalog](measurement_catalog.md). It produces only
+`cks_picks_cfb.ratings` namespace with the Preview-only CLIs
+`scripts/pipeline/build_rating_measurements.py` and
+`scripts/pipeline/build_rating_team_states.py`; V4 paths are untouched.
+Phase 2 consumed exactly the bounded refs and checksums recorded in the
+corrected [measurement catalog](measurement_catalog.md) and produces only
 Preview research component and team-state artifacts; no catalog registration
 occurs unless explicitly requested.
 
