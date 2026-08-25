@@ -1,0 +1,21 @@
+v4_benchmark_replay_config_version: v1
+research_prefix: artifacts/research/rating-successor/v4-benchmark-replay
+replay_engine_commit: 33432e81465aea67206df938cf48182b3684add9
+historical_seasons: [2022, 2023, 2024, 2025]
+selection:
+  feature_ref_uri: artifacts/preview/refs/v4/model-ready-strict-selection-20260817.json
+  expected_version_id: e6ebb94b3eeb6580293c2ce3
+  expected_content_sha: 06db0eb99c04644ea9a50570cad753e5a4e01acc8f32f2f17f44e7c43a0601e3
+  report_uri: artifacts/preview/refs/v4/selection-report-strict-20260818.json
+  expected_design_sha: ae34ddc7fc98d2693e278478b54f42ee0f896ba78768903ec81e3907457b555c
+locked:
+  feature_ref_uri: artifacts/preview/refs/v4/model-ready-strict-locked-20260818.json
+  expected_version_id: fe55e75884c7665527e740d3
+  expected_content_sha: 0bee7740705bdc61b37c00a1a9fec23383644a6a148e4c74581000e2758a9ecb
+  report_uri: artifacts/preview/refs/v4/locked-report-strict-20260818.json
+bundle:
+  manifest_uri: artifacts/preview/models/week0-2026-v4-strict-20260818-r2/manifest.json
+  expected_manifest_sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+  expected_recorded_code_sha: 5371d7f53c0735ea66872ca61421c0a0f686f005
+established_source_manifest_uri: artifacts/preview/models/week0-2026-preview-20260814/manifest.json
+v4_experiment_path: conf/experiment/week0_regimes.yaml
