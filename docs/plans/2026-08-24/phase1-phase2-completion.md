@@ -110,4 +110,23 @@ the recovered cutoff; authentic timing enforcement remains mandatory.
 
 ## Amendments
 
-None.
+1. **Task 3 bounded materialization (2026-08-25).** The Phase 1 Preview
+   materialization terminated as a raw-data resource failure under the
+   all-history byplay/drives load. Task 3 was completed with a season-scoped
+   builder (commit `48c0f11`, committed before any Preview write per policy):
+   raw parents are mapped from manifest season partitions with exactly one
+   byplay and one drives parent per historical season, missing/duplicate/
+   protected-season parents fail closed before any raw read, only compact
+   per-season observation outputs persist across seasons, and the audit
+   report records execution diagnostics (raw rows by dataset/season,
+   observation rows per season, stage timings excluded from report
+   identity). The authoritative passing build is
+   `runs/2026-08-24T2000Z-bounded/` at cutoff `2026-08-24T18:30:00Z` from
+   the recovered 14-ref parent lineage staged under
+   `runs/2026-08-24T1830Z/inputs/`: observations `2d167baa0be6f79eb3fad0ed`,
+   snapshots `3163c5e6a18cc01a30542cb2`, terminal `8ccf480cb367e3124086cd69`,
+   report identity SHA
+   `a5441b37b65a4151907e8d7fbff5359e8b358cdafa003f942da80b590f248d25`; a
+   same-stamp rerun reproduced every version and the identity byte-for-byte.
+   Totals, coverage, redundancy, and historical exclusions match the prior
+   all-at-once builds; Phase 2 (Task 4) is unblocked but unchanged.
