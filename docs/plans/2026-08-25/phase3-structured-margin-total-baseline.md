@@ -4,7 +4,8 @@
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
-- **Implementation log:** `session_logs/2026-08-25/01-phase3-structured-prediction.md`
+- **Implementation logs:** `session_logs/2026-08-25/01-phase3-structured-prediction.md`,
+  `session_logs/2026-08-25/04-phase3-foundation-certification.md`
 - **Commit policy:** Commit code/configuration before joining outcomes or writing Preview artifacts.
 
 ## Goal
@@ -54,6 +55,25 @@ six recovery gates pass and the same-stamp rerun is byte-identical. Phase 3
 may use this artifact only on matching `(season, game_id, target)` keys and
 must preserve `source_kind` in paired evaluation output. This record unblocks
 the Phase 3 foundation review, not prediction construction or Phase 4.
+
+### Implementation Record -- Foundation certification (2026-08-25)
+
+The independent Preview review passed all 24 checks and is immutable at:
+
+`artifacts/research/rating-successor/foundation-review/a0e74956f78b12a23de3eca08e5f8382b982c1222f3c101ff07db835d6e6a0fc/runs/2026-08-25T1429Z-foundation-review/report.json`
+
+Its SHA-256 is
+`865699a17198967a67664b254036164b3940a4f2f161f1a9aff1c98be4156e62`.
+The report is bound to certification code commit
+`d626258`, the authoritative Phase 1 v2 refs, and Phase 2 team-state version
+`1fdcb1ca6d235bf2ecf87414`. It independently recomputed observation ratios,
+point-in-time bounds, 39 exposure-weighted opponent-adjustment rows, component
+standardization/posteriors, prior carryover, composites, and two-team pregame
+coverage. The same-stamp rerun produced the identical report SHA.
+
+This clears only the certification gate. Phase 3 may now implement the frozen
+structured margin/total baseline; no predictions, outcomes-based evaluation,
+markets, production, Neon, or public state were touched by this review.
 
 ## Validation
 
