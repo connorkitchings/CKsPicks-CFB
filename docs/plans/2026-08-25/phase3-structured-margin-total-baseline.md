@@ -42,6 +42,19 @@ has produced a passing immutable `rating_v4_historical_predictions_v1` ref.
 Paired V4 metrics must consume only that ref on matching game/target keys and
 retain its `source_kind`; the historical gates above are unchanged.
 
+### Implementation Record -- Certified V4 benchmark (2026-08-25)
+
+The prerequisite is satisfied by the passing Preview
+`rating_v4_historical_predictions_v1` version `f4ec062c7f931f125ce6be99`
+(content SHA
+`6bdbe75ce83554c5828ac1a807056e26844db44c77defb6607d2ec7386efca2d`).
+Its audit SHA is
+`f601ba9d24becc07019d0bfb97e6d8ed74801eaae3da89f2148e52dbfd821538`; all
+six recovery gates pass and the same-stamp rerun is byte-identical. Phase 3
+may use this artifact only on matching `(season, game_id, target)` keys and
+must preserve `source_kind` in paired evaluation output. This record unblocks
+the Phase 3 foundation review, not prediction construction or Phase 4.
+
 ## Validation
 
 - Test ref tampering, formula recomputation, terminal-row rejection, OLS

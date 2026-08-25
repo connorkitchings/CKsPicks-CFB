@@ -1,10 +1,11 @@
 # Phase 3 V4 Historical Benchmark Recovery
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized the approved recovery plan on 2026-08-25.
-- **Implementation log:** `session_logs/2026-08-25/02-v4-benchmark-recovery.md`
+- **Implementation logs:** `session_logs/2026-08-25/02-v4-benchmark-recovery.md`,
+  `session_logs/2026-08-25/03-v4-benchmark-recovery-materialization.md`
 - **Commit policy:** Commit code and configuration before any Preview artifact write.
 
 ## Goal
@@ -90,13 +91,13 @@ historical fact and is not repaired in place.
 
 ## Definition of Done
 
-- [ ] The recovered V4 benchmark artifact and passing audit exist in Preview.
-- [ ] The early-route replay matches frozen report metrics and the established
+- [x] The recovered V4 benchmark artifact and passing audit exist in Preview.
+- [x] The early-route replay matches frozen report metrics and the established
   route is explicitly, reproducibly labeled derived compatibility evidence.
-- [ ] Immutable reruns are byte-identical.
-- [ ] Phase 3 documentation names the certified comparison ref and no V4 or
+- [x] Immutable reruns are byte-identical.
+- [x] Phase 3 documentation names the certified comparison ref and no V4 or
   production interface has changed.
-- [ ] This contract is marked `Implemented` with a complete session log.
+- [x] This contract is marked `Implemented` with a complete session log.
 
 ## Amendments
 
@@ -115,3 +116,24 @@ also proves successful ref publication and a byte-identical same-run rerun.
 **Impact:** No public, V4, production, or artifact-interface change. The
 first Preview materialization remains gated on a commit containing these
 corrections.
+
+### Implementation Record -- Certified Preview recovery (2026-08-25)
+
+- **Recovery code commit:** `a8827bfda34f6fb5e2ef43c8c6993f8dfe93dd21`;
+  **pinned replay engine:** `33432e81465aea67206df938cf48182b3684add9`.
+- **Design ID:** `341285d246cb24c1e4d978e60eeed306b67a5734931324c807b17da799bf97c3`;
+  **cutoff:** `2026-08-25T13:23:26Z`; **run:**
+  `2026-08-25T1323Z-v4-recovery`.
+- **Prediction ref:** `rating_v4_historical_predictions_v1`, version
+  `f4ec062c7f931f125ce6be99`, content SHA
+  `6bdbe75ce83554c5828ac1a807056e26844db44c77defb6607d2ec7386efca2d`,
+  URI `lake/gold/dataset=rating_v4_historical_predictions/version=f4ec062c7f931f125ce6be99/data.parquet`.
+- **Audit:** all six checks pass; report SHA
+  `f601ba9d24becc07019d0bfb97e6d8ed74801eaae3da89f2148e52dbfd821538`;
+  manifest SHA
+  `4c20a1deab68a5994575c84cdedc00a418e12a3b364a66feae2151810b2a9f2b`.
+- **Coverage:** 5,994 expected and recovered game-target rows (2022: 1,468;
+  2023: 1,500; 2024: 1,504; 2025: 1,522). Of these, 2,270 are
+  `native_route_replay` and 3,724 are `derived_compatibility_replay`.
+- The same-stamp rerun returned the identical prediction version, content SHA,
+  and audit SHA. No Neon, production, V4, public, or catalog state changed.
