@@ -159,12 +159,17 @@ def _deduplicate_predictions(frame: pd.DataFrame, *, column: str) -> pd.DataFram
         raise MeasurementContractError(
             f"V4 candidate rows are missing columns: {missing}"
         )
-    if frame[column].isna().any():
-        raise MeasurementContractError("V4 routed predictions may not be null")
-    grouped = frame.groupby(keys, sort=False, dropna=False)[column]
+    # The frozen V4 evaluator drops incomplete candidate rows before scoring.
+    # Candidate generation emits null placeholders for designs that could not
+    # produce a value, so retain only usable values before enforcing exactly
+    # one consistent prediction per game/target key.
+    usable = frame.dropna(subset=[column]).copy()
+    if usable.empty:
+        raise MeasurementContractError("V4 routed prediction has no usable rows")
+    grouped = usable.groupby(keys, sort=False, dropna=False)[column]
     if (grouped.nunique(dropna=False) != 1).any():
         raise MeasurementContractError("V4 route has conflicting duplicate predictions")
-    return frame.sort_values(keys).groupby(keys, as_index=False, sort=False).first()
+    return usable.sort_values(keys).groupby(keys, as_index=False, sort=False).first()
 
 
 def extract_frozen_routes(

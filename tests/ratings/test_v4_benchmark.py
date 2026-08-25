@@ -147,6 +147,37 @@ def test_extract_frozen_routes_rejects_conflicting_duplicate_predictions():
         )
 
 
+def test_extract_frozen_routes_discards_null_candidate_placeholders():
+    candidates = _candidate_rows()
+    selection, _ = _reports(candidates)
+    placeholder = candidates.iloc[[0]].copy()
+    placeholder["direct_ridge_prediction"] = float("nan")
+
+    result = extract_frozen_routes(
+        pd.concat([candidates, placeholder], ignore_index=True),
+        routing=selection["proposed_routing"],
+        selection=selection,
+        source_kind="native_route_replay",
+    )
+
+    assert len(result) == len(candidates)
+    assert result["v4_prediction"].notna().all()
+
+
+def test_extract_frozen_routes_rejects_candidate_with_no_usable_rows():
+    candidates = _candidate_rows()
+    selection, _ = _reports(candidates)
+    candidates["direct_ridge_prediction"] = float("nan")
+
+    with pytest.raises(MeasurementContractError, match="no usable rows"):
+        extract_frozen_routes(
+            candidates,
+            routing=selection["proposed_routing"],
+            selection=selection,
+            source_kind="native_route_replay",
+        )
+
+
 def test_established_replay_must_be_labeled_derived():
     candidates = _candidate_rows((2022,)).copy()
     candidates["regime"] = "established"
