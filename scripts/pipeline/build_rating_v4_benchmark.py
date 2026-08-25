@@ -112,7 +112,7 @@ import pandas as pd
 from omegaconf import OmegaConf
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
-from cks_picks_cfb.features.regimes import canonical_prediction_regime
+from cks_picks_cfb.features.v2_recency import canonical_prediction_regime
 from cks_picks_cfb.models.game_ordinal_training import generate_game_ordinal_candidate_predictions
 from cks_picks_cfb.models.training_policy import policy_from_mapping
 

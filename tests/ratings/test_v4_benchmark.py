@@ -156,6 +156,22 @@ def test_established_replay_must_be_labeled_derived():
         format_established_routes(candidates, source_kind="native_route_replay")
 
 
+def test_established_replay_script_uses_pinned_engine_compatible_import(tmp_path):
+    script = tmp_path / "established.py"
+
+    cli._established_script(script)
+
+    contents = script.read_text()
+    assert (
+        "from cks_picks_cfb.features.v2_recency import canonical_prediction_regime"
+        in contents
+    )
+    assert (
+        "from cks_picks_cfb.features.regimes import canonical_prediction_regime"
+        not in contents
+    )
+
+
 def test_finalize_rejects_same_season_training(config, refs):
     candidates = _candidate_rows((2022,))
     selection, _ = _reports(candidates)
