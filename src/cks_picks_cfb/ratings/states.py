@@ -161,7 +161,7 @@ def build_team_states(
                 parent_measurement_refs=parent_measurement_refs,
             )
             for row in components:
-                if row["state_id"] == f"terminal:{season}":
+                if row["state_id"].startswith(f"terminal:{season}:"):
                     prior_states[
                         (row["team"], row["measurement_id"], row["unit_role"])
                     ] = (row["posterior_mean"], row["posterior_variance"])
@@ -256,7 +256,11 @@ def _append_state_group(
             )
         )
         record = {
-            "state_id": state_id,
+            "state_id": (
+                f"terminal:{season}:{row['team']}"
+                if state_kind == "season_terminal"
+                else state_id
+            ),
             "state_kind": state_kind,
             "season": season,
             "week": week,
@@ -319,7 +323,11 @@ def _append_state_group(
         defense_mean, defense_sd, defense_weight = composite("defense")
         team_rows.append(
             {
-                "state_id": state_id,
+                "state_id": (
+                    f"terminal:{season}:{team}"
+                    if state_kind == "season_terminal"
+                    else state_id
+                ),
                 "state_kind": state_kind,
                 "season": season,
                 "week": week,

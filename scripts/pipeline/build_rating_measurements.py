@@ -305,22 +305,33 @@ def main(argv: list[str] | None = None) -> None:
         ),
         records=terminal_build.frame.to_dict("records"),
         partitions={"seasons": list(config.historical_development_seasons)},
-        validation={"nonempty": not terminal_build.frame.empty, "ratings_contract_valid": True},
+        validation={
+            "nonempty": not terminal_build.frame.empty,
+            "ratings_contract_valid": True,
+        },
     )
 
     report = build_rating_audit_report(
         observations=observation_build.frame,
         snapshots=snapshot_build.frame,
+        terminal_snapshots=terminal_build.frame,
         games=games,
         reconciled_team_game=reconciled_team_game,
         config=config,
         observations_ref=asdict(observations_ref),
         snapshots_ref=asdict(snapshots_ref),
         terminal_snapshots_ref=asdict(terminal_ref),
+        parent_refs=tuple(asdict(ref) for ref in parent_refs),
+        cutoff=cutoff.isoformat(),
+        code_sha=code_sha,
         build_audit=observation_build.audit,
     )
     report_payload = json.dumps(report, indent=2, sort_keys=True, default=str).encode()
     _write_immutable_json(storage, args.report_uri, report_payload)
+    if not report["all_checks_passed"]:
+        raise ValueError(
+            "Phase 1 audit failed; successful artifact refs were not published"
+        )
 
     _write_immutable_json(
         storage,

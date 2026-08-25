@@ -147,8 +147,9 @@ def main(argv: list[str] | None = None) -> None:
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
+    pregame_snapshots = read_dataset(storage, snapshots_ref)
     measurement_states, team_states, audit_seed = build_team_states(
-        pregame_snapshots=read_dataset(storage, snapshots_ref),
+        pregame_snapshots=pregame_snapshots,
         terminal_snapshots=read_dataset(storage, terminal_ref),
         config=config,
         code_sha=code_sha,
@@ -208,9 +209,15 @@ def main(argv: list[str] | None = None) -> None:
             "team_state_ref": asdict(team_ref),
         },
         state_design_id=config.design_id,
+        pregame_snapshots=pregame_snapshots,
     )
     report.update(audit_seed)
     payload = json.dumps(report, indent=2, sort_keys=True, default=str).encode()
+    _write_immutable(storage, args.report_uri, payload)
+    if not report["all_checks_passed"]:
+        raise ValueError(
+            "Phase 2 audit failed; successful artifact refs were not published"
+        )
     _write_immutable(
         storage,
         args.measurement_states_ref_uri,
@@ -221,7 +228,6 @@ def main(argv: list[str] | None = None) -> None:
         args.team_states_ref_uri,
         json.dumps(asdict(team_ref), sort_keys=True).encode(),
     )
-    _write_immutable(storage, args.report_uri, payload)
     if args.register_catalog:
         conn_url = resolve_runtime_target("preview").database_url
         register_dataset_version(conn_url, measurement_ref, measurement_manifest)

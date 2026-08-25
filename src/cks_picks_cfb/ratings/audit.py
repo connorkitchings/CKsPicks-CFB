@@ -189,12 +189,16 @@ def build_rating_audit_report(
     *,
     observations: pd.DataFrame,
     snapshots: pd.DataFrame,
+    terminal_snapshots: pd.DataFrame,
     games: pd.DataFrame,
     reconciled_team_game: pd.DataFrame | None,
     config: MeasurementConfig,
     observations_ref: Mapping[str, Any],
     snapshots_ref: Mapping[str, Any],
     terminal_snapshots_ref: Mapping[str, Any],
+    parent_refs: tuple[Mapping[str, Any], ...] = (),
+    cutoff: str | None = None,
+    code_sha: str | None = None,
     build_audit: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the immutable Phase 1 coverage, redundancy, and lineage report."""
@@ -218,6 +222,7 @@ def build_rating_audit_report(
 
     observation_keys = ["season", "game_id", "team", "measurement_id", "unit_role"]
     snapshot_keys = ["season", "as_of_game_id", "team", "measurement_id", "unit_role"]
+    terminal_keys = ["season", "team", "measurement_id", "unit_role"]
     observation_games = set(
         zip(
             pd.to_numeric(observations["season"], errors="coerce"),
@@ -235,8 +240,40 @@ def build_rating_audit_report(
     else:
         reconciliation_ok = True
 
-    market_conflicts = market_field_conflicts(observations.columns) + (
-        market_field_conflicts(snapshots.columns)
+    market_conflicts = (
+        market_field_conflicts(observations.columns)
+        + market_field_conflicts(snapshots.columns)
+        + market_field_conflicts(terminal_snapshots.columns)
+    )
+    observed = observations["coverage_status"].eq("observed")
+    denominator = pd.to_numeric(observations["denominator"], errors="coerce")
+    expected_raw = pd.to_numeric(
+        observations["numerator"], errors="coerce"
+    ) / denominator.replace(0, float("nan"))
+    ratios_ok = bool(
+        (
+            ~observed
+            | (pd.to_numeric(observations["raw_value"], errors="coerce") - expected_raw)
+            .abs()
+            .lt(1e-9)
+        ).all()
+    )
+    zero_exposure_ok = bool(
+        (denominator.ne(0) | observations["raw_value"].isna()).all()
+    )
+    authentic_ok = bool(
+        (
+            ~observations["temporal_status"].eq("authentic")
+            | (
+                observations["effective_at"].notna()
+                & observations["eligible_after"].notna()
+            )
+        ).all()
+    )
+    terminal_seasons = set(
+        pd.to_numeric(terminal_snapshots["season"], errors="coerce")
+        .dropna()
+        .astype(int)
     )
 
     report = {
@@ -248,6 +285,9 @@ def build_rating_audit_report(
             "snapshots_ref": dict(snapshots_ref),
             "terminal_snapshots_ref": dict(terminal_snapshots_ref),
             "measurement_config_version": config.config_version,
+            "parent_refs": [dict(ref) for ref in parent_refs],
+            "cutoff": cutoff,
+            "code_sha": code_sha,
         },
         "observations": {
             "total_rows": int(len(observations)),
@@ -275,6 +315,10 @@ def build_rating_audit_report(
                 snapshots["missing_reason"].value_counts(dropna=True).to_dict()
             ),
         },
+        "terminal_snapshots": {
+            "total_rows": int(len(terminal_snapshots)),
+            "seasons": sorted(terminal_seasons),
+        },
         "redundancy": {
             "spearman_adjusted_pregame_snapshots": _redundancy_correlations(
                 snapshots, config
@@ -284,6 +328,7 @@ def build_rating_audit_report(
             "uniqueness_ok": not (
                 observations.duplicated(observation_keys).any()
                 or snapshots.duplicated(snapshot_keys).any()
+                or terminal_snapshots.duplicated(terminal_keys).any()
             ),
             "two_team_symmetry_ok": _check_symmetry(observations, games, config),
             "source_reconciliation_ok": reconciliation_ok,
@@ -308,10 +353,21 @@ def build_rating_audit_report(
                 )
             ),
             "future_rows_ok": _check_future_rows(snapshots),
+            "authentic_timing_ok": authentic_ok,
+            "measurement_ratio_ok": ratios_ok,
+            "zero_exposure_null_ok": zero_exposure_ok,
+            "terminal_coverage_ok": bool(terminal_seasons)
+            and terminal_seasons.issubset(set(config.historical_development_seasons)),
             "no_double_counting_ok": _check_no_double_counting(snapshots, config),
             "market_free_ok": not market_conflicts,
             "market_field_conflicts": market_conflicts,
-            "v1_inputs_superseded_ok": True,
+            "v1_inputs_superseded_ok": not bool(
+                {
+                    str(observations_ref.get("version_id")),
+                    str(snapshots_ref.get("version_id")),
+                }
+                & {"b1da5e85a0438fab109937bf", "312917237b7b60cb10d61150"}
+            ),
         },
     }
     report["all_checks_passed"] = all(
