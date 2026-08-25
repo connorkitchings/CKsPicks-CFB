@@ -86,6 +86,17 @@ configuration must be committed before materialization; Phase 3 remains `In
 Progress` until the immutable historical evaluation and candidate-freeze gates
 pass.
 
+### Amendment 2 -- Canonical score-column merge hardening (2026-08-25)
+
+The first attempted Preview materialization recovered the exact staged parent
+filenames after a pre-read `NoSuchKey` stop. The next attempt reached feature
+assembly and stopped before any artifact write because canonical `games` also
+contains score columns that collide with `game_outcomes` during the join. The
+Phase 3 assembler now names outcome completion and score fields explicitly and
+derives targets only from the authoritative outcome fields. This is a
+mechanical lineage correction, preserves the frozen equations and gates, and
+requires a new commit before a fresh run-stamped Preview retry.
+
 ## Validation
 
 - Test ref tampering, formula recomputation, terminal-row rejection, OLS

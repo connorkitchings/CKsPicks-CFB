@@ -254,6 +254,8 @@ def test_prepare_uses_current_pregame_pace_and_outcome_identity(config):
                 "away_team": "B",
                 "neutral_site": False,
                 "completed": False,
+                "home_points": 99,
+                "away_points": 0,
             }
         ]
     )

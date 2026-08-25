@@ -220,7 +220,13 @@ def prepare_prediction_frame(
         raise MeasurementContractError(
             "Phase 3 rejects games with missing neutral-site status"
         )
-    outcome_rows = outcomes.rename(columns={"completed": "outcome_completed"})
+    outcome_rows = outcomes.rename(
+        columns={
+            "completed": "outcome_completed",
+            "home_points": "outcome_home_points",
+            "away_points": "outcome_away_points",
+        }
+    )
     outcome_rows = outcome_rows.drop_duplicates(["season", "game_id"])
     if len(outcome_rows) != len(outcomes):
         raise MeasurementContractError("Duplicate canonical outcomes")
@@ -263,13 +269,17 @@ def prepare_prediction_frame(
             bool(game.outcome_completed) if pd.notna(game.outcome_completed) else False
         )
         actual_margin = (
-            float(game.home_points - game.away_points)
-            if complete and pd.notna(game.home_points) and pd.notna(game.away_points)
+            float(game.outcome_home_points - game.outcome_away_points)
+            if complete
+            and pd.notna(game.outcome_home_points)
+            and pd.notna(game.outcome_away_points)
             else np.nan
         )
         actual_total = (
-            float(game.home_points + game.away_points)
-            if complete and pd.notna(game.home_points) and pd.notna(game.away_points)
+            float(game.outcome_home_points + game.outcome_away_points)
+            if complete
+            and pd.notna(game.outcome_home_points)
+            and pd.notna(game.outcome_away_points)
             else np.nan
         )
         records.append(
