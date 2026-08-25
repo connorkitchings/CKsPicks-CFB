@@ -69,7 +69,10 @@ def _evidence_bounds(rows: pd.DataFrame) -> dict[str, pd.Timestamp] | None:
 
 
 def _eligible_observations(
-    observations: pd.DataFrame, cutoff: pd.Timestamp, season: int, config: MeasurementConfig
+    observations: pd.DataFrame,
+    cutoff: pd.Timestamp,
+    season: int,
+    config: MeasurementConfig,
 ) -> pd.DataFrame:
     kickoff = observations["kickoff_ts"]
     effective = observations["effective_ts"]
@@ -102,7 +105,9 @@ def _team_evidence(rows: pd.DataFrame) -> dict[str, _TeamEvidence]:
     return evidence
 
 
-def _league_center(values: dict[str, float], evidence: dict[str, _TeamEvidence]) -> float:
+def _league_center(
+    values: dict[str, float], evidence: dict[str, _TeamEvidence]
+) -> float:
     pairs = [
         (value, evidence[team].denominator)
         for team, value in values.items()
@@ -110,7 +115,11 @@ def _league_center(values: dict[str, float], evidence: dict[str, _TeamEvidence])
     ]
     if not pairs:
         return float("nan")
-    return float(np.average([value for value, _ in pairs], weights=[weight for _, weight in pairs]))
+    return float(
+        np.average(
+            [value for value, _ in pairs], weights=[weight for _, weight in pairs]
+        )
+    )
 
 
 def _adjust_measurement(
@@ -237,7 +246,12 @@ def build_pregame_snapshots(
 ) -> SnapshotBuildResult:
     """Build pregame adjusted snapshots for every scheduled game in scope."""
     required = {
-        "season", "game_id", "week", "kickoff_utc", "home_team", "away_team",
+        "season",
+        "game_id",
+        "week",
+        "kickoff_utc",
+        "home_team",
+        "away_team",
     }
     missing = sorted(required - set(games.columns))
     if missing:
@@ -308,8 +322,18 @@ def build_pregame_snapshots(
             }
             context_cache = {
                 measurement_id: (
-                    _team_evidence(eligible[(eligible["measurement_id"] == measurement_id) & (eligible["unit_role"] == "offense")]),
-                    _team_evidence(eligible[(eligible["measurement_id"] == measurement_id) & (eligible["unit_role"] == "defense")]),
+                    _team_evidence(
+                        eligible[
+                            (eligible["measurement_id"] == measurement_id)
+                            & (eligible["unit_role"] == "offense")
+                        ]
+                    ),
+                    _team_evidence(
+                        eligible[
+                            (eligible["measurement_id"] == measurement_id)
+                            & (eligible["unit_role"] == "defense")
+                        ]
+                    ),
                 )
                 for measurement_id in context_ids
             }
@@ -381,7 +405,9 @@ def build_season_terminal_snapshots(
     """Build one adjusted terminal measurement state per historical team-season."""
     observations = observations.copy()
     observations["kickoff_ts"] = pd.to_datetime(observations["kickoff_utc"], utc=True)
-    observations["effective_ts"] = pd.to_datetime(observations["effective_at"], utc=True, errors="coerce")
+    observations["effective_ts"] = pd.to_datetime(
+        observations["effective_at"], utc=True, errors="coerce"
+    )
     observed = observations[observations["coverage_status"] == "observed"]
     records: list[dict[str, Any]] = []
     for season in config.historical_development_seasons:
@@ -389,7 +415,9 @@ def build_season_terminal_snapshots(
         if season_rows.empty:
             continue
         terminal_at = season_rows["kickoff_ts"].max() + pd.Timedelta(microseconds=1)
-        adjusted_ids = {spec.measurement_id for spec in config.measurements if spec.is_adjusted}
+        adjusted_ids = {
+            spec.measurement_id for spec in config.measurements if spec.is_adjusted
+        }
         adjusted_cache = {
             measurement_id: _adjust_measurement(
                 season_rows[season_rows["measurement_id"] == measurement_id],
@@ -397,11 +425,23 @@ def build_season_terminal_snapshots(
             )
             for measurement_id in adjusted_ids
         }
-        context_ids = {spec.measurement_id for spec in config.measurements if not spec.is_adjusted}
+        context_ids = {
+            spec.measurement_id for spec in config.measurements if not spec.is_adjusted
+        }
         context_cache = {
             measurement_id: (
-                _team_evidence(season_rows[(season_rows["measurement_id"] == measurement_id) & (season_rows["unit_role"] == "offense")]),
-                _team_evidence(season_rows[(season_rows["measurement_id"] == measurement_id) & (season_rows["unit_role"] == "defense")]),
+                _team_evidence(
+                    season_rows[
+                        (season_rows["measurement_id"] == measurement_id)
+                        & (season_rows["unit_role"] == "offense")
+                    ]
+                ),
+                _team_evidence(
+                    season_rows[
+                        (season_rows["measurement_id"] == measurement_id)
+                        & (season_rows["unit_role"] == "defense")
+                    ]
+                ),
             )
             for measurement_id in context_ids
         }
@@ -434,7 +474,9 @@ def build_season_terminal_snapshots(
                     record["terminal_at_utc"] = record.pop("as_of_kickoff_utc")
                     record.pop("as_of_game_id")
                     record.pop("week")
-                    record["measurement_schema_version"] = TERMINAL_SNAPSHOT_SCHEMA_VERSION
+                    record["measurement_schema_version"] = (
+                        TERMINAL_SNAPSHOT_SCHEMA_VERSION
+                    )
                     records.append(record)
     frame = pd.DataFrame.from_records(records, columns=TERMINAL_SNAPSHOT_COLUMNS)
     if not frame.empty:
@@ -443,7 +485,10 @@ def build_season_terminal_snapshots(
         ).reset_index(drop=True)
     return SnapshotBuildResult(
         frame=frame,
-        audit={"terminal_rows": int(len(frame)), "terminal_seasons": list(config.historical_development_seasons)},
+        audit={
+            "terminal_rows": int(len(frame)),
+            "terminal_seasons": list(config.historical_development_seasons),
+        },
     )
 
 

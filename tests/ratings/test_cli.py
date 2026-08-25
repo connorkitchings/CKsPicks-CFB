@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 import pytest
-from helpers import AS_OF, simple_league
+from helpers import AS_OF, multi_season_league, stage_rating_parents
 
-from cks_picks_cfb.data.lake import BuildRequest, DatasetRef, build_dataset_version
+from cks_picks_cfb.data.lake import DatasetRef
 from cks_picks_cfb.data.storage.local import LocalStorage
 from cks_picks_cfb.ratings.contracts import load_measurement_config
 from scripts.pipeline import build_rating_measurements as cli
@@ -19,64 +18,42 @@ CONFIG_PATH = "conf/ratings/measurement_baseline_v1.yaml"
 
 
 def _seed_parents(storage: LocalStorage) -> dict[str, list[str]]:
-    league = simple_league()
-    frames = {
-        "byplay": ("byplay_v1", league["byplay"]),
-        "drives": ("drives_v1", league["drives"]),
-        "games": ("games_v2", league["games"]),
-        "game_outcomes": ("game_outcomes_v1", league["outcomes"]),
-        "reconciled_team_game": ("team_game_v1", league["reconciled_team_game"]),
-    }
-    uris: dict[str, list[str]] = {}
-    cutoff = AS_OF
-    for dataset, (schema_version, frame) in frames.items():
-        ref, manifest = build_dataset_version(
-            storage,
-            build=BuildRequest(
-                dataset=dataset,
-                parent_refs=(),
-                code_sha="seed",
-                config_sha="seed",
-                as_of=cutoff,
-                schema_version=schema_version,
-                tier="silver",
-            ),
-            records=frame.to_dict("records"),
-        )
-        uri = f"artifacts/test/parents/{dataset}.json"
-        storage.write_bytes(json.dumps(asdict(ref), sort_keys=True).encode(), uri)
-        uris[dataset] = [uri]
-    return uris
+    return stage_rating_parents(storage, multi_season_league())
 
 
 def _argv(storage_uris, tmp_path: Path, design_id: str, as_of=None) -> list[str]:
     prefix = f"artifacts/research/rating-successor/measurements/{design_id}"
-    return [
+    argv = [
         "--environment",
         "preview",
         "--measurement-config",
         CONFIG_PATH,
         "--as-of",
         as_of or AS_OF.isoformat(),
-        "--byplay-ref-uri",
-        storage_uris["byplay"][0],
-        "--drives-ref-uri",
-        storage_uris["drives"][0],
-        "--games-ref-uri",
-        storage_uris["games"][0],
-        "--outcomes-ref-uri",
-        storage_uris["game_outcomes"][0],
-        "--team-game-ref-uri",
-        storage_uris["reconciled_team_game"][0],
-        "--observations-ref-uri",
-        f"{prefix}/observations/ref.json",
-        "--snapshots-ref-uri",
-        f"{prefix}/snapshots/ref.json",
-        "--terminal-snapshots-ref-uri",
-        f"{prefix}/terminal/ref.json",
-        "--report-uri",
-        f"{prefix}/audit/report.json",
     ]
+    for uri in storage_uris["byplay"]:
+        argv.extend(["--byplay-ref-uri", uri])
+    for uri in storage_uris["drives"]:
+        argv.extend(["--drives-ref-uri", uri])
+    argv.extend(
+        [
+            "--games-ref-uri",
+            storage_uris["games"][0],
+            "--outcomes-ref-uri",
+            storage_uris["game_outcomes"][0],
+            "--team-game-ref-uri",
+            storage_uris["reconciled_team_game"][0],
+            "--observations-ref-uri",
+            f"{prefix}/observations/ref.json",
+            "--snapshots-ref-uri",
+            f"{prefix}/snapshots/ref.json",
+            "--terminal-snapshots-ref-uri",
+            f"{prefix}/terminal/ref.json",
+            "--report-uri",
+            f"{prefix}/audit/report.json",
+        ]
+    )
+    return argv
 
 
 @pytest.fixture()

@@ -666,4 +666,6 @@ def validate_terminal_snapshot_frame(
     renamed = renamed[ordered]
     validate_snapshot_frame(renamed, config)
     if frame.duplicated(list(TERMINAL_SNAPSHOT_KEYS)).any():
-        raise MeasurementContractError(f"{TERMINAL_SNAPSHOT_DATASET} has duplicate keys")
+        raise MeasurementContractError(
+            f"{TERMINAL_SNAPSHOT_DATASET} has duplicate keys"
+        )

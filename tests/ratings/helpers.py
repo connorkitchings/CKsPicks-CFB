@@ -215,3 +215,194 @@ def simple_league():
         "outcomes": pd.DataFrame(outcomes),
         "reconciled_team_game": pd.DataFrame(reconciled),
     }
+
+
+HISTORICAL_SEASONS = (2021, 2022, 2023, 2024, 2025)
+
+
+def multi_season_league(include_completed_2026: bool = True):
+    """A compact league per historical season plus protected 2026 targets.
+
+    Each historical season has two weekends of games for the same four teams.
+    2026 adds one completed pre-cutoff game and one scheduled future game so
+    CLI runs can prove protected-season targets keep strictly prior-only
+    measurement evidence.
+    """
+    byplay = []
+    drives = []
+    games = []
+    outcomes = []
+    reconciled = []
+
+    def add_game(
+        season,
+        week,
+        game_id,
+        kickoff,
+        home,
+        away,
+        completed=True,
+        status="completed",
+    ):
+        games.append(
+            game_row(
+                season=season,
+                game_id=game_id,
+                week=week,
+                kickoff_utc=kickoff,
+                home_team=home,
+                away_team=away,
+                completed=completed,
+                status=status,
+            )
+        )
+        outcomes.append(outcome_row(season=season, game_id=game_id))
+        reconciled.append(reconciled_row(season=season, game_id=game_id, team=home))
+        reconciled.append(reconciled_row(season=season, game_id=game_id, team=away))
+        for drive_number, (offense, defense) in enumerate(
+            [(home, away), (away, home)], start=1
+        ):
+            for play_number in range(1, 3):
+                byplay.append(
+                    play_row(
+                        season=season,
+                        week=week,
+                        game_id=game_id,
+                        drive_number=drive_number,
+                        play_number=play_number,
+                        offense=offense,
+                        defense=defense,
+                        ppa=0.25 if offense == home else -0.1,
+                        success=1 if offense == home else 0,
+                        yards_gained=25 if play_number == 1 else 4,
+                    )
+                )
+            drives.append(
+                drive_row(
+                    season=season,
+                    week=week,
+                    game_id=game_id,
+                    drive_number=drive_number,
+                    offense=offense,
+                    defense=defense,
+                    start_yards_to_goal=75,
+                    had_scoring_opportunity=1,
+                    points=7 if offense == home else 3,
+                    points_on_opps=7 if offense == home else 3,
+                )
+            )
+
+    for season in HISTORICAL_SEASONS:
+        add_game(
+            season,
+            1,
+            season * 100 + 1,
+            f"{season}-09-06T18:00:00+00:00",
+            "Alpha",
+            "Beta",
+        )
+        add_game(
+            season,
+            1,
+            season * 100 + 2,
+            f"{season}-09-06T22:00:00+00:00",
+            "Gamma",
+            "Delta",
+        )
+        add_game(
+            season,
+            2,
+            season * 100 + 3,
+            f"{season}-09-13T18:00:00+00:00",
+            "Alpha",
+            "Gamma",
+        )
+        add_game(
+            season,
+            2,
+            season * 100 + 4,
+            f"{season}-09-13T22:00:00+00:00",
+            "Beta",
+            "Delta",
+        )
+    if include_completed_2026:
+        add_game(2026, 0, 2060, "2026-08-29T19:00:00+00:00", "Alpha", "Beta")
+    add_game(
+        2026,
+        1,
+        2061,
+        "2026-09-05T19:00:00+00:00",
+        "Gamma",
+        "Delta",
+        completed=False,
+        status="scheduled",
+    )
+
+    return {
+        "byplay": pd.DataFrame(byplay),
+        "drives": pd.DataFrame(drives),
+        "games": pd.DataFrame(games),
+        "outcomes": pd.DataFrame(outcomes),
+        "reconciled_team_game": pd.DataFrame(reconciled),
+    }
+
+
+def stage_rating_parents(storage, league) -> dict[str, list[str]]:
+    """Stage immutable parents with season-partitioned byplay/drives refs.
+
+    Historical byplay and drives evidence is staged as one single-season
+    dataset per season (matching the lake's season partitioning), while the
+    compact schedule, outcome, and reconciliation parents are staged whole.
+    """
+    import json
+    from dataclasses import asdict
+
+    from cks_picks_cfb.data.lake import BuildRequest, build_dataset_version
+
+    uris: dict[str, list[str]] = {"byplay": [], "drives": []}
+    for dataset, key, schema_version in (
+        ("byplay", "byplay", "byplay_v1"),
+        ("drives", "drives", "drives_v1"),
+    ):
+        for season in HISTORICAL_SEASONS:
+            frame = league[key][pd.to_numeric(league[key]["season"]) == season]
+            ref, _ = build_dataset_version(
+                storage,
+                build=BuildRequest(
+                    dataset=dataset,
+                    parent_refs=(),
+                    code_sha="seed",
+                    config_sha="seed",
+                    as_of=AS_OF,
+                    schema_version=schema_version,
+                    tier="silver",
+                ),
+                records=frame.to_dict("records"),
+                partitions={"seasons": [season]},
+            )
+            uri = f"artifacts/test/parents/{dataset}-{season}.json"
+            storage.write_bytes(json.dumps(asdict(ref), sort_keys=True).encode(), uri)
+            uris[dataset].append(uri)
+
+    for dataset, key, schema_version in (
+        ("games", "games", "games_v2"),
+        ("game_outcomes", "outcomes", "game_outcomes_v1"),
+        ("reconciled_team_game", "reconciled_team_game", "team_game_v1"),
+    ):
+        ref, _ = build_dataset_version(
+            storage,
+            build=BuildRequest(
+                dataset=dataset,
+                parent_refs=(),
+                code_sha="seed",
+                config_sha="seed",
+                as_of=AS_OF,
+                schema_version=schema_version,
+                tier="silver",
+            ),
+            records=league[key].to_dict("records"),
+        )
+        uri = f"artifacts/test/parents/{dataset}.json"
+        storage.write_bytes(json.dumps(asdict(ref), sort_keys=True).encode(), uri)
+        uris[dataset] = [uri]
+    return uris

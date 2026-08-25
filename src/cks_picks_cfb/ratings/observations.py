@@ -247,13 +247,23 @@ def build_measurement_observations(
     eligible_ids = {(game["season"], game["game_id"]) for game in eligible_games}
     byplay["season"] = pd.to_numeric(byplay["season"], errors="coerce").astype("Int64")
     drives["season"] = pd.to_numeric(drives["season"], errors="coerce").astype("Int64")
-    byplay["game_id"] = pd.to_numeric(byplay["game_id"], errors="coerce").astype("Int64")
-    drives["game_id"] = pd.to_numeric(drives["game_id"], errors="coerce").astype("Int64")
+    byplay["game_id"] = pd.to_numeric(byplay["game_id"], errors="coerce").astype(
+        "Int64"
+    )
+    drives["game_id"] = pd.to_numeric(drives["game_id"], errors="coerce").astype(
+        "Int64"
+    )
     byplay = byplay[
-        byplay.apply(lambda row: (int(row["season"]), int(row["game_id"])) in eligible_ids, axis=1)
+        byplay.apply(
+            lambda row: (int(row["season"]), int(row["game_id"])) in eligible_ids,
+            axis=1,
+        )
     ].copy()
     drives = drives[
-        drives.apply(lambda row: (int(row["season"]), int(row["game_id"])) in eligible_ids, axis=1)
+        drives.apply(
+            lambda row: (int(row["season"]), int(row["game_id"])) in eligible_ids,
+            axis=1,
+        )
     ].copy()
 
     byplay["is_drive_play"] = _derive_is_drive_play(byplay)
@@ -262,8 +272,12 @@ def build_measurement_observations(
 
     quality: dict[tuple[int, int], list[str]] = {}
     ambiguous = byplay[(byplay["is_drive_play"] == 1) & garbage.isna()]
-    for season, game_id in ambiguous[["season", "game_id"]].drop_duplicates().itertuples(index=False):
-        quality.setdefault((int(season), int(game_id)), []).append("garbage_flag_missing")
+    for season, game_id in (
+        ambiguous[["season", "game_id"]].drop_duplicates().itertuples(index=False)
+    ):
+        quality.setdefault((int(season), int(game_id)), []).append(
+            "garbage_flag_missing"
+        )
     eligible_plays = byplay[byplay["eligible"]]
 
     ppa = pd.to_numeric(eligible_plays["ppa"], errors="coerce")
@@ -278,10 +292,22 @@ def build_measurement_observations(
         explosive_num=(yards >= 20).astype(int),
         turnover_num=(turnover == 1).astype(int),
     )
-    for season, game_id in eligible_plays.loc[ppa.isna(), ["season", "game_id"]].drop_duplicates().itertuples(index=False):
-        quality.setdefault((int(season), int(game_id)), []).append("ppa_missing_on_eligible_plays")
-    for season, game_id in eligible_plays.loc[success.isna(), ["season", "game_id"]].drop_duplicates().itertuples(index=False):
-        quality.setdefault((int(season), int(game_id)), []).append("success_missing_on_eligible_plays")
+    for season, game_id in (
+        eligible_plays.loc[ppa.isna(), ["season", "game_id"]]
+        .drop_duplicates()
+        .itertuples(index=False)
+    ):
+        quality.setdefault((int(season), int(game_id)), []).append(
+            "ppa_missing_on_eligible_plays"
+        )
+    for season, game_id in (
+        eligible_plays.loc[success.isna(), ["season", "game_id"]]
+        .drop_duplicates()
+        .itertuples(index=False)
+    ):
+        quality.setdefault((int(season), int(game_id)), []).append(
+            "success_missing_on_eligible_plays"
+        )
 
     play_agg_off = eligible_plays.groupby(["season", "game_id", "offense"]).agg(
         epa_num=("ppa_num", "sum"),
@@ -303,7 +329,9 @@ def build_measurement_observations(
     )
 
     eligible_drive_plays = (
-        eligible_plays.groupby(["season", "game_id", "drive_number", "offense", "defense"])
+        eligible_plays.groupby(
+            ["season", "game_id", "drive_number", "offense", "defense"]
+        )
         .size()
         .rename("eligible_plays")
         .reset_index()
@@ -320,8 +348,14 @@ def build_measurement_observations(
         pd.to_numeric(drives["had_scoring_opportunity"], errors="coerce").fillna(0) == 1
     )
     missing_start = drives["start_own_goal_distance"].isna()
-    for season, game_id in drives.loc[missing_start, ["season", "game_id"]].drop_duplicates().itertuples(index=False):
-        quality.setdefault((int(season), int(game_id)), []).append("start_field_position_missing")
+    for season, game_id in (
+        drives.loc[missing_start, ["season", "game_id"]]
+        .drop_duplicates()
+        .itertuples(index=False)
+    ):
+        quality.setdefault((int(season), int(game_id)), []).append(
+            "start_field_position_missing"
+        )
     drives_with_start = drives[~missing_start]
     drive_agg_off = drives_with_start.groupby(["season", "game_id", "offense"]).agg(
         start_sum=("start_own_goal_distance", "sum"),
@@ -340,7 +374,9 @@ def build_measurement_observations(
         opp_points=("points_on_opps", "sum"),
         opp_count=("points_on_opps", "size"),
     )
-    drive_plays_off = eligible_drive_plays.groupby(["season", "game_id", "offense"]).agg(
+    drive_plays_off = eligible_drive_plays.groupby(
+        ["season", "game_id", "offense"]
+    ).agg(
         plays=("eligible_plays", "sum"),
         drives_count=("eligible_plays", "size"),
     )

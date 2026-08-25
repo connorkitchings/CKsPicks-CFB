@@ -3,9 +3,13 @@
 
 Preview-only: reads immutable byplay, drives, games, outcomes, and reconciled
 team-game parents and writes long-form raw observations, strictly pregame
-adjusted snapshots, and the coverage/redundancy audit report under the
-research prefix. Never writes predictions, V4 references, or production
-artifacts, and refuses production runtime targets.
+adjusted snapshots, terminal adjusted snapshots, and the coverage/redundancy
+audit report under the research prefix. Raw byplay/drives evidence is
+materialized one historical season at a time, so at most one season of raw
+plays and drives is resident while only compact observation outputs persist
+across seasons. Never writes predictions, V4 references, or production
+artifacts, and refuses production runtime targets, unverified code, and
+failing audits.
 """
 
 from __future__ import annotations
@@ -14,9 +18,11 @@ import argparse
 import hashlib
 import json
 import subprocess
+import time
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, Mapping
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -33,6 +39,7 @@ from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings.audit import build_rating_audit_report
 from cks_picks_cfb.ratings.contracts import (
+    OBSERVATION_COLUMNS,
     OBSERVATION_DATASET,
     OBSERVATION_SCHEMA_VERSION,
     SNAPSHOT_DATASET,
@@ -58,6 +65,15 @@ RELEVANT_CODE_PATHS = (
     "src/cks_picks_cfb/data/schema_contracts.py",
     "scripts/pipeline/build_rating_measurements.py",
     "conf/ratings/measurement_baseline_v1.yaml",
+)
+
+_OBSERVATION_SORT_KEYS = (
+    "season",
+    "kickoff_utc",
+    "game_id",
+    "team",
+    "measurement_id",
+    "unit_role",
 )
 
 
@@ -117,6 +133,229 @@ def _load_grouped_frames(
         require_dataset(ref, expected)
         refs.append(ref)
     return tuple(refs)
+
+
+def _manifest_seasons(storage, ref: DatasetRef) -> tuple[int, ...]:
+    """Read the manifest season partition of an immutable raw parent."""
+    manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
+    manifest = json.loads(storage.read_bytes(manifest_uri))
+    seasons = (manifest.get("partitions") or {}).get("seasons") or []
+    return tuple(int(season) for season in seasons)
+
+
+def _season_parent_maps(
+    storage,
+    byplay_refs: tuple[DatasetRef, ...],
+    drives_refs: tuple[DatasetRef, ...],
+    config,
+) -> tuple[dict[int, DatasetRef], dict[int, DatasetRef]]:
+    """Map raw parents to seasons and fail closed before any raw data read.
+
+    Every historical development season must have exactly one byplay and one
+    drives parent, each partitioned to exactly that season. Protected or
+    out-of-scope raw seasons are rejected because bounded materialization
+    only covers historical development evidence.
+    """
+    maps: dict[str, dict[int, DatasetRef]] = {}
+    for label, refs in (("byplay", byplay_refs), ("drives", drives_refs)):
+        by_season: dict[int, DatasetRef] = {}
+        for ref in refs:
+            seasons = _manifest_seasons(storage, ref)
+            if len(seasons) != 1:
+                raise ValueError(
+                    f"{label} parent {ref.version_id} must be partitioned to "
+                    f"exactly one season, got {list(seasons)}"
+                )
+            season = seasons[0]
+            if season in by_season:
+                raise ValueError(
+                    f"Duplicate {label} parent for season {season}: "
+                    f"{by_season[season].version_id} and {ref.version_id}"
+                )
+            by_season[season] = ref
+        maps[label] = by_season
+    required = tuple(config.historical_development_seasons)
+    missing = [
+        f"{label}:{season}"
+        for label in ("byplay", "drives")
+        for season in required
+        if season not in maps[label]
+    ]
+    if missing:
+        raise ValueError(
+            "Missing raw parent refs for historical development seasons "
+            f"(exactly one byplay and one drives parent each): {missing}"
+        )
+    extra = sorted((set(maps["byplay"]) | set(maps["drives"])) - set(required))
+    if extra:
+        raise ValueError(
+            f"Raw parent refs cover non-historical seasons {extra}; bounded "
+            "materialization covers historical development seasons only"
+        )
+    return maps["byplay"], maps["drives"]
+
+
+def _concat_frames(storage, refs: tuple[DatasetRef, ...]) -> pd.DataFrame:
+    frames = [read_dataset(storage, ref) for ref in refs]
+    columns = [tuple(frame.columns) for frame in frames]
+    if any(column != columns[0] for column in columns):
+        raise ValueError(f"Parent frames disagree on columns: {columns}")
+    nonempty = [frame for frame in frames if not frame.empty]
+    if not nonempty:
+        return frames[0]
+    return pd.concat(nonempty, ignore_index=True)
+
+
+def _build_observations_season_scoped(
+    *,
+    storage,
+    config,
+    byplay_by_season: Mapping[int, DatasetRef],
+    drives_by_season: Mapping[int, DatasetRef],
+    games: pd.DataFrame,
+    outcomes: pd.DataFrame,
+    reconciled_team_game: pd.DataFrame,
+    as_of: datetime,
+    code_sha: str,
+    config_sha: str,
+    parent_ref_shas: str,
+    progress: Callable[[str], None] | None = None,
+) -> tuple[pd.DataFrame, dict[str, Any], dict[str, Any]]:
+    """Build observations one historical season at a time.
+
+    Loads, verifies, and aggregates a single season's byplay/drives parents,
+    retains only that season's compact observation output, releases the raw
+    frames, and finally concatenates and globally re-sorts the per-season
+    outputs into the canonical all-history observation ordering.
+    """
+    merged_audit: dict[str, Any] = {
+        "excluded_games": [],
+        "season_counts": {},
+        "out_of_scope_season_games": {},
+        "quality_flag_counts": {},
+    }
+    raw_input_rows: dict[str, dict[int, int]] = {"byplay": {}, "drives": {}}
+    observation_rows_by_season: dict[int, int] = {}
+    timings_ms: dict[str, float] = {"raw_read": 0.0, "build": 0.0, "assemble": 0.0}
+
+    compact = {}
+    for name, frame in (
+        ("games", games),
+        ("outcomes", outcomes),
+        ("reconciled", reconciled_team_game),
+    ):
+        season_frame = frame.copy()
+        season_frame["season"] = pd.to_numeric(season_frame["season"], errors="coerce")
+        compact[name] = season_frame
+
+    frames: list[pd.DataFrame] = []
+    for season in sorted(config.historical_development_seasons):
+        if progress is not None:
+            progress(f"read:byplay:{season}")
+        started = time.perf_counter()
+        byplay = read_dataset(storage, byplay_by_season[season])
+        if progress is not None:
+            progress(f"read:drives:{season}")
+        drives = read_dataset(storage, drives_by_season[season])
+        timings_ms["raw_read"] += time.perf_counter() - started
+        for label, frame in (("byplay", byplay), ("drives", drives)):
+            frame_seasons = set(
+                pd.to_numeric(frame["season"], errors="coerce").dropna().astype(int)
+            )
+            if frame_seasons != {season}:
+                raise ValueError(
+                    f"{label} parent for season {season} contains rows from "
+                    f"seasons {sorted(frame_seasons)}; manifest partition and "
+                    "rows disagree"
+                )
+            raw_input_rows[label][int(season)] = int(len(frame))
+
+        if progress is not None:
+            progress(f"build:{season}")
+        started = time.perf_counter()
+        build = build_measurement_observations(
+            byplay=byplay,
+            drives=drives,
+            games=compact["games"][compact["games"]["season"] == season],
+            outcomes=compact["outcomes"][compact["outcomes"]["season"] == season],
+            reconciled_team_game=compact["reconciled"][
+                compact["reconciled"]["season"] == season
+            ],
+            config=config,
+            as_of=as_of,
+            code_sha=code_sha,
+            config_sha=config_sha,
+            parent_ref_shas=parent_ref_shas,
+        )
+        timings_ms["build"] += time.perf_counter() - started
+        frames.append(build.frame)
+        observation_rows_by_season[int(season)] = int(len(build.frame))
+        audit = build.audit
+        merged_audit["excluded_games"].extend(audit.get("excluded_games", []))
+        for flag, count in audit.get("quality_flag_counts", {}).items():
+            merged_audit["quality_flag_counts"][flag] = (
+                merged_audit["quality_flag_counts"].get(flag, 0) + count
+            )
+        for season_key, counts in audit.get("season_counts", {}).items():
+            merged_audit["season_counts"][season_key] = counts
+        for other_season, count in audit.get("out_of_scope_season_games", {}).items():
+            merged_audit["out_of_scope_season_games"][other_season] = (
+                merged_audit["out_of_scope_season_games"].get(other_season, 0) + count
+            )
+        del byplay, drives, build
+
+    started = time.perf_counter()
+    if frames:
+        combined = pd.concat(frames, ignore_index=True)
+        combined = combined.sort_values(
+            list(_OBSERVATION_SORT_KEYS), kind="mergesort"
+        ).reset_index(drop=True)
+    else:
+        combined = pd.DataFrame(columns=OBSERVATION_COLUMNS)
+    timings_ms["assemble"] = time.perf_counter() - started
+
+    execution = {
+        "raw_seasons_processed": [
+            int(season) for season in sorted(config.historical_development_seasons)
+        ],
+        "raw_input_rows": raw_input_rows,
+        "observation_rows_by_season": observation_rows_by_season,
+        "timings_ms": timings_ms,
+    }
+    return combined, merged_audit, execution
+
+
+def _serialize_report(report: Mapping[str, Any]) -> bytes:
+    return json.dumps(report, indent=2, sort_keys=True, default=str).encode()
+
+
+def _report_identity(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Return report content excluding wall-clock timing diagnostics."""
+    identity = json.loads(json.dumps(report, default=str))
+    execution = identity.get("execution")
+    if isinstance(execution, dict):
+        execution.pop("timing_by_stage_ms", None)
+    return identity
+
+
+def _write_report(storage, uri: str, report: Mapping[str, Any]) -> bytes:
+    """Write the audit report immutably, ignoring wall-clock timing drift.
+
+    A rerun whose report differs only in ``execution.timing_by_stage_ms`` is
+    byte-stable for every deterministic field; the first execution's timings
+    are retained. Any other difference is an immutable collision.
+    """
+    identity_payload = _serialize_report(_report_identity(report))
+    if storage.exists(uri):
+        try:
+            existing = json.loads(storage.read_bytes(uri))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise FileExistsError(f"Immutable artifact exists: {uri}") from exc
+        if _serialize_report(_report_identity(existing)) != identity_payload:
+            raise FileExistsError(f"Immutable artifact exists: {uri}")
+        return identity_payload
+    storage.write_bytes(_serialize_report(report), uri)
+    return identity_payload
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -184,40 +423,50 @@ def main(argv: list[str] | None = None) -> None:
         storage, args.team_game_ref_uri, "reconciled_team_game", "--team-game-ref-uri"
     )
 
-    def _concat(refs: tuple[DatasetRef, ...]) -> pd.DataFrame:
-        frames = [read_dataset(storage, ref) for ref in refs]
-        columns = [tuple(frame.columns) for frame in frames]
-        if any(column != columns[0] for column in columns):
-            raise ValueError(f"Parent frames disagree on columns: {columns}")
-        nonempty = [frame for frame in frames if not frame.empty]
-        if not nonempty:
-            return frames[0]
-        return pd.concat(nonempty, ignore_index=True)
-
-    byplay = _concat(byplay_refs)
-    drives = _concat(drives_refs)
-    games = _concat(games_refs)
-    outcomes = _concat(outcome_refs)
-    reconciled_team_game = _concat(team_game_refs)
+    # Validate the raw season map from manifests before materializing any raw
+    # data so missing, duplicate, or out-of-scope parents fail before reads.
+    byplay_by_season, drives_by_season = _season_parent_maps(
+        storage, byplay_refs, drives_refs, config
+    )
 
     parent_refs = byplay_refs + drives_refs + games_refs + outcome_refs + team_game_refs
     parent_ref_shas = ";".join(ref.content_sha for ref in parent_refs)
     code_sha = _require_committed_code(args.expected_code_sha)
     config_sha = config.design_id
 
-    observation_build = build_measurement_observations(
-        byplay=byplay,
-        drives=drives,
-        games=games,
-        outcomes=outcomes,
-        reconciled_team_game=reconciled_team_game,
-        config=config,
-        as_of=cutoff,
-        code_sha=code_sha,
-        config_sha=config_sha,
-        parent_ref_shas=parent_ref_shas,
+    read_started = time.perf_counter()
+    games = _concat_frames(storage, games_refs)
+    outcomes = _concat_frames(storage, outcome_refs)
+    reconciled_team_game = _concat_frames(storage, team_game_refs)
+    compact_read_s = time.perf_counter() - read_started
+
+    observations, merged_observation_audit, season_execution = (
+        _build_observations_season_scoped(
+            storage=storage,
+            config=config,
+            byplay_by_season=byplay_by_season,
+            drives_by_season=drives_by_season,
+            games=games,
+            outcomes=outcomes,
+            reconciled_team_game=reconciled_team_game,
+            as_of=cutoff,
+            code_sha=code_sha,
+            config_sha=config_sha,
+            parent_ref_shas=parent_ref_shas,
+        )
     )
-    validate_observation_frame(observation_build.frame, config)
+    observation_build_s = (
+        season_execution["timings_ms"]["build"]
+        + season_execution["timings_ms"]["assemble"]
+    )
+    read_s = compact_read_s + season_execution["timings_ms"]["raw_read"]
+
+    observation_build_started = time.perf_counter()
+    validate_observation_frame(observations, config)
+    observation_build_s += time.perf_counter() - observation_build_started
+    terminal_materialization_s = 0.0
+
+    dataset_started = time.perf_counter()
     observations_ref, observations_manifest = build_dataset_version(
         storage,
         build=BuildRequest(
@@ -229,22 +478,22 @@ def main(argv: list[str] | None = None) -> None:
             schema_version=OBSERVATION_SCHEMA_VERSION,
             tier="gold",
         ),
-        records=observation_build.frame.to_dict("records"),
+        records=observations.to_dict("records"),
         partitions={
-            "seasons": sorted(
-                int(season) for season in set(observation_build.frame["season"])
-            )
+            "seasons": sorted(int(season) for season in set(observations["season"]))
         }
-        if not observation_build.frame.empty
+        if not observations.empty
         else {"seasons": []},
         validation={
-            "nonempty": not observation_build.frame.empty,
+            "nonempty": not observations.empty,
             "ratings_contract_valid": True,
         },
     )
+    terminal_materialization_s += time.perf_counter() - dataset_started
 
+    snapshot_computation_started = time.perf_counter()
     snapshot_build = build_pregame_snapshots(
-        observations=observation_build.frame,
+        observations=observations,
         games=games,
         config=config,
         code_sha=code_sha,
@@ -255,6 +504,9 @@ def main(argv: list[str] | None = None) -> None:
         ),
     )
     validate_snapshot_frame(snapshot_build.frame, config)
+    snapshot_computation_s = time.perf_counter() - snapshot_computation_started
+
+    dataset_started = time.perf_counter()
     snapshots_ref, snapshots_manifest = build_dataset_version(
         storage,
         build=BuildRequest(
@@ -279,9 +531,11 @@ def main(argv: list[str] | None = None) -> None:
             "ratings_contract_valid": True,
         },
     )
+    terminal_materialization_s += time.perf_counter() - dataset_started
 
+    terminal_computation_started = time.perf_counter()
     terminal_build = build_season_terminal_snapshots(
-        observations=observation_build.frame,
+        observations=observations,
         games=games,
         config=config,
         code_sha=code_sha,
@@ -292,6 +546,10 @@ def main(argv: list[str] | None = None) -> None:
         ),
     )
     validate_terminal_snapshot_frame(terminal_build.frame, config)
+    terminal_computation_s = time.perf_counter() - terminal_computation_started
+    snapshot_build_s = snapshot_computation_s + terminal_computation_s
+
+    dataset_started = time.perf_counter()
     terminal_ref, terminal_manifest = build_dataset_version(
         storage,
         build=BuildRequest(
@@ -310,9 +568,13 @@ def main(argv: list[str] | None = None) -> None:
             "ratings_contract_valid": True,
         },
     )
+    terminal_build_s = terminal_materialization_s + (
+        time.perf_counter() - dataset_started
+    )
 
+    audit_started = time.perf_counter()
     report = build_rating_audit_report(
-        observations=observation_build.frame,
+        observations=observations,
         snapshots=snapshot_build.frame,
         terminal_snapshots=terminal_build.frame,
         games=games,
@@ -324,10 +586,28 @@ def main(argv: list[str] | None = None) -> None:
         parent_refs=tuple(asdict(ref) for ref in parent_refs),
         cutoff=cutoff.isoformat(),
         code_sha=code_sha,
-        build_audit=observation_build.audit,
+        build_audit=merged_observation_audit,
     )
-    report_payload = json.dumps(report, indent=2, sort_keys=True, default=str).encode()
-    _write_immutable_json(storage, args.report_uri, report_payload)
+    report["execution"] = {
+        "materialization": "season_scoped_v1",
+        "raw_seasons_processed": season_execution["raw_seasons_processed"],
+        "raw_input_rows": season_execution["raw_input_rows"],
+        "observation_rows_by_season": season_execution["observation_rows_by_season"],
+        "snapshot_rows": int(len(snapshot_build.frame)),
+        "terminal_snapshot_rows": int(len(terminal_build.frame)),
+        "timing_by_stage_ms": {
+            "read": int(read_s * 1000),
+            "observation_build": int(observation_build_s * 1000),
+            "snapshot_build": int(snapshot_build_s * 1000),
+            "terminal_build": int(terminal_build_s * 1000),
+            "audit": int((time.perf_counter() - audit_started) * 1000),
+        },
+        "timing_identity_note": (
+            "timing_by_stage_ms is execution diagnostics only and is excluded "
+            "from report_sha256 identity"
+        ),
+    }
+    identity_payload = _write_report(storage, args.report_uri, report)
     if not report["all_checks_passed"]:
         raise ValueError(
             "Phase 1 audit failed; successful artifact refs were not published"
@@ -362,7 +642,7 @@ def main(argv: list[str] | None = None) -> None:
                 "snapshots_ref": asdict(snapshots_ref),
                 "terminal_snapshots_ref": asdict(terminal_ref),
                 "report_uri": args.report_uri,
-                "report_sha256": hashlib.sha256(report_payload).hexdigest(),
+                "report_sha256": hashlib.sha256(identity_payload).hexdigest(),
                 "all_checks_passed": report["all_checks_passed"],
                 "status": "built",
             },
