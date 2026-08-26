@@ -53,7 +53,7 @@
 - [x] Scoped `uv run ruff check …`
 - [x] Read-only Preview frozen-model load (`locked_confirmation`)
 - [x] Read-only Preview locked-2025 oracle (`1,522` rows, max delta `0.0`)
-- [x] Full Python suite (`528 passed, 2 skipped`), contracts validation, strict
+- [x] Full Python suite (`529 passed, 2 skipped`), contracts validation, strict
   MkDocs, and `git diff --check`
 - [ ] Committed-code Preview rehearsal and byte-identical rerun
 
@@ -62,11 +62,25 @@
 - The plan amendment records the four mechanical defects discovered by review
   and their bounded corrections. The only remaining blocker is intentional:
   immutable Preview materialization requires a committed code identity.
+- First Preview rehearsal `2026-08-26T2107Z-phase4-rehearsal` failed closed on
+  the historical V4 `spread`/shadow `margin` label mismatch. It published no
+  successful evidence or summary. The follow-up normalizes the historical
+  replay boundary and writes diagnostics for incomplete rehearsal scores.
+- A read-only all-week preflight then rebuilt 19,786 observations and 19,812
+  snapshots. All 15 2025 weeks had complete outcomes/V4 coverage and matched
+  their frozen oracle rows within `9.95e-14`.
+- Added prospective V4 identity pins, cancellation waivers, Preview catalog
+  preflight, canonical partial-artifact rejection, and explicit Week 1
+  eligibility declaration before the next materialization attempt.
+- A fully cancelled slate is now diagnostic-only rather than producing an
+  empty evidence dataset. This retains cancellation traceability without
+  recording zero-row scored evidence.
 
 ## Handoff Notes
 
-- **Resume at:** Run final local validation, then make the implementation commit
-  before executing `run_rating_shadow_rehearsal.py` twice.
+- **Resume at:** Commit the target-label correction and pre-rehearsal
+  safeguards, then execute `run_rating_shadow_rehearsal.py` twice under a
+  fresh run ID.
 - **Watch out for:** Do not invoke a prospective Week 0/2026 freeze; it remains
   Phase 5 work and ineligible evidence.
 

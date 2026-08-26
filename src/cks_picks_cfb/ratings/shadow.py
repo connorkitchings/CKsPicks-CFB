@@ -56,8 +56,10 @@ class ShadowConfig:
     research_prefix: str
     candidate: Mapping[str, str]
     rehearsal: Mapping[str, str]
+    production_v4: Mapping[str, str]
     pace: Mapping[str, Any]
     gates: Mapping[str, Any]
+    eligibility: Mapping[str, Any]
     raw_config: Mapping[str, Any]
 
     @property
@@ -89,8 +91,10 @@ def load_shadow_config(path: str | Path) -> ShadowConfig:
             research_prefix=str(raw["research_prefix"]).rstrip("/"),
             candidate={str(k): str(v) for k, v in raw["candidate"].items()},
             rehearsal={str(k): str(v) for k, v in raw["rehearsal"].items()},
+            production_v4={str(k): str(v) for k, v in raw["production_v4"].items()},
             pace=dict(raw["pace"]),
             gates=dict(raw["gates"]),
+            eligibility=dict(raw["eligibility"]),
             raw_config=raw,
         )
     except (KeyError, TypeError, ValueError) as exc:
@@ -128,10 +132,13 @@ def load_shadow_config(path: str | Path) -> ShadowConfig:
         "measurement_config_path",
         "state_config_path",
     }
+    required_v4 = {"model_id", "model_bundle_sha256", "source_config"}
     if not required_candidate <= set(config.candidate):
         raise MeasurementContractError("Shadow candidate pins are incomplete")
     if not required_rehearsal <= set(config.rehearsal):
         raise MeasurementContractError("Shadow rehearsal pins are incomplete")
+    if not required_v4 <= set(config.production_v4):
+        raise MeasurementContractError("Production V4 pins are incomplete")
     if int(config.rehearsal["season"]) != 2025:
         raise MeasurementContractError("Rehearsal season must remain 2025")
     return config
@@ -327,6 +334,20 @@ def normal_coverage(scheduled: int, gates: Mapping[str, Any], *, week: int) -> b
     )
 
 
+def eligibility_declaration(
+    shadow: ShadowConfig, *, week: int, normal_coverage_slate: bool
+) -> dict[str, Any]:
+    """Make the Week 0 exclusion and first protected evidence window explicit."""
+    first_week = int(shadow.eligibility["first_eligible_normal_coverage_week"])
+    return {
+        "week_0_ineligible": bool(shadow.eligibility["week_0_ineligible"]),
+        "first_eligible_normal_coverage_week": first_week,
+        "week_is_eligible_prospective_evidence": bool(
+            normal_coverage_slate and week >= first_week
+        ),
+    }
+
+
 def canonical_manifest_uri(
     shadow: ShadowConfig, *, season: int, week: int, kind: str
 ) -> str:
@@ -348,6 +369,20 @@ def existing_or_collision(
     return found
 
 
+def assert_canonical_artifact_set(storage, *, prefix: str, kind: str) -> None:
+    """Refuse to build into a partially written canonical weekly lifecycle."""
+    expected = (
+        ("freeze-manifest.json", "predictions-ref.json")
+        if kind == "freeze"
+        else ("score-report.json", "evidence-ref.json")
+    )
+    present = [storage.exists(f"{prefix}/{name}") for name in expected]
+    if any(present) and not all(present):
+        raise RuntimeError(
+            f"Partial canonical shadow {kind} artifact set requires reconciliation: {prefix}"
+        )
+
+
 def immutable_write(storage, uri: str, payload: bytes) -> None:
     if storage.exists(uri):
         if storage.read_bytes(uri) != payload:
@@ -357,7 +392,12 @@ def immutable_write(storage, uri: str, payload: bytes) -> None:
 
 
 def normalize_v4_prediction_run(
-    *, manifest: Mapping[str, Any], csv_bytes: bytes, season: int, week: int
+    *,
+    manifest: Mapping[str, Any],
+    csv_bytes: bytes,
+    season: int,
+    week: int,
+    expected_v4: Mapping[str, str],
 ) -> pd.DataFrame:
     required = {
         "schema_version",
@@ -374,6 +414,13 @@ def normalize_v4_prediction_run(
         raise MeasurementContractError("Unsupported production prediction-run manifest")
     if int(manifest["season"]) != season or int(manifest["week"]) != week:
         raise MeasurementContractError("Production V4 run belongs to another slate")
+    identity = {
+        "model_id": manifest.get("model_id"),
+        "model_bundle_sha256": manifest.get("model_bundle_sha256"),
+        "source_config": manifest.get("source_config"),
+    }
+    if any(str(identity[key]) != str(expected_v4[key]) for key in identity):
+        raise MeasurementContractError("Production run is not the pinned V4 champion")
     if sha256_bytes(csv_bytes) != str(manifest["artifact_sha256"]):
         raise MeasurementContractError("Production V4 CSV checksum mismatch")
     frame = pd.read_csv(io.BytesIO(csv_bytes))
@@ -415,6 +462,7 @@ def score_freeze(
     outcomes: pd.DataFrame,
     v4: pd.DataFrame,
     lineage: Mapping[str, Any],
+    cancellation_waivers: Mapping[int, str] | None = None,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     required = {"season", "game_id", "completed", "home_points", "away_points"}
     if missing := sorted(required - set(outcomes.columns)):
@@ -436,20 +484,69 @@ def score_freeze(
         base.home_points - base.away_points,
         base.home_points + base.away_points,
     )
+    cancellation_waivers = dict(cancellation_waivers or {})
+    frozen_game_ids = set(base.game_id.astype(int))
+    if unknown := sorted(set(cancellation_waivers) - frozen_game_ids):
+        raise MeasurementContractError(
+            f"Cancellation waivers are not frozen games: {unknown}"
+        )
+    if any(not str(reason).strip() for reason in cancellation_waivers.values()):
+        raise MeasurementContractError("Cancellation waivers require non-empty reasons")
     missing_outcomes = base[base.actual.isna()][["season", "game_id"]].drop_duplicates()
-    paired = base.dropna(subset=["actual"]).merge(
-        v4[["season", "game_id", "target", "v4_prediction", "source_kind"]],
+    missing_ids = set(missing_outcomes.game_id.astype(int))
+    if invalid := sorted(set(cancellation_waivers) - missing_ids):
+        raise MeasurementContractError(
+            f"Cancellation waivers require a missing authoritative outcome: {invalid}"
+        )
+    waived = missing_outcomes[
+        missing_outcomes.game_id.astype(int).isin(cancellation_waivers)
+    ]
+    unresolved = missing_outcomes[
+        ~missing_outcomes.game_id.astype(int).isin(cancellation_waivers)
+    ]
+    benchmark = v4[
+        ["season", "game_id", "target", "v4_prediction", "source_kind"]
+    ].copy()
+    # Historical V4 replay preserves its production-facing ``spread`` label;
+    # shadow evidence uses the candidate's canonical ``margin`` target.
+    benchmark["target"] = benchmark["target"].replace({"spread": "margin"})
+    paired = base[
+        base.actual.notna() & ~base.game_id.astype(int).isin(cancellation_waivers)
+    ].merge(
+        benchmark,
         on=["season", "game_id", "target"],
         how="left",
         validate="one_to_one",
     )
     unpaired = paired[paired.v4_prediction.isna()][["season", "game_id", "target"]]
-    if not missing_outcomes.empty or not unpaired.empty:
+    waiver_rows = [
+        {
+            "season": int(row.season),
+            "game_id": int(row.game_id),
+            "reason": cancellation_waivers[int(row.game_id)],
+        }
+        for row in waived.itertuples(index=False)
+    ]
+    if not unresolved.empty or not unpaired.empty:
         return pd.DataFrame(), {
             "report_schema_version": SHADOW_SCORE_REPORT_SCHEMA_VERSION,
             "complete": False,
-            "missing_outcome_games": missing_outcomes.to_dict("records"),
+            "missing_outcome_games": unresolved.to_dict("records"),
+            "cancellation_waivers": waiver_rows,
             "unpaired_v4_rows": unpaired.to_dict("records"),
+        }
+    if paired.empty:
+        # A documented cancellation may waive an otherwise missing outcome, but
+        # a slate with no surviving games cannot create scored evidence. Keep it
+        # diagnostic-only rather than passing an empty frame to the immutable
+        # evidence writer, which would have no target-level evidence to certify.
+        return pd.DataFrame(), {
+            "report_schema_version": SHADOW_SCORE_REPORT_SCHEMA_VERSION,
+            "complete": False,
+            "no_scorable_games": True,
+            "missing_outcome_games": [],
+            "cancellation_waivers": waiver_rows,
+            "unpaired_v4_rows": [],
         }
     rows = freeze_predictions.drop(columns=["actual"]).merge(
         paired[
@@ -476,6 +573,7 @@ def score_freeze(
         "complete": True,
         "scored_rows": int(len(rows)),
         "missing_outcome_games": [],
+        "cancellation_waivers": waiver_rows,
         "unpaired_v4_rows": [],
         "targets": targets,
     }

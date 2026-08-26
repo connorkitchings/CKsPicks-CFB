@@ -31,7 +31,9 @@ from cks_picks_cfb.ratings.shadow import (
     SHADOW_PREDICTION_SCHEMA_VERSION,
     ShadowConfig,
     assemble_season_states,
+    assert_canonical_artifact_set,
     canonical_manifest_uri,
+    eligibility_declaration,
     existing_or_collision,
     immutable_write,
     load_certified_state_inputs,
@@ -154,7 +156,12 @@ def _frozen_v4_metadata(run_id: str, season: int, week: int) -> dict[str, object
 
 
 def _load_v4_proof(
-    storage, metadata: dict[str, object], season: int, week: int, earliest: datetime
+    storage,
+    metadata: dict[str, object],
+    season: int,
+    week: int,
+    earliest: datetime,
+    expected_v4: dict[str, str],
 ) -> tuple[pd.DataFrame, dict[str, object]]:
     manifest_uri = str(metadata["artifact_uri"]).rsplit("/", 1)[0] + "/manifest.json"
     manifest_bytes = storage.read_bytes(manifest_uri)
@@ -173,7 +180,11 @@ def _load_v4_proof(
             "Production V4 artifact was not frozen before earliest kickoff"
         )
     rows = normalize_v4_prediction_run(
-        manifest=manifest, csv_bytes=csv_bytes, season=season, week=week
+        manifest=manifest,
+        csv_bytes=csv_bytes,
+        season=season,
+        week=week,
+        expected_v4=expected_v4,
     )
     proof = {
         **metadata,
@@ -184,6 +195,16 @@ def _load_v4_proof(
         "data_as_of": str(manifest["data_as_of"]),
     }
     return rows, proof
+
+
+def _preflight_catalog() -> None:
+    """Verify optional Preview catalog connectivity before R2 canonical writes."""
+    import psycopg
+
+    with psycopg.connect(resolve_runtime_target("preview").database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchone()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -212,6 +233,8 @@ def main(argv: list[str] | None = None) -> None:
     code_sha = _require_commit(args.expected_code_sha, config_path)
     preview = get_storage(environment="preview")
     production = ReadOnlyStorage(get_storage(environment="production"))
+    if args.register_catalog:
+        _preflight_catalog()
     as_of = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
@@ -239,6 +262,7 @@ def main(argv: list[str] | None = None) -> None:
         season,
         week,
         earliest,
+        dict(shadow.production_v4),
     )
     model, model_ref = load_frozen_model(
         preview, shadow, stage=shadow.candidate["model_stage"]
@@ -258,6 +282,8 @@ def main(argv: list[str] | None = None) -> None:
     manifest_uri = canonical_manifest_uri(
         shadow, season=season, week=week, kind="freeze"
     )
+    prefix = shadow.canonical_week_prefix(season=season, week=week)
+    assert_canonical_artifact_set(preview, prefix=prefix, kind="freeze")
     if existing := existing_or_collision(preview, manifest_uri, expected):
         print(
             json.dumps(
@@ -358,6 +384,7 @@ def main(argv: list[str] | None = None) -> None:
             "positive_predictive_uncertainty": True,
         },
     )
+    normal_coverage_slate = normal_coverage(int(len(slate)), shadow.gates, week=week)
     manifest = {
         **expected,
         "manifest_schema_version": SHADOW_FREEZE_SCHEMA_VERSION,
@@ -367,14 +394,14 @@ def main(argv: list[str] | None = None) -> None:
         "lead_seconds": (earliest - as_of).total_seconds(),
         "scheduled_games": int(len(slate)),
         "predicted_games": int(predictions.game_id.nunique()),
-        "normal_coverage_slate": normal_coverage(
-            int(len(slate)), shadow.gates, week=week
+        "normal_coverage_slate": normal_coverage_slate,
+        "eligibility": eligibility_declaration(
+            shadow, week=week, normal_coverage_slate=normal_coverage_slate
         ),
         "predictions_ref": ref_identity(prediction_ref),
         "v4_source": v4_proof,
         "prospective": True,
     }
-    prefix = shadow.canonical_week_prefix(season=season, week=week)
     immutable_write(
         preview,
         manifest_uri,

@@ -17,8 +17,10 @@ from cks_picks_cfb.ratings.score_models import (
 )
 from cks_picks_cfb.ratings.shadow import (
     ORACLE_TOLERANCE,
+    assert_canonical_artifact_set,
     canonical_manifest_uri,
     compare_oracle,
+    eligibility_declaration,
     existing_or_collision,
     load_shadow_config,
     normal_coverage,
@@ -116,6 +118,19 @@ def test_timing_and_normal_coverage_rules():
     assert not normal_coverage(
         50, {"normal_coverage_min_games": 40, "ineligible_weeks": [0]}, week=0
     )
+    shadow = load_shadow_config("conf/ratings/shadow_operations_v1.yaml")
+    assert (
+        eligibility_declaration(shadow, week=0, normal_coverage_slate=True)[
+            "week_is_eligible_prospective_evidence"
+        ]
+        is False
+    )
+    assert (
+        eligibility_declaration(shadow, week=1, normal_coverage_slate=True)[
+            "week_is_eligible_prospective_evidence"
+        ]
+        is True
+    )
 
 
 def test_production_v4_csv_adapter_checks_checksum_and_normalizes_targets():
@@ -125,17 +140,40 @@ def test_production_v4_csv_adapter_checks_checksum_and_normalizes_targets():
         "season": 2026,
         "week": 1,
         "artifact_sha256": __import__("hashlib").sha256(csv_bytes).hexdigest(),
+        "model_id": "week0-2026-v4-strict-20260818-r2",
         "model_bundle_sha256": "v4",
+        "source_config": "conf/weekly_bets/v4_2026.yaml",
         "data_as_of": "2026-09-05T18:00:00Z",
     }
+    expected_v4 = {
+        "model_id": "week0-2026-v4-strict-20260818-r2",
+        "model_bundle_sha256": "v4",
+        "source_config": "conf/weekly_bets/v4_2026.yaml",
+    }
     rows = normalize_v4_prediction_run(
-        manifest=manifest, csv_bytes=csv_bytes, season=2026, week=1
+        manifest=manifest,
+        csv_bytes=csv_bytes,
+        season=2026,
+        week=1,
+        expected_v4=expected_v4,
     )
     assert set(rows.target) == {"margin", "total"}
     assert set(rows.source_kind) == {"production_v4_frozen_run"}
     with pytest.raises(MeasurementContractError):
         normalize_v4_prediction_run(
-            manifest={**manifest, "week": 2}, csv_bytes=csv_bytes, season=2026, week=1
+            manifest={**manifest, "week": 2},
+            csv_bytes=csv_bytes,
+            season=2026,
+            week=1,
+            expected_v4=expected_v4,
+        )
+    with pytest.raises(MeasurementContractError):
+        normalize_v4_prediction_run(
+            manifest={**manifest, "model_id": "other"},
+            csv_bytes=csv_bytes,
+            season=2026,
+            week=1,
+            expected_v4=expected_v4,
         )
 
 
@@ -171,11 +209,73 @@ def test_score_requires_complete_outcomes_and_v4_pairing_with_row_lineage():
     )
     assert report["complete"] is True
     assert set(evidence.freeze_manifest_sha256) == {"abc"}
+    replay_v4 = v4.copy()
+    replay_v4.loc[replay_v4.target.eq("margin"), "target"] = "spread"
+    evidence, report = score_freeze(
+        freeze_predictions=predictions,
+        outcomes=outcomes,
+        v4=replay_v4,
+        lineage={},
+    )
+    assert report["complete"] is True and len(evidence) == 2
     v4 = v4.iloc[:1]
     evidence, report = score_freeze(
         freeze_predictions=predictions, outcomes=outcomes, v4=v4, lineage={}
     )
     assert evidence.empty and report["complete"] is False
+
+
+def test_score_accepts_only_explicit_cancellation_waivers():
+    predictions = pd.concat(
+        [_predictions(), _predictions().assign(game_id=2)], ignore_index=True
+    )
+    outcomes = pd.DataFrame(
+        {
+            "season": [2026],
+            "game_id": [2],
+            "completed": [True],
+            "home_points": [28],
+            "away_points": [21],
+        }
+    )
+    v4 = pd.DataFrame(
+        {
+            "season": [2026] * 4,
+            "game_id": [1, 1, 2, 2],
+            "target": ["margin", "total", "margin", "total"],
+            "v4_prediction": [4.0, 49.0, 4.0, 49.0],
+            "source_kind": ["production_v4_frozen_run"] * 4,
+        }
+    )
+    evidence, report = score_freeze(
+        freeze_predictions=predictions,
+        outcomes=outcomes,
+        v4=v4,
+        lineage={},
+        cancellation_waivers={1: "cancelled by conference"},
+    )
+    assert report["complete"] is True
+    assert set(evidence.game_id) == {2}
+    assert report["cancellation_waivers"][0]["game_id"] == 1
+    all_cancelled_evidence, all_cancelled_report = score_freeze(
+        freeze_predictions=_predictions(),
+        outcomes=pd.DataFrame(
+            columns=["season", "game_id", "completed", "home_points", "away_points"]
+        ),
+        v4=v4[v4.game_id.eq(1)],
+        lineage={},
+        cancellation_waivers={1: "cancelled by conference"},
+    )
+    assert all_cancelled_report["complete"] is False and all_cancelled_evidence.empty
+    assert all_cancelled_report["no_scorable_games"] is True
+    with pytest.raises(MeasurementContractError):
+        score_freeze(
+            freeze_predictions=predictions,
+            outcomes=outcomes,
+            v4=v4,
+            lineage={},
+            cancellation_waivers={2: "unknown"},
+        )
 
 
 def test_oracle_and_canonical_collision_contracts(tmp_path):
@@ -220,6 +320,16 @@ def test_oracle_and_canonical_collision_contracts(tmp_path):
                 "as_of": "later",
                 "input_identity": {"a": 1},
             },
+        )
+    storage.write_bytes(b"{}", "ops/season=2026/week=01/predictions-ref.json")
+    with pytest.raises(RuntimeError):
+        assert_canonical_artifact_set(
+            storage, prefix="ops/season=2026/week=01", kind="freeze"
+        )
+    storage.write_bytes(b"{}", "ops/season=2026/week=02/evidence-ref.json")
+    with pytest.raises(RuntimeError):
+        assert_canonical_artifact_set(
+            storage, prefix="ops/season=2026/week=02", kind="score"
         )
     shadow = load_shadow_config("conf/ratings/shadow_operations_v1.yaml")
     assert canonical_manifest_uri(shadow, season=2026, week=1, kind="freeze").endswith(

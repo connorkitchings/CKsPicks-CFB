@@ -26,6 +26,7 @@ from cks_picks_cfb.ratings.shadow import (
     SHADOW_EVIDENCE_DATASET,
     SHADOW_EVIDENCE_SCHEMA_VERSION,
     SHADOW_FREEZE_DATASET,
+    assert_canonical_artifact_set,
     canonical_manifest_uri,
     existing_or_collision,
     immutable_write,
@@ -77,7 +78,11 @@ def _require_commit(expected: str | None, config_path: str) -> str:
 
 
 def _read_v4(
-    production, proof: dict[str, object], season: int, week: int
+    production,
+    proof: dict[str, object],
+    season: int,
+    week: int,
+    expected_v4: dict[str, str],
 ) -> pd.DataFrame:
     manifest_bytes = production.read_bytes(str(proof["manifest_uri"]))
     csv_bytes = production.read_bytes(str(proof["artifact_uri"]))
@@ -91,7 +96,30 @@ def _read_v4(
         csv_bytes=csv_bytes,
         season=season,
         week=week,
+        expected_v4=expected_v4,
     )
+
+
+def _cancellation_waivers(values: list[str]) -> dict[int, str]:
+    waivers: dict[int, str] = {}
+    for value in values:
+        game_id_text, separator, reason = value.partition("=")
+        if not separator or not reason.strip():
+            raise ValueError("Cancellation waiver must be GAME_ID=reason")
+        game_id = int(game_id_text)
+        if game_id in waivers:
+            raise ValueError(f"Duplicate cancellation waiver for game {game_id}")
+        waivers[game_id] = reason.strip()
+    return waivers
+
+
+def _preflight_catalog() -> None:
+    import psycopg
+
+    with psycopg.connect(resolve_runtime_target("preview").database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchone()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -107,6 +135,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--expected-code-sha")
     parser.add_argument("--register-catalog", action="store_true")
+    parser.add_argument("--cancellation-waiver", action="append", default=[])
     args = parser.parse_args(argv)
     if args.environment != "preview":
         raise ValueError("Shadow scoring is permitted only in preview")
@@ -117,12 +146,16 @@ def main(argv: list[str] | None = None) -> None:
         get_storage(environment="preview"),
         ReadOnlyStorage(get_storage(environment="production")),
     )
+    if args.register_catalog:
+        _preflight_catalog()
     season, week = args.season, args.week
     freeze_uri = canonical_manifest_uri(shadow, season=season, week=week, kind="freeze")
     if not preview.exists(freeze_uri):
         raise FileNotFoundError("Canonical shadow freeze manifest is required")
     freeze_bytes = preview.read_bytes(freeze_uri)
     freeze = json.loads(freeze_bytes.decode())
+    if int(freeze.get("season", -1)) != season or int(freeze.get("week", -1)) != week:
+        raise ValueError("Canonical freeze manifest does not match requested slate")
     prediction_ref = DatasetRef(**freeze["predictions_ref"])
     require_dataset(prediction_ref, SHADOW_FREEZE_DATASET)
     predictions = read_dataset(preview, prediction_ref)
@@ -134,7 +167,7 @@ def main(argv: list[str] | None = None) -> None:
         timezone.utc
     )
     proof = dict(freeze["v4_source"])
-    v4 = _read_v4(production, proof, season, week)
+    v4 = _read_v4(production, proof, season, week, dict(shadow.production_v4))
     input_identity = {
         "freeze_manifest_sha256": hashlib.sha256(freeze_bytes).hexdigest(),
         "outcomes": [ref_identity(ref) for ref in outcome_refs],
@@ -148,6 +181,8 @@ def main(argv: list[str] | None = None) -> None:
         "input_identity": input_identity,
     }
     report_uri = canonical_manifest_uri(shadow, season=season, week=week, kind="score")
+    prefix = shadow.canonical_week_prefix(season=season, week=week)
+    assert_canonical_artifact_set(preview, prefix=prefix, kind="score")
     if existing := existing_or_collision(preview, report_uri, expected):
         print(
             json.dumps(
@@ -165,7 +200,11 @@ def main(argv: list[str] | None = None) -> None:
         "scored_at": score_as_of.isoformat(),
     }
     evidence, report = score_freeze(
-        freeze_predictions=predictions, outcomes=outcomes, v4=v4, lineage=lineage
+        freeze_predictions=predictions,
+        outcomes=outcomes,
+        v4=v4,
+        lineage=lineage,
+        cancellation_waivers=_cancellation_waivers(args.cancellation_waiver),
     )
     report = {
         **report,
@@ -200,7 +239,6 @@ def main(argv: list[str] | None = None) -> None:
     )
     report["code_sha"] = code_sha
     report["evidence_ref"] = ref_identity(evidence_ref)
-    prefix = shadow.canonical_week_prefix(season=season, week=week)
     immutable_write(
         preview,
         report_uri,

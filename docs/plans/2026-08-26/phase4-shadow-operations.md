@@ -294,3 +294,43 @@ but tightens the Phase 4 mechanics as follows:
 These are mechanical safety corrections within the approved isolation,
 candidate, and acceptance boundaries. Preview materialization remains
 prohibited until the corrected code is committed and local validation passes.
+
+### 2026-08-26 — Historical V4 target-label normalization
+
+The first committed Preview rehearsal failed closed during Week 0 score
+assembly because the certified historical V4 replay labels its spread target
+`spread`, while shadow evidence uses the candidate's canonical `margin`
+target. No successful evidence ref or summary was published. The scorer now
+normalizes that documented historical replay label at its boundary, retains
+the production V4 CSV adapter's native margin label, and writes a diagnostic
+rather than attempting an evidence dataset when a rehearsal score is
+incomplete. This is a mechanical interface correction; no model, parent,
+threshold, or selection rule changed.
+
+### 2026-08-26 — Pre-rehearsal operational safeguards
+
+Before retrying Preview materialization, a read-only reconstruction exercised
+all 15 sealed 2025 weeks: every oracle comparison passed (maximum absolute
+delta `9.95e-14`), every completed outcome paired, and every historical V4
+row paired. The following prospective safeguards were added before a second
+write attempt:
+
+- Production V4 now pins its model ID, bundle SHA, and source config in
+  addition to frozen-run state, timing, manifest, and CSV checksums.
+- Final scoring accepts explicit `GAME_ID=reason` cancellation waivers only
+  for frozen games missing authoritative outcomes; waivers are retained in the
+  immutable score report.
+- A slate with no games remaining after documented cancellations is
+  diagnostic-only. It cannot create an empty evidence dataset or confer
+  scored-evidence status.
+- Opt-in Preview catalog registration performs a read-only connectivity
+  preflight before canonical R2 writes.
+- Freeze and score commands reject partial canonical artifact sets before a
+  new build; no partial state is treated as a valid lifecycle result.
+- Freeze manifests explicitly declare Week 0 ineligible and Week 1 as the
+  first normal-coverage prospective evidence window.
+
+The real Week 0 production manifest/CSV was also read and validated against
+the stricter V4 identity pins. Its run is still published rather than frozen,
+so the live frozen-state query remains intentionally unexercised until an
+actual frozen V4 run exists.

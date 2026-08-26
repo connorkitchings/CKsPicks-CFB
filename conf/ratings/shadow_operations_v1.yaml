@@ -31,6 +31,10 @@ rehearsal:
   season: 2025
   measurement_config_path: conf/ratings/measurement_baseline_v3.yaml
   state_config_path: conf/ratings/team_state_baseline_v2.yaml
+production_v4:
+  model_id: week0-2026-v4-strict-20260818-r2
+  model_bundle_sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+  source_config: conf/weekly_bets/v4_2026.yaml
 pace:
   measurement_id: plays_per_drive
   role: offense
@@ -40,3 +44,6 @@ pace:
 gates:
   normal_coverage_min_games: 40
   ineligible_weeks: [0]
+eligibility:
+  week_0_ineligible: true
+  first_eligible_normal_coverage_week: 1

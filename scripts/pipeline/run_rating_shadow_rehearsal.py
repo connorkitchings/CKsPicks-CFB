@@ -245,6 +245,13 @@ def main(argv: list[str] | None = None) -> None:
             },
         )
         week_prefix = f"{prefix}/weeks/{week:02d}"
+        if not score["complete"]:
+            immutable_write(
+                storage,
+                f"{week_prefix}/diagnostic-score.json",
+                json.dumps(score, indent=2, sort_keys=True, default=str).encode(),
+            )
+            raise ValueError(f"Rehearsal score incomplete for 2025 week {week}")
         p_ref, _ = build_dataset_version(
             storage,
             build=BuildRequest(
