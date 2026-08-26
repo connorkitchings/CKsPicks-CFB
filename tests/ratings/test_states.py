@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 from helpers import AS_OF, simple_league
 
@@ -11,6 +12,7 @@ from cks_picks_cfb.ratings.snapshots import (
     build_pregame_snapshots,
     build_season_terminal_snapshots,
 )
+from cks_picks_cfb.ratings.state_audit import _location_stability
 from cks_picks_cfb.ratings.state_contracts import load_team_state_config
 from cks_picks_cfb.ratings.states import build_team_states
 
@@ -122,3 +124,60 @@ def test_terminal_state_becomes_next_season_prior():
     ].iloc[0]
     assert next_state["prior_source_season"] == 2025
     assert next_state["prior_mean"] == pytest.approx(0.6 * terminal["posterior_mean"])
+
+
+def test_v2_config_versions_schemas_and_pins_the_true_ppso_handoff():
+    config = load_team_state_config("conf/ratings/team_state_baseline_v2.yaml")
+    assert config.is_v2 is True
+    assert config.measurement_state_schema_version == "rating_measurement_states_v2"
+    assert config.team_state_schema_version == "rating_team_states_v2"
+    assert config.raw_config["phase1"]["observations"]["schema_version"] == (
+        "rating_measurement_observations_v3"
+    )
+
+
+def test_v2_location_gate_excludes_small_postseason_population_but_gates_terminal():
+    config = load_team_state_config("conf/ratings/team_state_baseline_v2.yaml")
+    rows = []
+    for team in range(100):
+        rows.append(
+            {
+                "state_kind": "season_terminal",
+                "season": 2025,
+                "team": f"T{team}",
+                "completed_games": 12,
+                "offense_mean": 0.1,
+                "defense_mean": -0.1,
+            }
+        )
+    for team in range(90):
+        rows.append(
+            {
+                "state_kind": "pregame",
+                "season": 2025,
+                "team": f"T{team}",
+                "completed_games": 10,
+                "offense_mean": 0.2,
+                "defense_mean": -0.2,
+            }
+        )
+    for team in range(30):
+        rows.append(
+            {
+                "state_kind": "pregame",
+                "season": 2025,
+                "team": f"T{team}",
+                "completed_games": 11,
+                "offense_mean": 0.6,
+                "defense_mean": 0.6,
+            }
+        )
+    passed, evidence = _location_stability(pd.DataFrame(rows), config)
+    by_ordinal = {
+        row["completed_games"]: row
+        for row in evidence["groups"]
+        if row["state_kind"] == "pregame"
+    }
+    assert passed is True
+    assert by_ordinal[10]["qualifies"] is True
+    assert by_ordinal[11]["qualifies"] is False

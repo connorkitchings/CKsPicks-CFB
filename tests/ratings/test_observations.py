@@ -187,6 +187,38 @@ def test_v3_ppso_uses_score_stream_not_boolean_scoring_events():
     assert result.audit["score_reconciliation"][2025]["exact_rate"] == 1.0
 
 
+def test_v3_true_drive_points_cover_conversions_field_goals_and_scoreless_drives():
+    scores = [
+        (0, 0),
+        (6, 0),
+        (6, 0),
+        (13, 0),
+        (13, 0),
+        (16, 0),
+        (16, 0),
+        (18, 0),
+        (18, 0),
+    ]
+    byplay = pd.DataFrame(
+        [
+            play_row(
+                drive_number=(index // 2) + 1,
+                play_number=(index % 2) + 1,
+                offense_score=home,
+                defense_score=away,
+            )
+            for index, (home, away) in enumerate(scores)
+        ]
+    )
+    result = _true_drive_points(
+        byplay=byplay,
+        games=pd.DataFrame([game_row()]),
+        outcomes=pd.DataFrame([outcome_row(home_points=18, away_points=0)]),
+    )
+    assert result.drive_points["true_points"].tolist() == [6.0, 7.0, 3.0, 2.0, 0.0]
+    assert result.invalid_offenses == set()
+
+
 def test_v3_score_stream_mismatch_quarantines_offense_and_paired_defense():
     league = _score_stream_league()
     league["outcomes"].loc[0, "home_points"] = 10

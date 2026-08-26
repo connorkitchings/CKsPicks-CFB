@@ -33,9 +33,9 @@ market-decision stage.
 
 ## Approved Phase 1 baseline (v2 remediation in progress)
 
-The original Phase 1 implementation is preserved as immutable research history,
-but its review found lineage, season-boundary, weighting, and timing defects.
-The corrected v2 interface is in progress and does not alter V4 inputs:
+The original Phase 1 and v2 implementations are preserved as immutable research
+history. The certified v3 interface corrects PPSO to true score-stream drive
+points and does not alter V4 inputs:
 
 | Measurement | Roles | Adjustment posture | Phase 2 role |
 | --- | --- | --- | --- |
@@ -69,6 +69,20 @@ Historical 2021–2025 reconstruction supports development only; protected 2026
 evidence requires authentic source timing before kickoff.
 
 ### Phase 1 audit disposition
+
+**Authoritative v3 build (true PPSO, 2026-08-26):** design
+`6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a`, code
+`f5fd883ef1dd00a56c3e83020f8e0734f45fc0de`, report SHA
+`79f4370febcc95672380f703958e8dcc357c40161be58d9d110869b22c153e25`:
+
+- Observations v3 `5044de3c48a4be372a8505dc` / `db5f337c…`.
+- Snapshots v3 `9893612fe248932e8fc2edb8` / `6a979d9e…`.
+- Terminal snapshots v2 `684692e7b815b5825486f5ad` / `5c17dfdb…`.
+
+All five score-stream reconciliation rates exceed 94%, terminal PPSO means
+are in [2, 6], and the same-stamp Preview rerun is byte-identical. Phase 2 v2
+must consume only these refs; Phase 4 remains blocked pending a passing frozen
+Phase 3 v3 candidate.
 
 The v1 observation version `b1da5e85a0438fab109937bf`, snapshot version
 `312917237b1b60cb10d61150`, and audit report are superseded for Phase 2

@@ -1,0 +1,54 @@
+team_state_config_version: team_state_baseline_v2
+measurement_config_version: measurement_baseline_v3
+research_prefix: artifacts/research/rating-successor/states-v2
+
+phase1:
+  report_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/audit-report.json
+  report_sha256: 79f4370febcc95672380f703958e8dcc357c40161be58d9d110869b22c153e25
+  observations:
+    version_id: 5044de3c48a4be372a8505dc
+    content_sha: db5f337c31680089b3cd3257518edfe200a087163ecc6127b28eb1b0bb935132
+    schema_version: rating_measurement_observations_v3
+  snapshots:
+    version_id: 9893612fe248932e8fc2edb8
+    content_sha: 6a979d9e376ce220486b3d845c9d79f54f70fedc26a95f7ddca66234079beb64
+    schema_version: rating_adjusted_measurement_snapshots_v3
+  terminal_snapshots:
+    version_id: 684692e7b815b5825486f5ad
+    content_sha: 5c17dfdb6bc9ed3f23b7d0119356b795a8a8efccf2596e3580e85789852454a3
+    schema_version: rating_adjusted_measurement_terminal_snapshots_v2
+
+location_gate:
+  minimum_terminal_population_fraction: 0.90
+  maximum_abs_population_mean: 0.35
+
+core_measurements:
+  epa_per_play:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.00
+    fallback_scale: 0.15
+    scale_floor: 0.05
+  success_rate:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.42
+    fallback_scale: 0.06
+    scale_floor: 0.02
+  explosive_rate_20:
+    weight: 0.25
+    equivalent_prior_exposure: 100.0
+    fallback_center: 0.10
+    fallback_scale: 0.04
+    scale_floor: 0.01
+  points_per_scoring_opportunity:
+    weight: 0.25
+    equivalent_prior_exposure: 8.0
+    fallback_center: 4.00
+    fallback_scale: 0.75
+    scale_floor: 0.25
+
+prior:
+  offseason_rho: 0.60
+  neutral_mean: 0.0
+  neutral_variance: 1.0

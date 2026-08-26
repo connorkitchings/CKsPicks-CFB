@@ -94,6 +94,14 @@ corrected [measurement catalog](measurement_catalog.md) and produces only
 Preview research component and team-state artifacts; no catalog registration
 occurs unless explicitly requested.
 
+That v2/v1 handoff is now superseded for new research by certified true-PPSO
+Phase 1 v3 (report SHA
+`79f4370febcc95672380f703958e8dcc357c40161be58d9d110869b22c153e25`). Phase
+2 v2 retains the same estimator but pins the v3 inputs and gates location only
+on representative pregame populations (at least 90% of terminal-season teams)
+plus every terminal population. It must pass a refreshed foundation review
+before Phase 3 v3 can inspect historical outcomes. Phase 4 remains blocked.
+
 Phase 3 v1 is immutable failed research: its two-equation margin/total OLS
 diagnostic had complete paired V4 coverage but failed the frozen calibration
 and total-bias gates. The successor is the separate

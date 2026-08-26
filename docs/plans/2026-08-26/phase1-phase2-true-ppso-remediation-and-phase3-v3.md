@@ -3,7 +3,8 @@
 - **Status:** In Progress
 - **Created:** 2026-08-26
 - **Planner:** Sol (user-approved remediation plan)
-- **Approval source:** User explicitly authorized implementation on 2026-08-26.
+- **Approval source:** User explicitly authorized implementation on 2026-08-26;
+  expanded readiness remediation authorized on 2026-08-26.
 - **Implementation log:** `session_logs/2026-08-26/01-phase1-phase2-true-ppso-remediation.md`
 - **Commit policy:** The user commits each code/configuration contract before its
   Preview materialization. Every external write is Preview-only and immutable.
@@ -43,14 +44,18 @@ and require terminal offense/defense PPSO means in `[2, 6]`.
 
 ### Task 2 — Phase 2 v2 rebuild
 
-After Task 1 passes a same-stamp immutable rerun, pin its exact refs/checksums
+Task 1 is certified: report SHA
+`79f4370febcc95672380f703958e8dcc357c40161be58d9d110869b22c153e25`, with
+observation/snapshot/terminal versions `5044de3c…`, `9893612f…`, and
+`684692e7…`. Pin those exact refs/checksums
 in a separate `team_state_baseline_v2` commit and materialize
 `rating_measurement_states_v2` and `rating_team_states_v2`. Retain the four
 equal component weights, fallback center/scale, prior exposure, rho `0.60`,
 uncertainty algebra, defensive reversal, and point-in-time chronology. Add a
 location gate: absolute population means for offense and defense must be at
-most `0.35` per historical season and completed-game ordinal with 30+ rows,
-including terminal states.
+most `0.35` for every historical terminal population and every pregame ordinal
+with at least 90% of that season's terminal team population. Smaller
+postseason cohorts remain reported diagnostics.
 
 ### Task 3 — Phase 3 v3 sealed tournament
 
@@ -81,7 +86,7 @@ writes only its diagnostic evaluation and leaves Phase 3 in progress.
 
 ## Definition of Done
 
-- [ ] Phase 1 v3 artifacts and a byte-identical rerun pass all gates.
+- [x] Phase 1 v3 artifacts and a byte-identical rerun pass all gates.
 - [ ] Phase 2 v2 artifacts and a byte-identical rerun pass all gates.
 - [ ] Phase 3 v3 either freezes a passing candidate with rerun evidence, or
   records its immutable diagnostic and remains in progress.
@@ -108,3 +113,17 @@ audit report retained only the boolean result, not the required per-season
 rates. The report now serializes the already-computed immutable
 `score_reconciliation` evidence. This is a reporting-lineage correction only;
 it does not alter measurement values, gating, parents, or selection policy.
+
+### Amendment 3 — Representative location populations (2026-08-26)
+
+The prior 30-team rule admitted only 32–34 teams at completed-game ordinal 11
+in 2021–2023, a postseason-selected cohort with offense means near 0.40. The
+approved gate retains the 0.35 threshold but gates only pregame populations at
+least 90% of terminal-season size; terminal states always gate. Smaller cohorts
+are visible diagnostics. No state equation or Phase 3 selection rule changed.
+
+### Amendment 4 — Certification and regression closure (2026-08-26)
+
+Direct score-stream conversion, field-goal, scoreless-drive, and
+normal-coverage location tests are required. A refreshed foundation review
+must certify Phase 1 v3 and Phase 2 v2 lineage before Phase 3 v3 reads outcomes.

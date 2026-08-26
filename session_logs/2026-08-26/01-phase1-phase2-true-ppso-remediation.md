@@ -4,15 +4,16 @@
 
 - **Worked On:** Implemented the local, isolated Phase 1 true-PPSO v3 code and
   contract.
-- **Outcome:** Ready for the required user-controlled commit before Preview
-  materialization; no R2 research artifact, production path, V4 input, Neon
-  resource, market input, or Phase 4 operation was touched.
+- **Outcome:** Phase 1 v3 is certified in Preview with passing reconciliation,
+  terminal PPSO means, and a byte-identical rerun. Phase 2 v2 is next; V4,
+  Neon, markets, and Phase 4 remain untouched.
 - **Plan Contract:** `docs/plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md`
 - **Approval / Status:** User explicitly authorized implementation on
   2026-08-26; contract remains `In Progress`.
-- **Blockers:** None. The next gate is intentional commit identity pinning.
-- **Next:** Commit the listed Phase 1 v3 code/configuration, then materialize
-  the immutable Preview Phase 1 artifacts and require a same-stamp rerun.
+- **Blockers:** None for local Phase 2 v2 implementation; a user-controlled
+  commit remains required before Preview materialization.
+- **Next:** Validate and commit Phase 2 v2, then materialize its Preview-only
+  state artifacts and require a same-stamp rerun.
 
 ## Context and Decisions
 
@@ -95,3 +96,18 @@ immutable research evidence and are not promoted as the final v3 authority.
   public APIs, or market feature paths.
 
 **tags:** ["ratings", "phase1", "phase2", "ppso", "preview"]
+
+## Readiness-review continuation (2026-08-26)
+
+- Corrected the stale Phase 1 status and recorded the authoritative v3 report,
+  refs, reconciliation evidence, and rerun disposition in the governing docs.
+- Added direct true-score tests for conversion, field-goal, and scoreless-drive
+  arithmetic plus Phase 2 v2 representative-population gate tests.
+- Implemented local `team_state_baseline_v2`, dynamic v2 state schemas, exact
+  Phase 1 v3 pins, diagnostic-only failed location audits, and the approved
+  90%-of-terminal-population rule. State equations remain unchanged.
+- Validation: 104 ratings tests; 518 full tests, 2 skipped; Ruff, contracts
+  validation/sync, and strict MkDocs all pass.
+- **Resume at:** User commits this Phase 2 code/configuration contract; then
+  materialize Preview-only state artifacts with a fresh UTC run ID and rerun
+  the exact invocation for byte identity.

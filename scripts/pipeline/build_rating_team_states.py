@@ -26,9 +26,7 @@ from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings.state_audit import build_team_state_audit
 from cks_picks_cfb.ratings.state_contracts import (
     MEASUREMENT_STATE_DATASET,
-    MEASUREMENT_STATE_SCHEMA_VERSION,
     TEAM_STATE_DATASET,
-    TEAM_STATE_SCHEMA_VERSION,
     load_team_state_config,
     validate_measurement_state_frame,
     validate_team_state_frame,
@@ -49,7 +47,7 @@ def _ref(storage, uri: str) -> DatasetRef:
     return DatasetRef(**json.loads(storage.read_bytes(uri).decode()))
 
 
-def _require_commit(expected: str | None) -> str:
+def _require_commit(expected: str | None, *, config_path: str) -> str:
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,
@@ -60,7 +58,8 @@ def _require_commit(expected: str | None) -> str:
     sha = expected or result.stdout.strip()
     if not sha:
         raise ValueError("Team-state artifacts require a Git commit SHA")
-    for path in RELEVANT:
+    relevant = (*RELEVANT[:-1], config_path)
+    for path in relevant:
         if subprocess.run(
             ["git", "ls-files", "--error-unmatch", path],
             cwd=REPO_ROOT,
@@ -69,10 +68,48 @@ def _require_commit(expected: str | None) -> str:
         ).returncode:
             raise ValueError(f"Team-state artifact path is not committed: {path}")
     if subprocess.run(
-        ["git", "diff", "--quiet", sha, "--", *RELEVANT], cwd=REPO_ROOT, check=False
+        ["git", "diff", "--quiet", sha, "--", *relevant], cwd=REPO_ROOT, check=False
     ).returncode:
         raise ValueError("Team-state artifact paths differ from the recorded commit")
     return sha
+
+
+def _verify_v2_phase1_pins(
+    config,
+    phase1: dict,
+    refs: tuple[DatasetRef, ...],
+    report_uri: str,
+    report_bytes: bytes,
+) -> None:
+    if not config.is_v2:
+        return
+    pins = config.raw_config["phase1"]
+    if (
+        report_uri != pins["report_uri"]
+        or hashlib.sha256(report_bytes).hexdigest() != pins["report_sha256"]
+    ):
+        raise ValueError("Phase 2 v2 Phase 1 audit pin mismatch")
+    labels = ("observations", "snapshots", "terminal_snapshots")
+    for label, ref in zip(labels, refs, strict=True):
+        expected = pins[label]
+        if (
+            ref.version_id != expected["version_id"]
+            or ref.content_sha != expected["content_sha"]
+            or ref.schema_version != expected["schema_version"]
+        ):
+            raise ValueError(f"Phase 2 v2 Phase 1 {label} pin mismatch")
+    lineage = phase1.get("lineage", {})
+    for label, ref in zip(labels, refs, strict=True):
+        expected = lineage[
+            "terminal_snapshots_ref"
+            if label == "terminal_snapshots"
+            else f"{label}_ref"
+        ]
+        if (
+            expected.get("version_id") != ref.version_id
+            or expected.get("content_sha") != ref.content_sha
+        ):
+            raise ValueError(f"Phase 2 v2 audit lineage mismatch for {label}")
 
 
 def _write_immutable(storage, uri: str, data: bytes) -> None:
@@ -117,7 +154,8 @@ def main(argv: list[str] | None = None) -> None:
     ):
         raise ValueError("Team-state outputs must live under the state research prefix")
     storage = get_storage(environment="preview")
-    phase1 = json.loads(storage.read_bytes(args.phase1_report_uri).decode())
+    phase1_bytes = storage.read_bytes(args.phase1_report_uri)
+    phase1 = json.loads(phase1_bytes.decode())
     if (
         not phase1.get("all_checks_passed")
         or phase1.get("report_schema_version") != "rating_measurement_audit_v2"
@@ -127,6 +165,13 @@ def main(argv: list[str] | None = None) -> None:
         _ref(storage, args.observations_ref_uri),
         _ref(storage, args.snapshots_ref_uri),
         _ref(storage, args.terminal_snapshots_ref_uri),
+    )
+    _verify_v2_phase1_pins(
+        config,
+        phase1,
+        (observations_ref, snapshots_ref, terminal_ref),
+        args.phase1_report_uri,
+        phase1_bytes,
     )
     require_dataset(observations_ref, "rating_measurement_observations")
     require_dataset(snapshots_ref, "rating_adjusted_measurement_snapshots")
@@ -143,7 +188,10 @@ def main(argv: list[str] | None = None) -> None:
             or expected.get("content_sha") != actual.content_sha
         ):
             raise ValueError(f"Phase 1 audit ref mismatch for {key}")
-    code_sha = _require_commit(args.expected_code_sha)
+    code_sha = _require_commit(
+        args.expected_code_sha,
+        config_path=str(Path(args.state_config).resolve().relative_to(REPO_ROOT)),
+    )
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
@@ -164,6 +212,27 @@ def main(argv: list[str] | None = None) -> None:
     )
     validate_measurement_state_frame(measurement_states, config)
     validate_team_state_frame(team_states, config)
+    preliminary = build_team_state_audit(
+        measurement_states=measurement_states,
+        team_states=team_states,
+        measurement_refs={
+            "phase1_report_uri": args.phase1_report_uri,
+            "observations_ref": asdict(observations_ref),
+            "snapshots_ref": asdict(snapshots_ref),
+            "terminal_ref": asdict(terminal_ref),
+        },
+        state_design_id=config.design_id,
+        config=config,
+        pregame_snapshots=pregame_snapshots,
+    )
+    preliminary.update(audit_seed)
+    if not preliminary["all_checks_passed"]:
+        _write_immutable(
+            storage,
+            args.report_uri,
+            json.dumps(preliminary, indent=2, sort_keys=True, default=str).encode(),
+        )
+        raise ValueError("Phase 2 audit failed; only diagnostic report was published")
     measurement_ref, measurement_manifest = build_dataset_version(
         storage,
         build=BuildRequest(
@@ -172,7 +241,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config.design_id,
             as_of=cutoff,
-            schema_version=MEASUREMENT_STATE_SCHEMA_VERSION,
+            schema_version=config.measurement_state_schema_version,
             tier="gold",
         ),
         records=measurement_states.to_dict("records"),
@@ -190,7 +259,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config.design_id,
             as_of=cutoff,
-            schema_version=TEAM_STATE_SCHEMA_VERSION,
+            schema_version=config.team_state_schema_version,
             tier="gold",
         ),
         records=team_states.to_dict("records"),
@@ -209,6 +278,7 @@ def main(argv: list[str] | None = None) -> None:
             "team_state_ref": asdict(team_ref),
         },
         state_design_id=config.design_id,
+        config=config,
         pregame_snapshots=pregame_snapshots,
     )
     report.update(audit_seed)

@@ -18,6 +18,8 @@ from cks_picks_cfb.ratings.contracts import (
 )
 
 STATE_CONFIG_VERSION = "team_state_baseline_v1"
+STATE_CONFIG_VERSION_V2 = "team_state_baseline_v2"
+SUPPORTED_STATE_CONFIG_VERSIONS = (STATE_CONFIG_VERSION, STATE_CONFIG_VERSION_V2)
 MEASUREMENT_STATE_DATASET = "rating_measurement_states"
 TEAM_STATE_DATASET = "rating_team_states"
 MEASUREMENT_STATE_SCHEMA_VERSION = "rating_measurement_states_v1"
@@ -110,12 +112,35 @@ class ComponentSpec:
 
 @dataclass(frozen=True)
 class TeamStateConfig:
+    config_version: str
+    measurement_config_version: str
     components: tuple[ComponentSpec, ...]
     offseason_rho: float
     neutral_mean: float
     neutral_variance: float
     research_prefix: str
     raw_config: Mapping[str, Any]
+
+    @property
+    def is_v2(self) -> bool:
+        return self.config_version == STATE_CONFIG_VERSION_V2
+
+    @property
+    def measurement_state_schema_version(self) -> str:
+        return (
+            "rating_measurement_states_v2"
+            if self.is_v2
+            else MEASUREMENT_STATE_SCHEMA_VERSION
+        )
+
+    @property
+    def team_state_schema_version(self) -> str:
+        return "rating_team_states_v2" if self.is_v2 else TEAM_STATE_SCHEMA_VERSION
+
+    @property
+    def location_gate(self) -> Mapping[str, Any] | None:
+        value = self.raw_config.get("location_gate")
+        return value if isinstance(value, Mapping) else None
 
     @property
     def design_id(self) -> str:
@@ -131,7 +156,7 @@ def load_team_state_config(path: str | Path) -> TeamStateConfig:
     raw = yaml.safe_load(Path(path).read_text())
     if (
         not isinstance(raw, Mapping)
-        or raw.get("team_state_config_version") != STATE_CONFIG_VERSION
+        or raw.get("team_state_config_version") not in SUPPORTED_STATE_CONFIG_VERSIONS
     ):
         raise MeasurementContractError("Unsupported team-state configuration")
     assert_no_market_fields(raw.keys(), context="team-state configuration keys")
@@ -162,7 +187,36 @@ def load_team_state_config(path: str | Path) -> TeamStateConfig:
     variance = float(prior["neutral_variance"])
     if not 0 <= rho <= 1 or variance <= 0:
         raise MeasurementContractError("Invalid team-state prior configuration")
+    config_version = str(raw["team_state_config_version"])
+    if config_version == STATE_CONFIG_VERSION_V2:
+        if raw.get("measurement_config_version") != "measurement_baseline_v3":
+            raise MeasurementContractError(
+                "Phase 2 v2 requires measurement_baseline_v3"
+            )
+        phase1 = raw.get("phase1")
+        gate = raw.get("location_gate")
+        if not isinstance(phase1, Mapping) or not isinstance(gate, Mapping):
+            raise MeasurementContractError(
+                "Phase 2 v2 requires Phase 1 pins and location gate"
+            )
+        if not all(
+            phase1.get(key)
+            for key in (
+                "report_uri",
+                "report_sha256",
+                "observations",
+                "snapshots",
+                "terminal_snapshots",
+            )
+        ):
+            raise MeasurementContractError("Phase 2 v2 Phase 1 pins are incomplete")
+        fraction = float(gate.get("minimum_terminal_population_fraction", 0))
+        maximum = float(gate.get("maximum_abs_population_mean", -1))
+        if not 0 < fraction <= 1 or maximum <= 0:
+            raise MeasurementContractError("Invalid Phase 2 v2 location gate")
     return TeamStateConfig(
+        config_version,
+        str(raw.get("measurement_config_version", "")),
         components,
         rho,
         float(prior["neutral_mean"]),
@@ -217,6 +271,10 @@ def validate_measurement_state_frame(
         )
     if not set(frame["measurement_id"]).issubset(CORE_MEASUREMENTS):
         raise MeasurementContractError("Unexpected team-state measurement")
+    if set(frame["state_schema_version"].dropna()) != {
+        config.measurement_state_schema_version
+    }:
+        raise MeasurementContractError("Unexpected measurement-state schema version")
 
 
 def validate_team_state_frame(frame: pd.DataFrame, config: TeamStateConfig) -> None:
@@ -236,3 +294,7 @@ def validate_team_state_frame(frame: pd.DataFrame, config: TeamStateConfig) -> N
             or (column.endswith("_sd") and (values <= 0).any())
         ):
             raise MeasurementContractError(f"Invalid {column} in team state")
+    if set(frame["state_schema_version"].dropna()) != {
+        config.team_state_schema_version
+    }:
+        raise MeasurementContractError("Unexpected team-state schema version")

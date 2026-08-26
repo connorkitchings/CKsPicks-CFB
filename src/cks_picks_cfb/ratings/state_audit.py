@@ -7,6 +7,75 @@ from typing import Any, Mapping
 import pandas as pd
 
 from cks_picks_cfb.ratings.contracts import market_field_conflicts
+from cks_picks_cfb.ratings.state_contracts import TeamStateConfig
+
+
+def _location_stability(
+    team_states: pd.DataFrame, config: TeamStateConfig
+) -> tuple[bool, dict[str, object]]:
+    """Audit representative state populations without postseason-selection bias."""
+    gate = config.location_gate
+    if gate is None:
+        return True, {"enabled": False}
+    historical = set(range(2021, 2026))
+    terminal = team_states[
+        (team_states["state_kind"] == "season_terminal")
+        & (team_states["season"].astype(int).isin(historical))
+    ].copy()
+    population = terminal.groupby("season")["team"].nunique().to_dict()
+    rows: list[dict[str, object]] = []
+    pregame = team_states[
+        (team_states["state_kind"] == "pregame")
+        & (team_states["season"].astype(int).isin(historical))
+    ]
+    fraction = float(gate["minimum_terminal_population_fraction"])
+    maximum = float(gate["maximum_abs_population_mean"])
+    for (season, ordinal), values in pregame.groupby(["season", "completed_games"]):
+        teams = int(values["team"].nunique())
+        season_population = int(population.get(int(season), 0))
+        qualifies = season_population > 0 and teams >= fraction * season_population
+        offense = float(values["offense_mean"].mean())
+        defense = float(values["defense_mean"].mean())
+        rows.append(
+            {
+                "state_kind": "pregame",
+                "season": int(season),
+                "completed_games": int(ordinal),
+                "team_count": teams,
+                "terminal_population": season_population,
+                "qualifies": qualifies,
+                "offense_mean": offense,
+                "defense_mean": defense,
+                "max_abs_mean": max(abs(offense), abs(defense)),
+                "passes": (max(abs(offense), abs(defense)) <= maximum)
+                if qualifies
+                else None,
+            }
+        )
+    for season, values in terminal.groupby("season"):
+        offense = float(values["offense_mean"].mean())
+        defense = float(values["defense_mean"].mean())
+        rows.append(
+            {
+                "state_kind": "season_terminal",
+                "season": int(season),
+                "completed_games": None,
+                "team_count": int(values["team"].nunique()),
+                "terminal_population": int(population.get(int(season), 0)),
+                "qualifies": True,
+                "offense_mean": offense,
+                "defense_mean": defense,
+                "max_abs_mean": max(abs(offense), abs(defense)),
+                "passes": max(abs(offense), abs(defense)) <= maximum,
+            }
+        )
+    qualifying = [row for row in rows if row["qualifies"]]
+    return bool(qualifying) and all(bool(row["passes"]) for row in qualifying), {
+        "enabled": True,
+        "minimum_terminal_population_fraction": fraction,
+        "maximum_abs_population_mean": maximum,
+        "groups": rows,
+    }
 
 
 def build_team_state_audit(
@@ -15,6 +84,7 @@ def build_team_state_audit(
     team_states: pd.DataFrame,
     measurement_refs: Mapping[str, Any],
     state_design_id: str,
+    config: TeamStateConfig,
     pregame_snapshots: pd.DataFrame | None = None,
 ) -> dict[str, Any]:
     """Build the Phase 2 structural and behavioral exit-gate report."""
@@ -49,6 +119,7 @@ def build_team_state_audit(
         )
     actual = set(zip(pregame["season"], pregame["as_of_game_id"], pregame["team"]))
     terminal = team_states[team_states["state_kind"] == "season_terminal"]
+    location_ok, location = _location_stability(team_states, config)
     checks = {
         "schedule_coverage_ok": expected == actual if expected else True,
         "nonnull_states_ok": bool(
@@ -91,6 +162,7 @@ def build_team_state_audit(
             pd.to_numeric(team_states["season"], errors="coerce").dropna().astype(int)
         )
         & {2019, 2020},
+        "location_stability_ok": location_ok,
     }
     report = {
         "report_schema_version": "rating_team_state_audit_v1",
@@ -113,6 +185,7 @@ def build_team_state_audit(
             .value_counts(dropna=True)
             .to_dict(),
         },
+        "location_stability": location,
         "checks": checks,
     }
     report["all_checks_passed"] = all(checks.values())
