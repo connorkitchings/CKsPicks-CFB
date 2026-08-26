@@ -16,7 +16,7 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 import pandas as pd
 import yaml
-from scipy.optimize import minimize
+from scipy.optimize import lsq_linear, minimize
 from scipy.special import gammaln
 
 from cks_picks_cfb.ratings.contracts import MeasurementContractError
@@ -178,12 +178,7 @@ def _side_design(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray, np.ndarra
 
 
 def _assert_direction(coefficients: np.ndarray) -> None:
-    if (
-        coefficients[1] < 0
-        or coefficients[2] <= 0
-        or coefficients[3] >= 0
-        or coefficients[4] < 0
-    ):
+    if coefficients[1] < 0 or coefficients[2] <= 0 or coefficients[3] >= 0:
         raise MeasurementContractError(
             "Score model violates frozen football directions"
         )
@@ -219,14 +214,25 @@ def _paired_residual_covariance(
     return _psd_covariance(np.cov(residuals, rowvar=False, ddof=1))
 
 
+def _coefficient_bounds() -> tuple[np.ndarray, np.ndarray]:
+    """Frozen football-direction constraints for both score families."""
+    epsilon = 1e-9
+    return (
+        np.array([-np.inf, 0.0, epsilon, -np.inf, -np.inf]),
+        np.array([np.inf, np.inf, np.inf, -epsilon, np.inf]),
+    )
+
+
 def fit_linear_scores(
     frame: pd.DataFrame, *, training_seasons: Sequence[int]
 ) -> ScoreModel:
     rows = _complete_rows(frame[frame["season"].isin(training_seasons)])
     matrix, outcomes, _ = _side_design(rows)
-    coefficients, _, rank, _ = np.linalg.lstsq(matrix, outcomes, rcond=None)
-    if rank != len(FEATURE_NAMES) or not np.isfinite(coefficients).all():
-        raise MeasurementContractError("Linear score model is rank deficient")
+    lower, upper = _coefficient_bounds()
+    result = lsq_linear(matrix, outcomes, bounds=(lower, upper), tol=1e-12)
+    coefficients = result.x
+    if not result.success or not np.isfinite(coefficients).all():
+        raise MeasurementContractError("Constrained linear score fit failed")
     _assert_direction(coefficients)
     return ScoreModel(
         family="linear_scores",
@@ -269,12 +275,16 @@ def fit_negative_binomial_scores(
     if rank != len(FEATURE_NAMES):
         raise MeasurementContractError("NB2 score model is rank deficient")
     floor = float(nb2["dispersion_floor"])
+    lower, upper = _coefficient_bounds()
     result = minimize(
         _nb2_objective,
         np.concatenate([initial_coefficients, [np.log(0.25)]]),
         args=(matrix, outcomes),
         method="L-BFGS-B",
-        bounds=[(None, None)] * len(FEATURE_NAMES) + [(np.log(floor), np.log(100.0))],
+        bounds=[
+            *zip(lower.tolist(), upper.tolist(), strict=True),
+            (np.log(floor), np.log(100.0)),
+        ],
         options={
             "maxiter": int(nb2["max_iterations"]),
             "ftol": float(nb2["tolerance"]),

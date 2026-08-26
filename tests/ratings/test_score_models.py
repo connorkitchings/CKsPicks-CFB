@@ -235,19 +235,22 @@ def test_tie_break_selects_linear_family_for_both_targets(monkeypatch):
     assert report["winner"] == "linear_scores"
 
 
-def test_rejects_invalid_score_direction_and_nonpositive_predictions():
+def test_score_fits_enforce_direction_bounds_and_reject_nonpositive_predictions():
     frame = _score_frame()
     config = _broad_config()
     bad_direction = frame.copy()
     bad_direction["actual_home_points"] = 30 - bad_direction["home_offense_mean"]
     bad_direction["actual_away_points"] = 30 - bad_direction["away_offense_mean"]
-    with pytest.raises(MeasurementContractError, match="directions"):
-        fit_score_model(
-            "linear_scores",
+    for family in config.candidates:
+        fitted = fit_score_model(
+            family,
             bad_direction,
             training_seasons=(2021, 2022, 2023),
             config=config,
         )
+        assert fitted.coefficients[1] >= 0
+        assert fitted.coefficients[2] > 0
+        assert fitted.coefficients[3] < 0
     nonpositive = ScoreModel(
         family="linear_scores",
         coefficients=np.array([-100.0, 2.0, 4.0, -3.0, 1.0]),
