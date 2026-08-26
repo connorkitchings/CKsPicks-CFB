@@ -94,6 +94,14 @@ corrected [measurement catalog](measurement_catalog.md) and produces only
 Preview research component and team-state artifacts; no catalog registration
 occurs unless explicitly requested.
 
+Phase 3 v1 is immutable failed research: its two-equation margin/total OLS
+diagnostic had complete paired V4 coverage but failed the frozen calibration
+and total-bias gates. The successor is the separate
+[sealed v2 team-score tournament](../plans/2026-08-25/phase3-score-model-tournament-v2.md),
+which compares linear and NB2 team-score families on 2022–2024 expanding
+folds and confirms its selected, unchanged family once on 2025. It cannot tune
+v1, relax a gate, freeze a candidate, or begin Phase 4 unless all gates pass.
+
 ### Data and lineage
 
 - Use immutable Bronze/Silver/Gold lineage, stable team/game keys, and strict

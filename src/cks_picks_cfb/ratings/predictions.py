@@ -295,6 +295,10 @@ def prepare_prediction_frame(
                 "away_state_id": away.state_id,
                 "home_completed_games": int(home.completed_games),
                 "away_completed_games": int(away.completed_games),
+                "home_offense_mean": float(home.offense_mean),
+                "away_offense_mean": float(away.offense_mean),
+                "home_defense_mean": float(home.defense_mean),
+                "away_defense_mean": float(away.defense_mean),
                 "quality_gap": float(home.overall_mean - away.overall_mean),
                 "home_field": 0.0 if bool(game.neutral_site) else 1.0,
                 "offense_sum": float(home.offense_mean + away.offense_mean),
@@ -312,6 +316,16 @@ def prepare_prediction_frame(
                 "away_pace_source": away_source,
                 "actual_margin": actual_margin,
                 "actual_total": actual_total,
+                "actual_home_points": (
+                    float(game.outcome_home_points)
+                    if complete and pd.notna(game.outcome_home_points)
+                    else np.nan
+                ),
+                "actual_away_points": (
+                    float(game.outcome_away_points)
+                    if complete and pd.notna(game.outcome_away_points)
+                    else np.nan
+                ),
             }
         )
     return pd.DataFrame.from_records(records)

@@ -1,6 +1,6 @@
 # Phase 3 — Structured Margin and Total Baseline
 
-- **Status:** In Progress
+- **Status:** Superseded
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
@@ -134,3 +134,12 @@ failed report.
   deterministic reruns.
 - Run focused and full tests, Ruff, contracts validation, strict MkDocs, and
   diff checks. Record exact refs and checksums in the implementation record.
+
+### Amendment 4 -- v1 failed-research closure (2026-08-25)
+
+This contract is closed as immutable failed research and superseded only by
+[`phase3-score-model-tournament-v2.md`](phase3-score-model-tournament-v2.md).
+The successor has a new score-model candidate identity and sealed selection
+contract; it does not change, recalibrate, or retry this v1 design after its
+outcome report. The Phase 3 program remains in progress under v2, and Phase 4
+remains blocked unless that distinct contract passes every gate.

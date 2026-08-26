@@ -26,6 +26,12 @@ Copy the template from `.agent/skills/plan-session/assets/implementation-contrac
 
 Terra must not execute a Draft contract without an explicit user instruction naming that exact path. In that case, Terra records the instruction as the approval source and changes the status to `Approved` before code changes.
 
+## Current rating-transition contract
+
+- [Phase 3 v2 sealed team-score tournament](2026-08-25/phase3-score-model-tournament-v2.md)
+  — In Progress. It supersedes neither the Phase 3 v1 diagnostic nor its failed
+  research history; a passing v2 candidate freeze is required before Phase 4.
+
 ## When to use a contract
 
 Use the Sol-to-Terra workflow for architecture, data/model lineage, schemas or migrations, production/deployment behavior, security-sensitive work, or changes that span multiple subsystems. Use the normal fast path for a small, localized change that follows an established pattern.
