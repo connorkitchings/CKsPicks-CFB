@@ -1,0 +1,42 @@
+shadow_config_version: rating_shadow_operations_v1
+research_prefix: artifacts/research/rating-successor/shadow-v1
+candidate:
+  prediction_design_id: 503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe
+  expected_code_sha: c4c5cfb3e5617f08644531a4490a7e9907229a42
+  model_ref_uri: artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/models-ref.json
+  expected_model_version: 071f4de17b4b351e74e0a670
+  expected_model_sha: b941a1737ced28543c939496012c742bbb37fe2bb2c3fda57cf45a5038f86d3b
+  predictions_ref_uri: artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/predictions-ref.json
+  expected_predictions_version: 75e9a9cc7e942823bde56a2a
+  expected_predictions_sha: 226931b625769f008e91458afb984026c9976efba323030d408838df56be69b3
+  model_stage: final_refit
+  family: negative_binomial_scores
+  candidate_manifest_uri: artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/candidate-manifest.json
+  expected_candidate_sha: e803d417a6ad6fa82ec9dfa2e5c344c6cb4bf732f41c9e7dcb02527110800d08
+rehearsal:
+  model_stage: locked_confirmation
+  fold_prefix: locked_2025
+  team_states_ref_uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/team-states-ref.json
+  expected_team_states_version: 5237dcb3fdd14c4435d2f050
+  expected_team_states_sha: b0c5b6df7e0c794bb8490b09d280bfe917362405d5df45c8d4b44b51d30b80db
+  snapshots_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/snapshots-ref.json
+  expected_snapshots_version: 9893612fe248932e8fc2edb8
+  expected_snapshots_sha: 6a979d9e376ce220486b3d845c9d79f54f70fedc26a95f7ddca66234079beb64
+  terminal_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/terminal-snapshots-ref.json
+  expected_terminal_version: 684692e7b815b5825486f5ad
+  expected_terminal_sha: 5c17dfdb6bc9ed3f23b7d0119356b795a8a8efccf2596e3580e85789852454a3
+  games_ref_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T1830Z/inputs/games-5dabf61a15b3745ff3a595a4.json
+  outcomes_ref_uri: artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T1830Z/inputs/game_outcomes-0f6687fccc8eb676c52fbf85.json,artifacts/research/rating-successor/measurements/340091b61f45c272f02658b1d2ad670116c6d57d2c182792ce817546c8ca481b/runs/2026-08-24T1830Z/inputs/game_outcomes-9ac498036f4473df37fd474a.json
+  v4_ref_uri: artifacts/research/rating-successor/v4-benchmark-replay/341285d246cb24c1e4d978e60eeed306b67a5734931324c807b17da799bf97c3/runs/2026-08-25T1323Z-v4-recovery/predictions/ref.json
+  season: 2025
+  measurement_config_path: conf/ratings/measurement_baseline_v3.yaml
+  state_config_path: conf/ratings/team_state_baseline_v2.yaml
+pace:
+  measurement_id: plays_per_drive
+  role: offense
+  fallback_center: 6.0
+  fallback_scale: 1.0
+  scale_floor: 0.25
+gates:
+  normal_coverage_min_games: 40
+  ineligible_weeks: [0]

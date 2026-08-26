@@ -128,7 +128,9 @@ unchanged on 2021–2025. Candidate v1 identity: design
 `75e9a9cc7e942823bde56a2a`, tournament SHA-256
 `f71a0f437bf9156670fadd44e5dba6b42f56f8f63f666b682c389da37dfa54bd`. The
 candidate is frozen: it must not be tuned on any outcome it later claims as
-protected, and Phase 4 shadow operations require a fresh approved contract.
+protected, and Phase 4 shadow operations are in progress under the approved
+isolated contract. They may read a frozen V4 run only for paired evaluation;
+they cannot alter V4, production data, publication, or candidate v1.
 
 ### Data and lineage
 

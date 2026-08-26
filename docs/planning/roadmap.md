@@ -161,8 +161,8 @@ failed gate cannot be bypassed for schedule reasons.
   representative location gates and byte-identical rerun, and the sealed v3
   tournament froze `negative_binomial_scores` as candidate v1 (locked-2025:
   margin MAE 13.30 vs V4 15.52 with positive paired lift; total at parity; all
-  calibration gates true). Phase 4 shadow operations are the next gated
-  contract; no production interface changed.
+  calibration gates true). Phase 4 shadow operations are in progress under an
+  isolated Preview-only contract; no production interface changed.
 
 ## Invariants and open decisions
 

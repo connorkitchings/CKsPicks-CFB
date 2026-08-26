@@ -7,6 +7,7 @@ joint predictive distribution.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 from dataclasses import dataclass
@@ -387,8 +388,11 @@ def predict_score_model(
         home_mean = home_design @ model.coefficients
         away_mean = away_design @ model.coefficients
     else:
-        home_mean = np.exp(np.clip(home_design @ model.coefficients, -20, 20))
-        away_mean = np.exp(np.clip(away_design @ model.coefficients, -20, 20))
+        # The finite-value gate below remains authoritative.  Suppress expected
+        # intermediate BLAS warnings before the frozen clipping contract applies.
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            home_mean = np.exp(np.clip(home_design @ model.coefficients, -20, 20))
+            away_mean = np.exp(np.clip(away_design @ model.coefficients, -20, 20))
     if (
         not np.isfinite(home_mean).all()
         or not np.isfinite(away_mean).all()
@@ -551,3 +555,75 @@ def model_record(model: ScoreModel) -> dict[str, Any]:
         "dispersion": model.dispersion,
         "optimizer_success": model.optimizer_success,
     }
+
+
+def load_score_model(record: Mapping[str, Any]) -> ScoreModel:
+    """Reconstruct a frozen ``ScoreModel`` from a serialized model record."""
+
+    def _sequence(value: Any, *, label: str) -> list[Any]:
+        """Accept native sequences plus deterministic Parquet string encodings."""
+        if isinstance(value, str):
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                try:
+                    value = ast.literal_eval(value)
+                except (SyntaxError, ValueError) as exc:
+                    raise MeasurementContractError(
+                        f"Frozen model {label} is not a serialized sequence"
+                    ) from exc
+        if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+            raise MeasurementContractError(f"Frozen model {label} must be a sequence")
+        return list(value)
+
+    family = str(record["family"])
+    if family not in SCORE_FAMILIES:
+        raise MeasurementContractError(f"Unknown score model family: {family}")
+    feature_names = [
+        str(name) for name in _sequence(record["feature_names"], label="feature_names")
+    ]
+    if tuple(feature_names) != FEATURE_NAMES:
+        raise MeasurementContractError(
+            "Frozen model feature order does not match the current contract"
+        )
+    stored = json.loads(str(record["coefficients"]))
+    missing = [name for name in FEATURE_NAMES if name not in stored]
+    if missing:
+        raise MeasurementContractError(
+            f"Frozen model coefficients missing features: {missing}"
+        )
+    coefficients = np.array([stored[name] for name in FEATURE_NAMES], dtype=float)
+    covariance = np.array(json.loads(str(record["residual_covariance"])), dtype=float)
+    if covariance.shape != (2, 2):
+        raise MeasurementContractError("Frozen residual covariance must be 2x2")
+    if not np.isfinite(coefficients).all() or not np.isfinite(covariance).all():
+        raise MeasurementContractError("Frozen score model parameters must be finite")
+    if not np.allclose(covariance, covariance.T, rtol=0.0, atol=1e-12):
+        raise MeasurementContractError("Frozen residual covariance must be symmetric")
+    if (np.linalg.eigvalsh(covariance) < -1e-10).any():
+        raise MeasurementContractError("Frozen residual covariance must be PSD")
+    dispersion = record.get("dispersion")
+    dispersion = None if dispersion is None else float(dispersion)
+    if family == "negative_binomial_scores" and (
+        dispersion is None or not np.isfinite(dispersion) or dispersion <= 0
+    ):
+        raise MeasurementContractError("NB2 frozen model requires positive dispersion")
+    training_seasons = tuple(
+        int(season)
+        for season in _sequence(record["training_seasons"], label="training_seasons")
+    )
+    if not training_seasons or any(
+        season in {2019, 2020} for season in training_seasons
+    ):
+        raise MeasurementContractError("Frozen model has invalid training seasons")
+    optimizer_success = bool(record.get("optimizer_success", True))
+    if not optimizer_success:
+        raise MeasurementContractError("Frozen model optimizer did not succeed")
+    return ScoreModel(
+        family=family,
+        coefficients=coefficients,
+        residual_covariance=covariance,
+        dispersion=dispersion,
+        training_seasons=training_seasons,
+        optimizer_success=optimizer_success,
+    )
