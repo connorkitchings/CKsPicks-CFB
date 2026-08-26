@@ -15,7 +15,10 @@ from helpers import (
 )
 
 from cks_picks_cfb.ratings.contracts import load_measurement_config
-from cks_picks_cfb.ratings.observations import build_measurement_observations
+from cks_picks_cfb.ratings.observations import (
+    _true_drive_points,
+    build_measurement_observations,
+)
 
 CONFIG = load_measurement_config("conf/ratings/measurement_baseline_v1.yaml")
 V3_CONFIG = load_measurement_config("conf/ratings/measurement_baseline_v3.yaml")
@@ -219,9 +222,7 @@ def test_v3_invalid_drive_points_are_quarantined_without_clipping():
 
 def test_v3_rejects_nonfinite_score_stream_values():
     league = _score_stream_league()
-    league["byplay"]["offense_score"] = league["byplay"]["offense_score"].astype(
-        float
-    )
+    league["byplay"]["offense_score"] = league["byplay"]["offense_score"].astype(float)
     league["byplay"].loc[0, "offense_score"] = float("inf")
     result = _build_v3(league).frame
     alpha = result[
@@ -230,6 +231,18 @@ def test_v3_rejects_nonfinite_score_stream_values():
         & (result["measurement_id"] == "points_per_scoring_opportunity")
     ].iloc[0]
     assert alpha["missing_reason"] == "score_stream_mismatch"
+
+
+def test_v3_reconciliation_uses_cumulative_score_maximum():
+    league = _score_stream_league()
+    # A regression quarantines Alpha's score stream, but the outcome audit still
+    # compares the cumulative maximum rather than the lower trailing marker.
+    league["byplay"].loc[league["byplay"]["defense"] == "Alpha", "defense_score"] = 6
+    result = _true_drive_points(
+        byplay=league["byplay"], games=league["games"], outcomes=league["outcomes"]
+    )
+    assert result.reconciliation[2025]["exact_rate"] == 1.0
+    assert (2025, 1, "Alpha") in result.invalid_offenses
 
 
 def test_v3_changes_only_ppso_values_and_schema_lineage():

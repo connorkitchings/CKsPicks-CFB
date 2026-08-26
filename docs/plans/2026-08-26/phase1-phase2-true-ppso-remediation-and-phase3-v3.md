@@ -91,4 +91,12 @@ writes only its diagnostic evaluation and leaves Phase 3 in progress.
 
 ## Amendments
 
-None.
+### Amendment 1 — Cumulative final-score reconciliation (2026-08-26)
+
+The initial committed v3 Preview attempt stopped before publishing refs because
+the 2021 reconciliation rate fell below 94%. The failure exposed a mechanical
+implementation defect: final score validation used the trailing score marker
+rather than the required reconstructed cumulative maximum. The score stream is
+now audited against each team's maximum cumulative score; regressions remain
+quarantined independently. A focused regression test covers this distinction.
+No equation, parent, threshold, selection rule, or candidate identity changed.

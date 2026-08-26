@@ -161,10 +161,11 @@ def _true_drive_points(
             invalid_offenses.add((int(row.season), int(row.game_id), str(row.offense)))
 
     schedule = games.set_index(["season", "game_id"])[["home_team", "away_team"]]
+    # The canonical stream is cumulative. Its final valid team score is the
+    # cumulative maximum; regressions have already been quarantined above.
     final_scores = (
-        score_events.sort_values(["season", "game_id", "team", "_row_order"])
-        .groupby(["season", "game_id", "team"], sort=False)["score"]
-        .last()
+        score_events.groupby(["season", "game_id", "team"], sort=False)["score"]
+        .max()
         .to_dict()
     )
     outcome_index = outcomes.set_index(["season", "game_id"])[

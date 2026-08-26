@@ -66,10 +66,18 @@
 
 ## Amendments and Blockers
 
-None. The user-specified per-season 94% reconciliation gate is enforced by the
+The user-specified per-season 94% reconciliation gate is enforced by the
 season-scoped materializer rather than a single-season unit builder, allowing
 tests to verify individual mismatch quarantines while production execution
 still fails closed across the full historical set.
+
+The first committed v3 Preview attempt at
+`2026-08-26T1225Z-phase1-ppso-v3` failed before any successful refs were
+published: 2021 reconciliation was below 94%. The failure identified a
+mechanical final-score audit defect (trailing score marker rather than
+cumulative maximum). The local correction now reproduces the expected 2021
+rate of `0.9494535519125683`; it will be committed and retried under a fresh
+run ID without changing parents, thresholds, or model design.
 
 ## Handoff Notes
 
