@@ -23,6 +23,11 @@ from cks_picks_cfb.ratings.contracts import MeasurementContractError
 from cks_picks_cfb.ratings.prediction_evaluation import evaluate_predictions
 
 SCORE_TOURNAMENT_CONFIG_VERSION = "rating_score_tournament_v2"
+SCORE_TOURNAMENT_CONFIG_VERSION_V3 = "rating_score_tournament_v3"
+SUPPORTED_SCORE_TOURNAMENT_CONFIG_VERSIONS = (
+    SCORE_TOURNAMENT_CONFIG_VERSION,
+    SCORE_TOURNAMENT_CONFIG_VERSION_V3,
+)
 SCORE_MODEL_DATASET = "rating_score_models"
 SCORE_PREDICTION_DATASET = "rating_score_predictions"
 SCORE_MODEL_SCHEMA_VERSION = "rating_score_models_v2"
@@ -47,6 +52,7 @@ def _sha(value: Mapping[str, Any]) -> str:
 
 @dataclass(frozen=True)
 class ScoreTournamentConfig:
+    config_version: str
     research_prefix: str
     historical_seasons: tuple[int, ...]
     selection_seasons: tuple[int, ...]
@@ -61,6 +67,36 @@ class ScoreTournamentConfig:
     raw_config: Mapping[str, Any]
 
     @property
+    def is_v3(self) -> bool:
+        return self.config_version == SCORE_TOURNAMENT_CONFIG_VERSION_V3
+
+    @property
+    def model_schema_version(self) -> str:
+        return "rating_score_models_v3" if self.is_v3 else SCORE_MODEL_SCHEMA_VERSION
+
+    @property
+    def prediction_schema_version(self) -> str:
+        return (
+            "rating_score_predictions_v3"
+            if self.is_v3
+            else SCORE_PREDICTION_SCHEMA_VERSION
+        )
+
+    @property
+    def candidate_schema_version(self) -> str:
+        return (
+            "rating_score_candidate_v3"
+            if self.is_v3
+            else SCORE_CANDIDATE_SCHEMA_VERSION
+        )
+
+    @property
+    def report_schema_version(self) -> str:
+        return (
+            "rating_score_tournament_v3" if self.is_v3 else "rating_score_tournament_v2"
+        )
+
+    @property
     def design_id(self) -> str:
         return _sha(self.raw_config)
 
@@ -70,11 +106,12 @@ def load_score_tournament_config(path: str | Path) -> ScoreTournamentConfig:
     if (
         not isinstance(raw, Mapping)
         or raw.get("score_model_tournament_config_version")
-        != SCORE_TOURNAMENT_CONFIG_VERSION
+        not in SUPPORTED_SCORE_TOURNAMENT_CONFIG_VERSIONS
     ):
         raise MeasurementContractError("Unsupported Phase 3 score tournament config")
     try:
         config = ScoreTournamentConfig(
+            config_version=str(raw["score_model_tournament_config_version"]),
             research_prefix=str(raw["research_prefix"]).rstrip("/"),
             historical_seasons=tuple(int(value) for value in raw["historical_seasons"]),
             selection_seasons=tuple(int(value) for value in raw["selection_seasons"]),
@@ -449,7 +486,7 @@ def tournament_selection(
     config: ScoreTournamentConfig,
 ) -> tuple[str | None, dict[str, Any], dict[str, list[ScoreModel]]]:
     report: dict[str, Any] = {
-        "report_schema_version": "rating_score_tournament_v2",
+        "report_schema_version": config.report_schema_version,
         "selection_seasons": list(config.selection_seasons),
         "candidates": {},
     }

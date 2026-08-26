@@ -26,11 +26,8 @@ from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings.prediction_evaluation import evaluate_predictions
 from cks_picks_cfb.ratings.predictions import prepare_prediction_frame
 from cks_picks_cfb.ratings.score_models import (
-    SCORE_CANDIDATE_SCHEMA_VERSION,
     SCORE_MODEL_DATASET,
-    SCORE_MODEL_SCHEMA_VERSION,
     SCORE_PREDICTION_DATASET,
-    SCORE_PREDICTION_SCHEMA_VERSION,
     expanding_score_predictions,
     fit_score_model,
     load_score_tournament_config,
@@ -63,7 +60,7 @@ def _write_immutable(storage, uri: str, payload: bytes) -> None:
     storage.write_bytes(payload, uri)
 
 
-def _require_commit(expected: str | None) -> str:
+def _require_commit(expected: str | None, *, config_path: str) -> str:
     current = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,
@@ -74,7 +71,8 @@ def _require_commit(expected: str | None) -> str:
     code_sha = expected or current
     if not code_sha:
         raise ValueError("Phase 3 v2 artifacts require a committed code SHA")
-    for path in RELEVANT:
+    relevant = (*RELEVANT[:-1], config_path)
+    for path in relevant:
         if subprocess.run(
             ["git", "ls-files", "--error-unmatch", path],
             cwd=REPO_ROOT,
@@ -83,7 +81,7 @@ def _require_commit(expected: str | None) -> str:
         ).returncode:
             raise ValueError(f"Phase 3 v2 artifact path is not committed: {path}")
     if subprocess.run(
-        ["git", "diff", "--quiet", code_sha, "--", *RELEVANT],
+        ["git", "diff", "--quiet", code_sha, "--", *relevant],
         cwd=REPO_ROOT,
         check=False,
     ).returncode:
@@ -189,7 +187,8 @@ def main(argv: list[str] | None = None) -> None:
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
-    code_sha = _require_commit(args.expected_code_sha)
+    config_path = str(Path(args.config).resolve().relative_to(REPO_ROOT))
+    code_sha = _require_commit(args.expected_code_sha, config_path=config_path)
     storage = get_storage(environment="preview")
     team_ref, snapshots_ref, terminal_ref, v4_ref, phase1 = _verify_handoff(
         storage, config, args.v4_ref_uri
@@ -326,7 +325,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config.design_id,
             as_of=cutoff,
-            schema_version=SCORE_MODEL_SCHEMA_VERSION,
+            schema_version=config.model_schema_version,
             tier="gold",
         ),
         records=records,
@@ -342,7 +341,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config.design_id,
             as_of=cutoff,
-            schema_version=SCORE_PREDICTION_SCHEMA_VERSION,
+            schema_version=config.prediction_schema_version,
             tier="gold",
         ),
         records=all_predictions.to_dict("records"),
@@ -363,7 +362,7 @@ def main(argv: list[str] | None = None) -> None:
         tournament, indent=2, sort_keys=True, default=str
     ).encode()
     candidate_manifest = {
-        "candidate_schema_version": SCORE_CANDIDATE_SCHEMA_VERSION,
+        "candidate_schema_version": config.candidate_schema_version,
         "prediction_design_id": config.design_id,
         "code_sha": code_sha,
         "config_sha": config.design_id,

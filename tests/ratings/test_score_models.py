@@ -94,6 +94,14 @@ def _broad_config():
     return replace(config, gates=gates)
 
 
+def test_v3_config_uses_distinct_frozen_artifact_schemas():
+    config = load_score_tournament_config("conf/ratings/score_model_tournament_v3.yaml")
+    assert config.is_v3 is True
+    assert config.model_schema_version == "rating_score_models_v3"
+    assert config.prediction_schema_version == "rating_score_predictions_v3"
+    assert config.candidate_schema_version == "rating_score_candidate_v3"
+
+
 def test_score_predictions_derive_margin_total_and_valid_intervals():
     frame = _score_frame()
     config = _broad_config()

@@ -1,0 +1,49 @@
+score_model_tournament_config_version: rating_score_tournament_v3
+research_prefix: artifacts/research/rating-successor/score-tournament-v3
+historical_seasons: [2021, 2022, 2023, 2024, 2025]
+selection_seasons: [2022, 2023, 2024]
+locked_season: 2025
+state_inputs:
+  phase1_audit_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/audit-report.json
+  foundation_report_uri: artifacts/research/rating-successor/foundation-review-v2/a0a3d3d885ee7d66af4d3f094f710972d6dd0913187c970e76013ed5a1791187/runs/2026-08-26T1415Z-foundation-v2/report.json
+  foundation_report_sha256: 95cc66d4a052992521551b1222fd538d14ca00393b90f48b17cb20132ac49454
+  team_states_ref_uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/team-states-ref.json
+  expected_team_states_version: 5237dcb3fdd14c4435d2f050
+  expected_team_states_sha: b0c5b6df7e0c794bb8490b09d280bfe917362405d5df45c8d4b44b51d30b80db
+  snapshots_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/snapshots-ref.json
+  expected_snapshots_version: 9893612fe248932e8fc2edb8
+  expected_snapshots_sha: 6a979d9e376ce220486b3d845c9d79f54f70fedc26a95f7ddca66234079beb64
+  terminal_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/terminal-snapshots-ref.json
+  expected_terminal_version: 684692e7b815b5825486f5ad
+  expected_terminal_sha: 5c17dfdb6bc9ed3f23b7d0119356b795a8a8efccf2596e3580e85789852454a3
+v4_benchmark:
+  expected_version: f4ec062c7f931f125ce6be99
+  expected_sha: 6bdbe75ce83554c5828ac1a807056e26844db44c77defb6607d2ec7386efca2d
+pace:
+  measurement_id: plays_per_drive
+  role: offense
+  fallback_center: 6.0
+  fallback_scale: 1.0
+  scale_floor: 0.25
+candidates: [linear_scores, negative_binomial_scores]
+nb2:
+  max_iterations: 2000
+  tolerance: 1.0e-9
+  dispersion_floor: 1.0e-6
+selection:
+  mae_ratio_tie: 0.01
+  tie_winner: linear_scores
+gates:
+  pooled_error_ratio: 1.10
+  seasonal_mae_ratio: 1.20
+  max_absolute_bias: 2.0
+  max_bias_excess: 1.0
+  max_abs_standardized_residual_mean: 0.15
+  standardized_residual_sd_min: 0.80
+  standardized_residual_sd_max: 1.20
+  interval_80_min: 0.72
+  interval_80_max: 0.88
+  interval_95_min: 0.90
+  interval_95_max: 0.99
+  bootstrap_samples: 2000
+  bootstrap_seed: 42
