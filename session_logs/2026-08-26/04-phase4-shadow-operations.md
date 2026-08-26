@@ -3,15 +3,15 @@
 ## TL;DR
 
 - **Worked On:** Corrected the uncommitted Phase 4 shadow-operation draft.
-- **Outcome:** Implemented the local safety, lineage, canonical-artifact, state
-  carryover, and production-V4-read boundaries. No Preview shadow artifact was
-  materialized and no production surface was written.
+- **Outcome:** Implemented and rehearsed the local safety, lineage,
+  canonical-artifact, state carryover, and production-V4-read boundaries. The
+  full-2025 Preview rehearsal and byte-identical rerun passed; no production
+  surface was written.
 - **Plan Contract:** `docs/plans/2026-08-26/phase4-shadow-operations.md`
-- **Approval / Status:** User authorized the corrected contract; `In Progress`.
-- **Blockers:** Preview rehearsal requires a user-controlled code commit because
-  the immutable research CLIs reject uncommitted implementation identities.
-- **Next:** Run the full local validation battery, commit the implementation,
-  then execute the two identical Preview 2025 rehearsal runs.
+- **Approval / Status:** User authorized the corrected contract; `Implemented`.
+- **Blockers:** None.
+- **Next:** Draft and approve the separate Phase 5 Week 1 operations contract;
+  do not create an actual 2026 freeze before then.
 
 ## Context and Decisions
 
@@ -44,7 +44,9 @@
 - `scripts/pipeline/build_rating_shadow_freeze.py` - canonical pregame freeze.
 - `scripts/pipeline/build_rating_shadow_score.py` - canonical complete scorer.
 - `scripts/pipeline/run_rating_shadow_rehearsal.py` - reconstructed 2025 oracle.
+- `src/cks_picks_cfb/data/lake.py` - idempotent immutable partition comparison.
 - `tests/ratings/test_shadow.py` - focused regression coverage.
+- `tests/test_data_lake.py` - NumPy-partition retry regression coverage.
 
 ## Validation
 
@@ -55,7 +57,9 @@
 - [x] Read-only Preview locked-2025 oracle (`1,522` rows, max delta `0.0`)
 - [x] Full Python suite (`529 passed, 2 skipped`), contracts validation, strict
   MkDocs, and `git diff --check`
-- [ ] Committed-code Preview rehearsal and byte-identical rerun
+- [x] Committed-code Preview rehearsal and byte-identical rerun: 15/15 weeks,
+  `1,522` oracle rows, max delta `9.947598300641403e-14`, summary SHA-256
+  `b755b585914d2f36b6ff93edba8eb520c500cd0e6ea416a58f47ee4fbdc33e31`
 
 ## Amendments and Blockers
 
@@ -82,13 +86,17 @@
   and therefore no successful rehearsal evidence.
 - The rehearsal code-identity guard now explicitly includes the shared lake
   writer used for its immutable prediction and evidence artifacts.
+- Successful run `2026-08-26T2140Z-phase4-rehearsal-v3` used committed code
+  `b8103350899080994eeca6e39a9731790a61c0b9`, the frozen model ref
+  `071f4de17b4b351e74e0a670` (SHA-256 `b941a173…f86d3b`), and summary URI
+  `artifacts/research/rating-successor/shadow-v1/584f3f5cd43653745b4f3e4eed4f5437444fb5997366e574f22f3bf05ec4172e/rehearsal/runs/2026-08-26T2140Z-phase4-rehearsal-v3/summary.json`.
+  Both invocations produced the same SHA; the summary contains every weekly
+  prediction/evidence ref and checksum.
 
 ## Handoff Notes
 
-- **Resume at:** Commit the target-label correction and pre-rehearsal
-  safeguards, then execute `run_rating_shadow_rehearsal.py` twice under a
-  fresh run ID.
-- **Watch out for:** Do not invoke a prospective Week 0/2026 freeze; it remains
-  Phase 5 work and ineligible evidence.
+- **Resume at:** Create the separate Phase 5 Week 1 operations contract.
+- **Watch out for:** Do not invoke a prospective Week 0/2026 freeze; actual
+  Week 1 evidence remains Phase 5 work.
 
 **tags:** ["ratings", "phase4", "shadow", "lineage"]

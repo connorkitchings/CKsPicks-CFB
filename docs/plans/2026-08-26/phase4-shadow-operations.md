@@ -1,6 +1,6 @@
 # Phase 4 — Isolated Shadow Operations
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-26
 - **Planner:** Sol
 - **Approval source:** User approved this exact contract on 2026-08-26 and
@@ -244,15 +244,15 @@ evidence (run id, SHAs); Week 1 declared plan-eligible for Phase 5 iff
 
 ## Definition of Done
 
-- [ ] Tasks 1–5 implemented with all acceptance criteria and focused tests
+- [x] Tasks 1–5 implemented with all acceptance criteria and focused tests
       passing.
-- [ ] Full-season 2025 rehearsal passes the exact-match oracle with
+- [x] Full-season 2025 rehearsal passes the exact-match oracle with
       `all_checks_passed: true` and a deterministic rerun.
-- [ ] Validation battery green (full suite, Ruff, contracts, MkDocs,
+- [x] Validation battery green (full suite, Ruff, contracts, MkDocs,
       `git diff --check`).
-- [ ] Authority docs, plan index, and session log record refs, checksums, and
+- [x] Authority docs, plan index, and session log record refs, checksums, and
       Phase 5 eligibility.
-- [ ] No production, V4, publication, or market surface touched; candidate v1
+- [x] No production, V4, publication, or market surface touched; candidate v1
       unchanged.
 
 ## Amendments
@@ -345,3 +345,27 @@ comparison used their in-memory value. The lake now compares canonical
 partition JSON, so a matching immutable dataset is reused while any real
 identity mismatch remains fail-closed. This is a storage serialization
 correction only; it does not change the model, inputs, or gates.
+
+### 2026-08-26 — Completion evidence
+
+The committed Preview rehearsal `2026-08-26T2140Z-phase4-rehearsal-v3`
+completed under code `b8103350899080994eeca6e39a9731790a61c0b9`. Its immutable
+summary is
+`artifacts/research/rating-successor/shadow-v1/584f3f5cd43653745b4f3e4eed4f5437444fb5997366e574f22f3bf05ec4172e/rehearsal/runs/2026-08-26T2140Z-phase4-rehearsal-v3/summary.json`
+with SHA-256 `b755b585914d2f36b6ff93edba8eb520c500cd0e6ea416a58f47ee4fbdc33e31`.
+The same invocation produced the identical summary SHA and reused the same
+per-week artifacts.
+
+All 15 historical weeks passed: 761 games / 1,522 target rows, complete
+outcomes and paired V4 coverage, no cancellation waivers, one-hour freeze lead
+time, and maximum locked-oracle delta `9.947598300641403e-14` (tolerance
+`1e-9`). The summary records every prediction/evidence ref and checksum.
+Pooled rehearsal MAE was margin `13.2985` versus V4 `15.5197` (ratio `0.8569`)
+and total `13.4145` versus V4 `13.3927` (ratio `1.0016`); these descriptive
+historical rehearsal metrics do not modify the frozen Phase 3 gates or
+candidate. The frozen final-refit model is `071f4de17b4b351e74e0a670`, SHA-256
+`b941a1737ced28543c939496012c742bbb37fe2bb2c3fda57cf45a5038f86d3b`.
+
+Phase 4 is therefore implemented. Phase 5 Week 1 is plan-eligible only; no
+actual 2026 freeze, score, publication, activation, or production write is
+authorized by this completion record.

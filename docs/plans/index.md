@@ -29,9 +29,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 ## Current rating-transition contract
 
 - [Phase 4 isolated shadow operations](2026-08-26/phase4-shadow-operations.md)
-  — In progress 2026-08-26. Frozen candidate v1 shadow lifecycle (pregame freeze,
-  paired postgame scoring, full-2025 exact-match rehearsal) in a Preview-only
-  research namespace. Phase 5 Week 1 eligibility requires its exit gate.
+  — Implemented 2026-08-26. The Preview-only full-2025 rehearsal passed all 15
+  weeks and its byte-identical rerun (summary SHA-256 `b755b585…`). Phase 5
+  Week 1 is plan-eligible; actual 2026 operations still require that contract.
 - [Phase 1/2 true-PPSO remediation and Phase 3 v3 tournament](2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
   — Implemented 2026-08-26. Phase 1 v3 and Phase 2 v2 are certified with
   byte-identical reruns, and the sealed Phase 3 v3 tournament froze passing
