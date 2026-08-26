@@ -101,6 +101,10 @@ and total-bias gates. The successor is the separate
 which compares linear and NB2 team-score families on 2022–2024 expanding
 folds and confirms its selected, unchanged family once on 2025. It cannot tune
 v1, relax a gate, freeze a candidate, or begin Phase 4 unless all gates pass.
+Its sealed 2026-08-26 selection also failed: linear scores passed margin but
+failed total calibration, while NB2 failed required uncertainty/calibration
+gates. The immutable diagnostic is evidence only; no candidate or operational
+shadow artifact exists.
 
 ### Data and lineage
 

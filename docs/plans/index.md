@@ -30,7 +30,8 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 - [Phase 3 v2 sealed team-score tournament](2026-08-25/phase3-score-model-tournament-v2.md)
   — In Progress. It supersedes neither the Phase 3 v1 diagnostic nor its failed
-  research history; a passing v2 candidate freeze is required before Phase 4.
+  research history. Its sealed selection failed all-family gates; a future,
+  separately approved candidate identity is required before Phase 4.
 
 ## When to use a contract
 

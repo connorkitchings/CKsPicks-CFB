@@ -4,17 +4,14 @@
 
 - **Worked On:** Implemented the isolated linear-versus-NB2 team-score
   tournament and its Preview-only artifact CLI.
-- **Outcome:** Local implementation and repository validation pass. No R2
-  parents were read and no Preview artifacts were written because the contract
-  requires a user-controlled commit before outcome joins or external writes.
+- **Outcome:** The committed sealed selection produced only an immutable
+  diagnostic report; neither complete score family passed every frozen gate.
 - **Plan Contract:** `docs/plans/2026-08-25/phase3-score-model-tournament-v2.md`
 - **Approval / Status:** User explicitly authorized implementation; `In Progress`
-  pending committed-code materialization and gates.
-- **Blockers:** None; commit identity is an intentional required gate.
-- **Next:** Commit the tracked implementation, then run the sealed Preview
-  tournament with a new UTC cutoff/run ID. Record only diagnostics if either
-  family fails selection or the winner fails locked 2025; otherwise rerun the
-  same stamp byte-identically and close Phase 3.
+  after the frozen historical gate failure.
+- **Blockers:** Frozen historical gates failed; Phase 4 is blocked.
+- **Next:** A future, separately approved Phase 3 candidate identity is
+  required. Do not tune or retry v1/v2 after their outcome reports.
 
 ## Context and Decisions
 
@@ -23,8 +20,8 @@
 - v2 uses a shared pregame two-side score frame and selects one complete family
   for both derived targets. It preserves V4 as an unchanged, paired benchmark
   and preserves `source_kind` through evaluation.
-- The 2026 output is explicitly a post-cutoff dry run. Any actual fields are
-  cleared before prediction serialization, so it is not prospective evidence.
+- The 2026 output would have been a post-cutoff dry run, with any actual fields
+  cleared before serialization. No such output was published.
 
 ## Work Completed
 
@@ -41,6 +38,18 @@
   write boundaries.
 - Created the v2 implementation contract and updated rating roadmap,
   requirements, and plan index authority.
+- Committed the implementation as `a7c9cc5c8093b7d4db4399a7337e69f368cf1bf4`.
+- The first materialization detected a mechanical defect: fitting checked
+  frozen signs after optimization rather than constraining them. Added a
+  regression test, committed bounded optimization as
+  `ea0d3ac65261c72b5c0ee325c3b22ee2aab9a144`, and used a fresh run ID.
+- The corrected sealed selection report is
+  `artifacts/research/rating-successor/score-tournament-v2/9131f094dd90f2acc902fd8d0b972cd47c0e08263b769f425942b09d331331af/runs/2026-08-26T0322Z-phase3-score-v2/tournament.json`
+  (SHA-256 `0e391d8c2d48b3252bd9a7b2e13c184a75ca2bd1457d0a9cded632339edb620c`).
+  Linear failed total bias/standardized-residual mean; NB2 failed required
+  margin and total uncertainty/calibration gates. No winner was selected, so
+  locked 2025, final refit, dry run, model, prediction, and candidate writes
+  did not occur.
 
 ## Files Modified
 
@@ -68,15 +77,15 @@
 
 ## Amendments and Blockers
 
-None. The commit-before-materialization gate is deliberate and not a blocker.
+The bounded-fit correction was a mechanical contract remediation. It preserved
+the frozen equations, inputs, thresholds, and selection rule.
 
 ## Handoff Notes
 
-- **Resume at:** Create the user-controlled commit, use its full SHA as
-  `--expected-code-sha`, then run the v2 CLI against the exact certified
-  Preview refs.
-- **Watch out for:** Do not invoke production storage; do not alter the frozen
-  equations, inputs, gates, or candidate rule after seeing tournament results;
-  never treat the 2026 dry run as protected prospective evidence.
+- **Resume at:** Return to Sol planning for a new candidate identity only if
+  separately authorized.
+- **Watch out for:** Do not invoke production storage; do not alter or retry
+  v1/v2 after seeing their outcome reports; Phase 4 remains blocked and no
+  2026 protected evidence was consumed.
 
 **tags:** ["ratings", "phase3", "nb2", "research", "preview"]

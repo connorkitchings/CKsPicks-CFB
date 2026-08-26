@@ -109,6 +109,32 @@ diagnostic evidence and retain `In Progress`.
 - [ ] Plan is `Implemented` only after a passing candidate freeze; otherwise it
   remains `In Progress` and Phase 4 remains blocked.
 
+## Implementation Record — Sealed selection failure (2026-08-26)
+
+The first execution under run `2026-08-26T0318Z-phase3-score-v2` wrote only a
+diagnostic report because both fits detected sign violations after fitting.
+This was a mechanical contract defect: frozen direction bounds were checked but
+not enforced during optimization. Commit
+`ea0d3ac65261c72b5c0ee325c3b22ee2aab9a144` corrected only that behavior with
+bounded linear and NB2 optimization plus a regression test; it did not change
+equations, inputs, selection, chronology, or gates.
+
+The permitted fresh run used that commit, cutoff `2026-08-26T03:22:08Z`, and
+run `2026-08-26T0322Z-phase3-score-v2`. Its immutable selection diagnostic is
+at
+`artifacts/research/rating-successor/score-tournament-v2/9131f094dd90f2acc902fd8d0b972cd47c0e08263b769f425942b09d331331af/runs/2026-08-26T0322Z-phase3-score-v2/tournament.json`
+with SHA-256
+`0e391d8c2d48b3252bd9a7b2e13c184a75ca2bd1457d0a9cded632339edb620c`.
+
+Both candidates retained complete paired V4 coverage (2,236 rows per target)
+and passed pooled/seasonal error checks. Linear scores passed every margin gate
+but failed total bias (7.757) and standardized-residual mean (0.446). NB2
+failed margin 80% coverage (91.19%) and residual SD (0.739); its total also
+failed bias (8.645), standardized mean (0.370), residual SD (0.735), and 95%
+coverage (99.02%). No candidate was selected; no locked-2025 confirmation ran;
+and no model, prediction, or candidate-manifest ref exists. This plan remains
+`In Progress`, and Phase 4 remains blocked.
+
 ## Amendments
 
 None.

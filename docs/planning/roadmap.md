@@ -151,11 +151,11 @@ failed gate cannot be bypassed for schedule reasons.
   ([completion contract](../plans/2026-08-24/phase1-phase2-completion.md));
   Preview state artifacts pass all audit gates with byte-identical reruns.
 - [Phase 3 score-model tournament v2](../plans/2026-08-25/phase3-score-model-tournament-v2.md)
-  — In Progress. The v1 structured margin/total baseline is immutable failed
-  research: it had full paired V4 coverage but failed the pre-registered
-  uncertainty and total-bias gates. v2 is a distinct sealed linear-versus-NB2
-  team-score candidate; it must pass expanding selection and one locked-2025
-  confirmation before any candidate can freeze or Phase 4 can begin.
+  — In Progress. v1 is immutable failed research. v2 completed its sealed
+  linear-versus-NB2 selection after one mechanical bounded-fit correction, but
+  neither complete family passed every frozen gate. Only the immutable
+  diagnostic exists; no candidate froze, locked-2025 confirmation ran, or
+  Phase 4 work may begin.
 
 ## Invariants and open decisions
 
