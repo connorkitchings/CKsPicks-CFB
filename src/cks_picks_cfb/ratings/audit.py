@@ -322,6 +322,7 @@ def build_rating_audit_report(
             "quality_flag_counts": (
                 build_audit.get("quality_flag_counts", {}) if build_audit else {}
             ),
+            "score_reconciliation": reconciliation,
             "excluded_games": (
                 build_audit.get("excluded_games", []) if build_audit else []
             ),

@@ -100,3 +100,11 @@ rather than the required reconstructed cumulative maximum. The score stream is
 now audited against each team's maximum cumulative score; regressions remain
 quarantined independently. A focused regression test covers this distinction.
 No equation, parent, threshold, selection rule, or candidate identity changed.
+
+### Amendment 2 — Reconciliation audit evidence (2026-08-26)
+
+The first successful corrected v3 run passed the reconciliation gate but its
+audit report retained only the boolean result, not the required per-season
+rates. The report now serializes the already-computed immutable
+`score_reconciliation` evidence. This is a reporting-lineage correction only;
+it does not alter measurement values, gating, parents, or selection policy.

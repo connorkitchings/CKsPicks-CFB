@@ -79,6 +79,12 @@ cumulative maximum). The local correction now reproduces the expected 2021
 rate of `0.9494535519125683`; it will be committed and retried under a fresh
 run ID without changing parents, thresholds, or model design.
 
+The resulting corrected build passed all gates but omitted the per-season
+reconciliation values from its report body. A second mechanical audit-lineage
+correction serializes those precomputed values before the authoritative
+materialization and deterministic rerun. The intermediate passing refs remain
+immutable research evidence and are not promoted as the final v3 authority.
+
 ## Handoff Notes
 
 - **Resume at:** Commit the staged Phase 1 v3 code/configuration, obtain the

@@ -179,6 +179,11 @@ def test_cli_v3_true_ppso_builds_new_schemas_and_is_idempotent(tmp_path, capsys)
     report = json.loads(storage.read_bytes(f"{prefix}/audit/report.json"))
     assert report["checks"]["score_stream_reconciliation_ok"] is True
     assert report["checks"]["ppso_terminal_means_ok"] is True
+    assert report["observations"]["score_reconciliation"]
+    assert all(
+        values["exact_rate"] >= 0.94
+        for values in report["observations"]["score_reconciliation"].values()
+    )
     observations_ref = DatasetRef(
         **json.loads(storage.read_bytes(f"{prefix}/observations/ref.json"))
     )
