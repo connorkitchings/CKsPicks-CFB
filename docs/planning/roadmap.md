@@ -157,9 +157,12 @@ failed gate cannot be bypassed for schedule reasons.
   diagnostic exists; no candidate froze, locked-2025 confirmation ran, or
   Phase 4 work may begin.
 - [True-PPSO Phase 1/2 remediation and Phase 3 v3](../plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
-  — In Progress. Phase 1 v3 is certified. Phase 2 v2 uses representative
-  normal-coverage location gates before refreshed foundation certification and
-  a sealed v3 tournament; Phase 4 remains blocked.
+  — Implemented 2026-08-26. Phase 1 v3 is certified, Phase 2 v2 passed its
+  representative location gates and byte-identical rerun, and the sealed v3
+  tournament froze `negative_binomial_scores` as candidate v1 (locked-2025:
+  margin MAE 13.30 vs V4 15.52 with positive paired lift; total at parity; all
+  calibration gates true). Phase 4 shadow operations are the next gated
+  contract; no production interface changed.
 
 ## Invariants and open decisions
 

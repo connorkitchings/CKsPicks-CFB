@@ -1,6 +1,6 @@
 # Phase 1/2 True-PPSO Remediation and Phase 3 v3 Tournament
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-26
 - **Planner:** Sol (user-approved remediation plan)
 - **Approval source:** User explicitly authorized implementation on 2026-08-26;
@@ -87,12 +87,12 @@ writes only its diagnostic evaluation and leaves Phase 3 in progress.
 ## Definition of Done
 
 - [x] Phase 1 v3 artifacts and a byte-identical rerun pass all gates.
-- [ ] Phase 2 v2 artifacts and a byte-identical rerun pass all gates.
-- [ ] Phase 3 v3 either freezes a passing candidate with rerun evidence, or
-  records its immutable diagnostic and remains in progress.
-- [ ] Authority docs, measurement catalog, roadmap, requirements, plan index,
-  and session logs name exact refs, checksums, metrics, and eligibility.
-- [ ] Phase 4 is described as plan-eligible only after a passing v3 candidate.
+- [x] Phase 2 v2 artifacts and a byte-identical rerun pass all gates.
+- [x] Phase 3 v3 either freezes a passing candidate with rerun evidence, or
+      records its immutable diagnostic and remains in progress.
+- [x] Authority docs, measurement catalog, roadmap, requirements, plan index,
+      and session logs name exact refs, checksums, metrics, and eligibility.
+- [x] Phase 4 is described as plan-eligible only after a passing v3 candidate.
 
 ## Amendments
 
@@ -127,3 +127,33 @@ are visible diagnostics. No state equation or Phase 3 selection rule changed.
 Direct score-stream conversion, field-goal, scoreless-drive, and
 normal-coverage location tests are required. A refreshed foundation review
 must certify Phase 1 v3 and Phase 2 v2 lineage before Phase 3 v3 reads outcomes.
+
+### Amendment 5 — Phase 2 v2 rerun evidence and Phase 3 v3 freeze (2026-08-26)
+
+Phase 2 v2 satisfied its same-stamp rerun requirement from a detached worktree
+at the recorded code commit `ea00bbf` (the ratings package advanced after that
+commit, so the main worktree could not reproduce the identity). The rerun used
+the original as-of `2026-08-26T14:04:00Z` and identical output URIs; every
+immutable write no-oped byte-for-byte, the stored audit report SHA-256 is
+`574d0c1a182571f1e89df106745e2d2ceb4a10f0f5f2837361d0b035924ca1da`, and lake
+versions `50c4002b72ed93a9a7ff9f7a` (measurement states) and
+`5237dcb3fdd14c4435d2f050` (team states) were unchanged. No equation, gate,
+parent, or artifact changed.
+
+Phase 3 v3 then materialized from code commit `c4c5cfb` at cutoff
+`2026-08-26T15:02:00Z` (run
+`artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/`).
+Linear scores failed complete-family selection with non-positive score means;
+`negative_binomial_scores` passed sealed 2022–2024 selection (mean V4 MAE
+ratio `0.9116`), passed the unchanged locked-2025 confirmation on 1,522 fully
+V4-paired games (margin MAE `13.2985` vs V4 `15.5197`, paired lift 95% CI
+`[1.585, 2.818]`; total MAE `13.4145` vs V4 `13.3927`, lift CI `[-0.568,
+0.567]`; all bias/standardization/interval gates true), and refit unchanged on
+2021–2025. Frozen artifacts: tournament SHA-256
+`f71a0f437bf9156670fadd44e5dba6b42f56f8f63f666b682c389da37dfa54bd`, models
+ref `rating_score_models_v3` version `071f4de17b4b351e74e0a670`
+(`b941a173…`), predictions ref `rating_score_predictions_v3` version
+`75e9a9cc7e942823bde56a2a` (`226931b6…`), and the candidate manifest
+declaring `earliest_eligible_prospective_window` as the 2026 Week 1
+normal-coverage slate. The 2026 output is dry-run only with nulled outcomes.
+Phase 4 shadow operations are now plan-eligible under a fresh Sol contract.

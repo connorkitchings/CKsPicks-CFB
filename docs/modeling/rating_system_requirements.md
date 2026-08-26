@@ -114,6 +114,22 @@ failed total calibration, while NB2 failed required uncertainty/calibration
 gates. The immutable diagnostic is evidence only; no candidate or operational
 shadow artifact exists.
 
+The passing successor is the sealed
+[Phase 3 v3 tournament](../plans/2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+on the true-PPSO Phase 1 v3 and Phase 2 v2 foundation. Linear scores failed
+complete-family selection (non-positive score means); `negative_binomial_scores`
+passed the 2022–2024 sealed selection and the unchanged locked-2025
+confirmation on 1,522 fully V4-paired games — margin MAE `13.30` vs V4 `15.52`
+with paired-lift 95% CI `[1.59, 2.82]`, total MAE `13.41` vs V4 `13.39` at
+parity, and every bias/standardization/interval gate true — then refit
+unchanged on 2021–2025. Candidate v1 identity: design
+`503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe`, code
+`c4c5cfb`, models ref `071f4de17b4b351e74e0a670`, predictions ref
+`75e9a9cc7e942823bde56a2a`, tournament SHA-256
+`f71a0f437bf9156670fadd44e5dba6b42f56f8f63f666b682c389da37dfa54bd`. The
+candidate is frozen: it must not be tuned on any outcome it later claims as
+protected, and Phase 4 shadow operations require a fresh approved contract.
+
 ### Data and lineage
 
 - Use immutable Bronze/Silver/Gold lineage, stable team/game keys, and strict
