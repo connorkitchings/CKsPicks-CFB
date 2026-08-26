@@ -15,19 +15,57 @@ from scripts.pipeline import build_rating_measurements as cli
 from scripts.pipeline import build_rating_team_states as state_cli
 
 CONFIG_PATH = "conf/ratings/measurement_baseline_v1.yaml"
+V3_CONFIG_PATH = "conf/ratings/measurement_baseline_v3.yaml"
 
 
 def _seed_parents(storage: LocalStorage) -> dict[str, list[str]]:
     return stage_rating_parents(storage, multi_season_league())
 
 
-def _argv(storage_uris, tmp_path: Path, design_id: str, as_of=None) -> list[str]:
-    prefix = f"artifacts/research/rating-successor/measurements/{design_id}"
+def _seed_true_ppso_parents(storage: LocalStorage) -> dict[str, list[str]]:
+    """Stage historical parents with one reconciled 7-3 score stream per game."""
+    league = multi_season_league()
+    for game in league["games"].itertuples(index=False):
+        if game.season not in (2021, 2022, 2023, 2024, 2025):
+            continue
+        game_mask = (league["byplay"]["season"] == game.season) & (
+            league["byplay"]["game_id"] == game.game_id
+        )
+        rows = (
+            league["byplay"]
+            .loc[game_mask]
+            .sort_values(["drive_number", "quarter", "play_number"], kind="mergesort")
+        )
+        for row in rows.itertuples():
+            is_home = row.offense == game.home_team
+            final_play = (
+                row.play_number
+                == rows[rows["drive_number"] == row.drive_number]["play_number"].max()
+            )
+            league["byplay"].loc[row.Index, "offense_score"] = (
+                7 if is_home and final_play else 3 if final_play else 0
+            )
+            league["byplay"].loc[row.Index, "defense_score"] = 0 if is_home else 7
+        outcome_mask = (league["outcomes"]["season"] == game.season) & (
+            league["outcomes"]["game_id"] == game.game_id
+        )
+        league["outcomes"].loc[outcome_mask, ["home_points", "away_points"]] = [7, 3]
+    return stage_rating_parents(storage, league)
+
+
+def _argv(
+    storage_uris,
+    tmp_path: Path,
+    design_id: str,
+    as_of=None,
+    config_path: str = CONFIG_PATH,
+) -> list[str]:
+    prefix = f"{load_measurement_config(config_path).research_prefix}/{design_id}"
     argv = [
         "--environment",
         "preview",
         "--measurement-config",
-        CONFIG_PATH,
+        config_path,
         "--as-of",
         as_of or AS_OF.isoformat(),
     ]
@@ -124,6 +162,27 @@ def test_cli_rerun_is_idempotent(seeded_storage, capsys):
     assert first["observations_ref"] == second["observations_ref"]
     assert first["snapshots_ref"] == second["snapshots_ref"]
     assert first["report_sha256"] == second["report_sha256"]
+
+
+def test_cli_v3_true_ppso_builds_new_schemas_and_is_idempotent(tmp_path, capsys):
+    storage = LocalStorage(tmp_path)
+    uris = _seed_true_ppso_parents(storage)
+    config = load_measurement_config(V3_CONFIG_PATH)
+    argv = _argv(uris, tmp_path, config.design_id, config_path=V3_CONFIG_PATH)
+    _run(storage, argv)
+    first = json.loads(capsys.readouterr().out)
+    _run(storage, argv)
+    second = json.loads(capsys.readouterr().out)
+    assert first["observations_ref"] == second["observations_ref"]
+    assert first["report_sha256"] == second["report_sha256"]
+    prefix = f"{config.research_prefix}/{config.design_id}"
+    report = json.loads(storage.read_bytes(f"{prefix}/audit/report.json"))
+    assert report["checks"]["score_stream_reconciliation_ok"] is True
+    assert report["checks"]["ppso_terminal_means_ok"] is True
+    observations_ref = DatasetRef(
+        **json.loads(storage.read_bytes(f"{prefix}/observations/ref.json"))
+    )
+    assert observations_ref.schema_version == "rating_measurement_observations_v3"
 
 
 def test_cli_report_collision_fails_loudly(seeded_storage):

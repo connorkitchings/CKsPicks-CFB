@@ -18,6 +18,7 @@ from cks_picks_cfb.ratings.contracts import load_measurement_config
 from cks_picks_cfb.ratings.observations import build_measurement_observations
 
 CONFIG = load_measurement_config("conf/ratings/measurement_baseline_v1.yaml")
+V3_CONFIG = load_measurement_config("conf/ratings/measurement_baseline_v3.yaml")
 
 
 def _build(league, **overrides):
@@ -35,6 +36,80 @@ def _build(league, **overrides):
     )
     kwargs.update(overrides)
     return build_measurement_observations(**kwargs)
+
+
+def _score_stream_league():
+    """One fully reconciled game with 7 and 3 true drive points."""
+    byplay = pd.DataFrame(
+        [
+            play_row(
+                game_id=1,
+                drive_number=1,
+                play_number=1,
+                offense="Alpha",
+                defense="Beta",
+                offense_score=0,
+                defense_score=0,
+            ),
+            play_row(
+                game_id=1,
+                drive_number=1,
+                play_number=2,
+                offense="Alpha",
+                defense="Beta",
+                offense_score=7,
+                defense_score=0,
+            ),
+            play_row(
+                game_id=1,
+                drive_number=2,
+                play_number=1,
+                offense="Beta",
+                defense="Alpha",
+                offense_score=0,
+                defense_score=7,
+            ),
+            play_row(
+                game_id=1,
+                drive_number=2,
+                play_number=2,
+                offense="Beta",
+                defense="Alpha",
+                offense_score=3,
+                defense_score=7,
+            ),
+        ]
+    )
+    return {
+        "byplay": byplay,
+        "drives": pd.DataFrame(
+            [
+                drive_row(
+                    drive_number=1,
+                    offense="Alpha",
+                    defense="Beta",
+                    points=1,
+                    points_on_opps=1,
+                ),
+                drive_row(
+                    drive_number=2,
+                    offense="Beta",
+                    defense="Alpha",
+                    points=1,
+                    points_on_opps=1,
+                ),
+            ]
+        ),
+        "games": pd.DataFrame([game_row()]),
+        "outcomes": pd.DataFrame([outcome_row(home_points=7, away_points=3)]),
+        "reconciled_team_game": pd.DataFrame(
+            [reconciled_row(team="Alpha"), reconciled_row(team="Beta")]
+        ),
+    }
+
+
+def _build_v3(league):
+    return _build(league, config=V3_CONFIG)
 
 
 def test_eligible_game_yields_every_measurement_role_and_side():
@@ -95,6 +170,83 @@ def test_exact_numerators_and_denominators():
     assert alpha.loc["points_per_scoring_opportunity", "denominator"] == 1
     assert alpha.loc["average_start_field_position", "numerator"] == 25
     assert alpha.loc["average_start_field_position", "raw_value"] == pytest.approx(25.0)
+
+
+def test_v3_ppso_uses_score_stream_not_boolean_scoring_events():
+    result = _build_v3(_score_stream_league())
+    ppso = result.frame[
+        result.frame["measurement_id"] == "points_per_scoring_opportunity"
+    ].set_index(["team", "unit_role"])
+    assert ppso.loc[("Alpha", "offense"), "raw_value"] == 7.0
+    assert ppso.loc[("Beta", "defense"), "raw_value"] == 7.0
+    assert ppso.loc[("Beta", "offense"), "raw_value"] == 3.0
+    assert ppso.loc[("Alpha", "defense"), "raw_value"] == 3.0
+    assert result.audit["score_reconciliation"][2025]["exact_rate"] == 1.0
+
+
+def test_v3_score_stream_mismatch_quarantines_offense_and_paired_defense():
+    league = _score_stream_league()
+    league["outcomes"].loc[0, "home_points"] = 10
+    result = _build_v3(league).frame
+    ppso = result[
+        result["measurement_id"] == "points_per_scoring_opportunity"
+    ].set_index(["team", "unit_role"])
+    for key in (("Alpha", "offense"), ("Beta", "defense")):
+        assert ppso.loc[key, "coverage_status"] == "missing"
+        assert ppso.loc[key, "missing_reason"] == "score_stream_mismatch"
+        assert "score_stream_mismatch" in ppso.loc[key, "quality_flags"]
+    for key in (("Beta", "offense"), ("Alpha", "defense")):
+        assert ppso.loc[key, "coverage_status"] == "observed"
+
+
+def test_v3_invalid_drive_points_are_quarantined_without_clipping():
+    league = _score_stream_league()
+    alpha_last = (league["byplay"]["offense"] == "Alpha") & (
+        league["byplay"]["play_number"] == 2
+    )
+    league["byplay"].loc[alpha_last, "offense_score"] = 9
+    league["byplay"].loc[league["byplay"]["defense"] == "Alpha", "defense_score"] = 9
+    league["outcomes"].loc[0, "home_points"] = 9
+    result = _build_v3(league).frame
+    alpha = result[
+        (result["team"] == "Alpha")
+        & (result["unit_role"] == "offense")
+        & (result["measurement_id"] == "points_per_scoring_opportunity")
+    ].iloc[0]
+    assert alpha["missing_reason"] == "score_stream_mismatch"
+    assert alpha["raw_value"] is None or pd.isna(alpha["raw_value"])
+
+
+def test_v3_rejects_nonfinite_score_stream_values():
+    league = _score_stream_league()
+    league["byplay"]["offense_score"] = league["byplay"]["offense_score"].astype(
+        float
+    )
+    league["byplay"].loc[0, "offense_score"] = float("inf")
+    result = _build_v3(league).frame
+    alpha = result[
+        (result["team"] == "Alpha")
+        & (result["unit_role"] == "offense")
+        & (result["measurement_id"] == "points_per_scoring_opportunity")
+    ].iloc[0]
+    assert alpha["missing_reason"] == "score_stream_mismatch"
+
+
+def test_v3_changes_only_ppso_values_and_schema_lineage():
+    league = _score_stream_league()
+    v2 = _build(league).frame
+    v3 = _build_v3(league).frame
+    keys = ["season", "game_id", "team", "measurement_id", "unit_role"]
+    other = v2[v2["measurement_id"] != "points_per_scoring_opportunity"].merge(
+        v3[v3["measurement_id"] != "points_per_scoring_opportunity"],
+        on=keys,
+        suffixes=("_v2", "_v3"),
+    )
+    for column in ("numerator", "denominator", "raw_value", "coverage_status"):
+        assert other[f"{column}_v2"].equals(other[f"{column}_v3"])
+    assert set(v3["measurement_schema_version"]) == {
+        "rating_measurement_observations_v3"
+    }
 
 
 def test_garbage_and_non_drive_plays_are_ineligible():

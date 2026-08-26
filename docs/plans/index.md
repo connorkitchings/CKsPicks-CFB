@@ -28,6 +28,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contract
 
+- [Phase 1/2 true-PPSO remediation and Phase 3 v3 tournament](2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
+  — In Progress. It preserves Phase 1 v2, Phase 2 v1, and Phase 3 v1/v2 as
+  immutable research history while it repairs the upstream PPSO unit mismatch.
 - [Phase 3 v2 sealed team-score tournament](2026-08-25/phase3-score-model-tournament-v2.md)
   — In Progress. It supersedes neither the Phase 3 v1 diagnostic nor its failed
   research history. Its sealed selection failed all-family gates; a future,

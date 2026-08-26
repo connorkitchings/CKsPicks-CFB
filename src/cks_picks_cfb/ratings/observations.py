@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
-    OBSERVATION_SCHEMA_VERSION,
     MeasurementConfig,
     MeasurementContractError,
     assert_no_market_fields,
@@ -34,6 +34,11 @@ _BYPLAY_REQUIRED = (
     "yards_gained",
     "turnover",
 )
+_TRUE_PPSO_BYPLAY_REQUIRED = (
+    "quarter",
+    "offense_score",
+    "defense_score",
+)
 _DRIVES_REQUIRED = (
     "season",
     "week",
@@ -53,6 +58,163 @@ _NON_COUNT_PLAY_TYPES = ("Timeout", "Uncategorized", "placeholder", "End Period"
 class ObservationBuildResult:
     frame: pd.DataFrame
     audit: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class _TruePpsoBuild:
+    drive_points: pd.DataFrame
+    invalid_offenses: set[tuple[int, int, str]]
+    reconciliation: dict[int, dict[str, float | int]]
+
+
+def _true_drive_points(
+    *,
+    byplay: pd.DataFrame,
+    games: pd.DataFrame,
+    outcomes: pd.DataFrame,
+) -> _TruePpsoBuild:
+    """Reconstruct drive points only from the canonical play score stream.
+
+    ``game_outcomes`` is intentionally used only to audit each team's final
+    score. It never supplies a numerator or substitutes for a malformed play
+    score. A bad team-side score stream invalidates every PPSO observation fed
+    by that offense, including its paired opponent-defense observation.
+    """
+    required_outcomes = ("home_points", "away_points")
+    _require_columns(byplay, _TRUE_PPSO_BYPLAY_REQUIRED, "byplay")
+    _require_columns(outcomes, required_outcomes, "outcomes")
+    if outcomes.duplicated(["season", "game_id"]).any():
+        raise MeasurementContractError("outcomes parent contains duplicate game keys")
+    if byplay.empty:
+        return _TruePpsoBuild(
+            drive_points=pd.DataFrame(
+                columns=["season", "game_id", "drive_number", "offense", "true_points"]
+            ),
+            invalid_offenses=set(),
+            reconciliation={},
+        )
+
+    ordered = byplay.copy()
+    for column in ("season", "game_id", "drive_number", "quarter", "play_number"):
+        ordered[column] = pd.to_numeric(ordered[column], errors="coerce")
+    ordered = ordered.sort_values(
+        ["season", "game_id", "drive_number", "quarter", "play_number"],
+        kind="mergesort",
+    ).reset_index(drop=True)
+    ordered["_row_order"] = ordered.groupby(["season", "game_id"]).cumcount()
+
+    score_events = pd.concat(
+        [
+            ordered[
+                ["season", "game_id", "_row_order", "offense", "offense_score"]
+            ].rename(columns={"offense": "team", "offense_score": "score"}),
+            ordered[
+                ["season", "game_id", "_row_order", "defense", "defense_score"]
+            ].rename(columns={"defense": "team", "defense_score": "score"}),
+        ],
+        ignore_index=True,
+    ).sort_values(["season", "game_id", "team", "_row_order"], kind="mergesort")
+    score_events["score"] = pd.to_numeric(score_events["score"], errors="coerce")
+    score_events["previous_score"] = (
+        score_events.groupby(["season", "game_id", "team"])["score"]
+        .shift(1)
+        .fillna(0.0)
+    )
+    integral = score_events["score"].map(np.isfinite) & (
+        score_events["score"] == score_events["score"].round()
+    )
+    valid_score = integral & (score_events["score"] >= 0)
+    regressed = valid_score & (score_events["score"] < score_events["previous_score"])
+    invalid_events = score_events[~valid_score | regressed]
+    invalid_offenses: set[tuple[int, int, str]] = {
+        (int(row.season), int(row.game_id), str(row.team))
+        for row in invalid_events[["season", "game_id", "team"]].itertuples(index=False)
+        if pd.notna(row.season) and pd.notna(row.game_id)
+    }
+
+    # Every source row has both team scores, so the pre-drive state is the
+    # previous score observed for that offense and the drive end is its score
+    # on the final ordered play of that drive.
+    offense_events = score_events.rename(columns={"team": "offense"})[
+        ["season", "game_id", "_row_order", "offense", "score", "previous_score"]
+    ]
+    drive_rows = ordered.merge(
+        offense_events,
+        on=["season", "game_id", "_row_order", "offense"],
+        how="left",
+        validate="one_to_one",
+    )
+    drive_keys = ["season", "game_id", "drive_number", "offense"]
+    grouped = drive_rows.groupby(drive_keys, dropna=False, sort=False)
+    points = grouped.agg(
+        before=("previous_score", "first"),
+        after=("score", "last"),
+    ).reset_index()
+    points["true_points"] = points["after"] - points["before"]
+    valid_points = (
+        points["true_points"].map(np.isfinite)
+        & (points["true_points"] == points["true_points"].round())
+        & points["true_points"].between(0, 8)
+    )
+    for row in points.loc[~valid_points, drive_keys].itertuples(index=False):
+        if pd.notna(row.season) and pd.notna(row.game_id):
+            invalid_offenses.add((int(row.season), int(row.game_id), str(row.offense)))
+
+    schedule = games.set_index(["season", "game_id"])[["home_team", "away_team"]]
+    final_scores = (
+        score_events.sort_values(["season", "game_id", "team", "_row_order"])
+        .groupby(["season", "game_id", "team"], sort=False)["score"]
+        .last()
+        .to_dict()
+    )
+    outcome_index = outcomes.set_index(["season", "game_id"])[
+        ["home_points", "away_points"]
+    ]
+    reconciliation: dict[int, dict[str, float | int]] = {}
+    for (season, game_id), teams in schedule.iterrows():
+        if (season, game_id) not in outcome_index.index:
+            continue
+        outcome = outcome_index.loc[(season, game_id)]
+        expected = {
+            str(teams.home_team): outcome.home_points,
+            str(teams.away_team): outcome.away_points,
+        }
+        season_audit = reconciliation.setdefault(
+            int(season),
+            {"exact_team_scores": 0, "expected_team_scores": 0, "exact_rate": 0.0},
+        )
+        for team, outcome_score in expected.items():
+            season_audit["expected_team_scores"] = (
+                int(season_audit["expected_team_scores"]) + 1
+            )
+            observed_score = final_scores.get((season, game_id, team))
+            outcome_numeric = pd.to_numeric(
+                pd.Series([outcome_score]), errors="coerce"
+            ).iloc[0]
+            exact = (
+                pd.notna(observed_score)
+                and pd.notna(outcome_numeric)
+                and np.isfinite(observed_score)
+                and np.isfinite(outcome_numeric)
+                and float(observed_score) == float(outcome_numeric)
+            )
+            if exact:
+                season_audit["exact_team_scores"] = (
+                    int(season_audit["exact_team_scores"]) + 1
+                )
+            else:
+                invalid_offenses.add((int(season), int(game_id), team))
+    for values in reconciliation.values():
+        expected = int(values["expected_team_scores"])
+        values["exact_rate"] = (
+            float(values["exact_team_scores"]) / expected if expected else 0.0
+        )
+
+    return _TruePpsoBuild(
+        drive_points=points.loc[valid_points, drive_keys + ["true_points"]].copy(),
+        invalid_offenses=invalid_offenses,
+        reconciliation=reconciliation,
+    )
 
 
 def _require_columns(
@@ -142,6 +304,9 @@ def build_measurement_observations(
     ):
         _require_columns(frame, required, label)
         assert_no_market_fields(frame.columns, context=f"{label} parent columns")
+    if config.uses_true_ppso:
+        _require_columns(byplay, _TRUE_PPSO_BYPLAY_REQUIRED, "byplay")
+        _require_columns(outcomes, ("home_points", "away_points"), "outcomes")
 
     games = games.copy()
     if games.duplicated(["season", "game_id"]).any():
@@ -266,6 +431,28 @@ def build_measurement_observations(
         )
     ].copy()
 
+    true_ppso = (
+        _true_drive_points(
+            byplay=byplay,
+            games=games[
+                games.apply(
+                    lambda row: (int(row["season"]), int(row["game_id"]))
+                    in eligible_ids,
+                    axis=1,
+                )
+            ],
+            outcomes=outcomes,
+        )
+        if config.uses_true_ppso
+        else None
+    )
+    if true_ppso is not None:
+        audit["score_reconciliation"] = true_ppso.reconciliation
+        if true_ppso.invalid_offenses:
+            audit["quality_flag_counts"]["score_stream_mismatch"] = len(
+                true_ppso.invalid_offenses
+            )
+
     byplay["is_drive_play"] = _derive_is_drive_play(byplay)
     garbage = pd.to_numeric(byplay["garbage"], errors="coerce")
     byplay["eligible"] = (byplay["is_drive_play"] == 1) & (garbage == 0)
@@ -365,14 +552,36 @@ def build_measurement_observations(
         start_sum=("start_own_goal_distance", "sum"),
         drives_count=("start_own_goal_distance", "size"),
     )
-    opportunities_off = drives[drives["scoring_opportunity"]]
+    opportunities_off = drives[drives["scoring_opportunity"]].copy()
+    if true_ppso is not None:
+        opportunities_off = opportunities_off.merge(
+            true_ppso.drive_points,
+            on=["season", "game_id", "drive_number", "offense"],
+            how="left",
+        )
+        opportunities_off["ppso_valid"] = opportunities_off.apply(
+            lambda row: (int(row["season"]), int(row["game_id"]), str(row["offense"]))
+            not in true_ppso.invalid_offenses
+            and pd.notna(row["true_points"]),
+            axis=1,
+        )
+        opportunities_off = opportunities_off[opportunities_off["ppso_valid"]]
+        ppso_invalid_offenses = true_ppso.invalid_offenses
+    else:
+        ppso_invalid_offenses = set()
     opp_agg_off = opportunities_off.groupby(["season", "game_id", "offense"]).agg(
-        opp_points=("points_on_opps", "sum"),
-        opp_count=("points_on_opps", "size"),
+        opp_points=(
+            "true_points" if true_ppso is not None else "points_on_opps",
+            "sum",
+        ),
+        opp_count=("drive_number", "size"),
     )
     opp_agg_def = opportunities_off.groupby(["season", "game_id", "defense"]).agg(
-        opp_points=("points_on_opps", "sum"),
-        opp_count=("points_on_opps", "size"),
+        opp_points=(
+            "true_points" if true_ppso is not None else "points_on_opps",
+            "sum",
+        ),
+        opp_count=("drive_number", "size"),
     )
     drive_plays_off = eligible_drive_plays.groupby(
         ["season", "game_id", "offense"]
@@ -452,7 +661,22 @@ def build_measurement_observations(
                     numerator, denominator = _numerator_denominator(
                         spec.measurement_id, game["season"], game_id, team, role
                     )
-                    if denominator > 0:
+                    ppso_source = team if role == "offense" else opponent
+                    score_stream_mismatch = (
+                        spec.measurement_id == "points_per_scoring_opportunity"
+                        and (game["season"], game_id, ppso_source)
+                        in ppso_invalid_offenses
+                    )
+                    row_flags = list(flags)
+                    if score_stream_mismatch:
+                        row_flags.append("score_stream_mismatch")
+                    if score_stream_mismatch:
+                        numerator = 0.0
+                        denominator = 0.0
+                        coverage_status = "missing"
+                        missing_reason = "score_stream_mismatch"
+                        raw_value = None
+                    elif denominator > 0:
                         coverage_status = "observed"
                         missing_reason = None
                         raw_value = numerator / denominator
@@ -489,8 +713,10 @@ def build_measurement_observations(
                             "eligible_after": authentic_times.get(game_key),
                             "coverage_status": coverage_status,
                             "missing_reason": missing_reason,
-                            "quality_flags": ";".join(flags) if flags else None,
-                            "measurement_schema_version": OBSERVATION_SCHEMA_VERSION,
+                            "quality_flags": ";".join(sorted(set(row_flags)))
+                            if row_flags
+                            else None,
+                            "measurement_schema_version": config.observation_schema_version,
                             "measurement_design_id": config.design_id,
                             "parent_ref_shas": parent_ref_shas,
                             "code_sha": code_sha,

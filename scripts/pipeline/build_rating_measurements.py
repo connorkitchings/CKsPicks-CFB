@@ -41,11 +41,8 @@ from cks_picks_cfb.ratings.audit import build_rating_audit_report
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_DATASET,
-    OBSERVATION_SCHEMA_VERSION,
     SNAPSHOT_DATASET,
-    SNAPSHOT_SCHEMA_VERSION,
     TERMINAL_SNAPSHOT_DATASET,
-    TERMINAL_SNAPSHOT_SCHEMA_VERSION,
     load_measurement_config,
     validate_observation_frame,
     validate_snapshot_frame,
@@ -64,7 +61,6 @@ RELEVANT_CODE_PATHS = (
     "src/cks_picks_cfb/ratings",
     "src/cks_picks_cfb/data/schema_contracts.py",
     "scripts/pipeline/build_rating_measurements.py",
-    "conf/ratings/measurement_baseline_v1.yaml",
 )
 
 _OBSERVATION_SORT_KEYS = (
@@ -88,12 +84,15 @@ def _code_sha() -> str:
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
 
-def _require_committed_code(expected_code_sha: str | None = None) -> str:
+def _require_committed_code(
+    expected_code_sha: str | None = None, *, config_path: Path = DEFAULT_CONFIG
+) -> str:
     """Ensure materialized artifacts name a commit containing the relevant code."""
     code_sha = expected_code_sha or _code_sha()
     if code_sha == "unknown":
         raise ValueError("Rating artifacts require a resolvable Git commit SHA")
-    for path in RELEVANT_CODE_PATHS:
+    paths = RELEVANT_CODE_PATHS + (str(config_path.relative_to(REPO_ROOT)),)
+    for path in paths:
         tracked = subprocess.run(
             ["git", "ls-files", "--error-unmatch", path],
             capture_output=True,
@@ -104,7 +103,7 @@ def _require_committed_code(expected_code_sha: str | None = None) -> str:
         if tracked.returncode:
             raise ValueError(f"Rating artifact path is not committed: {path}")
     clean = subprocess.run(
-        ["git", "diff", "--quiet", code_sha, "--", *RELEVANT_CODE_PATHS],
+        ["git", "diff", "--quiet", code_sha, "--", *paths],
         capture_output=True,
         check=False,
         cwd=REPO_ROOT,
@@ -233,6 +232,7 @@ def _build_observations_season_scoped(
         "season_counts": {},
         "out_of_scope_season_games": {},
         "quality_flag_counts": {},
+        "score_reconciliation": {},
     }
     raw_input_rows: dict[str, dict[int, int]] = {"byplay": {}, "drives": {}}
     observation_rows_by_season: dict[int, int] = {}
@@ -298,6 +298,8 @@ def _build_observations_season_scoped(
             )
         for season_key, counts in audit.get("season_counts", {}).items():
             merged_audit["season_counts"][season_key] = counts
+        for season_key, reconciliation in audit.get("score_reconciliation", {}).items():
+            merged_audit["score_reconciliation"][season_key] = reconciliation
         for other_season, count in audit.get("out_of_scope_season_games", {}).items():
             merged_audit["out_of_scope_season_games"][other_season] = (
                 merged_audit["out_of_scope_season_games"].get(other_season, 0) + count
@@ -312,6 +314,22 @@ def _build_observations_season_scoped(
         ).reset_index(drop=True)
     else:
         combined = pd.DataFrame(columns=OBSERVATION_COLUMNS)
+    if config.uses_true_ppso:
+        missing = [
+            season
+            for season in config.historical_development_seasons
+            if season not in merged_audit["score_reconciliation"]
+        ]
+        failed = [
+            season
+            for season, values in merged_audit["score_reconciliation"].items()
+            if float(values["exact_rate"]) < 0.94
+        ]
+        if missing or failed:
+            raise ValueError(
+                "PPSO score reconciliation failed; missing seasons "
+                f"{missing}, below-94% seasons {sorted(failed)}"
+            )
     timings_ms["assemble"] = time.perf_counter() - started
 
     execution = {
@@ -431,7 +449,9 @@ def main(argv: list[str] | None = None) -> None:
 
     parent_refs = byplay_refs + drives_refs + games_refs + outcome_refs + team_game_refs
     parent_ref_shas = ";".join(ref.content_sha for ref in parent_refs)
-    code_sha = _require_committed_code(args.expected_code_sha)
+    code_sha = _require_committed_code(
+        args.expected_code_sha, config_path=Path(args.measurement_config).resolve()
+    )
     config_sha = config.design_id
 
     read_started = time.perf_counter()
@@ -475,7 +495,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config_sha,
             as_of=cutoff,
-            schema_version=OBSERVATION_SCHEMA_VERSION,
+            schema_version=config.observation_schema_version,
             tier="gold",
         ),
         records=observations.to_dict("records"),
@@ -515,7 +535,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config_sha,
             as_of=cutoff,
-            schema_version=SNAPSHOT_SCHEMA_VERSION,
+            schema_version=config.snapshot_schema_version,
             tier="gold",
         ),
         records=snapshot_build.frame.to_dict("records"),
@@ -558,7 +578,7 @@ def main(argv: list[str] | None = None) -> None:
             code_sha=code_sha,
             config_sha=config_sha,
             as_of=cutoff,
-            schema_version=TERMINAL_SNAPSHOT_SCHEMA_VERSION,
+            schema_version=config.terminal_snapshot_schema_version,
             tier="gold",
         ),
         records=terminal_build.frame.to_dict("records"),

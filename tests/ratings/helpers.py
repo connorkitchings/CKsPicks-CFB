@@ -15,6 +15,7 @@ def play_row(
     week=1,
     game_id=1,
     drive_number=1,
+    quarter=1,
     play_number=1,
     offense="Alpha",
     defense="Beta",
@@ -27,12 +28,15 @@ def play_row(
     success=1,
     yards_gained=5,
     turnover=0,
+    offense_score=0,
+    defense_score=0,
 ):
     return {
         "season": season,
         "week": week,
         "game_id": game_id,
         "drive_number": drive_number,
+        "quarter": quarter,
         "play_number": play_number,
         "offense": offense,
         "defense": defense,
@@ -45,6 +49,8 @@ def play_row(
         "success": success,
         "yards_gained": yards_gained,
         "turnover": turnover,
+        "offense_score": offense_score,
+        "defense_score": defense_score,
     }
 
 

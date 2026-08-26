@@ -71,6 +71,17 @@ def test_baseline_config_loads_with_frozen_catalog(config):
     assert config.temporal_status_for_season(2026) == "authentic"
 
 
+def test_true_ppso_v3_config_has_separate_artifact_contracts():
+    config = load_measurement_config("conf/ratings/measurement_baseline_v3.yaml")
+    assert config.uses_true_ppso is True
+    assert config.observation_schema_version == "rating_measurement_observations_v3"
+    assert config.snapshot_schema_version == "rating_adjusted_measurement_snapshots_v3"
+    assert (
+        config.terminal_snapshot_schema_version
+        == "rating_adjusted_measurement_terminal_snapshots_v2"
+    )
+
+
 def test_design_id_is_deterministic_and_content_addressed(config, tmp_path):
     raw = _baseline_raw(config)
     raw["adjustment"]["iterations"] = 5

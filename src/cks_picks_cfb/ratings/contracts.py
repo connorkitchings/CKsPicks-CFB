@@ -29,6 +29,11 @@ SNAPSHOT_DATASET = "rating_adjusted_measurement_snapshots"
 TERMINAL_SNAPSHOT_DATASET = "rating_adjusted_measurement_terminal_snapshots"
 
 BASELINE_CONFIG_VERSION = "measurement_baseline_v2"
+TRUE_PPSO_CONFIG_VERSION = "measurement_baseline_v3"
+SUPPORTED_CONFIG_VERSIONS = (
+    BASELINE_CONFIG_VERSION,
+    TRUE_PPSO_CONFIG_VERSION,
+)
 BASELINE_MEASUREMENT_IDS = (
     "epa_per_play",
     "success_rate",
@@ -51,6 +56,7 @@ SIDES = ("home", "away")
 OBSERVATION_MISSING_REASONS = (
     "zero_denominator",
     "source_evidence_missing",
+    "score_stream_mismatch",
 )
 SNAPSHOT_MISSING_REASONS = (
     "no_eligible_evidence",
@@ -228,6 +234,35 @@ class MeasurementConfig:
     raw_config: Mapping[str, Any]
 
     @property
+    def uses_true_ppso(self) -> bool:
+        """Whether the isolated v3 path reconstructs drive points from scores."""
+        return self.config_version == TRUE_PPSO_CONFIG_VERSION
+
+    @property
+    def observation_schema_version(self) -> str:
+        return (
+            "rating_measurement_observations_v3"
+            if self.uses_true_ppso
+            else OBSERVATION_SCHEMA_VERSION
+        )
+
+    @property
+    def snapshot_schema_version(self) -> str:
+        return (
+            "rating_adjusted_measurement_snapshots_v3"
+            if self.uses_true_ppso
+            else SNAPSHOT_SCHEMA_VERSION
+        )
+
+    @property
+    def terminal_snapshot_schema_version(self) -> str:
+        return (
+            "rating_adjusted_measurement_terminal_snapshots_v2"
+            if self.uses_true_ppso
+            else TERMINAL_SNAPSHOT_SCHEMA_VERSION
+        )
+
+    @property
     def known_seasons(self) -> tuple[int, ...]:
         return self.historical_development_seasons + self.protected_seasons
 
@@ -275,7 +310,7 @@ def load_measurement_config(path: str | Path) -> MeasurementConfig:
     raw = yaml.safe_load(Path(path).read_text())
     root = _require_mapping(raw, "root")
     config_version = root.get("measurement_config_version")
-    if config_version != BASELINE_CONFIG_VERSION:
+    if config_version not in SUPPORTED_CONFIG_VERSIONS:
         raise MeasurementContractError(
             f"Unsupported measurement config version: {config_version!r}"
         )
@@ -536,6 +571,20 @@ def validate_observation_frame(frame: pd.DataFrame, config: MeasurementConfig) -
             raise MeasurementContractError(
                 f"{label} measurement {measurement_id!r} has inconsistent exposure units"
             )
+    if set(frame["measurement_schema_version"].dropna().astype(str)) != {
+        config.observation_schema_version
+    }:
+        raise MeasurementContractError(
+            f"{label} must use schema {config.observation_schema_version!r}"
+        )
+    if config.uses_true_ppso:
+        ppso = frame[
+            (frame["measurement_id"] == "points_per_scoring_opportunity")
+            & (frame["coverage_status"] == "observed")
+        ]
+        values = pd.to_numeric(ppso["raw_value"], errors="coerce")
+        if ((values < 0) | (values > 8)).any():
+            raise MeasurementContractError(f"{label} PPSO values must be in [0, 8]")
 
 
 def validate_snapshot_frame(frame: pd.DataFrame, config: MeasurementConfig) -> None:
@@ -650,6 +699,12 @@ def validate_snapshot_frame(frame: pd.DataFrame, config: MeasurementConfig) -> N
         raise MeasurementContractError(
             f"{label} contains out-of-scope seasons: {sorted(unknown)}"
         )
+    if set(frame["measurement_schema_version"].dropna().astype(str)) != {
+        config.snapshot_schema_version
+    }:
+        raise MeasurementContractError(
+            f"{label} must use schema {config.snapshot_schema_version!r}"
+        )
 
 
 def validate_terminal_snapshot_frame(
@@ -659,6 +714,9 @@ def validate_terminal_snapshot_frame(
     renamed = frame.rename(columns={"terminal_at_utc": "as_of_kickoff_utc"}).copy()
     renamed["as_of_game_id"] = -1
     renamed["week"] = 99
+    # Terminal rows share all value semantics with pregame snapshots but carry
+    # their own immutable schema identity.
+    renamed["measurement_schema_version"] = config.snapshot_schema_version
     ordered = list(SNAPSHOT_COLUMNS)
     for column in ordered:
         if column not in renamed:
@@ -668,4 +726,11 @@ def validate_terminal_snapshot_frame(
     if frame.duplicated(list(TERMINAL_SNAPSHOT_KEYS)).any():
         raise MeasurementContractError(
             f"{TERMINAL_SNAPSHOT_DATASET} has duplicate keys"
+        )
+    if set(frame["measurement_schema_version"].dropna().astype(str)) != {
+        config.terminal_snapshot_schema_version
+    }:
+        raise MeasurementContractError(
+            f"{TERMINAL_SNAPSHOT_DATASET} must use schema "
+            f"{config.terminal_snapshot_schema_version!r}"
         )

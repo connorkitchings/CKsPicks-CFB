@@ -1,0 +1,95 @@
+measurement_config_version: measurement_baseline_v3
+catalog_version: 3
+description: >-
+  Phase 1/2 true-PPSO remediation. This isolated Preview-only catalog retains
+  every v2 measurement and adjustment rule, but derives scoring-opportunity
+  points from the canonical play score stream rather than Boolean scoring flags.
+
+eligible_play:
+  is_drive_play_rederived: true
+  requires_garbage_zero: true
+
+eligible_drive:
+  requires_eligible_play: true
+
+ppso_policy:
+  source: canonical_play_score_stream
+  order: [game_id, drive_number, quarter, play_number]
+  valid_drive_points: [0, 8]
+  exact_score_reconciliation_minimum: 0.94
+  terminal_role_mean_range: [2, 6]
+  score_stream_mismatch: quarantine_offense_and_paired_defense
+
+seasons:
+  historical_development: [2021, 2022, 2023, 2024, 2025]
+  protected: [2026]
+  forbidden: [2020]
+  out_of_scope: [2019]
+
+schedule_policy:
+  require_completed: true
+  excluded_statuses: [cancelled, canceled, postponed]
+  require_reconciled_team_game: true
+
+temporal_policy:
+  reconstructed_seasons: [2021, 2022, 2023, 2024, 2025]
+  authentic_seasons: [2026]
+  authentic_timestamp_columns: [effective_at, captured_at, observed_at, __captured_at]
+
+measurements:
+  - measurement_id: epa_per_play
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: sum of eligible-play PPA
+    denominator: eligible scrimmage plays
+  - measurement_id: success_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: successful eligible plays
+    denominator: eligible scrimmage plays
+  - measurement_id: explosive_rate_20
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: eligible plays gaining at least 20 yards
+    denominator: eligible scrimmage plays
+  - measurement_id: points_per_scoring_opportunity
+    source: canonical_play_score_stream
+    roles: [offense, defense]
+    exposure_unit: opportunities
+    adjustment: iterative_additive
+    numerator: team score after eligible scoring-opportunity drive minus score before it
+    denominator: eligible scoring-opportunity drives with reconciled score stream
+  - measurement_id: average_start_field_position
+    source: drives
+    roles: [offense, defense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: sum of own-goal distance at eligible drive start
+    denominator: eligible drives
+  - measurement_id: plays_per_drive
+    source: byplay
+    roles: [offense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: eligible scrimmage plays
+    denominator: eligible offensive drives
+  - measurement_id: turnover_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: none
+    numerator: eligible-play turnovers
+    denominator: eligible scrimmage plays
+
+adjustment:
+  method: iterative_additive_league_centered
+  iterations: 4
+  retained_iterations: [0, 4]
+
+research_prefix: artifacts/research/rating-successor/measurements-v3

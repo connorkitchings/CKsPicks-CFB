@@ -18,9 +18,7 @@ from cks_picks_cfb.ratings.contracts import (
     ADJUSTMENT_METHOD_ADJUSTED,
     ADJUSTMENT_METHOD_NONE,
     SNAPSHOT_COLUMNS,
-    SNAPSHOT_SCHEMA_VERSION,
     TERMINAL_SNAPSHOT_COLUMNS,
-    TERMINAL_SNAPSHOT_SCHEMA_VERSION,
     MeasurementConfig,
     MeasurementContractError,
     assert_no_market_fields,
@@ -475,7 +473,7 @@ def build_season_terminal_snapshots(
                     record.pop("as_of_game_id")
                     record.pop("week")
                     record["measurement_schema_version"] = (
-                        TERMINAL_SNAPSHOT_SCHEMA_VERSION
+                        config.terminal_snapshot_schema_version
                     )
                     records.append(record)
     frame = pd.DataFrame.from_records(records, columns=TERMINAL_SNAPSHOT_COLUMNS)
@@ -546,7 +544,7 @@ def _build_row(
         "coverage_status": "missing",
         "missing_reason": "no_eligible_evidence",
         "quality_flags": quality_flags,
-        "measurement_schema_version": SNAPSHOT_SCHEMA_VERSION,
+        "measurement_schema_version": config.snapshot_schema_version,
         "measurement_design_id": config.design_id,
         "parent_observation_version_id": parent_observation_version_id,
         "parent_ref_shas": parent_ref_shas,

@@ -185,6 +185,19 @@ def _check_no_double_counting(
     return True
 
 
+def _terminal_ppso_summary(terminal_snapshots: pd.DataFrame) -> dict[str, Any]:
+    """Report and validate v3's expected terminal PPSO football-unit range."""
+    rows = terminal_snapshots[
+        (terminal_snapshots["measurement_id"] == "points_per_scoring_opportunity")
+        & (terminal_snapshots["coverage_status"] == "observed")
+    ]
+    summary: dict[str, Any] = {}
+    for (season, role), group in rows.groupby(["season", "unit_role"]):
+        mean = float(pd.to_numeric(group["adjusted_value"], errors="coerce").mean())
+        summary[f"{int(season)}/{role}"] = {"mean": mean, "in_range": 2 <= mean <= 6}
+    return summary
+
+
 def build_rating_audit_report(
     *,
     observations: pd.DataFrame,
@@ -236,9 +249,9 @@ def build_rating_audit_report(
                 pd.to_numeric(reconciled_team_game["game_id"], errors="coerce"),
             )
         )
-        reconciliation_ok = observation_games.issubset(reconciled_pairs)
+        source_reconciliation_ok = observation_games.issubset(reconciled_pairs)
     else:
-        reconciliation_ok = True
+        source_reconciliation_ok = True
 
     market_conflicts = (
         market_field_conflicts(observations.columns)
@@ -274,6 +287,13 @@ def build_rating_audit_report(
         pd.to_numeric(terminal_snapshots["season"], errors="coerce")
         .dropna()
         .astype(int)
+    )
+    terminal_ppso = _terminal_ppso_summary(terminal_snapshots)
+    reconciliation = build_audit.get("score_reconciliation", {}) if build_audit else {}
+    score_stream_reconciliation_ok = all(
+        float(values.get("exact_rate", 0.0)) >= 0.94
+        for season, values in reconciliation.items()
+        if int(season) in config.historical_development_seasons
     )
 
     report = {
@@ -318,6 +338,7 @@ def build_rating_audit_report(
         "terminal_snapshots": {
             "total_rows": int(len(terminal_snapshots)),
             "seasons": sorted(terminal_seasons),
+            "ppso_terminal_means": terminal_ppso,
         },
         "redundancy": {
             "spearman_adjusted_pregame_snapshots": _redundancy_correlations(
@@ -331,7 +352,13 @@ def build_rating_audit_report(
                 or terminal_snapshots.duplicated(terminal_keys).any()
             ),
             "two_team_symmetry_ok": _check_symmetry(observations, games, config),
-            "source_reconciliation_ok": reconciliation_ok,
+            "source_reconciliation_ok": source_reconciliation_ok,
+            "score_stream_reconciliation_ok": score_stream_reconciliation_ok,
+            "ppso_terminal_means_ok": all(
+                bool(values["in_range"]) for values in terminal_ppso.values()
+            )
+            if config.uses_true_ppso
+            else True,
             "no_2020_ok": 2020 not in seasons
             and not (
                 snapshots.empty
