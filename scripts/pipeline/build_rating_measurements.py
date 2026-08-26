@@ -56,7 +56,7 @@ from cks_picks_cfb.ratings.snapshots import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = REPO_ROOT / "conf" / "ratings" / "measurement_baseline_v1.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "conf" / "ratings" / "measurement_baseline_v3.yaml"
 RELEVANT_CODE_PATHS = (
     "src/cks_picks_cfb/ratings",
     "src/cks_picks_cfb/data/schema_contracts.py",

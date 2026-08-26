@@ -22,11 +22,11 @@ from cks_picks_cfb.ratings.foundation_review import (
 from cks_picks_cfb.ratings.state_contracts import load_team_state_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/foundation_review_v1.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/foundation_review_v2.yaml"
 RELEVANT_PATHS = (
     "src/cks_picks_cfb/ratings/foundation_review.py",
     "scripts/pipeline/build_rating_foundation_review.py",
-    "conf/ratings/foundation_review_v1.yaml",
+    "conf/ratings/foundation_review_v2.yaml",
 )
 
 

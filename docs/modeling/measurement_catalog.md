@@ -31,7 +31,7 @@ market-decision stage.
 | Turnovers and luck | Volatile fumbles, interceptions, recoveries, and outcome residuals | Plays, drives, events | Separate signal with strong shrinkage | Reliability/context, not raw quality reward |
 | Special teams | Kicking, punting, returns, and field-position contribution | Attempts and returns | Include only when reliable coverage exists | Deferred component or explicit context |
 
-## Approved Phase 1 baseline (v2 remediation in progress)
+## Approved Phase 1 baseline (v3 current; v1/v2 superseded)
 
 The original Phase 1 and v2 implementations are preserved as immutable research
 history. The certified v3 interface corrects PPSO to true score-stream drive
@@ -81,8 +81,19 @@ evidence requires authentic source timing before kickoff.
 
 All five score-stream reconciliation rates exceed 94%, terminal PPSO means
 are in [2, 6], and the same-stamp Preview rerun is byte-identical. Phase 2 v2
-must consume only these refs; Phase 4 remains blocked pending a passing frozen
-Phase 3 v3 candidate.
+consumes only these refs; the Phase 3 v3 candidate froze from them on
+2026-08-26, so Phase 4 shadow operations are plan-eligible under a fresh
+contract.
+
+Config supersession: `conf/ratings/measurement_baseline_v1.yaml` (internally
+version `measurement_baseline_v2` after the in-place `cba1577` remediation;
+Boolean-PPSO numerator) and its dependent
+`team_state_baseline_v1`/`foundation_review_v1`/`score_model_tournament_v2`
+configs are superseded for new research by
+`measurement_baseline_v3`/`team_state_baseline_v2`/`foundation_review_v2`/
+`score_model_tournament_v3`. Their immutable artifacts remain evidence; the
+research CLIs default to the current lineage and a regression test pins those
+defaults.
 
 The v1 observation version `b1da5e85a0438fab109937bf`, snapshot version
 `312917237b1b60cb10d61150`, and audit report are superseded for Phase 2

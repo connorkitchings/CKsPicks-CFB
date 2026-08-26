@@ -34,9 +34,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   candidate `negative_binomial_scores` (run `2026-08-26T1502Z-phase3-score-v3`).
   Phase 4 shadow operations are plan-eligible under a fresh contract.
 - [Phase 3 v2 sealed team-score tournament](2026-08-25/phase3-score-model-tournament-v2.md)
-  — In Progress (failed research history). Its sealed selection failed
-  all-family gates; the separately identified v3 candidate under the 2026-08-26
-  contract is the passing successor. No v1/v2 artifact may be tuned or retried.
+  — Superseded 2026-08-26 by the passing v3 candidate under the 2026-08-26
+  contract. Its sealed selection failed all-family gates on the pre-remediation
+  foundation; it is immutable failed research and no v1/v2 artifact may be
+  tuned or retried.
 
 ## When to use a contract
 

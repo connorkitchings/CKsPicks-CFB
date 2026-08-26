@@ -1,6 +1,6 @@
 # Phase 3 v2 — Sealed Team-Score Model Tournament
 
-- **Status:** In Progress
+- **Status:** Superseded
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.

@@ -11,7 +11,9 @@ from helpers import AS_OF, multi_season_league, stage_rating_parents
 from cks_picks_cfb.data.lake import DatasetRef
 from cks_picks_cfb.data.storage.local import LocalStorage
 from cks_picks_cfb.ratings.contracts import load_measurement_config
+from scripts.pipeline import build_rating_foundation_review as foundation_cli
 from scripts.pipeline import build_rating_measurements as cli
+from scripts.pipeline import build_rating_score_tournament as tournament_cli
 from scripts.pipeline import build_rating_team_states as state_cli
 
 CONFIG_PATH = "conf/ratings/measurement_baseline_v1.yaml"
@@ -252,6 +254,8 @@ def test_state_cli_requires_passing_phase1_v2_refs_and_builds_states(
     argv = [
         "--environment",
         "preview",
+        "--state-config",
+        "conf/ratings/team_state_baseline_v1.yaml",
         "--as-of",
         AS_OF.isoformat(),
         "--observations-ref-uri",
@@ -281,4 +285,22 @@ def test_state_cli_requires_passing_phase1_v2_refs_and_builds_states(
     assert (
         DatasetRef(**json.loads(storage.read_bytes(f"{prefix}/team/ref.json"))).dataset
         == "rating_team_states"
+    )
+
+
+def test_rating_cli_defaults_point_at_current_lineage_configs():
+    """Superseded v1/v2 research configs must never become implicit defaults."""
+    assert cli.DEFAULT_CONFIG == (
+        Path(__file__).resolve().parents[2]
+        / "conf/ratings/measurement_baseline_v3.yaml"
+    )
+    assert state_cli.DEFAULT_CONFIG == (
+        Path(__file__).resolve().parents[2] / "conf/ratings/team_state_baseline_v2.yaml"
+    )
+    assert foundation_cli.DEFAULT_CONFIG == (
+        Path(__file__).resolve().parents[2] / "conf/ratings/foundation_review_v2.yaml"
+    )
+    assert tournament_cli.DEFAULT_CONFIG == (
+        Path(__file__).resolve().parents[2]
+        / "conf/ratings/score_model_tournament_v3.yaml"
     )

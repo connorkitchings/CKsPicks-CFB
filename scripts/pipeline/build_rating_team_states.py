@@ -34,12 +34,12 @@ from cks_picks_cfb.ratings.state_contracts import (
 from cks_picks_cfb.ratings.states import build_team_states
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/team_state_baseline_v1.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/team_state_baseline_v2.yaml"
 RELEVANT = (
     "src/cks_picks_cfb/ratings",
     "src/cks_picks_cfb/data/schema_contracts.py",
     "scripts/pipeline/build_rating_team_states.py",
-    "conf/ratings/team_state_baseline_v1.yaml",
+    "conf/ratings/team_state_baseline_v2.yaml",
 )
 
 

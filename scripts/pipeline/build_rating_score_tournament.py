@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Preview-only sealed Phase 3 v2 team-score tournament."""
+"""Build the Preview-only sealed Phase 3 team-score tournament."""
 
 from __future__ import annotations
 
@@ -38,13 +38,13 @@ from cks_picks_cfb.ratings.score_models import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/score_model_tournament_v2.yaml"
+DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/score_model_tournament_v3.yaml"
 RELEVANT = (
     "src/cks_picks_cfb/ratings/predictions.py",
     "src/cks_picks_cfb/ratings/prediction_evaluation.py",
     "src/cks_picks_cfb/ratings/score_models.py",
     "scripts/pipeline/build_rating_score_tournament.py",
-    "conf/ratings/score_model_tournament_v2.yaml",
+    "conf/ratings/score_model_tournament_v3.yaml",
 )
 
 
@@ -78,7 +78,7 @@ def _require_commit(expected: str | None, *, config_path: str) -> str:
     ).stdout.strip()
     code_sha = expected or current
     if not code_sha:
-        raise ValueError("Phase 3 v2 artifacts require a committed code SHA")
+        raise ValueError("Phase 3 artifacts require a committed code SHA")
     relevant = (*RELEVANT[:-1], config_path)
     for path in relevant:
         if subprocess.run(
@@ -87,13 +87,13 @@ def _require_commit(expected: str | None, *, config_path: str) -> str:
             capture_output=True,
             check=False,
         ).returncode:
-            raise ValueError(f"Phase 3 v2 artifact path is not committed: {path}")
+            raise ValueError(f"Phase 3 artifact path is not committed: {path}")
     if subprocess.run(
         ["git", "diff", "--quiet", code_sha, "--", *relevant],
         cwd=REPO_ROOT,
         check=False,
     ).returncode:
-        raise ValueError("Phase 3 v2 paths differ from the recorded commit")
+        raise ValueError("Phase 3 paths differ from the recorded commit")
     return code_sha
 
 
@@ -128,7 +128,7 @@ def _verify_handoff(
         raise ValueError("Foundation certification report checksum mismatch")
     foundation = json.loads(foundation_payload.decode())
     if not foundation.get("all_checks_passed"):
-        raise ValueError("Phase 3 v2 requires a passing foundation certification")
+        raise ValueError("Phase 3 requires a passing foundation certification")
     team_ref = _ref(storage, config.state_inputs["team_states_ref_uri"])
     snapshots_ref = _ref(storage, config.state_inputs["snapshots_ref_uri"])
     terminal_ref = _ref(storage, config.state_inputs["terminal_ref_uri"])
@@ -156,7 +156,7 @@ def _verify_handoff(
         storage.read_bytes(config.state_inputs["phase1_audit_uri"]).decode()
     )
     if not phase1.get("all_checks_passed"):
-        raise ValueError("Phase 3 v2 requires passing Phase 1 audit")
+        raise ValueError("Phase 3 requires passing Phase 1 audit")
     return team_ref, snapshots_ref, terminal_ref, v4_ref, phase1
 
 
@@ -179,7 +179,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--expected-code-sha")
     args = parser.parse_args(argv)
     if args.environment != "preview":
-        raise ValueError("Phase 3 v2 research is permitted only in preview")
+        raise ValueError("Phase 3 research is permitted only in preview")
     config = load_score_tournament_config(args.config)
     prefix = f"{config.research_prefix}/{config.design_id}/runs/{args.run_id}/"
     outputs = (
@@ -189,9 +189,7 @@ def main(argv: list[str] | None = None) -> None:
         args.candidate_manifest_uri,
     )
     if not args.run_id or any(not uri.startswith(prefix) for uri in outputs):
-        raise ValueError(
-            "Phase 3 v2 outputs must use their run-stamped research prefix"
-        )
+        raise ValueError("Phase 3 outputs must use their run-stamped research prefix")
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
@@ -250,7 +248,7 @@ def main(argv: list[str] | None = None) -> None:
             args.tournament_uri,
             json.dumps(tournament, indent=2, sort_keys=True).encode(),
         )
-        raise ValueError("No Phase 3 v2 score candidate passed sealed selection gates")
+        raise ValueError("No Phase 3 score candidate passed sealed selection gates")
     selection_predictions, _ = expanding_score_predictions(
         winner, historical, config=config
     )
@@ -270,7 +268,7 @@ def main(argv: list[str] | None = None) -> None:
             args.tournament_uri,
             json.dumps(tournament, indent=2, sort_keys=True).encode(),
         )
-        raise ValueError("Phase 3 v2 locked 2025 confirmation failed")
+        raise ValueError("Phase 3 locked 2025 confirmation failed")
     final_model = fit_score_model(
         winner, historical, training_seasons=config.historical_seasons, config=config
     )
