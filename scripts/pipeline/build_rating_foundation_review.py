@@ -34,7 +34,7 @@ def _read_ref(storage, uri: str) -> DatasetRef:
     return DatasetRef(**json.loads(storage.read_bytes(uri).decode()))
 
 
-def _require_committed_code(expected: str | None) -> str:
+def _require_committed_code(expected: str | None, *, config_path: str) -> str:
     current = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         cwd=REPO_ROOT,
@@ -45,7 +45,8 @@ def _require_committed_code(expected: str | None) -> str:
     code_sha = expected or current
     if not code_sha:
         raise ValueError("Foundation review requires a committed code SHA")
-    for path in RELEVANT_PATHS:
+    relevant = (*RELEVANT_PATHS[:-1], config_path)
+    for path in relevant:
         if subprocess.run(
             ["git", "ls-files", "--error-unmatch", path],
             cwd=REPO_ROOT,
@@ -54,7 +55,7 @@ def _require_committed_code(expected: str | None) -> str:
         ).returncode:
             raise ValueError(f"Foundation review path is not committed: {path}")
     if subprocess.run(
-        ["git", "diff", "--quiet", code_sha, "--", *RELEVANT_PATHS],
+        ["git", "diff", "--quiet", code_sha, "--", *relevant],
         cwd=REPO_ROOT,
         check=False,
     ).returncode:
@@ -91,7 +92,8 @@ def main(argv: list[str] | None = None) -> None:
             "Foundation review output must use its run-stamped research prefix"
         )
     datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(timezone.utc)
-    code_sha = _require_committed_code(args.expected_code_sha)
+    config_path = str(Path(args.config).resolve().relative_to(REPO_ROOT))
+    code_sha = _require_committed_code(args.expected_code_sha, config_path=config_path)
     storage = get_storage(environment="preview")
     phase1_audit = json.loads(storage.read_bytes(config.phase1["audit_uri"]).decode())
     phase2_audit = json.loads(storage.read_bytes(config.phase2["audit_uri"]).decode())

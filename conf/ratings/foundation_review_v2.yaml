@@ -1,0 +1,26 @@
+foundation_review_config_version: rating_foundation_review_v2
+research_prefix: artifacts/research/rating-successor/foundation-review-v2
+measurement_config_path: conf/ratings/measurement_baseline_v3.yaml
+team_state_config_path: conf/ratings/team_state_baseline_v2.yaml
+adjustment_sample_targets_per_season: 1
+
+phase1:
+  audit_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/audit-report.json
+  observations_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/observations-ref.json
+  snapshots_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/snapshots-ref.json
+  terminal_ref_uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/terminal-snapshots-ref.json
+  expected_observations_version: 5044de3c48a4be372a8505dc
+  expected_observations_sha: db5f337c31680089b3cd3257518edfe200a087163ecc6127b28eb1b0bb935132
+  expected_snapshots_version: 9893612fe248932e8fc2edb8
+  expected_snapshots_sha: 6a979d9e376ce220486b3d845c9d79f54f70fedc26a95f7ddca66234079beb64
+  expected_terminal_version: 684692e7b815b5825486f5ad
+  expected_terminal_sha: 5c17dfdb6bc9ed3f23b7d0119356b795a8a8efccf2596e3580e85789852454a3
+
+phase2:
+  audit_uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/audit-report.json
+  measurement_states_ref_uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/measurement-states-ref.json
+  team_states_ref_uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/team-states-ref.json
+  expected_measurement_states_version: 50c4002b72ed93a9a7ff9f7a
+  expected_measurement_states_sha: 43dce01131aa649f1173025b1acd92b8f54ad3b9911acedcfb75981faae28ec0
+  expected_team_states_version: 5237dcb3fdd14c4435d2f050
+  expected_team_states_sha: b0c5b6df7e0c794bb8490b09d280bfe917362405d5df45c8d4b44b51d30b80db

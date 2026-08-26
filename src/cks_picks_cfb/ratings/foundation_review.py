@@ -23,6 +23,11 @@ from cks_picks_cfb.ratings.state_contracts import (
 )
 
 FOUNDATION_REVIEW_CONFIG_VERSION = "rating_foundation_review_v1"
+FOUNDATION_REVIEW_CONFIG_VERSION_V2 = "rating_foundation_review_v2"
+SUPPORTED_FOUNDATION_REVIEW_CONFIG_VERSIONS = (
+    FOUNDATION_REVIEW_CONFIG_VERSION,
+    FOUNDATION_REVIEW_CONFIG_VERSION_V2,
+)
 FOUNDATION_REVIEW_SCHEMA_VERSION = "rating_foundation_review_v1"
 _CORE_SNAPSHOT_ROLES = tuple(
     (measurement, role)
@@ -39,6 +44,7 @@ def _sha(value: Mapping[str, Any]) -> str:
 
 @dataclass(frozen=True)
 class FoundationReviewConfig:
+    config_version: str
     research_prefix: str
     measurement_config_path: str
     team_state_config_path: str
@@ -46,6 +52,14 @@ class FoundationReviewConfig:
     phase1: Mapping[str, str]
     phase2: Mapping[str, str]
     raw_config: Mapping[str, Any]
+
+    @property
+    def report_schema_version(self) -> str:
+        return (
+            "rating_foundation_review_v2"
+            if self.config_version.endswith("_v2")
+            else FOUNDATION_REVIEW_SCHEMA_VERSION
+        )
 
     @property
     def design_id(self) -> str:
@@ -57,7 +71,7 @@ def load_foundation_review_config(path: str | Path) -> FoundationReviewConfig:
     if (
         not isinstance(raw, Mapping)
         or raw.get("foundation_review_config_version")
-        != FOUNDATION_REVIEW_CONFIG_VERSION
+        not in SUPPORTED_FOUNDATION_REVIEW_CONFIG_VERSIONS
     ):
         raise MeasurementContractError("Unsupported foundation review configuration")
     try:
@@ -66,6 +80,7 @@ def load_foundation_review_config(path: str | Path) -> FoundationReviewConfig:
         if not isinstance(phase1, Mapping) or not isinstance(phase2, Mapping):
             raise TypeError
         config = FoundationReviewConfig(
+            config_version=str(raw["foundation_review_config_version"]),
             research_prefix=str(raw["research_prefix"]).rstrip("/"),
             measurement_config_path=str(raw["measurement_config_path"]),
             team_state_config_path=str(raw["team_state_config_path"]),
@@ -571,7 +586,7 @@ def build_foundation_review(
         + market_field_conflicts(team_states.columns)
     ) and not set(pd.to_numeric(team_states["season"]).astype(int)) & {2019, 2020}
     return {
-        "report_schema_version": FOUNDATION_REVIEW_SCHEMA_VERSION,
+        "report_schema_version": config.report_schema_version,
         "foundation_review_design_id": config.design_id,
         "code_sha": code_sha,
         "input_refs": {key: ref.__dict__ for key, ref in refs.items()},
