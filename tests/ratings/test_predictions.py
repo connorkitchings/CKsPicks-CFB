@@ -88,6 +88,19 @@ def test_ols_rejects_frozen_sign_failure():
         fit_ols(frame, target="margin", training_seasons=(2021, 2022, 2023))
 
 
+def test_expanding_predictions_exclude_unscorable_historical_games(config):
+    frame = _training_frame()
+    incomplete_game_id = int(frame.loc[frame.season.eq(2024), "game_id"].iloc[0])
+    frame.loc[
+        frame.game_id.eq(incomplete_game_id), ["actual_margin", "actual_total"]
+    ] = np.nan
+
+    predictions, _ = expanding_predictions(frame, config)
+
+    assert incomplete_game_id not in set(predictions["game_id"])
+    assert len(predictions) == (4 * 12 - 1) * 2
+
+
 def test_prediction_evaluation_preserves_paired_v4_source_kind(config):
     frame = _training_frame()
     predictions, _ = expanding_predictions(frame, config)

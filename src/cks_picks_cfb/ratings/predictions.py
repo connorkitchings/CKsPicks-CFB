@@ -452,7 +452,15 @@ def expanding_predictions(
     models: list[OLSModel] = []
     for season in config.evaluation_seasons:
         training = tuple(year for year in config.historical_seasons if year < season)
-        test = frame[frame["season"] == season]
+        test = frame[
+            (frame["season"] == season)
+            & frame["actual_margin"].notna()
+            & frame["actual_total"].notna()
+        ]
+        if test.empty:
+            raise MeasurementContractError(
+                f"No completed outcomes available for expanding {season} evaluation"
+            )
         for target in PREDICTION_TARGETS:
             model = fit_ols(frame, target=target, training_seasons=training)
             models.append(model)
