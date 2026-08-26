@@ -75,6 +75,11 @@
 - A fully cancelled slate is now diagnostic-only rather than producing an
   empty evidence dataset. This retains cancellation traceability without
   recording zero-row scored evidence.
+- The committed rehearsal exposed a generic immutable-lake retry defect: a
+  pandas/NumPy partition scalar serializes as a string in the manifest but was
+  compared to its in-memory scalar on rerun. Canonical JSON comparison now
+  makes matching retries idempotent; the interrupted run published no summary
+  and therefore no successful rehearsal evidence.
 
 ## Handoff Notes
 

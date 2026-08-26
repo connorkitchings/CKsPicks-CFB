@@ -340,7 +340,11 @@ def build_dataset_version(
         if build.identity_version == "dataset_identity_v2" and (
             manifest.identity_version != build.identity_version
             or manifest.as_of != as_of.isoformat()
-            or dict(manifest.partitions) != dict(partitions or {})
+            # Dataset manifests serialize NumPy scalar partition values through
+            # JSON's ``default=str``. Compare their canonical JSON forms so a
+            # rerun with the same scalar (for example a pandas-derived week)
+            # reuses the immutable version instead of falsely colliding.
+            or _canonical_json(manifest.partitions) != _canonical_json(partitions or {})
             or manifest.schema_sha != schema_sha
         ):
             raise StorageError(f"Dataset manifest identity collision at {manifest_uri}")

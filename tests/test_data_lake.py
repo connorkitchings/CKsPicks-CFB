@@ -218,6 +218,34 @@ def test_v2_dataset_identity_includes_cutoff_and_partitions(tmp_path):
     assert len({first.version_id, later.version_id, other_partition.version_id}) == 3
 
 
+def test_v2_dataset_identity_reuses_numpy_scalar_partitions(tmp_path):
+    storage = LocalStorage(tmp_path)
+    parent = DatasetRef("schedule", "v1", "1", "a" * 64, "unused")
+    week = pd.Series([1], dtype="int64").iloc[0]
+    build = BuildRequest(
+        dataset="matchup_features",
+        parent_refs=(parent,),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        tier="gold",
+    )
+    first, first_manifest = build_dataset_version(
+        storage,
+        build=build,
+        records=[{"game_id": 1, "feature": 2.0}],
+        partitions={"week": [week]},
+    )
+    repeated, repeated_manifest = build_dataset_version(
+        storage,
+        build=build,
+        records=[{"game_id": 1, "feature": 2.0}],
+        partitions={"week": [week]},
+    )
+    assert repeated == first
+    assert repeated_manifest.created_at == first_manifest.created_at
+
+
 def test_failed_v2_validation_does_not_write_canonical_dataset(tmp_path):
     storage = LocalStorage(tmp_path)
     with pytest.raises(StorageError, match="validation failed"):

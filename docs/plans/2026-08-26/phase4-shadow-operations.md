@@ -334,3 +334,14 @@ The real Week 0 production manifest/CSV was also read and validated against
 the stricter V4 identity pins. Its run is still published rather than frozen,
 so the live frozen-state query remains intentionally unexercised until an
 actual frozen V4 run exists.
+
+### 2026-08-26 — Rehearsal idempotency correction
+
+The first committed rehearsal was interrupted after writing an unreferenced
+Week 1 dataset. Its retry correctly verified the data checksum but falsely
+reported a manifest identity collision: pandas-derived partition values are
+NumPy scalars, serialized by canonical JSON as strings, while the old
+comparison used their in-memory value. The lake now compares canonical
+partition JSON, so a matching immutable dataset is reused while any real
+identity mismatch remains fail-closed. This is a storage serialization
+correction only; it does not change the model, inputs, or gates.
