@@ -48,6 +48,7 @@ from cks_picks_cfb.ratings.shadow import (
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/shadow_operations_v1.yaml"
 RELEVANT = (
+    "src/cks_picks_cfb/data/lake.py",
     "src/cks_picks_cfb/ratings/shadow.py",
     "src/cks_picks_cfb/ratings/score_models.py",
     "src/cks_picks_cfb/ratings/observations.py",

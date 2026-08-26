@@ -80,6 +80,8 @@
   compared to its in-memory scalar on rerun. Canonical JSON comparison now
   makes matching retries idempotent; the interrupted run published no summary
   and therefore no successful rehearsal evidence.
+- The rehearsal code-identity guard now explicitly includes the shared lake
+  writer used for its immutable prediction and evidence artifacts.
 
 ## Handoff Notes
 
