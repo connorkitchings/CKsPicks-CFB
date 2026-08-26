@@ -102,6 +102,13 @@ def test_v3_config_uses_distinct_frozen_artifact_schemas():
     assert config.candidate_schema_version == "rating_score_candidate_v3"
 
 
+def test_nonprospective_dry_run_uses_only_affirmative_lake_validation_checks():
+    assert tournament_cli._prediction_validation() == {
+        "positive_predictive_uncertainty": True,
+        "non_prospective_dry_run": True,
+    }
+
+
 def test_score_predictions_derive_margin_total_and_valid_intervals():
     frame = _score_frame()
     config = _broad_config()

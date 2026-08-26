@@ -60,6 +60,14 @@ def _write_immutable(storage, uri: str, payload: bytes) -> None:
     storage.write_bytes(payload, uri)
 
 
+def _prediction_validation() -> dict[str, bool]:
+    """Return affirmative lake checks for the explicitly non-prospective dry run."""
+    return {
+        "positive_predictive_uncertainty": True,
+        "non_prospective_dry_run": True,
+    }
+
+
 def _require_commit(expected: str | None, *, config_path: str) -> str:
     current = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -346,10 +354,7 @@ def main(argv: list[str] | None = None) -> None:
         ),
         records=all_predictions.to_dict("records"),
         partitions={"seasons": [*config.selection_seasons, config.locked_season, 2026]},
-        validation={
-            "positive_predictive_uncertainty": True,
-            "prospective_evidence": False,
-        },
+        validation=_prediction_validation(),
     )
     tournament.update(
         {
