@@ -150,7 +150,10 @@ failed gate cannot be bypassed for schedule reasons.
   — Implemented 2026-08-25 from the bounded Phase 1 v2 handoff
   ([completion contract](../plans/2026-08-24/phase1-phase2-completion.md));
   Preview state artifacts pass all audit gates with byte-identical reruns.
-  Phase 3 (structured margin/total prediction) is the next Sol contract.
+- [Phase 3 structured margin/total baseline](../plans/2026-08-25/phase3-structured-margin-total-baseline.md)
+  — In Progress. Its first immutable historical evaluation completed with
+  full paired V4 coverage but failed the pre-registered uncertainty and total
+  bias gates; no candidate was frozen and Phase 4 cannot begin.
 
 ## Invariants and open decisions
 

@@ -4,9 +4,10 @@
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
-- **Implementation logs:** `session_logs/2026-08-25/01-phase3-structured-prediction.md`,
-  `session_logs/2026-08-25/04-phase3-foundation-certification.md`,
-  `session_logs/2026-08-25/05-phase3-structured-prediction.md`
+- **Implementation logs:** `session_logs/2026-08-25/04-phase3-foundation-certification.md`,
+  `session_logs/2026-08-25/05-phase3-structured-prediction.md`,
+  `session_logs/2026-08-25/06-phase3-materialization-merge-remediation.md`,
+  `session_logs/2026-08-25/07-phase3-historical-gate-failure.md`
 - **Commit policy:** Commit code/configuration before joining outcomes or writing Preview artifacts.
 
 ## Goal
@@ -96,6 +97,35 @@ Phase 3 assembler now names outcome completion and score fields explicitly and
 derives targets only from the authoritative outcome fields. This is a
 mechanical lineage correction, preserves the frozen equations and gates, and
 requires a new commit before a fresh run-stamped Preview retry.
+
+### Amendment 3 -- Completed-outcome evaluation filter (2026-08-25)
+
+The committed correction at `533507b99e5796e3cab2b557a2a4e101ce851028`
+excludes historical rows without both authoritative outcome targets from
+expanding evaluation. It preserves all model equations, training rows,
+thresholds, and 2026 candidate behavior. The certified parent data contains
+two such rows (2024 App State--Liberty and 2025 Navy--Army), while the V4
+comparison ref contains exactly the remaining 2,997 games / 5,994 target rows.
+
+### Implementation Record -- Historical gate failure (2026-08-25)
+
+Preview materialization ran from committed code `533507b99e5796e3cab2b557a2a4e101ce851028`
+using the frozen design `a505253d3e1d466fb70eeac4a1470c0ec9b3b58eb9916718194e19899f207119`,
+cutoff `2026-08-26T01:22:27Z`, and run `2026-08-26T0122Z-phase3-freeze`.
+The immutable evaluation report is at
+`artifacts/research/rating-successor/predictions/a505253d3e1d466fb70eeac4a1470c0ec9b3b58eb9916718194e19899f207119/runs/2026-08-26T0122Z-phase3-freeze/evaluation.json`
+with SHA-256
+`0c9029f5701572b73d669499855e441ce9874fe343a5f171107ef1acb503ba60`.
+
+All 5,994 candidate rows paired exactly with V4 and all MAE/RMSE, seasonal,
+and coverage checks passed. The margin target failed uncertainty calibration
+(standardized residual SD 0.589; 80% / 95% coverage 96.83% / 99.87%); the
+total target failed bias (3.42) and standardized-residual mean (0.197).
+Accordingly, only the diagnostic report exists: no model, prediction, or
+candidate-manifest ref was published, Phase 3 remains `In Progress`, and
+Phase 4 remains blocked. Any revised baseline requires a new candidate
+identity and a new Phase 3 contract; this baseline may not be tuned using the
+failed report.
 
 ## Validation
 
