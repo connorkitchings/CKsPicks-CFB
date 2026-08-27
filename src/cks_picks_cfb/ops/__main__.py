@@ -32,6 +32,15 @@ def _python(script: str, *args: object) -> list[str]:
     return [sys.executable, script, *(str(arg) for arg in args)]
 
 
+def _source_subprocess_timeout_seconds() -> float:
+    """Return the hard deadline for one resumable source-capture child."""
+
+    value = float(os.getenv("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS", "600"))
+    if value <= 0:
+        raise ValueError("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS must be positive")
+    return value
+
+
 def _require_week(context: OperationContext) -> int:
     if context.week is None:
         raise ValueError(f"{context.command} requires a week")
@@ -73,15 +82,23 @@ def _fetch_source_step(
 ) -> PipelineStep:
     def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
         ingestion_run_id = f"{context.pipeline_run_id}:{entity}"
-        completed = subprocess.run(
-            list(argv),
-            check=False,
-            env={
-                **os.environ,
-                "PYTHONPATH": ".:src",
-                "CFB_INGESTION_RUN_ID": ingestion_run_id,
-            },
-        )
+        timeout_seconds = _source_subprocess_timeout_seconds()
+        try:
+            completed = subprocess.run(
+                list(argv),
+                check=False,
+                timeout=timeout_seconds,
+                env={
+                    **os.environ,
+                    "PYTHONPATH": ".:src",
+                    "CFB_INGESTION_RUN_ID": ingestion_run_id,
+                },
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Source step {entity} exceeded its {timeout_seconds:g}-second "
+                "subprocess deadline"
+            ) from exc
         if completed.returncode != 0:
             raise subprocess.CalledProcessError(completed.returncode, list(argv))
         with psycopg.connect(conn_url) as conn:
@@ -134,7 +151,11 @@ def _fetch_source_step(
     return PipelineStep(
         name,
         action,
-        definition={"argv": list(argv), "entity": entity},
+        definition={
+            "argv": list(argv),
+            "entity": entity,
+            "subprocess_timeout_seconds": _source_subprocess_timeout_seconds(),
+        },
         resume_validator=resume_validator,
     )
 

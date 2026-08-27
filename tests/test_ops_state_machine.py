@@ -3,7 +3,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from cks_picks_cfb.ops.__main__ import _history_silver_steps, build_steps
+from cks_picks_cfb.ops.__main__ import (
+    _history_silver_steps,
+    _source_subprocess_timeout_seconds,
+    build_steps,
+)
 from cks_picks_cfb.ops.state_machine import (
     InjectedCrashError,
     InMemoryStateStore,
@@ -25,6 +29,15 @@ class RecordingNotifier:
         self.calls.append((context, step, category, detail))
         if self.error:
             raise self.error
+
+
+def test_source_subprocess_timeout_is_positive_and_configurable(monkeypatch):
+    monkeypatch.setenv("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS", "123.5")
+    assert _source_subprocess_timeout_seconds() == 123.5
+
+    monkeypatch.setenv("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS", "0")
+    with pytest.raises(ValueError, match="must be positive"):
+        _source_subprocess_timeout_seconds()
 
 
 def test_pipeline_reruns_unverified_step_after_forced_crash():
