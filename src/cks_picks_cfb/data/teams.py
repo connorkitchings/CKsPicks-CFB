@@ -35,7 +35,9 @@ class TeamsIngester(BaseIngester):
             List of team objects from CFBD API
         """
         api_instance = cfbd.TeamsApi(cfbd.ApiClient(self.cfbd_config))
-        teams = api_instance.get_teams(year=self.year)
+        teams = api_instance.get_teams(
+            year=self.year, _request_timeout=self.request_timeout_seconds
+        )
 
         # Filter for FBS teams only
         fbs_teams = self.filter_fbs_teams(teams)

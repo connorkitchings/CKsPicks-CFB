@@ -121,6 +121,7 @@ class PlaysIngester(BaseIngester):
             season_type=str(request["season_type"]),
             week=int(request["week"]),
             classification=str(request["classification"]),
+            _request_timeout=self.request_timeout_seconds,
         )
         expected = {int(game_id) for game_id in request["expected_game_ids"]}
         return [

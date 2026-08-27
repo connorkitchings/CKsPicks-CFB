@@ -98,6 +98,7 @@ class GamesIngester(BaseIngester):
         }
         if self.week is not None:
             api_kwargs["week"] = self.week
+        api_kwargs["_request_timeout"] = self.request_timeout_seconds
 
         # Fetch games using the specified parameters
         all_games = games_api.get_games(**api_kwargs)

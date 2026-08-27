@@ -109,6 +109,7 @@ class GameStatsIngester(BaseIngester):
             week=week,
             season_type=str(request["season_type"]),
             classification=str(request["classification"]),
+            _request_timeout=self.request_timeout_seconds,
         )
         return [
             {

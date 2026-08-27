@@ -57,7 +57,9 @@ class VenuesIngester(BaseIngester):
             List of venue objects from CFBD API
         """
         venues_api = cfbd.VenuesApi(cfbd.ApiClient(self.cfbd_config))
-        all_venues = venues_api.get_venues()
+        all_venues = venues_api.get_venues(
+            _request_timeout=self.request_timeout_seconds
+        )
         print(f"Found {len(all_venues)} total venues from venues API.")
 
         # Get venue IDs used by FBS games from local index

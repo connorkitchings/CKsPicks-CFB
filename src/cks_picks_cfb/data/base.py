@@ -174,6 +174,15 @@ class BaseIngester(ABC):
             )
         ]
 
+    @property
+    def request_timeout_seconds(self) -> float:
+        """Bound one provider request so a resumable operation cannot hang."""
+
+        value = float(os.getenv("CFB_CFBD_REQUEST_TIMEOUT_SECONDS", "60"))
+        if value <= 0:
+            raise ValueError("CFB_CFBD_REQUEST_TIMEOUT_SECONDS must be positive")
+        return value
+
     def fetch_source_request(self, request: dict[str, Any]) -> list[Any]:
         """Fetch one request. Subclasses with multiple requests override this."""
         return self.fetch_data()
