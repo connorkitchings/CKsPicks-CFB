@@ -747,20 +747,21 @@ def build_steps(
         steps: list[PipelineStep] = []
         if not options.skip_capture:
             for season in (2015, 2016, 2017, 2018):
-                steps.append(
-                    _fetch_source_step(
-                        name=f"capture_successor_history_{season}",
-                        argv=_python(
-                            "scripts/data/ingest_season.py",
-                            "--year",
-                            season,
-                            "--entities",
-                            "teams,venues,games,plays,game_stats",
-                        ),
-                        conn_url=conn_url,
-                        entity=f"successor_history_{season}",
+                for entity in ("teams", "venues", "games", "plays", "game_stats"):
+                    steps.append(
+                        _fetch_source_step(
+                            name=f"capture_successor_history_{season}_{entity}",
+                            argv=_python(
+                                "scripts/data/ingest_season.py",
+                                "--year",
+                                season,
+                                "--entities",
+                                entity,
+                            ),
+                            conn_url=conn_url,
+                            entity=f"successor_history_{season}_{entity}",
+                        )
                     )
-                )
             source, destination, _, eligible = _history_objects(options.prefix or "")
             for item in eligible:
                 if item.years == {2019}:

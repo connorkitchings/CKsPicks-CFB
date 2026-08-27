@@ -426,6 +426,36 @@ def test_historical_silver_composition_covers_all_allowed_seasons_and_dependenci
     assert "--optional" in team_aliases.definition["argv"]
 
 
+def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
+    context = new_context(
+        command="prepare-rating-history",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of="2026-08-27T12:00:00Z",
+        pipeline_run_id="successor-history",
+    )
+    options = SimpleNamespace(skip_capture=True, prefix="")
+    skipped = build_steps(context, conn_url="postgresql://unused", options=options)
+    assert all("capture_successor_history" not in step.name for step in skipped)
+
+    # Build the capture graph without querying a historical source archive.
+    options.skip_capture = False
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "cks_picks_cfb.ops.__main__._history_objects",
+            lambda _: (None, None, [], []),
+        )
+        steps = build_steps(context, conn_url="postgresql://unused", options=options)
+    captures = [step for step in steps if step.name.startswith("capture_successor")]
+    assert len(captures) == 20
+    assert len({step.definition["entity"] for step in captures}) == 20
+    games_before_plays = [step.name for step in captures].index(
+        "capture_successor_history_2015_games"
+    ) < [step.name for step in captures].index("capture_successor_history_2015_plays")
+    assert games_before_plays
+
+
 def test_postgres_state_store_preserves_lease_and_step_semantics_with_fake_connection(
     monkeypatch,
 ):
