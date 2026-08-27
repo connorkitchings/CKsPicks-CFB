@@ -450,10 +450,10 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
     captures = [step for step in steps if step.name.startswith("capture_successor")]
     assert len(captures) == 20
     assert len({step.definition["entity"] for step in captures}) == 20
-    games_before_plays = [step.name for step in captures].index(
-        "capture_successor_history_2015_games"
-    ) < [step.name for step in captures].index("capture_successor_history_2015_plays")
-    assert games_before_plays
+    names = [step.name for step in captures]
+    games_index = names.index("capture_successor_history_2015_games")
+    assert games_index < names.index("capture_successor_history_2015_venues")
+    assert games_index < names.index("capture_successor_history_2015_plays")
 
 
 def test_postgres_state_store_preserves_lease_and_step_semantics_with_fake_connection(

@@ -747,7 +747,7 @@ def build_steps(
         steps: list[PipelineStep] = []
         if not options.skip_capture:
             for season in (2015, 2016, 2017, 2018):
-                for entity in ("teams", "venues", "games", "plays", "game_stats"):
+                for entity in ("teams", "games", "venues", "plays", "game_stats"):
                     steps.append(
                         _fetch_source_step(
                             name=f"capture_successor_history_{season}_{entity}",
