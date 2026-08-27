@@ -1,11 +1,12 @@
 # R1 Full-Corpus Recapture and Certification
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact
   full-corpus successor-v2 plan in Codex on 2026-08-27.
-- **Implementation log:** Pending fresh Terra task.
+- **Implementation log:**
+  `session_logs/2026-08-27/13-r1-full-corpus-recapture-and-certification.md`
 - **Commit policy:** Separate plan commit required before implementation.
 
 ## Goal
@@ -137,3 +138,14 @@ parents of the authoritative successor-v2 corpus.
 
 Material changes to capture-only isolation, season scope, source authority,
 coverage thresholds, or R2 authorization require a new Sol review.
+
+### Amendment 1 — Automatic comparison-evidence bootstrap (2026-08-27)
+
+The user explicitly authorized R1 to resolve and freeze its own comparison-only
+legacy ref manifest from Preview catalog evidence. `--comparison-ref-set-uri`
+is now an optional expert override rather than an operator prerequisite. The
+preflight requires exact 2019 and 2021–2025 `games`, `game_outcomes`, and
+`teams` refs; it excludes successor-v2 paths, rejects ambiguity, includes plays
+and team-game stats only for revision diagnostics, and binds the resulting
+manifest checksum into R1 source-set lineage. Missing evidence stops before
+recapture with a diagnostic.

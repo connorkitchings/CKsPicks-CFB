@@ -1,0 +1,10 @@
+version: history_source_capture_v2
+provider: cfbd
+max_concurrency: 1
+sdk_request_timeout_seconds: 120
+worker_timeout_seconds: 300
+max_attempts: 4
+retry:
+  base_delay_seconds: 1.0
+  max_delay_seconds: 16.0
+  jitter_seconds: 0.0

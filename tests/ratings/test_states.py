@@ -136,6 +136,76 @@ def test_v2_config_versions_schemas_and_pins_the_true_ppso_handoff():
     )
 
 
+def test_successor_v2_uses_the_explicit_two_step_2019_to_2021_transition():
+    league = simple_league()
+    measurement_config = load_measurement_config(
+        "conf/ratings/measurement_baseline_v1.yaml"
+    )
+    observation = build_measurement_observations(
+        byplay=league["byplay"],
+        drives=league["drives"],
+        games=league["games"],
+        outcomes=league["outcomes"],
+        reconciled_team_game=league["reconciled_team_game"],
+        config=measurement_config,
+        as_of=AS_OF,
+        code_sha="code",
+        config_sha="config",
+        parent_ref_shas="parent",
+    ).frame
+    snapshots = build_pregame_snapshots(
+        observations=observation,
+        games=league["games"],
+        config=measurement_config,
+        code_sha="code",
+        config_sha="config",
+        parent_observation_version_id="obs",
+        parent_ref_shas="parent",
+    ).frame
+    terminal = build_season_terminal_snapshots(
+        observations=observation,
+        games=league["games"],
+        config=measurement_config,
+        code_sha="code",
+        config_sha="config",
+        parent_observation_version_id="obs",
+        parent_ref_shas="parent",
+    ).frame
+    permitted = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025)
+
+    def repeat(frame):
+        return pd.concat(
+            [frame.assign(season=season) for season in permitted], ignore_index=True
+        )
+
+    components, _, _ = build_team_states(
+        pregame_snapshots=repeat(snapshots),
+        terminal_snapshots=repeat(terminal),
+        config=load_team_state_config("conf/ratings/team_state_successor_v2.yaml"),
+        code_sha="code",
+        config_sha="config",
+        parent_measurement_refs="parent",
+    )
+    terminal_2019 = components[
+        (components["state_kind"] == "season_terminal")
+        & (components["season"] == 2019)
+        & (components["team"] == "Alpha")
+        & (components["measurement_id"] == "epa_per_play")
+        & (components["unit_role"] == "offense")
+    ].iloc[0]
+    prior_2021 = components[
+        (components["state_kind"] == "pregame")
+        & (components["season"] == 2021)
+        & (components["team"] == "Alpha")
+        & (components["measurement_id"] == "epa_per_play")
+        & (components["unit_role"] == "offense")
+    ].iloc[0]
+    assert prior_2021["prior_source_season"] == 2019
+    assert prior_2021["prior_mean"] == pytest.approx(
+        0.60**2 * terminal_2019["posterior_mean"]
+    )
+
+
 def test_v2_location_gate_excludes_small_postseason_population_but_gates_terminal():
     config = load_team_state_config("conf/ratings/team_state_baseline_v2.yaml")
     rows = []

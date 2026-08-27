@@ -127,6 +127,10 @@ def main(argv: list[str] | None = None) -> None:
         "--environment", choices=["preview", "production"], required=True
     )
     parser.add_argument("--state-config", default=str(DEFAULT_CONFIG))
+    parser.add_argument(
+        "--output-prefix",
+        help="Optional run-scoped output prefix below the configured research prefix.",
+    )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--observations-ref-uri", required=True)
     parser.add_argument("--snapshots-ref-uri", required=True)
@@ -143,7 +147,12 @@ def main(argv: list[str] | None = None) -> None:
             "Rating team-state research builds are permitted only in preview"
         )
     config = load_team_state_config(args.state_config)
-    prefix = f"{config.research_prefix}/{config.design_id}/"
+    prefix = (args.output_prefix or f"{config.research_prefix}/{config.design_id}").rstrip(
+        "/"
+    )
+    if not prefix.startswith(f"{config.research_prefix}/"):
+        raise ValueError("Team-state output prefix must be below the research prefix")
+    prefix = f"{prefix}/"
     if any(
         not uri.startswith(prefix)
         for uri in (

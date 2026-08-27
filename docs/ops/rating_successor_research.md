@@ -17,12 +17,19 @@ PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops prepare-rating-history \
 ```
 
 The command captures CFBD teams, games, venues, game statistics, and plays for
-2015–2018; imports the existing 2019 archive; and builds new isolated
-successor-v2 Silver/reconciled-team-game refs. It reuses the certified
-2021–2025 immutable refs when assembling the full corpus. Plays use the
-Preview-only `history_play_capture_v1` profile: one sequential, process-isolated
-request per provider week, with a 120-second SDK deadline, 300-second worker
-deadline, four attempts, and an append-only attempt ledger.
+every permitted historical season: 2015–2019 and 2021–2025. It never imports or
+reuses a historical compatibility projection, including 2021–2025, and writes
+no `raw/*` projection. Every source request is capture-only, process-isolated,
+sequential, bounded by a 120-second SDK deadline and 300-second worker deadline,
+and recorded in the append-only attempt ledger.
+
+Before capture, R1 resolves and freezes one run-scoped comparison manifest from
+the existing Preview catalog for 2019 and 2021–2025. It requires exact `games`,
+`game_outcomes`, and `teams` refs, includes available plays/stat refs only as
+revision diagnostics, and rejects ambiguous or successor-v2 selections. An
+operator may supply `--comparison-ref-set-uri` only to override that read-only
+selection with already-immutable evidence; comparison refs never become
+successor-v2 parents.
 
 On a failed play week, rerun the *same* pipeline ID. The stored request plan is
 validated, completed checksummed weeks are reused, and only missing/failed
@@ -35,8 +42,9 @@ PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops prepare-rating-history \
 ```
 
 Do not use `--skip-capture` to resume an incomplete capture set. It is only for
-downstream-only recovery after every 2015–2018 `play-capture-set-v1` manifest is
-complete and read-only verification has passed. Each manifest is written under
+downstream-only recovery after every permitted `play-capture-set-v2` and
+non-play capture manifest is complete and read-only verification has passed. Each
+manifest is written under
 `artifacts/research/rating-successor-v2/r1/$R1_RUN/` and lists the ordered
 request identities, capture IDs, checksums, rows, returned/missing game IDs,
 policy SHA, and code SHA. Successor Silver consumes those explicit capture IDs;
@@ -68,19 +76,18 @@ capture ID, checksum, returned/missing game IDs, timeout, and retry in the R1
 session log. A failed or incomplete set is diagnostic-only: it must not write a
 partial legacy `raw/plays/year=<season>` projection or reach Silver.
 
-After true-PPSO measurements, terminal states, and schema checks have produced
-the coverage counts, write the exact ref set and certification report. Pass
-each dataset ref explicitly; the command rejects missing/extra seasons,
-conflicting immutable payloads, and any 2020 lineage.
+After true-PPSO measurements and terminal states have passed their immutable
+reports, compute certification directly from the closed R1 ref set. The command
+rejects caller-authored coverage JSON, incomplete refs, and any 2020 lineage.
 
 ```bash
 PYTHONPATH=.:src uv run python scripts/pipeline/certify_successor_history.py \
   --environment preview \
-  --coverage-evidence-json "$R1_COVERAGE_EVIDENCE" \
-  --dataset-ref "2015:games:$GAMES_2015_REF" \
-  --dataset-ref "2015:plays:$PLAYS_2015_REF" \
-  # …repeat every required season/dataset ref… \
-  --ref-set-uri "artifacts/research/rating-successor-v2/r1/$R1_RUN/ref-set.json" \
+  --derived-ref-set-uri "artifacts/research/rating-successor-v2/r1/$R1_RUN/derived-ref-set.json" \
+  --measurement-report-uri "$R1_MEASUREMENT_REPORT_URI" \
+  --state-report-uri "$R1_STATE_REPORT_URI" \
+  --cross-lineage-report-uri "artifacts/research/rating-successor-v2/r1/$R1_RUN/cross-lineage.json" \
+  --expanded-ref-set-uri "artifacts/research/rating-successor-v2/r1/$R1_RUN/ref-set.json" \
   --coverage-report-uri "artifacts/research/rating-successor-v2/r1/$R1_RUN/coverage.json"
 ```
 

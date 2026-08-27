@@ -383,6 +383,10 @@ def main(argv: list[str] | None = None) -> None:
         "--environment", choices=["preview", "production"], required=True
     )
     parser.add_argument("--measurement-config", default=str(DEFAULT_CONFIG))
+    parser.add_argument(
+        "--output-prefix",
+        help="Optional run-scoped output prefix below the configured research prefix.",
+    )
     parser.add_argument("--expected-design-id")
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--byplay-ref-uri", action="append", required=True)
@@ -407,7 +411,11 @@ def main(argv: list[str] | None = None) -> None:
     if args.expected_design_id:
         verify_design_id(config, args.expected_design_id)
 
-    prefix = f"{config.research_prefix}/{config.design_id}"
+    prefix = (args.output_prefix or f"{config.research_prefix}/{config.design_id}").rstrip(
+        "/"
+    )
+    if not prefix.startswith(f"{config.research_prefix}/"):
+        raise ValueError("Measurement output prefix must be below the research prefix")
     for uri in (
         args.observations_ref_uri,
         args.snapshots_ref_uri,

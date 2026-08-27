@@ -136,6 +136,35 @@ def test_request_set_identity_ignores_observation_time_and_rejects_duplicates():
         catalog.canonical_request_plan([first, retry])
 
 
+def test_request_set_resume_rejects_changed_successor_code_or_configuration(
+    monkeypatch,
+):
+    request = {
+        "provider": "cfbd",
+        "entity": "plays",
+        "endpoint": "PlaysApi.get_plays",
+        "parameters": {"year": 2015, "week": 1},
+    }
+    header = {
+        "contract_version": "play_capture_set_v2",
+        "policy": {"version": "history_play_capture_v2"},
+        "identity": {"code_sha": "old", "configuration_sha256": "old-config"},
+        "requests": [request],
+    }
+    _connect(monkeypatch, _Cursor([("cfbd", "successor_history_2015_plays", header)]))
+    with pytest.raises(ValueError, match="Immutable request-set conflict"):
+        catalog.begin_or_resume_request_set(
+            "postgresql://fixture",
+            ingestion_run_id="r1:successor_history_2015_plays",
+            provider="cfbd",
+            entity="successor_history_2015_plays",
+            requests=[request],
+            policy={"version": "history_play_capture_v2"},
+            contract_version="play_capture_set_v2",
+            identity={"code_sha": "new", "configuration_sha256": "new-config"},
+        )
+
+
 def test_completed_request_capture_rejects_duplicate_or_mismatched_requests(monkeypatch):
     request = {
         "provider": "cfbd",
@@ -191,6 +220,54 @@ def test_catalog_point_in_time_lookups_and_missing_results(monkeypatch):
     _connect(monkeypatch, _Cursor([None]))
     with pytest.raises(LookupError, match="No validated games"):
         catalog.dataset_ref_as_of("url", "games", "2026-08-23")
+
+
+def test_legacy_comparison_ref_selection_rejects_successor_and_ambiguous_rows(
+    monkeypatch,
+):
+    rows = [
+        (
+            "legacy",
+            "v1",
+            "legacy-sha",
+            "artifacts/preview/history/games-2019",
+            {"seasons": [2019]},
+            "2026-08-20T00:00:00Z",
+            "2026-08-20T01:00:00Z",
+        ),
+        (
+            "successor",
+            "v1",
+            "successor-sha",
+            "artifacts/research/rating-successor-v2/r1/run/games-2019",
+            {"seasons": [2019]},
+            "2026-08-27T00:00:00Z",
+            "2026-08-27T01:00:00Z",
+        ),
+    ]
+    _connect(monkeypatch, _Cursor([rows]))
+    selected = catalog.legacy_dataset_ref_for_season(
+        "postgresql://fixture", "games", "2026-08-27T12:00:00Z", season=2019
+    )
+    assert selected.version_id == "legacy"
+
+    ambiguous = [
+        (
+            f"legacy-{index}",
+            "v1",
+            f"sha-{index}",
+            f"artifacts/preview/history/games-2019-{index}",
+            {"season": 2019},
+            "2026-08-20T00:00:00Z",
+            "2026-08-20T01:00:00Z",
+        )
+        for index in (1, 2)
+    ]
+    _connect(monkeypatch, _Cursor([ambiguous]))
+    with pytest.raises(ValueError, match="Ambiguous"):
+        catalog.legacy_dataset_ref_for_season(
+            "postgresql://fixture", "games", "2026-08-27T12:00:00Z", season=2019
+        )
 
 
 def test_manifest_conversion_identity_checks_and_json_are_deterministic():

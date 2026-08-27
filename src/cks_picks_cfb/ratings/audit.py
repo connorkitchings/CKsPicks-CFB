@@ -370,14 +370,17 @@ def build_rating_audit_report(
                     .astype(int)
                 )
             ),
-            "no_2019_ok": 2019 not in seasons
-            and not (
-                snapshots.empty
-                or 2019
-                in set(
-                    pd.to_numeric(snapshots["season"], errors="coerce")
-                    .dropna()
-                    .astype(int)
+            "no_2019_ok": 2019 in config.historical_development_seasons
+            or (
+                2019 not in seasons
+                and not (
+                    snapshots.empty
+                    or 2019
+                    in set(
+                        pd.to_numeric(snapshots["season"], errors="coerce")
+                        .dropna()
+                        .astype(int)
+                    )
                 )
             ),
             "future_rows_ok": _check_future_rows(snapshots),

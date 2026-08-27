@@ -68,6 +68,8 @@ def begin_or_resume_request_set(
     entity: str,
     requests: Sequence[Mapping[str, Any]],
     policy: Mapping[str, Any],
+    contract_version: str = "play_capture_set_v1",
+    identity: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Create or validate an immutable request-set header and return its plan."""
 
@@ -87,17 +89,19 @@ def begin_or_resume_request_set(
                 if (
                     str(existing_provider) != provider
                     or str(existing_entity) != entity
-                    or header.get("contract_version") != "play_capture_set_v1"
+                    or header.get("contract_version") != contract_version
                     or not isinstance(existing_plan, list)
                     or canonical_request_plan(existing_plan) != proposed
+                    or dict(header.get("identity") or {}) != dict(identity or {})
                 ):
                     raise ValueError(
                         f"Immutable request-set conflict: {ingestion_run_id}"
                     )
                 return [dict(item) for item in existing_plan]
             header = {
-                "contract_version": "play_capture_set_v1",
+                "contract_version": contract_version,
                 "policy": dict(policy),
+                "identity": dict(identity or {}),
                 "requests": [dict(request) for request in requests],
             }
             cur.execute(
@@ -665,6 +669,53 @@ def dataset_ref_for_partition_as_of(
         raise LookupError(
             f"No validated {dataset} dataset for {dict(partitions)} as of {as_of}"
         )
+    return DatasetRef(dataset, str(row[0]), str(row[1]), str(row[2]), str(row[3]))
+
+
+def legacy_dataset_ref_for_season(
+    conn_url: str,
+    dataset: str,
+    selection_as_of: str,
+    *,
+    season: int,
+    excluded_uri_prefix: str = "artifacts/research/rating-successor-v2/",
+) -> DatasetRef:
+    """Resolve one unambiguous pre-successor catalog ref for a season.
+
+    This is deliberately limited to comparison evidence. Successor R1 Silver
+    builders still receive only capture IDs from their closed source manifest.
+    """
+
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT version_id, schema_version, content_sha, uri, partitions, "
+                "as_of, created_at FROM catalog.dataset_versions "
+                "WHERE dataset = %s AND as_of <= %s AND state = 'validated' "
+                "AND uri NOT LIKE %s",
+                (dataset, selection_as_of, f"{excluded_uri_prefix}%"),
+            )
+            rows = cur.fetchall()
+    candidates = []
+    for row in rows:
+        if str(row[3]).startswith(excluded_uri_prefix):
+            continue
+        partitions = dict(row[4] or {})
+        seasons = partitions.get("seasons", [])
+        if partitions.get("season") != season and season not in seasons:
+            continue
+        candidates.append(row)
+    if not candidates:
+        raise LookupError(
+            f"No legacy {dataset} comparison ref exists for season {season}"
+        )
+    latest_key = max((str(row[5]), str(row[6])) for row in candidates)
+    latest = [row for row in candidates if (str(row[5]), str(row[6])) == latest_key]
+    if len(latest) != 1:
+        raise ValueError(
+            f"Ambiguous legacy {dataset} comparison refs for season {season}"
+        )
+    row = latest[0]
     return DatasetRef(dataset, str(row[0]), str(row[1]), str(row[2]), str(row[3]))
 
 

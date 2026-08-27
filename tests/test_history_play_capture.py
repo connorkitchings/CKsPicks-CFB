@@ -26,7 +26,7 @@ class _MemoryStorage:
 
 def test_history_play_policy_is_sequential_and_hashed():
     policy = load_history_play_capture_policy()
-    assert policy.version == "history_play_capture_v1"
+    assert policy.version == "history_play_capture_v2"
     assert policy.max_concurrency == 1
     assert policy.sdk_request_timeout_seconds == 120
     assert policy.worker_timeout_seconds == 300

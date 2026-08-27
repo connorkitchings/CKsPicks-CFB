@@ -170,7 +170,7 @@ def _fetch_source_step(
 
 
 def _history_play_capture_step(
-    *, season: int, conn_url: str, manifest_uri: str
+    *, season: int, conn_url: str, manifest_uri: str, identity: Mapping[str, Any]
 ) -> PipelineStep:
     """Capture one successor R1 season as a resumable weekly request set."""
 
@@ -183,6 +183,8 @@ def _history_play_capture_step(
             pipeline_run_id=context.pipeline_run_id,
             season=season,
             manifest_uri=manifest_uri,
+            identity=identity,
+            write_compatibility_projection=False,
         ).run()
         return (
             {
@@ -205,8 +207,9 @@ def _history_play_capture_step(
         except Exception:
             return False
         return (
-            raw.get("contract_version") == "play-capture-set-v1"
+            raw.get("contract_version") == "play-capture-set-v2"
             and raw.get("state") == "complete"
+            and raw.get("identity") == dict(identity)
             and raw.get("manifest_sha256") == outputs[0].get("manifest_sha256")
         )
 
@@ -222,6 +225,309 @@ def _history_play_capture_step(
             "manifest_uri": manifest_uri,
             "policy_version": policy.version,
             "policy_sha256": policy.sha256,
+            "identity": dict(identity),
+            "capture_only": True,
+        },
+        resume_validator=resume_validator,
+    )
+
+
+def _successor_r1_identity() -> dict[str, str]:
+    """Bind a full-corpus R1 run to code and immutable policy inputs."""
+
+    from cks_picks_cfb.data.history_play_capture import load_history_play_capture_policy
+    from cks_picks_cfb.data.history_source_capture import (
+        load_history_source_capture_policy,
+    )
+
+    def sha(path: str) -> str:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+    )
+    code_sha = completed.stdout.strip()
+    if not code_sha:
+        raise ValueError("Successor R1 requires a committed Git code identity")
+    play_policy = load_history_play_capture_policy()
+    source_policy = load_history_source_capture_policy()
+    config_shas = {
+        "season_lineage_sha256": sha(
+            "conf/ratings/successor_v2_season_lineage.yaml"
+        ),
+        "play_capture_policy_sha256": play_policy.sha256,
+        "source_capture_policy_sha256": source_policy.sha256,
+        "measurement_config_sha256": sha("conf/ratings/measurement_successor_v2.yaml"),
+        "state_config_sha256": sha("conf/ratings/team_state_successor_v2.yaml"),
+    }
+    return {
+        "code_sha": code_sha,
+        **config_shas,
+        "configuration_sha256": hashlib.sha256(
+            json.dumps(config_shas, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+
+
+SUCCESSOR_R1_COMMIT_PATHS = (
+    "conf/ratings/history_play_capture_v2.yaml",
+    "conf/ratings/history_source_capture_v2.yaml",
+    "conf/ratings/measurement_successor_v2.yaml",
+    "conf/ratings/successor_v2_season_lineage.yaml",
+    "conf/ratings/team_state_successor_v2.yaml",
+    "scripts/data/history_source_capture_worker.py",
+    "scripts/pipeline/audit_successor_cross_lineage.py",
+    "scripts/pipeline/build_history_silver.py",
+    "scripts/pipeline/build_rating_measurements.py",
+    "scripts/pipeline/build_rating_team_states.py",
+    "scripts/pipeline/build_successor_history_ref_set.py",
+    "scripts/pipeline/build_successor_legacy_comparison_ref_set.py",
+    "scripts/pipeline/build_successor_r1_foundation.py",
+    "scripts/pipeline/certify_successor_history.py",
+    "src/cks_picks_cfb/data/catalog.py",
+    "src/cks_picks_cfb/data/history_play_capture.py",
+    "src/cks_picks_cfb/data/history_source_capture.py",
+    "src/cks_picks_cfb/ops/__main__.py",
+    "src/cks_picks_cfb/ratings/audit.py",
+    "src/cks_picks_cfb/ratings/cross_lineage.py",
+    "src/cks_picks_cfb/ratings/state_audit.py",
+    "src/cks_picks_cfb/ratings/state_contracts.py",
+    "src/cks_picks_cfb/ratings/states.py",
+    "src/cks_picks_cfb/ratings/successor_history.py",
+)
+
+
+def _verify_successor_r1_committed_code() -> str:
+    """Require the implementation named by R1 manifests to be committed exactly."""
+
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+    ).stdout.strip()
+    if not head:
+        raise RuntimeError("Successor R1 requires a committed Git HEAD")
+    for path in SUCCESSOR_R1_COMMIT_PATHS:
+        tracked = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", path],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if tracked.returncode:
+            raise RuntimeError(f"Successor R1 implementation path is not committed: {path}")
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", *SUCCESSOR_R1_COMMIT_PATHS],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if dirty.stdout:
+        raise RuntimeError(
+            "Successor R1 implementation paths must be clean and committed before capture"
+        )
+    return head
+
+
+def _successor_preview_runtime_step(identity: Mapping[str, Any]) -> PipelineStep:
+    """Fail before R1 writes when Preview R2/CFBD isolation is not configured."""
+
+    def action(_: OperationContext) -> Sequence[Mapping[str, Any]]:
+        committed_code_sha = _verify_successor_r1_committed_code()
+        if committed_code_sha != identity.get("code_sha"):
+            raise RuntimeError("Successor R1 code SHA differs from its run identity")
+        if os.getenv("CFB_STORAGE_BACKEND", "").lower() != "r2":
+            raise RuntimeError("Successor R1 requires CFB_STORAGE_BACKEND=r2")
+        if not os.getenv("PREVIEW_DATABASE_URL"):
+            raise RuntimeError("Successor R1 requires PREVIEW_DATABASE_URL")
+        if not os.getenv("CFBD_API_KEY"):
+            raise RuntimeError("Successor R1 requires CFBD_API_KEY")
+        try:
+            get_storage(environment="preview")
+        except (RuntimeError, ValueError) as exc:
+            raise RuntimeError(f"Successor R1 Preview R2 isolation failed: {exc}") from exc
+        return (
+            {
+                "environment": "preview",
+                "storage_backend": "r2",
+                "preview_database_configured": True,
+                "cfbd_configured": True,
+                "code_sha": committed_code_sha,
+            },
+        )
+
+    return PipelineStep(
+        "validate_successor_r1_preview_runtime",
+        action,
+        definition={
+            "environment": "preview",
+            "required_storage_backend": "r2",
+            "required_credentials": ("PREVIEW_DATABASE_URL", "CFBD_API_KEY"),
+            "identity": dict(identity),
+        },
+        resume_validator=lambda _, __: False,
+    )
+
+
+def _history_source_capture_step(
+    *,
+    season: int,
+    entity: str,
+    conn_url: str,
+    manifest_uri: str,
+    identity: Mapping[str, Any],
+) -> PipelineStep:
+    """Capture one non-play R1 entity without legacy compatibility writes."""
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        from cks_picks_cfb.data.history_source_capture import HistorySourceCaptureSet
+
+        result = HistorySourceCaptureSet(
+            conn_url=conn_url,
+            storage=get_storage(environment="preview"),
+            pipeline_run_id=context.pipeline_run_id,
+            season=season,
+            entity=entity,
+            manifest_uri=manifest_uri,
+            identity=identity,
+        ).run()
+        return (
+            {
+                "manifest_uri": manifest_uri,
+                "manifest_sha256": result["manifest_sha256"],
+                "ingestion_run_id": result["ingestion_run_id"],
+                "capture_ids": [entry["capture_id"] for entry in result["requests"]],
+            },
+        )
+
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        if not outputs or not get_storage(environment="preview").exists(manifest_uri):
+            return False
+        try:
+            raw = json.loads(
+                get_storage(environment="preview").read_bytes(manifest_uri).decode()
+            )
+        except Exception:
+            return False
+        return (
+            raw.get("contract_version") == "source-capture-entity-set-v2"
+            and raw.get("state") == "complete"
+            and raw.get("identity") == dict(identity)
+            and raw.get("manifest_sha256") == outputs[0].get("manifest_sha256")
+        )
+
+    return PipelineStep(
+        f"capture_successor_history_{season}_{entity}",
+        action,
+        definition={
+            "season": season,
+            "entity": f"successor_history_{season}_{entity}",
+            "manifest_uri": manifest_uri,
+            "identity": dict(identity),
+            "capture_only": True,
+        },
+        resume_validator=resume_validator,
+    )
+
+
+def _successor_source_set_step(
+    *, manifest_uri: str, comparison_ref_set_uri: str, identity: Mapping[str, Any]
+) -> PipelineStep:
+    """Close the full R1 source manifest only after every exact set completes."""
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
+
+        policy = load_season_lineage_policy(
+            "conf/ratings/successor_v2_season_lineage.yaml"
+        )
+        storage = get_storage(environment="preview")
+        comparison = json.loads(storage.read_bytes(comparison_ref_set_uri).decode())
+        if (
+            comparison.get("contract_version")
+            != "successor-legacy-comparison-ref-set-v1"
+            or comparison.get("state") != "complete"
+            or not comparison.get("manifest_sha256")
+        ):
+            raise RuntimeError("R1 comparison evidence manifest is not complete")
+        entries = []
+        for season in policy.historical_development_seasons:
+            for entity in ("teams", "games", "venues", "game_stats", "plays"):
+                entity_uri = (
+                    f"{policy.research_prefix}/r1/{context.pipeline_run_id}/captures/"
+                    f"{season}/{entity}.json"
+                )
+                if not storage.exists(entity_uri):
+                    raise RuntimeError(f"Missing complete R1 capture manifest: {entity_uri}")
+                raw = json.loads(storage.read_bytes(entity_uri).decode())
+                expected_version = (
+                    "play-capture-set-v2" if entity == "plays" else "source-capture-entity-set-v2"
+                )
+                if (
+                    raw.get("contract_version") != expected_version
+                    or raw.get("state") != "complete"
+                    or raw.get("identity") != dict(identity)
+                    or raw.get("season") != season
+                ):
+                    raise RuntimeError(f"Invalid complete R1 capture manifest: {entity_uri}")
+                entries.append(
+                    {
+                        "season": season,
+                        "entity": entity,
+                        "manifest_uri": entity_uri,
+                        "manifest_sha256": raw["manifest_sha256"],
+                        "ingestion_run_id": raw["ingestion_run_id"],
+                        "capture_ids": [item["capture_id"] for item in raw["requests"]],
+                        "requests": raw["requests"],
+                    }
+                )
+        payload: dict[str, Any] = {
+            "contract_version": "successor-history-source-set-v2",
+            "state": "complete",
+            "pipeline_run_id": context.pipeline_run_id,
+            "identity": dict(identity),
+            "comparison_ref_set_uri": comparison_ref_set_uri,
+            "comparison_ref_set_sha256": comparison["manifest_sha256"],
+            "seasons": list(policy.historical_development_seasons),
+            "entries": entries,
+        }
+        payload["manifest_sha256"] = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        encoded = json.dumps(payload, indent=2, sort_keys=True).encode()
+        if storage.exists(manifest_uri):
+            if storage.read_bytes(manifest_uri) != encoded:
+                raise FileExistsError(f"Immutable R1 source manifest collision: {manifest_uri}")
+        else:
+            storage.write_bytes(encoded, manifest_uri)
+        return ({"manifest_uri": manifest_uri, "manifest_sha256": payload["manifest_sha256"]},)
+
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        if not outputs or not get_storage(environment="preview").exists(manifest_uri):
+            return False
+        try:
+            raw = json.loads(
+                get_storage(environment="preview").read_bytes(manifest_uri).decode()
+            )
+        except Exception:
+            return False
+        return (
+            raw.get("contract_version") == "successor-history-source-set-v2"
+            and raw.get("state") == "complete"
+            and raw.get("identity") == dict(identity)
+            and raw.get("comparison_ref_set_uri") == comparison_ref_set_uri
+            and raw.get("manifest_sha256") == outputs[0].get("manifest_sha256")
+        )
+
+    return PipelineStep(
+        "close_successor_history_source_set",
+        action,
+        definition={
+            "manifest_uri": manifest_uri,
+            "comparison_ref_set_uri": comparison_ref_set_uri,
+            "identity": dict(identity),
         },
         resume_validator=resume_validator,
     )
@@ -427,14 +733,16 @@ def _history_objects(prefix: str):
 def _rating_history_silver_steps(
     *, environment: str, as_of: str, pipeline_run_id: str
 ) -> list[PipelineStep]:
-    """Build isolated 2015–2019 successor-v2 Silver refs after raw capture/import."""
+    """Build full-corpus R1 refs from one complete source-set manifest."""
 
-    prefix = "artifacts/research/rating-successor-v2/r1"
+    from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
+
+    policy = load_season_lineage_policy("conf/ratings/successor_v2_season_lineage.yaml")
+    prefix = f"{policy.research_prefix}/r1/{pipeline_run_id}"
+    source_set_uri = f"{prefix}/source-set.json"
     steps: list[PipelineStep] = []
 
-    def add(
-        dataset: str, season: int, *, games: bool = False, optional: bool = False
-    ) -> None:
+    def add(dataset: str, season: int, *, games: bool = False) -> None:
         argv = _python(
             "scripts/pipeline/build_history_silver.py",
             "--dataset",
@@ -444,26 +752,19 @@ def _rating_history_silver_steps(
             "--as-of",
             as_of,
             "--output-ref-uri",
-            f"{prefix}/{dataset}-{season}.json",
+            f"{prefix}/refs/{dataset}-{season}.json",
             "--identity-label",
-            "rating_successor_v2",
+            "rating_successor_v2_r1_full_corpus",
             "--environment",
             environment,
+            "--source-set-uri",
+            source_set_uri,
         )
         if games:
-            argv.extend(["--games-ref-uri", f"{prefix}/games-{season}.json"])
-        if optional:
-            argv.append("--optional")
-        if dataset == "plays" and season in {2015, 2016, 2017, 2018}:
-            argv.extend(
-                [
-                    "--play-capture-set-uri",
-                    f"{prefix}/{pipeline_run_id}/plays-{season}-capture-set.json",
-                ]
-            )
+            argv.extend(["--games-ref-uri", f"{prefix}/refs/games-{season}.json"])
         steps.append(subprocess_step(f"successor_silver_{dataset}_{season}", argv))
 
-    for season in (2015, 2016, 2017, 2018, 2019):
+    for season in policy.historical_development_seasons:
         for dataset in ("teams", "venues", "games", "game_outcomes"):
             add(dataset, season)
         add("plays", season, games=True)
@@ -474,21 +775,23 @@ def _rating_history_silver_steps(
                 _python(
                     "scripts/pipeline/build_team_game_dataset.py",
                     "--plays-ref-uri",
-                    f"{prefix}/plays-{season}.json",
+                    f"{prefix}/refs/plays-{season}.json",
                     "--games-ref-uri",
-                    f"{prefix}/games-{season}.json",
+                    f"{prefix}/refs/games-{season}.json",
                     "--teams-ref-uri",
-                    f"{prefix}/teams-{season}.json",
+                    f"{prefix}/refs/teams-{season}.json",
                     "--venues-ref-uri",
-                    f"{prefix}/venues-{season}.json",
+                    f"{prefix}/refs/venues-{season}.json",
                     "--game-stats-ref-uri",
-                    f"{prefix}/team_game_stats-{season}.json",
+                    f"{prefix}/refs/team_game_stats-{season}.json",
                     "--corrections-ref-uri",
                     "artifacts/preview/refs/data-corrections-v1.json",
                     "--as-of",
                     as_of,
                     "--output-ref-uri",
-                    f"{prefix}/reconciled_team_game-{season}.json",
+                    f"{prefix}/refs/reconciled_team_game-{season}.json",
+                    "--output-ref-set-uri",
+                    f"{prefix}/derived/{season}/rating-input-ref-set.json",
                     "--environment",
                     environment,
                 ),
@@ -883,50 +1186,139 @@ def build_steps(
             raise ValueError(
                 "prepare-rating-history uses --year 2026 as its protected context"
             )
-        steps: list[PipelineStep] = []
+        from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
+
+        policy = load_season_lineage_policy(
+            "conf/ratings/successor_v2_season_lineage.yaml"
+        )
+        identity = _successor_r1_identity()
+        prefix = f"{policy.research_prefix}/r1/{context.pipeline_run_id}"
+        comparison_ref_set_uri = f"{prefix}/comparison-ref-set.json"
+        steps: list[PipelineStep] = [_successor_preview_runtime_step(identity)]
+        comparison_argv = _python(
+            "scripts/pipeline/build_successor_legacy_comparison_ref_set.py",
+            "--environment",
+            environment,
+            "--as-of",
+            as_of,
+            "--output-uri",
+            comparison_ref_set_uri,
+        )
+        if getattr(options, "comparison_ref_set_uri", None):
+            comparison_argv.extend(
+                ["--comparison-ref-set-uri", options.comparison_ref_set_uri]
+            )
+        steps.append(
+            subprocess_step("freeze_successor_legacy_comparison_evidence", comparison_argv)
+        )
         if not options.skip_capture:
-            for season in (2015, 2016, 2017, 2018):
+            for season in policy.historical_development_seasons:
                 for entity in ("teams", "games", "venues", "game_stats"):
                     steps.append(
-                        _fetch_source_step(
-                            name=f"capture_successor_history_{season}_{entity}",
-                            argv=_python(
-                                "scripts/data/ingest_season.py",
-                                "--year",
-                                season,
-                                "--entities",
-                                entity,
-                            ),
+                        _history_source_capture_step(
+                            season=season,
+                            entity=entity,
                             conn_url=conn_url,
-                            entity=f"successor_history_{season}_{entity}",
+                            manifest_uri=f"{prefix}/captures/{season}/{entity}.json",
+                            identity=identity,
                         )
                     )
                 steps.append(
                     _history_play_capture_step(
                         season=season,
                         conn_url=conn_url,
-                        manifest_uri=(
-                            "artifacts/research/rating-successor-v2/r1/"
-                            f"{context.pipeline_run_id}/plays-{season}-capture-set.json"
-                        ),
+                        manifest_uri=f"{prefix}/captures/{season}/plays.json",
+                        identity=identity,
                     )
                 )
-            source, destination, _, eligible = _history_objects(options.prefix or "")
-            for item in eligible:
-                if item.years == {2019}:
-                    suffix = hashlib.sha256(item.uri.encode()).hexdigest()[:16]
-                    steps.append(
-                        PipelineStep(
-                            f"import_successor_2019_{suffix}",
-                            _import_history_action(conn_url, source, destination, item),
-                        )
-                    )
+            steps.append(
+                _successor_source_set_step(
+                    manifest_uri=f"{prefix}/source-set.json",
+                    comparison_ref_set_uri=comparison_ref_set_uri,
+                    identity=identity,
+                )
+            )
         steps.extend(
             _rating_history_silver_steps(
                 environment=environment,
                 as_of=as_of,
                 pipeline_run_id=context.pipeline_run_id,
             )
+        )
+        steps.append(
+            subprocess_step(
+                "close_successor_history_derived_ref_set",
+                _python(
+                    "scripts/pipeline/build_successor_history_ref_set.py",
+                    "--environment",
+                    environment,
+                    "--source-set-uri",
+                    f"{prefix}/source-set.json",
+                    "--output-uri",
+                    f"{prefix}/derived-ref-set.json",
+                ),
+            )
+        )
+        from cks_picks_cfb.ratings.contracts import load_measurement_config
+        from cks_picks_cfb.ratings.state_contracts import load_team_state_config
+
+        measurement = load_measurement_config(
+            "conf/ratings/measurement_successor_v2.yaml"
+        )
+        states = load_team_state_config("conf/ratings/team_state_successor_v2.yaml")
+        measurement_prefix = f"{prefix}/foundation/measurements/{measurement.design_id}"
+        state_prefix = f"{prefix}/foundation/states/{states.design_id}"
+        steps.extend(
+            [
+                subprocess_step(
+                    "audit_successor_cross_lineage",
+                    _python(
+                        "scripts/pipeline/audit_successor_cross_lineage.py",
+                        "--environment",
+                        environment,
+                        "--derived-ref-set-uri",
+                        f"{prefix}/derived-ref-set.json",
+                        "--comparison-ref-set-uri",
+                        comparison_ref_set_uri,
+                        "--report-uri",
+                        f"{prefix}/cross-lineage.json",
+                    ),
+                ),
+                subprocess_step(
+                    "build_successor_r1_foundation",
+                    _python(
+                        "scripts/pipeline/build_successor_r1_foundation.py",
+                        "--environment",
+                        environment,
+                        "--as-of",
+                        as_of,
+                        "--derived-ref-set-uri",
+                        f"{prefix}/derived-ref-set.json",
+                        "--output-manifest-uri",
+                        f"{prefix}/foundation/manifest.json",
+                    ),
+                ),
+                subprocess_step(
+                    "certify_successor_history",
+                    _python(
+                        "scripts/pipeline/certify_successor_history.py",
+                        "--environment",
+                        environment,
+                        "--derived-ref-set-uri",
+                        f"{prefix}/derived-ref-set.json",
+                        "--measurement-report-uri",
+                        f"{measurement_prefix}/report.json",
+                        "--state-report-uri",
+                        f"{state_prefix}/report.json",
+                        "--cross-lineage-report-uri",
+                        f"{prefix}/cross-lineage.json",
+                        "--expanded-ref-set-uri",
+                        f"{prefix}/ref-set.json",
+                        "--coverage-report-uri",
+                        f"{prefix}/coverage.json",
+                    ),
+                ),
+            ]
         )
         return steps
     if context.command == "verify-history-play-sample":
@@ -1761,9 +2153,19 @@ def parse_args() -> argparse.Namespace:
                 )
             if command == "prepare-rating-history":
                 sub.add_argument(
+                    "--comparison-ref-set-uri",
+                    help=(
+                        "Optional immutable legacy 2019/2021–2025 comparison "
+                        "evidence override; otherwise resolve it from Preview catalog."
+                    ),
+                )
+                sub.add_argument(
                     "--skip-capture",
                     action="store_true",
-                    help="Reuse already registered 2015–2019 source captures.",
+                    help=(
+                        "Run downstream-only recovery from an existing complete "
+                        "full-corpus R1 source-set manifest."
+                    ),
                 )
             if command == "verify-history-play-sample":
                 sub.add_argument("--history-season", type=int, default=2015)

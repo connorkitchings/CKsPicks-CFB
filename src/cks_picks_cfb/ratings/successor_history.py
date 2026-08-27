@@ -18,6 +18,7 @@ from cks_picks_cfb.data.season_lineage import SeasonLineagePolicy
 
 HISTORY_REF_SET_VERSION = "expanded_rating_history_ref_set_v1"
 HISTORY_COVERAGE_REPORT_VERSION = "expanded_rating_history_coverage_v1"
+DERIVED_REF_SET_VERSION = "successor-history-derived-ref-set-v2"
 REQUIRED_DATASETS = (
     "games",
     "plays",
@@ -25,6 +26,18 @@ REQUIRED_DATASETS = (
     "reconciled_team_game",
     "teams",
     "venues",
+)
+R1_REQUIRED_DATASETS = (
+    "games",
+    "game_outcomes",
+    "plays",
+    "team_game_stats",
+    "teams",
+    "venues",
+    "byplay",
+    "drives",
+    "reconciled_team_game",
+    "source_reconciliation",
 )
 
 
@@ -185,6 +198,48 @@ def expanded_history_ref_set(
         "contract_version": HISTORY_REF_SET_VERSION,
         "season_lineage_policy_version": policy.version,
         "research_prefix": policy.research_prefix,
+        "entries": entries,
+    }
+    return {**payload, "ref_set_sha256": _canonical_sha(payload)}
+
+
+def derived_history_ref_set(
+    policy: SeasonLineagePolicy,
+    refs: Mapping[tuple[int, str], DatasetRef],
+    *,
+    source_set_uri: str,
+    source_set_sha256: str,
+    identity: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind every R1 Silver parent and output to its closed source set."""
+
+    expected = {
+        (season, dataset)
+        for season in policy.historical_development_seasons
+        for dataset in R1_REQUIRED_DATASETS
+    }
+    actual = set(refs)
+    missing = sorted(expected - actual)
+    extra = sorted(actual - expected)
+    if missing or extra:
+        raise SuccessorHistoryError(
+            f"R1 derived refs differ from policy; missing={missing}, extra={extra}"
+        )
+    entries = []
+    for season, dataset in sorted(refs):
+        policy.assert_allowed(season)
+        ref = refs[(season, dataset)]
+        if not ref.content_sha or not ref.uri or not ref.version_id:
+            raise SuccessorHistoryError(f"Invalid immutable ref for {season}/{dataset}")
+        entries.append({"season": season, "dataset": dataset, **asdict(ref)})
+    payload = {
+        "contract_version": DERIVED_REF_SET_VERSION,
+        "state": "complete",
+        "season_lineage_policy_version": policy.version,
+        "research_prefix": policy.research_prefix,
+        "source_set_uri": source_set_uri,
+        "source_set_sha256": source_set_sha256,
+        "identity": dict(identity),
         "entries": entries,
     }
     return {**payload, "ref_set_sha256": _canonical_sha(payload)}

@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
 from cks_picks_cfb.ratings.state_contracts import (
     MEASUREMENT_STATE_COLUMNS,
     TEAM_STATE_COLUMNS,
@@ -100,17 +101,34 @@ def build_team_states(
     """Build chronological pregame and terminal component/team states."""
     components: list[dict[str, Any]] = []
     teams: list[dict[str, Any]] = []
-    prior_states: dict[tuple[str, str, str], tuple[float, float]] = {}
+    terminal_states_by_season: dict[
+        int, dict[tuple[str, str, str], tuple[float, float]]
+    ] = {}
     seasons = sorted(
         set(pd.to_numeric(pregame_snapshots["season"]).dropna().astype(int))
     )
+    lineage = (
+        load_season_lineage_policy(config.season_lineage_policy_path)
+        if config.is_successor_v2
+        else None
+    )
+    if lineage is not None and tuple(seasons) != lineage.historical_development_seasons:
+        raise ValueError("Successor-v2 team states require the complete permitted corpus")
     for season in seasons:
+        transition = lineage.prior_transition_for(season) if lineage else None
+        prior_source_season = transition.source_season if transition else season - 1
+        annual_decay_steps = transition.annual_decay_steps if transition else 1
+        prior_states = (
+            terminal_states_by_season.get(prior_source_season, {})
+            if transition is not None
+            else terminal_states_by_season.get(season - 1, {})
+        )
         previous_terminal = terminal_snapshots[
-            pd.to_numeric(terminal_snapshots["season"]) == season - 1
+            pd.to_numeric(terminal_snapshots["season"]) == prior_source_season
         ]
         scales = (
             _scales(previous_terminal, config)
-            if season > min(seasons)
+            if prior_states
             else _scales(pd.DataFrame(columns=terminal_snapshots.columns), config)
         )
         season_pregame = pregame_snapshots[
@@ -134,6 +152,8 @@ def build_team_states(
                 config=config,
                 scales=scales,
                 prior_states=prior_states,
+                prior_source_season=prior_source_season if prior_states else None,
+                annual_decay_steps=annual_decay_steps,
                 code_sha=code_sha,
                 config_sha=config_sha,
                 parent_measurement_refs=parent_measurement_refs,
@@ -156,15 +176,20 @@ def build_team_states(
                 config=config,
                 scales=scales,
                 prior_states=prior_states,
+                prior_source_season=prior_source_season if prior_states else None,
+                annual_decay_steps=annual_decay_steps,
                 code_sha=code_sha,
                 config_sha=config_sha,
                 parent_measurement_refs=parent_measurement_refs,
             )
-            for row in components:
-                if row["state_id"].startswith(f"terminal:{season}:"):
-                    prior_states[
-                        (row["team"], row["measurement_id"], row["unit_role"])
-                    ] = (row["posterior_mean"], row["posterior_variance"])
+            terminal_states_by_season[season] = {
+                (row["team"], row["measurement_id"], row["unit_role"]): (
+                    row["posterior_mean"],
+                    row["posterior_variance"],
+                )
+                for row in components
+                if row["state_id"].startswith(f"terminal:{season}:")
+            }
     measurement_frame = pd.DataFrame.from_records(
         components, columns=MEASUREMENT_STATE_COLUMNS
     )
@@ -202,6 +227,8 @@ def _append_state_group(
     config: TeamStateConfig,
     scales: dict[tuple[str, str], tuple[float, float, str | None]],
     prior_states: dict[tuple[str, str, str], tuple[float, float]],
+    prior_source_season: int | None,
+    annual_decay_steps: int,
     code_sha: str,
     config_sha: str,
     parent_measurement_refs: str,
@@ -226,11 +253,12 @@ def _append_state_group(
             )
         else:
             terminal_mean, terminal_variance = terminal
-            prior_mean = config.offseason_rho * terminal_mean
-            prior_variance = config.offseason_rho**2 * terminal_variance + (
-                1 - config.offseason_rho**2
+            decay = config.offseason_rho**annual_decay_steps
+            prior_mean = decay * terminal_mean
+            prior_variance = decay**2 * terminal_variance + (
+                1 - decay**2
             )
-            prior_source, prior_flag = season - 1, None
+            prior_source, prior_flag = prior_source_season, None
         native = pd.to_numeric(
             pd.Series([row.get("adjusted_value")]), errors="coerce"
         ).iloc[0]

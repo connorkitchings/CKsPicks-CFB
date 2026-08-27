@@ -19,7 +19,12 @@ from cks_picks_cfb.ratings.contracts import (
 
 STATE_CONFIG_VERSION = "team_state_baseline_v1"
 STATE_CONFIG_VERSION_V2 = "team_state_baseline_v2"
-SUPPORTED_STATE_CONFIG_VERSIONS = (STATE_CONFIG_VERSION, STATE_CONFIG_VERSION_V2)
+STATE_CONFIG_VERSION_SUCCESSOR_V2 = "team_state_successor_v2"
+SUPPORTED_STATE_CONFIG_VERSIONS = (
+    STATE_CONFIG_VERSION,
+    STATE_CONFIG_VERSION_V2,
+    STATE_CONFIG_VERSION_SUCCESSOR_V2,
+)
 MEASUREMENT_STATE_DATASET = "rating_measurement_states"
 TEAM_STATE_DATASET = "rating_team_states"
 MEASUREMENT_STATE_SCHEMA_VERSION = "rating_measurement_states_v1"
@@ -126,21 +131,34 @@ class TeamStateConfig:
         return self.config_version == STATE_CONFIG_VERSION_V2
 
     @property
+    def is_successor_v2(self) -> bool:
+        return self.config_version == STATE_CONFIG_VERSION_SUCCESSOR_V2
+
+    @property
     def measurement_state_schema_version(self) -> str:
         return (
-            "rating_measurement_states_v2"
+            "rating_measurement_states_v3"
+            if self.is_successor_v2
+            else "rating_measurement_states_v2"
             if self.is_v2
             else MEASUREMENT_STATE_SCHEMA_VERSION
         )
 
     @property
     def team_state_schema_version(self) -> str:
+        if self.is_successor_v2:
+            return "rating_team_states_v3"
         return "rating_team_states_v2" if self.is_v2 else TEAM_STATE_SCHEMA_VERSION
 
     @property
     def location_gate(self) -> Mapping[str, Any] | None:
         value = self.raw_config.get("location_gate")
         return value if isinstance(value, Mapping) else None
+
+    @property
+    def season_lineage_policy_path(self) -> str | None:
+        value = self.raw_config.get("season_lineage_policy")
+        return str(value) if isinstance(value, str) else None
 
     @property
     def design_id(self) -> str:
@@ -214,6 +232,20 @@ def load_team_state_config(path: str | Path) -> TeamStateConfig:
         maximum = float(gate.get("maximum_abs_population_mean", -1))
         if not 0 < fraction <= 1 or maximum <= 0:
             raise MeasurementContractError("Invalid Phase 2 v2 location gate")
+    if config_version == STATE_CONFIG_VERSION_SUCCESSOR_V2:
+        if raw.get("measurement_config_version") != "measurement_baseline_v3":
+            raise MeasurementContractError(
+                "Successor-v2 state config requires true-PPSO measurements"
+            )
+        if not isinstance(raw.get("season_lineage_policy"), str):
+            raise MeasurementContractError(
+                "Successor-v2 state config requires a season lineage policy"
+            )
+        gate = raw.get("location_gate")
+        if not isinstance(gate, Mapping):
+            raise MeasurementContractError(
+                "Successor-v2 state config requires a location gate"
+            )
     return TeamStateConfig(
         config_version,
         str(raw.get("measurement_config_version", "")),

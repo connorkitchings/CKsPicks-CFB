@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 import pandas as pd
 
+from cks_picks_cfb.data.season_lineage import load_season_lineage_policy
 from cks_picks_cfb.ratings.contracts import market_field_conflicts
 from cks_picks_cfb.ratings.state_contracts import TeamStateConfig
 
@@ -17,7 +18,13 @@ def _location_stability(
     gate = config.location_gate
     if gate is None:
         return True, {"enabled": False}
-    historical = set(range(2021, 2026))
+    historical = (
+        set(
+            load_season_lineage_policy(config.season_lineage_policy_path).historical_development_seasons
+        )
+        if config.is_successor_v2
+        else set(range(2021, 2026))
+    )
     terminal = team_states[
         (team_states["state_kind"] == "season_terminal")
         & (team_states["season"].astype(int).isin(historical))
@@ -161,7 +168,11 @@ def build_team_state_audit(
         "forbidden_seasons_ok": not set(
             pd.to_numeric(team_states["season"], errors="coerce").dropna().astype(int)
         )
-        & {2019, 2020},
+        & (
+            set(load_season_lineage_policy(config.season_lineage_policy_path).forbidden_seasons)
+            if config.is_successor_v2
+            else {2019, 2020}
+        ),
         "location_stability_ok": location_ok,
     }
     report = {

@@ -6,6 +6,7 @@ import pytest
 from cks_picks_cfb.ops.__main__ import (
     _history_silver_steps,
     _source_subprocess_timeout_seconds,
+    _successor_preview_runtime_step,
     build_steps,
 )
 from cks_picks_cfb.ops.state_machine import (
@@ -38,6 +39,33 @@ def test_source_subprocess_timeout_is_positive_and_configurable(monkeypatch):
     monkeypatch.setenv("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS", "0")
     with pytest.raises(ValueError, match="must be positive"):
         _source_subprocess_timeout_seconds()
+
+
+def test_successor_r1_preview_preflight_requires_r2_cfbd_and_preview_storage(
+    monkeypatch,
+):
+    context = new_context(
+        command="prepare-rating-history",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of="2026-08-27T12:00:00Z",
+        pipeline_run_id="r1-preflight",
+    )
+    step = _successor_preview_runtime_step({"code_sha": "fixture-sha"})
+    monkeypatch.setattr(
+        "cks_picks_cfb.ops.__main__._verify_successor_r1_committed_code",
+        lambda: "fixture-sha",
+    )
+    monkeypatch.setenv("CFB_STORAGE_BACKEND", "local")
+    with pytest.raises(RuntimeError, match="CFB_STORAGE_BACKEND=r2"):
+        step.action(context)
+
+    monkeypatch.setenv("CFB_STORAGE_BACKEND", "r2")
+    monkeypatch.setenv("PREVIEW_DATABASE_URL", "postgresql://preview")
+    monkeypatch.setenv("CFBD_API_KEY", "fixture")
+    monkeypatch.setattr("cks_picks_cfb.ops.__main__.get_storage", lambda **_: object())
+    assert step.action(context)[0]["environment"] == "preview"
 
 
 def test_history_play_sample_probe_is_preview_graph_without_capture_writes():
@@ -467,11 +495,15 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
         as_of="2026-08-27T12:00:00Z",
         pipeline_run_id="successor-history",
     )
-    options = SimpleNamespace(skip_capture=True, prefix="")
+    options = SimpleNamespace(
+        skip_capture=True,
+        prefix="",
+    )
     skipped = build_steps(context, conn_url="postgresql://unused", options=options)
+    assert skipped[0].name == "validate_successor_r1_preview_runtime"
     assert all("capture_successor_history" not in step.name for step in skipped)
 
-    # Build the capture graph without querying a historical source archive.
+    # Build the full capture-only graph without querying a historical source archive.
     options.skip_capture = False
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
@@ -480,12 +512,38 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
         )
         steps = build_steps(context, conn_url="postgresql://unused", options=options)
     captures = [step for step in steps if step.name.startswith("capture_successor")]
-    assert len(captures) == 20
-    assert len({step.definition["entity"] for step in captures}) == 20
+    assert len(captures) == 50
+    assert len({step.definition["entity"] for step in captures}) == 50
     names = [step.name for step in captures]
     games_index = names.index("capture_successor_history_2015_games")
     assert games_index < names.index("capture_successor_history_2015_venues")
     assert games_index < names.index("capture_successor_history_2015_plays")
+    assert "capture_successor_history_2025_plays" in names
+    source_set = next(
+        step for step in steps if step.name == "close_successor_history_source_set"
+    )
+    assert source_set.definition["identity"]["code_sha"]
+    non_play_captures = [
+        step for step in captures if not step.name.endswith("_plays")
+    ]
+    assert all(step.definition.get("capture_only", False) for step in non_play_captures)
+    assert "close_successor_history_derived_ref_set" in [step.name for step in steps]
+    assert "build_successor_r1_foundation" in [step.name for step in steps]
+    assert "audit_successor_cross_lineage" in [step.name for step in steps]
+    assert "certify_successor_history" in [step.name for step in steps]
+    comparison = next(
+        step for step in steps if step.name == "freeze_successor_legacy_comparison_evidence"
+    )
+    assert "--comparison-ref-set-uri" not in comparison.definition["argv"]
+
+    options.comparison_ref_set_uri = "artifacts/preview/legacy-comparison/ref-set.json"
+    overridden = build_steps(context, conn_url="postgresql://unused", options=options)
+    comparison = next(
+        step
+        for step in overridden
+        if step.name == "freeze_successor_legacy_comparison_evidence"
+    )
+    assert "--comparison-ref-set-uri" in comparison.definition["argv"]
 
 
 def test_postgres_state_store_preserves_lease_and_step_semantics_with_fake_connection(

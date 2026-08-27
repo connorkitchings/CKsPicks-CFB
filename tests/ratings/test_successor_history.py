@@ -11,10 +11,12 @@ from cks_picks_cfb.ratings.context_admission import (
     evaluate_context_family,
 )
 from cks_picks_cfb.ratings.successor_history import (
+    R1_REQUIRED_DATASETS,
     REQUIRED_DATASETS,
     SeasonCoverageEvidence,
     SuccessorHistoryError,
     coverage_report,
+    derived_history_ref_set,
     expanded_history_ref_set,
 )
 
@@ -76,6 +78,48 @@ def test_history_ref_set_requires_exact_successor_scope_and_is_deterministic():
     refs.pop((2015, "plays"))
     with pytest.raises(SuccessorHistoryError, match="missing"):
         expanded_history_ref_set(POLICY, refs)
+
+
+def test_r1_derived_ref_set_binds_every_source_and_silver_output():
+    refs = {
+        (season, dataset): DatasetRef(
+            dataset=dataset,
+            version_id=f"{dataset}-{season}",
+            schema_version="v1",
+            content_sha=f"sha-{dataset}-{season}",
+            uri=f"lake/silver/{dataset}/{season}",
+        )
+        for season in POLICY.historical_development_seasons
+        for dataset in R1_REQUIRED_DATASETS
+    }
+    first = derived_history_ref_set(
+        POLICY,
+        refs,
+        source_set_uri="artifacts/research/rating-successor-v2/r1/run/source-set.json",
+        source_set_sha256="source-sha",
+        identity={"pipeline_id": "run"},
+    )
+    second = derived_history_ref_set(
+        POLICY,
+        refs,
+        source_set_uri="artifacts/research/rating-successor-v2/r1/run/source-set.json",
+        source_set_sha256="source-sha",
+        identity={"pipeline_id": "run"},
+    )
+    assert first["ref_set_sha256"] == second["ref_set_sha256"]
+    assert len(first["entries"]) == len(POLICY.historical_development_seasons) * len(
+        R1_REQUIRED_DATASETS
+    )
+
+    refs.pop((2015, "drives"))
+    with pytest.raises(SuccessorHistoryError, match="missing"):
+        derived_history_ref_set(
+            POLICY,
+            refs,
+            source_set_uri="artifacts/research/rating-successor-v2/r1/run/source-set.json",
+            source_set_sha256="source-sha",
+            identity={"pipeline_id": "run"},
+        )
 
 
 def test_context_admission_fails_closed_for_market_or_missing_authentic_capture():

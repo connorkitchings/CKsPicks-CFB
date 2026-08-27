@@ -81,6 +81,32 @@ def _capture_ids(conn_url: str, entity: str, season: int, dataset: str) -> list[
             return [str(row[0]) for row in cur.fetchall()]
 
 
+def _capture_ids_from_source_set(
+    storage, uri: str, *, entity: str, season: int
+) -> list[str]:
+    """Resolve exact R1 captures from a complete full-corpus source manifest."""
+
+    raw = json.loads(storage.read_bytes(uri).decode())
+    if (
+        raw.get("contract_version") != "successor-history-source-set-v2"
+        or raw.get("state") != "complete"
+    ):
+        raise ValueError("--source-set-uri must name a complete R1 source set")
+    matches = [
+        item
+        for item in raw.get("entries", [])
+        if int(item.get("season", -1)) == season and item.get("entity") == entity
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"R1 source set must contain exactly one {season}/{entity} entry"
+        )
+    capture_ids = [str(value) for value in matches[0].get("capture_ids", [])]
+    if not capture_ids or len(capture_ids) != len(set(capture_ids)):
+        raise ValueError(f"R1 source set has invalid {season}/{entity} capture IDs")
+    return capture_ids
+
+
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -89,6 +115,10 @@ def main() -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--games-ref-uri")
     parser.add_argument("--week-policy-ref-uri")
+    parser.add_argument(
+        "--source-set-uri",
+        help="Complete successor-history-source-set-v2 manifest for exact captures.",
+    )
     parser.add_argument(
         "--play-capture-set-uri",
         help=(
@@ -133,7 +163,15 @@ def main() -> None:
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     source_entity = SOURCE_ENTITIES[args.dataset]
-    if args.play_capture_set_uri:
+    if args.source_set_uri:
+        if args.play_capture_set_uri:
+            raise ValueError(
+                "--source-set-uri and --play-capture-set-uri are mutually exclusive"
+            )
+        ids = _capture_ids_from_source_set(
+            storage, args.source_set_uri, entity=source_entity, season=args.season
+        )
+    elif args.play_capture_set_uri:
         if args.dataset != "plays":
             raise ValueError("--play-capture-set-uri is valid only for plays")
         ids = manifest_capture_ids(storage, args.play_capture_set_uri)
