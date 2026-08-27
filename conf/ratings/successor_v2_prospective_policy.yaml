@@ -1,0 +1,12 @@
+prospective_policy_version: successor_v2_prospective_evidence_v1
+candidate_generation: v2
+season: 2026
+first_eligible_normal_coverage_week: 1
+normal_coverage_min_games: 40
+operating_target_lead_seconds: 7200
+hard_lead_seconds: 3600
+scoring_stabilization_seconds: 86400
+required_eligible_slates: 6
+forbidden_evidence_transfer_from: candidate_v1
+allow_retrospective_freeze: false
+research_prefix: artifacts/research/rating-successor-v2

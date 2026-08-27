@@ -26,12 +26,16 @@ Copy the template from `.agent/skills/plan-session/assets/implementation-contrac
 
 Terra must not execute a Draft contract without an explicit user instruction naming that exact path. In that case, Terra records the instruction as the approval source and changes the status to `Approved` before code changes.
 
-## Current rating-transition contract
+## Current rating-transition contracts
 
+- [Historical expansion and ratings methodology reset](2026-08-26/historical-expansion-ratings-methodology-reset.md)
+  — In Progress. R1–R4 expands football-only historical research through
+  2015–2019 and redesigns priors, updating, and prediction before any
+  candidate-v2 prospective lane begins. 2020 remains globally excluded.
 - [Phase 5 protected prospective evidence](2026-08-26/phase5-protected-prospective-evidence.md)
-  — In Progress. Preview-only tooling is implementing immutable policy, timing,
-  lineage, state, scoring, and six-slate audit gates; live evidence remains
-  blocked until committed-code and Preview environment preconditions pass.
+  — In Progress as O2 diagnostic evidence for frozen candidate v1 only. It
+  cannot tune v1, block successor-v2 research, or transfer its evidence to
+  candidate v2.
 - [Phase 4 isolated shadow operations](2026-08-26/phase4-shadow-operations.md)
   — Implemented 2026-08-26. The Preview-only full-2025 rehearsal passed all 15
   weeks and its byte-identical rerun (summary SHA-256 `b755b585…`).

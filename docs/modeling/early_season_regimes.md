@@ -17,7 +17,8 @@ baseline for every rating candidate.
 
 - All feature evidence must be reproducible before kickoff.
 - Market prices never enter model features or route selection.
-- 2020 is excluded; 2019 is prior-only lineage for early 2021 where permitted.
+- V4 excludes 2020 and retains its sealed 2021–2025 lineage. Successor-v2
+  research separately uses 2015–2019 and 2021–2025; it cannot alter V4.
 - Immutable artifact lineage, temporal validation, fail-closed publication, and
   frozen-run rollback remain mandatory.
 

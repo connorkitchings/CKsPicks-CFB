@@ -65,8 +65,9 @@ Two exposure-basis details are binding for Phase 2:
 
 The baseline uses four fixed, league-centered additive adjustment iterations
 for adjustment-eligible measures, retaining iteration zero and four for audit.
-Historical 2021–2025 reconstruction supports development only; protected 2026
-evidence requires authentic source timing before kickoff.
+Historical 2015–2019 and 2021–2025 reconstruction supports development only;
+2020 is excluded, and protected 2026 evidence requires authentic source timing
+before kickoff.
 
 ### Phase 1 audit disposition
 

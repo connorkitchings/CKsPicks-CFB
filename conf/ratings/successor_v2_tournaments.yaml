@@ -1,0 +1,56 @@
+tournament_contract_version: rating_successor_v2_tournaments_v1
+season_lineage_policy: conf/ratings/successor_v2_season_lineage.yaml
+research_prefix: artifacts/research/rating-successor-v2
+
+between_season:
+  candidates:
+    - {id: neutral_population, complexity: 0}
+    - {id: fixed_rho_0_60, complexity: 1}
+    - {id: learned_offense_defense, complexity: 2}
+    - {id: partially_pooled_components, complexity: 3}
+    - {id: terminal_ewma_half_life_1, complexity: 2}
+    - {id: terminal_ewma_half_life_2, complexity: 2}
+    - {id: terminal_ewma_half_life_3, complexity: 2}
+    - {id: continuity_ridge_alpha_0_1, complexity: 4, requires_admitted_context: true}
+    - {id: continuity_ridge_alpha_1, complexity: 4, requires_admitted_context: true}
+    - {id: continuity_ridge_alpha_10, complexity: 4, requires_admitted_context: true}
+    - {id: continuity_ridge_alpha_100, complexity: 4, requires_admitted_context: true}
+  baseline_id: fixed_rho_0_60
+  maximum_full_season_mae_ratio: 1.01
+  tie_fraction: 0.005
+
+within_season:
+  candidates:
+    - {id: fixed_precision_exposure, complexity: 1}
+    - {id: prior_exposure_0_5, complexity: 2}
+    - {id: prior_exposure_1, complexity: 2}
+    - {id: prior_exposure_2, complexity: 2}
+    - {id: prior_exposure_4, complexity: 2}
+    - {id: recency_half_life_2, complexity: 3}
+    - {id: recency_half_life_4, complexity: 3}
+    - {id: recency_half_life_8, complexity: 3}
+    - {id: gaussian_dynamic_sd_0_025, complexity: 4}
+    - {id: gaussian_dynamic_sd_0_05, complexity: 4}
+    - {id: gaussian_dynamic_sd_0_10, complexity: 4}
+    - {id: gaussian_dynamic_sd_0_20, complexity: 4}
+    - {id: robust_dynamic_cap_2, complexity: 5}
+    - {id: robust_dynamic_cap_3, complexity: 5}
+  baseline_id: fixed_precision_exposure
+  maximum_early_season_mae_ratio: 1.01
+  tie_fraction: 0.005
+
+structured_predictor:
+  candidates:
+    - {id: nb2_team_scores, complexity: 1}
+    - {id: gaussian_linear_team_scores, complexity: 1}
+    - {id: direct_bivariate_margin_total, complexity: 2}
+    - {id: ridge_structured_residual, complexity: 3}
+    - {id: catboost_structured_residual, complexity: 4}
+  baseline_id: nb2_team_scores
+  maximum_full_season_mae_ratio: 1.01
+  bootstrap_samples: 2000
+  bootstrap_seed: 42
+  tie_fraction: 0.005
+  catboost_feature_boundary:
+    allowed: [rating_outputs, uncertainty, pace, venue, weather, completed_game_counts, admitted_football_context]
+    prohibited: [team_categorical, markets, future_observations, unadmitted_context]

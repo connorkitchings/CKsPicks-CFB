@@ -1,6 +1,6 @@
-# 2026 Season and Rating-Centric Transition Roadmap
+# 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-08-24
+> **Last updated:** 2026-08-26
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 ## Direction
@@ -16,8 +16,11 @@ source data → Bronze/Silver/Gold → football measurements
 → market decision
 ```
 
-The successor may be promoted during 2026 only through the evidence gate below.
-It is not implemented or activation-eligible today. See the
+The successor may be promoted during 2026 only through a later, separately
+approved evidence and promotion review. It is not activation-eligible today.
+The active research authority is the
+[historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md).
+See the
 [rating-system requirements](../modeling/rating_system_requirements.md),
 [measurement catalog](../modeling/measurement_catalog.md), and
 [evaluation policy](../modeling/evaluation.md).
@@ -34,7 +37,26 @@ It is not implemented or activation-eligible today. See the
 - Market quotes are timestamped decision inputs after prediction; they never
   enter football-model inputs or selection.
 
-## Transition milestones
+## Two explicit tracks
+
+### Research track
+
+| Stage | Deliverable | Boundary |
+| --- | --- | --- |
+| R1 | Expanded, certified historical corpus: 2015–2019 and 2021–2025 | 2020 is forbidden; 2026 outcomes are protected and excluded. |
+| R2 | Sealed between-season prior tournament | 2025 is locked; 2019→2021 is a two-year stress transition, not a normal fit example. |
+| R3 | Sealed within-season state-update tournament | R2 winner is locked before selection. |
+| R4 | Structured predictor tournament and candidate-v2 freeze | Candidate v2 only freezes if every historical gate passes. |
+
+### 2026 operations track
+
+| Stage | Deliverable | Boundary |
+| --- | --- | --- |
+| O1 | Unchanged V4 production operations | V4 remains champion, rollback authority, and public system. |
+| O2 | Candidate-v1 diagnostic evidence from `ac1fba1` | Isolated worktree; diagnostic-only; it cannot block R1–R4. |
+| O3 | Candidate-v2 protected evidence and later promotion review | New prospective lane; no evidence transfers or backdating. |
+
+## Operational milestones
 
 | Window | Deliverable | Promotion status |
 | --- | --- | --- |
@@ -47,9 +69,7 @@ It is not implemented or activation-eligible today. See the
 Week 0 does not count as a full slate. A full slate has normal schedule coverage
 and both V4 and candidate predictions frozen before its first kickoff.
 
-## Transition phases
-
-### 0. Preserve production
+## Preserved production invariant
 
 Do not change V4 weights, routes, bundles, publication policy, weekly workflow,
 or rollback behavior as part of rating research. V4 is the production benchmark
@@ -57,86 +77,30 @@ for every challenger. Rating work has no path to Neon activation, public
 publication, or production rollback selection before a separate promotion
 contract is approved.
 
-### 1. Measurement and opponent-adjustment foundation
+## Research rules
 
-Audit the actual 2021–2026 Gold fields and formalize a deliberately small,
-versioned team-game measurement interface. Every selected measurement carries
-its exposure, effective-time status, immutable source lineage, missingness, and
-quality flags. The baseline performs schedule adjustment once at the
-measurement layer and records which contexts are already represented.
+R1 reconstructs history only under new successor-v2 identities. It must certify
+completed-game play coverage, score reconciliation, schemas, and zero 2020
+lineage before R2 can begin. R2, R3, and R4 are sequential sealed tournaments:
+each winning stage is locked before the next stage is evaluated. Football
+measurements, admitted preseason football context, venue, and weather are
+eligible inputs; bookmaker data is evaluation-only. 2025 is evaluated once as
+the locked confirmation year. A failed gate publishes an immutable diagnostic,
+not a relaxed candidate.
 
-The phase exits only when adjusted measurements are reproducible and pass
-coverage, redundancy, point-in-time, and schedule-strength double-counting
-checks. No rating estimator is introduced before this gate.
-
-**Current disposition:** The initial implementation is retained as immutable
-research history but is under corrective v2 remediation before it can satisfy
-this gate. See `docs/plans/2026-08-24/phase1-rating-measurement-remediation.md`.
-
-### 2. Minimum viable team-state baseline
-
-Select the simplest viable estimator under a dedicated implementation contract.
-Produce pregame offense, defense, overall-quality, and uncertainty-bearing team
-states whose meaning remains stable throughout the season. Preseason priors
-lose influence smoothly as credible exposure accumulates. Historical state
-snapshots retain exact input, configuration, code, and cutoff lineage.
-
-### 3. Structured margin and total prediction
-
-Map two frozen team states plus legitimate venue and game context directly to
-expected margin and total, with non-null predictive uncertainty for both. The
-first baseline excludes residual ML and market inputs. Historical expanding
-temporal evaluation compares the candidate to V4 on identical games, and all
-prospective gates are registered before the candidate identity freezes.
-
-### 4. Isolated shadow operations
-
-Add a research-only weekly workflow that builds states, generates predictions,
-validates schedule coverage, and freezes immutable artifacts before kickoff.
-Postgame scoring pairs candidate and V4 outputs for the same games and cutoff.
-Missing data, partial coverage, duplicates, late execution, or checksum failure
-must fail closed. Week 1 is the first target only if Phases 1–4 pass without
-weakening a gate.
-
-### 5. Protected prospective evidence
-
-2021–2025 supports historical temporal development; it is not a new untouched
-test set for this architecture. Each 2026 candidate must freeze its identity,
-lineage, configuration, cutoff, and predictions before eligible outcomes are
-observed. Run the unchanged baseline through normal-coverage slates and evaluate
-rating behavior, prediction quality, uncertainty calibration, and only then
-authentic timestamped market value. Week 0 does not count.
-
-### 6. Attributable challenger research
-
-After the simple baseline freezes, investigate estimator families, priors,
-special teams, alternative uncertainty methods, rating-assisted adjustment,
-and optional residual ML as separately attributable changes. Every revision
-receives a new candidate identity and later untouched prospective window; it
-cannot alter the baseline evidence lane.
-
-### 7. Promotion review and operationalization
-
-After one unchanged candidate accumulates six eligible full slates, a separate
-approved contract may review paired V4 results, calibration, reproducibility,
-operational rehearsal, fail-closed behavior, and rollback proof. Promotion is
-never automatic, and V4 remains the fallback.
-
-Authentic timestamped market evaluation follows football-model evaluation. A
-failed gate cannot be bypassed for schedule reasons.
+Candidate-v2 prospective evidence begins only after its committed identity is
+frozen. It has a new six-slate counter and cannot inherit candidate-v1 evidence.
+Authentic timestamped market evaluation follows football-model evaluation; a
+calendar date cannot bypass a failed gate.
 
 ## Planning and execution protocol
 
-- This roadmap controls sequencing; it does not authorize implementation of all
-  phases as one change.
-- Each phase receives a decision-complete Sol contract and a fresh Terra
-  implementation task. A phase cannot begin implementation before its prior
-  exit gate is satisfied or an approved amendment explicitly changes the order.
-- The initial baseline is deliberately end-to-end and simple. Richer research
-  begins only after the first candidate identity is frozen so prospective
-  evidence is not delayed or contaminated.
-- Week 1 is a conditional target. Production Week 0 operations and evidence
-  integrity take precedence over the date.
+- This roadmap controls sequencing; the active task-level authority is the
+  historical-expansion plan linked below.
+- The O2 candidate-v1 lane remains reproducible only from its pinned `ac1fba1`
+  worktree and is never an input to candidate-v2 selection.
+- No 2026 outcome is a development input. Missing a candidate-v2 prospective
+  window is acceptable and never permits a retrospective freeze.
 
 ## Phase contract queue
 
@@ -164,8 +128,12 @@ failed gate cannot be bypassed for schedule reasons.
   calibration gates true). Phase 4 shadow operations are implemented: the
   Preview-only all-2025 rehearsal passed all 15 weeks and byte-identical rerun
   (summary SHA-256 `b755b585…`); no production interface changed. Phase 5
-  protected-evidence tooling is In Progress under
+  protected-evidence tooling is amended into the O2 diagnostic lane under
   [its operations contract](../plans/2026-08-26/phase5-protected-prospective-evidence.md).
+- [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
+  — **In Progress.** Governing R1–R4 research contract: 2015–2019 plus
+  2021–2025, universal 2020 exclusion, staged methodology tournament, and a
+  future candidate-v2 evidence lane.
 
 ## Invariants and open decisions
 

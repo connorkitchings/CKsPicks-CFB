@@ -6,9 +6,11 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 ## Current posture
 
 **V4 is the live 2026 production champion.** It publishes spread and total
-predictions through the fail-closed weekly operations workflow. The approved
-successor is a rating-centric hybrid architecture, developed only in isolated
-research and shadow paths until it earns promotion.
+predictions through the fail-closed weekly operations workflow. The successor
+is a rating-centric hybrid architecture on a separate research track: R1
+certifies 2015–2019 and 2021–2025 history, R2–R4 select its methodology, and a
+fresh candidate-v2 evidence lane follows only after a committed freeze. 2020
+is excluded globally; 2026 outcomes are protected prospective evidence.
 
 The target flow is:
 
@@ -25,7 +27,7 @@ They are joined only after a football prediction exists.
 ## Start here
 
 - [2026 roadmap](planning/roadmap.md) — current work, milestones, and the
-  evidence-gated transition.
+  explicit R1–R4 research / O1–O3 operations split.
 - [Rating-system requirements](modeling/rating_system_requirements.md) — the
   approved successor’s initial requirements and deferred decisions.
 - [Measurement catalog](modeling/measurement_catalog.md) — football
@@ -36,6 +38,8 @@ They are joined only after a football prediction exists.
   2026 shadow evidence policy.
 - [Weekly pipeline](ops/weekly_pipeline.md) and
   [production runbook](ops/production_runbook.md) — live operations.
+- [Successor-v2 research runbook](ops/rating_successor_research.md) —
+  Preview-only R1 capture/certification and staged tournament procedure.
 - [Implementation contracts](plans/index.md) — durable Sol-to-Terra handoffs.
 - [Decision log](decisions/decision_log.md) — architectural decisions.
 

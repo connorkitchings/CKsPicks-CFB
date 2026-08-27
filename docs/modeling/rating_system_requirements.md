@@ -83,8 +83,8 @@ until a later contract says otherwise.
 The adjustment is four fixed, league-centered additive iterations over
 strictly prior evidence, with iteration zero and four retained for audit.
 Zero exposure stays null with a quality reason; play eligibility is
-`is_drive_play == 1` and `garbage == 0`. Reconstructed 2021–2025 timing is
-valid for historical development only; protected 2026 evidence requires
+`is_drive_play == 1` and `garbage == 0`. Reconstructed 2015–2019 and 2021–2025
+timing is valid for historical development only; protected 2026 evidence requires
 authentic source timing. The implementation lives in the isolated
 `cks_picks_cfb.ratings` namespace with the Preview-only CLIs
 `scripts/pipeline/build_rating_measurements.py` and
@@ -162,7 +162,7 @@ selection. V4 remains the production comparison baseline.
 
 ## Evaluation and promotion requirements
 
-Historical 2021–2025 data supports temporal development. Because its outcomes
+Historical 2015–2019 and 2021–2025 data supports temporal development. Because its outcomes
 are already known, it does not provide untouched successor evidence. Each
 candidate uses the protected 2026 policy in [evaluation](evaluation.md): freeze
 the design, data cutoff, configuration, and predictions before outcomes.

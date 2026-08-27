@@ -598,6 +598,17 @@ promotion. Promotion remains a separate approved contract after six slates.
 
 ## Amendments
 
+### Amendment 1 — Candidate v1 becomes the O2 diagnostic baseline (2026-08-26)
+
+The approved historical-expansion roadmap
+(`historical-expansion-ratings-methodology-reset.md`) starts a separate
+successor-v2 research track before candidate v1 can claim a promotion path.
+Candidate v1 remains frozen at `ac1fba1` and may collect Preview-only
+diagnostic evidence from an isolated worktree, but it no longer blocks R1–R4,
+cannot receive tuning, and cannot transfer its evidence to candidate v2. V4
+remains unchanged in production. This amendment preserves every v1 freeze and
+scoring invariant; it only changes the program role of the lane.
+
 Any material conflict discovered before the first prospective freeze must be
 recorded here and resolved under committed code before the lane begins. After
 the first eligible freeze, no amendment may alter the candidate, state math,

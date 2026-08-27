@@ -27,6 +27,7 @@ nav:
   - Operations:
       - Weekly Pipeline: ops/weekly_pipeline.md
       - Production Runbook: ops/production_runbook.md
+      - Successor-v2 Research: ops/rating_successor_research.md
       - Validation: ops/validation.md
       - MLflow Development Tooling: ops/mlflow_mcp.md
   - Model and Experiment Lineage:

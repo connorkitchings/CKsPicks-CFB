@@ -24,12 +24,14 @@ from cks_picks_cfb.data.catalog import (
 from cks_picks_cfb.data.lake import SourceCapture, capture_provider_records
 from cks_picks_cfb.data.storage import StorageBackend
 
-ALLOWED_YEARS = frozenset({2019, 2021, 2022, 2023, 2024, 2025, 2026})
+ALLOWED_YEARS = frozenset(
+    {2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025, 2026}
+)
 FORBIDDEN_YEARS = frozenset({2020})
 DATA_SUFFIXES = frozenset({".parquet", ".csv", ".json"})
-PRIOR_ONLY_2019_ENTITIES = frozenset(
-    {"teams", "venues", "preseason_team_inputs", "team_season"}
-)
+# 2019 is no longer prior-only for successor-v2 research.  Legacy source
+# imports still reject 2020 and every unsupported year at this boundary.
+PRIOR_ONLY_2019_ENTITIES = frozenset()
 
 
 @dataclass(frozen=True)
@@ -196,10 +198,6 @@ def validate_historical_scope(
     unknown = years - ALLOWED_YEARS
     if unknown:
         raise ValueError(f"Historical object has unsupported years {sorted(unknown)}")
-    if 2019 in years and item.entity not in PRIOR_ONLY_2019_ENTITIES:
-        raise ValueError(
-            f"2019 is prior-only; entity {item.entity!r} is not eligible: {item.uri}"
-        )
     return years
 
 

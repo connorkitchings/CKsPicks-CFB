@@ -1,6 +1,7 @@
 # Rating Shadow Prospective Operations
 
-Phase 5 is a manual, Preview-only research workflow. It never publishes,
+O2 / Phase 5 is a manual, Preview-only diagnostic workflow for frozen
+candidate v1. It never publishes,
 freezes, scores, or changes V4 production runs. The production V4 run must
 already be frozen under the normal production runbook.
 
@@ -9,7 +10,8 @@ already be frozen under the normal production runbook.
 - The Phase 5 implementation is committed and the freeze/evaluator code paths
   match that commit.
 - `PREVIEW_DATABASE_URL` is configured, distinct from `DATABASE_URL`, and the
-  Preview R2 credentials are available.
+  Preview Neon branch is available. The immutable R2 bucket may be shared when
+  artifact namespaces remain environment-specific.
 - Week `W` is at least 1, has at least 40 eligible games, and the production
   V4 run is frozen at least one hour before the earliest kickoff.
 - Run `make prepare-week YEAR=2026 WEEK=W ENV=preview AS_OF=<cutoff>` before

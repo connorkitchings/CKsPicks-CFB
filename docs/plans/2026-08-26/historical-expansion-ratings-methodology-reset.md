@@ -1,6 +1,6 @@
 # Historical Expansion and Ratings Methodology Reset
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-08-26
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact

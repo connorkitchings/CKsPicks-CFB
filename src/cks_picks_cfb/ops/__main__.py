@@ -279,19 +279,83 @@ def _history_objects(prefix: str):
 
     source = get_source_storage()
     destination = get_storage(environment="preview")
-    if getattr(source.backend, "bucket", None) == getattr(destination, "bucket", None):
-        raise RuntimeError(
-            "Historical source and preview destination buckets must differ"
-        )
+    # Source and Preview may intentionally share an R2 bucket. Immutable path
+    # namespaces plus distinct Neon branches provide the isolation boundary.
     objects = inventory_historical_source(source, prefix=prefix)
     eligible = []
     for item in objects:
         if item.years & FORBIDDEN_YEARS:
             continue
-        if 2019 in item.years and item.entity not in PRIOR_ONLY_2019_ENTITIES:
+        if PRIOR_ONLY_2019_ENTITIES and (
+            2019 in item.years and item.entity not in PRIOR_ONLY_2019_ENTITIES
+        ):
             continue
         eligible.append(item)
     return source, destination, objects, eligible
+
+
+def _rating_history_silver_steps(*, environment: str, as_of: str) -> list[PipelineStep]:
+    """Build isolated 2015–2019 successor-v2 Silver refs after raw capture/import."""
+
+    prefix = "artifacts/preview/refs/rating-successor-v2"
+    steps: list[PipelineStep] = []
+
+    def add(
+        dataset: str, season: int, *, games: bool = False, optional: bool = False
+    ) -> None:
+        argv = _python(
+            "scripts/pipeline/build_history_silver.py",
+            "--dataset",
+            dataset,
+            "--season",
+            season,
+            "--as-of",
+            as_of,
+            "--output-ref-uri",
+            f"{prefix}/{dataset}-{season}.json",
+            "--identity-label",
+            "rating_successor_v2",
+            "--environment",
+            environment,
+        )
+        if games:
+            argv.extend(["--games-ref-uri", f"{prefix}/games-{season}.json"])
+        if optional:
+            argv.append("--optional")
+        steps.append(subprocess_step(f"successor_silver_{dataset}_{season}", argv))
+
+    for season in (2015, 2016, 2017, 2018, 2019):
+        for dataset in ("teams", "venues", "games", "game_outcomes"):
+            add(dataset, season)
+        add("plays", season, games=True)
+        add("team_game_stats", season)
+        steps.append(
+            subprocess_step(
+                f"successor_reconciled_team_game_{season}",
+                _python(
+                    "scripts/pipeline/build_team_game_dataset.py",
+                    "--plays-ref-uri",
+                    f"{prefix}/plays-{season}.json",
+                    "--games-ref-uri",
+                    f"{prefix}/games-{season}.json",
+                    "--teams-ref-uri",
+                    f"{prefix}/teams-{season}.json",
+                    "--venues-ref-uri",
+                    f"{prefix}/venues-{season}.json",
+                    "--game-stats-ref-uri",
+                    f"{prefix}/team_game_stats-{season}.json",
+                    "--corrections-ref-uri",
+                    "artifacts/preview/refs/data-corrections-v1.json",
+                    "--as-of",
+                    as_of,
+                    "--output-ref-uri",
+                    f"{prefix}/reconciled_team_game-{season}.json",
+                    "--environment",
+                    environment,
+                ),
+            )
+        )
+    return steps
 
 
 def _inventory_source_action(prefix: str):
@@ -673,6 +737,41 @@ def build_steps(
                     ),
                 ]
             )
+        return steps
+    if context.command == "prepare-rating-history":
+        assert options is not None and as_of is not None
+        if year != 2026:
+            raise ValueError(
+                "prepare-rating-history uses --year 2026 as its protected context"
+            )
+        steps: list[PipelineStep] = []
+        if not options.skip_capture:
+            for season in (2015, 2016, 2017, 2018):
+                steps.append(
+                    _fetch_source_step(
+                        name=f"capture_successor_history_{season}",
+                        argv=_python(
+                            "scripts/data/ingest_season.py",
+                            "--year",
+                            season,
+                            "--entities",
+                            "teams,venues,games,plays,game_stats",
+                        ),
+                        conn_url=conn_url,
+                        entity=f"successor_history_{season}",
+                    )
+                )
+            source, destination, _, eligible = _history_objects(options.prefix or "")
+            for item in eligible:
+                if item.years == {2019}:
+                    suffix = hashlib.sha256(item.uri.encode()).hexdigest()[:16]
+                    steps.append(
+                        PipelineStep(
+                            f"import_successor_2019_{suffix}",
+                            _import_history_action(conn_url, source, destination, item),
+                        )
+                    )
+        steps.extend(_rating_history_silver_steps(environment=environment, as_of=as_of))
         return steps
     if context.command == "fetch-source":
         assert options is not None and options.entity
@@ -1382,6 +1481,7 @@ def parse_args() -> argparse.Namespace:
         "inventory-source",
         "import-history",
         "hydrate-history",
+        "prepare-rating-history",
         "fetch-source",
         "build-silver",
         "build-team-game",
@@ -1412,6 +1512,7 @@ def parse_args() -> argparse.Namespace:
             "build-baselines",
             "assemble-model-ready",
             "fetch-source",
+            "prepare-rating-history",
         }:
             sub.add_argument("--week", type=int, required=True)
         if command in {
@@ -1423,6 +1524,7 @@ def parse_args() -> argparse.Namespace:
             "build-baselines",
             "assemble-model-ready",
             "prepare-week",
+            "prepare-rating-history",
             "close-week",
         }:
             sub.add_argument("--as-of", required=True)
@@ -1451,13 +1553,24 @@ def parse_args() -> argparse.Namespace:
         if command == "fetch-source":
             sub.add_argument("--entity", required=True)
             sub.add_argument("--week", type=int)
-        if command in {"inventory-source", "import-history", "hydrate-history"}:
+        if command in {
+            "inventory-source",
+            "import-history",
+            "hydrate-history",
+            "prepare-rating-history",
+        }:
             sub.add_argument("--prefix", default="")
             if command == "import-history":
                 sub.add_argument(
                     "--skip-imports",
                     action="store_true",
                     help="Skip raw capture imports and run downstream Silver/Gold steps",
+                )
+            if command == "prepare-rating-history":
+                sub.add_argument(
+                    "--skip-capture",
+                    action="store_true",
+                    help="Reuse already registered 2015–2019 source captures.",
                 )
         if command == "audit-data":
             sub.add_argument(
@@ -1508,7 +1621,13 @@ def main() -> None:
     except (RuntimeError, ValueError) as exc:
         raise SystemExit(str(exc)) from exc
     if (
-        args.command in {"inventory-source", "import-history", "hydrate-history"}
+        args.command
+        in {
+            "inventory-source",
+            "import-history",
+            "hydrate-history",
+            "prepare-rating-history",
+        }
         and args.environment != "preview"
     ):
         raise SystemExit(

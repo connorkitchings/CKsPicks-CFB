@@ -15,7 +15,9 @@ totals, published as weekly leans on a public Vercel web app.
 **Sport:** NCAA Division I FBS College Football
 **Prediction Targets:** Point spreads, over/under totals (per completed-game regime)
 **Data Sources:** CollegeFootballData.com API (games/plays/stats/preseason) + The Odds API (timestamped market quotes) + weather ingestion
-**Time Period:** 2019, 2021–2025 training data in the R2 lake (2020 excluded; 2019 prior-only for early-2021 lineage); 2026 is inference-only
+**Time Period:** V4 uses its immutable 2021–2025 lineage; successor-v2 research
+uses 2015–2019 and 2021–2025. 2020 is globally excluded and 2026 is protected
+prospective inference only.
 **Production:** https://c-ks-picks-cfb.vercel.app (Neon Postgres + Cloudflare R2)
 
 ---
@@ -50,7 +52,9 @@ Key invariants:
 - R2 is the durable source of truth; Neon is the derived web-serving DB.
 - `CFB_STORAGE_BACKEND='r2'` is the production path; `'local'` + `CFB_MODEL_DATA_ROOT` is the dev fallback. Never `./data/`.
 - Untimestamped legacy betting lines live in `legacy_market_references` and can never produce leans, grades, ROI, model features, or selection input.
-- 2020 is excluded from everything; 2019 is prior-quality lineage only.
+- 2020 is excluded from every input, label, fold, prior, and successor-v2
+  artifact. The expanded 2015–2019 corpus is research-only; it does not alter
+  V4's sealed lineage.
 - Every mutating operation goes through `python -m cks_picks_cfb.ops` with an explicit `ENV`; failed steps activate nothing.
 
 ### Modeling: ten-route regime design
@@ -118,13 +122,14 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-Development remains isolated from production activation. Each candidate must
-freeze its design before inspecting the eligible 2026 outcomes used as protected
-prospective evidence. Exact estimator, scale, prior model, uncertainty method,
-special-teams component, residual model, and artifact schema remain open for
-later contracts. The first promotion review requires six completed full slates
-with V4 and candidate predictions frozen before kickoff; Week 0 does not count.
-See `docs/planning/roadmap.md` and the modeling authority docs.
+Development remains isolated from production activation. R1 historical
+certification, R2 between-season priors, R3 within-season updates, and R4
+structured prediction are the research track. O1 is unchanged V4 production,
+O2 is the `ac1fba1` candidate-v1 diagnostic lane, and O3 is a future fresh
+candidate-v2 evidence lane. Each candidate must freeze before inspecting its
+eligible 2026 outcomes. Football-only inputs may be admitted only when their
+preseason meaning, coverage, and authentic 2026 capture are proved; markets are
+evaluation-only. See `docs/planning/roadmap.md` and the modeling authority docs.
 
 ### Feature Engineering
 

@@ -29,8 +29,11 @@ champion and direct comparator.
 
 ## Protected prospective 2026 policy
 
-2021–2025 is historical development and temporal-validation evidence for the
-successor, not an untouched test set. For every 2026 candidate:
+The successor-v2 research corpus is 2015–2019 and 2021–2025; 2020 is excluded
+from every input, label, prior, and fold. This is historical development and
+temporal-validation evidence, not an untouched test set. Candidate v1 remains
+an O2 diagnostic baseline; candidate v2 receives a new prospective lane. For
+every 2026 candidate:
 
 1. Record immutable candidate identity, code/config lineage, training cutoff,
    data versions, and eligible outcome window before that window is observed.

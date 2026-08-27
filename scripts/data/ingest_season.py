@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from cks_picks_cfb.data.base import DataUnavailableError
 from cks_picks_cfb.data.betting_lines import BettingLinesIngester
 from cks_picks_cfb.data.coaches import CoachesIngester
+from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.games import GamesIngester
 from cks_picks_cfb.data.plays import PlaysIngester
 from cks_picks_cfb.data.rankings import RankingsIngester
@@ -36,6 +37,7 @@ ENTITIES = {
     "coaches": CoachesIngester,
     "betting_lines": BettingLinesIngester,
     "plays": PlaysIngester,
+    "game_stats": GameStatsIngester,
     "rankings": RankingsIngester,
     "recruiting": RecruitingIngester,
     "external_ratings": None,  # handled specially

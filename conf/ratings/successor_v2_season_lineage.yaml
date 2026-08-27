@@ -1,0 +1,28 @@
+season_lineage_policy_version: rating_successor_v2_season_lineage_v1
+
+seasons:
+  historical_development:
+    [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  protected: [2026]
+  forbidden: [2020]
+
+between_season:
+  seed_season: 2015
+  normal_transition_targets: [2016, 2017, 2018, 2019, 2022, 2023, 2024, 2025]
+  gap_transition:
+    source_season: 2019
+    target_season: 2021
+    annual_decay_steps: 2
+  selection_target_seasons: [2018, 2019, 2022, 2023, 2024]
+  locked_season: 2025
+
+within_season:
+  selection_target_seasons: [2017, 2018, 2019, 2021, 2022, 2023, 2024]
+  locked_season: 2025
+
+context_admission:
+  minimum_fbs_coverage_fraction: 0.90
+  football_only: true
+  required_2026_authentic_capture: true
+
+research_prefix: artifacts/research/rating-successor-v2

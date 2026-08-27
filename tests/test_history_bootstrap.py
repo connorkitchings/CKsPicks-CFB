@@ -56,7 +56,7 @@ def test_inventory_reuses_metadata_from_listing(tmp_path):
     assert objects[0].metadata["size"] > 0
 
 
-def test_scope_rejects_2020_and_labeled_2019(tmp_path):
+def test_scope_rejects_2020_but_admits_2019_for_successor_research(tmp_path):
     source_root = tmp_path / "source"
     source_root.mkdir()
     writable = LocalStorage(source_root)
@@ -69,10 +69,16 @@ def test_scope_rejects_2020_and_labeled_2019(tmp_path):
         "raw/plays/year=2019/data.parquet",
     )
     objects = inventory_historical_source(ReadOnlyStorage(writable))
+    validated = {}
     for item in objects:
         records, _ = read_historical_records(ReadOnlyStorage(writable), item)
-        with pytest.raises(ValueError):
-            validate_historical_scope(item, records)
+        if item.years == {2020}:
+            with pytest.raises(ValueError, match="2020"):
+                validate_historical_scope(item, records)
+        else:
+            validated[item.uri] = validate_historical_scope(item, records)
+
+    assert validated == {"raw/plays/year=2019/data.parquet": {2019}}
 
 
 def test_import_is_idempotent_and_records_source_provenance(tmp_path, monkeypatch):

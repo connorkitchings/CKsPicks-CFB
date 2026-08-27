@@ -89,6 +89,11 @@ def main() -> None:
     parser.add_argument("--games-ref-uri")
     parser.add_argument("--week-policy-ref-uri")
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument(
+        "--identity-label",
+        default="history_v1",
+        help="Versioned research identity used in immutable dataset lineage.",
+    )
     parser.add_argument("--optional", action="store_true")
     parser.add_argument(
         "--environment",
@@ -96,10 +101,23 @@ def main() -> None:
         required=True,
     )
     args = parser.parse_args()
-    if args.season == 2020:
-        raise SystemExit("2020 is excluded from historical Silver builds")
-    if args.season == 2019 and args.dataset != "preseason_team_inputs":
-        raise SystemExit("2019 may only build preseason_team_inputs")
+    allowed_seasons = {
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026,
+    }
+    if args.season == 2020 or args.season not in allowed_seasons:
+        raise SystemExit(
+            "Historical Silver builds allow 2015–2019 and 2021–2026; 2020 is excluded"
+        )
     conn_url = resolve_runtime_target(args.environment).database_url
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri):
@@ -160,7 +178,7 @@ def main() -> None:
             as_of=cutoff,
             code_sha=_code_sha(),
             config_sha=hashlib.sha256(
-                f"history:{args.dataset}:{args.season}:v1".encode()
+                f"{args.identity_label}:{args.dataset}:{args.season}:v1".encode()
             ).hexdigest(),
             context=context,
         )

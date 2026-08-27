@@ -18,9 +18,11 @@ football measurements → measurement-level opponent adjustment
 → timestamped market decision
 ```
 
-Initial requirements are due before Week 0. The successor stays isolated from
-V4, Neon activation, and public publication until it has six frozen,
-normal-coverage 2026 shadow slates and passes a separate promotion contract.
+The successor research track now expands historical football evidence through
+2015–2019 and 2021–2025 (2020 is excluded) before freezing candidate v2. V4
+remains isolated from research, Neon activation, and public publication. Frozen
+candidate v1 may collect diagnostic evidence only; candidate v2 needs its own
+six-slate prospective lane and promotion contract.
 
 ## Documentation
 

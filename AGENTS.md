@@ -61,7 +61,8 @@ print(f"✅ Data root verified: {data_root}")
 - Selection: expanding temporal folds validated in 2022-2024
 - Locked test: train 2021-2024, evaluate 2025 once
 - Production refit: unchanged design on 2021-2025 for 2026
-- 2019 is prior-feature lineage for early 2021 only; skip 2020 entirely
+- V4 retains its sealed 2021–2025 lineage. Successor-v2 research uses
+  2015–2019 and 2021–2025; skip 2020 entirely in every boundary.
 - Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
 **2026 Rating-Centric Transition:**
@@ -148,7 +149,8 @@ amendment, and commit-policy rules.
 
 - **What:** College football betting model that predicts spreads and over/unders, displayed as weekly leans in a Vercel web app
 - **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
-- **Data:** 2019, 2021–2025 CFB data in Cloudflare R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
+- **Data:** V4 artifacts retain 2021–2025; successor-v2 research expands to
+  2015–2019 and 2021–2025 in R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
 - **2026 Deliverable:** Vercel web app at `web/` showing every FBS game's spread + total lean (display only; auth/tracking is post-MVP)
 - **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
 - **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
@@ -199,9 +201,9 @@ pending game week).
 - 🟡 Phase 6: Production deployed 2026-08-18; predictions revealed from reviewed
   run `2026w0-55de0317120d` on 2026-08-21; progressive publishes + final freeze
   remain (Aug 25–29)
-- 🧭 2026 rating transition: initial requirements are due before Week 0; V4
-  remains production while measurement, rating, and shadow-evaluation contracts
-  are developed in isolation
+- 🧭 Ratings reset: R1–R4 research expands history and selects candidate v2;
+  O1 V4 production is unchanged and O2 candidate v1 at `ac1fba1` is
+  diagnostic-only. See `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
 
 **Roadmap (launch + 2026 transition):** `docs/planning/roadmap.md` · **Launch contract:**
 `docs/plans/2026-08-18/week0-launch-execution.md`
