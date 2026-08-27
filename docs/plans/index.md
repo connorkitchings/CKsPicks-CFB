@@ -28,14 +28,24 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contracts
 
+- [R4 structured predictor and candidate-v2 freeze](2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md)
+  — Approved. Runs selection only through 2024, freezes the end-to-end design,
+  and owns the single locked-2025 confirmation and optional candidate-v2 refit.
+- [R3 mixed state-update tournament](2026-08-27/r3-mixed-state-update-tournament.md)
+  — Approved, blocked on R2. Compares fixed, Bayesian, recency, Glicko-style,
+  and constrained ML updaters without reading 2025.
+- [R2 redesigned offseason-prior tournament](2026-08-27/r2-redesigned-offseason-prior-tournament.md)
+  — Approved, blocked on R1. Generates and selects pooled, EWMA, Ridge, and
+  baseline priors from exact certified refs without caller-produced metrics.
+- [R1 full-corpus recapture and certification](2026-08-27/r1-full-corpus-recapture-and-certification.md)
+  — Approved. Recaptures all 2015–2019 and 2021–2025 sources under a
+  capture-only, exact-manifest successor path and rebuilds the R1 foundation.
 - [R1 play-capture reliability hardening](2026-08-27/r1-play-capture-reliability-hardening.md)
-  — In Progress. Supersedes only the R1 CFBD play-capture mechanics with
-  Preview-only weekly immutable capture sets; R1 certification and every
-  tournament remain blocked until it is complete.
+  — Superseded by the full-corpus R1 contract. Its bounded weekly worker,
+  request ledger, and reconciliation implementation remain reusable.
 - [Historical expansion and ratings methodology reset](2026-08-26/historical-expansion-ratings-methodology-reset.md)
-  — In Progress. R1–R4 expands football-only historical research through
-  2015–2019 and redesigns priors, updating, and prediction before any
-  candidate-v2 prospective lane begins. 2020 remains globally excluded.
+  — In Progress governing contract, amended 2026-08-27 for full-corpus
+  recapture, redesigned R2–R4, and one end-to-end locked-2025 confirmation.
 - [Phase 5 protected prospective evidence](2026-08-26/phase5-protected-prospective-evidence.md)
   — In Progress as O2 diagnostic evidence for frozen candidate v1 only. It
   cannot tune v1, block successor-v2 research, or transfer its evidence to

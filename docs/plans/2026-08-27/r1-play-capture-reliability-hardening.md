@@ -1,6 +1,6 @@
 # R1 Play-Capture Reliability Hardening
 
-- **Status:** In Progress
+- **Status:** Superseded
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact
@@ -164,6 +164,11 @@ reconcile, and stop commands without any production path.
 
 ## Amendments
 
-None at approval. Material changes to weekly capture granularity, same-set
-resume semantics, production isolation, or R1 coverage gates require a new
-planning review.
+### Amendment 1 — Superseded by full-corpus capture-only R1
+
+The weekly request ledger, bounded worker, exact play manifest, and abandoned
+run reconciliation implemented at `2c7018d` remain reusable foundations. The
+approved
+[full-corpus R1 contract](r1-full-corpus-recapture-and-certification.md)
+supersedes this contract's 2015–2018-only scope and compatibility-projection
+behavior so recapturing 2019 and 2021–2025 cannot alter legacy `raw/*` paths.

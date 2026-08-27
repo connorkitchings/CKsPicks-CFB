@@ -222,3 +222,34 @@ weekly request ledger and complete-manifest-only downstream contract.
 policy, selection gates, and prospective evidence policy are unchanged. R1
 remains blocked until the amendment is implemented and validates a complete
 capture set.
+
+### Amendment 2 — Full-corpus recapture and R1–R4 redesign (2026-08-27)
+
+**Reason:** The user chose a new authoritative successor-v2 corpus recaptured
+directly from CFBD for every permitted season and chose to redesign the rating
+tournament before any results from that corpus are inspected. The original
+reuse of 2019/2021–2025 refs and the v1 tournament roster no longer express the
+approved research design.
+
+**Revised approach:**
+
+- Recapture 2015–2019 and 2021–2025 through a capture-only, run-scoped R1 path
+  that cannot overwrite legacy `raw/*` projections.
+- Treat previous 2019 and 2021–2025 refs as immutable comparison evidence only.
+- Replace caller-authored coverage/metric/pass inputs with gates derived from
+  exact immutable refs.
+- Redesign R2 and R3 as a broad mixed tournament spanning pooled/Ridge priors,
+  Bayesian/recency/Glicko-style/ML updates, and structured R4 predictors.
+- Reserve 2025 for one end-to-end R4 locked confirmation after R1–R4 design
+  identity is frozen; do not inspect it separately in R2 or R3.
+- Execute through four separately committed contracts and fresh Terra tasks:
+  [R1 full-corpus recapture](../2026-08-27/r1-full-corpus-recapture-and-certification.md),
+  [R2 redesigned priors](../2026-08-27/r2-redesigned-offseason-prior-tournament.md),
+  [R3 mixed updates](../2026-08-27/r3-mixed-state-update-tournament.md), and
+  [R4 structured prediction](../2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md).
+
+**Impact:** Amendment 2 supersedes Task 2's reuse/import authority, the R1
+hardening contract's compatibility-projection behavior, and the v1 R2–R4
+roster/locked-test mechanics. It does not change the season boundary, 2020/2026
+protections, V4, candidate v1, markets boundary, production, or promotion
+authority.
