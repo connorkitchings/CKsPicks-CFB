@@ -43,6 +43,13 @@
 - Bound the live R1 preflight to a clean committed implementation path list:
   any untracked or modified R1 code now fails before migration, catalog reads,
   or capture writes.
+- Applied Preview migration `0009` after proving Preview and migration URLs are
+  distinct credentials on the isolated Preview branch.
+- Passed the read-only 2015 Week 1 CFBD probe at exactly 15,369 plays.
+- Started the full-corpus run `r1-full-corpus-20260827-1d57c10`; its comparison
+  bootstrap stopped before capture because Preview contains no validated 2019
+  legacy catalog artifacts. Added a terminal immutable failure diagnostic for
+  this required pre-capture condition.
 - Updated the R1 operational runbook and focused tests.
 
 ## Files Modified
@@ -65,22 +72,23 @@
 - [x] Repository-wide Ruff, contract validation, strict MkDocs, and CLI smoke
   checks.
 - [x] Full pytest: `561 passed, 2 skipped`.
+- [x] Focused failure-diagnostic regression: 29 passed.
 - [x] `git diff --check`.
 
 ## Amendments and Blockers
 
-- No amendment. Preview data operations remain deferred only by the required
-  committed-code identity. The existing `scripts/ops/with_preview_env.sh`
-  wrapper provides isolated Preview database credentials, Preview R2
-  credentials, and CFBD access; the resolved Preview database URL differs from
-  the production URL. No migration or capture was attempted against an
-  uncommitted implementation.
+- No amendment. Preview migration `0009` and the required compatibility probe
+  completed. The catalog-bootstrap preflight found zero validated 2019 legacy
+  artifacts, so R1 stopped before successor capture as required. The revised
+  bootstrap now emits an immutable run-scoped failure diagnostic for this
+  terminal evidence condition.
 
 ## Handoff Notes
 
-- **Resume at:** Commit the implementation, then invoke the R1 command through
-  `scripts/ops/with_preview_env.sh`; it will resolve and freeze legacy
-  comparison evidence automatically, so an explicit URI is unnecessary.
+- **Resume at:** Commit the comparison-diagnostic hardening, rerun the
+  preflight under a fresh R1 ID to publish its terminal report, then restore
+  exact 2019 legacy `games`, `game_outcomes`, and `teams` artifacts before a
+  new full-corpus capture run can begin.
 - **Watch out for:** Never call compatibility writes for recaptured sources;
   never treat previous source refs as successor-v2 parents.
 

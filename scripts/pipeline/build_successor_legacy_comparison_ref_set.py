@@ -35,6 +35,45 @@ def _immutable_write(storage, uri: str, payload: bytes) -> None:
     storage.write_bytes(payload, uri)
 
 
+def _failure_uri(output_uri: str) -> str:
+    """Keep a failed preflight immutable without occupying its success URI."""
+
+    suffix = ".json"
+    if output_uri.endswith(suffix):
+        return f"{output_uri[:-len(suffix)]}.failure{suffix}"
+    return f"{output_uri}.failure.json"
+
+
+def _write_failure_diagnostic(
+    storage,
+    *,
+    output_uri: str,
+    selection_mode: str,
+    selection_as_of: str,
+    error: Exception,
+) -> str:
+    """Persist the terminal, comparison-only failure required before capture."""
+
+    diagnostic_uri = _failure_uri(output_uri)
+    payload: dict[str, Any] = {
+        "contract_version": CONTRACT_VERSION,
+        "state": "failed",
+        "selection_mode": selection_mode,
+        "selection_as_of": selection_as_of,
+        "failure": {
+            "error_type": type(error).__name__,
+            "message": str(error),
+        },
+    }
+    payload["manifest_sha256"] = _sha256(payload)
+    _immutable_write(
+        storage,
+        diagnostic_uri,
+        json.dumps(payload, indent=2, sort_keys=True).encode(),
+    )
+    return diagnostic_uri
+
+
 def _entries(raw: dict[str, Any]) -> list[dict[str, Any]]:
     entries = raw.get("entries")
     if not isinstance(entries, list):
@@ -98,18 +137,29 @@ def main(argv: list[str] | None = None) -> None:
     if not args.output_uri.startswith(SUCCESSOR_PREFIX):
         raise ValueError("Comparison ref set must use the isolated successor-v2 prefix")
     storage = get_storage(environment="preview")
-    if args.comparison_ref_set_uri:
-        source_bytes = storage.read_bytes(args.comparison_ref_set_uri)
-        entries = _entries(json.loads(source_bytes.decode()))
-        mode = "explicit_override"
-        source_uri = args.comparison_ref_set_uri
-        source_sha256 = hashlib.sha256(source_bytes).hexdigest()
-    else:
-        conn_url = resolve_runtime_target("preview").database_url
-        entries = _catalog_entries(conn_url, args.as_of)
-        mode = "catalog_preflight"
-        source_uri = None
-        source_sha256 = None
+    mode = "explicit_override" if args.comparison_ref_set_uri else "catalog_preflight"
+    try:
+        if args.comparison_ref_set_uri:
+            source_bytes = storage.read_bytes(args.comparison_ref_set_uri)
+            entries = _entries(json.loads(source_bytes.decode()))
+            source_uri = args.comparison_ref_set_uri
+            source_sha256 = hashlib.sha256(source_bytes).hexdigest()
+        else:
+            conn_url = resolve_runtime_target("preview").database_url
+            entries = _catalog_entries(conn_url, args.as_of)
+            source_uri = None
+            source_sha256 = None
+    except (KeyError, LookupError, TypeError, ValueError) as exc:
+        diagnostic_uri = _write_failure_diagnostic(
+            storage,
+            output_uri=args.output_uri,
+            selection_mode=mode,
+            selection_as_of=args.as_of,
+            error=exc,
+        )
+        raise SystemExit(
+            f"Legacy comparison evidence preflight failed; diagnostic: {diagnostic_uri}; {exc}"
+        ) from exc
     payload: dict[str, Any] = {
         "contract_version": CONTRACT_VERSION,
         "state": "complete",
