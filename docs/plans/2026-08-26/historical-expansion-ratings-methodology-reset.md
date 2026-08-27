@@ -207,6 +207,18 @@ manual tuning gates.
 
 ## Amendments
 
-None at approval. Material changes to the season policy, candidate roster,
-selection gates, production isolation, or prospective evidence rules require a
-new Sol review.
+### Amendment 1 — R1 play-capture reliability hardening (2026-08-27)
+
+**Reason:** The first Preview 2015 CFBD play captures proved that the original
+all-or-nothing seasonal process cannot make durable progress after a stalled
+weekly response and can leave catalog runs in `running` after child termination.
+
+**Revised approach:**
+`docs/plans/2026-08-27/r1-play-capture-reliability-hardening.md` supersedes
+only Task 2's 2015–2018 play-capture mechanics. It uses a same-set resumable,
+weekly request ledger and complete-manifest-only downstream contract.
+
+**Impact:** R1 certification, R2–R4, V4, candidate-v1, production, season
+policy, selection gates, and prospective evidence policy are unchanged. R1
+remains blocked until the amendment is implemented and validates a complete
+capture set.

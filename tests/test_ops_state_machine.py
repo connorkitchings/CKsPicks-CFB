@@ -40,6 +40,25 @@ def test_source_subprocess_timeout_is_positive_and_configurable(monkeypatch):
         _source_subprocess_timeout_seconds()
 
 
+def test_history_play_sample_probe_is_preview_graph_without_capture_writes():
+    context = new_context(
+        command="verify-history-play-sample",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of=None,
+        pipeline_run_id="history-play-sample",
+    )
+    options = SimpleNamespace(
+        history_season=2015,
+        provider_week=1,
+        expected_play_count=15369,
+    )
+    steps = build_steps(context, conn_url="postgresql://unused", options=options)
+    assert [step.name for step in steps] == ["verify_2015_week_1_play_compatibility"]
+    assert "verify_history_play_sample.py" in steps[0].definition["argv"][1]
+
+
 def test_pipeline_reruns_unverified_step_after_forced_crash():
     store = InMemoryStateStore()
     calls = []

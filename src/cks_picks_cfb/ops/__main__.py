@@ -95,6 +95,15 @@ def _fetch_source_step(
                 },
             )
         except subprocess.TimeoutExpired as exc:
+            from cks_picks_cfb.data.catalog import finish_ingestion_run
+
+            finish_ingestion_run(
+                conn_url,
+                ingestion_run_id,
+                succeeded=False,
+                error_category="subprocess_timeout",
+                error_detail=f"{entity} exceeded {timeout_seconds:g} seconds",
+            )
             raise RuntimeError(
                 f"Source step {entity} exceeded its {timeout_seconds:g}-second "
                 "subprocess deadline"
@@ -158,6 +167,106 @@ def _fetch_source_step(
         },
         resume_validator=resume_validator,
     )
+
+
+def _history_play_capture_step(
+    *, season: int, conn_url: str, manifest_uri: str
+) -> PipelineStep:
+    """Capture one successor R1 season as a resumable weekly request set."""
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        from cks_picks_cfb.data.history_play_capture import HistoryPlayCaptureSet
+
+        result = HistoryPlayCaptureSet(
+            conn_url=conn_url,
+            storage=get_storage(environment="preview"),
+            pipeline_run_id=context.pipeline_run_id,
+            season=season,
+            manifest_uri=manifest_uri,
+        ).run()
+        return (
+            {
+                "manifest_uri": manifest_uri,
+                "manifest_sha256": result["manifest_sha256"],
+                "ingestion_run_id": result["ingestion_run_id"],
+                "capture_ids": [entry["capture_id"] for entry in result["requests"]],
+            },
+        )
+
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        if not outputs or not get_storage(environment="preview").exists(manifest_uri):
+            return False
+        try:
+            raw = json.loads(
+                get_storage(environment="preview").read_bytes(manifest_uri).decode()
+            )
+        except Exception:
+            return False
+        return (
+            raw.get("contract_version") == "play-capture-set-v1"
+            and raw.get("state") == "complete"
+            and raw.get("manifest_sha256") == outputs[0].get("manifest_sha256")
+        )
+
+    from cks_picks_cfb.data.history_play_capture import load_history_play_capture_policy
+
+    policy = load_history_play_capture_policy()
+    return PipelineStep(
+        f"capture_successor_history_{season}_plays",
+        action,
+        definition={
+            "season": season,
+            "entity": f"successor_history_{season}_plays",
+            "manifest_uri": manifest_uri,
+            "policy_version": policy.version,
+            "policy_sha256": policy.sha256,
+        },
+        resume_validator=resume_validator,
+    )
+
+
+def _reconcile_abandoned_history_play_capture_action(
+    conn_url: str, ingestion_run_ids: Sequence[str]
+):
+    """Finalize only known-abandoned inner R1 captures after failed outer steps."""
+
+    def action(_: OperationContext) -> Sequence[Mapping[str, Any]]:
+        from cks_picks_cfb.data.catalog import finish_ingestion_run
+
+        results: list[Mapping[str, Any]] = []
+        with psycopg.connect(conn_url) as conn:
+            for ingestion_run_id in ingestion_run_ids:
+                if ":successor_history_2015_plays" not in ingestion_run_id:
+                    raise ValueError("only abandoned 2015 successor play runs may reconcile")
+                outer_run_id = ingestion_run_id.rsplit(":", 1)[0]
+                row = conn.execute(
+                    "SELECT i.state, p.state, s.state FROM catalog.ingestion_runs i "
+                    "JOIN ops.pipeline_runs p ON p.pipeline_run_id = %s "
+                    "JOIN ops.pipeline_steps s ON s.pipeline_run_id = p.pipeline_run_id "
+                    "AND s.step_name = 'capture_successor_history_2015_plays' "
+                    "WHERE i.ingestion_run_id = %s",
+                    (outer_run_id, ingestion_run_id),
+                ).fetchone()
+                if not row:
+                    raise LookupError(f"No failed outer evidence for {ingestion_run_id}")
+                if tuple(str(value) for value in row) != ("running", "failed", "failed"):
+                    raise ValueError(
+                        "reconciliation requires running inner capture and failed outer step"
+                    )
+                results.append({"ingestion_run_id": ingestion_run_id, "state": "failed"})
+        for result in results:
+            finish_ingestion_run(
+                conn_url,
+                str(result["ingestion_run_id"]),
+                succeeded=False,
+                error_category="reconciled_abandoned_operation",
+                error_detail="Outer successor R1 play step was already failed; preserved diagnostic evidence.",
+            )
+        return tuple(results)
+
+    return action
 
 
 def _silver_from_ingestion_step(
@@ -315,10 +424,12 @@ def _history_objects(prefix: str):
     return source, destination, objects, eligible
 
 
-def _rating_history_silver_steps(*, environment: str, as_of: str) -> list[PipelineStep]:
+def _rating_history_silver_steps(
+    *, environment: str, as_of: str, pipeline_run_id: str
+) -> list[PipelineStep]:
     """Build isolated 2015–2019 successor-v2 Silver refs after raw capture/import."""
 
-    prefix = "artifacts/preview/refs/rating-successor-v2"
+    prefix = "artifacts/research/rating-successor-v2/r1"
     steps: list[PipelineStep] = []
 
     def add(
@@ -343,6 +454,13 @@ def _rating_history_silver_steps(*, environment: str, as_of: str) -> list[Pipeli
             argv.extend(["--games-ref-uri", f"{prefix}/games-{season}.json"])
         if optional:
             argv.append("--optional")
+        if dataset == "plays" and season in {2015, 2016, 2017, 2018}:
+            argv.extend(
+                [
+                    "--play-capture-set-uri",
+                    f"{prefix}/{pipeline_run_id}/plays-{season}-capture-set.json",
+                ]
+            )
         steps.append(subprocess_step(f"successor_silver_{dataset}_{season}", argv))
 
     for season in (2015, 2016, 2017, 2018, 2019):
@@ -768,7 +886,7 @@ def build_steps(
         steps: list[PipelineStep] = []
         if not options.skip_capture:
             for season in (2015, 2016, 2017, 2018):
-                for entity in ("teams", "games", "venues", "plays", "game_stats"):
+                for entity in ("teams", "games", "venues", "game_stats"):
                     steps.append(
                         _fetch_source_step(
                             name=f"capture_successor_history_{season}_{entity}",
@@ -783,6 +901,16 @@ def build_steps(
                             entity=f"successor_history_{season}_{entity}",
                         )
                     )
+                steps.append(
+                    _history_play_capture_step(
+                        season=season,
+                        conn_url=conn_url,
+                        manifest_uri=(
+                            "artifacts/research/rating-successor-v2/r1/"
+                            f"{context.pipeline_run_id}/plays-{season}-capture-set.json"
+                        ),
+                    )
+                )
             source, destination, _, eligible = _history_objects(options.prefix or "")
             for item in eligible:
                 if item.years == {2019}:
@@ -793,8 +921,45 @@ def build_steps(
                             _import_history_action(conn_url, source, destination, item),
                         )
                     )
-        steps.extend(_rating_history_silver_steps(environment=environment, as_of=as_of))
+        steps.extend(
+            _rating_history_silver_steps(
+                environment=environment,
+                as_of=as_of,
+                pipeline_run_id=context.pipeline_run_id,
+            )
+        )
         return steps
+    if context.command == "verify-history-play-sample":
+        assert options is not None
+        if year != 2026:
+            raise ValueError(
+                "verify-history-play-sample uses --year 2026 as protected context"
+            )
+        return [
+            subprocess_step(
+                "verify_2015_week_1_play_compatibility",
+                _python(
+                    "scripts/data/verify_history_play_sample.py",
+                    "--history-season",
+                    options.history_season,
+                    "--provider-week",
+                    options.provider_week,
+                    "--expected-play-count",
+                    options.expected_play_count,
+                ),
+            )
+        ]
+    if context.command == "reconcile-history-play-captures":
+        assert options is not None
+        return [
+            PipelineStep(
+                "reconcile_abandoned_history_play_captures",
+                _reconcile_abandoned_history_play_capture_action(
+                    conn_url, options.ingestion_run_id
+                ),
+                definition={"ingestion_run_ids": list(options.ingestion_run_id)},
+            )
+        ]
     if context.command == "fetch-source":
         assert options is not None and options.entity
         weekly = {"plays", "betting_lines", "game_stats"}
@@ -1504,6 +1669,8 @@ def parse_args() -> argparse.Namespace:
         "import-history",
         "hydrate-history",
         "prepare-rating-history",
+        "verify-history-play-sample",
+        "reconcile-history-play-captures",
         "fetch-source",
         "build-silver",
         "build-team-game",
@@ -1535,6 +1702,8 @@ def parse_args() -> argparse.Namespace:
             "assemble-model-ready",
             "fetch-source",
             "prepare-rating-history",
+            "verify-history-play-sample",
+            "reconcile-history-play-captures",
         }:
             sub.add_argument("--week", type=int, required=True)
         if command in {
@@ -1580,6 +1749,8 @@ def parse_args() -> argparse.Namespace:
             "import-history",
             "hydrate-history",
             "prepare-rating-history",
+            "verify-history-play-sample",
+            "reconcile-history-play-captures",
         }:
             sub.add_argument("--prefix", default="")
             if command == "import-history":
@@ -1594,6 +1765,12 @@ def parse_args() -> argparse.Namespace:
                     action="store_true",
                     help="Reuse already registered 2015–2019 source captures.",
                 )
+            if command == "verify-history-play-sample":
+                sub.add_argument("--history-season", type=int, default=2015)
+                sub.add_argument("--provider-week", type=int, default=1)
+                sub.add_argument("--expected-play-count", type=int, default=15369)
+            if command == "reconcile-history-play-captures":
+                sub.add_argument("--ingestion-run-id", action="append", required=True)
         if command == "audit-data":
             sub.add_argument(
                 "--mode",
@@ -1649,6 +1826,8 @@ def main() -> None:
             "import-history",
             "hydrate-history",
             "prepare-rating-history",
+            "verify-history-play-sample",
+            "reconcile-history-play-captures",
         }
         and args.environment != "preview"
     ):

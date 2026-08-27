@@ -28,6 +28,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contracts
 
+- [R1 play-capture reliability hardening](2026-08-27/r1-play-capture-reliability-hardening.md)
+  — In Progress. Supersedes only the R1 CFBD play-capture mechanics with
+  Preview-only weekly immutable capture sets; R1 certification and every
+  tournament remain blocked until it is complete.
 - [Historical expansion and ratings methodology reset](2026-08-26/historical-expansion-ratings-methodology-reset.md)
   — In Progress. R1–R4 expands football-only historical research through
   2015–2019 and redesigns priors, updating, and prediction before any

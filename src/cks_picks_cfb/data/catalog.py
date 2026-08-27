@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import asdict
 from datetime import datetime
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import psycopg
 
@@ -22,6 +23,143 @@ def catalog_connection_url(environment: str) -> str:
 
 def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def source_request_sha(request: Mapping[str, Any]) -> str:
+    """Stable request identity; observation timestamps are not request semantics."""
+    required = ("provider", "entity", "endpoint", "parameters")
+    missing = [key for key in required if key not in request]
+    if missing:
+        raise ValueError(f"source request is missing semantic fields: {missing}")
+    value = {
+        key: request[key] for key in required
+    }
+    return hashlib.sha256(_canonical(value).encode()).hexdigest()
+
+
+def canonical_request_plan(requests: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Return the immutable, semantic portion of an ordered request plan.
+
+    Capture-set retries deliberately ignore observation timestamps.  The first
+    registered header still retains them, but a later process may validate the
+    same provider requests without inventing a conflicting plan.
+    """
+
+    plan = []
+    seen: set[str] = set()
+    for request in requests:
+        semantic = {
+            key: request[key]
+            for key in ("provider", "entity", "endpoint", "parameters")
+        }
+        request_sha = source_request_sha(semantic)
+        if request_sha in seen:
+            raise ValueError(f"duplicate semantic request in capture set: {request_sha}")
+        seen.add(request_sha)
+        plan.append({"request_sha": request_sha, **semantic})
+    return plan
+
+
+def begin_or_resume_request_set(
+    conn_url: str,
+    *,
+    ingestion_run_id: str,
+    provider: str,
+    entity: str,
+    requests: Sequence[Mapping[str, Any]],
+    policy: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Create or validate an immutable request-set header and return its plan."""
+
+    proposed = canonical_request_plan(requests)
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT provider, entity, request FROM catalog.ingestion_runs "
+                "WHERE ingestion_run_id = %s",
+                (ingestion_run_id,),
+            )
+            existing = cur.fetchone()
+            if existing:
+                existing_provider, existing_entity, existing_request = existing
+                header = dict(existing_request)
+                existing_plan = header.get("requests")
+                if (
+                    str(existing_provider) != provider
+                    or str(existing_entity) != entity
+                    or header.get("contract_version") != "play_capture_set_v1"
+                    or not isinstance(existing_plan, list)
+                    or canonical_request_plan(existing_plan) != proposed
+                ):
+                    raise ValueError(
+                        f"Immutable request-set conflict: {ingestion_run_id}"
+                    )
+                return [dict(item) for item in existing_plan]
+            header = {
+                "contract_version": "play_capture_set_v1",
+                "policy": dict(policy),
+                "requests": [dict(request) for request in requests],
+            }
+            cur.execute(
+                "INSERT INTO catalog.ingestion_runs "
+                "(ingestion_run_id, provider, entity, state, request) "
+                "VALUES (%s, %s, %s, 'running', %s::jsonb)",
+                (ingestion_run_id, provider, entity, json.dumps(header)),
+            )
+        conn.commit()
+    return [dict(request) for request in requests]
+
+
+def record_source_request_attempt(
+    conn_url: str, *, ingestion_run_id: str, request_sha: str, attempt: int,
+    state: str, capture_id: str | None = None, error: Exception | None = None,
+) -> None:
+    if state not in {"running", "succeeded", "failed"}:
+        raise ValueError("invalid source request attempt state")
+    with psycopg.connect(conn_url) as conn:
+        conn.execute(
+            "INSERT INTO catalog.source_request_attempts "
+            "(ingestion_run_id,request_sha,attempt,state,capture_id,finished_at,error_category,error_detail) "
+            "VALUES (%s,%s,%s,%s,%s,CASE WHEN %s='running' THEN NULL ELSE NOW() END,%s,%s) "
+            "ON CONFLICT (ingestion_run_id,request_sha,attempt) DO UPDATE SET "
+            "state=EXCLUDED.state,capture_id=EXCLUDED.capture_id,finished_at=EXCLUDED.finished_at,"
+            "error_category=EXCLUDED.error_category,error_detail=EXCLUDED.error_detail",
+            (ingestion_run_id, request_sha, attempt, state, capture_id, state,
+             type(error).__name__ if error else None, str(error)[-4000:] if error else None),
+        )
+        conn.commit()
+
+
+def next_source_request_attempt(
+    conn_url: str, *, ingestion_run_id: str, request_sha: str
+) -> int:
+    """Allocate the next append-only attempt number for one planned request."""
+
+    with psycopg.connect(conn_url) as conn:
+        row = conn.execute(
+            "SELECT COALESCE(MAX(attempt), 0) + 1 "
+            "FROM catalog.source_request_attempts "
+            "WHERE ingestion_run_id = %s AND request_sha = %s",
+            (ingestion_run_id, request_sha),
+        ).fetchone()
+    return int(row[0])
+
+
+def completed_request_capture_ids(conn_url: str, ingestion_run_id: str) -> dict[str, str]:
+    with psycopg.connect(conn_url) as conn:
+        rows = conn.execute(
+            "SELECT a.request_sha,a.capture_id,c.request FROM catalog.source_request_attempts a "
+            "JOIN catalog.source_captures c ON c.capture_id=a.capture_id "
+            "WHERE a.ingestion_run_id=%s AND a.state='succeeded' AND c.state='registered'",
+            (ingestion_run_id,),
+        ).fetchall()
+    result = {str(key): str(value) for key, value, request in rows if value}
+    if len(result) != len(rows):
+        raise ValueError("duplicate completed request capture")
+    for request_sha, _, request in rows:
+        if source_request_sha(dict(request)) != str(request_sha):
+            raise ValueError("completed capture request identity does not match attempt")
+    return result
 
 
 def _catalog_timestamp(value: str | None) -> datetime | str | None:

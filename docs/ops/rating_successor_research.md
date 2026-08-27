@@ -16,17 +16,57 @@ PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops prepare-rating-history \
   --pipeline-run-id "r1-history-$(git rev-parse --short HEAD)"
 ```
 
-The command captures CFBD games, plays, game statistics, teams, and venues for
+The command captures CFBD teams, games, venues, game statistics, and plays for
 2015–2018; imports the existing 2019 archive; and builds new isolated
 successor-v2 Silver/reconciled-team-game refs. It reuses the certified
-2021–2025 immutable refs when assembling the full corpus. A resumed operation
-uses exactly the previously registered captures:
+2021–2025 immutable refs when assembling the full corpus. Plays use the
+Preview-only `history_play_capture_v1` profile: one sequential, process-isolated
+request per provider week, with a 120-second SDK deadline, 300-second worker
+deadline, four attempts, and an append-only attempt ledger.
+
+On a failed play week, rerun the *same* pipeline ID. The stored request plan is
+validated, completed checksummed weeks are reused, and only missing/failed
+weeks are requested again:
 
 ```bash
 PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops prepare-rating-history \
   --year 2026 --as-of "$AS_OF" --environment preview \
-  --pipeline-run-id "$R1_RUN" --skip-capture
+  --pipeline-run-id "$R1_RUN"
 ```
+
+Do not use `--skip-capture` to resume an incomplete capture set. It is only for
+downstream-only recovery after every 2015–2018 `play-capture-set-v1` manifest is
+complete and read-only verification has passed. Each manifest is written under
+`artifacts/research/rating-successor-v2/r1/$R1_RUN/` and lists the ordered
+request identities, capture IDs, checksums, rows, returned/missing game IDs,
+policy SHA, and code SHA. Successor Silver consumes those explicit capture IDs;
+it never broadly queries a play ingestion run.
+
+For the four known abandoned 2015 diagnostics, reconcile only after confirming
+the outer pipeline run and `capture_successor_history_2015_plays` step are
+already failed. This preserves all existing evidence and never deletes objects:
+
+```bash
+PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops \
+  reconcile-history-play-captures --year 2026 --environment preview \
+  --pipeline-run-id "r1-reconcile-$(git rev-parse --short HEAD)" \
+  --ingestion-run-id "$ABANDONED_INGESTION_RUN_ID"
+```
+
+Before the full 2015 set, run the controlled Week 1 compatibility verification
+and require the known 15,369-play result. It is read-only and creates no Bronze,
+projection, or Silver object:
+
+```bash
+PYTHONPATH=.:src uv run python -m cks_picks_cfb.ops \
+  verify-history-play-sample --year 2026 --environment preview \
+  --pipeline-run-id "r1-2015-week1-verify-$(git rev-parse --short HEAD)"
+```
+
+Record every request SHA, attempt,
+capture ID, checksum, returned/missing game IDs, timeout, and retry in the R1
+session log. A failed or incomplete set is diagnostic-only: it must not write a
+partial legacy `raw/plays/year=<season>` projection or reach Silver.
 
 After true-PPSO measurements, terminal states, and schema checks have produced
 the coverage counts, write the exact ref set and certification report. Pass

@@ -1,0 +1,12 @@
+# Preview-only successor-v2 R1 historical play-capture policy.
+version: history_play_capture_v1
+provider: cfbd
+entity: plays
+max_concurrency: 1
+sdk_request_timeout_seconds: 120
+worker_timeout_seconds: 300
+max_attempts: 4
+retry:
+  base_delay_seconds: 1.0
+  max_delay_seconds: 16.0
+  jitter_seconds: 0.25

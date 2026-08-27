@@ -18,6 +18,7 @@ from cks_picks_cfb.data.catalog import (
     register_existing_dataset_ref,
     source_capture_by_id,
 )
+from cks_picks_cfb.data.history_play_capture import manifest_capture_ids
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset, read_source_capture
 from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.silver import (
@@ -88,6 +89,13 @@ def main() -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--games-ref-uri")
     parser.add_argument("--week-policy-ref-uri")
+    parser.add_argument(
+        "--play-capture-set-uri",
+        help=(
+            "Complete play-capture-set-v1 manifest required for successor R1 "
+            "2015–2018 plays; prevents broad ingestion-run selection."
+        ),
+    )
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument(
         "--identity-label",
@@ -125,7 +133,16 @@ def main() -> None:
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     source_entity = SOURCE_ENTITIES[args.dataset]
-    ids = _capture_ids(conn_url, source_entity, args.season, args.dataset)
+    if args.play_capture_set_uri:
+        if args.dataset != "plays":
+            raise ValueError("--play-capture-set-uri is valid only for plays")
+        ids = manifest_capture_ids(storage, args.play_capture_set_uri)
+    else:
+        if args.dataset == "plays" and args.season in {2015, 2016, 2017, 2018}:
+            raise ValueError(
+                "Successor R1 plays require --play-capture-set-uri; broad capture queries are forbidden"
+            )
+        ids = _capture_ids(conn_url, source_entity, args.season, args.dataset)
     if not ids:
         if args.optional:
             print(

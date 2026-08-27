@@ -119,6 +119,44 @@ def test_ingestion_and_capture_registration_are_immutable_offline(monkeypatch):
         catalog._register_source_capture_cursor(conflict, _capture(), None)
 
 
+def test_request_set_identity_ignores_observation_time_and_rejects_duplicates():
+    base = {
+        "provider": "cfbd",
+        "entity": "plays",
+        "endpoint": "PlaysApi.get_plays",
+        "parameters": {"year": 2015, "week": 1, "expected_game_ids": [1, 2]},
+    }
+    first = {**base, "requested_at": "2026-08-27T00:00:00Z"}
+    retry = {**base, "requested_at": "2026-08-28T00:00:00Z"}
+    assert catalog.source_request_sha(first) == catalog.source_request_sha(retry)
+    assert catalog.canonical_request_plan([first]) == catalog.canonical_request_plan(
+        [retry]
+    )
+    with pytest.raises(ValueError, match="duplicate semantic request"):
+        catalog.canonical_request_plan([first, retry])
+
+
+def test_completed_request_capture_rejects_duplicate_or_mismatched_requests(monkeypatch):
+    request = {
+        "provider": "cfbd",
+        "entity": "plays",
+        "endpoint": "PlaysApi.get_plays",
+        "parameters": {"year": 2015, "week": 1},
+    }
+    request_sha = catalog.source_request_sha(request)
+    _connect(monkeypatch, _Cursor([[(request_sha, "capture-1", request)]]))
+    assert catalog.completed_request_capture_ids("postgresql://fixture", "run") == {
+        request_sha: "capture-1"
+    }
+
+    _connect(
+        monkeypatch,
+        _Cursor([[(request_sha, "capture-1", request), (request_sha, "capture-2", request)]]),
+    )
+    with pytest.raises(ValueError, match="duplicate"):
+        catalog.completed_request_capture_ids("postgresql://fixture", "run")
+
+
 def test_catalog_point_in_time_lookups_and_missing_results(monkeypatch):
     cursor = _Cursor(
         [
