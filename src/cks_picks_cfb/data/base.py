@@ -209,6 +209,15 @@ class BaseIngester(ABC):
         def fetch_one(source_request):
             from cks_picks_cfb.data.sources import FailureCategory, SourceError
 
+            request_summary = {
+                key: value
+                for key, value in source_request.parameters.items()
+                if key not in {"expected_game_ids"}
+            }
+            print(
+                f"Fetching {source_request.entity} source request: {request_summary}",
+                flush=True,
+            )
             try:
                 response = fetch_with_retry(
                     adapter,
@@ -220,6 +229,10 @@ class BaseIngester(ABC):
                 if exc.category == FailureCategory.DATA_UNAVAILABLE:
                     raise DataUnavailableError(self.entity_name, self.year) from exc
                 raise
+            print(
+                f"Fetched {source_request.entity} source request: {request_summary}",
+                flush=True,
+            )
             return replace(response, request=source_request.manifest())
 
         max_workers = max(
