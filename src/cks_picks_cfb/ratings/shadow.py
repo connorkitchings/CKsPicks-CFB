@@ -25,11 +25,15 @@ from cks_picks_cfb.ratings.states import build_team_states
 
 SHADOW_CONFIG_VERSION = "rating_shadow_operations_v1"
 SHADOW_FREEZE_DATASET = "rating_shadow_predictions"
-SHADOW_FREEZE_SCHEMA_VERSION = "rating_shadow_freeze_manifest_v1"
+SHADOW_FREEZE_SCHEMA_VERSION = "rating_shadow_freeze_manifest_v2"
 SHADOW_PREDICTION_SCHEMA_VERSION = "rating_shadow_predictions_v1"
 SHADOW_EVIDENCE_DATASET = "rating_shadow_evidence"
-SHADOW_EVIDENCE_SCHEMA_VERSION = "rating_shadow_evidence_v1"
-SHADOW_SCORE_REPORT_SCHEMA_VERSION = "rating_shadow_score_report_v1"
+SHADOW_EVIDENCE_SCHEMA_VERSION = "rating_shadow_evidence_v2"
+SHADOW_SCORE_REPORT_SCHEMA_VERSION = "rating_shadow_score_report_v2"
+SHADOW_MEASUREMENT_STATES_DATASET = "rating_shadow_measurement_states"
+SHADOW_MEASUREMENT_STATES_SCHEMA_VERSION = "rating_shadow_measurement_states_v1"
+SHADOW_TEAM_STATES_DATASET = "rating_shadow_team_states"
+SHADOW_TEAM_STATES_SCHEMA_VERSION = "rating_shadow_team_states_v1"
 ORACLE_TOLERANCE = 1.0e-9
 REHEARSAL_CUTOFF_LEAD = timedelta(hours=1)
 
@@ -372,7 +376,12 @@ def existing_or_collision(
 def assert_canonical_artifact_set(storage, *, prefix: str, kind: str) -> None:
     """Refuse to build into a partially written canonical weekly lifecycle."""
     expected = (
-        ("freeze-manifest.json", "predictions-ref.json")
+        (
+            "freeze-manifest.json",
+            "predictions-ref.json",
+            "measurement-states-ref.json",
+            "team-states-ref.json",
+        )
         if kind == "freeze"
         else ("score-report.json", "evidence-ref.json")
     )

@@ -28,10 +28,13 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contract
 
+- [Phase 5 protected prospective evidence](2026-08-26/phase5-protected-prospective-evidence.md)
+  — In Progress. Preview-only tooling is implementing immutable policy, timing,
+  lineage, state, scoring, and six-slate audit gates; live evidence remains
+  blocked until committed-code and Preview environment preconditions pass.
 - [Phase 4 isolated shadow operations](2026-08-26/phase4-shadow-operations.md)
   — Implemented 2026-08-26. The Preview-only full-2025 rehearsal passed all 15
-  weeks and its byte-identical rerun (summary SHA-256 `b755b585…`). Phase 5
-  Week 1 is plan-eligible; actual 2026 operations still require that contract.
+  weeks and its byte-identical rerun (summary SHA-256 `b755b585…`).
 - [Phase 1/2 true-PPSO remediation and Phase 3 v3 tournament](2026-08-26/phase1-phase2-true-ppso-remediation-and-phase3-v3.md)
   — Implemented 2026-08-26. Phase 1 v3 and Phase 2 v2 are certified with
   byte-identical reruns, and the sealed Phase 3 v3 tournament froze passing

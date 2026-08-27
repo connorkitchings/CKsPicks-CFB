@@ -209,6 +209,12 @@ make freeze-week YEAR=2026 WEEK=0 ENV=preview
 # Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
 make close-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 
+# Preview-only frozen rating candidate evidence (Phase 5):
+# See docs/ops/rating_shadow_operations.md for preflight and recovery rules.
+PYTHONPATH=.:src uv run python scripts/pipeline/audit_rating_prospective_evidence.py \
+  --environment preview --through-week 1 --verification-games-ref-uri <games-ref> \
+  --verification-outcomes-ref-uri <outcomes-ref> --expected-code-sha <committed-sha>
+
 # Rebuild current-season Gold before a Week 1 rehearsal:
 make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 

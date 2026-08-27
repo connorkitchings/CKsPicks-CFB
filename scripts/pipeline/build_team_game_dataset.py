@@ -55,6 +55,7 @@ def main() -> None:
     parser.add_argument("--corrections-ref-uri", required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument("--output-ref-set-uri")
     parser.add_argument(
         "--environment",
         choices=["production", "preview"],
@@ -63,7 +64,7 @@ def main() -> None:
     args = parser.parse_args()
     conn_url = resolve_runtime_target(args.environment).database_url
     storage = get_storage(environment=args.environment)
-    if storage.exists(args.output_ref_uri):
+    if storage.exists(args.output_ref_uri) and not args.output_ref_set_uri:
         register_existing_dataset_ref(conn_url, storage, args.output_ref_uri)
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
@@ -142,6 +143,22 @@ def main() -> None:
             raise FileExistsError(f"Immutable ref exists: {args.output_ref_uri}")
     else:
         storage.write_bytes(payload, args.output_ref_uri)
+    if args.output_ref_set_uri:
+        ref_set = {
+            "schema_version": "rating_input_ref_set_v1",
+            "environment": args.environment,
+            "as_of": cutoff.isoformat(),
+            "input_refs": [asdict(ref) for ref in parent_refs],
+            "outputs": {ref.dataset: asdict(ref) for ref in outputs},
+        }
+        ref_set_payload = json.dumps(ref_set, indent=2, sort_keys=True).encode()
+        if storage.exists(args.output_ref_set_uri):
+            if storage.read_bytes(args.output_ref_set_uri) != ref_set_payload:
+                raise FileExistsError(
+                    f"Immutable ref set exists: {args.output_ref_set_uri}"
+                )
+        else:
+            storage.write_bytes(ref_set_payload, args.output_ref_set_uri)
     print(json.dumps([asdict(ref) for ref in outputs], indent=2, sort_keys=True))
 
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,11 +23,24 @@ from cks_picks_cfb.data.storage import ReadOnlyStorage, get_storage
 from cks_picks_cfb.ratings.contracts import load_measurement_config
 from cks_picks_cfb.ratings.observations import build_measurement_observations
 from cks_picks_cfb.ratings.predictions import prepare_prediction_frame
+from cks_picks_cfb.ratings.prospective import (
+    FREEZE_CODE_PATHS,
+    committed_code_manifest,
+    load_prospective_policy,
+    validate_exact_game_keys,
+    validate_freeze_clock,
+    validate_parent_manifest,
+    validate_source_times,
+)
 from cks_picks_cfb.ratings.score_models import predict_score_model
 from cks_picks_cfb.ratings.shadow import (
     SHADOW_FREEZE_DATASET,
     SHADOW_FREEZE_SCHEMA_VERSION,
+    SHADOW_MEASUREMENT_STATES_DATASET,
+    SHADOW_MEASUREMENT_STATES_SCHEMA_VERSION,
     SHADOW_PREDICTION_SCHEMA_VERSION,
+    SHADOW_TEAM_STATES_DATASET,
+    SHADOW_TEAM_STATES_SCHEMA_VERSION,
     ShadowConfig,
     assemble_season_states,
     assert_canonical_artifact_set,
@@ -39,7 +51,6 @@ from cks_picks_cfb.ratings.shadow import (
     load_certified_state_inputs,
     load_frozen_model,
     load_shadow_config,
-    normal_coverage,
     normalize_v4_prediction_run,
     prediction_config_for_shadow,
     ref_identity,
@@ -50,61 +61,56 @@ from cks_picks_cfb.ratings.shadow import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "conf/ratings/shadow_operations_v1.yaml"
-RELEVANT = (
-    "src/cks_picks_cfb/ratings/shadow.py",
-    "src/cks_picks_cfb/ratings/score_models.py",
-    "src/cks_picks_cfb/ratings/observations.py",
-    "src/cks_picks_cfb/ratings/snapshots.py",
-    "src/cks_picks_cfb/ratings/states.py",
-    "src/cks_picks_cfb/ratings/predictions.py",
-    "scripts/pipeline/build_rating_shadow_freeze.py",
-)
+DEFAULT_POLICY = REPO_ROOT / "conf/ratings/prospective_evidence_v1.yaml"
 
 
 def _ref(storage, uri: str) -> DatasetRef:
     return DatasetRef(**json.loads(storage.read_bytes(uri).decode()))
 
 
-def _require_commit(expected: str | None, config_path: str) -> str:
-    current = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=REPO_ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    ).stdout.strip()
-    code_sha = expected or current
-    if not code_sha:
-        raise ValueError("Shadow freeze artifacts require a committed code SHA")
-    paths = (*RELEVANT, config_path)
-    for path in paths:
-        if subprocess.run(
-            ["git", "ls-files", "--error-unmatch", path],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            check=False,
-        ).returncode:
-            raise ValueError(f"Shadow freeze path is not committed: {path}")
-    if subprocess.run(
-        ["git", "diff", "--quiet", code_sha, "--", *paths], cwd=REPO_ROOT, check=False
-    ).returncode:
-        raise ValueError("Shadow freeze paths differ from the recorded commit")
-    return code_sha
-
-
-def _validate_parent_as_of(storage, ref: DatasetRef, as_of: datetime) -> None:
+def _validate_parent_as_of(
+    storage, ref: DatasetRef, as_of: datetime, freeze_started_at: datetime
+) -> None:
     manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
     if not storage.exists(manifest_uri):
         raise ValueError(f"Parent manifest is missing: {manifest_uri}")
     manifest = json.loads(storage.read_bytes(manifest_uri).decode())
+    validate_parent_manifest(
+        manifest,
+        ref=ref_identity(ref),
+        as_of=as_of,
+        freeze_started_at=freeze_started_at,
+    )
+
+
+def _ref_set(
+    storage, uri: str, *, environment: str, as_of: datetime
+) -> dict[str, DatasetRef]:
+    payload = json.loads(storage.read_bytes(uri).decode())
+    if payload.get("schema_version") != "rating_input_ref_set_v1":
+        raise ValueError("Unsupported prospective input ref set")
+    if payload.get("environment") != environment:
+        raise ValueError("Prospective input ref set targets another environment")
     if (
-        manifest.get("version_id") != ref.version_id
-        or manifest.get("content_sha") != ref.content_sha
+        datetime.fromisoformat(str(payload["as_of"]).replace("Z", "+00:00")).astimezone(
+            timezone.utc
+        )
+        != as_of
     ):
-        raise ValueError("Parent ref and manifest disagree")
-    parent_as_of = datetime.fromisoformat(str(manifest["as_of"]).replace("Z", "+00:00"))
-    if parent_as_of.astimezone(timezone.utc) > as_of:
-        raise ValueError("Parent dataset is newer than the requested shadow freeze")
+        raise ValueError("Prospective input ref set has another cutoff")
+    outputs = payload.get("outputs")
+    if not isinstance(outputs, dict) or set(outputs) != {
+        "byplay",
+        "drives",
+        "reconciled_team_game",
+        "source_reconciliation",
+    }:
+        raise ValueError("Prospective input ref set is partial")
+    refs = {name: DatasetRef(**value) for name, value in outputs.items()}
+    for name, ref in refs.items():
+        if ref.dataset != name:
+            raise ValueError("Prospective input ref set contains crossed outputs")
+    return refs
 
 
 def _slate(games: pd.DataFrame, season: int, week: int) -> pd.DataFrame:
@@ -162,6 +168,7 @@ def _load_v4_proof(
     week: int,
     earliest: datetime,
     expected_v4: dict[str, str],
+    hard_lead_seconds: int,
 ) -> tuple[pd.DataFrame, dict[str, object]]:
     manifest_uri = str(metadata["artifact_uri"]).rsplit("/", 1)[0] + "/manifest.json"
     manifest_bytes = storage.read_bytes(manifest_uri)
@@ -175,10 +182,10 @@ def _load_v4_proof(
     data_as_of = datetime.fromisoformat(
         str(manifest["data_as_of"]).replace("Z", "+00:00")
     )
-    if frozen_at >= earliest or data_as_of >= earliest:
-        raise ValueError(
-            "Production V4 artifact was not frozen before earliest kickoff"
-        )
+    if (earliest - frozen_at).total_seconds() < hard_lead_seconds or (
+        earliest - data_as_of
+    ).total_seconds() < hard_lead_seconds:
+        raise ValueError("Production V4 artifact missed the prospective hard lead")
     rows = normalize_v4_prediction_run(
         manifest=manifest,
         csv_bytes=csv_bytes,
@@ -193,7 +200,14 @@ def _load_v4_proof(
         "prediction_sha256": hashlib.sha256(csv_bytes).hexdigest(),
         "model_bundle_sha256": manifest["model_bundle_sha256"],
         "data_as_of": str(manifest["data_as_of"]),
+        "expected_games": int(manifest.get("expected_games", rows.game_id.nunique())),
+        "predicted_games": int(manifest.get("predicted_games", rows.game_id.nunique())),
     }
+    if (
+        proof["expected_games"] != proof["predicted_games"]
+        or proof["predicted_games"] != rows.game_id.nunique()
+    ):
+        raise ValueError("Production V4 expected/predicted game metadata is incomplete")
     return rows, proof
 
 
@@ -214,23 +228,34 @@ def main(argv: list[str] | None = None) -> None:
         "--environment", choices=("preview", "production"), required=True
     )
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
+    parser.add_argument("--prospective-policy", default=str(DEFAULT_POLICY))
     parser.add_argument("--season", type=int, required=True)
     parser.add_argument("--week", type=int, required=True)
     parser.add_argument("--as-of", required=True)
-    parser.add_argument("--byplay-ref-uri", action="append", required=True)
-    parser.add_argument("--drives-ref-uri", action="append", required=True)
+    parser.add_argument("--input-ref-set-uri")
+    parser.add_argument("--byplay-ref-uri", action="append")
+    parser.add_argument("--drives-ref-uri", action="append")
     parser.add_argument("--games-ref-uri", required=True)
-    parser.add_argument("--outcomes-ref-uri", action="append", required=True)
-    parser.add_argument("--reconciled-ref-uri", required=True)
+    parser.add_argument("--outcomes-ref-uri", action="append")
+    parser.add_argument("--reconciled-ref-uri")
     parser.add_argument("--v4-run-id", required=True)
     parser.add_argument("--expected-code-sha")
     parser.add_argument("--register-catalog", action="store_true")
+    parser.add_argument("--preflight-only", action="store_true")
     args = parser.parse_args(argv)
     if args.environment != "preview":
         raise ValueError("Shadow freezes are permitted only in preview")
     shadow: ShadowConfig = load_shadow_config(args.config)
-    config_path = str(Path(args.config).resolve().relative_to(REPO_ROOT))
-    code_sha = _require_commit(args.expected_code_sha, config_path)
+    policy = load_prospective_policy(args.prospective_policy)
+    if policy.shadow_design_id != shadow.design_id:
+        raise ValueError("Prospective policy and shadow config do not match")
+    code_manifest = committed_code_manifest(
+        repo_root=REPO_ROOT,
+        code_sha=args.expected_code_sha,
+        paths=FREEZE_CODE_PATHS,
+        policy_sha256=policy.policy_sha256,
+    )
+    code_sha = str(code_manifest["code_sha"])
     preview = get_storage(environment="preview")
     production = ReadOnlyStorage(get_storage(environment="production"))
     if args.register_catalog:
@@ -238,20 +263,45 @@ def main(argv: list[str] | None = None) -> None:
     as_of = datetime.fromisoformat(args.as_of.replace("Z", "+00:00")).astimezone(
         timezone.utc
     )
+    freeze_started_at = datetime.now(timezone.utc)
+    if as_of > freeze_started_at:
+        raise ValueError("Prospective as-of cannot be in the future")
     season, week = args.season, args.week
-    game_ref = _ref(preview, args.games_ref_uri)
-    refs = tuple(
-        _ref(preview, uri)
-        for uri in (
-            *args.byplay_ref_uri,
-            *args.drives_ref_uri,
-            args.games_ref_uri,
-            *args.outcomes_ref_uri,
-            args.reconciled_ref_uri,
+    if season != policy.season or week < policy.first_eligible_week:
+        raise ValueError("Prospective policy does not permit this slate")
+    if args.input_ref_set_uri:
+        input_refs = _ref_set(
+            preview, args.input_ref_set_uri, environment="preview", as_of=as_of
         )
+        byplay_refs = (input_refs["byplay"],)
+        drives_refs = (input_refs["drives"],)
+        reconciled_ref = input_refs["reconciled_team_game"]
+        source_reconciliation_ref = input_refs["source_reconciliation"]
+    else:
+        if not (
+            args.byplay_ref_uri and args.drives_ref_uri and args.reconciled_ref_uri
+        ):
+            raise ValueError(
+                "A complete input ref set or explicit raw refs is required"
+            )
+        byplay_refs = tuple(_ref(preview, uri) for uri in args.byplay_ref_uri)
+        drives_refs = tuple(_ref(preview, uri) for uri in args.drives_ref_uri)
+        reconciled_ref = _ref(preview, args.reconciled_ref_uri)
+        source_reconciliation_ref = None
+    if not args.outcomes_ref_uri:
+        raise ValueError("Prospective freeze requires explicit outcomes refs")
+    outcome_refs = tuple(_ref(preview, uri) for uri in args.outcomes_ref_uri)
+    game_ref = _ref(preview, args.games_ref_uri)
+    refs = (
+        *byplay_refs,
+        *drives_refs,
+        game_ref,
+        *outcome_refs,
+        reconciled_ref,
+        *((source_reconciliation_ref,) if source_reconciliation_ref else ()),
     )
     for ref in refs:
-        _validate_parent_as_of(preview, ref, as_of)
+        _validate_parent_as_of(preview, ref, as_of, freeze_started_at)
     games = read_dataset(preview, game_ref)
     slate = _slate(games, season, week)
     validate_freeze_timing(as_of=as_of, slate=slate)
@@ -263,7 +313,9 @@ def main(argv: list[str] | None = None) -> None:
         week,
         earliest,
         dict(shadow.production_v4),
+        policy.hard_lead_seconds,
     )
+    validate_exact_game_keys(schedule=slate, v4=v4_rows)
     model, model_ref = load_frozen_model(
         preview, shadow, stage=shadow.candidate["model_stage"]
     )
@@ -271,6 +323,9 @@ def main(argv: list[str] | None = None) -> None:
         "parents": [ref_identity(ref) for ref in refs],
         "model": ref_identity(model_ref),
         "v4": v4_proof,
+        "prospective_policy_sha256": policy.policy_sha256,
+        "freeze_code_manifest": code_manifest,
+        "input_ref_set_uri": args.input_ref_set_uri,
     }
     expected = {
         "shadow_design_id": shadow.design_id,
@@ -292,10 +347,6 @@ def main(argv: list[str] | None = None) -> None:
         )
         return
 
-    byplay_refs = tuple(_ref(preview, uri) for uri in args.byplay_ref_uri)
-    drives_refs = tuple(_ref(preview, uri) for uri in args.drives_ref_uri)
-    outcome_refs = tuple(_ref(preview, uri) for uri in args.outcomes_ref_uri)
-    reconciled_ref = _ref(preview, args.reconciled_ref_uri)
     byplay = pd.concat(
         [read_dataset(preview, ref) for ref in byplay_refs], ignore_index=True
     )
@@ -306,6 +357,8 @@ def main(argv: list[str] | None = None) -> None:
         [read_dataset(preview, ref) for ref in outcome_refs], ignore_index=True
     )
     reconciled = read_dataset(preview, reconciled_ref)
+    for source_frame in (byplay, drives, games, outcomes, reconciled):
+        validate_source_times(source_frame, as_of=as_of)
 
     def target(frame: pd.DataFrame) -> pd.DataFrame:
         return frame[pd.to_numeric(frame["season"], errors="coerce").eq(season)].copy()
@@ -342,7 +395,7 @@ def main(argv: list[str] | None = None) -> None:
     combined_snapshots = pd.concat(
         [certified_snapshots, new_snapshots], ignore_index=True
     )
-    _, states, _ = assemble_season_states(
+    component_states, states, _ = assemble_season_states(
         pregame_snapshots=combined_snapshots,
         terminal_snapshots=certified_terminal,
         state_config_path=str(REPO_ROOT / shadow.rehearsal["state_config_path"]),
@@ -366,13 +419,82 @@ def main(argv: list[str] | None = None) -> None:
         model, frame, fold_id=f"shadow_{season}_w{week:02d}"
     )
     validate_freeze_predictions(predictions, slate=slate, prospective=True)
+    validate_exact_game_keys(schedule=slate, v4=v4_rows, predictions=predictions)
+    target_state_ids = {f"game:{season}:{int(game_id)}" for game_id in slate.game_id}
+    measurement_states = component_states[
+        (component_states.state_kind == "pregame")
+        & component_states.state_id.isin(target_state_ids)
+    ].copy()
+    team_states = states[
+        (states.state_kind == "pregame") & states.state_id.isin(target_state_ids)
+    ].copy()
+    if measurement_states.empty or team_states.empty:
+        raise ValueError("Prospective freeze produced incomplete target states")
+    if args.preflight_only:
+        print(
+            json.dumps(
+                {
+                    "status": "go",
+                    "season": season,
+                    "week": week,
+                    "policy_sha256": policy.policy_sha256,
+                    "freeze_code_manifest": code_manifest,
+                    "earliest_kickoff": earliest.isoformat(),
+                    "requested_as_of": as_of.isoformat(),
+                    "v4_source": v4_proof,
+                    "input_identity": input_identity,
+                },
+                indent=2,
+                sort_keys=True,
+                default=str,
+            )
+        )
+        return
+    state_parent_refs = (model_ref, snapshots_ref, terminal_ref, game_ref, *refs)
+    measurement_states_ref, measurement_states_manifest = build_dataset_version(
+        preview,
+        build=BuildRequest(
+            dataset=SHADOW_MEASUREMENT_STATES_DATASET,
+            parent_refs=state_parent_refs,
+            code_sha=code_sha,
+            config_sha=policy.policy_sha256,
+            as_of=as_of,
+            schema_version=SHADOW_MEASUREMENT_STATES_SCHEMA_VERSION,
+            tier="gold",
+        ),
+        records=measurement_states.to_dict("records"),
+        partitions={"slate": [f"{season}_w{week:02d}"]},
+        validation={"prospective": True, "target_only": True},
+    )
+    team_states_ref, team_states_manifest = build_dataset_version(
+        preview,
+        build=BuildRequest(
+            dataset=SHADOW_TEAM_STATES_DATASET,
+            parent_refs=state_parent_refs,
+            code_sha=code_sha,
+            config_sha=policy.policy_sha256,
+            as_of=as_of,
+            schema_version=SHADOW_TEAM_STATES_SCHEMA_VERSION,
+            tier="gold",
+        ),
+        records=team_states.to_dict("records"),
+        partitions={"slate": [f"{season}_w{week:02d}"]},
+        validation={"prospective": True, "target_only": True},
+    )
     prediction_ref, prediction_manifest = build_dataset_version(
         preview,
         build=BuildRequest(
             dataset=SHADOW_FREEZE_DATASET,
-            parent_refs=(model_ref, snapshots_ref, terminal_ref, game_ref),
+            parent_refs=(
+                model_ref,
+                snapshots_ref,
+                terminal_ref,
+                game_ref,
+                measurement_states_ref,
+                team_states_ref,
+            ),
             code_sha=code_sha,
-            config_sha=shadow.design_id,
+            config_sha=policy.policy_sha256,
             as_of=as_of,
             schema_version=SHADOW_PREDICTION_SCHEMA_VERSION,
             tier="gold",
@@ -384,21 +506,51 @@ def main(argv: list[str] | None = None) -> None:
             "positive_predictive_uncertainty": True,
         },
     )
-    normal_coverage_slate = normal_coverage(int(len(slate)), shadow.gates, week=week)
+    freeze_completed_at = datetime.now(timezone.utc)
+    timing = validate_freeze_clock(
+        requested_as_of=as_of,
+        freeze_started_at=freeze_started_at,
+        freeze_completed_at=freeze_completed_at,
+        earliest_kickoff=earliest,
+        policy=policy,
+    )
+    normal_coverage_slate = int(len(slate)) >= policy.normal_coverage_min_games
     manifest = {
         **expected,
         "manifest_schema_version": SHADOW_FREEZE_SCHEMA_VERSION,
         "code_sha": code_sha,
+        "freeze_started_at": freeze_started_at.isoformat(),
+        "freeze_completed_at": freeze_completed_at.isoformat(),
+        "prospective_policy_sha256": policy.policy_sha256,
+        "freeze_code_manifest": code_manifest,
         "earliest_kickoff": earliest.isoformat(),
         "latest_kickoff": latest.isoformat(),
-        "lead_seconds": (earliest - as_of).total_seconds(),
+        **timing,
         "scheduled_games": int(len(slate)),
+        "scheduled_game_keys": [
+            {
+                "game_id": int(row.game_id),
+                "home_team": str(row.home_team),
+                "away_team": str(row.away_team),
+                "kickoff_utc": pd.Timestamp(row.kickoff_utc).isoformat(),
+            }
+            for row in slate[["game_id", "home_team", "away_team", "kickoff_utc"]]
+            .sort_values("game_id", kind="mergesort")
+            .itertuples(index=False)
+        ],
         "predicted_games": int(predictions.game_id.nunique()),
         "normal_coverage_slate": normal_coverage_slate,
-        "eligibility": eligibility_declaration(
-            shadow, week=week, normal_coverage_slate=normal_coverage_slate
-        ),
+        "eligibility": {
+            **eligibility_declaration(
+                shadow, week=week, normal_coverage_slate=normal_coverage_slate
+            ),
+            "policy_eligible": bool(
+                week >= policy.first_eligible_week and normal_coverage_slate
+            ),
+        },
         "predictions_ref": ref_identity(prediction_ref),
+        "measurement_states_ref": ref_identity(measurement_states_ref),
+        "team_states_ref": ref_identity(team_states_ref),
         "v4_source": v4_proof,
         "prospective": True,
     }
@@ -412,6 +564,16 @@ def main(argv: list[str] | None = None) -> None:
         f"{prefix}/predictions-ref.json",
         json.dumps(ref_identity(prediction_ref), sort_keys=True).encode(),
     )
+    immutable_write(
+        preview,
+        f"{prefix}/measurement-states-ref.json",
+        json.dumps(ref_identity(measurement_states_ref), sort_keys=True).encode(),
+    )
+    immutable_write(
+        preview,
+        f"{prefix}/team-states-ref.json",
+        json.dumps(ref_identity(team_states_ref), sort_keys=True).encode(),
+    )
     if args.register_catalog:
         from cks_picks_cfb.data.catalog import register_dataset_version
 
@@ -419,6 +581,16 @@ def main(argv: list[str] | None = None) -> None:
             resolve_runtime_target("preview").database_url,
             prediction_ref,
             prediction_manifest,
+        )
+        register_dataset_version(
+            resolve_runtime_target("preview").database_url,
+            measurement_states_ref,
+            measurement_states_manifest,
+        )
+        register_dataset_version(
+            resolve_runtime_target("preview").database_url,
+            team_states_ref,
+            team_states_manifest,
         )
     print(
         json.dumps(

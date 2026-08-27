@@ -163,8 +163,9 @@ failed gate cannot be bypassed for schedule reasons.
   margin MAE 13.30 vs V4 15.52 with positive paired lift; total at parity; all
   calibration gates true). Phase 4 shadow operations are implemented: the
   Preview-only all-2025 rehearsal passed all 15 weeks and byte-identical rerun
-  (summary SHA-256 `b755b585…`); no production interface changed. Phase 5 Week
-  1 is plan-eligible, not yet authorized for operations.
+  (summary SHA-256 `b755b585…`); no production interface changed. Phase 5
+  protected-evidence tooling is In Progress under
+  [its operations contract](../plans/2026-08-26/phase5-protected-prospective-evidence.md).
 
 ## Invariants and open decisions
 

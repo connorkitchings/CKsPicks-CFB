@@ -1,0 +1,20 @@
+prospective_evidence_version: prospective_evidence_v1
+shadow_config_path: conf/ratings/shadow_operations_v1.yaml
+shadow_design_id: 584f3f5cd43653745b4f3e4eed4f5437444fb5997366e574f22f3bf05ec4172e
+candidate:
+  prediction_design_id: 503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe
+  expected_model_version: 071f4de17b4b351e74e0a670
+  expected_model_sha: b941a1737ced28543c939496012c742bbb37fe2bb2c3fda57cf45a5038f86d3b
+  expected_predictions_version: 75e9a9cc7e942823bde56a2a
+  expected_predictions_sha: 226931b625769f008e91458afb984026c9976efba323030d408838df56be69b3
+production_v4:
+  model_id: week0-2026-v4-strict-20260818-r2
+  model_bundle_sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+  source_config: conf/weekly_bets/v4_2026.yaml
+season: 2026
+first_eligible_week: 1
+normal_coverage_min_games: 40
+target_lead_seconds: 7200
+hard_lead_seconds: 3600
+score_stabilization_seconds: 86400
+required_eligible_slates: 6

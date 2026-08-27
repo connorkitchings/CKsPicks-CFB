@@ -267,6 +267,12 @@ def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
     assert any(
         value.endswith("baselines-selection.json") for value in gold.definition["argv"]
     )
+    team_game = next(step for step in steps if step.name == "build_current_team_game")
+    assert "--output-ref-set-uri" in team_game.definition["argv"]
+    assert any(
+        value.endswith("rating_input_ref_set.json")
+        for value in team_game.definition["argv"]
+    )
 
 
 def test_publish_after_week_zero_requires_explicit_prepared_gold():

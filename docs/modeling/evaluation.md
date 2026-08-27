@@ -43,6 +43,12 @@ successor, not an untouched test set. For every 2026 candidate:
 5. Retain candidate and V4 outputs for the identical game set and information
    cutoff to allow paired evaluation.
 
+Phase 5 implements this policy through a separate immutable operational policy:
+Week 1 or later, at least 40 games, T-2h operating target, T-1h hard measured
+freeze lead, 24-hour postgame stabilization, and six eligible slates. See the
+[rating shadow operations runbook](../ops/rating_shadow_operations.md). These
+are evidence gates only; reported metrics cannot tune or promote the candidate.
+
 ## Promotion review
 
 Week 0 is not a full slate. The first review occurs only after six completed

@@ -346,6 +346,32 @@ _RATING_SCHEMAS: dict[str, DatasetSchema] = {
         ),
         allowed_values={"state_kind": ("pregame", "season_terminal")},
     ),
+    "rating_shadow_measurement_states": DatasetSchema(
+        dataset="rating_shadow_measurement_states",
+        schema_version="rating_shadow_measurement_states_v1",
+        required=MEASUREMENT_STATE_COLUMNS,
+        keys=MEASUREMENT_STATE_KEYS,
+        integer_columns=("season", "week", "completed_games"),
+        timestamp_columns=("as_of_utc",),
+        nonnullable=(
+            "state_id",
+            "season",
+            "week",
+            "as_of_utc",
+            "team",
+            "measurement_id",
+            "unit_role",
+        ),
+    ),
+    "rating_shadow_team_states": DatasetSchema(
+        dataset="rating_shadow_team_states",
+        schema_version="rating_shadow_team_states_v1",
+        required=TEAM_STATE_COLUMNS,
+        keys=TEAM_STATE_KEYS,
+        integer_columns=("season", "week", "completed_games", "component_count"),
+        timestamp_columns=("as_of_utc",),
+        nonnullable=("state_id", "season", "week", "as_of_utc", "team"),
+    ),
 }
 
 
