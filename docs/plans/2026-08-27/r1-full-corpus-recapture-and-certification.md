@@ -27,8 +27,15 @@ for manifest-backed plays. Measurement and state configs remain pinned to the
 old 2021–2025 Phase artifacts.
 
 Preview R2 source/destination credentials and CFBD credentials are configured.
-`PREVIEW_DATABASE_URL` must be loaded through the isolated Preview environment
-workflow and verified distinct from production before any migration or capture.
+Migration `0009` was applied through the isolated Preview environment after
+verifying distinct Preview and migration credentials, and the 2015 Week 1
+probe returned exactly 15,369 plays. On 2026-08-27, the automatic comparison
+bootstrap correctly stopped before capture because the Preview catalog had no
+validated 2019 legacy artifacts. Its immutable terminal report is
+`artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260827-95b0456/comparison-ref-set.failure.json`.
+R1 remains blocked until exact legacy 2019 `games`, `game_outcomes`, and
+`teams` comparison refs are restored and catalog-validated; no substitute
+evidence may be selected.
 
 ## Proposed Approach
 
@@ -149,3 +156,11 @@ preflight requires exact 2019 and 2021–2025 `games`, `game_outcomes`, and
 and team-game stats only for revision diagnostics, and binds the resulting
 manifest checksum into R1 source-set lineage. Missing evidence stops before
 recapture with a diagnostic.
+
+### Execution Result — Terminal comparison-evidence failure (2026-08-27)
+
+The automatic Preview-catalog preflight found zero validated 2019 legacy
+artifacts. It published the immutable failure report named above with a valid
+checksum and stopped before creating any successor source-capture child run.
+This is an expected fail-closed contract outcome, not authority to substitute
+or recapture comparison evidence. R2 remains blocked.

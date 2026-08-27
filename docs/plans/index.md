@@ -38,8 +38,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — Approved, blocked on R1. Generates and selects pooled, EWMA, Ridge, and
   baseline priors from exact certified refs without caller-produced metrics.
 - [R1 full-corpus recapture and certification](2026-08-27/r1-full-corpus-recapture-and-certification.md)
-  — Approved. Recaptures all 2015–2019 and 2021–2025 sources under a
-  capture-only, exact-manifest successor path and rebuilds the R1 foundation.
+  — In Progress, blocked on catalog-restored 2019 legacy comparison evidence.
+  The Preview preflight published its immutable failure report before any
+  successor capture; it cannot substitute evidence or authorize R2.
 - [R1 play-capture reliability hardening](2026-08-27/r1-play-capture-reliability-hardening.md)
   — Superseded by the full-corpus R1 contract. Its bounded weekly worker,
   request ledger, and reconciliation implementation remain reusable.

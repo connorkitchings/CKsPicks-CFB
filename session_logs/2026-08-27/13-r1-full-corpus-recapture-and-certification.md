@@ -3,17 +3,17 @@
 ## TL;DR
 
 - **Worked On:** Implementing the approved capture-only R1 successor-v2 contract.
-- **Outcome:** In progress.
+- **Outcome:** Terminally blocked before capture by missing required 2019
+  comparison evidence; the immutable failure report is published.
 - **Plan Contract:**
   `docs/plans/2026-08-27/r1-full-corpus-recapture-and-certification.md`
 - **Approval / Status:** User explicitly authorized implementation in Codex on
   2026-08-27; contract is `In Progress`.
-- **Blockers:** Live work is intentionally blocked until the R1 implementation
-  is committed. Preview access is available through the repository's
-  Keychain-backed wrapper and resolves to a database URL distinct from
-  production.
-- **Next:** Implement capture-only source sets, manifest-scoped Silver/derived
-  refs, and successor-v2 measurement/state/certification interfaces.
+- **Blockers:** Preview catalog has zero validated legacy 2019 artifacts.
+  Exact legacy `games`, `game_outcomes`, and `teams` comparison refs must be
+  restored and catalog-validated; R1 may not substitute them.
+- **Next:** After that restoration, start a new committed R1 run through the
+  Preview wrapper; the automatic bootstrap will gate the full capture again.
 
 ## Context and Decisions
 
@@ -50,6 +50,10 @@
   bootstrap stopped before capture because Preview contains no validated 2019
   legacy catalog artifacts. Added a terminal immutable failure diagnostic for
   this required pre-capture condition.
+- Published and checksum-verified
+  `artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260827-95b0456/comparison-ref-set.failure.json`.
+  Catalog verification confirmed that the blocked run created zero source
+  capture child runs.
 - Updated the R1 operational runbook and focused tests.
 
 ## Files Modified
@@ -85,10 +89,10 @@
 
 ## Handoff Notes
 
-- **Resume at:** Commit the comparison-diagnostic hardening, rerun the
-  preflight under a fresh R1 ID to publish its terminal report, then restore
-  exact 2019 legacy `games`, `game_outcomes`, and `teams` artifacts before a
-  new full-corpus capture run can begin.
+- **Resume at:** Restore and catalog-validate exact legacy 2019 `games`,
+  `game_outcomes`, and `teams` refs. Then start a fresh committed R1 run
+  through `scripts/ops/with_preview_env.sh`; its auto-bootstrap remains the
+  first gate.
 - **Watch out for:** Never call compatibility writes for recaptured sources;
   never treat previous source refs as successor-v2 parents.
 
