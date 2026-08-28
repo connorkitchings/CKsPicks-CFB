@@ -17,6 +17,7 @@ from cks_picks_cfb.data.catalog import (
     register_existing_dataset_ref,
     register_reconciliation_results,
 )
+from cks_picks_cfb.data.history_play_capture import manifest_declared_missing_game_ids
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
@@ -52,6 +53,7 @@ def main() -> None:
     parser.add_argument("--venues-ref-uri")
     parser.add_argument("--weather-ref-uri")
     parser.add_argument("--game-stats-ref-uri")
+    parser.add_argument("--play-capture-manifest-uri")
     parser.add_argument("--corrections-ref-uri", required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
@@ -86,11 +88,6 @@ def main() -> None:
         weather_df=frames.get("weather_observations"),
         corrections_df=frames.get("data_corrections"),
     )
-    reconciliation = reconcile_completed_games(
-        games,
-        team_game,
-        frames.get("team_game_stats"),
-    )
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
@@ -100,6 +97,25 @@ def main() -> None:
     parent_refs = tuple(refs)
     seasons = sorted(
         {int(value) for value in games.get("season", []).tolist() if value is not None}
+    )
+    if args.play_capture_manifest_uri and len(seasons) != 1:
+        raise ValueError(
+            "play-capture manifest reconciliation requires exactly one game season"
+        )
+    declared_incomplete_game_ids = (
+        manifest_declared_missing_game_ids(
+            storage,
+            args.play_capture_manifest_uri,
+            season=seasons[0],
+        )
+        if args.play_capture_manifest_uri
+        else None
+    )
+    reconciliation = reconcile_completed_games(
+        games,
+        team_game,
+        frames.get("team_game_stats"),
+        declared_incomplete_game_ids=declared_incomplete_game_ids,
     )
     for dataset, frame, schema in (
         ("byplay", byplay, "byplay_v1"),

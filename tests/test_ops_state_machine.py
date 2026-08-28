@@ -531,6 +531,14 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
     assert "build_successor_r1_foundation" in [step.name for step in steps]
     assert "audit_successor_cross_lineage" in [step.name for step in steps]
     assert "certify_successor_history" in [step.name for step in steps]
+    team_game_2015 = next(
+        step for step in steps if step.name == "successor_reconciled_team_game_2015"
+    )
+    argv = team_game_2015.definition["argv"]
+    assert "--play-capture-manifest-uri" in argv
+    assert argv[argv.index("--play-capture-manifest-uri") + 1].endswith(
+        "/captures/2015/plays.json"
+    )
     comparison = next(
         step for step in steps if step.name == "freeze_successor_legacy_comparison_evidence"
     )

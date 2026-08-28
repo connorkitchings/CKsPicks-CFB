@@ -168,3 +168,17 @@ artifacts. It published the immutable failure report named above with a valid
 checksum and stopped before creating any successor source-capture child run.
 This is an expected fail-closed contract outcome, not authority to substitute
 or recapture comparison evidence. R2 remains blocked.
+
+### Amendment 2 — Manifest-declared play-coverage remediation (2026-08-28)
+
+The complete-source run `r1-full-corpus-20260828-929f331` stopped in the first
+2015 derived build: seven completed games have no team-game rows, and the exact
+completed play-capture manifest declares the same seven provider omissions.
+This is 717/724 (99.03%) play coverage, above this contract's 90% threshold,
+but the generic reconciliation builder currently rejects all zero-row games
+before certification can evaluate coverage. The approved remediation contract
+at `docs/plans/2026-08-28/r1-manifest-declared-play-coverage-remediation.md`
+adds an R1-only, manifest-bound nonblocking classification for those exact
+omissions while preserving strict defaults and every existing R1 threshold.
+Because the implementation changes code identity, it requires a fresh
+full-corpus capture run; the failed run remains diagnostic-only.

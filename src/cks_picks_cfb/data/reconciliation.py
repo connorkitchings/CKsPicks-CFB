@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Collection, Mapping
 
 import pandas as pd
 
@@ -43,9 +43,13 @@ def reconcile_completed_games(
     team_stats: pd.DataFrame | None = None,
     *,
     policy: ReconciliationPolicy | None = None,
+    declared_incomplete_game_ids: Collection[int] | None = None,
 ) -> pd.DataFrame:
     """Classify each completed game without silently choosing a conflicting source."""
     policy = policy or ReconciliationPolicy()
+    declared_incomplete_game_ids = {
+        int(game_id) for game_id in (declared_incomplete_game_ids or ())
+    }
     schedule = schedule.copy()
     schedule = schedule.rename(columns={_game_id_column(schedule): "game_id"})
     required = {"season", "game_id", "home_team", "away_team", "completed"}
@@ -79,11 +83,25 @@ def reconcile_completed_games(
         blocking = False
         expected_teams = {game["home_team"], game["away_team"]}
         actual_teams = set(aggregate.get("team", pd.Series(dtype=str)).dropna())
-        if len(aggregate) != 2 or actual_teams != expected_teams:
+        declared_missing_play_capture = (
+            aggregate.empty and int(game_id) in declared_incomplete_game_ids
+        )
+        if not aggregate.empty and (
+            len(aggregate) != 2 or actual_teams != expected_teams
+        ):
             classification = "blocking_conflict"
             blocking = True
             details["expected_teams"] = sorted(expected_teams)
             details["actual_teams"] = sorted(actual_teams)
+        elif aggregate.empty:
+            if declared_missing_play_capture:
+                classification = "incomplete_source"
+                details["declared_missing_play_capture"] = True
+            else:
+                classification = "blocking_conflict"
+                blocking = True
+                details["expected_teams"] = sorted(expected_teams)
+                details["actual_teams"] = sorted(actual_teams)
 
         if not blocking and {"home_points", "away_points"}.issubset(game):
             for team, expected in (
@@ -120,9 +138,22 @@ def reconcile_completed_games(
             if box.empty:
                 classification = "incomplete_source"
             elif "team" not in box:
-                classification = "incomplete_source"
+                if declared_missing_play_capture:
+                    classification = "blocking_conflict"
+                    blocking = True
+                    details["team_stats_error"] = "missing_team_column"
+                else:
+                    classification = "incomplete_source"
             elif set(box["team"].dropna()) != expected_teams:
-                classification = "incomplete_source"
+                if declared_missing_play_capture:
+                    classification = "blocking_conflict"
+                    blocking = True
+                    details["team_stats_expected_teams"] = sorted(expected_teams)
+                    details["team_stats_actual_teams"] = sorted(
+                        set(box["team"].dropna())
+                    )
+                else:
+                    classification = "incomplete_source"
             elif "team" in box and "team" in aggregate:
                 differences = []
                 for metric, tolerance in policy.tolerances().items():

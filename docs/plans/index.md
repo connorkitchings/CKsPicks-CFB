@@ -28,6 +28,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contracts
 
+- [R1 manifest-declared play-coverage remediation](2026-08-28/r1-manifest-declared-play-coverage-remediation.md)
+  — In Progress. Restores the R1 path from complete source capture to
+  certification while preserving its existing 90% coverage gate and strict
+  default reconciliation behavior.
 - [R4 structured predictor and candidate-v2 freeze](2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md)
   — Approved. Runs selection only through 2024, freezes the end-to-end design,
   and owns the single locked-2025 confirmation and optional candidate-v2 refit.

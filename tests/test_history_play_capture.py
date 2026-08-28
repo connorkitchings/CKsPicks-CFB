@@ -12,6 +12,7 @@ from cks_picks_cfb.data.history_play_capture import (
     HistoryPlayCaptureSet,
     load_history_play_capture_policy,
     manifest_capture_ids,
+    manifest_declared_missing_game_ids,
     run_isolated_play_worker,
 )
 
@@ -54,6 +55,54 @@ def test_manifest_capture_ids_requires_one_complete_ordered_set():
     duplicate = {**complete, "requests": [{"capture_id": "one"}, {"capture_id": "one"}]}
     with pytest.raises(HistoryPlayCaptureError, match="invalid capture IDs"):
         manifest_capture_ids(_MemoryStorage({uri: json.dumps(duplicate).encode()}), uri)
+
+
+def test_manifest_declared_missing_game_ids_requires_complete_exact_coverage():
+    uri = "artifacts/research/rating-successor-v2/r1/run/captures/2015/plays.json"
+    manifest = {
+        "contract_version": "play-capture-set-v2",
+        "state": "complete",
+        "season": 2015,
+        "requests": [
+            {
+                "capture_id": "one",
+                "request": {"parameters": {"year": 2015, "expected_game_ids": [1, 2]}},
+                "returned_game_ids": [1],
+                "missing_game_ids": [2],
+                "extra_game_ids": [],
+            },
+            {
+                "capture_id": "two",
+                "request": {"parameters": {"year": 2015, "expected_game_ids": [3]}},
+                "returned_game_ids": [3],
+                "missing_game_ids": [],
+                "extra_game_ids": [],
+            },
+        ],
+    }
+    storage = _MemoryStorage({uri: json.dumps(manifest).encode()})
+    assert manifest_declared_missing_game_ids(storage, uri, season=2015) == {2}
+
+    malformed = {
+        **manifest,
+        "requests": [
+            {
+                **manifest["requests"][0],
+                "returned_game_ids": [1],
+                "missing_game_ids": [],
+            }
+        ],
+    }
+    with pytest.raises(HistoryPlayCaptureError, match="coverage mismatches"):
+        manifest_declared_missing_game_ids(
+            _MemoryStorage({uri: json.dumps(malformed).encode()}), uri, season=2015
+        )
+
+    wrong_season = {**manifest, "season": 2016}
+    with pytest.raises(HistoryPlayCaptureError, match="incomplete or mismatched"):
+        manifest_declared_missing_game_ids(
+            _MemoryStorage({uri: json.dumps(wrong_season).encode()}), uri, season=2015
+        )
 
 
 def test_successor_play_requests_use_exact_games_capture_manifest(monkeypatch):

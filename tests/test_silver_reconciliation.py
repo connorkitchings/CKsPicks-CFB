@@ -149,6 +149,63 @@ def test_reconciliation_blocks_team_or_score_conflicts():
         require_reconciled(result)
 
 
+def test_reconciliation_allows_only_declared_zero_row_games():
+    schedule = pd.DataFrame(
+        [
+            {
+                "season": 2015,
+                "game_id": 1,
+                "home_team": "A",
+                "away_team": "B",
+                "completed": True,
+            },
+            {
+                "season": 2015,
+                "game_id": 2,
+                "home_team": "C",
+                "away_team": "D",
+                "completed": True,
+            },
+        ]
+    )
+    aggregate = pd.DataFrame(
+        [
+            {"game_id": 2, "team": "C", "points": 20},
+            {"game_id": 2, "team": "D", "points": 17},
+        ]
+    )
+
+    declared = reconcile_completed_games(
+        schedule, aggregate, declared_incomplete_game_ids=[1]
+    )
+    missing = declared.loc[declared["game_id"] == 1].iloc[0]
+    assert missing["classification"] == "incomplete_source"
+    assert missing["blocking"] is False or missing["blocking"] == 0
+    assert '"declared_missing_play_capture": true' in missing["details"]
+    require_reconciled(declared)
+
+    undeclared = reconcile_completed_games(schedule, aggregate)
+    with pytest.raises(ReconciliationError, match=r"games: \[1\]"):
+        require_reconciled(undeclared)
+
+    partial = reconcile_completed_games(
+        schedule,
+        pd.DataFrame([{"game_id": 1, "team": "A", "points": 20}]),
+        declared_incomplete_game_ids=[1],
+    )
+    with pytest.raises(ReconciliationError, match=r"games: \[1, 2\]"):
+        require_reconciled(partial)
+
+    conflicting_stats = reconcile_completed_games(
+        schedule.iloc[:1],
+        pd.DataFrame(columns=["game_id", "team", "points"]),
+        pd.DataFrame([{"game_id": 1, "team": "Unexpected"}]),
+        declared_incomplete_game_ids=[1],
+    )
+    with pytest.raises(ReconciliationError, match=r"games: \[1\]"):
+        require_reconciled(conflicting_stats)
+
+
 def test_market_quotes_decode_captured_sdk_mapping_string():
     result = normalize_market_quotes(
         [

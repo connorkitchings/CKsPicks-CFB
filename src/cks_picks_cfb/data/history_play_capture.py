@@ -454,3 +454,85 @@ def manifest_capture_ids(storage: StorageBackend, uri: str) -> list[str]:
     if not all(capture_ids) or len(set(capture_ids)) != len(capture_ids):
         raise HistoryPlayCaptureError("play capture manifest has invalid capture IDs")
     return capture_ids
+
+
+def manifest_declared_missing_game_ids(
+    storage: StorageBackend, uri: str, *, season: int
+) -> set[int]:
+    """Return exact provider-declared omissions from one completed R1 play manifest."""
+
+    raw = json.loads(storage.read_bytes(uri).decode("utf-8"))
+    try:
+        manifest_season = int(raw.get("season", -1))
+    except (TypeError, ValueError) as exc:
+        raise HistoryPlayCaptureError(
+            "play capture manifest is incomplete or mismatched"
+        ) from exc
+    if (
+        raw.get("contract_version") != "play-capture-set-v2"
+        or raw.get("state") != "complete"
+        or manifest_season != season
+    ):
+        raise HistoryPlayCaptureError("play capture manifest is incomplete or mismatched")
+    entries = raw.get("requests")
+    if not isinstance(entries, list) or not entries:
+        raise HistoryPlayCaptureError("play capture manifest has no request entries")
+
+    def game_ids(value: Any, *, label: str) -> set[int]:
+        if not isinstance(value, list):
+            raise HistoryPlayCaptureError(f"play capture manifest {label} is invalid")
+        parsed: list[int] = []
+        for item in value:
+            if isinstance(item, bool):
+                raise HistoryPlayCaptureError(
+                    f"play capture manifest {label} has an invalid game ID"
+                )
+            try:
+                parsed.append(int(item))
+            except (TypeError, ValueError) as exc:
+                raise HistoryPlayCaptureError(
+                    f"play capture manifest {label} has an invalid game ID"
+                ) from exc
+        if len(parsed) != len(set(parsed)):
+            raise HistoryPlayCaptureError(f"play capture manifest {label} has duplicates")
+        return set(parsed)
+
+    capture_ids: set[str] = set()
+    expected_all: set[int] = set()
+    missing_all: set[int] = set()
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            raise HistoryPlayCaptureError("play capture manifest request entry is invalid")
+        capture_id = str(entry.get("capture_id", ""))
+        if not capture_id or capture_id in capture_ids:
+            raise HistoryPlayCaptureError("play capture manifest has invalid capture IDs")
+        capture_ids.add(capture_id)
+        request = entry.get("request")
+        if not isinstance(request, Mapping) or not isinstance(
+            request.get("parameters"), Mapping
+        ):
+            raise HistoryPlayCaptureError("play capture manifest request is invalid")
+        parameters = request["parameters"]
+        try:
+            request_season = int(parameters.get("year", -1))
+        except (TypeError, ValueError) as exc:
+            raise HistoryPlayCaptureError(
+                "play capture manifest request season mismatches"
+            ) from exc
+        if request_season != season:
+            raise HistoryPlayCaptureError("play capture manifest request season mismatches")
+        expected = game_ids(
+            parameters.get("expected_game_ids"), label="expected_game_ids"
+        )
+        if expected_all & expected:
+            raise HistoryPlayCaptureError("play capture manifest repeats expected game IDs")
+        expected_all |= expected
+        returned = game_ids(entry.get("returned_game_ids"), label="returned_game_ids")
+        missing = game_ids(entry.get("missing_game_ids"), label="missing_game_ids")
+        extra = game_ids(entry.get("extra_game_ids"), label="extra_game_ids")
+        if extra:
+            raise HistoryPlayCaptureError("play capture manifest records extra game IDs")
+        if returned & missing or returned | missing != expected:
+            raise HistoryPlayCaptureError("play capture manifest request coverage mismatches")
+        missing_all |= missing
+    return missing_all
