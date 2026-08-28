@@ -67,3 +67,36 @@ def test_weather_imputation_is_distinguishable_from_observed_calm_weather():
     assert result.loc[0, "temperature"] == 70.0
     assert bool(result.loc[0, "weather_missing"])
     assert bool(result.loc[0, "temperature_missing"])
+
+
+def test_altitude_features_coerce_string_venue_elevations():
+    team_game = pd.DataFrame([{"game_id": 1, "team": "Away"}])
+    games = pd.DataFrame(
+        [
+            {
+                "id": 1,
+                "start_date": "2026-08-29T16:00:00Z",
+                "venue_id": 100,
+                "home_team": "Home",
+                "away_team": "Away",
+                "neutral_site": False,
+            }
+        ]
+    )
+    teams = pd.DataFrame(
+        [
+            {"school": "Home", "venue_id": 100},
+            {"school": "Away", "venue_id": 200},
+        ]
+    )
+    venues = pd.DataFrame(
+        [
+            {"id": 100, "latitude": 39.0, "longitude": -105.0, "elevation": "5280"},
+            {"id": 200, "latitude": 30.0, "longitude": -97.0, "elevation": "500"},
+        ]
+    )
+
+    result = merge_situational_features(team_game, games, teams, venues)
+
+    assert result.loc[0, "altitude_diff"] == 4780
+    assert not bool(result.loc[0, "altitude_missing"])

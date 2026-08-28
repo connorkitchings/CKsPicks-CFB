@@ -207,6 +207,12 @@ def merge_situational_features(
             merged_df["home_elevation"] = merged_df["home_venue_id"].map(
                 lambda vid: venue_lookup.get(vid, {}).get("elevation")
             )
+            merged_df["game_elevation"] = pd.to_numeric(
+                merged_df["game_elevation"], errors="coerce"
+            )
+            merged_df["home_elevation"] = pd.to_numeric(
+                merged_df["home_elevation"], errors="coerce"
+            )
             merged_df["altitude_diff"] = merged_df["game_elevation"].fillna(
                 0
             ) - merged_df["home_elevation"].fillna(0)
