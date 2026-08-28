@@ -28,6 +28,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contracts
 
+- [R1 cross-lineage audit scope remediation](2026-08-28/r1-cross-lineage-audit-scope-remediation.md)
+  — Approved. Compares each hard dataset against its own legacy counterpart
+  (games are FBS-scope; outcomes are a superset with legitimately canceled
+  games) before the fresh full-corpus R1 run and certification.
 - [R1 derived-schema registration and atomicity](2026-08-28/r1-derived-schema-registration-and-atomicity.md)
   — In Progress. Adds executable contracts for the complete derived R1 output
   set and prevents partial immutable writes before a fresh full-corpus R1

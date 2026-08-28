@@ -156,4 +156,12 @@ executable schema.
 
 ## Amendments
 
-None.
+1. **2026-08-28 (Task 3 execution).** A prior same-day attempt already bound
+   run ID `r1-full-corpus-20260828-962f85d` (as_of `2026-08-28T17:00:15Z`,
+   code SHA `962f85d`). It completed every capture, Silver season, reconciled
+   team-game step, and derived ref-set closure — validating Tasks 1–2 — then
+   failed at `audit_successor_cross_lineage` on check mis-specification, not
+   a successor data defect. Remediation continues under
+   `2026-08-28/r1-cross-lineage-audit-scope-remediation.md`; the fresh
+   full-corpus run required by this contract's Task 3 will use the remediated
+   code under a new code-bound run ID.
