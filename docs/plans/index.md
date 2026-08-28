@@ -28,6 +28,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current rating-transition contracts
 
+- [R1 derived-schema registration and atomicity](2026-08-28/r1-derived-schema-registration-and-atomicity.md)
+  — In Progress. Adds executable contracts for the complete derived R1 output
+  set and prevents partial immutable writes before a fresh full-corpus R1
+  recapture.
 - [R1 manifest-declared play-coverage remediation](2026-08-28/r1-manifest-declared-play-coverage-remediation.md)
   — In Progress. Restores the R1 path from complete source capture to
   certification while preserving its existing 90% coverage gate and strict
