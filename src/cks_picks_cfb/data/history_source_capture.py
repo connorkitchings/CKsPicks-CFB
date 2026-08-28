@@ -204,30 +204,41 @@ class HistorySourceCaptureSet:
         self.sleep = sleep
         self.ingestion_run_id = f"{pipeline_run_id}:successor_history_{season}_{entity}"
 
+    def _games_records_from_manifest(self) -> list[dict[str, Any]]:
+        """Read exact same-run game rows without falling back to raw storage."""
+
+        if not self.games_manifest_uri:
+            raise HistorySourceCaptureError(
+                f"successor {self.entity} capture requires an exact games capture manifest"
+            )
+        raw = json.loads(self.storage.read_bytes(self.games_manifest_uri).decode())
+        if (
+            raw.get("contract_version") != MANIFEST_VERSION
+            or raw.get("state") != "complete"
+            or int(raw.get("season", -1)) != self.season
+            or raw.get("entity") != "games"
+        ):
+            raise HistorySourceCaptureError(
+                f"successor {self.entity} capture games manifest is incomplete or mismatched"
+            )
+        records: list[dict[str, Any]] = []
+        for entry in raw.get("requests", []):
+            capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
+            records.extend(read_source_capture(self.storage, capture).to_dict("records"))
+        if not records:
+            raise HistorySourceCaptureError(
+                f"successor {self.entity} capture games manifest is empty"
+            )
+        return records
+
     def _planned_requests(self) -> list[dict[str, Any]]:
         if self.entity == "venues":
-            if not self.games_manifest_uri:
-                raise HistorySourceCaptureError(
-                    "successor venue capture requires an exact games capture manifest"
-                )
-            raw = json.loads(self.storage.read_bytes(self.games_manifest_uri).decode())
-            if (
-                raw.get("contract_version") != MANIFEST_VERSION
-                or raw.get("state") != "complete"
-                or int(raw.get("season", -1)) != self.season
-                or raw.get("entity") != "games"
-            ):
-                raise HistorySourceCaptureError(
-                    "successor venue capture games manifest is incomplete or mismatched"
-                )
             venue_ids: set[int] = set()
-            for entry in raw.get("requests", []):
-                capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
-                games = read_source_capture(self.storage, capture)
+            for game in self._games_records_from_manifest():
                 for column in ("venue_id", "venueId"):
-                    for venue_id in games.get(column, []):
-                        if venue_id is not None:
-                            venue_ids.add(int(venue_id))
+                    venue_id = game.get(column)
+                    if venue_id is not None:
+                        venue_ids.add(int(venue_id))
             if not venue_ids:
                 raise HistorySourceCaptureError(
                     "successor venue capture found no venue IDs in exact games captures"
@@ -246,6 +257,39 @@ class HistorySourceCaptureSet:
                 requested_at=datetime.now(timezone.utc),
             )
             return [request.manifest()]
+        if self.entity == "game_stats":
+            games_by_week: dict[int, set[int]] = {}
+            for game in self._games_records_from_manifest():
+                season_type = str(
+                    game.get("season_type", game.get("seasonType", "regular"))
+                ).lower()
+                game_id = game.get("game_id", game.get("id"))
+                week = game.get("week")
+                if season_type != "regular" or game_id is None or week is None:
+                    continue
+                games_by_week.setdefault(int(week), set()).add(int(game_id))
+            if not games_by_week:
+                raise HistorySourceCaptureError(
+                    "successor game-stat capture found no regular-season games"
+                )
+            ingester = GameStatsIngester(year=self.season, storage=self.storage)
+            requested_at = datetime.now(timezone.utc)
+            return [
+                SourceRequest(
+                    provider=self.policy.provider,
+                    entity="game_stats",
+                    endpoint=ingester.source_endpoint,
+                    parameters={
+                        "year": self.season,
+                        "week": week,
+                        "season_type": "regular",
+                        "classification": "fbs",
+                        "expected_game_ids": sorted(game_ids),
+                    },
+                    requested_at=requested_at,
+                ).manifest()
+                for week, game_ids in sorted(games_by_week.items())
+            ]
         ingester = INGESTERS[self.entity](year=self.season, storage=self.storage)
         return [request.manifest() for request in ingester.source_requests()]
 

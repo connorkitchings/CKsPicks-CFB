@@ -392,7 +392,7 @@ def _history_source_capture_step(
             identity=identity,
             games_manifest_uri=(
                 manifest_uri.rsplit("/", 1)[0] + "/games.json"
-                if entity == "venues"
+                if entity in {"venues", "game_stats"}
                 else None
             ),
         ).run()

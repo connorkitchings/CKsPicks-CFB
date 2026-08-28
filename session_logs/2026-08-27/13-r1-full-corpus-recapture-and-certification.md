@@ -110,6 +110,11 @@
   capture manifest and passes them to a capture-only CFBD venue request. The
   immutable games capture preserves CFBD's camel-case `venueId`, so the
   manifest planner now recognizes both `venueId` and normalized `venue_id`.
+- The first post-venue run confirmed the full 2015 source set, including all
+  15 play weeks, then found that `GameStatsIngester.source_requests()` also
+  reads `raw/games`. Game-stat request planning now uses the exact same-run
+  games capture manifest, filters to regular-season rows, and groups their
+  provider IDs by week without any compatibility projection access.
 
 ## Handoff Notes
 
