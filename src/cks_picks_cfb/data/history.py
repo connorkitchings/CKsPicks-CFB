@@ -215,9 +215,12 @@ def import_historical_object(
     destination: StorageBackend,
     conn_url: str,
     item: HistoricalObjectRef,
+    expected_source_sha256: str | None = None,
 ) -> SourceCapture:
     """Import one source object idempotently into preview Bronze and Neon."""
     records, source_sha = read_historical_records(source, item)
+    if expected_source_sha256 and source_sha != expected_source_sha256:
+        raise ValueError(f"Historical source checksum changed: {item.uri}")
     years = validate_historical_scope(item, records)
     identity = json.dumps(
         {

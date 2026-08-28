@@ -86,6 +86,15 @@
   artifacts, so R1 stopped before successor capture as required. The revised
   bootstrap now emits an immutable run-scoped failure diagnostic for this
   terminal evidence condition.
+- A read-only source inventory confirmed that the exact legacy 2019 archives
+  still exist outside the Preview catalog: `raw/games/year=2019/data.csv`
+  (848 rows, SHA-256 `127b0a201b7793d25159a02ecfa29d83f46f40a6899106bb7f61438e660e3db5`),
+  `raw/teams/year=2019/data.parquet` (130 rows, SHA-256
+  `655b71a08c510f95db9e81cc6c21aca4052dac889cf8e17cbb00d130ce294c22`),
+  and the associated venues and plays. Games include final scores. Restoring
+  those exact archives as cataloged *legacy comparison* refs would be a new
+  lineage operation and requires its own approval; it is not a substituted
+  successor capture.
 
 ## Handoff Notes
 

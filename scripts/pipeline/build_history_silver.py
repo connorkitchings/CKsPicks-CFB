@@ -107,6 +107,33 @@ def _capture_ids_from_source_set(
     return capture_ids
 
 
+def _capture_ids_from_legacy_comparison_source_set(
+    storage, uri: str, *, entity: str, season: int
+) -> list[str]:
+    """Resolve only the captures frozen by the 2019 comparison restoration."""
+
+    raw = json.loads(storage.read_bytes(uri).decode())
+    if (
+        raw.get("contract_version") != "legacy-comparison-2019-source-set-v1"
+        or raw.get("state") != "complete"
+        or int(raw.get("season", -1)) != season
+    ):
+        raise ValueError(
+            "--legacy-comparison-source-set-uri must name a complete 2019 comparison set"
+        )
+    matches = [item for item in raw.get("entries", []) if item.get("entity") == entity]
+    if len(matches) != 1:
+        raise ValueError(
+            f"Legacy comparison source set must contain exactly one {season}/{entity} entry"
+        )
+    capture_ids = [str(value) for value in matches[0].get("capture_ids", [])]
+    if len(capture_ids) != 1 or len(set(capture_ids)) != 1:
+        raise ValueError(
+            f"Legacy comparison source set has invalid {season}/{entity} capture IDs"
+        )
+    return capture_ids
+
+
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -118,6 +145,10 @@ def main() -> None:
     parser.add_argument(
         "--source-set-uri",
         help="Complete successor-history-source-set-v2 manifest for exact captures.",
+    )
+    parser.add_argument(
+        "--legacy-comparison-source-set-uri",
+        help="Complete exact 2019 legacy comparison source-set manifest.",
     )
     parser.add_argument(
         "--play-capture-set-uri",
@@ -163,13 +194,26 @@ def main() -> None:
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
     source_entity = SOURCE_ENTITIES[args.dataset]
+    exact_source_args = (
+        int(bool(args.source_set_uri))
+        + int(bool(args.legacy_comparison_source_set_uri))
+        + int(bool(args.play_capture_set_uri))
+    )
+    if exact_source_args > 1:
+        raise ValueError(
+            "--source-set-uri, --legacy-comparison-source-set-uri, and "
+            "--play-capture-set-uri are mutually exclusive"
+        )
     if args.source_set_uri:
-        if args.play_capture_set_uri:
-            raise ValueError(
-                "--source-set-uri and --play-capture-set-uri are mutually exclusive"
-            )
         ids = _capture_ids_from_source_set(
             storage, args.source_set_uri, entity=source_entity, season=args.season
+        )
+    elif args.legacy_comparison_source_set_uri:
+        ids = _capture_ids_from_legacy_comparison_source_set(
+            storage,
+            args.legacy_comparison_source_set_uri,
+            entity=source_entity,
+            season=args.season,
         )
     elif args.play_capture_set_uri:
         if args.dataset != "plays":
