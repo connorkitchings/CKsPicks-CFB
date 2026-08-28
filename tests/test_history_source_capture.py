@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pandas as pd
 
 from cks_picks_cfb.data.history_source_capture import (
     HistorySourceCapturePolicy,
     HistorySourceCaptureSet,
+    transform_capture_records,
 )
 from cks_picks_cfb.data.lake import SourceCapture
 
@@ -20,6 +22,32 @@ class _Storage:
 
     def read_bytes(self, uri: str) -> bytes:
         return self.objects[uri]
+
+
+def test_source_worker_uses_canonical_transform_without_projection_writes():
+    class _Ingester:
+        def __init__(self):
+            self.received = None
+
+        def transform_data(self, raw_records):
+            self.received = raw_records
+            return [
+                {
+                    "id": 10,
+                    "home_team": "Home",
+                    "away_team": "Away",
+                    "kickoff_utc": "2016-09-01T00:00:00+00:00",
+                }
+            ]
+
+    raw = [SimpleNamespace(id=10)]
+    ingester = _Ingester()
+
+    records = transform_capture_records(ingester, raw)
+
+    assert ingester.received == raw
+    assert records[0]["home_team"] == "Home"
+    assert records[0]["id"] == 10
 
 
 def test_successor_venue_request_uses_exact_games_capture_manifest(monkeypatch):

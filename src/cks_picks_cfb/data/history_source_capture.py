@@ -17,6 +17,7 @@ from typing import Any, Callable, Mapping
 
 from omegaconf import OmegaConf
 
+from cks_picks_cfb.data.base import BaseIngester
 from cks_picks_cfb.data.catalog import (
     begin_or_resume_request_set,
     completed_request_capture_ids,
@@ -47,6 +48,15 @@ INGESTERS = {
 
 class HistorySourceCaptureError(RuntimeError):
     """Raised when a non-play successor capture set cannot be completed."""
+
+
+def transform_capture_records(ingester: BaseIngester, raw_records: list[Any]) -> list[dict[str, Any]]:
+    """Apply an ingester's canonical transform without writing raw projections."""
+
+    return [
+        BaseIngester.provider_value(record)
+        for record in ingester.transform_data(raw_records)
+    ]
 
 
 @dataclass(frozen=True)

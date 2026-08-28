@@ -11,9 +11,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from cks_picks_cfb.data.base import BaseIngester
 from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.games import GamesIngester
+from cks_picks_cfb.data.history_source_capture import transform_capture_records
 from cks_picks_cfb.data.sources import classify_source_exception
 from cks_picks_cfb.data.teams import TeamsIngester
 from cks_picks_cfb.data.venues import VenuesIngester
@@ -39,9 +39,9 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
 
 def _game_ids(records: list[dict[str, Any]]) -> list[int]:
     values = {
-        int(record["game_id"])
+        int(record.get("game_id", record.get("id")))
         for record in records
-        if record.get("game_id") is not None
+        if record.get("game_id", record.get("id")) is not None
     }
     return sorted(values)
 
@@ -58,7 +58,7 @@ def main() -> None:
     try:
         ingester = INGESTERS[args.entity](year=args.year)
         raw_records = ingester.fetch_source_request(dict(request["parameters"]))
-        records = [BaseIngester.provider_value(record) for record in raw_records]
+        records = transform_capture_records(ingester, raw_records)
         if not records:
             raise ValueError(f"CFBD returned no {args.entity} records")
         _atomic_json(
