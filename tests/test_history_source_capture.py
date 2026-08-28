@@ -56,7 +56,7 @@ def test_successor_venue_request_uses_exact_games_capture_manifest(monkeypatch):
     )
     monkeypatch.setattr(
         "cks_picks_cfb.data.history_source_capture.read_source_capture",
-        lambda *_: pd.DataFrame([{"venue_id": 12}, {"venue_id": 34}]),
+        lambda *_: pd.DataFrame([{"venueId": 12}, {"venueId": 34}]),
     )
     policy = HistorySourceCapturePolicy(
         version="fixture",

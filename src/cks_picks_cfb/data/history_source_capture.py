@@ -224,9 +224,10 @@ class HistorySourceCaptureSet:
             for entry in raw.get("requests", []):
                 capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
                 games = read_source_capture(self.storage, capture)
-                for venue_id in games.get("venue_id", []):
-                    if venue_id is not None:
-                        venue_ids.add(int(venue_id))
+                for column in ("venue_id", "venueId"):
+                    for venue_id in games.get(column, []):
+                        if venue_id is not None:
+                            venue_ids.add(int(venue_id))
             if not venue_ids:
                 raise HistorySourceCaptureError(
                     "successor venue capture found no venue IDs in exact games captures"

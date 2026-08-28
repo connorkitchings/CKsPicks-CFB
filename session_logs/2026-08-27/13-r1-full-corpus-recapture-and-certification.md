@@ -107,7 +107,9 @@
   play requests. It then exposed a venue-isolation defect for 2016: the legacy
   venue adapter reads `raw/games`, absent by design in R1. Venue request
   planning now derives exact venue IDs from the same-run immutable games
-  capture manifest and passes them to a capture-only CFBD venue request.
+  capture manifest and passes them to a capture-only CFBD venue request. The
+  immutable games capture preserves CFBD's camel-case `venueId`, so the
+  manifest planner now recognizes both `venueId` and normalized `venue_id`.
 
 ## Handoff Notes
 
