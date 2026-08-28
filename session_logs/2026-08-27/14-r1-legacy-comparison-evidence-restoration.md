@@ -27,6 +27,11 @@
   returned its pre-registration in-memory state. The catalog row itself is
   registered and matches the pinned source URI/checksum. The restoration now
   rereads that catalog row before accepting an imported capture.
+- The second attempt built a validated immutable `games` ref, then stopped
+  before outcomes/teams/final manifest because its manifest reports the normal
+  `seasons: [2019]` partition shape rather than scalar `season: 2019`. The
+  catalog resolver already accepts this shape; restoration validation now does
+  too. That partial output remains unreferenced by any restoration manifest.
 
 ## Boundaries
 

@@ -106,9 +106,11 @@ def _ref(storage, uri: str, dataset: str) -> dict[str, Any]:
         raise ValueError(f"Invalid restored {dataset} comparison ref")
     manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
     manifest = json.loads(storage.read_bytes(manifest_uri).decode())
-    if manifest.get("state") != "validated" or int(
-        manifest.get("partitions", {}).get("season", -1)
-    ) != 2019:
+    partitions = dict(manifest.get("partitions") or {})
+    seasons = {int(value) for value in partitions.get("seasons", [])}
+    if manifest.get("state") != "validated" or (
+        int(partitions.get("season", -1)) != 2019 and seasons != {2019}
+    ):
         raise ValueError(f"Restored {dataset} ref is not a validated 2019 dataset")
     return asdict(ref)
 
