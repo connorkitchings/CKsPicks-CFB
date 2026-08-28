@@ -15,6 +15,7 @@ from typing import Any, Mapping
 
 from dotenv import load_dotenv
 
+from cks_picks_cfb.data.catalog import source_capture_by_id
 from cks_picks_cfb.data.history import (
     import_historical_object,
     inventory_historical_source,
@@ -179,6 +180,7 @@ def main(argv: list[str] | None = None) -> None:
             item=item,
             expected_source_sha256=archive.sha256,
         )
+        capture = source_capture_by_id(target.database_url, capture.capture_id)
         if (
             capture.entity != archive.entity
             or capture.request.get("source_uri") != archive.uri

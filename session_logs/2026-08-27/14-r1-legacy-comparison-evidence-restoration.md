@@ -22,6 +22,11 @@
   their row counts and SHA-256 values recorded in the contract.
 - Games contain final scores, allowing deterministic `game_outcomes` Silver
   derivation without a new external source.
+- The first Preview execution registered the exact games Bronze capture but
+  stopped before any source-set/ref publication because the import primitive
+  returned its pre-registration in-memory state. The catalog row itself is
+  registered and matches the pinned source URI/checksum. The restoration now
+  rereads that catalog row before accepting an imported capture.
 
 ## Boundaries
 
