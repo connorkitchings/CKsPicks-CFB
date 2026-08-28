@@ -104,6 +104,53 @@ SILVER_CONTRACTS: dict[str, SilverContract] = {
         frozenset({"season", "game_id", "team"}),
         ("season", "game_id", "team"),
     ),
+    "byplay": SilverContract(
+        "byplay",
+        "byplay_v1",
+        frozenset(
+            {
+                "season",
+                "week",
+                "game_id",
+                "drive_number",
+                "play_number",
+                "offense",
+                "defense",
+            }
+        ),
+        ("game_id", "drive_number", "play_number"),
+    ),
+    "drives": SilverContract(
+        "drives",
+        "drives_v1",
+        frozenset(
+            {
+                "season",
+                "week",
+                "game_id",
+                "drive_number",
+                "offense",
+                "defense",
+            }
+        ),
+        ("game_id", "drive_number", "offense", "defense"),
+    ),
+    "source_reconciliation": SilverContract(
+        "source_reconciliation",
+        "reconciliation_v1",
+        frozenset(
+            {
+                "reconciliation_id",
+                "season",
+                "game_id",
+                "classification",
+                "blocking",
+                "details",
+                "policy_version",
+            }
+        ),
+        ("reconciliation_id",),
+    ),
     "market_quotes": SilverContract(
         "market_quotes",
         "market_quotes_v1",

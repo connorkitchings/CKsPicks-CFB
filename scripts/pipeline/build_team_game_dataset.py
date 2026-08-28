@@ -16,6 +16,7 @@ from cks_picks_cfb.data.catalog import (
     register_dataset_version,
     register_existing_dataset_ref,
     register_reconciliation_results,
+    register_schema_version,
 )
 from cks_picks_cfb.data.history_play_capture import manifest_declared_missing_game_ids
 from cks_picks_cfb.data.lake import (
@@ -29,6 +30,7 @@ from cks_picks_cfb.data.reconciliation import (
     require_reconciled,
 )
 from cks_picks_cfb.data.runtime import resolve_runtime_target
+from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.features.pipeline import build_preaggregation_pipeline
 
@@ -42,6 +44,14 @@ def _code_sha() -> str:
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def _validate_derived_outputs(
+    outputs: tuple[tuple[str, object, str], ...],
+) -> None:
+    """Fail every derived contract before writing any immutable output."""
+    for dataset, frame, schema_version in outputs:
+        validate_frame(frame, schema_for(dataset, schema_version))
 
 
 def main() -> None:
@@ -117,12 +127,17 @@ def main() -> None:
         frames.get("team_game_stats"),
         declared_incomplete_game_ids=declared_incomplete_game_ids,
     )
-    for dataset, frame, schema in (
+    derived_outputs = (
         ("byplay", byplay, "byplay_v1"),
         ("drives", drives, "drives_v1"),
         ("reconciled_team_game", team_game, "team_game_v1"),
         ("source_reconciliation", reconciliation, "reconciliation_v1"),
-    ):
+    )
+    _validate_derived_outputs(derived_outputs)
+    require_reconciled(reconciliation)
+    for dataset, _, schema_version in derived_outputs:
+        register_schema_version(conn_url, dataset, schema_version)
+    for dataset, frame, schema in derived_outputs:
         ref, manifest = build_dataset_version(
             storage,
             build=BuildRequest(
@@ -152,7 +167,6 @@ def main() -> None:
         reconciliation,
         source_dataset_versions=[ref.version_id for ref in refs],
     )
-    require_reconciled(reconciliation)
     payload = json.dumps(asdict(final_ref), indent=2, sort_keys=True).encode()
     if storage.exists(args.output_ref_uri):
         if storage.read_bytes(args.output_ref_uri) != payload:

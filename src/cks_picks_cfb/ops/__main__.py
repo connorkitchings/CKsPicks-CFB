@@ -298,6 +298,7 @@ SUCCESSOR_R1_COMMIT_PATHS = (
     "src/cks_picks_cfb/data/history_source_capture.py",
     "src/cks_picks_cfb/data/plays.py",
     "src/cks_picks_cfb/data/reconciliation.py",
+    "src/cks_picks_cfb/data/schema_contracts.py",
     "src/cks_picks_cfb/data/venues.py",
     "src/cks_picks_cfb/features/situational.py",
     "src/cks_picks_cfb/ops/__main__.py",

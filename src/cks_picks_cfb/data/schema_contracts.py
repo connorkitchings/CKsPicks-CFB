@@ -156,6 +156,111 @@ _GOLD_REQUIRED: dict[str, tuple[str, ...]] = {
     "point_in_time_matchups_v5": ("season", "game_id"),
 }
 
+_DERIVED_SILVER_SCHEMAS: dict[str, DatasetSchema] = {
+    "byplay": DatasetSchema(
+        dataset="byplay",
+        schema_version="byplay_v1",
+        required=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "play_number",
+            "offense",
+            "defense",
+            "st",
+            "penalty",
+            "twopoint",
+            "play_type",
+            "garbage",
+            "ppa",
+            "success",
+            "yards_gained",
+            "turnover",
+            "quarter",
+            "offense_score",
+            "defense_score",
+        ),
+        keys=("game_id", "drive_number", "play_number"),
+        integer_columns=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "play_number",
+            "quarter",
+        ),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "play_number",
+            "offense",
+            "defense",
+            "quarter",
+        ),
+    ),
+    "drives": DatasetSchema(
+        dataset="drives",
+        schema_version="drives_v1",
+        required=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "offense",
+            "defense",
+            "start_yards_to_goal",
+            "had_scoring_opportunity",
+            "points",
+            "points_on_opps",
+        ),
+        keys=("game_id", "drive_number", "offense", "defense"),
+        integer_columns=("season", "week", "game_id", "drive_number"),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "offense",
+            "defense",
+        ),
+    ),
+    "source_reconciliation": DatasetSchema(
+        dataset="source_reconciliation",
+        schema_version="reconciliation_v1",
+        required=(
+            "reconciliation_id",
+            "season",
+            "game_id",
+            "classification",
+            "blocking",
+            "details",
+            "policy_version",
+        ),
+        keys=("reconciliation_id",),
+        integer_columns=("season", "game_id"),
+        boolean_columns=("blocking",),
+        nonnullable=(
+            "reconciliation_id",
+            "season",
+            "game_id",
+            "classification",
+            "blocking",
+            "details",
+            "policy_version",
+        ),
+        allowed_values={
+            "classification": (
+                "exact_match",
+                "incomplete_source",
+                "blocking_conflict",
+            )
+        },
+    ),
+}
+
 _RATING_SCHEMAS: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -377,6 +482,14 @@ _RATING_SCHEMAS: dict[str, DatasetSchema] = {
 
 def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
     """Return the executable contract for every active immutable dataset."""
+    if dataset in _DERIVED_SILVER_SCHEMAS:
+        schema = _DERIVED_SILVER_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, "
+                f"got {schema_version}"
+            )
+        return schema
     if dataset in _SILVER_REQUIRED:
         required = _SILVER_REQUIRED[dataset]
         integer = tuple(
