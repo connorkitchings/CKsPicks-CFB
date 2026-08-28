@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -29,7 +29,7 @@ from cks_picks_cfb.data.catalog import (
 )
 from cks_picks_cfb.data.lake import capture_provider_records, read_source_capture
 from cks_picks_cfb.data.plays import PlaysIngester
-from cks_picks_cfb.data.sources import RetryPolicy
+from cks_picks_cfb.data.sources import RetryPolicy, SourceRequest
 from cks_picks_cfb.data.storage import StorageBackend
 
 POLICY_PATH = Path("conf/ratings/history_play_capture_v2.yaml")
@@ -180,6 +180,7 @@ class HistoryPlayCaptureSet:
         season: int,
         manifest_uri: str,
         identity: Mapping[str, Any] | None = None,
+        games_manifest_uri: str | None = None,
         write_compatibility_projection: bool = False,
         policy: HistoryPlayCapturePolicy | None = None,
         worker: Callable[..., dict[str, Any]] = run_isolated_play_worker,
@@ -191,15 +192,73 @@ class HistoryPlayCaptureSet:
         self.season = season
         self.manifest_uri = manifest_uri
         self.identity = dict(identity or {})
+        self.games_manifest_uri = games_manifest_uri
         self.write_compatibility_projection = write_compatibility_projection
         self.policy = policy or load_history_play_capture_policy()
         self.worker = worker
         self.sleep = sleep
         self.ingestion_run_id = f"{pipeline_run_id}:successor_history_{season}_plays"
 
+    def _games_records_from_manifest(self) -> list[dict[str, Any]]:
+        """Read the exact same-run game set without consulting ``raw/games``."""
+
+        if not self.games_manifest_uri:
+            raise HistoryPlayCaptureError(
+                "successor play capture requires an exact games capture manifest"
+            )
+        raw = json.loads(self.storage.read_bytes(self.games_manifest_uri).decode())
+        if (
+            raw.get("contract_version") != "source-capture-entity-set-v2"
+            or raw.get("state") != "complete"
+            or int(raw.get("season", -1)) != self.season
+            or raw.get("entity") != "games"
+        ):
+            raise HistoryPlayCaptureError(
+                "successor play capture games manifest is incomplete or mismatched"
+            )
+        records: list[dict[str, Any]] = []
+        for entry in raw.get("requests", []):
+            capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
+            records.extend(read_source_capture(self.storage, capture).to_dict("records"))
+        if not records:
+            raise HistoryPlayCaptureError("successor play capture games manifest is empty")
+        return records
+
     def _planned_requests(self) -> list[dict[str, Any]]:
+        """Plan CFBD weeks from the exact captured FBS games for this R1 run."""
+
+        games_by_week: dict[int, set[int]] = {}
+        for game in self._games_records_from_manifest():
+            season_type = str(
+                game.get("season_type", game.get("seasonType", "regular"))
+            ).lower()
+            game_id = game.get("game_id", game.get("id"))
+            week = game.get("week")
+            if season_type != "regular" or game_id is None or week is None:
+                continue
+            games_by_week.setdefault(int(week), set()).add(int(game_id))
+        if not games_by_week:
+            raise HistoryPlayCaptureError(
+                "successor play capture found no regular-season games"
+            )
         ingester = PlaysIngester(year=self.season, storage=self.storage)
-        return [request.manifest() for request in ingester.source_requests()]
+        requested_at = datetime.now(timezone.utc)
+        return [
+            SourceRequest(
+                provider=self.policy.provider,
+                entity="plays",
+                endpoint=ingester.source_endpoint,
+                parameters={
+                    "year": self.season,
+                    "season_type": "regular",
+                    "week": week,
+                    "classification": "fbs",
+                    "expected_game_ids": sorted(game_ids),
+                },
+                requested_at=requested_at,
+            ).manifest()
+            for week, game_ids in sorted(games_by_week.items())
+        ]
 
     def _completed(self) -> dict[str, str]:
         capture_ids = completed_request_capture_ids(self.conn_url, self.ingestion_run_id)
@@ -361,6 +420,7 @@ class HistoryPlayCaptureSet:
                 "policy_sha256": self.policy.sha256,
                 "code_sha": _code_sha(),
                 "identity": self.identity,
+                "games_capture_manifest_uri": self.games_manifest_uri,
                 "compatibility_projection_written": self.write_compatibility_projection,
                 "requests": entries,
             }

@@ -170,7 +170,12 @@ def _fetch_source_step(
 
 
 def _history_play_capture_step(
-    *, season: int, conn_url: str, manifest_uri: str, identity: Mapping[str, Any]
+    *,
+    season: int,
+    conn_url: str,
+    manifest_uri: str,
+    games_manifest_uri: str,
+    identity: Mapping[str, Any],
 ) -> PipelineStep:
     """Capture one successor R1 season as a resumable weekly request set."""
 
@@ -184,6 +189,7 @@ def _history_play_capture_step(
             season=season,
             manifest_uri=manifest_uri,
             identity=identity,
+            games_manifest_uri=games_manifest_uri,
             write_compatibility_projection=False,
         ).run()
         return (
@@ -223,6 +229,7 @@ def _history_play_capture_step(
             "season": season,
             "entity": f"successor_history_{season}_plays",
             "manifest_uri": manifest_uri,
+            "games_manifest_uri": games_manifest_uri,
             "policy_version": policy.version,
             "policy_sha256": policy.sha256,
             "identity": dict(identity),
@@ -288,6 +295,7 @@ SUCCESSOR_R1_COMMIT_PATHS = (
     "src/cks_picks_cfb/data/game_stats.py",
     "src/cks_picks_cfb/data/history_play_capture.py",
     "src/cks_picks_cfb/data/history_source_capture.py",
+    "src/cks_picks_cfb/data/plays.py",
     "src/cks_picks_cfb/data/venues.py",
     "src/cks_picks_cfb/ops/__main__.py",
     "src/cks_picks_cfb/ratings/audit.py",
@@ -1235,6 +1243,7 @@ def build_steps(
                         season=season,
                         conn_url=conn_url,
                         manifest_uri=f"{prefix}/captures/{season}/plays.json",
+                        games_manifest_uri=f"{prefix}/captures/{season}/games.json",
                         identity=identity,
                     )
                 )

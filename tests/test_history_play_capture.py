@@ -3,10 +3,13 @@ from __future__ import annotations
 import json
 import subprocess
 
+import pandas as pd
 import pytest
 
 from cks_picks_cfb.data.history_play_capture import (
     HistoryPlayCaptureError,
+    HistoryPlayCapturePolicy,
+    HistoryPlayCaptureSet,
     load_history_play_capture_policy,
     manifest_capture_ids,
     run_isolated_play_worker,
@@ -51,6 +54,62 @@ def test_manifest_capture_ids_requires_one_complete_ordered_set():
     duplicate = {**complete, "requests": [{"capture_id": "one"}, {"capture_id": "one"}]}
     with pytest.raises(HistoryPlayCaptureError, match="invalid capture IDs"):
         manifest_capture_ids(_MemoryStorage({uri: json.dumps(duplicate).encode()}), uri)
+
+
+def test_successor_play_requests_use_exact_games_capture_manifest(monkeypatch):
+    games_manifest_uri = "r1/captures/2016/games.json"
+    storage = _MemoryStorage(
+        {
+            games_manifest_uri: json.dumps(
+                {
+                    "contract_version": "source-capture-entity-set-v2",
+                    "state": "complete",
+                    "season": 2016,
+                    "entity": "games",
+                    "requests": [{"capture_id": "games-capture"}],
+                }
+            ).encode()
+        }
+    )
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.history_play_capture.source_capture_by_id",
+        lambda *_: object(),
+    )
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.history_play_capture.read_source_capture",
+        lambda *_: pd.DataFrame(
+            [
+                {"id": 10, "week": 1, "seasonType": "regular"},
+                {"id": 11, "week": 1, "seasonType": "regular"},
+                {"id": 12, "week": 16, "seasonType": "postseason"},
+            ]
+        ),
+    )
+    policy = HistoryPlayCapturePolicy(
+        version="fixture",
+        provider="cfbd",
+        entity="plays",
+        max_concurrency=1,
+        sdk_request_timeout_seconds=1,
+        worker_timeout_seconds=1,
+        max_attempts=1,
+        retry={"base_delay_seconds": 0, "max_delay_seconds": 0},
+    )
+    capture_set = HistoryPlayCaptureSet(
+        conn_url="postgresql://fixture",
+        storage=storage,
+        pipeline_run_id="r1",
+        season=2016,
+        manifest_uri="r1/captures/2016/plays.json",
+        games_manifest_uri=games_manifest_uri,
+        policy=policy,
+    )
+
+    requests = capture_set._planned_requests()
+
+    assert len(requests) == 1
+    assert requests[0]["parameters"]["expected_game_ids"] == [10, 11]
+    assert "raw/games" not in json.dumps(requests)
 
 
 def test_stalled_worker_terminates_its_process_group(monkeypatch):
