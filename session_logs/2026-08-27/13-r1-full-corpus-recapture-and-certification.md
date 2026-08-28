@@ -95,6 +95,14 @@
   those exact archives as cataloged *legacy comparison* refs would be a new
   lineage operation and requires its own approval; it is not a substituted
   successor capture.
+- After the approved restoration completed, R1 auto-froze a complete comparison
+  manifest and captured 2015 teams, games, and venues. The first game-statistics
+  request then revealed two implementation defects before any game-stat capture
+  was registered: migration `0009` omitted the `cks_pipeline` privilege on its
+  request-attempt ledger (corrected by append-only migration `0010`), and CFBD
+  historical team-stat responses expose game identity as `id` rather than
+  `game_id` (now covered by a regression test). The failed partial R1 runs
+  remain diagnostic-only and are not resumed under changed code identity.
 
 ## Handoff Notes
 

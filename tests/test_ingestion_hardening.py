@@ -111,6 +111,31 @@ def test_week_zero_source_responses_filter_provider_week_one(monkeypatch):
     ] == [10]
 
 
+def test_game_stats_accepts_historical_cfbd_id_field(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    storage = MemoryIndexStorage([{"id": 10, "week": 1}])
+
+    class FakeStatsApi:
+        def get_game_team_stats(self, **_kwargs):
+            return [SimpleNamespace(id=10), SimpleNamespace(id=11)]
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.game_stats.cfbd.GamesApi", lambda _client: FakeStatsApi()
+    )
+    request = {
+        "year": 2015,
+        "season_type": "regular",
+        "week": 1,
+        "classification": "fbs",
+        "expected_game_ids": [10],
+    }
+    stats = GameStatsIngester(year=2015, storage=storage)
+
+    assert [
+        row["provider_record"].id for row in stats.fetch_source_request(request)
+    ] == [10]
+
+
 def test_unknown_play_week_fails_instead_of_becoming_week_zero(monkeypatch):
     monkeypatch.setenv("CFBD_API_KEY", "test-key")
     storage = MemoryIndexStorage([])

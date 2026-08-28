@@ -285,6 +285,7 @@ SUCCESSOR_R1_COMMIT_PATHS = (
     "scripts/pipeline/build_successor_r1_foundation.py",
     "scripts/pipeline/certify_successor_history.py",
     "src/cks_picks_cfb/data/catalog.py",
+    "src/cks_picks_cfb/data/game_stats.py",
     "src/cks_picks_cfb/data/history_play_capture.py",
     "src/cks_picks_cfb/data/history_source_capture.py",
     "src/cks_picks_cfb/ops/__main__.py",

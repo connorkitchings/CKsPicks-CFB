@@ -111,15 +111,23 @@ class GameStatsIngester(BaseIngester):
             classification=str(request["classification"]),
             _request_timeout=self.request_timeout_seconds,
         )
-        return [
-            {
-                "request_week": week,
-                "canonical_week": int(request.get("canonical_week", week)),
-                "provider_record": stat,
-            }
-            for stat in stats
-            if self.safe_getattr(stat, "game_id", None) in wanted
-        ]
+        records = []
+        for stat in stats:
+            game_id = self.safe_getattr(stat, "game_id", None)
+            # CFBD's game-team-stats response uses `id` in historical seasons
+            # even though newer SDK models may expose `game_id`.
+            if game_id is None:
+                game_id = self.safe_getattr(stat, "id", None)
+            if game_id is None or int(game_id) not in wanted:
+                continue
+            records.append(
+                {
+                    "request_week": week,
+                    "canonical_week": int(request.get("canonical_week", week)),
+                    "provider_record": stat,
+                }
+            )
+        return records
 
     def fetch_data(self) -> list[Any]:
         return [
