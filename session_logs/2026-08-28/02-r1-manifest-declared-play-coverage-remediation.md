@@ -6,16 +6,16 @@
   explicitly recorded CFBD play omissions.
 - **Outcome:** The successor R1 path now permits only manifest-declared
   zero-row games to remain visible as `incomplete_source`; all undeclared
-  omissions and data conflicts remain blocking. A fresh full-corpus Preview
-  run awaits the required user-controlled commit.
+  omissions and data conflicts remain blocking. The fresh run completed all
+  source capture but stopped at missing executable byplay-schema registration.
 - **Plan Contract:**
   `docs/plans/2026-08-28/r1-manifest-declared-play-coverage-remediation.md`
 - **Approval / Status:** User approved implementation in Codex on 2026-08-28;
   contract remains `In Progress` until the fresh R1 run and exact rerun finish.
-- **Blockers:** R1 preflight requires a clean committed code identity. R2 stays
-  blocked pending `tournaments_permitted: true`.
-- **Next:** User commits this implementation, then execute a fresh Preview-only
-  `prepare-rating-history` run and verify certification plus an exact rerun.
+- **Blockers:** `byplay/byplay_v1` has no executable schema registration. R2
+  stays blocked pending `tournaments_permitted: true`.
+- **Next:** Plan the required durable schema-contract remediation before any
+  further R1 execution.
 
 ## Context and Decisions
 
@@ -63,19 +63,23 @@
 - [x] `git diff --check`.
 - [x] Read-only Preview reconstruction against the failed R1 artifacts:
   724 completed, 717 covered, exactly seven declared omissions, zero blocks.
-- [ ] Fresh committed-code R1 Preview capture, certification, and exact rerun.
+- [x] Fresh committed-code full-corpus Preview capture and source-set closure.
+- [ ] Derived-data schema remediation, R1 certification, and exact rerun.
 
 ## Amendments and Blockers
 
-None. The implementation preserves source authority and every existing R1
-threshold; it changes only the timing of where the already-approved coverage
-gate is evaluated.
+The new run `r1-full-corpus-20260828-fb9870c` completed all ten capture-only
+source sets and closed its exact source-set manifest. It passed the corrected
+manifest-bound 2015 reconciliation but failed when registering the first
+derived `byplay` ref: `DatasetSchemaError: No executable schema registered for
+byplay/byplay_v1`. This is a separate durable schema-contract gap, not a
+missing-play or capture failure. A new Sol contract is required before adding
+or versioning executable schemas.
 
 ## Handoff Notes
 
-- **Resume at:** After the user commits, run the fresh Preview-only R1 command
-  from `docs/ops/rating_successor_research.md` with a new
-  `r1-full-corpus-20260828-<committed-short-sha>` pipeline ID.
+- **Resume at:** Open a new Sol plan for executable schemas for the R1 derived
+  datasets, then run a fresh full-corpus R1 identity after implementation.
 - **Watch out for:** Do not reuse the failed source set as a parent, do not
   weaken any coverage gate, do not include 2020/2026 outcomes, and do not
   start R2 until immutable certification reports `tournaments_permitted: true`.

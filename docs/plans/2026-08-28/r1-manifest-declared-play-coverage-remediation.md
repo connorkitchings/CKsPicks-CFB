@@ -117,3 +117,16 @@ The code change creates a new R1 code identity, so the corrected execution uses 
 ## Amendments
 
 Material changes to the source allowlist, coverage thresholds, source-parent rules, or R2 authorization require a new Sol review.
+
+### Execution Blocker — Missing byplay schema registration (2026-08-28)
+
+The fresh committed run `r1-full-corpus-20260828-fb9870c` completed all ten
+source capture sets and closed its exact source-set manifest. The corrected
+2015 reconciliation then passed its manifest-bound missing-play check, but the
+builder stopped when registering its first derived output:
+`DatasetSchemaError: No executable schema registered for byplay/byplay_v1`.
+The remediation contract assumed the existing derived schemas were executable;
+they are not. Registering or versioning the byplay, drives, reconciled-team-
+game, and source-reconciliation schemas is a durable data-contract change and
+requires a separate Sol review before implementation. The run and all created
+artifacts remain immutable diagnostic evidence; R2 remains blocked.
