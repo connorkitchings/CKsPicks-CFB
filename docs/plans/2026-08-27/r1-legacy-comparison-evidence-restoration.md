@@ -1,6 +1,6 @@
 # R1 Legacy 2019 Comparison-Evidence Restoration
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly approved the narrow Preview-only
@@ -35,7 +35,10 @@ The configured read-only historical source still contains exact legacy files:
 The games archive contains final home/away points, so `game_outcomes` can be
 derived deterministically using the existing Silver builder. This is a
 restoration of exact archive evidence, not a CFBD recapture and not a
-successor-v2 parent.
+successor-v2 parent. The restoration completed under
+`artifacts/preview/legacy-comparison/2019/legacy-comparison-2019-55f6968/manifest.json`;
+the automatic R1 preflight now resolves its exact `games`, `game_outcomes`,
+and `teams` refs as comparison-only evidence.
 
 ## Proposed Approach
 

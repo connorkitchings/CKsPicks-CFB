@@ -33,9 +33,13 @@ probe returned exactly 15,369 plays. On 2026-08-27, the automatic comparison
 bootstrap correctly stopped before capture because the Preview catalog had no
 validated 2019 legacy artifacts. Its immutable terminal report is
 `artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260827-95b0456/comparison-ref-set.failure.json`.
-R1 remains blocked until exact legacy 2019 `games`, `game_outcomes`, and
-`teams` comparison refs are restored and catalog-validated; no substitute
-evidence may be selected.
+The approved exact legacy-2019 comparison restoration is now complete and
+automatic preflight freezes it as comparison-only evidence. The active run is
+`r1-full-corpus-20260828-929f331`, bound to code SHA `929f331`; it is
+recapturing all ten permitted seasons directly from CFBD and has entered the
+2015 play stage. Earlier partial runs and their immutable artifacts are
+diagnostic-only because their code identity differs. No substitute evidence
+may be selected.
 
 ## Proposed Approach
 
