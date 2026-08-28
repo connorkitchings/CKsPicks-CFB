@@ -103,6 +103,11 @@
   historical team-stat responses expose game identity as `id` rather than
   `game_id` (now covered by a regression test). The failed partial R1 runs
   remain diagnostic-only and are not resumed under changed code identity.
+- The corrected run completed all 15 2015 game-statistics and all 15 2015
+  play requests. It then exposed a venue-isolation defect for 2016: the legacy
+  venue adapter reads `raw/games`, absent by design in R1. Venue request
+  planning now derives exact venue IDs from the same-run immutable games
+  capture manifest and passes them to a capture-only CFBD venue request.
 
 ## Handoff Notes
 

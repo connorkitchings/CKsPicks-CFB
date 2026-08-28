@@ -75,6 +75,22 @@ class VenuesIngester(BaseIngester):
         print(f"Filtered to {len(fbs_venues)} venues used by FBS games.")
         return fbs_venues
 
+    def fetch_source_request(self, request: dict[str, Any]) -> list[Any]:
+        """Fetch an exact venue set without reading a compatibility projection."""
+
+        expected_ids = request.get("expected_venue_ids")
+        if expected_ids is None:
+            return self.fetch_data()
+        wanted = {int(value) for value in expected_ids}
+        venues_api = cfbd.VenuesApi(cfbd.ApiClient(self.cfbd_config))
+        venues = venues_api.get_venues(_request_timeout=self.request_timeout_seconds)
+        return [
+            venue
+            for venue in venues
+            if self.safe_getattr(venue, "id", None) is not None
+            and int(self.safe_getattr(venue, "id")) in wanted
+        ]
+
     def transform_data(self, data: list[Any]) -> list[dict[str, Any]]:
         """Transform venues data into storage format.
 

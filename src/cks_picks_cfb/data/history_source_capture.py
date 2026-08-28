@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -30,7 +30,7 @@ from cks_picks_cfb.data.catalog import (
 from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.games import GamesIngester
 from cks_picks_cfb.data.lake import capture_provider_records, read_source_capture
-from cks_picks_cfb.data.sources import RetryPolicy
+from cks_picks_cfb.data.sources import RetryPolicy, SourceRequest
 from cks_picks_cfb.data.storage import StorageBackend
 from cks_picks_cfb.data.teams import TeamsIngester
 from cks_picks_cfb.data.venues import VenuesIngester
@@ -184,6 +184,7 @@ class HistorySourceCaptureSet:
         entity: str,
         manifest_uri: str,
         identity: Mapping[str, Any],
+        games_manifest_uri: str | None = None,
         policy: HistorySourceCapturePolicy | None = None,
         worker: Callable[..., dict[str, Any]] = run_isolated_source_worker,
         sleep: Callable[[float], None] = time.sleep,
@@ -197,12 +198,53 @@ class HistorySourceCaptureSet:
         self.entity = entity
         self.manifest_uri = manifest_uri
         self.identity = dict(identity)
+        self.games_manifest_uri = games_manifest_uri
         self.policy = policy or load_history_source_capture_policy()
         self.worker = worker
         self.sleep = sleep
         self.ingestion_run_id = f"{pipeline_run_id}:successor_history_{season}_{entity}"
 
     def _planned_requests(self) -> list[dict[str, Any]]:
+        if self.entity == "venues":
+            if not self.games_manifest_uri:
+                raise HistorySourceCaptureError(
+                    "successor venue capture requires an exact games capture manifest"
+                )
+            raw = json.loads(self.storage.read_bytes(self.games_manifest_uri).decode())
+            if (
+                raw.get("contract_version") != MANIFEST_VERSION
+                or raw.get("state") != "complete"
+                or int(raw.get("season", -1)) != self.season
+                or raw.get("entity") != "games"
+            ):
+                raise HistorySourceCaptureError(
+                    "successor venue capture games manifest is incomplete or mismatched"
+                )
+            venue_ids: set[int] = set()
+            for entry in raw.get("requests", []):
+                capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
+                games = read_source_capture(self.storage, capture)
+                for venue_id in games.get("venue_id", []):
+                    if venue_id is not None:
+                        venue_ids.add(int(venue_id))
+            if not venue_ids:
+                raise HistorySourceCaptureError(
+                    "successor venue capture found no venue IDs in exact games captures"
+                )
+            request = SourceRequest(
+                provider=self.policy.provider,
+                entity="venues",
+                endpoint=VenuesIngester(
+                    year=self.season, storage=self.storage
+                ).source_endpoint,
+                parameters={
+                    "year": self.season,
+                    "classification": "fbs",
+                    "expected_venue_ids": sorted(venue_ids),
+                },
+                requested_at=datetime.now(timezone.utc),
+            )
+            return [request.manifest()]
         ingester = INGESTERS[self.entity](year=self.season, storage=self.storage)
         return [request.manifest() for request in ingester.source_requests()]
 
@@ -345,6 +387,7 @@ class HistorySourceCaptureSet:
                 "code_sha": _code_sha(),
                 "identity": self.identity,
                 "capture_only": True,
+                "games_capture_manifest_uri": self.games_manifest_uri,
                 "requests": entries,
             }
             payload["manifest_sha256"] = hashlib.sha256(

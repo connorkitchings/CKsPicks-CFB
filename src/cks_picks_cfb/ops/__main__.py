@@ -288,6 +288,7 @@ SUCCESSOR_R1_COMMIT_PATHS = (
     "src/cks_picks_cfb/data/game_stats.py",
     "src/cks_picks_cfb/data/history_play_capture.py",
     "src/cks_picks_cfb/data/history_source_capture.py",
+    "src/cks_picks_cfb/data/venues.py",
     "src/cks_picks_cfb/ops/__main__.py",
     "src/cks_picks_cfb/ratings/audit.py",
     "src/cks_picks_cfb/ratings/cross_lineage.py",
@@ -389,6 +390,11 @@ def _history_source_capture_step(
             entity=entity,
             manifest_uri=manifest_uri,
             identity=identity,
+            games_manifest_uri=(
+                manifest_uri.rsplit("/", 1)[0] + "/games.json"
+                if entity == "venues"
+                else None
+            ),
         ).run()
         return (
             {

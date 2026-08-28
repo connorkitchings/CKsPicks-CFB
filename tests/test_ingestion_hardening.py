@@ -5,6 +5,7 @@ import pytest
 
 from cks_picks_cfb.data.game_stats import GameStatsIngester
 from cks_picks_cfb.data.plays import PlaysIngester
+from cks_picks_cfb.data.venues import VenuesIngester
 from cks_picks_cfb.data.week_policy import CanonicalWeekGame
 from cks_picks_cfb.features.byplay import apply_data_corrections
 
@@ -134,6 +135,23 @@ def test_game_stats_accepts_historical_cfbd_id_field(monkeypatch):
     assert [
         row["provider_record"].id for row in stats.fetch_source_request(request)
     ] == [10]
+
+
+def test_venues_accept_exact_source_request_ids_without_raw_games(monkeypatch):
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+
+    class FakeVenuesApi:
+        def get_venues(self, **_kwargs):
+            return [SimpleNamespace(id=12), SimpleNamespace(id=34), SimpleNamespace(id=56)]
+
+    monkeypatch.setattr(
+        "cks_picks_cfb.data.venues.cfbd.VenuesApi", lambda _client: FakeVenuesApi()
+    )
+    venues = VenuesIngester(year=2016, storage=MemoryIndexStorage([]))
+
+    result = venues.fetch_source_request({"expected_venue_ids": [12, 34]})
+
+    assert [venue.id for venue in result] == [12, 34]
 
 
 def test_unknown_play_week_fails_instead_of_becoming_week_zero(monkeypatch):
