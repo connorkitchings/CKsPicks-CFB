@@ -24,8 +24,24 @@ from cks_picks_cfb.ratings.successor_history import (
 POLICY = load_season_lineage_policy("conf/ratings/successor_v2_season_lineage.yaml")
 
 
-def _evidence(season: int) -> SeasonCoverageEvidence:
-    return SeasonCoverageEvidence(season, 100, 95, 94, 190, 200, True)
+def _evidence(
+    season: int,
+    *,
+    observed_ppso_games: int = 94,
+    final_exact_team_scores: int = 198,
+    expected_team_scores: int = 200,
+) -> SeasonCoverageEvidence:
+    return SeasonCoverageEvidence(
+        season,
+        100,
+        95,
+        observed_ppso_games,
+        190,
+        200,
+        True,
+        final_exact_team_scores=final_exact_team_scores,
+        expected_team_scores=expected_team_scores,
+    )
 
 
 def test_history_coverage_requires_all_seasons_and_three_legacy_passes():
@@ -50,14 +66,32 @@ def test_history_coverage_rejects_2020_and_subthreshold_reconciliation():
     report = coverage_report(
         POLICY,
         [
-            SeasonCoverageEvidence(
-                year, 100, 95, 93 if year == 2015 else 94, 190, 200, True
+            _evidence(
+                year,
+                final_exact_team_scores=187 if year == 2015 else 198,
             )
             for year in POLICY.historical_development_seasons
         ],
     )
     assert report["seasons"][0]["eligible"] is False
     assert report["tournaments_permitted"] is False
+
+
+def test_history_coverage_gates_finals_exact_rate_not_observed_ppso_coverage():
+    # Provider score-stream glitches quarantine PPSO evidence without
+    # breaking finals reconciliation; the gate follows the Phase-1 metric.
+    report = coverage_report(
+        POLICY,
+        [
+            _evidence(year, observed_ppso_games=82)
+            for year in POLICY.historical_development_seasons
+        ],
+    )
+    assert report["tournaments_permitted"] is True
+    modern = next(item for item in report["seasons"] if item["season"] == 2021)
+    assert modern["checks"]["score_stream_reconciliation"] is True
+    assert modern["score_reconciliation_fraction"] == 0.99
+    assert modern["observed_ppso_game_fraction"] == 0.82
 
 
 def test_history_ref_set_requires_exact_successor_scope_and_is_deterministic():

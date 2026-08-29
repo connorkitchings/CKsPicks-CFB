@@ -61,6 +61,8 @@ class SeasonCoverageEvidence:
     representative_terminal_team_count: int
     representative_team_count: int
     stable_schema: bool
+    final_exact_team_scores: int = 0
+    expected_team_scores: int = 0
 
     def validate(self, policy: SeasonLineagePolicy) -> None:
         policy.assert_allowed(self.season)
@@ -74,6 +76,8 @@ class SeasonCoverageEvidence:
             self.score_reconciled_game_count,
             self.representative_terminal_team_count,
             self.representative_team_count,
+            self.final_exact_team_scores,
+            self.expected_team_scores,
         )
         if any(value < 0 for value in values):
             raise SuccessorHistoryError("Coverage counts may not be negative")
@@ -83,6 +87,8 @@ class SeasonCoverageEvidence:
             raise SuccessorHistoryError("Reconciled games exceed completed games")
         if self.representative_terminal_team_count > self.representative_team_count:
             raise SuccessorHistoryError("Terminal teams exceed representative teams")
+        if self.final_exact_team_scores > self.expected_team_scores:
+            raise SuccessorHistoryError("Exact team scores exceed expected team scores")
 
 
 def _fraction(numerator: int, denominator: int) -> float:
@@ -124,7 +130,15 @@ def coverage_report(
         play_fraction = _fraction(
             item.completed_games_with_plays, item.completed_game_count
         )
-        reconciliation_fraction = _fraction(
+        # The gated score-stream reconciliation is the Phase-1 finals-exact
+        # rate: the immutable measurement report's exact team-score rate
+        # against official outcomes. Observed-PPSO game coverage (games whose
+        # full PPSO evidence survived provider score-stream quarantine) is a
+        # reported diagnostic, never the gate.
+        finals_exact_rate = _fraction(
+            item.final_exact_team_scores, item.expected_team_scores
+        )
+        observed_ppso_fraction = _fraction(
             item.score_reconciled_game_count, item.completed_game_count
         )
         terminal_fraction = _fraction(
@@ -134,7 +148,7 @@ def coverage_report(
         checks = {
             "completed_game_play_coverage": play_fraction
             >= policy.minimum_fbs_coverage_fraction,
-            "score_stream_reconciliation": reconciliation_fraction
+            "score_stream_reconciliation": finals_exact_rate
             >= minimum_score_reconciliation_fraction,
             "representative_terminal_team_coverage": terminal_fraction
             >= policy.minimum_fbs_coverage_fraction,
@@ -152,7 +166,11 @@ def coverage_report(
                 "checks": checks,
                 "completed_game_count": item.completed_game_count,
                 "play_coverage_fraction": play_fraction,
-                "score_reconciliation_fraction": reconciliation_fraction,
+                "score_reconciliation_fraction": finals_exact_rate,
+                "observed_ppso_game_fraction": observed_ppso_fraction,
+                "observed_ppso_game_count": item.score_reconciled_game_count,
+                "final_exact_team_scores": item.final_exact_team_scores,
+                "expected_team_scores": item.expected_team_scores,
                 "terminal_team_coverage_fraction": terminal_fraction,
             }
         )

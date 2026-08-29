@@ -148,3 +148,23 @@ are now compared) while removing only the two impossible demands.
    with round-trip regression coverage; verified read-only against the real
    100-entry ref set. A fresh code-bound run is required for the same
    one-run-one-identity reason as before.
+
+2. **2026-08-29 (certification metric alignment).** Run
+   `r1-full-corpus-20260829-aaac30d` completed all 127 steps end-to-end —
+   captures, Silver, derived refs, a passing cross-lineage audit, foundation,
+   and certification — with `tournaments_permitted: false` because
+   2021–2025 failed `score_stream_reconciliation` at observed-PPSO game
+   fractions 0.816–0.896. Diagnosis: the certification code re-derived a new,
+   stricter metric (games whose full PPSO evidence survived provider
+   score-stream quarantine) while the contract's Task 4, the Phase-1 v3
+   precedent, and the shared 0.94 threshold all define the gate as the
+   finals-exact reconciliation rate — which passes for every season today
+   (0.949–0.997, immutable in the measurement report). The gap is driven by
+   isolated CFBD score-field glitches (verified identical in the Aug-9
+   bootstrap corpus and the passing Aug-26 v3-era byplay) that the deliberate
+   2026-08-26 quarantine policy penalizes at offense granularity. Remediation:
+   the gate now reads the finals-exact counts from the immutable measurement
+   report (`score_reconciliation_fraction` = finals-exact rate), while
+   observed-PPSO game coverage is reported per season as a diagnostic
+   (`observed_ppso_game_fraction`) and never gates. Thresholds, quarantine
+   policy, and evidence values are unchanged.

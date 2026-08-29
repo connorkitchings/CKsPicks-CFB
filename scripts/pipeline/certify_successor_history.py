@@ -48,6 +48,45 @@ def _report(storage, uri: str, *, label: str) -> tuple[dict[str, Any], str]:
     return raw, _sha256(payload)
 
 
+def _finals_reconciliation(
+    measurement_report: Mapping[str, Any], policy: Any
+) -> dict[int, tuple[int, int]]:
+    """Extract per-season finals-exact counts from the immutable measurement report.
+
+    The gated score-stream reconciliation metric is the Phase-1 finals-exact
+    rate; the measurement report is its immutable source of truth.
+    """
+
+    try:
+        reconciliation = measurement_report["observations"]["score_reconciliation"]
+    except (KeyError, TypeError) as exc:
+        raise ValueError(
+            "Measurement report does not expose score-stream reconciliation"
+        ) from exc
+    if not isinstance(reconciliation, Mapping):
+        raise ValueError("Measurement report score reconciliation is invalid")
+    finals: dict[int, tuple[int, int]] = {}
+    for season in policy.historical_development_seasons:
+        entry = reconciliation.get(str(season))
+        if not isinstance(entry, Mapping):
+            raise ValueError(
+                f"Measurement report lacks finals reconciliation for {season}"
+            )
+        try:
+            exact = int(entry["exact_team_scores"])
+            expected = int(entry["expected_team_scores"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                f"Measurement report finals reconciliation for {season} is invalid"
+            ) from exc
+        if exact < 0 or expected <= 0 or exact > expected:
+            raise ValueError(
+                f"Measurement report finals reconciliation for {season} is invalid"
+            )
+        finals[season] = (exact, expected)
+    return finals
+
+
 def _complete_game_ids(games: pd.DataFrame, season: int) -> set[int]:
     required = {"season", "game_id", "completed", "home_team", "away_team"}
     missing = sorted(required - set(games.columns))
@@ -176,6 +215,7 @@ def main(argv: list[str] | None = None) -> None:
     require_dataset(team_states_ref, "rating_team_states")
     observations = read_dataset(storage, observations_ref)
     team_states = read_dataset(storage, team_states_ref)
+    finals = _finals_reconciliation(measurement_report, policy)
     evidence = []
     compatibility_refs: dict[tuple[int, str], DatasetRef] = {}
     for season in policy.historical_development_seasons:
@@ -201,6 +241,8 @@ def main(argv: list[str] | None = None) -> None:
                 representative_terminal_team_count=len(terminal),
                 representative_team_count=len(representative),
                 stable_schema=_stable_refs(season_refs, season),
+                final_exact_team_scores=finals[season][0],
+                expected_team_scores=finals[season][1],
             )
         )
     report = coverage_report(policy, evidence)
