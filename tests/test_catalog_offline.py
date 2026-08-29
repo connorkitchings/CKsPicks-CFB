@@ -165,7 +165,9 @@ def test_request_set_resume_rejects_changed_successor_code_or_configuration(
         )
 
 
-def test_completed_request_capture_rejects_duplicate_or_mismatched_requests(monkeypatch):
+def test_completed_request_capture_rejects_duplicate_or_mismatched_requests(
+    monkeypatch,
+):
     request = {
         "provider": "cfbd",
         "entity": "plays",
@@ -180,7 +182,9 @@ def test_completed_request_capture_rejects_duplicate_or_mismatched_requests(monk
 
     _connect(
         monkeypatch,
-        _Cursor([[(request_sha, "capture-1", request), (request_sha, "capture-2", request)]]),
+        _Cursor(
+            [[(request_sha, "capture-1", request), (request_sha, "capture-2", request)]]
+        ),
     )
     with pytest.raises(ValueError, match="duplicate"):
         catalog.completed_request_capture_ids("postgresql://fixture", "run")
@@ -234,6 +238,7 @@ def test_legacy_comparison_ref_selection_rejects_successor_and_ambiguous_rows(
             {"seasons": [2019]},
             "2026-08-20T00:00:00Z",
             "2026-08-20T01:00:00Z",
+            "v1",
         ),
         (
             "successor",
@@ -243,13 +248,20 @@ def test_legacy_comparison_ref_selection_rejects_successor_and_ambiguous_rows(
             {"seasons": [2019]},
             "2026-08-27T00:00:00Z",
             "2026-08-27T01:00:00Z",
+            "v1",
         ),
     ]
-    _connect(monkeypatch, _Cursor([rows]))
+    cursor = _Cursor([rows])
+    _connect(monkeypatch, cursor)
     selected = catalog.legacy_dataset_ref_for_season(
         "postgresql://fixture", "games", "2026-08-27T12:00:00Z", season=2019
     )
     assert selected.version_id == "legacy"
+    # Successor-v2 research writes dataset_identity_v2 rows whose lake/silver
+    # URIs evade the research-prefix exclusion; the selection must pin the
+    # pre-successor v1 registration lineage in SQL.
+    selection_sql = " ".join(sql for sql, _ in cursor.executed)
+    assert "identity_version = 'v1'" in selection_sql
 
     ambiguous = [
         (
@@ -260,6 +272,7 @@ def test_legacy_comparison_ref_selection_rejects_successor_and_ambiguous_rows(
             {"season": 2019},
             "2026-08-20T00:00:00Z",
             "2026-08-20T01:00:00Z",
+            "v1",
         )
         for index in (1, 2)
     ]

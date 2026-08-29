@@ -168,3 +168,22 @@ are now compared) while removing only the two impossible demands.
    observed-PPSO game coverage is reported per season as a diagnostic
    (`observed_ppso_game_fraction`) and never gates. Thresholds, quarantine
    policy, and evidence values are unchanged.
+
+3. **2026-08-29 (legacy comparison selection pollution).** The deterministic
+   recovery rerun of `e9edee5` failed its comparison freeze with an immutable
+   collision, exposing that `legacy_dataset_ref_for_season` selects
+   `max(as_of, created_at)` over rows filtered only by a research-prefix URI
+   exclusion. Successor-v2 Silver writes `lake/silver/...` URIs with
+   `dataset_identity_v2` registration identity, so each run's own outputs
+   displaced the legacy selection for every later selection bound: runs
+   `2cb4d5a`, `aaac30d`, and `e9edee5` each compared against the previous
+   run's outputs (successor-vs-successor), and only `962f85d` selected the
+   true `v1` bootstrap corpus. Consequently `e9edee5`'s passing
+   cross-lineage audit is self-referential and cannot serve as legacy-parity
+   evidence. Fix: the selection now pins `identity_version = 'v1'` (the
+   pre-successor registration lineage) in SQL, with the research-prefix
+   exclusion retained as defense in depth; verified live that the bound
+   `2026-08-29T01:23:11Z` again selects bootstrap version `5dabf61a…` for
+   2021 games. A fresh code-bound run with true legacy comparison evidence
+   is required; its certification supersedes `e9edee5`'s as the R1
+   authorization basis.

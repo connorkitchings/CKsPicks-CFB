@@ -31,13 +31,13 @@ def source_request_sha(request: Mapping[str, Any]) -> str:
     missing = [key for key in required if key not in request]
     if missing:
         raise ValueError(f"source request is missing semantic fields: {missing}")
-    value = {
-        key: request[key] for key in required
-    }
+    value = {key: request[key] for key in required}
     return hashlib.sha256(_canonical(value).encode()).hexdigest()
 
 
-def canonical_request_plan(requests: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+def canonical_request_plan(
+    requests: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
     """Return the immutable, semantic portion of an ordered request plan.
 
     Capture-set retries deliberately ignore observation timestamps.  The first
@@ -54,7 +54,9 @@ def canonical_request_plan(requests: Sequence[Mapping[str, Any]]) -> list[dict[s
         }
         request_sha = source_request_sha(semantic)
         if request_sha in seen:
-            raise ValueError(f"duplicate semantic request in capture set: {request_sha}")
+            raise ValueError(
+                f"duplicate semantic request in capture set: {request_sha}"
+            )
         seen.add(request_sha)
         plan.append({"request_sha": request_sha, **semantic})
     return plan
@@ -115,8 +117,14 @@ def begin_or_resume_request_set(
 
 
 def record_source_request_attempt(
-    conn_url: str, *, ingestion_run_id: str, request_sha: str, attempt: int,
-    state: str, capture_id: str | None = None, error: Exception | None = None,
+    conn_url: str,
+    *,
+    ingestion_run_id: str,
+    request_sha: str,
+    attempt: int,
+    state: str,
+    capture_id: str | None = None,
+    error: Exception | None = None,
 ) -> None:
     if state not in {"running", "succeeded", "failed"}:
         raise ValueError("invalid source request attempt state")
@@ -128,8 +136,16 @@ def record_source_request_attempt(
             "ON CONFLICT (ingestion_run_id,request_sha,attempt) DO UPDATE SET "
             "state=EXCLUDED.state,capture_id=EXCLUDED.capture_id,finished_at=EXCLUDED.finished_at,"
             "error_category=EXCLUDED.error_category,error_detail=EXCLUDED.error_detail",
-            (ingestion_run_id, request_sha, attempt, state, capture_id, state,
-             type(error).__name__ if error else None, str(error)[-4000:] if error else None),
+            (
+                ingestion_run_id,
+                request_sha,
+                attempt,
+                state,
+                capture_id,
+                state,
+                type(error).__name__ if error else None,
+                str(error)[-4000:] if error else None,
+            ),
         )
         conn.commit()
 
@@ -149,7 +165,9 @@ def next_source_request_attempt(
     return int(row[0])
 
 
-def completed_request_capture_ids(conn_url: str, ingestion_run_id: str) -> dict[str, str]:
+def completed_request_capture_ids(
+    conn_url: str, ingestion_run_id: str
+) -> dict[str, str]:
     with psycopg.connect(conn_url) as conn:
         rows = conn.execute(
             "SELECT a.request_sha,a.capture_id,c.request FROM catalog.source_request_attempts a "
@@ -162,7 +180,9 @@ def completed_request_capture_ids(conn_url: str, ingestion_run_id: str) -> dict[
         raise ValueError("duplicate completed request capture")
     for request_sha, _, request in rows:
         if source_request_sha(dict(request)) != str(request_sha):
-            raise ValueError("completed capture request identity does not match attempt")
+            raise ValueError(
+                "completed capture request identity does not match attempt"
+            )
     return result
 
 
@@ -684,15 +704,20 @@ def legacy_dataset_ref_for_season(
 
     This is deliberately limited to comparison evidence. Successor R1 Silver
     builders still receive only capture IDs from their closed source manifest.
+    Comparison evidence must come from the pre-successor ``v1`` registration
+    lineage: successor-v2 research writes ``dataset_identity_v2`` rows whose
+    ``lake/silver/...`` URIs are otherwise indistinguishable from legacy
+    versions, and whose later ``created_at`` would silently displace the
+    legacy selection.
     """
 
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT version_id, schema_version, content_sha, uri, partitions, "
-                "as_of, created_at FROM catalog.dataset_versions "
+                "as_of, created_at, identity_version FROM catalog.dataset_versions "
                 "WHERE dataset = %s AND as_of <= %s AND state = 'validated' "
-                "AND uri NOT LIKE %s",
+                "AND uri NOT LIKE %s AND identity_version = 'v1'",
                 (dataset, selection_as_of, f"{excluded_uri_prefix}%"),
             )
             rows = cur.fetchall()
