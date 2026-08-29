@@ -134,4 +134,17 @@ are now compared) while removing only the two impossible demands.
 
 ## Amendments
 
-None.
+1. **2026-08-28 (fresh run execution).** Run `r1-full-corpus-20260828-2cb4d5a`
+   completed captures (with two sanctioned same-ID resumes after a transient
+   Neon connection timeout and a CFBD 502 outage), all Silver seasons, derived
+   ref-set closure, and — for the first time — a passing
+   `audit_successor_cross_lineage` (`all_checks_passed: true`). It then
+   exposed a second never-executed path: `build_successor_r1_foundation` and
+   `certify_successor_history` both parsed derived-ref-set entries with
+   `DatasetRef(**entry)`, which crashes on the entries' required `season`
+   scope field (`TypeError: unexpected keyword argument 'season'`). Fixed by
+   a shared scope-aware parser `derived_history_dataset_refs()` in
+   `src/cks_picks_cfb/ratings/successor_history.py` used by both scripts,
+   with round-trip regression coverage; verified read-only against the real
+   100-entry ref set. A fresh code-bound run is required for the same
+   one-run-one-identity reason as before.

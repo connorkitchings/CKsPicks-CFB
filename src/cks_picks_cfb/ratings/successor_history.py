@@ -243,3 +243,36 @@ def derived_history_ref_set(
         "entries": entries,
     }
     return {**payload, "ref_set_sha256": _canonical_sha(payload)}
+
+
+def derived_history_dataset_refs(
+    payload: Mapping[str, Any],
+) -> dict[tuple[int, str], DatasetRef]:
+    """Parse derived-ref-set entries into season-scoped immutable dataset refs.
+
+    Entries carry a ``season`` scope field alongside the dataset-ref fields;
+    callers must not pass the scope field through to ``DatasetRef``.
+    """
+
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        raise SuccessorHistoryError("R1 derived-ref set entries are invalid")
+    refs: dict[tuple[int, str], DatasetRef] = {}
+    for entry in entries:
+        if not isinstance(entry, Mapping):
+            raise SuccessorHistoryError("R1 derived-ref set entries are invalid")
+        try:
+            season = int(entry["season"])
+            ref = DatasetRef(
+                dataset=str(entry["dataset"]),
+                version_id=str(entry["version_id"]),
+                schema_version=str(entry["schema_version"]),
+                content_sha=str(entry["content_sha"]),
+                uri=str(entry["uri"]),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise SuccessorHistoryError(
+                "R1 derived-ref set entry lacks immutable dataset fields"
+            ) from exc
+        refs[(season, ref.dataset)] = ref
+    return refs

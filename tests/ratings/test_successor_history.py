@@ -16,6 +16,7 @@ from cks_picks_cfb.ratings.successor_history import (
     SeasonCoverageEvidence,
     SuccessorHistoryError,
     coverage_report,
+    derived_history_dataset_refs,
     derived_history_ref_set,
     expanded_history_ref_set,
 )
@@ -120,6 +121,36 @@ def test_r1_derived_ref_set_binds_every_source_and_silver_output():
             source_set_sha256="source-sha",
             identity={"pipeline_id": "run"},
         )
+
+
+def test_derived_ref_set_entries_round_trip_through_the_scope_aware_parser():
+    refs = {
+        (season, dataset): DatasetRef(
+            dataset=dataset,
+            version_id=f"{dataset}-{season}",
+            schema_version="v1",
+            content_sha=f"sha-{dataset}-{season}",
+            uri=f"lake/silver/{dataset}/{season}",
+        )
+        for season in POLICY.historical_development_seasons
+        for dataset in R1_REQUIRED_DATASETS
+    }
+    payload = derived_history_ref_set(
+        POLICY,
+        refs,
+        source_set_uri="artifacts/research/rating-successor-v2/r1/run/source-set.json",
+        source_set_sha256="source-sha",
+        identity={"pipeline_id": "run"},
+    )
+    assert derived_history_dataset_refs(payload) == refs
+
+    payload["entries"] = "not-a-list"
+    with pytest.raises(SuccessorHistoryError, match="entries are invalid"):
+        derived_history_dataset_refs(payload)
+
+    payload["entries"] = [{"season": 2015, "dataset": "plays"}]
+    with pytest.raises(SuccessorHistoryError, match="immutable dataset fields"):
+        derived_history_dataset_refs(payload)
 
 
 def test_context_admission_fails_closed_for_market_or_missing_authentic_capture():

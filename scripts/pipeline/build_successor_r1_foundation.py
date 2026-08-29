@@ -20,6 +20,7 @@ from cks_picks_cfb.ratings.state_contracts import load_team_state_config
 from cks_picks_cfb.ratings.successor_history import (
     DERIVED_REF_SET_VERSION,
     R1_REQUIRED_DATASETS,
+    derived_history_dataset_refs,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -31,10 +32,6 @@ def _immutable_write(storage, uri: str, payload: bytes) -> None:
             raise FileExistsError(f"Immutable successor-v2 artifact collision: {uri}")
         return
     storage.write_bytes(payload, uri)
-
-
-def _ref(value: dict) -> DatasetRef:
-    return DatasetRef(**value)
 
 
 def _pointer(storage, uri: str, ref: DatasetRef) -> None:
@@ -58,7 +55,9 @@ def _sha256(payload: bytes) -> str:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment", choices=("preview", "production"), required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--derived-ref-set-uri", required=True)
     parser.add_argument("--output-manifest-uri", required=True)
@@ -92,10 +91,7 @@ def main(argv: list[str] | None = None) -> None:
     ).stdout.strip()
     if current != identity["code_sha"]:
         raise ValueError("R1 foundation code SHA differs from the capture identity")
-    refs = {
-        (int(entry["season"]), str(entry["dataset"])): _ref(entry)
-        for entry in derived.get("entries", [])
-    }
+    refs = derived_history_dataset_refs(derived)
     expected = {
         (season, dataset)
         for season in policy.historical_development_seasons

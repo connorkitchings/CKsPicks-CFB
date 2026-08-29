@@ -19,6 +19,7 @@ from cks_picks_cfb.ratings.successor_history import (
     REQUIRED_DATASETS,
     SeasonCoverageEvidence,
     coverage_report,
+    derived_history_dataset_refs,
     expanded_history_ref_set,
 )
 
@@ -86,7 +87,9 @@ def _reconciled_score_game_ids(observations: pd.DataFrame, season: int) -> set[i
     return set(pd.to_numeric(counts[counts >= 2].index, errors="raise").astype(int))
 
 
-def _representative_teams(games: pd.DataFrame, season: int, completed: set[int]) -> set[str]:
+def _representative_teams(
+    games: pd.DataFrame, season: int, completed: set[int]
+) -> set[str]:
     scoped = games[
         (pd.to_numeric(games["season"], errors="coerce") == season)
         & pd.to_numeric(games["game_id"], errors="coerce").isin(completed)
@@ -149,13 +152,7 @@ def main(argv: list[str] | None = None) -> None:
         or not derived.get("source_set_sha256")
     ):
         raise ValueError("Certification requires a complete R1 derived-ref set")
-    entries = derived.get("entries")
-    if not isinstance(entries, list):
-        raise ValueError("R1 derived-ref set entries are invalid")
-    refs = {
-        (int(entry["season"]), str(entry["dataset"])): _ref(entry)
-        for entry in entries
-    }
+    refs = derived_history_dataset_refs(derived)
     measurement_report, measurement_report_sha = _report(
         storage, args.measurement_report_uri, label="measurement report"
     )
@@ -165,7 +162,10 @@ def main(argv: list[str] | None = None) -> None:
     cross_lineage_report, cross_lineage_report_sha = _report(
         storage, args.cross_lineage_report_uri, label="cross-lineage report"
     )
-    if cross_lineage_report.get("contract_version") != "successor-cross-lineage-audit-v2":
+    if (
+        cross_lineage_report.get("contract_version")
+        != "successor-cross-lineage-audit-v2"
+    ):
         raise ValueError("Certification requires the successor-v2 cross-lineage audit")
     try:
         observations_ref = _ref(measurement_report["lineage"]["observations_ref"])
@@ -180,8 +180,7 @@ def main(argv: list[str] | None = None) -> None:
     compatibility_refs: dict[tuple[int, str], DatasetRef] = {}
     for season in policy.historical_development_seasons:
         season_refs = {
-            dataset: refs[(season, dataset)]
-            for dataset in REQUIRED_DATASETS
+            dataset: refs[(season, dataset)] for dataset in REQUIRED_DATASETS
         }
         for dataset, ref in season_refs.items():
             require_dataset(ref, dataset)
