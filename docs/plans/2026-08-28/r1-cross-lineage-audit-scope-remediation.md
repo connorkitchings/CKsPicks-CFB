@@ -187,3 +187,22 @@ are now compared) while removing only the two impossible demands.
    2021 games. A fresh code-bound run with true legacy comparison evidence
    is required; its certification supersedes `e9edee5`'s as the R1
    authorization basis.
+4. **2026-08-31 (2019 catalog gap remediation).** Runs `e9edee5` and
+   `6bc4be6` both succeeded through cross-lineage audit, foundation, and
+   certification but failed at the final step
+   `freeze_successor_legacy_comparison_evidence` with "No legacy games
+   comparison ref exists for season 2019." Root cause: the v1 catalog pin
+   (`identity_version = 'v1'`) covers only 2021–2025; the 2019 legacy
+   artifacts were restored from the Feb 2026 legacy export before the catalog
+   ingestion integration existed and were never registered in
+   `catalog.dataset_versions`. The restoration manifest at
+   `artifacts/preview/legacy-comparison/2019/legacy-comparison-2019-55f6968/manifest.json`
+   (SHA-256 `a2b9398f…`) is the authoritative source for the 2019 refs.
+   Fix: `build_successor_legacy_comparison_ref_set.py` now uses a two-source
+   merge — `_manifest_2019_entry()` reads the pinned restoration manifest from
+   R2 with 7 integrity checks for 2019, while `_catalog_entries()` covers
+   2021–2025 only (unchanged). The `CONTRACT_VERSION` and merged payload shape
+   are unchanged; no consumer parses `selection_mode`. Tests: 5 cases pass
+   (success + 3 manifest failure modes + adapted catalog-failure case). A fresh
+   code-bound R1 run is required; its certification supersedes all prior runs
+   as the R1 authorization basis for R2–R4.
