@@ -13,12 +13,12 @@
 | Component | Value |
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
-| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`, `CFB_PUBLICATION_WEEKS=0` |
+| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`; update `CFB_PUBLICATION_WEEKS` to comma-separated list (e.g. `0,1`) when each week is ready |
 | Database | Neon **production branch** (separate from `preview-2026`); migrations 0002–0008 applied |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
 | Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |
-| Launch model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml` |
+| Active model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml` |
 | Fallback | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
 | Active run | Query `/api/health` or `current_week.active_run_id`; each progressive publish activates a new immutable run. |
 
@@ -60,6 +60,12 @@ No scheduler is configured for Week 0. The timing record contains only
 manually published captures; it must not be described as a continuous
 best-time-to-bet feed.
 
+> **Week 0 completion note (2026-08-31):** Week 0 games were played Aug 29–30.
+> The run `2026w0-55de0317120d` was published but never frozen before kickoff.
+> Freeze-week can still be applied post-hoc (the freeze script checks 8/8/8
+> coverage, not a timestamp) before running `close-week`. See Stage 5 of the
+> launch contract for the freeze → close sequence.
+
 Before kickoff, make one final progressive publish, review it, then freeze it:
 
 ```bash
@@ -85,6 +91,20 @@ homepage shows the latest immutable model-vs-market snapshot, numeric edges,
 and the model-accuracy panel. `CFB_PUBLICATION_MODE` is fail-closed: only the
 exact value `predictions` exposes model fields; every other value remains
 market-only.
+
+## Regular-week operating cycle
+
+For Week 1 and beyond, before publishing a new week, rebuild the cumulative
+current-season Gold from completed-game results:
+
+```bash
+make prepare-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+make readiness  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+```
+
+Then publish progressively as lines arrive, freeze before kickoff, and
+close after finals. Update `CFB_PUBLICATION_WEEKS` in Vercel to add the
+new week number (comma-separated from prior weeks) before going live.
 
 ### 4. Postgame close (after finals)
 
@@ -169,4 +189,4 @@ pipeline's original failure or activation boundary.
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-08-31_

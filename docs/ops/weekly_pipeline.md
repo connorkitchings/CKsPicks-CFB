@@ -48,9 +48,11 @@ Readiness fails unless R2 and Neon connect, the run-aware schema exists, the FBS
 ## Progressive publish and freeze
 
 Before publishing a week after any completed games, rebuild the cumulative
-current-season inputs in the intended environment. `prepare-week` is resumable
-and captures its own source lineage; it preserves the frozen 2021–2025
-baseline rather than rerunning model selection.
+current-season inputs in the intended environment. `prepare-week` is required
+for Week 1 and every subsequent week (it is not needed for Week 0 which is
+pure preseason). `prepare-week` is resumable and captures its own source
+lineage; it preserves the frozen 2021–2025 baseline rather than rerunning
+model selection.
 
 ```bash
 make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
@@ -90,7 +92,7 @@ For Week 0, Vercel now exposes the reviewed active run in predictions mode:
 
 ```bash
 CFB_PUBLICATION_SEASON=2026
-CFB_PUBLICATION_WEEKS=0
+CFB_PUBLICATION_WEEKS=0,1   # comma-separated; add each week after publish + freeze
 CFB_PUBLICATION_MODE=predictions
 ```
 
@@ -118,10 +120,12 @@ Frozen runs are immutable. Historical pages select the newest frozen/scored run,
 
 ## Close and replay
 
-After finals:
+After finals — **run on Tuesday** (not Monday). CFBD takes ~24–48 h to finalize
+all game scores after weekend play; running close-week on Monday often produces
+`away_points`/`home_points` missing errors from the Silver game_outcomes build.
 
 ```bash
-make close-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+make close-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=production
 ```
 
 Scoring resolves the frozen run from Neon, verifies that run's immutable R2 artifact, and writes run-specific `prediction_grades`. It requires an immutable `game_outcomes` reference with a completed outcome for every frozen eligible game. Cancellations require explicit game-ID/reason waivers and are retained in the scored manifest without a grade.

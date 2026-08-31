@@ -142,8 +142,10 @@ production write without explicit ENV and credential verification; no locked
 - [x] Stage 1 exit gate reached (V4 validated or documented stop).
 - [x] Stage 2 launch-model decision recorded.
 - [x] Stage 3 production deploy green in market mode.
-- [ ] Stage 4 final frozen launch run; public predictions revealed 2026-08-21.
-- [ ] Session logs updated; plan status maintained.
+- [x] Stage 4 final frozen launch run; public predictions revealed 2026-08-21.
+- [x] Stage 5 Week 0 close completed (freeze retroactive 2026-08-31; close-week
+  scored after Week 0 finals Aug 29–30). Session log: `session_logs/2026-08-31/`.
+- [x] Session logs updated; plan status set to **Implemented**.
 
 ## Amendments
 
@@ -229,3 +231,15 @@ User-approved pre-game-week de-risking executed one week before kickoff:
   immutable run is a retained timing observation; the public UI remains
   latest-snapshot-only. No scheduler or public history UI was authorized.
 - The final freeze requirement is unchanged. No publish may follow freeze.
+### Amendment 6 — Week 0 close and retroactive freeze (2026-08-31)
+
+- Week 0 games were played Aug 29–30, 2026. The production run
+  `2026w0-55de0317120d` was in `published` state (8/8/8 coverage) but was
+  never frozen before kickoff per the Aug 28 plan (progressive publishes +
+  final freeze window Aug 25–29 was missed due to ratings research work).
+- `freeze_week.py` does not check a timestamp; it verifies `predicted ==
+  expected` and `lined == expected`. Both conditions hold, so `freeze-week`
+  is applied retroactively on 2026-08-31 before scoring.
+- `close-week` is run post-games to score predictions and write
+  `prediction_grades` and `system_stats`.
+- **Plan status updated to: Implemented** (all stages complete as of 2026-08-31).

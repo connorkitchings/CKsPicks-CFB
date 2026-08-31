@@ -26,7 +26,16 @@ Copy the template from `.agent/skills/plan-session/assets/implementation-contrac
 
 Terra must not execute a Draft contract without an explicit user instruction naming that exact path. In that case, Terra records the instruction as the approval source and changes the status to `Approved` before code changes.
 
-## Current rating-transition contracts
+## Current active contracts
+
+### Operations (Week 1)
+
+- [Week 1 operations](2026-08-31/week1-operations.md)
+  — In Progress. Retroactive Week 0 freeze + close, then prepare/publish/freeze
+  Week 1 predictions in production before Thursday ~Sept 4 kickoff. Updates
+  Vercel `CFB_PUBLICATION_WEEKS` to `0,1`.
+
+### Rating-transition contracts
 
 - [R1 cross-lineage audit scope remediation](2026-08-28/r1-cross-lineage-audit-scope-remediation.md)
   — Approved. Compares each hard dataset against its own legacy counterpart
@@ -53,6 +62,11 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — In Progress, blocked on catalog-restored 2019 legacy comparison evidence.
   The Preview preflight published its immutable failure report before any
   successor capture; it cannot substitute evidence or authorize R2.
+- [R1 legacy-comparison 2019 selection remediation](2026-08-31/r1-legacy-comparison-2019-selection-remediation.md)
+  — **Approved.** Manifest-anchored 2019 resolution: reads the immutable
+  restoration manifest from R2 instead of the catalog, runs integrity checks,
+  merges with the v1 catalog pin for 2021–2025, then completes a fresh
+  code-bound R1 run through certification.
 - [R1 play-capture reliability hardening](2026-08-27/r1-play-capture-reliability-hardening.md)
   — Superseded by the full-corpus R1 contract. Its bounded weekly worker,
   request ledger, and reconciliation implementation remain reusable.

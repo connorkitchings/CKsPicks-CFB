@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-08-26
+> **Last updated:** 2026-08-31
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 ## Direction
@@ -58,9 +58,11 @@ See the
 
 ## Operational milestones
 
-| Window | Deliverable | Promotion status |
+| Window | Deliverable | Status |
 | --- | --- | --- |
-| By 2026-08-28 | Documentation audit, measurement catalog, initial rating requirements, uncertainty and shadow-evaluation requirements, and follow-on contracts | No rating activation |
+| By 2026-08-28 | Documentation audit, measurement catalog, initial rating requirements, uncertainty and shadow-evaluation requirements, and follow-on contracts | ✅ Complete |
+| **2026-08-29–31 (Week 0 close)** | Week 0 games scored; freeze + close-week; Week 0 launch contract closed | ✅ In progress (2026-08-31) |
+| **Week 1 (Sept 4–6)** | `prepare-week` → `publish-week` → freeze before kickoff; Vercel `CFB_PUBLICATION_WEEKS=0,1` | 🟡 Active operational window |
 | After kickoff | Measurement/adjustment implementation contract and simple point-in-time rating baseline | Isolated research artifacts only |
 | Subsequent weeks | Structured rating-to-game prediction, then frozen candidate shadow scoring | No Neon activation or publication |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
@@ -133,7 +135,14 @@ calendar date cannot bypass a failed gate.
 - [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
   — **In Progress.** Governing R1–R4 research contract: 2015–2019 plus
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
-  future candidate-v2 evidence lane.
+  future candidate-v2 evidence lane. R1 runs on 2026-08-28/29 succeeded
+  through cross-lineage audit and certification but failed at
+  `freeze_successor_legacy_comparison_evidence` — no 2019 catalog entry
+  (the restoration predated catalog integration). Remediation plan approved
+  2026-08-31:
+  [R1 legacy-comparison 2019 selection remediation](../plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md)
+  — manifest-anchored 2019 resolution. Fresh code-bound R1 run pending after
+  remediation commit. R2–R4 remain blocked on `tournaments_permitted: true`.
 
 ## Invariants and open decisions
 

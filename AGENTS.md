@@ -181,32 +181,37 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🚀 Launch in progress — buildout complete, production live, game-week operations remain
+**Status:** 🏈 Season live — Week 0 complete (games played Aug 29–30), Week 1 in progress (kickoff ~Sept 4–6)
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
 Production is live at `https://c-ks-picks-cfb.vercel.app` in approval-gated
-`predictions` publication mode (revealed 2026-08-21). Active work is governed by the Week 0 launch
-contract (`docs/plans/2026-08-18/week0-launch-execution.md`, Stages 4–5
-pending game week).
+`predictions` publication mode (revealed 2026-08-21). Active work is the
+weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
+`docs/ops/production_runbook.md`.
 
 **Current focus:**
 - ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
 - ✅ Week 0 regime modeling (5 routes × 2 targets, temporal folds)
-- ✅ Phase 1: Legacy market adjudication + canonical Week 0 policy encoded
-- ✅ Phase 2: Historical bootstrap import (7,156 eligible objects, checksums verified)
-- ✅ Phases 3–4: Silver reconciliation + Gold with 2022–2024 OOF baselines
-- ✅ Phase 5: V4 tournament — sealed selection, locked-2025 pass, refit on 2021–2025
+- ✅ Phase 1–5: Full bootstrap, Silver/Gold, OOF baselines, V4 tournament complete
   (bundle `week0-2026-v4-strict-20260818-r2`, config `conf/weekly_bets/v4_2026.yaml`)
-- 🟡 Phase 6: Production deployed 2026-08-18; predictions revealed from reviewed
-  run `2026w0-55de0317120d` on 2026-08-21; progressive publishes + final freeze
-  remain (Aug 25–29)
-- 🧭 Ratings reset: R1–R4 research expands history and selects candidate v2;
-  O1 V4 production is unchanged and O2 candidate v1 at `ac1fba1` is
-  diagnostic-only. See `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
+- ✅ Phase 6: Production deployed 2026-08-18; predictions revealed 2026-08-21;
+  Week 0 games played Aug 29–30.
+- 🟡 **Week 0 close (immediate):** Active run `2026w0-55de0317120d` is `published`
+  (8/8/8 coverage). Needs `freeze-week` → `close-week` scoring.
+  See Stage 5 of `docs/plans/2026-08-18/week0-launch-execution.md`.
+- 🟡 **Week 1 ops (by Thursday ~Sept 4):** `prepare-week` → `publish-week` →
+  freeze before kickoff; update Vercel `CFB_PUBLICATION_WEEKS=0,1`.
+  See `docs/ops/weekly_pipeline.md` for the full cadence.
+- 🧭 **Ratings research (R1–R4):** Paused on in-flight R1 run
+  `r1-full-corpus-20260829-e9edee5` (code `e9edee5`, launched 2026-08-28).
+  R2–R4 remain blocked on `tournaments_permitted: true`. O2 candidate-v1 at
+  `ac1fba1` is diagnostic-only. See
+  `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
 
-**Roadmap (launch + 2026 transition):** `docs/planning/roadmap.md` · **Launch contract:**
-`docs/plans/2026-08-18/week0-launch-execution.md`
+**Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
+**Weekly ops:** `docs/ops/weekly_pipeline.md` ·
+**Production runbook:** `docs/ops/production_runbook.md`
 
 **Historical reference:** V2 workflow and prior rating research are retained in
 `docs/archive/`; they are evidence, not current operating authority.

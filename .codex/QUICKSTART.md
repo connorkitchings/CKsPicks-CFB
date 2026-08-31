@@ -46,7 +46,7 @@ export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 # Vercel publication scope (web app)
 export CFB_PUBLICATION_MODE='predictions' # current approved release mode; all other values fail closed to market-only
 export CFB_PUBLICATION_SEASON='2026'
-export CFB_PUBLICATION_WEEKS='0'
+export CFB_PUBLICATION_WEEKS='0,1'        # comma-separated; update each week after publish + readiness pass
 
 # Optional: MLflow tracking
 export MLFLOW_TRACKING_URI='file:///path/to/mlruns'
@@ -222,7 +222,7 @@ make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 make reconcile YEAR=2026 ENV=preview
 
 # Alias for pregame publish:
-make weekly YEAR=2026 WEEK=0
+make weekly YEAR=2026 WEEK=1
 
 # Durable recovery: resume the same recorded state-machine run
 PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week \
@@ -669,5 +669,5 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-08-31_
 _Quick command reference for CKsPicks-CFB_
