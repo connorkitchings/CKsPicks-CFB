@@ -12,7 +12,7 @@ import yaml
 
 from cks_picks_cfb.data.season_lineage import SeasonLineagePolicy
 
-TOURNAMENT_CONTRACT_VERSION = "rating_successor_v2_tournaments_v1"
+TOURNAMENT_CONTRACT_VERSION = "rating_successor_v2_tournaments_v2"
 
 
 class SuccessorTournamentError(ValueError):

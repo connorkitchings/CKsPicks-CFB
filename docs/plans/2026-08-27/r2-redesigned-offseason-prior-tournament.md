@@ -1,11 +1,11 @@
 # R2 Redesigned Offseason-Prior Tournament
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact
   full-corpus successor-v2 plan in Codex on 2026-08-27.
-- **Implementation log:** Pending fresh Terra task after R1 certification.
+- **Implementation log:** `session_logs/2026-08-31/04-r2-prior-tournament-implementation.md`
 - **Commit policy:** Separate plan commit required after R1 and before implementation.
 
 ## Goal

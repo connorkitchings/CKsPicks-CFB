@@ -1,4 +1,4 @@
-tournament_contract_version: rating_successor_v2_tournaments_v1
+tournament_contract_version: rating_successor_v2_tournaments_v2
 season_lineage_policy: conf/ratings/successor_v2_season_lineage.yaml
 research_prefix: artifacts/research/rating-successor-v2
 
