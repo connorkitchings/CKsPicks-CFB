@@ -54,7 +54,7 @@ function spreadLabel(view: SpreadView): string {
 }
 
 /** Signed difference between the displayed model and market spread numbers. */
-function spreadEdgeNote(model: SpreadView, market: SpreadView): string | null {
+function spreadEdge(model: SpreadView, market: SpreadView): number | null {
   if (
     model === null ||
     market === null ||
@@ -63,16 +63,16 @@ function spreadEdgeNote(model: SpreadView, market: SpreadView): string | null {
   ) {
     return null;
   }
-  return `(${signedSpread(model.line - market.line)})`;
+  return model.line - market.line;
 }
 
 /** Signed difference between the model and market totals. */
-function totalEdgeNote(
+function totalEdge(
   predictedTotal: number | null,
   totalLine: number | null,
-): string | null {
+): number | null {
   if (predictedTotal === null || totalLine === null) return null;
-  return `(${signedSpread(predictedTotal - totalLine)})`;
+  return predictedTotal - totalLine;
 }
 
 /** The bet the model would place: the leaned team and the line it would take. */
@@ -101,11 +101,25 @@ const colHeaderCls =
 const rowHeaderCls = "py-1.5 pr-2 text-left font-medium text-ink-muted";
 const numberCellCls = "py-1.5 pl-2 text-right font-mono tabular-nums text-ink";
 
+/** Color reflects the size of the disagreement; the signed number preserves direction. */
+function edgeTone(edge: number, target: "spread" | "total"): string {
+  const magnitude = Math.abs(edge);
+  const [lowThreshold, highThreshold] = target === "spread" ? [3, 8] : [2, 7];
+  if (magnitude < lowThreshold) return "edge-low";
+  if (magnitude <= highThreshold) return "edge-medium";
+  return "edge-high";
+}
+
 /** Quiet parenthetical in the Model cell: how far model sits from market. */
-function EdgeNote({ note }: { note: string | null }) {
-  if (note === null) return null;
+function EdgeNote({ edge, target }: { edge: number | null; target: "spread" | "total" }) {
+  if (edge === null) return null;
+  const note = `(${signedSpread(edge)})`;
   return (
-    <span className="ml-1 text-ink-faint" title="Model minus market">
+    <span
+      className={clsx("ml-1 font-medium", edgeTone(edge, target))}
+      title="Model minus market"
+      aria-label={`Model minus market ${note}`}
+    >
       {note}
     </span>
   );
@@ -193,76 +207,94 @@ export function GameRow({ game }: { game: Game }) {
         />
       </div>
 
-      {/* Market vs model comparison */}
-      <table className="mt-3 w-full tabular-nums text-[11px] sm:text-xs">
-        <thead>
-          <tr>
-            <th scope="col" className={colHeaderCls}>
-              <span className="sr-only">Bet type</span>
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Market
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Model
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Model Bet
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Bet Result
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-t border-line">
-            <th scope="row" className={rowHeaderCls}>
-              Spread
-            </th>
-            <td className={numberCellCls}>{spreadLabel(marketSpread)}</td>
-            <td className={numberCellCls}>
-              {spreadLabel(modelSpread)}
-              <EdgeNote note={spreadEdgeNote(modelSpread, marketSpread)} />
-            </td>
-            <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
-              {spreadBet ? (
-                <span className="font-medium text-accent-ink">{spreadBet}</span>
-              ) : (
-                <span className="text-ink-faint">No lean</span>
-              )}
-            </td>
-            <td className="py-1.5 pl-2 text-right">
-              <ResultCell result={game.spreadResult} />
-            </td>
-          </tr>
-          <tr className="border-t border-b border-line">
-            <th scope="row" className={rowHeaderCls}>
-              Total
-            </th>
-            <td className={numberCellCls}>
-              {game.totalLine === null ? "—" : game.totalLine.toFixed(1)}
-            </td>
-            <td className={numberCellCls}>
-              {game.predictedTotal === null
-                ? "—"
-                : game.predictedTotal.toFixed(1)}
-              <EdgeNote
-                note={totalEdgeNote(game.predictedTotal, game.totalLine)}
-              />
-            </td>
-            <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
-              {totalBet ? (
-                <span className="font-medium text-accent-ink">{totalBet}</span>
-              ) : (
-                <span className="text-ink-faint">No lean</span>
-              )}
-            </td>
-            <td className="py-1.5 pl-2 text-right">
-              <ResultCell result={game.totalResult} />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      {/* Desktop keeps the full comparison table; phone cards use three value columns. */}
+      <div className="mt-3 hidden sm:block">
+        <table className="w-full tabular-nums text-xs" aria-label="Market and model comparison">
+          <thead>
+            <tr>
+              <th scope="col" className={colHeaderCls}>
+                <span className="sr-only">Bet type</span>
+              </th>
+              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
+                Market
+              </th>
+              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
+                Model
+              </th>
+              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
+                Model Bet
+              </th>
+              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
+                Bet Result
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-line">
+              <th scope="row" className={rowHeaderCls}>Spread</th>
+              <td className={numberCellCls}>{spreadLabel(marketSpread)}</td>
+              <td className={numberCellCls}>
+                {spreadLabel(modelSpread)}
+                <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
+              </td>
+              <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
+                {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
+              </td>
+              <td className="py-1.5 pl-2 text-right"><ResultCell result={game.spreadResult} /></td>
+            </tr>
+            <tr className="border-y border-line">
+              <th scope="row" className={rowHeaderCls}>Total</th>
+              <td className={numberCellCls}>{game.totalLine === null ? "—" : game.totalLine.toFixed(1)}</td>
+              <td className={numberCellCls}>
+                {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
+                <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
+              </td>
+              <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
+                {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
+              </td>
+              <td className="py-1.5 pl-2 text-right"><ResultCell result={game.totalResult} /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 sm:hidden">
+        <table className="w-full table-fixed tabular-nums text-[11px]" aria-label="Market and model comparison">
+          <thead>
+            <tr>
+              <th scope="col" className={`${colHeaderCls} w-[16%] text-left`}><span className="sr-only">Bet type</span></th>
+              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Market</th>
+              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Model</th>
+              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Bet</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-t border-line">
+              <th scope="row" className={rowHeaderCls}>Spread</th>
+              <td className={`${numberCellCls} break-words`}>{spreadLabel(marketSpread)}</td>
+              <td className={`${numberCellCls} break-words`}>
+                {spreadLabel(modelSpread)}
+                <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
+              </td>
+              <td className="break-words py-1.5 pl-2 text-right font-mono tabular-nums">
+                {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
+                {game.spreadResult && <div className="mt-1"><ResultCell result={game.spreadResult} /></div>}
+              </td>
+            </tr>
+            <tr className="border-y border-line">
+              <th scope="row" className={rowHeaderCls}>Total</th>
+              <td className={numberCellCls}>{game.totalLine === null ? "—" : game.totalLine.toFixed(1)}</td>
+              <td className={numberCellCls}>
+                {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
+                <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
+              </td>
+              <td className="break-words py-1.5 pl-2 text-right font-mono tabular-nums">
+                {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
+                {game.totalResult && <div className="mt-1"><ResultCell result={game.totalResult} /></div>}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       {!hasAnyLine && (
         <p className="mt-2 text-xs text-ink-faint">
@@ -310,7 +342,7 @@ function MarketGameRow({
           highlighted={false}
         />
       </div>
-      <table className="mt-3 w-full tabular-nums text-[11px] sm:text-xs">
+      <table className="mt-3 w-full tabular-nums text-[11px] sm:text-xs" aria-label="Market and results">
         <thead>
           <tr>
             <th scope="col" className={colHeaderCls}>
@@ -379,7 +411,7 @@ function TeamLine({
       />
       <span
         className={clsx(
-          "truncate text-sm text-ink",
+          "min-w-0 truncate text-sm text-ink",
           highlighted && "font-semibold",
         )}
       >

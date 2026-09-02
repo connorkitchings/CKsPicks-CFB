@@ -2,7 +2,7 @@ import {
   getCurrentWeek,
   getGamesForWeek,
   getMarketGamesForWeek,
-  getSystemStats,
+  getSystemStatsThroughWeek,
   getAvailableWeeks,
   type Game,
   type Stats,
@@ -11,7 +11,6 @@ import { Header, Footer } from "@/components/Header";
 import { RecordBanner } from "@/components/RecordBanner";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
-import { ModelAccuracyPanel } from "@/components/ModelAccuracyPanel";
 import { publicationScope } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
@@ -114,7 +113,7 @@ export default async function Home({
         if (publicationMode === "predictions") {
         [games, stats] = await Promise.all([
           getGamesForWeek(season, week),
-          getSystemStats(season),
+          getSystemStatsThroughWeek(season, week),
         ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
@@ -140,15 +139,14 @@ export default async function Home({
       ? new Date(gamesUpdatedAt)
       : currentUpdatedAt;
 
-  // Backtest context renders only with model output (fail-closed boundary).
-  const regimesInPlay = games
-    .map((g) =>
-      g.publicationMode === "predictions" && g.regime ? g.regime : null,
-    )
-    .filter((r): r is NonNullable<typeof r> => r !== null);
-
   return (
     <div className="flex min-h-screen flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       <Header
         season={season > 0 ? season : null}
         week={season > 0 ? week : null}
@@ -158,7 +156,7 @@ export default async function Home({
         publicationMode={publicationMode}
       />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
+      <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
         {dbError && (
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
             <strong>Database not connected.</strong> Set <code>DATABASE_URL</code>{" "}
@@ -179,22 +177,19 @@ export default async function Home({
         {season > 0 && (
           <>
             {stats && (
-              <RecordBanner season={season} stats={stats} />
+              <RecordBanner season={season} week={week} stats={stats} />
             )}
 
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />
             )}
 
-            {publicationMode === "predictions" && regimesInPlay.length > 0 && (
-              <>
-                <ModelAccuracyPanel regimes={regimesInPlay} />
-                <p className="px-1 text-xs text-ink-faint">
-                  Market lines are consensus snapshots; your sportsbook may
-                  differ. Edge shows how far the model and market disagree. It
-                  is not a confidence score or a promise of profit.
-                </p>
-              </>
+            {publicationMode === "predictions" && (
+              <p className="px-1 text-xs text-ink-faint">
+                Market lines are consensus snapshots; your sportsbook may
+                differ. Edge shows how far the model and market disagree. It
+                is not a confidence score or a promise of profit.
+              </p>
             )}
 
             {games.length === 0 ? (

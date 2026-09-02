@@ -17,6 +17,7 @@
  *   accent*     the one interactive/lean hue (blue family)
  *   win / loss  reserved exclusively for graded results
  *   warn        advisory states (missing line, db unreachable)
+ *   edge-*      magnitude signal for model-versus-market comparisons
  */
 :root {
   --surface-page: #fafafa; /* zinc-50 */
@@ -40,6 +41,9 @@
   --warn: #b45309; /* amber-700 */
   --warn-soft: #fffbeb; /* amber-50 */
   --warn-line: #fcd34d; /* amber-300 */
+  --edge-low: #dc2626; /* red-600 */
+  --edge-medium: #ca8a04; /* yellow-600 */
+  --edge-high: #15803d; /* green-700 */
 }
 
 html.dark {
@@ -64,6 +68,9 @@ html.dark {
   --warn: #fcd34d; /* amber-300 */
   --warn-soft: #451a03; /* amber-950 */
   --warn-line: #78350f; /* amber-900 */
+  --edge-low: #f87171; /* red-400 */
+  --edge-medium: #facc15; /* yellow-400 */
+  --edge-high: #4ade80; /* green-400 */
 }
 
 @theme inline {
@@ -88,6 +95,9 @@ html.dark {
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-warn-line: var(--warn-line);
+  --color-edge-low: var(--edge-low);
+  --color-edge-medium: var(--edge-medium);
+  --color-edge-high: var(--edge-high);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -96,4 +106,18 @@ body {
   background: var(--surface-page);
   color: var(--ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Applied from runtime edge thresholds, so keep these as explicit CSS classes
+   rather than Tailwind utilities that may be omitted by static scanning. */
+.edge-low {
+  color: var(--edge-low);
+}
+
+.edge-medium {
+  color: var(--edge-medium);
+}
+
+.edge-high {
+  color: var(--edge-high);
 }

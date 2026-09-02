@@ -1,4 +1,4 @@
-import { desc, eq, asc, and, inArray, sql } from "drizzle-orm";
+import { desc, eq, asc, and, inArray, lte, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 
@@ -57,14 +57,14 @@ export type Game = MarketGame | PredictionGame;
 /** YTD system record shape. */
 export type Stats = {
   season: number;
-  asOfWeek: number;
+  /** Last week with immutable grades in this selected-week snapshot. */
+  asOfWeek: number | null;
   spreadWins: number;
   spreadLosses: number;
   spreadPushes: number;
   totalWins: number;
   totalLosses: number;
   totalPushes: number;
-  updatedAt: Date;
 };
 
 /** Return the active { season, week, updatedAt } from the singleton current_week row. */
@@ -398,12 +398,88 @@ export async function getMarketGamesForWeek(
   );
 }
 
-/** YTD system record for a season (win/loss/push for spreads and totals). */
-export async function getSystemStats(season: number): Promise<Stats | null> {
-  const rows = await db
-    .select()
-    .from(schema.systemStats)
-    .where(eq(schema.systemStats.season, season))
-    .limit(1);
-  return (rows[0] as Stats | undefined) ?? null;
+function emptyStats(season: number): Stats {
+  return {
+    season,
+    asOfWeek: null,
+    spreadWins: 0,
+    spreadLosses: 0,
+    spreadPushes: 0,
+    totalWins: 0,
+    totalLosses: 0,
+    totalPushes: 0,
+  };
 }
+
+/**
+ * Immutable W-L-P snapshot through a selected week. A replacement run can be
+ * published during the week, but only the latest scored run is authoritative
+ * once results are final. This intentionally does not read `system_stats`:
+ * that table is the latest full-season aggregate maintained by the pipeline.
+ */
+export const getSystemStatsThroughWeek = cache(async (
+  season: number,
+  throughWeek: number,
+): Promise<Stats> => {
+  const candidates = await db
+    .select({
+      runId: schema.predictionRuns.runId,
+      week: schema.predictionRuns.week,
+    })
+    .from(schema.predictionRuns)
+    .where(
+      and(
+        eq(schema.predictionRuns.season, season),
+        lte(schema.predictionRuns.week, throughWeek),
+        eq(schema.predictionRuns.state, "scored"),
+      ),
+    )
+    .orderBy(
+      asc(schema.predictionRuns.week),
+      sql`${schema.predictionRuns.scoredAt} DESC NULLS LAST`,
+      desc(schema.predictionRuns.createdAt),
+    );
+
+  const selectedWeeks = new Map<number, string>();
+  for (const candidate of candidates) {
+    if (!selectedWeeks.has(candidate.week)) {
+      selectedWeeks.set(candidate.week, candidate.runId);
+    }
+  }
+  const runIds = [...selectedWeeks.values()];
+  if (runIds.length === 0) return emptyStats(season);
+
+  const grades = await db
+    .select({
+      runId: schema.predictionGrades.runId,
+      target: schema.predictionGrades.target,
+      result: schema.predictionGrades.result,
+    })
+    .from(schema.predictionGrades)
+    .where(inArray(schema.predictionGrades.runId, runIds));
+
+  if (grades.length === 0) return emptyStats(season);
+
+  const stats = emptyStats(season);
+  let asOfWeek: number | null = null;
+  const weekByRunId = new Map(
+    [...selectedWeeks.entries()].map(([week, runId]) => [runId, week]),
+  );
+  for (const grade of grades) {
+    const week = weekByRunId.get(grade.runId);
+    if (week !== undefined) {
+      asOfWeek = asOfWeek === null ? week : Math.max(asOfWeek, week);
+    }
+    if (grade.target === "spread") {
+      if (grade.result === "win") stats.spreadWins += 1;
+      if (grade.result === "loss") stats.spreadLosses += 1;
+      if (grade.result === "push") stats.spreadPushes += 1;
+    }
+    if (grade.target === "total") {
+      if (grade.result === "win") stats.totalWins += 1;
+      if (grade.result === "loss") stats.totalLosses += 1;
+      if (grade.result === "push") stats.totalPushes += 1;
+    }
+  }
+  return { ...stats, asOfWeek };
+});
