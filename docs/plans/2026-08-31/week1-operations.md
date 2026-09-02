@@ -1,6 +1,6 @@
 # Week 1 Operations
 
-- **Status:** In Progress — Stage A complete; Stage B in progress
+- **Status:** In Progress — Stage A complete; Stage B complete; Stage C pending
 - **Created:** 2026-08-31
 - **Updated:** 2026-09-02
 - **Planner:** Fast-path (documentation + established operational commands)
@@ -38,41 +38,37 @@ before Thursday ~September 4 kickoff.
 Production `/api/health` reports `state: scored` for run `2026w0-55de0317120d`.
 All 8 Week 0 games have completed results in `game_results`.
 
-## Stage B — Prepare Week 1
+## Stage B — Prepare Week 1 ✅ Done 2026-09-02
 
-### B1. Ingest Week 0 results
+### B1. Ingest Week 0 results ✅
 
-```bash
-make ingest-week YEAR=2026 WEEK=0
-```
+`prepare-week` automatically ingested Week 0 plays and game_stats. Week 0 outcomes were already in R2 from the earlier `close-week` run.
 
-Captures final scores and outcomes for all Week 0 games into R2.
+### B2. Build Week 1 Gold (preview first) ✅
 
-### B2. Build Week 1 Gold (preview first)
-
-Set AS_OF to ~5 minutes ahead of when you run it:
+Succeeded with prepared Gold ref:
+`artifacts/preview/pipeline-runs/c9b80bf11d364c84978f2c4203dd1165/point_in_time_matchups_ref.json`
+(content_sha `30ac8b5d37719160ff9d751c`).
 
 ```bash
 zsh scripts/ops/with_preview_env.sh make prepare-week \
-  YEAR=2026 WEEK=1 AS_OF=2026-09-01T14:00:00Z ENV=preview
+  YEAR=2026 WEEK=1 AS_OF=2026-09-03T04:00:00Z ENV=preview
 ```
 
-### B3. Preview readiness check
+### B3. Preview readiness check ✅
 
-```bash
-zsh scripts/ops/with_preview_env.sh make readiness \
-  YEAR=2026 WEEK=1 AS_OF=2026-09-01T14:00:00Z ENV=preview
-```
+Passed.
 
-### B4. Preview publish
+### B4. Preview publish ✅
+
+Preview prediction run `2026w1-2ba9ea0d113d` is `published` with 43/43/43 coverage.
 
 ```bash
 zsh scripts/ops/with_preview_env.sh make publish-week \
-  YEAR=2026 WEEK=1 AS_OF=2026-09-01T14:05:00Z ENV=preview \
-  CONFIG=conf/weekly_bets/v4_2026.yaml
+  YEAR=2026 WEEK=1 AS_OF=2026-09-03T04:10:00Z ENV=preview \
+  CONFIG=conf/weekly_bets/v4_2026.yaml \
+  PREPARED_GOLD_REF_URI=artifacts/preview/pipeline-runs/c9b80bf11d364c84978f2c4203dd1165/point_in_time_matchups_ref.json
 ```
-
-Review coverage, predictions, edges.
 
 ## Stage C — Week 1 Production
 
@@ -112,8 +108,8 @@ Expect: state frozen, Week 1 coverage, predictions mode active.
 - [x] A1: Week 0 frozen
 - [x] A2: Week 0 closed/scored
 - [x] A3: Health confirms scored state for Week 0
-- [ ] B1: Week 0 results ingested
-- [ ] B2–B4: Preview prepare + publish verified
+- [x] B1: Week 0 results ingested
+- [x] B2–B4: Preview prepare + publish verified
 - [ ] C1: Production Week 1 publish (progressive)
 - [ ] C2: Vercel CFB_PUBLICATION_WEEKS=0,1 live
 - [ ] C3: Final freeze before Thursday kickoff

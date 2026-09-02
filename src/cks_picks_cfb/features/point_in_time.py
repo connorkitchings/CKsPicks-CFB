@@ -183,6 +183,69 @@ def build_temporal_matchup_inputs(
     if {"home_points", "away_points"}.issubset(result.columns):
         result["spread_target"] = result["home_points"] - result["away_points"]
         result["total_target"] = result["home_points"] + result["away_points"]
+
+    # Drop capture-level metadata and any object/string columns that are not
+    # part of the approved temporal-matchup metadata set. Boolean-like columns
+    # (missing indicators and neutral_site) are cast to nullable boolean so they
+    # pass the dynamic-feature schema check.
+    allowed_non_numeric = {
+        "season",
+        "game_id",
+        "week",
+        "start_date",
+        "kickoff_utc",
+        "home_team",
+        "away_team",
+        "team",
+        "opponent",
+        "regime",
+        "as_of",
+        "prediction_regime",
+        "feature_as_of",
+        "feature_provenance",
+        "home_line_scores",
+        "away_line_scores",
+        "v4_feature_track",
+        "v4_reference_sha",
+    }
+
+    def _to_bool(series: pd.Series, *, fill: bool) -> pd.Series:
+        mapped = series.map(
+            lambda value: (
+                {
+                    "true": True,
+                    "false": False,
+                    "1": True,
+                    "0": False,
+                    1: True,
+                    0: False,
+                }.get(value, value)
+                if pd.notna(value)
+                else fill
+            )
+        )
+        return mapped.astype(bool)
+
+    for column in list(result.columns):
+        if column.startswith("__"):
+            result = result.drop(columns=[column])
+            continue
+        if column in allowed_non_numeric:
+            continue
+        if (
+            pd.api.types.is_numeric_dtype(result[column])
+            or pd.api.types.is_bool_dtype(result[column])
+            or pd.api.types.is_datetime64_any_dtype(result[column])
+        ):
+            continue
+        if column.endswith("_missing"):
+            result[column] = _to_bool(result[column], fill=True)
+        elif column.endswith("_neutral_site"):
+            result[column] = _to_bool(result[column], fill=False)
+        else:
+            # Drop any remaining non-numeric/non-bool dynamic columns.
+            result = result.drop(columns=[column])
+
     return result
 
 
@@ -401,6 +464,7 @@ def build_team_side_gold(
                     "points",
                     "conference",
                     "classification",
+                    "line_scores",
                 }:
                     continue
                 else:

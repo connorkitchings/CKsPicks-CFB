@@ -146,10 +146,11 @@ def main() -> None:
         )
     result = team_side_to_wide(team_side)
     if baselines_ref is not None:
-        required_baseline_seasons = set(result["season"].astype(int)) - {2021}
+        baselines = read_dataset(storage, baselines_ref)
+        required_baseline_seasons = set(baselines["season"].astype(int)) - {2021}
         result = attach_baseline_predictions(
             result,
-            read_dataset(storage, baselines_ref),
+            baselines,
             required_seasons=required_baseline_seasons,
         )
     output_dataset = (
@@ -188,7 +189,7 @@ def main() -> None:
             **(
                 {
                     "baseline_complete": not result[
-                        result["season"].astype(int) != 2021
+                        result["season"].astype(int).isin(required_baseline_seasons)
                     ][["baseline_spread_prediction", "baseline_total_prediction"]]
                     .isna()
                     .any()
