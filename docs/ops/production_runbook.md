@@ -13,7 +13,7 @@
 | Component | Value |
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
-| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`; update `CFB_PUBLICATION_WEEKS` to comma-separated list (e.g. `0,1`) when each week is ready |
+| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`; `CFB_PUBLICATION_WEEKS=0,1,2` (2026-09-02, set via Vercel CLI). Weeks may be pre-authorized — the app shows only weeks with an activated run, so an early entry stays hidden until that week publishes |
 | Database | Neon **production branch** (separate from `preview-2026`); migrations 0002–0008 applied |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |

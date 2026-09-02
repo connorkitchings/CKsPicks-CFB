@@ -82,10 +82,12 @@ make publish-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
   PREPARED_GOLD_REF_URI=artifacts/preview/pipeline-runs/c9b80bf11d364c84978f2c4203dd1165/point_in_time_matchups_ref.json
 ```
 
-### C2. Update Vercel CFB_PUBLICATION_WEEKS to 0,1
+### C2. Update Vercel CFB_PUBLICATION_WEEKS ✅ Done 2026-09-02
 
-In Vercel dashboard environment variables. The publish-week script fires
-on-demand ISR revalidation automatically via CFB_REVALIDATION_URL.
+Set to `0,1,2` via the Vercel CLI (redeployed production). Week 2 is
+pre-authorized: the web app only shows weeks that have an activated run, so
+listing 2 early is safe — the homepage keeps showing Week 1 until a Week 2
+run is activated. `/api/health` now reports `weeks: [0,1,2]`.
 
 ### C3. Final production publish + freeze (by Thursday kickoff)
 
@@ -114,9 +116,19 @@ Expect: state frozen, Week 1 coverage, predictions mode active.
 - [x] B1: Week 0 results ingested
 - [x] B2–B4: Preview prepare + publish verified
 - [x] C1: Production Week 1 publish (progressive) — initial run published
-- [ ] C2: Vercel CFB_PUBLICATION_WEEKS=0,1 live
+- [x] C2: Vercel CFB_PUBLICATION_WEEKS=0,1,2 live
 - [ ] C3: Final freeze before Thursday kickoff
 - [ ] C4: Health confirms Week 1 frozen + predictions active
+
+## Week 2 cadence (pre-authorized via CFB_PUBLICATION_WEEKS=0,1,2)
+
+`prepare-week WEEK=2` cannot run until Week 1 games are final — it ingests
+completed results for weeks 0..1 and the Gold it builds must include them.
+
+1. Tuesday Sept 8 (after finals): `make close-week YEAR=2026 WEEK=1 AS_OF=... ENV=production`
+2. `zsh scripts/ops/with_preview_env.sh make prepare-week YEAR=2026 WEEK=2 AS_OF=... ENV=preview`
+3. Readiness → progressive production publish (no Vercel env change needed) →
+   freeze before the next kickoff.
 
 ## Risks and Notes
 
