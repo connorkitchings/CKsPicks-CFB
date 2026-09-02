@@ -15,6 +15,8 @@ const base = {
   updatedAt: startDate,
   homePoints: 24,
   awayPoints: 21,
+  homeRecord: null,
+  awayRecord: "1-0",
 };
 
 export function uiFixture(

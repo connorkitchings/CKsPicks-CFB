@@ -96,18 +96,6 @@ function totalBetLabel(
   return `${lean === "over" ? "↑ Over" : "↓ Under"} ${totalLine.toFixed(1)}`;
 }
 
-const REGIME_LABEL = {
-  preseason: "Preseason",
-  one_game: "1 game",
-  two_games: "2 games",
-  three_games: "3 games",
-  game_1: "Game 1",
-  game_2: "Game 2",
-  game_3: "Game 3",
-  game_4: "Game 4",
-  established: "Established",
-} as const;
-
 const colHeaderCls =
   "py-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint";
 const rowHeaderCls = "py-1.5 pr-2 text-left font-medium text-ink-muted";
@@ -152,7 +140,6 @@ export function GameRow({ game }: { game: Game }) {
   if (game.publicationMode === "market") {
     return <MarketGameRow game={game} />;
   }
-  const regimeLabel = game.regime ? REGIME_LABEL[game.regime] : null;
   const hasAnyLine =
     game.homeTeamSpreadLine !== null || game.totalLine !== null;
   const marketSpread = marketSpreadView(
@@ -175,36 +162,31 @@ export function GameRow({ game }: { game: Game }) {
 
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      {/* Meta row: kickoff + context markers */}
+      {/* Meta row: kickoff + high-confidence marker */}
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
         <span>{formatKickoff(game.startDate)}</span>
-        <div className="flex items-center gap-2">
-          {regimeLabel && (
-            <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
-              {regimeLabel}
-            </span>
-          )}
-          {game.highConfidence && (
-            <span
-              className="text-sm leading-none text-accent"
-              title="High confidence lean"
-              aria-label="High confidence lean"
-            >
-              ★
-            </span>
-          )}
-        </div>
+        {game.highConfidence && (
+          <span
+            className="text-sm leading-none text-accent"
+            title="High confidence lean"
+            aria-label="High confidence lean"
+          >
+            ★
+          </span>
+        )}
       </div>
 
       {/* Box score: logos, teams, finals */}
       <div className="space-y-1.5">
         <TeamLine
           name={game.awayTeam}
+          record={game.awayRecord}
           score={game.awayPoints}
           highlighted={game.spreadLean === "away"}
         />
         <TeamLine
           name={game.homeTeam}
+          record={game.homeRecord}
           home
           score={game.homePoints}
           highlighted={game.spreadLean === "home"}
@@ -316,11 +298,13 @@ function MarketGameRow({
       <div className="space-y-1.5">
         <TeamLine
           name={game.awayTeam}
+          record={game.awayRecord}
           score={game.awayPoints}
           highlighted={false}
         />
         <TeamLine
           name={game.homeTeam}
+          record={game.homeRecord}
           home
           score={game.homePoints}
           highlighted={false}
@@ -371,11 +355,14 @@ function MarketGameRow({
 
 function TeamLine({
   name,
+  record = null,
   home = false,
   score,
   highlighted,
 }: {
   name: string;
+  /** Season W-L as of kickoff (e.g. "1-0"); null hides the marker. */
+  record?: string | null;
   home?: boolean;
   score: number | null;
   highlighted: boolean;
@@ -398,6 +385,9 @@ function TeamLine({
       >
         {name}
       </span>
+      {record && (
+        <span className="text-xs tabular-nums text-ink-faint">({record})</span>
+      )}
       {home && (
         <span className="text-[10px] uppercase tracking-wide text-ink-faint">
           home

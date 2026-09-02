@@ -14,6 +14,9 @@ type BaseGame = {
   updatedAt: Date;
   homePoints: number | null;
   awayPoints: number | null;
+  /** Season W-L as of this game's kickoff (null before the first game). */
+  homeRecord: string | null;
+  awayRecord: string | null;
 };
 
 /** Public-safe schedule and market projection with no model-only fields. */
@@ -133,6 +136,90 @@ export async function getAvailableWeeks(season: number): Promise<number[]> {
   return [...new Set(weeks)].sort((a, b) => a - b);
 }
 
+type CompletedGameRow = {
+  startDate: Date;
+  homeTeam: string;
+  awayTeam: string;
+  homePoints: number;
+  awayPoints: number;
+};
+
+/**
+ * Completed season games in kickoff order. Card views advance through this
+ * timeline to snapshot each team's record as of a game's kickoff, so
+ * historical week pages never leak later results.
+ */
+const getSeasonCompletedGames = cache(async (season: number): Promise<CompletedGameRow[]> => {
+  const rows = await db
+    .select({
+      startDate: schema.games.startDate,
+      homeTeam: schema.games.homeTeam,
+      awayTeam: schema.games.awayTeam,
+      homePoints: schema.gameResults.homePoints,
+      awayPoints: schema.gameResults.awayPoints,
+    })
+    .from(schema.games)
+    .innerJoin(
+      schema.gameResults,
+      eq(schema.games.gameId, schema.gameResults.gameId),
+    )
+    .where(
+      and(
+        eq(schema.games.season, season),
+        eq(schema.gameResults.completionState, "completed"),
+      ),
+    )
+    .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
+  return rows.filter(
+    (row): row is CompletedGameRow =>
+      row.homePoints !== null && row.awayPoints !== null,
+  );
+});
+
+function recordLabel(record: { wins: number; losses: number } | undefined): string | null {
+  if (!record || record.wins + record.losses === 0) return null;
+  return `${record.wins}-${record.losses}`;
+}
+
+/**
+ * Attach point-in-time season records to a week's games (either publication
+ * mode). Precondition: `games` is in kickoff order (all query paths order by
+ * startDate). Strictly-earlier completions count, so a game's own final never
+ * appears in its own record.
+ */
+function withRecords<
+  T extends { startDate: Date; homeTeam: string; awayTeam: string },
+>(games: T[], completed: CompletedGameRow[]): (T & {
+  homeRecord: string | null;
+  awayRecord: string | null;
+})[] {
+  const records = new Map<string, { wins: number; losses: number }>();
+  const bump = (team: string) => {
+    const entry = records.get(team) ?? { wins: 0, losses: 0 };
+    records.set(team, entry);
+    return entry;
+  };
+  let cursor = 0;
+  return games.map((game) => {
+    const kickoff = game.startDate.getTime();
+    while (cursor < completed.length && completed[cursor].startDate.getTime() < kickoff) {
+      const { homeTeam, awayTeam, homePoints, awayPoints } = completed[cursor];
+      const winner = homePoints > awayPoints ? homeTeam : awayPoints > homePoints ? awayTeam : null;
+      const loser = homePoints > awayPoints ? awayTeam : awayPoints > homePoints ? homeTeam : null;
+      if (winner && loser) {
+        bump(winner).wins += 1;
+        bump(loser).losses += 1;
+      }
+      cursor += 1;
+    }
+    return {
+      ...game,
+      homeRecord: recordLabel(records.get(game.homeTeam)),
+      awayRecord: recordLabel(records.get(game.awayTeam)),
+    };
+  });
+}
+
 /** Return all games (with optional results) for a given season/week, sorted by start time. */
 export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
   const run = await getRunForWeek(season, week);
@@ -188,11 +275,15 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
       .where(eq(schema.predictions.runId, run.runId))
       .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
-    return rows.map((row) => ({
-      ...row,
-      publicationMode: "predictions" as const,
-      runState: run.state,
-    })) as PredictionGame[];
+    const completed = await getSeasonCompletedGames(season);
+    return withRecords(
+      rows.map((row) => ({
+        ...row,
+        publicationMode: "predictions" as const,
+        runState: run.state,
+      })),
+      completed,
+    ) as PredictionGame[];
   }
 
   // Temporary compatibility path for rows published before run versioning.
@@ -236,17 +327,21 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       ),
     )
     .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
-  return rows.map((row) => ({
-    ...row,
-    publicationMode: "predictions" as const,
-    runId: null,
-    runState: "legacy" as const,
-    regime: null,
-    homeCompletedGames: 0,
-    awayCompletedGames: 0,
-    spreadModelVersion: null,
-    totalModelVersion: null,
-  })) as PredictionGame[];
+  const completed = await getSeasonCompletedGames(season);
+  return withRecords(
+    rows.map((row) => ({
+      ...row,
+      publicationMode: "predictions" as const,
+      runId: null,
+      runState: "legacy" as const,
+      regime: null,
+      homeCompletedGames: 0,
+      awayCompletedGames: 0,
+      spreadModelVersion: null,
+      totalModelVersion: null,
+    })),
+    completed,
+  ) as PredictionGame[];
 }
 
 /** Schedule + current published market lines without selecting model output. */
@@ -296,7 +391,11 @@ export async function getMarketGamesForWeek(
     .where(and(eq(schema.games.season, season), eq(schema.games.week, week)))
     .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
 
-  return rows.map((row) => ({ ...row, publicationMode: "market" as const }));
+  const completed = await getSeasonCompletedGames(season);
+  return withRecords(
+    rows.map((row) => ({ ...row, publicationMode: "market" as const })),
+    completed,
+  );
 }
 
 /** YTD system record for a season (win/loss/push for spreads and totals). */
