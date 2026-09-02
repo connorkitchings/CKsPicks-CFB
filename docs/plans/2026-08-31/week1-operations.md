@@ -1,12 +1,12 @@
 # Week 1 Operations
 
-- **Status:** In Progress
+- **Status:** In Progress — Stage A complete; Stage B in progress
 - **Created:** 2026-08-31
+- **Updated:** 2026-09-02
 - **Planner:** Fast-path (documentation + established operational commands)
-- **Approval source:** User approved implementation plan on 2026-08-31.
+- **Approval source:** User approved implementation plan on 2026-08-31; approved execution of validation, commit, and Preview Stage B on 2026-09-02.
 - **Commit policy:** Propose commit after docs and session log are complete;
-  user executes git operations. Operational commands (freeze, close, publish)
-  require user execution from terminal.
+  operational commands run by assistant in preview, user executes production commands.
 
 ## Goal
 
@@ -28,27 +28,15 @@ before Thursday ~September 4 kickoff.
 
 `freeze-week` was run on 2026-08-31. Run `2026w0-55de0317120d` is now frozen.
 
-### A2. Close Week 0 (scoring) — **Wait until Tuesday Sept 2**
+### A2. Close Week 0 (scoring) ✅ Done 2026-09-02
 
-CFBD takes ~24–48 h to finalize all game scores. Running close-week on
-Sunday/Monday produces `away_points`/`home_points` missing errors because
-not all scores are recorded yet. Run on Tuesday Sept 2:
+`close-week` ran successfully on 2026-09-02. The Week 0 run is now `scored`,
+`prediction_grades` were written, and `system_stats` were derived.
 
-```bash
-make close-week YEAR=2026 WEEK=0 \
-  AS_OF=2026-09-02T14:00:00Z ENV=production
-```
+### A3. Verify close (Tuesday) ✅ Done 2026-09-02
 
-This writes `prediction_grades` and derives `system_stats`. If any games
-were canceled, add `CANCELLATION_WAIVERS="game_id:reason"`.
-
-### A3. Verify close (Tuesday)
-
-```bash
-curl https://c-ks-picks-cfb.vercel.app/api/health
-```
-
-Health should report `state: scored` for the Week 0 run.
+Production `/api/health` reports `state: scored` for run `2026w0-55de0317120d`.
+All 8 Week 0 games have completed results in `game_results`.
 
 ## Stage B — Prepare Week 1
 
@@ -121,9 +109,9 @@ Expect: state frozen, Week 1 coverage, predictions mode active.
 
 ## Definition of Done
 
-- [ ] A1: Week 0 frozen
-- [ ] A2: Week 0 closed/scored
-- [ ] A3: Health confirms scored state for Week 0
+- [x] A1: Week 0 frozen
+- [x] A2: Week 0 closed/scored
+- [x] A3: Health confirms scored state for Week 0
 - [ ] B1: Week 0 results ingested
 - [ ] B2–B4: Preview prepare + publish verified
 - [ ] C1: Production Week 1 publish (progressive)

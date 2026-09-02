@@ -365,9 +365,13 @@ def main():
                 f"Partial scored run requires reconciliation: {run_id}"
             )
         if artifact_exists:
+            existing_manifest = read_json_artifact(manifest_path, storage)
             if (
                 storage.read_bytes(scored_path) != scored_bytes
-                or read_json_artifact(manifest_path, storage) != manifest_payload
+                or existing_manifest.get("artifact_sha256")
+                != manifest_payload["artifact_sha256"]
+                or existing_manifest.get("cancellation_waivers")
+                != manifest_payload["cancellation_waivers"]
             ):
                 raise FileExistsError(f"Immutable scored run collision: {run_id}")
         else:

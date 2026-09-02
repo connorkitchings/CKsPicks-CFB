@@ -483,7 +483,7 @@ def main() -> None:
             n = upsert_results(df, conn_url) if not args.refresh_stats_only else 0
             source_name = Path(source_path).name
             print(f"  week {week}: {n} results upserted from {source_name}")
-    elif args.week:
+    elif args.week is not None:
         csv_path = local_scored_path(args.year, args.week)
         scored_manifest = None
         if use_artifact and not args.artifact_path:

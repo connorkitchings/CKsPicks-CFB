@@ -31,6 +31,18 @@ from cks_picks_cfb.data.storage import StorageBackend
 def _rename_common(frame: pd.DataFrame) -> pd.DataFrame:
     result = frame.copy()
     renames = {}
+    for col in result.columns:
+        if not col.startswith("__"):
+            snake = re.sub(
+                r"([a-z0-9])([A-Z])",
+                r"\1_\2",
+                re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", col),
+            ).lower()
+            if snake != col and snake not in result.columns:
+                renames[col] = snake
+    if renames:
+        result = result.rename(columns=renames)
+    renames = {}
     if "id" in result and "game_id" not in result:
         renames["id"] = "game_id"
     if "year" in result and "season" not in result:
@@ -107,11 +119,68 @@ def normalize_games(
 def normalize_plays(
     records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
 ) -> pd.DataFrame:
-    frame = _rename_common(pd.DataFrame.from_records(records)).rename(
-        columns={"id": "play_id"}
-    )
-    if "play_id" not in frame and "id" in pd.DataFrame.from_records(records):
-        frame["play_id"] = pd.DataFrame.from_records(records)["id"]
+    rows: list[dict[str, Any]] = []
+    for source in records:
+        wrapper = dict(source)
+        raw = wrapper.get("provider_record", wrapper.get("raw_data", wrapper))
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                raw = ast.literal_eval(raw)
+        if isinstance(raw, Mapping):
+            row = {}
+            for k, v in raw.items():
+                snake = re.sub(
+                    r"([a-z0-9])([A-Z])",
+                    r"\1_\2",
+                    re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", k),
+                ).lower()
+                row[snake] = v
+            for k, v in wrapper.items():
+                if k not in ("provider_record", "raw_data"):
+                    snake = re.sub(
+                        r"([a-z0-9])([A-Z])",
+                        r"\1_\2",
+                        re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", k),
+                    ).lower()
+                    if snake not in row or row[snake] is None:
+                        row[snake] = v
+            if "canonical_week" in wrapper and wrapper["canonical_week"] is not None:
+                row["week"] = wrapper["canonical_week"]
+            if "clock" in row:
+                clock = row.pop("clock")
+                if isinstance(clock, Mapping):
+                    row.setdefault("clock_minutes", clock.get("minutes"))
+                    row.setdefault("clock_seconds", clock.get("seconds"))
+            if "id" in row and "play_id" not in row:
+                row["play_id"] = row.pop("id")
+            rows.append(row)
+        else:
+            rows.append(wrapper)
+
+    frame = _rename_common(pd.DataFrame.from_records(rows))
+    if "play_id" not in frame and "id" in frame:
+        frame["play_id"] = frame.pop("id")
+
+    if games is not None and "game_id" in frame:
+        if "season" not in frame or frame["season"].isna().any():
+            game_season_map = dict(zip(games["game_id"], games["season"]))
+            if "season" not in frame:
+                frame["season"] = frame["game_id"].map(game_season_map)
+            else:
+                frame["season"] = frame["season"].fillna(
+                    frame["game_id"].map(game_season_map)
+                )
+        if "week" not in frame or frame["week"].isna().any():
+            game_week_map = dict(zip(games["game_id"], games["week"]))
+            if "week" not in frame:
+                frame["week"] = frame["game_id"].map(game_week_map)
+            else:
+                frame["week"] = frame["week"].fillna(
+                    frame["game_id"].map(game_week_map)
+                )
+
     required = SILVER_CONTRACTS["plays"].required_columns
     missing = sorted(required - set(frame.columns))
     if missing:
@@ -119,6 +188,8 @@ def normalize_plays(
     if frame["week"].isna().any():
         raise SilverValidationError("plays contains an unresolved week")
     frame["week"] = pd.to_numeric(frame["week"], errors="raise").astype(int)
+    if "season" in frame:
+        frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
     if frame.duplicated(["game_id", "play_id"]).any():
         raise SilverValidationError("plays contains duplicate game_id/play_id keys")
     if games is not None:
@@ -424,18 +495,26 @@ def normalize_venues(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame.from_records(records).rename(columns={"id": "venue_id"})
 
 
-def normalize_team_game_stats(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
+def normalize_team_game_stats(
+    records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
+) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     for source in records:
         wrapper = dict(source)
         raw = wrapper.get("provider_record", wrapper.get("raw_data", wrapper))
         if isinstance(raw, str):
-            raw = json.loads(raw)
+            try:
+                raw = json.loads(raw)
+            except Exception:
+                raw = ast.literal_eval(raw)
         if not isinstance(raw, Mapping):
             raise SilverValidationError("team_game_stats record is not an object")
         game_id = raw.get("id", raw.get("game_id", wrapper.get("game_id")))
         season = wrapper.get("season", wrapper.get("year", raw.get("season")))
-        week = wrapper.get("request_week", wrapper.get("week", raw.get("week")))
+        week = wrapper.get(
+            "canonical_week",
+            wrapper.get("request_week", wrapper.get("week", raw.get("week"))),
+        )
         teams = raw.get("teams")
         if not isinstance(teams, list) or len(teams) != 2:
             raise SilverValidationError(
@@ -465,6 +544,23 @@ def normalize_team_game_stats(records: Sequence[Mapping[str, Any]]) -> pd.DataFr
                 row[slug] = stat.get("stat")
             rows.append(row)
     frame = pd.DataFrame.from_records(rows)
+    if games is not None and "game_id" in frame:
+        if "season" not in frame or frame["season"].isna().any():
+            game_season_map = dict(zip(games["game_id"], games["season"]))
+            if "season" not in frame:
+                frame["season"] = frame["game_id"].map(game_season_map)
+            else:
+                frame["season"] = frame["season"].fillna(
+                    frame["game_id"].map(game_season_map)
+                )
+        if "week" not in frame or frame["week"].isna().any():
+            game_week_map = dict(zip(games["game_id"], games["week"]))
+            if "week" not in frame:
+                frame["week"] = frame["game_id"].map(game_week_map)
+            else:
+                frame["week"] = frame["week"].fillna(
+                    frame["game_id"].map(game_week_map)
+                )
     if frame.duplicated(["season", "game_id", "team"]).any():
         raise SilverValidationError("team_game_stats contains duplicate team/game rows")
     return frame.sort_values(["season", "week", "game_id", "team"]).reset_index(

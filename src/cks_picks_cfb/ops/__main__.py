@@ -259,9 +259,7 @@ def _successor_r1_identity() -> dict[str, str]:
     play_policy = load_history_play_capture_policy()
     source_policy = load_history_source_capture_policy()
     config_shas = {
-        "season_lineage_sha256": sha(
-            "conf/ratings/successor_v2_season_lineage.yaml"
-        ),
+        "season_lineage_sha256": sha("conf/ratings/successor_v2_season_lineage.yaml"),
         "play_capture_policy_sha256": play_policy.sha256,
         "source_capture_policy_sha256": source_policy.sha256,
         "measurement_config_sha256": sha("conf/ratings/measurement_successor_v2.yaml"),
@@ -327,9 +325,18 @@ def _verify_successor_r1_committed_code() -> str:
             check=False,
         )
         if tracked.returncode:
-            raise RuntimeError(f"Successor R1 implementation path is not committed: {path}")
+            raise RuntimeError(
+                f"Successor R1 implementation path is not committed: {path}"
+            )
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all", "--", *SUCCESSOR_R1_COMMIT_PATHS],
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            *SUCCESSOR_R1_COMMIT_PATHS,
+        ],
         capture_output=True,
         text=True,
         check=False,
@@ -357,7 +364,9 @@ def _successor_preview_runtime_step(identity: Mapping[str, Any]) -> PipelineStep
         try:
             get_storage(environment="preview")
         except (RuntimeError, ValueError) as exc:
-            raise RuntimeError(f"Successor R1 Preview R2 isolation failed: {exc}") from exc
+            raise RuntimeError(
+                f"Successor R1 Preview R2 isolation failed: {exc}"
+            ) from exc
         return (
             {
                 "environment": "preview",
@@ -477,10 +486,14 @@ def _successor_source_set_step(
                     f"{season}/{entity}.json"
                 )
                 if not storage.exists(entity_uri):
-                    raise RuntimeError(f"Missing complete R1 capture manifest: {entity_uri}")
+                    raise RuntimeError(
+                        f"Missing complete R1 capture manifest: {entity_uri}"
+                    )
                 raw = json.loads(storage.read_bytes(entity_uri).decode())
                 expected_version = (
-                    "play-capture-set-v2" if entity == "plays" else "source-capture-entity-set-v2"
+                    "play-capture-set-v2"
+                    if entity == "plays"
+                    else "source-capture-entity-set-v2"
                 )
                 if (
                     raw.get("contract_version") != expected_version
@@ -488,7 +501,9 @@ def _successor_source_set_step(
                     or raw.get("identity") != dict(identity)
                     or raw.get("season") != season
                 ):
-                    raise RuntimeError(f"Invalid complete R1 capture manifest: {entity_uri}")
+                    raise RuntimeError(
+                        f"Invalid complete R1 capture manifest: {entity_uri}"
+                    )
                 entries.append(
                     {
                         "season": season,
@@ -516,10 +531,17 @@ def _successor_source_set_step(
         encoded = json.dumps(payload, indent=2, sort_keys=True).encode()
         if storage.exists(manifest_uri):
             if storage.read_bytes(manifest_uri) != encoded:
-                raise FileExistsError(f"Immutable R1 source manifest collision: {manifest_uri}")
+                raise FileExistsError(
+                    f"Immutable R1 source manifest collision: {manifest_uri}"
+                )
         else:
             storage.write_bytes(encoded, manifest_uri)
-        return ({"manifest_uri": manifest_uri, "manifest_sha256": payload["manifest_sha256"]},)
+        return (
+            {
+                "manifest_uri": manifest_uri,
+                "manifest_sha256": payload["manifest_sha256"],
+            },
+        )
 
     def resume_validator(
         _: OperationContext, outputs: Sequence[Mapping[str, Any]]
@@ -564,7 +586,9 @@ def _reconcile_abandoned_history_play_capture_action(
         with psycopg.connect(conn_url) as conn:
             for ingestion_run_id in ingestion_run_ids:
                 if ":successor_history_2015_plays" not in ingestion_run_id:
-                    raise ValueError("only abandoned 2015 successor play runs may reconcile")
+                    raise ValueError(
+                        "only abandoned 2015 successor play runs may reconcile"
+                    )
                 outer_run_id = ingestion_run_id.rsplit(":", 1)[0]
                 row = conn.execute(
                     "SELECT i.state, p.state, s.state FROM catalog.ingestion_runs i "
@@ -575,12 +599,20 @@ def _reconcile_abandoned_history_play_capture_action(
                     (outer_run_id, ingestion_run_id),
                 ).fetchone()
                 if not row:
-                    raise LookupError(f"No failed outer evidence for {ingestion_run_id}")
-                if tuple(str(value) for value in row) != ("running", "failed", "failed"):
+                    raise LookupError(
+                        f"No failed outer evidence for {ingestion_run_id}"
+                    )
+                if tuple(str(value) for value in row) != (
+                    "running",
+                    "failed",
+                    "failed",
+                ):
                     raise ValueError(
                         "reconciliation requires running inner capture and failed outer step"
                     )
-                results.append({"ingestion_run_id": ingestion_run_id, "state": "failed"})
+                results.append(
+                    {"ingestion_run_id": ingestion_run_id, "state": "failed"}
+                )
         for result in results:
             finish_ingestion_run(
                 conn_url,
@@ -1230,7 +1262,9 @@ def build_steps(
                 ["--comparison-ref-set-uri", options.comparison_ref_set_uri]
             )
         steps.append(
-            subprocess_step("freeze_successor_legacy_comparison_evidence", comparison_argv)
+            subprocess_step(
+                "freeze_successor_legacy_comparison_evidence", comparison_argv
+            )
         )
         if not options.skip_capture:
             for season in policy.historical_development_seasons:
@@ -1651,7 +1685,7 @@ def build_steps(
                 environment,
             )
             for historic_year in range(2021, 2026):
-                argv.extend(["--season", historic_year])
+                argv.extend(["--season", str(historic_year)])
             steps.append(subprocess_step(name, argv))
         steps.extend(
             [
