@@ -1,6 +1,6 @@
 # Week 1 Operations
 
-- **Status:** In Progress — Stage A complete; Stage B complete; Stage C pending
+- **Status:** In Progress — Stage A complete; Stage B complete; Stage C initial publish done; freeze + Vercel update pending
 - **Created:** 2026-08-31
 - **Updated:** 2026-09-02
 - **Planner:** Fast-path (documentation + established operational commands)
@@ -72,11 +72,14 @@ zsh scripts/ops/with_preview_env.sh make publish-week \
 
 ## Stage C — Week 1 Production
 
-### C1. Production publish (repeat as lines arrive Mon–Wed)
+### C1. Production publish (repeat as lines arrive Mon–Wed) ✅ Initial publish done 2026-09-02
+
+Initial production run `2026w1-b2c739321e5d` is `published` with 43/43/43 coverage.
 
 ```bash
 make publish-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
-  ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml
+  ENV=production CONFIG=conf/weekly_bets/v4_2026.yaml \
+  PREPARED_GOLD_REF_URI=artifacts/preview/pipeline-runs/c9b80bf11d364c84978f2c4203dd1165/point_in_time_matchups_ref.json
 ```
 
 ### C2. Update Vercel CFB_PUBLICATION_WEEKS to 0,1
@@ -110,7 +113,7 @@ Expect: state frozen, Week 1 coverage, predictions mode active.
 - [x] A3: Health confirms scored state for Week 0
 - [x] B1: Week 0 results ingested
 - [x] B2–B4: Preview prepare + publish verified
-- [ ] C1: Production Week 1 publish (progressive)
+- [x] C1: Production Week 1 publish (progressive) — initial run published
 - [ ] C2: Vercel CFB_PUBLICATION_WEEKS=0,1 live
 - [ ] C3: Final freeze before Thursday kickoff
 - [ ] C4: Health confirms Week 1 frozen + predictions active
