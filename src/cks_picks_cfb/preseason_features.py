@@ -258,6 +258,20 @@ def _numeric_column(df: pd.DataFrame, column: str) -> pd.Series:
     return pd.to_numeric(df[column], errors="coerce")
 
 
+def _numeric_alias(df: pd.DataFrame, *columns: str) -> pd.Series:
+    """Read a numeric provider field while accepting documented wire aliases.
+
+    CFBD's generated Python client serializes returning-production properties
+    in camelCase; older immutable snapshots and fixtures use snake_case.  Keep
+    the provider's raw representation intact and normalize only at the
+    feature boundary.
+    """
+    for column in columns:
+        if column in df:
+            return _numeric_column(df, column)
+    return pd.Series(np.nan, index=df.index, dtype=float)
+
+
 def _snapshot_source(
     storage: StorageBackend, year: int, as_of: str, source: str
 ) -> pd.DataFrame:
@@ -296,16 +310,16 @@ def _returning_production(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty or "team" not in df:
         return pd.DataFrame(columns=["team", *targets])
     result = pd.DataFrame({"team": df["team"].map(canonical_team)})
-    for target, source in {
-        "return_total_ppa": "total_ppa",
-        "return_passing_ppa": "total_passing_ppa",
-        "return_rushing_ppa": "total_rushing_ppa",
-        "return_receiving_ppa": "total_receiving_ppa",
-        "return_percent_ppa": "percent_ppa",
-        "return_passing_usage": "passing_usage",
-        "return_rushing_usage": "rushing_usage",
+    for target, sources in {
+        "return_total_ppa": ("total_ppa", "totalPPA"),
+        "return_passing_ppa": ("total_passing_ppa", "totalPassingPPA"),
+        "return_rushing_ppa": ("total_rushing_ppa", "totalRushingPPA"),
+        "return_receiving_ppa": ("total_receiving_ppa", "totalReceivingPPA"),
+        "return_percent_ppa": ("percent_ppa", "percentPPA"),
+        "return_passing_usage": ("passing_usage", "passingUsage"),
+        "return_rushing_usage": ("rushing_usage", "rushingUsage"),
     }.items():
-        result[target] = _numeric_column(df, source)
+        result[target] = _numeric_alias(df, *sources)
     return result.drop_duplicates("team")
 
 

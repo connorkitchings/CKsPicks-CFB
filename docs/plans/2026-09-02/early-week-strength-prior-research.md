@@ -124,4 +124,23 @@ Run two independent experiments from the admitted context. Do not claim a shared
 
 ## Amendments
 
-No amendments yet. Any new source family, metric, gate, direct-route candidate, or activation path requires a new amendment before outcomes are inspected.
+### 2026-09-03 — Reconstructed 2026 diagnostic authorization
+
+The user authorized one immutable, Preview-only Alabama–East Carolina scorer
+after historical selection. It may train the selection-fixed recipe only to
+emit a research diagnostic; it cannot create a bundle, affect locked testing,
+read 2026 outcomes or market fields, enter readiness, or alter publication.
+
+### 2026-09-03 — Context-materialization diagnosis and repair
+
+The first corrected immutable admission report is
+`artifacts/research/rating-successor-v2/early-week-context-20260903-0455595-r2/admission-v2-report.json`.
+It admits reconstructed `recruiting` and `coaching`, rejects transfers and
+talent for their declared evidence gaps, and rejects returning production at
+0% coverage in every required season. This was diagnosed as a local adapter
+defect, not a provider coverage gap: CFBD's generated client serializes the
+returning fields in camelCase (`totalPPA`, `percentPPA`, and `*Usage`) while
+the adapter accepted only snake_case. The repaired adapter has read-only
+coverage of 91.9%–93.8% in every required season. The failed immutable report
+is preserved; after the repair is committed, rematerialize under a new prefix
+and require the planned three-family admission before direct or R2 execution.

@@ -21,6 +21,7 @@ from cks_picks_cfb.preseason import (
     v4_snapshot_is_usable,
     write_snapshot_source,
 )
+from cks_picks_cfb.preseason_features import _returning_production
 
 AS_OF = "2024-08-15"
 
@@ -201,6 +202,38 @@ def test_snapshot_ingester_writes_each_requested_source(
     monkeypatch.setattr(ingester, "fetch", lambda source: _snapshot_records(source))
     counts = ingester.run(("talent", "transfers"))
     assert counts == {"talent": 2, "transfers": 2}
+
+
+def test_returning_production_normalizes_cfbd_generated_client_field_names():
+    result = _returning_production(
+        pd.DataFrame(
+            [
+                {
+                    "team": "Alabama",
+                    "totalPPA": 201.2,
+                    "totalPassingPPA": 10.7,
+                    "totalRushingPPA": 87.8,
+                    "totalReceivingPPA": 102.8,
+                    "percentPPA": 0.615,
+                    "passingUsage": 0.162,
+                    "rushingUsage": 0.711,
+                }
+            ]
+        )
+    )
+
+    assert result.to_dict("records") == [
+        {
+            "team": "Alabama",
+            "return_total_ppa": 201.2,
+            "return_passing_ppa": 10.7,
+            "return_rushing_ppa": 87.8,
+            "return_receiving_ppa": 102.8,
+            "return_percent_ppa": 0.615,
+            "return_passing_usage": 0.162,
+            "return_rushing_usage": 0.711,
+        }
+    ]
 
 
 def test_build_matchups_uses_snapshot_data_and_excludes_lines(storage: LocalStorage):

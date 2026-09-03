@@ -35,6 +35,18 @@ def _family_refs(values: list[str]) -> dict[str, str]:
     return result
 
 
+def _family_reasons(values: list[str]) -> dict[str, str]:
+    result: dict[str, str] = {}
+    for value in values:
+        family, separator, reason = value.partition("=")
+        if not separator or not family or not reason.strip() or family in result:
+            raise ValueError(
+                "--family-unavailable must be unique FAMILY=NONEMPTY_REASON"
+            )
+        result[family] = reason.strip()
+    return result
+
+
 def _write_immutable(storage, uri: str, payload: bytes) -> None:
     if storage.exists(uri):
         if storage.read_bytes(uri) != payload:
@@ -48,6 +60,7 @@ def main() -> None:
     parser.add_argument("--environment", choices=("preview",), required=True)
     parser.add_argument("--team-universe-ref-uri", required=True)
     parser.add_argument("--family-ref", action="append", default=[])
+    parser.add_argument("--family-unavailable", action="append", default=[])
     parser.add_argument("--context-uri", required=True)
     parser.add_argument("--context-ref-uri", required=True)
     parser.add_argument("--report-uri", required=True)
@@ -55,6 +68,9 @@ def main() -> None:
     args = parser.parse_args()
     storage = get_storage(environment="preview")
     family_uris = _family_refs(args.family_ref)
+    unavailable_reasons = _family_reasons(args.family_unavailable)
+    if set(family_uris) & set(unavailable_reasons):
+        raise ValueError("A context family cannot be both supplied and unavailable")
     universe_ref = _ref(storage, args.team_universe_ref_uri)
     family_refs = {family: _ref(storage, uri) for family, uri in family_uris.items()}
     try:
@@ -75,6 +91,7 @@ def main() -> None:
             ),
             source_refs={family: asdict(ref) for family, ref in family_refs.items()},
             minimum_coverage=args.minimum_coverage,
+            unavailable_reasons=unavailable_reasons,
         )
     except ContextAdmissionError as exc:
         rejected = {

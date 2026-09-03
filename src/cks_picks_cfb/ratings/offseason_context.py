@@ -17,7 +17,7 @@ FAMILY_FEATURES: Mapping[str, tuple[str, ...]] = {
     "coaching": ("coach_tenure", "coach_new"),
     "talent": ("talent",),
 }
-FORBIDDEN_TOKENS = ("spread", "total", "line", "odds", "market", "bookmaker")
+FORBIDDEN_TOKENS = ("spread", "line", "odds", "market", "bookmaker", "over_under")
 REPORT_VERSION = "offseason_context_admission_v1"
 
 
@@ -57,9 +57,12 @@ def _source(family: str, frame: pd.DataFrame, seasons: set[int]) -> pd.DataFrame
     result["effective_at"] = _timestamps(result["effective_at"], f"{family}.effective_at")
     result["retrieved_at"] = _timestamps(result["retrieved_at"], f"{family}.retrieved_at")
     numeric = result.loc[:, list(FAMILY_FEATURES[family])].apply(pd.to_numeric, errors="coerce")
-    if numeric.isna().any().any() or not np.isfinite(numeric.to_numpy(dtype=float)).all():
-        raise ContextAdmissionError(f"{family} contains missing or non-finite values")
-    result.loc[:, list(FAMILY_FEATURES[family])] = numeric
+    finite_rows = np.isfinite(numeric.to_numpy(dtype=float)).all(axis=1)
+    # Source feeds may include teams outside the target FBS universe or partial
+    # rows.  They are not imputed; coverage admission decides whether the
+    # remaining complete team-season evidence meets the family threshold.
+    result = result.loc[finite_rows].copy()
+    result.loc[:, list(FAMILY_FEATURES[family])] = numeric.loc[finite_rows]
     return result
 
 
@@ -71,6 +74,7 @@ def admit_offseason_context(
     authentic_season: int = 2026,
     minimum_coverage: float = 0.90,
     source_refs: Mapping[str, Mapping[str, object]] | None = None,
+    unavailable_reasons: Mapping[str, str] | None = None,
 ) -> ContextAdmission:
     """Classify each complete family as strict, reconstructed, or rejected."""
     permitted = {int(year) for year in permitted_seasons}
@@ -90,11 +94,26 @@ def admit_offseason_context(
     if universe.empty:
         raise ContextAdmissionError("Team universe has no permitted rows")
 
+    unavailable = {str(name): str(reason) for name, reason in (unavailable_reasons or {}).items()}
+    unknown = sorted(set(unavailable) - set(FAMILY_FEATURES))
+    if unknown:
+        raise ContextAdmissionError(f"Unknown unavailable context families: {unknown}")
+    duplicates = sorted(set(unavailable) & set(sources))
+    if duplicates:
+        raise ContextAdmissionError(
+            f"Context families cannot be both supplied and unavailable: {duplicates}"
+        )
+    if any(not reason.strip() for reason in unavailable.values()):
+        raise ContextAdmissionError("Unavailable context families require a reason")
+
     admitted: list[pd.DataFrame] = []
     reports: dict[str, dict[str, object]] = {}
     for family in FAMILY_FEATURES:
         if family not in sources:
-            reports[family] = {"status": "rejected", "reason": "source not supplied"}
+            reports[family] = {
+                "status": "rejected",
+                "reason": unavailable.get(family, "source not supplied"),
+            }
             continue
         try:
             source = _source(family, sources[family], {*permitted, authentic_season})

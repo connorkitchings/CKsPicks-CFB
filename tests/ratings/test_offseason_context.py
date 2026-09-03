@@ -80,3 +80,47 @@ def test_report_validator_rejects_invalid_state():
             {"schema_version": REPORT_VERSION, "state": "rejected"},
             allow_reconstructed=True,
         )
+
+
+def test_admission_records_declared_unavailable_family_reason():
+    result = admit_offseason_context(
+        {"coaching": _coaches()},
+        _universe(),
+        permitted_seasons=(2025,),
+        unavailable_reasons={"talent": "no authentic 2026 capture"},
+    )
+
+    assert result.report["families"]["talent"] == {
+        "status": "rejected",
+        "reason": "no authentic 2026 capture",
+    }
+
+
+def test_admission_rejects_duplicate_source_and_unavailable_family():
+    with pytest.raises(ContextAdmissionError, match="both supplied and unavailable"):
+        admit_offseason_context(
+            {"coaching": _coaches()},
+            _universe(),
+            permitted_seasons=(2025,),
+            unavailable_reasons={"coaching": "not actually available"},
+        )
+
+
+def test_admission_allows_football_total_feature_name():
+    source = _coaches().rename(
+        columns={"coach_tenure": "return_total_ppa", "coach_new": "return_passing_ppa"}
+    )
+    for column in (
+        "return_rushing_ppa",
+        "return_receiving_ppa",
+        "return_percent_ppa",
+        "return_passing_usage",
+        "return_rushing_usage",
+    ):
+        source[column] = 1.0
+    result = admit_offseason_context(
+        {"returning_production": source},
+        _universe(),
+        permitted_seasons=(2025,),
+    )
+    assert result.report["families"]["returning_production"]["status"] == "strict"
