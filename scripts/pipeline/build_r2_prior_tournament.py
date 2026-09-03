@@ -43,6 +43,9 @@ from cks_picks_cfb.ratings.evaluation_head import (  # noqa: E402
     fold_metrics,
     predict_gaussian_head,
 )
+from cks_picks_cfb.ratings.offseason_context import (  # noqa: E402
+    require_admitted_context,
+)
 from cks_picks_cfb.ratings.priors import CANDIDATE_IDS, compute_prior  # noqa: E402
 from cks_picks_cfb.ratings.successor_tournaments import (  # noqa: E402
     TOURNAMENT_CONTRACT_VERSION,
@@ -121,6 +124,13 @@ def main(argv: list[str] | None = None) -> None:
         help="URI of the R1 certify report (tournaments_permitted check). "
         "If omitted, the foundation manifest is trusted.",
     )
+    parser.add_argument("--context-admission-report-uri")
+    parser.add_argument("--context-ref-uri")
+    parser.add_argument(
+        "--allow-reconstructed-context",
+        action="store_true",
+        help="Required to use reconstructed context in this Preview research run.",
+    )
     args = parser.parse_args(argv)
 
     if args.environment != "preview":
@@ -146,6 +156,26 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     storage = get_storage(environment="preview")
+    admitted_context = None
+    admitted_context_families: tuple[str, ...] = ()
+    context_report = None
+    if bool(args.context_admission_report_uri) != bool(args.context_ref_uri):
+        raise ValueError(
+            "--context-admission-report-uri and --context-ref-uri must be supplied together"
+        )
+    if args.context_admission_report_uri:
+        context_report = json.loads(
+            storage.read_bytes(args.context_admission_report_uri).decode()
+        )
+        admitted_context_families = require_admitted_context(
+            context_report,
+            allow_reconstructed=args.allow_reconstructed_context,
+        )
+        admitted_context = read_dataset(storage, _read_ref(storage, args.context_ref_uri))
+        if set(admitted_context.get("feature_track", pd.Series()).dropna()) != {
+            context_report["feature_track"]
+        }:
+            raise ValueError("Context DatasetRef track does not match admission report")
 
     # Load and validate R1 foundation manifest
     manifest_bytes = storage.read_bytes(args.r1_foundation_manifest_uri)
@@ -228,10 +258,13 @@ def main(argv: list[str] | None = None) -> None:
         except Exception as exc:
             print(f"  WARNING: could not load outcomes for {season}: {exc}", flush=True)
 
-    # Determine active candidates (Option A: skip context candidates)
-    active_candidates = [c for c in CANDIDATE_IDS if c not in _CONTEXT_REQUIRED]
+    active_candidates = [
+        candidate
+        for candidate in CANDIDATE_IDS
+        if candidate not in _CONTEXT_REQUIRED or admitted_context is not None
+    ]
     print(
-        f"Running R2 with {len(active_candidates)} non-context candidates: {active_candidates}",
+        f"Running R2 with {len(active_candidates)} candidates: {active_candidates}",
         flush=True,
     )
 
@@ -320,6 +353,7 @@ def main(argv: list[str] | None = None) -> None:
                     target_season=fold_season,
                     policy=policy,
                     training_terminal_states=terminal_by_season,
+                    admitted_context=admitted_context,
                 )
             except Exception as exc:
                 print(f"PRIOR FAILED: {exc}", flush=True)
@@ -453,6 +487,11 @@ def main(argv: list[str] | None = None) -> None:
     # Run the tournament selection
     selection_report_uri = f"{args.output_prefix}/selection-report.json"
     print("\nRunning tournament selection...", flush=True)
+    selection_context_args = (
+        ["--admitted-context-family", "continuity"]
+        if admitted_context is not None
+        else []
+    )
     result = subprocess.run(
         [
             sys.executable,
@@ -465,6 +504,7 @@ def main(argv: list[str] | None = None) -> None:
             metrics_ref_uri,
             "--output-uri",
             selection_report_uri,
+            *selection_context_args,
         ],
         cwd=REPO_ROOT,
         capture_output=True,
@@ -493,7 +533,12 @@ def main(argv: list[str] | None = None) -> None:
         },
         "tournament_contract_version": TOURNAMENT_CONTRACT_VERSION,
         "active_candidates": active_candidates,
-        "skipped_candidates": list(_CONTEXT_REQUIRED),
+        "skipped_candidates": [
+            candidate for candidate in _CONTEXT_REQUIRED if candidate not in active_candidates
+        ],
+        "context_admission_report_uri": args.context_admission_report_uri,
+        "context_ref_uri": args.context_ref_uri,
+        "admitted_context_families": list(admitted_context_families),
         "selection_folds": selection_folds,
         "fold_metrics_ref": asdict(metrics_ref),
         "fold_metrics_ref_uri": metrics_ref_uri,

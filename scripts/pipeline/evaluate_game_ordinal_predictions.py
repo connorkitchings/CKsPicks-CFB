@@ -23,6 +23,7 @@ from cks_picks_cfb.models.training_policy import (
     selection_years,
     validate_feature_lineage,
 )
+from cks_picks_cfb.ratings.offseason_context import require_admitted_context
 
 EARLY_REGIMES = ("game_1", "game_2", "game_3", "game_4")
 CANDIDATE_COLUMNS = {
@@ -130,6 +131,25 @@ def _write_immutable(storage, uri: str, payload: dict[str, Any]) -> None:
             raise FileExistsError(f"Immutable report exists: {uri}")
     else:
         storage.write_bytes(encoded, uri)
+
+
+def _strength_gap_diagnostics(frame: pd.DataFrame) -> dict[str, Any]:
+    """Summarize the extreme non-market pregame baseline segment."""
+    values = pd.to_numeric(frame["baseline_prediction"], errors="coerce").abs()
+    if values.notna().sum() < 10:
+        return {"available": False, "reason": "fewer than ten finite baseline rows"}
+    high = values >= values.quantile(0.90)
+    return {
+        "available": True,
+        "basis": "absolute_pregame_baseline_prediction_top_decile",
+        "high_gap_rows": int(high.sum()),
+        "high_gap_mae": float(
+            (frame.loc[high, "baseline_prediction"] - frame.loc[high, "actual"])
+            .abs()
+            .mean()
+        ),
+        "all_rows": int(len(frame)),
+    }
 
 
 def _selection(
@@ -259,6 +279,7 @@ def main() -> None:
     parser.add_argument("--selection-report-uri")
     parser.add_argument("--feature-ref-uri")
     parser.add_argument("--blend-weights-json", type=Path)
+    parser.add_argument("--context-admission-report-uri")
     parser.add_argument("--research-only", action="store_true")
     parser.add_argument(
         "--environment", choices=("preview", "production"), default="preview"
@@ -315,6 +336,12 @@ def main() -> None:
             }
             for target in ("spread", "total")
         }
+        context_admission = None
+        if args.context_admission_report_uri:
+            context_admission = _read(storage, args.context_admission_report_uri)
+            require_admitted_context(context_admission, allow_reconstructed=True)
+            if context_admission["feature_track"] != "reconstructed":
+                raise ValueError("Research-only candidates require reconstructed context")
         payload = {
             "schema_version": "game_ordinal_reconstructed_research_v1",
             "stage": "research",
@@ -322,6 +349,8 @@ def main() -> None:
             "activation_eligible": False,
             "selection_basis": "research_only",
             "feature_ref_uri": args.feature_ref_uri,
+            "context_admission": context_admission,
+            "strength_gap_diagnostics": _strength_gap_diagnostics(frame),
             "reports": reports,
         }
         _write_immutable(storage, args.output_uri, payload)

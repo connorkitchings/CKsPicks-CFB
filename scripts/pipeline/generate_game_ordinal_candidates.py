@@ -24,16 +24,25 @@ from cks_picks_cfb.models.game_ordinal_training import (
 from cks_picks_cfb.models.predictive_evaluation import evaluate_predictive_candidate
 from cks_picks_cfb.models.training_policy import policy_from_mapping
 from cks_picks_cfb.models.v4_feature_variants import additive_feature_variants
+from cks_picks_cfb.ratings.offseason_context import require_admitted_context
 
 EARLY = ("game_1", "game_2", "game_3", "game_4")
 
 
-def _context_feature_variants(raw: pd.DataFrame, spec) -> dict[str, list[str]]:
-    return additive_feature_variants(
+def _context_feature_variants(
+    raw: pd.DataFrame, spec, *, required_families: tuple[str, ...] = ()
+) -> dict[str, list[str]]:
+    variants = additive_feature_variants(
         raw,
         family_order=list(spec.preseason_feature_variants),
         context_features=list(spec.context_features),
     )
+    missing = sorted(set(required_families) - set(variants))
+    if missing:
+        raise ValueError(
+            f"Feature reference is missing admitted context families: {missing}"
+        )
+    return variants
 
 
 def _feature_ref(storage, uri: str) -> DatasetRef:
@@ -131,9 +140,9 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
 
 
 def _selection(
-    raw: pd.DataFrame, policy, spec, seed: int
+    raw: pd.DataFrame, policy, spec, seed: int, *, required_families: tuple[str, ...] = ()
 ) -> tuple[pd.DataFrame, dict[str, dict[str, dict[str, float]]]]:
-    variants = _context_feature_variants(raw, spec)
+    variants = _context_feature_variants(raw, spec, required_families=required_families)
     ridge_rows = []
     for feature_variant, context_features in variants.items():
         for strengths in prior_strength_designs():
@@ -200,9 +209,15 @@ def _selection(
 
 
 def _locked(
-    raw: pd.DataFrame, policy, spec, selection: dict, seed: int
+    raw: pd.DataFrame,
+    policy,
+    spec,
+    selection: dict,
+    seed: int,
+    *,
+    required_families: tuple[str, ...] = (),
 ) -> pd.DataFrame:
-    variants = _context_feature_variants(raw, spec)
+    variants = _context_feature_variants(raw, spec, required_families=required_families)
     default_strengths = {"plays": 100.0, "drives": 20.0, "games": 4.0}
     default_frame, default_features = add_ordinal_shrinkage_features(
         raw, prior_strengths=default_strengths
@@ -285,6 +300,7 @@ def main() -> None:
     parser.add_argument("--feature-ref-uri", required=True)
     parser.add_argument("--output-csv", type=Path, required=True)
     parser.add_argument("--selection-report-uri")
+    parser.add_argument("--context-admission-report-uri")
     parser.add_argument("--research-only", action="store_true")
     parser.add_argument(
         "--environment", choices=("preview", "production"), required=True
@@ -309,9 +325,28 @@ def main() -> None:
         raise ValueError("Reconstructed V4 references require --research-only")
     if args.research_only and tracks != {"reconstructed"}:
         raise ValueError("--research-only accepts only a reconstructed V4 reference")
+    admission_report = None
+    required_families: tuple[str, ...] = ()
+    if args.context_admission_report_uri:
+        admission_report = json.loads(
+            storage.read_bytes(args.context_admission_report_uri).decode()
+        )
+        required_families = require_admitted_context(
+            admission_report, allow_reconstructed=args.research_only
+        )
+        if admission_report["feature_track"] not in tracks:
+            raise ValueError(
+                "Context admission report track does not match feature reference track"
+            )
     raw["feature_track"] = next(iter(tracks)) if tracks else "legacy"
     if args.stage == "selection":
-        result, weights = _selection(raw, policy, spec, args.random_seed)
+        result, weights = _selection(
+            raw,
+            policy,
+            spec,
+            args.random_seed,
+            required_families=required_families,
+        )
         result.attrs["blend_weights"] = weights
         weights_path = args.output_csv.with_suffix(".blend-weights.json")
         weights_path.write_text(json.dumps(weights, indent=2, sort_keys=True))
@@ -325,7 +360,19 @@ def main() -> None:
             raise ValueError("Locked generation requires a sealed selection report")
         if selection.get("feature_track", "strict") != "strict":
             raise ValueError("Locked generation requires a strict selection report")
-        result = _locked(raw, policy, spec, selection, args.random_seed)
+        result = _locked(
+            raw,
+            policy,
+            spec,
+            selection,
+            args.random_seed,
+            required_families=required_families,
+        )
+    if admission_report is not None:
+        result["context_admission_report_uri"] = args.context_admission_report_uri
+        result["admitted_context_families"] = ",".join(
+            admission_report["admitted_families"]
+        )
     args.output_csv.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(args.output_csv, index=False)
     print(

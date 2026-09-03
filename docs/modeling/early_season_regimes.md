@@ -46,3 +46,13 @@ Rating research may create immutable shadow artifacts only. It may not modify
 V4 bundles, Neon activation, public publication, or rollback authority. A first
 promotion review is possible only after six frozen full-slate shadow evaluations
 under the [evaluation policy](evaluation.md).
+
+## Offseason-context research boundary
+
+The approved early-week strength-prior research may evaluate returning
+production, transfers, recruiting, coaching, and optional talent only through
+an immutable family admission report. Every family must be football-only,
+complete for its team-season population, canonically mapped, and carry
+effective/retrieved provenance. Any family without pre-kickoff evidence is
+classified `reconstructed`: it may inform Preview research reports but cannot
+select a strict bundle, run locked validation, refit, publish, or alter V4.
