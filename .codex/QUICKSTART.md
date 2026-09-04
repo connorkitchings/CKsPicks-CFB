@@ -37,6 +37,11 @@ export CFB_R2_PREVIEW_BUCKET='your_preview_bucket'
 # Required for ingestion
 export CFBD_API_KEY='your_api_key_here'
 
+# Optional: opt-in live The Odds API market capture during publish-week
+# (~2 credits/run; soft-fails to CFBD-only on provider errors)
+export THE_ODDS_API_KEY='your_odds_api_key_here'
+export CFB_ODDS_API_ENABLED='1'
+
 # Required for CFBD Model Pick'em API submission (optional path)
 export CFBD_PREDICTION_TOKEN='your_prediction_token_here'
 
@@ -305,6 +310,14 @@ make build-silver YEAR=2026 DATASET=games CAPTURE_ID=<capture-id> \
 
 # Legacy compatibility command; not an authoritative production input
 make ingest-week YEAR=2026 WEEK=0
+
+# Retro-load frozen Silver market quotes into Neon market_quotes (idempotent)
+PYTHONPATH=.:src uv run python scripts/pipeline/backfill_market_quotes_db.py \
+  --season 2026 --dry-run
+
+# Opt-in live The Odds API capture (estimate first; --confirm spends ~2 credits)
+PYTHONPATH=.:src uv run python scripts/data/fetch_odds_api_market_quotes.py \
+  --year 2026 --week 2
 
 # Direct scripts (no Make):
 PYTHONPATH=.:src uv run python scripts/data/ingest_season.py --year 2026

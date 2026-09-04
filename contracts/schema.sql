@@ -205,6 +205,12 @@ CREATE TABLE IF NOT EXISTS market_quotes (
     spread         DOUBLE PRECISION,
     total          DOUBLE PRECISION,
     source_capture_id TEXT,
+    home_spread_price DOUBLE PRECISION,
+    away_spread_price DOUBLE PRECISION,
+    over_price     DOUBLE PRECISION,
+    under_price    DOUBLE PRECISION,
+    quote_updated_at TIMESTAMPTZ,
+    source_event_id TEXT,
     CHECK (spread IS NOT NULL OR total IS NOT NULL)
 );
 

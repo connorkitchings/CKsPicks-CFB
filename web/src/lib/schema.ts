@@ -165,6 +165,12 @@ export const marketQuotes = pgTable(
     spread: doublePrecision("spread"),
     total: doublePrecision("total"),
     sourceCaptureId: text("source_capture_id"),
+    homeSpreadPrice: doublePrecision("home_spread_price"),
+    awaySpreadPrice: doublePrecision("away_spread_price"),
+    overPrice: doublePrecision("over_price"),
+    underPrice: doublePrecision("under_price"),
+    quoteUpdatedAt: timestamp("quote_updated_at", { withTimezone: true }),
+    sourceEventId: text("source_event_id"),
   },
   (table) => [index("idx_market_quotes_game_capture").on(table.gameId, table.capturedAt)],
 );

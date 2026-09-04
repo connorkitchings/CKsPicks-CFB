@@ -292,6 +292,7 @@ def test_publish_pipeline_accepts_live_week_zero():
         "audit_data",
         "ingest_schedule",
         "ingest_market",
+        "ingest_market_quotes",
         "build_market_snapshot",
         "snapshot_inputs",
         "predict",
@@ -523,9 +524,7 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
         step for step in steps if step.name == "close_successor_history_source_set"
     )
     assert source_set.definition["identity"]["code_sha"]
-    non_play_captures = [
-        step for step in captures if not step.name.endswith("_plays")
-    ]
+    non_play_captures = [step for step in captures if not step.name.endswith("_plays")]
     assert all(step.definition.get("capture_only", False) for step in non_play_captures)
     assert "close_successor_history_derived_ref_set" in [step.name for step in steps]
     assert "build_successor_r1_foundation" in [step.name for step in steps]
@@ -540,7 +539,9 @@ def test_successor_history_capture_uses_one_catalog_run_per_source_entity():
         "/captures/2015/plays.json"
     )
     comparison = next(
-        step for step in steps if step.name == "freeze_successor_legacy_comparison_evidence"
+        step
+        for step in steps
+        if step.name == "freeze_successor_legacy_comparison_evidence"
     )
     assert "--comparison-ref-set-uri" not in comparison.definition["argv"]
 

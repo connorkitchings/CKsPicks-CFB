@@ -1,5 +1,32 @@
 # Decision Log
 
+## 2026-09-03: Canonical Market-Quote Persistence and Opt-In The Odds API Capture
+
+- **Context**: Pre-2026 CFBD lines are quarantined (`legacy_market_references`)
+  because they lack authentic quote timestamps; 2026 captures are durably
+  immutable in R2 but quote-level history never reached Neon — `market_quotes`
+  and `market_snapshot_quotes` existed with no writer — and the built The Odds
+  API adapter had zero production wiring.
+- **Decision**: Activation now writes the run's frozen Silver `market_quotes`
+  rows (full price payload via append-only migration `0011`) and derived
+  `market_snapshot_quotes` links inside the publish transaction, failing
+  closed when a snapshot-bearing run lacks a resolvable quotes ref; a
+  catalog-driven retro-loader backfills prior runs idempotently. Publish-week
+  gains an opt-in `ingest_market_quotes` step (`CFB_ODDS_API_ENABLED=1` +
+  `THE_ODDS_API_KEY`, ~2-credit live board request, estimate-first
+  `--confirm` gating, strict event matching) that is soft-fail: provider
+  errors degrade loudly to CFBD-only and never block publication. The
+  snapshot builder admits `the_odds_api` captures under the unchanged
+  `consensus_then_median_v1` policy (CFBD Consensus still wins; books fill
+  gaps). Historical 2021–2025 recovery via The Odds API remains a
+  budget-gated exploration with no committed spend.
+- **Impact**: Markets remain evaluation-only; no model feature, selection, or
+  publication behavior changes while the step is disabled (the default).
+  Snapshot IDs change only for future consensus-less games once books are
+  admitted. In-flight pipeline runs started before this change cannot be
+  resumed (definition SHA changes); start a new run instead.
+- **Source**: `docs/plans/2026-09-03/market-line-retention.md`.
+
 ## 2026-08-23: Adopt Rating-Centric Hybrid Architecture for 2026
 
 - **Context**: V4 provides strong point-in-time lineage, temporal validation,

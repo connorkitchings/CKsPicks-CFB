@@ -42,12 +42,24 @@ def main() -> None:
     inputs = (
         ("games", "games"),
         ("betting_lines", "market_snapshots"),
+        ("betting_lines_quotes", "market_quotes"),
         ("point_in_time_matchups", "point_in_time_matchups"),
     )
     refs = []
     for entity, dataset in inputs:
         if dataset == "market_snapshots" and args.market_ref_uri:
             raw_ref = json.loads(storage.read_bytes(args.market_ref_uri).decode())
+            ref = DatasetRef(**raw_ref)
+        elif dataset == "market_quotes" and args.market_ref_uri:
+            quotes_ref_uri = (
+                f"{os.path.dirname(args.market_ref_uri.rstrip('/'))}"
+                "/market_quotes_ref.json"
+            )
+            if not storage.exists(quotes_ref_uri):
+                raise SystemExit(
+                    f"Market quotes ref missing next to snapshots ref: {quotes_ref_uri}"
+                )
+            raw_ref = json.loads(storage.read_bytes(quotes_ref_uri).decode())
             ref = DatasetRef(**raw_ref)
         elif dataset == "point_in_time_matchups" and args.prepared_gold_ref_uri:
             raw_ref = json.loads(

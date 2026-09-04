@@ -40,6 +40,12 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
 - Each rerun creates a **new immutable run** (new R2 prefix, new `prediction_runs` row) and moves `current_week.active_run_id` on activation.
 - Missing lines are allowed — the site shows the game without a lean ("Line unavailable—model prediction shown, no lean").
 - During game week (e.g. Aug 25–28) rerun daily or as lines move; verify coverage each time (see Health).
+- **The Odds API capture (optional):** set `CFB_ODDS_API_ENABLED=1` and
+  `THE_ODDS_API_KEY` to add a ~2-credit live per-book capture after the CFBD
+  market step. It is **soft-fail**: on provider error the publish completes
+  CFBD-only with a loud warning recorded in the run's step outputs — to
+  unblock, unset `CFB_ODDS_API_ENABLED` and rerun; never debug with the flag
+  on in production. Resumes never re-issue the paid request.
 
 ### 2. Manual snapshot ledger and final freeze (before kickoff)
 

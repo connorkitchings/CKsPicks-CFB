@@ -1,4 +1,10 @@
-"""The Odds API historical NCAAF adapter with no implicit paid requests."""
+"""The Odds API NCAAF adapter with no implicit paid requests.
+
+Two explicit fetch modes: ``fetch`` (historical snapshot at a requested
+timestamp, 20 credits) and ``fetch_live`` (current odds at request time,
+2 credits with regions=us x spreads+totals). Both refuse unauthenticated
+calls and never issue requests at import or construction time.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +29,10 @@ HISTORICAL_NCAAF_ENDPOINT = (
     "https://api.the-odds-api.com/v4/historical/sports/americanfootball_ncaaf/odds"
 )
 HISTORICAL_CREDITS_PER_SNAPSHOT = 20  # US region × spreads + totals.
+LIVE_NCAAF_ENDPOINT = (
+    "https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf/odds"
+)
+LIVE_CREDITS_PER_REQUEST = 2  # US region × spreads + totals markets.
 
 
 def estimate_historical_snapshot_requests(
@@ -41,25 +51,48 @@ def estimate_historical_snapshot_requests(
     }
 
 
+# CFBD abbreviations whose The Odds API names neither equal nor prefix-match
+# the short form. Applied to schedule names before comparison only; values
+# are stored in normalized (alphanumeric, lowercase) form.
+CFBD_NAME_EXPANSIONS = {
+    "appstate": "appalachianstate",
+    "fiu": "floridainternational",
+    "fau": "floridaatlantic",
+    "usf": "southflorida",
+}
+
+
 def match_odds_events_to_schedule(
     events: Sequence[Mapping[str, Any]],
     schedule: pd.DataFrame,
     *,
     kickoff_tolerance_minutes: int = 5,
+    allow_prefix: bool = False,
 ) -> dict[str, int]:
-    """Return only unambiguous provider-event to canonical-game matches."""
+    """Return only unambiguous provider-event to canonical-game matches.
+
+    Team names are compared after alphanumeric normalization (plus the
+    ``CFBD_NAME_EXPANSIONS`` table on the schedule side). ``allow_prefix``
+    additionally accepts a schedule name that is a prefix of the provider
+    name (CFBD short names vs The Odds API mascot names, e.g. ``Texas Tech``
+    vs ``Texas Tech Red Raiders``). Any event matching more than one schedule
+    row raises; unmatched events are simply absent from the result.
+    """
     required = {"game_id", "home_team", "away_team", "start_date"}
     missing = sorted(required - set(schedule.columns))
     if missing:
         raise ValueError(f"Schedule is missing event-matching columns: {missing}")
 
     def normalized(value: object) -> str:
-        return re.sub(r"[^a-z0-9]", "", str(value).casefold())
+        base = re.sub(r"[^a-z0-9]", "", str(value).casefold())
+        return CFBD_NAME_EXPANSIONS.get(base, base)
 
     schedule_rows = schedule.copy()
     schedule_rows["start_date"] = pd.to_datetime(
         schedule_rows["start_date"], utc=True, errors="raise"
     )
+    schedule_rows["__home"] = schedule_rows["home_team"].map(normalized)
+    schedule_rows["__away"] = schedule_rows["away_team"].map(normalized)
     result: dict[str, int] = {}
     tolerance = pd.Timedelta(minutes=kickoff_tolerance_minutes)
     for event in events:
@@ -71,21 +104,29 @@ def match_odds_events_to_schedule(
         )
         if not event_id or pd.isna(kickoff):
             continue
-        matched = schedule_rows[
-            (
-                schedule_rows["home_team"].map(normalized)
-                == normalized(event.get("home_team"))
-            )
-            & (
-                schedule_rows["away_team"].map(normalized)
-                == normalized(event.get("away_team"))
-            )
-            & ((schedule_rows["start_date"] - kickoff).abs() <= tolerance)
+        home = re.sub(r"[^a-z0-9]", "", str(event.get("home_team")).casefold())
+        away = re.sub(r"[^a-z0-9]", "", str(event.get("away_team")).casefold())
+        same_slot = (schedule_rows["start_date"] - kickoff).abs() <= tolerance
+        exact = schedule_rows[
+            (schedule_rows["__home"] == home)
+            & (schedule_rows["__away"] == away)
+            & same_slot
         ]
-        if len(matched) > 1:
+        slot = exact
+        if len(slot) != 1 and allow_prefix and home and away:
+            slot = schedule_rows[
+                schedule_rows["__home"].map(
+                    lambda name: bool(name) and home.startswith(name)
+                )
+                & schedule_rows["__away"].map(
+                    lambda name: bool(name) and away.startswith(name)
+                )
+                & same_slot
+            ]
+        if len(slot) > 1:
             raise ValueError(f"Ambiguous The Odds API event match: {event_id}")
-        if len(matched) == 1:
-            result[event_id] = int(matched.iloc[0]["game_id"])
+        if len(slot) == 1:
+            result[event_id] = int(slot.iloc[0]["game_id"])
     return result
 
 
@@ -116,7 +157,7 @@ class TheOddsAPIAdapter:
         with urlopen(url, timeout=30) as response:  # noqa: S310 - fixed HTTPS host
             return json.loads(response.read().decode("utf-8"))
 
-    def fetch(self, entity: str, request: Mapping[str, Any]) -> SourceResponse:
+    def _require_authenticated_entity(self, entity: str) -> None:
         if entity != "market_quotes":
             raise SourceError(
                 f"Unsupported The Odds API entity: {entity}",
@@ -125,10 +166,19 @@ class TheOddsAPIAdapter:
             )
         if not self.api_key:
             raise SourceError(
-                "THE_ODDS_API_KEY is required for historical odds requests",
+                "THE_ODDS_API_KEY is required for The Odds API requests",
                 FailureCategory.AUTHENTICATION,
                 retryable=False,
             )
+
+    def _now_utc(self) -> pd.Timestamp:
+        now = pd.Timestamp(self._now())
+        if now.tzinfo is None:
+            return now.tz_localize("UTC")
+        return now.tz_convert("UTC")
+
+    def fetch(self, entity: str, request: Mapping[str, Any]) -> SourceResponse:
+        self._require_authenticated_entity(entity)
         snapshot_at = pd.Timestamp(request.get("snapshot_at"), tz="UTC")
         parameters = {
             "apiKey": self.api_key,
@@ -177,6 +227,54 @@ class TheOddsAPIAdapter:
                 "snapshot_timestamp": response_timestamp.isoformat(),
                 "previous_timestamp": payload.get("previous_timestamp"),
                 "next_timestamp": payload.get("next_timestamp"),
+            },
+        )
+
+    def fetch_live(self, entity: str, request: Mapping[str, Any]) -> SourceResponse:
+        """Fetch the current NCAAF odds board (one paid request, ~2 credits).
+
+        ``captured_at``/``effective_at`` are the actual fetch time: the quote
+        state is authentic to the moment of the request, matching the CFBD
+        ingestion discipline. ``quote_updated_at`` per record comes from the
+        provider's market ``last_update``.
+        """
+        self._require_authenticated_entity(entity)
+        parameters = {
+            "apiKey": self.api_key,
+            "regions": str(request.get("regions", "us")),
+            "markets": "spreads,totals",
+            "oddsFormat": "american",
+            "dateFormat": "iso",
+        }
+        url = f"{LIVE_NCAAF_ENDPOINT}?{urlencode(parameters)}"
+        payload = self._http_get(url)
+        events = payload if isinstance(payload, list) else (payload.get("data") or ())
+        fetched_at = self._now_utc()
+        event_game_ids = {
+            str(key): int(value)
+            for key, value in dict(request.get("event_game_ids") or {}).items()
+        }
+        records = tuple(self._flatten(events, fetched_at, event_game_ids))
+        if not records:
+            raise SourceError(
+                "The Odds API returned no live NCAAF quotes",
+                FailureCategory.DATA_UNAVAILABLE,
+                retryable=False,
+            )
+        return SourceResponse(
+            provider=self.provider,
+            entity=entity,
+            records=records,
+            request={
+                key: value for key, value in parameters.items() if key != "apiKey"
+            },
+            captured_at=fetched_at.to_pydatetime(),
+            effective_at=fetched_at.to_pydatetime(),
+            provider_api_version="v4",
+            response_metadata={
+                "capture_timestamp": fetched_at.isoformat(),
+                "mode": "live",
+                "estimated_credits": LIVE_CREDITS_PER_REQUEST,
             },
         )
 

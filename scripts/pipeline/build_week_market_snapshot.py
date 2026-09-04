@@ -60,17 +60,28 @@ def main() -> None:
         print(storage.read_bytes(args.output_ref_uri).decode())
         return
 
-    ingestion_run_id = f"{args.pipeline_run_id}:betting_lines"
+    ingestion_run_ids = {
+        "cfbd": f"{args.pipeline_run_id}:betting_lines",
+        "the_odds_api": f"{args.pipeline_run_id}:market_quotes",
+    }
     with psycopg.connect(conn_url) as conn:
         rows = conn.execute(
             "SELECT capture_id FROM catalog.source_captures "
-            "WHERE ingestion_run_id = %s AND entity = 'betting_lines' "
-            "AND provider = 'cfbd' AND state = 'registered' "
+            "WHERE ((ingestion_run_id = %s AND entity = 'betting_lines' "
+            "AND provider = 'cfbd') "
+            "OR (ingestion_run_id = %s AND entity = 'market_quotes' "
+            "AND provider = 'the_odds_api')) "
+            "AND state = 'registered' "
             "ORDER BY captured_at, capture_id",
-            (ingestion_run_id,),
+            (
+                ingestion_run_ids["cfbd"],
+                ingestion_run_ids["the_odds_api"],
+            ),
         ).fetchall()
     if not rows:
-        raise LookupError(f"No registered market capture for {ingestion_run_id}")
+        raise LookupError(
+            f"No registered market capture for {sorted(ingestion_run_ids.values())}"
+        )
 
     captures = [source_capture_by_id(conn_url, str(row[0])) for row in rows]
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))

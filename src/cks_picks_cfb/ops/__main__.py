@@ -169,6 +169,163 @@ def _fetch_source_step(
     )
 
 
+def _soft_fail_market_quotes_step(
+    *, conn_url: str, year: int, week: int
+) -> PipelineStep:
+    """Opt-in live The Odds API capture; provider errors degrade to CFBD-only.
+
+    Markets are evaluation-only: when the step is enabled but the provider
+    fails, a loud warning is emitted (stderr + best-effort webhook) and the
+    publish proceeds on the CFBD capture alone. The step records its status
+    durably in the run's step outputs so a degraded capture is never a silent
+    success.
+    """
+
+    def _warn(context: OperationContext, category: str, detail: str) -> None:
+        message = (
+            f"WARNING: the_odds_api market capture degraded to CFBD-only "
+            f"({context.pipeline_run_id} ingest_market_quotes): {category}: {detail}"
+        )
+        print(message, file=sys.stderr)
+        try:
+            from cks_picks_cfb.ops.notifier import WebhookFailureNotifier
+
+            notifier = WebhookFailureNotifier.from_env()
+            if notifier is not None:
+                notifier.notify(
+                    context,
+                    "ingest_market_quotes",
+                    category=category,
+                    detail=detail,
+                )
+        except Exception:  # pragma: no cover - notification is best effort
+            pass
+
+    def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
+        if os.getenv("CFB_ODDS_API_ENABLED", "0") != "1":
+            return [{"status": "skipped", "reason": "CFB_ODDS_API_ENABLED != 1"}]
+        if not os.getenv("THE_ODDS_API_KEY"):
+            return [{"status": "skipped", "reason": "THE_ODDS_API_KEY not set"}]
+        argv = _python(
+            "scripts/data/fetch_odds_api_market_quotes.py",
+            "--year",
+            year,
+            "--week",
+            week,
+            "--confirm",
+        )
+        ingestion_run_id = f"{context.pipeline_run_id}:market_quotes"
+        timeout_seconds = _source_subprocess_timeout_seconds()
+        try:
+            completed = subprocess.run(
+                list(argv),
+                check=False,
+                timeout=timeout_seconds,
+                env={
+                    **os.environ,
+                    "PYTHONPATH": ".:src",
+                    "CFB_INGESTION_RUN_ID": ingestion_run_id,
+                },
+            )
+        except subprocess.TimeoutExpired as exc:
+            _warn(
+                context,
+                "subprocess_timeout",
+                f"the_odds_api capture exceeded {timeout_seconds:g} seconds: {exc}",
+            )
+            return [
+                {
+                    "status": "degraded",
+                    "error_category": "subprocess_timeout",
+                    "ingestion_run_id": ingestion_run_id,
+                }
+            ]
+        if completed.returncode != 0:
+            _warn(
+                context,
+                "subprocess_error",
+                f"the_odds_api capture exited {completed.returncode}",
+            )
+            return [
+                {
+                    "status": "degraded",
+                    "error_category": "subprocess_error",
+                    "returncode": completed.returncode,
+                    "ingestion_run_id": ingestion_run_id,
+                }
+            ]
+        with psycopg.connect(conn_url) as conn:
+            rows = conn.execute(
+                "SELECT capture_id FROM catalog.source_captures "
+                "WHERE ingestion_run_id = %s AND provider = 'the_odds_api' "
+                "AND state = 'registered' ORDER BY captured_at, capture_id",
+                (ingestion_run_id,),
+            ).fetchall()
+        if not rows:
+            _warn(
+                context,
+                "no_registered_capture",
+                "the_odds_api subprocess succeeded but registered no captures",
+            )
+            return [
+                {
+                    "status": "degraded",
+                    "error_category": "no_registered_capture",
+                    "ingestion_run_id": ingestion_run_id,
+                }
+            ]
+        return tuple(
+            {
+                "status": "captured",
+                "capture_id": str(row[0]),
+                "provider": "the_odds_api",
+            }
+            for row in rows
+        )
+
+    def resume_validator(
+        _: OperationContext, outputs: Sequence[Mapping[str, Any]]
+    ) -> bool:
+        # Never re-issue a paid provider request on resume: skipped and
+        # degraded outcomes are final for this run, and captured rows must
+        # still exist in the catalog to be skipped.
+        if not outputs:
+            return False
+        statuses = {str(output.get("status")) for output in outputs}
+        if not statuses <= {"skipped", "degraded", "captured"}:
+            return False
+        capture_ids = [
+            str(output["capture_id"])
+            for output in outputs
+            if output.get("capture_id") is not None
+        ]
+        if not capture_ids:
+            return True
+        try:
+            with psycopg.connect(conn_url) as conn:
+                rows = conn.execute(
+                    "SELECT capture_id FROM catalog.source_captures "
+                    "WHERE capture_id = ANY(%s)",
+                    (capture_ids,),
+                ).fetchall()
+        except Exception:
+            return False
+        return {str(row[0]) for row in rows} == set(capture_ids)
+
+    return PipelineStep(
+        "ingest_market_quotes",
+        action,
+        definition={
+            "year": year,
+            "week": week,
+            "provider": "the_odds_api",
+            "soft_fail": True,
+            "subprocess_timeout_seconds": _source_subprocess_timeout_seconds(),
+        },
+        resume_validator=resume_validator,
+    )
+
+
 def _history_play_capture_step(
     *,
     season: int,
@@ -1835,6 +1992,7 @@ def build_steps(
                 conn_url=conn_url,
                 entity="betting_lines",
             ),
+            _soft_fail_market_quotes_step(conn_url=conn_url, year=year, week=week),
             subprocess_step(
                 "build_market_snapshot",
                 _python(

@@ -5,7 +5,9 @@ that powers the Vercel web app.
 
 Reads: an ephemeral working CSV, or the active immutable run manifest in R2.
 Writes: immutable prediction_runs/predictions plus compatibility games rows;
-        activation updates current_week in the same database transaction.
+        market_snapshots and their market_quotes/market_snapshot_quotes lineage
+        when the run carries market snapshots; activation updates current_week
+        in the same database transaction.
 
 Requires DATABASE_URL environment variable (Neon connection string).
 
@@ -294,6 +296,26 @@ INSERT INTO market_snapshots (
 ON CONFLICT (snapshot_id) DO NOTHING
 """
 
+INSERT_MARKET_QUOTE_SQL = """
+INSERT INTO market_quotes (
+    quote_id, game_id, provider, captured_at, spread, total,
+    source_capture_id, home_spread_price, away_spread_price,
+    over_price, under_price, quote_updated_at, source_event_id
+) VALUES (
+    %(quote_id)s, %(game_id)s, %(provider)s, %(captured_at)s,
+    %(spread)s, %(total)s, %(source_capture_id)s,
+    %(home_spread_price)s, %(away_spread_price)s, %(over_price)s,
+    %(under_price)s, %(quote_updated_at)s, %(source_event_id)s
+)
+ON CONFLICT (quote_id) DO NOTHING
+"""
+
+INSERT_MARKET_SNAPSHOT_QUOTE_SQL = """
+INSERT INTO market_snapshot_quotes (snapshot_id, quote_id, target)
+VALUES (%(snapshot_id)s, %(quote_id)s, %(target)s)
+ON CONFLICT (snapshot_id, quote_id, target) DO NOTHING
+"""
+
 
 def _row_to_record(
     row: pd.Series,
@@ -391,6 +413,104 @@ def _row_to_record(
     }
 
 
+def _market_quotes_ref_from_manifest(manifest: dict | None) -> dict | None:
+    """Return the frozen market_quotes dataset ref recorded on a run manifest."""
+    if not manifest:
+        return None
+    for ref in manifest.get("input_dataset_refs") or []:
+        if ref.get("dataset") == "market_quotes":
+            return ref
+    return None
+
+
+def load_market_quotes(manifest: dict | None) -> pd.DataFrame | None:
+    """Load the run's frozen Silver market_quotes version with checksum verify."""
+    ref_payload = _market_quotes_ref_from_manifest(manifest)
+    if ref_payload is None:
+        return None
+    from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+    from cks_picks_cfb.data.storage import get_storage
+
+    ref = DatasetRef(
+        dataset=str(ref_payload["dataset"]),
+        version_id=str(ref_payload["version_id"]),
+        schema_version=str(ref_payload["schema_version"]),
+        content_sha=str(ref_payload["content_sha"]),
+        uri=str(ref_payload["uri"]),
+    )
+    return read_dataset(get_storage(), ref)
+
+
+def _quote_frame_to_records(quotes: pd.DataFrame) -> list[dict]:
+    """Coerce Silver market_quotes rows into market_quotes insert records."""
+    required = {"quote_id", "game_id", "provider", "captured_at"}
+    missing = sorted(required - set(quotes.columns))
+    if missing:
+        raise ValueError(f"market_quotes frame missing columns: {missing}")
+    if quotes["quote_id"].duplicated().any():
+        raise ValueError("market_quotes frame contains duplicate quote IDs")
+    records = []
+    for _, row in quotes.iterrows():
+        captured_at = pd.to_datetime(row["captured_at"], utc=True, errors="coerce")
+        if pd.isna(captured_at):
+            raise ValueError(
+                f"market quote {row['quote_id']} has no parseable captured_at"
+            )
+        total = _safe_float(row.get("total"))
+        if total is None:
+            total = _safe_float(row.get("over_under"))
+        quote_updated_at = pd.to_datetime(
+            row.get("quote_updated_at"), utc=True, errors="coerce"
+        )
+        records.append(
+            {
+                "quote_id": str(row["quote_id"]),
+                "game_id": int(row["game_id"]),
+                "provider": str(row["provider"]),
+                "captured_at": captured_at.to_pydatetime(),
+                "spread": _safe_float(row.get("spread")),
+                "total": total,
+                "source_capture_id": (
+                    str(row["source_capture_id"])
+                    if row.get("source_capture_id") is not None
+                    and not pd.isna(row.get("source_capture_id"))
+                    else (
+                        str(row["__capture_id"])
+                        if row.get("__capture_id") is not None
+                        and not pd.isna(row.get("__capture_id"))
+                        else None
+                    )
+                ),
+                "home_spread_price": _safe_float(row.get("home_spread_price")),
+                "away_spread_price": _safe_float(row.get("away_spread_price")),
+                "over_price": _safe_float(row.get("over_price")),
+                "under_price": _safe_float(row.get("under_price")),
+                "quote_updated_at": (
+                    quote_updated_at.to_pydatetime()
+                    if not pd.isna(quote_updated_at)
+                    else None
+                ),
+                "source_event_id": (
+                    str(row["source_event_id"])
+                    if row.get("source_event_id") is not None
+                    and not pd.isna(row.get("source_event_id"))
+                    else None
+                ),
+            }
+        )
+    return records
+
+
+def _quote_link_targets(quote: dict) -> list[str]:
+    """Attribute one quote to the snapshot targets it can support."""
+    targets = []
+    if quote["spread"] is not None:
+        targets.append("spread")
+    if quote["total"] is not None:
+        targets.append("total")
+    return targets
+
+
 def publish_week(
     df: pd.DataFrame,
     conn_url: str,
@@ -404,6 +524,7 @@ def publish_week(
     update_current: bool,
     run_manifest: dict | None = None,
     state: str = "published",
+    market_quotes: pd.DataFrame | None = None,
 ) -> int:
     """Transactionally insert an immutable run and optionally activate it."""
     if state not in {"preview", "published"}:
@@ -412,6 +533,23 @@ def publish_week(
     run_id = str(manifest.get("run_id") or f"legacy-{season}-w{week}")
     if df["game_id"].isna().any() or df["game_id"].duplicated().any():
         raise ValueError("Prediction run has missing or duplicate game IDs")
+    snapshot_ids = {
+        row.get("market_snapshot_id")
+        for _, row in df.iterrows()
+        if row.get("market_snapshot_id") is not None
+        and not pd.isna(row.get("market_snapshot_id"))
+    }
+    quote_records: list[dict] = []
+    quote_by_id: dict[str, dict] = {}
+    if snapshot_ids:
+        if market_quotes is None:
+            raise ValueError(
+                "Prediction run references market snapshots but no frozen "
+                "market_quotes dataset was provided; refusing to publish "
+                "without quote-level lineage"
+            )
+        quote_records = _quote_frame_to_records(market_quotes)
+        quote_by_id = {record["quote_id"]: record for record in quote_records}
     if manifest:
         if int(manifest.get("row_count", -1)) != len(df):
             raise ValueError(
@@ -474,6 +612,15 @@ def publish_week(
                     (run_id,),
                 )
             count = 0
+            run_game_ids = {
+                int(row["game_id"])
+                for _, row in df.iterrows()
+                if not pd.isna(row.get("game_id"))
+            }
+            for quote in quote_records:
+                if quote["game_id"] not in run_game_ids:
+                    continue
+                cur.execute(INSERT_MARKET_QUOTE_SQL, quote)
             for _, row in df.iterrows():
                 if pd.isna(row.get("game_id")):
                     continue
@@ -489,6 +636,23 @@ def publish_week(
                 cur.execute(UPSERT_SQL, record)
                 if record["market_snapshot_id"]:
                     cur.execute(INSERT_MARKET_SNAPSHOT_SQL, record)
+                    source_quote_ids = json.loads(record["source_quote_ids"])
+                    for quote_id in source_quote_ids:
+                        if quote_id not in quote_by_id:
+                            raise ValueError(
+                                f"Snapshot {record['market_snapshot_id']} cites "
+                                f"quote {quote_id} absent from the frozen "
+                                "market_quotes dataset"
+                            )
+                        for target in _quote_link_targets(quote_by_id[quote_id]):
+                            cur.execute(
+                                INSERT_MARKET_SNAPSHOT_QUOTE_SQL,
+                                {
+                                    "snapshot_id": record["market_snapshot_id"],
+                                    "quote_id": quote_id,
+                                    "target": target,
+                                },
+                            )
                 cur.execute(INSERT_PREDICTION_SQL, {**record, "run_id": run_id})
                 count += 1
 
@@ -656,6 +820,15 @@ def main() -> None:
         df = load_predictions(csv_path)
     print(f"  loaded {len(df)} rows from CSV")
 
+    market_quotes = None
+    if run_manifest:
+        market_quotes = load_market_quotes(run_manifest)
+    if market_quotes is not None:
+        print(
+            f"  loaded {len(market_quotes)} frozen market quote rows "
+            "for quote-level persistence"
+        )
+
     count = publish_week(
         df,
         conn_url,
@@ -668,6 +841,7 @@ def main() -> None:
         update_current=not args.no_update_current,
         run_manifest=run_manifest,
         state=args.state,
+        market_quotes=market_quotes,
     )
     if not args.no_update_current:
         try:

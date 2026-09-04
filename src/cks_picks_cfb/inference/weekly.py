@@ -109,6 +109,13 @@ def prepare_inference_features(
                 "home_team_spread_line",
                 "total_line",
                 "market_snapshot_id",
+                "market_captured_at",
+                "market_policy_version",
+                "spread_selection_rule",
+                "total_selection_rule",
+                "spread_provider_count",
+                "total_provider_count",
+                "source_quote_ids",
             )
             if column in market
         ]

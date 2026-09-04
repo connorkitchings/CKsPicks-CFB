@@ -88,6 +88,25 @@ input ref set. For example, the August 29, 2026 slate is canonical Week 0 but
 provider Week 1. The requested `AS_OF` must follow the market capture time;
 the build fails closed rather than backdating a late capture.
 
+**The Odds API (opt-in second provider).** After `ingest_market`, the publish
+flow includes an `ingest_market_quotes` step that captures the live The Odds
+API NCAAF board (~2 credits) alongside the CFBD capture. It is disabled by
+default; enable it by setting `CFB_ODDS_API_ENABLED=1` **and**
+`THE_ODDS_API_KEY`. When enabled, the step is soft-fail: a provider error
+records a loud warning and the publish proceeds CFBD-only — the snapshot
+builder admits any registered `the_odds_api` captures and the
+`consensus_then_median_v1` policy still prefers CFBD Consensus, so per-book
+quotes fill gaps rather than displace consensus. Resuming a run never
+re-issues the paid request.
+
+**Neon quote persistence.** Activation writes the run's frozen
+`market_quotes` rows and `market_snapshot_quotes` links in the same Neon
+transaction as snapshots and predictions (`ON CONFLICT DO NOTHING`; a
+snapshot-bearing run without a resolvable quotes ref fails closed).
+`scripts/pipeline/backfill_market_quotes_db.py` retro-loads quotes from
+catalog refs (`--season YYYY`, or explicit `--from-quotes-ref` URIs; use
+`--dry-run` first).
+
 For Week 0, Vercel now exposes the reviewed active run in predictions mode:
 
 ```bash

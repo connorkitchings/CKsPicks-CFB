@@ -42,7 +42,9 @@ def test_prepare_inputs_merges_latest_market_and_enforces_schedule_coverage():
                 "spread": -2.5,
                 "total": 49.0,
                 "captured_at": "2026-08-01",
+                "market_captured_at": "2026-08-01T18:00:00Z",
                 "market_snapshot_id": "old",
+                "source_quote_ids": '["q-old"]',
             },
             {
                 "game_id": 1,
@@ -50,6 +52,13 @@ def test_prepare_inputs_merges_latest_market_and_enforces_schedule_coverage():
                 "total": 50.0,
                 "captured_at": "2026-08-02",
                 "market_snapshot_id": "new",
+                "market_captured_at": "2026-08-02T18:00:00Z",
+                "market_policy_version": "consensus_then_median_v1",
+                "spread_selection_rule": "cfbd_consensus",
+                "total_selection_rule": "cfbd_consensus",
+                "spread_provider_count": 1,
+                "total_provider_count": 1,
+                "source_quote_ids": '["q1", "q2"]',
             },
         ]
     )
@@ -64,6 +73,17 @@ def test_prepare_inputs_merges_latest_market_and_enforces_schedule_coverage():
     assert prepared.features.loc[0, "id"] == 1
     assert prepared.features.loc[0, "home_team_spread_line"] == -3.5
     assert prepared.features.loc[0, "total_line"] == 50.0
+    assert prepared.features.loc[0, "market_snapshot_id"] == "new"
+    # Full market lineage must survive the merge for downstream persistence.
+    assert prepared.features.loc[0, "source_quote_ids"] == '["q1", "q2"]'
+    assert prepared.features.loc[0, "market_captured_at"] == "2026-08-02T18:00:00Z"
+    assert (
+        prepared.features.loc[0, "market_policy_version"] == "consensus_then_median_v1"
+    )
+    assert prepared.features.loc[0, "spread_selection_rule"] == "cfbd_consensus"
+    assert prepared.features.loc[0, "total_selection_rule"] == "cfbd_consensus"
+    assert prepared.features.loc[0, "spread_provider_count"] == 1
+    assert prepared.features.loc[0, "total_provider_count"] == 1
     with pytest.raises(RuntimeError, match="coverage mismatch"):
         prepare_inference_features(
             _features(),

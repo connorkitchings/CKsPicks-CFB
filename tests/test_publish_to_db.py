@@ -271,3 +271,126 @@ def test_row_to_record_honors_high_confidence_eligibility():
         model_id="t",
     )
     assert rec["high_confidence"] is False
+
+
+# ---------------------------------------------------------------------------
+# Market quote persistence (plan 2026-09-03 market-line-retention)
+# ---------------------------------------------------------------------------
+
+SAMPLE_QUOTE_FRAME = pd.DataFrame(
+    [
+        {
+            "quote_id": "q1",
+            "game_id": 401762868,
+            "provider": "consensus",
+            "captured_at": "2026-08-28T18:00:00Z",
+            "spread": -7.5,
+            "total": pd.NA,
+            "over_under": 55.5,
+            "__capture_id": "cap-1",
+            "source_event_id": pd.NA,
+            "quote_updated_at": pd.NA,
+        },
+        {
+            "quote_id": "q2",
+            "game_id": 401762870,
+            "provider": "draftkings",
+            "captured_at": "2026-08-28T17:55:00Z",
+            "spread": -7.0,
+            "total": 56.0,
+            "over_under": pd.NA,
+            "__capture_id": "cap-2",
+            "source_event_id": "evt-9",
+            "quote_updated_at": "2026-08-28T17:50:00Z",
+            "home_spread_price": -110,
+            "over_price": -105,
+        },
+    ]
+)
+
+
+def test_quote_frame_to_records_coerces_columns():
+    records = publish_to_db._quote_frame_to_records(SAMPLE_QUOTE_FRAME)
+    assert len(records) == 2
+    first, second = records
+    # over_under falls back when total is absent
+    assert first["total"] == 55.5
+    assert first["source_capture_id"] == "cap-1"
+    assert first["source_event_id"] is None
+    assert first["quote_updated_at"] is None
+    assert second["total"] == 56.0
+    assert second["home_spread_price"] == -110.0
+    assert second["over_price"] == -105.0
+    assert second["source_event_id"] == "evt-9"
+    assert second["quote_updated_at"] is not None
+
+
+def test_quote_frame_to_records_rejects_missing_required():
+    frame = SAMPLE_QUOTE_FRAME.drop(columns=["provider"])
+    with pytest.raises(ValueError, match="missing columns"):
+        publish_to_db._quote_frame_to_records(frame)
+
+
+def test_quote_frame_to_records_rejects_duplicate_ids():
+    frame = pd.concat([SAMPLE_QUOTE_FRAME, SAMPLE_QUOTE_FRAME], ignore_index=True)
+    with pytest.raises(ValueError, match="duplicate quote IDs"):
+        publish_to_db._quote_frame_to_records(frame)
+
+
+def test_quote_frame_to_records_rejects_missing_timestamp():
+    frame = SAMPLE_QUOTE_FRAME.copy()
+    frame.loc[0, "captured_at"] = None
+    with pytest.raises(ValueError, match="captured_at"):
+        publish_to_db._quote_frame_to_records(frame)
+
+
+def test_quote_link_targets_attribution():
+    spread_only = {"spread": -3.0, "total": None}
+    total_only = {"spread": None, "total": 55.0}
+    both = {"spread": -3.0, "total": 55.0}
+    assert publish_to_db._quote_link_targets(spread_only) == ["spread"]
+    assert publish_to_db._quote_link_targets(total_only) == ["total"]
+    assert publish_to_db._quote_link_targets(both) == ["spread", "total"]
+
+
+def test_market_quotes_ref_from_manifest():
+    manifest = {
+        "input_dataset_refs": [
+            {"entity": "games", "dataset": "games", "uri": "a"},
+            {
+                "entity": "betting_lines_quotes",
+                "dataset": "market_quotes",
+                "version_id": "v1",
+                "uri": "b",
+            },
+        ]
+    }
+    ref = publish_to_db._market_quotes_ref_from_manifest(manifest)
+    assert ref is not None and ref["version_id"] == "v1"
+    assert (
+        publish_to_db._market_quotes_ref_from_manifest(
+            {"input_dataset_refs": [{"dataset": "games"}]}
+        )
+        is None
+    )
+    assert publish_to_db._market_quotes_ref_from_manifest(None) is None
+
+
+def test_publish_fails_closed_without_quotes_for_snapshot_run():
+    df = publish_to_db.prepare_predictions(pd.read_csv(StringIO(SAMPLE_CSV)))
+    df["market_snapshot_id"] = "snap-1"
+    df["source_quote_ids"] = '["q1"]'
+    df["market_captured_at"] = "2026-08-28T18:00:00Z"
+    with pytest.raises(ValueError, match="market_quotes dataset"):
+        publish_to_db.publish_week(
+            df,
+            "unused",
+            season=2026,
+            week=1,
+            high_conf_threshold=8.0,
+            source_config="config.yaml",
+            system_name="system",
+            model_id="model",
+            update_current=True,
+            market_quotes=None,
+        )
