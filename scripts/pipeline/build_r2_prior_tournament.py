@@ -268,7 +268,7 @@ def main(argv: list[str] | None = None) -> None:
     # Load game outcomes from foundation input-refs layout
     # Format: <root>/foundation/input-refs/<season>/game_outcomes.json
     r1_root = args.r1_foundation_manifest_uri.rsplit("/", 1)[0]
-    input_refs_root = f"{r1_root}/foundation/input-refs"
+    input_refs_root = f"{r1_root}/input-refs"
 
     outcomes_by_season: dict[int, pd.DataFrame] = {}
     print("Loading game outcome refs from R1 input-refs...", flush=True)
