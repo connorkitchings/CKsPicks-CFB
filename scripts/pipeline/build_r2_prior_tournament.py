@@ -231,6 +231,14 @@ def main(argv: list[str] | None = None) -> None:
     print("Loading R1 team state artifacts from R2...", flush=True)
     measurement_states = read_dataset(storage, measurement_states_ref)
     team_states = read_dataset(storage, team_states_ref)
+    # R1 state schema keys the point-in-time game as as_of_game_id; the
+    # Gaussian evaluation head contract expects game_id. Normalize to a
+    # nullable integer so string keys match the outcome game_ids exactly.
+    if "as_of_game_id" in team_states.columns and "game_id" not in team_states.columns:
+        team_states = team_states.rename(columns={"as_of_game_id": "game_id"})
+        team_states["game_id"] = pd.to_numeric(
+            team_states["game_id"], errors="coerce"
+        ).astype("Int64")
 
     # 2025 is retained exclusively for the locked confirmation.  It must not
     # become a selection or fitting input for an earlier fold.
@@ -279,6 +287,14 @@ def main(argv: list[str] | None = None) -> None:
         try:
             outcomes_ref = _read_ref(storage, outcomes_uri)
             outcomes_df = read_dataset(storage, outcomes_ref)
+            # game_outcomes lacks home/away labels; the foundation games
+            # dataset carries them on the same game_id keys.
+            games_ref = _read_ref(storage, f"{input_refs_root}/{season}/games.json")
+            games_df = read_dataset(storage, games_ref)
+            labels = games_df[["game_id", "home_team", "away_team"]].drop_duplicates(
+                subset=["game_id"]
+            )
+            outcomes_df = outcomes_df.merge(labels, on="game_id", how="left")
             outcomes_by_season[season] = outcomes_df
         except Exception as exc:
             print(f"  WARNING: could not load outcomes for {season}: {exc}", flush=True)
