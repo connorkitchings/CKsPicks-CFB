@@ -1,6 +1,6 @@
 # Early-Week Strength-Prior Research
 
-- **Status:** In Progress
+- **Status:** Implemented (2026-09-04; direct report sealed, R2 tournament complete at `r2-prior-20260904-4c6e610`, cross-report memo in `docs/research/2026-09-04-early-week-context-cross-report.md`)
 - **Created:** 2026-09-02
 - **Planner:** Sol
 - **Approval source:** User approved the plan and said “Proceed” in Codex on 2026-09-02.
@@ -114,13 +114,31 @@ Run two independent experiments from the admitted context. Do not claim a shared
 - The R1 certificate is an external dependency for R2. Direct research may proceed independently but may not bypass its reconstructed restrictions.
 - Large-strength-gap diagnostics may expose errors but cannot become manual overrides or use a bookmaker line as truth.
 
+### 2026-09-04 — R2 prior tournament completed
+
+The independent R2 between-season prior tournament ran in the isolated Preview
+lane at `artifacts/research/rating-successor-v2/r2-prior-20260904-4c6e610/`,
+bound to code SHA `4c6e6103ca7d8bbe8820a46c34432055f86e85a9` after two
+user-committed lineage repairs (`278120a` doubled foundation path;
+`4c6e610` game-label join and `game_id` normalization for the evaluation
+head). All eleven candidates ran across folds 2018/2019/2022/2023/2024 with
+the admitted reconstructed context. Winner: `continuity_ridge_alpha_0_1`
+under the 0.5% simplicity tie rule; all non-regression gates passed. Context
+candidates beat every non-context candidate on margin MAE in every fold, but
+the alpha variants are nearly indistinguishable, so the lift is attributable
+mostly to the continuity structure. The cross-report decision memo is
+`docs/research/2026-09-04-early-week-context-cross-report.md`. This remains
+reconstructed, activation-ineligible research: it authorizes no locked
+evaluation, refit, bundle, readiness, publication, V4 change, or R3/R4
+execution beyond their existing gates.
+
 ## Definition of Done
 
-- [ ] Immutable source/admission refs classify every requested family and track.
-- [ ] Direct and R2 research reports are written or explicitly fail closed with immutable diagnostics.
+- [x] Immutable source/admission refs classify every requested family and track.
+- [x] Direct and R2 research reports are written or explicitly fail closed with immutable diagnostics.
 - [x] V4, the published Week 1 run, and production/publication state are unchanged.
 - [x] Required validation and documentation/session log updates pass.
-- [ ] Plan status is updated to `Implemented` or `Superseded` with evidence.
+- [x] Plan status is updated to `Implemented` or `Superseded` with evidence.
 
 ## Amendments
 

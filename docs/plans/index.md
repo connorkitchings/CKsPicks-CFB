@@ -38,10 +38,14 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 ### Rating-transition contracts
 
 - [Early-week strength-prior research](2026-09-02/early-week-strength-prior-research.md)
-  — **In Progress.** Adds audited, football-only offseason-context research to
-  separate R2 prior and direct Game 1–3 tracks. R1 certification and the
-  code-bound reconstructed Preview admission are complete; direct/R2 reports
-  are the next isolated research work. V4 and production stay unchanged.
+  — **Implemented 2026-09-04 (pending final user commit).** Adds audited,
+  football-only offseason-context research to separate R2 prior and direct
+  Game 1–3 tracks. Admission, the direct selection report, and the R2 prior
+  tournament (`continuity_ridge_alpha_0_1`, all gates passed) are complete;
+  the cross-report decision memo is
+  `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
+  is reconstructed and activation-ineligible; V4 and production stay
+  unchanged.
 
 - [R1 cross-lineage audit scope remediation](2026-08-28/r1-cross-lineage-audit-scope-remediation.md)
   — Approved. Compares each hard dataset against its own legacy counterpart

@@ -181,7 +181,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Week 0 complete (games played Aug 29–30), Week 1 in progress (kickoff ~Sept 4–6)
+**Status:** 🏈 Season live — Week 0 scored; Week 1 frozen (games through Mon Sept 7), close-week due Tuesday Sept 8
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -197,20 +197,25 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   (bundle `week0-2026-v4-strict-20260818-r2`, config `conf/weekly_bets/v4_2026.yaml`)
 - ✅ Phase 6: Production deployed 2026-08-18; predictions revealed 2026-08-21;
   Week 0 games played Aug 29–30.
-- 🟡 **Week 0 close (immediate):** Active run `2026w0-55de0317120d` is `published`
-  (8/8/8 coverage). Needs `freeze-week` → `close-week` scoring.
-  See Stage 5 of `docs/plans/2026-08-18/week0-launch-execution.md`.
-- 🟡 **Week 1 ops (by Thursday ~Sept 4):** `prepare-week` → `publish-week` →
-  freeze before kickoff; update Vercel `CFB_PUBLICATION_WEEKS=0,1`.
-  See `docs/ops/weekly_pipeline.md` for the full cadence.
+- ✅ **Week 0 closed:** `2026w0-55de0317120d` frozen and `scored` (8/8/8).
+- ✅ **Week 1 published and frozen:** `2026w1-b2c739321e5d` frozen 2026-09-04
+  (43/43/43, no waiver; Thursday kickoff preceded freeze).
+- 🟡 **Week 1 close (Tuesday Sept 8):** `close-week YEAR=2026 WEEK=1 AS_OF=<ts>
+  ENV=production` — run Tuesday, not Monday (CFBD finalization lag). Then the
+  Week 2 cycle: `prepare-week` → `readiness` in Preview → `publish-week` →
+  freeze before kickoff. See `docs/ops/weekly_pipeline.md`.
 - 🧭 **Ratings research (R1–R4):** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
   `early-week-context-20260904-786580ec-r2` admits reconstructed returning
   production, recruiting, and coaching; transfers and talent remain rejected.
-  After its evidence checkpoint, direct and R2 research may run only in their
-  isolated Preview lanes; R3–R4 remain sequentially blocked on R2. O2
-  candidate-v1 at `ac1fba1` is diagnostic-only. See
+  The direct selection report is sealed, and the R2 between-season prior
+  tournament completed 2026-09-04 at `r2-prior-20260904-4c6e610` (winner
+  `continuity_ridge_alpha_0_1`, all gates passed) — see
+  `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
+  is reconstructed and activation-ineligible; R3 is next in the research
+  sequence and stays Preview-isolated. O2 candidate-v1 at `ac1fba1` is
+  diagnostic-only. See
   `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·

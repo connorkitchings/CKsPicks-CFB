@@ -140,8 +140,13 @@ calendar date cannot bypass a failed gate.
   `coverage.json` sets `tournaments_permitted: true`. The fresh, code-bound
   Preview admission at `early-week-context-20260904-786580ec-r2` admits only
   reconstructed returning production, recruiting, and coaching; direct
-  early-game research and R2 may use only that passing report. R3–R4 remain
-  sequentially blocked on the R2 outcome.
+  early-game research and R2 used only that passing report. The R2
+  between-season prior tournament completed 2026-09-04 at
+  `r2-prior-20260904-4c6e610` (winner `continuity_ridge_alpha_0_1` via the
+  0.5% simplicity tie; all gates passed; reconstructed and
+  activation-ineligible — see the
+  [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
+  R3 is next in the research sequence and remains isolated in Preview.
 
 ## Invariants and open decisions
 
