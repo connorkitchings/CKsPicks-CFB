@@ -73,3 +73,15 @@
   `artifacts/research/rating-successor-v2/`.
 
 **tags:** ["modeling", "ratings", "preseason", "research", "context"]
+
+## Closeout Update
+
+- **Outcome:** Direct reconstructed selection is sealed at
+  `artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/direct/reconstructed-selection-report-v1.json`.
+  It is activation-ineligible and covers 522,198 stacked 2022–2024 candidate rows.
+- **Validation:** Focused Ruff/preseason/game-ordinal/ratings tests passed
+  (47); MkDocs and `git diff --check` were run before closeout.
+- **Next:** Run the independent R2 Preview tournament from certified R1 plus
+  the admitted reconstructed context pair; then publish a cross-report decision memo.
+- **Blocker:** Do not infer R2, R3/R4, refit, bundle, readiness, publication,
+  or V4 action from the direct report alone.

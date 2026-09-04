@@ -202,3 +202,14 @@ preseason reference correctly used canonical identities. The assembler now
 joins through a temporary canonical key and preserves the original game-facing
 labels. This is a lineage/identity repair, not a data fill; its fresh Preview
 reference must bind the repair commit.
+
+### 2026-09-04 — Direct reconstructed selection sealed
+
+The direct Preview-only selection report is sealed at
+`artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/direct/reconstructed-selection-report-v1.json`.
+It evaluates 2022–2024 spread and total evidence across Games 1–4, includes
+the admitted-context and strength-gap diagnostics, and is explicitly
+activation-ineligible. The complete grid emitted 522,198 stacked candidate
+rows. This does not authorize locked evaluation, refit, bundles, R3/R4,
+readiness, publication, or any V4 change. The independent R2 tournament is
+the remaining research task.
