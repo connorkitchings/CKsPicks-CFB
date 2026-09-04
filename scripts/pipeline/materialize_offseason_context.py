@@ -59,7 +59,9 @@ def _immutable_write(storage, uri: str, payload: bytes) -> None:
 
 
 def _code_sha() -> str:
-    result = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
+    )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
 
@@ -117,7 +119,9 @@ def _snapshot_rows(storage, family: str) -> tuple[list[dict[str, Any]], datetime
     )
     if not rows or len(manifest) != 1 or int(manifest[0].get("rows", 0)) != len(rows):
         raise ValueError(f"Missing or inconsistent authentic 2026 {family} snapshot")
-    captured = datetime.fromisoformat(str(manifest[0]["retrieved_at"]).replace("Z", "+00:00"))
+    captured = datetime.fromisoformat(
+        str(manifest[0]["retrieved_at"]).replace("Z", "+00:00")
+    )
     return rows, captured
 
 
@@ -139,7 +143,9 @@ def _capture(
         captured_at=captured_at,
         effective_at=captured_at,
         request=request,
-        response_metadata={"context_track": "strict" if season == 2026 else "reconstructed"},
+        response_metadata={
+            "context_track": "strict" if season == 2026 else "reconstructed"
+        },
         capture_id=capture_id,
     )
     return capture, _features(family, rows, season)
@@ -154,7 +160,9 @@ def _capture_id(*, family: str, season: int, as_of: str, code_sha: str) -> str:
     ).hexdigest()[:32]
 
 
-def _team_universe(storage, foundation_uri: str, games_2026_uri: str) -> tuple[pd.DataFrame, list[DatasetRef]]:
+def _team_universe(
+    storage, foundation_uri: str, games_2026_uri: str
+) -> tuple[pd.DataFrame, list[DatasetRef]]:
     root = foundation_uri.rsplit("/", 1)[0]
     refs: list[DatasetRef] = []
     frames: list[pd.DataFrame] = []
@@ -169,19 +177,28 @@ def _team_universe(storage, foundation_uri: str, games_2026_uri: str) -> tuple[p
     required = {"season", "home_team", "away_team", "kickoff_utc"}
     if missing := sorted(required - set(games)):
         raise ValueError(f"Games refs lack team-universe columns: {missing}")
-    games["kickoff_utc"] = pd.to_datetime(games["kickoff_utc"], utc=True, errors="raise")
+    games["kickoff_utc"] = pd.to_datetime(
+        games["kickoff_utc"], utc=True, errors="raise"
+    )
     sides = pd.concat(
         [
-            games[["season", "kickoff_utc", "home_team"]].rename(columns={"home_team": "team"}),
-            games[["season", "kickoff_utc", "away_team"]].rename(columns={"away_team": "team"}),
+            games[["season", "kickoff_utc", "home_team"]].rename(
+                columns={"home_team": "team"}
+            ),
+            games[["season", "kickoff_utc", "away_team"]].rename(
+                columns={"away_team": "team"}
+            ),
         ],
         ignore_index=True,
     )
     allowed = set(HISTORICAL_SEASONS) | {2026}
-    sides = sides[pd.to_numeric(sides["season"], errors="raise").astype(int).isin(allowed)]
+    sides = sides[
+        pd.to_numeric(sides["season"], errors="raise").astype(int).isin(allowed)
+    ]
     universe = (
         sides.assign(season=lambda frame: frame["season"].astype(int))
-        .groupby(["season", "team"], as_index=False)["kickoff_utc"].min()
+        .groupby(["season", "team"], as_index=False)["kickoff_utc"]
+        .min()
         .rename(columns={"kickoff_utc": "first_kickoff_utc"})
         .sort_values(["season", "team"])
     )
@@ -205,23 +222,47 @@ def main() -> None:
     if not args.output_prefix.startswith("artifacts/research/rating-successor-v2/"):
         raise ValueError("Context output must use the isolated successor-v2 prefix")
     storage = get_storage(environment="preview")
-    foundation = json.loads(storage.read_bytes(args.r1_foundation_manifest_uri).decode())
-    if foundation.get("contract_version") != "successor-r1-foundation-v2" or foundation.get("state") != "complete":
+    foundation = json.loads(
+        storage.read_bytes(args.r1_foundation_manifest_uri).decode()
+    )
+    if (
+        foundation.get("contract_version") != "successor-r1-foundation-v2"
+        or foundation.get("state") != "complete"
+    ):
         raise ValueError("Context materialization requires a complete R1 foundation")
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
-    universe, universe_parents = _team_universe(storage, args.r1_foundation_manifest_uri, args.games_2026_ref_uri)
+    universe, universe_parents = _team_universe(
+        storage, args.r1_foundation_manifest_uri, args.games_2026_ref_uri
+    )
     universe_ref, _ = build_dataset_version(
         storage,
-        build=BuildRequest("offseason_context_team_universe", tuple(universe_parents), args.expected_code_sha, "offseason_context_universe_v1", cutoff, schema_version="offseason_context_team_universe_v1", tier="gold", identity_version="v1"),
+        build=BuildRequest(
+            "offseason_context_team_universe",
+            tuple(universe_parents),
+            args.expected_code_sha,
+            "offseason_context_universe_v1",
+            cutoff,
+            schema_version="offseason_context_team_universe_v1",
+            tier="gold",
+            identity_version="v1",
+        ),
         records=universe.to_dict("records"),
-        partitions={"seasons": sorted(universe["season"].astype(int).unique().tolist())},
+        partitions={
+            "seasons": sorted(universe["season"].astype(int).unique().tolist())
+        },
         validation={"unique_team_keys": True, "excludes_2020": True},
     )
-    _immutable_write(storage, f"{args.output_prefix}/team-universe-ref.json", json.dumps(asdict(universe_ref), sort_keys=True).encode())
+    _immutable_write(
+        storage,
+        f"{args.output_prefix}/team-universe-ref.json",
+        json.dumps(asdict(universe_ref), sort_keys=True).encode(),
+    )
 
-    client = cfbd.ApiClient(cfbd.Configuration(access_token=__import__("os").environ["CFBD_API_KEY"]))
+    client = cfbd.ApiClient(
+        cfbd.Configuration(access_token=__import__("os").environ["CFBD_API_KEY"])
+    )
     family_refs: dict[str, DatasetRef] = {}
     family_capture_ids: dict[str, list[str]] = {}
     for family in FAMILIES:
@@ -230,10 +271,14 @@ def main() -> None:
         if storage.exists(family_ref_uri):
             ref = _ref(storage, family_ref_uri)
             dataset_manifest = json.loads(
-                storage.read_bytes(ref.uri.rsplit("/", 1)[0] + "/manifest.json").decode()
+                storage.read_bytes(
+                    ref.uri.rsplit("/", 1)[0] + "/manifest.json"
+                ).decode()
             )
             family_refs[family] = ref
-            family_capture_ids[family] = list(dataset_manifest.get("source_capture_ids", []))
+            family_capture_ids[family] = list(
+                dataset_manifest.get("source_capture_ids", [])
+            )
             print(f"reused {family}", flush=True)
             continue
         normalized: list[pd.DataFrame] = []
@@ -241,11 +286,21 @@ def main() -> None:
         for season in (*HISTORICAL_SEASONS, 2026):
             if season == 2026:
                 rows, captured_at = _snapshot_rows(storage, family)
-                request = {"operation": "reuse_authentic_preseason_snapshot", "source": family, "season": 2026, "snapshot_as_of": SNAPSHOT_AS_OF}
+                request = {
+                    "operation": "reuse_authentic_preseason_snapshot",
+                    "source": family,
+                    "season": 2026,
+                    "snapshot_as_of": SNAPSHOT_AS_OF,
+                }
             else:
                 captured_at = datetime.now(timezone.utc)
                 rows = _fetch(client, family, season)
-                request = {"operation": "historical_context_backfill", "source": family, "season": season, "provider_endpoint": "cfbd"}
+                request = {
+                    "operation": "historical_context_backfill",
+                    "source": family,
+                    "season": season,
+                    "provider_endpoint": "cfbd",
+                }
             capture_id = _capture_id(
                 family=family,
                 season=season,
@@ -253,7 +308,9 @@ def main() -> None:
                 code_sha=args.expected_code_sha,
             )
             try:
-                capture = source_capture_by_id(catalog_connection_url("preview"), capture_id)
+                capture = source_capture_by_id(
+                    catalog_connection_url("preview"), capture_id
+                )
                 frame = _features(
                     family,
                     read_source_capture(storage, capture).to_dict("records"),
@@ -269,21 +326,64 @@ def main() -> None:
                     request=request,
                     capture_id=capture_id,
                 )
-                register_source_capture(catalog_connection_url("preview"), capture)
+                try:
+                    register_source_capture(catalog_connection_url("preview"), capture)
+                except ValueError as exc:
+                    # An interrupted prior invocation can finish catalog
+                    # registration after this attempt's initial lookup.  Its
+                    # capture timestamp is immutable provenance, so reuse it
+                    # instead of creating a timestamp-conflicting replay.
+                    if not str(exc).startswith("Immutable source capture conflict:"):
+                        raise
+                    capture = source_capture_by_id(
+                        catalog_connection_url("preview"), capture_id
+                    )
+                    frame = _features(
+                        family,
+                        read_source_capture(storage, capture).to_dict("records"),
+                        season,
+                    )
             captures.append(capture)
-            normalized.append(frame.assign(effective_at=captured_at.isoformat(), retrieved_at=captured_at.isoformat()))
-        combined = pd.concat(normalized, ignore_index=True).sort_values(["season", "team"])
+            observed_at = capture.captured_at.isoformat()
+            normalized.append(
+                frame.assign(effective_at=observed_at, retrieved_at=observed_at)
+            )
+        combined = pd.concat(normalized, ignore_index=True).sort_values(
+            ["season", "team"]
+        )
         ref, _ = build_dataset_version(
             storage,
-            build=BuildRequest("offseason_context_family", (), args.expected_code_sha, f"offseason_context_{family}_v1", cutoff, source_capture_ids=tuple(c.capture_id for c in captures), schema_version="offseason_context_family_v1", tier="silver", identity_version="v1"),
+            build=BuildRequest(
+                "offseason_context_family",
+                (),
+                args.expected_code_sha,
+                f"offseason_context_{family}_v1",
+                cutoff,
+                source_capture_ids=tuple(c.capture_id for c in captures),
+                schema_version="offseason_context_family_v1",
+                tier="silver",
+                identity_version="v1",
+            ),
             records=combined.to_dict("records"),
-            partitions={"family": family, "seasons": sorted(combined["season"].astype(int).unique().tolist())},
-            validation={"unique_team_keys": not combined.duplicated(["season", "team"]).any(), "excludes_2020": 2020 not in set(combined["season"].astype(int))},
-            coverage={"family": family, "track": "reconstructed", "source_capture_count": len(captures)},
+            partitions={
+                "family": family,
+                "seasons": sorted(combined["season"].astype(int).unique().tolist()),
+            },
+            validation={
+                "unique_team_keys": not combined.duplicated(["season", "team"]).any(),
+                "excludes_2020": 2020 not in set(combined["season"].astype(int)),
+            },
+            coverage={
+                "family": family,
+                "track": "reconstructed",
+                "source_capture_count": len(captures),
+            },
         )
         family_refs[family] = ref
         family_capture_ids[family] = [capture.capture_id for capture in captures]
-        _immutable_write(storage, family_ref_uri, json.dumps(asdict(ref), sort_keys=True).encode())
+        _immutable_write(
+            storage, family_ref_uri, json.dumps(asdict(ref), sort_keys=True).encode()
+        )
         print(f"materialized {family}", flush=True)
     manifest = {
         "schema_version": "offseason_context_source_manifest_v1",
@@ -297,8 +397,20 @@ def main() -> None:
             "talent": "no authentic nonempty 2026 pre-kickoff capture exists",
         },
     }
-    _immutable_write(storage, f"{args.output_prefix}/source-manifest.json", json.dumps(manifest, indent=2, sort_keys=True).encode())
-    print(json.dumps({"source_manifest_uri": f"{args.output_prefix}/source-manifest.json", "families": sorted(family_refs)}, sort_keys=True))
+    _immutable_write(
+        storage,
+        f"{args.output_prefix}/source-manifest.json",
+        json.dumps(manifest, indent=2, sort_keys=True).encode(),
+    )
+    print(
+        json.dumps(
+            {
+                "source_manifest_uri": f"{args.output_prefix}/source-manifest.json",
+                "families": sorted(family_refs),
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@
 - **Created:** 2026-09-02
 - **Planner:** Sol
 - **Approval source:** User approved the plan and said “Proceed” in Codex on 2026-09-02.
-- **Implementation log:** `session_logs/2026-09-02/06-early-week-strength-prior-research-implementation.md`
+- **Implementation log:** `session_logs/2026-09-04/01-early-week-strength-prior-research-continuation.md`
 - **Commit policy:** Separate plan commit required; implementation commits remain user-controlled.
 
 ## Goal
@@ -18,7 +18,7 @@ Success means each track is reproducible, point-in-time classified, market-free,
 - Production V4 run `2026w1-b2c739321e5d` correctly stored Alabama `+0.1656` (home margin) against East Carolina and a `-28.25` home line. This is not a UI or sign-convention error.
 - Its `game_1` direct-CatBoost route has zero completed-game evidence, so all empirical-Bayes current weights are zero. The route uses prior-season performance rates and only neutral-site/conference context; it has no admitted roster, recruiting, coaching, talent, or conference-strength input.
 - The strict V4 reference has only `prior_core`. Existing historic preseason inputs have 2026 capture timestamps/end-of-season fields and are explicitly reconstructed evidence; they cannot support activation, locked validation, refit, readiness, or publication.
-- The existing R2 roster already defines four context Ridge candidates but skips them until an immutable context-admission report passes. R2 is also blocked on the certified R1 foundation.
+- The existing R2 roster already defines four context Ridge candidates but skips them until an immutable context-admission report passes. R1 is certified at `r1-full-corpus-20260831-5f2a384`: its immutable coverage report sets `tournaments_permitted: true`, so fresh context admission is the remaining R2 gate.
 
 ## Proposed Approach
 
@@ -144,3 +144,15 @@ the adapter accepted only snake_case. The repaired adapter has read-only
 coverage of 91.9%–93.8% in every required season. The failed immutable report
 is preserved; after the repair is committed, rematerialize under a new prefix
 and require the planned three-family admission before direct or R2 execution.
+
+### 2026-09-04 — Certified-R1 handoff and code-bound admission
+
+The R1 coverage report at
+`artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/coverage.json`
+now permits tournaments. Commit the returning-production adapter and R2
+lineage repair before materializing a new Preview-only context prefix bound to
+that code SHA. The new admission must preserve reconstructed provenance and
+admit only returning production, recruiting, and coaching at the existing 90%
+season-coverage threshold; transfers and talent remain excluded with explicit
+diagnostic reasons. This unblocks only reconstructed direct/R2 research reports,
+never locked validation, refit, bundle creation, readiness, publication, or V4.

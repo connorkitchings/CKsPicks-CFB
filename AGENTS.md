@@ -203,10 +203,13 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 - 🟡 **Week 1 ops (by Thursday ~Sept 4):** `prepare-week` → `publish-week` →
   freeze before kickoff; update Vercel `CFB_PUBLICATION_WEEKS=0,1`.
   See `docs/ops/weekly_pipeline.md` for the full cadence.
-- 🧭 **Ratings research (R1–R4):** Paused on in-flight R1 run
-  `r1-full-corpus-20260829-e9edee5` (code `e9edee5`, launched 2026-08-28).
-  R2–R4 remain blocked on `tournaments_permitted: true`. O2 candidate-v1 at
-  `ac1fba1` is diagnostic-only. See
+- 🧭 **Ratings research (R1–R4):** R1 is certified at
+  `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
+  `tournaments_permitted: true`. The immediate gate is a fresh,
+  code-bound Preview offseason-context admission after the returning-production
+  adapter repair. R2 may then evaluate reconstructed context only in its
+  isolated research lane; R3–R4 remain sequentially blocked on R2. O2
+  candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·

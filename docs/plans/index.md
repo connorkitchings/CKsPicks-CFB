@@ -39,8 +39,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 - [Early-week strength-prior research](2026-09-02/early-week-strength-prior-research.md)
   — **In Progress.** Adds audited, football-only offseason-context research to
-  separate R2 prior and direct Game 1–3 tracks; V4 and production stay
-  unchanged.
+  separate R2 prior and direct Game 1–3 tracks. R1 certification now permits
+  tournaments; a fresh code-bound Preview admission is the immediate gate.
+  V4 and production stay unchanged.
 
 - [R1 cross-lineage audit scope remediation](2026-08-28/r1-cross-lineage-audit-scope-remediation.md)
   — Approved. Compares each hard dataset against its own legacy counterpart
@@ -61,17 +62,16 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — Approved, blocked on R2. Compares fixed, Bayesian, recency, Glicko-style,
   and constrained ML updaters without reading 2025.
 - [R2 redesigned offseason-prior tournament](2026-08-27/r2-redesigned-offseason-prior-tournament.md)
-  — Approved, blocked on R1. Generates and selects pooled, EWMA, Ridge, and
-  baseline priors from exact certified refs without caller-produced metrics.
+  — Implemented runner; its R1 certificate gate is satisfied. The first
+  context-enabled Preview execution waits for the fresh offseason-context
+  admission report and remains research-only.
 - [R1 full-corpus recapture and certification](2026-08-27/r1-full-corpus-recapture-and-certification.md)
-  — In Progress, blocked on catalog-restored 2019 legacy comparison evidence.
-  The Preview preflight published its immutable failure report before any
-  successor capture; it cannot substitute evidence or authorize R2.
+  — Certification completed in Preview run `r1-full-corpus-20260831-5f2a384`.
+  Its immutable coverage report permits tournaments; prior failed preflights
+  remain diagnostic evidence only.
 - [R1 legacy-comparison 2019 selection remediation](2026-08-31/r1-legacy-comparison-2019-selection-remediation.md)
-  — **Approved.** Manifest-anchored 2019 resolution: reads the immutable
-  restoration manifest from R2 instead of the catalog, runs integrity checks,
-  merges with the v1 catalog pin for 2021–2025, then completes a fresh
-  code-bound R1 run through certification.
+  — Implemented. Its manifest-anchored 2019 resolution enabled the certified
+  R1 run; the original catalog failure remains immutable diagnostic evidence.
 - [R1 play-capture reliability hardening](2026-08-27/r1-play-capture-reliability-hardening.md)
   — Superseded by the full-corpus R1 contract. Its bounded weekly worker,
   request ledger, and reconciliation implementation remain reusable.

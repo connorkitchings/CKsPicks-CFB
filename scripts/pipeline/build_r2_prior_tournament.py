@@ -121,8 +121,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--expected-code-sha", required=True)
     parser.add_argument(
         "--certify-report-uri",
-        help="URI of the R1 certify report (tournaments_permitted check). "
-        "If omitted, the foundation manifest is trusted.",
+        required=True,
+        help="URI of the passing R1 coverage report pinned to this foundation.",
     )
     parser.add_argument("--context-admission-report-uri")
     parser.add_argument("--context-ref-uri")
@@ -137,7 +137,9 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("R2 prior tournament is Preview-only")
 
     policy = load_season_lineage_policy("conf/ratings/successor_v2_season_lineage.yaml")
-    load_tournament_configs("conf/ratings/successor_v2_tournaments.yaml")  # validate version
+    load_tournament_configs(
+        "conf/ratings/successor_v2_tournaments.yaml"
+    )  # validate version
 
     # Validate output prefix is under research_prefix
     if not args.output_prefix.startswith(f"{policy.research_prefix}/"):
@@ -171,13 +173,16 @@ def main(argv: list[str] | None = None) -> None:
             context_report,
             allow_reconstructed=args.allow_reconstructed_context,
         )
-        admitted_context = read_dataset(storage, _read_ref(storage, args.context_ref_uri))
+        admitted_context = read_dataset(
+            storage, _read_ref(storage, args.context_ref_uri)
+        )
         if set(admitted_context.get("feature_track", pd.Series()).dropna()) != {
             context_report["feature_track"]
         }:
             raise ValueError("Context DatasetRef track does not match admission report")
 
-    # Load and validate R1 foundation manifest
+    # Load and validate R1 foundation manifest.  The parent foundation has its
+    # own immutable code identity; downstream R2 code is expected to evolve.
     manifest_bytes = storage.read_bytes(args.r1_foundation_manifest_uri)
     foundation = json.loads(manifest_bytes.decode())
     if foundation.get("contract_version") != "successor-r1-foundation-v2":
@@ -185,15 +190,34 @@ def main(argv: list[str] | None = None) -> None:
     if foundation.get("state") != "complete":
         raise ValueError("R1 foundation manifest is not complete")
     identity = foundation.get("identity", {})
-    if identity.get("code_sha") != args.expected_code_sha:
-        raise ValueError("R1 foundation code SHA does not match --expected-code-sha")
+    if not identity.get("code_sha"):
+        raise ValueError("R1 foundation manifest is missing its code identity")
 
-    # Optionally verify certify report tournaments_permitted
-    if args.certify_report_uri:
-        certify_bytes = storage.read_bytes(args.certify_report_uri)
-        certify = json.loads(certify_bytes.decode())
-        if not certify.get("tournaments_permitted"):
-            raise ValueError("R1 certify report: tournaments_permitted is not True")
+    certify_bytes = storage.read_bytes(args.certify_report_uri)
+    certify = json.loads(certify_bytes.decode())
+    if not certify.get("tournaments_permitted"):
+        raise ValueError("R1 certify report: tournaments_permitted is not True")
+    certification_lineage = certify.get("lineage") or {}
+    expected_lineage = {
+        "derived_ref_set_uri": foundation.get("derived_ref_set_uri"),
+        "derived_ref_set_sha256": foundation.get("derived_ref_set_sha256"),
+        "measurement_report_uri": foundation.get("measurement", {}).get("report"),
+        "states_report_uri": foundation.get("states", {}).get("report"),
+        "cross_lineage_report_uri": f"{args.r1_foundation_manifest_uri.rsplit('/', 2)[0]}/cross-lineage.json",
+    }
+    if (
+        certification_lineage.get("derived_ref_set_uri")
+        != expected_lineage["derived_ref_set_uri"]
+        or certification_lineage.get("derived_ref_set_sha256")
+        != expected_lineage["derived_ref_set_sha256"]
+        or certification_lineage.get("measurement_report_uri")
+        != expected_lineage["measurement_report_uri"]
+        or certification_lineage.get("state_report_uri")
+        != expected_lineage["states_report_uri"]
+        or certification_lineage.get("cross_lineage_report_uri")
+        != expected_lineage["cross_lineage_report_uri"]
+    ):
+        raise ValueError("R1 coverage report lineage does not match foundation")
 
     # Load measurement-state and team-state refs from foundation
     measurement_info = foundation.get("measurement", {})
@@ -208,14 +232,15 @@ def main(argv: list[str] | None = None) -> None:
     measurement_states = read_dataset(storage, measurement_states_ref)
     team_states = read_dataset(storage, team_states_ref)
 
-    # Validate 2025/2020/2026 are not present
+    # 2025 is retained exclusively for the locked confirmation.  It must not
+    # become a selection or fitting input for an earlier fold.
     for col_name, df in [
         ("measurement_states", measurement_states),
         ("team_states", team_states),
     ]:
         if "season" in df.columns:
             forbidden_present = pd.to_numeric(df["season"], errors="coerce").isin(
-                [2020, 2025, 2026]
+                [2020, 2026]
             )
             if forbidden_present.any():
                 raise ValueError(f"{col_name} contains forbidden seasons")
@@ -229,7 +254,7 @@ def main(argv: list[str] | None = None) -> None:
     else:
         terminal_ms = measurement_states
     for season in policy.historical_development_seasons:
-        if season in (2025, 2020):
+        if season in (2020,):
             continue
         mask = (
             pd.to_numeric(
@@ -248,7 +273,7 @@ def main(argv: list[str] | None = None) -> None:
     outcomes_by_season: dict[int, pd.DataFrame] = {}
     print("Loading game outcome refs from R1 input-refs...", flush=True)
     for season in policy.historical_development_seasons:
-        if season in (2025, 2020):
+        if season in (2020,):
             continue
         outcomes_uri = f"{input_refs_root}/{season}/game_outcomes.json"
         try:
@@ -352,7 +377,12 @@ def main(argv: list[str] | None = None) -> None:
                     terminal_states=source_terminal,
                     target_season=fold_season,
                     policy=policy,
-                    training_terminal_states=terminal_by_season,
+                    training_terminal_states={
+                        season: values
+                        for season, values in terminal_by_season.items()
+                        if season < fold_season
+                        and season not in policy.forbidden_seasons
+                    },
                     admitted_context=admitted_context,
                 )
             except Exception as exc:
@@ -534,7 +564,9 @@ def main(argv: list[str] | None = None) -> None:
         "tournament_contract_version": TOURNAMENT_CONTRACT_VERSION,
         "active_candidates": active_candidates,
         "skipped_candidates": [
-            candidate for candidate in _CONTEXT_REQUIRED if candidate not in active_candidates
+            candidate
+            for candidate in _CONTEXT_REQUIRED
+            if candidate not in active_candidates
         ],
         "context_admission_report_uri": args.context_admission_report_uri,
         "context_ref_uri": args.context_ref_uri,

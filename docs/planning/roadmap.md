@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-08-31
+> **Last updated:** 2026-09-04
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 ## Direction
@@ -135,14 +135,12 @@ calendar date cannot bypass a failed gate.
 - [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
   — **In Progress.** Governing R1–R4 research contract: 2015–2019 plus
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
-  future candidate-v2 evidence lane. R1 runs on 2026-08-28/29 succeeded
-  through cross-lineage audit and certification but failed at
-  `freeze_successor_legacy_comparison_evidence` — no 2019 catalog entry
-  (the restoration predated catalog integration). Remediation plan approved
-  2026-08-31:
-  [R1 legacy-comparison 2019 selection remediation](../plans/2026-08-31/r1-legacy-comparison-2019-selection-remediation.md)
-  — manifest-anchored 2019 resolution. Fresh code-bound R1 run pending after
-  remediation commit. R2–R4 remain blocked on `tournaments_permitted: true`.
+  future candidate-v2 evidence lane. The remediated R1 run
+  `r1-full-corpus-20260831-5f2a384` is certified: its immutable
+  `coverage.json` sets `tournaments_permitted: true`. The next gate is a
+  fresh, code-bound Preview admission of reconstructed offseason context;
+  direct early-game research and R2 may use only its passing report. R3–R4
+  remain sequentially blocked on the R2 outcome.
 
 ## Invariants and open decisions
 
