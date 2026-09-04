@@ -134,10 +134,12 @@ def test_family_frame_joins_project_team_aliases():
     assert result["team"].tolist() == ["Appalachian State"]
 
 
-def test_reconstructed_returning_production_allows_only_declared_fbs_entries():
+def test_reconstructed_returning_production_allows_only_declared_absences():
     module = _reference_module()
     family_frame = module["_family_frame"]
-    exceptions = sorted(module["FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION"])
+    exceptions = sorted(
+        module["DECLARED_RECONSTRUCTED_CONTEXT_ABSENCES"]["returning_production"]
+    )
     features = module["FAMILY_FEATURES"]["returning_production"]
     universe = pd.DataFrame(
         {
@@ -159,6 +161,31 @@ def test_reconstructed_returning_production_allows_only_declared_fbs_entries():
     assert len(metadata["structural_absences"]) == len(exceptions)
     assert result is not None
     assert result["returning_production_available"].eq(0).all()
+
+
+def test_reconstructed_recruiting_allows_declared_provider_gap():
+    module = _reference_module()
+    family_frame = module["_family_frame"]
+    features = module["FAMILY_FEATURES"]["recruiting"]
+    universe = pd.DataFrame(
+        {
+            "season": [2022],
+            "team": ["Florida International"],
+            "season_first_kickoff_utc": pd.to_datetime(["2022-09-01T00:00:00Z"]),
+        }
+    )
+    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+
+    result, metadata = family_frame(
+        source, universe=universe, family="recruiting", strict=False
+    )
+
+    assert metadata["eligible"] is True
+    assert metadata["structural_absences"] == [
+        {"season": 2022, "team": "Florida International", "reason": "source_unavailable"}
+    ]
+    assert result is not None
+    assert result["recruiting_available"].eq(0).all()
 
 
 def test_reconstructed_returning_production_rejects_an_undeclared_gap():

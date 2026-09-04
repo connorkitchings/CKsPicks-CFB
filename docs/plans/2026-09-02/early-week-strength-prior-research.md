@@ -183,3 +183,13 @@ indicator and `fbs_history_unavailable` provenance for only these keys. It
 must reject any other missing key. Direct research uses the complete base
 prior/recruiting/coaching variant for an entrant-involved game and records the
 fallback; it neither substitutes FCS production nor promotes this fallback.
+
+### 2026-09-04 — Declared provider-gap extension
+
+The user also approved the same reconstructed-only, fail-closed cohort policy
+for Connecticut's missing 2021 returning-production row and Florida
+International's incomplete 2022 recruiting row. These are recorded as
+`source_unavailable`, distinct from `fbs_history_unavailable`. A family can
+enter direct research only through a complete-family cohort; affected games
+remain in the complete base cohort. Recruiting remains an optional proxy for
+roster quality, not an assertion that it measures the post-transfer roster.

@@ -156,27 +156,31 @@ def _selection(
 ) -> tuple[pd.DataFrame, dict[str, dict[str, dict[str, float]]]]:
     variants = _context_feature_variants(raw, spec, required_families=required_families)
     variant_frames = {variant: raw for variant in variants}
-    availability_columns = {
-        "home_returning_production_available",
-        "away_returning_production_available",
-    }
-    if availability_columns <= set(raw):
+    for family in required_families:
+        prefixes = FAMILY_PREFIXES[family]
+        family_columns = [
+            column
+            for column in raw
+            if any(column.startswith(prefix) for prefix in prefixes)
+        ]
+        if not family_columns:
+            continue
+        values = raw.loc[:, family_columns].apply(pd.to_numeric, errors="coerce")
         complete_context = raw.loc[
-            raw.loc[:, sorted(availability_columns)].fillna(0).astype(int).min(axis=1)
-            == 1
+            values.notna().all(axis=1)
+            & np.isfinite(values.to_numpy(dtype=float)).all(axis=1)
         ].copy()
         complete_variants = additive_feature_variants(
             complete_context,
             family_order=list(spec.preseason_feature_variants),
             context_features=list(spec.context_features),
         )
-        if "returning_production" in complete_variants:
+        if family in complete_variants and family not in variants:
             # This cohort is diagnostic-only.  Entrant-involved games retain
             # the all-row base variant below and never receive an FCS proxy.
-            variants["returning_production_complete"] = complete_variants[
-                "returning_production"
-            ]
-            variant_frames["returning_production_complete"] = complete_context
+            variant = f"{family}_complete"
+            variants[variant] = complete_variants[family]
+            variant_frames[variant] = complete_context
     ridge_rows = []
     for feature_variant, context_features in variants.items():
         for strengths in prior_strength_designs():
@@ -199,7 +203,7 @@ def _selection(
                 )
             predictions["context_cohort"] = (
                 "returning_production_complete"
-                if feature_variant == "returning_production_complete"
+                if feature_variant.endswith("_complete")
                 else "all_games_base"
             )
             ridge_rows.append(predictions)
@@ -234,7 +238,7 @@ def _selection(
                 )
             predictions["context_cohort"] = (
                 "returning_production_complete"
-                if feature_variant == "returning_production_complete"
+                if feature_variant.endswith("_complete")
                 else "all_games_base"
             )
             cat_rows.append(predictions)

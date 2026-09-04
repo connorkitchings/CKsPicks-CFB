@@ -20,6 +20,9 @@
   apparent coverage gap without changing evidence.
 - Eight returning-production absences are declared FBS-entry cases. Preserve
   them as `fbs_history_unavailable`; do not manufacture values from FCS data.
+- Connecticut 2021 returning production and Florida International 2022
+  recruiting are separately declared `source_unavailable` provider gaps. They
+  remain null and use only complete-family diagnostic cohorts.
 
 ## Work Completed
 

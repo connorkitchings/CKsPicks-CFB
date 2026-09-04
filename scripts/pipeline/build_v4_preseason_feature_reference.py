@@ -68,18 +68,23 @@ FAMILY_FEATURES = {
 # Returning production is intentionally unavailable: using an FCS prior would
 # change the measurement contract.  Keep this exception set narrow and
 # immutable so a genuine provider gap cannot be silently treated as expected.
-FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION = frozenset(
-    {
-        (2021, "Old Dominion"),
-        (2022, "James Madison"),
-        (2023, "Jacksonville State"),
-        (2024, "Kennesaw State"),
-        (2025, "Delaware"),
-        (2025, "Missouri State"),
-        (2026, "North Dakota State"),
-        (2026, "Sacramento State"),
-    }
-)
+DECLARED_RECONSTRUCTED_CONTEXT_ABSENCES = {
+    "returning_production": {
+        (2021, "Connecticut"): "source_unavailable",
+        (2021, "Old Dominion"): "fbs_history_unavailable",
+        (2022, "James Madison"): "fbs_history_unavailable",
+        (2023, "Jacksonville State"): "fbs_history_unavailable",
+        (2023, "Sam Houston State"): "fbs_history_unavailable",
+        (2024, "Kennesaw State"): "fbs_history_unavailable",
+        (2025, "Delaware"): "fbs_history_unavailable",
+        (2025, "Missouri State"): "fbs_history_unavailable",
+        (2026, "North Dakota State"): "fbs_history_unavailable",
+        (2026, "Sacramento State"): "fbs_history_unavailable",
+    },
+    "recruiting": {
+        (2022, "Florida International"): "source_unavailable",
+    },
+}
 
 
 def _ref(storage, uri: str) -> DatasetRef:
@@ -188,18 +193,17 @@ def _family_frame(
         (int(row.season), str(row.team))
         for row in merged.loc[~complete_rows, ["season", "team"]].itertuples(index=False)
     )
-    expected_fbs_history_absences = (
-        family == "returning_production"
-        and not strict
-        and missing_keys <= FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION
+    declared_absences = DECLARED_RECONSTRUCTED_CONTEXT_ABSENCES.get(family, {})
+    expected_reconstructed_absences = (
+        not strict and missing_keys <= set(declared_absences)
     )
     eligible = (
-        (values_complete or expected_fbs_history_absences)
+        (values_complete or expected_reconstructed_absences)
         and evidence_complete
         and (effective_before_kickoff if strict else True)
     )
     reason = None
-    if not values_complete and not expected_fbs_history_absences:
+    if not values_complete and not expected_reconstructed_absences:
         reason = "incomplete team-season feature coverage"
     elif not evidence_complete:
         reason = "missing effective_at or retrieved_at provenance"
@@ -213,14 +217,20 @@ def _family_frame(
         "required_rows": int(len(universe)),
         "complete_coverage": values_complete,
         "structural_absences": [
-            {"season": season, "team": team, "reason": "fbs_history_unavailable"}
+            {
+                "season": season,
+                "team": team,
+                "reason": declared_absences.get(
+                    (season, team), "missing_source_evidence"
+                ),
+            }
             for season, team in sorted(missing_keys)
         ],
         "effective_before_kickoff": effective_before_kickoff,
     }
-    if family == "returning_production" and eligible:
-        merged["returning_production_available"] = complete_rows.astype(int)
-        columns = ["season", "team", *features, "returning_production_available"]
+    if family in DECLARED_RECONSTRUCTED_CONTEXT_ABSENCES and eligible:
+        merged[f"{family}_available"] = complete_rows.astype(int)
+        columns = ["season", "team", *features, f"{family}_available"]
     else:
         columns = ["season", "team", *features]
     return (merged[columns] if eligible else None), metadata
