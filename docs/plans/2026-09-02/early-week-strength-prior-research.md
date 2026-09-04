@@ -156,3 +156,17 @@ admit only returning production, recruiting, and coaching at the existing 90%
 season-coverage threshold; transfers and talent remain excluded with explicit
 diagnostic reasons. This unblocks only reconstructed direct/R2 research reports,
 never locked validation, refit, bundle creation, readiness, publication, or V4.
+
+### 2026-09-04 — Fresh Preview admission completed
+
+The code-bound Preview prefix
+`artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2`
+has a complete source manifest and admitted context report. The report admits
+reconstructed `returning_production`, `recruiting`, and `coaching`; every
+permitted-season coverage fraction is at least 98.46%, above the 90% gate.
+`transfer_portal` remains rejected because CFBD lacks 2015 data, and `talent`
+because no authentic nonempty 2026 pre-kickoff capture exists. Its context ref
+is `context-ref.json` (content SHA
+`6430bf713637cadb6bb27d71af4ab204936091638c647276d4b4b7e15b3d8a2a`).
+This evidence is activation-ineligible and authorizes only the planned
+reconstructed direct and R2 Preview reports after the evidence checkpoint.

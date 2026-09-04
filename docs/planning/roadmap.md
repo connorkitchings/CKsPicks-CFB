@@ -137,10 +137,11 @@ calendar date cannot bypass a failed gate.
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
   future candidate-v2 evidence lane. The remediated R1 run
   `r1-full-corpus-20260831-5f2a384` is certified: its immutable
-  `coverage.json` sets `tournaments_permitted: true`. The next gate is a
-  fresh, code-bound Preview admission of reconstructed offseason context;
-  direct early-game research and R2 may use only its passing report. R3–R4
-  remain sequentially blocked on the R2 outcome.
+  `coverage.json` sets `tournaments_permitted: true`. The fresh, code-bound
+  Preview admission at `early-week-context-20260904-786580ec-r2` admits only
+  reconstructed returning production, recruiting, and coaching; direct
+  early-game research and R2 may use only that passing report. R3–R4 remain
+  sequentially blocked on the R2 outcome.
 
 ## Invariants and open decisions
 

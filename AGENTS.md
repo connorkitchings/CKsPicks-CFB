@@ -205,10 +205,11 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   See `docs/ops/weekly_pipeline.md` for the full cadence.
 - 🧭 **Ratings research (R1–R4):** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
-  `tournaments_permitted: true`. The immediate gate is a fresh,
-  code-bound Preview offseason-context admission after the returning-production
-  adapter repair. R2 may then evaluate reconstructed context only in its
-  isolated research lane; R3–R4 remain sequentially blocked on R2. O2
+  `tournaments_permitted: true`. The fresh, code-bound Preview admission at
+  `early-week-context-20260904-786580ec-r2` admits reconstructed returning
+  production, recruiting, and coaching; transfers and talent remain rejected.
+  After its evidence checkpoint, direct and R2 research may run only in their
+  isolated Preview lanes; R3–R4 remain sequentially blocked on R2. O2
   candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
 

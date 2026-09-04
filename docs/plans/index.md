@@ -39,9 +39,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 - [Early-week strength-prior research](2026-09-02/early-week-strength-prior-research.md)
   — **In Progress.** Adds audited, football-only offseason-context research to
-  separate R2 prior and direct Game 1–3 tracks. R1 certification now permits
-  tournaments; a fresh code-bound Preview admission is the immediate gate.
-  V4 and production stay unchanged.
+  separate R2 prior and direct Game 1–3 tracks. R1 certification and the
+  code-bound reconstructed Preview admission are complete; direct/R2 reports
+  are the next isolated research work. V4 and production stay unchanged.
 
 - [R1 cross-lineage audit scope remediation](2026-08-28/r1-cross-lineage-audit-scope-remediation.md)
   — Approved. Compares each hard dataset against its own legacy counterpart
@@ -62,9 +62,8 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — Approved, blocked on R2. Compares fixed, Bayesian, recency, Glicko-style,
   and constrained ML updaters without reading 2025.
 - [R2 redesigned offseason-prior tournament](2026-08-27/r2-redesigned-offseason-prior-tournament.md)
-  — Implemented runner; its R1 certificate gate is satisfied. The first
-  context-enabled Preview execution waits for the fresh offseason-context
-  admission report and remains research-only.
+  — Implemented runner; its R1 certificate gate and reconstructed context
+  admission are satisfied. Its first Preview execution remains research-only.
 - [R1 full-corpus recapture and certification](2026-08-27/r1-full-corpus-recapture-and-certification.md)
   — Certification completed in Preview run `r1-full-corpus-20260831-5f2a384`.
   Its immutable coverage report permits tournaments; prior failed preflights
