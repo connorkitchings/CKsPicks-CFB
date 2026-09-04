@@ -23,7 +23,10 @@ from cks_picks_cfb.models.game_ordinal_training import (
 )
 from cks_picks_cfb.models.predictive_evaluation import evaluate_predictive_candidate
 from cks_picks_cfb.models.training_policy import policy_from_mapping
-from cks_picks_cfb.models.v4_feature_variants import additive_feature_variants
+from cks_picks_cfb.models.v4_feature_variants import (
+    FAMILY_PREFIXES,
+    additive_feature_variants,
+)
 from cks_picks_cfb.ratings.offseason_context import require_admitted_context
 
 EARLY = ("game_1", "game_2", "game_3", "game_4")
@@ -37,7 +40,16 @@ def _context_feature_variants(
         family_order=list(spec.preseason_feature_variants),
         context_features=list(spec.context_features),
     )
-    missing = sorted(set(required_families) - set(variants))
+    # A reconstructed returning-production family may have declared FBS-entry
+    # absences.  Its columns remain lineage-visible, while the complete base
+    # variants provide the deterministic fallback for those games.
+    source_columns = {
+        family
+        for family, prefixes in FAMILY_PREFIXES.items()
+        if family != "prior_core"
+        and any(any(column.startswith(prefix) for prefix in prefixes) for column in raw)
+    }
+    missing = sorted(set(required_families) - source_columns)
     if missing:
         raise ValueError(
             f"Feature reference is missing admitted context families: {missing}"
@@ -143,14 +155,35 @@ def _selection(
     raw: pd.DataFrame, policy, spec, seed: int, *, required_families: tuple[str, ...] = ()
 ) -> tuple[pd.DataFrame, dict[str, dict[str, dict[str, float]]]]:
     variants = _context_feature_variants(raw, spec, required_families=required_families)
+    variant_frames = {variant: raw for variant in variants}
+    availability_columns = {
+        "home_returning_production_available",
+        "away_returning_production_available",
+    }
+    if availability_columns <= set(raw):
+        complete_context = raw.loc[
+            raw.loc[:, sorted(availability_columns)].fillna(0).astype(int).min(axis=1)
+            == 1
+        ].copy()
+        complete_variants = additive_feature_variants(
+            complete_context,
+            family_order=list(spec.preseason_feature_variants),
+            context_features=list(spec.context_features),
+        )
+        if "returning_production" in complete_variants:
+            # This cohort is diagnostic-only.  Entrant-involved games retain
+            # the all-row base variant below and never receive an FCS proxy.
+            variants["returning_production_complete"] = complete_variants[
+                "returning_production"
+            ]
+            variant_frames["returning_production_complete"] = complete_context
     ridge_rows = []
     for feature_variant, context_features in variants.items():
         for strengths in prior_strength_designs():
             frame, features = add_ordinal_shrinkage_features(
-                raw, prior_strengths=strengths
+                variant_frames[feature_variant], prior_strengths=strengths
             )
-            ridge_rows.append(
-                generate_game_ordinal_candidate_predictions(
+            predictions = generate_game_ordinal_candidate_predictions(
                     frame,
                     policy=policy,
                     features=[*features, *context_features],
@@ -164,7 +197,12 @@ def _selection(
                     established_features=list(spec.established_features),
                     feature_variant=feature_variant,
                 )
+            predictions["context_cohort"] = (
+                "returning_production_complete"
+                if feature_variant == "returning_production_complete"
+                else "all_games_base"
             )
+            ridge_rows.append(predictions)
     ridge = pd.concat(ridge_rows, ignore_index=True)
     selected = {
         candidate: _best_strengths(ridge, candidate)
@@ -178,10 +216,9 @@ def _selection(
         }:
             values = json.loads(strengths)
             frame, features = add_ordinal_shrinkage_features(
-                raw, prior_strengths=values
+                variant_frames[feature_variant], prior_strengths=values
             )
-            cat_rows.append(
-                generate_game_ordinal_candidate_predictions(
+            predictions = generate_game_ordinal_candidate_predictions(
                     frame,
                     policy=policy,
                     features=[*features, *variants[feature_variant]],
@@ -195,7 +232,12 @@ def _selection(
                     established_features=list(spec.established_features),
                     feature_variant=feature_variant,
                 )
+            predictions["context_cohort"] = (
+                "returning_production_complete"
+                if feature_variant == "returning_production_complete"
+                else "all_games_base"
             )
+            cat_rows.append(predictions)
     blends = []
     weights = {}
     for feature_variant, values in ridge.groupby("feature_variant", observed=True):
@@ -339,6 +381,15 @@ def main() -> None:
                 "Context admission report track does not match feature reference track"
             )
     raw["feature_track"] = next(iter(tracks)) if tracks else "legacy"
+    availability_columns = {
+        "home_returning_production_available",
+        "away_returning_production_available",
+    }
+    if availability_columns <= set(raw):
+        raw["returning_production_fallback"] = (
+            raw.loc[:, sorted(availability_columns)].fillna(0).astype(int).min(axis=1)
+            == 0
+        ).astype(int)
     if args.stage == "selection":
         result, weights = _selection(
             raw,

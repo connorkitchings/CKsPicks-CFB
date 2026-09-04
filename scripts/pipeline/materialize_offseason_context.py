@@ -23,6 +23,8 @@ from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import (
     catalog_connection_url,
+    register_dataset_version,
+    register_existing_dataset_ref,
     register_source_capture,
     source_capture_by_id,
 )
@@ -222,6 +224,7 @@ def main() -> None:
     if not args.output_prefix.startswith("artifacts/research/rating-successor-v2/"):
         raise ValueError("Context output must use the isolated successor-v2 prefix")
     storage = get_storage(environment="preview")
+    catalog_url = catalog_connection_url("preview")
     foundation = json.loads(
         storage.read_bytes(args.r1_foundation_manifest_uri).decode()
     )
@@ -236,7 +239,7 @@ def main() -> None:
     universe, universe_parents = _team_universe(
         storage, args.r1_foundation_manifest_uri, args.games_2026_ref_uri
     )
-    universe_ref, _ = build_dataset_version(
+    universe_ref, universe_manifest = build_dataset_version(
         storage,
         build=BuildRequest(
             "offseason_context_team_universe",
@@ -254,6 +257,7 @@ def main() -> None:
         },
         validation={"unique_team_keys": True, "excludes_2020": True},
     )
+    register_dataset_version(catalog_url, universe_ref, universe_manifest)
     _immutable_write(
         storage,
         f"{args.output_prefix}/team-universe-ref.json",
@@ -269,7 +273,7 @@ def main() -> None:
         print(f"materializing {family}", flush=True)
         family_ref_uri = f"{args.output_prefix}/family-refs/{family}.json"
         if storage.exists(family_ref_uri):
-            ref = _ref(storage, family_ref_uri)
+            ref = register_existing_dataset_ref(catalog_url, storage, family_ref_uri)
             dataset_manifest = json.loads(
                 storage.read_bytes(
                     ref.uri.rsplit("/", 1)[0] + "/manifest.json"
@@ -308,9 +312,7 @@ def main() -> None:
                 code_sha=args.expected_code_sha,
             )
             try:
-                capture = source_capture_by_id(
-                    catalog_connection_url("preview"), capture_id
-                )
+                capture = source_capture_by_id(catalog_url, capture_id)
                 frame = _features(
                     family,
                     read_source_capture(storage, capture).to_dict("records"),
@@ -327,7 +329,7 @@ def main() -> None:
                     capture_id=capture_id,
                 )
                 try:
-                    register_source_capture(catalog_connection_url("preview"), capture)
+                    register_source_capture(catalog_url, capture)
                 except ValueError as exc:
                     # An interrupted prior invocation can finish catalog
                     # registration after this attempt's initial lookup.  Its
@@ -335,9 +337,7 @@ def main() -> None:
                     # instead of creating a timestamp-conflicting replay.
                     if not str(exc).startswith("Immutable source capture conflict:"):
                         raise
-                    capture = source_capture_by_id(
-                        catalog_connection_url("preview"), capture_id
-                    )
+                    capture = source_capture_by_id(catalog_url, capture_id)
                     frame = _features(
                         family,
                         read_source_capture(storage, capture).to_dict("records"),
@@ -351,7 +351,7 @@ def main() -> None:
         combined = pd.concat(normalized, ignore_index=True).sort_values(
             ["season", "team"]
         )
-        ref, _ = build_dataset_version(
+        ref, family_manifest = build_dataset_version(
             storage,
             build=BuildRequest(
                 "offseason_context_family",
@@ -379,6 +379,7 @@ def main() -> None:
                 "source_capture_count": len(captures),
             },
         )
+        register_dataset_version(catalog_url, ref, family_manifest)
         family_refs[family] = ref
         family_capture_ids[family] = [capture.capture_id for capture in captures]
         _immutable_write(

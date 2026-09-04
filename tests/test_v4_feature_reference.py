@@ -104,6 +104,85 @@ def test_strict_source_requires_pre_kickoff_effective_time_and_full_coverage():
     assert reconstructed is not None
 
 
+def test_family_frame_joins_project_team_aliases():
+    module = _reference_module()
+    family_frame = module["_family_frame"]
+    features = module["FAMILY_FEATURES"]["returning_production"]
+    universe = pd.DataFrame(
+        {
+            "season": [2021],
+            "team": ["Appalachian State"],
+            "season_first_kickoff_utc": pd.to_datetime(["2021-09-01T00:00:00Z"]),
+        }
+    )
+    source = pd.DataFrame(
+        {
+            "season": [2021],
+            "team": ["App State"],
+            "effective_at": ["2021-08-01T00:00:00Z"],
+            "retrieved_at": ["2021-08-02T00:00:00Z"],
+            **{feature: [1.0] for feature in features},
+        }
+    )
+
+    result, metadata = family_frame(
+        source, universe=universe, family="returning_production", strict=False
+    )
+
+    assert metadata["eligible"] is True
+    assert result is not None
+    assert result["team"].tolist() == ["Appalachian State"]
+
+
+def test_reconstructed_returning_production_allows_only_declared_fbs_entries():
+    module = _reference_module()
+    family_frame = module["_family_frame"]
+    exceptions = sorted(module["FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION"])
+    features = module["FAMILY_FEATURES"]["returning_production"]
+    universe = pd.DataFrame(
+        {
+            "season": [season for season, _ in exceptions],
+            "team": [team for _, team in exceptions],
+            "season_first_kickoff_utc": pd.to_datetime(
+                ["2021-09-01T00:00:00Z"] * len(exceptions)
+            ),
+        }
+    )
+    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+
+    result, metadata = family_frame(
+        source, universe=universe, family="returning_production", strict=False
+    )
+
+    assert metadata["eligible"] is True
+    assert metadata["complete_coverage"] is False
+    assert len(metadata["structural_absences"]) == len(exceptions)
+    assert result is not None
+    assert result["returning_production_available"].eq(0).all()
+
+
+def test_reconstructed_returning_production_rejects_an_undeclared_gap():
+    module = _reference_module()
+    family_frame = module["_family_frame"]
+    features = module["FAMILY_FEATURES"]["returning_production"]
+    universe = pd.DataFrame(
+        {
+            "season": [2021],
+            "team": ["Unexpected Gap"],
+            "season_first_kickoff_utc": pd.to_datetime(["2021-09-01T00:00:00Z"]),
+        }
+    )
+    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+
+    result, metadata = family_frame(
+        source, universe=universe, family="returning_production", strict=False
+    )
+
+    assert result is None
+    assert metadata["eligible"] is False
+    assert metadata["reason"] == "incomplete team-season feature coverage"
+
+
 def test_route_report_freezes_the_selected_feature_variant():
     module = _evaluator_module()
     rows = []

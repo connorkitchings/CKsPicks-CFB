@@ -24,7 +24,7 @@ Success means each track is reproducible, point-in-time classified, market-free,
 
 Use a shared, source-family admission boundary before either model experiment. The normalized source contract is one row per `season`, `team`, and family, with every family feature, `effective_at`, `retrieved_at`, source identity, and an explicit `feature_track` of `strict` or `reconstructed`.
 
-Admit only complete football-only family data: returning production, transfers, recruiting, coaching, and optional talent. Require at least 90% FBS team-season coverage per season, canonical team mapping, no duplicate keys, finite numeric values, no market-named fields, and an authentic pre-kickoff 2026 capture. A family that fails is omitted wholesale; no row-level fill or fallback is allowed.
+Admit only football-only family data: returning production, transfers, recruiting, coaching, and optional talent. Require at least 90% FBS team-season coverage per season, canonical team mapping, no duplicate keys, finite numeric values, no market-named fields, and an authentic pre-kickoff 2026 capture. A family that fails is omitted wholesale. The sole permitted row-level exception is the checked-in, auditable FBS-entry list for returning production; those rows retain null values and an explicit `fbs_history_unavailable` status, never a filled FCS proxy.
 
 Run two independent experiments from the admitted context. Do not claim a shared winner: R2 evaluates preseason team-state priors, while the direct track evaluates Game 1–3 margin/total predictions. Reconstructed data can produce research reports only. Strict data is required before a later selection, locked test, refit, or promotion proposal.
 
@@ -68,7 +68,7 @@ Run two independent experiments from the admitted context. Do not claim a shared
 
 **Changes:**
 
-- Generate Game 1–3 spread and total candidates using deterministic additive variants in this order: `prior_core`, returning production, transfers, recruiting, coaching, then optional talent.
+- Generate Game 1–3 spread and total candidates using deterministic additive variants in this order: `prior_core`, returning production, transfers, recruiting, coaching, then optional talent. For a declared FBS-entry absence, retain the base prior/recruiting/coaching path and record a returning-production fallback flag; returning-production features are not silently imputed or used for that game.
 - Evaluate direct Ridge, direct CatBoost, points-derived Ridge, and points-derived CatBoost against the frozen V4 baseline on the existing 2022–2024 temporal folds. Record MAE, RMSE, bias, paired bootstrap, seasonal stability, per-family coverage, and the selected feature set for every route.
 - For reconstructed input, use only the existing research-report mode; block locked-2025 evaluation, refit, bundle creation, readiness, and publication.
 
@@ -170,3 +170,16 @@ is `context-ref.json` (content SHA
 `6430bf713637cadb6bb27d71af4ab204936091638c647276d4b4b7e15b3d8a2a`).
 This evidence is activation-ineligible and authorizes only the planned
 reconstructed direct and R2 Preview reports after the evidence checkpoint.
+
+### 2026-09-04 — FBS-entry returning-production exception
+
+The user approved an explicit research-only handling policy for teams entering
+FBS without an eligible FBS returning-production season. The checked-in
+exception list is limited to Old Dominion (2021), James Madison (2022),
+Jacksonville State (2023), Kennesaw State (2024), Delaware and Missouri State
+(2025), and North Dakota State and Sacramento State (2026). The feature
+reference must preserve null returning-production values plus an availability
+indicator and `fbs_history_unavailable` provenance for only these keys. It
+must reject any other missing key. Direct research uses the complete base
+prior/recruiting/coaching variant for an entrant-involved game and records the
+fallback; it neither substitutes FCS production nor promotes this fallback.

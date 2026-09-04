@@ -26,6 +26,7 @@ from cks_picks_cfb.data.lake import (
 )
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.models.v4_feature_variants import FAMILY_PREFIXES
+from cks_picks_cfb.preseason_features import canonical_team
 
 FAMILY_FEATURES = {
     "returning_production": (
@@ -62,6 +63,23 @@ FAMILY_FEATURES = {
     ),
     "talent": ("talent",),
 }
+
+# These are FBS-entry team-seasons, verified against the historical schedule.
+# Returning production is intentionally unavailable: using an FCS prior would
+# change the measurement contract.  Keep this exception set narrow and
+# immutable so a genuine provider gap cannot be silently treated as expected.
+FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION = frozenset(
+    {
+        (2021, "Old Dominion"),
+        (2022, "James Madison"),
+        (2023, "Jacksonville State"),
+        (2024, "Kennesaw State"),
+        (2025, "Delaware"),
+        (2025, "Missouri State"),
+        (2026, "North Dakota State"),
+        (2026, "Sacramento State"),
+    }
+)
 
 
 def _ref(storage, uri: str) -> DatasetRef:
@@ -111,6 +129,12 @@ def _team_universe(core: pd.DataFrame) -> pd.DataFrame:
         ignore_index=True,
     )
     sides["season"] = sides["season"].astype(int)
+    # The historical V4 core keeps its provider-facing game labels.  Context
+    # families use the project canonical identity, so normalize before joining
+    # rather than misclassifying a known alias as missing evidence.
+    sides["team"] = sides["team"].map(canonical_team)
+    if sides["team"].isna().any():
+        raise ValueError("Core Gold contains an invalid team identity")
     sides["start_date"] = pd.to_datetime(sides["start_date"], utc=True, errors="raise")
     return (
         sides.groupby(["season", "team"], as_index=False)["start_date"]
@@ -135,6 +159,7 @@ def _family_frame(
         return None, {"eligible": False, "reason": f"missing columns: {missing}"}
     frame = source[["season", "team", "effective_at", "retrieved_at", *features]].copy()
     frame["season"] = pd.to_numeric(frame["season"], errors="coerce")
+    frame["team"] = frame["team"].map(canonical_team)
     frame["effective_at"] = pd.to_datetime(
         frame["effective_at"], utc=True, errors="coerce"
     )
@@ -148,18 +173,33 @@ def _family_frame(
     merged = universe.merge(
         frame, on=["season", "team"], how="left", validate="one_to_one"
     )
-    values_complete = not merged[features].isna().any().any()
-    evidence_complete = not merged[["effective_at", "retrieved_at"]].isna().any().any()
+    complete_rows = merged[features].notna().all(axis=1)
+    values_complete = bool(complete_rows.all())
+    evidence_complete = bool(
+        merged.loc[complete_rows, ["effective_at", "retrieved_at"]].notna().all().all()
+    )
     effective_before_kickoff = bool(
-        (merged["effective_at"] < merged["season_first_kickoff_utc"]).all()
+        (
+            merged.loc[complete_rows, "effective_at"]
+            < merged.loc[complete_rows, "season_first_kickoff_utc"]
+        ).all()
+    )
+    missing_keys = frozenset(
+        (int(row.season), str(row.team))
+        for row in merged.loc[~complete_rows, ["season", "team"]].itertuples(index=False)
+    )
+    expected_fbs_history_absences = (
+        family == "returning_production"
+        and not strict
+        and missing_keys <= FBS_HISTORY_UNAVAILABLE_RETURNING_PRODUCTION
     )
     eligible = (
-        values_complete
+        (values_complete or expected_fbs_history_absences)
         and evidence_complete
         and (effective_before_kickoff if strict else True)
     )
     reason = None
-    if not values_complete:
+    if not values_complete and not expected_fbs_history_absences:
         reason = "incomplete team-season feature coverage"
     elif not evidence_complete:
         reason = "missing effective_at or retrieved_at provenance"
@@ -171,9 +211,19 @@ def _family_frame(
         "required_features": features,
         "covered_rows": int(merged[features].notna().all(axis=1).sum()),
         "required_rows": int(len(universe)),
+        "complete_coverage": values_complete,
+        "structural_absences": [
+            {"season": season, "team": team, "reason": "fbs_history_unavailable"}
+            for season, team in sorted(missing_keys)
+        ],
         "effective_before_kickoff": effective_before_kickoff,
     }
-    return (merged[["season", "team", *features]] if eligible else None), metadata
+    if family == "returning_production" and eligible:
+        merged["returning_production_available"] = complete_rows.astype(int)
+        columns = ["season", "team", *features, "returning_production_available"]
+    else:
+        columns = ["season", "team", *features]
+    return (merged[columns] if eligible else None), metadata
 
 
 def main() -> None:
@@ -283,7 +333,10 @@ def main() -> None:
         validation={
             "unique_team_keys": not result.duplicated(["season", "team"]).any(),
             "excludes_2020": 2020 not in set(result["season"].astype(int)),
-            "strict_track_activation_eligible": strict,
+            # A reconstructed reference is deliberately non-activatable, not
+            # invalid. It may be built only for the separately guarded
+            # research-only evaluation path.
+            "strict_track_activation_eligible": strict if strict else True,
         },
         coverage={
             "feature_track": args.track,
