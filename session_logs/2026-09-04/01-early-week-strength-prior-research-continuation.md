@@ -23,6 +23,10 @@
 - Connecticut 2021 returning production and Florida International 2022
   recruiting are separately declared `source_unavailable` provider gaps. They
   remain null and use only complete-family diagnostic cohorts.
+- The first model-ready assembly failed before artifact creation because its
+  raw V4 game labels were joined directly to canonical preseason identities.
+  The repaired assembler uses a temporary canonical join key and preserves
+  displayed team labels.
 
 ## Work Completed
 
@@ -42,6 +46,7 @@
 - `scripts/pipeline/build_r2_prior_tournament.py` — pending user-owned lineage/selection repair.
 - `scripts/pipeline/materialize_offseason_context.py` — pending user-owned provenance and idempotency repair.
 - `scripts/pipeline/build_v4_preseason_feature_reference.py` — canonical joins and declared FBS-entry availability.
+- `scripts/pipeline/assemble_model_ready_features.py` — canonical preseason join.
 - `contracts/teams.py` — canonical FIU alias.
 - `tests/test_v4_feature_reference.py` — alias and FBS-entry regression coverage.
 

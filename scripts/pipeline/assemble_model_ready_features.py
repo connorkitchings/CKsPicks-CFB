@@ -28,6 +28,7 @@ from cks_picks_cfb.data.lake import (
 from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.features.point_in_time import attach_baseline_predictions
+from cks_picks_cfb.preseason_features import canonical_team
 
 
 def _ref(storage, uri: str) -> DatasetRef:
@@ -39,6 +40,31 @@ def _code_sha() -> str:
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def _attach_preseason_features(
+    result: pd.DataFrame, preseason: pd.DataFrame, feature_columns: list[str]
+) -> pd.DataFrame:
+    """Join canonical preseason evidence without altering game-facing labels."""
+    attached = result.copy()
+    for side in ("home", "away"):
+        join_key = f"_{side}_preseason_team"
+        attached[join_key] = attached[f"{side}_team"].map(canonical_team)
+        if attached[join_key].isna().any():
+            raise ValueError(f"V4 core has an invalid {side} team identity")
+        renamed = preseason[["season", "team", *feature_columns]].rename(
+            columns={
+                "team": join_key,
+                **{column: f"{side}_{column}" for column in feature_columns},
+            }
+        )
+        attached = attached.merge(
+            renamed,
+            on=["season", join_key],
+            how="left",
+            validate="many_to_one",
+        ).drop(columns=[join_key])
+    return attached
 
 
 def main() -> None:
@@ -115,19 +141,7 @@ def main() -> None:
                 "v4_reference_sha",
             }
         ]
-        for side in ("home", "away"):
-            renamed = preseason[["season", "team", *feature_columns]].rename(
-                columns={
-                    "team": f"{side}_team",
-                    **{column: f"{side}_{column}" for column in feature_columns},
-                }
-            )
-            result = result.merge(
-                renamed,
-                on=["season", f"{side}_team"],
-                how="left",
-                validate="many_to_one",
-            )
+        result = _attach_preseason_features(result, preseason, feature_columns)
         if (
             feature_columns
             and result[[f"home_{column}" for column in feature_columns]]

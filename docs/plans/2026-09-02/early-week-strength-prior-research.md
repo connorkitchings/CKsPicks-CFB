@@ -193,3 +193,12 @@ International's incomplete 2022 recruiting row. These are recorded as
 enter direct research only through a complete-family cohort; affected games
 remain in the complete base cohort. Recruiting remains an optional proxy for
 roster quality, not an assertion that it measures the post-transfer roster.
+
+### 2026-09-04 — Canonical model-ready join repair
+
+The first v3 model-ready assembly failed closed before writing a dataset because
+the V4 game core retained provider-facing labels while the reconstructed
+preseason reference correctly used canonical identities. The assembler now
+joins through a temporary canonical key and preserves the original game-facing
+labels. This is a lineage/identity repair, not a data fill; its fresh Preview
+reference must bind the repair commit.

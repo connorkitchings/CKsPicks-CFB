@@ -210,6 +210,37 @@ def test_reconstructed_returning_production_rejects_an_undeclared_gap():
     assert metadata["reason"] == "incomplete team-season feature coverage"
 
 
+def test_model_ready_attachment_uses_canonical_join_keys():
+    module = run_path(
+        str(
+            Path(__file__).resolve().parents[1]
+            / "scripts/pipeline/assemble_model_ready_features.py"
+        )
+    )
+    core = pd.DataFrame(
+        {
+            "season": [2021],
+            "game_id": [1],
+            "home_team": ["App State"],
+            "away_team": ["UConn"],
+        }
+    )
+    preseason = pd.DataFrame(
+        {
+            "season": [2021, 2021],
+            "team": ["Appalachian State", "Connecticut"],
+            "coach_tenure": [3.0, 4.0],
+        }
+    )
+
+    result = module["_attach_preseason_features"](core, preseason, ["coach_tenure"])
+
+    assert result["home_team"].tolist() == ["App State"]
+    assert result["away_team"].tolist() == ["UConn"]
+    assert result["home_coach_tenure"].tolist() == [3.0]
+    assert result["away_coach_tenure"].tolist() == [4.0]
+
+
 def test_route_report_freezes_the_selected_feature_variant():
     module = _evaluator_module()
     rows = []
