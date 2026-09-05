@@ -10,6 +10,7 @@ export const TEAM_LOGO_MAP: Record<string, string> = {
   "Hawai i": "Hawai_i",
   UConn: "Connecticut",
   "Southern Miss": "Southern Mississippi",
+  FIU: "Florida International",
   "Texas A&M": "Texas A&M",
 };
 

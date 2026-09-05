@@ -1,5 +1,10 @@
 # Early-Week Context Cross-Report — Direct and R2 Research Tracks
 
+> **Historical evidence notice (2026-09-05):** This report records the decision
+> available when it was published. The data-first football forecasting roadmap
+> later superseded its proposed R3/R4 continuation. Its findings and numerical
+> warnings now enter the Phase 1 evidence audit; they do not authorize R3.
+
 - **Date:** 2026-09-04
 - **Contract:** `docs/plans/2026-09-02/early-week-strength-prior-research.md`
 - **Feature track:** reconstructed (research-only, activation-ineligible)
@@ -37,7 +42,7 @@ Admitted families: `returning_production`, `recruiting`, `coaching` (all reconst
 
 1. **Convergent conclusion:** reconstructed offseason context (recruiting, returning production, coaching) carries genuine early-week signal — largest and most statistically isolated at Game 1 spread (`recruiting_complete`) and Game 1 total (`returning_production_complete`) in the direct track, and directionally positive as rating priors (`continuity_ridge`) in R2.
 2. **No activation:** every artifact here is reconstructed-track and activation-ineligible. No locked-2025 evaluation, refit, bundle, readiness, or publication may consume these reports. A strict, authentic pre-kickoff capture remains the gating requirement for any future promotion proposal.
-3. **R3/R4 sequencing:** R2 completed with all gates passed, so the between-season prior stage is settled in the research lane (`continuity_ridge_alpha_0_1`). R3 (within-season updates) is next in the research sequence, still isolated in Preview.
+3. **Historical R3/R4 sequencing decision:** At publication, R2 had completed with all gates passed and the report proposed R3 next. The data-first roadmap superseded that continuation on 2026-09-05; Phase 1 audit is now next.
 4. **Follow-ups recorded:** (a) the R2 run emitted non-fatal NumPy warnings (divide-by-zero/overflow/invalid in the head's matmul) — investigate the state rows that produce non-finite features before R3; (b) Game 4 spread shows no context lift — do not carry context into that route without new evidence; (c) the ~13–14% of completed games unmatched to FBS-vs-FBS states (FCS-involved) are excluded from head evaluation by design.
 
 ## Reproduction

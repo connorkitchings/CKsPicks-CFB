@@ -1,5 +1,11 @@
 # Rating Shadow Prospective Operations
 
+!!! warning "Historical candidate-v1 compatibility only"
+    This page preserves the frozen candidate-v1 procedure at `ac1fba1`. It is
+    not the active research sequence. New prospective work follows the
+    [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+    after Phases 1–5 produce a frozen candidate.
+
 O2 / Phase 5 is a manual, Preview-only diagnostic workflow for frozen
 candidate v1. It never publishes,
 freezes, scores, or changes V4 production runs. The production V4 run must

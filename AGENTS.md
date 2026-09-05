@@ -214,7 +214,7 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `continuity_ridge_alpha_0_1`, all gates passed) — see
   `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
   is reconstructed and activation-ineligible. The pending R3/R4 sequence is
-  superseded; Phase 0 of the data-first program is next. O2 candidate-v1 at
+  superseded; Phase 0 is implemented and the Phase 1 data audit is next. O2 candidate-v1 at
   `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

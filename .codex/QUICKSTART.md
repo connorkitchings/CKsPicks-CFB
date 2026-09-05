@@ -192,6 +192,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --help
 
 ## Production Pipeline
 
+The [production runbook](../docs/ops/production_runbook.md) is the operating
+authority. Commands in this section can affect configured production state;
+follow its approval and environment checks.
+
 ### Weekly Operating Cycle (2026)
 
 ```bash
@@ -214,12 +218,6 @@ make freeze-week YEAR=2026 WEEK=0 ENV=preview
 # Postgame close (refresh finals → score → scored R2 artifact → Neon stats):
 make close-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 
-# Preview-only frozen rating candidate evidence (Phase 5):
-# See docs/ops/rating_shadow_operations.md for preflight and recovery rules.
-PYTHONPATH=.:src uv run python scripts/pipeline/audit_rating_prospective_evidence.py \
-  --environment preview --through-week 1 --verification-games-ref-uri <games-ref> \
-  --verification-outcomes-ref-uri <outcomes-ref> --expected-code-sha <committed-sha>
-
 # Rebuild current-season Gold before a Week 1 rehearsal:
 make prepare-week YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 
@@ -233,6 +231,28 @@ make weekly YEAR=2026 WEEK=1
 PYTHONPATH=src uv run python -m cks_picks_cfb.ops publish-week \
   --year 2026 --week 1 --as-of YYYY-MM-DD --environment preview \
   --pipeline-run-id <existing-pipeline-run-id>
+```
+
+### Data-First Research and Historical Benchmarks
+
+The [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
+is the active research direction. New executable research commands belong in
+`scripts/research/`, reusable logic belongs in `src/cks_picks_cfb/`, and new
+configuration belongs in `conf/research/data_first_football_v1/`. See the
+[repository boundaries](../docs/architecture/repository_boundaries.md).
+
+Existing rating commands in `scripts/pipeline/` remain callable only for named
+benchmark reproduction. The successor-v2 runbook preserves completed R1/R2
+evidence; its R3/R4 sequence is superseded. The candidate-v1 shadow runbook is
+also historical compatibility guidance. Neither runbook authorizes production
+activation.
+
+```bash
+# Historical compatibility smoke checks (do not execute a research run)
+PYTHONPATH=.:src uv run python scripts/pipeline/build_successor_r1_foundation.py --help
+PYTHONPATH=.:src uv run python scripts/pipeline/build_rating_measurements.py --help
+PYTHONPATH=.:src uv run python scripts/pipeline/build_r2_prior_tournament.py --help
+PYTHONPATH=.:src uv run python scripts/pipeline/generate_game_ordinal_candidates.py --help
 ```
 
 ### Weekly Predictions (standalone)

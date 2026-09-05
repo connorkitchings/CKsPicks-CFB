@@ -31,7 +31,7 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 ### Data-first football forecasting
 
 - [Phase 0 repository architecture and documentation alignment](2026-09-05/00-repository-architecture-and-documentation-alignment.md)
-  — **Approved; next implementation contract.** Establishes compatibility
+  — **Implemented 2026-09-05.** Established compatibility
   baselines, aligns authority, separates active research entry points, and
   permits removal only with dependency and recovery evidence.
 - [Phase 1 data and evidence audit](2026-09-05/01-data-and-evidence-audit.md)
@@ -55,7 +55,7 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   Week 1 predictions in production before Thursday ~Sept 4 kickoff. Updates
   Vercel `CFB_PUBLICATION_WEEKS` to `0,1`.
 
-### Rating-transition contracts
+### Historical and compatibility rating-transition contracts
 
 - [Early-week strength-prior research](2026-09-02/early-week-strength-prior-research.md)
   — **Implemented 2026-09-04 (pending final user commit).** Adds audited,

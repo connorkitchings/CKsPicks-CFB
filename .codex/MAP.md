@@ -4,7 +4,7 @@
 >
 > Find files fast. Know where things live.
 >
-> _Regenerated 2026-08-19 against the actual tree._
+> _Regenerated 2026-09-05 against the Phase 0 compatibility baseline._
 
 ---
 
@@ -136,6 +136,8 @@ scripts/
 │   │   cache_weekly_stats.py, combine_history_versions.py, seed_data_corrections.py
 │   └── compare_preview_model_bundles.py, publish_review.py
 │       # Archived wrappers and legacy publishers live in scripts/archive/.
+├── research/                    # New data-first executable research commands
+│   └── README.md                # Command/library/production boundaries
 └── archive/                     # points_for, tests (historical)
 ```
 
@@ -157,7 +159,9 @@ conf/
 ├── weekly_bets/                 # v4_2026 (LAUNCH), v3_preview_games_ordinal_2026,
 │                                #   v2_preview_2026, v2_champion
 ├── policy/                      # canonical_week_2026_v1.yaml (Week 0 game IDs)
-├── preprocessing/ paths/ hydra/ sweeper/ research/ legacy/ validation.yaml
+├── repository/                 # Machine-readable compatibility manifest
+├── research/data_first_football_v1/ # New-program configs (empty in Phase 0)
+├── preprocessing/ paths/ hydra/ sweeper/ legacy/ validation.yaml
 ```
 
 ---
@@ -165,12 +169,13 @@ conf/
 ## Tests
 
 ```
-tests/                           # 54 files — 355 passed / 2 skipped (2026-08-19)
+tests/                           # 67 files — 673 passed / 2 skipped (2026-09-05)
 ├── test_migrations.py           # Empty + legacy schema migration validation
 ├── test_history_bootstrap.py    # Import resumability/checksums
 ├── test_silver_reconciliation.py
 ├── test_model_bundle_v3.py / test_game_ordinal_training.py
 ├── test_v4_feature_reference.py
+├── test_repository_boundaries.py # Static ownership and compatibility checks
 ├── test_legacy_market_references*.py  # Quarantine contract tests (17)
 ├── test_runtime_target.py, test_training_policy.py, test_aggregations_core.py, ...
 └── fixtures/
@@ -216,15 +221,15 @@ web/
 ```
 docs/
 ├── index.md                     # Documentation hub + MkDocs landing
-├── architecture/                # data_platform_2026.md, cfbd_point_in_time_pipeline.md
+├── architecture/                # repository_boundaries.md (authority), data platform
 ├── ops/                         # weekly_pipeline.md, production_runbook.md,
 │                                #   validation.md, mlflow_mcp.md
 ├── modeling/                    # rating_system_requirements.md,
 │                                #   measurement_catalog.md, evaluation.md, V4 regime contract
-├── planning/                    # roadmap.md (current 2026 transition)
+├── planning/                    # data-first roadmap + production/historical roadmap
 ├── plans/                       # 👈 Task-level Sol→Terra implementation contracts
 │   ├── index.md                 # Lifecycle rules
-│   └── 2026-08-18/week0-launch-execution.md   # ACTIVE (Stages 4–5)
+│   └── 2026-09-05/              # Data-first Phase 0–6 contracts
 ├── decisions/                   # decision_log.md (read for rationale)
 ├── cfbd/                        # Provider audit
 ├── data/                        # Current ingestion/data orientation
@@ -261,4 +266,4 @@ docs/
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-09-05_

@@ -1,5 +1,12 @@
 # Successor-v2 Rating Research Operations
 
+!!! warning "Historical compatibility only"
+    The data-first football forecasting roadmap supersedes the unfinished R3/R4
+    sequence in this runbook. Keep these commands and policies only to reproduce
+    completed R1/R2 evidence under their original identities. For active work,
+    use the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+    and [repository boundaries](../architecture/repository_boundaries.md).
+
 This runbook governs R1–R4 only. It is Preview-only and never changes V4
 bundles, production Neon state, publication, or rollback authority. Candidate
 v1 remains a separate O2 diagnostic lane in the worktree pinned to `ac1fba1`.

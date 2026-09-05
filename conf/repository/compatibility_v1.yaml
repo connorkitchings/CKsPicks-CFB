@@ -1,0 +1,123 @@
+schema_version: repository_compatibility_v1
+
+baseline:
+  commit: b930066
+  production_model: week0-2026-v4-strict-20260818-r2
+  production_config: conf/weekly_bets/v4_2026.yaml
+  production_bundle_manifest:
+    artifact_uri: artifacts/preview/models/week0-2026-v4-strict-20260818-r2/manifest.json
+    sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+
+research:
+  artifact_namespace: artifacts/research/data-first-football-v1/
+  command_root: scripts/research
+  config_root: conf/research/data_first_football_v1
+
+public_make_targets:
+  - preflight
+  - prepare-week
+  - readiness
+  - publish-week
+  - freeze-week
+  - close-week
+  - replay-season
+  - reconcile
+  - audit-data
+  - db-publish
+  - db-score
+
+required_paths:
+  production:
+    - Makefile
+    - conf/weekly_bets/v4_2026.yaml
+    - src/cks_picks_cfb/model_bundle_v3.py
+    - src/cks_picks_cfb/inference/weekly.py
+    - src/cks_picks_cfb/ops/__main__.py
+    - src/cks_picks_cfb/ops/state_machine.py
+    - scripts/pipeline/preflight.py
+    - scripts/pipeline/generate_weekly_bets.py
+    - scripts/pipeline/publish_to_db.py
+    - scripts/pipeline/freeze_week.py
+    - scripts/pipeline/replay_season.py
+    - scripts/pipeline/score_weekly_bets.py
+    - scripts/pipeline/score_to_db.py
+  contracts:
+    - contracts/schema.sql
+    - contracts/schema.ts
+    - contracts/teams.py
+    - contracts/teams.ts
+    - contracts/migrations
+  web:
+    - web/src/app/page.tsx
+    - web/src/app/api/health/route.ts
+    - web/src/lib/schema.ts
+    - web/src/lib/teams.ts
+  research_structure:
+    - scripts/research
+    - conf/research/data_first_football_v1
+
+supported_production_scripts:
+  - scripts/pipeline/preflight.py
+  - scripts/pipeline/generate_weekly_bets.py
+  - scripts/pipeline/publish_to_db.py
+  - scripts/pipeline/publish_review.py
+  - scripts/pipeline/freeze_week.py
+  - scripts/pipeline/replay_season.py
+  - scripts/pipeline/score_weekly_bets.py
+  - scripts/pipeline/score_to_db.py
+
+production_configs:
+  - conf/weekly_bets/v4_2026.yaml
+  - conf/weekly_bets/v2_preview_2026.yaml
+
+named_research_benchmarks:
+  certified_r1_foundation:
+    classification: named-benchmark-compatibility
+    identity: r1-full-corpus-20260831-5f2a384
+    paths:
+      - scripts/pipeline/build_successor_r1_foundation.py
+      - scripts/pipeline/build_successor_history_ref_set.py
+      - scripts/pipeline/certify_successor_history.py
+      - src/cks_picks_cfb/ratings/successor_manifest.py
+      - conf/ratings/foundation_review_v2.yaml
+  fixed_rating_baseline:
+    classification: named-benchmark-compatibility
+    paths:
+      - scripts/pipeline/build_rating_measurements.py
+      - scripts/pipeline/build_rating_team_states.py
+      - src/cks_picks_cfb/ratings/observations.py
+      - src/cks_picks_cfb/ratings/states.py
+      - conf/ratings/measurement_baseline_v3.yaml
+      - conf/ratings/team_state_baseline_v2.yaml
+  candidate_v1_shadow:
+    classification: named-benchmark-compatibility
+    identity: ac1fba1
+    paths:
+      - scripts/pipeline/build_rating_shadow_freeze.py
+      - scripts/pipeline/build_rating_shadow_score.py
+      - scripts/pipeline/audit_rating_prospective_evidence.py
+      - src/cks_picks_cfb/ratings/shadow.py
+      - conf/ratings/shadow_operations_v1.yaml
+  completed_r2_prior:
+    classification: named-benchmark-compatibility
+    identity: r2-prior-20260904-4c6e610
+    paths:
+      - scripts/pipeline/build_r2_prior_tournament.py
+      - src/cks_picks_cfb/ratings/priors.py
+      - conf/ratings/successor_v2_tournaments.yaml
+  direct_early_game:
+    classification: named-benchmark-compatibility
+    paths:
+      - scripts/pipeline/generate_game_ordinal_candidates.py
+      - scripts/pipeline/evaluate_game_ordinal_predictions.py
+      - src/cks_picks_cfb/models/game_ordinal_training.py
+      - conf/weekly_bets/v3_preview_games_ordinal_2026.yaml
+
+dependency_rules:
+  prohibited_import_prefixes:
+    - research
+    - scripts.research
+  prohibited_research_output_prefixes:
+    - artifacts/production/
+    - lake/production/
+    - production/pipeline-runs/

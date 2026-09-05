@@ -121,14 +121,15 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-Development remains isolated from production activation. R1 historical
-certification, R2 between-season priors, R3 within-season updates, and R4
-structured prediction are the research track. O1 is unchanged V4 production,
-O2 is the `ac1fba1` candidate-v1 diagnostic lane, and O3 is a future fresh
-candidate-v2 evidence lane. Each candidate must freeze before inspecting its
-eligible 2026 outcomes. Football-only inputs may be admitted only when their
-preseason meaning, coverage, and authentic 2026 capture are proved; markets are
-evaluation-only. See `docs/planning/roadmap.md` and the modeling authority docs.
+Development remains isolated from production activation. Completed R1/R2,
+candidate-v1, and direct early-game work are historical evidence subject to the
+data-first audit; the former R3/R4 sequence is superseded. The active sequence
+is repository alignment, data audit and repair, measurement validation, simple
+ratings, spread/total forecasting, and frozen prospective evaluation. Each
+candidate must freeze before inspecting eligible future outcomes. Football-only
+inputs may be admitted only when their preseason meaning, coverage, and timing
+are proved; timestamped markets are comparison evidence after football-model
+evaluation. See the data-first roadmap and modeling authority docs.
 
 ### Feature Engineering
 

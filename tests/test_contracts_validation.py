@@ -11,6 +11,10 @@ assert spec.loader is not None
 spec.loader.exec_module(contracts_validation)
 
 
+def test_checked_in_team_maps_are_synchronized():
+    assert contracts_validation.check_teams_sync() == []
+
+
 def test_extract_python_map_includes_values(tmp_path):
     path = tmp_path / "teams.py"
     path.write_text('TEAM_LOGO_MAP = {"A": "Alpha", "B": "Beta"}\n')

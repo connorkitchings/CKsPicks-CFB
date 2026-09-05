@@ -31,6 +31,8 @@ deferred.
 
 - [Data-first forecasting roadmap](planning/data-first-football-forecasting-roadmap.md)
   — governing new research sequence and compatibility boundaries.
+- [Repository boundaries](architecture/repository_boundaries.md) — current and
+  target architecture, dependency direction, ownership, and versioning rules.
 - [2026 operations and historical roadmap](planning/roadmap.md) — current V4
   operations and the completed/superseded research record.
 - [Rating-system requirements](modeling/rating_system_requirements.md) — the
@@ -43,8 +45,9 @@ deferred.
   2026 shadow evidence policy.
 - [Weekly pipeline](ops/weekly_pipeline.md) and
   [production runbook](ops/production_runbook.md) — live operations.
-- [Successor-v2 research runbook](ops/rating_successor_research.md) —
-  Preview-only R1 capture/certification and staged tournament procedure.
+- [Historical successor-v2 compatibility runbook](ops/rating_successor_research.md)
+  — reproduction guidance for completed R1/R2 evidence; its pending R3/R4
+  sequence is superseded.
 - [Implementation contracts](plans/index.md) — durable Sol-to-Terra handoffs.
 - [Decision log](decisions/decision_log.md) — architectural decisions.
 

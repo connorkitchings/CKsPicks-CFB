@@ -14,12 +14,14 @@ theme:
 nav:
   - Home: index.md
   - 2026 Direction:
-      - Roadmap: planning/roadmap.md
+      - Data-First Forecasting Roadmap: planning/data-first-football-forecasting-roadmap.md
+      - Production and Historical Roadmap: planning/roadmap.md
       - Rating-System Requirements: modeling/rating_system_requirements.md
       - Measurement Catalog: modeling/measurement_catalog.md
       - Evaluation: modeling/evaluation.md
       - V4 Regime Contract: modeling/early_season_regimes.md
   - Data Platform:
+      - Repository Boundaries: architecture/repository_boundaries.md
       - Data Platform 2026: architecture/data_platform_2026.md
       - Point-in-Time Pipeline: architecture/cfbd_point_in_time_pipeline.md
       - Ingestion Guide: data/ingestion_guide.md
@@ -27,7 +29,8 @@ nav:
   - Operations:
       - Weekly Pipeline: ops/weekly_pipeline.md
       - Production Runbook: ops/production_runbook.md
-      - Successor-v2 Research: ops/rating_successor_research.md
+      - Historical Successor-v2 Compatibility: ops/rating_successor_research.md
+      - Historical Candidate-v1 Shadow: ops/rating_shadow_operations.md
       - Validation: ops/validation.md
       - MLflow Development Tooling: ops/mlflow_mcp.md
   - Model and Experiment Lineage:

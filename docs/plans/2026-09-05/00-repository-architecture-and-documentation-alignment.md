@@ -1,6 +1,6 @@
 # Phase 0: Repository Architecture and Documentation Alignment
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan and explicitly targeted Phase 0 on 2026-09-05.
@@ -16,11 +16,11 @@ behavior.
 
 ## Current State
 
-The repository already has sound top-level boundaries, but current authority
-still describes the R1-R4 successor sequence as active. Research entry points
-share `scripts/pipeline/` with production commands, and legacy modules, configs,
-and documents require dependency classification before removal. The current
-worktree was clean at planning time on `main` at `de54a7a`.
+The repository already has sound top-level boundaries, but research entry
+points share `scripts/pipeline/` with production commands, and legacy modules,
+configs, and documents require dependency classification before removal. The
+planning package aligned the top-level research authority. The implementation
+baseline is the clean `main` worktree at `b930066`.
 
 ## Proposed Approach
 
@@ -126,15 +126,34 @@ to test structure.
 
 ## Definition of Done
 
-- [ ] Operating baseline and dependency map are published.
-- [ ] Authority docs consistently describe current and target systems.
-- [ ] Research entry points are separated with required compatibility preserved.
-- [ ] Every removal has evidence and a recovery path.
-- [ ] Required validation passes and Phase 1 entry conditions are explicit.
-- [ ] Session log is complete and status is `Implemented`.
+- [x] Operating baseline and dependency map are published.
+- [x] Authority docs consistently describe current and target systems.
+- [x] Research entry points are separated with required compatibility preserved.
+- [x] Every removal candidate has a classification and recovery path; Phase 0
+  performed no removals.
+- [x] Required validation passes and Phase 1 entry conditions are explicit.
+- [x] Session log is complete and status is `Implemented`.
 
 ## Amendments
 
 A change to production behavior, public interfaces, top-level boundaries,
 compatibility scope, or deletion criteria requires a revised Sol plan.
 
+### Amendment 1 - Bounded Phase 0 execution detail
+
+**Reason:** The user approved the detailed Phase 0 implementation plan after
+the contract was persisted. Repository inspection also found that existing
+research script paths are embedded in orchestration, tests, documentation, and
+committed-code identities, plus one unambiguous pre-existing FIU mapping drift.
+
+**Original approach:** Relocate research commands incrementally where safe and
+record pre-existing validation failures.
+
+**Revised approach:** Establish `scripts/research/` for all new data-first
+commands but do not relocate or delete existing Python/config paths in Phase 0.
+Classify those paths instead. Synchronize only the missing canonical
+`FIU -> Florida International` mapping across existing contract copies so the
+required contract gate can pass.
+
+**Impact:** Scope and architecture are unchanged. Compatibility risk is lower,
+and the contract gate becomes actionable without altering V4 interfaces.

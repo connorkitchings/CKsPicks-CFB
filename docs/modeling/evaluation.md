@@ -20,12 +20,13 @@ Later evidence cannot rescue a failure at an earlier layer.
 2. **Prediction quality:** margin/total or score accuracy, bias, season and
    early/late stability, paired comparison against V4, and probabilistic
    calibration when distributions are emitted.
-3. **Market value:** only after football-model quality succeeds, join authentic
-   timestamped prices for edge, closing-line value, hit rate, ROI, and risk
-   analysis.
+3. **Market comparison:** only after football-model quality succeeds, join
+   authentic timestamped lines to compare forecast and market margin/total
+   errors, cutoff disagreement, and closing information separately.
 
-Market prices, untimestamped legacy quotes, ROI, and betting thresholds are
-never ratings or football-prediction inputs and cannot choose a candidate.
+Market prices and untimestamped legacy quotes are never ratings or
+football-prediction inputs and cannot choose a candidate. Betting selection,
+staking, bankroll outcomes, and threshold optimization are deferred.
 
 ## V4 benchmark
 
@@ -54,7 +55,7 @@ every 2026 candidate:
 5. Retain candidate and V4 outputs for the identical game set and information
    cutoff to allow paired evaluation.
 
-Phase 5 implements this policy through a separate immutable operational policy:
+Historical candidate-v1 Phase 5 implemented a separate immutable policy:
 Week 1 or later, at least 40 games, T-2h operating target, T-1h hard measured
 freeze lead, 24-hour postgame stabilization, and six eligible slates. See the
 [rating shadow operations runbook](../ops/rating_shadow_operations.md). These
@@ -71,7 +72,7 @@ approved contract must show:
 - no material predictive regression against V4, with paired and season/slice
   evidence;
 - operational rehearsal, fail-closed behavior, and rollback proof; and
-- market-value analysis only after the previous findings are satisfactory.
+- timestamped market comparison only after the previous findings are satisfactory.
 
 No calendar target overrides missing evidence. Exact statistical thresholds are
 chosen in the baseline and promotion contracts, not retrofitted after results.

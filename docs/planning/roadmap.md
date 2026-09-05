@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-09-04
+> **Last updated:** 2026-09-05
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 > **Authority note (2026-09-05):** This page remains the current V4 operations
@@ -19,7 +19,7 @@ canonical representation of team quality.
 source data → Bronze/Silver/Gold → football measurements
 → measurement-level opponent adjustment → team ratings/state
 → structured game prediction → optional ML residual → probabilistic output
-→ market decision
+→ timestamped line comparison
 ```
 
 No successor is activation-eligible today. The active research authority is the
@@ -83,16 +83,13 @@ for every challenger. Rating work has no path to Neon activation, public
 publication, or production rollback selection before a separate promotion
 contract is approved.
 
-## Research rules
+## Historical successor rules
 
-R1 reconstructs history only under new successor-v2 identities. It must certify
-completed-game play coverage, score reconciliation, schemas, and zero 2020
-lineage before R2 can begin. R2, R3, and R4 are sequential sealed tournaments:
-each winning stage is locked before the next stage is evaluated. Football
-measurements, admitted preseason football context, venue, and weather are
-eligible inputs; bookmaker data is evaluation-only. 2025 is evaluated once as
-the locked confirmation year. A failed gate publishes an immutable diagnostic,
-not a relaxed candidate.
+The superseded successor design required R1 reconstruction under new identities
+and sequential R2–R4 sealed tournaments, with 2025 as locked confirmation.
+Those rules remain attached to existing experiment identities only. Under the
+new program, 2025 is development evidence, every admitted input is audited
+before modeling, and future frozen forecasts provide prospective evidence.
 
 Candidate-v2 prospective evidence begins only after its committed identity is
 frozen. It has a new six-slate counter and cannot inherit candidate-v1 evidence.
@@ -101,12 +98,13 @@ calendar date cannot bypass a failed gate.
 
 ## Planning and execution protocol
 
-- This roadmap controls sequencing; the active task-level authority is the
-  historical-expansion plan linked below.
+- The data-first roadmap controls research sequencing; its dated Phase 0–6
+  contracts are the active task-level authority.
 - The O2 candidate-v1 lane remains reproducible only from its pinned `ac1fba1`
   worktree and is never an input to candidate-v2 selection.
-- No 2026 outcome is a development input. Missing a candidate-v2 prospective
-  window is acceptable and never permits a retrospective freeze.
+- No outcome may be claimed as prospective evidence unless its prediction was
+  frozen before kickoff. Missing a prospective window never permits a
+  retrospective freeze.
 
 ## Phase contract queue
 
@@ -137,7 +135,7 @@ calendar date cannot bypass a failed gate.
   protected-evidence tooling is amended into the O2 diagnostic lane under
   [its operations contract](../plans/2026-08-26/phase5-protected-prospective-evidence.md).
 - [Historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md)
-  — **In Progress.** Governing R1–R4 research contract: 2015–2019 plus
+  — **Superseded after completed R1/R2 evidence.** Historical R1–R4 research contract: 2015–2019 plus
   2021–2025, universal 2020 exclusion, staged methodology tournament, and a
   future candidate-v2 evidence lane. The remediated R1 run
   `r1-full-corpus-20260831-5f2a384` is certified: its immutable
@@ -151,7 +149,7 @@ calendar date cannot bypass a failed gate.
   activation-ineligible — see the
   [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
   Its completed R1/R2 evidence remains available for audit. The data-first
-  program's Phase 0 is next; the former R3/R4 sequence is superseded.
+  program's Phase 0 is implemented; Phase 1 data and evidence audit is next.
 
 ## Invariants and open decisions
 
