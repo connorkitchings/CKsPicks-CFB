@@ -441,6 +441,19 @@ def _game_ids(frame: pd.DataFrame) -> set[int]:
     return set(pd.to_numeric(values, errors="coerce").dropna().astype(int))
 
 
+def _canonical_columns(part: pd.DataFrame, aliases: dict[str, str]) -> pd.DataFrame:
+    rename: dict[str, str] = {}
+    drop: list[str] = []
+    for alias, canonical in aliases.items():
+        has_alias = alias in part.columns
+        has_canonical = canonical in part.columns
+        if has_alias and not has_canonical:
+            rename[alias] = canonical
+        elif has_alias and has_canonical:
+            drop.append(alias)
+    return part.rename(columns=rename).drop(columns=drop)
+
+
 def _stage(dataset: str) -> str | None:
     name = dataset.casefold()
     if "outcome" in name:
@@ -702,6 +715,8 @@ def audit_evidence(
     games_parts: list[pd.DataFrame] = []
     teams_parts: list[pd.DataFrame] = []
     capture_inventory: list[dict[str, Any]] = []
+    games_aliases = {"year": "season", "id": "game_id"}
+    teams_aliases = {"year": "season", "school": "team"}
     for raw_capture in resolved["source_captures"]:
         capture = _source_capture(raw_capture)
         entity = capture.entity.casefold()
@@ -745,11 +760,13 @@ def audit_evidence(
             )
             continue
         if "games" in entity and "game_stats" not in entity:
-            part = frame.copy()
-            part["__captured_at"] = capture.captured_at
-            games_parts.append(part)
+            if not frame.empty:
+                part = _canonical_columns(frame.copy(), games_aliases)
+                part["__captured_at"] = capture.captured_at
+                games_parts.append(part)
         elif "teams" in entity:
-            teams_parts.append(frame)
+            if not frame.empty:
+                teams_parts.append(_canonical_columns(frame, teams_aliases))
         if "plays" in entity:
             stage_ids["plays"].update(_game_ids(frame))
         if "game_stats" in entity:
@@ -760,7 +777,6 @@ def audit_evidence(
     exclusions = pd.DataFrame()
     if games_parts:
         raw_games = pd.concat(games_parts, ignore_index=True)
-        raw_games = raw_games.rename(columns={"year": "season", "id": "game_id"})
         raw_games["season"] = pd.to_numeric(raw_games["season"], errors="coerce")
         raw_games = raw_games[raw_games["season"].isin(DEVELOPMENT_SEASONS)]
         raw_games = raw_games.sort_values("__captured_at").drop_duplicates(

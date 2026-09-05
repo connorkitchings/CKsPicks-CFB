@@ -372,3 +372,30 @@ def test_immutable_writer_is_idempotent_and_namespace_constrained():
     with pytest.raises(ValueError, match="exactly"):
         validate_output_prefix("artifacts/production/run", "run")
     assert json.loads(storage.read_bytes(uri)) == {"value": 1}
+
+
+def test_canonical_columns_prefers_canonical_and_survives_duplicate_aliases():
+    from scripts.research.audit_data_first_evidence import _canonical_columns
+
+    aliases = {"year": "season", "id": "game_id"}
+    alias_only = _canonical_columns(pd.DataFrame({"year": [2025], "id": [7]}), aliases)
+    assert list(alias_only.columns) == ["season", "game_id"]
+    canonical_only = _canonical_columns(
+        pd.DataFrame({"season": [2025], "game_id": [7]}), aliases
+    )
+    assert list(canonical_only.columns) == ["season", "game_id"]
+    both = _canonical_columns(
+        pd.DataFrame({"season": [2025], "year": [2025], "game_id": [7], "id": [7]}),
+        aliases,
+    )
+    assert list(both.columns) == ["season", "game_id"]
+    assert both["season"].iloc[0] == 2025
+    empty = _canonical_columns(pd.DataFrame(), aliases)
+    assert empty.empty
+
+    crash_case = _games().assign(year=_games()["season"], game_id=_games()["id"])
+    normalized = _canonical_columns(crash_case, {"year": "season", "id": "game_id"})
+    assert isinstance(normalized["season"], pd.Series)
+    schedule, conflicts = classify_schedule(normalized)
+    assert set(schedule["game_id"]) == {1, 2, 3, 4}
+    assert conflicts == []
