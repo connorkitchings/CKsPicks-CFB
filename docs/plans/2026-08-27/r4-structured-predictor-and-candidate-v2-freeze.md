@@ -1,6 +1,6 @@
 # R4 Structured Predictor and Candidate-v2 Freeze
 
-- **Status:** Approved
+- **Status:** Superseded 2026-09-05 by `docs/plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md`
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact
@@ -9,6 +9,10 @@
 - **Commit policy:** Separate plan commit required after R3 and before implementation.
 
 ## Goal
+
+> Historical planning evidence only. Do not implement this contract. Forecast
+> development now follows the data-first audit, measurement, and simple-rating
+> sequence; 2025 is development evidence in that new namespace.
 
 Select a structured football predictor on data through 2024, freeze the entire
 successor-v2 design, evaluate 2025 exactly once, and either publish a complete

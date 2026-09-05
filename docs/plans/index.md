@@ -28,6 +28,26 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
+### Data-first football forecasting
+
+- [Phase 0 repository architecture and documentation alignment](2026-09-05/00-repository-architecture-and-documentation-alignment.md)
+  — **Approved; next implementation contract.** Establishes compatibility
+  baselines, aligns authority, separates active research entry points, and
+  permits removal only with dependency and recovery evidence.
+- [Phase 1 data and evidence audit](2026-09-05/01-data-and-evidence-audit.md)
+  — Approved; begins after Phase 0.
+- [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
+  — Approved; consumes verified Phase 1 defects.
+- [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
+  — Approved; consumes certified Phase 2 inputs.
+- [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
+  — Approved; bounded interpretable ratings after measurement selection.
+- [Phase 5 spread and total forecasting](2026-09-05/05-spread-total-forecasting.md)
+  — Approved; separate target selection with simple benchmarks.
+- [Phase 6 prospective evidence and line comparison](2026-09-05/06-prospective-evidence-and-line-comparison.md)
+  — Approved; frozen future evidence and market comparison, with betting
+  decisions deferred.
+
 ### Operations (Week 1)
 
 - [Week 1 operations](2026-08-31/week1-operations.md)
@@ -60,11 +80,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   certification while preserving its existing 90% coverage gate and strict
   default reconciliation behavior.
 - [R4 structured predictor and candidate-v2 freeze](2026-08-27/r4-structured-predictor-and-candidate-v2-freeze.md)
-  — Approved. Runs selection only through 2024, freezes the end-to-end design,
-  and owns the single locked-2025 confirmation and optional candidate-v2 refit.
+  — **Superseded before implementation** by the data-first roadmap.
 - [R3 mixed state-update tournament](2026-08-27/r3-mixed-state-update-tournament.md)
-  — Approved, blocked on R2. Compares fixed, Bayesian, recency, Glicko-style,
-  and constrained ML updaters without reading 2025.
+  — **Superseded before implementation** by the data-first roadmap.
 - [R2 redesigned offseason-prior tournament](2026-08-27/r2-redesigned-offseason-prior-tournament.md)
   — Implemented runner; its R1 certificate gate and reconstructed context
   admission are satisfied. Its first Preview execution remains research-only.
@@ -79,8 +97,8 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — Superseded by the full-corpus R1 contract. Its bounded weekly worker,
   request ledger, and reconciliation implementation remain reusable.
 - [Historical expansion and ratings methodology reset](2026-08-26/historical-expansion-ratings-methodology-reset.md)
-  — In Progress governing contract, amended 2026-08-27 for full-corpus
-  recapture, redesigned R2–R4, and one end-to-end locked-2025 confirmation.
+  — Completed R1/R2 work remains historical evidence; its unfinished R3/R4 and
+  locked-2025 sequence is superseded by the data-first roadmap.
 - [Phase 5 protected prospective evidence](2026-08-26/phase5-protected-prospective-evidence.md)
   — In Progress as O2 diagnostic evidence for frozen candidate v1 only. It
   cannot tune v1, block successor-v2 research, or transfer its evidence to

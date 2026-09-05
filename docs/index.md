@@ -6,28 +6,33 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 ## Current posture
 
 **V4 is the live 2026 production champion.** It publishes spread and total
-predictions through the fail-closed weekly operations workflow. The successor
-is a rating-centric hybrid architecture on a separate research track: R1
-certifies 2015–2019 and 2021–2025 history, R2–R4 select its methodology, and a
-fresh candidate-v2 evidence lane follows only after a committed freeze. 2020
-is excluded globally; 2026 outcomes are protected prospective evidence.
+predictions through the fail-closed weekly operations workflow. New research is
+governed by the [data-first football forecasting roadmap](planning/data-first-football-forecasting-roadmap.md):
+repository alignment, data audit/repair, measurement validation, simple ratings,
+spread/total forecasting, then prospective evidence. The completed R1/R2 and
+earlier candidate work remain historical evidence subject to audit. 2020 is
+excluded globally; 2025 is development data only inside the new research
+namespace; future frozen predictions provide independent evidence.
 
 The target flow is:
 
 ```text
 source data → canonical Bronze/Silver/Gold → football measurements
 → measurement-level opponent adjustment → team ratings/state
-→ structured game prediction → optional ML residual → probabilistic output
-→ market decision
+→ structured game prediction → probabilistic output
+→ prospective evaluation → timestamped line comparison
 ```
 
 Markets never inform football measurements, ratings, or prediction selection.
-They are joined only after a football prediction exists.
+They are joined only after football-model evaluation. Betting decisions are
+deferred.
 
 ## Start here
 
-- [2026 roadmap](planning/roadmap.md) — current work, milestones, and the
-  explicit R1–R4 research / O1–O3 operations split.
+- [Data-first forecasting roadmap](planning/data-first-football-forecasting-roadmap.md)
+  — governing new research sequence and compatibility boundaries.
+- [2026 operations and historical roadmap](planning/roadmap.md) — current V4
+  operations and the completed/superseded research record.
 - [Rating-system requirements](modeling/rating_system_requirements.md) — the
   approved successor’s initial requirements and deferred decisions.
 - [Measurement catalog](modeling/measurement_catalog.md) — football

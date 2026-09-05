@@ -15,9 +15,9 @@ totals, published as weekly leans on a public Vercel web app.
 **Sport:** NCAA Division I FBS College Football
 **Prediction Targets:** Point spreads, over/under totals (per completed-game regime)
 **Data Sources:** CollegeFootballData.com API (games/plays/stats/preseason) + The Odds API (timestamped market quotes) + weather ingestion
-**Time Period:** V4 uses its immutable 2021–2025 lineage; successor-v2 research
-uses 2015–2019 and 2021–2025. 2020 is globally excluded and 2026 is protected
-prospective inference only.
+**Time Period:** V4 uses its immutable 2021–2025 lineage. New data-first research
+uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and relies
+on future pre-kickoff freezes for independent evidence.
 **Production:** https://c-ks-picks-cfb.vercel.app (Neon Postgres + Cloudflare R2)
 
 ---
@@ -103,16 +103,15 @@ canonical intermediate product is a matchup feature row rather than a durable
 team-state estimate. Predictive uncertainty is not yet modeled; weekly
 inference emits null spread and total standard-deviation fields.
 
-### Approved 2026 direction: rating-centric hybrid
+### Approved direction: data-first football forecasting
 
 V4 remains the unchanged 2026 production champion and benchmark. The approved
 target architecture is:
 
 ```text
-source data → canonical Bronze/Silver/Gold → football measurements
-→ measurement-level opponent adjustment → team ratings/state
-→ structured game prediction → optional ML residual → probabilistic output
-→ market decision
+verified data → validated football measurements → opponent adjustment
+→ simple offense/defense ratings + uncertainty → spread/total forecasts
+→ prospective evaluation → timestamped line comparison
 ```
 
 Ratings will become the canonical offense, defense, overall-quality, and

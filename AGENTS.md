@@ -65,14 +65,14 @@ print(f"✅ Data root verified: {data_root}")
   2015–2019 and 2021–2025; skip 2020 entirely in every boundary.
 - Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
-**2026 Rating-Centric Transition:**
+**Data-First Forecasting Transition:**
 - V4 remains the unchanged 2026 production champion and benchmark
-- Approved target flow: measurements → opponent adjustment → team ratings/state → structured prediction → optional ML residual → market decision
+- Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
-- Treat eligible 2026 outcomes as protected prospective evidence: freeze a candidate design before inspecting those outcomes, and never tune repeatedly on a protected test
+- Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
 - Complete initial requirements before Week 0. A first promotion review requires six completed, normal-coverage slates with V4 and candidate predictions frozen before kickoff; Week 0 does not count.
-- Rating research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved
+- New research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
 - Maintain: `season`, `week`, `game_id`, `team` keys
@@ -204,7 +204,7 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   ENV=production` — run Tuesday, not Monday (CFBD finalization lag). Then the
   Week 2 cycle: `prepare-week` → `readiness` in Preview → `publish-week` →
   freeze before kickoff. See `docs/ops/weekly_pipeline.md`.
-- 🧭 **Ratings research (R1–R4):** R1 is certified at
+- 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
   `early-week-context-20260904-786580ec-r2` admits reconstructed returning
@@ -213,10 +213,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   tournament completed 2026-09-04 at `r2-prior-20260904-4c6e610` (winner
   `continuity_ridge_alpha_0_1`, all gates passed) — see
   `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
-  is reconstructed and activation-ineligible; R3 is next in the research
-  sequence and stays Preview-isolated. O2 candidate-v1 at `ac1fba1` is
-  diagnostic-only. See
-  `docs/plans/2026-08-26/historical-expansion-ratings-methodology-reset.md`.
+  is reconstructed and activation-ineligible. The pending R3/R4 sequence is
+  superseded; Phase 0 of the data-first program is next. O2 candidate-v1 at
+  `ac1fba1` is diagnostic-only. See
+  `docs/planning/data-first-football-forecasting-roadmap.md`.
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
 **Weekly ops:** `docs/ops/weekly_pipeline.md` ·

@@ -9,25 +9,26 @@ The live production champion is the V4 ten-route model bundle
 `week0-2026-v4-strict-20260818-r2`. It remains the stable, fail-closed
 production and rollback system for the 2026 season.
 
-The approved successor is a rating-centric hybrid architecture:
+New research follows the approved data-first football forecasting architecture:
 
 ```text
-football measurements → measurement-level opponent adjustment
-→ offense/defense/overall team state + uncertainty
-→ structured game prediction → optional ML residual → probabilistic output
-→ timestamped market decision
+audited football data → validated measurements → opponent adjustment
+→ offense/defense team state + uncertainty → spread/total forecast
+→ prospective evaluation → timestamped line comparison
 ```
 
-The successor research track now expands historical football evidence through
-2015–2019 and 2021–2025 (2020 is excluded) before freezing candidate v2. V4
-remains isolated from research, Neon activation, and public publication. Frozen
-candidate v1 may collect diagnostic evidence only; candidate v2 needs its own
-six-slate prospective lane and promotion contract.
+The program uses 2015–2019 and 2021–2025 as development evidence and excludes
+2020. It starts by preserving and clarifying repository architecture, auditing
+and repairing data, then testing measurements and deliberately simple ratings
+and forecasts. V4 remains isolated from research, Neon activation, and public
+publication. Future frozen forecasts provide independent evidence. Market lines
+are comparison evidence only; betting decisions are deferred.
 
 ## Documentation
 
 - [Documentation home](docs/index.md)
 - [2026 roadmap](docs/planning/roadmap.md)
+- [Data-first football forecasting roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
 - [Rating-system requirements](docs/modeling/rating_system_requirements.md)
 - [Measurement catalog](docs/modeling/measurement_catalog.md)
 - [V4 regime contract](docs/modeling/early_season_regimes.md)

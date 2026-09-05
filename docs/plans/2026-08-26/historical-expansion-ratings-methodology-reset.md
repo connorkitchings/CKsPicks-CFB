@@ -1,6 +1,6 @@
 # Historical Expansion and Ratings Methodology Reset
 
-- **Status:** In Progress
+- **Status:** Superseded in part 2026-09-05
 - **Created:** 2026-08-26
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact
@@ -10,6 +10,10 @@
 - **Commit policy:** Separate plan commit required before implementation.
 
 ## Goal
+
+> R1/R2 implementation and artifacts remain immutable historical evidence. The
+> unfinished R3/R4, locked-2025, and candidate-v2 work is superseded by the
+> [data-first football forecasting roadmap](../../planning/data-first-football-forecasting-roadmap.md).
 
 Expand historical football evidence to 2015–2019 and 2021–2025, then select a
 replacement rating/prediction methodology without using 2026 outcomes. Keep V4

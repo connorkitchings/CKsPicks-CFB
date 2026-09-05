@@ -3,6 +3,12 @@
 > **Last updated:** 2026-09-04
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
+> **Authority note (2026-09-05):** This page remains the current V4 operations
+> authority and historical record of the R1/R2 successor work. The pending R3/R4
+> sequence and unfinished research portion are superseded by the
+> [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
+> Completed artifacts remain immutable evidence subject to its Phase 1 audit.
+
 ## Direction
 
 V4 remains the live, rollback-safe 2026 production system. The approved
@@ -16,10 +22,8 @@ source data → Bronze/Silver/Gold → football measurements
 → market decision
 ```
 
-The successor may be promoted during 2026 only through a later, separately
-approved evidence and promotion review. It is not activation-eligible today.
-The active research authority is the
-[historical expansion and ratings methodology reset](../plans/2026-08-26/historical-expansion-ratings-methodology-reset.md).
+No successor is activation-eligible today. The active research authority is the
+[data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 See the
 [rating-system requirements](../modeling/rating_system_requirements.md),
 [measurement catalog](../modeling/measurement_catalog.md), and
@@ -45,8 +49,8 @@ See the
 | --- | --- | --- |
 | R1 | Expanded, certified historical corpus: 2015–2019 and 2021–2025 | 2020 is forbidden; 2026 outcomes are protected and excluded. |
 | R2 | Sealed between-season prior tournament | 2025 is locked; 2019→2021 is a two-year stress transition, not a normal fit example. |
-| R3 | Sealed within-season state-update tournament | R2 winner is locked before selection. |
-| R4 | Structured predictor tournament and candidate-v2 freeze | Candidate v2 only freezes if every historical gate passes. |
+| R3 | Sealed within-season state-update tournament | Superseded before implementation; retained as historical planning evidence. |
+| R4 | Structured predictor tournament and candidate-v2 freeze | Superseded before implementation; retained as historical planning evidence. |
 
 ### 2026 operations track
 
@@ -146,7 +150,8 @@ calendar date cannot bypass a failed gate.
   0.5% simplicity tie; all gates passed; reconstructed and
   activation-ineligible — see the
   [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
-  R3 is next in the research sequence and remains isolated in Preview.
+  Its completed R1/R2 evidence remains available for audit. The data-first
+  program's Phase 0 is next; the former R3/R4 sequence is superseded.
 
 ## Invariants and open decisions
 

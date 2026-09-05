@@ -1,5 +1,13 @@
 # Evaluation Policy
 
+> **Authority note (2026-09-05):** V4 and existing frozen experiments retain
+> the policies below. New work under `data-first-football-v1` uses 2015-2019 and
+> 2021-2025 as development data and relies on future pre-kickoff freezes for
+> independent evidence. See the
+> [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md).
+> Timestamped lines are comparison evidence after football evaluation; betting
+> decisions are outside the current program.
+
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 

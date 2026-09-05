@@ -1,6 +1,6 @@
 # R3 Mixed State-Update Tournament
 
-- **Status:** Approved
+- **Status:** Superseded 2026-09-05 by `docs/plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md`
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact
@@ -9,6 +9,10 @@
 - **Commit policy:** Separate plan commit required after R2 and before implementation.
 
 ## Goal
+
+> Historical planning evidence only. Do not implement this contract. Its
+> bounded simple-updater concepts are reconsidered after data and measurement
+> certification in the data-first program.
 
 Select and freeze a continuous within-season updater across Bayesian,
 recency-weighted, score-driven, and constrained ML families while preserving
