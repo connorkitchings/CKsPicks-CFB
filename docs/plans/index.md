@@ -35,9 +35,11 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   baselines, aligns authority, separates active research entry points, and
   permits removal only with dependency and recovery evidence.
 - [Phase 1 data and evidence audit](2026-09-05/01-data-and-evidence-audit.md)
-  — Approved; begins after Phase 0.
+  — **Implemented 2026-09-05.** Sealed audit at
+  `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
+  (57 issues; all 5 research results unsupported pending Phase 2 repair).
 - [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
-  — Approved; consumes verified Phase 1 defects.
+  — Approved; consumes Phase 1 findings.
 - [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
   — Approved; consumes certified Phase 2 inputs.
 - [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
