@@ -1,10 +1,10 @@
 # Phase 1: Data and Evidence Audit
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05.
-- **Implementation log:** Pending Phase 0 completion
+- **Implementation log:** `session_logs/2026-09-05/03-phase1-data-evidence-audit.md`
 - **Commit policy:** Separate plan commit required
 
 ## Goal
@@ -66,3 +66,13 @@ reports, exact Phase 2 repair inputs, validation, session log, and status update
 Changing seasons, populations, timing rules, cost ceiling, or result-disposition
 criteria requires a revised plan.
 
+### Amendment 1 - Decision-complete implementation detail
+
+**Approval source:** The user explicitly approved the detailed Phase 1
+implementation plan on 2026-09-05.
+
+The audit covers regular and postseason games involving at least one
+season-classified FBS team. It uses separate `resolve` and `audit` stages,
+recomputes evidence without refitting models, writes only beneath
+`artifacts/research/data-first-football-v1/phase1/`, and may finish with
+explicit blockers when existing evidence cannot establish the full population.

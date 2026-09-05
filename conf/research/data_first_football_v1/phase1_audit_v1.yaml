@@ -1,0 +1,141 @@
+schema_version: data_first_phase1_audit_v1
+environment: preview
+output_root: artifacts/research/data-first-football-v1/phase1
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+season_types: [regular, postseason]
+population: fbs_involved
+metric_tolerance: 1.0e-9
+existing_monthly_cost_usd: 4.0
+maximum_monthly_cost_usd: 15.0
+
+roots:
+  - root_id: v4_config
+    kind: local_yaml
+    path: conf/weekly_bets/v4_2026.yaml
+    required: true
+  - root_id: v4_bundle
+    kind: json
+    uri: artifacts/preview/models/week0-2026-v4-strict-20260818-r2/manifest.json
+    expected_sha256: 72429375bfa8c434c7d6fcb455bb9e22333af8c929c0cc3e832f0b80787bf25c
+    required: true
+  - root_id: r1_foundation
+    kind: json
+    uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/foundation/manifest.json
+    required: true
+  - root_id: r1_coverage
+    kind: json
+    uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/coverage.json
+    required: true
+  - root_id: measurement_v3_audit
+    kind: json
+    uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/audit-report.json
+    required: true
+  - root_id: measurement_v3_observations
+    kind: json
+    uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/observations-ref.json
+    required: true
+  - root_id: measurement_v3_snapshots
+    kind: json
+    uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/snapshots-ref.json
+    required: true
+  - root_id: measurement_v3_terminal
+    kind: json
+    uri: artifacts/research/rating-successor/measurements-v3/6494832d3dee24bb507a3adddcecdaf9029d9e7ace3396417421dfe53f3f739a/runs/2026-08-26T1236Z-phase1-ppso-v3-final/terminal-snapshots-ref.json
+    required: true
+  - root_id: state_v2_audit
+    kind: json
+    uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/audit-report.json
+    required: true
+  - root_id: state_v2_measurements
+    kind: json
+    uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/measurement-states-ref.json
+    required: true
+  - root_id: state_v2_teams
+    kind: json
+    uri: artifacts/research/rating-successor/states-v2/fb51dcb6daf78ac06b67da0b68612a398bf99843eb02e312e81bfdb79cce838d/runs/2026-08-26T1404Z-phase2-state-v2/team-states-ref.json
+    required: true
+  - root_id: candidate_v1_manifest
+    kind: json
+    uri: artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/candidate-manifest.json
+    expected_sha256: e803d417a6ad6fa82ec9dfa2e5c344c6cb4bf732f41c9e7dcb02527110800d08
+    required: true
+  - root_id: candidate_v1_predictions
+    kind: json
+    uri: artifacts/research/rating-successor/score-tournament-v3/503d422c22bc357bfb25b7fe27f8f9c5e14098a1d2748e71d58b043d5a74e6fe/runs/2026-08-26T1502Z-phase3-score-v3/predictions-ref.json
+    required: true
+  - root_id: candidate_v1_rehearsal
+    kind: json
+    uri: artifacts/research/rating-successor/shadow-v1/584f3f5cd43653745b4f3e4eed4f5437444fb5997366e574f22f3bf05ec4172e/rehearsal/runs/2026-08-26T2140Z-phase4-rehearsal-v3/summary.json
+    expected_sha256: b755b585914d2f36b6ff93edba8eb520c500cd0e6ea416a58f47ee4fbdc33e31
+    required: true
+  - root_id: v4_replay_predictions
+    kind: json
+    uri: artifacts/research/rating-successor/v4-benchmark-replay/341285d246cb24c1e4d978e60eeed306b67a5734931324c807b17da799bf97c3/runs/2026-08-25T1323Z-v4-recovery/predictions/ref.json
+    required: true
+  - root_id: r2_prior_manifest
+    kind: json
+    uri: artifacts/research/rating-successor-v2/r2-prior-20260904-4c6e610/manifest.json
+    required: true
+  - root_id: r2_prior_selection
+    kind: json
+    uri: artifacts/research/rating-successor-v2/r2-prior-20260904-4c6e610/selection-report.json
+    required: true
+  - root_id: direct_selection
+    kind: json
+    uri: artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/direct/reconstructed-selection-report-v1.json
+    required: true
+  - root_id: context_source
+    kind: json
+    uri: artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/source-manifest.json
+    required: true
+  - root_id: context_admission
+    kind: json
+    uri: artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/admission-report.json
+    required: true
+  - root_id: context_dataset
+    kind: json
+    uri: artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2/context-ref.json
+    required: true
+
+results:
+  - result_id: certified_r1_foundation
+    required_roots: [r1_foundation, r1_coverage]
+    evidence_mode: integrity_counts
+    modeling_status: historical-only
+  - result_id: fixed_rating_baseline
+    required_roots: [measurement_v3_audit, measurement_v3_observations, measurement_v3_snapshots, measurement_v3_terminal, state_v2_audit, state_v2_measurements, state_v2_teams]
+    evidence_mode: integrity_counts
+    modeling_status: blocked-pending-repair
+  - result_id: candidate_v1_shadow
+    required_roots: [candidate_v1_manifest, candidate_v1_predictions, candidate_v1_rehearsal, v4_replay_predictions]
+    evidence_mode: prediction_metrics
+    modeling_status: diagnostic-only
+  - result_id: completed_r2_prior
+    required_roots: [r2_prior_manifest, r2_prior_selection]
+    evidence_mode: prediction_metrics
+    modeling_status: historical-only
+  - result_id: direct_early_game
+    required_roots: [direct_selection, context_admission, context_dataset]
+    evidence_mode: prediction_metrics
+    modeling_status: historical-only
+
+source_candidates:
+  - source_id: cfbd
+    categories: [quarterback, roster, returning_production, transfers, recruiting, talent, weather, special_teams]
+    official_url: https://collegefootballdata.com/
+  - source_id: ncaa_stats_and_team_sites
+    categories: [quarterback, roster, participation, special_teams]
+    official_url: https://stats.ncaa.org/
+  - source_id: noaa_ncei
+    categories: [historical_weather]
+    official_url: https://www.ncei.noaa.gov/support/access-data-service-api-user-documentation
+  - source_id: open_meteo
+    categories: [forecast_weather, historical_weather]
+    official_url: https://open-meteo.com/en/docs
+  - source_id: sportsdataio
+    categories: [quarterback, roster, transfers, weather, special_teams]
+    official_url: https://sportsdata.io/developers/api-documentation/ncaa-football
+  - source_id: sportradar
+    categories: [quarterback, roster, weather, special_teams]
+    official_url: https://developer.sportradar.com/football/reference/ncaafb-overview
