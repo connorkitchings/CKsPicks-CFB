@@ -1,0 +1,50 @@
+schema_version: data_first_phase2d_audit_v1
+environment: preview
+output_root: artifacts/research/data-first-football-v1/phase1
+prior_audit_prefix: artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+season_types: [regular, postseason]
+population: fbs_involved
+
+certification_root:
+  phase2c_ref_set_uri: artifacts/research/data-first-football-v1/phase2/silver/runs/2026-09-06T1437Z-phase2c-expanded-silver-v1/ref-set.json
+  phase2c_ref_set_sha256: b3023ab5b7a304ddbc81ae2feca56238959520a54b3a75ed9be136f5d8f51df3
+  follow_policy: no_follow
+
+required_stages:
+  - game_outcomes
+  - plays
+  - team_game_stats
+  - byplay
+  - drives
+  - reconciled_team_game
+  - source_reconciliation
+
+coverage_thresholds:
+  comparison: strictly_greater_than
+  fbs_fbs: 0.95
+  fbs_fcs: 0.90
+  outcomes: 1.0
+  source_reconciliation: 1.0
+  postseason_detail: 1.0
+
+historical_exclusion_policy:
+  noncanonical_research_objects:
+    - artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384
+    - artifacts/research/rating-successor/measurements-v3
+    - artifacts/research/rating-successor/states-v2
+    - artifacts/research/rating-successor/score-tournament-v3
+    - artifacts/research/rating-successor/shadow-v1
+    - artifacts/research/rating-successor/v4-benchmark-replay
+    - artifacts/research/rating-successor-v2/r2-prior-20260904-4c6e610
+    - artifacts/research/rating-successor-v2/early-week-context-20260904-786580ec-r2
+  disposition: historical_exclusion
+  reason: noncanonical historical parquet remains visible and ineligible
+
+omission_policy:
+  permitted_reason: provider_response_omission
+  expected_counts:
+    play: 32
+    team_stat: 1
+  postseason_omissions: blocking
