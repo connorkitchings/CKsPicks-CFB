@@ -481,7 +481,14 @@ def register_dataset_version(
         registered_schema_sha = register_schema_version(
             conn_url, ref.dataset, ref.schema_version
         )
-        if manifest.schema_sha != registered_schema_sha:
+        # Historical manifests were sealed before the executable registry
+        # learned their schema versions, so they recorded ``schema_sha: null``.
+        # They register against the schema learned now; only manifests that
+        # recorded a schema sha are checked for drift.
+        if (
+            manifest.schema_sha is not None
+            and manifest.schema_sha != registered_schema_sha
+        ):
             raise ValueError(
                 f"Dataset schema SHA mismatch for {ref.dataset}/{ref.version_id}"
             )

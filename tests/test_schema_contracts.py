@@ -130,3 +130,51 @@ def test_reconciliation_schema_rejects_unknown_classification():
     frame.loc[0, "classification"] = "ignored"
     with pytest.raises(DatasetSchemaError, match="unsupported values"):
         validate_frame(frame, schema_for("source_reconciliation", "reconciliation_v1"))
+
+
+_HISTORICAL_RATING_VERSIONS = (
+    ("rating_measurement_observations", "rating_measurement_observations_v3"),
+    (
+        "rating_adjusted_measurement_snapshots",
+        "rating_adjusted_measurement_snapshots_v3",
+    ),
+    (
+        "rating_adjusted_measurement_terminal_snapshots",
+        "rating_adjusted_measurement_terminal_snapshots_v2",
+    ),
+    ("rating_measurement_states", "rating_measurement_states_v2"),
+    ("rating_measurement_states", "rating_measurement_states_v3"),
+    ("rating_team_states", "rating_team_states_v2"),
+    ("rating_team_states", "rating_team_states_v3"),
+    ("rating_score_models", "rating_score_models_v3"),
+    ("rating_score_predictions", "rating_score_predictions_v3"),
+    ("rating_shadow_predictions", "rating_shadow_predictions_v1"),
+    ("rating_shadow_evidence", "rating_shadow_evidence_v1"),
+    ("rating_v4_historical_predictions", "rating_v4_historical_predictions_v1"),
+)
+
+
+def test_historical_rating_schema_versions_resolve():
+    for dataset, version in _HISTORICAL_RATING_VERSIONS:
+        schema = schema_for(dataset, version)
+        assert schema.schema_version == version
+        assert schema.required
+    base = schema_for(
+        "rating_measurement_observations",
+        "rating_measurement_observations_v2",
+    )
+    variant = schema_for(
+        "rating_measurement_observations",
+        "rating_measurement_observations_v3",
+    )
+    assert variant.required == base.required
+    assert variant.nonnullable == base.nonnullable
+    assert variant.sha256 != base.sha256
+
+
+def test_unknown_rating_schema_version_names_known_versions():
+    with pytest.raises(DatasetSchemaError, match="known versions"):
+        schema_for(
+            "rating_measurement_observations",
+            "rating_measurement_observations_v9",
+        )

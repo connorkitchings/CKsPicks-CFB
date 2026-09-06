@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 import pandas as pd
@@ -29,6 +29,11 @@ from cks_picks_cfb.ratings.state_contracts import (
     TEAM_STATE_DATASET,
     TEAM_STATE_KEYS,
     TEAM_STATE_SCHEMA_VERSION,
+)
+from cks_picks_cfb.ratings.v4_benchmark import (
+    BENCHMARK_COLUMNS,
+    BENCHMARK_KEYS,
+    V4_BENCHMARK_SCHEMA_VERSION,
 )
 
 
@@ -274,7 +279,7 @@ _DERIVED_SILVER_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
-_RATING_SCHEMAS: dict[str, DatasetSchema] = {
+_RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
         schema_version=OBSERVATION_SCHEMA_VERSION,
@@ -492,6 +497,216 @@ _RATING_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+# Historical rating datasets were sealed under schema versions this registry
+# never learned: the lake write path tolerates unknown versions and records
+# ``schema_sha: null``, which left the objects writable but unregistrable.
+# The corrected Phase 1 audit reproduced those registration gaps, so each
+# additional version below reuses its dataset's sealed column contract, and
+# the four datasets after the version map were derived from the sealed
+# objects' parquet columns and their writer contracts.
+_RATING_SCHEMA_EXTRA_VERSIONS: dict[str, tuple[str, ...]] = {
+    "rating_measurement_observations": ("rating_measurement_observations_v3",),
+    "rating_adjusted_measurement_snapshots": (
+        "rating_adjusted_measurement_snapshots_v3",
+    ),
+    "rating_adjusted_measurement_terminal_snapshots": (
+        "rating_adjusted_measurement_terminal_snapshots_v2",
+    ),
+    MEASUREMENT_STATE_DATASET: (
+        "rating_measurement_states_v2",
+        "rating_measurement_states_v3",
+    ),
+    TEAM_STATE_DATASET: ("rating_team_states_v2", "rating_team_states_v3"),
+}
+
+_SCORE_PREDICTION_COLUMNS = (
+    "season",
+    "week",
+    "game_id",
+    "kickoff_utc",
+    "home_state_id",
+    "away_state_id",
+    "home_completed_games",
+    "away_completed_games",
+    "home_pace_source",
+    "away_pace_source",
+    "fold_id",
+    "score_model_family",
+    "predicted_home_score",
+    "predicted_away_score",
+    "home_score_sd",
+    "away_score_sd",
+    "score_covariance",
+    "distribution_family",
+    "target",
+    "actual",
+    "prediction_mean",
+    "prediction_sd",
+    "interval_50_lower",
+    "interval_50_upper",
+    "interval_80_lower",
+    "interval_80_upper",
+    "interval_95_lower",
+    "interval_95_upper",
+)
+
+_SCORE_PREDICTION_NONNULLABLE = (
+    "season",
+    "week",
+    "game_id",
+    "kickoff_utc",
+    "home_state_id",
+    "away_state_id",
+    "fold_id",
+    "score_model_family",
+    "predicted_home_score",
+    "predicted_away_score",
+    "distribution_family",
+    "target",
+    "prediction_mean",
+    "prediction_sd",
+)
+
+_RATING_SCHEMA_BASES.update(
+    {
+        "rating_score_models": DatasetSchema(
+            dataset="rating_score_models",
+            schema_version="rating_score_models_v3",
+            required=(
+                "family",
+                "training_seasons",
+                "feature_names",
+                "coefficients",
+                "residual_covariance",
+                "dispersion",
+                "optimizer_success",
+                "model_stage",
+                "fold_id",
+            ),
+            keys=("family", "model_stage", "fold_id"),
+            boolean_columns=("optimizer_success",),
+            nonnullable=(
+                "family",
+                "training_seasons",
+                "feature_names",
+                "coefficients",
+                "optimizer_success",
+                "model_stage",
+                "fold_id",
+            ),
+        ),
+        "rating_score_predictions": DatasetSchema(
+            dataset="rating_score_predictions",
+            schema_version="rating_score_predictions_v3",
+            required=_SCORE_PREDICTION_COLUMNS,
+            keys=(
+                "season",
+                "game_id",
+                "target",
+                "fold_id",
+                "score_model_family",
+            ),
+            integer_columns=(
+                "season",
+                "week",
+                "game_id",
+                "home_completed_games",
+                "away_completed_games",
+            ),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=_SCORE_PREDICTION_NONNULLABLE,
+        ),
+        "rating_shadow_predictions": DatasetSchema(
+            dataset="rating_shadow_predictions",
+            schema_version="rating_shadow_predictions_v1",
+            required=_SCORE_PREDICTION_COLUMNS,
+            keys=(
+                "season",
+                "game_id",
+                "target",
+                "fold_id",
+                "score_model_family",
+            ),
+            integer_columns=(
+                "season",
+                "week",
+                "game_id",
+                "home_completed_games",
+                "away_completed_games",
+            ),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=_SCORE_PREDICTION_NONNULLABLE,
+        ),
+        "rating_shadow_evidence": DatasetSchema(
+            dataset="rating_shadow_evidence",
+            schema_version="rating_shadow_evidence_v1",
+            required=_SCORE_PREDICTION_COLUMNS
+            + (
+                "v4_prediction",
+                "source_kind",
+                "rehearsal_only",
+                "freeze_manifest_sha256",
+                "scored_at",
+                "candidate_absolute_error",
+                "v4_absolute_error",
+            ),
+            keys=(
+                "season",
+                "game_id",
+                "target",
+                "fold_id",
+                "score_model_family",
+                "source_kind",
+            ),
+            integer_columns=(
+                "season",
+                "week",
+                "game_id",
+                "home_completed_games",
+                "away_completed_games",
+            ),
+            boolean_columns=("rehearsal_only",),
+            timestamp_columns=("kickoff_utc", "scored_at"),
+            nonnullable=_SCORE_PREDICTION_NONNULLABLE
+            + (
+                "v4_prediction",
+                "source_kind",
+                "freeze_manifest_sha256",
+                "scored_at",
+            ),
+        ),
+        "rating_v4_historical_predictions": DatasetSchema(
+            dataset="rating_v4_historical_predictions",
+            schema_version=V4_BENCHMARK_SCHEMA_VERSION,
+            required=BENCHMARK_COLUMNS,
+            keys=BENCHMARK_KEYS,
+            integer_columns=("season", "game_id"),
+            nonnullable=(
+                "season",
+                "game_id",
+                "target",
+                "regime",
+                "actual",
+                "v4_prediction",
+                "source_kind",
+                "benchmark_schema_version",
+                "benchmark_design_id",
+            ),
+        ),
+    }
+)
+
+_RATING_SCHEMAS: dict[str, dict[str, DatasetSchema]] = {
+    dataset: {
+        base.schema_version: base,
+        **{
+            version: replace(base, schema_version=version)
+            for version in _RATING_SCHEMA_EXTRA_VERSIONS.get(dataset, ())
+        },
+    }
+    for dataset, base in _RATING_SCHEMA_BASES.items()
+}
+
 
 def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
     """Return the executable contract for every active immutable dataset."""
@@ -576,11 +791,12 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             True,
         )
     if dataset in _RATING_SCHEMAS:
-        schema = _RATING_SCHEMAS[dataset]
-        if schema_version != schema.schema_version:
+        versions = _RATING_SCHEMAS[dataset]
+        schema = versions.get(schema_version)
+        if schema is None:
             raise DatasetSchemaError(
-                f"{dataset} must use schema version {schema.schema_version}, "
-                f"got {schema_version}"
+                f"{dataset} has no registered schema version {schema_version}; "
+                f"known versions: {sorted(versions)}"
             )
         return schema
     raise DatasetSchemaError(

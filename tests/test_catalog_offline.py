@@ -363,3 +363,60 @@ def test_dataset_registration_records_dependency_and_quality_surfaces(monkeypatc
         source_dataset_versions=["v-register"],
     )
     assert any("source_reconciliations" in sql for sql, _ in cursor.executed)
+
+
+def _null_sha_historical_manifest():
+    return DatasetManifest(
+        dataset="rating_shadow_predictions",
+        version_id="v-null-sha",
+        tier="silver",
+        schema_version="rating_shadow_predictions_v1",
+        content_sha="sha",
+        uri="lake/silver/dataset=rating_shadow_predictions/version=v-null-sha/data.parquet",
+        row_count=1,
+        partitions={"season": 2026},
+        created_at="2026-09-01T00:00:00Z",
+        as_of="2026-09-01T00:00:00Z",
+        identity_version="dataset_identity_v2",
+        schema_sha=None,
+    )
+
+
+def test_dataset_registration_tolerates_null_schema_sha_history(monkeypatch):
+    cursor = _Cursor()
+    connection = _connect(monkeypatch, cursor)
+
+    manifest = _null_sha_historical_manifest()
+    ref = DatasetRef(
+        manifest.dataset,
+        manifest.version_id,
+        manifest.schema_version,
+        manifest.content_sha,
+        manifest.uri,
+    )
+    catalog.register_dataset_version("postgresql://fixture", ref, manifest)
+    assert connection.commits >= 1
+    statements = "\n".join(sql for sql, _ in cursor.executed)
+    assert "schema_versions" in statements
+    assert "dataset_versions" in statements
+
+
+def test_dataset_registration_rejects_schema_sha_drift(monkeypatch):
+    cursor = _Cursor()
+    _connect(monkeypatch, cursor)
+
+    manifest = _null_sha_historical_manifest()
+    object.__setattr__(
+        manifest,
+        "schema_sha",
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    )
+    ref = DatasetRef(
+        manifest.dataset,
+        manifest.version_id,
+        manifest.schema_version,
+        manifest.content_sha,
+        manifest.uri,
+    )
+    with pytest.raises(ValueError, match="schema SHA mismatch"):
+        catalog.register_dataset_version("postgresql://fixture", ref, manifest)
