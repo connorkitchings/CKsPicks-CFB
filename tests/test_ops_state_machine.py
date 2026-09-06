@@ -402,6 +402,10 @@ def test_command_builders_preserve_optional_arguments_and_scoped_commands(monkey
         )
         steps = build_steps(context, conn_url="postgresql://unused", options=options)
         assert len(steps) == expected_count
+        if command in {"build-silver", "build-team-game"}:
+            argv = steps[0].definition["argv"]
+            environment_index = argv.index("--environment")
+            assert argv[environment_index + 1] == "preview"
 
     freeze = build_steps(
         new_context(

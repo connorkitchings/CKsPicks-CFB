@@ -6,7 +6,7 @@
 - **Approval source:** User approved the full data-first plan on 2026-09-05 and
   explicitly approved the full Phase 2 scope (split sub-phases, ingest 2015-2019,
   include FBS-FCS games) on 2026-09-05.
-- **Implementation log:** `session_logs/2026-09-05/05-phase1-correction-and-phase2-implementation.md`
+- **Implementation log:** `session_logs/2026-09-05/06-phase2-completion.md`
 - **Sealed Phase 1 input:**
   `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
 - **Commit policy:** Separate plan commit required
@@ -440,6 +440,25 @@ measurement definitions require another amendment. Each failed gate remains
 visible and blocks only the affected inputs; it is never weakened after seeing
 results.
 
+### Amendment 3 - Complete postseason capture and enforce Preview routing
+
+**Approval source:** The user explicitly approved and directed implementation
+of the Phase 2 completion plan on 2026-09-05.
+
+The first Phase 2b execution captured the ten missing postseason schedule
+requests, but the sealed v3 denominator contains regular-season rows only. The
+historical planner therefore could not derive postseason weekly plays and
+game-stat requests from that unchanged denominator. Phase 2b remains partial
+until those endpoints are captured.
+
+The historical capture CLI accepts explicit registered postseason schedule
+capture IDs, validates their CFBD provenance and permitted seasons, and merges
+their game/week observations with the sealed denominator without hiding
+identity conflicts. The Silver and team-game ops wrappers must also propagate
+their explicit environment; `build_silver.py` resolves both storage and catalog
+targets from that value instead of an ambient database URL. These repairs do
+not alter the Phase 2 architecture, acceptance gates, V4, or production.
+
 ### Execution record
 
 - **Corrected Phase 1 audit v3 (prerequisite) — complete 2026-09-06.** Sealed
@@ -458,17 +477,21 @@ results.
   `artifacts/research/data-first-football-v1/phase2/catalog-repair/2026-09-06T0055Z-catalog-repair/repair-report.json`:
   53 registered, 0 quarantined, confirmed in Preview Neon. All 53 objects
   pass `validate_frame` under the registered schemas.
-- **Phase 2b bounded capture — complete 2026-09-06.**
+- **Phase 2b bounded capture — partial 2026-09-06.**
   - Pregame rehearsal (7 requests): 7/7 captured, all first-attempt, Preview
     Neon registration confirmed, authentic pregame timestamps.
   - Historical postseason capture (10 requests): 10/10 postseason `/games`
     requests captured across 10 seasons (2015–2019 + 2021–2025), ~415 games,
     all first-attempt, registered in Preview Neon under entity
     `data_first_games`.
+  - Amendment 3 dry-run with those ten explicit captures discovers 20 missing
+    requests: one postseason `/plays` and one postseason `/game/team/stats`
+    request for each permitted season. Phase 2b completes only after these are
+    captured and registered in Preview.
   - CFBD quota: Tier 2, ~29,360/30,000 remaining this month.
   - GHA daily cron (`CFB_DATA_FIRST_CAPTURE_SCHEDULE_ENABLED=true`) ready for
     enablement per Amendment 2 (manual rehearsal + timing proof satisfied).
-- **Phase 2c Silver rebuild — in progress.** Root cause fixed (commit
+- **Phase 2c Silver rebuild — blocked on Phase 2b completion.** Root cause fixed (commit
   `64879e2`): mixed camelCase/snake_case column conventions in concatenated
   Bronze captures (`_rename_common` now coalesces camelCase aliases into
   snake_case twins). `fbs_involved_games` builder ready; regular-season Bronze

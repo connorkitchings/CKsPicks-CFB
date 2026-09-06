@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import subprocess
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -18,6 +17,7 @@ from cks_picks_cfb.data.catalog import (
     source_capture_by_id,
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset, read_source_capture
+from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.silver import SILVER_CONTRACTS, build_silver_version
 from cks_picks_cfb.data.storage import get_storage
 
@@ -43,11 +43,13 @@ def main() -> None:
     parser.add_argument("--games-ref-uri")
     parser.add_argument("--week-policy-ref-uri")
     parser.add_argument("--output-ref-uri", required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     args = parser.parse_args()
-    conn_url = os.getenv("DATABASE_URL")
-    if not conn_url:
-        raise SystemExit("DATABASE_URL is required")
-    storage = get_storage()
+    target = resolve_runtime_target(args.environment)
+    conn_url = target.database_url
+    storage = get_storage(environment=args.environment)
     captures = [source_capture_by_id(conn_url, value) for value in args.capture_id]
     records = []
     for capture in captures:

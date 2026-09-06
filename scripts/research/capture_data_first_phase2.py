@@ -20,14 +20,17 @@ from dotenv import load_dotenv
 from cks_picks_cfb.data.catalog import (
     catalog_connection_url,
     register_source_capture,
+    source_capture_by_id,
 )
 from cks_picks_cfb.data.data_first_phase2 import (
     CaptureRequest,
     active_pregame_request_plan,
     execute_with_bounded_retries,
     historical_request_plan,
+    merge_schedule_observations,
+    validate_postseason_schedule_capture,
 )
-from cks_picks_cfb.data.lake import capture_provider_records
+from cks_picks_cfb.data.lake import capture_provider_records, read_source_capture
 from cks_picks_cfb.data.storage import get_storage
 
 OUTPUT_ROOT = "artifacts/research/data-first-football-v1/phase2/capture/runs"
@@ -122,15 +125,35 @@ def _quota(client: cfbd.ApiClient, required: int) -> dict[str, Any]:
     }
 
 
-def _schedule(storage, audit_prefix: str) -> pd.DataFrame:
+def _supplemental_schedule(
+    storage, conn_url: str, capture_ids: list[str]
+) -> list[pd.DataFrame]:
+    frames = []
+    for capture_id in capture_ids:
+        capture = source_capture_by_id(conn_url, capture_id)
+        validate_postseason_schedule_capture(capture)
+        frames.append(read_source_capture(storage, capture))
+    return frames
+
+
+def _schedule(
+    storage, audit_prefix: str, conn_url: str, capture_ids: list[str]
+) -> pd.DataFrame:
     uri = f"{audit_prefix.rstrip('/')}/schedule-denominator.parquet"
-    return pd.read_parquet(io.BytesIO(storage.read_bytes(uri)))
+    schedule = pd.read_parquet(io.BytesIO(storage.read_bytes(uri)))
+    if not capture_ids:
+        return schedule
+    return merge_schedule_observations(
+        schedule, _supplemental_schedule(storage, conn_url, capture_ids)
+    )
 
 
 def _plan(args, storage, conn_url: str) -> list[CaptureRequest]:
     if args.kind == "pregame":
         return active_pregame_request_plan(args.season)
-    schedule = _schedule(storage, args.audit_prefix)
+    schedule = _schedule(
+        storage, args.audit_prefix, conn_url, list(args.schedule_capture_id or [])
+    )
     candidates = historical_request_plan(schedule)
     existing = _existing_request_shas(conn_url, candidates)
     return historical_request_plan(schedule, existing_request_shas=existing)
@@ -143,6 +166,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("dry-run", "apply"), required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--audit-prefix")
+    parser.add_argument("--schedule-capture-id", action="append", default=[])
     parser.add_argument("--season", type=int, default=2026)
     parser.add_argument("--max-requests", type=int, required=True)
     parser.add_argument("--max-attempts", type=int, default=3)
@@ -152,6 +176,8 @@ def main() -> None:
         raise RuntimeError("Phase 2 capture requires CFB_STORAGE_BACKEND=r2")
     if args.kind == "historical" and not args.audit_prefix:
         raise ValueError("historical capture requires --audit-prefix")
+    if args.kind != "historical" and args.schedule_capture_id:
+        raise ValueError("--schedule-capture-id is only valid for historical capture")
     if not 1 <= args.max_attempts <= 5:
         raise ValueError("--max-attempts must be between 1 and 5")
     if args.mode == "apply" and args.expected_code_sha != _git_sha():

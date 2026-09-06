@@ -108,6 +108,74 @@ def historical_request_plan(
     return [unique[key] for key in sorted(unique) if key not in existing]
 
 
+def merge_schedule_observations(
+    schedule: pd.DataFrame, supplemental: Sequence[pd.DataFrame]
+) -> pd.DataFrame:
+    """Merge explicit schedule captures without hiding identity conflicts."""
+
+    frames = [schedule.copy(), *(frame.copy() for frame in supplemental)]
+    normalized: list[pd.DataFrame] = []
+    aliases = {
+        "year": "season",
+        "id": "game_id",
+        "seasonType": "season_type",
+    }
+    required = {"season", "week", "season_type", "game_id"}
+    for frame in frames:
+        for source, target in aliases.items():
+            if source in frame and target not in frame:
+                frame = frame.rename(columns={source: target})
+        if missing := sorted(required - set(frame)):
+            raise ValueError(f"schedule observation missing columns: {missing}")
+        frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
+        frame["week"] = pd.to_numeric(frame["week"], errors="raise").astype(int)
+        frame["season_type"] = frame["season_type"].astype(str).str.casefold()
+        normalized.append(frame)
+
+    combined = pd.concat(normalized, ignore_index=True, sort=False)
+    if combined["season"].isin(FORBIDDEN_SEASONS).any():
+        raise ValueError("schedule observations reject 2020")
+    unknown = sorted(set(combined["season_type"]) - set(SEASON_TYPES))
+    if unknown:
+        raise ValueError(f"unsupported season types: {unknown}")
+
+    identity = ["season", "game_id"]
+    dimensions = ["week", "season_type"]
+    conflicts = combined.groupby(identity, dropna=False)[dimensions].nunique()
+    if (conflicts > 1).any(axis=None):
+        bad = conflicts[(conflicts > 1).any(axis=1)].index.tolist()
+        raise ValueError(f"conflicting schedule observations: {bad[:10]}")
+    return (
+        combined.drop_duplicates(identity)
+        .sort_values(["season", "season_type", "week", "game_id"])
+        .reset_index(drop=True)
+    )
+
+
+def validate_postseason_schedule_capture(capture: Any) -> None:
+    """Require an explicit registered CFBD postseason games observation."""
+
+    request = dict(capture.request or {})
+    parameters = dict(request.get("parameters") or {})
+    if capture.state != "registered":
+        raise ValueError(f"schedule capture is not registered: {capture.capture_id}")
+    if capture.provider != "cfbd" or capture.entity != "data_first_games":
+        raise ValueError(
+            "supplemental schedule capture must be a CFBD data_first_games "
+            f"capture: {capture.capture_id}"
+        )
+    if request.get("endpoint") != "GamesApi.get_games":
+        raise ValueError(
+            f"schedule capture has the wrong endpoint: {capture.capture_id}"
+        )
+    if parameters.get("season_type") != "postseason":
+        raise ValueError(f"schedule capture is not postseason: {capture.capture_id}")
+    if parameters.get("year") not in set(DEVELOPMENT_SEASONS):
+        raise ValueError(
+            f"schedule capture has an invalid season: {capture.capture_id}"
+        )
+
+
 def active_pregame_request_plan(season: int) -> list[CaptureRequest]:
     if season in FORBIDDEN_SEASONS:
         raise ValueError("pregame capture rejects 2020")

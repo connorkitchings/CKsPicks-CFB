@@ -36,8 +36,17 @@ counts the remaining provider requests by season, season type, and week:
 PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py \
   --kind historical --mode dry-run --run-id phase2-history-plan \
   --audit-prefix artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3 \
+  --schedule-capture-id <registered-postseason-games-capture-id> \
   --max-requests <reviewed-bound>
 ```
+
+Repeat `--schedule-capture-id` for each of the ten registered postseason games
+captures. The command validates that every supplied observation is registered,
+comes from CFBD `GamesApi.get_games` under `data_first_games`, is postseason,
+and belongs to a permitted development season. It rejects 2020 and conflicting
+`(season, game_id)` schedule identities. Supplying all ten captures currently
+produces exactly 20 remaining requests: postseason plays and team-game stats
+for each permitted season.
 
 An apply run requires the exact committed code SHA. It fails before capture if
 the plan exceeds the reviewed bound or the account has fewer remaining calls.

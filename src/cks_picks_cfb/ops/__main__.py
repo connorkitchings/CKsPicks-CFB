@@ -1606,6 +1606,8 @@ def build_steps(
             as_of,
             "--output-ref-uri",
             options.output_ref_uri,
+            "--environment",
+            environment,
         )
         for capture_id in options.capture_id:
             argv.extend(["--capture-id", capture_id])
@@ -1626,6 +1628,8 @@ def build_steps(
             as_of,
             "--output-ref-uri",
             options.output_ref_uri,
+            "--environment",
+            environment,
         )
         for name in ("teams", "venues", "weather", "game_stats", "corrections"):
             value = getattr(options, f"{name}_ref_uri")

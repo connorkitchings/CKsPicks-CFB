@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pandas as pd
 import pytest
 
@@ -10,6 +12,8 @@ from cks_picks_cfb.data.data_first_phase2 import (
     deduplicate_preseason_rows,
     execute_with_bounded_retries,
     historical_request_plan,
+    merge_schedule_observations,
+    validate_postseason_schedule_capture,
 )
 
 
@@ -45,6 +49,99 @@ def test_capture_plans_reject_2020_and_active_plan_is_seven_calls():
             pd.DataFrame([{"season": 2020, "week": 1, "season_type": "regular"}])
         )
     assert len(active_pregame_request_plan(2026)) == 7
+
+
+def test_supplemental_postseason_schedule_discovers_weekly_requests():
+    regular = pd.DataFrame(
+        [
+            {
+                "season": 2019,
+                "week": 1,
+                "season_type": "regular",
+                "game_id": 1,
+            }
+        ]
+    )
+    postseason = pd.DataFrame(
+        [
+            {"year": 2019, "week": 1, "seasonType": "postseason", "id": 2},
+            {"year": 2019, "week": 1, "seasonType": "postseason", "id": 2},
+        ]
+    )
+    merged = merge_schedule_observations(regular, [postseason])
+    requests = historical_request_plan(merged)
+    postseason_weekly = [
+        request
+        for request in requests
+        if request.parameters.get("year") == 2019
+        and request.parameters.get("season_type") == "postseason"
+        and request.entity in {"plays", "game_stats"}
+    ]
+    assert len(merged) == 2
+    assert len(postseason_weekly) == 2
+
+
+def test_supplemental_schedule_rejects_2020_and_identity_conflicts():
+    base = pd.DataFrame(
+        [
+            {
+                "season": 2019,
+                "week": 1,
+                "season_type": "regular",
+                "game_id": 1,
+            }
+        ]
+    )
+    with pytest.raises(ValueError, match="2020"):
+        merge_schedule_observations(
+            base,
+            [
+                pd.DataFrame(
+                    [
+                        {
+                            "season": 2020,
+                            "week": 1,
+                            "season_type": "postseason",
+                            "game_id": 2,
+                        }
+                    ]
+                )
+            ],
+        )
+    with pytest.raises(ValueError, match="conflicting schedule observations"):
+        merge_schedule_observations(
+            base,
+            [
+                pd.DataFrame(
+                    [
+                        {
+                            "season": 2019,
+                            "week": 2,
+                            "season_type": "regular",
+                            "game_id": 1,
+                        }
+                    ]
+                )
+            ],
+        )
+
+
+def test_supplemental_capture_requires_registered_cfbd_postseason_provenance():
+    valid = SimpleNamespace(
+        capture_id="capture",
+        state="registered",
+        provider="cfbd",
+        entity="data_first_games",
+        request={
+            "endpoint": "GamesApi.get_games",
+            "parameters": {"year": 2019, "season_type": "postseason"},
+        },
+    )
+    validate_postseason_schedule_capture(valid)
+
+    invalid = SimpleNamespace(**(valid.__dict__ | {"entity": "games"}))
+    with pytest.raises(ValueError, match="CFBD data_first_games"):
+        validate_postseason_schedule_capture(invalid)
 
 
 def test_bounded_retries_report_attempts_and_exhaustion_without_waiting():
