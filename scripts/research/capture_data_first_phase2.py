@@ -165,6 +165,7 @@ def main() -> None:
     parser.add_argument("--kind", choices=("historical", "pregame"), required=True)
     parser.add_argument("--mode", choices=("dry-run", "apply"), required=True)
     parser.add_argument("--run-id", required=True)
+    parser.add_argument("--environment", choices=("preview",), required=True)
     parser.add_argument("--audit-prefix")
     parser.add_argument("--schedule-capture-id", action="append", default=[])
     parser.add_argument("--season", type=int, default=2026)
@@ -174,6 +175,8 @@ def main() -> None:
     args = parser.parse_args()
     if os.getenv("CFB_STORAGE_BACKEND", "").casefold() != "r2":
         raise RuntimeError("Phase 2 capture requires CFB_STORAGE_BACKEND=r2")
+    if args.environment != "preview":
+        raise RuntimeError("Phase 2 capture requires --environment preview")
     if args.kind == "historical" and not args.audit_prefix:
         raise ValueError("historical capture requires --audit-prefix")
     if args.kind != "historical" and args.schedule_capture_id:
@@ -271,7 +274,8 @@ def main() -> None:
     failed = [row for row in results if row["state"] != "captured"]
     manifest = {
         **plan,
-        "schema_version": "data_first_phase2_capture_run_v1",
+        "schema_version": "data_first_phase2_capture_run_v2",
+        "environment": args.environment,
         "state": "complete" if not failed else "complete_with_gaps",
         "code_sha": args.expected_code_sha,
         "quota": quota,

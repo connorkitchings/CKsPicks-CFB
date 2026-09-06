@@ -29,7 +29,6 @@ jobs:
       CFB_R2_PREVIEW_ACCESS_KEY: ${{ secrets.CFB_R2_PREVIEW_ACCESS_KEY }}
       CFB_R2_PREVIEW_SECRET_KEY: ${{ secrets.CFB_R2_PREVIEW_SECRET_KEY }}
       PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
     steps:
       - uses: actions/checkout@v7
@@ -46,6 +45,7 @@ jobs:
           --kind pregame
           --mode apply
           --run-id github-${{ github.run_id }}-${{ github.run_attempt }}
+          --environment preview
           --season ${{ inputs.season || '2026' }}
           --max-requests 7
           --expected-code-sha ${{ github.sha }}
