@@ -6,6 +6,9 @@
 - **Approval source:** User approved the full data-first plan on 2026-09-05.
 - **Implementation log:** `session_logs/2026-09-05/03-phase1-data-evidence-audit.md`
 - **Sealed audit:** `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/` (complete_with_blockers; 57 issues; all 5 results unsupported pending Phase 2)
+- **Current authority:** The sealed v2 audit is preserved historical evidence
+  but requires correction under Phase 2 Amendment 2 before it can govern repair
+  or eligibility decisions.
 - **Commit policy:** Separate plan commit required
 
 ## Goal

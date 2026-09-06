@@ -55,9 +55,10 @@ contained the mapping while `contracts/teams.ts`, `web/src/lib/teams.ts`,
 did not. Phase 0 synchronizes those four copies without changing another team
 mapping.
 
-## Deterministic compatibility assertions
+## Deterministic fixture compatibility assertions
 
-The checked-in fixtures remain the immutable comparison mechanism:
+The checked-in fixtures, rather than a newly executed live production replay,
+remain the immutable comparison mechanism:
 
 - V3 team-score derivation produces spread `7.0` and total `49.0`.
 - Frozen blend routing produces spread `15.0`.

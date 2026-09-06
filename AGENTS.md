@@ -71,7 +71,10 @@ print(f"✅ Data root verified: {data_root}")
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
-- Complete initial requirements before Week 0. A first promotion review requires six completed, normal-coverage slates with V4 and candidate predictions frozen before kickoff; Week 0 does not count.
+- The original target was to complete initial requirements before Week 0; that
+  date has passed, so any unfinished requirement remains an explicit blocker.
+  A first promotion review requires six completed, normal-coverage slates with
+  V4 and candidate predictions frozen before kickoff; Week 0 does not count.
 - New research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
@@ -214,9 +217,11 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `continuity_ridge_alpha_0_1`, all gates passed) — see
   `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
   is reconstructed and activation-ineligible. The pending R3/R4 sequence is
-  superseded; **Phase 0 and Phase 1 are implemented** (Phase 1 sealed audit at
+  superseded; **Phase 0 is implemented and Phase 1 is being corrected under
+  Phase 2 Amendment 2** (the original Phase 1 audit is preserved at
   `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`;
-  57 issues feeding Phase 2). **Phase 2 data repair and recertification is next.**
+  but its 57 issues are not current repair authority). **Phase 2 data repair and
+  recertification is in progress.**
   O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

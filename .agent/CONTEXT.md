@@ -243,7 +243,9 @@ make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 
 - Every mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.
 - `AS_OF` must be set ~5 minutes ahead of the publish run so the market capture falls before the cutoff.
-- Publication modes: `market` (fail-closed, no model output — current production default) vs `predictions` (requires explicit user approval).
+- Publication modes: `market` (fail-closed, no model output) vs `predictions`.
+  Production currently uses the explicitly approved `predictions` mode; every
+  other value remains fail-closed.
 - Health: `GET /api/health` (schema version, active run state, predicted/lined coverage, freshness).
 - Pick'em export: `make export-pickem` (submission needs `CFBD_PREDICTION_TOKEN` + explicit approval).
 - Rollback: frozen runs are immutable; reselect `current_week.active_run_id` to a prior frozen run. See `docs/ops/production_runbook.md`.

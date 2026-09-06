@@ -1,12 +1,12 @@
 # Phase 2: Data Repair and Recertification
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05 and
   explicitly approved the full Phase 2 scope (split sub-phases, ingest 2015-2019,
   include FBS-FCS games) on 2026-09-05.
-- **Implementation log:** Pending
+- **Implementation log:** `session_logs/2026-09-05/05-phase1-correction-and-phase2-implementation.md`
 - **Sealed Phase 1 input:**
   `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
 - **Commit policy:** Separate plan commit required
@@ -65,7 +65,12 @@ runbook, eligibility manifest, validation, session log, and status update.
 Production fixes, new paid sources, fabricated timing, gate changes, or new
 measurement definitions require separate authorization or a revised plan.
 
-### Amendment 1 - Detailed sub-phase execution plan
+### Amendment 1 - Detailed sub-phase execution plan (superseded)
+
+This amendment is retained as planning history but is not implementation
+authority. Direct verification found that its duplicate-key, missing-object,
+API-call, and historical-result assumptions were incorrect. Amendment 2
+replaces it in full.
 
 **Reason:** The user approved full Phase 2 scope on 2026-09-05 (split
 sub-phases, ingest 2015-2019, include FBS-FCS games) and directed
@@ -360,3 +365,77 @@ manifest, and verify Phase 2 success via Phase 1 audit v4.
 After this amendment is committed, open a fresh Terra task to implement
 Sub-phase 2a (deterministic repairs). Sub-phases 2b, 2c, and 2d each require
 their own fresh task after the preceding sub-phase is accepted.
+
+### Amendment 2 - Correct Phase 1 before Phase 2 execution
+
+**Approval source:** The user explicitly approved and directed implementation
+of this replacement plan on 2026-09-05.
+
+**Verified corrections:** All 52 catalog-missing dataset objects exist at their
+exact R2 URIs; `preseason_team_inputs` has zero duplicates on its declared
+`(season, team, as_of)` key; the R1 derived ref set contains 100 refs, 90 of
+which Phase 1 did not inventory; and the previous API estimate counted returned
+rows instead of provider requests.
+
+#### Prerequisite - Phase 0 closure and corrected Phase 1
+
+1. Correct current-authority documentation while preserving V4 production and
+   historical interfaces.
+2. Traverse declared JSON links, dataset refs, catalog parents, and capture
+   dependencies recursively. Validate exact objects even when registration is
+   absent; classify registration, object, manifest, and checksum failures
+   separately.
+3. Require schema-declared keys, retain root-to-descendant attribution, and
+   propagate defects and timing restrictions through lineage.
+4. Report coverage by dataset version, season type, season, and population;
+   preserve exclusions and incomplete opponent-experience evidence.
+5. Recompute reported metrics only after matching result, design/model, target,
+   fold, population, and immutable labels. Exercise actual unique-game and
+   bootstrap semantics.
+6. Seal a new audit and an issue crosswalk under a fresh immutable identity.
+
+#### Phase 2a - Deterministic repair
+
+1. Validate the 52 existing objects and their manifests. Reuse valid evidence;
+   register only entries supported by complete immutable metadata.
+2. Preserve distinct preseason `as_of` observations. Collapse only byte- or
+   value-identical rows with the same declared key; quarantine conflicts.
+3. Repair only defects reproduced by the corrected audit under research-only
+   identities. Publish before/after counts, descendants, and dispositions.
+
+#### Phase 2b - Bounded capture
+
+1. Reuse valid captures and calculate remaining requests by endpoint, season,
+   season type, and week. The plays endpoint receives both year and week.
+2. Extend the existing resumable, isolated capture system with dry-run request
+   counts, quota checks, bounded retries, checkpoints, and explicit partial or
+   empty-response dispositions.
+3. Cover regular and postseason 2015-2019 and 2021-2025, including FBS-FCS;
+   reject 2020. Do not purchase or upgrade a source.
+
+#### Phase 2c - Research rebuild
+
+1. Add `fbs_involved_games_v1` without changing production `games` behavior.
+2. Build versioned outcomes, plays, team-game statistics, and reconciled inputs
+   from explicit capture refs. Keep the full schedule denominator when FCS
+   detail is unavailable and preserve null/exclusion reasons.
+3. Rebuild only affected descendants required for reconciliation; defer new
+   measurements and model selection.
+
+#### Phase 2d - Recertification and capture automation
+
+1. Publish an eligibility manifest with exact refs, checksums, parents, timing
+   classes, permitted uses, null policies, exclusions, seasons, and populations.
+2. Require zero unresolved correctness or leakage defects for admitted inputs.
+   Report regular/postseason and season/population gates separately. Historical
+   results may remain unsupported when excluded with an exact reason.
+3. Add Preview-only GitHub Actions capture at 12:00 UTC daily plus manual
+   dispatch for schedules, returning production, recruiting, and coaching.
+   Enable scheduling only after a successful manual rehearsal and timing proof.
+4. Close with the full Python/coverage, documentation, contract, V4
+   compatibility, and diff validation required by this contract.
+
+**Amendment rule:** Production changes, purchases, relaxed gates, or new
+measurement definitions require another amendment. Each failed gate remains
+visible and blocks only the affected inputs; it is never weakened after seeing
+results.
