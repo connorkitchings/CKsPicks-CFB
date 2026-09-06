@@ -35,24 +35,23 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   baselines, aligns authority, separates active research entry points, and
   permits removal only with dependency and recovery evidence.
 - [Phase 1 data and evidence audit](2026-09-05/01-data-and-evidence-audit.md)
-  — **Implemented with correction required 2026-09-05.** The original sealed audit at
-  `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
-  is preserved but is not current repair authority; Phase 2 Amendment 2 governs
-  its corrected rerun.
+  — **Implemented after correction.** Audit v3 is current authority and preserves
+  exact unsupported/correction-required historical result dispositions; v2 is
+  immutable superseded evidence.
 - [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
-  — **Implemented 2026-09-06.** Corrected Phase 1 audit, recertified the sealed
-  Phase 2c lineage, published the Phase 3 eligibility handoff, and activated
-  the Preview-only daily capture schedule after a verified remote rehearsal.
+  — **Reopened 2026-09-06.** Phase 2a–2c evidence is retained; Phase 2d must
+  publish a checksum-valid replacement handoff under strengthened gates.
 - [Phase 2c materialization and ref-set closure](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
   — **Implemented 2026-09-06.** Materialized and verified the exact ten-season
   Preview corpus and published the checksum-verified ref set that unblocks
   Phase 2d.
 - [Phase 2d recertification, eligibility, and capture activation](2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md)
-  — **Implemented 2026-09-06.** Certified the sealed Phase 2c lineage, published
-  the Phase 3 eligibility handoff, and activated the Preview-only daily capture
-  schedule after a verified remote rehearsal.
+  — **Reopened for bounded repair.** Its audit and remote rehearsal remain
+  evidence, but its eligibility checksum is invalid and promised gates are missing.
+- [Transformation check-in, Phase 2d repair, and Phase 3 redesign](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
+  — **In Progress.** Governs the corrected certification and replacement handoff.
 - [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
-  — **Unblocked.** Approved; consumes certified Phase 2 inputs.
+  — **Approved, blocked on Phase 2d repair.** The staged design is frozen.
 - [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
   — Approved; bounded interpretable ratings after measurement selection.
 - [Phase 5 spread and total forecasting](2026-09-05/05-spread-total-forecasting.md)

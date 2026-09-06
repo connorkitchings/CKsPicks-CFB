@@ -18,6 +18,8 @@ Consume the frozen Phase 5 candidate and validated Phase 2 capture. Include
 pregame freeze, paired V4 evaluation, forecast scoring, and line comparison.
 Exclude production activation, public changes, feature selection from markets,
 staking, bet selection, bankroll results, and optimized betting thresholds.
+Daily source capture is input evidence only and never counts as a frozen model
+prediction or prospective slate.
 
 ## Interfaces
 
@@ -56,4 +58,3 @@ status update without activation.
 
 Promotion, publication, betting decisions, thresholds, evidence-window changes,
 or market-informed modeling require a separate approved contract.
-

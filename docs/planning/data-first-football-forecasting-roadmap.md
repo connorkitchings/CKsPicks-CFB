@@ -55,7 +55,7 @@ research entry points under `scripts/research/`, exploratory work under
 | 0 | [Repository alignment](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) | Current operations are regression-protected and the active architecture is unambiguous. |
 | 1 | [Data and evidence audit](../plans/2026-09-05/01-data-and-evidence-audit.md) | Every selected input and population loss is located or explicitly unresolved. |
 | 2 | [Repair and recertification](../plans/2026-09-05/02-data-repair-and-recertification.md) | Admitted research inputs contain no unresolved correctness or leakage defect. |
-| 3 | [Measurement validation](../plans/2026-09-05/03-football-measurement-validation.md) | Useful, redundant, inconclusive, and unavailable information is distinguished. |
+| 3 | [Measurement validation](../plans/2026-09-05/03-football-measurement-validation.md) | A shared quality core and any target-specific context are frozen from staged validation. |
 | 4 | [Simple ratings](../plans/2026-09-05/04-simple-team-rating-benchmarks.md) | One reproducible simple rating benchmark is frozen. |
 | 5 | [Spread/total forecasting](../plans/2026-09-05/05-spread-total-forecasting.md) | One eligible candidate or valid simple reference is frozen. |
 | 6 | [Prospective evidence](../plans/2026-09-05/06-prospective-evidence-and-line-comparison.md) | Evidence supports retention, continued shadowing, or a separate promotion plan. |
@@ -66,6 +66,21 @@ artifacts, runs in a separate implementation task, and publishes evidence plus
 a session log. A failed phase produces a diagnostic and blocks dependent work;
 criteria are not weakened after results.
 
+## Current checkpoint
+
+Phase 0 is complete and corrected Phase 1 audit v3 is sealed. Phase 2a–2c are
+retained, but Phase 2d is reopened under the
+[transformation check-in repair contract](../plans/2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md):
+the first eligibility manifest fails its own checksum and its implementation
+does not enforce every promised gate. Phase 2e separately certifies the
+reconstructed auxiliary context and market-reference backfill. Phase 3A/3B
+cannot execute until a checksum-valid Phase 2d handoff passes; Phase 3C also
+requires the Phase 2e reconstructed-only manifest.
+
+Historical R2 and direct early-game results keep their exact Phase 1
+dispositions. The former R2 winner is unsupported for this program and cannot
+enter Phase 4 without renewed evidence.
+
 ## Authority transition
 
 This roadmap replaces the pending R3/R4 sequence and the unfinished research
@@ -73,4 +88,3 @@ portion of the historical-expansion roadmap. Completed R1/R2 work, candidate
 v1, and direct early-game research remain immutable historical evidence subject
 to Phase 1 audit disposition. V4 remains the production benchmark and rollback
 authority throughout.
-

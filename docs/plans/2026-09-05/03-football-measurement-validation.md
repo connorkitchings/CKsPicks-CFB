@@ -1,62 +1,191 @@
 # Phase 3: Football Measurement Validation
 
-- **Status:** Approved
+- **Status:** Approved, Blocked on Phase 2d Repair
 - **Created:** 2026-09-05
 - **Planner:** Sol
-- **Approval source:** User approved the full data-first plan on 2026-09-05.
-- **Implementation log:** Pending Phase 2
-- **Commit policy:** Separate plan commit required
+- **Approval source:** User approved the original data-first plan on 2026-09-05 and the staged Phase 3 redesign on 2026-09-06.
+- **Implementation log:** Pending corrected Phase 2 eligibility handoff
+- **Commit policy:** Separate plan and implementation/evidence commits
 
 ## Goal
 
-Determine which football measurements contain useful, distinct, and reliable
-information before expanding rating or model complexity.
+Determine which football measurements provide reliable, distinct forecast
+information before Phase 4 selects a rating system. Freeze one shared
+offense/defense quality set plus any separately justified spread- or
+total-specific context. Adding information is not required.
 
-## Dependencies and Scope
+## Current State
 
-Consume the Phase 2 eligibility manifest. Reproduce the seven-measurement
-foundation, then compare the equal-weight composite, EPA-only, leave-one-out
-composites, audited passing/rushing components, and one-family context additions
-for recruiting, returning production, coaching, pace, field position, and
-turnovers. Do not alter V4 or introduce a second schedule adjustment.
+Phase 2c contains ten reconstructed development seasons: 2015–2019 and
+2021–2025, with 2020 forbidden. The current Phase 2 eligibility artifact is
+invalid and must be replaced under the Phase 2d repair contract before Phase 3
+execution. Existing rating measurement code is reusable reference behavior,
+but its 2021–2025 artifacts and historical evaluation head are not Phase 3
+inputs: the older head excludes 2025 and can silently omit games without a
+fallback row.
 
-## Interfaces
+The four quality measurements are EPA/PPA per play, success rate, explosive
+play rate at 20 yards, and points per scoring opportunity. Average starting
+field position, plays per drive, and turnover rate are context measurements.
+Opponent adjustment occurs once at measurement level using four fixed,
+league-centered additive iterations.
 
-Each candidate declares numerator, denominator, eligible events, direction,
-exposure, missingness, adjustment, timing, lineage, and population. Comparison
-outputs identify retained, redundant, inconclusive, unavailable, and capture-only
-information on common populations.
+## Proposed Approach
+
+Phase 3 has three sealed stages. Phase 3A reconstructs and independently checks
+measurement meaning. Phase 3B compares a bounded shared quality core with one
+fixed updater and forecast head. Phase 3C tests context one family at a time,
+separately by target. Phase 3A/3B require Phase 2d; Phase 3C additionally
+requires the reconstructed-only Phase 2e auxiliary eligibility manifest.
+
+## Scope
+
+### Included
+
+- All completed regular and postseason games involving at least one FBS team.
+- Measurement construction, four-iteration adjustment, fixed comparison state,
+  chronological forecasts, attribution, coverage, fallback, and retention.
+- Explicit FBS-FBS/FBS-FCS, first-game, unequal-experience, overtime, and
+  missing-input cohorts.
+
+### Excluded
+
+- V4 or production changes; market inputs; Phase 4 rating selection; special
+  teams without admitted evidence; provider purchases; model promotion.
+- Market references as model inputs, selection metrics, or CLV evidence.
+
+## Interfaces and Fixed Design
+
+- Inputs are only the checksum-valid replacement Phase 2 eligibility manifest
+  and its exact `phase3_input_refs`.
+- New outputs use `data_first_phase3_measurement_observations_v1`,
+  `data_first_phase3_adjusted_measurements_v1`,
+  `data_first_phase3_fold_predictions_v1`, and
+  `data_first_phase3_retained_measurements_v1` beneath
+  `artifacts/research/data-first-football-v1/phase3/`.
+- Every measurement row records season, week, game, team, role, numerator,
+  denominator, exposure, raw value, adjusted value/iteration, eligible-event
+  rule, missing reason, timing class, and exact parents.
+- Chronological validation folds train on all permitted earlier seasons and
+  validate 2018, 2019, 2021, 2022, 2023, 2024, and 2025. The 2019→2021 gap is
+  two elapsed years; 2020 contributes no rows, labels, priors, or transforms.
+- The comparison updater is fixed: neutral state for the first available season,
+  0.60 annual terminal carryover thereafter, and the existing exposure-weighted
+  empirical-Bayes update. It is evaluation scaffolding, not the Phase 4 winner.
+- The forecast head is fold-local Ridge with alpha 10 and training-fold
+  standardization. Margin and total are fitted separately from home/away
+  offense and defense state means plus an intercept. No team identity, market,
+  future result, or second opponent adjustment is allowed.
+- Missing team/component evidence produces a row using the training-fold role
+  mean, maximum observed training-fold uncertainty, and an explicit fallback
+  flag. It never disappears from aggregate evaluation. FBS opponents without
+  eligible history use the same rule and are reported separately.
 
 ## Implementation Tasks
 
-1. Reproduce current measurements and four-iteration opponent adjustment from
-   certified inputs; retain unadjusted values as diagnostics only.
-2. Implement the bounded ablations/components under new research versions.
-3. Hold one simple updater and regularized linear forecast head fixed across
-   comparisons; fit all transforms within chronological folds.
-4. Test measurement redundancy, correlated uncertainty, sparse events, and
-   missing-feature fallback. Investigate possession volume and scoring
-   efficiency separately for totals.
-5. Admit shorter-window families only on a contiguous window with >=90% FBS
-   team coverage per season and at least three chronological validation seasons.
-6. Publish attribution, coverage, fallback, and common-population reports.
+### 3A — Reproduce and validate measurement meaning
 
-## Acceptance and Validation
+1. Add a Phase 3 configuration and runner that reject invalid eligibility
+   signatures, unexpected refs, 2020, market data, non-Preview routing, dirty
+   apply worktrees, or code-SHA mismatch.
+2. Rebuild the seven baseline measurements from Phase 2 inputs under new
+   identities. Eligible plays require `is_drive_play == 1` and `garbage == 0`;
+   success excludes null-success plays from both numerator and denominator;
+   explosiveness uses `yards_gained >= 20`; PPSO uses the reconciled score
+   stream and opportunities; zero exposure stays null with a reason.
+3. Independently recompute sampled and aggregate numerators/denominators,
+   offense-defense symmetry, score-stream reconciliation, overtime handling,
+   and four-iteration opponent adjustment. Preserve iteration 0 and 4.
+4. Build audited pass/rush EPA components using the canonical play-type
+   classification. Ambiguous or excluded plays remain counted in coverage and
+   receive a reason; they are never silently assigned.
+5. If source or definition correctness fails, publish diagnostics and return the
+   defect through Phase 2 versioning. Phase 3B remains blocked.
 
-The phase may retain the current set; adding a feature is not required. Verify
-independent calculations, symmetry, zero exposure, overtime, garbage time,
-fold-local fitting, and population parity. Missing-feature fallback predictions
-must appear in aggregate results rather than disappearing.
+### 3B — Compare the shared quality core
 
-## Failure Behavior and Done
+1. Freeze these candidates before outcomes are evaluated:
+   `epa_only`; `quality_core_equal` (four quality measures at 0.25 each);
+   four leave-one-out variants with remaining weights renormalized equally;
+   `epa_pass_rush` (pass/rush EPA equally weighted); and
+   `quality_core_epa_split` (pass/rush EPA at 0.125 each plus the other three
+   quality measures at 0.25 each).
+2. Build identical pregame states and predictions for every candidate and fold.
+   Fit standardization, carryover inputs, updater inputs, and Ridge only from
+   seasons preceding the validation season.
+3. Evaluate unique games on identical candidate populations. Report margin and
+   total MAE, RMSE, bias, game counts, fallback counts, and paired error deltas
+   overall and by season, population, season type, first-game involvement,
+   unequal experience, and overtime.
+4. Use 2,000 fixed-seed paired hierarchical bootstrap replicates, resampling
+   seasons and then week blocks while keeping every game's candidates and
+   targets together.
+5. Rank shared-core candidates by the mean of margin and total MAE relative to
+   `epa_only`. An addition has clear value only when it improves the pooled
+   score by at least 0.5%, its 90% paired bootstrap interval excludes zero, it
+   loses no coverage, and neither target has a validation-season MAE regression
+   above 5%. Choose the fewest components within 0.5% of the best eligible
+   score; otherwise retain `epa_only`.
 
-Inconclusive or unavailable families remain capture-only and cannot feed Phase
-4. A measurement-definition correction returns through Phase 2 versioning.
-Complete artifacts, attribution report, exact retained set, validation, session
-log, and status update.
+### 3C — Evaluate admitted context by target
+
+1. Starting from the selected shared core, test average starting field position,
+   plays per drive, and turnover rate one family at a time as forecast-head
+   context. Do not add them to the offense/defense quality composite.
+2. Retain context independently for margin or total only when that target gains
+   at least 0.5% pooled MAE, its 90% paired bootstrap interval excludes zero,
+   coverage does not fall, and no validation season regresses by more than 5%.
+   Do not search combinations after a one-family result.
+3. Test recruiting, returning production, coaching, roster continuity, and
+   strictly lagged AP/Coaches polls from the Phase 2e manifest alongside field
+   position, pace, and turnovers. Polls may use only `poll_week < game_week`;
+   the first available game keeps an explicit fallback.
+4. Retain at most one context family per target. Rank passing families by that
+   target's pooled MAE and choose the fewest-feature family within 0.5% of the
+   best. Do not stack context families or search combinations.
+5. Seal the retained manifest with the shared core, target-specific context,
+   exact refs/checksums, candidate registry, folds, metrics, bootstrap seed,
+   fallback rules, exclusions, and authorization flags set false for production
+   activation and model selection outside Phase 4.
+
+## Testing Strategy
+
+- Unit-test numerator/denominator definitions, pass/rush classification, zero
+  exposure, score reconciliation, adjustment centering, and deterministic IDs.
+- Test fold-local fitting and explicit rejection of future, 2020, market, and
+  outcome-derived inputs; cover the two-year gap and first-game priors.
+- Test that missing features, FBS-FCS games, unequal experience, postseason,
+  and overtime remain in predictions with explicit cohort/fallback flags.
+- Test paired bootstrap units, candidate/population equality, thresholds,
+  simplicity tie-breaks, deterministic reruns, and immutable collisions.
+- Run focused Phase 2/3 and rating tests, the full warning-as-error Python suite
+  with coverage, Ruff, contracts validation, MkDocs, repository-boundary/V4
+  checks, and `git diff --check`.
+
+## Risks and Failure Behavior
+
+- Measurement-definition or source defects return to Phase 2 and block dependent
+  comparisons; thresholds are not relaxed after results.
+- Correlated measures may look useful alone while adding no distinct value;
+  paired leave-one-out and bootstrap evidence governs retention.
+- The fixed updater/head can affect measured utility. Phase 3 records this
+  limitation, and Phase 4 may select a different rating method without changing
+  Phase 3 measurement definitions.
+- Failed and inconclusive candidates remain immutable diagnostics and cannot
+  expand the Phase 4 feature set.
+
+## Definition of Done
+
+- [ ] Corrected Phase 2 eligibility is verified before any Phase 3 apply run.
+- [ ] Phase 3A definitions and four-iteration adjustment pass independent checks.
+- [ ] Phase 3B freezes one shared quality set under the stated rules.
+- [ ] Phase 3C freezes any target-specific context and explicit deferred families.
+- [ ] All games and fallback cohorts reconcile to the independent denominator.
+- [ ] Artifacts, tests, documentation, session log, and deterministic rerun pass.
+- [ ] V4 and production remain unchanged.
 
 ## Amendments
 
-Adding candidate families, changing adjustment policy, admission gates, or the
-fixed comparison head requires a revised plan.
-
+New candidate families, grids, folds, updater/head behavior, retention gates,
+bootstrap units, opponent-adjustment policy, or admission beyond the signed
+Phase 2e reconstructed-only context requires a revised approved plan.

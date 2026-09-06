@@ -1,0 +1,16 @@
+schema_version: data_first_phase2e_config_v1
+environment: preview
+phase2c_ref_set_uri: artifacts/research/data-first-football-v1/phase2/silver/runs/2026-09-06T1437Z-phase2c-expanded-silver-v1/ref-set.json
+source_entities:
+  - betting_lines
+  - coaches
+  - rankings
+  - rosters
+  - returning_production
+  - recruiting
+capture_window:
+  start: "2026-09-06T18:10:00Z"
+  end: "2026-09-06T19:16:00Z"
+timing_class: historically_reconstructed
+minimum_context_coverage: 0.90
+market_policy: consensus_then_median_v1

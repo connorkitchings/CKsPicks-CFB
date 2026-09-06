@@ -212,16 +212,14 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
   `early-week-context-20260904-786580ec-r2` admits reconstructed returning
   production, recruiting, and coaching; transfers and talent remain rejected.
-  The direct selection report is sealed, and the R2 between-season prior
-  tournament completed 2026-09-04 at `r2-prior-20260904-4c6e610` (winner
-  `continuity_ridge_alpha_0_1`, all gates passed) — see
-  `docs/research/2026-09-04-early-week-context-cross-report.md`. All evidence
-  is reconstructed and activation-ineligible. The pending R3/R4 sequence is
-  superseded; **Phase 0 is implemented and Phase 1 is being corrected under
-  Phase 2 Amendment 2** (the original Phase 1 audit is preserved at
-  `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`;
-  but its 57 issues are not current repair authority). **Phase 2 data repair and
-  recertification is in progress.**
+  The direct selection report and R2 between-season tournament remain historical
+  reconstructed evidence. Corrected Phase 1 audit v3 classifies the R2 result as
+  unsupported for the data-first program, so its prior winner cannot enter
+  Phase 4 without renewed evidence. The pending R3/R4 sequence is superseded;
+  **Phase 0 is implemented, corrected Phase 1 is sealed, and Phase 2d is reopened
+  for a bounded certification repair** after its first eligibility manifest
+  failed checksum and enforcement review. Phase 3 is planned but blocked until
+  a checksum-valid replacement handoff passes the strengthened gates.
   O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

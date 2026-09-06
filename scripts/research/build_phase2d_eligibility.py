@@ -18,6 +18,8 @@ from cks_picks_cfb.data.data_first_phase2d import (
     eligibility_manifest,
     eligibility_role,
     sha256,
+    signed_payload,
+    verify_signed_payload,
 )
 from cks_picks_cfb.data.storage import ReadOnlyStorage, get_storage
 
@@ -31,6 +33,16 @@ def _git_sha() -> str:
     return result.stdout.strip() if result.returncode == 0 else "unknown"
 
 
+def _tracked_worktree_clean() -> bool:
+    result = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and not result.stdout.strip()
+
+
 def _utc(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
@@ -38,8 +50,11 @@ def _utc(value: str) -> str:
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _json(storage, uri: str) -> dict[str, Any]:
-    return json.loads(storage.read_bytes(uri))
+def _signed_json(storage, uri: str, *, label: str) -> tuple[dict[str, Any], str]:
+    raw = storage.read_bytes(uri)
+    value = json.loads(raw)
+    verify_signed_payload(value, label=label)
+    return value, sha256(raw)
 
 
 def _immutable(storage, uri: str, value: dict[str, Any]) -> None:
@@ -83,31 +98,39 @@ def main() -> None:
     )
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--as-of", required=True)
+    parser.add_argument("--mode", choices=("dry-run", "apply"), required=True)
+    parser.add_argument("--expected-code-sha", required=True)
     args = parser.parse_args()
 
     if os.getenv("CFB_STORAGE_BACKEND", "").casefold() != "r2":
         raise Phase2dError("Phase 2d eligibility requires CFB_STORAGE_BACKEND=r2")
 
     args.as_of = _utc(args.as_of)
+    if args.expected_code_sha != _git_sha():
+        raise Phase2dError("--expected-code-sha must match HEAD")
+    if args.mode == "apply" and not _tracked_worktree_clean():
+        raise Phase2dError("apply requires a clean tracked worktree")
     storage = get_storage(environment="preview")
     reader = ReadOnlyStorage(storage)
 
     audit_prefix = args.audit_prefix.rstrip("/")
-    audit = _json(reader, f"{audit_prefix}/audit-v4.json")
+    audit_uri = f"{audit_prefix}/audit-v5.json"
+    audit, audit_raw_sha256 = _signed_json(reader, audit_uri, label="audit-v5")
     audit_identity = audit.get("identity") or {}
-    if audit_identity.get("schema_version") != "data_first_phase2d_run_identity_v1":
-        raise Phase2dError("audit-v4 identity has wrong schema")
+    if audit_identity.get("schema_version") != "data_first_phase2d_run_identity_v2":
+        raise Phase2dError("audit-v5 identity has wrong schema")
     if not audit_identity.get("code_sha"):
-        raise Phase2dError("audit-v4 identity missing code_sha")
+        raise Phase2dError("audit-v5 identity missing code_sha")
+    if audit_identity["code_sha"] != args.expected_code_sha:
+        raise Phase2dError("audit-v5 is not bound to the expected code SHA")
 
-    automation_admission = _json(reader, args.automation_admission_uri)
-    if (
-        automation_admission.get("schema_version")
-        != "data_first_phase2d_automation_admission_v1"
+    automation_admission, automation_raw_sha256 = _signed_json(
+        reader, args.automation_admission_uri, label="automation admission"
+    )
+    if automation_admission.get("schema_version") != (
+        "data_first_phase2d_automation_admission_v2"
     ):
         raise Phase2dError("automation admission has wrong schema")
-    automation_sha = sha256(canonical_bytes(automation_admission))
-
     inputs = _enrich_inputs(audit.get("inputs") or [])
     coverage = audit.get("coverage_gate") or {}
     omissions = audit.get("omissions") or {}
@@ -115,14 +138,16 @@ def main() -> None:
     manifest = eligibility_manifest(
         identity=audit_identity,
         audit={
-            "uri": f"{audit_prefix}/audit-v4.json",
-            "sha256": audit.get("manifest_sha256"),
             **audit,
+            "uri": audit_uri,
+            "sha256": audit_raw_sha256,
+            "declared_manifest_sha256": audit.get("manifest_sha256"),
         },
         automation_admission={
-            "uri": args.automation_admission_uri,
-            "sha256": automation_sha,
             **automation_admission,
+            "uri": args.automation_admission_uri,
+            "sha256": automation_raw_sha256,
+            "declared_manifest_sha256": automation_admission.get("manifest_sha256"),
         },
         inputs=inputs,
         coverage=coverage,
@@ -136,10 +161,11 @@ def main() -> None:
             "code_sha": audit_identity["code_sha"],
         }
     )
-    manifest["manifest_sha256"] = sha256(canonical_bytes(manifest))
+    manifest = signed_payload(manifest)
 
     prefix = f"{OUTPUT_ROOT}/{args.run_id}"
-    _immutable(storage, f"{prefix}/eligibility-manifest.json", manifest)
+    if args.mode == "apply":
+        _immutable(storage, f"{prefix}/eligibility-manifest.json", manifest)
     print(
         json.dumps(
             {"state": manifest["state"], "prefix": prefix}, sort_keys=True, default=str

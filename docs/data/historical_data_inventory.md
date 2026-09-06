@@ -16,6 +16,9 @@ This document is the canonical inventory of college football data captured from 
 ## 2. Ingested Data Inventory
 
 All data below is captured in R2 Parquet format and registered in `catalog.source_captures`.
+The table is the queryable compatibility projection, which can exclude malformed
+provider rows during normalization. Bronze capture counts are the immutable
+lineage authority.
 
 ### Summary by Season
 
@@ -36,7 +39,7 @@ All data below is captured in R2 Parquet format and registered in `catalog.sourc
 | **2014** | — | — | — | — | — | 231 | — | — | — |
 | **2013** | — | — | — | — | — | 210 | — | — | — |
 | **2012** | — | — | — | — | — | 183 | — | — | — |
-| **Total** | **1,446** | **1,566** | **169,807** | **1,438** | **1,624** | **2,987** | **17,466** | **9,360** | **25,490** |
+| **Total** | **1,446** | **1,566** | **169,807** | **1,434** | **1,624** | **2,987** | **17,466** | **9,360** | **25,490** |
 
 
 ---
@@ -51,7 +54,7 @@ The four foundational pregame evidence families approved for data-first forecast
    - Total: 8,468 historical games (9,360 including 2026).
 2. **Returning Production (`raw/returning_production/year={YYYY}/part-0.parquet`)**:
    - Ingested via `ReturningProductionIngester`. Contains total, offensive, and defensive PPA returning percentages and usage returning metrics.
-   - Total: 1,304 historical team-seasons (1,438 including 2026).
+   - Bronze total: 1,300 historical team-seasons (1,434 including 2026).
 3. **Recruiting Rankings (`raw/recruiting/year={YYYY}/part-0.parquet`)**:
    - Ingested via `RecruitingIngester`. Contains 247Sports Composite points and national ranks.
    - Ingested for **2012 through 2025** so that 2015 has a complete 4-year rolling window (`recruiting_4yr`, `recruiting_current`, `recruiting_trend`).
@@ -63,8 +66,11 @@ The four foundational pregame evidence families approved for data-first forecast
 ### Supplementary Matchup & Edge Entities
 - **Betting Lines (`raw/betting_lines/year={YYYY}/week={W}/part-0.parquet`)**:
   - Ingested via `BettingLinesIngester`. Covers consensus and major sportsbook (Bovada, DraftKings, ESPN Bet, etc.) spreads, totals, and moneyline quotes.
-  - Used strictly post-model for market edge evaluation and closing line value (CLV).
-  - Total: 25,146 historical quotes (25,490 including 2026).
+  - Used strictly post-model as a reconstructed diagnostic reference. It is not
+    authentic closing-line or CLV evidence.
+  - Bronze total: 26,844 historical quotes. The compatibility projection has
+    25,146 historical rows after normalization; every exclusion is subject to
+    the Phase 2e ledger.
 - **Venues (`raw/venues/year={YYYY}/part-0.parquet`)**:
   - Ingested via `VenuesIngester`, filtered against the active games index for each season.
   - Contains stadium capacity, elevation, grass vs. turf, dome flag, coordinates, and timezone.
@@ -81,36 +87,30 @@ The four foundational pregame evidence families approved for data-first forecast
 
 ### In-Game Performance & Aggregated Metrics
 - **Plays & Play-by-Play (`raw/plays/`)**:
-  - **Already Available in R2:**
-    - **Source Bucket (`cfb-model-data`):** Full play-by-play captures and derived aggregations exist for **2019, 2021, 2022, 2023, 2024, and 2025**.
-    - **Preview Lake (`cks-picks-cfb-preview`):** Partitions exist for **2015 and 2026**.
-  - **Processed Play-by-Play Aggregations:**
-    - Already processed in `cfb-model-data` under `processed/byplay/`, `processed/drives/`, `processed/team_game/`, `processed/team_season/`, `processed/team_season_adj/`, and `processed/team_week_adj/` for all modern seasons.
-  - **Remaining Play Gap:** Only seasons **2016, 2017, and 2018** if full 2015–2019 play-level parity is desired.
+  - Phase 2c has sealed checksum-verified Preview play and derived-measurement
+    evidence for every permitted development season: 2015–2019 and 2021–2025.
+    Its exact 80-ref handoff, rather than this compatibility inventory, governs
+    Phase 3 research eligibility.
 
 ---
 
 ## 4. What Data Is Redundant, Missing, or Excluded
 
-### 1. Redundant Data (Not Needed for Modeling)
+### 1. Independent Reconciliation Evidence
 - **Game Stats / Box Scores (`raw/game_stats`)**:
-  - **Redundant:** Because we have atomic play-by-play data (`raw/plays/`) and pre-computed aggregations (`processed/team_game/`), traditional box scores are completely redundant.
-  - Play-by-play data provides full down-and-distance, EPA, success rates, explosive play rates, line yards, and drive efficiency. Traditional game stats were only used as an external sanity check for official ESPN box score totals.
+  - Play-by-play remains the measurement source, while box scores provide
+    independent source-reconciliation evidence in the Phase 2c/2d contract.
+    Neither is silently substituted for the other.
 
-### 2. Optional Historical Play Parity
-- **Plays (2016–2018)**:
-  - While 2015, 2019, and 2021–2026 are present, 2016–2018 play-by-play data has not yet been fetched if researchers want play-level EPA/SR feature backtests across that intermediate 3-year span.
-
-### 3. External Third-Party Ratings (Offline Ingestion Required)
+### 2. External Third-Party Ratings (Offline Ingestion Required)
 - **SP+, FPI, and SRS ratings**:
   - CFBD historically discontinued open SP+/FPI API endpoints due to licensing restrictions.
   - These require offline CSV ingestion via `src/cks_picks_cfb/data/external_ratings.py` if used as benchmark baselines.
 
-### 4. Intentionally Excluded / Rejected Sources
+### 3. Intentionally Excluded / Rejected Sources
 - **2020 Season**:
   - Excluded by architecture design across all tables to avoid distorted COVID-year sample sizes.
 - **Transfer Portal (`transfers`)**:
   - The NCAA transfer portal only began operating reliably around 2021. To prevent breaking the 2015–2019 chronology with non-existent data, player transfer volume is intentionally omitted from the core rating lineage.
 - **247 Team Talent Composite (`talent`)**:
   - Omitted because CFBD talent rankings only started around 2015–2016 and overlap heavily with the 4-year rolling recruiting composite (`recruiting_4yr`), which spans back to 2012 cleanly.
-

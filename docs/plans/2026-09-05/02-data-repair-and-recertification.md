@@ -504,7 +504,35 @@ not alter the Phase 2 architecture, acceptance gates, V4, or production.
   and zero blocking reconciliation conflicts. The 32 missing regular play
   responses and one missing regular stat response remain explicit
   `provider_response_omission` evidence; postseason detail is complete.
-- **Phase 2d recertification and capture automation — unblocked, not started.**
-  Its only authorized Phase 2c input is the complete, checksum-verified ref set
-  above. Eligibility publication, descendant rebuilding, audit v4, and
-  automation activation remain outside this completed Phase 2c task.
+- **Phase 2d recertification and capture automation — reopened 2026-09-06.**
+  Audit-v4, the complete 80-ref input set, and the successful remote Preview
+  rehearsal remain valid evidence. The first eligibility manifest is
+  superseded because its declared checksum does not verify, and review found
+  missing membership, special-coverage, lineage, omission, and automation
+  enforcement. The bounded replacement is governed by the transformation
+  check-in repair contract.
+
+### Amendment 4 - Reopen Phase 2d after independent completion review
+
+**Approval source:** User approved the transformation check-in plan and
+explicitly directed implementation on 2026-09-06.
+
+Preserve Phase 2a–2c and the successful provider capture. Add fail-closed
+validation for exact input membership, raw immutable checksums, catalog/source
+lineage, exact omissions, 100% outcomes/reconciliation/postseason coverage,
+quota, authentic timing, and GitHub workflow identity. Publish replacement
+audit, automation-admission, and eligibility artifacts only from a clean,
+committed repair SHA. The defective eligibility artifact remains immutable and
+explicitly superseded. Phase 3 stays blocked until the replacement verifies.
+
+### Amendment 5 - Auxiliary context and market-reference certification
+
+**Approval source:** User approved the Transformation Continuation plan and
+explicitly directed implementation on 2026-09-06.
+
+Phase 2e preserves the completed core corpus and verifies the exact 63
+primary-lake Bronze captures for recruiting, returning production, coaching,
+rosters, rankings, and betting lines. It normalizes signed Preview datasets
+directly from those captures, records all timing as historically reconstructed,
+and emits a separate auxiliary eligibility manifest. Context may support Phase
+3 research only; market references support a post-Phase-5 diagnostic only.

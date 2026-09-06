@@ -15,8 +15,10 @@ benchmark with offense, defense, uncertainty, and explicit fallback behavior.
 ## Dependencies and Candidates
 
 Consume Phase 3 measurements. Preseason candidates are neutral, fixed annual
-carryover 0.60, the R2 winner if Phase 1/2 preserve its evidence, and context
-Ridge with alpha `{0.1,1,10,100}`. Within-season candidates are the existing
+carryover 0.60, and context Ridge with alpha `{0.1,1,10,100}` only after a
+separate eligible context handoff. Corrected Phase 1 marks the historical R2
+winner unsupported; it is not a candidate without renewed evidence.
+Within-season candidates are the existing
 exposure update and recency half-lives `{2,4,8}`. Kalman, Glicko, and nonlinear
 transition models are deferred.
 
@@ -38,7 +40,8 @@ and exact parent identity. Rating meaning stays continuous across a season.
    pooled FCS state only from preceding FBS-FCS games, with explicit fallback
    status and uncertainty.
 6. Publish movement, attribution, prior reliance, uncertainty, coverage, and
-   error reports; rankings remain diagnostics.
+   error reports. A context Ridge prior may be rebuilt only from a Phase 3
+   retained offseason family; polls and markets never initialize ratings.
 
 ## Acceptance and Validation
 
@@ -56,4 +59,3 @@ reference with its inputs and diagnostics, validation, session log, and status.
 
 Adding updater families, changing the candidate grid, uncertainty semantics,
 or FCS fallback requires a revised plan.
-

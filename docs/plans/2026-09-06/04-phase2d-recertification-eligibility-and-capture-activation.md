@@ -1,6 +1,6 @@
 # Phase 2d Recertification, Eligibility, and Preview Capture Activation
 
-- **Status:** Implemented
+- **Status:** Superseded in Part by Bounded Repair
 - **Created:** 2026-09-06
 - **Planner:** Sol
 - **Approval source:** User supplied and explicitly authorized this exact Phase 2d plan on 2026-09-06, directing the plan be documented before implementation begins.
@@ -14,6 +14,12 @@ eligibility handoff, and activate the existing daily Preview capture workflow
 only after one successful remote rehearsal. Phase 2d succeeds when the
 eligibility manifest is `eligible`, its audit has zero certification blockers,
 and the enabled workflow is demonstrated to write only Preview evidence.
+
+> **2026-09-06 verification correction:** Audit-v4 and the remote rehearsal are
+> retained, but the published eligibility manifest fails its own checksum and
+> the implementation omits promised enforcement gates. Final Phase 2d closure
+> is governed by the transformation check-in repair contract. The original
+> immutable artifact remains visible as superseded evidence.
 
 ## Current State
 

@@ -14,7 +14,8 @@ the useful information available to a direct football-only benchmark.
 
 ## Dependencies and Candidates
 
-Consume the frozen Phase 4 benchmark. Compare rating-based Ridge margin/total,
+Consume the frozen Phase 4 benchmark and Phase 3's shared core plus explicitly
+retained target-specific context. Compare rating-based Ridge margin/total,
 Ridge team scores, the existing NB2 score model when its corrected lineage is
 eligible, and direct Ridge using identical admitted information. Ridge alpha is
 `{0.1,1,10,100}` with fold-local standardization. Boosted residuals are deferred.
@@ -39,6 +40,9 @@ CRPS, interval coverage, and width; fit calibration from preceding data only.
 4. Report 2,000 fixed-seed hierarchical bootstrap replicates, resampling seasons
    then week blocks and keeping each game's paired predictions together.
 5. Freeze the selected candidate or the valid simple reference with full lineage.
+6. After selection, publish a separate reconstructed-market diagnostic using
+   Phase 2e references. It cannot affect fitting, ranking, or advancement and
+   cannot be described as CLV or prospective evidence.
 
 ## Acceptance and Validation
 
@@ -56,4 +60,3 @@ session log, and status update.
 
 New model families, grids, selection metrics, thresholds, resampling units, or
 use of market data require a revised plan.
-
