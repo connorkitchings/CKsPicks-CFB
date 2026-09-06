@@ -44,7 +44,9 @@ class Phase2dError(ValueError):
 
 
 def canonical_bytes(value: Any) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), default=str
+    ).encode()
 
 
 def sha256(value: Any) -> str:
@@ -84,8 +86,12 @@ def verify_phase2c_ref_set(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
 
     entries = list(payload.get("entries") or [])
     by_season = {int(entry.get("season")): entry for entry in entries}
-    if len(entries) != len(DEVELOPMENT_SEASONS) or set(by_season) != set(DEVELOPMENT_SEASONS):
-        raise Phase2dError("Phase 2c ref set must have one entry for every permitted season")
+    if len(entries) != len(DEVELOPMENT_SEASONS) or set(by_season) != set(
+        DEVELOPMENT_SEASONS
+    ):
+        raise Phase2dError(
+            "Phase 2c ref set must have one entry for every permitted season"
+        )
     refs: set[tuple[str, str, str, str, str]] = set()
     for season in DEVELOPMENT_SEASONS:
         entry = by_season[season]
@@ -158,7 +164,9 @@ def coverage_report(
     rows: list[dict[str, Any]] = []
     observed = {
         (int(season), season_type, population)
-        for season, season_type, population in frame[["season", "season_type", "population"]]
+        for season, season_type, population in frame[
+            ["season", "season_type", "population"]
+        ]
         .drop_duplicates()
         .itertuples(index=False, name=None)
     }
@@ -171,7 +179,9 @@ def coverage_report(
                     & (frame["season_type"] == season_type)
                     & (frame["population"] == population)
                 ]
-                denominator = set(pd.to_numeric(subset["game_id"], errors="raise").astype(int))
+                denominator = set(
+                    pd.to_numeric(subset["game_id"], errors="raise").astype(int)
+                )
                 for stage, stage_ids in ids_by_stage.items():
                     if key not in observed:
                         rows.append(
@@ -228,7 +238,13 @@ def eligibility_role(dataset: str) -> tuple[str, list[str]]:
         return "denominator_and_chronology", ["phase3_measurement_validation"]
     if dataset == "game_outcomes":
         return "labels_and_evaluation_only", ["phase3_measurement_validation"]
-    if dataset in {"plays", "team_game_stats", "byplay", "drives", "reconciled_team_game"}:
+    if dataset in {
+        "plays",
+        "team_game_stats",
+        "byplay",
+        "drives",
+        "reconciled_team_game",
+    }:
         return "measurement_construction", ["phase3_measurement_validation"]
     if dataset == "source_reconciliation":
         return "audit_evidence_only", ["audit_only"]

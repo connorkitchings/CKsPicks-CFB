@@ -36,7 +36,9 @@ PHASE2C_REF_SET_URI = (
     "artifacts/research/data-first-football-v1/phase2/silver/runs/"
     "2026-09-06T1437Z-phase2c-expanded-silver-v1/ref-set.json"
 )
-PHASE2C_REF_SET_SHA256 = "b3023ab5b7a304ddbc81ae2feca56238959520a54b3a75ed9be136f5d8f51df3"
+PHASE2C_REF_SET_SHA256 = (
+    "b3023ab5b7a304ddbc81ae2feca56238959520a54b3a75ed9be136f5d8f51df3"
+)
 PRIOR_AUDIT_PREFIX = (
     "artifacts/research/data-first-football-v1/phase1/"
     "2026-09-06T0055Z-phase1-evidence-audit-v3"
@@ -102,7 +104,7 @@ def _catalog_ref(conn_url: str, ref: DatasetRef) -> tuple[list[str], list[str]]:
 def _manifest(storage, ref: DatasetRef) -> dict[str, Any]:
     if not ref.uri.endswith("/data.parquet"):
         raise Phase2dError(f"noncanonical dataset URI: {ref.uri}")
-    uri = f"{ref.uri[:-len('/data.parquet')]}/manifest.json"
+    uri = f"{ref.uri[: -len('/data.parquet')]}/manifest.json"
     value = json.loads(storage.read_bytes(uri))
     for key, expected in asdict(ref).items():
         if str(value.get(key)) != str(expected):
@@ -110,13 +112,19 @@ def _manifest(storage, ref: DatasetRef) -> dict[str, Any]:
     return value
 
 
-def _audit_ref(storage, conn_url: str, ref_value: dict[str, Any]) -> tuple[pd.DataFrame, dict[str, Any]]:
+def _audit_ref(
+    storage, conn_url: str, ref_value: dict[str, Any]
+) -> tuple[pd.DataFrame, dict[str, Any]]:
     ref = DatasetRef(**ref_value)
     frame = read_dataset(storage, ref)
     schema = schema_for(ref.dataset, ref.schema_version)
     validate_frame(frame, schema)
     audit = frame_audit(frame, dataset=ref.dataset, key_columns=schema.keys)
-    if audit["duplicate_key_rows"] or audit["infinite_numeric_values"] or audit["forbidden_2020"]:
+    if (
+        audit["duplicate_key_rows"]
+        or audit["infinite_numeric_values"]
+        or audit["forbidden_2020"]
+    ):
         raise Phase2dError(f"dataset correctness failed: {ref.version_id}")
     parents, captures = _catalog_ref(conn_url, ref)
     manifest = _manifest(storage, ref)
@@ -134,7 +142,9 @@ def _audit_ref(storage, conn_url: str, ref_value: dict[str, Any]) -> tuple[pd.Da
     }
 
 
-def _omission_summary(entries: list[dict[str, Any]], games: pd.DataFrame) -> dict[str, Any]:
+def _omission_summary(
+    entries: list[dict[str, Any]], games: pd.DataFrame
+) -> dict[str, Any]:
     game_type = {
         int(row.game_id): str(row.season_type)
         for row in games[["game_id", "season_type"]].itertuples(index=False)
@@ -161,7 +171,9 @@ def _omission_summary(entries: list[dict[str, Any]], games: pd.DataFrame) -> dic
 
 
 def _historical_crosswalk(storage) -> tuple[list[dict[str, Any]], str]:
-    payload = json.loads(storage.read_bytes(f"{PRIOR_AUDIT_PREFIX}/issue-register.json"))
+    payload = json.loads(
+        storage.read_bytes(f"{PRIOR_AUDIT_PREFIX}/issue-register.json")
+    )
     raw = canonical_bytes(payload)
     issues = []
     for issue in payload.get("issues") or []:
@@ -217,12 +229,18 @@ def build_recertification(
             rows.append({"season": season, "dataset": dataset, **evidence})
             inputs.append({"season": season, "dataset": dataset, **evidence})
     games = pd.concat(
-        [frames[(season, "fbs_involved_games")] for season in sorted({row["season"] for row in rows})],
+        [
+            frames[(season, "fbs_involved_games")]
+            for season in sorted({row["season"] for row in rows})
+        ],
         ignore_index=True,
     )
     stage_frames = {
         dataset: pd.concat(
-            [frames[(season, dataset)] for season in sorted({row["season"] for row in rows})],
+            [
+                frames[(season, dataset)]
+                for season in sorted({row["season"] for row in rows})
+            ],
             ignore_index=True,
         )
         for dataset in REQUIRED_STAGES
@@ -233,7 +251,9 @@ def build_recertification(
     blocking = []
     if not gate["passed"]:
         blocking.append("coverage_gate")
-    if int(sum((entry.get("reconciliation") or {}).get("blocking", 0) for entry in entries)):
+    if int(
+        sum((entry.get("reconciliation") or {}).get("blocking", 0) for entry in entries)
+    ):
         blocking.append("reconciliation")
     audit = {
         "schema_version": "data_first_phase1_audit_v1",
@@ -273,7 +293,9 @@ def main() -> None:
         raise Phase2dError("--expected-code-sha must match HEAD")
     target = resolve_runtime_target(args.environment)
     storage = get_storage(environment=args.environment)
-    audit, identity = build_recertification(storage=storage, conn_url=target.database_url, args=args)
+    audit, identity = build_recertification(
+        storage=storage, conn_url=target.database_url, args=args
+    )
     prefix = f"{PHASE1_ROOT}/{args.run_id}"
     if args.mode == "apply":
         _immutable_json(storage, f"{prefix}/identity.json", identity)
@@ -281,9 +303,16 @@ def main() -> None:
         _immutable_json(
             storage,
             f"{prefix}/issue-crosswalk.json",
-            {"schema_version": audit["schema_version"], "issues": audit["issue_crosswalk"]},
+            {
+                "schema_version": audit["schema_version"],
+                "issues": audit["issue_crosswalk"],
+            },
         )
-    print(json.dumps({"state": audit["state"], "audit": audit}, sort_keys=True, default=str))
+    print(
+        json.dumps(
+            {"state": audit["state"], "audit": audit}, sort_keys=True, default=str
+        )
+    )
     if audit["certification_blocking_issue_count"]:
         raise SystemExit(2)
 

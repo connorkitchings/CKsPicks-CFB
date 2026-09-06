@@ -40,17 +40,19 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   is preserved but is not current repair authority; Phase 2 Amendment 2 governs
   its corrected rerun.
 - [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
-  — **In Progress;** first corrects Phase 1, then consumes only the corrected findings.
+  — **Implemented 2026-09-06.** Corrected Phase 1 audit, recertified the sealed
+  Phase 2c lineage, published the Phase 3 eligibility handoff, and activated
+  the Preview-only daily capture schedule after a verified remote rehearsal.
 - [Phase 2c materialization and ref-set closure](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
   — **Implemented 2026-09-06.** Materialized and verified the exact ten-season
   Preview corpus and published the checksum-verified ref set that unblocks
   Phase 2d.
 - [Phase 2d recertification, eligibility, and capture activation](2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md)
-  — **Approved.** Certifies the sealed Phase 2c lineage, publishes the Phase 3
-  eligibility handoff, and activates the Preview-only daily capture schedule
-  after a verified remote rehearsal.
+  — **Implemented 2026-09-06.** Certified the sealed Phase 2c lineage, published
+  the Phase 3 eligibility handoff, and activated the Preview-only daily capture
+  schedule after a verified remote rehearsal.
 - [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
-  — Approved; consumes certified Phase 2 inputs.
+  — **Unblocked.** Approved; consumes certified Phase 2 inputs.
 - [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
   — Approved; bounded interpretable ratings after measurement selection.
 - [Phase 5 spread and total forecasting](2026-09-05/05-spread-total-forecasting.md)
