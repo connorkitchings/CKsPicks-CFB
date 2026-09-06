@@ -249,3 +249,41 @@ def test_versioned_play_correction_is_exact_and_fail_closed():
     corrections.loc[0, "old_value"] = 99
     with pytest.raises(ValueError, match="old-value mismatch"):
         apply_data_corrections(plays, corrections)
+
+
+def test_returning_production_ingester_transform(monkeypatch):
+    from cks_picks_cfb.data.returning_production import ReturningProductionIngester
+
+    monkeypatch.setenv("CFBD_API_KEY", "test-key")
+    storage = MemoryIndexStorage([])
+    ingester = ReturningProductionIngester(year=2024, storage=storage)
+
+    assert ingester.entity_name == "raw/returning_production"
+    assert ingester.source_endpoint == "PlayersApi.get_returning_production"
+    assert ingester.partition_keys == ["year"]
+
+    sample_raw = [
+        SimpleNamespace(
+            team="Georgia",
+            conference="SEC",
+            total_ppa=188.4,
+            total_passing_ppa=20.8,
+            total_rushing_ppa=28.1,
+            total_receiving_ppa=139.5,
+            percent_ppa=0.372,
+            percent_passing_ppa=0.132,
+            percent_rushing_ppa=0.378,
+            percent_receiving_ppa=0.508,
+            usage=0.351,
+            passing_usage=0.132,
+            rushing_usage=0.508,
+            receiving_usage=0.483,
+        )
+    ]
+    transformed = ingester.transform_data(sample_raw)
+    assert len(transformed) == 1
+    row = transformed[0]
+    assert row["team"] == "Georgia"
+    assert row["season"] == 2024
+    assert row["percent_ppa"] == 0.372
+    assert row["total_ppa"] == 188.4

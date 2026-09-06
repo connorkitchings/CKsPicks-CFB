@@ -14,6 +14,7 @@ from .games import GamesIngester
 from .plays import PlaysIngester
 from .rankings import RankingsIngester
 from .recruiting import RecruitingIngester
+from .returning_production import ReturningProductionIngester
 from .rosters import RostersIngester
 from .teams import TeamsIngester
 from .venues import VenuesIngester
@@ -30,5 +31,6 @@ __all__ = [
     "GameStatsIngester",
     "RankingsIngester",
     "RecruitingIngester",
+    "ReturningProductionIngester",
     "ExternalRatingsIngester",
 ]

@@ -3,7 +3,8 @@
 The current data authority is the immutable Bronze/Silver/Gold platform and
 strict point-in-time provenance described in the
 [data platform](../architecture/data_platform_2026.md),
-[point-in-time pipeline](../architecture/cfbd_point_in_time_pipeline.md), and
+[point-in-time pipeline](../architecture/cfbd_point_in_time_pipeline.md),
+[historical data inventory](historical_data_inventory.md), and
 [ingestion guide](ingestion_guide.md).
 
 For rating work, consult the [measurement catalog](../modeling/measurement_catalog.md)

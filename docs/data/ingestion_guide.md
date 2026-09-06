@@ -25,17 +25,20 @@ external path.
 
 ## Ingestion modules and dependencies
 
+Current stored datasets and coverage status are inventoried in the [Historical Data Inventory](historical_data_inventory.md).
+
 | CFBD entity | Module | R2 entity | Required prior data | Primary consumer |
 | --- | --- | --- | --- | --- |
 | Teams | `data/teams.py` | `raw/teams` | none | games, rosters, coaches, features |
 | Games | `data/games.py` | `raw/games` | none | weekly schedule, scoring, features |
 | Venues | `data/venues.py` | `raw/venues` | games | feature persistence |
 | Betting lines | `data/betting_lines.py` | `raw/betting_lines` | games | weekly prediction/publish path |
-| Plays | `data/plays.py` | `raw/plays` | games | feature persistence and aggregation |
-| Game stats | `data/game_stats.py` | `raw/game_stats` | games | raw-stat validation |
+| Returning production | `data/returning_production.py` | `raw/returning_production` | none | preseason ratings & features |
 | Rosters | `data/rosters.py` | `raw/rosters` | teams | future/preseason research |
 | Coaches | `data/coaches.py` | `raw/coaches` | teams | preseason research |
 | Recruiting | `data/recruiting.py` | `raw/recruiting` | none | external features |
+| Plays | `data/plays.py` | `raw/plays` | games | feature persistence and aggregation |
+| Game stats | `data/game_stats.py` | `raw/game_stats` | games | raw-stat validation |
 | Rankings | `data/rankings.py` | `raw/rankings` | none | external features |
 
 Season partitions are overwritten by a successful refresh. Plays, game stats,

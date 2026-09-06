@@ -25,6 +25,7 @@ from cks_picks_cfb.data.games import GamesIngester
 from cks_picks_cfb.data.plays import PlaysIngester
 from cks_picks_cfb.data.rankings import RankingsIngester
 from cks_picks_cfb.data.recruiting import RecruitingIngester
+from cks_picks_cfb.data.returning_production import ReturningProductionIngester
 from cks_picks_cfb.data.rosters import RostersIngester
 from cks_picks_cfb.data.teams import TeamsIngester
 from cks_picks_cfb.data.venues import VenuesIngester
@@ -35,6 +36,7 @@ ENTITIES = {
     "games": GamesIngester,
     "rosters": RostersIngester,
     "coaches": CoachesIngester,
+    "returning_production": ReturningProductionIngester,
     "betting_lines": BettingLinesIngester,
     "plays": PlaysIngester,
     "game_stats": GameStatsIngester,
