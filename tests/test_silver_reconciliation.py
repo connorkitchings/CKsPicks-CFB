@@ -121,6 +121,73 @@ def test_research_schedule_preserves_fbs_fcs_and_unresolved_and_rejects_2020():
         )
 
 
+def test_research_schedule_coalesces_mixed_column_conventions():
+    """Production captures store snake_case; isolated research captures keep
+    raw provider camelCase. Concatenated builds must preserve both."""
+    production_style = {
+        "id": 1,
+        "season": 2021,
+        "week": 1,
+        "season_type": "regular",
+        "start_date": "2021-09-04T16:00:00Z",
+        "home_team": "A",
+        "away_team": "B",
+        "home_classification": "fbs",
+        "away_classification": "fbs",
+    }
+    research_style = {
+        "id": 2,
+        "season": 2021,
+        "week": 1,
+        "seasonType": "postseason",
+        "startDate": "2021-12-31T20:00:00Z",
+        "homeTeam": "C",
+        "awayTeam": "D",
+        "homeClassification": "fbs",
+        "awayClassification": "fcs",
+    }
+    result = normalize_fbs_involved_games([production_style, research_style])
+    assert result["game_id"].tolist() == [1, 2]
+    assert result["kickoff_utc"].isna().sum() == 0
+    by_id = result.set_index("game_id")
+    assert str(by_id.loc[2, "kickoff_utc"]) == "2021-12-31 20:00:00+00:00"
+    assert by_id.loc[2, "home_team"] == "C"
+    assert by_id.loc[2, "population"] == "fbs_fcs"
+    assert by_id.loc[2, "season_type"] == "postseason"
+    assert by_id.loc[1, "population"] == "fbs_fbs"
+
+
+def test_normalize_games_coalesces_mixed_column_conventions():
+    games = normalize_games(
+        [
+            {
+                "id": 1,
+                "season": 2026,
+                "week": 0,
+                "season_type": "regular",
+                "start_date": "2026-08-22T16:00:00Z",
+                "home_team": "A",
+                "away_team": "B",
+                "home_classification": "fbs",
+                "away_classification": "fbs",
+            },
+            {
+                "id": 2,
+                "season": 2026,
+                "week": 1,
+                "seasonType": "regular",
+                "startDate": "2026-08-29T16:00:00Z",
+                "homeTeam": "C",
+                "awayTeam": "D",
+                "homeClassification": "fbs",
+                "awayClassification": "fbs",
+            },
+        ]
+    )
+    assert games["game_id"].tolist() == [1, 2]
+    assert games["kickoff_utc"].isna().sum() == 0
+
+
 def test_silver_plays_rejects_duplicates_and_unknown_games():
     games = pd.DataFrame([{"game_id": 1}])
     records = [

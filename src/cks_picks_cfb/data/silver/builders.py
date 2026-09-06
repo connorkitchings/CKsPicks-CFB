@@ -28,8 +28,37 @@ from cks_picks_cfb.data.silver.contracts import (
 from cks_picks_cfb.data.storage import StorageBackend
 
 
-def _rename_common(frame: pd.DataFrame) -> pd.DataFrame:
+def _snake_case(column: str) -> str:
+    return re.sub(
+        r"([a-z0-9])([A-Z])",
+        r"\1_\2",
+        re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", column),
+    ).lower()
+
+
+def _coalesce_camel_aliases(frame: pd.DataFrame) -> pd.DataFrame:
+    """Merge camelCase provider columns into their snake_case twins.
+
+    Bronze captures mix conventions: the production ingestion path stores
+    snake_case columns while isolated research captures keep the raw provider
+    camelCase. When records from both provenances are concatenated, each row
+    carries a value in exactly one of the two variants, so coalescing the
+    snake_case column from its camelCase alias preserves both. This is a
+    no-op when only one convention is present.
+    """
     result = frame.copy()
+    for col in list(result.columns):
+        if col.startswith("__"):
+            continue
+        snake = _snake_case(col)
+        if snake != col and snake in result.columns:
+            result[snake] = result[snake].fillna(result[col])
+            result = result.drop(columns=[col])
+    return result
+
+
+def _rename_common(frame: pd.DataFrame) -> pd.DataFrame:
+    result = _coalesce_camel_aliases(frame)
     renames = {}
     for col in result.columns:
         if not col.startswith("__"):
