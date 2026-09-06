@@ -42,11 +42,13 @@ def test_fresh_database_applies_snapshot_and_hardening_migration():
     assert {"definition_sha", "lease_epoch", "lease_expires_at"} <= pipeline_columns
     assert {"identity_version", "schema_sha"} <= dataset_columns
     assert "game_4" in regime_constraint
-    cur.execute(
-        "SELECT column_name FROM information_schema.columns "
-        "WHERE table_schema = 'public' AND table_name = 'market_quotes'"
-    )
-    quote_columns = {row[0] for row in cur.fetchall()}
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = 'market_quotes'"
+            )
+            quote_columns = {row[0] for row in cur.fetchall()}
     assert {
         "home_spread_price",
         "away_spread_price",
