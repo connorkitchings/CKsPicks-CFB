@@ -212,7 +212,13 @@ def _verify_capture(
             expected.get("parameters") or {}
         ):
             raise Phase2cError(f"R1 request mismatch for {season}/{entity}")
-    read_source_capture(storage, capture)
+    # The season builder below reads every selected capture through
+    # ``read_source_capture`` before it can produce an output, which verifies
+    # the physical object checksum and parquet readability.  Preflight only
+    # performs the cheap object-existence check so it does not deserialize the
+    # complete ten-season corpus twice before dry-run can report its gates.
+    if not storage.exists(capture.uri):
+        raise Phase2cError(f"source capture object is missing: {capture.capture_id}")
     return {
         "capture_id": capture.capture_id,
         "provider": capture.provider,
