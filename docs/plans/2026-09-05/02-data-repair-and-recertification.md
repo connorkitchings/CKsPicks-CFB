@@ -493,11 +493,18 @@ not alter the Phase 2 architecture, acceptance gates, V4, or production.
   - CFBD quota: Tier 2, ~29,360/30,000 remaining this month.
   - GHA daily cron (`CFB_DATA_FIRST_CAPTURE_SCHEDULE_ENABLED=true`) ready for
     enablement per Amendment 2 (manual rehearsal + timing proof satisfied).
-- **Phase 2c Silver rebuild — unblocked.** Root cause fixed (commit
-  `64879e2`): mixed camelCase/snake_case column conventions in concatenated
-  Bronze captures (`_rename_common` now coalesces camelCase aliases into
-  snake_case twins). `fbs_involved_games` builder ready; regular-season Bronze
-  captures exist for all 10 target years; postseason captures are the 10 new
-  `data_first_games` captures. Next: loop all 10 seasons for
-  `fbs_involved_games`, then expanded `game_outcomes`, `plays`,
-  `team_game_stats`, `reconciled_team_game` per year.
+- **Phase 2c Silver rebuild — implemented 2026-09-06.** Preview run
+  `2026-09-06T1437Z-phase2c-expanded-silver-v1` sealed the complete
+  `data_first_phase2c_ref_set_v1` at
+  `artifacts/research/data-first-football-v1/phase2/silver/runs/2026-09-06T1437Z-phase2c-expanded-silver-v1/ref-set.json`
+  (SHA-256 `b3023ab5b7a304ddbc81ae2feca56238959520a54b3a75ed9be136f5d8f51df3`).
+  Its ten checkpoints cover all 80 expected outputs; the independently verified
+  and repeated-dry-run-matched corpus closes at 8,936 games/outcomes (8,521
+  regular, 415 postseason; 7,792 FBS–FBS, 1,144 FBS–FCS), with no 2020 rows
+  and zero blocking reconciliation conflicts. The 32 missing regular play
+  responses and one missing regular stat response remain explicit
+  `provider_response_omission` evidence; postseason detail is complete.
+- **Phase 2d recertification and capture automation — unblocked, not started.**
+  Its only authorized Phase 2c input is the complete, checksum-verified ref set
+  above. Eligibility publication, descendant rebuilding, audit v4, and
+  automation activation remain outside this completed Phase 2c task.

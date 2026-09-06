@@ -1,6 +1,6 @@
 # Phase 2c Materialization and Ref-Set Closure
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-06
 - **Planner:** Sol
 - **Approval source:** User explicitly approved implementation of this exact contract on 2026-09-06.
@@ -16,16 +16,11 @@ and publishing the exact ref set required by Phase 2d.
 
 ## Current State
 
-Commit `79e760b` contains the initial Phase 2c runner and mixed-capture
-normalization fixes. The repository has no tracked modifications other than the
-unrelated `.opencode/` directory, but the Preview Phase 2c output prefix is
-empty: no season checkpoint, dataset ref, or final ref set exists. Phase 2d
-therefore has no authorized input.
-
-The runner selects the intended manifests and can calculate the corpus, but it
-does not yet prove Phase 1/R1 source-set equality, preserve complete capture
-checksum/timing evidence in its ref set, or implement the promised immutable
-resume protocol. Its script-level orchestration also lacks focused tests.
+The committed runner now has explicit lineage, immutable-identity, checkpoint,
+and ref-set contracts. On 2026-09-06 it materialized the complete Preview-only
+corpus, verified its 80 R2 objects and 80 Preview Neon catalog registrations,
+and published the sealed Phase 2c ref set. Phase 2d is unblocked to consume
+that ref set in a subsequent task; it has not begun here.
 
 ## Proposed Approach
 
@@ -163,12 +158,12 @@ state.
 
 ## Definition of Done
 
-- [ ] Hardened implementation and tests are committed before materialization.
-- [ ] Committed-SHA dry-run passes the exact corpus and reconciliation gates.
-- [ ] All 80 per-season outputs are registered and checksum-verified in Preview.
-- [ ] The complete Phase 2c ref set is published and matches a repeated dry-run.
-- [ ] Phase 2c is documented as implemented and Phase 2d as unblocked.
-- [ ] Required validation passes and the evidence-only closeout is ready.
+- [x] Hardened implementation and tests are committed before materialization.
+- [x] Committed-SHA dry-run passes the exact corpus and reconciliation gates.
+- [x] All 80 per-season outputs are registered and checksum-verified in Preview.
+- [x] The complete Phase 2c ref set is published and matches a repeated dry-run.
+- [x] Phase 2c is documented as implemented and Phase 2d as unblocked.
+- [x] Required validation passes and the evidence-only closeout is ready.
 
 ## Implementation Record
 
@@ -178,14 +173,36 @@ state.
   capture equality plus catalog/source evidence, writes and verifies immutable
   checkpoints on apply, and rejects a final ref set until all ten seasons pass
   the approved corpus gates.
-- **Validation:** focused Phase 2c/Silver tests (47), full Python suite with
-  warnings as errors (716 passed, 2 skipped), Ruff lint/format check,
-  repository lint, contracts validation, MkDocs, V4/repository-boundary tests
-  (14), and `git diff --check` passed.
-- **Materialization blocker:** Per the contract, the implementation must be
-  committed before dry-run/apply so immutable identities bind the code SHA.
-  The user-owned implementation commit is pending; no Phase 2c R2/Neon writes
-  or provider calls have occurred.
+- **Validation:** focused Phase 2c/Silver tests (47), final full Python suite
+  with warnings as errors (717 passed, 2 skipped), scoped Ruff format check,
+  repository Ruff lint, contracts validation, MkDocs,
+  V4/repository-boundary tests (14), and `git diff --check` passed.
+- **Committed implementation:** `095f464b6996fe94c2c4259a9c001e6074949e7e`
+  established the code checkpoint. `6be713a33ee32c1d661bd536e2db9c9d0fa73ca1`
+  retained the runner contract while avoiding a duplicate preflight capture
+  read; this is the code SHA bound to the run.
+- **Run identity:**
+  `2026-09-06T1437Z-phase2c-expanded-silver-v1`, Preview,
+  `as_of=2026-09-06T14:37:06+00:00`, identity SHA-256
+  `b3a02b56ca0f0c7495ce9bbc8221b38d15ac50be32104a48638e2ffa0e7e41a6`,
+  configuration SHA-256
+  `75992691ca876bfa4ad871806b828ca8b8e013114793a5cb3d59c919993ea780`.
+- **Published ref set:**
+  `artifacts/research/data-first-football-v1/phase2/silver/runs/2026-09-06T1437Z-phase2c-expanded-silver-v1/ref-set.json`
+  (`data_first_phase2c_ref_set_v1`, complete; manifest SHA-256
+  `b3023ab5b7a304ddbc81ae2feca56238959520a54b3a75ed9be136f5d8f51df3`).
+- **Closure:** ten checkpoints cover 2015–2019 and 2021–2025, with eight
+  datasets each (80 total). The verified corpus has 8,936 games/outcomes:
+  8,521 regular, 415 postseason, 7,792 FBS–FBS, and 1,144 FBS–FCS. There are
+  zero blocking reconciliation conflicts and no 2020 rows. The 32 missing
+  regular play responses and one missing regular team-stat response are sealed
+  as `provider_response_omission`; `omission_reasons` rejected any postseason
+  omission before materialization.
+- **Verification:** the first dry-run passed the exact gates; apply reread and
+  registered every object before checkpointing; an independent post-apply read
+  confirmed all ten checkpoints, 80 readable objects, and 80 matching Preview
+  catalog rows. The repeated dry-run completed under the same identity and
+  matched the published ref set.
 
 ## Amendments
 
