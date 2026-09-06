@@ -439,3 +439,26 @@ rows instead of provider requests.
 measurement definitions require another amendment. Each failed gate remains
 visible and blocks only the affected inputs; it is never weakened after seeing
 results.
+
+### Execution record
+
+- **Corrected Phase 1 audit v3 (prerequisite) — complete 2026-09-06.** Sealed
+  at `artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3/`
+  (code SHA `f77dd213…`): `complete_with_blockers`, 70 issues, 5 result
+  dispositions with exact reasons, 12 sealed outputs. Two unresolved-lineage
+  blockers remain visible (research parquet objects at non-canonical URIs that
+  cannot hold dataset manifests).
+- **Phase 2a deterministic repair — complete 2026-09-06.** Root cause found
+  and fixed (commit `052486c`): 43 of 53 gaps were sealed under schema
+  versions the executable registry never learned (lake writes tolerate
+  unknown versions with `schema_sha: null`). The registry now carries the 12
+  historical (dataset, version) combos and `register_dataset_version`
+  tolerates null-sha historical manifests while preserving recorded-sha drift
+  checks. Repair report sealed at
+  `artifacts/research/data-first-football-v1/phase2/catalog-repair/2026-09-06T0055Z-catalog-repair/repair-report.json`:
+  53 registered, 0 quarantined, confirmed in Preview Neon. All 53 objects
+  pass `validate_frame` under the registered schemas.
+- **Phase 2b — pending.** Historical dry-run against the v3 schedule
+  denominator, then the pregame rehearsal (7 requests) per
+  `docs/ops/data_first_capture.md`; enable the scheduled capture only after a
+  successful rehearsal and timing proof.
