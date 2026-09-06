@@ -157,6 +157,34 @@ def test_research_schedule_coalesces_mixed_column_conventions():
     assert by_id.loc[1, "population"] == "fbs_fbs"
 
 
+def test_research_schedule_parses_mixed_provider_timestamp_encodings():
+    records = [
+        {
+            "id": 1,
+            "season": 2025,
+            "week": 1,
+            "season_type": "regular",
+            "start_date": "2025-09-01T12:00:00+00:00",
+            "home_team": "A",
+            "away_team": "B",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+        {
+            "id": 2,
+            "season": 2025,
+            "week": 1,
+            "season_type": "postseason",
+            "start_date": "2025-12-31 12:00:00+00:00",
+            "home_team": "C",
+            "away_team": "D",
+            "home_classification": "fbs",
+            "away_classification": "fbs",
+        },
+    ]
+    assert normalize_fbs_involved_games(records)["game_id"].tolist() == [1, 2]
+
+
 def test_normalize_games_coalesces_mixed_column_conventions():
     games = normalize_games(
         [
@@ -389,6 +417,47 @@ def test_team_game_stats_flatten_to_exact_team_game_rows():
         {"game_id": 10, "team": "B"},
     ]
     assert result["total_yards"].tolist() == ["400", "350"]
+
+
+def test_team_game_stats_decodes_parquet_serialized_teams_and_filters_context():
+    record = {
+        "id": 10,
+        "teams": "[{'teamId': 1, 'team': 'A', 'homeAway': 'home', 'points': 21, 'stats': []}, {'teamId': 2, 'team': 'B', 'homeAway': 'away', 'points': 17, 'stats': []}]",
+    }
+    result = normalize_team_game_stats(
+        [record], games=pd.DataFrame([{"game_id": 10, "season": 2025, "week": 1}])
+    )
+    assert result[["season", "week", "game_id"]].drop_duplicates().to_dict(
+        "records"
+    ) == [{"season": 2025, "week": 1, "game_id": 10}]
+    with pytest.raises(SilverValidationError, match="serialized structure"):
+        normalize_team_game_stats([{"id": 10, "teams": "not-a-list"}])
+
+
+def test_outcomes_reject_conflicting_selected_game_season_and_filters_non_target():
+    rows = [
+        {
+            "id": 1,
+            "season": 2025,
+            "week": 1,
+            "completed": True,
+            "home_points": 1,
+            "away_points": 0,
+        },
+        {
+            "id": 2,
+            "season": 2025,
+            "week": 1,
+            "completed": True,
+            "home_points": 1,
+            "away_points": 0,
+        },
+    ]
+    games = pd.DataFrame([{"game_id": 1, "season": 2025, "week": 1}])
+    assert normalize_game_outcomes(rows, games=games)["game_id"].tolist() == [1]
+    rows[0]["season"] = 2024
+    with pytest.raises(SilverValidationError, match="season conflicts"):
+        normalize_game_outcomes(rows, games=games)
 
 
 def test_legacy_market_quote_requires_authentic_capture_timestamp():

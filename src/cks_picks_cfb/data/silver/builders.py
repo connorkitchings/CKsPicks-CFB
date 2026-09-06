@@ -81,6 +81,59 @@ def _rename_common(frame: pd.DataFrame) -> pd.DataFrame:
     return result.rename(columns=renames)
 
 
+def _parse_utc(values: pd.Series) -> pd.Series:
+    """Parse provider timestamps without assuming a single ISO rendering."""
+    return pd.to_datetime(values, utc=True, errors="raise", format="mixed")
+
+
+def _decode_mapping_or_sequence(value: Any, *, label: str) -> Any:
+    """Decode parquet-round-tripped provider structures without accepting junk."""
+    if not isinstance(value, str):
+        return value
+    try:
+        return json.loads(value)
+    except json.JSONDecodeError:
+        try:
+            return ast.literal_eval(value)
+        except (SyntaxError, ValueError) as exc:
+            raise SilverValidationError(
+                f"{label} is not a serialized structure"
+            ) from exc
+
+
+def _constrain_to_games(
+    frame: pd.DataFrame, games: pd.DataFrame | None, *, dataset: str
+) -> pd.DataFrame:
+    """Fail closed on conflicting game identities and discard known non-target rows."""
+    if games is None or frame.empty:
+        return frame
+    if "game_id" not in games:
+        raise SilverValidationError(f"{dataset} game context is incomplete")
+    fields = [field for field in ("season", "week") if field in games]
+    context = games[["game_id", *fields]].drop_duplicates("game_id")
+    if context.duplicated("game_id").any():
+        raise SilverValidationError(f"{dataset} game context has duplicate game IDs")
+    known = set(context["game_id"])
+    supplied = set(frame["game_id"])
+    if not supplied & known:
+        raise SilverValidationError(f"{dataset} references only unknown games")
+    frame = frame[frame["game_id"].isin(known)].copy()
+    joined = frame.merge(context, on="game_id", how="left", suffixes=("", "_schedule"))
+    for field in fields:
+        schedule = f"{field}_schedule"
+        if field not in joined:
+            joined[field] = joined[schedule]
+        else:
+            conflict = joined[field].notna() & (joined[field] != joined[schedule])
+            if conflict.any():
+                raise SilverValidationError(
+                    f"{dataset} {field} conflicts with selected games"
+                )
+            joined[field] = joined[field].where(joined[field].notna(), joined[schedule])
+        joined = joined.drop(columns=[schedule])
+    return joined
+
+
 def normalize_games(
     records: Sequence[Mapping[str, Any]], *, week_policy: pd.DataFrame | None = None
 ) -> pd.DataFrame:
@@ -98,9 +151,7 @@ def normalize_games(
     missing = sorted(required - (set(frame.columns) | {"provider_week"}))
     if missing:
         raise SilverValidationError(f"games missing columns: {missing}")
-    frame["kickoff_utc"] = pd.to_datetime(
-        frame["kickoff_utc"], utc=True, errors="raise"
-    )
+    frame["kickoff_utc"] = _parse_utc(frame["kickoff_utc"])
     frame["week"] = pd.to_numeric(frame["week"], errors="raise").astype(int)
     frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
     frame["provider_week"] = frame["week"]
@@ -163,9 +214,7 @@ def normalize_fbs_involved_games(
     )
     if missing:
         raise SilverValidationError(f"fbs_involved_games missing columns: {missing}")
-    frame["kickoff_utc"] = pd.to_datetime(
-        frame["kickoff_utc"], utc=True, errors="raise"
-    )
+    frame["kickoff_utc"] = _parse_utc(frame["kickoff_utc"])
     frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
     if frame["season"].eq(2020).any():
         raise SilverValidationError("fbs_involved_games rejects forbidden 2020 rows")
@@ -284,15 +333,7 @@ def normalize_plays(
         frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
     if frame.duplicated(["game_id", "play_id"]).any():
         raise SilverValidationError("plays contains duplicate game_id/play_id keys")
-    if games is not None:
-        known = set(games["game_id"])
-        unknown = set(frame["game_id"]) - known
-        if unknown:
-            if not (set(frame["game_id"]) & known):
-                raise SilverValidationError(
-                    f"plays reference unknown games: {sorted(unknown)[:10]}"
-                )
-            frame = frame[frame["game_id"].isin(known)].copy()
+    frame = _constrain_to_games(frame, games, dataset="plays")
     return frame.sort_values(["season", "week", "game_id", "play_id"]).reset_index(
         drop=True
     )
@@ -571,11 +612,14 @@ def normalize_team_aliases(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame
     return pd.DataFrame.from_records(rows)
 
 
-def normalize_game_outcomes(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
+def normalize_game_outcomes(
+    records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
+) -> pd.DataFrame:
     frame = _rename_common(pd.DataFrame.from_records(records))
     required = SILVER_CONTRACTS["game_outcomes"].required_columns
     if missing := sorted(required - set(frame.columns)):
         raise SilverValidationError(f"game outcomes missing columns: {missing}")
+    frame = _constrain_to_games(frame, games, dataset="game_outcomes")
     return (
         frame[sorted(required)]
         .sort_values(["season", "game_id"])
@@ -607,7 +651,9 @@ def normalize_team_game_stats(
             "canonical_week",
             wrapper.get("request_week", wrapper.get("week", raw.get("week"))),
         )
-        teams = raw.get("teams")
+        teams = _decode_mapping_or_sequence(
+            raw.get("teams"), label="team_game_stats teams"
+        )
         if not isinstance(teams, list) or len(teams) != 2:
             raise SilverValidationError(
                 f"team_game_stats game {game_id} does not contain exactly two teams"
@@ -636,23 +682,7 @@ def normalize_team_game_stats(
                 row[slug] = stat.get("stat")
             rows.append(row)
     frame = pd.DataFrame.from_records(rows)
-    if games is not None and "game_id" in frame:
-        if "season" not in frame or frame["season"].isna().any():
-            game_season_map = dict(zip(games["game_id"], games["season"]))
-            if "season" not in frame:
-                frame["season"] = frame["game_id"].map(game_season_map)
-            else:
-                frame["season"] = frame["season"].fillna(
-                    frame["game_id"].map(game_season_map)
-                )
-        if "week" not in frame or frame["week"].isna().any():
-            game_week_map = dict(zip(games["game_id"], games["week"]))
-            if "week" not in frame:
-                frame["week"] = frame["game_id"].map(game_week_map)
-            else:
-                frame["week"] = frame["week"].fillna(
-                    frame["game_id"].map(game_week_map)
-                )
+    frame = _constrain_to_games(frame, games, dataset="team_game_stats")
     if frame.duplicated(["season", "game_id", "team"]).any():
         raise SilverValidationError("team_game_stats contains duplicate team/game rows")
     return frame.sort_values(["season", "week", "game_id", "team"]).reset_index(
