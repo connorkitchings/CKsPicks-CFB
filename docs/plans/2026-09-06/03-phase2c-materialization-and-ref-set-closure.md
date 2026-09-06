@@ -1,9 +1,9 @@
 # Phase 2c Materialization and Ref-Set Closure
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Created:** 2026-09-06
 - **Planner:** Sol
-- **Approval source:** Pending user approval
+- **Approval source:** User explicitly approved implementation of this exact contract on 2026-09-06.
 - **Implementation log:** `session_logs/2026-09-06/04-phase2c-materialization-and-ref-set-closure.md`
 - **Commit policy:** Separate plan, implementation, and evidence commits
 
@@ -169,6 +169,23 @@ state.
 - [ ] The complete Phase 2c ref set is published and matches a repeated dry-run.
 - [ ] Phase 2c is documented as implemented and Phase 2d as unblocked.
 - [ ] Required validation passes and the evidence-only closeout is ready.
+
+## Implementation Record
+
+- **2026-09-06 code checkpoint:** Added the reusable
+  `data_first_phase2c` lineage, immutable-identity, checkpoint, ref-set, and
+  omission contracts. The Preview-only runner now validates exact Phase 1/R1
+  capture equality plus catalog/source evidence, writes and verifies immutable
+  checkpoints on apply, and rejects a final ref set until all ten seasons pass
+  the approved corpus gates.
+- **Validation:** focused Phase 2c/Silver tests (47), full Python suite with
+  warnings as errors (716 passed, 2 skipped), Ruff lint/format check,
+  repository lint, contracts validation, MkDocs, V4/repository-boundary tests
+  (14), and `git diff --check` passed.
+- **Materialization blocker:** Per the contract, the implementation must be
+  committed before dry-run/apply so immutable identities bind the code SHA.
+  The user-owned implementation commit is pending; no Phase 2c R2/Neon writes
+  or provider calls have occurred.
 
 ## Amendments
 

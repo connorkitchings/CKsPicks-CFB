@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import subprocess
@@ -12,6 +11,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
+import psycopg
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.catalog import (
@@ -19,6 +19,22 @@ from cks_picks_cfb.data.catalog import (
     register_reconciliation_results,
     register_schema_version,
     source_capture_by_id,
+)
+from cks_picks_cfb.data.data_first_phase2c import (
+    CHECKPOINT_SCHEMA,
+    DEVELOPMENT_SEASONS,
+    OUTPUT_DATASETS,
+    Phase2cError,
+    build_run_identity,
+    canonical_bytes,
+    checkpoint_payload,
+    omission_reasons,
+    parse_manifest,
+    ref_set_payload,
+    require_exact_regular_lineage,
+    require_expected_dry_run,
+    require_identical_identity,
+    sha256_value,
 )
 from cks_picks_cfb.data.history_play_capture import manifest_declared_missing_game_ids
 from cks_picks_cfb.data.lake import (
@@ -45,19 +61,9 @@ from cks_picks_cfb.data.silver import (
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.features.pipeline import build_preaggregation_pipeline
 
-SEASONS = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025)
+SEASONS = DEVELOPMENT_SEASONS
 ROOT = "artifacts/research/data-first-football-v1/phase2/silver/runs"
 PHASE1_STATE = "resolved_with_blockers"
-
-
-class Phase2cError(ValueError):
-    pass
-
-
-def _sha(value: Any) -> str:
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()
-    ).hexdigest()
 
 
 def _git_sha() -> str:
@@ -77,7 +83,7 @@ def _clean_tracked_tree() -> bool:
 
 
 def _immutable_json(storage, uri: str, value: Mapping[str, Any]) -> None:
-    payload = json.dumps(value, indent=2, sort_keys=True, default=str).encode()
+    payload = canonical_bytes(value)
     if storage.exists(uri):
         if storage.read_bytes(uri) != payload:
             raise FileExistsError(f"immutable artifact collision: {uri}")
@@ -106,11 +112,15 @@ def _capture_rows(storage, captures):
     return records
 
 
-def _manifest(storage, uri: str, *, allowed_states: set[str]) -> dict[str, Any]:
-    raw = json.loads(storage.read_bytes(uri).decode())
-    if raw.get("state") not in allowed_states:
-        raise Phase2cError(f"manifest {uri} is not sealed in an allowed state")
-    return raw
+def _manifest(
+    storage, uri: str, *, allowed_states: set[str], label: str
+) -> tuple[dict[str, Any], dict[str, str]]:
+    return parse_manifest(
+        uri=uri,
+        raw_bytes=storage.read_bytes(uri),
+        allowed_states=allowed_states,
+        label=label,
+    )
 
 
 def _run_captures(raw: Mapping[str, Any], *, entity: str) -> dict[int, str]:
@@ -139,6 +149,132 @@ def _run_captures(raw: Mapping[str, Any], *, entity: str) -> dict[int, str]:
     if set(result) != set(SEASONS):
         raise Phase2cError(f"postseason run lacks complete {entity} coverage")
     return result
+
+
+def _r1_request_evidence(
+    r1: Mapping[str, Any], *, season: int, entity: str
+) -> dict[str, Mapping[str, Any]]:
+    matches = [
+        item
+        for item in r1.get("entries", [])
+        if int(item.get("season", -1)) == season and item.get("entity") == entity
+    ]
+    if len(matches) != 1:
+        raise Phase2cError(f"R1 source set lacks one {season}/{entity} entry")
+    evidence = {str(row["capture_id"]): row for row in matches[0].get("requests", [])}
+    if not evidence or len(evidence) != len(matches[0].get("capture_ids", [])):
+        raise Phase2cError(f"R1 source set has malformed {season}/{entity} evidence")
+    return evidence
+
+
+def _verify_capture(
+    storage,
+    capture,
+    *,
+    season: int,
+    entity: str,
+    expected_request: Mapping[str, Any] | None = None,
+    postseason: bool,
+) -> dict[str, Any]:
+    """Verify catalog metadata, the physical object, and source-request meaning."""
+    if capture.state != "registered" or capture.provider != "cfbd":
+        raise Phase2cError(f"unregistered or non-CFBD {season}/{entity} capture")
+    request = dict(capture.request or {})
+    params = dict(request.get("parameters") or {})
+    expected_entity = f"data_first_{entity}" if postseason else entity
+    if capture.entity != expected_entity:
+        raise Phase2cError(f"unexpected catalog entity for {season}/{entity}")
+    if params.get("year") != season:
+        raise Phase2cError(f"capture season mismatch for {season}/{entity}")
+    if entity != "teams" and params.get("season_type") != (
+        "postseason" if postseason else "regular"
+    ):
+        raise Phase2cError(f"capture season type mismatch for {season}/{entity}")
+    if entity in {"plays", "game_stats"} and postseason and params.get("week") != 1:
+        raise Phase2cError(f"postseason {entity} must be Week 1")
+    if params.get("classification") != "fbs" and entity != "teams":
+        raise Phase2cError(f"capture classification mismatch for {season}/{entity}")
+    if (
+        postseason
+        and capture.response_metadata.get("timing_class")
+        != "historically_reconstructed"
+    ):
+        raise Phase2cError(f"postseason {season}/{entity} has an invalid timing class")
+    if expected_request is not None:
+        if capture.content_sha != expected_request.get("content_sha256"):
+            raise Phase2cError(f"R1 content checksum mismatch for {season}/{entity}")
+        if capture.object_sha != expected_request.get("object_sha256"):
+            raise Phase2cError(f"R1 object checksum mismatch for {season}/{entity}")
+        if capture.row_count != int(expected_request.get("row_count", -1)):
+            raise Phase2cError(f"R1 row-count mismatch for {season}/{entity}")
+        expected = dict(expected_request.get("request") or {})
+        if request.get("endpoint") != expected.get("endpoint") or params != dict(
+            expected.get("parameters") or {}
+        ):
+            raise Phase2cError(f"R1 request mismatch for {season}/{entity}")
+    read_source_capture(storage, capture)
+    return {
+        "capture_id": capture.capture_id,
+        "provider": capture.provider,
+        "entity": capture.entity,
+        "request": request,
+        "timing_class": capture.response_metadata.get("timing_class"),
+        "row_count": capture.row_count,
+        "content_sha256": capture.content_sha,
+        "object_sha256": capture.object_sha,
+        "uri": capture.uri,
+    }
+
+
+def _verify_catalog_ref(conn_url: str, ref: DatasetRef) -> None:
+    """Ensure the immutable ref is registered in the Preview catalog exactly."""
+    with psycopg.connect(conn_url) as conn:
+        row = conn.execute(
+            "SELECT dataset, schema_version, content_sha, uri "
+            "FROM catalog.dataset_versions WHERE version_id = %s",
+            (ref.version_id,),
+        ).fetchone()
+    if not row or tuple(map(str, row)) != (
+        ref.dataset,
+        ref.schema_version,
+        ref.content_sha,
+        ref.uri,
+    ):
+        raise Phase2cError(f"Preview catalog registration mismatch: {ref.version_id}")
+
+
+def _verify_checkpoint(
+    storage, conn_url: str, checkpoint: Mapping[str, Any], identity
+) -> dict[str, Any]:
+    if (
+        checkpoint.get("schema_version") != CHECKPOINT_SCHEMA
+        or checkpoint.get("state") != "complete"
+    ):
+        raise Phase2cError("Phase 2c checkpoint is incomplete or malformed")
+    if checkpoint.get("identity_sha256") != identity["identity_sha256"]:
+        raise Phase2cError("Phase 2c checkpoint belongs to another run identity")
+    unsigned = dict(checkpoint)
+    claimed_sha = unsigned.pop("checkpoint_sha256", None)
+    if claimed_sha != sha256_value(unsigned):
+        raise Phase2cError("Phase 2c checkpoint checksum mismatch")
+    entry = dict(checkpoint.get("entry") or {})
+    if int(entry.get("season", -1)) != int(checkpoint.get("season", -1)):
+        raise Phase2cError("Phase 2c checkpoint season mismatch")
+    outputs = entry.get("outputs") or {}
+    if set(outputs) != set(OUTPUT_DATASETS):
+        raise Phase2cError("Phase 2c checkpoint lacks complete outputs")
+    for raw in outputs.values():
+        ref = _ref(raw)
+        read_dataset(storage, ref)
+        _verify_catalog_ref(conn_url, ref)
+    return entry
+
+
+def _dry_run_view(entries: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {key: value for key, value in entry.items() if key != "outputs"}
+        for entry in entries
+    ]
 
 
 def _regular_capture_ids(
@@ -189,15 +325,31 @@ def _dataset_ref(
 
 def _build_plan(
     storage, conn_url: str, args
-) -> tuple[dict[int, dict[str, Any]], dict[str, Any]]:
-    phase1 = _manifest(storage, args.phase1_manifest_uri, allowed_states={PHASE1_STATE})
-    games_run = _manifest(
-        storage, args.postseason_games_manifest_uri, allowed_states={"complete"}
+) -> tuple[dict[int, dict[str, Any]], dict[str, Any], list[dict[str, str]]]:
+    phase1, phase1_evidence = _manifest(
+        storage,
+        args.phase1_manifest_uri,
+        allowed_states={PHASE1_STATE},
+        label="Phase 1 v3",
     )
-    weekly_run = _manifest(
-        storage, args.postseason_weekly_manifest_uri, allowed_states={"complete"}
+    games_run, games_evidence = _manifest(
+        storage,
+        args.postseason_games_manifest_uri,
+        allowed_states={"complete"},
+        label="Phase 2 postseason games",
     )
-    r1 = _manifest(storage, args.r1_source_set_uri, allowed_states={"complete"})
+    weekly_run, weekly_evidence = _manifest(
+        storage,
+        args.postseason_weekly_manifest_uri,
+        allowed_states={"complete"},
+        label="Phase 2 postseason detail",
+    )
+    r1, r1_manifest_evidence = _manifest(
+        storage,
+        args.r1_source_set_uri,
+        allowed_states={"complete"},
+        label="certified R1 source set",
+    )
     if r1.get("contract_version") != "successor-history-source-set-v2":
         raise Phase2cError("R1 source set is not the certified source-set contract")
     post_games = _run_captures(games_run, entity="games")
@@ -208,6 +360,7 @@ def _build_plan(
         entity: _regular_capture_ids(phase1, entity=entity)
         for entity in ("games", "plays", "game_stats", "teams")
     }
+    require_exact_regular_lineage(r1, regular)
     r1_root = args.r1_source_set_uri.rsplit("/", 1)[0]
     for season in SEASONS:
         ids = {
@@ -224,14 +377,35 @@ def _build_plan(
             ]
             for entity, values in ids.items()
         }
+        capture_evidence = {}
         for entity, values in captures.items():
-            if any(value.state != "registered" for value in values):
-                raise Phase2cError(f"unregistered {season}/{entity} capture")
-            for value in values:
-                read_source_capture(storage, value)
+            regular_count = len(regular[entity][season])
+            expected_r1 = _r1_request_evidence(r1, season=season, entity=entity)
+            evidence_rows = []
+            for index, value in enumerate(values):
+                is_postseason = index >= regular_count
+                evidence_rows.append(
+                    _verify_capture(
+                        storage,
+                        value,
+                        season=season,
+                        entity=entity,
+                        expected_request=(
+                            None if is_postseason else expected_r1.get(value.capture_id)
+                        ),
+                        postseason=is_postseason,
+                    )
+                )
+            if any(
+                row["capture_id"] not in expected_r1
+                for row in evidence_rows[:regular_count]
+            ):
+                raise Phase2cError(f"R1 evidence is incomplete for {season}/{entity}")
+            capture_evidence[entity] = evidence_rows
         plan[season] = {
             "capture_ids": ids,
             "captures": captures,
+            "capture_evidence": capture_evidence,
             "teams_ref": _dataset_ref(
                 phase1,
                 dataset="teams",
@@ -241,15 +415,18 @@ def _build_plan(
             "play_manifest_uri": f"{r1_root}/captures/{season}/plays.json",
         }
     meta = {
-        "phase1_manifest_uri": args.phase1_manifest_uri,
-        "phase1_manifest_sha256": phase1.get("manifest_sha256"),
-        "postseason_games_manifest_uri": args.postseason_games_manifest_uri,
-        "postseason_weekly_manifest_uri": args.postseason_weekly_manifest_uri,
-        "r1_source_set_uri": args.r1_source_set_uri,
-        "r1_source_set_sha256": r1.get("manifest_sha256"),
         "corrections_ref": asdict(_dataset_ref(phase1, dataset="data_corrections")),
     }
-    return plan, meta
+    return (
+        plan,
+        meta,
+        [
+            phase1_evidence,
+            games_evidence,
+            weekly_evidence,
+            r1_manifest_evidence,
+        ],
+    )
 
 
 def _season_frames(storage, item: Mapping[str, Any]):
@@ -272,8 +449,14 @@ def _season_frames(storage, item: Mapping[str, Any]):
     declared = manifest_declared_missing_game_ids(
         storage, item["play_manifest_uri"], season=int(games.iloc[0]["season"])
     )
-    if not set(missing_plays).issubset(declared):
-        raise Phase2cError("missing plays are not declared by the exact R1 manifest")
+    detail_omissions = omission_reasons(
+        missing_plays=missing_plays,
+        missing_stats=sorted(complete - stats_ids),
+        declared_regular_plays=declared,
+        postseason_game_ids=games.loc[
+            games["season_type"].eq("postseason"), "game_id"
+        ].astype(int),
+    )
     return (
         games,
         outcomes,
@@ -283,6 +466,7 @@ def _season_frames(storage, item: Mapping[str, Any]):
             "missing_play_game_ids": missing_plays,
             "missing_stat_game_ids": sorted(complete - stats_ids),
             "declared_missing_play_game_ids": sorted(declared),
+            "reasons": detail_omissions,
         },
     )
 
@@ -311,11 +495,44 @@ def main() -> None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
     target = resolve_runtime_target("preview")
     storage = get_storage(environment="preview")
-    plan, input_meta = _build_plan(storage, target.database_url, args)
+    plan, input_meta, input_manifests = _build_plan(storage, target.database_url, args)
     corrections = read_dataset(storage, _ref(input_meta["corrections_ref"]))
     root = f"{ROOT}/{args.run_id}"
+    identity = build_run_identity(
+        run_id=args.run_id,
+        environment=args.environment,
+        as_of=cutoff.isoformat(),
+        code_sha=args.expected_code_sha,
+        configuration={
+            "phase1_manifest_uri": args.phase1_manifest_uri,
+            "postseason_games_manifest_uri": args.postseason_games_manifest_uri,
+            "postseason_weekly_manifest_uri": args.postseason_weekly_manifest_uri,
+            "r1_source_set_uri": args.r1_source_set_uri,
+            "corrections_ref": input_meta["corrections_ref"],
+        },
+        input_manifests=input_manifests,
+    )
+    identity_uri = f"{root}/identity.json"
+    if args.mode == "apply":
+        if storage.exists(identity_uri):
+            require_identical_identity(
+                json.loads(storage.read_bytes(identity_uri).decode("utf-8")), identity
+            )
+        else:
+            _immutable_json(storage, identity_uri, identity)
     entries = []
     for season, item in plan.items():
+        checkpoint_uri = f"{root}/seasons/{season}.json"
+        if args.mode == "apply" and storage.exists(checkpoint_uri):
+            entries.append(
+                _verify_checkpoint(
+                    storage,
+                    target.database_url,
+                    json.loads(storage.read_bytes(checkpoint_uri).decode("utf-8")),
+                    identity,
+                )
+            )
+            continue
         games, outcomes, plays, stats, omissions = _season_frames(storage, item)
         teams = read_dataset(storage, item["teams_ref"])
         byplay, drives, team_game, _ = build_preaggregation_pipeline(
@@ -347,6 +564,7 @@ def main() -> None:
         entry = {
             "season": season,
             "source_capture_ids": item["capture_ids"],
+            "capture_evidence": item["capture_evidence"],
             "teams_ref": asdict(item["teams_ref"]),
             "omissions": omissions,
             "row_counts": {
@@ -361,7 +579,8 @@ def main() -> None:
             },
             "population": games["population"].value_counts().to_dict(),
             "season_type": games["season_type"].value_counts().to_dict(),
-            "reconciliation": reconciliation["classification"].value_counts().to_dict(),
+            "reconciliation": reconciliation["classification"].value_counts().to_dict()
+            | {"blocking": int(reconciliation["blocking"].fillna(True).sum())},
         }
         if args.mode == "apply":
             refs = {}
@@ -378,7 +597,9 @@ def main() -> None:
                     source_captures=source,
                     as_of=cutoff,
                     code_sha=args.expected_code_sha,
-                    config_sha=_sha({"phase2c": input_meta, "dataset": dataset}),
+                    config_sha=sha256_value(
+                        {"identity": identity["identity_sha256"], "dataset": dataset}
+                    ),
                     context={"games": games},
                 )
                 register_dataset_version(target.database_url, ref, manifest)
@@ -404,7 +625,12 @@ def main() -> None:
                         dataset=dataset,
                         parent_refs=parents,
                         code_sha=args.expected_code_sha,
-                        config_sha=_sha({"phase2c": input_meta, "dataset": dataset}),
+                        config_sha=sha256_value(
+                            {
+                                "identity": identity["identity_sha256"],
+                                "dataset": dataset,
+                            }
+                        ),
                         as_of=cutoff,
                         schema_version=schema,
                         schema_sha=schema_for(dataset, schema).sha256,
@@ -422,23 +648,29 @@ def main() -> None:
                 source_dataset_versions=[ref.version_id for ref in parents],
             )
             entry["outputs"] = {name: asdict(ref) for name, ref in refs.items()}
-            _immutable_json(storage, f"{root}/seasons/{season}.json", entry)
+            for ref in refs.values():
+                read_dataset(storage, ref)
+                _verify_catalog_ref(target.database_url, ref)
+            _immutable_json(
+                storage,
+                checkpoint_uri,
+                checkpoint_payload(identity=identity, entry=entry),
+            )
         entries.append(entry)
-    payload = {
-        "schema_version": "data_first_phase2c_ref_set_v1",
-        "state": "complete" if args.mode == "apply" else "dry_run",
-        "environment": "preview",
-        "run_id": args.run_id,
-        "as_of": cutoff.isoformat(),
-        "code_sha": args.expected_code_sha,
-        "inputs": input_meta,
-        "seasons": list(SEASONS),
-        "forbidden_seasons": [2020],
-        "entries": entries,
-    }
-    payload["manifest_sha256"] = _sha(payload)
+    require_expected_dry_run(entries)
+    payload = ref_set_payload(
+        identity=identity,
+        entries=entries,
+        state="complete" if args.mode == "apply" else "dry_run",
+    )
+    ref_set_uri = f"{root}/ref-set.json"
     if args.mode == "apply":
-        _immutable_json(storage, f"{root}/ref-set.json", payload)
+        _immutable_json(storage, ref_set_uri, payload)
+    elif storage.exists(ref_set_uri):
+        existing = json.loads(storage.read_bytes(ref_set_uri).decode("utf-8"))
+        require_identical_identity(existing.get("identity") or {}, identity)
+        if _dry_run_view(existing.get("entries") or []) != _dry_run_view(entries):
+            raise Phase2cError("repeated dry-run does not match the completed ref set")
     print(json.dumps(payload, indent=2, sort_keys=True, default=str))
 
 
