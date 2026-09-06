@@ -35,7 +35,7 @@ counts the remaining provider requests by season, season type, and week:
 ```bash
 PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py \
   --kind historical --mode dry-run --run-id phase2-history-plan \
-  --audit-prefix artifacts/research/data-first-football-v1/phase1/<corrected-run> \
+  --audit-prefix artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3 \
   --max-requests <reviewed-bound>
 ```
 
