@@ -458,7 +458,21 @@ results.
   `artifacts/research/data-first-football-v1/phase2/catalog-repair/2026-09-06T0055Z-catalog-repair/repair-report.json`:
   53 registered, 0 quarantined, confirmed in Preview Neon. All 53 objects
   pass `validate_frame` under the registered schemas.
-- **Phase 2b — pending.** Historical dry-run against the v3 schedule
-  denominator, then the pregame rehearsal (7 requests) per
-  `docs/ops/data_first_capture.md`; enable the scheduled capture only after a
-  successful rehearsal and timing proof.
+- **Phase 2b bounded capture — complete 2026-09-06.**
+  - Pregame rehearsal (7 requests): 7/7 captured, all first-attempt, Preview
+    Neon registration confirmed, authentic pregame timestamps.
+  - Historical postseason capture (10 requests): 10/10 postseason `/games`
+    requests captured across 10 seasons (2015–2019 + 2021–2025), ~415 games,
+    all first-attempt, registered in Preview Neon under entity
+    `data_first_games`.
+  - CFBD quota: Tier 2, ~29,360/30,000 remaining this month.
+  - GHA daily cron (`CFB_DATA_FIRST_CAPTURE_SCHEDULE_ENABLED=true`) ready for
+    enablement per Amendment 2 (manual rehearsal + timing proof satisfied).
+- **Phase 2c Silver rebuild — in progress.** Root cause fixed (commit
+  `64879e2`): mixed camelCase/snake_case column conventions in concatenated
+  Bronze captures (`_rename_common` now coalesces camelCase aliases into
+  snake_case twins). `fbs_involved_games` builder ready; regular-season Bronze
+  captures exist for all 10 target years; postseason captures are the 10 new
+  `data_first_games` captures. Next: loop all 10 seasons for
+  `fbs_involved_games`, then expanded `game_outcomes`, `plays`,
+  `team_game_stats`, `reconciled_team_game` per year.
