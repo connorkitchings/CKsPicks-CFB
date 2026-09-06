@@ -69,12 +69,12 @@ def _verify_capture_manifest(
     return manifest
 
 
-def _verify_r2_objects(storage, manifest: dict[str, Any]) -> None:
+def _verify_r2_objects(storage, manifest: dict[str, Any], manifest_uri: str) -> None:
+    prefix = manifest_uri.rsplit("/", 1)[0]
     for result in manifest.get("results") or []:
         if result.get("state") != "captured":
             continue
         request_sha = result.get("request_sha")
-        prefix = manifest.get("prefix") or ""
         uri = f"{prefix}/requests/{request_sha}.json"
         if not storage.exists(uri):
             raise Phase2dError(f"capture result not found: {uri}")
@@ -132,7 +132,7 @@ def main() -> None:
     manifest = _verify_capture_manifest(
         reader, args.capture_manifest_uri, args.expected_code_sha
     )
-    _verify_r2_objects(reader, manifest)
+    _verify_r2_objects(reader, manifest, args.capture_manifest_uri)
     _verify_catalog_registration(conn_url, manifest)
     future_kickoff_count = _verify_future_kickoff(conn_url)
 
