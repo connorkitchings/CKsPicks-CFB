@@ -6,7 +6,7 @@
 - **Approval source:** User approved the full data-first plan on 2026-09-05 and
   explicitly approved the full Phase 2 scope (split sub-phases, ingest 2015-2019,
   include FBS-FCS games) on 2026-09-05.
-- **Implementation log:** `session_logs/2026-09-05/06-phase2-completion.md`
+- **Implementation log:** `session_logs/2026-09-06/01-phase2b-postseason-capture.md`
 - **Sealed Phase 1 input:**
   `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
 - **Commit policy:** Separate plan commit required
@@ -477,21 +477,23 @@ not alter the Phase 2 architecture, acceptance gates, V4, or production.
   `artifacts/research/data-first-football-v1/phase2/catalog-repair/2026-09-06T0055Z-catalog-repair/repair-report.json`:
   53 registered, 0 quarantined, confirmed in Preview Neon. All 53 objects
   pass `validate_frame` under the registered schemas.
-- **Phase 2b bounded capture — partial 2026-09-06.**
+- **Phase 2b bounded capture — complete 2026-09-06.**
   - Pregame rehearsal (7 requests): 7/7 captured, all first-attempt, Preview
     Neon registration confirmed, authentic pregame timestamps.
   - Historical postseason capture (10 requests): 10/10 postseason `/games`
     requests captured across 10 seasons (2015–2019 + 2021–2025), ~415 games,
     all first-attempt, registered in Preview Neon under entity
     `data_first_games`.
-  - Amendment 3 dry-run with those ten explicit captures discovers 20 missing
+  - Amendment 3 run
+    `2026-09-06T0402Z-phase2-postseason-weekly-v1` captured the remaining 20
     requests: one postseason `/plays` and one postseason `/game/team/stats`
-    request for each permitted season. Phase 2b completes only after these are
-    captured and registered in Preview.
+    request for each permitted season. All completed on the first attempt and
+    registered in Preview with reconstructed timing: 75,032 plays and 415
+    team-stat game records. The post-capture dry-run returns zero requests.
   - CFBD quota: Tier 2, ~29,360/30,000 remaining this month.
   - GHA daily cron (`CFB_DATA_FIRST_CAPTURE_SCHEDULE_ENABLED=true`) ready for
     enablement per Amendment 2 (manual rehearsal + timing proof satisfied).
-- **Phase 2c Silver rebuild — blocked on Phase 2b completion.** Root cause fixed (commit
+- **Phase 2c Silver rebuild — unblocked.** Root cause fixed (commit
   `64879e2`): mixed camelCase/snake_case column conventions in concatenated
   Bronze captures (`_rename_common` now coalesces camelCase aliases into
   snake_case twins). `fbs_involved_games` builder ready; regular-season Bronze
