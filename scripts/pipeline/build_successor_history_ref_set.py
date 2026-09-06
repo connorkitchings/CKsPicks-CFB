@@ -29,7 +29,9 @@ def _ref(storage, uri: str) -> DatasetRef:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment", choices=("preview", "production"), required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     parser.add_argument(
         "--season-lineage-policy",
         default="conf/ratings/successor_v2_season_lineage.yaml",

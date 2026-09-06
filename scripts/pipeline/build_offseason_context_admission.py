@@ -102,9 +102,15 @@ def main() -> None:
             "source_refs": {family: asdict(ref) for family, ref in family_refs.items()},
         }
         _write_immutable(
-            storage, args.report_uri, json.dumps(rejected, indent=2, sort_keys=True).encode()
+            storage,
+            args.report_uri,
+            json.dumps(rejected, indent=2, sort_keys=True).encode(),
         )
-        print(json.dumps({"report_uri": args.report_uri, "state": "rejected"}, sort_keys=True))
+        print(
+            json.dumps(
+                {"report_uri": args.report_uri, "state": "rejected"}, sort_keys=True
+            )
+        )
         return
     table = pa.Table.from_pandas(admission.context, preserve_index=False)
     buffer = io.BytesIO()
@@ -124,9 +130,25 @@ def main() -> None:
         args.context_ref_uri,
         json.dumps(asdict(context_ref), sort_keys=True).encode(),
     )
-    report = {**admission.report, "context_ref": asdict(context_ref), "team_universe_ref": asdict(universe_ref)}
-    _write_immutable(storage, args.report_uri, json.dumps(report, indent=2, sort_keys=True).encode())
-    print(json.dumps({"context_ref_uri": args.context_ref_uri, "report_uri": args.report_uri, "feature_track": report["feature_track"], "families": report["admitted_families"]}, sort_keys=True))
+    report = {
+        **admission.report,
+        "context_ref": asdict(context_ref),
+        "team_universe_ref": asdict(universe_ref),
+    }
+    _write_immutable(
+        storage, args.report_uri, json.dumps(report, indent=2, sort_keys=True).encode()
+    )
+    print(
+        json.dumps(
+            {
+                "context_ref_uri": args.context_ref_uri,
+                "report_uri": args.report_uri,
+                "feature_track": report["feature_track"],
+                "families": report["admitted_families"],
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

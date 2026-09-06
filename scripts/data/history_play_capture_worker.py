@@ -44,9 +44,15 @@ def main() -> None:
         raw_records = ingester.fetch_source_request(parameters)
         records = ingester.transform_data(raw_records)
         returned_game_ids = sorted(
-            {int(record["game_id"]) for record in records if record.get("game_id") is not None}
+            {
+                int(record["game_id"])
+                for record in records
+                if record.get("game_id") is not None
+            }
         )
-        expected_game_ids = sorted(int(value) for value in parameters["expected_game_ids"])
+        expected_game_ids = sorted(
+            int(value) for value in parameters["expected_game_ids"]
+        )
         _atomic_json(
             result_path,
             {
@@ -54,8 +60,12 @@ def main() -> None:
                 "captured_at": datetime.now(timezone.utc).isoformat(),
                 "records": records,
                 "returned_game_ids": returned_game_ids,
-                "missing_game_ids": sorted(set(expected_game_ids) - set(returned_game_ids)),
-                "extra_game_ids": sorted(set(returned_game_ids) - set(expected_game_ids)),
+                "missing_game_ids": sorted(
+                    set(expected_game_ids) - set(returned_game_ids)
+                ),
+                "extra_game_ids": sorted(
+                    set(returned_game_ids) - set(expected_game_ids)
+                ),
             },
         )
     except Exception as exc:

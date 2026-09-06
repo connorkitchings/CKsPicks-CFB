@@ -72,16 +72,22 @@ def load_legacy_comparison_restore_config(
         raise ValueError("Legacy comparison evidence may not use a successor prefix")
     expected_entities = {"games", "teams"}
     if {archive.entity for archive in config.archives} != expected_entities:
-        raise ValueError("Legacy comparison restoration requires exactly games and teams")
+        raise ValueError(
+            "Legacy comparison restoration requires exactly games and teams"
+        )
     if len(config.archives) != len(expected_entities):
-        raise ValueError("Legacy comparison restoration archive entities must be unique")
+        raise ValueError(
+            "Legacy comparison restoration archive entities must be unique"
+        )
     for archive in config.archives:
         if len(archive.sha256) != 64 or any(
             char not in "0123456789abcdef" for char in archive.sha256
         ):
             raise ValueError(f"Invalid SHA-256 for legacy archive {archive.entity}")
         if not archive.uri.startswith("raw/") or "/year=2019/" not in archive.uri:
-            raise ValueError(f"Legacy archive URI is outside fixed 2019 scope: {archive.uri}")
+            raise ValueError(
+                f"Legacy archive URI is outside fixed 2019 scope: {archive.uri}"
+            )
     return config
 
 
@@ -93,7 +99,9 @@ def find_and_verify_legacy_archives(
     """Return only allowlisted source records after exact checksum verification."""
 
     by_uri = {item.uri: item for item in inventory}
-    verified: list[tuple[LegacyArchiveSpec, HistoricalObjectRef, list[dict[str, Any]]]] = []
+    verified: list[
+        tuple[LegacyArchiveSpec, HistoricalObjectRef, list[dict[str, Any]]]
+    ] = []
     for archive in config.archives:
         item = by_uri.get(archive.uri)
         if item is None:

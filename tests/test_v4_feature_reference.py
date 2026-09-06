@@ -150,7 +150,9 @@ def test_reconstructed_returning_production_allows_only_declared_absences():
             ),
         }
     )
-    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+    source = pd.DataFrame(
+        columns=["season", "team", "effective_at", "retrieved_at", *features]
+    )
 
     result, metadata = family_frame(
         source, universe=universe, family="returning_production", strict=False
@@ -174,7 +176,9 @@ def test_reconstructed_recruiting_allows_declared_provider_gap():
             "season_first_kickoff_utc": pd.to_datetime(["2022-09-01T00:00:00Z"]),
         }
     )
-    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+    source = pd.DataFrame(
+        columns=["season", "team", "effective_at", "retrieved_at", *features]
+    )
 
     result, metadata = family_frame(
         source, universe=universe, family="recruiting", strict=False
@@ -182,7 +186,11 @@ def test_reconstructed_recruiting_allows_declared_provider_gap():
 
     assert metadata["eligible"] is True
     assert metadata["structural_absences"] == [
-        {"season": 2022, "team": "Florida International", "reason": "source_unavailable"}
+        {
+            "season": 2022,
+            "team": "Florida International",
+            "reason": "source_unavailable",
+        }
     ]
     assert result is not None
     assert result["recruiting_available"].eq(0).all()
@@ -199,7 +207,9 @@ def test_reconstructed_returning_production_rejects_an_undeclared_gap():
             "season_first_kickoff_utc": pd.to_datetime(["2021-09-01T00:00:00Z"]),
         }
     )
-    source = pd.DataFrame(columns=["season", "team", "effective_at", "retrieved_at", *features])
+    source = pd.DataFrame(
+        columns=["season", "team", "effective_at", "retrieved_at", *features]
+    )
 
     result, metadata = family_frame(
         source, universe=universe, family="returning_production", strict=False

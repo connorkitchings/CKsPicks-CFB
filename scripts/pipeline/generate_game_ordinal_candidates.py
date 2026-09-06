@@ -152,7 +152,12 @@ def _blend_rows(rows: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, dict[str, f
 
 
 def _selection(
-    raw: pd.DataFrame, policy, spec, seed: int, *, required_families: tuple[str, ...] = ()
+    raw: pd.DataFrame,
+    policy,
+    spec,
+    seed: int,
+    *,
+    required_families: tuple[str, ...] = (),
 ) -> tuple[pd.DataFrame, dict[str, dict[str, dict[str, float]]]]:
     variants = _context_feature_variants(raw, spec, required_families=required_families)
     variant_frames = {variant: raw for variant in variants}
@@ -188,19 +193,19 @@ def _selection(
                 variant_frames[feature_variant], prior_strengths=strengths
             )
             predictions = generate_game_ordinal_candidate_predictions(
-                    frame,
-                    policy=policy,
-                    features=[*features, *context_features],
-                    baseline_columns=OmegaConf.to_container(
-                        spec.baseline_columns, resolve=True
-                    ),
-                    random_seed=seed,
-                    stage="selection",
-                    candidate_kinds=("direct_ridge", "points_ridge"),
-                    prior_strengths=strengths,
-                    established_features=list(spec.established_features),
-                    feature_variant=feature_variant,
-                )
+                frame,
+                policy=policy,
+                features=[*features, *context_features],
+                baseline_columns=OmegaConf.to_container(
+                    spec.baseline_columns, resolve=True
+                ),
+                random_seed=seed,
+                stage="selection",
+                candidate_kinds=("direct_ridge", "points_ridge"),
+                prior_strengths=strengths,
+                established_features=list(spec.established_features),
+                feature_variant=feature_variant,
+            )
             predictions["context_cohort"] = (
                 "returning_production_complete"
                 if feature_variant.endswith("_complete")
@@ -223,19 +228,19 @@ def _selection(
                 variant_frames[feature_variant], prior_strengths=values
             )
             predictions = generate_game_ordinal_candidate_predictions(
-                    frame,
-                    policy=policy,
-                    features=[*features, *variants[feature_variant]],
-                    baseline_columns=OmegaConf.to_container(
-                        spec.baseline_columns, resolve=True
-                    ),
-                    random_seed=seed,
-                    stage="selection",
-                    candidate_kinds=(candidate.replace("ridge", "catboost"),),
-                    prior_strengths=values,
-                    established_features=list(spec.established_features),
-                    feature_variant=feature_variant,
-                )
+                frame,
+                policy=policy,
+                features=[*features, *variants[feature_variant]],
+                baseline_columns=OmegaConf.to_container(
+                    spec.baseline_columns, resolve=True
+                ),
+                random_seed=seed,
+                stage="selection",
+                candidate_kinds=(candidate.replace("ridge", "catboost"),),
+                prior_strengths=values,
+                established_features=list(spec.established_features),
+                feature_variant=feature_variant,
+            )
             predictions["context_cohort"] = (
                 "returning_production_complete"
                 if feature_variant.endswith("_complete")

@@ -16,7 +16,9 @@ def _module():
         Path(__file__).parents[1]
         / "scripts/pipeline/build_successor_legacy_comparison_ref_set.py"
     )
-    spec = importlib.util.spec_from_file_location("successor_comparison_bootstrap", path)
+    spec = importlib.util.spec_from_file_location(
+        "successor_comparison_bootstrap", path
+    )
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -42,6 +44,7 @@ class _Storage:
 # ---------------------------------------------------------------------------
 # Helpers: build valid fixture data
 # ---------------------------------------------------------------------------
+
 
 def _make_ref(dataset: str, season: int) -> dict:
     """Create a minimal DatasetRef-shaped dict for a given dataset/season."""
@@ -82,6 +85,7 @@ def _make_catalog_entries(module, seasons=(2021, 2022, 2023, 2024, 2025)) -> lis
 # Task 2 — success path
 # ---------------------------------------------------------------------------
 
+
 def test_success_path_all_18_required_entries(monkeypatch):
     """manifest 2019 + catalog 2021-2025 → all 18 required entries present."""
     module = _module()
@@ -109,9 +113,12 @@ def test_success_path_all_18_required_entries(monkeypatch):
     output_uri = "artifacts/research/rating-successor-v2/r1/run/comparison-ref-set.json"
     module.main(
         [
-            "--environment", "preview",
-            "--as-of", "2026-08-31T00:00:00Z",
-            "--output-uri", output_uri,
+            "--environment",
+            "preview",
+            "--as-of",
+            "2026-08-31T00:00:00Z",
+            "--output-uri",
+            output_uri,
         ]
     )
 
@@ -136,6 +143,7 @@ def test_success_path_all_18_required_entries(monkeypatch):
 # Task 2 — failure modes
 # ---------------------------------------------------------------------------
 
+
 def test_tampered_manifest_sha_fails_closed(monkeypatch):
     """Tampered manifest SHA → immutable failure diagnostic + SystemExit."""
     module = _module()
@@ -144,7 +152,9 @@ def test_tampered_manifest_sha_fails_closed(monkeypatch):
     manifest_bytes = _make_restoration_manifest(season=2019)
     storage.objects[module.LEGACY_COMPARISON_2019_MANIFEST_URI] = manifest_bytes
     # Pin is deliberately wrong
-    monkeypatch.setattr(module, "LEGACY_COMPARISON_2019_MANIFEST_SHA256", "bad" * 21 + "0")
+    monkeypatch.setattr(
+        module, "LEGACY_COMPARISON_2019_MANIFEST_SHA256", "bad" * 21 + "0"
+    )
     monkeypatch.setattr(module, "get_storage", lambda **_: storage)
     monkeypatch.setattr(
         module,
@@ -156,9 +166,12 @@ def test_tampered_manifest_sha_fails_closed(monkeypatch):
     with pytest.raises(SystemExit, match="Legacy comparison evidence preflight failed"):
         module.main(
             [
-                "--environment", "preview",
-                "--as-of", "2026-08-31T00:00:00Z",
-                "--output-uri", output_uri,
+                "--environment",
+                "preview",
+                "--as-of",
+                "2026-08-31T00:00:00Z",
+                "--output-uri",
+                output_uri,
             ]
         )
 
@@ -186,9 +199,12 @@ def test_missing_manifest_fails_closed(monkeypatch):
     with pytest.raises(SystemExit, match="Legacy comparison evidence preflight failed"):
         module.main(
             [
-                "--environment", "preview",
-                "--as-of", "2026-08-31T00:00:00Z",
-                "--output-uri", output_uri,
+                "--environment",
+                "preview",
+                "--as-of",
+                "2026-08-31T00:00:00Z",
+                "--output-uri",
+                output_uri,
             ]
         )
 
@@ -222,9 +238,12 @@ def test_incomplete_manifest_state_fails_closed(monkeypatch):
     with pytest.raises(SystemExit, match="Legacy comparison evidence preflight failed"):
         module.main(
             [
-                "--environment", "preview",
-                "--as-of", "2026-08-31T00:00:00Z",
-                "--output-uri", output_uri,
+                "--environment",
+                "preview",
+                "--as-of",
+                "2026-08-31T00:00:00Z",
+                "--output-uri",
+                output_uri,
             ]
         )
 
@@ -238,6 +257,7 @@ def test_incomplete_manifest_state_fails_closed(monkeypatch):
 # ---------------------------------------------------------------------------
 # Preserved: existing test (adapted for two-source flow)
 # ---------------------------------------------------------------------------
+
 
 def test_catalog_failure_writes_immutable_failure_diagnostic(monkeypatch):
     """Catalog LookupError → failure diagnostic + SystemExit (2021-2025 coverage)."""
@@ -268,9 +288,12 @@ def test_catalog_failure_writes_immutable_failure_diagnostic(monkeypatch):
     with pytest.raises(SystemExit, match="Legacy comparison evidence preflight failed"):
         module.main(
             [
-                "--environment", "preview",
-                "--as-of", "2026-08-27T00:00:00Z",
-                "--output-uri", output_uri,
+                "--environment",
+                "preview",
+                "--as-of",
+                "2026-08-27T00:00:00Z",
+                "--output-uri",
+                output_uri,
             ]
         )
 

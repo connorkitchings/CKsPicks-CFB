@@ -341,7 +341,9 @@ def main() -> None:
             context_admission = _read(storage, args.context_admission_report_uri)
             require_admitted_context(context_admission, allow_reconstructed=True)
             if context_admission["feature_track"] != "reconstructed":
-                raise ValueError("Research-only candidates require reconstructed context")
+                raise ValueError(
+                    "Research-only candidates require reconstructed context"
+                )
         payload = {
             "schema_version": "game_ordinal_reconstructed_research_v1",
             "stage": "research",

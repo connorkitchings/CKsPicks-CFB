@@ -147,9 +147,9 @@ def main(argv: list[str] | None = None) -> None:
             "Rating team-state research builds are permitted only in preview"
         )
     config = load_team_state_config(args.state_config)
-    prefix = (args.output_prefix or f"{config.research_prefix}/{config.design_id}").rstrip(
-        "/"
-    )
+    prefix = (
+        args.output_prefix or f"{config.research_prefix}/{config.design_id}"
+    ).rstrip("/")
     if not prefix.startswith(f"{config.research_prefix}/"):
         raise ValueError("Team-state output prefix must be below the research prefix")
     prefix = f"{prefix}/"

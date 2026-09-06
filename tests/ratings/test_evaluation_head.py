@@ -14,7 +14,9 @@ from cks_picks_cfb.ratings.evaluation_head import (
 )
 
 
-def _team_states(season: int, game_ids: list[int], teams: list[tuple[str, float, float]]) -> pd.DataFrame:
+def _team_states(
+    season: int, game_ids: list[int], teams: list[tuple[str, float, float]]
+) -> pd.DataFrame:
     """Build synthetic pregame team states."""
     rows = []
     for gid in game_ids:

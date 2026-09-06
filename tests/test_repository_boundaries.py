@@ -31,7 +31,10 @@ def _assert_no_prohibited_imports(paths: list[Path], prefixes: list[str]) -> Non
     violations: list[str] = []
     for path in paths:
         for imported in _imports(path):
-            if any(imported == prefix or imported.startswith(f"{prefix}.") for prefix in prefixes):
+            if any(
+                imported == prefix or imported.startswith(f"{prefix}.")
+                for prefix in prefixes
+            ):
                 violations.append(f"{path.relative_to(ROOT)} imports {imported}")
     assert violations == []
 
@@ -60,7 +63,9 @@ def test_declared_compatibility_paths_exist():
 def test_declared_public_make_targets_exist():
     manifest = _manifest()
     makefile = (ROOT / "Makefile").read_text()
-    declared_targets = set(re.findall(r"^([A-Za-z0-9_.-]+):", makefile, flags=re.MULTILINE))
+    declared_targets = set(
+        re.findall(r"^([A-Za-z0-9_.-]+):", makefile, flags=re.MULTILINE)
+    )
 
     missing = sorted(set(manifest["public_make_targets"]) - declared_targets)
     assert missing == []
@@ -88,7 +93,9 @@ def test_data_first_configs_do_not_reference_production_outputs():
     config_root = ROOT / manifest["research"]["config_root"]
     prefixes = manifest["dependency_rules"]["prohibited_research_output_prefixes"]
     violations: list[str] = []
-    for path in sorted(config_root.rglob("*.yaml")) + sorted(config_root.rglob("*.yml")):
+    for path in sorted(config_root.rglob("*.yaml")) + sorted(
+        config_root.rglob("*.yml")
+    ):
         content = path.read_text()
         for prefix in prefixes:
             if prefix in content:

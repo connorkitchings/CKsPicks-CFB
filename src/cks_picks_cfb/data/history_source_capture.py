@@ -50,7 +50,9 @@ class HistorySourceCaptureError(RuntimeError):
     """Raised when a non-play successor capture set cannot be completed."""
 
 
-def transform_capture_records(ingester: BaseIngester, raw_records: list[Any]) -> list[dict[str, Any]]:
+def transform_capture_records(
+    ingester: BaseIngester, raw_records: list[Any]
+) -> list[dict[str, Any]]:
     """Apply an ingester's canonical transform without writing raw projections."""
 
     return [
@@ -129,7 +131,11 @@ def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
 
 
 def run_isolated_source_worker(
-    *, entity: str, season: int, request: Mapping[str, Any], policy: HistorySourceCapturePolicy
+    *,
+    entity: str,
+    season: int,
+    request: Mapping[str, Any],
+    policy: HistorySourceCapturePolicy,
 ) -> dict[str, Any]:
     """Run one non-play request out of process without compatibility writes."""
 
@@ -137,7 +143,9 @@ def run_isolated_source_worker(
         root = Path(temp_dir)
         request_path = root / "request.json"
         result_path = root / "result.json"
-        request_path.write_text(json.dumps(dict(request), sort_keys=True), encoding="utf-8")
+        request_path.write_text(
+            json.dumps(dict(request), sort_keys=True), encoding="utf-8"
+        )
         environment = {
             **os.environ,
             "PYTHONPATH": ".:src",
@@ -172,12 +180,16 @@ def run_isolated_source_worker(
             )
         result = json.loads(result_path.read_text(encoding="utf-8"))
         if result.get("state") != "succeeded":
-            error = HistorySourceCaptureError(str(result.get("error_detail", "worker failed")))
+            error = HistorySourceCaptureError(
+                str(result.get("error_detail", "worker failed"))
+            )
             setattr(error, "category", result.get("error_category", "worker_failed"))
             setattr(error, "retryable", bool(result.get("retryable", False)))
             raise error
         if process.returncode != 0:
-            raise HistorySourceCaptureError("source worker failed after reporting success")
+            raise HistorySourceCaptureError(
+                "source worker failed after reporting success"
+            )
         return result
 
 
@@ -234,7 +246,9 @@ class HistorySourceCaptureSet:
         records: list[dict[str, Any]] = []
         for entry in raw.get("requests", []):
             capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
-            records.extend(read_source_capture(self.storage, capture).to_dict("records"))
+            records.extend(
+                read_source_capture(self.storage, capture).to_dict("records")
+            )
         if not records:
             raise HistorySourceCaptureError(
                 f"successor {self.entity} capture games manifest is empty"
@@ -315,11 +329,15 @@ class HistorySourceCaptureSet:
                 )
         return completed
 
-    def _attempt(self, request: Mapping[str, Any], request_sha: str) -> tuple[str, Mapping[str, Any]]:
+    def _attempt(
+        self, request: Mapping[str, Any], request_sha: str
+    ) -> tuple[str, Mapping[str, Any]]:
         last_error: BaseException | None = None
         for _ in range(self.policy.retry_policy.max_attempts):
             attempt = next_source_request_attempt(
-                self.conn_url, ingestion_run_id=self.ingestion_run_id, request_sha=request_sha
+                self.conn_url,
+                ingestion_run_id=self.ingestion_run_id,
+                request_sha=request_sha,
             )
             record_source_request_attempt(
                 self.conn_url,
@@ -330,7 +348,10 @@ class HistorySourceCaptureSet:
             )
             try:
                 result = self.worker(
-                    entity=self.entity, season=self.season, request=request, policy=self.policy
+                    entity=self.entity,
+                    season=self.season,
+                    request=request,
+                    policy=self.policy,
                 )
                 captured_at = datetime.fromisoformat(
                     str(result["captured_at"]).replace("Z", "+00:00")
@@ -369,9 +390,14 @@ class HistorySourceCaptureSet:
                     request_sha=request_sha,
                     attempt=attempt,
                     state="failed",
-                    error=exc if isinstance(exc, Exception) else RuntimeError(type(exc).__name__),
+                    error=exc
+                    if isinstance(exc, Exception)
+                    else RuntimeError(type(exc).__name__),
                 )
-                if not bool(getattr(exc, "retryable", True)) or attempt >= self.policy.max_attempts:
+                if (
+                    not bool(getattr(exc, "retryable", True))
+                    or attempt >= self.policy.max_attempts
+                ):
                     break
                 self.sleep(self.policy.retry_policy.delay(attempt))
         assert last_error is not None
@@ -394,18 +420,29 @@ class HistorySourceCaptureSet:
         try:
             completed = self._completed()
             if self.storage.exists(self.manifest_uri):
-                existing = json.loads(self.storage.read_bytes(self.manifest_uri).decode())
+                existing = json.loads(
+                    self.storage.read_bytes(self.manifest_uri).decode()
+                )
                 expected = [source_request_sha(request) for request in stored]
                 if (
                     existing.get("contract_version") == MANIFEST_VERSION
                     and existing.get("state") == "complete"
                     and existing.get("identity") == self.identity
-                    and [entry.get("request_sha") for entry in existing.get("requests", [])] == expected
-                    and [entry.get("capture_id") for entry in existing.get("requests", [])]
+                    and [
+                        entry.get("request_sha")
+                        for entry in existing.get("requests", [])
+                    ]
+                    == expected
+                    and [
+                        entry.get("capture_id")
+                        for entry in existing.get("requests", [])
+                    ]
                     == [completed.get(value) for value in expected]
                 ):
                     return existing
-                raise HistorySourceCaptureError("existing source capture manifest conflicts with request set")
+                raise HistorySourceCaptureError(
+                    "existing source capture manifest conflicts with request set"
+                )
             entries = []
             for request in stored:
                 request_sha = source_request_sha(request)

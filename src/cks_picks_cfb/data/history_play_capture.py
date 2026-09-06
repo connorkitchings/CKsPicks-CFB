@@ -127,7 +127,9 @@ def run_isolated_play_worker(
         root = Path(temp_dir)
         request_path = root / "request.json"
         result_path = root / "result.json"
-        request_path.write_text(json.dumps(dict(request), sort_keys=True), encoding="utf-8")
+        request_path.write_text(
+            json.dumps(dict(request), sort_keys=True), encoding="utf-8"
+        )
         env = {
             **os.environ,
             "PYTHONPATH": ".:src",
@@ -219,9 +221,13 @@ class HistoryPlayCaptureSet:
         records: list[dict[str, Any]] = []
         for entry in raw.get("requests", []):
             capture = source_capture_by_id(self.conn_url, str(entry["capture_id"]))
-            records.extend(read_source_capture(self.storage, capture).to_dict("records"))
+            records.extend(
+                read_source_capture(self.storage, capture).to_dict("records")
+            )
         if not records:
-            raise HistoryPlayCaptureError("successor play capture games manifest is empty")
+            raise HistoryPlayCaptureError(
+                "successor play capture games manifest is empty"
+            )
         return records
 
     def _planned_requests(self) -> list[dict[str, Any]]:
@@ -261,15 +267,22 @@ class HistoryPlayCaptureSet:
         ]
 
     def _completed(self) -> dict[str, str]:
-        capture_ids = completed_request_capture_ids(self.conn_url, self.ingestion_run_id)
+        capture_ids = completed_request_capture_ids(
+            self.conn_url, self.ingestion_run_id
+        )
         for request_sha, capture_id in capture_ids.items():
             capture = source_capture_by_id(self.conn_url, capture_id)
-            if capture.state != "registered" or source_request_sha(capture.request) != request_sha:
+            if (
+                capture.state != "registered"
+                or source_request_sha(capture.request) != request_sha
+            ):
                 raise HistoryPlayCaptureError("completed capture is not verified")
             read_source_capture(self.storage, capture)
         return capture_ids
 
-    def _attempt(self, request: Mapping[str, Any], request_sha: str) -> tuple[str, dict[str, Any]]:
+    def _attempt(
+        self, request: Mapping[str, Any], request_sha: str
+    ) -> tuple[str, dict[str, Any]]:
         policy = self.policy.retry_policy
         last_error: BaseException | None = None
         for _ in range(policy.max_attempts):
@@ -327,9 +340,14 @@ class HistoryPlayCaptureSet:
                     request_sha=request_sha,
                     attempt=attempt,
                     state="failed",
-                    error=exc if isinstance(exc, Exception) else RuntimeError(type(exc).__name__),
+                    error=exc
+                    if isinstance(exc, Exception)
+                    else RuntimeError(type(exc).__name__),
                 )
-                if not bool(getattr(exc, "retryable", True)) or attempt >= policy.max_attempts:
+                if (
+                    not bool(getattr(exc, "retryable", True))
+                    or attempt >= policy.max_attempts
+                ):
                     break
                 self.sleep(policy.delay(attempt))
         assert last_error is not None
@@ -342,7 +360,9 @@ class HistoryPlayCaptureSet:
         records: list[dict[str, Any]] = []
         for capture_id in capture_ids:
             capture = source_capture_by_id(self.conn_url, capture_id)
-            records.extend(read_source_capture(self.storage, capture).to_dict("records"))
+            records.extend(
+                read_source_capture(self.storage, capture).to_dict("records")
+            )
         if not records:
             raise HistoryPlayCaptureError("complete play capture set has no records")
         ingester.ingest_data(records)
@@ -376,7 +396,10 @@ class HistoryPlayCaptureSet:
                     and [entry.get("request_sha") for entry in existing_entries]
                     == expected_request_shas
                     and [entry.get("capture_id") for entry in existing_entries]
-                    == [completed.get(request_sha) for request_sha in expected_request_shas]
+                    == [
+                        completed.get(request_sha)
+                        for request_sha in expected_request_shas
+                    ]
                 ):
                     return existing
                 raise HistoryPlayCaptureError(
@@ -400,9 +423,15 @@ class HistoryPlayCaptureSet:
                         "content_sha256": capture.content_sha,
                         "object_sha256": capture.object_sha,
                         "row_count": capture.row_count,
-                        "returned_game_ids": metadata.get("returned_game_ids", result.get("returned_game_ids", [])),
-                        "missing_game_ids": metadata.get("missing_game_ids", result.get("missing_game_ids", [])),
-                        "extra_game_ids": metadata.get("extra_game_ids", result.get("extra_game_ids", [])),
+                        "returned_game_ids": metadata.get(
+                            "returned_game_ids", result.get("returned_game_ids", [])
+                        ),
+                        "missing_game_ids": metadata.get(
+                            "missing_game_ids", result.get("missing_game_ids", [])
+                        ),
+                        "extra_game_ids": metadata.get(
+                            "extra_game_ids", result.get("extra_game_ids", [])
+                        ),
                     }
                 )
             if len(completed) != len(stored_requests):
@@ -427,7 +456,9 @@ class HistoryPlayCaptureSet:
             payload["manifest_sha256"] = hashlib.sha256(
                 json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest()
-            _immutable_write(self.storage, self.manifest_uri, _manifest_payload(payload))
+            _immutable_write(
+                self.storage, self.manifest_uri, _manifest_payload(payload)
+            )
             finish_ingestion_run(self.conn_url, self.ingestion_run_id, succeeded=True)
             return payload
         except BaseException as exc:
@@ -445,7 +476,10 @@ def manifest_capture_ids(storage: StorageBackend, uri: str) -> list[str]:
     """Return the ordered, verified capture IDs from a complete R1 manifest."""
 
     raw = json.loads(storage.read_bytes(uri).decode("utf-8"))
-    if raw.get("contract_version") not in {MANIFEST_VERSION, "play-capture-set-v2"} or raw.get("state") != "complete":
+    if (
+        raw.get("contract_version") not in {MANIFEST_VERSION, "play-capture-set-v2"}
+        or raw.get("state") != "complete"
+    ):
         raise HistoryPlayCaptureError("play capture manifest is not complete")
     entries = raw.get("requests")
     if not isinstance(entries, list) or not entries:
@@ -473,7 +507,9 @@ def manifest_declared_missing_game_ids(
         or raw.get("state") != "complete"
         or manifest_season != season
     ):
-        raise HistoryPlayCaptureError("play capture manifest is incomplete or mismatched")
+        raise HistoryPlayCaptureError(
+            "play capture manifest is incomplete or mismatched"
+        )
     entries = raw.get("requests")
     if not isinstance(entries, list) or not entries:
         raise HistoryPlayCaptureError("play capture manifest has no request entries")
@@ -494,7 +530,9 @@ def manifest_declared_missing_game_ids(
                     f"play capture manifest {label} has an invalid game ID"
                 ) from exc
         if len(parsed) != len(set(parsed)):
-            raise HistoryPlayCaptureError(f"play capture manifest {label} has duplicates")
+            raise HistoryPlayCaptureError(
+                f"play capture manifest {label} has duplicates"
+            )
         return set(parsed)
 
     capture_ids: set[str] = set()
@@ -502,10 +540,14 @@ def manifest_declared_missing_game_ids(
     missing_all: set[int] = set()
     for entry in entries:
         if not isinstance(entry, Mapping):
-            raise HistoryPlayCaptureError("play capture manifest request entry is invalid")
+            raise HistoryPlayCaptureError(
+                "play capture manifest request entry is invalid"
+            )
         capture_id = str(entry.get("capture_id", ""))
         if not capture_id or capture_id in capture_ids:
-            raise HistoryPlayCaptureError("play capture manifest has invalid capture IDs")
+            raise HistoryPlayCaptureError(
+                "play capture manifest has invalid capture IDs"
+            )
         capture_ids.add(capture_id)
         request = entry.get("request")
         if not isinstance(request, Mapping) or not isinstance(
@@ -520,19 +562,27 @@ def manifest_declared_missing_game_ids(
                 "play capture manifest request season mismatches"
             ) from exc
         if request_season != season:
-            raise HistoryPlayCaptureError("play capture manifest request season mismatches")
+            raise HistoryPlayCaptureError(
+                "play capture manifest request season mismatches"
+            )
         expected = game_ids(
             parameters.get("expected_game_ids"), label="expected_game_ids"
         )
         if expected_all & expected:
-            raise HistoryPlayCaptureError("play capture manifest repeats expected game IDs")
+            raise HistoryPlayCaptureError(
+                "play capture manifest repeats expected game IDs"
+            )
         expected_all |= expected
         returned = game_ids(entry.get("returned_game_ids"), label="returned_game_ids")
         missing = game_ids(entry.get("missing_game_ids"), label="missing_game_ids")
         extra = game_ids(entry.get("extra_game_ids"), label="extra_game_ids")
         if extra:
-            raise HistoryPlayCaptureError("play capture manifest records extra game IDs")
+            raise HistoryPlayCaptureError(
+                "play capture manifest records extra game IDs"
+            )
         if returned & missing or returned | missing != expected:
-            raise HistoryPlayCaptureError("play capture manifest request coverage mismatches")
+            raise HistoryPlayCaptureError(
+                "play capture manifest request coverage mismatches"
+            )
         missing_all |= missing
     return missing_all

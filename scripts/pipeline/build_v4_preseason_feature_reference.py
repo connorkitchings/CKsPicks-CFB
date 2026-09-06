@@ -191,11 +191,13 @@ def _family_frame(
     )
     missing_keys = frozenset(
         (int(row.season), str(row.team))
-        for row in merged.loc[~complete_rows, ["season", "team"]].itertuples(index=False)
+        for row in merged.loc[~complete_rows, ["season", "team"]].itertuples(
+            index=False
+        )
     )
     declared_absences = DECLARED_RECONSTRUCTED_CONTEXT_ABSENCES.get(family, {})
-    expected_reconstructed_absences = (
-        not strict and missing_keys <= set(declared_absences)
+    expected_reconstructed_absences = not strict and missing_keys <= set(
+        declared_absences
     )
     eligible = (
         (values_complete or expected_reconstructed_absences)

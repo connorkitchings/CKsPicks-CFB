@@ -20,7 +20,9 @@ def _location_stability(
         return True, {"enabled": False}
     historical = (
         set(
-            load_season_lineage_policy(config.season_lineage_policy_path).historical_development_seasons
+            load_season_lineage_policy(
+                config.season_lineage_policy_path
+            ).historical_development_seasons
         )
         if config.is_successor_v2
         else set(range(2021, 2026))
@@ -169,7 +171,11 @@ def build_team_state_audit(
             pd.to_numeric(team_states["season"], errors="coerce").dropna().astype(int)
         )
         & (
-            set(load_season_lineage_policy(config.season_lineage_policy_path).forbidden_seasons)
+            set(
+                load_season_lineage_policy(
+                    config.season_lineage_policy_path
+                ).forbidden_seasons
+            )
             if config.is_successor_v2
             else {2019, 2020}
         ),

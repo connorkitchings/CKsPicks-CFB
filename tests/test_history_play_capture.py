@@ -50,7 +50,9 @@ def test_manifest_capture_ids_requires_one_complete_ordered_set():
 
     incomplete = {**complete, "state": "failed"}
     with pytest.raises(HistoryPlayCaptureError, match="not complete"):
-        manifest_capture_ids(_MemoryStorage({uri: json.dumps(incomplete).encode()}), uri)
+        manifest_capture_ids(
+            _MemoryStorage({uri: json.dumps(incomplete).encode()}), uri
+        )
 
     duplicate = {**complete, "requests": [{"capture_id": "one"}, {"capture_id": "one"}]}
     with pytest.raises(HistoryPlayCaptureError, match="invalid capture IDs"):
@@ -189,14 +191,18 @@ def test_stalled_worker_terminates_its_process_group(monkeypatch):
 
     monkeypatch.setattr("cks_picks_cfb.data.history_play_capture.os.killpg", killpg)
     policy = load_history_play_capture_policy()
-    policy = type(policy)(
-        **{**policy.__dict__, "worker_timeout_seconds": 0.001}
-    )
+    policy = type(policy)(**{**policy.__dict__, "worker_timeout_seconds": 0.001})
     request = {
         "provider": "cfbd",
         "entity": "plays",
         "endpoint": "PlaysApi.get_plays",
-        "parameters": {"year": 2015, "week": 1, "season_type": "regular", "classification": "fbs", "expected_game_ids": [1]},
+        "parameters": {
+            "year": 2015,
+            "week": 1,
+            "season_type": "regular",
+            "classification": "fbs",
+            "expected_game_ids": [1],
+        },
     }
     with pytest.raises(subprocess.TimeoutExpired):
         run_isolated_play_worker(request, policy=policy)

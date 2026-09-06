@@ -42,7 +42,9 @@ def _refs(payload: dict[str, Any]) -> dict[tuple[int, str], DatasetRef]:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment", choices=("preview", "production"), required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     parser.add_argument("--derived-ref-set-uri", required=True)
     parser.add_argument("--comparison-ref-set-uri", required=True)
     parser.add_argument("--report-uri", required=True)
@@ -62,13 +64,24 @@ def main(argv: list[str] | None = None) -> None:
         raise ValueError("Cross-lineage audit requires the closed R1 derived-ref set")
     successor_refs = _refs(successor)
     legacy_refs = _refs(legacy)
-    required = {(season, dataset) for season in COMPARISON_SEASONS for dataset in HARD_DATASETS}
+    required = {
+        (season, dataset) for season in COMPARISON_SEASONS for dataset in HARD_DATASETS
+    }
     if not required.issubset(legacy_refs):
-        raise ValueError("Legacy comparison ref set lacks required 2019/2021–2025 evidence")
+        raise ValueError(
+            "Legacy comparison ref set lacks required 2019/2021–2025 evidence"
+        )
     comparisons = []
-    checks = {"season_membership_ok": True, "game_identity_ok": True, "team_identity_ok": True, "scores_ok": True}
+    checks = {
+        "season_membership_ok": True,
+        "game_identity_ok": True,
+        "team_identity_ok": True,
+        "scores_ok": True,
+    }
     for season in COMPARISON_SEASONS:
-        current = {dataset: successor_refs[(season, dataset)] for dataset in HARD_DATASETS}
+        current = {
+            dataset: successor_refs[(season, dataset)] for dataset in HARD_DATASETS
+        }
         prior = {dataset: legacy_refs[(season, dataset)] for dataset in HARD_DATASETS}
         for dataset in HARD_DATASETS:
             require_dataset(current[dataset], dataset)
@@ -94,7 +107,8 @@ def main(argv: list[str] | None = None) -> None:
                 revisions[dataset] = {
                     "previous_content_sha": prior_ref.content_sha,
                     "successor_content_sha": current_ref.content_sha,
-                    "schema_changed": prior_ref.schema_version != current_ref.schema_version,
+                    "schema_changed": prior_ref.schema_version
+                    != current_ref.schema_version,
                     "content_changed": prior_ref.content_sha != current_ref.content_sha,
                 }
         comparisons.append(
@@ -108,10 +122,22 @@ def main(argv: list[str] | None = None) -> None:
         "seasons": comparisons,
     }
     report["all_checks_passed"] = all(checks.values())
-    _immutable_write(storage, args.report_uri, json.dumps(report, indent=2, sort_keys=True).encode())
-    print(json.dumps({"report_uri": args.report_uri, "all_checks_passed": report["all_checks_passed"]}, sort_keys=True))
+    _immutable_write(
+        storage, args.report_uri, json.dumps(report, indent=2, sort_keys=True).encode()
+    )
+    print(
+        json.dumps(
+            {
+                "report_uri": args.report_uri,
+                "all_checks_passed": report["all_checks_passed"],
+            },
+            sort_keys=True,
+        )
+    )
     if not report["all_checks_passed"]:
-        raise ValueError("Cross-lineage audit found incompatible game, team, score, or season evidence")
+        raise ValueError(
+            "Cross-lineage audit found incompatible game, team, score, or season evidence"
+        )
 
 
 if __name__ == "__main__":

@@ -72,7 +72,10 @@ def test_exact_legacy_archives_require_the_pinned_source_checksums():
     verified = find_and_verify_legacy_archives(
         source,
         config,
-        [_item("raw/games/year=2019/data.json", "games"), _item("raw/teams/year=2019/data.json", "teams")],
+        [
+            _item("raw/games/year=2019/data.json", "games"),
+            _item("raw/teams/year=2019/data.json", "teams"),
+        ],
     )
     assert [archive.entity for archive, _, _ in verified] == ["games", "teams"]
 
@@ -81,7 +84,10 @@ def test_exact_legacy_archives_require_the_pinned_source_checksums():
         find_and_verify_legacy_archives(
             source,
             altered,
-            [_item("raw/games/year=2019/data.json", "games"), _item("raw/teams/year=2019/data.json", "teams")],
+            [
+                _item("raw/games/year=2019/data.json", "games"),
+                _item("raw/teams/year=2019/data.json", "teams"),
+            ],
         )
 
 

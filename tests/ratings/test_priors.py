@@ -25,7 +25,9 @@ MEASUREMENTS = [
 ]
 
 
-def _terminal(season: int, teams: list[str], mean: float = 0.5, variance: float = 0.3) -> pd.DataFrame:
+def _terminal(
+    season: int, teams: list[str], mean: float = 0.5, variance: float = 0.3
+) -> pd.DataFrame:
     """Build a synthetic terminal measurement state DataFrame."""
     rows = []
     for team in teams:
@@ -327,7 +329,9 @@ def test_ewma_no_training_data_is_neutral():
 def test_ewma_never_uses_2020():
     """2020 must never contribute to EWMA weights."""
     t2019 = _terminal(2019, ["TeamA"], mean=0.5)
-    _terminal(2020, ["TeamA"], mean=99.9)  # should never be used; build to verify no crash
+    _terminal(
+        2020, ["TeamA"], mean=99.9
+    )  # should never be used; build to verify no crash
     t2021 = _terminal(2021, ["TeamA"], mean=0.5)
     training = {2019: t2019, 2021: t2021}
     # 2020 is not in training_terminal_states (policy enforces this upstream)
@@ -383,7 +387,9 @@ def test_context_candidates_reject_market_columns():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("candidate_id", [c for c in CANDIDATE_IDS if not c.startswith("continuity_")])
+@pytest.mark.parametrize(
+    "candidate_id", [c for c in CANDIDATE_IDS if not c.startswith("continuity_")]
+)
 def test_all_candidates_produce_valid_schema(candidate_id):
     teams = ["TeamA", "TeamB", "TeamC"]
     t2016 = _terminal(2016, teams, mean=0.3)

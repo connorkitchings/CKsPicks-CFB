@@ -142,7 +142,11 @@ def test_venues_accept_exact_source_request_ids_without_raw_games(monkeypatch):
 
     class FakeVenuesApi:
         def get_venues(self, **_kwargs):
-            return [SimpleNamespace(id=12), SimpleNamespace(id=34), SimpleNamespace(id=56)]
+            return [
+                SimpleNamespace(id=12),
+                SimpleNamespace(id=34),
+                SimpleNamespace(id=56),
+            ]
 
     monkeypatch.setattr(
         "cks_picks_cfb.data.venues.cfbd.VenuesApi", lambda _client: FakeVenuesApi()

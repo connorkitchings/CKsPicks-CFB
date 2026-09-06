@@ -113,7 +113,9 @@ def build_team_states(
         else None
     )
     if lineage is not None and tuple(seasons) != lineage.historical_development_seasons:
-        raise ValueError("Successor-v2 team states require the complete permitted corpus")
+        raise ValueError(
+            "Successor-v2 team states require the complete permitted corpus"
+        )
     for season in seasons:
         transition = lineage.prior_transition_for(season) if lineage else None
         prior_source_season = transition.source_season if transition else season - 1
@@ -255,9 +257,7 @@ def _append_state_group(
             terminal_mean, terminal_variance = terminal
             decay = config.offseason_rho**annual_decay_steps
             prior_mean = decay * terminal_mean
-            prior_variance = decay**2 * terminal_variance + (
-                1 - decay**2
-            )
+            prior_variance = decay**2 * terminal_variance + (1 - decay**2)
             prior_source, prior_flag = prior_source_season, None
         native = pd.to_numeric(
             pd.Series([row.get("adjusted_value")]), errors="coerce"

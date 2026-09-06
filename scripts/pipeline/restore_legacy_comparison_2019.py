@@ -56,7 +56,9 @@ def _committed_code_sha() -> str:
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     ).stdout.strip()
     if not head:
-        raise RuntimeError("Legacy comparison restoration requires a committed Git HEAD")
+        raise RuntimeError(
+            "Legacy comparison restoration requires a committed Git HEAD"
+        )
     for path in RESTORE_COMMIT_PATHS:
         tracked = subprocess.run(
             ["git", "ls-files", "--error-unmatch", path],
@@ -65,9 +67,18 @@ def _committed_code_sha() -> str:
             check=False,
         )
         if tracked.returncode:
-            raise RuntimeError(f"Legacy comparison implementation is not committed: {path}")
+            raise RuntimeError(
+                f"Legacy comparison implementation is not committed: {path}"
+            )
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all", "--", *RESTORE_COMMIT_PATHS],
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+            "--",
+            *RESTORE_COMMIT_PATHS,
+        ],
         capture_output=True,
         text=True,
         check=False,
@@ -102,7 +113,9 @@ def _source_set_payload(
 def _ref(storage, uri: str, dataset: str) -> dict[str, Any]:
     raw = json.loads(storage.read_bytes(uri).decode())
     ref = DatasetRef(**raw)
-    if ref.dataset != dataset or ref.uri.startswith("artifacts/research/rating-successor-v2/"):
+    if ref.dataset != dataset or ref.uri.startswith(
+        "artifacts/research/rating-successor-v2/"
+    ):
         raise ValueError(f"Invalid restored {dataset} comparison ref")
     manifest_uri = ref.uri.rsplit("/", 1)[0] + "/manifest.json"
     manifest = json.loads(storage.read_bytes(manifest_uri).decode())
@@ -150,7 +163,9 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--run-id", required=True)
-    parser.add_argument("--environment", choices=("preview", "production"), required=True)
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), required=True
+    )
     args = parser.parse_args(argv)
     if args.environment != "preview":
         raise ValueError("Legacy comparison restoration is Preview-only")
@@ -159,10 +174,14 @@ def main(argv: list[str] | None = None) -> None:
     if not args.as_of.endswith("Z"):
         raise ValueError("Legacy comparison restoration --as-of must be UTC Z time")
     if os.environ.get("CFB_STORAGE_BACKEND", "").lower() != "r2":
-        raise RuntimeError("Legacy comparison restoration requires CFB_STORAGE_BACKEND=r2")
+        raise RuntimeError(
+            "Legacy comparison restoration requires CFB_STORAGE_BACKEND=r2"
+        )
     target = resolve_runtime_target("preview")
     if not target.database_url:
-        raise RuntimeError("Legacy comparison restoration requires PREVIEW_DATABASE_URL")
+        raise RuntimeError(
+            "Legacy comparison restoration requires PREVIEW_DATABASE_URL"
+        )
     code_sha = _committed_code_sha()
     source = get_source_storage()
     storage = get_storage(environment="preview")
