@@ -41,6 +41,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   its corrected rerun.
 - [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
   — **In Progress;** first corrects Phase 1, then consumes only the corrected findings.
+- [Phase 2c materialization and ref-set closure](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
+  — **Draft.** Hardens the committed runner, materializes the exact ten-season
+  Preview corpus, and publishes the ref set required before Phase 2d.
 - [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
   — Approved; consumes certified Phase 2 inputs.
 - [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
