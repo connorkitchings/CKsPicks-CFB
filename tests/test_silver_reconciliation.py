@@ -12,6 +12,7 @@ from cks_picks_cfb.data.reconciliation import (
 from cks_picks_cfb.data.silver import (
     SilverValidationError,
     build_silver_version,
+    normalize_fbs_involved_games,
     normalize_games,
     normalize_legacy_market_references,
     normalize_market_quotes,
@@ -58,6 +59,66 @@ def test_silver_games_enforces_both_sides_are_fbs():
     )
     assert games["game_id"].tolist() == [1]
     assert games["week"].tolist() == [0]
+
+
+def test_research_schedule_preserves_fbs_fcs_and_unresolved_and_rejects_2020():
+    base = {
+        "season": 2025,
+        "week": 1,
+        "start_date": "2025-08-30T16:00:00Z",
+        "home_team": "A",
+        "season_type": "regular",
+    }
+    result = normalize_fbs_involved_games(
+        [
+            {
+                **base,
+                "id": 1,
+                "away_team": "B",
+                "home_classification": "fbs",
+                "away_classification": "fbs",
+            },
+            {
+                **base,
+                "id": 2,
+                "away_team": "C",
+                "home_classification": "fbs",
+                "away_classification": "fcs",
+            },
+            {
+                **base,
+                "id": 3,
+                "away_team": "D",
+                "home_classification": "fbs",
+                "away_classification": None,
+            },
+            {
+                **base,
+                "id": 4,
+                "away_team": "E",
+                "home_classification": "fcs",
+                "away_classification": "fcs",
+            },
+        ]
+    )
+    assert result.set_index("game_id")["population"].to_dict() == {
+        1: "fbs_fbs",
+        2: "fbs_fcs",
+        3: "unresolved",
+    }
+    with pytest.raises(SilverValidationError, match="2020"):
+        normalize_fbs_involved_games(
+            [
+                {
+                    **base,
+                    "season": 2020,
+                    "id": 5,
+                    "away_team": "B",
+                    "home_classification": "fbs",
+                    "away_classification": "fbs",
+                }
+            ]
+        )
 
 
 def test_silver_plays_rejects_duplicates_and_unknown_games():

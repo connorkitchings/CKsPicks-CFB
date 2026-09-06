@@ -64,6 +64,25 @@ SILVER_CONTRACTS: dict[str, SilverContract] = {
         ),
         ("season", "game_id"),
     ),
+    "fbs_involved_games": SilverContract(
+        "fbs_involved_games",
+        "fbs_involved_games_v1",
+        frozenset(
+            {
+                "season",
+                "game_id",
+                "week",
+                "provider_week",
+                "kickoff_utc",
+                "home_team",
+                "away_team",
+                "season_type",
+                "population",
+                "classification_unresolved",
+            }
+        ),
+        ("season", "game_id"),
+    ),
     "schedule_week_policy": SilverContract(
         "schedule_week_policy",
         "schedule_week_policy_v1",

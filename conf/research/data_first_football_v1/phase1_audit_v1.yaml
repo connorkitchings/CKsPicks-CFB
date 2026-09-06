@@ -1,6 +1,7 @@
 schema_version: data_first_phase1_audit_v1
 environment: preview
 output_root: artifacts/research/data-first-football-v1/phase1
+prior_audit_prefix: artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2
 development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 forbidden_seasons: [2020]
 season_types: [regular, postseason]

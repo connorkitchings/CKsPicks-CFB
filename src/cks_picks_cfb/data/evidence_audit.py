@@ -26,6 +26,15 @@ FORBIDDEN_SEASONS = (2020,)
 OUTPUT_ROOT = "artifacts/research/data-first-football-v1/phase1/"
 
 _REF_KEYS = {"dataset", "version_id", "schema_version", "content_sha", "uri"}
+_JSON_LINK_HINTS = (
+    "manifest",
+    "ref",
+    "report",
+    "selection",
+    "prediction",
+    "evidence",
+    "coverage",
+)
 _GAME_ALIASES = {
     "id": "game_id",
     "year": "season",
@@ -121,6 +130,74 @@ def extract_dataset_refs(value: Any) -> list[DatasetRef]:
 
     visit(value)
     return [found[key] for key in sorted(found)]
+
+
+def extract_json_links(value: Any) -> list[str]:
+    """Find explicit immutable JSON links without treating prose as lineage."""
+    found: set[str] = set()
+
+    def visit(item: Any, key: str = "") -> None:
+        if isinstance(item, Mapping):
+            for child_key, child in item.items():
+                normalized = str(child_key).casefold()
+                visit(child, key if normalized in {"uri", "path"} else normalized)
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child, key)
+        elif (
+            isinstance(item, str)
+            and item.endswith(".json")
+            and item.startswith(("artifacts/", "lake/"))
+            and any(hint in key for hint in _JSON_LINK_HINTS)
+        ):
+            found.add(item)
+
+    visit(value)
+    return sorted(found)
+
+
+def transitive_descendants(
+    version_id: str, edges: Sequence[Mapping[str, str]]
+) -> list[str]:
+    """Return all catalog children that transitively consume a dataset."""
+    children: dict[str, set[str]] = {}
+    for edge in edges:
+        children.setdefault(str(edge["parent_version_id"]), set()).add(
+            str(edge["child_version_id"])
+        )
+    seen: set[str] = set()
+    pending = list(children.get(version_id, ()))
+    while pending:
+        child = pending.pop()
+        if child in seen:
+            continue
+        seen.add(child)
+        pending.extend(children.get(child, ()))
+    return sorted(seen)
+
+
+def propagate_timing_classes(
+    own: Mapping[str, str], edges: Sequence[Mapping[str, str]]
+) -> dict[str, str]:
+    """Propagate the least trustworthy timing class through dataset lineage."""
+    rank = {"authentic_pregame": 0, "reconstructed": 1, "unresolved": 2}
+    result = {str(key): str(value) for key, value in own.items()}
+    for value in result.values():
+        if value not in rank:
+            raise ValueError(f"unsupported timing class: {value}")
+    changed = True
+    while changed:
+        changed = False
+        for edge in edges:
+            child = str(edge["child_version_id"])
+            parent = str(edge["parent_version_id"])
+            inherited = result.get(parent, "unresolved")
+            current = result.get(child, "unresolved")
+            worst = inherited if rank[inherited] > rank[current] else current
+            if result.get(child) != worst:
+                result[child] = worst
+                changed = True
+    return result
 
 
 def lineage_cycles(edges: Sequence[Mapping[str, str]]) -> list[list[str]]:
@@ -361,6 +438,11 @@ def add_team_experience(schedule: pd.DataFrame) -> pd.DataFrame:
     frame["matchup_max_completed"] = frame[
         ["home_completed_before", "away_completed_before"]
     ].max(axis=1)
+    frame["home_experience_complete"] = frame["home_classification_resolved"].eq("fbs")
+    frame["away_experience_complete"] = frame["away_classification_resolved"].eq("fbs")
+    frame["matchup_experience_complete"] = frame[
+        ["home_experience_complete", "away_experience_complete"]
+    ].all(axis=1)
     return frame
 
 
@@ -654,6 +736,154 @@ def recompute_prediction_metrics(frame: pd.DataFrame) -> pd.DataFrame:
             }
         )
     return pd.DataFrame(rows)
+
+
+def attach_prediction_labels(
+    predictions: pd.DataFrame, outcomes: pd.DataFrame
+) -> pd.DataFrame:
+    """Attach immutable game labels while refusing conflicting outcome rows."""
+    if "game_id" not in predictions or "game_id" not in outcomes:
+        return predictions.copy()
+    required = {"home_points", "away_points"}
+    if not required.issubset(outcomes):
+        return predictions.copy()
+    labels = outcomes[["game_id", "home_points", "away_points"]].copy()
+    labels["home_points"] = pd.to_numeric(labels["home_points"], errors="coerce")
+    labels["away_points"] = pd.to_numeric(labels["away_points"], errors="coerce")
+    consistent = labels.groupby("game_id", dropna=False).filter(
+        lambda group: group[["home_points", "away_points"]].drop_duplicates().shape[0]
+        == 1
+    )
+    consistent = consistent.drop_duplicates("game_id")
+    consistent["actual_margin"] = consistent["home_points"] - consistent["away_points"]
+    consistent["actual_spread"] = consistent["actual_margin"]
+    consistent["actual_total"] = consistent["home_points"] + consistent["away_points"]
+    result = predictions.copy()
+    if {"target", "prediction"}.issubset(result) and "actual" not in result:
+        result = result.merge(
+            consistent[["game_id", "actual_margin", "actual_total"]],
+            on="game_id",
+            how="left",
+            validate="many_to_one",
+        )
+        result["actual"] = np.where(
+            result["target"].astype(str).str.casefold().isin({"margin", "spread"}),
+            result["actual_margin"],
+            np.where(
+                result["target"].astype(str).str.casefold().eq("total"),
+                result["actual_total"],
+                np.nan,
+            ),
+        )
+    else:
+        additions = ["game_id"]
+        if any(name in result for name in ("predicted_margin", "margin_prediction")):
+            additions.append("actual_margin")
+        if any(name in result for name in ("predicted_spread", "spread_prediction")):
+            additions.append("actual_spread")
+        if any(name in result for name in ("predicted_total", "total_prediction")):
+            additions.append("actual_total")
+        if len(additions) > 1:
+            result = result.merge(
+                consistent[additions], on="game_id", how="left", validate="many_to_one"
+            )
+    return result
+
+
+def reported_metric_claims(value: Any) -> list[dict[str, Any]]:
+    """Extract MAE claims only when their evaluation slice is explicit."""
+    identity_keys = (
+        "candidate_id",
+        "family",
+        "design_id",
+        "season",
+        "fold",
+        "target",
+        "regime",
+        "population",
+    )
+    claims: list[dict[str, Any]] = []
+
+    def visit(item: Any) -> None:
+        if isinstance(item, Mapping):
+            identity = {key: item[key] for key in identity_keys if key in item}
+            for key, child in item.items():
+                if (
+                    str(key).casefold().endswith("mae")
+                    and isinstance(child, (int, float))
+                    and "target" in identity
+                    and any(
+                        name in identity
+                        for name in ("candidate_id", "family", "design_id")
+                    )
+                ):
+                    claims.append(
+                        {
+                            **identity,
+                            "metric_name": str(key),
+                            "reported": float(child),
+                        }
+                    )
+            for child in item.values():
+                visit(child)
+        elif isinstance(item, (list, tuple)):
+            for child in item:
+                visit(child)
+
+    visit(value)
+    return claims
+
+
+def match_reported_metrics(
+    recomputed: pd.DataFrame,
+    claims: Sequence[Mapping[str, Any]],
+    *,
+    tolerance: float = 1e-9,
+) -> tuple[bool, list[dict[str, Any]]]:
+    """Match each recomputed MAE to the same explicit evaluation slice."""
+    if recomputed.empty or not claims:
+        return False, []
+    dimensions = (
+        "candidate_id",
+        "family",
+        "design_id",
+        "season",
+        "fold",
+        "target",
+        "regime",
+        "population",
+    )
+    comparisons = []
+    for row in recomputed.to_dict("records"):
+        candidates = []
+        for claim in claims:
+            shared = [key for key in dimensions if key in row and key in claim]
+            if "target" not in shared or not any(
+                key in shared for key in ("candidate_id", "family", "design_id")
+            ):
+                continue
+            if all(str(row[key]) == str(claim[key]) for key in shared):
+                candidates.append(claim)
+        exact = [
+            claim
+            for claim in candidates
+            if math.isclose(
+                float(row["mae"]),
+                float(claim["reported"]),
+                rel_tol=1e-9,
+                abs_tol=tolerance,
+            )
+        ]
+        comparisons.append(
+            {
+                "slice": {key: row[key] for key in dimensions if key in row},
+                "recomputed_mae": row.get("mae"),
+                "matched_claim_count": len(exact),
+            }
+        )
+    return bool(comparisons) and all(
+        row["matched_claim_count"] == 1 for row in comparisons
+    ), comparisons
 
 
 def metrics_match(

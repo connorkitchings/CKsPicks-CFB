@@ -12,20 +12,26 @@ from cks_picks_cfb.data.evidence_audit import (
     AUDIT_SCHEMA_VERSION,
     ImmutableAuditWriter,
     add_team_experience,
+    attach_prediction_labels,
     canonical_json,
     classify_schedule,
     extract_dataset_refs,
+    extract_json_links,
     frame_audit,
     join_cardinality_audit,
     lineage_cycles,
+    match_reported_metrics,
     metrics_match,
     numeric_semantics_audit,
     pregame_timing_audit,
+    propagate_timing_classes,
     recompute_prediction_metrics,
+    reported_metric_claims,
     require_resolved_manifest,
     result_disposition,
     sha256,
     stage_coverage,
+    transitive_descendants,
     validate_output_prefix,
 )
 from cks_picks_cfb.data.storage import StorageBackend
@@ -167,6 +173,7 @@ def test_team_experience_uses_each_teams_own_completed_games_and_byes():
     assert bool(result.loc[2, "asymmetric_experience"])
     assert result.loc[3, "away_completed_before"] == 0
     assert result.loc[3, "matchup_max_completed"] == 1
+    assert not bool(result.loc[2, "matchup_experience_complete"])
 
 
 def test_stage_coverage_reconciles_exclusions_and_preserves_cancellations():
@@ -279,6 +286,25 @@ def test_prediction_metrics_distinguish_stacked_rows_unique_games_and_nonfinite(
     assert result["finite_unique_games"] == 0
 
 
+def test_prediction_labels_join_by_game_and_reject_conflicting_outcomes():
+    predictions = pd.DataFrame(
+        [
+            {"game_id": 1, "candidate_id": "a", "target": "margin", "prediction": 3.0},
+            {"game_id": 2, "candidate_id": "a", "target": "total", "prediction": 40.0},
+        ]
+    )
+    outcomes = pd.DataFrame(
+        [
+            {"game_id": 1, "home_points": 24, "away_points": 17},
+            {"game_id": 2, "home_points": 21, "away_points": 20},
+            {"game_id": 2, "home_points": 28, "away_points": 20},
+        ]
+    )
+    labeled = attach_prediction_labels(predictions, outcomes)
+    assert labeled.loc[labeled["game_id"].eq(1), "actual"].iloc[0] == 7
+    assert pd.isna(labeled.loc[labeled["game_id"].eq(2), "actual"].iloc[0])
+
+
 @pytest.mark.parametrize(
     ("kwargs", "expected"),
     [
@@ -360,6 +386,65 @@ def test_lineage_ref_extraction_cycles_and_sealed_manifest_identity():
         require_resolved_manifest(manifest)
 
 
+def test_linked_manifests_and_transitive_descendants_are_explicit():
+    payload = {
+        "derived_ref_set_uri": "artifacts/research/run/derived-ref-set.json",
+        "notes": "artifacts/research/run/not-lineage.json",
+        "report": {"uri": "artifacts/research/run/report.json"},
+    }
+    assert extract_json_links(payload) == [
+        "artifacts/research/run/derived-ref-set.json",
+        "artifacts/research/run/report.json",
+    ]
+    edges = [
+        {"child_version_id": "b", "parent_version_id": "a"},
+        {"child_version_id": "c", "parent_version_id": "b"},
+        {"child_version_id": "d", "parent_version_id": "a"},
+    ]
+    assert transitive_descendants("a", edges) == ["b", "c", "d"]
+    assert propagate_timing_classes(
+        {"a": "reconstructed", "b": "authentic_pregame", "c": "authentic_pregame"},
+        edges,
+    ) == {
+        "a": "reconstructed",
+        "b": "reconstructed",
+        "c": "reconstructed",
+        "d": "unresolved",
+    }
+
+
+def test_metric_claims_require_and_match_the_same_slice():
+    report = {
+        "unscoped_mae": 1.0,
+        "rows": [
+            {
+                "candidate_id": "ridge",
+                "target": "margin",
+                "fold": 2024,
+                "mae": 2.0,
+            },
+            {
+                "candidate_id": "other",
+                "target": "margin",
+                "fold": 2024,
+                "mae": 9.0,
+            },
+        ],
+    }
+    claims = reported_metric_claims(report)
+    assert len(claims) == 2
+    recomputed = pd.DataFrame(
+        [{"candidate_id": "ridge", "target": "margin", "fold": 2024, "mae": 2.0}]
+    )
+    matched, comparisons = match_reported_metrics(recomputed, claims)
+    assert matched
+    assert comparisons[0]["matched_claim_count"] == 1
+    matched, _ = match_reported_metrics(
+        recomputed.assign(candidate_id="other", mae=2.0), claims
+    )
+    assert not matched
+
+
 def test_immutable_writer_is_idempotent_and_namespace_constrained():
     storage = MemoryStorage()
     writer = ImmutableAuditWriter(storage, run_id="run-1")
@@ -375,11 +460,33 @@ def test_immutable_writer_is_idempotent_and_namespace_constrained():
 
 
 def test_canonical_columns_prefers_canonical_and_survives_duplicate_aliases():
-    from scripts.research.audit_data_first_evidence import _canonical_columns
+    from scripts.research.audit_data_first_evidence import (
+        _canonical_columns,
+        _key_columns,
+    )
 
     aliases = {"year": "season", "id": "game_id"}
     alias_only = _canonical_columns(pd.DataFrame({"year": [2025], "id": [7]}), aliases)
     assert list(alias_only.columns) == ["season", "game_id"]
+    preseason = pd.DataFrame(
+        {
+            "season": [2025, 2025],
+            "team": ["Alpha", "Alpha"],
+            "as_of": ["2025-01-01", "2025-02-01"],
+        }
+    )
+    keys = _key_columns(
+        "preseason_team_inputs", "preseason_inputs_v1", preseason, require_declared=True
+    )
+    assert keys == ["season", "team", "as_of"]
+    assert not preseason.duplicated(keys).any()
+    with pytest.raises(ValueError, match="as_of"):
+        _key_columns(
+            "preseason_team_inputs",
+            "preseason_inputs_v1",
+            preseason.drop(columns="as_of"),
+            require_declared=True,
+        )
     canonical_only = _canonical_columns(
         pd.DataFrame({"season": [2025], "game_id": [7]}), aliases
     )

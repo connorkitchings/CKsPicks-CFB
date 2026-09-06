@@ -116,6 +116,69 @@ def normalize_games(
     )
 
 
+def normalize_fbs_involved_games(
+    records: Sequence[Mapping[str, Any]], *, week_policy: pd.DataFrame | None = None
+) -> pd.DataFrame:
+    """Build the research schedule denominator without narrowing to FBS-FBS."""
+    frame = _rename_common(pd.DataFrame.from_records(records))
+    required = SILVER_CONTRACTS["fbs_involved_games"].required_columns | {
+        "home_classification",
+        "away_classification",
+    }
+    missing = sorted(
+        required
+        - (
+            set(frame.columns)
+            | {"provider_week", "population", "classification_unresolved"}
+        )
+    )
+    if missing:
+        raise SilverValidationError(f"fbs_involved_games missing columns: {missing}")
+    frame["kickoff_utc"] = pd.to_datetime(
+        frame["kickoff_utc"], utc=True, errors="raise"
+    )
+    frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
+    if frame["season"].eq(2020).any():
+        raise SilverValidationError("fbs_involved_games rejects forbidden 2020 rows")
+    frame["week"] = pd.to_numeric(frame["week"], errors="raise").astype(int)
+    frame["provider_week"] = frame["week"]
+    home = frame["home_classification"].astype("string").str.casefold()
+    away = frame["away_classification"].astype("string").str.casefold()
+    known_fbs = home.eq("fbs") | away.eq("fbs")
+    unresolved = home.isna() | away.isna()
+    frame["population"] = "excluded_non_fbs"
+    frame.loc[known_fbs & home.eq("fbs") & away.eq("fbs"), "population"] = "fbs_fbs"
+    frame.loc[known_fbs & ~unresolved & ~home.eq(away), "population"] = "fbs_fcs"
+    frame.loc[unresolved, "population"] = "unresolved"
+    frame["classification_unresolved"] = unresolved
+    frame["season_type"] = frame["season_type"].astype(str).str.casefold()
+    frame = frame[frame["population"].isin({"fbs_fbs", "fbs_fcs", "unresolved"})].copy()
+    if frame.empty:
+        raise SilverValidationError(
+            "fbs_involved_games contains no target or unresolved rows"
+        )
+    if week_policy is not None:
+        policy = week_policy[["season", "game_id", "provider_week", "canonical_week"]]
+        frame = frame.merge(
+            policy,
+            on=["season", "game_id", "provider_week"],
+            how="left",
+            validate="many_to_one",
+        )
+        if frame["canonical_week"].isna().any():
+            raise SilverValidationError(
+                "schedule week policy does not cover fbs_involved_games"
+            )
+        frame["week"] = frame.pop("canonical_week").astype(int)
+    if frame.duplicated(["season", "game_id"]).any():
+        raise SilverValidationError(
+            "fbs_involved_games contains duplicate season/game_id rows"
+        )
+    return frame.sort_values(["season", "kickoff_utc", "game_id"]).reset_index(
+        drop=True
+    )
+
+
 def normalize_plays(
     records: Sequence[Mapping[str, Any]], *, games: pd.DataFrame | None = None
 ) -> pd.DataFrame:
@@ -637,6 +700,7 @@ NORMALIZERS: dict[str, Callable[..., pd.DataFrame]] = {
     "teams": normalize_teams,
     "venues": normalize_venues,
     "games": normalize_games,
+    "fbs_involved_games": normalize_fbs_involved_games,
     "game_outcomes": normalize_game_outcomes,
     "team_aliases": normalize_team_aliases,
     "schedule_revisions": normalize_games,

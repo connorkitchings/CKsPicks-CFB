@@ -1,0 +1,51 @@
+name: Data-first pregame capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: Active season
+        required: true
+        default: "2026"
+  schedule:
+    - cron: "0 12 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-first-pregame-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    if: github.event_name == 'workflow_dispatch' || vars.CFB_DATA_FIRST_CAPTURE_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CFB_STORAGE_BACKEND: r2
+      CFB_R2_PREVIEW_BUCKET: ${{ secrets.CFB_R2_PREVIEW_BUCKET }}
+      CFB_R2_PREVIEW_ACCOUNT_ID: ${{ secrets.CFB_R2_PREVIEW_ACCOUNT_ID }}
+      CFB_R2_PREVIEW_ACCESS_KEY: ${{ secrets.CFB_R2_PREVIEW_ACCESS_KEY }}
+      CFB_R2_PREVIEW_SECRET_KEY: ${{ secrets.CFB_R2_PREVIEW_SECRET_KEY }}
+      PREVIEW_DATABASE_URL: ${{ secrets.PREVIEW_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Capture existing pregame sources
+        run: >-
+          PYTHONPATH=src:. uv run python scripts/research/capture_data_first_phase2.py
+          --kind pregame
+          --mode apply
+          --run-id github-${{ github.run_id }}-${{ github.run_attempt }}
+          --season ${{ inputs.season || '2026' }}
+          --max-requests 7
+          --expected-code-sha ${{ github.sha }}

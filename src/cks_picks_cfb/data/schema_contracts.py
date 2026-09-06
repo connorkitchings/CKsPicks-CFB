@@ -86,6 +86,18 @@ _SILVER_REQUIRED: dict[str, tuple[str, ...]] = {
         "home_team",
         "away_team",
     ),
+    "fbs_involved_games": (
+        "season",
+        "game_id",
+        "week",
+        "provider_week",
+        "kickoff_utc",
+        "home_team",
+        "away_team",
+        "season_type",
+        "population",
+        "classification_unresolved",
+    ),
     "schedule_week_policy": (
         "season",
         "game_id",
@@ -134,6 +146,7 @@ _SILVER_KEYS: dict[str, tuple[str, ...]] = {
     "venues": ("venue_id",),
     "schedule_revisions": ("season", "game_id", "captured_at"),
     "games": ("season", "game_id"),
+    "fbs_involved_games": ("season", "game_id"),
     "schedule_week_policy": ("season", "game_id"),
     "game_outcomes": ("season", "game_id"),
     "plays": ("game_id", "play_id"),
@@ -516,6 +529,7 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
                 "exact_replay_eligible",
                 "grading_eligible",
                 "lean_eligible",
+                "classification_unresolved",
             }
         )
         timestamps = tuple(
@@ -525,11 +539,15 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             or c
             in {"kickoff_utc", "as_of", "observed_at", "captured_at", "approved_at"}
         )
-        allowed = (
-            {"timestamp_status": ("missing_authentic_timestamp",)}
-            if dataset == "legacy_market_references"
-            else {}
-        )
+        if dataset == "legacy_market_references":
+            allowed = {"timestamp_status": ("missing_authentic_timestamp",)}
+        elif dataset == "fbs_involved_games":
+            allowed = {
+                "population": ("fbs_fbs", "fbs_fcs", "unresolved"),
+                "season_type": ("regular", "postseason"),
+            }
+        else:
+            allowed = {}
         return DatasetSchema(
             dataset,
             schema_version,

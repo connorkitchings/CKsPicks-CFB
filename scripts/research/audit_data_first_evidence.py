@@ -25,20 +25,26 @@ from cks_picks_cfb.data.evidence_audit import (
     DEVELOPMENT_SEASONS,
     ImmutableAuditWriter,
     add_team_experience,
+    attach_prediction_labels,
     canonical_json,
     classify_schedule,
     extract_dataset_refs,
+    extract_json_links,
     frame_audit,
     issue,
     join_cardinality_audit,
     lineage_cycles,
+    match_reported_metrics,
     numeric_semantics_audit,
     pregame_timing_audit,
+    propagate_timing_classes,
     recompute_prediction_metrics,
+    reported_metric_claims,
     require_resolved_manifest,
     result_disposition,
     sha256,
     stage_coverage,
+    transitive_descendants,
 )
 from cks_picks_cfb.data.lake import (
     DatasetRef,
@@ -100,6 +106,13 @@ def _read_json(storage: ReadOnlyStorage, uri: str) -> tuple[dict[str, Any], byte
     if not isinstance(value, dict):
         raise ValueError(f"evidence root is not a JSON object: {uri}")
     return value, payload
+
+
+def _dataset_manifest_uri(ref: DatasetRef) -> str:
+    suffix = "/data.parquet"
+    if not ref.uri.endswith(suffix):
+        raise ValueError(f"dataset URI has no canonical manifest location: {ref.uri}")
+    return f"{ref.uri[: -len(suffix)]}/manifest.json"
 
 
 def _catalog_dataset(cur, version_id: str) -> dict[str, Any] | None:
@@ -219,6 +232,66 @@ def resolve_evidence(
     initial_refs: dict[str, DatasetRef] = {}
     root_versions: dict[str, list[str]] = {}
     blockers: list[dict[str, Any]] = []
+    registration_gaps: list[dict[str, Any]] = []
+    linked_documents: dict[str, dict[str, Any]] = {}
+    document_cache: dict[str, tuple[dict[str, Any], bytes]] = {}
+
+    def add_ref(ref: DatasetRef, *, root_id: str, document_uri: str) -> None:
+        existing = initial_refs.get(ref.version_id)
+        if existing is not None and existing != ref:
+            blockers.append(
+                {
+                    "version_id": ref.version_id,
+                    "error": "conflicting immutable dataset references",
+                    "root_id": root_id,
+                    "document_uri": document_uri,
+                }
+            )
+            return
+        initial_refs[ref.version_id] = ref
+        linked_documents.setdefault(document_uri, {}).setdefault("root_ids", set()).add(
+            root_id
+        )
+        linked_documents[document_uri].setdefault("dataset_versions", set()).add(
+            ref.version_id
+        )
+
+    def walk_document(
+        payload: dict[str, Any], *, root_id: str, document_uri: str
+    ) -> set[str]:
+        versions: set[str] = set()
+        pending = [(document_uri, payload)]
+        visited: set[str] = set()
+        while pending:
+            uri, document = pending.pop()
+            if uri in visited:
+                continue
+            visited.add(uri)
+            entry = linked_documents.setdefault(uri, {})
+            entry.setdefault("root_ids", set()).add(root_id)
+            entry.setdefault("dataset_versions", set())
+            for ref in extract_dataset_refs(document):
+                add_ref(ref, root_id=root_id, document_uri=uri)
+                versions.add(ref.version_id)
+            for link in extract_json_links(document):
+                try:
+                    linked, raw = document_cache.get(link) or _read_json(reader, link)
+                    document_cache[link] = (linked, raw)
+                    linked_documents.setdefault(link, {}).update(
+                        {"sha256": sha256(raw), "state": "resolved"}
+                    )
+                    pending.append((link, linked))
+                except Exception as exc:
+                    blockers.append(
+                        {
+                            "root_id": root_id,
+                            "document_uri": uri,
+                            "linked_uri": link,
+                            "error_type": type(exc).__name__,
+                            "error": str(exc),
+                        }
+                    )
+        return versions
 
     for spec in config["roots"]:
         root_id = str(spec["root_id"])
@@ -236,10 +309,9 @@ def resolve_evidence(
                 raise ValueError(
                     f"root checksum mismatch: {actual_sha} != {expected_sha}"
                 )
-            refs = extract_dataset_refs(payload)
-            root_versions[root_id] = [ref.version_id for ref in refs]
-            for ref in refs:
-                initial_refs[ref.version_id] = ref
+            root_versions[root_id] = sorted(
+                walk_document(payload, root_id=root_id, document_uri=location)
+            )
             roots.append(
                 {
                     "root_id": root_id,
@@ -282,13 +354,104 @@ def resolve_evidence(
                     continue
                 catalog_row = _catalog_dataset(cur, version_id)
                 if not catalog_row:
-                    blockers.append(
-                        {
+                    ref = initial_refs.get(version_id)
+                    if ref is None:
+                        blockers.append(
+                            {
+                                "version_id": version_id,
+                                "error": "catalog registration and exact reference missing",
+                            }
+                        )
+                        continue
+                    try:
+                        frame = read_dataset(reader, ref)
+                        manifest_uri = _dataset_manifest_uri(ref)
+                        manifest = None
+                        if reader.exists(manifest_uri):
+                            manifest, _ = _read_json(reader, manifest_uri)
+                            for key in (
+                                "dataset",
+                                "version_id",
+                                "schema_version",
+                                "content_sha",
+                                "uri",
+                            ):
+                                if str(manifest.get(key)) != str(getattr(ref, key)):
+                                    raise ValueError(f"manifest/ref mismatch: {key}")
+                        registration_gaps.append(
+                            {
+                                "version_id": version_id,
+                                "dataset": ref.dataset,
+                                "uri": ref.uri,
+                                "manifest_uri": manifest_uri if manifest else None,
+                                "object_state": "checksum_verified",
+                            }
+                        )
+                        catalog_row = {
                             "version_id": version_id,
-                            "error": "catalog registration missing",
+                            "dataset": ref.dataset,
+                            "tier": ref.uri.split("/", 2)[1]
+                            if ref.uri.startswith("lake/")
+                            else "research",
+                            "schema_version": ref.schema_version,
+                            "content_sha": ref.content_sha,
+                            "uri": ref.uri,
+                            "manifest_uri": manifest_uri if manifest else None,
+                            "row_count": int(len(frame)),
+                            "partitions": dict(
+                                (manifest or {}).get("partitions") or {}
+                            ),
+                            "as_of": (manifest or {}).get("as_of"),
+                            "code_sha": (manifest or {}).get("code_sha"),
+                            "config_sha": (manifest or {}).get("config_sha"),
+                            "state": "unregistered_object_verified",
+                            "identity_version": (manifest or {}).get(
+                                "identity_version", "unknown"
+                            ),
+                            "schema_sha": (manifest or {}).get("schema_sha"),
+                            "parent_versions": list(
+                                (manifest or {}).get("parent_versions") or []
+                            ),
+                            "source_capture_ids": list(
+                                (manifest or {}).get("source_capture_ids") or []
+                            ),
+                            "quality_results": [],
                         }
-                    )
-                    continue
+                        datasets[version_id] = catalog_row
+                        for parent in catalog_row["parent_versions"]:
+                            edges.append(
+                                {
+                                    "child_version_id": version_id,
+                                    "parent_version_id": str(parent),
+                                }
+                            )
+                            if parent not in datasets:
+                                queue.append(str(parent))
+                        for capture_id in catalog_row["source_capture_ids"]:
+                            if capture_id in captures:
+                                continue
+                            capture = _catalog_capture(cur, str(capture_id))
+                            if capture is None:
+                                blockers.append(
+                                    {
+                                        "capture_id": str(capture_id),
+                                        "version_id": version_id,
+                                        "error": "catalog capture missing",
+                                    }
+                                )
+                            else:
+                                captures[str(capture_id)] = capture
+                        continue
+                    except Exception as exc:
+                        blockers.append(
+                            {
+                                "version_id": version_id,
+                                "uri": ref.uri,
+                                "error_type": type(exc).__name__,
+                                "error": f"unregistered dataset object invalid: {exc}",
+                            }
+                        )
+                        continue
                 ref = initial_refs.get(version_id)
                 if ref:
                     comparisons = {
@@ -369,6 +532,19 @@ def resolve_evidence(
             edges, key=lambda row: (row["child_version_id"], row["parent_version_id"])
         ),
         "source_captures": [captures[key] for key in sorted(captures)],
+        "linked_documents": [
+            {
+                "uri": uri,
+                **{
+                    key: sorted(value) if isinstance(value, set) else value
+                    for key, value in linked_documents[uri].items()
+                },
+            }
+            for uri in sorted(linked_documents)
+        ],
+        "registration_gaps": sorted(
+            registration_gaps, key=lambda row: row["version_id"]
+        ),
         "blockers": sorted(blockers, key=lambda row: canonical_json(row)),
     }
     for cycle in lineage_cycles(payload["lineage_edges"]):
@@ -481,20 +657,6 @@ def _stage(dataset: str) -> str | None:
     return None
 
 
-def _numeric_claims(value: Any, prefix: str = "") -> list[tuple[str, float]]:
-    claims: list[tuple[str, float]] = []
-    if isinstance(value, dict):
-        for key, child in value.items():
-            path = f"{prefix}.{key}" if prefix else str(key)
-            if str(key).casefold().endswith("mae") and isinstance(child, (int, float)):
-                claims.append((path, float(child)))
-            claims.extend(_numeric_claims(child, path))
-    elif isinstance(value, list):
-        for index, child in enumerate(value):
-            claims.extend(_numeric_claims(child, f"{prefix}[{index}]"))
-    return claims
-
-
 def _source_comparison(config: dict[str, Any]) -> dict[str, Any]:
     assessments = {
         "cfbd": {
@@ -563,6 +725,40 @@ def _source_comparison(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _issue_subject(value: dict[str, Any]) -> tuple[str, str, str]:
+    evidence = dict(value.get("evidence") or {})
+    audit = dict(evidence.get("audit") or {})
+    return (
+        str(value.get("category") or ""),
+        str(evidence.get("version_id") or audit.get("version_id") or ""),
+        str(evidence.get("stage") or ""),
+    )
+
+
+def _issue_crosswalk(
+    prior: list[dict[str, Any]], current: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    current_by_subject: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(
+        list
+    )
+    for item in current:
+        current_by_subject[_issue_subject(item)].append(item)
+    rows = []
+    for item in prior:
+        matches = current_by_subject.get(_issue_subject(item), [])
+        rows.append(
+            {
+                "prior_issue_id": item.get("issue_id"),
+                "prior_category": item.get("category"),
+                "disposition": "retained" if matches else "resolved_or_reclassified",
+                "current_issue_ids": sorted(
+                    str(match["issue_id"]) for match in matches
+                ),
+            }
+        )
+    return rows
+
+
 def audit_evidence(
     *,
     config: dict[str, Any],
@@ -574,10 +770,39 @@ def audit_evidence(
     inventory: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
     stage_ids: dict[str, set[int]] = defaultdict(set)
+    stage_version_ids: dict[tuple[str, str], set[int]] = {}
+    stage_game_seasons: dict[str, dict[int, set[int]]] = defaultdict(
+        lambda: defaultdict(set)
+    )
     frames: dict[str, pd.DataFrame] = {}
     readable_versions: set[str] = set()
+    descendants = {
+        version: transitive_descendants(version, resolved["lineage_edges"])
+        for version in {str(row["version_id"]) for row in resolved.get("datasets", [])}
+        | {str(row["parent_version_id"]) for row in resolved.get("lineage_edges", [])}
+    }
+
+    for gap in resolved.get("registration_gaps", []):
+        version_id = str(gap["version_id"])
+        issues.append(
+            issue(
+                "catalog-registration-missing",
+                status="verified",
+                severity="high",
+                evidence=gap,
+                affected_records=None,
+                affected_descendants=[version_id, *descendants.get(version_id, [])],
+                root_cause_status="reproduced",
+                certification_impact=(
+                    "The exact object is checksum-verified but cannot be admitted until "
+                    "its immutable metadata is registered or explicitly quarantined."
+                ),
+                phase2_action="Register only from a complete verified manifest.",
+            )
+        )
 
     for blocker in resolved.get("blockers", []):
+        version_id = str(blocker.get("version_id") or "")
         issues.append(
             issue(
                 "unresolved-lineage",
@@ -585,7 +810,9 @@ def audit_evidence(
                 severity="high",
                 evidence=blocker,
                 affected_records=None,
-                affected_descendants=[],
+                affected_descendants=(
+                    [version_id, *descendants.get(version_id, [])] if version_id else []
+                ),
                 root_cause_status="unresolved",
                 certification_impact="Blocks the affected root and descendants.",
                 phase2_action="Resolve or recapture the exact missing immutable evidence.",
@@ -606,7 +833,11 @@ def audit_evidence(
             frames[version_id] = frame
             readable_versions.add(version_id)
             audit = frame_audit(
-                frame, dataset=ref.dataset, key_columns=_key_columns(ref.dataset, frame)
+                frame,
+                dataset=ref.dataset,
+                key_columns=_key_columns(
+                    ref.dataset, ref.schema_version, frame, require_declared=True
+                ),
             )
             exposure_columns = [
                 column
@@ -642,7 +873,13 @@ def audit_evidence(
             )
             stage = _stage(ref.dataset)
             if stage:
-                stage_ids[stage].update(_game_ids(frame))
+                ids = _game_ids(frame)
+                stage_ids[stage].update(ids)
+                stage_version_ids[(stage, version_id)] = ids
+                if {"season", "game_id"}.issubset(frame):
+                    key_rows = frame[["game_id", "season"]].dropna().drop_duplicates()
+                    for game_id, season in key_rows.itertuples(index=False, name=None):
+                        stage_game_seasons[stage][int(game_id)].add(int(season))
             if (
                 not row_count_match
                 or audit["duplicate_key_rows"]
@@ -660,7 +897,10 @@ def audit_evidence(
                             "row_count_matches": row_count_match,
                         },
                         affected_records=int(len(frame)),
-                        affected_descendants=[],
+                        affected_descendants=[
+                            version_id,
+                            *descendants.get(version_id, []),
+                        ],
                         root_cause_status="reproduced",
                         certification_impact="Blocks this dataset from certification.",
                         phase2_action="Repair under a new dataset identity and rebuild descendants.",
@@ -774,6 +1014,7 @@ def audit_evidence(
 
     schedule = pd.DataFrame()
     coverage = pd.DataFrame()
+    version_coverage = pd.DataFrame()
     exclusions = pd.DataFrame()
     if games_parts:
         raw_games = pd.concat(games_parts, ignore_index=True)
@@ -798,11 +1039,44 @@ def audit_evidence(
                     ]
                     row["unresolved_timing_rows"] = timing["unresolved_rows"]
                     break
+        own_timing = {}
+        for row in inventory:
+            version_id = row.get("version_id")
+            if not version_id:
+                continue
+            total = int(row.get("rows") or 0)
+            pregame = int(row.get("pregame_timing_rows") or 0)
+            reconstructed = int(row.get("reconstructed_timing_rows") or 0)
+            unresolved = int(row.get("unresolved_timing_rows") or 0)
+            if total and pregame == total:
+                own_timing[str(version_id)] = "authentic_pregame"
+            elif reconstructed:
+                own_timing[str(version_id)] = "reconstructed"
+            elif unresolved or total:
+                own_timing[str(version_id)] = "unresolved"
+        inherited_timing = propagate_timing_classes(
+            own_timing, resolved["lineage_edges"]
+        )
+        for row in inventory:
+            if row.get("version_id"):
+                row["timing_class"] = inherited_timing.get(
+                    str(row["version_id"]), "unresolved"
+                )
         stage_ids = {
             "captured_schedule": set(schedule["game_id"].astype(int)),
             **stage_ids,
         }
         coverage, exclusions = stage_coverage(schedule, stage_ids)
+        version_parts = []
+        for (stage, version_id), game_ids in sorted(stage_version_ids.items()):
+            part, _ = stage_coverage(schedule, {stage: game_ids})
+            part["dataset_version_id"] = version_id
+            version_parts.append(part)
+        version_coverage = (
+            pd.concat(version_parts, ignore_index=True)
+            if version_parts
+            else pd.DataFrame()
+        )
         for stage, game_ids in sorted(stage_ids.items()):
             if stage == "captured_schedule":
                 continue
@@ -811,17 +1085,50 @@ def audit_evidence(
                 schedule[["game_id"]], stage_frame, keys=("game_id",)
             )
             if join["right_only_keys"]:
+                outside_ids = sorted(game_ids - set(schedule["game_id"].astype(int)))
+                outside_seasons = sorted(
+                    {
+                        season
+                        for game_id in outside_ids
+                        for season in stage_game_seasons.get(stage, {}).get(
+                            game_id, set()
+                        )
+                    }
+                )
+                by_design = (
+                    bool(outside_seasons)
+                    and set(outside_seasons).isdisjoint(DEVELOPMENT_SEASONS)
+                    and 2020 not in outside_seasons
+                )
                 issues.append(
                     issue(
                         "downstream-game-outside-denominator",
-                        status="verified",
-                        severity="high",
-                        evidence={"stage": stage, "join": join},
+                        status="accepted-limitation" if by_design else "verified",
+                        severity="low" if by_design else "high",
+                        evidence={
+                            "stage": stage,
+                            "join": join,
+                            "outside_seasons": outside_seasons,
+                            "outside_game_id_examples": outside_ids[:100],
+                            "classification": (
+                                "outside_development_scope"
+                                if by_design
+                                else "unresolved"
+                            ),
+                        },
                         affected_records=int(join["right_only_keys"]),
                         affected_descendants=[stage],
                         root_cause_status="reproduced",
-                        certification_impact="Blocks coverage certification for the stage.",
-                        phase2_action="Repair the stage join or denominator lineage under new identities.",
+                        certification_impact=(
+                            "No impact on development coverage."
+                            if by_design
+                            else "Blocks coverage certification for the stage."
+                        ),
+                        phase2_action=(
+                            "Preserve as an explicit out-of-scope disposition."
+                            if by_design
+                            else "Repair the stage join or denominator lineage under new identities."
+                        ),
                     )
                 )
         if classification_conflicts:
@@ -904,6 +1211,19 @@ def audit_evidence(
 
     root_states = {row["root_id"]: row["state"] for row in resolved["roots"]}
     roots_to_versions = resolved["root_dataset_versions"]
+    root_blockers: set[str] = {
+        str(blocker["root_id"])
+        for blocker in resolved.get("blockers", [])
+        if blocker.get("root_id")
+    }
+    for blocker in resolved.get("blockers", []):
+        blocked_version = blocker.get("version_id")
+        if blocked_version:
+            root_blockers.update(
+                root
+                for root, versions in roots_to_versions.items()
+                if str(blocked_version) in set(map(str, versions))
+            )
     root_payloads: dict[str, dict[str, Any]] = {}
     for spec in config["roots"]:
         if spec["kind"] != "json" or root_states.get(spec["root_id"]) != "resolved":
@@ -915,9 +1235,27 @@ def audit_evidence(
 
     dispositions = []
     metric_tables: list[pd.DataFrame] = []
+    metric_comparisons: list[dict[str, Any]] = []
+    dataset_names = {
+        str(row["version_id"]): str(row["dataset"])
+        for row in resolved.get("datasets", [])
+    }
+    outcome_frames = [
+        frame
+        for version, frame in frames.items()
+        if _stage(dataset_names.get(version, "")) == "outcomes"
+    ]
+    immutable_labels = (
+        pd.concat(outcome_frames, ignore_index=True)
+        if outcome_frames
+        else pd.DataFrame()
+    )
     for result in config["results"]:
         required_roots = list(result["required_roots"])
-        lineage_ok = all(root_states.get(root) == "resolved" for root in required_roots)
+        lineage_ok = all(
+            root_states.get(root) == "resolved" and root not in root_blockers
+            for root in required_roots
+        )
         versions = {
             version
             for root in required_roots
@@ -943,30 +1281,70 @@ def audit_evidence(
             tables = []
             for version in versions:
                 if version in frames:
-                    metrics = recompute_prediction_metrics(frames[version])
+                    labeled = attach_prediction_labels(
+                        frames[version], immutable_labels
+                    )
+                    metrics = recompute_prediction_metrics(labeled)
                     if not metrics.empty:
                         metrics["result_id"] = result["result_id"]
                         tables.append(metrics)
             if tables:
                 combined = pd.concat(tables, ignore_index=True)
                 metric_tables.append(combined)
+                duplicate_rows = int(combined["duplicate_game_rows"].sum())
+                nonfinite_rows = int(combined["nonfinite_rows"].sum())
+                if duplicate_rows:
+                    issues.append(
+                        issue(
+                            "evaluator-stacked-row-semantics",
+                            status="verified",
+                            severity="high",
+                            evidence={
+                                "result_id": result["result_id"],
+                                "duplicate_game_rows": duplicate_rows,
+                                "actual_evaluator_semantics": "counts_input_rows",
+                                "audit_semantics": "unique_game_only",
+                            },
+                            affected_records=duplicate_rows,
+                            affected_descendants=sorted(versions),
+                            root_cause_status="reproduced",
+                            certification_impact="Blocks the reported metric until its sampling unit is corrected.",
+                            phase2_action="Recompute one row per game with a game-level paired bootstrap.",
+                        )
+                    )
+                if nonfinite_rows:
+                    issues.append(
+                        issue(
+                            "prediction-nonfinite",
+                            status="verified",
+                            severity="high",
+                            evidence={
+                                "result_id": result["result_id"],
+                                "nonfinite_rows": nonfinite_rows,
+                            },
+                            affected_records=nonfinite_rows,
+                            affected_descendants=sorted(versions),
+                            root_cause_status="reproduced",
+                            certification_impact="Blocks reported metrics containing non-finite predictions or labels.",
+                            phase2_action="Quarantine non-finite rows and recompute the declared population.",
+                        )
+                    )
                 claims = [
                     claim
                     for root in required_roots
-                    for claim in _numeric_claims(root_payloads.get(root, {}))
+                    for claim in reported_metric_claims(root_payloads.get(root, {}))
                 ]
-                recomputed = [float(value) for value in combined["mae"].dropna()]
-                metric_ok = (
-                    bool(claims)
-                    and bool(recomputed)
-                    and all(
-                        any(
-                            abs(float(claimed) - value)
-                            <= float(config["metric_tolerance"])
-                            for _, claimed in claims
-                        )
-                        for value in recomputed
-                    )
+                metric_ok, comparisons = match_reported_metrics(
+                    combined,
+                    claims,
+                    tolerance=float(config["metric_tolerance"]),
+                )
+                metric_comparisons.append(
+                    {
+                        "result_id": result["result_id"],
+                        "claim_count": len(claims),
+                        "comparisons": comparisons,
+                    }
                 )
                 if not metric_ok:
                     reasons.append(
@@ -1001,6 +1379,30 @@ def audit_evidence(
     )
     hypotheses = _hypothesis_map(schedule, metrics_frame)
     blockers = [item for item in issues if item["severity"] in {"critical", "high"}]
+    prior_issues: list[dict[str, Any]] = []
+    prior_prefix = str(config.get("prior_audit_prefix") or "").rstrip("/")
+    if prior_prefix:
+        try:
+            prior_payload, _ = _read_json(reader, f"{prior_prefix}/issue-register.json")
+            prior_issues = list(prior_payload.get("issues") or [])
+        except Exception as exc:
+            issues.append(
+                issue(
+                    "prior-audit-unreadable",
+                    status="verified",
+                    severity="high",
+                    evidence={"uri": prior_prefix, "error": str(exc)},
+                    affected_records=None,
+                    affected_descendants=[],
+                    root_cause_status="reproduced",
+                    certification_impact="Blocks correction crosswalk completion.",
+                    phase2_action="Restore the exact prior audit artifact.",
+                )
+            )
+            blockers = [
+                item for item in issues if item["severity"] in {"critical", "high"}
+            ]
+    crosswalk = _issue_crosswalk(prior_issues, issues)
     summary = {
         "schema_version": AUDIT_SCHEMA_VERSION,
         "state": "complete_with_blockers" if blockers else "complete",
@@ -1022,18 +1424,28 @@ def audit_evidence(
     }
     return {
         "inventory": pd.DataFrame(inventory + capture_inventory),
+        "schedule": schedule,
         "lineage_edges": pd.DataFrame(resolved["lineage_edges"]),
         "coverage": coverage,
+        "version_coverage": version_coverage,
         "exclusions": exclusions,
         "issues": sorted(issues, key=lambda row: row["issue_id"]),
         "dispositions": sorted(dispositions, key=lambda row: row["result_id"]),
         "hypotheses": hypotheses,
+        "metric_comparisons": metric_comparisons,
+        "issue_crosswalk": crosswalk,
         "source_comparison": _source_comparison(config),
         "summary": summary,
     }
 
 
-def _key_columns(dataset: str, frame: pd.DataFrame) -> list[str]:
+def _key_columns(
+    dataset: str,
+    schema_version: str,
+    frame: pd.DataFrame,
+    *,
+    require_declared: bool = False,
+) -> list[str]:
     candidates = {
         "games": ["season", "game_id"],
         "game_outcomes": ["season", "game_id"],
@@ -1041,10 +1453,16 @@ def _key_columns(dataset: str, frame: pd.DataFrame) -> list[str]:
         "byplay": ["game_id", "drive_number", "play_number"],
         "drives": ["game_id", "drive_number", "offense", "defense"],
         "reconciled_team_game": ["season", "game_id", "team"],
+        "preseason_team_inputs": ["season", "team", "as_of"],
     }
     for name, keys in candidates.items():
         if dataset == name or dataset.startswith(name):
-            return [key for key in keys if key in frame]
+            missing = sorted(set(keys) - set(frame))
+            if missing and require_declared:
+                raise ValueError(
+                    f"{dataset}/{schema_version} is missing declared key columns: {missing}"
+                )
+            return keys if not missing else [key for key in keys if key in frame]
     return [
         key
         for key in ("season", "game_id", "team", "candidate_id", "target")
@@ -1091,6 +1509,9 @@ def _write_audit(
     writer: ImmutableAuditWriter, result: dict[str, Any]
 ) -> dict[str, str]:
     outputs = {
+        "schedule_denominator": writer.write_bytes(
+            "schedule-denominator.parquet", _parquet_bytes(result["schedule"])
+        ),
         "dataset_inventory": writer.write_bytes(
             "dataset-inventory.parquet", _parquet_bytes(result["inventory"])
         ),
@@ -1099,6 +1520,10 @@ def _write_audit(
         ),
         "game_stage_coverage": writer.write_bytes(
             "game-stage-coverage.parquet", _parquet_bytes(result["coverage"])
+        ),
+        "game_stage_version_coverage": writer.write_bytes(
+            "game-stage-version-coverage.parquet",
+            _parquet_bytes(result["version_coverage"]),
         ),
         "exclusions": writer.write_bytes(
             "exclusions.parquet", _parquet_bytes(result["exclusions"])
@@ -1116,6 +1541,20 @@ def _write_audit(
         ),
         "source_comparison": writer.write_json(
             "source-comparison.json", result["source_comparison"]
+        ),
+        "issue_crosswalk": writer.write_json(
+            "issue-crosswalk.json",
+            {
+                "schema_version": AUDIT_SCHEMA_VERSION,
+                "issues": result["issue_crosswalk"],
+            },
+        ),
+        "metric_comparisons": writer.write_json(
+            "metric-comparisons.json",
+            {
+                "schema_version": AUDIT_SCHEMA_VERSION,
+                "results": result["metric_comparisons"],
+            },
         ),
     }
     summary = {**result["summary"], "outputs": outputs}
