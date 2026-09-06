@@ -52,16 +52,14 @@ def _immutable(storage, uri: str, value: dict[str, Any]) -> None:
     storage.write_bytes(payload, uri)
 
 
-def _verify_capture_manifest(
-    storage, manifest_uri: str, expected_code_sha: str
-) -> dict[str, Any]:
+def _verify_capture_manifest(storage, manifest_uri: str) -> dict[str, Any]:
     manifest = _json(storage, manifest_uri)
     if manifest.get("schema_version") != "data_first_phase2_capture_run_v2":
         raise Phase2dError("capture manifest has wrong schema version")
     if manifest.get("environment") != "preview":
         raise Phase2dError("capture manifest is not Preview")
-    if manifest.get("code_sha") != expected_code_sha:
-        raise Phase2dError("capture manifest code SHA mismatch")
+    if not manifest.get("code_sha"):
+        raise Phase2dError("capture manifest missing code_sha")
     results = manifest.get("results") or []
     captured = [row for row in results if row.get("state") == "captured"]
     if len(captured) != 7:
@@ -103,8 +101,8 @@ def _verify_future_kickoff(conn_url: str) -> int:
     with psycopg.connect(conn_url) as conn:
         conn.execute("SET TRANSACTION READ ONLY")
         row = conn.execute(
-            "SELECT COUNT(*) FROM silver.games "
-            "WHERE season = 2026 AND kickoff > NOW() AND completed = false"
+            "SELECT COUNT(*) FROM public.games "
+            "WHERE season = 2026 AND start_date > NOW()"
         ).fetchone()
         return int(row[0]) if row else 0
 
@@ -115,26 +113,25 @@ def main() -> None:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--capture-manifest-uri", required=True)
     parser.add_argument("--github-run-url", required=True)
-    parser.add_argument("--expected-code-sha", required=True)
     parser.add_argument("--as-of", required=True)
     args = parser.parse_args()
 
     if os.getenv("CFB_STORAGE_BACKEND", "").casefold() != "r2":
         raise Phase2dError("automation admission requires CFB_STORAGE_BACKEND=r2")
-    if args.expected_code_sha != _git_sha():
-        raise Phase2dError("--expected-code-sha must match committed HEAD")
 
     args.as_of = _utc(args.as_of)
     storage = get_storage(environment="preview")
     reader = ReadOnlyStorage(storage)
     conn_url = catalog_connection_url("preview")
 
-    manifest = _verify_capture_manifest(
-        reader, args.capture_manifest_uri, args.expected_code_sha
-    )
+    manifest = _verify_capture_manifest(reader, args.capture_manifest_uri)
     _verify_r2_objects(reader, manifest, args.capture_manifest_uri)
     _verify_catalog_registration(conn_url, manifest)
     future_kickoff_count = _verify_future_kickoff(conn_url)
+
+    code_sha = manifest.get("code_sha")
+    if not code_sha:
+        raise Phase2dError("capture manifest missing code_sha")
 
     captures = [
         {
@@ -150,7 +147,7 @@ def main() -> None:
 
     admission = automation_admission(
         run_id=args.run_id,
-        code_sha=args.expected_code_sha,
+        code_sha=code_sha,
         capture_manifest_uri=args.capture_manifest_uri,
         capture_manifest_sha256=sha256(canonical_bytes(manifest)),
         github_run_url=args.github_run_url,

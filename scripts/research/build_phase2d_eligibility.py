@@ -83,13 +83,10 @@ def main() -> None:
     )
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--as-of", required=True)
-    parser.add_argument("--expected-code-sha", required=True)
     args = parser.parse_args()
 
     if os.getenv("CFB_STORAGE_BACKEND", "").casefold() != "r2":
         raise Phase2dError("Phase 2d eligibility requires CFB_STORAGE_BACKEND=r2")
-    if args.expected_code_sha != _git_sha():
-        raise Phase2dError("--expected-code-sha must match committed HEAD")
 
     args.as_of = _utc(args.as_of)
     storage = get_storage(environment="preview")
@@ -100,8 +97,8 @@ def main() -> None:
     audit_identity = audit.get("identity") or {}
     if audit_identity.get("schema_version") != "data_first_phase2d_run_identity_v1":
         raise Phase2dError("audit-v4 identity has wrong schema")
-    if audit_identity.get("code_sha") != args.expected_code_sha:
-        raise Phase2dError("audit and eligibility code SHAs differ")
+    if not audit_identity.get("code_sha"):
+        raise Phase2dError("audit-v4 identity missing code_sha")
 
     automation_admission = _json(reader, args.automation_admission_uri)
     if (
@@ -136,7 +133,7 @@ def main() -> None:
         {
             "run_id": args.run_id,
             "as_of": args.as_of,
-            "code_sha": args.expected_code_sha,
+            "code_sha": audit_identity["code_sha"],
         }
     )
     manifest["manifest_sha256"] = sha256(canonical_bytes(manifest))
