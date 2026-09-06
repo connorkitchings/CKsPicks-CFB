@@ -91,8 +91,8 @@ def _catalog_ref(conn_url: str, ref: DatasetRef) -> tuple[list[str], list[str]]:
         captures = [
             str(value[0])
             for value in conn.execute(
-                "SELECT capture_id FROM catalog.dataset_source_captures "
-                "WHERE dataset_version_id = %s ORDER BY capture_id",
+                "SELECT capture_id FROM catalog.dataset_capture_dependencies "
+                "WHERE child_version_id = %s ORDER BY ordinal",
                 (ref.version_id,),
             ).fetchall()
         ]
@@ -114,7 +114,7 @@ def _audit_ref(storage, conn_url: str, ref_value: dict[str, Any]) -> tuple[pd.Da
     ref = DatasetRef(**ref_value)
     frame = read_dataset(storage, ref)
     schema = schema_for(ref.dataset, ref.schema_version)
-    validate_frame(ref.dataset, ref.schema_version, frame, require_declared=True)
+    validate_frame(frame, schema)
     audit = frame_audit(frame, dataset=ref.dataset, key_columns=schema.keys)
     if audit["duplicate_key_rows"] or audit["infinite_numeric_values"] or audit["forbidden_2020"]:
         raise Phase2dError(f"dataset correctness failed: {ref.version_id}")
