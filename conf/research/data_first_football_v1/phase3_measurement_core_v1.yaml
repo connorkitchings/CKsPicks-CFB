@@ -76,6 +76,15 @@ measurements:
 selection:
   primary_rho: 0.60
   primary_updater: exposure_weighted_empirical_bayes
+  evidence_cutoff: week_open
+  feature_roles: [home_offense, home_defense, away_offense, away_defense]
+  equivalent_prior_exposure:
+    epa_per_play: 100.0
+    epa_pass: 100.0
+    epa_rush: 100.0
+    success_rate: 100.0
+    explosive_rate_20: 100.0
+    points_per_scoring_opportunity: 8.0
   ridge_alpha: 10
   validation_seasons: [2018, 2019, 2021, 2022, 2023, 2024, 2025]
   minimum_pooled_improvement_pct: 0.5
