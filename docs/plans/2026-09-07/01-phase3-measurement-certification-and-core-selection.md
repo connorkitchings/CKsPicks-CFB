@@ -109,3 +109,10 @@ updater.
 
 Any measurement family, candidate, fold, updater, threshold, bootstrap unit,
 or opponent-adjustment change requires a revised approved plan.
+
+- **2026-09-07 implementation note:** The first committed dry run exposed that
+  `fbs_involved_games` carries informational score columns in addition to the
+  authoritative `game_outcomes` parent. The runner now projects the schedule
+  to identity, timing, and team columns before joining outcome targets. This
+  resolves a mechanical column-name collision without changing inputs,
+  population, targets, candidates, folds, gates, or output contracts.

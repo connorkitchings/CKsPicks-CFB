@@ -448,6 +448,10 @@ def _tournament_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
                 "kickoff_utc": kickoff,
                 "home_team": "A",
                 "away_team": "B",
+                # The real fbs_involved_games parent also carries scores; the
+                # tournament must source targets only from game_outcomes.
+                "home_points": 999,
+                "away_points": 999,
             }
         )
         outcome_rows.append(

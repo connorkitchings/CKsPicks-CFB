@@ -70,7 +70,13 @@
 
 ## Amendments and Blockers
 
-- None.
+- The first committed-SHA dry run at `4b0345431ef7d4daa5a22d736f5bdce2cc713008`
+  verified the signed 70-ref parent and completed measurement/state work, then
+  stopped without writes when the tournament found overlapping score-column
+  names in `fbs_involved_games` and `game_outcomes`. The schedule is now
+  projected to non-target columns before joining the authoritative outcome
+  targets. This is a mechanical schema-overlap correction and is recorded in
+  the implementation contract.
 
 ## Handoff Notes
 

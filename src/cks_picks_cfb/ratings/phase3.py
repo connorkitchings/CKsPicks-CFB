@@ -1007,7 +1007,16 @@ def run_candidate_tournament(
     schedule = games.copy()
     for column in ("season", "week", "game_id"):
         schedule[column] = _numeric(schedule, column).astype(int)
-    schedule = schedule.drop_duplicates(["season", "game_id"])
+    schedule = schedule[
+        [
+            "season",
+            "week",
+            "game_id",
+            "kickoff_utc",
+            "home_team",
+            "away_team",
+        ]
+    ].drop_duplicates(["season", "game_id"])
     accepted = set(
         primary_states[["season", "game_id"]]
         .drop_duplicates()
