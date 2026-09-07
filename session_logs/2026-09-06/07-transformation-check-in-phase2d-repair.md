@@ -4,13 +4,12 @@
 
 - **Worked On:** Phase 0–2 completion verification, Phase 2d certification repair,
   Phase 2e auxiliary certification, and staged Phase 3 redesign.
-- **Outcome:** Code, tests, documentation, and read-only evidence verification
-  are complete. Replacement immutable artifacts await the required committed SHA.
+- **Outcome:** Phase 2d and Phase 2e replacement evidence is published and
+  independently verified. Phase 3 is unblocked but has not begun execution.
 - **Plan Contract:** `docs/plans/2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md`
-- **Approval / Status:** User explicitly authorized implementation on 2026-09-06; contract is `In Progress`.
-- **Blockers:** Replacement immutable evidence requires a user-executed implementation checkpoint commit.
-- **Next:** Commit the implementation checkpoint, then publish and independently
-  verify both Phase 2d and Phase 2e evidence from that SHA.
+- **Approval / Status:** User explicitly authorized implementation on 2026-09-06; contract is `Implemented`.
+- **Blockers:** None.
+- **Next:** Begin Phase 3 only under its approved measurement-validation contract.
 
 ## Context and Decisions
 
@@ -55,6 +54,23 @@
   gates passing, 32 exact play omissions, one exact team-stat omission, and no
   postseason omissions. The v2 remote automation dry run also passed against
   GitHub run `34045238393`.
+- Published the Phase 2d replacement under committed SHA
+  `285422026816bc933279a69e997021847b4bfb31`: the audit is complete with zero
+  blockers, automation admission is admitted, and the signed eligibility
+  handoff is eligible with 70 Phase 3 refs.
+- Corrected Phase 2e coverage to use the FBS team-season denominator for
+  FBS-only auxiliary captures while preserving every FBS–FCS game for required
+  Phase 3 fallbacks. Documented structural recruiting fallbacks for the
+  forbidden-2020 four-class windows and registered executable schemas for all
+  six auxiliary datasets.
+- Published the Phase 2e handoff under committed SHA
+  `80aba46df8b5e92959024510140cbd06de6b3b3e`: 63 source captures, six Preview
+  datasets, and a signed `eligible_reconstructed_only` manifest with activation
+  disabled.
+- Independently reread all three Phase 2d artifacts, the Phase 2e capture-set
+  and eligibility artifacts, 70 core refs, six auxiliary refs, 63 source
+  capture objects, and matching Preview catalog rows. All checksums and
+  identities matched.
 
 ## Files Modified
 
@@ -73,6 +89,8 @@
   backfill capture window and source matrix.
 - `tests/test_data_first_phase2e.py` - auxiliary regression coverage.
 - Active roadmap and Phase 0–6 contracts - corrected status and staged Phase 3 design.
+- `src/cks_picks_cfb/data/schema_contracts.py` - Phase 2e executable schemas.
+- `tests/test_schema_contracts.py` - Phase 2e schema coverage.
 
 ## Validation
 
@@ -87,18 +105,21 @@
 - [x] `git diff --check`.
 - [x] Phase 2e pure contract suite: 6 passed; combined Phase 2d/2e suite: 14 passed.
 - [x] Phase 2e runner CLI help, Ruff, and strict MkDocs build passed.
+- [x] Phase 2e denominator correction: 7 passed; schema contracts: 8 passed;
+  combined targeted run: 15 passed; Ruff passed.
+- [x] Independent R2/Preview verification: 70 Phase 2d refs, 63 Bronze
+  captures, six auxiliary refs, five signed artifacts, and all catalog rows.
 
 ## Amendments and Blockers
 
-- Phase 2d and Phase 2e apply are intentionally blocked until the user commits
-  this code checkpoint. No immutable object was written in this session.
+- The first Phase 2e apply stopped at catalog schema registration. Its partial,
+  unregistered object lineage is preserved; the successful fresh run above is
+  the sole eligible auxiliary handoff.
 
 ## Handoff Notes
 
-- **Resume at:** User commits the implementation checkpoint, then rerun the v2
-  Phase 2d recertification/automation/eligibility sequence and the Phase 2e
-  auxiliary certification in apply mode under fresh UTC run IDs; independently
-  verify both signed manifests before beginning Phase 3.
+- **Resume at:** Execute Phase 3A from the approved measurement-validation
+  contract using both published eligibility URIs where applicable.
 - **Watch out for:** Preserve V4, production, immutable evidence, 2020 exclusion, and unrelated `.opencode/`.
 
 **tags:** ["data-first", "phase2", "phase3", "certification", "planning"]

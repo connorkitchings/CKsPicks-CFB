@@ -46,12 +46,12 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   Preview corpus and published the checksum-verified ref set that unblocks
   Phase 2d.
 - [Phase 2d recertification, eligibility, and capture activation](2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md)
-  — **Reopened for bounded repair.** Its audit and remote rehearsal remain
-  evidence, but its eligibility checksum is invalid and promised gates are missing.
+  — **Superseded in part by the completed bounded repair.** Its audit and remote
+  rehearsal remain historical evidence; the replacement handoff is authoritative.
 - [Transformation check-in, Phase 2d repair, and Phase 3 redesign](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
-  — **In Progress.** Governs the corrected certification and replacement handoff.
+  — **Implemented.** Published the corrected core and reconstructed-only auxiliary handoffs.
 - [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
-  — **Approved, blocked on Phase 2d repair.** The staged design is frozen.
+  — **Approved, ready to implement.** The staged design is frozen.
 - [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
   — Approved; bounded interpretable ratings after measurement selection.
 - [Phase 5 spread and total forecasting](2026-09-05/05-spread-total-forecasting.md)

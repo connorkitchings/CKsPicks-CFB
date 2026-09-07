@@ -1,6 +1,6 @@
 # Transformation Check-In, Phase 2d Repair, and Phase 3 Redesign
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-06
 - **Planner:** Sol
 - **Approval source:** User approved the complete transformation check-in plan in this task and explicitly directed implementation on 2026-09-06.
@@ -32,6 +32,38 @@ pure validation contracts and fail-closed runners, then publish a fresh Phase
 artifacts from the committed repair SHA. Mark the existing eligibility artifact
 superseded in documentation. Phase 3 proceeds in stages: measurement meaning,
 core comparison, then context comparison.
+
+## Published Evidence
+
+The checksum-valid Phase 2d replacement is bound to committed SHA
+`285422026816bc933279a69e997021847b4bfb31`:
+
+- Audit: `artifacts/research/data-first-football-v1/phase1/2026-09-06T2358Z-phase2d-recertification-v2/audit-v5.json`
+  (`0fd8a32a13ce64a261fa8a0179cdaa1de1cb93e428e362d50ad0aa9970c7761f`)
+- Automation admission: `artifacts/research/data-first-football-v1/phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/automation-admission.json`
+  (`7a46adfaff0bcb89b86f244c586d93085557ba3119699da81824ffa4e83f5518`)
+- Eligibility: `artifacts/research/data-first-football-v1/phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json`
+  (`cdeeea01035c9108491a42b2e29a9e6033cdd7781d1ab837df8e411b29afe760`)
+
+It has zero certification blockers, 70 verified Phase 3 input refs, 32 exact
+regular-season play omissions, one exact regular-season team-stat omission,
+and no postseason omissions. The earlier defective eligibility artifact remains
+superseded evidence.
+
+The separate Phase 2e reconstructed-only handoff is bound to committed SHA
+`80aba46df8b5e92959024510140cbd06de6b3b3e`:
+
+- Capture set: `artifacts/research/data-first-football-v1/phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/capture-set.json`
+  (`c2ff56b084e58b5cd159f884171df05187746c0dc40b42817912866a540de650`)
+- Eligibility: `artifacts/research/data-first-football-v1/phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json`
+  (`d06ed3968a7bb6ec7ba97212aa2063068c253f26202e810c921b044006ab13ad`)
+
+It registers 63 immutable Bronze captures and six Preview datasets. It is
+`eligible_reconstructed_only` with `activation_eligible: false`; its context
+coverage is recruiting 99.34%, returning production 99.08%, coaching 90.69%,
+roster continuity 100%, and lagged rankings 100%. Recruiting 2021–2023 is an
+explicit forbidden-2020 four-class-window fallback, and roster continuity has
+the declared 2015/2021 prior-roster fallback.
 
 ## Scope
 
@@ -116,16 +148,15 @@ read back independently and every declared checksum recomputed from raw bytes.
 
 - [x] Phase 2d implementation rejects every identified false-positive case.
 - [x] Required local validation passes.
-- [ ] A committed repair SHA produces checksum-valid replacement evidence.
+- [x] A committed repair SHA produces checksum-valid replacement evidence.
 - [x] Phase 0–2 status documentation and historical result dispositions agree.
 - [x] The Phase 3 contract is decision-complete and remains gated on Phase 2.
 - [x] Phase 2e code rejects malformed capture matrices, duplicate identities,
   incomplete context coverage, and non-lagged rankings; it writes only
   reconstructed-only Preview evidence.
-- [ ] A committed repair SHA produces signed, independently verified Phase 2e
+- [x] A committed repair SHA produces signed, independently verified Phase 2e
   auxiliary evidence alongside the Phase 2d replacement handoff.
-- [x] Implementation log is updated; plan remains `In Progress` at the
-  committed-SHA evidence gate.
+- [x] Implementation log is updated and the Phase 3 contract is unblocked.
 
 ## Amendments
 

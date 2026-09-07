@@ -68,14 +68,13 @@ criteria are not weakened after results.
 
 ## Current checkpoint
 
-Phase 0 is complete and corrected Phase 1 audit v3 is sealed. Phase 2a–2c are
-retained, but Phase 2d is reopened under the
+Phase 0 is complete and corrected Phase 1 audit v3 is sealed. Phase 2a–2d are
+complete under the
 [transformation check-in repair contract](../plans/2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md):
-the first eligibility manifest fails its own checksum and its implementation
-does not enforce every promised gate. Phase 2e separately certifies the
-reconstructed auxiliary context and market-reference backfill. Phase 3A/3B
-cannot execute until a checksum-valid Phase 2d handoff passes; Phase 3C also
-requires the Phase 2e reconstructed-only manifest.
+the checksum-valid replacement core handoff supersedes the defective earlier
+eligibility artifact. Phase 2e separately certifies reconstructed-only
+auxiliary context and market-reference evidence. Phase 3A/3B may begin from
+the Phase 2d handoff; Phase 3C additionally requires the Phase 2e manifest.
 
 Historical R2 and direct early-game results keep their exact Phase 1
 dispositions. The former R2 winner is unsupported for this program and cannot

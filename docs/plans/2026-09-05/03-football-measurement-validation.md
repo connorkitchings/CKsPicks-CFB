@@ -1,6 +1,6 @@
 # Phase 3: Football Measurement Validation
 
-- **Status:** Approved, Blocked on Phase 2d Repair
+- **Status:** Approved, Ready to Implement
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the original data-first plan on 2026-09-05 and the staged Phase 3 redesign on 2026-09-06.
@@ -17,9 +17,10 @@ total-specific context. Adding information is not required.
 ## Current State
 
 Phase 2c contains ten reconstructed development seasons: 2015–2019 and
-2021–2025, with 2020 forbidden. The current Phase 2 eligibility artifact is
-invalid and must be replaced under the Phase 2d repair contract before Phase 3
-execution. Existing rating measurement code is reusable reference behavior,
+2021–2025, with 2020 forbidden. The checksum-valid Phase 2d replacement
+eligibility handoff is published under the Phase 2d repair contract, and the
+separate Phase 2e manifest admits reconstructed-only auxiliary context.
+Existing rating measurement code is reusable reference behavior,
 but its 2021–2025 artifacts and historical evaluation head are not Phase 3
 inputs: the older head excludes 2025 and can silently omit games without a
 fallback row.
