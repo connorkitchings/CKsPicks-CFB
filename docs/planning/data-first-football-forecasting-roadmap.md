@@ -55,10 +55,11 @@ research entry points under `scripts/research/`, exploratory work under
 | 0 | [Repository alignment](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) | Current operations are regression-protected and the active architecture is unambiguous. |
 | 1 | [Data and evidence audit](../plans/2026-09-05/01-data-and-evidence-audit.md) | Every selected input and population loss is located or explicitly unresolved. |
 | 2 | [Repair and recertification](../plans/2026-09-05/02-data-repair-and-recertification.md) | Admitted research inputs contain no unresolved correctness or leakage defect. |
-| 3 | [Measurement validation](../plans/2026-09-05/03-football-measurement-validation.md) | A shared quality core and any target-specific context are frozen from staged validation. |
-| 4 | [Simple ratings](../plans/2026-09-05/04-simple-team-rating-benchmarks.md) | One reproducible simple rating benchmark is frozen. |
-| 5 | [Spread/total forecasting](../plans/2026-09-05/05-spread-total-forecasting.md) | One eligible candidate or valid simple reference is frozen. |
-| 6 | [Prospective evidence](../plans/2026-09-05/06-prospective-evidence-and-line-comparison.md) | Evidence supports retention, continued shadowing, or a separate promotion plan. |
+| 3 | [Measurement certification and core selection](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md) | Measurement meaning is certified and one shared football core is frozen. |
+| 4A | [Context-free rating selection](../plans/2026-09-07/02-phase4a-context-free-rating-selection.md) | One reproducible offense/defense rating prior and updater are frozen. |
+| 4B | [Target-context selection](../plans/2026-09-07/03-phase4b-target-context-selection.md) | At most one context family per target is frozen outside the rating. |
+| 5 | [Final spread and total selection](../plans/2026-09-07/04-phase5-final-spread-total-selection.md) | One eligible candidate or valid target baseline is frozen. |
+| 6 | [Prospective evidence and market diagnostics](../plans/2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md) | Evidence supports retention, continued shadowing, or a separate Phase 7 plan. |
 
 Automated pregame capture begins after its Phase 2 validation and continues
 alongside later research. Each phase consumes explicit passing predecessor
@@ -68,13 +69,31 @@ criteria are not weakened after results.
 
 ## Current checkpoint
 
-Phase 0 is complete and corrected Phase 1 audit v3 is sealed. Phase 2a–2d are
-complete under the
-[transformation check-in repair contract](../plans/2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md):
-the checksum-valid replacement core handoff supersedes the defective earlier
-eligibility artifact. Phase 2e separately certifies reconstructed-only
-auxiliary context and market-reference evidence. Phase 3A/3B may begin from
-the Phase 2d handoff; Phase 3C additionally requires the Phase 2e manifest.
+Phases 0–2 are complete. The checksum-valid Phase 2d replacement core handoff
+supersedes the defective earlier eligibility artifact, while Phase 2e separately
+certifies reconstructed-only auxiliary context and market-reference evidence.
+Phase 3 may begin only from the signed Phase 2d core handoff. Phase 4B, not
+Phase 3, is the first stage permitted to consume the Phase 2e manifest.
+
+## Certified predecessor evidence
+
+| Phase/evidence | Immutable identity and code binding | Timing and permitted use | Activation |
+| --- | --- | --- | --- |
+| Phase 0 alignment | [Implemented contract](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) and its compatibility baseline | Repository boundary and V4-regression protection; no model input | Not applicable |
+| Corrected Phase 1 audit v3 | `artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3/` | Preserves the exact unsupported/correction-required dispositions of historical results | Research evidence only |
+| Phase 2d audit | `phase1/2026-09-06T2358Z-phase2d-recertification-v2/audit-v5.json` — SHA `0fd8a32a13ce64a261fa8a0179cdaa1de1cb93e428e362d50ad0aa9970c7761f`, code `285422026816bc933279a69e997021847b4bfb31` | Certifies core lineage, omissions, coverage, and timing for measurement construction | False |
+| Phase 2d automation admission | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/automation-admission.json` — SHA `7a46adfaff0bcb89b86f244c586d93085557ba3119699da81824ffa4e83f5518`, code `285422026816bc933279a69e997021847b4bfb31` | Enables only the verified Preview capture workflow; it is not a model artifact | False |
+| Phase 2d core handoff | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json` — SHA `cdeeea01035c9108491a42b2e29a9e6033cdd7781d1ab837df8e411b29afe760`, 70 exact refs | Sole Phase 3 parent for reconstructed historical football measurements | False |
+| Phase 2e auxiliary capture set | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/capture-set.json` — SHA `c2ff56b084e58b5cd159f884171df05187746c0dc40b42817912866a540de650`, code `80aba46df8b5e92959024510140cbd06de6b3b3e`, 63 Bronze captures | Reconstructed-only historical evidence; captures cover recruiting, returning production, coaching, roster continuity, rankings, and market references | False |
+| Phase 2e auxiliary handoff | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json` — SHA `d06ed3968a7bb6ec7ba97212aa2063068c253f26202e810c921b044006ab13ad` | Six Preview datasets: recruiting, returning production, coaching, roster continuity, strictly lagged polls, and reconstructed market references. Only Phase 4B may use football context; markets are Phase 5 post-selection diagnostics only. | False (`eligible_reconstructed_only`) |
+
+The earlier checksum-invalid Phase 2d eligibility artifact is superseded. The
+first partial Phase 2e apply is unregistered diagnostic evidence and has no
+eligible downstream use. The corrected source inventory records 1,300
+returning-production Bronze captures and 26,844 betting-line Bronze captures;
+lower compatibility-projection counts are not source inventory totals. Game
+statistics are reconciliation evidence, not a separate required play source;
+the obsolete 2016–2018 play-gap claim is not current authority.
 
 Historical R2 and direct early-game results keep their exact Phase 1
 dispositions. The former R2 winner is unsupported for this program and cannot
@@ -83,7 +102,9 @@ enter Phase 4 without renewed evidence.
 ## Authority transition
 
 This roadmap replaces the pending R3/R4 sequence and the unfinished research
-portion of the historical-expansion roadmap. Completed R1/R2 work, candidate
-v1, and direct early-game research remain immutable historical evidence subject
-to Phase 1 audit disposition. V4 remains the production benchmark and rollback
-authority throughout.
+portion of the historical-expansion roadmap. The 2026-09-05 Phase 3–6 contracts
+are superseded historical planning records; the replacement sequence is the
+sole active path. Completed R1/R2 work, candidate v1, and direct early-game
+research remain immutable historical evidence subject to Phase 1 audit
+disposition. V4 remains the production benchmark and rollback authority
+throughout.

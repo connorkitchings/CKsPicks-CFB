@@ -1,5 +1,11 @@
 # Transformation Check-In, Phase 2d Repair, and Phase 3 Redesign
 
+> **Current-authority note (2026-09-07).** The Phase 2d/2e evidence described
+> here remains authoritative. Its staged Phase 3C context-selection design is
+> superseded by the [Phase 3–6 resequencing contract](06-transformation-documentation-and-phase3-plus-resequence.md)
+> and the replacement Phase 3–6 contracts linked from the
+> [contract index](../index.md).
+
 - **Status:** Implemented
 - **Created:** 2026-09-06
 - **Planner:** Sol

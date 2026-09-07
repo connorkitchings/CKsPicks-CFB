@@ -1,11 +1,17 @@
 # Phase 4: Simple Team-Rating Benchmarks
 
-- **Status:** Approved
+- **Status:** Superseded
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05.
 - **Implementation log:** Pending Phase 3
 - **Commit policy:** Separate plan commit required
+
+> **Superseded 2026-09-07.** This historical contract selected priors and
+> updaters in stages and admitted context into a rating prior. The active
+> replacement is [Phase 4A context-free rating selection](../2026-09-07/02-phase4a-context-free-rating-selection.md);
+> target-specific context is evaluated only afterward by
+> [Phase 4B](../2026-09-07/03-phase4b-target-context-selection.md).
 
 ## Goal
 

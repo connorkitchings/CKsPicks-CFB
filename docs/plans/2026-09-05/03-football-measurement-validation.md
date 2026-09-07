@@ -1,11 +1,19 @@
 # Phase 3: Football Measurement Validation
 
-- **Status:** Approved, Ready to Implement
+- **Status:** Superseded
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the original data-first plan on 2026-09-05 and the staged Phase 3 redesign on 2026-09-06.
 - **Implementation log:** Pending corrected Phase 2 eligibility handoff
 - **Commit policy:** Separate plan and implementation/evidence commits
+
+> **Superseded 2026-09-07.** This contract is retained as historical planning
+> evidence. Its Phase 3C target-context selection moved to the independent
+> [Phase 4B target-context selection](../2026-09-07/03-phase4b-target-context-selection.md)
+> contract so that context cannot be selected through a rating updater or
+> forecast head that is later replaced. Execute
+> [Phase 3 measurement certification and core selection](../2026-09-07/01-phase3-measurement-certification-and-core-selection.md)
+> instead.
 
 ## Goal
 

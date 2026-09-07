@@ -3,8 +3,8 @@
 > **Authority note (2026-09-05):** These requirements describe completed and
 > historical rating work. New rating development is governed by the
 > [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-> and its Phase 3-5 contracts. In that namespace, 2025 is development evidence,
-> simple benchmarks precede broader updater/model families, and betting
+> and its Phase 3, 4A, 4B, 5, and 6 contracts. In that namespace, 2025 is
+> development evidence, simple benchmarks precede broader updater/model families, and betting
 > decisions are deferred. V4 remains unchanged.
 
 > **Status:** Approved initial requirements for 2026 research and shadow work.

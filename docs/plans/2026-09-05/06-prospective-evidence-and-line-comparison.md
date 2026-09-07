@@ -1,11 +1,15 @@
 # Phase 6: Prospective Evidence and Line Comparison
 
-- **Status:** Approved
+- **Status:** Superseded
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05.
 - **Implementation log:** Pending Phase 5
 - **Commit policy:** Separate plan commit required
+
+> **Superseded 2026-09-07.** This contract remains historical planning
+> evidence. Execute the replacement [Phase 6 prospective evidence and market diagnostics](../2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md),
+> which consumes a candidate frozen by the replacement Phase 5 contract.
 
 ## Goal
 

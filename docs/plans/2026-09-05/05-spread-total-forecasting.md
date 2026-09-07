@@ -1,11 +1,15 @@
 # Phase 5: Spread and Total Forecasting
 
-- **Status:** Approved
+- **Status:** Superseded
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05.
 - **Implementation log:** Pending Phase 4
 - **Commit policy:** Separate plan commit required
+
+> **Superseded 2026-09-07.** This contract remains historical planning
+> evidence. Execute the replacement [Phase 5 final spread and total selection](../2026-09-07/04-phase5-final-spread-total-selection.md),
+> which consumes the frozen Phase 4A rating and Phase 4B target baselines.
 
 ## Goal
 

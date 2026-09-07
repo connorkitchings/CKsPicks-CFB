@@ -2,9 +2,9 @@
 
 > **Authority note (2026-09-05):** This catalog is the baseline input to the
 > data-first program, not a frozen assertion that every listed measurement will
-> be retained. Phase 1 audits its evidence and Phase 3 evaluates meaning,
-> redundancy, shorter-window information, and totals decomposition. V4 inputs
-> remain unchanged.
+> be retained. Phase 1 audits its evidence and the active Phase 3 contract
+> evaluates meaning and the shared football core; target context is evaluated
+> separately in Phase 4B. V4 inputs remain unchanged.
 
 > **Status:** Initial catalog for the approved 2026 rating transition. It does
 > not change V4 feature inputs.

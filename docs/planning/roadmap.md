@@ -9,6 +9,12 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
+> **Current research checkpoint (2026-09-07):** Phases 0–2 of the data-first
+> program are complete. The active sequence is Phase 3 measurement certification
+> and core selection, Phase 4A context-free ratings, Phase 4B target-context
+> selection, Phase 5 final forecast selection, and Phase 6 prospective evidence.
+> The historical phase queue below is retained for evidence only.
+
 ## Direction
 
 V4 remains the live, rollback-safe 2026 production system. The approved
@@ -149,7 +155,8 @@ calendar date cannot bypass a failed gate.
   activation-ineligible — see the
   [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
   Its completed R1/R2 evidence remains available for audit. The data-first
-  program's Phase 0 is implemented; Phase 1 data and evidence audit is next.
+  program's Phases 0–2 are implemented; Phase 3 is next under the active
+  data-first roadmap.
 
 ## Invariants and open decisions
 

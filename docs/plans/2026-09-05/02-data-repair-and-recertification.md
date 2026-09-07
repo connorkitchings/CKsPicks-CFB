@@ -1,12 +1,13 @@
 # Phase 2: Data Repair and Recertification
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-05
 - **Planner:** Sol
 - **Approval source:** User approved the full data-first plan on 2026-09-05 and
   explicitly approved the full Phase 2 scope (split sub-phases, ingest 2015-2019,
   include FBS-FCS games) on 2026-09-05.
-- **Implementation log:** `session_logs/2026-09-06/01-phase2b-postseason-capture.md`
+- **Implementation log:** Final closure:
+  `session_logs/2026-09-06/07-transformation-check-in-phase2d-repair.md`
 - **Sealed Phase 1 input:**
   `artifacts/research/data-first-football-v1/phase1/2026-09-05T1510Z-phase1-evidence-audit-v2/`
 - **Commit policy:** Separate plan commit required
@@ -536,3 +537,9 @@ rosters, rankings, and betting lines. It normalizes signed Preview datasets
 directly from those captures, records all timing as historically reconstructed,
 and emits a separate auxiliary eligibility manifest. Context may support Phase
 3 research only; market references support a post-Phase-5 diagnostic only.
+
+> **Current-authority note (2026-09-07):** The Phase 2e evidence and its
+> reconstructed-only restriction remain authoritative. The downstream staging
+> sentence above is superseded: Phase 3 consumes only the Phase 2d core handoff;
+> auxiliary context first becomes eligible for Phase 4B under the active
+> data-first roadmap.

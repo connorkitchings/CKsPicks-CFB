@@ -39,8 +39,9 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   exact unsupported/correction-required historical result dispositions; v2 is
   immutable superseded evidence.
 - [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
-  — **Reopened 2026-09-06.** Phase 2a–2c evidence is retained; Phase 2d must
-  publish a checksum-valid replacement handoff under strengthened gates.
+  — **Implemented after repair.** Phase 2a–2c evidence is retained; the signed
+  Phase 2d core handoff and Phase 2e reconstructed-only auxiliary handoff are
+  the current research parents.
 - [Phase 2c materialization and ref-set closure](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
   — **Implemented 2026-09-06.** Materialized and verified the exact ten-season
   Preview corpus and published the checksum-verified ref set that unblocks
@@ -50,15 +51,23 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   rehearsal remain historical evidence; the replacement handoff is authoritative.
 - [Transformation check-in, Phase 2d repair, and Phase 3 redesign](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
   — **Implemented.** Published the corrected core and reconstructed-only auxiliary handoffs.
-- [Phase 3 football measurement validation](2026-09-05/03-football-measurement-validation.md)
-  — **Approved, ready to implement.** The staged design is frozen.
-- [Phase 4 simple team-rating benchmarks](2026-09-05/04-simple-team-rating-benchmarks.md)
-  — Approved; bounded interpretable ratings after measurement selection.
-- [Phase 5 spread and total forecasting](2026-09-05/05-spread-total-forecasting.md)
-  — Approved; separate target selection with simple benchmarks.
-- [Phase 6 prospective evidence and line comparison](2026-09-05/06-prospective-evidence-and-line-comparison.md)
-  — Approved; frozen future evidence and market comparison, with betting
-  decisions deferred.
+- [Phase 3 measurement certification and core selection](2026-09-07/01-phase3-measurement-certification-and-core-selection.md)
+  — **Approved.** Certifies measurement meaning and selects only the shared
+  football core from the signed Phase 2d handoff.
+- [Phase 4A context-free rating selection](2026-09-07/02-phase4a-context-free-rating-selection.md)
+  — **Approved after Phase 3.** Selects the prior and updater without auxiliary
+  context.
+- [Phase 4B target-context selection](2026-09-07/03-phase4b-target-context-selection.md)
+  — **Approved after Phase 4A.** Tests one context family at a time through a
+  frozen forecast bridge.
+- [Phase 5 final spread and total selection](2026-09-07/04-phase5-final-spread-total-selection.md)
+  — **Approved after Phase 4B.** Selects final target-specific forecasts.
+- [Phase 6 prospective evidence and market diagnostics](2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md)
+  — **Approved after Phase 5.** Collects frozen prospective evidence without
+  promotion or publication.
+- [Phase 3–6 resequencing](2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md)
+  — **In Progress.** Governs this active replacement sequence; the superseded
+  2026-09-05 Phase 3–6 contracts remain historical records.
 
 ### Operations (Week 1)
 

@@ -8,7 +8,8 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 **V4 is the live 2026 production champion.** It publishes spread and total
 predictions through the fail-closed weekly operations workflow. New research is
 governed by the [data-first football forecasting roadmap](planning/data-first-football-forecasting-roadmap.md):
-repository alignment, data audit/repair, measurement validation, simple ratings,
+repository alignment, data audit/repair, measurement certification and shared
+core selection, context-free ratings, target-context selection, final
 spread/total forecasting, then prospective evidence. The completed R1/R2 and
 earlier candidate work remain historical evidence subject to audit. 2020 is
 excluded globally; 2025 is development data only inside the new research
