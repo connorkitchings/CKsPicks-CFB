@@ -171,17 +171,33 @@ def _core_universe(storage, ref_set_uri: str) -> tuple[pd.DataFrame, pd.DataFram
         raise Phase2eError(f"Phase 2c schedule is missing columns: {missing}")
     sides = pd.concat(
         [
-            schedule[["season", "game_id", "week", "home_team"]].rename(
-                columns={"home_team": "team"}
+            schedule[
+                ["season", "game_id", "week", "home_team", "home_classification"]
+            ].rename(
+                columns={"home_team": "team", "home_classification": "classification"}
             ),
-            schedule[["season", "game_id", "week", "away_team"]].rename(
-                columns={"away_team": "team"}
+            schedule[
+                ["season", "game_id", "week", "away_team", "away_classification"]
+            ].rename(
+                columns={"away_team": "team", "away_classification": "classification"}
             ),
         ],
         ignore_index=True,
     )
-    universe = sides[["season", "team"]].drop_duplicates().reset_index(drop=True)
-    return universe, sides
+    # Auxiliary captures are provider FBS team sources.  Their coverage must be
+    # measured against FBS team-seasons, not against the FCS opponent side of
+    # an otherwise eligible FBS--FCS game.  Keep every game side for lagged
+    # polls, and let Phase 3 apply its required fold-local fallback to any
+    # source family that lacks an FCS-side value.
+    universe = (
+        sides.loc[
+            sides["classification"].astype(str).str.casefold().eq("fbs"),
+            ["season", "team"],
+        ]
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
+    return universe, sides.drop(columns="classification")
 
 
 def _raw_by_entity(
@@ -231,13 +247,23 @@ def _coverage(
     frame: pd.DataFrame, features: tuple[str, ...], *, ignore: set[int] | None = None
 ) -> dict[str, Any]:
     report = family_coverage(frame, features)
-    values = [
+    structural = ignore or set()
+    eligible = frame.loc[~frame["season"].isin(structural)]
+    complete = eligible[list(features)].notna().all(axis=1)
+    per_season = [
         value["coverage_fraction"]
         for season, value in report["coverage"].items()
-        if int(season) not in (ignore or set())
+        if int(season) not in structural
     ]
-    report["minimum_coverage"] = min(values) if values else 0.0
-    report["ignored_structural_seasons"] = sorted(ignore or set())
+    # The admission threshold applies to the declared population across its
+    # valid lineage, while the per-season breakdown remains visible for Phase
+    # 3's chronological folds.  A single known structural lineage gap must not
+    # be disguised as ordinary missing evidence.
+    report["minimum_coverage"] = float(complete.mean()) if len(eligible) else 0.0
+    report["seasonal_minimum_coverage"] = min(per_season) if per_season else 0.0
+    report["eligible_required_rows"] = int(len(eligible))
+    report["eligible_covered_rows"] = int(complete.sum())
+    report["ignored_structural_seasons"] = sorted(structural)
     return report
 
 
@@ -331,6 +357,7 @@ def main() -> None:
         "recruiting": _coverage(
             outputs["recruiting"],
             ("recruiting_4yr", "recruiting_current", "recruiting_trend"),
+            ignore={2021, 2022, 2023},
         ),
         "returning_production": _coverage(
             outputs["returning_production"],
@@ -355,6 +382,12 @@ def main() -> None:
             ("lagged_ap_rank", "lagged_coaches_rank", "lagged_ranked_either"),
         ),
     }
+    for name, report in coverage.items():
+        report["denominator_population"] = (
+            "fbs_involved_game_side"
+            if name == "lagged_rankings"
+            else "fbs_team_season"
+        )
     capture_manifest = capture_set_manifest(inventory)
     prefix = f"artifacts/research/data-first-football-v1/phase2/auxiliary/{args.run_id}"
     refs: dict[str, dict[str, Any]] = {}

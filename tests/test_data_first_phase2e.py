@@ -60,6 +60,15 @@ def test_recruiting_requires_four_complete_class_rows():
     assert result.loc[0, "recruiting_trend"] == 1.5
 
 
+def test_recruiting_records_the_forbidden_2020_structural_fallback():
+    universe = pd.DataFrame({"season": [2021], "team": ["A"]})
+    raw = pd.DataFrame(
+        {"year": [2018, 2019, 2021], "team": ["A"] * 3, "points": [1, 2, 4]}
+    )
+    result = normalize_recruiting(raw, universe)
+    assert result.loc[0, "missing_reason"] == "forbidden_2020_four_class_window"
+
+
 def test_coaching_excludes_ambiguous_assignment_without_outcome_selection():
     universe = pd.DataFrame({"season": [2021], "team": ["A"]})
     raw = pd.DataFrame(

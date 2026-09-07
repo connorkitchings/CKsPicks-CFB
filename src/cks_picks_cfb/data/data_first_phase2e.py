@@ -180,6 +180,15 @@ def normalize_recruiting(raw: pd.DataFrame, universe: pd.DataFrame) -> pd.DataFr
         current = values[values["year"] == row.season]["points"]
         mean = values["points"].mean() if len(values) == 4 else np.nan
         current_value = current.iloc[0] if len(current) == 1 else np.nan
+        missing_reason = (
+            None
+            if pd.notna(current_value) and pd.notna(mean)
+            else (
+                "forbidden_2020_four_class_window"
+                if 2020 in range(row.season - 3, row.season + 1)
+                else "incomplete_four_class_history"
+            )
+        )
         rows.append(
             {
                 "season": row.season,
@@ -189,9 +198,7 @@ def normalize_recruiting(raw: pd.DataFrame, universe: pd.DataFrame) -> pd.DataFr
                 "recruiting_trend": current_value - mean
                 if pd.notna(current_value) and pd.notna(mean)
                 else np.nan,
-                "missing_reason": None
-                if pd.notna(current_value) and pd.notna(mean)
-                else "incomplete_four_class_history",
+                "missing_reason": missing_reason,
                 "timing_class": RECONSTRUCTED_TIMING,
             }
         )
