@@ -294,7 +294,6 @@ def _write_dataset(
         partitions={"seasons": list(DEVELOPMENT_SEASONS)},
         coverage={"timing_class": "historically_reconstructed"},
         validation={
-            "unique_keys": not frame.duplicated().any(),
             "excludes_2020": 2020 not in set(frame["season"])
             if "season" in frame
             else True,

@@ -279,6 +279,95 @@ _DERIVED_SILVER_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+_PHASE2E_SCHEMAS: dict[str, DatasetSchema] = {
+    "phase2e_recruiting": DatasetSchema(
+        dataset="phase2e_recruiting",
+        schema_version="phase2e_recruiting_v1",
+        required=(
+            "season", "team", "recruiting_4yr", "recruiting_current",
+            "recruiting_trend", "missing_reason", "timing_class",
+        ),
+        keys=("season", "team"),
+        integer_columns=("season",),
+        nonnullable=("season", "team", "timing_class"),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    "phase2e_returning_production": DatasetSchema(
+        dataset="phase2e_returning_production",
+        schema_version="phase2e_returning_production_v1",
+        required=(
+            "season", "team", "return_total_ppa", "return_passing_ppa",
+            "return_rushing_ppa", "return_receiving_ppa", "return_percent_ppa",
+            "return_passing_usage", "return_rushing_usage", "missing_reason",
+            "timing_class",
+        ),
+        keys=("season", "team"),
+        integer_columns=("season",),
+        nonnullable=("season", "team", "timing_class"),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    "phase2e_coaching": DatasetSchema(
+        dataset="phase2e_coaching",
+        schema_version="phase2e_coaching_v1",
+        required=(
+            "season", "team", "coach_tenure", "coach_new", "missing_reason",
+            "timing_class",
+        ),
+        keys=("season", "team"),
+        integer_columns=("season",),
+        boolean_columns=("coach_new",),
+        nonnullable=("season", "team", "timing_class"),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    "phase2e_roster_continuity": DatasetSchema(
+        dataset="phase2e_roster_continuity",
+        schema_version="phase2e_roster_continuity_v1",
+        required=(
+            "season", "team", "roster_size", "roster_returning_share",
+            "roster_returning_qb_count", "identity_exclusion_count",
+            "missing_reason", "timing_class",
+        ),
+        keys=("season", "team"),
+        integer_columns=("season", "identity_exclusion_count"),
+        nonnullable=("season", "team", "identity_exclusion_count", "timing_class"),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    "phase2e_lagged_rankings": DatasetSchema(
+        dataset="phase2e_lagged_rankings",
+        schema_version="phase2e_lagged_rankings_v1",
+        required=(
+            "season", "week", "game_id", "team", "lagged_ap_rank",
+            "lagged_coaches_rank", "lagged_ranked_either", "missing_reason",
+            "timing_class",
+        ),
+        keys=("season", "game_id", "team"),
+        integer_columns=("season", "week", "game_id"),
+        nonnullable=("season", "week", "game_id", "team", "timing_class"),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    "phase2e_market_references": DatasetSchema(
+        dataset="phase2e_market_references",
+        schema_version="phase2e_market_references_v1",
+        required=(
+            "game_id", "spread_line", "total_line", "market_policy_version",
+            "spread_selection_rule", "total_selection_rule", "spread_provider_count",
+            "total_provider_count", "source_quote_ids", "market_snapshot_id",
+            "market_captured_at", "timing_class", "usage",
+        ),
+        keys=("market_snapshot_id",),
+        integer_columns=("game_id", "spread_provider_count", "total_provider_count"),
+        timestamp_columns=("market_captured_at",),
+        nonnullable=(
+            "game_id", "market_policy_version", "source_quote_ids",
+            "market_snapshot_id", "market_captured_at", "timing_class", "usage",
+        ),
+        allowed_values={
+            "timing_class": ("historically_reconstructed",),
+            "usage": ("post_phase5_diagnostic_only",),
+        },
+    ),
+}
+
 _RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -712,6 +801,14 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
     """Return the executable contract for every active immutable dataset."""
     if dataset in _DERIVED_SILVER_SCHEMAS:
         schema = _DERIVED_SILVER_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, "
+                f"got {schema_version}"
+            )
+        return schema
+    if dataset in _PHASE2E_SCHEMAS:
+        schema = _PHASE2E_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, "
