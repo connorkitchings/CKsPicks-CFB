@@ -1,0 +1,97 @@
+measurement_config_version: measurement_baseline_v3
+schema_version: data_first_phase3_config_v1
+catalog_version: 3
+environment: preview
+description: >-
+  Data-first Phase 3 Preview-only ten-season measurement certification.
+seasons:
+  historical_development: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  protected: []
+  forbidden: [2020]
+  out_of_scope: []
+output_root: artifacts/research/data-first-football-v1/phase3
+research_prefix: artifacts/research/data-first-football-v1/phase3
+schedule_policy:
+  require_completed: true
+  excluded_statuses: [cancelled, canceled, postponed]
+  require_reconciled_team_game: true
+temporal_policy:
+  reconstructed_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  authentic_seasons: []
+  authentic_timestamp_columns: [effective_at, captured_at, observed_at, __captured_at]
+adjustment:
+  method: iterative_additive_league_centered
+  iterations: 4
+  retained_iterations: [0, 4]
+measurements:
+  - measurement_id: epa_per_play
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: sum of eligible-play PPA
+    denominator: eligible scrimmage plays
+  - measurement_id: success_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: successful eligible plays
+    denominator: eligible scrimmage plays
+  - measurement_id: explosive_rate_20
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: iterative_additive
+    numerator: eligible plays gaining at least 20 yards
+    denominator: eligible scrimmage plays
+  - measurement_id: points_per_scoring_opportunity
+    source: canonical_play_score_stream
+    roles: [offense, defense]
+    exposure_unit: opportunities
+    adjustment: iterative_additive
+    numerator: score-stream drive points
+    denominator: eligible scoring-opportunity drives
+  - measurement_id: average_start_field_position
+    source: drives
+    roles: [offense, defense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: own-goal distance at eligible drive start
+    denominator: eligible drives
+  - measurement_id: plays_per_drive
+    source: byplay
+    roles: [offense]
+    exposure_unit: drives
+    adjustment: none
+    numerator: eligible scrimmage plays
+    denominator: eligible offensive drives
+  - measurement_id: turnover_rate
+    source: byplay
+    roles: [offense, defense]
+    exposure_unit: plays
+    adjustment: none
+    numerator: eligible-play turnovers
+    denominator: eligible scrimmage plays
+selection:
+  primary_rho: 0.60
+  primary_updater: exposure_weighted_empirical_bayes
+  ridge_alpha: 10
+  validation_seasons: [2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  minimum_pooled_improvement_pct: 0.5
+  maximum_seasonal_regression_pct: 5.0
+  bootstrap_confidence: 0.90
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260907
+  sensitivity:
+    recency_half_life_games: 4
+    maximum_regression_vs_epa_only_pct: 0.5
+candidates:
+  - epa_only
+  - quality_core_equal
+  - without_success_rate
+  - without_explosive_rate_20
+  - without_points_per_scoring_opportunity
+  - without_epa_per_play
+  - epa_pass_rush
+  - quality_core_epa_split

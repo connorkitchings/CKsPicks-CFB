@@ -1,10 +1,10 @@
 # Phase 3: Measurement Certification and Shared Core Selection
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.
-- **Implementation log:** Pending
+- **Implementation log:** `session_logs/2026-09-07/02-phase3-measurement-certification.md`
 - **Commit policy:** Separate plan and implementation/evidence commits; user executes Git operations.
 
 ## Goal
