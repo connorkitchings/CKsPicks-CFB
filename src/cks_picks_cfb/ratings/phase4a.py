@@ -506,13 +506,23 @@ def _fit_predict_ridge(
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
             model = Ridge(alpha=ridge_alpha).fit(x_train, y_train)
+    except (RuntimeWarning, FloatingPointError, ValueError) as exc:
+        raise Phase4AError(f"Ridge fit numerical failure ({context}): {exc}") from exc
+    coefficients = np.ascontiguousarray(model.coef_, dtype=np.float64)
+    intercept = float(model.intercept_)
+    if not np.isfinite(coefficients).all() or not np.isfinite(intercept):
+        raise Phase4AError(
+            f"Ridge fit produced non-finite coefficients ({context}): "
+            f"coef_max={np.abs(coefficients).max()}, intercept={intercept}"
+        )
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
             predicted = np.ascontiguousarray(
                 model.predict(x_validate), dtype=np.float64
             )
     except (RuntimeWarning, FloatingPointError, ValueError) as exc:
-        raise Phase4AError(f"Ridge numerical failure ({context}): {exc}") from exc
-    coefficients = np.ascontiguousarray(model.coef_, dtype=np.float64)
-    intercept = float(model.intercept_)
+        raise Phase4AError(f"Ridge predict numerical failure ({context}): {exc}") from exc
     if (
         not np.isfinite(coefficients).all()
         or not np.isfinite(intercept)
