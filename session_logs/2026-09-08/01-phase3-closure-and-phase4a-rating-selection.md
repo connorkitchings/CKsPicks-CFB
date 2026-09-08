@@ -72,6 +72,11 @@
   normalizes nullable source-season state columns before concatenation. This
   follow-up remains dry-run-only and requires a further user commit before the
   next retry.
+- The third dry run completed all 101,024 fold predictions and retained
+  `rho_0_60__exposure`, but emitted Ridge overflow warnings from an underflowed
+  `1e-8` fold feature scale. The rating path now uses the established `0.05`
+  scale floor for fold-local standardization. This requires a final user commit
+  and warning-free dry-run repeat before apply can be considered.
 
 ## Handoff Notes
 

@@ -115,6 +115,10 @@ changing the phase boundary:
   5%, and a positive 90% paired season-then-week bootstrap lower bound (2,000
   draws, deterministic 20260908 seed). Within 0.5% of the best passer, choose
   fewer mechanisms; otherwise retain the reference.
+- Use the same `0.05` lower scale bound for fold-local rating-feature
+  standardization. This prevents an all-neutral or near-constant early fold
+  from manufacturing numerically explosive Ridge inputs; it does not clip or
+  otherwise transform rating values.
 - Apply artifacts are Preview-only under
   `artifacts/research/data-first-football-v1/phase4a/runs/<run-id>/` and bind
   the signed Phase 3 manifest plus its exact Phase 2d parent chain. Required

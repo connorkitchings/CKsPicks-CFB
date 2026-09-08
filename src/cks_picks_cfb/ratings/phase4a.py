@@ -364,7 +364,10 @@ def _standardize(
         if values.empty:
             raise Phase4AError(f"fold has no training evidence for {feature}")
         centers[feature] = float(values.mean())
-        scales[feature] = max(float(values.std(ddof=0)), 1e-8)
+        # Phase 4A keeps the Phase 3 rating-scale floor. A near-zero
+        # fold-local standard deviation would turn ordinary first-season
+        # movement into an artificial, numerically unstable Ridge feature.
+        scales[feature] = max(float(values.std(ddof=0)), 0.05)
         validate_missing = ~np.isfinite(_num(validate_out, feature))
         fallback |= validate_missing
         for frame in (train_out, validate_out):

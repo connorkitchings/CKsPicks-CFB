@@ -31,6 +31,7 @@ from cks_picks_cfb.data.data_first_phase4a import (
     verify_phase3_parent,
 )
 from cks_picks_cfb.ratings.phase4a import (
+    _standardize,
     analytic_posterior,
     fcs_partial_pool,
     paired_bootstrap_interval,
@@ -225,3 +226,22 @@ def test_unseen_fcs_fallback_uses_only_preceding_named_fcs_evidence():
         sd_column="offense_sd",
         cutoff="2024-09-08T00:00:00Z",
     ) == (0.0, 1.0, "neutral_no_preceding_fcs_cohort")
+
+
+def test_fold_standardization_uses_the_rating_scale_floor():
+    train = pd.DataFrame(
+        [
+            {
+                feature: 0.0
+                for feature in (
+                    "home_offense",
+                    "home_defense",
+                    "away_offense",
+                    "away_defense",
+                )
+            }
+        ]
+    )
+    validate = train.copy()
+    _, _, metadata = _standardize(train, validate)
+    assert set(metadata["scale"].values()) == {0.05}
