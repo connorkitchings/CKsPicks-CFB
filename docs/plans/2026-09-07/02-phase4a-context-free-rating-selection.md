@@ -80,6 +80,26 @@ Phase 4A input.
 New priors/updaters, altered uncertainty semantics, rating-assisted opponent
 adjustment, or any auxiliary-context input requires a revised approved plan.
 
+### 2026-09-08 implementation amendment — bounded numerical execution
+
+The diagnostic-only Preview dry runs established that the approved rating
+values remain approximately within -3 to +3. The observed Ridge overflow came
+from pandas nullable `Float64` feature and target columns becoming NumPy
+`object` matrices at the fold translator boundary, not from rating semantics.
+Phase 4A now explicitly converts standardized training features, validation
+features, and targets to contiguous native `float64` arrays before fitting or
+prediction. The established `0.05` scale floor and range guard remain in
+place.
+
+Every `RuntimeWarning` or floating-point exception raised during Ridge fitting
+or prediction is now a contextual `Phase4AError`; matrices, coefficients,
+intercepts, predictions, absolute errors, and attribution evidence must all be
+finite before artifact creation. The independent verifier repeats the evidence
+and coefficient checks. This is an execution-boundary correction only: it does
+not alter candidates, rating values, chronology, alpha, selection gates,
+schemas, clipping policy, or activation boundary. Only a warning-free run of
+the corrected committed code may determine the retained candidate.
+
 ### 2026-09-08 implementation amendment — user-authorized analytic posterior
 
 The user's 2026-09-08 instruction to implement this contract authorizes this

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -24,6 +25,21 @@ from cks_picks_cfb.data.data_first_phase4a import (
 
 VALIDATION_SEASONS = (2018, 2019, 2021, 2022, 2023, 2024, 2025)
 FEATURES = ("home_offense", "home_defense", "away_offense", "away_defense")
+PREDICTION_NUMERIC_COLUMNS = (
+    "actual",
+    "prediction",
+    "absolute_error",
+    "ridge_intercept",
+)
+ATTRIBUTION_NUMERIC_COLUMNS = (
+    "pooled_mae",
+    "reference_mae",
+    "improvement_pct",
+    "bootstrap_mean_improvement",
+    "bootstrap_90_lower",
+    "bootstrap_90_upper",
+    "maximum_seasonal_regression_pct",
+)
 
 
 @dataclass(frozen=True)
@@ -37,6 +53,58 @@ class Phase4AComputation:
 
 def _num(frame: pd.DataFrame, column: str) -> pd.Series:
     return pd.to_numeric(frame[column], errors="coerce")
+
+
+def _native_float64(values: pd.Series, *, context: str) -> np.ndarray:
+    """Materialize nullable pandas numerics as contiguous native floats."""
+    try:
+        result = np.ascontiguousarray(
+            values.to_numpy(dtype=np.float64, na_value=np.nan)
+        )
+    except (TypeError, ValueError) as exc:
+        raise Phase4AError(
+            f"could not materialize native float64 values ({context})"
+        ) from exc
+    return result
+
+
+def _require_finite_columns(
+    frame: pd.DataFrame, columns: tuple[str, ...], *, context: str
+) -> None:
+    """Reject non-finite published evidence with its available row context."""
+    for column in columns:
+        values = pd.to_numeric(frame[column], errors="coerce").to_numpy(
+            dtype=np.float64
+        )
+        invalid = ~np.isfinite(values)
+        if invalid.any():
+            row = frame.iloc[int(np.flatnonzero(invalid)[0])]
+            details = ", ".join(
+                f"{name}={row[name]}"
+                for name in ("candidate", "season", "target")
+                if name in frame.columns
+            )
+            raise Phase4AError(
+                f"{context} contains non-finite {column}"
+                + (f" ({details})" if details else "")
+            )
+
+
+def validate_tournament_evidence(
+    predictions: pd.DataFrame, attribution: pd.DataFrame | None = None
+) -> None:
+    """Fail closed before retaining predictions or selection evidence."""
+    _require_finite_columns(
+        predictions,
+        PREDICTION_NUMERIC_COLUMNS,
+        context="Phase 4A prediction evidence",
+    )
+    if attribution is not None:
+        _require_finite_columns(
+            attribution,
+            ATTRIBUTION_NUMERIC_COLUMNS,
+            context="Phase 4A attribution evidence",
+        )
 
 
 def analytic_posterior(
@@ -393,16 +461,66 @@ def _standardize(
         validate_out[feature] = (
             _num(validate_out, feature) - centers[feature]
         ) / scales[feature]
-    if (
-        not np.isfinite(train_out.loc[:, FEATURES].to_numpy(dtype=float)).all()
-        or not np.isfinite(validate_out.loc[:, FEATURES].to_numpy(dtype=float)).all()
-    ):
+    x_train = np.ascontiguousarray(
+        train_out.loc[:, FEATURES].to_numpy(dtype=np.float64)
+    )
+    x_validate = np.ascontiguousarray(
+        validate_out.loc[:, FEATURES].to_numpy(dtype=np.float64)
+    )
+    if not np.isfinite(x_train).all() or not np.isfinite(x_validate).all():
         raise Phase4AError("fold standardization produced non-finite rating features")
     return (
-        train_out.loc[:, FEATURES].to_numpy(),
-        validate_out.loc[:, FEATURES].to_numpy(),
+        x_train,
+        x_validate,
         {"center": centers, "scale": scales, "fallback": fallback},
     )
+
+
+def _fit_predict_ridge(
+    *,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    x_validate: np.ndarray,
+    candidate: str,
+    validation_season: int,
+    target: str,
+    ridge_alpha: float,
+) -> tuple[Ridge, np.ndarray]:
+    """Run the fixed Ridge head while treating numerical warnings as fatal."""
+    context = (
+        f"candidate={candidate}, validation_season={validation_season}, target={target}"
+    )
+    if not (
+        x_train.dtype == np.float64
+        and x_validate.dtype == np.float64
+        and y_train.dtype == np.float64
+        and x_train.flags.c_contiguous
+        and x_validate.flags.c_contiguous
+        and y_train.flags.c_contiguous
+        and np.isfinite(x_train).all()
+        and np.isfinite(x_validate).all()
+        and np.isfinite(y_train).all()
+    ):
+        raise Phase4AError(f"Ridge received invalid native-float inputs ({context})")
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", RuntimeWarning)
+            with np.errstate(over="raise", divide="raise", invalid="raise"):
+                model = Ridge(alpha=ridge_alpha).fit(x_train, y_train)
+                predicted = np.ascontiguousarray(
+                    model.predict(x_validate), dtype=np.float64
+                )
+    except (RuntimeWarning, FloatingPointError, ValueError) as exc:
+        raise Phase4AError(f"Ridge numerical failure ({context}): {exc}") from exc
+    coefficients = np.ascontiguousarray(model.coef_, dtype=np.float64)
+    intercept = float(model.intercept_)
+    if (
+        not np.isfinite(coefficients).all()
+        or not np.isfinite(intercept)
+        or not np.isfinite(predicted).all()
+    ):
+        raise Phase4AError(f"Ridge produced non-finite output ({context})")
+    return model, predicted
 
 
 def run_rating_tournament(
@@ -437,10 +555,32 @@ def run_rating_tournament(
             x_train, x_validate, meta = _standardize(train, validate)
             training_seasons = sorted(set(train["season"].astype(int)))
             for target in ("margin", "total"):
-                model = Ridge(alpha=ridge_alpha).fit(
-                    x_train, _num(train, target).to_numpy()
+                y_train = _native_float64(
+                    _num(train, target),
+                    context=(
+                        f"candidate={candidate}, validation_season={season}, target={target}"
+                    ),
                 )
-                predicted = model.predict(x_validate)
+                actual = _native_float64(
+                    _num(validate, target),
+                    context=(
+                        f"candidate={candidate}, validation_season={season}, target={target}"
+                    ),
+                )
+                model, predicted = _fit_predict_ridge(
+                    x_train=x_train,
+                    y_train=y_train,
+                    x_validate=x_validate,
+                    candidate=candidate,
+                    validation_season=season,
+                    target=target,
+                    ridge_alpha=ridge_alpha,
+                )
+                if not np.isfinite(actual).all():
+                    raise Phase4AError(
+                        "validation outcome is non-finite "
+                        f"(candidate={candidate}, validation_season={season}, target={target})"
+                    )
                 for pos, row in enumerate(validate.itertuples(index=False)):
                     records.append(
                         {
@@ -450,10 +590,10 @@ def run_rating_tournament(
                             "game_id": int(row.game_id),
                             "kickoff_utc": str(row.kickoff_utc),
                             "target": target,
-                            "actual": float(getattr(row, target)),
+                            "actual": float(actual[pos]),
                             "prediction": float(predicted[pos]),
                             "absolute_error": abs(
-                                float(getattr(row, target)) - float(predicted[pos])
+                                float(actual[pos]) - float(predicted[pos])
                             ),
                             "fold_id": f"validate-{season}",
                             "training_seasons": json.dumps(training_seasons),
@@ -475,17 +615,20 @@ def run_rating_tournament(
             expected = candidate_keys
         elif expected != candidate_keys:
             raise Phase4AError("rating candidate population changed")
-    return (
+    result = (
         pd.DataFrame.from_records(records, columns=PREDICTION_COLUMNS)
         .sort_values(
             ["candidate", "season", "week", "game_id", "target"], kind="mergesort"
         )
         .reset_index(drop=True)
     )
+    validate_tournament_evidence(result)
+    return result
 
 
 def evaluate_rating_tournament(predictions: pd.DataFrame) -> pd.DataFrame:
     """Evaluate the fixed reference against every challenger with paired bootstrap."""
+    validate_tournament_evidence(predictions)
     reference = predictions[predictions["candidate"].eq("rho_0_60__exposure")]
     rows: list[dict[str, Any]] = []
     reference_keys = set(
@@ -554,6 +697,7 @@ def evaluate_rating_tournament(predictions: pd.DataFrame) -> pd.DataFrame:
         & result["seasonal_gate_passed"]
     )
     result.loc[result["candidate"].eq(selected), "selected"] = True
+    validate_tournament_evidence(predictions, result)
     return result
 
 

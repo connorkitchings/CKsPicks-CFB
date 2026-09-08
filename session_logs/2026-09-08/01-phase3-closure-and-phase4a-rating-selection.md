@@ -83,12 +83,23 @@
   feature is non-finite, retaining the offending feature's maximum magnitude
   in the error. This diagnostic guard must pass before any revised numerical
   treatment can be considered.
+- Read-only range diagnostics then established that every candidate's offense
+  and defense states remain roughly within -3 to +3. The actual cause is a
+  pandas nullable-`Float64` to NumPy-`object` conversion at the Ridge boundary,
+  despite finite standardized values. The bounded numerical-execution
+  amendment now forces contiguous native `float64` feature/target matrices,
+  promotes every Ridge numerical warning to contextual failure, and rejects
+  non-finite predictions, coefficients, errors, and attribution evidence both
+  before retention and in independent verification. It changes no modeling
+  semantics and awaits a user commit before the required warning-as-error dry
+  run.
 
 ## Handoff Notes
 
-- **Resume at:** After the user commits this scoped work, run the Phase 4A dry
-  run against the signed Phase 3 manifest, then apply and independently verify
-  its immutable Preview artifacts.
+- **Resume at:** After the user commits this numerical-execution remediation,
+  run the Phase 4A dry run with `PYTHONWARNINGS=error` against the signed Phase
+  3 manifest. Apply and independently verify immutable Preview artifacts only
+  if it is warning-free with the established population counts.
 - **Watch out for:** Preserve unrelated `.opencode/` work. Do not execute R2
   writes until the user has committed the exact code and the tracked worktree
   is clean.

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.data.data_first_phase2d import (
@@ -229,11 +230,31 @@ def select_rating(
     """Apply the predeclared gates and deterministic simplicity tie-break."""
     if set(attribution["candidate"].astype(str)) != set(RATING_CANDIDATES):
         raise Phase4AError("rating attribution lacks the complete candidate grid")
+    numeric_evidence = (
+        "pooled_mae",
+        "reference_mae",
+        "improvement_pct",
+        "bootstrap_mean_improvement",
+        "bootstrap_90_lower",
+        "bootstrap_90_upper",
+        "maximum_seasonal_regression_pct",
+    )
+    present_numeric_evidence = [
+        column for column in numeric_evidence if column in attribution.columns
+    ]
+    for column in present_numeric_evidence:
+        values = pd.to_numeric(attribution[column], errors="coerce").to_numpy(
+            dtype=float
+        )
+        if not np.isfinite(values).all():
+            raise Phase4AError(f"rating attribution has non-finite {column}")
     reference = attribution.loc[
         attribution["candidate"].eq(REFERENCE_CANDIDATE), "pooled_mae"
     ]
     if len(reference) != 1:
         raise Phase4AError("rating attribution lacks exactly one reference row")
+    if not np.isfinite(float(reference.iloc[0])) or float(reference.iloc[0]) <= 0:
+        raise Phase4AError("rating attribution has an invalid reference MAE")
     candidates = attribution.copy()
     candidates["improvement_pct"] = (
         (float(reference.iloc[0]) - candidates["pooled_mae"].astype(float))

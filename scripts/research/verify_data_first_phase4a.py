@@ -20,6 +20,7 @@ from cks_picks_cfb.data.data_first_phase4a import (
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.ratings.phase4a import validate_tournament_evidence
 
 
 def _ref(value: dict[str, object]) -> DatasetRef:
@@ -30,6 +31,24 @@ def _ref(value: dict[str, object]) -> DatasetRef:
         content_sha=str(value["content_sha"]),
         uri=str(value["uri"]),
     )
+
+
+def _validate_numeric_artifact_evidence(
+    predictions: pd.DataFrame, attribution: pd.DataFrame
+) -> None:
+    """Validate retained tournament evidence independently of the runner."""
+    validate_tournament_evidence(predictions, attribution)
+    for row in predictions.itertuples(index=False):
+        try:
+            coefficients = np.asarray(
+                json.loads(row.ridge_coefficients), dtype=np.float64
+            )
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise Phase4AError(
+                "frozen Phase 4A Ridge coefficients are malformed"
+            ) from exc
+        if coefficients.shape != (4,) or not np.isfinite(coefficients).all():
+            raise Phase4AError("frozen Phase 4A Ridge coefficients are non-finite")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -90,6 +109,7 @@ def main(argv: list[str] | None = None) -> None:
         teams["overall_rating"], (teams["offense_rating"] + teams["defense_rating"]) / 2
     ):
         raise Phase4AError("frozen Phase 4A overall rating is not role-composed")
+    _validate_numeric_artifact_evidence(predictions, attribution)
     selected = attribution[attribution["selected"].astype(bool)]
     if (
         len(selected) != 1

@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import runpy
+import warnings
 from copy import deepcopy
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from sklearn.linear_model import Ridge
 
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.data.data_first_phase3 import (
@@ -31,10 +35,12 @@ from cks_picks_cfb.data.data_first_phase4a import (
     verify_phase3_parent,
 )
 from cks_picks_cfb.ratings.phase4a import (
+    _fit_predict_ridge,
     _standardize,
     analytic_posterior,
     fcs_partial_pool,
     paired_bootstrap_interval,
+    validate_tournament_evidence,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -247,6 +253,25 @@ def test_fold_standardization_uses_the_rating_scale_floor():
     assert set(metadata["scale"].values()) == {0.05}
 
 
+def test_fold_standardization_converts_nullable_features_to_native_float64():
+    train = pd.DataFrame(
+        {
+            feature: pd.Series([0.0, 1.0], dtype="Float64")
+            for feature in (
+                "home_offense",
+                "home_defense",
+                "away_offense",
+                "away_defense",
+            )
+        }
+    )
+    x_train, x_validate, _ = _standardize(train, train.copy())
+    for matrix in (x_train, x_validate):
+        assert matrix.dtype == np.float64
+        assert matrix.flags.c_contiguous
+        assert np.isfinite(matrix).all()
+
+
 def test_fold_standardization_rejects_numerically_unstable_features():
     train = pd.DataFrame(
         [
@@ -272,3 +297,125 @@ def test_fold_standardization_rejects_numerically_unstable_features():
     )
     with pytest.raises(Phase4AError, match="numerically unstable"):
         _standardize(train, train.copy())
+
+
+def test_ridge_warnings_and_nonfinite_outputs_fail_closed_with_fold_context(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    x_train = np.ascontiguousarray(np.array([[0.0], [1.0]], dtype=np.float64))
+    y_train = np.ascontiguousarray(np.array([0.0, 1.0], dtype=np.float64))
+    x_validate = np.ascontiguousarray(np.array([[0.5]], dtype=np.float64))
+
+    def warn_on_predict(self: Ridge, values: np.ndarray) -> np.ndarray:
+        warnings.warn("synthetic numerical warning", RuntimeWarning)
+        return np.zeros(len(values), dtype=np.float64)
+
+    monkeypatch.setattr(Ridge, "predict", warn_on_predict)
+    with pytest.raises(
+        Phase4AError,
+        match=("candidate=neutral__exposure, validation_season=2024, target=margin"),
+    ):
+        _fit_predict_ridge(
+            x_train=x_train,
+            y_train=y_train,
+            x_validate=x_validate,
+            candidate="neutral__exposure",
+            validation_season=2024,
+            target="margin",
+            ridge_alpha=10,
+        )
+
+
+@pytest.mark.parametrize("failure", ["coefficients", "predictions"])
+def test_ridge_nonfinite_outputs_fail_closed_with_fold_context(
+    monkeypatch: pytest.MonkeyPatch, failure: str
+):
+    x_train = np.ascontiguousarray(np.array([[0.0], [1.0]], dtype=np.float64))
+    y_train = np.ascontiguousarray(np.array([0.0, 1.0], dtype=np.float64))
+    x_validate = np.ascontiguousarray(np.array([[0.5]], dtype=np.float64))
+    if failure == "coefficients":
+        original_fit = Ridge.fit
+
+        def fit_with_nan(self: Ridge, values: np.ndarray, target: np.ndarray) -> Ridge:
+            fitted = original_fit(self, values, target)
+            self.coef_ = np.array([np.nan], dtype=np.float64)
+            return fitted
+
+        monkeypatch.setattr(Ridge, "fit", fit_with_nan)
+    else:
+        monkeypatch.setattr(
+            Ridge,
+            "predict",
+            lambda self, values: np.full(len(values), np.inf, dtype=np.float64),
+        )
+    with pytest.raises(
+        Phase4AError,
+        match=("candidate=neutral__exposure, validation_season=2024, target=margin"),
+    ):
+        _fit_predict_ridge(
+            x_train=x_train,
+            y_train=y_train,
+            x_validate=x_validate,
+            candidate="neutral__exposure",
+            validation_season=2024,
+            target="margin",
+            ridge_alpha=10,
+        )
+
+
+def _numeric_attribution() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "candidate": "rho_0_60__exposure",
+                "pooled_mae": 10.0,
+                "reference_mae": 10.0,
+                "improvement_pct": 0.0,
+                "bootstrap_mean_improvement": 0.0,
+                "bootstrap_90_lower": 0.0,
+                "bootstrap_90_upper": 0.0,
+                "maximum_seasonal_regression_pct": 0.0,
+            }
+        ]
+    )
+
+
+def _numeric_prediction() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "candidate": "rho_0_60__exposure",
+                "season": 2024,
+                "target": "margin",
+                "actual": 3.0,
+                "prediction": 2.5,
+                "absolute_error": 0.5,
+                "ridge_intercept": 0.0,
+                "ridge_coefficients": "[0.1, 0.2, 0.3, 0.4]",
+            }
+        ]
+    )
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf])
+def test_selection_and_evidence_reject_nonfinite_tournament_values(value: float):
+    attribution = _attribution()
+    attribution.loc[0, "pooled_mae"] = value
+    with pytest.raises(Phase4AError, match="non-finite"):
+        select_rating(attribution)
+
+    prediction = _numeric_prediction()
+    prediction.loc[0, "prediction"] = value
+    with pytest.raises(Phase4AError, match="non-finite prediction"):
+        validate_tournament_evidence(prediction, _numeric_attribution())
+
+
+def test_independent_verifier_rejects_nonfinite_tournament_evidence():
+    verifier = runpy.run_path(
+        str(ROOT / "scripts/research/verify_data_first_phase4a.py")
+    )
+    prediction = _numeric_prediction()
+    attribution = _numeric_attribution()
+    attribution.loc[0, "bootstrap_90_lower"] = np.inf
+    with pytest.raises(Phase4AError, match="non-finite"):
+        verifier["_validate_numeric_artifact_evidence"](prediction, attribution)
