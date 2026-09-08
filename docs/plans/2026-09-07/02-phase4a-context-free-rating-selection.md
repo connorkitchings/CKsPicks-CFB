@@ -1,10 +1,10 @@
 # Phase 4A: Context-Free Rating Selection
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.
-- **Implementation log:** Pending Phase 3
+- **Implementation log:** `session_logs/2026-09-08/01-phase3-closure-and-phase4a-rating-selection.md`
 - **Commit policy:** Separate plan and implementation/evidence commits; user executes Git operations.
 
 ## Goal
@@ -79,3 +79,46 @@ Phase 4A input.
 
 New priors/updaters, altered uncertainty semantics, rating-assisted opponent
 adjustment, or any auxiliary-context input requires a revised approved plan.
+
+### 2026-09-08 implementation amendment — user-authorized analytic posterior
+
+The user's 2026-09-08 instruction to implement this contract authorizes this
+bounded amendment. It resolves the remaining implementation choices without
+changing the phase boundary:
+
+- Evaluate exactly these eight IDs: `neutral__exposure`,
+  `neutral__half_life_2`, `neutral__half_life_4`,
+  `neutral__half_life_8`, `rho_0_60__exposure`,
+  `rho_0_60__half_life_2`, `rho_0_60__half_life_4`, and
+  `rho_0_60__half_life_8`. The `rho_0_60__exposure` row is the frozen
+  selection reference.
+- Use the Phase 3 EPA-only adjusted measurement only. Each candidate applies
+  its history weighting, then the same four-iteration opponent adjustment;
+  there is no rating-assisted second adjustment. Standardize each season from
+  terminal states of strictly preceding permitted seasons, with fallback
+  center `0`, scale `0.15`, and scale floor `0.05`.
+- Use an analytic posterior: neutral annual priors reset to mean `0`, variance
+  `1`; fixed-`rho` priors carry terminal state with `rho=0.60`, including
+  two-year 2019-to-2021 decay. An evidence contribution of `e` has precision
+  `e / 100`; posterior variance is `1 / (1/prior_variance + e/100)`. No
+  residual floor or volatility model is introduced. Overall rating is the mean
+  of offense and sign-reversed defense, with propagated analytic uncertainty.
+- Named FCS teams use their own eligible history. An unseen FCS team uses a
+  preceding-data-only role cohort partially pooled against the same neutral
+  prior and carries maximum available training-fold uncertainty; an empty
+  cohort uses neutral state. States must expose the cohort and fallback reason.
+- Translate pregame states with separate fold-local, standardized Ridge
+  (`alpha=10`) heads for margin and total. Validation seasons are 2018, 2019,
+  2021–2025, with all fitting restricted to preceding seasons. Rank pooled
+  mean absolute error with equal target weight. Challengers require at least
+  0.5% pooled improvement, equal coverage, no target-season regression above
+  5%, and a positive 90% paired season-then-week bootstrap lower bound (2,000
+  draws, deterministic 20260908 seed). Within 0.5% of the best passer, choose
+  fewer mechanisms; otherwise retain the reference.
+- Apply artifacts are Preview-only under
+  `artifacts/research/data-first-football-v1/phase4a/runs/<run-id>/` and bind
+  the signed Phase 3 manifest plus its exact Phase 2d parent chain. Required
+  artifacts are versioned long rating states, wide team states, fold
+  predictions, attribution/coverage diagnostics, and a signed retained-rating
+  manifest. They explicitly deny production activation, Neon activation, and
+  publication.

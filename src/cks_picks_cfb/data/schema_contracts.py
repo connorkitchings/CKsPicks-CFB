@@ -22,6 +22,28 @@ from cks_picks_cfb.data.data_first_phase3 import (
     PHASE3_PREDICTION_DATASET,
     PHASE3_PREDICTION_SCHEMA,
 )
+from cks_picks_cfb.data.data_first_phase4a import (
+    ATTRIBUTION_COLUMNS as PHASE4A_ATTRIBUTION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_phase4a import (
+    PHASE4A_ATTRIBUTION_DATASET,
+    PHASE4A_ATTRIBUTION_SCHEMA,
+    PHASE4A_PREDICTION_DATASET,
+    PHASE4A_PREDICTION_SCHEMA,
+    PHASE4A_RATING_STATE_DATASET,
+    PHASE4A_RATING_STATE_SCHEMA,
+    PHASE4A_TEAM_STATE_DATASET,
+    PHASE4A_TEAM_STATE_SCHEMA,
+)
+from cks_picks_cfb.data.data_first_phase4a import (
+    PREDICTION_COLUMNS as PHASE4A_PREDICTION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_phase4a import (
+    RATING_STATE_COLUMNS as PHASE4A_RATING_STATE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_phase4a import (
+    TEAM_STATE_COLUMNS as PHASE4A_TEAM_STATE_COLUMNS,
+)
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_KEYS,
@@ -825,6 +847,88 @@ _RATING_SCHEMA_BASES.update(
                 "selected",
             ),
             nonnullable=PHASE3_ATTRIBUTION_COLUMNS,
+        ),
+        PHASE4A_RATING_STATE_DATASET: DatasetSchema(
+            dataset=PHASE4A_RATING_STATE_DATASET,
+            schema_version=PHASE4A_RATING_STATE_SCHEMA,
+            required=PHASE4A_RATING_STATE_COLUMNS,
+            keys=("candidate", "season", "game_id", "team", "unit_role"),
+            integer_columns=(
+                "season",
+                "week",
+                "game_id",
+                "annual_decay_steps",
+                "completed_games",
+            ),
+            boolean_columns=("fallback_used",),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=(
+                "candidate",
+                "season",
+                "week",
+                "game_id",
+                "kickoff_utc",
+                "team",
+                "unit_role",
+                "prior_source",
+                "annual_decay_steps",
+                "standardization_center",
+                "standardization_scale",
+                "effective_exposure",
+                "completed_games",
+                "prior_mean",
+                "prior_variance",
+                "prior_precision",
+                "observed_precision",
+                "posterior_mean",
+                "posterior_variance",
+                "posterior_sd",
+                "movement",
+                "fallback_used",
+                "parent_identity_sha",
+                "code_sha",
+                "config_sha",
+            ),
+            allowed_values={
+                "unit_role": ("offense", "defense"),
+                "prior_source": ("neutral", "fixed_rho"),
+            },
+        ),
+        PHASE4A_TEAM_STATE_DATASET: DatasetSchema(
+            dataset=PHASE4A_TEAM_STATE_DATASET,
+            schema_version=PHASE4A_TEAM_STATE_SCHEMA,
+            required=PHASE4A_TEAM_STATE_COLUMNS,
+            keys=("candidate", "season", "game_id", "team"),
+            integer_columns=("season", "week", "game_id"),
+            boolean_columns=("offense_fallback", "defense_fallback"),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=PHASE4A_TEAM_STATE_COLUMNS,
+        ),
+        PHASE4A_PREDICTION_DATASET: DatasetSchema(
+            dataset=PHASE4A_PREDICTION_DATASET,
+            schema_version=PHASE4A_PREDICTION_SCHEMA,
+            required=PHASE4A_PREDICTION_COLUMNS,
+            keys=("candidate", "season", "game_id", "target"),
+            integer_columns=("season", "week", "game_id", "fallback_count"),
+            boolean_columns=("feature_fallback",),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=PHASE4A_PREDICTION_COLUMNS,
+            allowed_values={"target": ("margin", "total")},
+        ),
+        PHASE4A_ATTRIBUTION_DATASET: DatasetSchema(
+            dataset=PHASE4A_ATTRIBUTION_DATASET,
+            schema_version=PHASE4A_ATTRIBUTION_SCHEMA,
+            required=PHASE4A_ATTRIBUTION_COLUMNS,
+            keys=("candidate",),
+            integer_columns=("mechanism_count", "validation_rows", "validation_games"),
+            boolean_columns=(
+                "bootstrap_excludes_zero",
+                "coverage_equal",
+                "seasonal_gate_passed",
+                "primary_gate_passed",
+                "selected",
+            ),
+            nonnullable=PHASE4A_ATTRIBUTION_COLUMNS,
         ),
         "rating_score_models": DatasetSchema(
             dataset="rating_score_models",

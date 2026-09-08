@@ -1,0 +1,29 @@
+schema_version: data_first_phase4a_config_v1
+environment: preview
+description: >-
+  Data-first Phase 4A context-free EPA-only team-rating selection.
+seasons:
+  historical_development: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  forbidden: [2020]
+output_root: artifacts/research/data-first-football-v1/phase4a
+research_prefix: artifacts/research/data-first-football-v1/phase4a
+candidates:
+  - neutral__exposure
+  - neutral__half_life_2
+  - neutral__half_life_4
+  - neutral__half_life_8
+  - rho_0_60__exposure
+  - rho_0_60__half_life_2
+  - rho_0_60__half_life_4
+  - rho_0_60__half_life_8
+selection:
+  reference_candidate: rho_0_60__exposure
+  rho: 0.60
+  equivalent_exposure: 100.0
+  ridge_alpha: 10
+  validation_seasons: [2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  minimum_pooled_improvement_pct: 0.5
+  maximum_seasonal_regression_pct: 5.0
+  bootstrap_confidence: 0.90
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260908

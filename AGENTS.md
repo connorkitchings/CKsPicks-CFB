@@ -216,10 +216,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   reconstructed evidence. Corrected Phase 1 audit v3 classifies the R2 result as
   unsupported for the data-first program, so its prior winner cannot enter
   Phase 4 without renewed evidence. The pending R3/R4 sequence is superseded;
-  **Phase 0 is implemented, corrected Phase 1 is sealed, and Phase 2d is reopened
-  for a bounded certification repair** after its first eligibility manifest
-  failed checksum and enforcement review. Phase 3 is planned but blocked until
-  a checksum-valid replacement handoff passes the strengthened gates.
+  **Phases 0–3 are implemented:** corrected Phase 1 is sealed, the replacement
+  Phase 2d handoff passed strengthened checksum and enforcement gates, and
+  Phase 3 selected the EPA-only shared core. Phase 4A context-free rating
+  selection is now active from the signed retained-core manifest.
   O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

@@ -52,11 +52,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 - [Transformation check-in, Phase 2d repair, and Phase 3 redesign](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
   — **Implemented.** Published the corrected core and reconstructed-only auxiliary handoffs.
 - [Phase 3 measurement certification and core selection](2026-09-07/01-phase3-measurement-certification-and-core-selection.md)
-  — **Approved.** Certifies measurement meaning and selects only the shared
-  football core from the signed Phase 2d handoff.
+  — **Implemented 2026-09-07.** Certified measurement meaning and selected the
+  EPA-only shared football core from the signed Phase 2d handoff.
 - [Phase 4A context-free rating selection](2026-09-07/02-phase4a-context-free-rating-selection.md)
-  — **Approved after Phase 3.** Selects the prior and updater without auxiliary
-  context.
+  — **In Progress.** Selects the prior and updater without auxiliary context.
 - [Phase 4B target-context selection](2026-09-07/03-phase4b-target-context-selection.md)
   — **Approved after Phase 4A.** Tests one context family at a time through a
   frozen forecast bridge.

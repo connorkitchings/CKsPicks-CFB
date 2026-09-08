@@ -1,10 +1,10 @@
 # Phase 3: Measurement Certification and Shared Core Selection
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.
-- **Implementation log:** `session_logs/2026-09-07/02-phase3-measurement-certification.md`
+- **Implementation log:** `session_logs/2026-09-07/03-phase3-apply-and-verification.md`
 - **Commit policy:** Separate plan and implementation/evidence commits; user executes Git operations.
 
 ## Goal
@@ -99,11 +99,24 @@ updater.
 
 ## Definition of Done
 
-- [ ] Signed Phase 2d lineage is independently verified before apply.
-- [ ] Measurement definitions and adjustment pass independent certification.
-- [ ] One retained shared core (or EPA-only) is frozen with complete evidence.
-- [ ] No auxiliary context, rating selection, or production action occurs.
-- [ ] Artifacts, tests, documentation, and a session log are complete.
+- [x] Signed Phase 2d lineage is independently verified before apply.
+- [x] Measurement definitions and adjustment pass independent certification.
+- [x] One retained shared core (or EPA-only) is frozen with complete evidence.
+- [x] No auxiliary context, rating selection, or production action occurs.
+- [x] Artifacts, tests, documentation, and a session log are complete.
+
+## Completion Evidence
+
+- **Run identity:** `phase3-v1-20260907T1500Z`
+- **Manifest URI:** `artifacts/research/data-first-football-v1/phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json`
+- **Manifest raw SHA-256:** `c8bc1ebd8a369c59cf298844dfdb2167baaa17dc72a3b29ceebd119eeacaf234`
+- **Code SHA:** `6addf437e7d76f5e39f198c41acd47c4e9b2c5b4`
+- **Selected candidate:** `epa_only` (no challenger passed every predeclared
+  gate; some improved point MAE but their 90% paired-bootstrap intervals did
+  not exclude zero)
+- **Output rows:** 302,702 observations, 1,210,808 adjusted measurements, 202,048 fold predictions, 8 attribution rows
+- **Independent verification:** passed (`scripts/research/verify_data_first_phase3.py`)
+- **Quality gates:** 750 tests passed, ruff clean, contracts valid, mkdocs strict built
 
 ## Amendments
 

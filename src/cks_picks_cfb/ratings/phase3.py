@@ -42,6 +42,12 @@ ADJUSTED_COMPONENTS = (
 )
 VALIDATION_SEASONS = (2018, 2019, 2021, 2022, 2023, 2024, 2025)
 RECENCY_MODES = ("primary", "half_life_4_games")
+RATING_RECENCY_MODES = (
+    "primary",
+    "half_life_2_games",
+    "half_life_4_games",
+    "half_life_8_games",
+)
 TARGETS = ("margin", "total")
 
 _NON_COUNT_PLAY_TYPES = ("Timeout", "Uncategorized", "placeholder", "End Period")
@@ -570,7 +576,7 @@ def build_adjusted_measurements(
     recency_mode: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build week-open pregame and season-terminal iteration-0/4 measurements."""
-    if recency_mode not in RECENCY_MODES:
+    if recency_mode not in RATING_RECENCY_MODES:
         raise Phase3Error(f"unsupported recency mode: {recency_mode}")
     if observations["season"].isin(FORBIDDEN_SEASONS).any():
         raise Phase3Error("Phase 3 observations include 2020")
@@ -633,9 +639,14 @@ def build_adjusted_measurements(
                 ["kickoff_ts", "game_id"], kind="mergesort"
             )
             history = season_observations[season_observations["week"] < week]
+            half_life = {
+                "half_life_2_games": 2.0,
+                "half_life_4_games": 4.0,
+                "half_life_8_games": 8.0,
+            }.get(recency_mode)
             effective_history = (
-                _recency_weight(history, half_life=4.0)
-                if recency_mode == "half_life_4_games"
+                _recency_weight(history, half_life=half_life)
+                if half_life is not None
                 else history
             )
             cache = adjusted_for(effective_history)
@@ -701,9 +712,14 @@ def build_adjusted_measurements(
                                         "config_sha": config_sha,
                                     }
                                 )
+        terminal_half_life = {
+            "half_life_2_games": 2.0,
+            "half_life_4_games": 4.0,
+            "half_life_8_games": 8.0,
+        }.get(recency_mode)
         terminal_history = (
-            _recency_weight(season_observations, half_life=4.0)
-            if recency_mode == "half_life_4_games"
+            _recency_weight(season_observations, half_life=terminal_half_life)
+            if terminal_half_life is not None
             else season_observations
         )
         terminal_cache = adjusted_for(terminal_history)

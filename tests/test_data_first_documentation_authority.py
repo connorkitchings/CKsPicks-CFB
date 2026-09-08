@@ -23,7 +23,7 @@ def test_roadmap_uses_resequenced_phase_three_to_six_contracts():
         assert path in content
 
     assert "Phase 3C" not in content
-    assert "Phase 4B, not\nPhase 3" in content
+    assert "Phase 4B, not Phase 3" in " ".join(content.split())
 
 
 def test_roadmap_records_only_the_certified_phase_two_handoffs():
