@@ -353,26 +353,29 @@ def main(argv: list[str] | None = None) -> None:
         raise Phase4BError("--as-of must be timezone-aware")
     storage = get_storage(environment="preview")
     raw_4a = storage.read_bytes(args.phase4_rating_uri)
-    raw_4a_sha = hashlib.sha256(raw_4a).hexdigest()
+    phase4a_manifest = json.loads(raw_4a)
+    raw_4a_sha = phase4a_manifest.get("manifest_sha256")
     if raw_4a_sha != REQUIRED_PHASE4A_RETAINED_SHA256:
         raise Phase4BError(
             "--phase4-rating-uri is not the approved signed Phase 4A handoff"
         )
-    phase4a_manifest = verify_phase4a_parent(json.loads(raw_4a))
+    phase4a_manifest = verify_phase4a_parent(phase4a_manifest)
     raw_3 = storage.read_bytes(args.phase3_retained_uri)
-    raw_3_sha = hashlib.sha256(raw_3).hexdigest()
+    phase3_manifest = json.loads(raw_3)
+    raw_3_sha = phase3_manifest.get("manifest_sha256")
     if raw_3_sha != REQUIRED_PHASE3_RETAINED_SHA256:
         raise Phase4BError(
             "--phase3-retained-uri is not the approved signed Phase 3 handoff"
         )
-    phase3_manifest = verify_phase3_parent(json.loads(raw_3))
+    phase3_manifest = verify_phase3_parent(phase3_manifest)
     raw_2e = storage.read_bytes(args.auxiliary_eligibility_uri)
-    raw_2e_sha = hashlib.sha256(raw_2e).hexdigest()
+    phase2e_manifest = json.loads(raw_2e)
+    raw_2e_sha = phase2e_manifest.get("manifest_sha256")
     if raw_2e_sha != REQUIRED_PHASE2E_ELIGIBILITY_SHA256:
         raise Phase4BError(
             "--auxiliary-eligibility-uri is not the approved signed Phase 2e handoff"
         )
-    phase2e_manifest = verify_phase2e_parent(json.loads(raw_2e))
+    phase2e_manifest = verify_phase2e_parent(phase2e_manifest)
     identity = phase4b_identity(
         run_id=args.run_id,
         environment="preview",
