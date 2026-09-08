@@ -46,14 +46,18 @@
 
 ## Validation
 
-- [x] Focused Phase 3/4A/documentation tests: 22 passed.
-- [x] Full warning-as-error Python suite: 756 passed, 2 skipped.
-- [x] Ruff: clean.
+- [x] Focused Phase 3/4A warning-as-error tests: 28 passed.
+- [x] Full warning-as-error Python suite: 765 passed, 2 skipped.
+- [x] Ruff lint: clean; all Phase 4A remediation files formatted.
 - [x] Contracts validation: passed.
 - [x] MkDocs strict: built (existing unlisted-page notices only).
 - [x] `git diff --check`: clean.
-- [ ] R2 dry run/apply and independent remote verification pending the required
-  user commit and clean tracked worktree.
+- [x] First R2 Preview dry-run attempt used committed SHA
+  `721ab60d1817ec1dd10d33426d59c889b30b31fb`, made no writes, and failed
+  closed on the subsequently narrowed local floating-point-status wrapper.
+- [ ] Corrected R2 warning-as-error dry run, apply, and independent remote
+  verification remain pending the required user commit and clean tracked
+  worktree.
 
 ## Amendments and Blockers
 
@@ -93,6 +97,13 @@
   before retention and in independent verification. It changes no modeling
   semantics and awaits a user commit before the required warning-as-error dry
   run.
+- The first R2-backed warning-as-error retry reached native Ridge prediction
+  and failed closed on a low-level `matmul` floating-point status created by an
+  over-broad local `np.errstate(...="raise")` wrapper, not a `RuntimeWarning`
+  or non-finite value. That wrapper is removed: Ridge warnings remain fatal,
+  while the contractually required finite input/output checks continue to guard
+  numerical integrity. The narrowed execution guard needs its own user commit
+  before another clean-SHA dry run.
 
 ## Handoff Notes
 

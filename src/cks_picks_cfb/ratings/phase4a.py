@@ -505,11 +505,10 @@ def _fit_predict_ridge(
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
-            with np.errstate(over="raise", divide="raise", invalid="raise"):
-                model = Ridge(alpha=ridge_alpha).fit(x_train, y_train)
-                predicted = np.ascontiguousarray(
-                    model.predict(x_validate), dtype=np.float64
-                )
+            model = Ridge(alpha=ridge_alpha).fit(x_train, y_train)
+            predicted = np.ascontiguousarray(
+                model.predict(x_validate), dtype=np.float64
+            )
     except (RuntimeWarning, FloatingPointError, ValueError) as exc:
         raise Phase4AError(f"Ridge numerical failure ({context}): {exc}") from exc
     coefficients = np.ascontiguousarray(model.coef_, dtype=np.float64)
