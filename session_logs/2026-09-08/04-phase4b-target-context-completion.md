@@ -51,9 +51,22 @@ Key design decisions:
 - [x] Focused Phase 4B tests: 12 passed
 - [x] Full warning-as-error Python suite: 777 passed, 2 skipped
 - [x] Ruff format + lint: clean
-- [ ] Preview dry run: pending commit
-- [ ] Preview apply: pending dry run
-- [ ] Independent verification: pending apply
+- [x] Preview dry run: warning-free, 113,652 predictions, margin selected `field_position`, total selected `no_context`
+- [x] Preview apply: immutable artifacts written
+- [x] Independent verification: status `verified`, all artifact counts match
+- [x] `git diff --check`: clean
+
+## Artifacts
+
+- **Manifest URI:** `artifacts/research/data-first-football-v1/phase4b/runs/phase4b-v1-20260908T1600Z/retained-baseline-manifest.json`
+- **Manifest SHA-256:** `dee8a668115af4f426d6080d8b139575ba35859fea9e7212cfd613b364779b4a`
+- **Margin Context Selected:** `field_position`
+- **Total Context Selected:** `no_context`
+- **Code SHA:** `f611575d195780b678eab12322fe5fde6b1e8ea7`
+- **Row Counts:**
+  - Fold predictions: 113,652
+  - Attribution: 18 (9 families × 2 targets)
+  - Coverage: 126
 
 ## Amendments and Blockers
 

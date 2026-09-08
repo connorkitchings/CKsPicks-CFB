@@ -6,7 +6,7 @@
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.
 - **Implementation log:** `session_logs/2026-09-08/03-phase4b-implementation-planning.md`, `session_logs/2026-09-08/04-phase4b-target-context-completion.md`
 - **Commit policy:** Separate plan and implementation/evidence commits; user executes Git operations.
-- **Completed:** 2026-09-08. Implementation complete, awaiting dry run and apply against Preview storage.
+- **Completed:** 2026-09-08. Selected `field_position` for margin, `no_context` for total. Manifest: `artifacts/research/data-first-football-v1/phase4b/runs/phase4b-v1-20260908T1600Z/retained-baseline-manifest.json`, SHA `dee8a668115af4f426d6080d8b139575ba35859fea9e7212cfd613b364779b4a`.
 
 ## Goal
 

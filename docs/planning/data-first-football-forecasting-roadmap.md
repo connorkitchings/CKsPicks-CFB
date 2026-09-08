@@ -71,10 +71,11 @@ criteria are not weakened after results.
 
 Phases 0–4B are complete. Phase 3 certified measurement definitions and selected
 `epa_only` as the shared quality core. Phase 4A selected `rho_0_60__exposure`
-as the frozen reference rating. Phase 4B implementation is complete with
-contracts, tournament computation, runner, verifier, config, and tests; the
-Preview dry run and apply remain pending. Phase 5 may begin from the sealed
-Phase 4B retained baseline manifest once the Preview artifacts are written.
+as the frozen reference rating. Phase 4B selected `field_position` for margin
+and `no_context` for total. The sealed Phase 4B baseline manifest is at
+`phase4b/runs/phase4b-v1-20260908T1600Z/retained-baseline-manifest.json` (SHA
+`dee8a668115af4f426d6080d8b139575ba35859fea9e7212cfd613b364779b4a`).
+Phase 5 may begin from the sealed Phase 4B retained baseline manifest.
 
 ## Certified predecessor evidence
 
