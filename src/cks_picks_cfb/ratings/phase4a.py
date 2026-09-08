@@ -532,26 +532,17 @@ def _fit_predict_ridge(
             f"shape mismatch ({context}): x_validate.shape={x_validate.shape}, "
             f"coefficients.shape={coefficients.shape}"
         )
-    try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", RuntimeWarning)
-            products = np.matmul(x_validate, coefficients)
-            if not np.isfinite(products).all():
-                non_finite_mask = ~np.isfinite(products)
-                sample_vals = products[non_finite_mask][:5] if non_finite_mask.any() else []
-                raise Phase4AError(
-                    f"matmul produced non-finite products ({context}): "
-                    f"count={non_finite_mask.sum()}, sample={sample_vals.tolist()}"
-                )
-            predicted = np.ascontiguousarray(products + intercept, dtype=np.float64)
-    except (RuntimeWarning, FloatingPointError, ValueError) as exc:
-        sample_row = x_validate[0].tolist() if len(x_validate) > 0 else []
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        products = np.matmul(x_validate, coefficients)
+    if not np.isfinite(products).all():
+        non_finite_mask = ~np.isfinite(products)
+        sample_vals = products[non_finite_mask][:5] if non_finite_mask.any() else []
         raise Phase4AError(
-            f"Ridge predict numerical failure ({context}): {exc}, "
-            f"coef_max={coef_max}, feature_max={feature_max}, "
-            f"intercept={intercept}, coefs={coefficients.tolist()}, "
-            f"sample_x_validate_row={sample_row}"
-        ) from exc
+            f"matmul produced non-finite products ({context}): "
+            f"count={non_finite_mask.sum()}, sample={sample_vals.tolist()}"
+        )
+    predicted = np.ascontiguousarray(products + intercept, dtype=np.float64)
     if (
         not np.isfinite(coefficients).all()
         or not np.isfinite(intercept)
