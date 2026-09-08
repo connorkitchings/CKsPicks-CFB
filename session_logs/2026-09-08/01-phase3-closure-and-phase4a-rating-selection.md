@@ -65,6 +65,13 @@
   coerce role uncertainty before propagation and normalize all-null optional
   state columns before concatenation; they require one additional user commit
   before retrying the immutable-run gate.
+- The second dry run then rejected a Phase 2d schedule row absent from the
+  certified Phase 3 measurement population. The runner now projects the
+  schedule to the exact Phase 3 observation game keys before tournament
+  evaluation, preserving Phase 3 as the sole population authority. It also
+  normalizes nullable source-season state columns before concatenation. This
+  follow-up remains dry-run-only and requires a further user commit before the
+  next retry.
 
 ## Handoff Notes
 

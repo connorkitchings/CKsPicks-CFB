@@ -168,6 +168,20 @@ def compute(
     config: dict[str, Any],
 ) -> Phase4AComputation:
     observations, games, outcomes, _ = _parent_frames(storage, manifest)
+    # The Phase 3 retained core is the authoritative game population.  The
+    # Phase 2d schedule is a lineage parent only and can include a game that
+    # was excluded during Phase 3 measurement certification.
+    accepted_games = set(
+        observations[["season", "game_id"]]
+        .drop_duplicates()
+        .itertuples(index=False, name=None)
+    )
+    games = games[
+        games[["season", "game_id"]].apply(
+            lambda row: (int(row.iloc[0]), int(row.iloc[1])) in accepted_games,
+            axis=1,
+        )
+    ].copy()
     measurement_config = load_measurement_config(PHASE3_CONFIG)
     adjusted_by_mode: dict[str, tuple[pd.DataFrame, pd.DataFrame]] = {}
     for mode in (
@@ -206,6 +220,10 @@ def compute(
     # Optional lineage/fallback columns are legitimately all-null in some
     # candidates. Normalize them around concat so pandas cannot infer a
     # candidate-dependent dtype (or emit a future-behavior warning).
+    for frame in state_frames:
+        frame["prior_source_season"] = pd.array(
+            frame["prior_source_season"], dtype="Int64"
+        )
     all_null_columns = [
         column
         for column in state_frames[0].columns
