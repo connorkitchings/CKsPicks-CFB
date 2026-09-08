@@ -59,6 +59,12 @@
 
 - The Phase 4A analytic-posterior amendment is user-authorized and recorded in
   the implementation contract.
+- The first committed-SHA Preview dry run reached team-state composition and
+  exposed object-dtype standard deviations after candidate concatenation. No
+  R2 write was possible because the command was a dry run. The follow-up fixes
+  coerce role uncertainty before propagation and normalize all-null optional
+  state columns before concatenation; they require one additional user commit
+  before retrying the immutable-run gate.
 
 ## Handoff Notes
 

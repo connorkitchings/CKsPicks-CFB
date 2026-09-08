@@ -219,9 +219,17 @@ def build_team_states(states: pd.DataFrame) -> pd.DataFrame:
     )
     if output[["offense_rating", "defense_rating"]].isna().any().any():
         raise Phase4AError("rating state lacks an offense or defense row")
-    output["overall_rating"] = (output["offense_rating"] + output["defense_rating"]) / 2
+    offense_rating = pd.to_numeric(output["offense_rating"], errors="raise")
+    defense_rating = pd.to_numeric(output["defense_rating"], errors="raise")
+    offense_sd = pd.to_numeric(output["offense_sd"], errors="raise")
+    defense_sd = pd.to_numeric(output["defense_sd"], errors="raise")
+    output["overall_rating"] = (offense_rating + defense_rating) / 2
     output["overall_sd"] = (
-        np.sqrt(output["offense_sd"] ** 2 + output["defense_sd"] ** 2) / 2
+        np.sqrt(
+            offense_sd.to_numpy(dtype=float) ** 2
+            + defense_sd.to_numpy(dtype=float) ** 2
+        )
+        / 2
     )
     source = (
         states.groupby(index, sort=False)[

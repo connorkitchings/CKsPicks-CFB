@@ -203,7 +203,21 @@ def compute(
                 config_sha=str(identity["config_sha"]),
             )
         )
-    states = pd.concat(state_frames, ignore_index=True)
+    # Optional lineage/fallback columns are legitimately all-null in some
+    # candidates. Normalize them around concat so pandas cannot infer a
+    # candidate-dependent dtype (or emit a future-behavior warning).
+    all_null_columns = [
+        column
+        for column in state_frames[0].columns
+        if all(frame[column].isna().all() for frame in state_frames)
+    ]
+    states = pd.concat(
+        [frame.drop(columns=all_null_columns) for frame in state_frames],
+        ignore_index=True,
+    )
+    for column in all_null_columns:
+        states[column] = None
+    states = states.loc[:, state_frames[0].columns]
     teams = build_team_states(states)
     predictions = run_rating_tournament(
         teams, games, outcomes, ridge_alpha=float(config["selection"]["ridge_alpha"])
