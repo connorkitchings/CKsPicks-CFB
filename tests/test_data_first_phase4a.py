@@ -299,21 +299,25 @@ def test_fold_standardization_rejects_numerically_unstable_features():
         _standardize(train, train.copy())
 
 
-def test_ridge_warnings_and_nonfinite_outputs_fail_closed_with_fold_context(
+def test_ridge_fit_warnings_fail_closed_with_fold_context(
     monkeypatch: pytest.MonkeyPatch,
 ):
     x_train = np.ascontiguousarray(np.array([[0.0], [1.0]], dtype=np.float64))
     y_train = np.ascontiguousarray(np.array([0.0, 1.0], dtype=np.float64))
     x_validate = np.ascontiguousarray(np.array([[0.5]], dtype=np.float64))
 
-    def warn_on_predict(self: Ridge, values: np.ndarray) -> np.ndarray:
+    def warn_on_fit(self: Ridge, values: np.ndarray, target: np.ndarray) -> Ridge:
         warnings.warn("synthetic numerical warning", RuntimeWarning)
-        return np.zeros(len(values), dtype=np.float64)
+        self.coef_ = np.array([1.0], dtype=np.float64)
+        self.intercept_ = 0.0
+        return self
 
-    monkeypatch.setattr(Ridge, "predict", warn_on_predict)
+    monkeypatch.setattr(Ridge, "fit", warn_on_fit)
     with pytest.raises(
         Phase4AError,
-        match=("candidate=neutral__exposure, validation_season=2024, target=margin"),
+        match=(
+            "Ridge fit numerical failure.*candidate=neutral__exposure, validation_season=2024, target=margin"
+        ),
     ):
         _fit_predict_ridge(
             x_train=x_train,
@@ -343,11 +347,13 @@ def test_ridge_nonfinite_outputs_fail_closed_with_fold_context(
 
         monkeypatch.setattr(Ridge, "fit", fit_with_nan)
     else:
-        monkeypatch.setattr(
-            Ridge,
-            "predict",
-            lambda self, values: np.full(len(values), np.inf, dtype=np.float64),
-        )
+        original_matmul = np.matmul
+
+        def matmul_with_inf(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+            result = original_matmul(a, b)
+            return np.full_like(result, np.inf)
+
+        monkeypatch.setattr(np, "matmul", matmul_with_inf)
     with pytest.raises(
         Phase4AError,
         match=("candidate=neutral__exposure, validation_season=2024, target=margin"),
