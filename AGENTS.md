@@ -70,6 +70,7 @@ print(f"✅ Data root verified: {data_root}")
 - Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
+- The approved 2026-09-08 replacement compares learned preseason priors and one Kalman challenger; the original Phase 4B manifest is ineligible for new forecasting. Polls and direct-core models are diagnostic-only.
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
@@ -216,10 +217,15 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   reconstructed evidence. Corrected Phase 1 audit v3 classifies the R2 result as
   unsupported for the data-first program, so its prior winner cannot enter
   Phase 4 without renewed evidence. The pending R3/R4 sequence is superseded;
-  **Phases 0–3 are implemented:** corrected Phase 1 is sealed, the replacement
-  Phase 2d handoff passed strengthened checksum and enforcement gates, and
-  Phase 3 selected the EPA-only shared core. Phase 4A context-free rating
-  selection is now active from the signed retained-core manifest.
+  **Corrective checkpoint 2026-09-08:** completed Phase 3/4 engineering does
+  not establish current predictive eligibility. The review found 32 completed
+  schedule games omitted from Phase 3, same-game context leakage in Phase 4B,
+  constant coaching features, and incorrect roster continuity. The original
+  Phase 4B retained manifest is prohibited as a new forecasting parent.
+  Execute the approved repair → Phase 3 v2 → Phase 4A learned-prior/dynamic
+  ratings v2 → Phase 4B pregame context v2 → Phase 5 v2 → Phase 6 v2 sequence
+  in separate tasks. Ratings remain mandatory; polls/direct models are
+  diagnostic-only. Contracts and evidence: `docs/plans/2026-09-08/transformation-review-and-authority-reset.md`.
   O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

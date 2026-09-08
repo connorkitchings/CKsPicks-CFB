@@ -1,6 +1,8 @@
 # Transformation Documentation Reset and Revised Phase 3–6 Sequence
 
-- **Status:** In Progress
+> **Superseded 2026-09-08.** The [review and corrective contracts](../2026-09-08/transformation-review-and-authority-reset.md) replace this sequence. Historical decisions below are preserved.
+
+- **Status:** Superseded
 - **Created:** 2026-09-06
 - **Planner:** Sol
 - **Approval source:** User approved the proposed plan and requested that it be documented on 2026-09-06.

@@ -11,6 +11,32 @@
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 
+## Current data-first evaluation contract (2026-09-08)
+
+The [review and common rules](../plans/2026-09-08/transformation-review-and-authority-reset.md)
+and its six replacement contracts govern new research. Original Phase 4B
+same-game context gains are invalid pregame evidence. Historical Phase 3/4A
+results remain reduced-population development comparisons.
+
+Use schedule-derived populations and outer seasons 2018, 2019, 2021–2025 with
+strictly preceding inner fitting/calibration. Retain the 2,000-replicate paired
+season/week bootstrap and 90% interval. New prior/rating selection may advance
+on >=0.5% early-game improvement with positive interval and full-season MAE
+within 1%, subject to target-season and completed-game-stage regression guards.
+Other phases keep their own specified gates; this exception is not global.
+
+Rating-based Ridge/NB2 forecasts use explicitly labeled moment-based Gaussian
+target distributions, Gaussian CRPS and 50/80/95% intervals. Calibration comes
+from earlier nested rolling-origin residuals; rating variance is not itself
+outcome variance. Direct-core Ridge and polls remain diagnostic-only.
+
+Prospective evidence requires six qualifying paired slates, >=40 games, T−2h
+target/T−1h hard freeze and >=24h outcome stabilization. Prespecified weekly
+state/context updates do not reset the window; design/fitting/calibration
+changes do. Heads, preseason parameters and calibration remain fixed during the
+prospective season. Genuine live availability is mandatory; reconstructed
+historical coverage cannot satisfy it. Phase 7 remains separately approved.
+
 ## Ordered evaluation layers
 
 Later evidence cannot rescue a failure at an earlier layer.

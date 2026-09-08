@@ -30,44 +30,43 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ### Data-first football forecasting
 
-- [Phase 0 repository architecture and documentation alignment](2026-09-05/00-repository-architecture-and-documentation-alignment.md)
-  — **Implemented 2026-09-05.** Established compatibility
-  baselines, aligns authority, separates active research entry points, and
-  permits removal only with dependency and recovery evidence.
-- [Phase 1 data and evidence audit](2026-09-05/01-data-and-evidence-audit.md)
-  — **Implemented after correction.** Audit v3 is current authority and preserves
-  exact unsupported/correction-required historical result dispositions; v2 is
-  immutable superseded evidence.
-- [Phase 2 data repair and recertification](2026-09-05/02-data-repair-and-recertification.md)
-  — **Implemented after repair.** Phase 2a–2c evidence is retained; the signed
-  Phase 2d core handoff and Phase 2e reconstructed-only auxiliary handoff are
-  the current research parents.
-- [Phase 2c materialization and ref-set closure](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
-  — **Implemented 2026-09-06.** Materialized and verified the exact ten-season
-  Preview corpus and published the checksum-verified ref set that unblocks
-  Phase 2d.
-- [Phase 2d recertification, eligibility, and capture activation](2026-09-06/04-phase2d-recertification-eligibility-and-capture-activation.md)
-  — **Superseded in part by the completed bounded repair.** Its audit and remote
-  rehearsal remain historical evidence; the replacement handoff is authoritative.
-- [Transformation check-in, Phase 2d repair, and Phase 3 redesign](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
-  — **Implemented.** Published the corrected core and reconstructed-only auxiliary handoffs.
-- [Phase 3 measurement certification and core selection](2026-09-07/01-phase3-measurement-certification-and-core-selection.md)
-  — **Implemented 2026-09-07.** Certified measurement meaning and selected the
-  EPA-only shared football core from the signed Phase 2d handoff.
-- [Phase 4A context-free rating selection](2026-09-07/02-phase4a-context-free-rating-selection.md)
-  — **Implemented 2026-09-08.** Selected `rho_0_60__exposure` as the frozen
-  reference rating from the signed Phase 3 retained core.
-- [Phase 4B target-context selection](2026-09-07/03-phase4b-target-context-selection.md)
-  — **Implemented 2026-09-08.** Selected `field_position` for margin and
-  `no_context` for total from the signed Phase 4A rating and Phase 2e auxiliary.
-- [Phase 5 final spread and total selection](2026-09-07/04-phase5-final-spread-total-selection.md)
-  — **Approved after Phase 4B.** Selects final target-specific forecasts.
-- [Phase 6 prospective evidence and market diagnostics](2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md)
-  — **Approved after Phase 5.** Collects frozen prospective evidence without
-  promotion or publication.
-- [Phase 3–6 resequencing](2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md)
-  — **In Progress.** Governs this active replacement sequence; the superseded
-  2026-09-05 Phase 3–6 contracts remain historical records.
+The [2026-09-08 review and authority reset](2026-09-08/transformation-review-and-authority-reset.md)
+records the approved corrective checkpoint. The original Phase 4B result cannot
+be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagnostics.
+
+| Approved, unexecuted contract | Dependency |
+| --- | --- |
+| [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | Reviewed predecessor artifacts as repair inputs |
+| [Phase 3 measurement/core v2](2026-09-08/phase3-measurement-and-core-selection-v2.md) | Passing repair handoff |
+| [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | Repaired core and admitted auxiliary features |
+| [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | Corrected retained rating |
+| [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Corrected target baselines |
+| [Phase 6 prospective evidence v2](2026-09-08/phase6-prospective-evidence-v2.md) | Corrected frozen candidate and live readiness |
+
+Each requires a separate implementation task; documentation approval executes no phase.
+
+### Retained transformation engineering and superseded evidence
+
+- [Phase 0 alignment](2026-09-05/00-repository-architecture-and-documentation-alignment.md)
+  — Implemented; retained compatibility boundaries.
+- [Corrected Phase 1 audit](2026-09-05/01-data-and-evidence-audit.md)
+  — Implemented; historical-result dispositions retained.
+- [Phase 2 repair](2026-09-05/02-data-repair-and-recertification.md)
+  — **Implemented after repair.** Existing engineering retained; auxiliary semantics
+  and descendant population require the new repair contract.
+- [Phase 2c materialization](2026-09-06/03-phase2c-materialization-and-ref-set-closure.md)
+  — Implemented; complete schedule is the reconciliation denominator.
+- [Phase 2d/2e bounded repair](2026-09-06/05-transformation-check-in-phase2d-repair-and-phase3-redesign.md)
+  — Existing engineering retained; revised semantic eligibility supersedes downstream assumptions.
+- [Phase 3](2026-09-07/01-phase3-measurement-certification-and-core-selection.md)
+  and [Phase 4A](2026-09-07/02-phase4a-context-free-rating-selection.md)
+  — Superseded authority; EPA-only and carryover/exposure results retain reduced-population limitations.
+- [Phase 4B](2026-09-07/03-phase4b-target-context-selection.md)
+  — Superseded; same-game context invalidates pregame comparison and retained-parent eligibility.
+- [Old Phase 5](2026-09-07/04-phase5-final-spread-total-selection.md),
+  [old Phase 6](2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md),
+  and [2026-09-06 resequencing](2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md)
+  — Superseded by the approved 2026-09-08 package; never execute as current authority.
 
 ### Operations (Week 1)
 

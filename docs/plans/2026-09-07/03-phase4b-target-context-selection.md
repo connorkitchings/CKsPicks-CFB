@@ -1,6 +1,10 @@
 # Phase 4B: Target-Context Selection
 
-- **Status:** Implemented
+> **Superseded 2026-09-08.** Same-game field-position, drive-length and turnover features invalidate pregame comparisons. The retained manifest is prohibited as a new forecasting parent.
+> Use the approved [replacement contract](../2026-09-08/phase4b-pregame-context-selection-v2.md).
+> Original implementation history below is preserved, not current authority.
+
+- **Status:** Superseded
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.

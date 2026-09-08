@@ -124,8 +124,13 @@ and later rating-assisted adjustment is a separately attributable challenger.
 Development remains isolated from production activation. Completed R1/R2,
 candidate-v1, and direct early-game work are historical evidence subject to the
 data-first audit; the former R3/R4 sequence is superseded. The active sequence
-is repository alignment, data audit and repair, measurement validation, simple
-ratings, spread/total forecasting, and frozen prospective evaluation. Each
+is the approved 2026-09-08 corrective repair, repeated measurement/core selection,
+learned-prior and dynamic-rating comparison, pregame context, rating-based
+Ridge/NB2 forecasting, and frozen prospective evaluation. The original Phase 4B
+manifest is ineligible because of same-game context leakage; Phase 3/4A inherit
+a reduced population and auxiliary coaching/roster semantics require repair.
+See `docs/plans/2026-09-08/transformation-review-and-authority-reset.md`.
+Ratings are mandatory; direct-core models and polls are diagnostic-only. Each
 candidate must freeze before inspecting eligible future outcomes. Football-only
 inputs may be admitted only when their preseason meaning, coverage, and timing
 are proved; timestamped markets are comparison evidence after football-model

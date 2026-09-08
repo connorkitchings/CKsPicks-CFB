@@ -9,11 +9,12 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-08):** Phases 0–4B of the data-first
-> program are complete. Phase 4A selected `rho_0_60__exposure` as the frozen
-> reference rating; Phase 4B selected `field_position` for margin and
-> `no_context` for total. The remaining sequence is Phase 5 final forecast
-> selection and Phase 6 prospective evidence.
+> **Current research checkpoint (2026-09-08):** corrective repair and
+> recertification are required before forecasting. The original Phase 4B
+> pregame claim is invalid; Phase 3/4A results retain reduced-population
+> limitations. The approved [review and replacement contracts](../plans/2026-09-08/transformation-review-and-authority-reset.md)
+> govern repair, repeated core selection, learned-prior/dynamic ratings,
+> pregame context, rating-based forecasts, and prospective evidence.
 > The historical phase queue below is retained for evidence only.
 
 ## Direction
@@ -156,8 +157,8 @@ calendar date cannot bypass a failed gate.
   activation-ineligible — see the
   [cross-report memo](../research/2026-09-04-early-week-context-cross-report.md)).
   Its completed R1/R2 evidence remains available for audit. The data-first
-  program's Phases 0–3 are implemented; Phase 4A is active under the
-  data-first roadmap.
+  program now requires the 2026-09-08 corrective sequence; prior
+  engineering completion does not establish predictive eligibility.
 
 ## Invariants and open decisions
 

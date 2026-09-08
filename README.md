@@ -3,6 +3,16 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
+## Research checkpoint
+
+The [2026-09-08 review and replacement contracts](docs/plans/2026-09-08/transformation-review-and-authority-reset.md)
+require corrective repair before Phase 5. The original Phase 4B result used
+same-game context; coaching, roster continuity and completed-game coverage also
+need correction. Ratings remain the forecast foundation. The approved sequence
+compares learned preseason priors and a bounded Kalman challenger before
+pregame context and Ridge/NB2 forecasting. These are approved plans, not newly
+executed phases; V4 remains unchanged.
+
 ## 2026 posture
 
 The live production champion is the V4 ten-route model bundle
@@ -19,8 +29,8 @@ audited football data → validated measurements → opponent adjustment
 
 The program uses 2015–2019 and 2021–2025 as development evidence and excludes
 2020. It starts by preserving and clarifying repository architecture, auditing
-and repairing data, then testing measurements and deliberately simple ratings
-and forecasts. V4 remains isolated from research, Neon activation, and public
+and repairing data, then testing measurements, preseason priors, team ratings
+and rating-based forecasts. V4 remains isolated from research, Neon activation, and public
 publication. Future frozen forecasts provide independent evidence. Market lines
 are comparison evidence only; betting decisions are deferred.
 

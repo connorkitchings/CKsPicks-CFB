@@ -1,5 +1,7 @@
 # Phase 2: Data Repair and Recertification
 
+> **Corrective checkpoint 2026-09-08.** Prior engineering completion is retained. Coaching/roster semantics and descendant population eligibility require [repair and recertification v2](../2026-09-08/data-first-repair-and-recertification-v2.md); this historical completion does not authorize Phase 5.
+
 - **Status:** Implemented
 - **Created:** 2026-09-05
 - **Planner:** Sol

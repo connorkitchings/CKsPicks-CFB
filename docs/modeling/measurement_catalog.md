@@ -13,6 +13,28 @@ This catalog organizes observed football performance before it becomes team
 state. Current V4 uses a strict, point-in-time feature reference; the future
 rating baseline will select from the same lineage under a separate contract.
 
+## Current corrective interface contract (2026-09-08)
+
+The [approved review](../plans/2026-09-08/transformation-review-and-authority-reset.md)
+is the canonical findings/evidence table. The [replacement Phase 3](../plans/2026-09-08/phase3-measurement-and-core-selection-v2.md)
+repeats the original eight-core comparison on the repaired schedule population.
+Observation rows describe completed games; pregame snapshots use only permitted
+history before their cutoff. These are separate schemas and consumer roles.
+
+Same-game field position, plays per drive and turnovers are not pregame
+predictors. The corrected context stage uses prior evidence for both teams;
+plays per drive is **drive length**, not clock tempo. Missing measurements carry
+zero usable exposure and reasons while eligible forecast games remain present.
+
+The [repair contract](../plans/2026-09-08/data-first-repair-and-recertification-v2.md)
+corrects coaching tenure, same-team roster continuity versus incoming experience,
+and recruiting-window representations. Admitted football auxiliary inputs enter
+preseason-prior comparisons; polls and markets are diagnostic-only. Captured,
+semantically admitted, and predictively useful are different statuses.
+
+The older rating-transition implementations below retain their original lineage
+and dispositions; they do not supersede the current corrective handoffs.
+
 ## Responsibility boundary
 
 ```text

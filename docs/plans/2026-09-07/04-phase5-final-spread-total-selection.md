@@ -1,6 +1,10 @@
 # Phase 5: Final Spread and Total Selection
 
-- **Status:** Approved
+> **Superseded 2026-09-08.** Its Phase 4B dependency is invalid for forecasting. Do not execute this contract.
+> Use the approved [replacement contract](../2026-09-08/phase5-rating-based-forecast-selection-v2.md).
+> Original implementation history below is preserved, not current authority.
+
+- **Status:** Superseded
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.

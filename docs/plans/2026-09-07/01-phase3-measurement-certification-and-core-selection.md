@@ -1,6 +1,10 @@
 # Phase 3: Measurement Certification and Shared Core Selection
 
-- **Status:** Implemented
+> **Superseded 2026-09-08.** The implemented comparison omitted 32 completed schedule games; results remain reduced-population historical evidence.
+> Use the approved [replacement contract](../2026-09-08/phase3-measurement-and-core-selection-v2.md).
+> Original implementation history below is preserved, not current authority.
+
+- **Status:** Superseded
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.

@@ -1,6 +1,6 @@
 # Data-First Football Forecasting Roadmap
 
-> **Status:** Approved 2026-09-05
+> **Status:** Approved 2026-09-05; corrective replacement approved 2026-09-08
 > **Production authority:** V4 remains unchanged
 > **Research namespace:** `artifacts/research/data-first-football-v1/`
 
@@ -50,35 +50,50 @@ research entry points under `scripts/research/`, exploratory work under
 
 ## Ordered phases
 
-| Phase | Contract | Exit decision |
-| --- | --- | --- |
-| 0 | [Repository alignment](../plans/2026-09-05/00-repository-architecture-and-documentation-alignment.md) | Current operations are regression-protected and the active architecture is unambiguous. |
-| 1 | [Data and evidence audit](../plans/2026-09-05/01-data-and-evidence-audit.md) | Every selected input and population loss is located or explicitly unresolved. |
-| 2 | [Repair and recertification](../plans/2026-09-05/02-data-repair-and-recertification.md) | Admitted research inputs contain no unresolved correctness or leakage defect. |
-| 3 | [Measurement certification and core selection](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md) | Measurement meaning is certified and one shared football core is frozen. |
-| 4A | [Context-free rating selection](../plans/2026-09-07/02-phase4a-context-free-rating-selection.md) | One reproducible offense/defense rating prior and updater are frozen. |
-| 4B | [Target-context selection](../plans/2026-09-07/03-phase4b-target-context-selection.md) | At most one context family per target is frozen outside the rating. |
-| 5 | [Final spread and total selection](../plans/2026-09-07/04-phase5-final-spread-total-selection.md) | One eligible candidate or valid target baseline is frozen. |
-| 6 | [Prospective evidence and market diagnostics](../plans/2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md) | Evidence supports retention, continued shadowing, or a separate Phase 7 plan. |
+The [approved review and replacement contracts](../plans/2026-09-08/transformation-review-and-authority-reset.md)
+are the current authority. Implemented engineering and verified predictive
+eligibility are separate statuses.
 
-Automated pregame capture begins after its Phase 2 validation and continues
-alongside later research. Each phase consumes explicit passing predecessor
-artifacts, runs in a separate implementation task, and publishes evidence plus
-a session log. A failed phase produces a diagnostic and blocks dependent work;
-criteria are not weakened after results.
+| Stage | Contract | Exit decision |
+| --- | --- | --- |
+| Repair | [Repair and recertification v2](../plans/2026-09-08/data-first-repair-and-recertification-v2.md) | Population and auxiliary semantics are recertified; rejected families are explicit. |
+| 3 | [Measurement/core selection v2](../plans/2026-09-08/phase3-measurement-and-core-selection-v2.md) | Original eight-core comparison repeated on repaired population; pregame interfaces verified. |
+| 4A | [Prior/dynamic rating selection v2](../plans/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | One shared rating selected across learned priors, established updaters and one Kalman challenger. |
+| 4B | [Pregame context selection v2](../plans/2026-09-08/phase4b-pregame-context-selection-v2.md) | At most one strictly pregame field-position, drive-length or turnover family per target. |
+| 5 | [Rating-based forecast selection v2](../plans/2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Rating-based Ridge/NB2 target forecasts or corrected references frozen with uncertainty. |
+| 6 | [Prospective evidence v2](../plans/2026-09-08/phase6-prospective-evidence-v2.md) | Six qualifying paired slates support a recommendation, not activation. |
+
+Each contract is approved but unexecuted and requires its passing predecessor
+and a separate implementation task. Phase 7 remains a future promotion contract.
+Ratings are the mandatory forecast foundation; direct-core Ridge and polls are
+diagnostic-only. Auxiliary football information is tested inside preseason priors.
 
 ## Current checkpoint
 
-Phases 0–4B are complete. Phase 3 certified measurement definitions and selected
-`epa_only` as the shared quality core. Phase 4A selected `rho_0_60__exposure`
-as the frozen reference rating. Phase 4B, not Phase 3, is the first stage
-permitted to consume the Phase 2e auxiliary manifest; it selected `field_position`
-for margin and `no_context` for total. The sealed Phase 4B baseline manifest is at
-`phase4b/runs/phase4b-v1-20260908T1600Z/retained-baseline-manifest.json` (SHA
-`dee8a668115af4f426d6080d8b139575ba35859fea9e7212cfd613b364779b4a`).
-Phase 5 may begin from the sealed Phase 4B retained baseline manifest.
+**Corrective work is required before Phase 5.** The review found same-game context
+leakage in Phase 4B, constant coaching features, incorrect roster continuity,
+and 32 completed schedule games omitted from the Phase 3 population. The old
+Phase 4B retained manifest is prohibited as a new forecasting parent. Its
+11.36% apparent margin gain is not valid pregame predictive evidence.
 
-## Certified predecessor evidence
+Phase 0 alignment, corrected Phase 1 dispositions, and unaffected Phase 2
+engineering evidence remain retained. Phase 3 EPA-only and Phase 4A
+`rho_0_60__exposure` selections remain historical reduced-population references;
+their descendants require repair and renewed selection. The review's
+[evidence table](../plans/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
+is the canonical record of findings, actual metrics, population counts, checksum
+types and permitted uses. No replacement phase has run in this documentation task.
+
+Historical sequence: [Phase 3](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md),
+[Phase 4A](../plans/2026-09-07/02-phase4a-context-free-rating-selection.md),
+[Phase 4B](../plans/2026-09-07/03-phase4b-target-context-selection.md),
+[Phase 5](../plans/2026-09-07/04-phase5-final-spread-total-selection.md), and
+[Phase 6](../plans/2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md)
+are superseded execution authority. In that historical sequence, Phase 4B, not Phase 3,
+first consumed the Phase 2e auxiliary manifest. That historical admission does
+not certify repaired prior features or authorize current forecasting.
+
+## Historical predecessor identities (use subject to review dispositions)
 
 | Phase/evidence | Immutable identity and code binding | Timing and permitted use | Activation |
 | --- | --- | --- | --- |
@@ -86,11 +101,11 @@ Phase 5 may begin from the sealed Phase 4B retained baseline manifest.
 | Corrected Phase 1 audit v3 | `artifacts/research/data-first-football-v1/phase1/2026-09-06T0055Z-phase1-evidence-audit-v3/` | Preserves the exact unsupported/correction-required dispositions of historical results | Research evidence only |
 | Phase 2d audit | `phase1/2026-09-06T2358Z-phase2d-recertification-v2/audit-v5.json` — SHA `0fd8a32a13ce64a261fa8a0179cdaa1de1cb93e428e362d50ad0aa9970c7761f`, code `285422026816bc933279a69e997021847b4bfb31` | Certifies core lineage, omissions, coverage, and timing for measurement construction | False |
 | Phase 2d automation admission | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/automation-admission.json` — SHA `7a46adfaff0bcb89b86f244c586d93085557ba3119699da81824ffa4e83f5518`, code `285422026816bc933279a69e997021847b4bfb31` | Enables only the verified Preview capture workflow; it is not a model artifact | False |
-| Phase 2d core handoff | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json` — SHA `cdeeea01035c9108491a42b2e29a9e6033cdd7781d1ab837df8e411b29afe760`, 70 exact refs | Sole Phase 3 parent for reconstructed historical football measurements | False |
+| Phase 2d core handoff | `phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json` — SHA `cdeeea01035c9108491a42b2e29a9e6033cdd7781d1ab837df8e411b29afe760`, 70 exact refs | Historical Phase 3 parent; current use is repair input | False |
 | Phase 2e auxiliary capture set | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/capture-set.json` — SHA `c2ff56b084e58b5cd159f884171df05187746c0dc40b42817912866a540de650`, code `80aba46df8b5e92959024510140cbd06de6b3b3e`, 63 Bronze captures | Reconstructed-only historical evidence; captures cover recruiting, returning production, coaching, roster continuity, rankings, and market references | False |
-| Phase 2e auxiliary handoff | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json` — SHA `d06ed3968a7bb6ec7ba97212aa2063068c253f26202e810c921b044006ab13ad` | Six Preview datasets: recruiting, returning production, coaching, roster continuity, strictly lagged polls, and reconstructed market references. Only Phase 4B may use football context; markets are Phase 5 post-selection diagnostics only. | False (`eligible_reconstructed_only`) |
-| Phase 3 retained core | `phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json` — raw SHA `c8bc1ebd8a369c59cf298844dfdb2167baaa17dc72a3b29ceebd119eeacaf234`, code `6addf437e7d76f5e39f198c41acd47c4e9b2c5b4`, selected `epa_only` | Sole Phase 4A parent for context-free rating selection; 302,702 observations, 1,210,808 adjusted measurements, 202,048 fold predictions | False |
-| Phase 4A retained rating | `phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json` — raw SHA `af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`, code `3547844111c90f71c85760cbf841ae11787591a8`, selected `rho_0_60__exposure` | Sole Phase 4B parent for target-context selection; 101,024 fold predictions, 284,896 rating states, 142,448 team states | False |
+| Phase 2e auxiliary handoff | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json` — SHA `d06ed3968a7bb6ec7ba97212aa2063068c253f26202e810c921b044006ab13ad` | Six Preview datasets: recruiting, returning production, coaching, roster continuity, strictly lagged polls, and reconstructed market references. Historical football-context admission requires semantic recertification; markets remain post-selection diagnostics only. | False (`eligible_reconstructed_only`) |
+| Phase 3 retained core | `phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json` — raw SHA `c8bc1ebd8a369c59cf298844dfdb2167baaa17dc72a3b29ceebd119eeacaf234`, code `6addf437e7d76f5e39f198c41acd47c4e9b2c5b4`, selected `epa_only` | Historical reduced-population Phase 4A parent; 302,702 observations, 1,210,808 adjusted measurements, 202,048 fold predictions | False |
+| Phase 4A retained rating | `phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json` — canonical manifest checksum `af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`, code `3547844111c90f71c85760cbf841ae11787591a8`, selected `rho_0_60__exposure` | Historical reduced-population Phase 4B parent; 101,024 fold predictions, 284,896 rating states, 142,448 team states | False |
 
 The earlier checksum-invalid Phase 2d eligibility artifact is superseded. The
 first partial Phase 2e apply is unregistered diagnostic evidence and has no
@@ -107,9 +122,9 @@ enter Phase 4 without renewed evidence.
 ## Authority transition
 
 This roadmap replaces the pending R3/R4 sequence and the unfinished research
-portion of the historical-expansion roadmap. The 2026-09-05 Phase 3–6 contracts
-are superseded historical planning records; the replacement sequence is the
-sole active path. Completed R1/R2 work, candidate v1, and direct early-game
+portion of the historical-expansion roadmap. The 2026-09-05 and 2026-09-07 Phase 3–6 contracts
+are superseded historical planning records; the 2026-09-08 corrective sequence
+is the sole active path. Completed R1/R2 work, candidate v1, and direct early-game
 research remain immutable historical evidence subject to Phase 1 audit
 disposition. V4 remains the production benchmark and rollback authority
 throughout.

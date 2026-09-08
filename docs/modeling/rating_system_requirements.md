@@ -10,6 +10,20 @@
 > **Status:** Approved initial requirements for 2026 research and shadow work.
 > This is not a rating-engine implementation or a promotion authorization.
 
+## Current replacement requirements (2026-09-08)
+
+The [approved review and contract package](../plans/2026-09-08/transformation-review-and-authority-reset.md)
+replaces the active Phase 3–6 sequence. Ratings remain the mandatory foundation.
+The new Phase 4A compares neutral/carryover and four learned residual-prior
+families across exposure, three recency updaters and one local-level Kalman
+challenger; there is no adaptive-volatility mechanism. Polls/direct models are
+diagnostic-only. The original Phase 4B manifest cannot authorize forecasting.
+
+The exact approved equations, uncertainty rules, inputs, gates and dependency
+states are in the replacement contracts. Historical descriptions and deferred
+choices below are records of earlier programs, not unresolved authority for
+these approved contracts. Implementation and recertification are still pending.
+
 ## Goal
 
 Make a point-in-time, uncertainty-bearing team state the canonical expression
