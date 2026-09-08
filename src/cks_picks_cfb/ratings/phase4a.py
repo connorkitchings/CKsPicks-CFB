@@ -530,13 +530,18 @@ def _fit_predict_ridge(
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
-            predicted = np.ascontiguousarray(
-                model.predict(x_validate), dtype=np.float64
-            )
+            products = x_validate @ coefficients
+            if not np.isfinite(products).all():
+                raise Phase4AError(
+                    f"matmul produced non-finite products ({context}): "
+                    f"max={np.abs(products[~np.isfinite(products) | (np.abs(products) > 1e10)]).max() if (~np.isfinite(products) | (np.abs(products) > 1e10)).any() else 'all_finite'}"
+                )
+            predicted = np.ascontiguousarray(products + intercept, dtype=np.float64)
     except (RuntimeWarning, FloatingPointError, ValueError) as exc:
         raise Phase4AError(
             f"Ridge predict numerical failure ({context}): {exc}, "
-            f"coef_max={coef_max}, feature_max={feature_max}"
+            f"coef_max={coef_max}, feature_max={feature_max}, "
+            f"intercept={intercept}, coefs={coefficients.tolist()}"
         ) from exc
     if (
         not np.isfinite(coefficients).all()
