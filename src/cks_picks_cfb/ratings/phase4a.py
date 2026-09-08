@@ -527,21 +527,30 @@ def _fit_predict_ridge(
             f"validation features are numerically unstable ({context}): "
             f"feature_max={feature_max}"
         )
+    if x_validate.shape[1] != coefficients.shape[0]:
+        raise Phase4AError(
+            f"shape mismatch ({context}): x_validate.shape={x_validate.shape}, "
+            f"coefficients.shape={coefficients.shape}"
+        )
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
-            products = x_validate @ coefficients
+            products = np.matmul(x_validate, coefficients)
             if not np.isfinite(products).all():
+                non_finite_mask = ~np.isfinite(products)
+                sample_vals = products[non_finite_mask][:5] if non_finite_mask.any() else []
                 raise Phase4AError(
                     f"matmul produced non-finite products ({context}): "
-                    f"max={np.abs(products[~np.isfinite(products) | (np.abs(products) > 1e10)]).max() if (~np.isfinite(products) | (np.abs(products) > 1e10)).any() else 'all_finite'}"
+                    f"count={non_finite_mask.sum()}, sample={sample_vals.tolist()}"
                 )
             predicted = np.ascontiguousarray(products + intercept, dtype=np.float64)
     except (RuntimeWarning, FloatingPointError, ValueError) as exc:
+        sample_row = x_validate[0].tolist() if len(x_validate) > 0 else []
         raise Phase4AError(
             f"Ridge predict numerical failure ({context}): {exc}, "
             f"coef_max={coef_max}, feature_max={feature_max}, "
-            f"intercept={intercept}, coefs={coefficients.tolist()}"
+            f"intercept={intercept}, coefs={coefficients.tolist()}, "
+            f"sample_x_validate_row={sample_row}"
         ) from exc
     if (
         not np.isfinite(coefficients).all()
