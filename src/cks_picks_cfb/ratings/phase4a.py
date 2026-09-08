@@ -515,6 +515,12 @@ def _fit_predict_ridge(
             f"Ridge fit produced non-finite coefficients ({context}): "
             f"coef_max={np.abs(coefficients).max()}, intercept={intercept}"
         )
+    coef_max = float(np.abs(coefficients).max())
+    if coef_max > 1000.0:
+        raise Phase4AError(
+            f"Ridge coefficients are numerically explosive ({context}): "
+            f"coef_max={coef_max}, intercept={intercept}"
+        )
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
