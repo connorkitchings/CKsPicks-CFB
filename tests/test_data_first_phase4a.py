@@ -245,3 +245,30 @@ def test_fold_standardization_uses_the_rating_scale_floor():
     validate = train.copy()
     _, _, metadata = _standardize(train, validate)
     assert set(metadata["scale"].values()) == {0.05}
+
+
+def test_fold_standardization_rejects_numerically_unstable_features():
+    train = pd.DataFrame(
+        [
+            {
+                feature: 1e308
+                for feature in (
+                    "home_offense",
+                    "home_defense",
+                    "away_offense",
+                    "away_defense",
+                )
+            },
+            {
+                feature: 1e308
+                for feature in (
+                    "home_offense",
+                    "home_defense",
+                    "away_offense",
+                    "away_defense",
+                )
+            },
+        ]
+    )
+    with pytest.raises(Phase4AError, match="numerically unstable"):
+        _standardize(train, train.copy())

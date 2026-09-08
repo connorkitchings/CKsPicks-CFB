@@ -77,6 +77,12 @@
   `1e-8` fold feature scale. The rating path now uses the established `0.05`
   scale floor for fold-local standardization. This requires a final user commit
   and warning-free dry-run repeat before apply can be considered.
+- The subsequent dry run still reported overflow, which means the underlying
+  fold feature range—not only a near-zero scale—is unstable. Phase 4A now
+  fails closed before Ridge fitting when a fold center, scale, or standardized
+  feature is non-finite, retaining the offending feature's maximum magnitude
+  in the error. This diagnostic guard must pass before any revised numerical
+  treatment can be considered.
 
 ## Handoff Notes
 

@@ -363,11 +363,25 @@ def _standardize(
         values = _num(train_out, feature).replace([np.inf, -np.inf], np.nan).dropna()
         if values.empty:
             raise Phase4AError(f"fold has no training evidence for {feature}")
+        max_abs = float(values.abs().max())
+        # Reject before mean/variance reduction can itself overflow. The bound
+        # follows float64 arithmetic rather than changing any rating value.
+        safe_reduction_bound = np.sqrt(np.finfo(float).max) / max(len(values), 1)
+        if max_abs > safe_reduction_bound:
+            raise Phase4AError(
+                "fold rating feature is numerically unstable "
+                f"({feature}: max_abs={max_abs})"
+            )
         centers[feature] = float(values.mean())
         # Phase 4A keeps the Phase 3 rating-scale floor. A near-zero
         # fold-local standard deviation would turn ordinary first-season
         # movement into an artificial, numerically unstable Ridge feature.
         scales[feature] = max(float(values.std(ddof=0)), 0.05)
+        if not np.isfinite(centers[feature]) or not np.isfinite(scales[feature]):
+            raise Phase4AError(
+                "fold rating feature is numerically unstable "
+                f"({feature}: max_abs={max_abs})"
+            )
         validate_missing = ~np.isfinite(_num(validate_out, feature))
         fallback |= validate_missing
         for frame in (train_out, validate_out):
@@ -379,6 +393,11 @@ def _standardize(
         validate_out[feature] = (
             _num(validate_out, feature) - centers[feature]
         ) / scales[feature]
+    if (
+        not np.isfinite(train_out.loc[:, FEATURES].to_numpy(dtype=float)).all()
+        or not np.isfinite(validate_out.loc[:, FEATURES].to_numpy(dtype=float)).all()
+    ):
+        raise Phase4AError("fold standardization produced non-finite rating features")
     return (
         train_out.loc[:, FEATURES].to_numpy(),
         validate_out.loc[:, FEATURES].to_numpy(),
