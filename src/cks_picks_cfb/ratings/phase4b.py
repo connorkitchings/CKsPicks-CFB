@@ -303,8 +303,8 @@ def _add_context_features(
                 measurement, role = feature.rsplit("_", 1)
                 col_name = f"{side}_{feature}"
                 subset = side_context[side_context["unit_role"].eq(role)][
-                    ["season", "game_id", f"{side}_team", "adjusted_value"]
-                ].rename(columns={"adjusted_value": col_name})
+                    ["season", "game_id", f"{side}_team", "raw_value"]
+                ].rename(columns={"raw_value": col_name})
                 result = result.merge(
                     subset,
                     on=["season", "game_id", f"{side}_team"],
