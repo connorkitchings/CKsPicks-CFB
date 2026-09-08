@@ -521,6 +521,12 @@ def _fit_predict_ridge(
             f"Ridge coefficients are numerically explosive ({context}): "
             f"coef_max={coef_max}, intercept={intercept}"
         )
+    feature_max = float(np.abs(x_validate).max())
+    if feature_max > 100.0:
+        raise Phase4AError(
+            f"validation features are numerically unstable ({context}): "
+            f"feature_max={feature_max}"
+        )
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", RuntimeWarning)
@@ -528,7 +534,10 @@ def _fit_predict_ridge(
                 model.predict(x_validate), dtype=np.float64
             )
     except (RuntimeWarning, FloatingPointError, ValueError) as exc:
-        raise Phase4AError(f"Ridge predict numerical failure ({context}): {exc}") from exc
+        raise Phase4AError(
+            f"Ridge predict numerical failure ({context}): {exc}, "
+            f"coef_max={coef_max}, feature_max={feature_max}"
+        ) from exc
     if (
         not np.isfinite(coefficients).all()
         or not np.isfinite(intercept)
