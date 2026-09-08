@@ -188,9 +188,9 @@ def _fit_predict_ridge(
         raise Phase4BError(f"Ridge received invalid native-float inputs ({context})")
     try:
         with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            warnings.simplefilter("error", RuntimeWarning)
             model = Ridge(alpha=ridge_alpha).fit(x_train, y_train)
-    except (FloatingPointError, ValueError) as exc:
+    except (RuntimeWarning, FloatingPointError, ValueError) as exc:
         raise Phase4BError(f"Ridge fit numerical failure ({context}): {exc}") from exc
     coefficients = np.ascontiguousarray(model.coef_, dtype=np.float64)
     intercept = float(model.intercept_)
