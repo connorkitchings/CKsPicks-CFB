@@ -69,13 +69,15 @@ criteria are not weakened after results.
 
 ## Current checkpoint
 
-Phases 0–3 are complete. Phase 3 certified measurement definitions and selected
-`epa_only` as the shared quality core (no multi-measure candidate beat EPA-only
-by the 0.5% threshold). The checksum-valid Phase 2d replacement core handoff
-supersedes the defective earlier eligibility artifact, while Phase 2e separately
-certifies reconstructed-only auxiliary context and market-reference evidence.
-Phase 4A may begin from the signed Phase 3 retained-core manifest. Phase 4B,
-not Phase 3, is the first stage permitted to consume the Phase 2e manifest.
+Phases 0–4A are complete. Phase 3 certified measurement definitions and selected
+`epa_only` as the shared quality core. Phase 4A selected `rho_0_60__exposure`
+as the frozen reference rating (no challenger passed all gates). The sealed
+Phase 4A rating manifest is at
+`phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json` (SHA
+`af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`).
+Phase 4B may begin from the signed Phase 4A rating manifest and the Phase 2e
+auxiliary manifest. Phase 4B, not Phase 3, is the first stage permitted to
+consume the Phase 2e manifest.
 
 ## Certified predecessor evidence
 
@@ -89,6 +91,7 @@ not Phase 3, is the first stage permitted to consume the Phase 2e manifest.
 | Phase 2e auxiliary capture set | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/capture-set.json` — SHA `c2ff56b084e58b5cd159f884171df05187746c0dc40b42817912866a540de650`, code `80aba46df8b5e92959024510140cbd06de6b3b3e`, 63 Bronze captures | Reconstructed-only historical evidence; captures cover recruiting, returning production, coaching, roster continuity, rankings, and market references | False |
 | Phase 2e auxiliary handoff | `phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json` — SHA `d06ed3968a7bb6ec7ba97212aa2063068c253f26202e810c921b044006ab13ad` | Six Preview datasets: recruiting, returning production, coaching, roster continuity, strictly lagged polls, and reconstructed market references. Only Phase 4B may use football context; markets are Phase 5 post-selection diagnostics only. | False (`eligible_reconstructed_only`) |
 | Phase 3 retained core | `phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json` — raw SHA `c8bc1ebd8a369c59cf298844dfdb2167baaa17dc72a3b29ceebd119eeacaf234`, code `6addf437e7d76f5e39f198c41acd47c4e9b2c5b4`, selected `epa_only` | Sole Phase 4A parent for context-free rating selection; 302,702 observations, 1,210,808 adjusted measurements, 202,048 fold predictions | False |
+| Phase 4A retained rating | `phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json` — raw SHA `af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`, code `3547844111c90f71c85760cbf841ae11787591a8`, selected `rho_0_60__exposure` | Sole Phase 4B parent for target-context selection; 101,024 fold predictions, 284,896 rating states, 142,448 team states | False |
 
 The earlier checksum-invalid Phase 2d eligibility artifact is superseded. The
 first partial Phase 2e apply is unregistered diagnostic evidence and has no

@@ -1,11 +1,12 @@
 # Phase 4A: Context-Free Rating Selection
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-07
 - **Planner:** Sol
 - **Approval source:** User-approved 2026-09-06 resequencing contract, `docs/plans/2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md`.
-- **Implementation log:** `session_logs/2026-09-08/01-phase3-closure-and-phase4a-rating-selection.md`
+- **Implementation log:** `session_logs/2026-09-08/01-phase3-closure-and-phase4a-rating-selection.md`, `session_logs/2026-09-08/02-phase4a-rating-selection-completion.md`
 - **Commit policy:** Separate plan and implementation/evidence commits; user executes Git operations.
+- **Completed:** 2026-09-08. Selected candidate: `rho_0_60__exposure` (frozen reference). Manifest: `artifacts/research/data-first-football-v1/phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json`, SHA `af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`.
 
 ## Goal
 
@@ -69,11 +70,11 @@ Phase 4A input.
 
 ## Definition of Done
 
-- [ ] All eight candidates are evaluated on identical populations and folds.
-- [ ] One shared rating or the frozen reference is sealed with reproducible
+- [x] All eight candidates are evaluated on identical populations and folds.
+- [x] One shared rating or the frozen reference is sealed with reproducible
   pregame state and uncertainty behavior.
-- [ ] Auxiliary context is absent from every rating input.
-- [ ] Artifacts, validation, documentation, and a session log are complete.
+- [x] Auxiliary context is absent from every rating input.
+- [x] Artifacts, validation, documentation, and a session log are complete.
 
 ## Amendments
 
