@@ -55,10 +55,11 @@ Terra must not execute a Draft contract without an explicit user instruction nam
   — **Implemented 2026-09-07.** Certified measurement meaning and selected the
   EPA-only shared football core from the signed Phase 2d handoff.
 - [Phase 4A context-free rating selection](2026-09-07/02-phase4a-context-free-rating-selection.md)
-  — **In Progress.** Selects the prior and updater without auxiliary context.
+  — **Implemented 2026-09-08.** Selected `rho_0_60__exposure` as the frozen
+  reference rating from the signed Phase 3 retained core.
 - [Phase 4B target-context selection](2026-09-07/03-phase4b-target-context-selection.md)
-  — **Approved after Phase 4A.** Tests one context family at a time through a
-  frozen forecast bridge.
+  — **Implemented 2026-09-08.** Selected `field_position` for margin and
+  `no_context` for total from the signed Phase 4A rating and Phase 2e auxiliary.
 - [Phase 5 final spread and total selection](2026-09-07/04-phase5-final-spread-total-selection.md)
   — **Approved after Phase 4B.** Selects final target-specific forecasts.
 - [Phase 6 prospective evidence and market diagnostics](2026-09-07/05-phase6-prospective-evidence-and-market-diagnostics.md)

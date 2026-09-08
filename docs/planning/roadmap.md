@@ -9,10 +9,11 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-08):** Phases 0–3 of the data-first
-> program are complete. Phase 4A context-free rating selection is in progress;
-> the remaining sequence is Phase 4B target-context
-> selection, Phase 5 final forecast selection, and Phase 6 prospective evidence.
+> **Current research checkpoint (2026-09-08):** Phases 0–4B of the data-first
+> program are complete. Phase 4A selected `rho_0_60__exposure` as the frozen
+> reference rating; Phase 4B selected `field_position` for margin and
+> `no_context` for total. The remaining sequence is Phase 5 final forecast
+> selection and Phase 6 prospective evidence.
 > The historical phase queue below is retained for evidence only.
 
 ## Direction
