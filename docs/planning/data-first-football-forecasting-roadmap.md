@@ -69,15 +69,12 @@ criteria are not weakened after results.
 
 ## Current checkpoint
 
-Phases 0–4A are complete. Phase 3 certified measurement definitions and selected
+Phases 0–4B are complete. Phase 3 certified measurement definitions and selected
 `epa_only` as the shared quality core. Phase 4A selected `rho_0_60__exposure`
-as the frozen reference rating (no challenger passed all gates). The sealed
-Phase 4A rating manifest is at
-`phase4a/runs/phase4a-v1-20260908T1500Z/retained-rating-manifest.json` (SHA
-`af9e66af67f26155ab74d1acd1947f72add7307203ae09bf1853856696e27612`).
-Phase 4B may begin from the signed Phase 4A rating manifest and the Phase 2e
-auxiliary manifest. Phase 4B, not Phase 3, is the first stage permitted to
-consume the Phase 2e manifest.
+as the frozen reference rating. Phase 4B implementation is complete with
+contracts, tournament computation, runner, verifier, config, and tests; the
+Preview dry run and apply remain pending. Phase 5 may begin from the sealed
+Phase 4B retained baseline manifest once the Preview artifacts are written.
 
 ## Certified predecessor evidence
 

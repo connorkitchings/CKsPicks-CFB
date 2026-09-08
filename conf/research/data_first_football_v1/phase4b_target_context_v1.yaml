@@ -1,0 +1,60 @@
+schema_version: data_first_phase4b_config_v1
+environment: preview
+description: >-
+  Data-first Phase 4B target-context selection. Evaluates context families
+  beyond the Phase 4A rating-only baseline for margin and total prediction.
+seasons:
+  historical_development: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  forbidden: [2020]
+output_root: artifacts/research/data-first-football-v1/phase4b
+research_prefix: artifacts/research/data-first-football-v1/phase4b
+context_families:
+  - field_position
+  - pace
+  - turnovers
+  - recruiting
+  - returning_production
+  - coaching
+  - roster_continuity
+  - lagged_rankings
+family_features:
+  field_position:
+    - average_start_field_position_offense
+    - average_start_field_position_defense
+  pace:
+    - plays_per_drive_offense
+  turnovers:
+    - turnover_rate_offense
+    - turnover_rate_defense
+  recruiting:
+    - recruiting_4yr
+    - recruiting_current
+    - recruiting_trend
+  returning_production:
+    - return_total_ppa
+    - return_passing_ppa
+    - return_rushing_ppa
+    - return_receiving_ppa
+    - return_percent_ppa
+    - return_passing_usage
+    - return_rushing_usage
+  coaching:
+    - coach_tenure
+    - coach_new
+  roster_continuity:
+    - roster_size
+    - roster_returning_share
+    - roster_returning_qb_count
+  lagged_rankings:
+    - lagged_ap_rank
+    - lagged_coaches_rank
+    - lagged_ranked_either
+selection:
+  baseline_family: no_context
+  ridge_alpha: 10
+  validation_seasons: [2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  minimum_pooled_improvement_pct: 0.5
+  maximum_seasonal_regression_pct: 5.0
+  bootstrap_confidence: 0.90
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260908

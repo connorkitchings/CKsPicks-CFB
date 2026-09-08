@@ -44,6 +44,23 @@ from cks_picks_cfb.data.data_first_phase4a import (
 from cks_picks_cfb.data.data_first_phase4a import (
     TEAM_STATE_COLUMNS as PHASE4A_TEAM_STATE_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_phase4b import (
+    ATTRIBUTION_COLUMNS as PHASE4B_ATTRIBUTION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_phase4b import (
+    COVERAGE_COLUMNS as PHASE4B_COVERAGE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_phase4b import (
+    PHASE4B_ATTRIBUTION_DATASET,
+    PHASE4B_ATTRIBUTION_SCHEMA,
+    PHASE4B_COVERAGE_DATASET,
+    PHASE4B_COVERAGE_SCHEMA,
+    PHASE4B_PREDICTION_DATASET,
+    PHASE4B_PREDICTION_SCHEMA,
+)
+from cks_picks_cfb.data.data_first_phase4b import (
+    PREDICTION_COLUMNS as PHASE4B_PREDICTION_COLUMNS,
+)
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_KEYS,
@@ -929,6 +946,42 @@ _RATING_SCHEMA_BASES.update(
                 "selected",
             ),
             nonnullable=PHASE4A_ATTRIBUTION_COLUMNS,
+        ),
+        PHASE4B_PREDICTION_DATASET: DatasetSchema(
+            dataset=PHASE4B_PREDICTION_DATASET,
+            schema_version=PHASE4B_PREDICTION_SCHEMA,
+            required=PHASE4B_PREDICTION_COLUMNS,
+            keys=("family", "target", "season", "game_id"),
+            integer_columns=("season", "week", "game_id", "fallback_count"),
+            boolean_columns=("feature_fallback",),
+            timestamp_columns=("kickoff_utc",),
+            nonnullable=PHASE4B_PREDICTION_COLUMNS,
+            allowed_values={"target": ("margin", "total")},
+        ),
+        PHASE4B_ATTRIBUTION_DATASET: DatasetSchema(
+            dataset=PHASE4B_ATTRIBUTION_DATASET,
+            schema_version=PHASE4B_ATTRIBUTION_SCHEMA,
+            required=PHASE4B_ATTRIBUTION_COLUMNS,
+            keys=("target", "family"),
+            integer_columns=("feature_count", "validation_rows", "validation_games"),
+            boolean_columns=(
+                "bootstrap_excludes_zero",
+                "coverage_equal",
+                "seasonal_gate_passed",
+                "primary_gate_passed",
+                "selected",
+            ),
+            nonnullable=PHASE4B_ATTRIBUTION_COLUMNS,
+            allowed_values={"target": ("margin", "total")},
+        ),
+        PHASE4B_COVERAGE_DATASET: DatasetSchema(
+            dataset=PHASE4B_COVERAGE_DATASET,
+            schema_version=PHASE4B_COVERAGE_SCHEMA,
+            required=PHASE4B_COVERAGE_COLUMNS,
+            keys=("family", "target", "season"),
+            integer_columns=("total_rows", "complete_rows", "imputed_rows"),
+            nonnullable=PHASE4B_COVERAGE_COLUMNS,
+            allowed_values={"target": ("margin", "total")},
         ),
         "rating_score_models": DatasetSchema(
             dataset="rating_score_models",
