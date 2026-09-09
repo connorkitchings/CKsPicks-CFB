@@ -157,6 +157,26 @@ make replay-season YEAR=2025 ENV=preview
 
 The replay command refuses to run unless `PREVIEW_DATABASE_URL` is set and differs from `DATABASE_URL`.
 
+## Retrospective model context
+
+The public prediction page may show a diagnostic-only prior-season context
+panel. It is sourced from the immutable `historical_model_context` artifact,
+not from `prediction_grades` or `system_stats`. Its reconstructed historical
+market references are captured after the season and must never be described as
+an official pregame betting record, ROI, or promotion evidence.
+
+Build and publish a new context only from an approved, committed contract:
+
+```bash
+PYTHONPATH=src uv run python scripts/pipeline/build_historical_model_context.py --environment preview ...
+PYTHONPATH=src uv run python scripts/pipeline/publish_historical_model_context.py --environment preview ...
+PYTHONPATH=src uv run python scripts/pipeline/publish_historical_model_context.py --environment production ...
+```
+
+Apply the append-only database migration to Preview first, verify the exact
+artifact checksum and aggregates there, then publish the same artifact to
+production. The Vercel deployment is a separate user-managed release step.
+
 ## Early-season routing
 
 Completed games are counted per team. The matchup regime label uses the lesser count:

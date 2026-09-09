@@ -4,17 +4,17 @@
 
 - **Worked On:** Implemented the approved diagnostic-only 2025 V4 context
   calculation, serving projection, and prediction-mode web panel.
-- **Outcome:** The code checkpoint is ready for a user-managed commit. The
-  pinned Preview calculation independently reproduced the required 1,522-row
-  population and full-season/Week 2 parity without writing R2 or Neon.
+- **Outcome:** The immutable Preview artifact, Preview serving rows, and
+  production serving rows are published and independently verified. The public
+  panel remains pending the user's normal Git push/Vercel deployment.
 - **Plan Contract:** `docs/plans/2026-09-08/2025-retrospective-model-context.md`
 - **Approval / Status:** User explicitly authorized implementation; contract
   remains `In Progress` pending committed-SHA Preview materialization and
   Preview-first database/UI rollout.
-- **Blockers:** Immutable apply, migration, and publication must use the
-  committed code SHA; the user controls the required commit.
-- **Next:** Commit this checkpoint, then run Task 4 Preview dry-run/apply,
-  migration, aggregate publication, and visual verification.
+- **Blockers:** The committed web code has not been pushed/deployed, so no
+  public Vercel UI can yet be verified.
+- **Next:** User pushes `094407c` through the normal deployment workflow; then
+  verify the live panel for Weeks 0, 1, and 2 and close the contract.
 
 ## Work Completed
 
@@ -29,6 +29,17 @@
 - Added a prediction-mode-only historical context panel with explicit
   reconstructed-line disclosure and Week 0 unavailable behavior.
 - Added focused unit coverage for configuration guarding and W-L-P aggregation.
+- Built the immutable Preview R2 artifact at
+  `artifacts/research/historical-model-context/840eda828d14d8fe572d53e84eadbccdf54692ae088d75de98f95c922c51805c/runs/2026-09-08T2300Z-v1/`.
+  Its dataset ref is `ed45304956b5c8a179839a7c`, content SHA
+  `f33e7b43d5606a1cbe17da9c764789bf4b407dc0255b03cd7d5e3191feac5680`.
+- Independently reread all 1,522 rows and the 16 aggregate periods from R2.
+- Applied append-only migration `0012` to Preview and production, then
+  published the same 16 artifact-backed aggregate rows to each database.
+- Independently verified Preview and production season/Week 2 parity,
+  reconstructed diagnostic provenance, production `current_week` remains
+  `(2026, 2, 2026w2-43b25511a100)`, and the live 2026 system record remains
+  independently stored as `(18-32 spreads, 19-32 totals)`.
 
 ## Files Modified
 
@@ -51,9 +62,10 @@
 - [x] Web typecheck.
 - [x] Web production build completed successfully once.
 - [x] `git diff --check`.
-- [ ] Immutable Preview artifact apply and independent verification (requires committed code SHA).
-- [ ] Preview migration/publish and UI verification (requires committed checkpoint).
-- [ ] Production rollout (requires Preview parity and explicit next-stage execution).
+- [x] Immutable Preview artifact apply and independent verification.
+- [x] Preview migration and aggregate publication.
+- [x] Production migration and aggregate publication after Preview parity.
+- [ ] Vercel deployment and live panel verification (requires user-managed push/deploy).
 
 ## Amendments and Blockers
 
@@ -62,8 +74,8 @@
 
 ## Handoff Notes
 
-- **Resume at:** Commit the implementation checkpoint, then materialize the
-  immutable Preview artifact under the contract's run-stamped prefix.
+- **Resume at:** Push/deploy commit `094407c`, then inspect the live panel for
+  Weeks 0, 1, and 2.
 - **Watch out for:** Do not publish reconstructed context into
   `prediction_grades`, `system_stats`, or any canonical live-record table.
 
