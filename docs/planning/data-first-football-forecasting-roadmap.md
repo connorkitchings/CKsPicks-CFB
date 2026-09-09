@@ -63,8 +63,11 @@ eligibility are separate statuses.
 | 5 | [Rating-based forecast selection v2](../plans/2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Rating-based Ridge/NB2 target forecasts or corrected references frozen with uncertainty. |
 | 6 | [Prospective evidence v2](../plans/2026-09-08/phase6-prospective-evidence-v2.md) | Six qualifying paired slates support a recommendation, not activation. |
 
-Each contract is approved but unexecuted and requires its passing predecessor
-and a separate implementation task. Phase 7 remains a future promotion contract.
+Repair v2 is implemented and verified in Preview. Phase 3 v2 implementation is
+in progress locally; its Preview dry run and immutable materialization require a
+clean committed checkpoint. Every later contract remains unexecuted and requires
+its passing predecessor and a separate implementation task. Phase 7 remains a
+future promotion contract.
 Ratings are the mandatory forecast foundation; direct-core Ridge and polls are
 diagnostic-only. Auxiliary football information is tested inside preseason priors.
 

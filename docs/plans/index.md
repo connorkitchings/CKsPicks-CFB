@@ -37,7 +37,7 @@ be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagno
 | Approved, unexecuted contract | Dependency |
 | --- | --- |
 | [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | Reviewed predecessor artifacts as repair inputs |
-| [Phase 3 measurement/core v2](2026-09-08/phase3-measurement-and-core-selection-v2.md) | Passing repair handoff |
+| [Phase 3 measurement/core v2](2026-09-08/phase3-measurement-and-core-selection-v2.md) | In progress locally; Preview materialization awaits a clean committed checkpoint |
 | [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | Repaired core and admitted auxiliary features |
 | [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | Corrected retained rating |
 | [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Corrected target baselines |

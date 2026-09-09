@@ -1,0 +1,35 @@
+schema_version: data_first_phase3_v2_config_v1
+environment: preview
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+output_root: artifacts/research/data-first-football-v1/phase3/v2/runs
+availability_policy:
+  classification: historically_reconstructed
+  source_week_relation: strictly_prior_canonical_week
+  source_kickoff_buffer_hours: 6
+  target_cutoff: earliest_eligible_target_kickoff
+adjustment:
+  method: iterative_additive_league_centered
+  iterations: 4
+  retained_iterations: [0, 4]
+selection:
+  primary_rho: 0.60
+  primary_updater: exposure_weighted_empirical_bayes
+  ridge_alpha: 10
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260908
+  minimum_pooled_improvement_pct: 0.5
+  maximum_seasonal_regression_pct: 5.0
+  sensitivity:
+    recency_half_life_games: 4
+    maximum_regression_vs_epa_only_pct: 0.5
+candidates:
+  - epa_only
+  - quality_core_equal
+  - without_success_rate
+  - without_explosive_rate_20
+  - without_points_per_scoring_opportunity
+  - without_epa_per_play
+  - epa_pass_rush
+  - quality_core_epa_split
+

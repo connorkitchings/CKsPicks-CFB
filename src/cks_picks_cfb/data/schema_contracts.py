@@ -22,6 +22,16 @@ from cks_picks_cfb.data.data_first_phase3 import (
     PHASE3_PREDICTION_DATASET,
     PHASE3_PREDICTION_SCHEMA,
 )
+from cks_picks_cfb.data.data_first_phase3_v2 import (
+    ATTRIBUTION_COLUMNS_V2,
+    HISTORY_COLUMNS_V2,
+    OBSERVATION_COLUMNS_V2,
+    PHASE3_V2_DATASETS,
+    POPULATION_COLUMNS as PHASE3_V2_POPULATION_COLUMNS,
+    PREDICTION_COLUMNS_V2,
+    SNAPSHOT_COLUMNS_V2,
+    TERMINAL_COLUMNS_V2,
+)
 from cks_picks_cfb.data.data_first_phase4a import (
     ATTRIBUTION_COLUMNS as PHASE4A_ATTRIBUTION_COLUMNS,
 )
@@ -603,6 +613,122 @@ _REPAIR_V2_SCHEMAS: dict[str, DatasetSchema] = {
             "timing_class",
         ),
         allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+}
+
+_PHASE3_V2_SCHEMAS: dict[str, DatasetSchema] = {
+    PHASE3_V2_DATASETS["population"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["population"][0],
+        schema_version=PHASE3_V2_DATASETS["population"][1],
+        required=PHASE3_V2_POPULATION_COLUMNS,
+        keys=("season", "game_id"),
+        integer_columns=("season", "week", "game_id"),
+        boolean_columns=("forecast_eligible", "measurement_usable", "outer_validation"),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season", "week", "game_id", "kickoff_utc", "home_team", "away_team",
+            "forecast_eligible", "measurement_usable", "timing_class",
+            "outer_validation",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    PHASE3_V2_DATASETS["observations"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["observations"][0],
+        schema_version=PHASE3_V2_DATASETS["observations"][1],
+        required=OBSERVATION_COLUMNS_V2,
+        keys=("season", "game_id", "team", "measurement_id", "unit_role"),
+        integer_columns=("season", "week", "game_id"),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season", "week", "game_id", "kickoff_utc", "team", "opponent",
+            "side", "measurement_id", "unit_role", "numerator", "denominator",
+            "exposure_unit", "coverage_status", "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    PHASE3_V2_DATASETS["pregame_snapshots"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["pregame_snapshots"][0],
+        schema_version=PHASE3_V2_DATASETS["pregame_snapshots"][1],
+        required=SNAPSHOT_COLUMNS_V2,
+        keys=(
+            "season", "week", "as_of_game_id", "team", "measurement_id",
+            "unit_role", "recency_mode", "adjustment_iteration",
+        ),
+        integer_columns=("season", "week", "as_of_game_id", "adjustment_iteration"),
+        timestamp_columns=("as_of_kickoff_utc", "target_week_cutoff_utc"),
+        nonnullable=(
+            "season", "week", "as_of_game_id", "as_of_kickoff_utc",
+            "target_week_cutoff_utc", "team", "measurement_id", "unit_role",
+            "recency_mode", "adjustment_iteration", "primary_exposure",
+            "games_exposure", "source_game_count", "timing_class",
+            "availability_policy",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    PHASE3_V2_DATASETS["adjusted_history"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["adjusted_history"][0],
+        schema_version=PHASE3_V2_DATASETS["adjusted_history"][1],
+        required=HISTORY_COLUMNS_V2,
+        keys=(
+            "season", "week", "as_of_game_id", "source_season", "source_game_id",
+            "team", "measurement_id", "unit_role", "recency_mode",
+        ),
+        integer_columns=(
+            "season", "week", "as_of_game_id", "source_season", "source_week",
+            "source_game_id",
+        ),
+        boolean_columns=("included",),
+        timestamp_columns=(
+            "as_of_kickoff_utc", "target_week_cutoff_utc", "source_kickoff_utc",
+            "source_available_utc",
+        ),
+        nonnullable=(
+            "season", "week", "as_of_game_id", "target_week_cutoff_utc",
+            "source_season", "source_week", "source_game_id", "source_kickoff_utc",
+            "source_available_utc", "team", "opponent", "measurement_id",
+            "unit_role", "recency_mode", "numerator", "denominator", "included",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    PHASE3_V2_DATASETS["terminal"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["terminal"][0],
+        schema_version=PHASE3_V2_DATASETS["terminal"][1],
+        required=TERMINAL_COLUMNS_V2,
+        keys=("season", "team", "measurement_id", "unit_role", "recency_mode"),
+        integer_columns=("season", "games_exposure", "source_game_count"),
+        nonnullable=(
+            "season", "team", "measurement_id", "unit_role", "recency_mode",
+            "primary_exposure", "games_exposure", "source_game_count",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    PHASE3_V2_DATASETS["predictions"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["predictions"][0],
+        schema_version=PHASE3_V2_DATASETS["predictions"][1],
+        required=PREDICTION_COLUMNS_V2,
+        keys=("season", "game_id", "candidate", "recency_mode", "target"),
+        integer_columns=("season", "week", "game_id", "fallback_count"),
+        boolean_columns=("feature_fallback",),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season", "week", "game_id", "kickoff_utc", "candidate", "recency_mode",
+            "target", "actual", "prediction", "absolute_error", "fold_id",
+            "training_seasons", "feature_fallback", "fallback_count",
+        ),
+    ),
+    PHASE3_V2_DATASETS["attribution"][0]: DatasetSchema(
+        dataset=PHASE3_V2_DATASETS["attribution"][0],
+        schema_version=PHASE3_V2_DATASETS["attribution"][1],
+        required=ATTRIBUTION_COLUMNS_V2,
+        keys=("candidate",),
+        integer_columns=("component_count", "validation_rows", "validation_games"),
+        boolean_columns=(
+            "bootstrap_excludes_zero", "coverage_equal", "seasonal_gate_passed",
+            "sensitivity_gate_passed", "primary_gate_passed", "selected",
+        ),
+        nonnullable=ATTRIBUTION_COLUMNS_V2,
     ),
 }
 
@@ -1287,6 +1413,14 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
         return schema
     if dataset in _REPAIR_V2_SCHEMAS:
         schema = _REPAIR_V2_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, "
+                f"got {schema_version}"
+            )
+        return schema
+    if dataset in _PHASE3_V2_SCHEMAS:
+        schema = _PHASE3_V2_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, "
