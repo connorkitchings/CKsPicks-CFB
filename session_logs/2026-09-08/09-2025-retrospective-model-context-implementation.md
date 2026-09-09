@@ -4,17 +4,16 @@
 
 - **Worked On:** Implemented the approved diagnostic-only 2025 V4 context
   calculation, serving projection, and prediction-mode web panel.
-- **Outcome:** The immutable Preview artifact, Preview serving rows, and
-  production serving rows are published and independently verified. The public
-  panel remains pending the user's normal Git push/Vercel deployment.
+- **Outcome:** The immutable Preview artifact, Preview serving rows, production
+  serving rows, and public Vercel panel are published and independently
+  verified.
 - **Plan Contract:** `docs/plans/2026-09-08/2025-retrospective-model-context.md`
-- **Approval / Status:** User explicitly authorized implementation; contract
-  remains `In Progress` pending committed-SHA Preview materialization and
-  Preview-first database/UI rollout.
-- **Blockers:** The committed web code has not been pushed/deployed, so no
-  public Vercel UI can yet be verified.
-- **Next:** User pushes `094407c` through the normal deployment workflow; then
-  verify the live panel for Weeks 0, 1, and 2 and close the contract.
+- **Approval / Status:** User explicitly authorized implementation; contract is
+  `Implemented` after committed-SHA Preview materialization, Preview-first
+  database rollout, and live UI verification.
+- **Blockers:** None.
+- **Next:** Continue normal weekly operations; this retrospective context is
+  diagnostic-only and requires no weekly publisher interaction.
 
 ## Work Completed
 
@@ -40,6 +39,12 @@
   reconstructed diagnostic provenance, production `current_week` remains
   `(2026, 2, 2026w2-43b25511a100)`, and the live 2026 system record remains
   independently stored as `(18-32 spreads, 19-32 totals)`.
+- Verified the public prediction-mode deployment after `094407c` was pushed:
+  Week 2 displays full-season spread `379-366-16` (50.9%) and total
+  `398-358-5` (52.6%), with matching Week 2 values including total `28-22-0`.
+  Week 0 retains the full-season context and renders “No 2025 Week 0
+  comparison.” The deployed disclosure labels the references as reconstructed,
+  post-season diagnostic context rather than an official pregame record.
 
 ## Files Modified
 
@@ -65,17 +70,18 @@
 - [x] Immutable Preview artifact apply and independent verification.
 - [x] Preview migration and aggregate publication.
 - [x] Production migration and aggregate publication after Preview parity.
-- [ ] Vercel deployment and live panel verification (requires user-managed push/deploy).
+- [x] Vercel deployment and live panel verification for Week 0 and Week 2.
 
 ## Amendments and Blockers
 
 - No amendment. A repeated web build was blocked by a pre-existing `.next/lock`
-  after a prior successful build; no lock file was removed.
+  after a prior successful build; no lock file was removed. The subsequent
+  deployed-page check succeeded.
 
 ## Handoff Notes
 
-- **Resume at:** Push/deploy commit `094407c`, then inspect the live panel for
-  Weeks 0, 1, and 2.
+- **Resume at:** No active implementation work. The historical context should
+  remain isolated from the weekly production publisher.
 - **Watch out for:** Do not publish reconstructed context into
   `prediction_grades`, `system_stats`, or any canonical live-record table.
 

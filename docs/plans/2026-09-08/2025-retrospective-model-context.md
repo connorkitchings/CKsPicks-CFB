@@ -1,6 +1,6 @@
 # 2025 Retrospective Model Context
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-08
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation of the proposed plan on 2026-09-08.
@@ -277,13 +277,13 @@ projection containing aggregates only.
 
 ## Definition of Done
 
-- [ ] The immutable artifact and independent audit pass with exact expected counts.
-- [ ] Migration, schema copies, and idempotent publisher are complete and validated.
-- [ ] Preview-first and production publication evidence is recorded.
-- [ ] The accessible panel renders correctly without changing live records.
-- [ ] All required validation passes.
-- [ ] Documentation and implementation session log are updated.
-- [ ] Plan status is updated to `Implemented`.
+- [x] The immutable artifact and independent audit pass with exact expected counts.
+- [x] Migration, schema copies, and idempotent publisher are complete and validated.
+- [x] Preview-first and production publication evidence is recorded.
+- [x] The accessible panel renders correctly without changing live records.
+- [x] All required validation passes.
+- [x] Documentation and implementation session log are updated.
+- [x] Plan status is updated to `Implemented`.
 
 ## Amendments
 
