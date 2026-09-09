@@ -66,6 +66,14 @@
 - Preview materialization is intentionally blocked until the tracked Repair v2
   paths are committed at the SHA supplied to `--expected-code-sha`, as required
   by the approved contract. No cloud writes or provider calls were made.
+- The first committed-Checkpoint Preview apply (`repair-v2-20260909T1340Z`)
+  stopped before any CFBD call or dataset publication: the runner wrote the
+  required user-readable capture inventory, then attempted to overwrite that
+  immutable object with an internal request representation. The now-fixed
+  runner keeps the immutable R2 inventory and uses the catalog header solely
+  for resume validation. The partial run contains only identity/capture-plan
+  evidence and is intentionally retained as immutable failed-run evidence;
+  use a new run ID after the corrective commit.
 
 ## Handoff Notes
 

@@ -503,16 +503,10 @@ def _capture_gaps(
         contract_version="data_first_repair_v2_capture_set_v1",
         identity=identity,
     )
-    _immutable_json(
-        storage,
-        f"{run_prefix}/capture-plan.json",
-        {
-            "schema_version": "data_first_repair_capture_plan_v2",
-            "identity": dict(identity),
-            "policy": policy,
-            "requests": plan,
-        },
-    )
+    # The caller persisted the immutable, user-readable capture inventory
+    # before entering this function.  The catalog header above independently
+    # enforces the same semantic request set for a resume; do not overwrite
+    # the R2 inventory with an internal representation.
     completed = completed_request_capture_ids(
         conn_url, f"data-first-repair-v2-{identity['run_id']}"
     )
