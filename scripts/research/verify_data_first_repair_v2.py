@@ -26,6 +26,14 @@ from scripts.research.run_data_first_repair_v2 import (
 )
 
 
+def _frame_digest(frame):
+    """Hash records after normalizing equivalent nullable object values."""
+    normalized = frame.copy()
+    for column in normalized.select_dtypes(include=["object"]).columns:
+        normalized[column] = normalized[column].where(normalized[column].notna(), None)
+    return sha256(normalized.to_dict("records"))
+
+
 def _capture_plan_extra_captures(storage, frame):
     """Read only capture IDs recorded by the repaired artifact itself."""
     from cks_picks_cfb.data.catalog import catalog_connection_url, source_capture_by_id
@@ -101,8 +109,8 @@ def main(argv: list[str] | None = None) -> None:
         extra_captures=extra,
     )
     for name in ("population", "auxiliary", "coverage", "issues"):
-        expected = sha256(recomputed[name].to_dict("records"))
-        actual = sha256(output_frames[name].to_dict("records"))
+        expected = _frame_digest(recomputed[name])
+        actual = _frame_digest(output_frames[name])
         if actual != expected:
             raise RepairV2Error(
                 f"Repair v2 independent reconstruction mismatch: {name}"

@@ -27,6 +27,13 @@ def test_parquet_bytes_preserves_nullable_boolean_values() -> None:
     assert pd.isna(values[2])
 
 
+def test_parquet_bytes_preserves_missing_object_values_as_null() -> None:
+    payload = parquet_bytes([{"value": "present"}, {"value": float("nan")}])
+    values = pd.read_parquet(io.BytesIO(payload))["value"].tolist()
+    assert values[0] == "present"
+    assert pd.isna(values[1])
+
+
 def test_identical_capture_reuses_content_and_preserves_observations(tmp_path):
     storage = LocalStorage(tmp_path)
     now = datetime.now(timezone.utc)

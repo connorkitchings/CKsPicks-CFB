@@ -15,8 +15,12 @@ The sealed local dry run reproduces the required `8,936 / 8,935 / 8,903 / 33 /
 independent verifier rejected a nullable-boolean serialization defect; it is
 not certified evidence. The replacement implementation preserves nullable
 booleans and reuses only the two exact, already registered reconstructed
-captures. A clean committed checkpoint and a new immutable Preview run remain
-required before this contract can be marked complete.
+captures. Replacement run `repair-v2-20260909T1356Z` reused those captures and
+exposed the remaining null-string representation defect during independent
+verification; it is also uncertified. The next committed implementation
+preserves object nulls and compares nullable object values semantically in the
+independent digest. A clean committed checkpoint and a new immutable Preview
+run remain required before this contract can be marked complete.
 
 ## Goal, parents, and boundary
 

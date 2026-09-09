@@ -64,6 +64,8 @@
   focused tests.
 - [x] Sealed-parent Preview dry run after the correction: 8,936 / 8,935 /
   8,903 / 33 / 5,240 invariants reproduced.
+- [x] Null-serialization correction: `20 passed` across the lake and Repair v2
+  focused tests; full warning-as-error suite: `790 passed, 2 skipped`.
 
 ## Amendments and Blockers
 
@@ -93,6 +95,13 @@
   columns, adds a regression test, and reuses only exact registered captures
   with reconstructed timing on the replacement run, so it makes no additional
   provider call.
+- The fourth Preview apply (`repair-v2-20260909T1356Z`) reused exactly those
+  two captures and materialized its output. Its verifier found one population
+  null written as the text `"nan"` rather than a null. The repair population
+  itself was unchanged; the difference is serialization-only. The new
+  correction serializes object NaNs as null and makes the verifier compare
+  nullable object records semantically. This run is retained as immutable,
+  uncertified diagnostic evidence and will not be handed to Phase 3.
 
 ## Handoff Notes
 

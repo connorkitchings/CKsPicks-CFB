@@ -168,7 +168,12 @@ def parquet_bytes(records: Sequence[Mapping[str, Any]]) -> bytes:
             df[col] = pd.array(df[col], dtype="boolean")
         else:
             df[col] = df[col].apply(
-                lambda value: str(value) if value is not None else None
+                lambda value: None
+                if value is None
+                or value is pd.NA
+                or value is pd.NaT
+                or (isinstance(value, (float, np.floating)) and math.isnan(value))
+                else str(value)
             )
     table = pa.Table.from_pandas(df, preserve_index=False)
     sink = io.BytesIO()
