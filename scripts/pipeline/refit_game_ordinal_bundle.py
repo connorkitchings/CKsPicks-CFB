@@ -157,6 +157,28 @@ def _compatibility_features(
     return features
 
 
+def parse_train_years(
+    raw: str | None, policy_years: tuple[int, ...]
+) -> tuple[int, ...]:
+    """Parse an optional training-window override.
+
+    The override must be a non-empty, strictly ordered subset that matches a
+    leading window of the frozen production refit years (for example the
+    locked-test 2021-2024 window used by selection-time historical replays).
+    """
+    if raw is None:
+        return policy_years
+    years = tuple(int(value.strip()) for value in raw.split(",") if value.strip())
+    if not years:
+        raise ValueError("--train-years must list at least one season")
+    if years != policy_years[: len(years)]:
+        raise ValueError(
+            f"--train-years must be a leading window of {list(policy_years)}; "
+            f"got {list(years)}"
+        )
+    return years
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--feature-ref-uri", required=True)
@@ -169,6 +191,14 @@ def main() -> None:
         "--experiment", type=Path, default=Path("conf/experiment/week0_regimes.yaml")
     )
     parser.add_argument("--established-source-bundle-uri")
+    parser.add_argument(
+        "--train-years",
+        help=(
+            "Comma-separated seasons constraining the training frame to a "
+            "leading window of the frozen production refit years (for example "
+            "the 2021-2024 locked-test window for selection-time replays)."
+        ),
+    )
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     ref = DatasetRef(**json.loads(storage.read_bytes(args.feature_ref_uri).decode()))
@@ -201,7 +231,8 @@ def main() -> None:
     if tracks == {"strict"} and not bool(raw["v4_activation_eligible"].all()):
         raise ValueError("Strict V4 feature reference is not activation eligible")
     frame = labeled_training_frame(raw, policy)
-    frame = frame[frame["season"].isin(policy.production_refit_years)].copy()
+    train_years = parse_train_years(args.train_years, policy.production_refit_years)
+    frame = frame[frame["season"].isin(train_years)].copy()
     if {"home_points", "away_points"} - set(frame.columns):
         frame["home_points"] = (frame["total_target"] + frame["spread_target"]) / 2.0
         frame["away_points"] = (frame["total_target"] - frame["spread_target"]) / 2.0
@@ -406,7 +437,12 @@ def main() -> None:
         "schema_version": "model_bundle_v3",
         "bundle_id": args.bundle_id,
         "code_sha": _code_sha(),
-        "training_years": list(policy.production_refit_years),
+        "training_years": list(train_years),
+        "training_window": (
+            "production_refit"
+            if train_years == policy.production_refit_years
+            else "leading_window_override"
+        ),
         "feature_dataset_refs": [asdict(ref)],
         "prior_source_policy": {"2021": 2019, "excluded_years": [2020]},
         "selection_basis": "predictive_results_only",
