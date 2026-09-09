@@ -60,6 +60,10 @@
 - [x] V4/boundary coverage through the full Python suite.
 - [x] Strict MkDocs build.
 - [x] `git diff --check`.
+- [x] Serialization correction: `19 passed` across the lake and Repair v2
+  focused tests.
+- [x] Sealed-parent Preview dry run after the correction: 8,936 / 8,935 /
+  8,903 / 33 / 5,240 invariants reproduced.
 
 ## Amendments and Blockers
 
@@ -80,12 +84,21 @@
   the deterministic hash from that semantic request before recording attempts.
   Its identity/capture-plan header is retained as failed-run evidence; use a
   new run ID after the second corrective commit.
+- The third Preview apply (`repair-v2-20260909T1345Z`) made exactly the two
+  approved, successful provider captures and materialized all immutable output
+  datasets. Independent verification then rejected the artifact because the
+  generic lake serializer encoded a nullable boolean as text. This is an
+  artifact-type failure, not a population or forecast result: the records must
+  not be used as Repair v2 evidence. The correction preserves nullable boolean
+  columns, adds a regression test, and reuses only exact registered captures
+  with reconstructed timing on the replacement run, so it makes no additional
+  provider call.
 
 ## Handoff Notes
 
-- **Resume at:** Commit the implementation, then run:
+- **Resume at:** Commit the serialization/capture-reuse correction, then run:
 
-  `PYTHONPATH=src:. uv run python scripts/research/run_data_first_repair_v2.py --core-eligibility-uri artifacts/research/data-first-football-v1/phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json --auxiliary-eligibility-uri artifacts/research/data-first-football-v1/phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json --phase3-retained-uri artifacts/research/data-first-football-v1/phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json --run-id <committed-run-id> --expected-code-sha <committed-sha> --environment preview --as-of 2026-09-09T12:00:00Z --apply`
+  `PYTHONPATH=src:. uv run python scripts/research/run_data_first_repair_v2.py --core-eligibility-uri artifacts/research/data-first-football-v1/phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json --auxiliary-eligibility-uri artifacts/research/data-first-football-v1/phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json --phase3-retained-uri artifacts/research/data-first-football-v1/phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json --run-id <new-committed-run-id> --expected-code-sha <committed-sha> --environment preview --as-of <utc-timestamp> --apply`
 - **Then:** Run `verify_data_first_repair_v2.py` with the emitted manifest URI
   and the same committed SHA before changing the plan status.
 - **Watch out for:** 2020 is forbidden in every outcome, feature, state, and fold; historical capture metadata remains reconstructed-only.

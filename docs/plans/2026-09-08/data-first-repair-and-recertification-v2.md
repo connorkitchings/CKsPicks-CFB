@@ -7,6 +7,17 @@
 - **Implementation log:** `session_logs/2026-09-09/01-data-first-repair-v2-implementation.md`
 - **Commit policy:** Separate code and evidence checkpoints; user executes Git.
 
+## Implementation record
+
+The sealed local dry run reproduces the required `8,936 / 8,935 / 8,903 / 33 /
+5,240` population and auxiliary invariants. Preview run
+`repair-v2-20260909T1345Z` executed the two approved gap captures but its
+independent verifier rejected a nullable-boolean serialization defect; it is
+not certified evidence. The replacement implementation preserves nullable
+booleans and reuses only the two exact, already registered reconstructed
+captures. A clean committed checkpoint and a new immutable Preview run remain
+required before this contract can be marked complete.
+
 ## Goal, parents, and boundary
 
 Repair predictive-population and auxiliary semantics without changing immutable

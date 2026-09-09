@@ -15,6 +15,7 @@ from typing import Any, Mapping
 
 import cfbd
 import pandas as pd
+import psycopg
 import yaml
 from dotenv import load_dotenv
 
@@ -88,7 +89,9 @@ RELEVANT_PATHS = (
     "scripts/research/run_data_first_repair_v2.py",
     "scripts/research/verify_data_first_repair_v2.py",
     "src/cks_picks_cfb/data/data_first_repair_v2.py",
+    "src/cks_picks_cfb/data/lake.py",
     "src/cks_picks_cfb/data/schema_contracts.py",
+    "tests/test_data_lake.py",
 )
 
 
@@ -416,7 +419,7 @@ def _first_kickoffs(schedule: pd.DataFrame) -> pd.DataFrame:
 
 def _capture_rows(
     config: Mapping[str, Any],
-    existing: Mapping[str, str] | None = None,
+    existing: Mapping[str, SourceCapture] | None = None,
     captures: Mapping[str, SourceCapture] | None = None,
     attempts: Mapping[str, int] | None = None,
 ) -> pd.DataFrame:
@@ -431,7 +434,8 @@ def _capture_rows(
             "parameters": dict(request["parameters"]),
         }
         request_id = source_request_sha(semantic)
-        capture = captures.get(request_id)
+        existing_capture = existing.get(request_id)
+        capture = captures.get(request_id) or existing_capture
         rows.append(
             {
                 "request_id": request_id,
@@ -441,14 +445,12 @@ def _capture_rows(
                 "existing_captures_checked": _stable_parameters(sorted(existing)),
                 "max_attempts": int(policy["max_attempts_per_request"]),
                 "max_total_requests": int(policy["max_total_requests"]),
-                "state": "captured"
+                "state": "existing_capture"
+                if existing_capture
+                else "captured"
                 if capture
-                else "existing_capture"
-                if request_id in existing
                 else "planned",
-                "capture_id": capture.capture_id
-                if capture
-                else existing.get(request_id),
+                "capture_id": capture.capture_id if capture else None,
                 "attempt_count": int(attempts.get(request_id, 0)),
                 "captured_at": capture.captured_at.isoformat() if capture else None,
                 "content_sha": capture.content_sha if capture else None,
@@ -457,6 +459,53 @@ def _capture_rows(
             }
         )
     return pd.DataFrame(rows)
+
+
+def _registered_gap_captures(
+    conn_url: str, config: Mapping[str, Any]
+) -> dict[str, SourceCapture]:
+    """Return exact, timing-safe previously registered Repair v2 captures."""
+    policy = dict(config["capture_policy"])
+    expected = {
+        source_request_sha(
+            {
+                "provider": policy["provider"],
+                "entity": request["entity"],
+                "endpoint": request["endpoint"],
+                "parameters": dict(request["parameters"]),
+            }
+        )
+        for request in config["gap_capture_requests"]
+    }
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT capture_id FROM catalog.source_captures "
+                "WHERE provider = %s AND state = 'registered' "
+                "AND entity IN ('data_first_repair_rosters', "
+                "'data_first_repair_coaches')",
+                (policy["provider"],),
+            )
+            capture_ids = [str(row[0]) for row in cur.fetchall()]
+    matches: dict[str, list[SourceCapture]] = {}
+    for capture_id in capture_ids:
+        capture = source_capture_by_id(conn_url, capture_id)
+        request_id = source_request_sha(dict(capture.request))
+        timing = dict(capture.response_metadata).get("timing_class")
+        if (
+            request_id in expected
+            and capture.effective_at is None
+            and timing == "historically_reconstructed"
+        ):
+            matches.setdefault(request_id, []).append(capture)
+    duplicates = [
+        request_id for request_id, values in matches.items() if len(values) > 1
+    ]
+    if duplicates:
+        raise RepairV2Error(
+            "ambiguous registered Repair v2 captures: " + ", ".join(sorted(duplicates))
+        )
+    return {request_id: values[0] for request_id, values in matches.items()}
 
 
 def _plain(row: Any) -> dict[str, Any]:
@@ -482,6 +531,7 @@ def _capture_gaps(
     config: Mapping[str, Any],
     identity: Mapping[str, Any],
     run_prefix: str,
+    existing_captures: Mapping[str, SourceCapture],
 ) -> list[SourceCapture]:
     policy = dict(config["capture_policy"])
     requests = [
@@ -510,10 +560,9 @@ def _capture_gaps(
     completed = completed_request_capture_ids(
         conn_url, f"data-first-repair-v2-{identity['run_id']}"
     )
-    output: list[SourceCapture] = [
+    output: list[SourceCapture] = list(existing_captures.values()) + [
         source_capture_by_id(conn_url, capture_id) for capture_id in completed.values()
     ]
-    client = cfbd.ApiClient(cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"]))
     for request in plan:
         request_id = source_request_sha(
             {
@@ -521,8 +570,11 @@ def _capture_gaps(
                 for key in ("provider", "entity", "endpoint", "parameters")
             }
         )
-        if request_id in completed:
+        if request_id in completed or request_id in existing_captures:
             continue
+        client = cfbd.ApiClient(
+            cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"])
+        )
         for _ in range(int(policy["max_attempts_per_request"])):
             attempt = next_source_request_attempt(
                 conn_url,
@@ -759,6 +811,8 @@ def main(argv: list[str] | None = None) -> None:
     capture_plan = _capture_rows(config)
     if args.apply:
         conn_url = catalog_connection_url("preview")
+        registered_captures = _registered_gap_captures(conn_url, config)
+        capture_plan = _capture_rows(config, existing=registered_captures)
         _immutable_json(storage, f"{run_prefix}/identity.json", identity)
         _immutable_json(
             storage,
@@ -769,12 +823,23 @@ def main(argv: list[str] | None = None) -> None:
                 "plan": capture_plan.to_dict("records"),
             },
         )
-        extra_captures = _capture_gaps(storage, conn_url, config, identity, run_prefix)
+        extra_captures = _capture_gaps(
+            storage,
+            conn_url,
+            config,
+            identity,
+            run_prefix,
+            existing_captures=registered_captures,
+        )
         captures_by_request = {
             source_request_sha(dict(capture.request)): capture
             for capture in extra_captures
         }
-        capture_plan = _capture_rows(config, captures=captures_by_request)
+        capture_plan = _capture_rows(
+            config,
+            existing=registered_captures,
+            captures=captures_by_request,
+        )
     frames, family_admission, details = compute_repair(
         storage,
         core=core,

@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Mapping, Sequence
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -157,7 +158,18 @@ def parquet_bytes(records: Sequence[Mapping[str, Any]]) -> bytes:
     """Serialize records deterministically enough for content addressing."""
     df = pd.DataFrame.from_records(list(records))
     for col in df.select_dtypes(include=["object"]).columns:
-        df[col] = df[col].apply(lambda v: str(v) if v is not None else None)
+        values = df[col].dropna()
+        if (
+            not values.empty
+            and values.map(lambda value: isinstance(value, (bool, np.bool_))).all()
+        ):
+            # Nullable booleans otherwise have object dtype and used to be
+            # stringified below. Preserve their semantic type in the lake.
+            df[col] = pd.array(df[col], dtype="boolean")
+        else:
+            df[col] = df[col].apply(
+                lambda value: str(value) if value is not None else None
+            )
     table = pa.Table.from_pandas(df, preserve_index=False)
     sink = io.BytesIO()
     pq.write_table(table, sink, compression="snappy")

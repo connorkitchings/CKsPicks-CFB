@@ -12,11 +12,19 @@ from cks_picks_cfb.data.lake import (
     build_dataset_version,
     canonicalize_market_quotes_frame,
     capture_provider_records,
+    parquet_bytes,
     read_dataset,
     select_capture_as_of,
     select_market_snapshot,
 )
 from cks_picks_cfb.data.storage import LocalStorage, StorageError
+
+
+def test_parquet_bytes_preserves_nullable_boolean_values() -> None:
+    payload = parquet_bytes([{"flag": True}, {"flag": False}, {"flag": None}])
+    values = pd.read_parquet(io.BytesIO(payload))["flag"].tolist()
+    assert values[:2] == [True, False]
+    assert pd.isna(values[2])
 
 
 def test_identical_capture_reuses_content_and_preserves_observations(tmp_path):
