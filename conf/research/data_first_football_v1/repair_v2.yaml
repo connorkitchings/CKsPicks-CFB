@@ -1,0 +1,45 @@
+schema_version: data_first_repair_v2_config_v1
+environment: preview
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+capture_policy:
+  provider: cfbd
+  max_total_requests: 200
+  max_attempts_per_request: 3
+  timing_class: historically_reconstructed
+gap_capture_requests:
+  - entity: rosters
+    endpoint: TeamsApi.get_roster
+    parameters:
+      year: 2014
+      classification: fbs
+    reason: 2015 same-team roster continuity predecessor
+  - entity: coaches
+    endpoint: CoachesApi.get_coaches
+    parameters:
+      min_year: 1869
+      max_year: 2014
+    reason: pre-2015 coach-tenure evidence
+families:
+  football: [recruiting, returning_production, coaching, roster_continuity]
+  polls_role: diagnostic_only
+  market_role: post_phase5_diagnostic_only
+semantic_fixtures:
+  coaches:
+    - season: 2015
+      team: Michigan
+      coach: Jim Harbaugh
+      expected_new: true
+    - season: 2015
+      team: Alabama
+      coach: Nick Saban
+      expected_new: false
+  roster:
+    - player_id: "3126356"
+      season: 2016
+      team: Alabama
+      expected: same_team_return
+    - player_id: "535754"
+      season: 2016
+      team: North Texas
+      expected: incoming_experienced

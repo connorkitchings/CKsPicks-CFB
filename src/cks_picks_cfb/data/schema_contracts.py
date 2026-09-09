@@ -61,6 +61,33 @@ from cks_picks_cfb.data.data_first_phase4b import (
 from cks_picks_cfb.data.data_first_phase4b import (
     PREDICTION_COLUMNS as PHASE4B_PREDICTION_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    AUXILIARY_COLUMNS as REPAIR_AUXILIARY_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    CAPTURE_PLAN_COLUMNS as REPAIR_CAPTURE_PLAN_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    COVERAGE_COLUMNS as REPAIR_COVERAGE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    ISSUE_COLUMNS as REPAIR_ISSUE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    POPULATION_COLUMNS as REPAIR_POPULATION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    REPAIR_AUXILIARY_DATASET,
+    REPAIR_AUXILIARY_SCHEMA,
+    REPAIR_CAPTURE_PLAN_DATASET,
+    REPAIR_CAPTURE_PLAN_SCHEMA,
+    REPAIR_COVERAGE_DATASET,
+    REPAIR_COVERAGE_SCHEMA,
+    REPAIR_ISSUE_DATASET,
+    REPAIR_ISSUE_SCHEMA,
+    REPAIR_POPULATION_DATASET,
+    REPAIR_POPULATION_SCHEMA,
+)
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_KEYS,
@@ -458,6 +485,124 @@ _PHASE2E_SCHEMAS: dict[str, DatasetSchema] = {
             "timing_class": ("historically_reconstructed",),
             "usage": ("post_phase5_diagnostic_only",),
         },
+    ),
+}
+
+_REPAIR_V2_SCHEMAS: dict[str, DatasetSchema] = {
+    REPAIR_POPULATION_DATASET: DatasetSchema(
+        dataset=REPAIR_POPULATION_DATASET,
+        schema_version=REPAIR_POPULATION_SCHEMA,
+        required=REPAIR_POPULATION_COLUMNS,
+        keys=("season", "game_id"),
+        integer_columns=("season", "week", "game_id", "measurement_exposure"),
+        boolean_columns=(
+            "schedule_completed",
+            "outcome_valid",
+            "forecast_eligible",
+            "measurement_usable",
+        ),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "kickoff_utc",
+            "home_team",
+            "away_team",
+            "schedule_completed",
+            "outcome_valid",
+            "forecast_eligible",
+            "measurement_usable",
+            "measurement_exposure",
+            "missing_measurement_sources",
+            "disposition",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    REPAIR_AUXILIARY_DATASET: DatasetSchema(
+        dataset=REPAIR_AUXILIARY_DATASET,
+        schema_version=REPAIR_AUXILIARY_SCHEMA,
+        required=REPAIR_AUXILIARY_COLUMNS,
+        keys=("family", "season", "team"),
+        integer_columns=("season",),
+        boolean_columns=(
+            "historical_eligible",
+            "live_eligible",
+            "coach_tenure_censored",
+            "coach_new",
+        ),
+        nonnullable=(
+            "family",
+            "season",
+            "team",
+            "timing_class",
+            "historical_eligible",
+            "live_eligible",
+            "permitted_role",
+            "source_capture_ids",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    REPAIR_COVERAGE_DATASET: DatasetSchema(
+        dataset=REPAIR_COVERAGE_DATASET,
+        schema_version=REPAIR_COVERAGE_SCHEMA,
+        required=REPAIR_COVERAGE_COLUMNS,
+        keys=("family", "season", "slice"),
+        integer_columns=(
+            "season",
+            "required_rows",
+            "non_null_rows",
+            "missing_rows",
+            "distinct_values",
+            "ambiguity_rows",
+            "structural_missing_rows",
+        ),
+        boolean_columns=("constant_warning", "historical_eligible", "live_eligible"),
+        nonnullable=REPAIR_COVERAGE_COLUMNS,
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    REPAIR_ISSUE_DATASET: DatasetSchema(
+        dataset=REPAIR_ISSUE_DATASET,
+        schema_version=REPAIR_ISSUE_SCHEMA,
+        required=REPAIR_ISSUE_COLUMNS,
+        keys=("issue_id", "affected_key"),
+        boolean_columns=("outcome_valid", "core_blocker", "resolved"),
+        nonnullable=(
+            "issue_id",
+            "affected_key",
+            "category",
+            "core_blocker",
+            "resolved",
+            "details",
+        ),
+    ),
+    REPAIR_CAPTURE_PLAN_DATASET: DatasetSchema(
+        dataset=REPAIR_CAPTURE_PLAN_DATASET,
+        schema_version=REPAIR_CAPTURE_PLAN_SCHEMA,
+        required=REPAIR_CAPTURE_PLAN_COLUMNS,
+        keys=("request_id",),
+        integer_columns=(
+            "max_attempts",
+            "max_total_requests",
+            "attempt_count",
+            "row_count",
+        ),
+        nonnullable=(
+            "request_id",
+            "provider",
+            "entity",
+            "endpoint",
+            "parameters",
+            "reason",
+            "existing_captures_checked",
+            "max_attempts",
+            "max_total_requests",
+            "state",
+            "attempt_count",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
     ),
 }
 
@@ -1134,6 +1279,14 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
         return schema
     if dataset in _PHASE2E_SCHEMAS:
         schema = _PHASE2E_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, "
+                f"got {schema_version}"
+            )
+        return schema
+    if dataset in _REPAIR_V2_SCHEMAS:
+        schema = _REPAIR_V2_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, "

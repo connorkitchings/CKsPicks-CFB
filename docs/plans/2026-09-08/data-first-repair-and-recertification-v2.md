@@ -1,10 +1,10 @@
 # Data-First Repair and Recertification v2
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-08
 - **Planner:** Astra
 - **Approval source:** User approved the full pre–Phase 5 replacement plan on 2026-09-08; execution is deferred to a separate task.
-- **Implementation log:** Pending separate repair task
+- **Implementation log:** `session_logs/2026-09-09/01-data-first-repair-v2-implementation.md`
 - **Commit policy:** Separate code and evidence checkpoints; user executes Git.
 
 ## Goal, parents, and boundary
