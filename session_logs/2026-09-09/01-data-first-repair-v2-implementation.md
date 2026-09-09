@@ -74,6 +74,12 @@
   for resume validation. The partial run contains only identity/capture-plan
   evidence and is intentionally retained as immutable failed-run evidence;
   use a new run ID after the corrective commit.
+- The second Preview apply (`repair-v2-20260909T1342Z`) likewise stopped before
+  any provider call or dataset publication. The catalog resume helper returns
+  semantic requests without an embedded request hash; the runner now derives
+  the deterministic hash from that semantic request before recording attempts.
+  Its identity/capture-plan header is retained as failed-run evidence; use a
+  new run ID after the second corrective commit.
 
 ## Handoff Notes
 

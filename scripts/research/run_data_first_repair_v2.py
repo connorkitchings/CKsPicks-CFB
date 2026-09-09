@@ -515,7 +515,12 @@ def _capture_gaps(
     ]
     client = cfbd.ApiClient(cfbd.Configuration(access_token=os.environ["CFBD_API_KEY"]))
     for request in plan:
-        request_id = str(request["request_sha"])
+        request_id = source_request_sha(
+            {
+                key: request[key]
+                for key in ("provider", "entity", "endpoint", "parameters")
+            }
+        )
         if request_id in completed:
             continue
         for _ in range(int(policy["max_attempts_per_request"])):
