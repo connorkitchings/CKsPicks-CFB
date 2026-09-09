@@ -8,6 +8,7 @@ import hashlib
 import json
 from types import SimpleNamespace
 
+import pandas as pd
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
@@ -31,6 +32,14 @@ def _frame_digest(frame):
     normalized = frame.copy()
     for column in normalized.select_dtypes(include=["object"]).columns:
         normalized[column] = normalized[column].where(normalized[column].notna(), None)
+    for column in ("season", "week", "game_id", "measurement_exposure"):
+        if column not in normalized:
+            continue
+        values = pd.to_numeric(normalized[column], errors="raise")
+        if values.dropna().map(lambda value: float(value).is_integer()).all():
+            normalized[column] = values.map(
+                lambda value: None if pd.isna(value) else int(value)
+            )
     return sha256(normalized.to_dict("records"))
 
 

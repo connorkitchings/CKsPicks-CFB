@@ -3,14 +3,13 @@
 ## TL;DR
 
 - **Worked On:** Began implementation of the approved Repair v2 contract.
-- **Outcome:** Repair v2 code, contracts, tests, and read-only Preview dry run
-  are complete; immutable Preview materialization awaits the required clean
-  committed checkpoint.
+- **Outcome:** Repair v2 code, contracts, and Preview-only immutable evidence
+  are complete and independently verified.
 - **Plan Contract:** `docs/plans/2026-09-08/data-first-repair-and-recertification-v2.md`
 - **Approval / Status:** User explicitly authorized implementation on 2026-09-09; contract is `In Progress`.
-- **Blockers:** None at session start.
-- **Next:** User creates the code checkpoint, then run the exact Preview apply
-  and independent verifier commands recorded below.
+- **Blockers:** None. Phase 3 v2 is a separate task and is not authorized here.
+- **Next:** Commit the final verifier regression test and hand the verified
+  Repair manifest to the separate Phase 3 v2 task.
 
 ## Context and Decisions
 
@@ -66,6 +65,9 @@
   8,903 / 33 / 5,240 invariants reproduced.
 - [x] Null-serialization correction: `20 passed` across the lake and Repair v2
   focused tests; full warning-as-error suite: `790 passed, 2 skipped`.
+- [x] Independent Preview verification of
+  `repair-v2-20260909T1417Z/repair-manifest.json`: verified `8,936 / 8,935 /
+  8,903 / 33 / 5,240`, with output rows `8,936 / 5,240 / 230 / 498 / 2`.
 
 ## Amendments and Blockers
 
@@ -102,14 +104,19 @@
   correction serializes object NaNs as null and makes the verifier compare
   nullable object records semantically. This run is retained as immutable,
   uncertified diagnostic evidence and will not be handed to Phase 3.
+- The final Preview run (`repair-v2-20260909T1417Z`) reused the exact two
+  registered captures, made no provider calls, and materialized all outputs.
+  After declared nullable integer keys were normalized in the independent
+  digest, verification passed. Its manifest raw SHA-256 is
+  `b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4`.
 
 ## Handoff Notes
 
-- **Resume at:** Commit the serialization/capture-reuse correction, then run:
-
-  `PYTHONPATH=src:. uv run python scripts/research/run_data_first_repair_v2.py --core-eligibility-uri artifacts/research/data-first-football-v1/phase2/recertification/runs/2026-09-06T2358Z-phase2d-recertification-v2/eligibility-manifest.json --auxiliary-eligibility-uri artifacts/research/data-first-football-v1/phase2/auxiliary/2026-09-07T0016Z-phase2e-auxiliary-v1/eligibility-manifest.json --phase3-retained-uri artifacts/research/data-first-football-v1/phase3/runs/phase3-v1-20260907T1500Z/retained-core-manifest.json --run-id <new-committed-run-id> --expected-code-sha <committed-sha> --environment preview --as-of <utc-timestamp> --apply`
-- **Then:** Run `verify_data_first_repair_v2.py` with the emitted manifest URI
-  and the same committed SHA before changing the plan status.
+- **Resume at:** Start the separately authorized Phase 3 v2 task with the
+  verified Repair manifest
+  `artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json`.
+- **Then:** Treat the Repair manifest as Preview-only diagnostic evidence and
+  retain its production-activation prohibition.
 - **Watch out for:** 2020 is forbidden in every outcome, feature, state, and fold; historical capture metadata remains reconstructed-only.
 
 **tags:** ["data-first", "repair-v2", "research", "r2"]

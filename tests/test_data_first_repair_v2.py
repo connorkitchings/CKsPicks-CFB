@@ -19,6 +19,7 @@ from cks_picks_cfb.data.data_first_repair_v2 import (
     reconcile_population,
     verify_parent,
 )
+from scripts.research.verify_data_first_repair_v2 import _frame_digest
 
 
 def _schedule() -> pd.DataFrame:
@@ -75,6 +76,14 @@ def test_population_keeps_completed_game_without_measurements() -> None:
     third = population.set_index("game_id").loc[3]
     assert not bool(third.forecast_eligible)
     assert len(issues) == 2
+
+
+def test_verifier_digest_normalizes_nullable_game_key_representation() -> None:
+    expected = pd.DataFrame({"game_id": [400944873, None], "details": ["x", None]})
+    stored = pd.DataFrame(
+        {"game_id": [400944873.0, float("nan")], "details": ["x", None]}
+    )
+    assert _frame_digest(expected) == _frame_digest(stored)
 
 
 def test_population_rejects_duplicate_schedule_key() -> None:

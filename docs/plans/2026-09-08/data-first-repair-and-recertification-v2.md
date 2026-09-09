@@ -1,6 +1,6 @@
 # Data-First Repair and Recertification v2
 
-- **Status:** In Progress
+- **Status:** Implemented — Preview verified
 - **Created:** 2026-09-08
 - **Planner:** Astra
 - **Approval source:** User approved the full pre–Phase 5 replacement plan on 2026-09-08; execution is deferred to a separate task.
@@ -17,10 +17,14 @@ not certified evidence. The replacement implementation preserves nullable
 booleans and reuses only the two exact, already registered reconstructed
 captures. Replacement run `repair-v2-20260909T1356Z` reused those captures and
 exposed the remaining null-string representation defect during independent
-verification; it is also uncertified. The next committed implementation
-preserves object nulls and compares nullable object values semantically in the
-independent digest. A clean committed checkpoint and a new immutable Preview
-run remain required before this contract can be marked complete.
+verification; it is also uncertified. The final immutable Preview artifact is
+`repair-v2-20260909T1417Z`; its independent verification succeeded with
+manifest raw SHA-256
+`b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4`.
+The verifier normalizes nullable object values and declared integer keys before
+digesting records, preserving the schemas' semantics across Parquet round trips.
+This is Preview-only diagnostic evidence, not authority to run Phase 3,
+activate production, or change V4.
 
 ## Goal, parents, and boundary
 
