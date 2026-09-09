@@ -613,15 +613,7 @@ def publish_week(
                     (run_id,),
                 )
             count = 0
-            run_game_ids = {
-                int(row["game_id"])
-                for _, row in df.iterrows()
-                if not pd.isna(row.get("game_id"))
-            }
-            for quote in quote_records:
-                if quote["game_id"] not in run_game_ids:
-                    continue
-                cur.execute(INSERT_MARKET_QUOTE_SQL, quote)
+            records_by_game: list[dict] = []
             for _, row in df.iterrows():
                 if pd.isna(row.get("game_id")):
                     continue
@@ -635,6 +627,19 @@ def publish_week(
                     model_id=model_id,
                 )
                 cur.execute(UPSERT_SQL, record)
+                records_by_game.append(record)
+
+            run_game_ids = {
+                int(row["game_id"])
+                for _, row in df.iterrows()
+                if not pd.isna(row.get("game_id"))
+            }
+            for quote in quote_records:
+                if quote["game_id"] not in run_game_ids:
+                    continue
+                cur.execute(INSERT_MARKET_QUOTE_SQL, quote)
+
+            for record in records_by_game:
                 if record["market_snapshot_id"]:
                     cur.execute(INSERT_MARKET_SNAPSHOT_SQL, record)
                     source_quote_ids = json.loads(record["source_quote_ids"])

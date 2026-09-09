@@ -98,10 +98,16 @@ def prepare_scored(df: pd.DataFrame) -> pd.DataFrame:
     df["total_result_norm"] = (
         df[total_result_col].apply(_normalize_result) if total_result_col else None
     )
-    if "spread_lean" not in df.columns and "Spread Bet" in df.columns:
-        df["spread_lean"] = df["Spread Bet"].astype(str).str.lower()
-    if "total_lean" not in df.columns and "Total Bet" in df.columns:
-        df["total_lean"] = df["Total Bet"].astype(str).str.lower()
+    if "spread_lean" not in df.columns:
+        if "Spread Lean" in df.columns:
+            df["spread_lean"] = df["Spread Lean"].astype(str).str.lower()
+        elif "Spread Bet" in df.columns:
+            df["spread_lean"] = df["Spread Bet"].astype(str).str.lower()
+    if "total_lean" not in df.columns:
+        if "Total Lean" in df.columns:
+            df["total_lean"] = df["Total Lean"].astype(str).str.lower()
+        elif "Total Bet" in df.columns:
+            df["total_lean"] = df["Total Bet"].astype(str).str.lower()
     return df
 
 

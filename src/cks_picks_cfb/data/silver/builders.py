@@ -121,16 +121,17 @@ def _constrain_to_games(
     joined = frame.merge(context, on="game_id", how="left", suffixes=("", "_schedule"))
     for field in fields:
         schedule = f"{field}_schedule"
-        if field not in joined:
-            joined[field] = joined[schedule]
-        else:
+        if field not in frame.columns:
+            # Field was only in context, so merged as field directly (not field_schedule)
+            continue
+        if schedule in joined.columns:
             conflict = joined[field].notna() & (joined[field] != joined[schedule])
             if conflict.any():
                 raise SilverValidationError(
                     f"{dataset} {field} conflicts with selected games"
                 )
             joined[field] = joined[field].where(joined[field].notna(), joined[schedule])
-        joined = joined.drop(columns=[schedule])
+            joined = joined.drop(columns=[schedule])
     return joined
 
 
@@ -322,6 +323,7 @@ def normalize_plays(
                     frame["game_id"].map(game_week_map)
                 )
 
+    frame = _constrain_to_games(frame, games, dataset="plays")
     required = SILVER_CONTRACTS["plays"].required_columns
     missing = sorted(required - set(frame.columns))
     if missing:
@@ -333,7 +335,6 @@ def normalize_plays(
         frame["season"] = pd.to_numeric(frame["season"], errors="raise").astype(int)
     if frame.duplicated(["game_id", "play_id"]).any():
         raise SilverValidationError("plays contains duplicate game_id/play_id keys")
-    frame = _constrain_to_games(frame, games, dataset="plays")
     return frame.sort_values(["season", "week", "game_id", "play_id"]).reset_index(
         drop=True
     )
@@ -619,6 +620,8 @@ def normalize_game_outcomes(
     required = SILVER_CONTRACTS["game_outcomes"].required_columns
     if missing := sorted(required - set(frame.columns)):
         raise SilverValidationError(f"game outcomes missing columns: {missing}")
+    if "week" in frame.columns:
+        frame = frame.drop(columns=["week"])
     frame = _constrain_to_games(frame, games, dataset="game_outcomes")
     return (
         frame[sorted(required)]

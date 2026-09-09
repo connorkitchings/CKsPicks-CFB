@@ -142,6 +142,8 @@ def score_bets(bets_df, scores_df):
         cover_margin = margin + line
 
         bet_side = str(row.get("Spread Bet", "")).lower()
+        if bet_side not in ("home", "away"):
+            bet_side = str(row.get("spread_lean", "")).lower()
 
         if cover_margin > 0:
             return (
@@ -169,6 +171,8 @@ def score_bets(bets_df, scores_df):
         score = row["total_score"]
         line = row["total_line"]
         bet_side = str(row.get("Total Bet", "")).lower()
+        if bet_side not in ("over", "under"):
+            bet_side = str(row.get("total_lean", "")).lower()
 
         if score > line:
             return (

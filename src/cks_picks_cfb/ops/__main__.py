@@ -78,10 +78,15 @@ def _snapshot_inputs_step(argv: Sequence[str], output_uri: str) -> PipelineStep:
 
 
 def _fetch_source_step(
-    *, name: str, argv: Sequence[str], conn_url: str, entity: str
+    *,
+    name: str,
+    argv: Sequence[str],
+    conn_url: str,
+    entity: str,
+    ingestion_run_key: str | None = None,
 ) -> PipelineStep:
     def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
-        ingestion_run_id = f"{context.pipeline_run_id}:{entity}"
+        ingestion_run_id = f"{context.pipeline_run_id}:{ingestion_run_key or entity}"
         timeout_seconds = _source_subprocess_timeout_seconds()
         try:
             completed = subprocess.run(
@@ -791,18 +796,23 @@ def _silver_from_ingestion_step(
     conn_url: str,
     output_ref_uri: str,
     as_of: str,
+    environment: str,
     games_ref_uri: str | None = None,
     week_policy_ref_uri: str | None = None,
+    ingestion_run_keys: list[str] | None = None,
 ) -> PipelineStep:
     """Materialize one immutable Silver ref from this run's captured source rows."""
 
     def action(context: OperationContext) -> Sequence[Mapping[str, Any]]:
-        ingestion_run_id = f"{context.pipeline_run_id}:{entity}"
+        if ingestion_run_keys:
+            run_ids = [f"{context.pipeline_run_id}:{k}" for k in ingestion_run_keys]
+        else:
+            run_ids = [f"{context.pipeline_run_id}:{entity}"]
         with psycopg.connect(conn_url) as conn:
             rows = conn.execute(
                 "SELECT capture_id FROM catalog.source_captures "
-                "WHERE ingestion_run_id = %s ORDER BY captured_at, capture_id",
-                (ingestion_run_id,),
+                "WHERE ingestion_run_id = ANY(%s) ORDER BY captured_at, capture_id",
+                (run_ids,),
             ).fetchall()
         if not rows:
             raise RuntimeError(f"No captures available for {entity} Silver build")
@@ -814,6 +824,8 @@ def _silver_from_ingestion_step(
             as_of,
             "--output-ref-uri",
             output_ref_uri,
+            "--environment",
+            environment,
         )
         if games_ref_uri:
             argv.extend(["--games-ref-uri", games_ref_uri])
@@ -1753,6 +1765,7 @@ def build_steps(
                         ),
                         conn_url=conn_url,
                         entity=entity,
+                        ingestion_run_key=f"{entity}:week_{completed_week}",
                     )
                 )
         steps.extend(
@@ -1767,6 +1780,7 @@ def build_steps(
                     conn_url=conn_url,
                     output_ref_uri=refs["games"],
                     as_of=as_of,
+                    environment=environment,
                     week_policy_ref_uri=refs["policy"],
                 ),
                 _silver_from_ingestion_step(
@@ -1776,6 +1790,8 @@ def build_steps(
                     conn_url=conn_url,
                     output_ref_uri=refs["outcomes"],
                     as_of=as_of,
+                    environment=environment,
+                    games_ref_uri=refs["games"],
                 ),
                 _silver_from_ingestion_step(
                     name="build_plays",
@@ -1784,7 +1800,9 @@ def build_steps(
                     conn_url=conn_url,
                     output_ref_uri=refs["plays"],
                     as_of=as_of,
+                    environment=environment,
                     games_ref_uri=refs["games"],
+                    ingestion_run_keys=[f"plays:week_{w}" for w in range(week)],
                 ),
                 _silver_from_ingestion_step(
                     name="build_team_game_stats",
@@ -1793,7 +1811,9 @@ def build_steps(
                     conn_url=conn_url,
                     output_ref_uri=refs["stats"],
                     as_of=as_of,
+                    environment=environment,
                     games_ref_uri=refs["games"],
+                    ingestion_run_keys=[f"game_stats:week_{w}" for w in range(week)],
                 ),
                 subprocess_step(
                     "build_current_team_game",
@@ -2108,6 +2128,7 @@ def build_steps(
                 conn_url=conn_url,
                 output_ref_uri=outcomes_ref_uri,
                 as_of=as_of,
+                environment=context.environment,
             ),
             subprocess_step(
                 "ingest_completed_week",
