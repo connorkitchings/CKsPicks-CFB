@@ -17,7 +17,11 @@ test("prediction output requires the exact opt-in value", () => {
 
 test("market query projects settled grades but excludes model-only columns", () => {
   const source = readFileSync(new URL("./queries.ts", import.meta.url), "utf8");
-  const marketQuery = source.slice(source.indexOf("export async function getMarketGamesForWeek"));
+  const marketQueryStart = source.indexOf("export async function getMarketGamesForWeek");
+  const marketQueryEnd = source.indexOf("function emptyStats", marketQueryStart);
+  assert.notEqual(marketQueryStart, -1, "market query must exist");
+  assert.notEqual(marketQueryEnd, -1, "market query boundary must exist");
+  const marketQuery = source.slice(marketQueryStart, marketQueryEnd);
   assert.match(marketQuery, /homeTeamSpreadLine: schema\.games\.homeTeamSpreadLine/);
   assert.match(marketQuery, /totalLine: schema\.games\.totalLine/);
   assert.match(marketQuery, /spreadResult/);

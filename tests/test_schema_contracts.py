@@ -182,23 +182,40 @@ def test_unknown_rating_schema_version_names_known_versions():
 
 def test_phase2e_schemas_validate_reconstructed_recruiting_and_market_rows():
     recruiting = pd.DataFrame(
-        [{
-            "season": 2025, "team": "Home", "recruiting_4yr": 1.0,
-            "recruiting_current": 1.0, "recruiting_trend": 0.0,
-            "missing_reason": None, "timing_class": "historically_reconstructed",
-        }]
+        [
+            {
+                "season": 2025,
+                "team": "Home",
+                "recruiting_4yr": 1.0,
+                "recruiting_current": 1.0,
+                "recruiting_trend": 0.0,
+                "missing_reason": None,
+                "timing_class": "historically_reconstructed",
+            }
+        ]
     )
     market = pd.DataFrame(
-        [{
-            "game_id": 1, "spread_line": 1.5, "total_line": 50.5,
-            "market_policy_version": "consensus_then_median_v1",
-            "spread_selection_rule": "cfbd_consensus",
-            "total_selection_rule": "cfbd_consensus", "spread_provider_count": 1,
-            "total_provider_count": 1, "source_quote_ids": "[]",
-            "market_snapshot_id": "snapshot", "market_captured_at": "2026-09-06T00:00:00Z",
-            "timing_class": "historically_reconstructed",
-            "usage": "post_phase5_diagnostic_only",
-        }]
+        [
+            {
+                "game_id": 1,
+                "spread_line": 1.5,
+                "total_line": 50.5,
+                "market_policy_version": "consensus_then_median_v1",
+                "spread_selection_rule": "cfbd_consensus",
+                "total_selection_rule": "cfbd_consensus",
+                "spread_provider_count": 1,
+                "total_provider_count": 1,
+                "source_quote_ids": "[]",
+                "market_snapshot_id": "snapshot",
+                "market_captured_at": "2026-09-06T00:00:00Z",
+                "timing_class": "historically_reconstructed",
+                "usage": "post_phase5_diagnostic_only",
+            }
+        ]
     )
-    validate_frame(recruiting, schema_for("phase2e_recruiting", "phase2e_recruiting_v1"))
-    validate_frame(market, schema_for("phase2e_market_references", "phase2e_market_references_v1"))
+    validate_frame(
+        recruiting, schema_for("phase2e_recruiting", "phase2e_recruiting_v1")
+    )
+    validate_frame(
+        market, schema_for("phase2e_market_references", "phase2e_market_references_v1")
+    )

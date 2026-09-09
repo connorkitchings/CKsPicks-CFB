@@ -383,9 +383,7 @@ def main() -> None:
     }
     for name, report in coverage.items():
         report["denominator_population"] = (
-            "fbs_involved_game_side"
-            if name == "lagged_rankings"
-            else "fbs_team_season"
+            "fbs_involved_game_side" if name == "lagged_rankings" else "fbs_team_season"
         )
     capture_manifest = capture_set_manifest(inventory)
     prefix = f"artifacts/research/data-first-football-v1/phase2/auxiliary/{args.run_id}"
