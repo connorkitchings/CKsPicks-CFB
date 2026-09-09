@@ -3,12 +3,15 @@ import {
   getGamesForWeek,
   getMarketGamesForWeek,
   getSystemStatsThroughWeek,
+  getHistoricalModelContext,
   getAvailableWeeks,
   type Game,
+  type HistoricalModelContext,
   type Stats,
 } from "@/lib/queries";
 import { Header, Footer } from "@/components/Header";
 import { RecordBanner } from "@/components/RecordBanner";
+import { HistoricalModelContext as HistoricalModelContextBanner } from "@/components/HistoricalModelContext";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
 import { publicationScope } from "@/lib/publication";
@@ -95,6 +98,7 @@ export default async function Home({
 
   let games: Game[] = [];
   let stats: Stats | null = null;
+  let historicalContext: HistoricalModelContext | null = null;
   let dbError: string | null = null;
   let systemName: string | null = null;
   let runState: string | null = null;
@@ -103,6 +107,7 @@ export default async function Home({
     const fixture = uiFixture(publicationMode, week);
     games = fixture.games;
     stats = fixture.stats;
+    historicalContext = fixture.historicalContext;
     if (games[0]?.publicationMode === "predictions") {
       systemName = games[0].systemName;
       runState = games[0].runState;
@@ -111,9 +116,10 @@ export default async function Home({
     try {
       if (season > 0 && week >= 0) {
         if (publicationMode === "predictions") {
-        [games, stats] = await Promise.all([
+        [games, stats, historicalContext] = await Promise.all([
           getGamesForWeek(season, week),
           getSystemStatsThroughWeek(season, week),
+          getHistoricalModelContext(season - 1, week),
         ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
@@ -178,6 +184,10 @@ export default async function Home({
           <>
             {stats && (
               <RecordBanner season={season} week={week} stats={stats} />
+            )}
+
+            {publicationMode === "predictions" && historicalContext && (
+              <HistoricalModelContextBanner context={historicalContext} selectedWeek={week} />
             )}
 
             {weeks.length > 1 && (

@@ -1,0 +1,23 @@
+comparison_season: 2025
+model_id: week0-2026-v4-strict-20260818-r2
+prediction_ref:
+  dataset: rating_v4_historical_predictions
+  version_id: f4ec062c7f931f125ce6be99
+  schema_version: rating_v4_historical_predictions_v1
+  content_sha: 6bdbe75ce83554c5828ac1a807056e26844db44c77defb6607d2ec7386efca2d
+  uri: lake/gold/dataset=rating_v4_historical_predictions/version=f4ec062c7f931f125ce6be99/data.parquet
+feature_ref:
+  dataset: point_in_time_matchups_v5
+  version_id: fe55e75884c7665527e740d3
+  schema_version: point_in_time_matchups_v5
+  content_sha: 0bee7740705bdc61b37c00a1a9fec23383644a6a148e4c74581000e2758a9ecb
+  uri: lake/gold/dataset=point_in_time_matchups_v5/version=fe55e75884c7665527e740d3/data.parquet
+market_ref:
+  dataset: phase2e_market_references
+  version_id: f963100462302311a853f6bb
+  schema_version: phase2e_market_references_v1
+  content_sha: 37bf453c9698271b2c30cead4334fb224191c43d51ee2c1d65c454d07632c6b7
+  uri: lake/silver/dataset=phase2e_market_references/version=f963100462302311a853f6bb/data.parquet
+market_policy_version: consensus_then_median_v1
+timing_class: historically_reconstructed
+usage: post_phase5_diagnostic_only

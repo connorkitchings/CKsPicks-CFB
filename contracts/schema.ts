@@ -258,6 +258,34 @@ export type SystemStats = typeof systemStats.$inferSelect;
 
 // ---------------------------------------------------------------------------
 
+export const historicalModelContext = pgTable("historical_model_context", {
+  contextId: text("context_id").primaryKey(),
+  modelId: text("model_id").notNull(),
+  modelName: text("model_name").notNull(),
+  comparisonSeason: integer("comparison_season").notNull(),
+  periodScope: text("period_scope").$type<"season" | "week">().notNull(),
+  comparisonWeek: integer("comparison_week"),
+  calculationVersion: text("calculation_version").notNull(),
+  timingClass: text("timing_class").notNull(),
+  usage: text("usage").notNull(),
+  spreadWins: integer("spread_wins").notNull(),
+  spreadLosses: integer("spread_losses").notNull(),
+  spreadPushes: integer("spread_pushes").notNull(),
+  spreadComparedGames: integer("spread_compared_games").notNull(),
+  totalWins: integer("total_wins").notNull(),
+  totalLosses: integer("total_losses").notNull(),
+  totalPushes: integer("total_pushes").notNull(),
+  totalComparedGames: integer("total_compared_games").notNull(),
+  sourceArtifactUri: text("source_artifact_uri").notNull(),
+  sourceArtifactSha256: text("source_artifact_sha256").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type HistoricalModelContext = typeof historicalModelContext.$inferSelect;
+
+// ---------------------------------------------------------------------------
+
 export const currentWeek = pgTable(
   "current_week",
   {

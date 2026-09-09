@@ -67,6 +67,26 @@ export type Stats = {
   totalPushes: number;
 };
 
+/** Diagnostic-only reconstructed historical comparison; never a live bet record. */
+export type HistoricalContextPeriod = {
+  comparisonSeason: number;
+  comparisonWeek: number | null;
+  spreadWins: number;
+  spreadLosses: number;
+  spreadPushes: number;
+  spreadComparedGames: number;
+  totalWins: number;
+  totalLosses: number;
+  totalPushes: number;
+  totalComparedGames: number;
+};
+
+export type HistoricalModelContext = {
+  modelId: string;
+  fullSeason: HistoricalContextPeriod;
+  matchingWeek: HistoricalContextPeriod | null;
+};
+
 /** Return the active { season, week, updatedAt } from the singleton current_week row. */
 export const getCurrentWeek = cache(async (): Promise<{
   season: number;
@@ -482,4 +502,42 @@ export const getSystemStatsThroughWeek = cache(async (
     }
   }
   return { ...stats, asOfWeek };
+});
+
+/**
+ * Read only the pinned, diagnostic-only V4 historical context. A missing or
+ * ambiguous serving projection fails closed rather than selecting a row.
+ */
+export const getHistoricalModelContext = cache(async (
+  comparisonSeason: number,
+  selectedWeek: number,
+): Promise<HistoricalModelContext | null> => {
+  const rows = await db
+    .select()
+    .from(schema.historicalModelContext)
+    .where(and(
+      eq(schema.historicalModelContext.comparisonSeason, comparisonSeason),
+      eq(schema.historicalModelContext.modelId, "week0-2026-v4-strict-20260818-r2"),
+      eq(schema.historicalModelContext.calculationVersion, "v1"),
+      eq(schema.historicalModelContext.timingClass, "historically_reconstructed"),
+      eq(schema.historicalModelContext.usage, "post_phase5_diagnostic_only"),
+    ));
+  const full = rows.filter((row) => row.periodScope === "season");
+  const week = rows.filter(
+    (row) => row.periodScope === "week" && row.comparisonWeek === selectedWeek,
+  );
+  if (full.length !== 1 || week.length > 1) return null;
+  const map = (row: typeof rows[number]): HistoricalContextPeriod => ({
+    comparisonSeason: row.comparisonSeason,
+    comparisonWeek: row.comparisonWeek,
+    spreadWins: row.spreadWins,
+    spreadLosses: row.spreadLosses,
+    spreadPushes: row.spreadPushes,
+    spreadComparedGames: row.spreadComparedGames,
+    totalWins: row.totalWins,
+    totalLosses: row.totalLosses,
+    totalPushes: row.totalPushes,
+    totalComparedGames: row.totalComparedGames,
+  });
+  return { modelId: full[0].modelId, fullSeason: map(full[0]), matchingWeek: week[0] ? map(week[0]) : null };
 });

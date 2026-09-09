@@ -1,4 +1,4 @@
-import type { Game, Stats } from "@/lib/queries";
+import type { Game, HistoricalModelContext, Stats } from "@/lib/queries";
 import type { PublicationMode } from "@/lib/publication";
 
 const startDate = new Date("2026-08-29T19:30:00.000Z");
@@ -22,7 +22,7 @@ const base = {
 export function uiFixture(
   mode: PublicationMode,
   week = 0,
-): { games: Game[]; stats: Stats | null; weeks: number[] } {
+): { games: Game[]; stats: Stats | null; historicalContext: HistoricalModelContext | null; weeks: number[] } {
   const shared = { ...base, week };
   if (mode === "market") {
     return {
@@ -35,6 +35,7 @@ export function uiFixture(
         },
       ],
       stats: null,
+      historicalContext: null,
       weeks: [0, 1],
     };
   }
@@ -75,6 +76,11 @@ export function uiFixture(
       totalWins: 1,
       totalLosses: 0,
       totalPushes: 1,
+    },
+    historicalContext: {
+      modelId: "week0-2026-v4-strict-20260818-r2",
+      fullSeason: { comparisonSeason: 2025, comparisonWeek: null, spreadWins: 379, spreadLosses: 366, spreadPushes: 16, spreadComparedGames: 761, totalWins: 398, totalLosses: 358, totalPushes: 5, totalComparedGames: 761 },
+      matchingWeek: week === 0 ? null : { comparisonSeason: 2025, comparisonWeek: week, spreadWins: 26, spreadLosses: 22, spreadPushes: 2, spreadComparedGames: 50, totalWins: 28, totalLosses: 22, totalPushes: 0, totalComparedGames: 50 },
     },
     weeks: [0, 1],
   };
