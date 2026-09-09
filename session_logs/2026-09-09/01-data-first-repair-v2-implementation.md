@@ -6,10 +6,10 @@
 - **Outcome:** Repair v2 code, contracts, and Preview-only immutable evidence
   are complete and independently verified.
 - **Plan Contract:** `docs/plans/2026-09-08/data-first-repair-and-recertification-v2.md`
-- **Approval / Status:** User explicitly authorized implementation on 2026-09-09; contract is `In Progress`.
+- **Approval / Status:** User explicitly authorized implementation on 2026-09-09; contract is `Implemented — Preview verified`.
 - **Blockers:** None. Phase 3 v2 is a separate task and is not authorized here.
-- **Next:** Commit the final verifier regression test and hand the verified
-  Repair manifest to the separate Phase 3 v2 task.
+- **Next:** Hand the verified Repair manifest to the separately authorized
+  Phase 3 v2 task.
 
 ## Context and Decisions
 
@@ -36,7 +36,7 @@
 
 ## Files Modified
 
-- `docs/plans/2026-09-08/data-first-repair-and-recertification-v2.md` - Marked implementation in progress and linked this log.
+- `docs/plans/2026-09-08/data-first-repair-and-recertification-v2.md` - Marked the Preview-verified implementation complete and linked this log.
 - `session_logs/2026-09-09/01-data-first-repair-v2-implementation.md` - Created implementation session log.
 - `src/cks_picks_cfb/data/data_first_repair_v2.py` - Repair population,
   auxiliary normalizers, coverage/admission, immutable manifest contracts.
@@ -68,12 +68,14 @@
 - [x] Independent Preview verification of
   `repair-v2-20260909T1417Z/repair-manifest.json`: verified `8,936 / 8,935 /
   8,903 / 33 / 5,240`, with output rows `8,936 / 5,240 / 230 / 498 / 2`.
+- [x] Final repository validation: `791 passed, 2 skipped`; Ruff format/lint,
+  contract synchronization, strict MkDocs, and `git diff --check` passed.
 
 ## Amendments and Blockers
 
-- Preview materialization is intentionally blocked until the tracked Repair v2
-  paths are committed at the SHA supplied to `--expected-code-sha`, as required
-  by the approved contract. No cloud writes or provider calls were made.
+- The required committed checkpoints were completed before each Preview apply.
+  The final artifact is independently verified and no blocker remains within
+  Repair v2's authorized scope.
 - The first committed-Checkpoint Preview apply (`repair-v2-20260909T1340Z`)
   stopped before any CFBD call or dataset publication: the runner wrote the
   required user-readable capture inventory, then attempted to overwrite that
