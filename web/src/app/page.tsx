@@ -14,7 +14,7 @@ import { RecordBanner } from "@/components/RecordBanner";
 import { HistoricalModelContext as HistoricalModelContextBanner } from "@/components/HistoricalModelContext";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
-import { publicationScope } from "@/lib/publication";
+import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
 // Revalidate every 5 minutes (ISR).
@@ -23,8 +23,9 @@ export const revalidate = 300;
 type SearchParams = Promise<{ season?: string; week?: string; mode?: string }>;
 
 /**
- * Resolve only the server-configured public release scope. Query parameters
- * can choose an allowed week, but cannot expose another season or week.
+ * Resolve the target season and week from URL params and publication scope.
+ * URL params can select an allowed season and week; invalid values fall back
+ * to defaults. Historical seasons (2025) show all available weeks.
  */
 async function resolveTarget(
   searchParams: SearchParams,
@@ -57,15 +58,21 @@ async function resolveTarget(
     && publicationScope.weeks.includes(current.week)
     ? current.week
     : null;
-  const season = publicationScope.season;
-  const availableWeeks = (await getAvailableWeeks(season))
-    .filter((week) => publicationScope.weeks.includes(week));
+
+  const requestedSeason = params.season ? Number(params.season) : publicationScope.season;
+  const season = isAllowedSeason(requestedSeason) ? requestedSeason : publicationScope.season;
+
+  const allAvailableWeeks = await getAvailableWeeks(season);
+  const isHistoricalSeason = season !== publicationScope.season;
+  const availableWeeks = isHistoricalSeason
+    ? allAvailableWeeks
+    : allAvailableWeeks.filter((week) => publicationScope.weeks.includes(week));
+
   const requestedWeek = params.week ? Number(params.week) : activeWeek;
 
-  // Invalid URLs and unready future weeks stay within the release boundary.
-  let week = publicationScope.weeks.includes(requestedWeek ?? -1)
+  let week = availableWeeks.includes(requestedWeek ?? -1)
     ? requestedWeek!
-    : activeWeek ?? availableWeeks[availableWeeks.length - 1] ?? publicationScope.weeks[0];
+    : activeWeek ?? availableWeeks[availableWeeks.length - 1] ?? (isHistoricalSeason ? allAvailableWeeks[0] : publicationScope.weeks[0]);
   if (availableWeeks.length > 0 && !availableWeeks.includes(week)) {
     week = availableWeeks[availableWeeks.length - 1];
   }
@@ -160,6 +167,7 @@ export default async function Home({
         updatedAt={updatedAt}
         runState={runState}
         publicationMode={publicationMode}
+        allowedSeasons={publicationScope.allowedSeasons}
       />
 
       <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">

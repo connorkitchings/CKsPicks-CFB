@@ -3,6 +3,7 @@
  * to the smallest 2026 release: Week 0 only. Vercel environment values may
  * expand the release after the next slate has passed preview readiness.
  */
+const ALLOWED_SEASONS = [2025, 2026];
 const DEFAULT_SEASON = 2026;
 const DEFAULT_WEEKS = [0];
 
@@ -33,10 +34,15 @@ function parseWeeks(value: string | undefined): number[] {
     : DEFAULT_WEEKS;
 }
 
+export function isAllowedSeason(season: number): boolean {
+  return ALLOWED_SEASONS.includes(season);
+}
+
 export const publicationScope = Object.freeze({
   season: parseSeason(process.env.CFB_PUBLICATION_SEASON),
   weeks: parseWeeks(process.env.CFB_PUBLICATION_WEEKS),
   mode: parsePublicationMode(process.env.CFB_PUBLICATION_MODE),
+  allowedSeasons: ALLOWED_SEASONS,
 });
 
 export function isPublishedWeek(season: number, week: number): boolean {

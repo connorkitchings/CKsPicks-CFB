@@ -1,5 +1,6 @@
 import type { PublicationMode } from "@/lib/publication";
 import { ThemeToggle } from "./ThemeToggle";
+import { SeasonSelector } from "./SeasonSelector";
 
 export function Header({
   season,
@@ -8,6 +9,7 @@ export function Header({
   updatedAt,
   runState,
   publicationMode,
+  allowedSeasons,
 }: {
   season: number | null;
   week: number | null;
@@ -15,6 +17,7 @@ export function Header({
   updatedAt: Date | null;
   runState: string | null;
   publicationMode: PublicationMode;
+  allowedSeasons?: number[];
 }) {
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
@@ -49,6 +52,9 @@ export function Header({
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
+          {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
+            <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
+          )}
           {season !== null && week !== null && (
             <div className="text-sm font-medium tabular-nums text-ink-muted">
               {season} · Week {week}
