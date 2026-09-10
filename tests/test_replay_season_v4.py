@@ -248,7 +248,8 @@ def test_build_market_refs_rejects_unlined_schedule_games(monkeypatch):
             storage,
             year=2025,
             games=games,
-            market_ref_uri="artifacts/preview/refs/replay-2025/market.json",
+            snapshots_ref_uri="artifacts/preview/refs/replay-2025/market.json",
+            quotes_ref_uri="artifacts/preview/refs/replay-2025/quotes.json",
             environment="preview",
             as_of=datetime.now(timezone.utc),
         )
