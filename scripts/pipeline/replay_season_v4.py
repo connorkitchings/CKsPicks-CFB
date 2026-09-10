@@ -271,7 +271,12 @@ def main() -> None:
     )
     run_prefix = args.run_prefix or f"v4replay-{args.year}"
 
-    now = datetime.now(timezone.utc)
+    # Deterministic build time for the market datasets: the last kickoff of
+    # the replayed season, so rebuilds reproduce identical refs.
+    market_as_of = max(
+        datetime.fromisoformat(week_cutoff(games, year=args.year, week=week))
+        for week in weeks
+    )
     snapshots_uri = args.market_snapshots_ref_uri
     quotes_uri = args.market_quotes_ref_uri
     if args.skip_market_build and not (
@@ -288,7 +293,7 @@ def main() -> None:
             snapshots_ref_uri=snapshots_uri,
             quotes_ref_uri=quotes_uri,
             environment=args.environment,
-            as_of=now,
+            as_of=market_as_of,
         )
     )
     print(f"Market refs: {market_ref.version_id} / {quotes_ref.version_id}")
