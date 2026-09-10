@@ -56,18 +56,22 @@ def _write_immutable_json(storage, uri: str, payload: bytes) -> None:
         storage.write_bytes(payload, uri)
 
 
-def build_market_ref(
+def build_market_refs(
     storage,
     *,
     year: int,
     games: pd.DataFrame,
-    market_ref_uri: str,
+    snapshots_ref_uri: str,
+    quotes_ref_uri: str,
     environment: str,
     as_of: datetime,
-) -> DatasetRef:
-    """Canonicalize Bronze provider lines into one immutable market_snapshots ref."""
-    if storage.exists(market_ref_uri):
-        return _ref(storage, market_ref_uri)
+) -> tuple[DatasetRef, DatasetRef]:
+    """Register immutable market_quotes and market_snapshots refs from Bronze."""
+    if storage.exists(snapshots_ref_uri) and storage.exists(quotes_ref_uri):
+        return (
+            _ref(storage, snapshots_ref_uri),
+            _ref(storage, quotes_ref_uri),
+        )
     quotes = storage.read_index("raw/betting_lines", {"year": year})
     if not quotes:
         raise SystemExit(f"No Bronze betting_lines captures for {year}")
@@ -103,13 +107,13 @@ def build_market_ref(
     if dropped:
         print(f"Dropping {dropped} quotes with neither a spread nor a total")
     normalized = normalize_market_quotes(valued)
-    snapshots = canonicalize_market_quotes_frame(normalized)
     schedule_ids = set(games["game_id"].astype(int))
-    snapshots = snapshots[snapshots["game_id"].astype(int).isin(schedule_ids)].merge(
+    quotes = normalized[normalized["game_id"].astype(int).isin(schedule_ids)].merge(
         games[["game_id", "season", "week"]].drop_duplicates("game_id"),
         on="game_id",
         how="left",
     )
+    snapshots = canonicalize_market_quotes_frame(quotes)
     unlined = sorted(schedule_ids - set(snapshots["game_id"].astype(int)))
     if unlined:
         raise SystemExit(f"Provider lines do not cover scheduled games: {unlined[:10]}")
@@ -123,6 +127,28 @@ def build_market_ref(
         "timing": "provider_recorded_lines_postseason_capture",
         "captured_at_backfilled_weeks": sorted(backfilled_weeks),
     }
+    quotes_ref, quotes_manifest = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="market_quotes",
+            parent_refs=(),
+            code_sha=_code_sha(),
+            config_sha=hashlib.sha256(
+                json.dumps(config_identity, sort_keys=True).encode()
+            ).hexdigest(),
+            as_of=as_of,
+            schema_version="market_quotes_v1",
+            tier="silver",
+        ),
+        records=quotes.to_dict("records"),
+        partitions={"seasons": [year]},
+        coverage={**config_identity, "quote_rows": int(len(quotes))},
+    )
+    register_dataset_version(
+        catalog_connection_url(environment), quotes_ref, quotes_manifest
+    )
+    payload = json.dumps(asdict(quotes_ref), indent=2, sort_keys=True).encode()
+    _write_immutable_json(storage, quotes_ref_uri, payload)
     ref, manifest = build_dataset_version(
         storage,
         build=BuildRequest(
@@ -146,8 +172,8 @@ def build_market_ref(
     )
     register_dataset_version(catalog_connection_url(environment), ref, manifest)
     payload = json.dumps(asdict(ref), indent=2, sort_keys=True).encode()
-    _write_immutable_json(storage, market_ref_uri, payload)
-    return ref
+    _write_immutable_json(storage, snapshots_ref_uri, payload)
+    return ref, quotes_ref
 
 
 def write_input_refs(
@@ -157,12 +183,14 @@ def write_input_refs(
     year: int,
     games_ref: DatasetRef,
     market_ref: DatasetRef,
+    quotes_ref: DatasetRef,
     gold_ref: DatasetRef,
     environment: str,
 ) -> str:
     entities = (
         ("games", games_ref),
         ("betting_lines", market_ref),
+        ("betting_lines_quotes", quotes_ref),
         ("point_in_time_matchups", gold_ref),
     )
     refs = [{"entity": entity, "year": year, **asdict(ref)} for entity, ref in entities]
@@ -208,7 +236,8 @@ def main() -> None:
     parser.add_argument("--feature-ref-uri", required=True)
     parser.add_argument("--games-ref-uri", required=True)
     parser.add_argument("--outcomes-ref-uri", required=True)
-    parser.add_argument("--market-ref-uri", required=True)
+    parser.add_argument("--market-snapshots-ref-uri", required=True)
+    parser.add_argument("--market-quotes-ref-uri", required=True)
     parser.add_argument("--weeks", help="Comma-separated weeks (default: all)")
     parser.add_argument("--run-prefix", default=None)
     parser.add_argument("--skip-market-build", action="store_true")
@@ -243,21 +272,26 @@ def main() -> None:
     run_prefix = args.run_prefix or f"v4replay-{args.year}"
 
     now = datetime.now(timezone.utc)
-    if args.skip_market_build and not storage.exists(args.market_ref_uri):
-        raise SystemExit("--skip-market-build requires an existing market ref")
-    market_ref = (
-        _ref(storage, args.market_ref_uri)
+    snapshots_uri = args.market_snapshots_ref_uri
+    quotes_uri = args.market_quotes_ref_uri
+    if args.skip_market_build and not (
+        storage.exists(snapshots_uri) and storage.exists(quotes_uri)
+    ):
+        raise SystemExit("--skip-market-build requires existing market refs")
+    market_ref, quotes_ref = (
+        (_ref(storage, snapshots_uri), _ref(storage, quotes_uri))
         if args.skip_market_build
-        else build_market_ref(
+        else build_market_refs(
             storage,
             year=args.year,
             games=games,
-            market_ref_uri=args.market_ref_uri,
+            snapshots_ref_uri=snapshots_uri,
+            quotes_ref_uri=quotes_uri,
             environment=args.environment,
             as_of=now,
         )
     )
-    print(f"Market ref: {market_ref.version_id} ({market_ref.uri})")
+    print(f"Market refs: {market_ref.version_id} / {quotes_ref.version_id}")
 
     env = {
         **os.environ,
@@ -274,6 +308,7 @@ def main() -> None:
             year=args.year,
             games_ref=games_ref,
             market_ref=market_ref,
+            quotes_ref=quotes_ref,
             gold_ref=gold_ref,
             environment=args.environment,
         )

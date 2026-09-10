@@ -13,7 +13,7 @@ from scripts.pipeline.refit_game_ordinal_bundle import (
     parse_train_years,
 )
 from scripts.pipeline.replay_season_v4 import (
-    build_market_ref,
+    build_market_refs,
     week_cutoff,
     write_input_refs,
 )
@@ -112,6 +112,7 @@ def test_write_input_refs_entities_and_immutability():
         year=2025,
         games_ref=games_ref,
         market_ref=market_ref,
+        quotes_ref=market_ref,
         gold_ref=gold_ref,
         environment="preview",
     )
@@ -120,10 +121,11 @@ def test_write_input_refs_entities_and_immutability():
     assert [r["entity"] for r in refs] == [
         "games",
         "betting_lines",
+        "betting_lines_quotes",
         "point_in_time_matchups",
     ]
     assert all(r["year"] == 2025 for r in refs)
-    assert refs[2]["dataset"] == "point_in_time_matchups_v5"
+    assert refs[3]["dataset"] == "point_in_time_matchups_v5"
     payload = storage.files[uri]
     write_input_refs(
         storage,
@@ -131,6 +133,7 @@ def test_write_input_refs_entities_and_immutability():
         year=2025,
         games_ref=games_ref,
         market_ref=market_ref,
+        quotes_ref=market_ref,
         gold_ref=gold_ref,
         environment="preview",
     )
@@ -149,6 +152,7 @@ def test_write_input_refs_entities_and_immutability():
             year=2025,
             games_ref=games_ref,
             market_ref=market_ref,
+            quotes_ref=market_ref,
             gold_ref=gold_ref2,
             environment="preview",
         )
@@ -183,44 +187,56 @@ def _quote_rows():
     ]
 
 
-def test_build_market_ref_canonicalizes_and_registers(monkeypatch):
+def test_build_market_refs_canonicalizes_and_registers(monkeypatch):
     storage = FakeStorage(index_rows=_quote_rows())
     games = pd.DataFrame({"game_id": [1, 2], "season": [2025, 2025], "week": [1, 1]})
     registered = []
     monkeypatch.setattr(
         "scripts.pipeline.replay_season_v4.register_dataset_version",
-        lambda conn, ref, manifest: registered.append(ref.version_id),
+        lambda conn, ref, manifest: registered.append((ref.dataset, ref.version_id)),
     )
-    ref = build_market_ref(
+    snapshots_uri = "artifacts/preview/refs/replay-2025/market.json"
+    quotes_uri = "artifacts/preview/refs/replay-2025/quotes.json"
+    ref, quotes_ref = build_market_refs(
         storage,
         year=2025,
         games=games,
-        market_ref_uri="artifacts/preview/refs/replay-2025/market.json",
+        snapshots_ref_uri=snapshots_uri,
+        quotes_ref_uri=quotes_uri,
         environment="preview",
         as_of=datetime.now(timezone.utc),
     )
-    assert registered == [ref.version_id]
+    assert quotes_ref.dataset == "market_quotes"
+    assert ref.dataset == "market_snapshots"
+    assert ("market_quotes", quotes_ref.version_id) in registered
+    assert ("market_snapshots", ref.version_id) in registered
     snapshots = pd.read_parquet(__import__("io").BytesIO(storage.files[ref.uri]))
     by_game = snapshots.set_index("game_id")
     # Consensus beats the median; providers fall back to median.
     assert by_game.loc[2, "spread_line"] == 3.0
     assert by_game.loc[1, "spread_line"] == -5.0
     assert by_game.loc[1, "total_line"] == 39.0
-    assert set(by_game.loc[1, ["season", "week"]]) == {2025, 1}
-    # Reuse: the existing ref JSON short-circuits the build.
-    ref_again = build_market_ref(
+    quotes = pd.read_parquet(__import__("io").BytesIO(storage.files[quotes_ref.uri]))
+    assert set(quotes["game_id"]) == {1, 2}
+    assert set(quotes[quotes["game_id"] == 1][["season", "week"]].iloc[0]) == {
+        2025,
+        1,
+    }
+    # Reuse: the existing ref JSONs short-circuit the build.
+    refs_again = build_market_refs(
         storage,
         year=2025,
         games=games,
-        market_ref_uri="artifacts/preview/refs/replay-2025/market.json",
+        snapshots_ref_uri=snapshots_uri,
+        quotes_ref_uri=quotes_uri,
         environment="preview",
         as_of=datetime.now(timezone.utc) + timedelta(hours=1),
     )
-    assert ref_again == ref
-    assert registered == [ref.version_id]
+    assert refs_again == (ref, quotes_ref)
+    assert len(registered) == 2
 
 
-def test_build_market_ref_rejects_unlined_schedule_games(monkeypatch):
+def test_build_market_refs_rejects_unlined_schedule_games(monkeypatch):
     storage = FakeStorage(index_rows=_quote_rows())
     games = pd.DataFrame({"game_id": [1, 3], "season": [2025, 2025], "week": [1, 1]})
     monkeypatch.setattr(
@@ -228,7 +244,7 @@ def test_build_market_ref_rejects_unlined_schedule_games(monkeypatch):
         lambda conn, ref, manifest: None,
     )
     with pytest.raises(SystemExit, match="do not cover"):
-        build_market_ref(
+        build_market_refs(
             storage,
             year=2025,
             games=games,
