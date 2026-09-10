@@ -1,15 +1,17 @@
 # 2025 historical operational-replay configuration. This replays the completed
 # 2025 season week-by-week through the real generate -> publish -> freeze ->
 # score pipeline using the selection-time V4 engine (trained on 2021-2024 via
-# the leading-window refit override). It must never be used for live weeks:
-# the production bundle remains conf/weekly_bets/v4_2026.yaml.
+# the leading-window refit override with exact frozen baseline/blend column
+# routes; predictions reproduce rating_v4_historical_predictions to float
+# epsilon). It must never be used for live weeks: the production bundle
+# remains conf/weekly_bets/v4_2026.yaml.
 system_name: "Trench Warfare V4"
-model_id: "v4-selection-2021-2024-replay-20260909"
+model_id: "v4-locked-test-replay-20260909b"
 
 model_bundle_v2: null
 model_bundle_v3:
-  artifact_uri: artifacts/preview/models/v4-selection-2021-2024-replay-20260909/manifest.json
-  sha256: f039bb8b004636bca4c58248266cf0cd5ff6e7eac990ac2f4af3fdeac14f671c
+  artifact_uri: artifacts/preview/models/v4-locked-test-replay-20260909b/manifest.json
+  sha256: f1bb1f0a6d48001230ae6fc55034994c9777009427753c4451f67f33edbeade4
   allow_locked_test_window: true
 
 year: 2025
