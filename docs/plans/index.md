@@ -34,16 +34,17 @@ The [2026-09-08 review and authority reset](2026-09-08/transformation-review-and
 records the approved corrective checkpoint. The original Phase 4B result cannot
 be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagnostics.
 
-| Approved, unexecuted contract | Dependency |
+| Current contract or record | Status and dependency |
 | --- | --- |
-| [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | Reviewed predecessor artifacts as repair inputs |
-| [Phase 3 measurement/core v2](2026-09-08/phase3-measurement-and-core-selection-v2.md) | In progress locally; Preview materialization awaits a clean committed checkpoint |
-| [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | Repaired core and admitted auxiliary features |
-| [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | Corrected retained rating |
-| [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Corrected target baselines |
-| [Phase 6 prospective evidence v2](2026-09-08/phase6-prospective-evidence-v2.md) | Corrected frozen candidate and live readiness |
+| [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | **Implemented and independently Preview-verified.** Sole repaired modeling parent. |
+| [Phase 3 compact-state measurement/core v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **In Progress.** Committed implementation; Preview preflight, materialization, verifier, and rerun are pending. The September 8/9 contracts retain inherited modeling decisions and historical context. |
+| [Documentation alignment and next research steps](2026-09-10/documentation-alignment-and-next-research-steps.md) | **In Progress.** Records the agreed possession-based direction and the required methodology-design handoff. |
+| [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | **Approved record; execution held** pending methodology replacement or explicit reaffirmation after verified Phase 3. |
+| [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | **Approved record; execution held** pending the rating-methodology decision. |
+| [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | **Approved record; execution held** pending replacement forecasting design. |
+| [Phase 6 prospective evidence v2](2026-09-08/phase6-prospective-evidence-v2.md) | **Approved record; execution held** pending a verified replacement candidate. |
 
-Each requires a separate implementation task; documentation approval executes no phase.
+Each research phase requires a separate implementation task; documentation approval executes no phase.
 
 ### Retained transformation engineering and superseded evidence
 
@@ -68,12 +69,12 @@ Each requires a separate implementation task; documentation approval executes no
   and [2026-09-06 resequencing](2026-09-06/06-transformation-documentation-and-phase3-plus-resequence.md)
   — Superseded by the approved 2026-09-08 package; never execute as current authority.
 
-### Operations (Week 1)
+### Historical operations (Week 1)
 
 - [Week 1 operations](2026-08-31/week1-operations.md)
-  — In Progress. Retroactive Week 0 freeze + close, then prepare/publish/freeze
-  Week 1 predictions in production before Thursday ~Sept 4 kickoff. Updates
-  Vercel `CFB_PUBLICATION_WEEKS` to `0,1`.
+  — Completed operational record. Week 1 was published, frozen, and scored;
+  the September 10 verification found 43 games and 86 grade rows. Current
+  weekly procedures live in the operations runbooks.
 
 ### Production model performance
 

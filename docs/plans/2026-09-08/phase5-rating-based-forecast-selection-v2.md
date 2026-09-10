@@ -7,6 +7,10 @@
 - **Implementation log:** Pending repaired Phase 4B and separate Phase 5 task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
+> **Execution hold (2026-09-10):** This remains an Approved historical record
+> with its original approval source. Do not execute it until a replacement
+> forecasting design or explicit reaffirmation follows methodology review.
+
 ## Goal, scope and parents
 
 Freeze one rating-based margin and one total forecast with non-null uncertainty.

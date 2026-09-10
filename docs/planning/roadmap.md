@@ -9,13 +9,11 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-08):** corrective repair and
-> recertification are required before forecasting. The original Phase 4B
-> pregame claim is invalid; Phase 3/4A results retain reduced-population
-> limitations. The approved [review and replacement contracts](../plans/2026-09-08/transformation-review-and-authority-reset.md)
-> govern repair, repeated core selection, learned-prior/dynamic ratings,
-> pregame context, rating-based forecasts, and prospective evidence.
-> The historical phase queue below is retained for evidence only.
+> **Current research checkpoint (2026-09-10):** Repair v2 is independently
+> Preview-verified. Committed Phase 3 v2 needs Preview certification before its
+> result can serve as benchmark evidence. A possession-based methodology design
+> then precedes replacement or reaffirmed Phase 4A–6 contracts. The original
+> Phase 4B pregame claim remains invalid; its historical queue is evidence only.
 
 ## Direction
 
@@ -73,9 +71,10 @@ See the
 | Window | Deliverable | Status |
 | --- | --- | --- |
 | By 2026-08-28 | Documentation audit, measurement catalog, initial rating requirements, uncertainty and shadow-evaluation requirements, and follow-on contracts | ✅ Complete |
-| **2026-08-29–31 (Week 0 close)** | Week 0 games scored; freeze + close-week; Week 0 launch contract closed | ✅ In progress (2026-08-31) |
-| **Week 1 (Sept 4–6)** | `prepare-week` → `publish-week` → freeze before kickoff; Vercel `CFB_PUBLICATION_WEEKS=0,1` | 🟡 Active operational window |
-| After kickoff | Measurement/adjustment implementation contract and simple point-in-time rating baseline | Isolated research artifacts only |
+| **2026-08-29–31 (Week 0 close)** | Week 0 games scored; freeze + close-week; Week 0 launch contract closed | ✅ Complete |
+| **Week 1** | Published, frozen, and scored | ✅ Verified 2026-09-10: 43 games / 86 grade rows |
+| **Week 2** | Published and frozen | ✅ Frozen 2026-09-10: `2026w2-43b25511a100`, 49/49/49 coverage |
+| Current research | Complete unchanged Phase 3 compact-state benchmark, then design possession-based methodology | Preview-only; no Neon activation or publication |
 | Subsequent weeks | Structured rating-to-game prediction, then frozen candidate shadow scoring | No Neon activation or publication |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
 | Any later point in 2026 | Operational rehearsal, rollback proof, and evidence-based promotion decision | V4 remains fallback |

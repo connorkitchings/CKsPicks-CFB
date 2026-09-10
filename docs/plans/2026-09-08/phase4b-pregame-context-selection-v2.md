@@ -7,6 +7,10 @@
 - **Implementation log:** Pending repaired Phase 4A and separate Phase 4B task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
+> **Execution hold (2026-09-10):** This remains an Approved historical record
+> with its original approval source. Do not execute it until the rating-methodology
+> review produces a replacement or explicit reaffirmation.
+
 ## Goal, scope and parents
 
 Select at most one legitimate pregame context family per target outside the

@@ -16,8 +16,9 @@ rating baseline will select from the same lineage under a separate contract.
 ## Current corrective interface contract (2026-09-08)
 
 The [approved review](../plans/2026-09-08/transformation-review-and-authority-reset.md)
-is the canonical findings/evidence table. The [replacement Phase 3](../plans/2026-09-08/phase3-measurement-and-core-selection-v2.md)
-repeats the original eight-core comparison on the repaired schedule population.
+is the canonical findings/evidence table. The active [compact-state Phase 3
+benchmark](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) repeats
+the original eight-core comparison on the repaired schedule population.
 Observation rows describe completed games; pregame snapshots use only permitted
 history before their cutoff. These are separate schemas and consumer roles.
 
@@ -34,6 +35,16 @@ semantically admitted, and predictively useful are different statuses.
 
 The older rating-transition implementations below retain their original lineage
 and dispositions; they do not supersede the current corrective handoffs.
+
+## Certified measurements and proposed possession scoring
+
+The certified catalog below supplies the unchanged Phase 3 benchmark. It does
+not yet certify a possession-scoring target. In particular,
+`points_per_scoring_opportunity` measures finishing after a scoring opportunity;
+it is not points per possession. A future methodology contract must define
+possession eligibility, scoring attribution, field-position normalization, and
+treatment of overtime, defensive/special-teams scores, clock-ending possessions,
+missing evidence, and FCS games before a possession-scoring measure is admitted.
 
 ## Responsibility boundary
 

@@ -5,13 +5,12 @@ Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 ## Research checkpoint
 
-The [2026-09-08 review and replacement contracts](docs/plans/2026-09-08/transformation-review-and-authority-reset.md)
-require corrective repair before Phase 5. The original Phase 4B result used
-same-game context; coaching, roster continuity and completed-game coverage also
-need correction. Ratings remain the forecast foundation. The approved sequence
-compares learned preseason priors and a bounded Kalman challenger before
-pregame context and Ridge/NB2 forecasting. These are approved plans, not newly
-executed phases; V4 remains unchanged.
+Repair v2 is independently verified, while the committed [Phase 3 v2
+benchmark](docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md) still
+needs Preview certification. The next design task will define a possession-based
+rating methodology before any new rating, context, or forecasting contract can
+run. The [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
+is the current status authority; V4 remains unchanged.
 
 ## 2026 posture
 

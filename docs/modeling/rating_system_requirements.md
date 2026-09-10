@@ -10,7 +10,27 @@
 > **Status:** Approved initial requirements for 2026 research and shadow work.
 > This is not a rating-engine implementation or a promotion authorization.
 
-## Current replacement requirements (2026-09-08)
+## Current rating direction (2026-09-10)
+
+New ratings must express expected **scoring efficiency per possession** against
+an average opponent under standard conditions. The first coherent system has one
+offense and one defense rating per team, each with explicit uncertainty.
+Passing, rushing, explosiveness, and finishing remain diagnostic evidence that
+explains a rating; they are not separate first-generation rating states.
+
+Possession volume is a separate state or forecast layer used only when
+translating unit efficiency into expected team scores, totals, and margins.
+Preseason research compares learned football-only priors with a simpler
+prior-season carryover baseline. The selected core from the existing Phase 3
+benchmark is evidence for this design, not an automatic definition of it.
+
+Possession eligibility, scoring attribution, field-position normalization,
+opponent-adjustment details, estimator, state updates, and artifact schema are
+unresolved and uncertified. A dedicated methodology contract must settle them
+before new rating-estimator work. The September 8 Phase 4A–6 contracts are
+execution-held records pending replacement or explicit reaffirmation.
+
+## Historical replacement requirements (2026-09-08)
 
 The [approved review and contract package](../plans/2026-09-08/transformation-review-and-authority-reset.md)
 replaces the active Phase 3–6 sequence. Ratings remain the mandatory foundation.
@@ -20,9 +40,9 @@ challenger; there is no adaptive-volatility mechanism. Polls/direct models are
 diagnostic-only. The original Phase 4B manifest cannot authorize forecasting.
 
 The exact approved equations, uncertainty rules, inputs, gates and dependency
-states are in the replacement contracts. Historical descriptions and deferred
-choices below are records of earlier programs, not unresolved authority for
-these approved contracts. Implementation and recertification are still pending.
+states are retained in the replacement contracts as historical approved records.
+They are not current execution authority until the methodology review replaces
+or explicitly reaffirms them.
 
 ## Goal
 
@@ -52,8 +72,9 @@ state includes:
 - source/version provenance and as-of timestamp; and
 - coverage, missingness, and quality flags.
 
-This is a conceptual contract, not a schema. The final rating scale, estimator,
-prior, uncertainty method, and artifact format remain open.
+This is a conceptual contract, not a schema. The rating meaning and the
+preseason comparison are decided above; the estimator, detailed prior form,
+update mechanics, and artifact format remain open.
 
 ### Layer boundaries
 

@@ -9,6 +9,14 @@
 
 ## Goal and execution boundary
 
+> **Subsequent direction (2026-09-10):** Repair v2 is independently verified;
+> Phase 3 v2 remains pending Preview certification. The user selected expected
+> scoring efficiency per possession as the intended rating meaning and requires
+> a dedicated methodology design before new rating-estimator work. Phase 4A–6
+> retain their approved historical records but are execution-held pending
+> replacement or explicit reaffirmation. See
+> [documentation alignment and next research steps](../2026-09-10/documentation-alignment-and-next-research-steps.md).
+
 Keep an interpretable, uncertainty-bearing team rating as the mandatory foundation
 for forecasts. Restore research on learned preseason priors, add one bounded
 Kalman challenger, and compare rating-based Ridge and NB2 forecasts. Direct-core

@@ -7,6 +7,10 @@
 - **Implementation log:** Pending corrected Phase 5 and separate Phase 6 task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
+> **Execution hold (2026-09-10):** This remains an Approved historical record
+> with its original approval source. Do not execute it until a verified
+> replacement candidate and explicit replacement or reaffirmation exist.
+
 ## Goal and dependencies
 
 Collect six independently verifiable normal-coverage paired slates, then recommend

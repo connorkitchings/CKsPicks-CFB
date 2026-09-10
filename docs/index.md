@@ -7,12 +7,12 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 **V4 is the live 2026 production champion.** It publishes spread and total
 predictions through the fail-closed weekly operations workflow. New research is
-governed by the [data-first football forecasting roadmap](planning/data-first-football-forecasting-roadmap.md):
-corrective data repair, repeated measurement/core selection, learned preseason
-priors and dynamic ratings, strictly pregame context, rating-based Ridge/NB2
-forecasting, then prospective evidence. The [2026-09-08 review](plans/2026-09-08/transformation-review-and-authority-reset.md)
-blocks the original Phase 4B manifest from new forecasting and records the
-population and auxiliary-semantic corrections required before advancement. The completed R1/R2 and
+governed by the [data-first football forecasting roadmap](planning/data-first-football-forecasting-roadmap.md).
+Repair v2 is verified; the committed [Phase 3 v2 benchmark](plans/2026-09-10/phase3-v2-compact-tournament-state.md)
+still needs Preview certification. The next design task will define the
+possession-based rating methodology before replacement Phase 4A–6 contracts.
+The [2026-09-08 review](plans/2026-09-08/transformation-review-and-authority-reset.md)
+blocks the original Phase 4B manifest from new forecasting. Completed R1/R2 and
 earlier candidate work remain historical evidence subject to audit. 2020 is
 excluded globally; 2025 is development data only inside the new research
 namespace; future frozen predictions provide independent evidence.
@@ -39,7 +39,7 @@ deferred.
 - [2026 operations and historical roadmap](planning/roadmap.md) — current V4
   operations and the completed/superseded research record.
 - [Rating-system requirements](modeling/rating_system_requirements.md) — the
-  approved successor’s initial requirements and deferred decisions.
+  agreed rating meaning and unresolved possession-methodology decisions.
 - [Measurement catalog](modeling/measurement_catalog.md) — football
   measurements, provenance, and rating eligibility.
 - [V4 regime contract](modeling/early_season_regimes.md) — live production

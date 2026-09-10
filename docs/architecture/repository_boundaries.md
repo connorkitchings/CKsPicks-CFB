@@ -38,7 +38,8 @@ The new program uses this flow:
 
 ```text
 audited immutable data → football measurements → opponent adjustment
-→ preseason and in-season ratings → spread and total forecasts
+→ scoring-efficiency ratings + uncertainty → possession-volume translation
+→ expected scores → spread and total forecasts
 → prospective evaluation → timestamped line comparison
 ```
 
@@ -53,6 +54,13 @@ New program configuration lives under
 development corpus, including 2025 as development evidence, applies only to
 this namespace. Existing V4 and named benchmark identities retain their
 original season policies and locations.
+
+The intended rating meaning is expected scoring efficiency per possession against
+an average opponent under standard conditions. Possession eligibility, scoring
+attribution, normalization, estimator, and update mechanics remain unimplemented
+until a dedicated methodology contract is approved. The existing Phase 3 v2 run
+is benchmark-only; the September 8 Phase 4A–6 contracts are execution-held
+records pending replacement or explicit reaffirmation.
 
 Research code cannot publish, freeze, close, migrate, deploy, or change live
 state. Timestamped market lines are joined after football evaluation for

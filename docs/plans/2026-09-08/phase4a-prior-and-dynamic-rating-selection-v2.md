@@ -7,6 +7,11 @@
 - **Implementation log:** Pending repaired Phase 3 and separate Phase 4A task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
+> **Execution hold (2026-09-10):** This remains an Approved historical record
+> with its original approval source. Do not execute it until a verified Phase 3
+> benchmark and the possession-based methodology review produce a replacement or
+> explicit reaffirmation.
+
 ## Goal, parents, and interfaces
 
 Select one shared offense/defense rating from six prior families crossed with

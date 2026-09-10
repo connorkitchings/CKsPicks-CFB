@@ -185,7 +185,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Week 0 scored; Week 1 frozen (games through Mon Sept 7), close-week due Tuesday Sept 8
+**Status:** 🏈 Season live — Week 0 and Week 1 scored; Week 2 frozen (49/49/49) on 2026-09-10
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -202,12 +202,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 - ✅ Phase 6: Production deployed 2026-08-18; predictions revealed 2026-08-21;
   Week 0 games played Aug 29–30.
 - ✅ **Week 0 closed:** `2026w0-55de0317120d` frozen and `scored` (8/8/8).
-- ✅ **Week 1 published and frozen:** `2026w1-b2c739321e5d` frozen 2026-09-04
-  (43/43/43, no waiver; Thursday kickoff preceded freeze).
-- 🟡 **Week 1 close (Tuesday Sept 8):** `close-week YEAR=2026 WEEK=1 AS_OF=<ts>
-  ENV=production` — run Tuesday, not Monday (CFBD finalization lag). Then the
-  Week 2 cycle: `prepare-week` → `readiness` in Preview → `publish-week` →
-  freeze before kickoff. See `docs/ops/weekly_pipeline.md`.
+- ✅ **Week 1 scored:** 43 games and 86 grade rows were verified on 2026-09-10.
+- ✅ **Week 2 frozen:** `2026w2-43b25511a100` froze on 2026-09-10 with 49/49/49
+  predicted/lined/expected coverage and no waiver. Follow the current weekly
+  runbooks for later-week procedures.
 - 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
@@ -221,11 +219,14 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   not establish current predictive eligibility. The review found 32 completed
   schedule games omitted from Phase 3, same-game context leakage in Phase 4B,
   constant coaching features, and incorrect roster continuity. The original
-  Phase 4B retained manifest is prohibited as a new forecasting parent.
-  Execute the approved repair → Phase 3 v2 → Phase 4A learned-prior/dynamic
-  ratings v2 → Phase 4B pregame context v2 → Phase 5 v2 → Phase 6 v2 sequence
-  in separate tasks. Ratings remain mandatory; polls/direct models are
-  diagnostic-only. Contracts and evidence: `docs/plans/2026-09-08/transformation-review-and-authority-reset.md`.
+  Phase 4B retained manifest is prohibited as a new forecasting parent. Repair
+  v2 is independently verified; Phase 3 v2 is committed but awaits Preview
+  certification under `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md`.
+  It is benchmark evidence before a dedicated possession-based methodology plan.
+  Ratings should represent scoring efficiency per possession with uncertainty;
+  possession volume is translated separately. Phase 4A–6 remain execution-held
+  approved records pending replacement or reaffirmation. Polls/direct models are
+  diagnostic-only.
   O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
   `docs/planning/data-first-football-forecasting-roadmap.md`.
 

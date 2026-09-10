@@ -18,6 +18,14 @@ and its six replacement contracts govern new research. Original Phase 4B
 same-game context gains are invalid pregame evidence. Historical Phase 3/4A
 results remain reduced-population development comparisons.
 
+Repair v2 is verified and the Phase 3 compact-state benchmark remains pending
+Preview certification. Its selection is benchmark evidence only. The agreed
+next methodology will evaluate scoring efficiency per possession first, model
+possession volume separately, then translate those states into expected scores,
+margin, and total. It must preserve the chronology and evidence rules below.
+The September 8 Ridge/NB2 and distribution rules remain approved historical
+records under execution hold pending replacement or explicit reaffirmation.
+
 Use schedule-derived populations and outer seasons 2018, 2019, 2021–2025 with
 strictly preceding inner fitting/calibration. Retain the 2,000-replicate paired
 season/week bootstrap and 90% interval. New prior/rating selection may advance

@@ -57,23 +57,23 @@ eligibility are separate statuses.
 | Stage | Contract | Exit decision |
 | --- | --- | --- |
 | Repair | [Repair and recertification v2](../plans/2026-09-08/data-first-repair-and-recertification-v2.md) | Population and auxiliary semantics are recertified; rejected families are explicit. |
-| 3 | [Measurement/core selection v2](../plans/2026-09-08/phase3-measurement-and-core-selection-v2.md) | Original eight-core comparison repeated on repaired population; pregame interfaces verified. |
-| 4A | [Prior/dynamic rating selection v2](../plans/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | One shared rating selected across learned priors, established updaters and one Kalman challenger. |
-| 4B | [Pregame context selection v2](../plans/2026-09-08/phase4b-pregame-context-selection-v2.md) | At most one strictly pregame field-position, drive-length or turnover family per target. |
-| 5 | [Rating-based forecast selection v2](../plans/2026-09-08/phase5-rating-based-forecast-selection-v2.md) | Rating-based Ridge/NB2 target forecasts or corrected references frozen with uncertainty. |
-| 6 | [Prospective evidence v2](../plans/2026-09-08/phase6-prospective-evidence-v2.md) | Six qualifying paired slates support a recommendation, not activation. |
+| 3 | [Compact-state measurement/core benchmark v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) | Finish the unchanged eight-core benchmark and independently certify its Preview evidence. |
+| Methodology | [Documentation alignment and next steps](../plans/2026-09-10/documentation-alignment-and-next-research-steps.md) | Specify the possession-based rating methodology before new estimator work. |
+| Replacement contracts | Phase 4A–6 replacements or reaffirmations | Define rating estimation, score forecasting, and prospective evidence only after methodology review. |
 
-Repair v2 is implemented and verified in Preview. Phase 3 v2 implementation is
-in progress locally; its Preview dry run and immutable materialization require a
-clean committed checkpoint. Every later contract remains unexecuted and requires
-its passing predecessor and a separate implementation task. Phase 7 remains a
+Repair v2 is implemented and independently verified in Preview. Phase 3 v2
+implementation is committed, but its no-write Preview preflight, immutable
+materialization, independent verification, and idempotent rerun remain pending.
+The September 8 Phase 4A–6 contracts retain their approved historical records
+but are on execution hold pending the methodology review; they cannot advance
+without replacement contracts or explicit reaffirmation. Phase 7 remains a
 future promotion contract.
 Ratings are the mandatory forecast foundation; direct-core Ridge and polls are
 diagnostic-only. Auxiliary football information is tested inside preseason priors.
 
 ## Current checkpoint
 
-**Corrective work is required before Phase 5.** The review found same-game context
+**Corrective work and a methodology review are required before forecasting.** The review found same-game context
 leakage in Phase 4B, constant coaching features, incorrect roster continuity,
 and 32 completed schedule games omitted from the Phase 3 population. The old
 Phase 4B retained manifest is prohibited as a new forecasting parent. Its
@@ -87,7 +87,10 @@ their descendants require repair and renewed selection. The review's
 is the canonical record of findings, actual metrics, population counts, checksum
 types and permitted uses. No replacement phase has run in this documentation task.
 
-Historical sequence: [Phase 3](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md),
+The current next step is to complete the [September 10 Phase 3 compact-state
+benchmark](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) unchanged.
+Its output is benchmark evidence, not automatic authority for the later
+possession-based estimator. Historical sequence: [Phase 3](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md),
 [Phase 4A](../plans/2026-09-07/02-phase4a-context-free-rating-selection.md),
 [Phase 4B](../plans/2026-09-07/03-phase4b-target-context-selection.md),
 [Phase 5](../plans/2026-09-07/04-phase5-final-spread-total-selection.md), and

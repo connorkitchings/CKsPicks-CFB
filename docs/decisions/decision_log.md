@@ -1,5 +1,26 @@
 # Decision Log
 
+## 2026-09-10: Possession-Based Rating Direction and Phase Sequencing
+
+- **Context**: Repair v2 is independently Preview-verified, while Phase 3 v2's
+  compact-state benchmark implementation still needs Preview preflight,
+  materialization, independent verification, and deterministic rerun. The
+  September 8 Phase 4A–6 contracts were approved before the team clarified what
+  the rating should mean in football terms.
+- **Decision**: Define one offense and one defense rating as expected scoring
+  efficiency per possession against an average opponent under standard
+  conditions, with explicit uncertainty. Keep passing, rushing, explosiveness,
+  and finishing as diagnostics; model possession volume separately when
+  translating efficiency into expected scores, margins, and totals. Compare
+  learned football-only preseason priors with carryover. Complete the unchanged
+  Phase 3 benchmark first, then create a dedicated methodology contract before
+  rating-estimator work.
+- **Impact**: Phase 4A–6 retain their original Approved records but are on
+  execution hold pending replacement or explicit reaffirmation. This does not
+  alter Phase 3's sealed mathematics, V4 production, weekly operations, market
+  separation, 2020 exclusion, or prospective-evidence requirements.
+- **Source**: `docs/plans/2026-09-10/documentation-alignment-and-next-research-steps.md`.
+
 ## 2026-09-03: Canonical Market-Quote Persistence and Opt-In The Odds API Capture
 
 - **Context**: Pre-2026 CFBD lines are quarantined (`legacy_market_references`)
