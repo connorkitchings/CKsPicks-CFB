@@ -13,7 +13,7 @@ import json
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Iterator, Literal, Mapping, Sequence
 from uuid import uuid4
 
 import numpy as np
@@ -63,6 +63,290 @@ class DatasetRef:
     schema_version: str
     content_sha: str
     uri: str
+
+
+PARTITIONED_DATASET_KIND = "partitioned_dataset_v1"
+
+
+@dataclass(frozen=True)
+class PartitionedDatasetRef:
+    """A logical immutable dataset assembled from independently immutable parts.
+
+    ``content_sha`` protects the root manifest bytes. ``records_sha`` protects
+    the canonical ordered row content, independently of Parquet serialization.
+    Consumers must use :func:`iter_partitioned_dataset`, never ``read_dataset``.
+    """
+
+    artifact_kind: str
+    dataset: str
+    version_id: str
+    schema_version: str
+    content_sha: str
+    records_sha: str
+    uri: str
+    row_count: int
+    partition_keys: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PartitionedDatasetPart:
+    """One bounded dataframe and its exact logical partition key."""
+
+    partition: Mapping[str, Any]
+    frame: pd.DataFrame
+
+
+def partition_key(partition: Mapping[str, Any]) -> str:
+    return _canonical_json(dict(partition)).decode("utf-8")
+
+
+def canonical_frame_digest(frame: pd.DataFrame, *, columns: Sequence[str]) -> str:
+    """Hash sorted canonical rows without retaining another full dataset copy."""
+    records = frame.loc[:, list(columns)].to_dict("records")
+    return _sha256(_canonical_json(records))
+
+
+def partitioned_records_sha(
+    parts: Sequence[Mapping[str, Any]], partition_keys: Sequence[str]
+) -> str:
+    return _sha256(
+        _canonical_json(
+            {
+                "artifact_kind": PARTITIONED_DATASET_KIND,
+                "partition_keys": list(partition_keys),
+                "parts": [
+                    {
+                        "partition": dict(part["partition"]),
+                        "row_count": int(part["row_count"]),
+                        "records_sha": str(part["records_sha"]),
+                    }
+                    for part in parts
+                ],
+            }
+        )
+    )
+
+
+class PartitionedDatasetWriter:
+    """Write immutable dataset parts while retaining only bounded metadata.
+
+    The root manifest is deliberately delayed until :meth:`finish`. A process
+    interrupted between ``add`` calls therefore leaves only unreachable,
+    content-addressed children and cannot publish a consumable logical dataset.
+    """
+
+    def __init__(
+        self,
+        storage: StorageBackend,
+        *,
+        build: "BuildRequest",
+        partition_keys: Sequence[str],
+        row_partition_keys: Sequence[str] | None = None,
+        expected_parts: Mapping[str, Mapping[str, Any]] | None = None,
+    ) -> None:
+        if not partition_keys:
+            raise ValueError("partitioned datasets require partition keys")
+        self.storage = storage
+        self.build = build
+        self.partition_keys = tuple(partition_keys)
+        self.row_partition_keys = tuple(row_partition_keys or partition_keys)
+        if not set(self.row_partition_keys).issubset(self.partition_keys):
+            raise ValueError("row partition keys must be logical partition keys")
+        self.expected_parts = dict(expected_parts or {})
+        self.parts: list[dict[str, Any]] = []
+        self._last_key: str | None = None
+
+    def add(self, part: PartitionedDatasetPart) -> None:
+        partition = dict(part.partition)
+        if tuple(partition) != self.partition_keys:
+            raise StorageError(
+                f"{self.build.dataset} partition keys must be {self.partition_keys}"
+            )
+        key = partition_key(partition)
+        if self._last_key is not None and key <= self._last_key:
+            raise StorageError(f"{self.build.dataset} parts are not strictly ordered")
+        self._last_key = key
+
+        frame = part.frame
+        try:
+            from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
+
+            schema = schema_for(self.build.dataset, self.build.schema_version)
+            validation = validate_frame(frame, schema)
+            columns = schema.required
+        except Exception as exc:
+            raise StorageError(
+                f"{self.build.dataset} partition schema validation failed"
+            ) from exc
+        for column in self.row_partition_keys:
+            value = partition[column]
+            if column not in frame.columns:
+                raise StorageError(
+                    f"{self.build.dataset} partition column is absent: {column}"
+                )
+            if (
+                not frame.empty
+                and not frame[column].map(lambda item: item == value).all()
+            ):
+                raise StorageError(
+                    f"{self.build.dataset} rows escape partition {partition}"
+                )
+        records_sha = canonical_frame_digest(frame, columns=columns)
+        item: dict[str, Any] = {
+            "partition": partition,
+            "row_count": int(len(frame)),
+            "records_sha": records_sha,
+            "ref": None,
+        }
+        expected = self.expected_parts.get(key)
+        if expected is not None and (
+            int(expected["row_count"]) != item["row_count"]
+            or str(expected["records_sha"]) != records_sha
+        ):
+            raise StorageError(
+                f"{self.build.dataset} partition differs from the preflight: {partition}"
+            )
+        if not frame.empty:
+            ref, _ = build_dataset_version(
+                self.storage,
+                build=self.build,
+                records=frame.to_dict("records"),
+                partitions={
+                    "partitioned_dataset": PARTITIONED_DATASET_KIND,
+                    "partition": partition,
+                },
+                validation=validation,
+            )
+            item["ref"] = asdict(ref)
+        self.parts.append(item)
+
+    def finish(self) -> PartitionedDatasetRef:
+        actual_keys = {partition_key(part["partition"]) for part in self.parts}
+        if self.expected_parts and actual_keys != set(self.expected_parts):
+            raise StorageError(
+                f"{self.build.dataset} does not match the preflight plan"
+            )
+        records_sha = partitioned_records_sha(self.parts, self.partition_keys)
+        identity = {
+            "artifact_kind": PARTITIONED_DATASET_KIND,
+            "dataset": self.build.dataset,
+            "tier": self.build.tier,
+            "schema_version": self.build.schema_version,
+            "records_sha": records_sha,
+            "partition_keys": list(self.partition_keys),
+            "row_partition_keys": list(self.row_partition_keys),
+            "parents": [asdict(parent) for parent in self.build.parent_refs],
+            "source_captures": list(self.build.source_capture_ids),
+            "code_sha": self.build.code_sha,
+            "config_sha": self.build.config_sha,
+            "as_of": _utc(self.build.as_of).isoformat(),
+        }
+        version_id = _sha256(_canonical_json(identity))[:24]
+        prefix = (
+            f"lake/{self.build.tier}/dataset={self.build.dataset}/version={version_id}"
+        )
+        uri = f"{prefix}/partitioned-manifest.json"
+        if self.storage.exists(uri):
+            payload = self.storage.read_bytes(uri)
+            existing = json.loads(payload)
+            if (
+                existing.get("artifact_kind") != PARTITIONED_DATASET_KIND
+                or existing.get("records_sha") != records_sha
+                or existing.get("parts") != self.parts
+            ):
+                raise StorageError(f"Partitioned dataset manifest collision at {uri}")
+            return PartitionedDatasetRef(
+                artifact_kind=PARTITIONED_DATASET_KIND,
+                dataset=self.build.dataset,
+                version_id=version_id,
+                schema_version=self.build.schema_version,
+                content_sha=_sha256(payload),
+                records_sha=records_sha,
+                uri=uri,
+                row_count=int(existing["row_count"]),
+                partition_keys=self.partition_keys,
+            )
+        manifest = {
+            **identity,
+            "version_id": version_id,
+            "uri": uri,
+            "row_count": int(sum(part["row_count"] for part in self.parts)),
+            "parts": self.parts,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        payload = _canonical_json(manifest)
+        _write_immutable(self.storage, uri, payload)
+        return PartitionedDatasetRef(
+            artifact_kind=PARTITIONED_DATASET_KIND,
+            dataset=self.build.dataset,
+            version_id=version_id,
+            schema_version=self.build.schema_version,
+            content_sha=_sha256(payload),
+            records_sha=records_sha,
+            uri=uri,
+            row_count=int(manifest["row_count"]),
+            partition_keys=self.partition_keys,
+        )
+
+
+def iter_partitioned_dataset(
+    storage: StorageBackend, ref: PartitionedDatasetRef
+) -> Iterator[pd.DataFrame]:
+    """Yield validated parts in manifest order without concatenating them."""
+    if ref.artifact_kind != PARTITIONED_DATASET_KIND:
+        raise StorageError("unsupported partitioned artifact kind")
+    payload = storage.read_bytes(ref.uri)
+    if _sha256(payload) != ref.content_sha:
+        raise StorageError(f"Partitioned dataset checksum mismatch: {ref.uri}")
+    manifest = json.loads(payload)
+    if (
+        manifest.get("artifact_kind") != PARTITIONED_DATASET_KIND
+        or manifest.get("dataset") != ref.dataset
+        or manifest.get("schema_version") != ref.schema_version
+        or tuple(manifest.get("partition_keys") or ()) != ref.partition_keys
+    ):
+        raise StorageError("partitioned dataset manifest identity mismatch")
+    parts = list(manifest.get("parts") or [])
+    row_partition_keys = tuple(manifest.get("row_partition_keys") or ref.partition_keys)
+    if not set(row_partition_keys).issubset(ref.partition_keys):
+        raise StorageError("partitioned dataset has invalid row partition keys")
+    if partitioned_records_sha(parts, ref.partition_keys) != ref.records_sha:
+        raise StorageError("partitioned dataset logical digest mismatch")
+    if int(sum(int(part["row_count"]) for part in parts)) != ref.row_count:
+        raise StorageError("partitioned dataset row-count mismatch")
+    previous: str | None = None
+    for part in parts:
+        partition = dict(part["partition"])
+        key = partition_key(partition)
+        if tuple(partition) != ref.partition_keys or (
+            previous is not None and key <= previous
+        ):
+            raise StorageError("partitioned dataset has malformed part order")
+        previous = key
+        child = part.get("ref")
+        if child is None:
+            if int(part["row_count"]) != 0:
+                raise StorageError("nonempty partition lacks a child reference")
+            continue
+        frame = read_dataset(storage, DatasetRef(**child))
+        try:
+            from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
+
+            schema = schema_for(ref.dataset, ref.schema_version)
+            validate_frame(frame, schema)
+        except Exception as exc:
+            raise StorageError(
+                "partitioned dataset child schema validation failed"
+            ) from exc
+        if int(len(frame)) != int(part["row_count"]) or canonical_frame_digest(
+            frame, columns=schema.required
+        ) != str(part["records_sha"]):
+            raise StorageError("partitioned dataset child content mismatch")
+        for column in row_partition_keys:
+            value = partition[column]
+            if not frame[column].map(lambda item: item == value).all():
+                raise StorageError("partitioned dataset child escapes its partition")
+        yield frame
 
 
 @dataclass(frozen=True)

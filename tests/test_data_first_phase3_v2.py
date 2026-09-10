@@ -28,7 +28,7 @@ from cks_picks_cfb.data.data_first_phase3_v2 import (
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.ratings.phase3_v2 import (
     _adjustment_trace,
-    build_replayable_measurements,
+    iter_replayable_measurements,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -144,6 +144,15 @@ def test_config_is_sealed_and_rejects_availability_drift():
     payload["availability_policy"]["source_kickoff_buffer_hours"] = 5
     with pytest.raises(Phase3V2Error, match="availability"):
         validate_phase3_v2_config(payload)
+    payload = yaml.safe_load(
+        (
+            ROOT
+            / "conf/research/data_first_football_v1/phase3_measurement_core_v2.yaml"
+        ).read_text()
+    )
+    payload["materialization"]["maximum_partition_rows"] = 100001
+    with pytest.raises(Phase3V2Error, match="materialization"):
+        validate_phase3_v2_config(payload)
 
 
 def test_repaired_population_remains_complete_and_rejects_duplicates():
@@ -237,8 +246,18 @@ def test_iteration_three_opponent_values_drive_the_fourth_pass_correction():
 def test_replay_history_is_cutoff_safe_and_records_source_correction():
     population = _small_population()
     observations = _observed_rows()
-    snapshots, history, terminal = build_replayable_measurements(
-        population=population, observations=observations
+    parts = list(
+        iter_replayable_measurements(population=population, observations=observations)
+    )
+    snapshots = pd.concat(
+        [part.snapshots for part in parts if not part.snapshots.empty],
+        ignore_index=True,
+    )
+    history = pd.concat(
+        [part.history for part in parts if not part.history.empty], ignore_index=True
+    )
+    terminal = pd.concat(
+        [part.terminal for part in parts if not part.terminal.empty], ignore_index=True
     )
     assert len(snapshots) == 272
     assert not terminal.empty
@@ -246,6 +265,22 @@ def test_replay_history_is_cutoff_safe_and_records_source_correction():
     assert set(history["week"]) == {2}
     assert history["source_available_utc"].le(history["target_week_cutoff_utc"]).all()
     assert history["iteration_three_opponent_value"].notna().all()
+
+
+def test_replay_iterator_emits_week_partitions_before_terminal_state():
+    parts = iter(
+        iter_replayable_measurements(
+            population=_small_population(), observations=_observed_rows()
+        )
+    )
+    first = next(parts)
+    assert first.week == 1
+    assert not first.snapshots.empty
+    second = next(parts)
+    assert second.week == 2
+    terminal = next(parts)
+    assert terminal.week is None
+    assert not terminal.terminal.empty
 
 
 def test_common_bootstrap_is_deterministic_and_shared_for_selection():

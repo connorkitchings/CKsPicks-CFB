@@ -1,11 +1,12 @@
 # Phase 3: Corrected Measurements and Core Selection v2
 
-- **Status:** In Progress
+- **Status:** Superseded
 - **Created:** 2026-09-08
 - **Last amended:** 2026-09-09
 - **Planner:** Astra
 - **Approval source:** User approved the expanded execution contract and selected the reconstructed-history six-hour availability buffer on 2026-09-09.
-- **Implementation log:** `session_logs/2026-09-09/03-phase3-v2-implementation.md` (to be created by the implementation task)
+- **Implementation log:** `session_logs/2026-09-09/03-phase3-v2-implementation.md`
+- **Superseded by:** `docs/plans/2026-09-09/phase3-measurement-and-core-selection-v2.md` — the streaming replacement retains this contract's modeling decisions while replacing its unsafe materialization design.
 - **Commit policy:** User creates a clean, committed checkpoint before Preview execution; user executes all Git operations.
 
 ## Goal

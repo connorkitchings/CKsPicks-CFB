@@ -7,12 +7,12 @@ sealed Phase 3 state/tournament primitives consume the resulting snapshot state.
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Iterator
 
 import numpy as np
 import pandas as pd
 
-from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3_v2 import (
     ADJUSTED_COMPONENTS,
     HISTORY_COLUMNS_V2,
@@ -163,15 +163,241 @@ def _history_for_cutoff(
     return source.loc[admitted].copy()
 
 
-def build_replayable_measurements(
-    *, population: pd.DataFrame, observations: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Build cutoff-specific snapshots, source history, and terminal state.
+@dataclass(frozen=True)
+class ReplayPartition:
+    """Bounded Phase 3 replay output for one weekly cutoff or terminal season."""
 
-    Four adjustment passes are executed for every target cutoff. History stores
-    the exact iteration-three opponent state and pass-four source correction,
-    so exposure-weighting the source rows reconstitutes the iteration-four state.
-    """
+    season: int
+    week: int | None
+    snapshots: pd.DataFrame
+    history: pd.DataFrame
+    terminal: pd.DataFrame
+
+
+def _replay_week(
+    *,
+    schedule: pd.DataFrame,
+    observations: pd.DataFrame,
+    season: int,
+    week: int,
+    cutoff: pd.Timestamp,
+    measurement_ids: list[str],
+    roles: dict[str, list[str]],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build one bounded target-week partition for both recency modes."""
+    games = schedule[
+        (schedule["season"].astype(int) == season)
+        & (schedule["week"].astype(int) == week)
+    ]
+    snapshot_rows: list[dict[str, Any]] = []
+    history_rows: list[dict[str, Any]] = []
+    for recency_mode in RECENCY_MODES:
+        half_life = _HALF_LIFE[recency_mode]
+        history = _history_for_cutoff(
+            observations=observations, season=season, week=week, cutoff=cutoff
+        )
+        effective = _recency_weight(history, half_life) if half_life else history
+        cache = {
+            measurement: _measurement_adjustments(
+                effective[effective["measurement_id"].astype(str) == measurement],
+                measurement,
+                4,
+            )
+            for measurement in measurement_ids
+        }
+        traces = {
+            measurement: _adjustment_trace(
+                effective[effective["measurement_id"].astype(str) == measurement]
+            )
+            for measurement in ADJUSTED_COMPONENTS
+        }
+        sums = _weighted_sums(effective)
+        for game in games.itertuples(index=False):
+            for team in (str(game.home_team), str(game.away_team)):
+                for measurement in measurement_ids:
+                    for role in roles[measurement]:
+                        value = cache[measurement].get(role, {}).get(team)
+                        numerator, denominator = sums.get(
+                            (measurement, role, team), (0.0, 0.0)
+                        )
+                        raw = _finite(value["raw"]) if value else None
+                        adjusted = _finite(value["adjusted"]) if value else None
+                        for iteration, adjusted_value in ((0, raw), (4, adjusted)):
+                            snapshot_rows.append(
+                                {
+                                    "season": season,
+                                    "week": week,
+                                    "as_of_game_id": int(game.game_id),
+                                    "as_of_kickoff_utc": game.kickoff_utc,
+                                    "target_week_cutoff_utc": cutoff,
+                                    "team": team,
+                                    "measurement_id": measurement,
+                                    "unit_role": role,
+                                    "recency_mode": recency_mode,
+                                    "adjustment_iteration": iteration,
+                                    "raw_value": raw,
+                                    "adjusted_value": adjusted_value,
+                                    "primary_exposure": float(value["exposure"])
+                                    if value
+                                    else 0.0,
+                                    "games_exposure": int(value["games"])
+                                    if value
+                                    else 0,
+                                    "source_game_count": int(
+                                        history["game_id"].nunique()
+                                    ),
+                                    "timing_class": "historically_reconstructed",
+                                    "availability_policy": _AVAILABILITY_POLICY,
+                                }
+                            )
+        for source in effective[
+            effective["measurement_id"].isin(ADJUSTED_COMPONENTS)
+        ].itertuples(index=False):
+            _, iteration_three, centers = traces[str(source.measurement_id)]
+            opponent_role = (
+                "defense" if str(source.unit_role) == "offense" else "offense"
+            )
+            opponent_value = _finite(
+                iteration_three[opponent_role].get(str(source.opponent))
+            )
+            center = _finite(centers[opponent_role])
+            correction = (
+                opponent_value - center
+                if opponent_value is not None and center is not None
+                else 0.0
+            )
+            history_rows.append(
+                {
+                    "season": season,
+                    "week": week,
+                    "as_of_game_id": int(games["game_id"].min()),
+                    "as_of_kickoff_utc": cutoff,
+                    "target_week_cutoff_utc": cutoff,
+                    "source_season": int(source.season),
+                    "source_week": int(source.week),
+                    "source_game_id": int(source.game_id),
+                    "source_kickoff_utc": source.kickoff_utc,
+                    "source_available_utc": pd.Timestamp(source.kickoff_utc)
+                    + pd.Timedelta(hours=6),
+                    "team": str(source.team),
+                    "opponent": str(source.opponent),
+                    "measurement_id": str(source.measurement_id),
+                    "unit_role": str(source.unit_role),
+                    "recency_mode": recency_mode,
+                    "raw_value": _finite(source.raw_value),
+                    "numerator": float(source.numerator),
+                    "denominator": float(source.denominator),
+                    "iteration_three_opponent_value": opponent_value,
+                    "schedule_strength_component": correction,
+                    "iteration_zero_value": _finite(source.raw_value),
+                    "iteration_four_value": (
+                        _finite(source.raw_value - correction)
+                        if _finite(source.raw_value) is not None
+                        else None
+                    ),
+                    "included": True,
+                    "missing_reason": None,
+                    "timing_class": "historically_reconstructed",
+                }
+            )
+    snapshot = pd.DataFrame.from_records(snapshot_rows, columns=SNAPSHOT_COLUMNS_V2)
+    history = pd.DataFrame.from_records(history_rows, columns=HISTORY_COLUMNS_V2)
+    return (
+        snapshot.sort_values(
+            [
+                "season",
+                "week",
+                "as_of_game_id",
+                "team",
+                "measurement_id",
+                "unit_role",
+                "recency_mode",
+                "adjustment_iteration",
+            ],
+            kind="mergesort",
+        ).reset_index(drop=True),
+        history.sort_values(
+            [
+                "season",
+                "week",
+                "as_of_game_id",
+                "source_game_id",
+                "team",
+                "measurement_id",
+                "unit_role",
+                "recency_mode",
+            ],
+            kind="mergesort",
+        ).reset_index(drop=True),
+    )
+
+
+def _terminal_for_season(
+    *,
+    observations: pd.DataFrame,
+    universe: pd.DataFrame,
+    season: int,
+    measurement_ids: list[str],
+) -> pd.DataFrame:
+    rows: list[dict[str, Any]] = []
+    season_observations = observations[
+        (observations["season"].astype(int) == season)
+        & (observations["coverage_status"] == "observed")
+        & (observations["denominator"].astype(float) > 0)
+    ].copy()
+    for recency_mode in RECENCY_MODES:
+        half_life = _HALF_LIFE[recency_mode]
+        effective = (
+            _recency_weight(season_observations, half_life)
+            if half_life
+            else season_observations
+        )
+        for measurement in measurement_ids:
+            cache = _measurement_adjustments(
+                effective[effective["measurement_id"].astype(str) == measurement],
+                measurement,
+                4,
+            )
+            for role, values in cache.items():
+                for row in universe[
+                    universe["season"].astype(int) == season
+                ].itertuples(index=False):
+                    value = values.get(str(row.team))
+                    rows.append(
+                        {
+                            "season": season,
+                            "team": str(row.team),
+                            "measurement_id": measurement,
+                            "unit_role": role,
+                            "recency_mode": recency_mode,
+                            "raw_value": _finite(value["raw"]) if value else None,
+                            "adjusted_value": _finite(value["adjusted"])
+                            if value
+                            else None,
+                            "primary_exposure": float(value["exposure"])
+                            if value
+                            else 0.0,
+                            "games_exposure": int(value["games"]) if value else 0,
+                            "source_game_count": int(
+                                season_observations["game_id"].nunique()
+                            ),
+                            "timing_class": "historically_reconstructed",
+                        }
+                    )
+    return (
+        pd.DataFrame.from_records(rows, columns=TERMINAL_COLUMNS_V2)
+        .sort_values(
+            ["season", "team", "measurement_id", "unit_role", "recency_mode"],
+            kind="mergesort",
+        )
+        .reset_index(drop=True)
+    )
+
+
+def iter_replayable_measurements(
+    *, population: pd.DataFrame, observations: pd.DataFrame
+) -> Iterator[ReplayPartition]:
+    """Yield one target-week partition at a time; never retain full history."""
     required = {
         "season",
         "week",
@@ -188,10 +414,6 @@ def build_replayable_measurements(
     cutoffs = weekly_cutoffs(population)
     schedule = population[population["forecast_eligible"]].copy()
     schedule["kickoff_utc"] = pd.to_datetime(schedule["kickoff_utc"], utc=True)
-    snapshots: list[dict[str, Any]] = []
-    history_rows: list[dict[str, Any]] = []
-    terminal_rows: list[dict[str, Any]] = []
-
     universe = (
         pd.concat(
             [
@@ -204,216 +426,47 @@ def build_replayable_measurements(
         .sort_values(["season", "team"], kind="mergesort")
     )
 
-    for recency_mode in RECENCY_MODES:
-        half_life = _HALF_LIFE[recency_mode]
-        for cutoff_row in cutoffs.itertuples(index=False):
-            season, week, cutoff = (
-                int(cutoff_row.season),
-                int(cutoff_row.week),
-                cutoff_row.target_week_cutoff_utc,
+    measurement_ids = sorted(set(observations["measurement_id"].astype(str)))
+    roles = {
+        measurement: sorted(
+            set(
+                observations.loc[
+                    observations["measurement_id"].astype(str) == measurement,
+                    "unit_role",
+                ].astype(str)
             )
-            history = _history_for_cutoff(
-                observations=observations, season=season, week=week, cutoff=cutoff
+        )
+        for measurement in measurement_ids
+    }
+    empty_snapshot = pd.DataFrame(columns=SNAPSHOT_COLUMNS_V2)
+    empty_history = pd.DataFrame(columns=HISTORY_COLUMNS_V2)
+    empty_terminal = pd.DataFrame(columns=TERMINAL_COLUMNS_V2)
+    for season in sorted(schedule["season"].astype(int).unique().tolist()):
+        season_cutoffs = cutoffs[cutoffs["season"].astype(int) == season]
+        for cutoff_row in season_cutoffs.itertuples(index=False):
+            week = int(cutoff_row.week)
+            snapshots, history = _replay_week(
+                schedule=schedule,
+                observations=observations,
+                season=season,
+                week=week,
+                cutoff=cutoff_row.target_week_cutoff_utc,
+                measurement_ids=measurement_ids,
+                roles=roles,
             )
-            effective = _recency_weight(history, half_life) if half_life else history
-            measurement_ids = sorted(set(observations["measurement_id"].astype(str)))
-            roles = {
-                measurement: sorted(
-                    set(
-                        observations.loc[
-                            observations["measurement_id"].astype(str) == measurement,
-                            "unit_role",
-                        ].astype(str)
-                    )
-                )
-                for measurement in measurement_ids
-            }
-            cache = {
-                measurement: _measurement_adjustments(
-                    effective[effective["measurement_id"].astype(str) == measurement],
-                    measurement,
-                    4,
-                )
-                for measurement in measurement_ids
-            }
-            traces = {
-                measurement: _adjustment_trace(
-                    effective[effective["measurement_id"].astype(str) == measurement]
-                )
-                for measurement in ADJUSTED_COMPONENTS
-            }
-            sums = _weighted_sums(effective)
-            games = schedule[
-                (schedule["season"].astype(int) == season)
-                & (schedule["week"].astype(int) == week)
-            ]
-            for game in games.itertuples(index=False):
-                for team in (str(game.home_team), str(game.away_team)):
-                    for measurement in measurement_ids:
-                        for role in roles[measurement]:
-                            value = cache[measurement].get(role, {}).get(team)
-                            numerator, denominator = sums.get(
-                                (measurement, role, team), (0.0, 0.0)
-                            )
-                            raw = _finite(value["raw"]) if value else None
-                            adjusted = _finite(value["adjusted"]) if value else None
-                            for iteration, adjusted_value in ((0, raw), (4, adjusted)):
-                                snapshots.append(
-                                    {
-                                        "season": season,
-                                        "week": week,
-                                        "as_of_game_id": int(game.game_id),
-                                        "as_of_kickoff_utc": game.kickoff_utc,
-                                        "target_week_cutoff_utc": cutoff,
-                                        "team": team,
-                                        "measurement_id": measurement,
-                                        "unit_role": role,
-                                        "recency_mode": recency_mode,
-                                        "adjustment_iteration": iteration,
-                                        "raw_value": raw,
-                                        "adjusted_value": adjusted_value,
-                                        "primary_exposure": float(value["exposure"])
-                                        if value
-                                        else 0.0,
-                                        "games_exposure": int(value["games"])
-                                        if value
-                                        else 0,
-                                        "source_game_count": int(
-                                            history["game_id"].nunique()
-                                        ),
-                                        "timing_class": "historically_reconstructed",
-                                        "availability_policy": _AVAILABILITY_POLICY,
-                                    }
-                                )
-            for source in effective[
-                effective["measurement_id"].isin(ADJUSTED_COMPONENTS)
-            ].itertuples(index=False):
-                _, iteration_three, centers = traces[str(source.measurement_id)]
-                opponent_role = (
-                    "defense" if str(source.unit_role) == "offense" else "offense"
-                )
-                opponent_value = _finite(
-                    iteration_three[opponent_role].get(str(source.opponent))
-                )
-                center = _finite(centers[opponent_role])
-                correction = (
-                    opponent_value - center
-                    if opponent_value is not None and center is not None
-                    else 0.0
-                )
-                history_rows.append(
-                    {
-                        "season": season,
-                        "week": week,
-                        "as_of_game_id": int(games["game_id"].min()),
-                        "as_of_kickoff_utc": cutoff,
-                        "target_week_cutoff_utc": cutoff,
-                        "source_season": int(source.season),
-                        "source_week": int(source.week),
-                        "source_game_id": int(source.game_id),
-                        "source_kickoff_utc": source.kickoff_utc,
-                        "source_available_utc": pd.Timestamp(source.kickoff_utc)
-                        + pd.Timedelta(hours=6),
-                        "team": str(source.team),
-                        "opponent": str(source.opponent),
-                        "measurement_id": str(source.measurement_id),
-                        "unit_role": str(source.unit_role),
-                        "recency_mode": recency_mode,
-                        "raw_value": _finite(source.raw_value),
-                        "numerator": float(source.numerator),
-                        "denominator": float(source.denominator),
-                        "iteration_three_opponent_value": opponent_value,
-                        "schedule_strength_component": correction,
-                        "iteration_zero_value": _finite(source.raw_value),
-                        "iteration_four_value": (
-                            _finite(source.raw_value - correction)
-                            if _finite(source.raw_value) is not None
-                            else None
-                        ),
-                        "included": True,
-                        "missing_reason": None,
-                        "timing_class": "historically_reconstructed",
-                    }
-                )
-
-        for season in DEVELOPMENT_SEASONS:
-            season_observations = observations[
-                (observations["season"].astype(int) == season)
-                & (observations["coverage_status"] == "observed")
-                & (observations["denominator"].astype(float) > 0)
-            ].copy()
-            effective = (
-                _recency_weight(season_observations, half_life)
-                if half_life
-                else season_observations
-            )
-            for measurement in sorted(set(observations["measurement_id"].astype(str))):
-                cache = _measurement_adjustments(
-                    effective[effective["measurement_id"].astype(str) == measurement],
-                    measurement,
-                    4,
-                )
-                for role, values in cache.items():
-                    for row in universe[
-                        universe["season"].astype(int) == season
-                    ].itertuples(index=False):
-                        value = values.get(str(row.team))
-                        terminal_rows.append(
-                            {
-                                "season": season,
-                                "team": str(row.team),
-                                "measurement_id": measurement,
-                                "unit_role": role,
-                                "recency_mode": recency_mode,
-                                "raw_value": _finite(value["raw"]) if value else None,
-                                "adjusted_value": _finite(value["adjusted"])
-                                if value
-                                else None,
-                                "primary_exposure": float(value["exposure"])
-                                if value
-                                else 0.0,
-                                "games_exposure": int(value["games"]) if value else 0,
-                                "source_game_count": int(
-                                    season_observations["game_id"].nunique()
-                                ),
-                                "timing_class": "historically_reconstructed",
-                            }
-                        )
-
-    snapshot = pd.DataFrame.from_records(snapshots, columns=SNAPSHOT_COLUMNS_V2)
-    history = pd.DataFrame.from_records(history_rows, columns=HISTORY_COLUMNS_V2)
-    terminal = pd.DataFrame.from_records(terminal_rows, columns=TERMINAL_COLUMNS_V2)
-    snapshot = snapshot.sort_values(
-        [
-            "season",
-            "week",
-            "as_of_game_id",
-            "team",
-            "measurement_id",
-            "unit_role",
-            "recency_mode",
-            "adjustment_iteration",
-        ],
-        kind="mergesort",
-    ).reset_index(drop=True)
-    history = history.sort_values(
-        [
-            "season",
-            "week",
-            "as_of_game_id",
-            "source_game_id",
-            "team",
-            "measurement_id",
-            "unit_role",
-            "recency_mode",
-        ],
-        kind="mergesort",
-    ).reset_index(drop=True)
-    terminal = terminal.sort_values(
-        ["season", "team", "measurement_id", "unit_role", "recency_mode"],
-        kind="mergesort",
-    ).reset_index(drop=True)
-    return snapshot, history, terminal
+            yield ReplayPartition(season, week, snapshots, history, empty_terminal)
+        yield ReplayPartition(
+            season,
+            None,
+            empty_snapshot,
+            empty_history,
+            _terminal_for_season(
+                observations=observations,
+                universe=universe,
+                season=season,
+                measurement_ids=measurement_ids,
+            ),
+        )
 
 
 def _v1_adjusted(snapshot: pd.DataFrame) -> pd.DataFrame:

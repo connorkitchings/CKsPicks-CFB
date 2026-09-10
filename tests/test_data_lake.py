@@ -9,15 +9,40 @@ from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
     MarketQuote,
+    PartitionedDatasetPart,
+    PartitionedDatasetWriter,
     build_dataset_version,
     canonicalize_market_quotes_frame,
     capture_provider_records,
+    iter_partitioned_dataset,
     parquet_bytes,
     read_dataset,
     select_capture_as_of,
     select_market_snapshot,
 )
 from cks_picks_cfb.data.storage import LocalStorage, StorageError
+
+
+def _phase3_population_frame(season: int = 2025) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "season": season,
+                "week": 1,
+                "game_id": season,
+                "kickoff_utc": "2025-09-01T12:00:00Z",
+                "home_team": "Home",
+                "away_team": "Away",
+                "home_points": 21,
+                "away_points": 14,
+                "forecast_eligible": True,
+                "measurement_usable": True,
+                "missing_reason": None,
+                "timing_class": "historically_reconstructed",
+                "outer_validation": True,
+            }
+        ]
+    )
 
 
 def test_parquet_bytes_preserves_nullable_boolean_values() -> None:
@@ -278,6 +303,72 @@ def test_failed_v2_validation_does_not_write_canonical_dataset(tmp_path):
             validation={"valid": False},
         )
     assert storage.list_files("lake/") == []
+
+
+def test_partitioned_dataset_streams_ordered_immutable_parts(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_population",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_population_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(storage, build=build, partition_keys=("season",))
+    writer.add(
+        PartitionedDatasetPart(
+            {"season": 2023}, _phase3_population_frame(2023).iloc[:0]
+        )
+    )
+    writer.add(PartitionedDatasetPart({"season": 2024}, _phase3_population_frame(2024)))
+    writer.add(PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2025)))
+    ref = writer.finish()
+    assert ref.row_count == 2
+    assert [
+        int(frame.iloc[0]["season"]) for frame in iter_partitioned_dataset(storage, ref)
+    ] == [2024, 2025]
+
+    repeated = PartitionedDatasetWriter(
+        storage, build=build, partition_keys=("season",)
+    )
+    repeated.add(
+        PartitionedDatasetPart(
+            {"season": 2023}, _phase3_population_frame(2023).iloc[:0]
+        )
+    )
+    repeated.add(
+        PartitionedDatasetPart({"season": 2024}, _phase3_population_frame(2024))
+    )
+    repeated.add(
+        PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2025))
+    )
+    assert repeated.finish() == ref
+
+
+def test_partitioned_dataset_rejects_malformed_or_corrupt_parts(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_population",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_population_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(storage, build=build, partition_keys=("season",))
+    with pytest.raises(StorageError, match="partition keys"):
+        writer.add(PartitionedDatasetPart({"week": 1}, _phase3_population_frame()))
+    writer.add(PartitionedDatasetPart({"season": 2025}, _phase3_population_frame()))
+    ref = writer.finish()
+    child = next(
+        path for path in storage.list_files("lake/") if path.endswith("data.parquet")
+    )
+    storage.write_bytes(b"corrupt", child)
+    with pytest.raises(StorageError, match="checksum mismatch"):
+        list(iter_partitioned_dataset(storage, ref))
 
 
 def test_consensus_then_median_is_independent_by_target():

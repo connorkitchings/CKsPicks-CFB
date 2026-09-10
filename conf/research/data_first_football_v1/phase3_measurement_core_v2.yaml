@@ -12,6 +12,10 @@ adjustment:
   method: iterative_additive_league_centered
   iterations: 4
   retained_iterations: [0, 4]
+materialization:
+  artifact_kind: partitioned_dataset_v1
+  maximum_partition_rows: 100000
+  maximum_compact_rows: 250000
 selection:
   primary_rho: 0.60
   primary_updater: exposure_weighted_empirical_bayes
@@ -32,4 +36,3 @@ candidates:
   - without_epa_per_play
   - epa_pass_rush
   - quality_core_epa_split
-

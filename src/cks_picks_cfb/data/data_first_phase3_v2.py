@@ -274,6 +274,13 @@ def validate_phase3_v2_config(payload: Mapping[str, Any]) -> None:
         or policy.get("target_cutoff") != "earliest_eligible_target_kickoff"
     ):
         raise Phase3V2Error("Phase 3 v2 availability policy drifted")
+    materialization = payload.get("materialization") or {}
+    if materialization != {
+        "artifact_kind": "partitioned_dataset_v1",
+        "maximum_partition_rows": 100000,
+        "maximum_compact_rows": 250000,
+    }:
+        raise Phase3V2Error("Phase 3 v2 materialization policy drifted")
 
 
 def verify_repair_manifest(payload: Mapping[str, Any]) -> dict[str, Any]:
