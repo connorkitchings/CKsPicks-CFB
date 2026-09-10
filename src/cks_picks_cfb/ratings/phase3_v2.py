@@ -39,8 +39,11 @@ _AVAILABILITY_POLICY = "prior_week_and_source_kickoff_plus_6h"
 
 
 def _finite(value: Any) -> float | None:
-    value = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
-    return None if pd.isna(value) or not np.isfinite(value) else float(value)
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    return numeric if np.isfinite(numeric) else None
 
 
 def _weighted_sums(
@@ -500,6 +503,7 @@ def _replay_week(
                 if opponent_value is not None and center is not None
                 else 0.0
             )
+            raw_value = _finite(source.raw_value)
             history_rows.append(
                 {
                     "season": season,
@@ -518,15 +522,15 @@ def _replay_week(
                     "measurement_id": str(source.measurement_id),
                     "unit_role": str(source.unit_role),
                     "recency_mode": recency_mode,
-                    "raw_value": _finite(source.raw_value),
+                    "raw_value": raw_value,
                     "numerator": float(source.numerator),
                     "denominator": float(source.denominator),
                     "iteration_three_opponent_value": opponent_value,
                     "schedule_strength_component": correction,
-                    "iteration_zero_value": _finite(source.raw_value),
+                    "iteration_zero_value": raw_value,
                     "iteration_four_value": (
-                        _finite(source.raw_value - correction)
-                        if _finite(source.raw_value) is not None
+                        _finite(raw_value - correction)
+                        if raw_value is not None
                         else None
                     ),
                     "included": True,

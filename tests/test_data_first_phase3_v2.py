@@ -35,12 +35,21 @@ from cks_picks_cfb.ratings.phase3 import (
 from cks_picks_cfb.ratings.phase3_v2 import (
     CompactTournamentFeatureBuilder,
     _adjustment_trace,
+    _finite,
     _v1_adjusted,
     _v1_terminal,
     iter_replayable_measurements,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_scalar_finite_conversion_preserves_numeric_and_missing_semantics():
+    assert _finite("1.25") == pytest.approx(1.25)
+    assert _finite(0) == 0.0
+    assert _finite(pd.NA) is None
+    assert _finite("not-a-number") is None
+    assert _finite(float("inf")) is None
 
 
 def _repair_population() -> pd.DataFrame:
