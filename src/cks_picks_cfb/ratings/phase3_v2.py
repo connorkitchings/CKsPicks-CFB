@@ -16,12 +16,12 @@ import pandas as pd
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3_v2 import (
     ADJUSTED_COMPONENTS,
+    AVAILABILITY_BUFFER_HOURS,
     HISTORY_COLUMNS_V2,
     RECENCY_MODES,
     SNAPSHOT_COLUMNS_V2,
     TERMINAL_COLUMNS_V2,
     Phase3V2Error,
-    source_is_available,
     weekly_cutoffs,
 )
 from cks_picks_cfb.ratings.phase3 import (
@@ -155,14 +155,8 @@ def _history_for_cutoff(
         & (observations["denominator"].astype(float) > 0)
     ].copy()
     source["kickoff_utc"] = pd.to_datetime(source["kickoff_utc"], utc=True)
-    admitted = source.apply(
-        lambda row: source_is_available(
-            source_week=int(row.week),
-            source_kickoff_utc=row.kickoff_utc,
-            target_week=week,
-            target_week_cutoff_utc=cutoff,
-        ),
-        axis=1,
+    admitted = (source["week"].astype(int) < week) & (
+        source["kickoff_utc"] + pd.Timedelta(hours=AVAILABILITY_BUFFER_HOURS) <= cutoff
     )
     return source.loc[admitted].copy()
 

@@ -285,6 +285,24 @@ def test_replay_history_is_cutoff_safe_and_records_source_correction():
     assert history["iteration_three_opponent_value"].notna().all()
 
 
+def test_replay_history_applies_the_inclusive_vectorized_availability_cutoff():
+    population = _small_population()
+    observations = _observed_rows()
+    observations.loc[observations["game_id"].eq(1), "kickoff_utc"] = (
+        "2025-09-01T18:00:00Z"
+    )
+    observations.loc[observations["game_id"].eq(2), "kickoff_utc"] = (
+        "2025-09-08T18:00:01Z"
+    )
+
+    parts = list(
+        iter_replayable_measurements(population=population, observations=observations)
+    )
+    week_two = next(part for part in parts if part.week == 2)
+
+    assert set(week_two.history["source_game_id"]) == {1}
+
+
 def test_replay_iterator_emits_week_partitions_before_terminal_state():
     parts = iter(
         iter_replayable_measurements(
