@@ -60,10 +60,10 @@ def test_parse_train_years_rejects_nonleading_windows(raw):
 
 
 def test_frozen_component_model_reproduces_column_semantics():
-    passthrough = _frozen_component_model([1.0])
+    passthrough = _frozen_component_model([1.0], ["baseline_spread_prediction"])
     frame = pd.DataFrame({"baseline_spread_prediction": [-3.5, 7.0]})
     assert list(passthrough.predict(frame)) == [-3.5, 7.0]
-    blend = _frozen_component_model([0.7, 0.3])
+    blend = _frozen_component_model([0.7, 0.3], ["prior", "current"])
     blended = blend.predict(pd.DataFrame({"prior": [10.0], "current": [20.0]}))
     assert abs(float(blended[0]) - 13.0) < 1e-12
 

@@ -108,10 +108,10 @@ def _weights(
     return float(weights[regime])
 
 
-def _frozen_component_model(coefficients: list[float]):
+def _frozen_component_model(coefficients: list[float], columns: list[str]):
     """A fixed linear model over frozen frame component columns."""
     model = LinearRegression(fit_intercept=False)
-    model.fit(np.zeros((1, len(coefficients))), np.array([0.0]))
+    model.fit(pd.DataFrame({column: [0.0] for column in columns}), np.array([0.0]))
     model.coef_ = np.array([coefficients], dtype=float)
     return model
 
@@ -283,7 +283,7 @@ def main() -> None:
                 column = f"baseline_{target}_prediction"
                 artifact = _write_model(
                     storage,
-                    _frozen_component_model([1.0]),
+                    _frozen_component_model([1.0], [column]),
                     f"{prefix}/routes/{target}-{regime}-baseline.joblib",
                 )
                 routes.append(
@@ -321,7 +321,9 @@ def main() -> None:
                 weight = _weights(selection, target, regime, candidate)
                 artifact = _write_model(
                     storage,
-                    _frozen_component_model([weight, 1.0 - weight]),
+                    _frozen_component_model(
+                        [weight, 1.0 - weight], [prior_column, current_column]
+                    ),
                     f"{prefix}/routes/{target}-{regime}-blend.joblib",
                 )
                 routes.append(
