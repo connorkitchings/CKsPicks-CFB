@@ -193,3 +193,18 @@ snapshotted before promotion and restored to the live 2026/2 run afterward.
   (never published, zero consumers) were deleted before the clean rerun:
   `replay-2025-v4-w1/input_refs.json` and the w1 predictions
   `manifest.json`/`point_in_time_features.csv`/`predictions.csv`.
+
+### Amendment 5 — Comprehensive totals grading (2026-09-10)
+
+**Reason:** The operational scorer writes grades only for above-threshold bets,
+leaving 125 totals ungraded (all below the 1.5 edge threshold; e.g. 2025 week 2
+Texas vs San Jose State had a total edge of 0.71). The retrospective season
+record was therefore incomplete.
+
+**Approach:** New `scripts/pipeline/backfill_replay_grades.py` grades every
+replay prediction carrying a frozen line, a lean, and a final score using the
+identical frozen-line rule (`frozen_line_v2`), never overwriting existing
+grades, then refreshes `system_stats`. Applied to Preview then Production.
+Final 2025 record: spread **380-366-16**, total **398-359-5**. Weeks 1-15
+totals match the prior backfill exactly; the one delta is Army-Navy's total
+loss. Live 2026 bets-only semantics intentionally unchanged.
