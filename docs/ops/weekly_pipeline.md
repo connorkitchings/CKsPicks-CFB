@@ -63,6 +63,38 @@ It fails if Gold is stale for the requested cutoff, target-week rows do not
 cover the canonical schedule, outcomes disagree with completed schedule games,
 or a team with completed 2026 games lacks current-season features.
 
+### Preseason Features Requirement (V4 Model)
+
+**Critical:** The V4 model was trained on `point_in_time_matchups_v5` which includes preseason features (recruiting, returning production, talent composite). The operational pipeline must use the same feature set.
+
+When rebuilding features with `assemble_model_ready_features.py`, you must include the `--preseason-features-ref-uri` parameter pointing to the correct preseason features dataset:
+
+```bash
+PYTHONPATH=.:src uv run python scripts/pipeline/assemble_model_ready_features.py \
+  --core-ref-uri <core_ref_uri> \
+  --baselines-ref-uri <baselines_ref_uri> \
+  --preseason-features-ref-uri lake/gold/dataset=v4_preseason_team_features/version=8c47f6d5ccdced2365e4dfdd/manifest.json \
+  --feature-track strict \
+  --as-of <as_of_timestamp> \
+  --output-ref-uri <output_uri> \
+  --environment preview
+```
+
+**Why this matters:** Without preseason features, the model is asked to predict using a different feature set than it was trained on, leading to degraded accuracy (observed 36% win rate in 2026 vs 51% in 2025). This is especially critical in weeks 0-2 where current-season data is sparse and the model relies heavily on preseason priors.
+
+**Validation:** After rebuilding features, verify the dataset is `point_in_time_matchups_v5` (not `point_in_time_matchups` v4):
+
+```bash
+PYTHONPATH=.:src uv run python -c "
+from cks_picks_cfb.data.storage import get_storage
+import json
+storage = get_storage()
+manifest = json.loads(storage.read_bytes('<output_uri>').replace('data.parquet', 'manifest.json'))
+print(f'Dataset: {manifest[\"dataset\"]}')
+assert manifest['dataset'] == 'point_in_time_matchups_v5', 'Wrong dataset version!'
+"
+```
+
 Publish and rerun as lines arrive. Every mutating Make target requires an
 explicit `ENV`; there is no implicit production default:
 
@@ -156,6 +188,30 @@ make replay-season YEAR=2025 ENV=preview
 ```
 
 The replay command refuses to run unless `PREVIEW_DATABASE_URL` is set and differs from `DATABASE_URL`.
+
+### Historical season replay with a frozen selection-time bundle
+
+`scripts/pipeline/replay_season_v4.py` replays a completed season week-by-week
+using explicit immutable refs (certified point-in-time Gold, Silver schedule,
+provider market snapshots/quotes, Silver outcomes) through the same
+generate → publish → freeze → score → score_to_db loop:
+
+```bash
+PYTHONPATH=.:src uv run python scripts/pipeline/replay_season_v4.py \
+  --year 2025 --environment preview \
+  --config conf/weekly_bets/v4_2025_replay.yaml \
+  --feature-ref-uri <certified-v5-ref> \
+  --games-ref-uri <silver-games-ref> \
+  --outcomes-ref-uri <silver-outcomes-ref> \
+  --market-snapshots-ref-uri <ref> --market-quotes-ref-uri <ref>
+```
+
+Rules: each week's cutoff precedes its first kickoff; freezes record the
+`historical replay` line-coverage waiver; promotion to production requires a
+separate explicit approval, a `current_week` snapshot/restore around the run,
+and `--confirm-production`. Never predict a completed season with the
+production refit bundle (in-sample); use the selection-time model whose
+training years exclude that season.
 
 ## Retrospective model context
 

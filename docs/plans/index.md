@@ -75,6 +75,23 @@ Each requires a separate implementation task; documentation approval executes no
   Week 1 predictions in production before Thursday ~Sept 4 kickoff. Updates
   Vercel `CFB_PUBLICATION_WEEKS` to `0,1`.
 
+### Production model performance
+
+- [2025 V4 week-by-week operational replay](2026-09-09/2025-v4-operational-replay.md)
+  — **Implemented 2026-09-10.** Replaced the ad-hoc 2025 backfill with a
+  genuine week-by-week operational replay of the selection-time V4 model
+  (`v4-locked-test-replay-20260909b`, trained 2021-2024) using authentic
+  pre-kickoff provider lines, through the real generate → publish →
+  freeze → score pipeline (16 weeks, 762 games incl. Army-Navy). Final 2025
+  YTD: spread 380-366-16, total 340-292-5. Live `current_week` restored.
+
+- [Rebuild 2026 predictions with correct features](2026-09-09/rebuild-2026-predictions.md)
+  — **Draft.** Root cause analysis identified feature mismatch: V4 model trained on
+  `point_in_time_matchups_v5` (with preseason features) but 2026 operational pipeline
+  uses `point_in_time_matchups` (v4, missing preseason features). Plan documents
+  step-by-step remediation to rebuild 2026 weeks 0-2 with correct features.
+  Documentation updated in `docs/ops/weekly_pipeline.md` and `docs/ops/production_runbook.md`.
+
 ### Historical and compatibility rating-transition contracts
 
 - [Early-week strength-prior research](2026-09-02/early-week-strength-prior-research.md)
