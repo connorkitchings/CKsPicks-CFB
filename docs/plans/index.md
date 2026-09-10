@@ -85,11 +85,19 @@ Each requires a separate implementation task; documentation approval executes no
   freeze → score pipeline (16 weeks, 762 games incl. Army-Navy). Final 2025
   YTD: spread 380-366-16, total 340-292-5. Live `current_week` restored.
 
+- [2026 v5 shadow rebuild diagnostic](2026-09-10/2026-v5-shadow-rebuild-diagnostic.md)
+  — **Draft (Amendment 2 incorporated, pending re-approval).** Second run
+  STOPPED with zero writes: byte-parity is stale (post-08-15 drift — 5 extra
+  never-read all-NaN columns + 16 all-missing None→NaN prior columns; lineage
+  intact). Gate is now two-tier (diff confinement + prediction-level control
+  proving inference-inertness); W0 v5 `as_of` pinned to the publish cutoff.
+  Preview-only, no serving writes. Replaces the contract below as the
+  executable plan.
+
 - [Rebuild 2026 predictions with correct features](2026-09-09/rebuild-2026-predictions.md)
-  — **Draft.** Root cause analysis identified feature mismatch: V4 model trained on
-  `point_in_time_matchups_v5` (with preseason features) but 2026 operational pipeline
-  uses `point_in_time_matchups` (v4, missing preseason features). Plan documents
-  step-by-step remediation to rebuild 2026 weeks 0-2 with correct features.
+  — **Superseded as executable plan** by the shadow diagnostic above;
+  retained as the root-cause record. Its Step 5 (`superseded` state, hand-edited
+  run tables) is not executable and predates the Week 2 freeze.
   Documentation updated in `docs/ops/weekly_pipeline.md` and `docs/ops/production_runbook.md`.
 
 ### Historical and compatibility rating-transition contracts
