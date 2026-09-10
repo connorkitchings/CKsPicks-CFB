@@ -100,6 +100,32 @@ def partition_key(partition: Mapping[str, Any]) -> str:
     return _canonical_json(dict(partition)).decode("utf-8")
 
 
+def partition_order_key(
+    partition: Mapping[str, Any],
+) -> tuple[tuple[str, int, Any], ...]:
+    """Return a natural, typed ordering for logical dataset partitions.
+
+    ``partition_key`` is a stable canonical-JSON identity used in manifests.
+    JSON's lexical ordering would put numeric week 10 before week 2, so stream
+    ordering deliberately uses this separate typed key.
+    """
+
+    def typed_value(value: Any) -> tuple[int, Any]:
+        if value is None:
+            return (0, "")
+        if isinstance(value, bool):
+            return (1, int(value))
+        if isinstance(value, (int, float)):
+            if isinstance(value, float) and not math.isfinite(value):
+                raise StorageError("partition values must be finite")
+            return (2, value)
+        if isinstance(value, str):
+            return (3, value)
+        return (4, partition_key({"value": value}))
+
+    return tuple((str(name), *typed_value(value)) for name, value in partition.items())
+
+
 def canonical_frame_digest(frame: pd.DataFrame, *, columns: Sequence[str]) -> str:
     """Hash sorted canonical rows without retaining another full dataset copy."""
     records = frame.loc[:, list(columns)].to_dict("records")
@@ -154,7 +180,7 @@ class PartitionedDatasetWriter:
             raise ValueError("row partition keys must be logical partition keys")
         self.expected_parts = dict(expected_parts or {})
         self.parts: list[dict[str, Any]] = []
-        self._last_key: str | None = None
+        self._last_key: tuple[tuple[str, int, Any], ...] | None = None
 
     def add(self, part: PartitionedDatasetPart) -> None:
         partition = dict(part.partition)
@@ -163,9 +189,10 @@ class PartitionedDatasetWriter:
                 f"{self.build.dataset} partition keys must be {self.partition_keys}"
             )
         key = partition_key(partition)
-        if self._last_key is not None and key <= self._last_key:
+        order_key = partition_order_key(partition)
+        if self._last_key is not None and order_key <= self._last_key:
             raise StorageError(f"{self.build.dataset} parts are not strictly ordered")
-        self._last_key = key
+        self._last_key = order_key
 
         frame = part.frame
         try:
@@ -314,10 +341,10 @@ def iter_partitioned_dataset(
         raise StorageError("partitioned dataset logical digest mismatch")
     if int(sum(int(part["row_count"]) for part in parts)) != ref.row_count:
         raise StorageError("partitioned dataset row-count mismatch")
-    previous: str | None = None
+    previous: tuple[tuple[str, int, Any], ...] | None = None
     for part in parts:
         partition = dict(part["partition"])
-        key = partition_key(partition)
+        key = partition_order_key(partition)
         if tuple(partition) != ref.partition_keys or (
             previous is not None and key <= previous
         ):

@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -345,6 +346,34 @@ def test_partitioned_dataset_streams_ordered_immutable_parts(tmp_path):
         PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2025))
     )
     assert repeated.finish() == ref
+
+
+def test_partitioned_dataset_orders_numeric_partition_values_naturally(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_population",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_population_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(
+        storage,
+        build=build,
+        partition_keys=("season", "week"),
+        row_partition_keys=("season",),
+    )
+    for week in (1, 2, 10):
+        writer.add(
+            PartitionedDatasetPart(
+                {"season": 2025, "week": week}, _phase3_population_frame()
+            )
+        )
+    ref = writer.finish()
+    manifest = json.loads(storage.read_bytes(ref.uri))
+    assert [part["partition"]["week"] for part in manifest["parts"]] == [1, 2, 10]
 
 
 def test_partitioned_dataset_rejects_malformed_or_corrupt_parts(tmp_path):

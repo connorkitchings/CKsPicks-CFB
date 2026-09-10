@@ -41,6 +41,7 @@ from cks_picks_cfb.data.lake import (
     PartitionedDatasetWriter,
     canonical_frame_digest,
     partition_key,
+    partition_order_key,
     partitioned_records_sha,
     read_dataset,
     require_dataset,
@@ -272,7 +273,7 @@ class DatasetPlan:
             "row_count": int(len(frame)),
             "records_sha": canonical_frame_digest(frame, columns=schema.required),
         }
-        if self.parts and partition_key(partition) <= partition_key(
+        if self.parts and partition_order_key(partition) <= partition_order_key(
             self.parts[-1]["partition"]
         ):
             raise Phase3V2Error(f"{self.name} partitions are not strictly ordered")
