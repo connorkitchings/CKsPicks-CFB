@@ -16,11 +16,7 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
-try:  # Supports both `python script.py` and repository-module invocation.
-    from scripts.research.run_data_first_phase3 import _compute as v1_compute
-except ModuleNotFoundError:  # pragma: no cover - direct script path only
-    from run_data_first_phase3 import _compute as v1_compute
-
+from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3 import verify_core_eligibility
 from cks_picks_cfb.data.data_first_phase3_v2 import (
     PHASE3_V2_DATASETS,
@@ -42,9 +38,17 @@ from cks_picks_cfb.data.lake import (
     DatasetRef,
     build_dataset_version,
     read_dataset,
+    require_dataset,
 )
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.ratings.contracts import (
+    OBSERVATION_COLUMNS,
+    load_measurement_config,
+    validate_observation_frame,
+)
+from cks_picks_cfb.ratings.observations import build_measurement_observations
+from cks_picks_cfb.ratings.phase3 import build_pass_rush_observations
 from cks_picks_cfb.ratings.phase3_v2 import (
     build_replayable_measurements,
     run_repaired_tournament,
@@ -164,25 +168,57 @@ def _v1_observations(
     identity: Mapping[str, Any],
     as_of: datetime,
 ) -> pd.DataFrame:
-    """Reuse only v1's fixed raw measurement construction."""
+    """Reuse fixed raw definitions without invoking the superseded tournament."""
     core_uri = ((repair.get("parents") or {}).get("core_eligibility") or {}).get("uri")
     if not core_uri:
         raise Phase3V2Error("Repair manifest does not bind a core eligibility parent")
     core_payload = json.loads(storage.read_bytes(str(core_uri)))
     refs = verify_core_eligibility(core_payload)
-    legacy_identity = {
-        "code_sha": identity["code_sha"],
-        "config_sha": identity["config_sha"],
-        "identity_sha256": identity["identity_sha256"],
+    config = load_measurement_config(V1_CONFIG)
+    parent_ref_shas = ";".join(str(ref["content_sha"]) for ref in refs)
+    by_season: dict[int, dict[str, DatasetRef]] = {
+        season: {} for season in DEVELOPMENT_SEASONS
     }
-    computation = v1_compute(
-        storage=storage,
-        refs=refs,
-        identity=legacy_identity,
-        config_path=V1_CONFIG,
-        as_of=as_of,
+    for value in refs:
+        ref = _ref(value)
+        require_dataset(ref, str(value["dataset"]))
+        by_season[int(value["season"])][ref.dataset] = ref
+    frames: list[pd.DataFrame] = []
+    for season in DEVELOPMENT_SEASONS:
+        season_refs = by_season[season]
+        if len(season_refs) != 7:
+            raise Phase3V2Error(
+                f"season {season} does not resolve all seven certified parents"
+            )
+        source = {
+            dataset: read_dataset(storage, ref)
+            for dataset, ref in sorted(season_refs.items())
+        }
+        base = build_measurement_observations(
+            byplay=source["byplay"],
+            drives=source["drives"],
+            games=source["fbs_involved_games"],
+            outcomes=source["game_outcomes"],
+            reconciled_team_game=source["reconciled_team_game"],
+            config=config,
+            as_of=as_of,
+            code_sha=str(identity["code_sha"]),
+            config_sha=str(identity["config_sha"]),
+            parent_ref_shas=parent_ref_shas,
+        )
+        validate_observation_frame(base.frame, config)
+        pass_rush, _ = build_pass_rush_observations(
+            byplay=source["byplay"], base_observations=base.frame
+        )
+        frames.extend((base.frame, pass_rush))
+    return (
+        pd.concat(frames, ignore_index=True)[list(OBSERVATION_COLUMNS)]
+        .sort_values(
+            ["season", "week", "game_id", "team", "measurement_id", "unit_role"],
+            kind="mergesort",
+        )
+        .reset_index(drop=True)
     )
-    return computation.observations
 
 
 def compute_phase3_v2(

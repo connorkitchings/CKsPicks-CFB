@@ -73,10 +73,25 @@
 
 ## Handoff Notes
 
-- **Resume at:** Commit the exact local implementation, then run the exact
-  Preview dry run with the Repair v2 manifest URI and committed SHA.
+- **Resume at:** Commit the runner correction below, then retry the exact
+  Preview dry run with the Repair v2 manifest URI and the new committed SHA.
 - **Watch out for:** Do not use the Phase 3 v1 retained manifest as an input; do
   not apply/write Preview artifacts until dry-run review passes; do not update
   the plan to `Implemented` until verifier and deterministic rerun succeed.
+
+## Preview Dry-Run Finding
+
+- The first Preview dry-run attempt was read-only and wrote no artifacts. It
+  reached the legacy Phase 3 tournament solely because the initial v2 runner
+  used v1's all-in-one computation helper to obtain raw measurements. The
+  superseded reduced-population tournament emitted repeated Ridge numerical
+  overflow/divide-by-zero warnings, so the run was interrupted before evidence
+  could be accepted.
+- The runner now reconstructs only the sealed raw observation definitions from
+  the exact certified Phase 2 parents. It no longer invokes v1 adjustment,
+  tournament, selection, or retained-core code. This preserves the approved
+  v2 architecture and removes the invalid diagnostic dependency.
+- The corrected runner passed format/lint, compile, CLI help, and focused v2
+  tests. A new clean committed checkpoint is required before the dry-run retry.
 
 **tags:** ["implementation", "data-first", "phase3", "research", "lineage"]
