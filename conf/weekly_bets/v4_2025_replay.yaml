@@ -9,7 +9,8 @@ model_id: "v4-selection-2021-2024-replay-20260909"
 model_bundle_v2: null
 model_bundle_v3:
   artifact_uri: artifacts/preview/models/v4-selection-2021-2024-replay-20260909/manifest.json
-  sha256: PENDING_PHASE1_REFIT_MANIFEST_SHA256
+  sha256: f039bb8b004636bca4c58248266cf0cd5ff6e7eac990ac2f4af3fdeac14f671c
+  allow_locked_test_window: true
 
 year: 2025
 week: 1

@@ -183,3 +183,67 @@ def test_v3_bundle_rejects_reconstructed_research_manifest(tmp_path):
             },
             storage=storage,
         )
+
+
+def test_v3_bundle_locked_test_window_requires_opt_in(tmp_path):
+    storage_root = tmp_path / "storage"
+    storage_root.mkdir()
+    storage = LocalStorage(storage_root)
+    direct = _ref(storage, tmp_path, "locked-direct", 21.0)
+    routes = [
+        {
+            "target": target,
+            "regime": regime,
+            "strategy": "direct",
+            "model_version": f"{target}-{regime}",
+            "feature_version": "v1",
+            "display_fallback": False,
+            "high_confidence_eligible": True,
+            "direct": direct,
+        }
+        for target in TARGETS
+        for regime in REGIMES
+    ]
+    base = {
+        "schema_version": "model_bundle_v3",
+        "bundle_id": "locked-test",
+        "code_sha": "abc",
+        "training_years": [2021, 2022, 2023, 2024],
+        "training_window": "leading_window_override",
+        "feature_dataset_refs": [
+            {
+                "dataset": "features",
+                "version_id": "v1",
+                "schema_version": "v1",
+                "content_sha": "c" * 64,
+                "uri": "lake/features",
+            }
+        ],
+        "prior_source_policy": {"2021": 2019, "excluded_years": [2020]},
+        "selection_basis": "predictive_results_only",
+        "betting_validation_status": "not_evaluated",
+        "routes": routes,
+    }
+    payload = json.dumps(base).encode()
+    storage.write_bytes(payload, "models/locked.json")
+    spec = {
+        "artifact_uri": "models/locked.json",
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+    with pytest.raises(ValueError, match="allow_locked_test_window"):
+        load_model_bundle_v3(spec, storage=storage)
+    bundle = load_model_bundle_v3(spec, storage=storage, allow_locked_test_window=True)
+    assert bundle.training_years == (2021, 2022, 2023, 2024)
+    unmarked = dict(base)
+    unmarked.pop("training_window")
+    payload = json.dumps(unmarked).encode()
+    storage.write_bytes(payload, "models/locked-unmarked.json")
+    with pytest.raises(ValueError, match="training_window"):
+        load_model_bundle_v3(
+            {
+                "artifact_uri": "models/locked-unmarked.json",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            },
+            storage=storage,
+            allow_locked_test_window=True,
+        )

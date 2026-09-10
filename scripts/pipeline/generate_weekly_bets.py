@@ -146,7 +146,13 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
             "Weekly configuration may select only one model bundle version"
         )
     if cfg.get("model_bundle_v3"):
-        routing_bundle = load_model_bundle_v3(cfg.model_bundle_v3, storage=storage)
+        routing_bundle = load_model_bundle_v3(
+            cfg.model_bundle_v3,
+            storage=storage,
+            allow_locked_test_window=bool(
+                cfg.model_bundle_v3.get("allow_locked_test_window", False)
+            ),
+        )
         bundle_version = "v3"
     elif cfg.get("model_bundle_v2"):
         routing_bundle = load_model_bundle_v2(cfg.model_bundle_v2, storage=storage)

@@ -57,7 +57,10 @@ class ModelBundleV3:
 
 
 def load_model_bundle_v3(
-    spec: Mapping[str, Any], *, storage: StorageBackend | None = None
+    spec: Mapping[str, Any],
+    *,
+    storage: StorageBackend | None = None,
+    allow_locked_test_window: bool = False,
 ) -> ModelBundleV3:
     """Load a checksummed ten-route canonical early-season bundle."""
     uri = str(spec.get("artifact_uri") or "")
@@ -135,7 +138,18 @@ def load_model_bundle_v3(
             f"model_bundle_v3 requires ten routes; missing={sorted(expected - set(routes))}"
         )
     years = tuple(int(year) for year in raw.get("training_years") or ())
-    if years != (2021, 2022, 2023, 2024, 2025):
+    if years == (2021, 2022, 2023, 2024):
+        if not allow_locked_test_window:
+            raise ValueError(
+                "v3 bundle with locked-test 2021-2024 training years requires "
+                "an explicit allow_locked_test_window opt-in"
+            )
+        if str(raw.get("training_window")) != "leading_window_override":
+            raise ValueError(
+                "locked-test v3 bundle must declare training_window="
+                "leading_window_override"
+            )
+    elif years != (2021, 2022, 2023, 2024, 2025):
         raise ValueError("v3 production bundle training years must be 2021-2025")
     refs = tuple(raw.get("feature_dataset_refs") or ())
     if not refs:
