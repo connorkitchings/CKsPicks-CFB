@@ -86,13 +86,15 @@ Each requires a separate implementation task; documentation approval executes no
   YTD: spread 380-366-16, total 340-292-5. Live `current_week` restored.
 
 - [2026 v5 shadow rebuild diagnostic](2026-09-10/2026-v5-shadow-rebuild-diagnostic.md)
-  — **Draft (Amendment 2 incorporated, pending re-approval).** Second run
-  STOPPED with zero writes: byte-parity is stale (post-08-15 drift — 5 extra
-  never-read all-NaN columns + 16 all-missing None→NaN prior columns; lineage
-  intact). Gate is now two-tier (diff confinement + prediction-level control
-  proving inference-inertness); W0 v5 `as_of` pinned to the publish cutoff.
-  Preview-only, no serving writes. Replaces the contract below as the
-  executable plan.
+  — **In Progress — BLOCKED on W2 finals (Amendments 1–3).** All Tier 1 + Tier 2
+  gates pass (W0 confinement + 8/8 exact; W1/W2 byte-identical reruns + 43/43 and
+  49/49 exact controls, assembler path-equivalence byte-identical + exact).
+  Three strict v5 Golds + three shadow prediction artifacts in Preview R2; W0/W1
+  shadows scored. Interim (not a verdict): v5 predictions are bit-identical to
+  v4 for all 51 W0/W1 games. W2 first kickoff Fri 2026-09-11 → pooled W1+W2
+  verdict + kill criterion resume after the Week 2 close. W2 shadow frozen
+  pre-kickoff and grading-ready. Preview-only, no serving writes. Replaces the
+  contract below as the executable plan.
 
 - [Rebuild 2026 predictions with correct features](2026-09-09/rebuild-2026-predictions.md)
   — **Superseded as executable plan** by the shadow diagnostic above;

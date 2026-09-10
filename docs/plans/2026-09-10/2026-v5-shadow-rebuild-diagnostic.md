@@ -1,10 +1,10 @@
 # 2026 v5 Shadow Rebuild Diagnostic (Preview-only)
 
-- **Status:** Draft (Amendment 2 incorporated 2026-09-10; pending re-approval for a fresh Terra run)
+- **Status:** In Progress — BLOCKED on W2 finals (fresh Terra run under Amendment 2 two-tier gate; user re-approval 2026-09-10, Amendment 2). Tasks 1–4 complete; Task 5 partial (W0/W1 scored, interim evidence recorded, kill criterion NOT applied — pooled W1+W2 verdict requires W2 finals, unavailable until after the 2026-09-11 kickoff + Week 2 close).
 - **Created:** 2026-09-10
 - **Planner:** Sol
-- **Approval source:** Original: user go-ahead 2026-09-10 (→ STOPPED, Amendment 1). Amendment 1: user re-approval 2026-09-10 (→ STOPPED on Task 2 byte-parity: code drift, zero writes). Amendment 2: pending user re-approval.
-- **Implementation log:** `session_logs/2026-09-10/09-v5-shadow-rebuild-implementation-fresh.md` (`session_logs/2026-09-10/07-v5-shadow-rebuild-implementation.md` is the stopped-run evidence, read-only; `session_logs/2026-09-10/06-v5-shadow-rebuild-planning.md` is the planning log)
+- **Approval source:** Original: user go-ahead 2026-09-10 (→ STOPPED, Amendment 1). Amendment 1: user re-approval 2026-09-10 (→ STOPPED on Task 2 byte-parity: code drift, zero writes). Amendment 2: user re-approval 2026-09-10, Amendment 2 (explicit authorization of this exact plan path for a fresh Terra run).
+- **Implementation log:** `session_logs/2026-09-10/11-v5-shadow-rebuild-implementation-two-tier.md` (this fresh run; `session_logs/2026-09-10/09-v5-shadow-rebuild-implementation-fresh.md` and `session_logs/2026-09-10/07-v5-shadow-rebuild-implementation.md` are stopped-run evidence, read-only; `session_logs/2026-09-10/06-v5-shadow-rebuild-planning.md` is the planning log)
 - **Commit policy:** Separate plan commit (production-adjacent diagnostic; difficult-to-reverse conclusions must stay reviewable)
 - **Supersedes (as executable plan):** `docs/plans/2026-09-09/rebuild-2026-predictions.md` (retained as the root-cause record; its Step 5 is not executable — see Current State §4)
 
@@ -198,6 +198,16 @@ Byte-parity is stale relative to HEAD: the W0 rerun from immutable parents produ
 
 - Independent recomputation of the table from the scored artifacts; `git diff --check`.
 
+**Terra execution note (2026-09-10, BLOCKER — not an amendment):** W2 first
+kickoff is Fri 2026-09-11 23:30 UTC (verified in games Silver `5dabf61a`;
+today 2026-09-10), so no W2 finals exist and the pooled-W1+W2 verdict + kill
+criterion cannot execute yet. W0/W1 shadows scored per this task; W2 shadow
+(`shadow-2026-v5-w2`, `--as-of 2026-09-08T17:50:00Z`) stands frozen pre-kickoff
+in Preview R2. Resume after the Week 2 close: score with the Week 2 close
+`game_outcomes_ref.json`, render the pooled table, apply the kill criterion.
+Interim evidence (not a verdict): v5 predictions are value-identical to v4 for
+all 8 W0 and all 43 W1 games. See implementation log `11-…`.
+
 ## Testing Strategy
 
 - No product-code changes, so no new unit tests. Verification is gate-based: SHA parity (Task 2), manifest assertions (Task 3), coverage + no-DB-write checks (Task 4), recomputed verdict table (Task 5).
@@ -223,6 +233,25 @@ Byte-parity is stale relative to HEAD: the W0 rerun from immutable parents produ
 - [ ] `docs/plans/index.md` entry accurate for the final status.
 
 ## Amendments
+
+### Amendment 3 — Ref-minting for unregistered-core parents (Terra, 2026-09-10, minor/technical)
+
+**Reason:** At HEAD (`d79276d`), `build_regime_features.py --no-baselines` and the
+assembler's trailing `register_dataset_version` fail in Preview catalog writes:
+no executable schema is registered for `point_in_time_matchups_core_v1`
+(`schema_contracts.py:1594`), and the catalog FK then rejects children of the
+unregistered core. The immutable bytes + manifests ARE written by the builders
+before registration, content-addressed and parent-linked.
+
+**Approach (mechanics only, no architecture/scope/acceptance change):** output
+ref-files minted byte-faithfully from the builder-written manifests (same 5-key
+`DatasetRef` JSON the builders would have written) at the prescribed shadow
+`--output-ref-uri` paths: W1 core `fa0f7c34`, W1 assembly `7210bd9a`, W2 core
+`1906c44b`, W2 assembly `90398ae9`, W1 v5 `882f691f`, W2 v5 `4d89b391`
+(W0 paths needed no recovery). Preview catalog rows for versions with
+unregistered parents remain absent — permitted-but-optional research metadata;
+all Tier/manifest assertions run against R2 bytes. No source, script, bundle,
+or contract file was modified.
 
 ### Amendment 2 — Two-tier parity gate for code drift + W0 v5 as_of fix (Sol, 2026-09-10)
 
