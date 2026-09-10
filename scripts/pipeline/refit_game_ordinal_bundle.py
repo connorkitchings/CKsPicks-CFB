@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
 from omegaconf import OmegaConf
+from sklearn.linear_model import LinearRegression
 
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
@@ -104,6 +106,14 @@ def _weights(
     if regime not in weights:
         raise ValueError(f"Frozen blend weight missing for {target}/{regime}")
     return float(weights[regime])
+
+
+def _frozen_component_model(coefficients: list[float]):
+    """A fixed linear model over frozen frame component columns."""
+    model = LinearRegression(fit_intercept=False)
+    model.fit(np.zeros((1, len(coefficients))), np.array([0.0]))
+    model.coef_ = np.array([coefficients], dtype=float)
+    return model
 
 
 def _strengths(
@@ -199,6 +209,17 @@ def main() -> None:
             "the 2021-2024 locked-test window for selection-time replays)."
         ),
     )
+    parser.add_argument(
+        "--baseline-source",
+        choices=("refit_ridge", "frame_columns"),
+        default="refit_ridge",
+        help=(
+            "refit_ridge refits prior-Ridge approximations for baseline and "
+            "blend routes (production-future semantics); frame_columns emits "
+            "exact pass-through/component-blend models over the frozen OOF "
+            "baseline columns in the feature frame (locked-test semantics)."
+        ),
+    )
     args = parser.parse_args()
     storage = get_storage(environment=args.environment)
     ref = DatasetRef(**json.loads(storage.read_bytes(args.feature_ref_uri).decode()))
@@ -258,6 +279,23 @@ def main() -> None:
                 "display_fallback": candidate == "baseline",
                 "high_confidence_eligible": candidate != "baseline",
             }
+            if candidate == "baseline" and args.baseline_source == "frame_columns":
+                column = f"baseline_{target}_prediction"
+                artifact = _write_model(
+                    storage,
+                    _frozen_component_model([1.0]),
+                    f"{prefix}/routes/{target}-{regime}-baseline.joblib",
+                )
+                routes.append(
+                    {
+                        **common,
+                        "strategy": "direct",
+                        "direct": {**artifact, "features": [column]},
+                        "route_semantics": "frozen_oof_baseline_column",
+                        "source_columns": [column],
+                    }
+                )
+                continue
             if candidate == "baseline":
                 artifact = _write_model(
                     storage,
@@ -274,6 +312,29 @@ def main() -> None:
                         **common,
                         "strategy": "direct",
                         "direct": {**artifact, "features": prior_features},
+                    }
+                )
+                continue
+            if candidate == "blend" and args.baseline_source == "frame_columns":
+                prior_column = f"preseason_{target}_prediction"
+                current_column = f"current_{target}_prediction"
+                weight = _weights(selection, target, regime, candidate)
+                artifact = _write_model(
+                    storage,
+                    _frozen_component_model([weight, 1.0 - weight]),
+                    f"{prefix}/routes/{target}-{regime}-blend.joblib",
+                )
+                routes.append(
+                    {
+                        **common,
+                        "strategy": "direct",
+                        "direct": {
+                            **artifact,
+                            "features": [prior_column, current_column],
+                        },
+                        "route_semantics": "frozen_component_blend",
+                        "source_columns": [prior_column, current_column],
+                        "prior_weight": weight,
                     }
                 )
                 continue
@@ -443,6 +504,7 @@ def main() -> None:
             if train_years == policy.production_refit_years
             else "leading_window_override"
         ),
+        "baseline_source": args.baseline_source,
         "feature_dataset_refs": [asdict(ref)],
         "prior_source_policy": {"2021": 2019, "excluded_years": [2020]},
         "selection_basis": "predictive_results_only",

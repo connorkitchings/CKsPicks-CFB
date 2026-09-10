@@ -8,7 +8,10 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import pytest
 
-from scripts.pipeline.refit_game_ordinal_bundle import parse_train_years
+from scripts.pipeline.refit_game_ordinal_bundle import (
+    _frozen_component_model,
+    parse_train_years,
+)
 from scripts.pipeline.replay_season_v4 import (
     build_market_ref,
     week_cutoff,
@@ -54,6 +57,15 @@ def test_parse_train_years_accepts_leading_window():
 def test_parse_train_years_rejects_nonleading_windows(raw):
     with pytest.raises(ValueError):
         parse_train_years(raw, POLICY_YEARS)
+
+
+def test_frozen_component_model_reproduces_column_semantics():
+    passthrough = _frozen_component_model([1.0])
+    frame = pd.DataFrame({"baseline_spread_prediction": [-3.5, 7.0]})
+    assert list(passthrough.predict(frame)) == [-3.5, 7.0]
+    blend = _frozen_component_model([0.7, 0.3])
+    blended = blend.predict(pd.DataFrame({"prior": [10.0], "current": [20.0]}))
+    assert abs(float(blended[0]) - 13.0) < 1e-12
 
 
 def test_week_cutoff_precedes_first_kickoff():
