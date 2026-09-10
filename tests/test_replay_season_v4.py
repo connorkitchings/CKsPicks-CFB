@@ -188,6 +188,7 @@ def _quote_rows():
 
 
 def test_build_market_refs_canonicalizes_and_registers(monkeypatch):
+    monkeypatch.setenv("PREVIEW_DATABASE_URL", "postgresql://preview")
     storage = FakeStorage(index_rows=_quote_rows())
     games = pd.DataFrame({"game_id": [1, 2], "season": [2025, 2025], "week": [1, 1]})
     registered = []
