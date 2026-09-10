@@ -1,12 +1,13 @@
 # Phase 3 v2: Streaming Measurement Replay and Core Selection
 
-- **Status:** In Progress
+- **Status:** Superseded
 - **Created:** 2026-09-10
 - **Planner:** Astra
 - **Approval source:** User explicitly approved this replacement contract on 2026-09-10.
 - **Implementation logs:** `session_logs/2026-09-10/01-phase3-v2-streaming.md`,
   `session_logs/2026-09-10/02-phase3-v2-preview-preflight.md`
 - **Supersedes:** `docs/plans/2026-09-08/phase3-measurement-and-core-selection-v2.md`
+- **Superseded by:** `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md`
 - **Commit policy:** The user creates the clean committed checkpoint required before Preview apply and executes all Git operations.
 
 ## Summary

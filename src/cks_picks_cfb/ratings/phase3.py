@@ -1058,30 +1058,73 @@ def run_candidate_tournament(
     if universe["season"].isin(FORBIDDEN_SEASONS).any():
         raise Phase3Error("Phase 3 tournament contains 2020")
 
-    features = ("home_offense", "home_defense", "away_offense", "away_defense")
-    output: list[dict[str, Any]] = []
+    feature_frames: list[pd.DataFrame] = []
     for recency_mode, states in (
         ("primary", primary_states),
         ("half_life_4_games", sensitivity_states),
     ):
         for candidate in CORE_CANDIDATES:
-            candidate_frame = _game_features(
-                states=states, games=universe, candidate=candidate
-            ).merge(
-                universe[
-                    [
-                        "season",
-                        "game_id",
-                        "home_points",
-                        "away_points",
-                        "margin",
-                        "total",
-                    ]
-                ],
-                on=["season", "game_id"],
-                how="inner",
-                validate="one_to_one",
-            )
+            feature = _game_features(states=states, games=universe, candidate=candidate)
+            feature["recency_mode"] = recency_mode
+            feature_frames.append(feature)
+    return run_candidate_feature_tournament(
+        features=pd.concat(feature_frames, ignore_index=True),
+        outcomes=outcomes,
+        ridge_alpha=ridge_alpha,
+    )
+
+
+def run_candidate_feature_tournament(
+    *, features: pd.DataFrame, outcomes: pd.DataFrame, ridge_alpha: float
+) -> pd.DataFrame:
+    """Run the sealed tournament from compact game/candidate feature rows."""
+    required = {
+        "season",
+        "week",
+        "game_id",
+        "kickoff_utc",
+        "candidate",
+        "recency_mode",
+        "home_offense",
+        "home_defense",
+        "away_offense",
+        "away_defense",
+    }
+    if missing := sorted(required - set(features)):
+        raise Phase3Error(f"compact tournament features missing columns: {missing}")
+    keys = ["season", "game_id", "candidate", "recency_mode"]
+    if features.duplicated(keys).any():
+        raise Phase3Error("compact tournament features contain duplicate keys")
+    if features["season"].isin(FORBIDDEN_SEASONS).any():
+        raise Phase3Error("compact tournament features contain 2020")
+    scores = outcomes[["season", "game_id", "home_points", "away_points"]].copy()
+    scores["season"] = _numeric(scores, "season").astype(int)
+    scores["game_id"] = _numeric(scores, "game_id").astype(int)
+    scores["home_points"] = _numeric(scores, "home_points")
+    scores["away_points"] = _numeric(scores, "away_points")
+    candidate_features = features.merge(
+        scores, on=["season", "game_id"], how="inner", validate="many_to_one"
+    )
+    if len(candidate_features) != len(features):
+        raise Phase3Error("compact tournament feature population lost an outcome row")
+    if not np.isfinite(
+        candidate_features[["home_points", "away_points"]].to_numpy()
+    ).all():
+        raise Phase3Error("eligible Phase 3 outcomes contain non-finite scores")
+    candidate_features["margin"] = (
+        candidate_features["home_points"] - candidate_features["away_points"]
+    )
+    candidate_features["total"] = (
+        candidate_features["home_points"] + candidate_features["away_points"]
+    )
+    feature_names = ("home_offense", "home_defense", "away_offense", "away_defense")
+    output: list[dict[str, Any]] = []
+    for recency_mode in RECENCY_MODES:
+        for candidate in CORE_CANDIDATES:
+            candidate_frame = candidate_features[
+                (candidate_features["recency_mode"] == recency_mode)
+                & (candidate_features["candidate"] == candidate)
+            ]
             for validation_season in VALIDATION_SEASONS:
                 train = candidate_frame[candidate_frame["season"] < validation_season]
                 validate = candidate_frame[
@@ -1091,7 +1134,9 @@ def run_candidate_tournament(
                     raise Phase3Error(
                         f"empty temporal fold for validation season {validation_season}"
                     )
-                x_train, x_validate, metadata = _prepare_fold(train, validate, features)
+                x_train, x_validate, metadata = _prepare_fold(
+                    train, validate, feature_names
+                )
                 completed_training_seasons = sorted(set(train["season"].astype(int)))
                 if any(
                     season >= validation_season for season in completed_training_seasons
@@ -1114,7 +1159,7 @@ def run_candidate_tournament(
                             )
                             if pd.notna(getattr(validate.iloc[position], feature))
                             else 1
-                            for feature in features
+                            for feature in feature_names
                         )
                         actual = float(getattr(row, target))
                         prediction = float(predictions[position])
@@ -1132,7 +1177,7 @@ def run_candidate_tournament(
                                 "absolute_error": abs(actual - prediction),
                                 "fold_id": f"validate-{validation_season}",
                                 "training_seasons": _json(completed_training_seasons),
-                                "feature_names": _json(features),
+                                "feature_names": _json(feature_names),
                                 "standardization_center": _json(metadata["center"]),
                                 "standardization_scale": _json(metadata["scale"]),
                                 "ridge_coefficients": _json(model.coef_.tolist()),

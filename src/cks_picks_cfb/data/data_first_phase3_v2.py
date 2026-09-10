@@ -279,6 +279,8 @@ def validate_phase3_v2_config(payload: Mapping[str, Any]) -> None:
         "artifact_kind": "partitioned_dataset_v1",
         "maximum_partition_rows": 100000,
         "maximum_compact_rows": 250000,
+        "raw_iteration_four_component_rows": 428880,
+        "compact_tournament_feature_rows": 142960,
     }:
         raise Phase3V2Error("Phase 3 v2 materialization policy drifted")
 

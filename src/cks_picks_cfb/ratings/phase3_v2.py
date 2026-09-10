@@ -7,12 +7,13 @@ sealed Phase 3 state/tournament primitives consume the resulting snapshot state.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterator
 
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3_v2 import (
     ADJUSTED_COMPONENTS,
     HISTORY_COLUMNS_V2,
@@ -24,8 +25,11 @@ from cks_picks_cfb.data.data_first_phase3_v2 import (
     weekly_cutoffs,
 )
 from cks_picks_cfb.ratings.phase3 import (
+    _game_features,
     _measurement_adjustments,
+    _posterior,
     _recency_weight,
+    _scales,
     build_component_states,
     run_candidate_tournament,
 )
@@ -172,6 +176,242 @@ class ReplayPartition:
     snapshots: pd.DataFrame
     history: pd.DataFrame
     terminal: pd.DataFrame
+
+
+@dataclass
+class CompactTournamentFeatureBuilder:
+    """Incrementally convert snapshot partitions into tournament game features.
+
+    Raw iteration-four component rows are deliberately transient.  Only compact
+    game/candidate/recency feature rows survive across weekly partitions.
+    """
+
+    terminal_history: dict[str, pd.DataFrame] = field(default_factory=dict)
+    terminal_states: dict[
+        str, dict[int, dict[tuple[str, str, str], tuple[float, float]]]
+    ] = field(default_factory=dict)
+    feature_frames: list[pd.DataFrame] = field(default_factory=list)
+    raw_component_rows: int = 0
+    max_component_partition_rows: int = 0
+    max_feature_partition_rows: int = 0
+    seen_seasons: set[int] = field(default_factory=set)
+    closed_seasons: set[int] = field(default_factory=set)
+    last_week_by_season: dict[int, int] = field(default_factory=dict)
+
+    def _history(self, mode: str, columns: pd.Index) -> pd.DataFrame:
+        if mode not in self.terminal_history:
+            self.terminal_history[mode] = pd.DataFrame(columns=columns)
+        return self.terminal_history[mode]
+
+    @staticmethod
+    def _prior(
+        season: int,
+        states: dict[int, dict[tuple[str, str, str], tuple[float, float]]],
+    ) -> tuple[int | None, int, dict[tuple[str, str, str], tuple[float, float]]]:
+        previous = [value for value in DEVELOPMENT_SEASONS if value < season]
+        source_season = previous[-1] if previous else None
+        return (
+            source_season,
+            season - source_season if source_season is not None else 0,
+            states.get(source_season, {}) if source_season is not None else {},
+        )
+
+    @staticmethod
+    def _state_rows(
+        current: pd.DataFrame,
+        *,
+        scales: dict[tuple[str, str], tuple[float, float]],
+        priors: dict[tuple[str, str, str], tuple[float, float]],
+        source_season: int | None,
+        decay_steps: int,
+        mode: str,
+    ) -> pd.DataFrame:
+        rows: list[dict[str, Any]] = []
+        for row in current.itertuples(index=False):
+            key = (str(row.team), str(row.measurement_id), str(row.unit_role))
+            prior = priors.get(key)
+            if prior is None:
+                prior_mean, prior_variance = 0.0, 1.0
+            else:
+                decay = 0.60**decay_steps
+                prior_mean = decay * prior[0]
+                prior_variance = decay**2 * prior[1] + (1 - decay**2)
+            center, scale = scales[(row.measurement_id, row.unit_role)]
+            native = pd.to_numeric(
+                pd.Series([row.adjusted_value]), errors="coerce"
+            ).iloc[0]
+            observed_z = None if pd.isna(native) else float((native - center) / scale)
+            if row.unit_role == "defense" and observed_z is not None:
+                observed_z *= -1
+            mean, variance = _posterior(
+                prior_mean,
+                prior_variance,
+                observed_z,
+                float(row.primary_exposure),
+                {
+                    "epa_per_play": 100.0,
+                    "epa_pass": 100.0,
+                    "epa_rush": 100.0,
+                    "success_rate": 100.0,
+                    "explosive_rate_20": 100.0,
+                    "points_per_scoring_opportunity": 8.0,
+                }[str(row.measurement_id)],
+            )
+            available = observed_z is not None or prior is not None
+            rows.append(
+                {
+                    "season": int(row.season),
+                    "week": int(row.week),
+                    "game_id": int(row.as_of_game_id),
+                    "kickoff_utc": row.as_of_kickoff_utc,
+                    "team": str(row.team),
+                    "measurement_id": str(row.measurement_id),
+                    "unit_role": str(row.unit_role),
+                    "recency_mode": mode,
+                    "state_value": mean if available else None,
+                    "state_uncertainty": float(np.sqrt(variance))
+                    if available
+                    else None,
+                    "evidence_available": available,
+                    "prior_source_season": source_season if prior is not None else None,
+                    "annual_decay_steps": decay_steps if prior is not None else None,
+                    "standardization_center": center,
+                    "standardization_scale": scale,
+                }
+            )
+        return pd.DataFrame.from_records(rows)
+
+    def add_week(self, *, snapshots: pd.DataFrame, games: pd.DataFrame) -> None:
+        if snapshots.empty:
+            raise Phase3V2Error("compact feature builder received an empty week")
+        season_values = set(snapshots["season"].astype(int))
+        if len(season_values) != 1:
+            raise Phase3V2Error("compact feature builder week spans seasons")
+        season = next(iter(season_values))
+        if season in self.closed_seasons:
+            raise Phase3V2Error("compact feature builder received a closed season")
+        if self.seen_seasons and season < max(self.seen_seasons):
+            raise Phase3V2Error("compact feature builder received out-of-order season")
+        week_values = set(snapshots["week"].astype(int))
+        if len(week_values) != 1:
+            raise Phase3V2Error("compact feature builder week spans canonical weeks")
+        week = next(iter(week_values))
+        if week <= self.last_week_by_season.get(season, -1):
+            raise Phase3V2Error("compact feature builder received out-of-order week")
+        self.seen_seasons.add(season)
+        self.last_week_by_season[season] = week
+        for mode in RECENCY_MODES:
+            current = snapshots[
+                (snapshots["recency_mode"] == mode)
+                & (snapshots["adjustment_iteration"].astype(int) == 4)
+                & snapshots["measurement_id"].isin(ADJUSTED_COMPONENTS)
+            ].copy()
+            if current.empty:
+                raise Phase3V2Error("compact feature builder lacks adjusted components")
+            self.raw_component_rows += len(current)
+            self.max_component_partition_rows = max(
+                self.max_component_partition_rows, len(current)
+            )
+            history = self._history(mode, snapshots.columns)
+            scales = _scales(history, season)
+            states = self.terminal_states.setdefault(mode, {})
+            source_season, decay_steps, priors = self._prior(season, states)
+            component_states = self._state_rows(
+                current,
+                scales=scales,
+                priors=priors,
+                source_season=source_season,
+                decay_steps=decay_steps,
+                mode=mode,
+            )
+            if len(component_states) != len(current):
+                raise Phase3V2Error("compact component state row loss")
+            self.max_component_partition_rows = max(
+                self.max_component_partition_rows, len(component_states)
+            )
+            for candidate in (
+                "epa_only",
+                "quality_core_equal",
+                "without_success_rate",
+                "without_explosive_rate_20",
+                "without_points_per_scoring_opportunity",
+                "without_epa_per_play",
+                "epa_pass_rush",
+                "quality_core_epa_split",
+            ):
+                features = _game_features(
+                    states=component_states, games=games, candidate=candidate
+                )
+                features["recency_mode"] = mode
+                self.max_feature_partition_rows = max(
+                    self.max_feature_partition_rows, len(features)
+                )
+                self.feature_frames.append(features)
+
+    def add_terminal(self, terminal: pd.DataFrame) -> None:
+        if terminal.empty:
+            raise Phase3V2Error("compact feature builder lacks terminal state")
+        season_values = set(terminal["season"].astype(int))
+        if len(season_values) != 1:
+            raise Phase3V2Error("compact terminal spans seasons")
+        season = next(iter(season_values))
+        if season in self.closed_seasons:
+            raise Phase3V2Error("compact terminal repeated a season")
+        for mode in RECENCY_MODES:
+            current = terminal[
+                (terminal["recency_mode"] == mode)
+                & terminal["measurement_id"].isin(ADJUSTED_COMPONENTS)
+            ].copy()
+            history = self._history(mode, terminal.columns)
+            scales = _scales(history, season)
+            states = self.terminal_states.setdefault(mode, {})
+            source_season, decay_steps, priors = self._prior(season, states)
+            next_states: dict[tuple[str, str, str], tuple[float, float]] = {}
+            for row in current.itertuples(index=False):
+                key = (str(row.team), str(row.measurement_id), str(row.unit_role))
+                prior = priors.get(key)
+                if prior is None:
+                    prior_mean, prior_variance = 0.0, 1.0
+                else:
+                    decay = 0.60**decay_steps
+                    prior_mean = decay * prior[0]
+                    prior_variance = decay**2 * prior[1] + (1 - decay**2)
+                center, scale = scales[(row.measurement_id, row.unit_role)]
+                observed_z = (float(row.adjusted_value) - center) / scale
+                if row.unit_role == "defense":
+                    observed_z *= -1
+                next_states[key] = _posterior(
+                    prior_mean,
+                    prior_variance,
+                    observed_z,
+                    float(row.primary_exposure),
+                    {
+                        "epa_per_play": 100.0,
+                        "epa_pass": 100.0,
+                        "epa_rush": 100.0,
+                        "success_rate": 100.0,
+                        "explosive_rate_20": 100.0,
+                        "points_per_scoring_opportunity": 8.0,
+                    }[str(row.measurement_id)],
+                )
+            states[season] = next_states
+            self.terminal_history[mode] = (
+                current.reset_index(drop=True)
+                if history.empty
+                else pd.concat([history, current], ignore_index=True)
+            )
+        self.closed_seasons.add(season)
+
+    def finish(self) -> pd.DataFrame:
+        if not self.feature_frames:
+            raise Phase3V2Error("compact feature builder emitted no features")
+        if self.seen_seasons != self.closed_seasons:
+            raise Phase3V2Error("compact feature builder lacks terminal transition")
+        features = pd.concat(self.feature_frames, ignore_index=True)
+        key = ["season", "game_id", "candidate", "recency_mode"]
+        if features.duplicated(key).any():
+            raise Phase3V2Error("compact feature builder emitted duplicate keys")
+        return features.sort_values(key, kind="mergesort").reset_index(drop=True)
 
 
 def _replay_week(

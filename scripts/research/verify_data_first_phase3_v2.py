@@ -127,6 +127,11 @@ def main(argv: list[str] | None = None) -> None:
         raise Phase3V2Error("independent partitioned reconstruction mismatch")
     if recomputed.retained["selected_candidate"] != manifest.get("selected_candidate"):
         raise Phase3V2Error("independent selection differs from retained core")
+    compact_evidence = manifest.get("compact_tournament_evidence")
+    if not isinstance(compact_evidence, dict):
+        raise Phase3V2Error("retained core lacks compact tournament evidence")
+    if compact_evidence != recomputed.compact_evidence:
+        raise Phase3V2Error("independent compact tournament evidence differs")
     certification = json.loads(
         storage.read_bytes(args.manifest_uri.rsplit("/", 1)[0] + "/certification.json")
     )
@@ -135,6 +140,8 @@ def main(argv: list[str] | None = None) -> None:
         "certification_sha256"
     ) or not certification.get("all_checks_passed"):
         raise Phase3V2Error("Phase 3 v2 certification mismatch")
+    if certification.get("compact_tournament_evidence") != compact_evidence:
+        raise Phase3V2Error("Phase 3 v2 compact certification mismatch")
     print(
         json.dumps(
             {
@@ -143,6 +150,7 @@ def main(argv: list[str] | None = None) -> None:
                 "manifest_raw_sha256": hashlib.sha256(raw_manifest).hexdigest(),
                 "selected_candidate": manifest["selected_candidate"],
                 "output_rows": output_rows,
+                "compact_tournament_evidence": compact_evidence,
             },
             indent=2,
             sort_keys=True,

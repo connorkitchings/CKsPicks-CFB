@@ -20,7 +20,6 @@ from dotenv import load_dotenv
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3 import verify_core_eligibility
 from cks_picks_cfb.data.data_first_phase3_v2 import (
-    ADJUSTED_COMPONENTS,
     PHASE3_V2_DATASETS,
     PHASE3_V2_OUTPUT_ROOT,
     REQUIRED_REPAIR_CANONICAL_SHA256,
@@ -54,10 +53,13 @@ from cks_picks_cfb.ratings.contracts import (
     validate_observation_frame,
 )
 from cks_picks_cfb.ratings.observations import build_measurement_observations
-from cks_picks_cfb.ratings.phase3 import build_pass_rush_observations
+from cks_picks_cfb.ratings.phase3 import (
+    build_pass_rush_observations,
+    run_candidate_feature_tournament,
+)
 from cks_picks_cfb.ratings.phase3_v2 import (
+    CompactTournamentFeatureBuilder,
     iter_replayable_measurements,
-    run_repaired_tournament,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -80,6 +82,8 @@ RELEVANT_PATHS = (
 )
 MAX_PARTITION_ROWS = 100_000
 MAX_COMPACT_ROWS = 250_000
+EXPECTED_RAW_COMPONENT_ROWS = 428_880
+EXPECTED_COMPACT_FEATURE_ROWS = 142_960
 EXPECTED_ROWS = {
     "population": 8936,
     "observations": 303790,
@@ -303,8 +307,8 @@ class DatasetPlan:
 @dataclass
 class Phase3Preflight:
     population: pd.DataFrame
-    compact_snapshots: pd.DataFrame
-    terminal: pd.DataFrame
+    compact_tournament_features: pd.DataFrame
+    compact_evidence: dict[str, Any]
     predictions: pd.DataFrame
     attribution: pd.DataFrame
     retained: dict[str, Any]
@@ -332,7 +336,9 @@ def _add(
 
 
 def _certification(
-    population: pd.DataFrame, plans: Mapping[str, DatasetPlan]
+    population: pd.DataFrame,
+    plans: Mapping[str, DatasetPlan],
+    compact_evidence: Mapping[str, Any],
 ) -> dict[str, Any]:
     checks = {
         "population_complete": len(population) == 8936
@@ -346,6 +352,24 @@ def _certification(
         "reconstructed_timing_only": population["timing_class"]
         .eq("historically_reconstructed")
         .all(),
+        "compact_tournament_state_bounded": (
+            int(compact_evidence["raw_iteration_four_component_rows"])
+            == EXPECTED_RAW_COMPONENT_ROWS
+            and int(compact_evidence["compact_tournament_feature_rows"])
+            == EXPECTED_COMPACT_FEATURE_ROWS
+            and int(compact_evidence["compact_tournament_feature_rows"])
+            <= MAX_COMPACT_ROWS
+            and int(compact_evidence["max_snapshot_partition_rows"])
+            <= MAX_PARTITION_ROWS
+            and int(compact_evidence["max_history_partition_rows"])
+            <= MAX_PARTITION_ROWS
+            and int(compact_evidence["max_component_partition_rows"])
+            <= MAX_PARTITION_ROWS
+            and int(compact_evidence["max_feature_partition_rows"])
+            <= MAX_PARTITION_ROWS
+            and int(compact_evidence["max_prediction_rows"]) <= MAX_COMPACT_ROWS
+            and bool(compact_evidence["raw_component_accumulator_absent"])
+        ),
     }
     from cks_picks_cfb.data.data_first_phase2d import signed_payload
 
@@ -358,6 +382,7 @@ def _certification(
             "output_records_sha256": {
                 name: plan.records_sha for name, plan in plans.items()
             },
+            "compact_tournament_evidence": dict(compact_evidence),
             "population_sha256": canonical_frame_digest(
                 population,
                 columns=schema_for(*PHASE3_V2_DATASETS["population"]).required,
@@ -387,8 +412,7 @@ def preflight_phase3_v2(
         _plans(),
         _source_refs(storage, repair),
     )
-    compact_frames: list[pd.DataFrame] = []
-    terminal_frames: list[pd.DataFrame] = []
+    compact_builder = CompactTournamentFeatureBuilder()
     for season in DEVELOPMENT_SEASONS:
         season_population = population[
             population["season"].astype(int) == season
@@ -404,25 +428,58 @@ def preflight_phase3_v2(
         ):
             if replay.week is None:
                 _add(plans, "terminal", {"season": season}, replay.terminal, writers)
-                terminal_frames.append(replay.terminal)
+                compact_builder.add_terminal(replay.terminal)
                 continue
             partition = {"season": season, "week": replay.week}
             _add(plans, "pregame_snapshots", partition, replay.snapshots, writers)
             _add(plans, "adjusted_history", partition, replay.history, writers)
-            compact_frames.append(
-                replay.snapshots[
-                    (replay.snapshots["adjustment_iteration"].astype(int) == 4)
-                    & replay.snapshots["measurement_id"].isin(ADJUSTED_COMPONENTS)
-                ].copy()
+            week_games = season_population[
+                (season_population["forecast_eligible"])
+                & (season_population["week"].astype(int) == int(replay.week))
+            ].copy()
+            compact_builder.add_week(
+                snapshots=replay.snapshots,
+                games=week_games,
             )
         del observed, observations
         gc.collect()
-    compact = pd.concat(compact_frames, ignore_index=True)
-    terminal = pd.concat(terminal_frames, ignore_index=True)
+    compact = compact_builder.finish()
     if len(compact) > MAX_COMPACT_ROWS:
         raise Phase3V2Error("compact tournament state exceeds sealed bound")
-    predictions = run_repaired_tournament(
-        population=population, snapshots=compact, terminal=terminal
+    compact_evidence = {
+        "raw_iteration_four_component_rows": compact_builder.raw_component_rows,
+        "compact_tournament_feature_rows": len(compact),
+        "compact_tournament_feature_sha256": canonical_frame_digest(
+            compact, columns=list(compact.columns)
+        ),
+        "max_snapshot_partition_rows": max(
+            (part["row_count"] for part in plans["pregame_snapshots"].parts),
+            default=0,
+        ),
+        "max_history_partition_rows": max(
+            (part["row_count"] for part in plans["adjusted_history"].parts),
+            default=0,
+        ),
+        "max_component_partition_rows": compact_builder.max_component_partition_rows,
+        "max_feature_partition_rows": compact_builder.max_feature_partition_rows,
+        "raw_component_accumulator_absent": True,
+    }
+    if (
+        compact_evidence["raw_iteration_four_component_rows"]
+        != EXPECTED_RAW_COMPONENT_ROWS
+    ):
+        raise Phase3V2Error("raw compact component count differs from sealed invariant")
+    if (
+        compact_evidence["compact_tournament_feature_rows"]
+        != EXPECTED_COMPACT_FEATURE_ROWS
+    ):
+        raise Phase3V2Error(
+            "compact tournament feature count differs from sealed invariant"
+        )
+    predictions = run_candidate_feature_tournament(
+        features=compact,
+        outcomes=population,
+        ridge_alpha=10.0,
     )
     if len(predictions) > MAX_COMPACT_ROWS:
         raise Phase3V2Error("tournament predictions exceed sealed bound")
@@ -436,7 +493,8 @@ def preflight_phase3_v2(
         )
     attribution, retained = select_retained_core(predictions)
     _add(plans, "attribution", {"scope": "all"}, attribution, writers)
-    certification = _certification(population, plans)
+    compact_evidence["max_prediction_rows"] = len(predictions)
+    certification = _certification(population, plans, compact_evidence)
     if not certification["all_checks_passed"]:
         raise Phase3V2Error(
             f"Phase 3 v2 certification failed: {[name for name, value in certification['checks'].items() if not value]}"
@@ -444,7 +502,7 @@ def preflight_phase3_v2(
     return Phase3Preflight(
         population,
         compact,
-        terminal,
+        compact_evidence,
         predictions,
         attribution,
         retained,
@@ -509,6 +567,7 @@ def _apply(
         "plans": {name: plan.json() for name, plan in preflight.plans.items()},
         "certification_sha256": preflight.certification["manifest_sha256"],
         "retained_core_sha256": preflight.retained["manifest_sha256"],
+        "compact_tournament_evidence": preflight.compact_evidence,
         "production_activation_authorized": False,
     }
     _immutable_json(storage, f"{prefix}/publication-plan.json", publication)
@@ -519,9 +578,11 @@ def _apply(
     if (
         repeated.certification["manifest_sha256"],
         repeated.retained["manifest_sha256"],
+        repeated.compact_evidence,
     ) != (
         preflight.certification["manifest_sha256"],
         preflight.retained["manifest_sha256"],
+        preflight.compact_evidence,
     ):
         raise Phase3V2Error("apply recomputation differs from preflight")
     refs = {name: asdict(writer.finish()) for name, writer in writers.items()}
@@ -548,6 +609,7 @@ def _apply(
                 name: plan.records_sha for name, plan in repeated.plans.items()
             },
             "certification_sha256": repeated.certification["manifest_sha256"],
+            "compact_tournament_evidence": repeated.compact_evidence,
             "production_activation_authorized": False,
         }
     )
@@ -612,6 +674,7 @@ def main(argv: list[str] | None = None) -> None:
         "selected_candidate": preflight.retained["selected_candidate"],
         "certification_sha256": preflight.certification["manifest_sha256"],
         "retained_core_sha256": preflight.retained["manifest_sha256"],
+        "compact_tournament_evidence": preflight.compact_evidence,
     }
     if args.apply:
         applied = _apply(storage, args.run_id, preflight, repair, identity, as_of)
