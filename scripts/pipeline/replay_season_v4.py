@@ -71,23 +71,57 @@ def build_market_ref(
     quotes = storage.read_index("raw/betting_lines", {"year": year})
     if not quotes:
         raise SystemExit(f"No Bronze betting_lines captures for {year}")
-    normalized = normalize_market_quotes(quotes)
+    backfilled_weeks: list[int] = []
+    for row in quotes:
+        if pd.notna(row.get("captured_at")):
+            continue
+        week = int(row.get("week"))
+        manifest_uri = f"raw/betting_lines/year={year}/week={week}/manifest.json"
+        write_time = json.loads(storage.read_bytes(manifest_uri).decode()).get(
+            "write_time"
+        )
+        if write_time is None:
+            raise SystemExit(f"Bronze manifest has no write_time: {manifest_uri}")
+        stamp = pd.to_datetime(write_time, utc=True, errors="raise")
+        # Match the strict inferred quote format (%Y-%m-%dT%H:%M:%S.%f%z).
+        row["captured_at"] = stamp.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
+        if week not in backfilled_weeks:
+            backfilled_weeks.append(week)
+    if backfilled_weeks:
+        print(
+            "Backfilled missing quote captured_at from Bronze manifest "
+            f"write_time for weeks: {sorted(backfilled_weeks)}"
+        )
+    valued = [
+        row
+        for row in quotes
+        if row.get("spread") is not None
+        or row.get("over_under") is not None
+        or row.get("total") is not None
+    ]
+    dropped = len(quotes) - len(valued)
+    if dropped:
+        print(f"Dropping {dropped} quotes with neither a spread nor a total")
+    normalized = normalize_market_quotes(valued)
     snapshots = canonicalize_market_quotes_frame(normalized)
-    snapshots = snapshots.merge(
+    schedule_ids = set(games["game_id"].astype(int))
+    snapshots = snapshots[snapshots["game_id"].astype(int).isin(schedule_ids)].merge(
         games[["game_id", "season", "week"]].drop_duplicates("game_id"),
         on="game_id",
         how="left",
     )
-    if snapshots["season"].isna().any():
-        missing = sorted(
-            int(g)
-            for g in snapshots.loc[snapshots["season"].isna(), "game_id"].tolist()
-        )
-        raise SystemExit(f"Market quotes reference unknown games: {missing[:10]}")
+    unlined = sorted(schedule_ids - set(snapshots["game_id"].astype(int)))
+    if unlined:
+        raise SystemExit(f"Provider lines do not cover scheduled games: {unlined[:10]}")
+    snapshots = snapshots.copy()
+    snapshots["market_captured_at"] = pd.to_datetime(
+        snapshots["market_captured_at"], utc=True, errors="raise", format="mixed"
+    ).dt.strftime("%Y-%m-%dT%H:%M:%S.%f%z")
     config_identity = {
         "replay_market_source": f"raw/betting_lines/year={year}",
         "policy": "consensus_then_median_v1",
         "timing": "provider_recorded_lines_postseason_capture",
+        "captured_at_backfilled_weeks": sorted(backfilled_weeks),
     }
     ref, manifest = build_dataset_version(
         storage,
@@ -152,9 +186,12 @@ def week_cutoff(games: pd.DataFrame, *, year: int, week: int) -> str:
     ]
     if week_games.empty:
         raise SystemExit(f"No schedule rows for {year} week {week}")
+    kickoff_column = (
+        "start_date" if "start_date" in week_games.columns else "kickoff_utc"
+    )
     kickoffs = [
         datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        for value in week_games["start_date"]
+        for value in week_games[kickoff_column]
         if pd.notna(value)
     ]
     if not kickoffs:

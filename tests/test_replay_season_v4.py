@@ -220,14 +220,14 @@ def test_build_market_ref_canonicalizes_and_registers(monkeypatch):
     assert registered == [ref.version_id]
 
 
-def test_build_market_ref_rejects_unknown_games(monkeypatch):
+def test_build_market_ref_rejects_unlined_schedule_games(monkeypatch):
     storage = FakeStorage(index_rows=_quote_rows())
-    games = pd.DataFrame({"game_id": [1], "season": [2025], "week": [1]})
+    games = pd.DataFrame({"game_id": [1, 3], "season": [2025, 2025], "week": [1, 1]})
     monkeypatch.setattr(
         "scripts.pipeline.replay_season_v4.register_dataset_version",
         lambda conn, ref, manifest: None,
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit, match="do not cover"):
         build_market_ref(
             storage,
             year=2025,
