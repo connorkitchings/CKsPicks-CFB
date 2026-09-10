@@ -231,7 +231,9 @@ def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, required=True)
-    parser.add_argument("--environment", choices=("preview",), default="preview")
+    parser.add_argument(
+        "--environment", choices=("preview", "production"), default="preview"
+    )
     parser.add_argument("--config", default="conf/weekly_bets/v4_2025_replay.yaml")
     parser.add_argument("--feature-ref-uri", required=True)
     parser.add_argument("--games-ref-uri", required=True)
@@ -242,13 +244,27 @@ def main() -> None:
     parser.add_argument("--run-prefix", default=None)
     parser.add_argument("--skip-market-build", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--confirm-production",
+        action="store_true",
+        help="Required to run the replay against the production database.",
+    )
     args = parser.parse_args()
 
-    preview_url = os.getenv("PREVIEW_DATABASE_URL")
-    if not preview_url:
-        raise SystemExit("PREVIEW_DATABASE_URL must identify an isolated Neon branch")
-    if preview_url == os.getenv("DATABASE_URL"):
-        raise SystemExit("PREVIEW_DATABASE_URL must not equal DATABASE_URL")
+    if args.environment == "production" and not args.confirm_production:
+        raise SystemExit("Production replays require --confirm-production")
+    if args.environment == "production":
+        db_url = os.getenv("DATABASE_URL")
+        if not db_url:
+            raise SystemExit("DATABASE_URL is not set")
+    else:
+        db_url = os.getenv("PREVIEW_DATABASE_URL")
+        if not db_url:
+            raise SystemExit(
+                "PREVIEW_DATABASE_URL must identify an isolated Neon branch"
+            )
+        if db_url == os.getenv("DATABASE_URL"):
+            raise SystemExit("PREVIEW_DATABASE_URL must not equal DATABASE_URL")
 
     storage = get_storage(environment=args.environment)
     gold_ref = _ref(storage, args.feature_ref_uri)
@@ -300,7 +316,7 @@ def main() -> None:
 
     env = {
         **os.environ,
-        "DATABASE_URL": preview_url,
+        "DATABASE_URL": db_url,
         "CFB_ARTIFACT_ENV": args.environment,
     }
     for week in weeks:
@@ -398,7 +414,7 @@ def main() -> None:
             continue
         for step in steps:
             run_step(step, env)
-    print(f"Replayed {len(weeks)} weeks into the isolated preview database.")
+    print(f"Replayed {len(weeks)} weeks into the {args.environment} database.")
 
 
 if __name__ == "__main__":
