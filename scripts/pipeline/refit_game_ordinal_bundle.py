@@ -112,7 +112,7 @@ def _frozen_component_model(coefficients: list[float], columns: list[str]):
     """A fixed linear model over frozen frame component columns."""
     model = LinearRegression(fit_intercept=False)
     model.fit(pd.DataFrame({column: [0.0] for column in columns}), np.array([0.0]))
-    model.coef_ = np.array([coefficients], dtype=float)
+    model.coef_ = np.array(coefficients, dtype=float)
     return model
 
 
