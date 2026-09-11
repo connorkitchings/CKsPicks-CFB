@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
+from cks_picks_cfb.data.data_first_phase3 import CANDIDATE_COMPONENTS
 from cks_picks_cfb.data.data_first_phase3_v2 import (
     ADJUSTED_COMPONENTS,
     AVAILABILITY_BUFFER_HOURS,
@@ -25,7 +26,6 @@ from cks_picks_cfb.data.data_first_phase3_v2 import (
     weekly_cutoffs,
 )
 from cks_picks_cfb.ratings.phase3 import (
-    _game_features,
     _measurement_adjustments,
     _posterior,
     _recency_weight,
@@ -162,6 +162,65 @@ def _history_for_cutoff(
         source["kickoff_utc"] + pd.Timedelta(hours=AVAILABILITY_BUFFER_HOURS) <= cutoff
     )
     return source.loc[admitted].copy()
+
+
+def _compact_game_features(
+    *, states: pd.DataFrame, games: pd.DataFrame, candidate: str
+) -> pd.DataFrame:
+    """Build one candidate's game features without legacy Python aggregations."""
+    components = CANDIDATE_COMPONENTS[candidate]
+    selected = states[states["measurement_id"].isin(components)].copy()
+    selected["uncertainty_squared"] = (
+        pd.to_numeric(selected["state_uncertainty"], errors="coerce") ** 2
+    )
+    keys = ["season", "week", "game_id", "kickoff_utc", "team", "unit_role"]
+    composites = (
+        selected.groupby(keys, sort=False)
+        .agg(
+            component_rows=("measurement_id", "nunique"),
+            available_rows=("evidence_available", "sum"),
+            state_value=("state_value", "mean"),
+            uncertainty_squared=("uncertainty_squared", "sum"),
+        )
+        .reset_index()
+    )
+    complete = (composites["component_rows"] == len(components)) & (
+        composites["available_rows"] == len(components)
+    )
+    composites["state_uncertainty"] = np.sqrt(composites["uncertainty_squared"]) / len(
+        components
+    )
+    composites.loc[~complete, ["state_value", "state_uncertainty"]] = np.nan
+
+    team_sides = states[["season", "week", "game_id", "kickoff_utc", "team"]]
+    game_count = states[["season", "game_id"]].drop_duplicates().shape[0]
+    if team_sides.drop_duplicates().shape[0] < game_count * 2:
+        raise Phase3V2Error(f"candidate {candidate} lacks two teams per game")
+
+    schedule = games[
+        ["season", "week", "game_id", "kickoff_utc", "home_team", "away_team"]
+    ].drop_duplicates(["season", "game_id"])
+    result = schedule.copy()
+    for side in ("home", "away"):
+        for role in ("offense", "defense"):
+            values = composites[composites["unit_role"] == role][
+                ["season", "game_id", "team", "state_value", "state_uncertainty"]
+            ].rename(
+                columns={
+                    "team": f"{side}_team_join",
+                    "state_value": f"{side}_{role}",
+                    "state_uncertainty": f"{side}_{role}_uncertainty",
+                }
+            )
+            result = result.merge(
+                values,
+                left_on=["season", "game_id", f"{side}_team"],
+                right_on=["season", "game_id", f"{side}_team_join"],
+                how="left",
+                validate="one_to_one",
+            ).drop(columns=[f"{side}_team_join"])
+    result["candidate"] = candidate
+    return result
 
 
 @dataclass(frozen=True)
@@ -326,17 +385,8 @@ class CompactTournamentFeatureBuilder:
             self.max_component_partition_rows = max(
                 self.max_component_partition_rows, len(component_states)
             )
-            for candidate in (
-                "epa_only",
-                "quality_core_equal",
-                "without_success_rate",
-                "without_explosive_rate_20",
-                "without_points_per_scoring_opportunity",
-                "without_epa_per_play",
-                "epa_pass_rush",
-                "quality_core_epa_split",
-            ):
-                features = _game_features(
+            for candidate in CANDIDATE_COMPONENTS:
+                features = _compact_game_features(
                     states=component_states, games=games, candidate=candidate
                 )
                 features["recency_mode"] = mode
