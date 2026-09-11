@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase3 import verify_core_eligibility
 from cks_picks_cfb.data.data_first_phase3_v2 import (
+    EXPECTED_ADJUSTED_HISTORY_ROWS,
     PHASE3_V2_DATASETS,
     PHASE3_V2_OUTPUT_ROOT,
     REQUIRED_REPAIR_CANONICAL_SHA256,
@@ -88,7 +89,7 @@ EXPECTED_ROWS = {
     "population": 8936,
     "observations": 303790,
     "pregame_snapshots": 1215160,
-    "adjusted_history": 6777120,
+    "adjusted_history": EXPECTED_ADJUSTED_HISTORY_ROWS,
     "predictions": 202176,
 }
 PARTITIONS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {

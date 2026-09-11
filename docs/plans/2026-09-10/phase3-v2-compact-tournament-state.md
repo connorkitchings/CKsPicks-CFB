@@ -60,6 +60,32 @@ mathematical, lineage, timing, and Preview-only decision.
   schema checks, V4/boundary regressions, strict MkDocs, CLI help, and
   `git diff --check`.
 
+## Amendment 1 — Adjusted-history count correction (2026-09-11)
+
+**Approval:** The user explicitly authorized this amendment on 2026-09-11.
+**Implementation log:** `session_logs/2026-09-11/02-phase3-v2-adjusted-history-amendment.md`
+
+The first completed no-write Preview preflight reached every compact-state and
+tournament headline invariant, but rejected `expected_replay_counts` because
+the inherited adjusted-history expectation was 6,777,120. A read-only
+reconstruction proved the retained replay output is 3,067,048 rows. The replay
+has always retained history only for `ADJUSTED_COMPONENTS`: the six measures
+that receive a four-pass opponent adjustment. It does not retain diagnostic
+measurements in this dataset.
+
+Replace only the adjusted-history invariant with **3,067,048**. Preserve the
+population, observation, snapshot, compact-component, compact-feature,
+validation-game, prediction, candidate, recency, timing, and selection gates
+unchanged. This is a correction to an unverified inherited denominator, not a
+change to the replay scope or tournament mathematics.
+
+Implementation must pin the corrected value in the runner and add regression
+coverage proving that adjusted-history rows contain only adjusted components.
+The independent verifier continues to reconstruct the complete preflight and
+compare its output, selection, certification, and compact evidence before any
+result is accepted. Repeat the no-write Preview preflight after a clean
+committed checkpoint; Preview apply remains prohibited until it passes.
+
 ## Rollout
 
 After local validation, the user creates a committed checkpoint. Run one

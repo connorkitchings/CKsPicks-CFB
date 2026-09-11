@@ -15,6 +15,7 @@ from cks_picks_cfb.data.data_first_phase3_v2 import (
     ADJUSTED_COMPONENTS,
     ATTRIBUTION_COLUMNS_V2,
     BOOTSTRAP_REPLICATES,
+    EXPECTED_ADJUSTED_HISTORY_ROWS,
     MEASUREMENT_ROLE_GRID,
     Phase3V2Error,
     build_population,
@@ -290,8 +291,13 @@ def test_replay_history_is_cutoff_safe_and_records_source_correction():
     assert not terminal.empty
     assert set(history["source_week"]) == {1}
     assert set(history["week"]) == {2}
+    assert set(history["measurement_id"]) == set(ADJUSTED_COMPONENTS)
     assert history["source_available_utc"].le(history["target_week_cutoff_utc"]).all()
     assert history["iteration_three_opponent_value"].notna().all()
+
+
+def test_replay_count_gate_records_only_adjusted_component_history():
+    assert EXPECTED_ADJUSTED_HISTORY_ROWS == 3_067_048
 
 
 def test_replay_history_applies_the_inclusive_vectorized_availability_cutoff():
