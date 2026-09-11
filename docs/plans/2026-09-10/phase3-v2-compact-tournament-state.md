@@ -1,6 +1,6 @@
 # Phase 3 v2 Compact Tournament-State Replacement
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-10
 - **Planner:** Astra
 - **Approval source:** User explicitly authorized this exact replacement on 2026-09-10.
@@ -122,3 +122,23 @@ as-of `2026-09-10T00:00:00Z`, inspect counts/digests/selection, then apply only
 from a clean tracked worktree. Finish with the independent verifier and an
 idempotent rerun. Mark this contract Implemented only when every Preview gate
 passes; otherwise retain it In Progress with the blocker recorded.
+
+## Implementation Record — Certified Preview apply (2026-09-11)
+
+Every Preview gate passed. The no-write preflight at committed code SHA
+`93b2e1ce6c9fa738a194adf42017d2bb554e2993` reproduced every sealed invariant:
+population 8,936; observations 303,790; pregame snapshots 1,215,160; adjusted
+history 3,067,048; terminal 79,776; compact features 142,960; transient
+iteration-four components 428,880; predictions 202,176; attribution 8;
+selection `quality_core_epa_split`; certification SHA `8961d85b…`. The apply
+materialized the run at
+`artifacts/research/data-first-football-v1/phase3/v2/runs/phase3-v2-compact-state-20260910-r2/retained-core-manifest.json`
+(identity SHA `222a3947…`, retained-core SHA `67211ec6…`), the independent
+verifier returned `verified` after re-reading every partitioned output and
+recomputing the replay from the Repair v2 parent, and the idempotent rerun
+returned `already_applied`. `production_activation_authorized` is `false` in
+every artifact. The result is historical reconstructed benchmark evidence for
+the data-first program; it authorizes no production activation, and the next
+research step is the separate possession-based methodology design contract.
+The superseded first attempt at run ID `phase3-v2-compact-state-20260910`
+retains only its failed-apply `publication-plan.json` as immutable evidence.

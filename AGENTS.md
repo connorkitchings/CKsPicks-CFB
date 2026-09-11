@@ -220,8 +220,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   schedule games omitted from Phase 3, same-game context leakage in Phase 4B,
   constant coaching features, and incorrect roster continuity. The original
   Phase 4B retained manifest is prohibited as a new forecasting parent. Repair
-  v2 is independently verified; Phase 3 v2 is committed but awaits Preview
-  certification under `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md`.
+  v2 is independently verified; Phase 3 v2 is certified in Preview under
+  `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
+  `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
+  independently verified and idempotently rerun on 2026-09-11).
   It is benchmark evidence before a dedicated possession-based methodology plan.
   Ratings should represent scoring efficiency per possession with uncertainty;
   possession volume is translated separately. Phase 4A–6 remain execution-held

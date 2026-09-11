@@ -122,8 +122,10 @@ boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
 Development remains isolated from production activation. Repair v2 is
-independently verified; committed Phase 3 v2 remains pending Preview
-certification under `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md`.
+independently verified; Phase 3 v2 is certified in Preview under
+`docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
+`phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
+verifier `verified`, idempotent rerun 2026-09-11).
 Its result is benchmark evidence before a separate possession-based methodology
 design task. That direction defines one uncertain offense and defense rating for
 expected scoring efficiency per possession, with separate possession-volume
