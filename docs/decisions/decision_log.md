@@ -1,5 +1,33 @@
 # Decision Log
 
+## 2026-09-11: Possession-Based Rating Methodology Specification
+
+- **Context**: The Phase 3 v2 compact-state benchmark was certified in Preview
+  (`phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`),
+  unblocking the methodology stage of the approved handoff queue. The
+  possession-based direction existed, but possession eligibility, scoring
+  attribution, normalization, adjustment, scale, priors, state updates,
+  uncertainty, volume, and score translation were unresolved.
+- **Decision**: Compete two first-generation rating definitions — true points
+  per possession and EPA per possession — under identical estimation grids;
+  carry the full execution-held Phase 4A v2 prior/updater grid (6 priors × 5
+  updaters, including the net-new Kalman challenger) onto both definitions;
+  use the certified plays-per-drive proxy for possession volume in v1 with
+  clock reconstruction deferred; exclude overtime possessions from rating
+  evidence while keeping overtime points in game targets; route defensive and
+  special-teams scoring to a separate non-offense translation state rather
+  than unit ratings; apply no field-position normalization in v1; reuse the
+  four-pass additive opponent adjustment and z-standardization machinery.
+  Provisional constants (floors, equivalent exposures, λ, HFA) are to-freeze
+  by downstream certification contracts, never tuned post hoc.
+- **Impact**: The methodology is decision-complete and persisted as semantic
+  authority (`docs/modeling/possession_rating_methodology.md`); possession
+  measurements remain uncertified until the measurement certification contract
+  passes. Phase 4A–6 remain execution-held; the Phase 4A v2 grid is reaffirmed
+  only as carried forward onto the possession definitions. No estimator code,
+  V4 change, production change, or data write occurred.
+- **Source**: `docs/plans/2026-09-11/possession-rating-methodology-specification.md`.
+
 ## 2026-09-10: Possession-Based Rating Direction and Phase Sequencing
 
 - **Context**: Repair v2 is independently Preview-verified, while Phase 3 v2's

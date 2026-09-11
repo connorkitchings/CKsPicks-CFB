@@ -1,6 +1,6 @@
 # Possession-Based Rating Methodology Specification
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-11
 - **Planner:** Sol
 - **Approval source:** User selected the four contested decisions on 2026-09-11
@@ -8,7 +8,7 @@
   grid; volume proxy now; accepted the overtime and non-offense-scoring
   defaults) and approved the complete contract in the same planning session.
 - **Planning log:** `session_logs/2026-09-11/05-possession-rating-methodology-planning.md`
-- **Implementation log:** Pending
+- **Implementation log:** `session_logs/2026-09-11/06-possession-methodology-implementation.md`
 - **Commit policy:** Commit with implementation (contained documentation work).
 
 ## Goal

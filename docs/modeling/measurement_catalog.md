@@ -36,15 +36,31 @@ semantically admitted, and predictively useful are different statuses.
 The older rating-transition implementations below retain their original lineage
 and dispositions; they do not supersede the current corrective handoffs.
 
-## Certified measurements and proposed possession scoring
+## Certified measurements and specified possession scoring
 
 The certified catalog below supplies the unchanged Phase 3 benchmark. It does
 not yet certify a possession-scoring target. In particular,
 `points_per_scoring_opportunity` measures finishing after a scoring opportunity;
-it is not points per possession. A future methodology contract must define
-possession eligibility, scoring attribution, field-position normalization, and
-treatment of overtime, defensive/special-teams scores, clock-ending possessions,
-missing evidence, and FCS games before a possession-scoring measure is admitted.
+it is not points per possession.
+
+Possession-scoring measurements are now **specified, pending certification**,
+in the [possession-based rating methodology]
+(possession_rating_methodology.md) (approved 2026-09-11). A possession is a
+drive with at least one eligible scrimmage play; overtime drives are excluded
+from rating evidence; defensive and special-teams scores are routed to a
+separate non-offense translation state rather than unit ratings; no
+field-position normalization applies in v1. The specified set:
+
+| Specified measurement | Roles | Exposure | Status |
+| --- | --- | --- | --- |
+| Eligible possession count | Offense, defense | Drives | Specified, uncertified |
+| True points per possession (PPP) | Offense, defense | Possessions | Specified, uncertified |
+| EPA per possession | Offense, defense | Possessions | Specified, uncertified |
+| Non-offense points scored / allowed | Team | Games | Specified, uncertified (translation layer only) |
+
+None of these is admitted as model input until the possession measurement
+certification contract freezes its constants from representative data and
+passes its validity gates.
 
 ## Responsibility boundary
 

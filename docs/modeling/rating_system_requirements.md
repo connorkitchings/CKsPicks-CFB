@@ -10,7 +10,7 @@
 > **Status:** Approved initial requirements for 2026 research and shadow work.
 > This is not a rating-engine implementation or a promotion authorization.
 
-## Current rating direction (2026-09-10)
+## Current rating direction (specified 2026-09-11)
 
 New ratings must express expected **scoring efficiency per possession** against
 an average opponent under standard conditions. The first coherent system has one
@@ -22,13 +22,21 @@ Possession volume is a separate state or forecast layer used only when
 translating unit efficiency into expected team scores, totals, and margins.
 Preseason research compares learned football-only priors with a simpler
 prior-season carryover baseline. The selected core from the existing Phase 3
-benchmark is evidence for this design, not an automatic definition of it.
+benchmark (`quality_core_epa_split`, certified 2026-09-11) is evidence for
+this design, not an automatic definition of it.
 
 Possession eligibility, scoring attribution, field-position normalization,
-opponent-adjustment details, estimator, state updates, and artifact schema are
-unresolved and uncertified. A dedicated methodology contract must settle them
-before new rating-estimator work. The September 8 Phase 4A–6 contracts are
-execution-held records pending replacement or explicit reaffirmation.
+opponent adjustment, rating scale, preseason priors, state updates,
+uncertainty, possession volume, and score translation are now **specified** —
+decision-complete in the [possession-based rating methodology]
+(possession_rating_methodology.md), approved 2026-09-11. Two rating
+definitions (true points per possession and EPA per possession) compete in
+the estimation tournament under the full carried-forward Phase 4A v2
+prior/updater grid. Specified is not certified: every possession measurement
+remains uncertified until the possession measurement certification contract
+passes. The September 8 Phase 4A–6 contracts remain execution-held records;
+their prior/updater grid is reaffirmed only as carried forward onto the
+possession rating definitions by the methodology contract.
 
 ## Historical replacement requirements (2026-09-08)
 
@@ -229,6 +237,10 @@ code, artifacts, Preview catalog registration, or audit execution occurs.
 
 ## Deferred decisions
 
-No document currently selects the estimator, rating scale, prior model,
-uncertainty mechanism, special-teams component, residual model, concrete
-artifact schema, or production activation date.
+The methodology specification settles the rating quantity, possession
+eligibility, attribution, adjustment, scale, priors, updaters, uncertainty,
+volume proxy, and translation. Still open, each requiring its own approved
+contract or amendment: the special-teams rating component, the residual-ML
+layer, the concrete rating artifact schema, and any production activation
+date. No estimator code exists for the possession rating; its measurement
+certification is the first execution contract.

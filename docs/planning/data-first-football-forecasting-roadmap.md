@@ -57,27 +57,33 @@ eligibility are separate statuses.
 | Stage | Contract | Exit decision |
 | --- | --- | --- |
 | Repair | [Repair and recertification v2](../plans/2026-09-08/data-first-repair-and-recertification-v2.md) | Population and auxiliary semantics are recertified; rejected families are explicit. |
-| 3 | [Compact-state measurement/core benchmark v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) | Finish the unchanged eight-core benchmark and independently certify its Preview evidence. |
-| Methodology | [Documentation alignment and next steps](../plans/2026-09-10/documentation-alignment-and-next-research-steps.md) | Specify the possession-based rating methodology before new estimator work. |
-| Replacement contracts | Phase 4A–6 replacements or reaffirmations | Define rating estimation, score forecasting, and prospective evidence only after methodology review. |
+| 3 | [Compact-state measurement/core benchmark v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) | Certified Preview apply `phase3-v2-compact-state-20260910-r2` (2026-09-11): preflight, verifier, and idempotent rerun passed; selection `quality_core_epa_split`. |
+| Methodology | [Possession-based rating methodology specification](../plans/2026-09-11/possession-rating-methodology-specification.md) | Decision-complete first-generation specification persisted in [possession rating methodology](../modeling/possession_rating_methodology.md). |
+| Replacement contracts | Phase 4A–6 replacements or reaffirmations | Define rating estimation, score forecasting, and prospective evidence from the methodology annex. |
 
-Repair v2 is implemented and independently verified in Preview. Phase 3 v2
-implementation is committed, but its no-write Preview preflight, immutable
-materialization, independent verification, and idempotent rerun remain pending.
-The September 8 Phase 4A–6 contracts retain their approved historical records
-but are on execution hold pending the methodology review; they cannot advance
-without replacement contracts or explicit reaffirmation. Phase 7 remains a
-future promotion contract.
+Repair v2 is implemented and independently verified in Preview. Phase 3 v2 is
+certified: its no-write Preview preflight, immutable materialization,
+independent verification, and idempotent rerun all passed on 2026-09-11. The
+possession-based rating methodology is specified (2026-09-11); possession
+measurements remain uncertified until the measurement certification contract
+passes. The September 8 Phase 4A–6 contracts retain their approved historical
+records but remain on execution hold pending replacement contracts; their
+prior/updater grid is reaffirmed only as carried forward onto the possession
+rating definitions by the methodology contract. Phase 7 remains a future
+promotion contract.
 Ratings are the mandatory forecast foundation; direct-core Ridge and polls are
 diagnostic-only. Auxiliary football information is tested inside preseason priors.
 
 ## Current checkpoint
 
-**Corrective work and a methodology review are required before forecasting.** The review found same-game context
-leakage in Phase 4B, constant coaching features, incorrect roster continuity,
-and 32 completed schedule games omitted from the Phase 3 population. The old
-Phase 4B retained manifest is prohibited as a new forecasting parent. Its
-11.36% apparent margin gain is not valid pregame predictive evidence.
+**Corrective work is complete and the methodology is specified; replacement
+execution contracts are next.** The 2026-09-08 review's findings (same-game
+context leakage in Phase 4B, constant coaching features, incorrect roster
+continuity, and 32 completed schedule games omitted from the Phase 3
+population) were repaired by Repair v2, and the corrected Phase 3 v2 benchmark
+was certified on 2026-09-11. The old Phase 4B retained manifest remains
+prohibited as a forecasting parent; its 11.36% apparent margin gain is not
+valid pregame predictive evidence.
 
 Phase 0 alignment, corrected Phase 1 dispositions, and unaffected Phase 2
 engineering evidence remain retained. Phase 3 EPA-only and Phase 4A
@@ -85,12 +91,15 @@ engineering evidence remain retained. Phase 3 EPA-only and Phase 4A
 their descendants require repair and renewed selection. The review's
 [evidence table](../plans/2026-09-08/transformation-review-and-authority-reset.md#review-evidence-and-dispositions)
 is the canonical record of findings, actual metrics, population counts, checksum
-types and permitted uses. No replacement phase has run in this documentation task.
+types and permitted uses.
 
-The current next step is to complete the [September 10 Phase 3 compact-state
-benchmark](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) unchanged.
-Its output is benchmark evidence, not automatic authority for the later
-possession-based estimator. Historical sequence: [Phase 3](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md),
+The current next step is to issue the possession measurement certification
+contract (annex A of the [methodology specification]
+(../modeling/possession_rating_methodology.md)), followed by rating estimation,
+score forecasting, and prospective evaluation contracts. The Phase 3 v2 output
+(`phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`) is
+benchmark evidence, not automatic authority for the possession estimator.
+Historical sequence: [Phase 3](../plans/2026-09-07/01-phase3-measurement-certification-and-core-selection.md),
 [Phase 4A](../plans/2026-09-07/02-phase4a-context-free-rating-selection.md),
 [Phase 4B](../plans/2026-09-07/03-phase4b-target-context-selection.md),
 [Phase 5](../plans/2026-09-07/04-phase5-final-spread-total-selection.md), and

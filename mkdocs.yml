@@ -17,6 +17,7 @@ nav:
       - Data-First Forecasting Roadmap: planning/data-first-football-forecasting-roadmap.md
       - Production and Historical Roadmap: planning/roadmap.md
       - Rating-System Requirements: modeling/rating_system_requirements.md
+      - Possession Rating Methodology: modeling/possession_rating_methodology.md
       - Measurement Catalog: modeling/measurement_catalog.md
       - Evaluation: modeling/evaluation.md
       - V4 Regime Contract: modeling/early_season_regimes.md
