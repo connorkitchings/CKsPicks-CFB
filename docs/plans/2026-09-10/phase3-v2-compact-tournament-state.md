@@ -86,6 +86,34 @@ compare its output, selection, certification, and compact evidence before any
 result is accepted. Repeat the no-write Preview preflight after a clean
 committed checkpoint; Preview apply remains prohibited until it passes.
 
+## Amendment 2 — Apply-path row-partition repair and retry run ID (2026-09-11)
+
+**Approval:** The user explicitly authorized this amendment on 2026-09-11.
+**Implementation log:** `session_logs/2026-09-11/03-phase3-v2-apply-row-partition-repair.md`
+
+The first Preview apply, authorized after the passing no-write preflight at
+commit `513dec0`, failed inside the apply-only writer path.
+`PartitionedDatasetWriter` treated an explicitly empty `row_partition_keys`
+sequence as unspecified and fell back to the logical partition keys, so the
+deliberately logical-only `attribution` partition (`scope`) demanded a `scope`
+column its rows do not carry. The no-write preflight attaches no writers and no
+coverage existed for logical-only partitions, so only materialization could
+expose it. The writer and reader now honor an explicit empty sequence while an
+absent declaration still defaults to the partition keys, with lake regression
+coverage for both the attribution-shaped round trip and row binding. No Phase
+3 v2 mathematics, counts, digests, gates, timing, or selection rule changed.
+
+The failed apply published nothing consumable: it left only orphaned
+content-addressed children and a stale `publication-plan.json` bound to the
+prior code SHA under run ID `phase3-v2-compact-state-20260910`. Because
+immutable artifacts can be neither rewritten nor deleted through the storage
+contract, the certified retry uses run ID
+`phase3-v2-compact-state-20260910-r2` with the same as-of
+`2026-09-10T00:00:00Z` and the amended invariants. Every remaining rollout
+gate — a passing no-write preflight at the committed SHA, apply from a clean
+tracked worktree, the independent verifier, and an idempotent rerun — still
+applies in full before this contract can be marked Implemented.
+
 ## Rollout
 
 After local validation, the user creates a committed checkpoint. Run one

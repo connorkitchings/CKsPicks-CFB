@@ -46,6 +46,36 @@ def _phase3_population_frame(season: int = 2025) -> pd.DataFrame:
     )
 
 
+def _phase3_attribution_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "candidate": "prior_only",
+                "components": "core",
+                "component_count": 1,
+                "validation_rows": 10,
+                "validation_games": 2,
+                "pooled_mae": 15.0,
+                "baseline_mae": 16.0,
+                "improvement_pct": 6.25,
+                "bootstrap_mean_improvement": 1.0,
+                "bootstrap_90_lower": 0.5,
+                "bootstrap_90_upper": 1.5,
+                "bootstrap_excludes_zero": True,
+                "coverage_equal": True,
+                "maximum_seasonal_regression_pct": 1.0,
+                "seasonal_gate_passed": True,
+                "sensitivity_mae": 15.5,
+                "sensitivity_baseline_mae": 16.0,
+                "sensitivity_regression_pct": 3.1,
+                "sensitivity_gate_passed": True,
+                "primary_gate_passed": True,
+                "selected": False,
+            }
+        ]
+    )
+
+
 def test_parquet_bytes_preserves_nullable_boolean_values() -> None:
     payload = parquet_bytes([{"flag": True}, {"flag": False}, {"flag": None}])
     values = pd.read_parquet(io.BytesIO(payload))["flag"].tolist()
@@ -398,6 +428,66 @@ def test_partitioned_dataset_rejects_malformed_or_corrupt_parts(tmp_path):
     storage.write_bytes(b"corrupt", child)
     with pytest.raises(StorageError, match="checksum mismatch"):
         list(iter_partitioned_dataset(storage, ref))
+
+
+def test_partitioned_dataset_supports_logical_only_partitions(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_attribution",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_attribution_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(
+        storage,
+        build=build,
+        partition_keys=("scope",),
+        row_partition_keys=(),
+    )
+    frame = _phase3_attribution_frame()
+    assert "scope" not in frame.columns
+    writer.add(PartitionedDatasetPart({"scope": "all"}, frame))
+    ref = writer.finish()
+    manifest = json.loads(storage.read_bytes(ref.uri))
+    assert manifest["row_partition_keys"] == []
+    frames = list(iter_partitioned_dataset(storage, ref))
+    assert [len(part) for part in frames] == [1]
+    assert frames[0]["candidate"].tolist() == ["prior_only"]
+
+    repeated = PartitionedDatasetWriter(
+        storage,
+        build=build,
+        partition_keys=("scope",),
+        row_partition_keys=(),
+    )
+    repeated.add(PartitionedDatasetPart({"scope": "all"}, _phase3_attribution_frame()))
+    assert repeated.finish() == ref
+
+
+def test_partitioned_dataset_binds_rows_to_declared_partition_columns(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_population",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_population_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(
+        storage,
+        build=build,
+        partition_keys=("season",),
+        row_partition_keys=("season",),
+    )
+    with pytest.raises(StorageError, match="rows escape partition"):
+        writer.add(
+            PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2024))
+        )
 
 
 def test_consensus_then_median_is_independent_by_target():

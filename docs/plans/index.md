@@ -37,7 +37,7 @@ be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagno
 | Current contract or record | Status and dependency |
 | --- | --- |
 | [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | **Implemented and independently Preview-verified.** Sole repaired modeling parent. |
-| [Phase 3 compact-state measurement/core v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **In Progress.** The adjusted-history count amendment is validated locally; the matching-SHA no-write Preview preflight, materialization, verifier, and rerun remain pending. The September 8/9 contracts retain inherited modeling decisions and historical context. |
+| [Phase 3 compact-state measurement/core v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **In Progress.** The first apply attempt failed on an apply-only writer defect (now repaired: logical-only row partitions); per Amendment 2 the certified retry runs under `phase3-v2-compact-state-20260910-r2` and still requires preflight, materialization, verifier, and rerun. The September 8/9 contracts retain inherited modeling decisions and historical context. |
 | [Documentation alignment and next research steps](2026-09-10/documentation-alignment-and-next-research-steps.md) | **Implemented.** Records the agreed possession-based direction and the required methodology-design handoff. |
 | [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | **Approved record; execution held** pending methodology replacement or explicit reaffirmation after verified Phase 3. |
 | [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | **Approved record; execution held** pending the rating-methodology decision. |

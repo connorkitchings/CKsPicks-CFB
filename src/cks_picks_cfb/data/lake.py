@@ -175,7 +175,11 @@ class PartitionedDatasetWriter:
         self.storage = storage
         self.build = build
         self.partition_keys = tuple(partition_keys)
-        self.row_partition_keys = tuple(row_partition_keys or partition_keys)
+        self.row_partition_keys = (
+            tuple(partition_keys)
+            if row_partition_keys is None
+            else tuple(row_partition_keys)
+        )
         if not set(self.row_partition_keys).issubset(self.partition_keys):
             raise ValueError("row partition keys must be logical partition keys")
         self.expected_parts = dict(expected_parts or {})
@@ -334,7 +338,12 @@ def iter_partitioned_dataset(
     ):
         raise StorageError("partitioned dataset manifest identity mismatch")
     parts = list(manifest.get("parts") or [])
-    row_partition_keys = tuple(manifest.get("row_partition_keys") or ref.partition_keys)
+    declared_row_partition_keys = manifest.get("row_partition_keys")
+    row_partition_keys = (
+        tuple(ref.partition_keys)
+        if declared_row_partition_keys is None
+        else tuple(declared_row_partition_keys)
+    )
     if not set(row_partition_keys).issubset(ref.partition_keys):
         raise StorageError("partitioned dataset has invalid row partition keys")
     if partitioned_records_sha(parts, ref.partition_keys) != ref.records_sha:
