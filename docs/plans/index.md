@@ -38,7 +38,7 @@ be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagno
 | --- | --- |
 | [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | **Implemented and independently Preview-verified.** Sole repaired modeling parent. |
 | [Phase 3 compact-state measurement/core v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **In Progress.** Committed implementation; Preview preflight, materialization, verifier, and rerun are pending. The September 8/9 contracts retain inherited modeling decisions and historical context. |
-| [Documentation alignment and next research steps](2026-09-10/documentation-alignment-and-next-research-steps.md) | **In Progress.** Records the agreed possession-based direction and the required methodology-design handoff. |
+| [Documentation alignment and next research steps](2026-09-10/documentation-alignment-and-next-research-steps.md) | **Implemented.** Records the agreed possession-based direction and the required methodology-design handoff. |
 | [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | **Approved record; execution held** pending methodology replacement or explicit reaffirmation after verified Phase 3. |
 | [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | **Approved record; execution held** pending the rating-methodology decision. |
 | [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | **Approved record; execution held** pending replacement forecasting design. |
