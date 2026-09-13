@@ -185,7 +185,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Weeks 0-2 scored (Week 2 closed 2026-09-13, 49 games); Week 3 prepared and readiness-green, publish/freeze pending
+**Status:** 🏈 Season live — Weeks 0-2 scored (Week 2 closed 2026-09-13, 49 games); Week 3 published `2026w3-68fe6a815bd6` (57/57/56) 2026-09-13, freeze pending before Thu kickoff
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -213,7 +213,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `285684cc44af4e5b95943d4c5f40d4b3`), readiness-green 2026-09-13 after a
   Preview-only catalog quarantine of 2025-replay market versions
   (`e4061aab…`, `32db239e…`, `dfc36725…`) plus phantom-row cleanup
-  (`db61a68d…`); earliest kickoff Thu 2026-09-17 23:30Z. The v4 feature
+  (`db61a68d…`); earliest kickoff Thu 2026-09-17 23:30Z. Week 3 published
+  same day: run `2026w3-68fe6a815bd6` activated 57/57/56 (Houston @ Texas
+  Tech total not yet posted); progressive republish Mon-Wed, then freeze
+  before kickoff. The v4 feature
   chain is intentionally unchanged; the rebuild-2026 plan remains Draft.
 - 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
