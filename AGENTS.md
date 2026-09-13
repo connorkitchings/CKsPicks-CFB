@@ -185,7 +185,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Week 0 and Week 1 scored; Week 2 frozen (49/49/49) on 2026-09-10
+**Status:** 🏈 Season live — Weeks 0-2 scored (Week 2 closed 2026-09-13, 49 games); Week 3 prepared and readiness-green, publish/freeze pending
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -203,9 +203,18 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   Week 0 games played Aug 29–30.
 - ✅ **Week 0 closed:** `2026w0-55de0317120d` frozen and `scored` (8/8/8).
 - ✅ **Week 1 scored:** 43 games and 86 grade rows were verified on 2026-09-10.
-- ✅ **Week 2 frozen:** `2026w2-43b25511a100` froze on 2026-09-10 with 49/49/49
-  predicted/lined/expected coverage and no waiver. Follow the current weekly
-  runbooks for later-week procedures.
+- ✅ **Week 2 scored:** `2026w2-43b25511a100` froze on 2026-09-10 (49/49/49,
+  no waiver) and closed 2026-09-13 after a 49/49 finals gate: 90 grade rows
+  (49 spread + 41 total; 8 sub-threshold totals are No-Bet/ungraded by design);
+  YTD spread 37-62-1, total 40-52-0. Follow the current weekly runbooks for
+  later-week procedures.
+- 🧭 **Week 3 prepared:** cumulative Gold `point_in_time_matchups`
+  `d184186ddfbc7c40657f0714` (preview pipeline-run
+  `285684cc44af4e5b95943d4c5f40d4b3`), readiness-green 2026-09-13 after a
+  Preview-only catalog quarantine of 2025-replay market versions
+  (`e4061aab…`, `32db239e…`, `dfc36725…`) plus phantom-row cleanup
+  (`db61a68d…`); earliest kickoff Thu 2026-09-17 23:30Z. The v4 feature
+  chain is intentionally unchanged; the rebuild-2026 plan remains Draft.
 - 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
