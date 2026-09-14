@@ -1,66 +1,63 @@
 # Measurement Catalog
 
-> **Authority note (2026-09-05):** This catalog is the baseline input to the
-> data-first program, not a frozen assertion that every listed measurement will
-> be retained. Phase 1 audits its evidence and the active Phase 3 contract
-> evaluates meaning and the shared football core; target context is evaluated
-> separately in Phase 4B. V4 inputs remain unchanged.
+> **Authority (2026-09-13):** The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> governs new possession work. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+> is current status authority. Historical measurements below retain their original
+> certification scope; they do not certify possession scoring or change V4 inputs.
 
-> **Status:** Initial catalog for the approved 2026 rating transition. It does
-> not change V4 feature inputs.
+## Current measurement checkpoint
 
-This catalog organizes observed football performance before it becomes team
-state. Current V4 uses a strict, point-in-time feature reference; the future
-rating baseline will select from the same lineage under a separate contract.
+V5 ratings successor is distinct from V4 feature schema v5. Repair v2 is verified
+and Phase 3 v2 is certified. The possession methodology is specified and amended;
+possession measurements remain uncertified. The next ratings task is
+02: possession measurement certification. The original Phase 4B retained manifest
+remains prohibited as a forecasting parent; same-game field position, plays per
+drive and turnovers are not pregame predictors.
 
-## Current corrective interface contract (2026-09-08)
-
-The [approved review](../plans/2026-09-08/transformation-review-and-authority-reset.md)
-is the canonical findings/evidence table. The active [compact-state Phase 3
-benchmark](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) repeats
-the original eight-core comparison on the repaired schedule population.
-Observation rows describe completed games; pregame snapshots use only permitted
-history before their cutoff. These are separate schemas and consumer roles.
-
-Same-game field position, plays per drive and turnovers are not pregame
-predictors. The corrected context stage uses prior evidence for both teams;
-plays per drive is **drive length**, not clock tempo. Missing measurements carry
-zero usable exposure and reasons while eligible forecast games remain present.
-
-The [repair contract](../plans/2026-09-08/data-first-repair-and-recertification-v2.md)
-corrects coaching tenure, same-team roster continuity versus incoming experience,
-and recruiting-window representations. Admitted football auxiliary inputs enter
-preseason-prior comparisons; polls and markets are diagnostic-only. Captured,
-semantically admitted, and predictively useful are different statuses.
-
-The older rating-transition implementations below retain their original lineage
-and dispositions; they do not supersede the current corrective handoffs.
+The repaired source/population manifest supplies the exact parent roles.
+[Phase 3 v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) is certified
+benchmark evidence, not the possession definition. Repaired coaching, same-team
+roster continuity and recruiting/returning-production semantics supply only their
+admitted preseason-prior roles. Polls and markets remain diagnostic-only.
 
 ## Certified measurements and specified possession scoring
 
-The certified catalog below supplies the unchanged Phase 3 benchmark. It does
-not yet certify a possession-scoring target. In particular,
 `points_per_scoring_opportunity` measures finishing after a scoring opportunity;
-it is not points per possession.
-
-Possession-scoring measurements are now **specified, pending certification**,
-in the [possession-based rating methodology]
-(possession_rating_methodology.md) (approved 2026-09-11). A possession is a
-drive with at least one eligible scrimmage play; overtime drives are excluded
-from rating evidence; defensive and special-teams scores are routed to a
-separate non-offense translation state rather than unit ratings; no
-field-position normalization applies in v1. The specified set:
+it is not points per possession. Plays per drive measures drive length, not
+clock tempo. Existing final-score reconciliation does not prove offensive-unit
+attribution. Contract 02 must independently certify the new scoring ledger and
+possession numerator/denominator semantics under the
+[amended methodology](possession_rating_methodology.md).
 
 | Specified measurement | Roles | Exposure | Status |
 | --- | --- | --- | --- |
-| Eligible possession count | Offense, defense | Drives | Specified, uncertified |
-| True points per possession (PPP) | Offense, defense | Possessions | Specified, uncertified |
-| EPA per possession | Offense, defense | Possessions | Specified, uncertified |
-| Non-offense points scored / allowed | Team | Games | Specified, uncertified (translation layer only) |
+| Eligible regulation possession count | Offense, defense | Drives with an eligible scrimmage play | Specified, uncertified |
+| True points per possession (PPP) | Offense, defense | Same eligible possessions | Specified, uncertified |
+| EPA per possession | Offense, defense | Same eligible possessions | Specified, uncertified |
+| Eligible plays and plays per possession | Offense, defense | Plays / possessions | Specified, uncertified; volume diagnostic |
+| Regulation non-offense points for / against | Team | Usable prior games | Specified, uncertified; translation only |
+| Excluded offense, overtime, unresolved scoring | Team | Scoring ledger | Specified, uncertified; accounting and quality |
 
-None of these is admitted as model input until the possession measurement
-certification contract freezes its constants from representative data and
-passes its validity gates.
+Qualifying drives have an eligible non-garbage scrimmage play; quarter >=5 is
+excluded from rating evidence. Missing periods are not assumed regulation.
+PPP includes attributable offensive points on qualifying drives; EPA uses only
+eligible-play PPA. Missing EPA is not zero or permission to shrink a denominator.
+Keep counts separate from usable measurement exposure; missing values retain
+quality reasons and zero information without removing schedule games.
+
+The scoring ledger partitions eligible regulation offense, excluded regulation
+offense, regulation non-offense, overtime and unresolved increments. Attach
+conversions to originating scoring events. Preserve integral/[0,8] offensive-drive
+checks, >=94% season reconciliation and paired quarantine; never infer an offensive
+numerator from unexplained final-score residuals. Unresolved attribution blocks
+PPP/non-offense certification for the affected evidence.
+
+Floors/fallbacks 0.30/1.00 and 0.50/1.50, plus k=8/20 possessions, are fixed
+first-generation settings, not empirically certified optima. Seasonal fitted
+scales use preceding seasons only; no global 2015–2019 constant fitting occurs.
+Contract 02 independently validates four-pass replay and membership-derived counts.
+No possession artifact becomes an eligible model input merely because its schema
+or documentation exists. No catalog registration is authorized.
 
 ## Responsibility boundary
 

@@ -8,6 +8,18 @@
 
 ## Environment Setup
 
+**Research checkpoint (2026-09-13):** V5 ratings successor is distinct from V4
+feature schema v5. Repair v2 is verified and Phase 3 v2 is certified. The
+possession methodology is specified and amended; possession measurements remain
+uncertified. The next ratings task is 02: possession measurement certification;
+contract 01 is the independent diagnostic closure. See the canonical
+[data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md).
+The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+
+Commands and season/week/publication values below are illustrative examples,
+not instructions to execute a research phase or the current live configuration.
+Use the exact approved task contract and weekly runbooks for execution.
+
 ### Install Dependencies
 
 ```bash

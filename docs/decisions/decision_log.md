@@ -1,5 +1,36 @@
 # Decision Log
 
+## 2026-09-13: V5 Ratings Contracts and Bridge-First Methodology Amendment
+
+- **Context:** Repair v2 is verified, Phase 3 v2 certified, and the September 11
+  possession specification documented. Current entry points still described
+  earlier pending work. The expanded development corpus was already available;
+  the next task is possession certification, not repeating completed benchmarks.
+- **Decision:** Name the research model V5 ratings successor, distinct from V4
+  feature schema v5. Retain both possession definitions, six priors, five updaters,
+  upstream four-pass adjustment and continuous state meaning. Use fixed published
+  floors/fallbacks and k values; remove global 2015–2019 fitting across validation
+  folds. Correct analytic credibility to include prior variance. Require a
+  complete scoring ledger with eligible/excluded regulation offense, regulation
+  non-offense, OT and unresolved scoring; final reconciliation alone is insufficient.
+- **Forecasting:** Use the Ridge bridge and prior-only non-offense offsets first.
+  Compare expanding versus latest-five fitting horizons on identical 2022–2025
+  games after structural rating selection. Preserve state carryover and earlier-only
+  fitting/calibration. Arithmetic, clock tempo, normalization, NB2 and residual ML
+  are later challengers. Rating variance is not empirical outcome-error variance.
+- **Execution:** Approve contracts 00–06 with explicit predecessor gates. Contract
+  01 closes the independent V4 diagnostic, preserving its threshold while requiring
+  paired prediction/error evidence for interpretation. Supersede September 8
+  Phase 4A–6 execution contracts while retaining approvals and explicitly inherited
+  mathematics. Keep September 11 as an Implemented historical documentation milestone.
+- **Impact:** This implementation updates documentation and authority tests only.
+  Possession measurements remain uncertified; no estimator, cloud data, serving
+  state, or V4 production behavior changes. Authentic readiness, six paired slates,
+  and separate promotion authorization remain mandatory.
+- **Source:** [Approved common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+  and [documentation implementation](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md).
+
+
 ## 2026-09-11: Possession-Based Rating Methodology Specification
 
 - **Context**: The Phase 3 v2 compact-state benchmark was certified in Preview

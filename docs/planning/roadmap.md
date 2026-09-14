@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-09-05
+> **Last updated:** 2026-09-13
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 > **Authority note (2026-09-05):** This page remains the current V4 operations
@@ -9,11 +9,14 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-10):** Repair v2 is independently
-> Preview-verified. Committed Phase 3 v2 needs Preview certification before its
-> result can serve as benchmark evidence. A possession-based methodology design
-> then precedes replacement or reaffirmed Phase 4A–6 contracts. The original
-> Phase 4B pregame claim remains invalid; its historical queue is evidence only.
+> **Current research checkpoint (2026-09-13):** V5 ratings successor research
+> is distinct from the V4 feature schema v5 diagnostic. Repair v2 is verified;
+> Phase 3 v2 is certified. The possession methodology is specified and amended;
+> possession measurements remain uncertified. The next ratings task is
+> 02: possession measurement certification. See the
+> [data-first roadmap](data-first-football-forecasting-roadmap.md) for the active
+> 00–06 queue. Contract 01 closes the independent V4 diagnostic. The original
+> Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 ## Direction
 
@@ -24,7 +27,7 @@ canonical representation of team quality.
 ```text
 source data → Bronze/Silver/Gold → football measurements
 → measurement-level opponent adjustment → team ratings/state
-→ structured game prediction → optional ML residual → probabilistic output
+→ rating-to-margin/total Ridge bridge → probabilistic output
 → timestamped line comparison
 ```
 
@@ -49,7 +52,7 @@ See the
 
 ## Two explicit tracks
 
-### Research track
+### Historical R1–R4 research track (superseded)
 
 | Stage | Deliverable | Boundary |
 | --- | --- | --- |
@@ -73,8 +76,9 @@ See the
 | By 2026-08-28 | Documentation audit, measurement catalog, initial rating requirements, uncertainty and shadow-evaluation requirements, and follow-on contracts | ✅ Complete |
 | **2026-08-29–31 (Week 0 close)** | Week 0 games scored; freeze + close-week; Week 0 launch contract closed | ✅ Complete |
 | **Week 1** | Published, frozen, and scored | ✅ Verified 2026-09-10: 43 games / 86 grade rows |
-| **Week 2** | Published and frozen | ✅ Frozen 2026-09-10: `2026w2-43b25511a100`, 49/49/49 coverage |
-| Current research | Complete unchanged Phase 3 compact-state benchmark, then design possession-based methodology | Preview-only; no Neon activation or publication |
+| **Week 2** | Scored | ✅ Recorded 2026-09-13: `2026w2-43b25511a100`, 49 games; 90 graded targets |
+| **Week 3** | Published | Recorded 2026-09-13: `2026w3-68fe6a815bd6`, 57/57/56; freeze pending at that checkpoint |
+| Current research | 02: possession measurement certification, then rating and bridge selection | Preview-only; approved downstream contracts require verified parents |
 | Subsequent weeks | Structured rating-to-game prediction, then frozen candidate shadow scoring | No Neon activation or publication |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
 | Any later point in 2026 | Operational rehearsal, rollback proof, and evidence-based promotion decision | V4 remains fallback |
@@ -105,15 +109,19 @@ calendar date cannot bypass a failed gate.
 
 ## Planning and execution protocol
 
-- The data-first roadmap controls research sequencing; its dated Phase 0–6
-  contracts are the active task-level authority.
+- The data-first roadmap controls research sequencing; the September 13 V5
+  contracts 00–06 are the active task-level authority.
 - The O2 candidate-v1 lane remains reproducible only from its pinned `ac1fba1`
   worktree and is never an input to candidate-v2 selection.
 - No outcome may be claimed as prospective evidence unless its prediction was
   frozen before kickoff. Missing a prospective window never permits a
   retrospective freeze.
 
-## Phase contract queue
+## Historical phase contract queue (not current execution authority)
+
+These entries retain their dated findings and former lifecycle states. Use the
+[data-first roadmap](data-first-football-forecasting-roadmap.md) for current
+contracts; historical approvals below do not authorize execution.
 
 - [Approved high-level roadmap](../plans/2026-08-24/rating-centric-successor-high-level-roadmap.md)
   — sequencing and governance authority; not a single Terra implementation task.
@@ -159,13 +167,12 @@ calendar date cannot bypass a failed gate.
   program now requires the 2026-09-08 corrective sequence; prior
   engineering completion does not establish predictive eligibility.
 
-## Invariants and open decisions
+## Invariants and deferred challengers
 
 All work preserves immutable lineage, strict point-in-time provenance, temporal
-validation, 2020 exclusion, market separation, sealed/frozen evaluation,
-research-production isolation, and fail-closed operations.
-
-The exact baseline estimator, rating scale, prior model, uncertainty mechanism,
-and artifact schema are selected in their phase contracts. Special-teams
-treatment, rating-assisted adjustment, and residual ML remain deferred
-challenger decisions.
+validation, 2020 exclusion, market separation, frozen evaluation, and research
+isolation. The V5 package specifies the rating definitions, priors, updates,
+uncertainty, bridge and artifact interfaces. Possession arithmetic, clock tempo,
+field-position normalization, NB2 and residual ML are later challengers; production
+promotion remains a separate contract. Fixed constants and fitting windows are
+specified in the [methodology](../modeling/possession_rating_methodology.md).

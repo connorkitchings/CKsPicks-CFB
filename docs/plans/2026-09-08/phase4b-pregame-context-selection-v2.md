@@ -1,11 +1,18 @@
 # Phase 4B: Pregame Context Selection v2
 
-- **Status:** Approved
+- **Status:** Superseded
 - **Created:** 2026-09-08
 - **Planner:** Astra
 - **Approval source:** User approved the full replacement plan on 2026-09-08.
 - **Implementation log:** Pending repaired Phase 4A and separate Phase 4B task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
+
+> **Superseded (2026-09-13):** Execution authority is [04: forecast bridge and fitting-window selection](../2026-09-13/04-v5-forecast-bridge-and-fitting-window.md).
+> Preserve the original approval, historical hold notice, and mathematical record
+> below. Only sections explicitly inherited by the
+> [V5 common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> carry forward. This does not authorize executing old runners or consuming the
+> original Phase 4B retained manifest as a forecasting parent.
 
 > **Execution hold (2026-09-10):** This remains an Approved historical record
 > with its original approval source. Do not execute it until the rating-methodology

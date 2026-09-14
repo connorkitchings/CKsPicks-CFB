@@ -1,56 +1,50 @@
 # Rating-System Requirements
 
-> **Authority note (2026-09-05):** These requirements describe completed and
-> historical rating work. New rating development is governed by the
-> [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-> and its Phase 3, 4A, 4B, 5, and 6 contracts. In that namespace, 2025 is
-> development evidence, simple benchmarks precede broader updater/model families, and betting
-> decisions are deferred. V4 remains unchanged.
+> **Authority (2026-09-13):** Current V5 semantics follow the
+> [methodology](possession_rating_methodology.md) and
+> [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
+> The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+> is the canonical status page. V4 remains unchanged; historical sections below
+> retain their original experiment boundaries and do not authorize execution.
 
-> **Status:** Approved initial requirements for 2026 research and shadow work.
-> This is not a rating-engine implementation or a promotion authorization.
+## Current rating direction (specified 2026-09-11; amended 2026-09-13)
 
-## Current rating direction (specified 2026-09-11)
+New ratings express expected **scoring efficiency per possession** against an
+average opponent under standard conditions. One offense and one defense state
+carry explicit uncertainty. PPP measures actual offensive scoring; EPA measures
+added expected value, not literal points. Diagnostic components are not separate
+first-generation rating states. V5 ratings successor is distinct from the V4
+feature schema v5 diagnostic.
 
-New ratings must express expected **scoring efficiency per possession** against
-an average opponent under standard conditions. The first coherent system has one
-offense and one defense rating per team, each with explicit uncertainty.
-Passing, rushing, explosiveness, and finishing remain diagnostic evidence that
-explains a rating; they are not separate first-generation rating states.
+Repair v2 is verified and Phase 3 v2 is certified. Its `quality_core_epa_split`
+selection is historical reconstructed benchmark evidence, not the possession
+definition. The possession methodology is specified and amended; possession
+measurements remain uncertified. **Specified is not certified.** The next ratings
+task is 02: possession measurement certification; contract 01 is the independent
+V4 diagnostic closure.
 
-Possession volume is a separate state or forecast layer used only when
-translating unit efficiency into expected team scores, totals, and margins.
-Preseason research compares learned football-only priors with a simpler
-prior-season carryover baseline. The selected core from the existing Phase 3
-benchmark (`quality_core_epa_split`, certified 2026-09-11) is evidence for
-this design, not an automatic definition of it.
+The original Phase 4B retained manifest remains prohibited as a forecasting
+parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only
+explicitly inherited mathematics carry forward. Preserve the two possession
+definitions, six priors and five updaters, four-pass upstream opponent adjustment,
+and no second schedule adjustment inside ratings.
 
-Possession eligibility, scoring attribution, field-position normalization,
-opponent adjustment, rating scale, preseason priors, state updates,
-uncertainty, possession volume, and score translation are now **specified** —
-decision-complete in the [possession-based rating methodology]
-(possession_rating_methodology.md), approved 2026-09-11. Two rating
-definitions (true points per possession and EPA per possession) compete in
-the estimation tournament under the full carried-forward Phase 4A v2
-prior/updater grid. Specified is not certified: every possession measurement
-remains uncertified until the possession measurement certification contract
-passes. The September 8 Phase 4A–6 contracts remain execution-held records;
-their prior/updater grid is reaffirmed only as carried forward onto the
-possession rating definitions by the methodology contract.
+The first release is **bridge-first**, with a prior-only non-offense translation
+offset. Possession arithmetic, volume models, clock tempo, field-position
+normalization, NB2 and residual ML are later challengers. Ledger categories must
+account for eligible/excluded regulation offense, regulation non-offense, overtime
+and unresolved scoring; full-game labels include all valid scoring.
 
-## Historical replacement requirements (2026-09-08)
+Scale floor/fallback values 0.30/1.00 (PPP), 0.50/1.50 (EPA), and equivalent
+exposures 8/20 possessions are fixed first-generation settings, not empirically
+certified optima. Seasonal scales use preceding-season evidence; no global
+2015–2019 fitting is permitted. Analytic evidence weight depends on prior variance
+as documented in D9; `n/(n+k)` applies only when prior variance is one.
 
-The [approved review and contract package](../plans/2026-09-08/transformation-review-and-authority-reset.md)
-replaces the active Phase 3–6 sequence. Ratings remain the mandatory foundation.
-The new Phase 4A compares neutral/carryover and four learned residual-prior
-families across exposure, three recency updaters and one local-level Kalman
-challenger; there is no adaptive-volatility mechanism. Polls/direct models are
-diagnostic-only. The original Phase 4B manifest cannot authorize forecasting.
-
-The exact approved equations, uncertainty rules, inputs, gates and dependency
-states are retained in the replacement contracts as historical approved records.
-They are not current execution authority until the methodology review replaces
-or explicitly reaffirms them.
+After structural rating selection, compare expanding fitting history with the
+latest five eligible seasons on identical 2022–2025 validation games. Preserve
+continuous state carryover, earlier-only fitting/calibration, and a single shared
+window policy for both targets. Historical results remain development evidence.
 
 ## Goal
 
@@ -61,7 +55,7 @@ market decision.
 ```text
 source data → canonical Bronze/Silver/Gold → football measurements
 → measurement-level opponent adjustment → team ratings/state
-→ structured game prediction → optional ML residual → probabilistic output
+→ rating-to-margin/total Ridge bridge → probabilistic output
 → market decision
 ```
 
@@ -80,9 +74,9 @@ state includes:
 - source/version provenance and as-of timestamp; and
 - coverage, missingness, and quality flags.
 
-This is a conceptual contract, not a schema. The rating meaning and the
-preseason comparison are decided above; the estimator, detailed prior form,
-update mechanics, and artifact format remain open.
+This is a conceptual summary. Contracts 02–04 specify measurement/state/forecast
+interfaces, priors, updates, fitting rules and output lineage. Their implementation
+and independent certification remain separate prerequisites.
 
 ### Layer boundaries
 
@@ -98,7 +92,10 @@ update mechanics, and artifact format remain open.
 - **Market decision** receives timestamped prices only after football
   prediction, uncertainty, and provenance exist.
 
-### Phase 1 remediation and Phase 2 baseline (implemented)
+### Historical Phase 1 remediation and Phase 2 baseline (implemented)
+
+The following dated predecessor record preserves its original claims and blockers.
+It is not the active V5 execution queue; use contracts 02–06 above.
 
 The original Phase 1 implementation is retained as research history but is not
 an authorized Phase 2 input. Its corrective contract is
@@ -226,21 +223,20 @@ is mandatory.
 
 ## Follow-on implementation contracts
 
-1. Measurement and adjustment interfaces, coverage audit, and redundancy study.
-2. Deliberately simple point-in-time rating baseline.
-3. Structured rating-to-game prediction and shadow artifact contract.
-4. Candidate-estimator, special-teams, uncertainty, and residual-ML research.
-5. Evidence-gated promotion, rehearsal, and rollback contract.
+The [V5 package](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+defines 02 possession certification → 03 rating estimation → 04 bridge/window
+selection → 05 shadow tooling and authentic live readiness → 06 six-slate evidence.
+Each exact contract requires its own authorized task and verified parents. Approval,
+implementation, data certification, downstream eligibility, and prospective
+collection are separate statuses. No catalog registration or serving writes are
+part of these research phases.
 
-Each follow-on contract requires a fresh Terra task before its estimator
-code, artifacts, Preview catalog registration, or audit execution occurs.
+## Deferred challengers
 
-## Deferred decisions
-
-The methodology specification settles the rating quantity, possession
-eligibility, attribution, adjustment, scale, priors, updaters, uncertainty,
-volume proxy, and translation. Still open, each requiring its own approved
-contract or amendment: the special-teams rating component, the residual-ML
-layer, the concrete rating artifact schema, and any production activation
-date. No estimator code exists for the possession rating; its measurement
-certification is the first execution contract.
+Possession arithmetic and EPA-to-points conversion, clock-based volume, field-
+position normalization, a separate special-teams rating, new context, NB2 and
+residual ML require a separately frozen later challenger. The first bridge may
+enter shadow evaluation without them. A production activation decision requires
+a separate promotion contract after qualifying prospective evidence; no activation
+date is promised. The artifact interfaces and first-generation constants are
+specified by the current contracts, not left for an implementer to choose.

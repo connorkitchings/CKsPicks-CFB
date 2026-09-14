@@ -55,7 +55,7 @@ Key invariants:
 - 2020 is excluded from every input, label, fold, prior, and successor-v2
   artifact. The expanded 2015–2019 corpus is research-only; it does not alter
   V4's sealed lineage.
-- Every mutating operation goes through `python -m cks_picks_cfb.ops` with an explicit `ENV`; failed steps activate nothing.
+- Every production mutating operation goes through `python -m cks_picks_cfb.ops` with an explicit `ENV`; failed steps activate nothing.
 
 ### Modeling: ten-route regime design
 
@@ -121,22 +121,23 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-Development remains isolated from production activation. Repair v2 is
-independently verified; Phase 3 v2 is certified in Preview under
-`docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
-`phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
-verifier `verified`, idempotent rerun 2026-09-11).
-Its result is benchmark evidence before a separate possession-based methodology
-design task. That direction defines one uncertain offense and defense rating for
-expected scoring efficiency per possession, with separate possession-volume
-translation and learned-prior versus carryover comparison. Phase 4A–6 approved
-records are held pending replacement or explicit reaffirmation. The original
-Phase 4B manifest remains ineligible because of same-game context leakage.
-Ratings are mandatory; direct-core models and polls are diagnostic-only. Each
-candidate must freeze before inspecting eligible future outcomes. Football-only
-inputs may be admitted only when their preseason meaning, coverage, and timing
-are proved; timestamped markets are comparison evidence after football-model
-evaluation. See the data-first roadmap and modeling authority docs.
+**V5 ratings successor checkpoint (2026-09-13):** Repair v2 is verified and
+Phase 3 v2 is certified in Preview (`phase3-v2-compact-state-20260910-r2`, selected
+`quality_core_epa_split`, verifier passed and idempotent rerun 2026-09-11). Its
+result is benchmark evidence. The possession methodology is specified and amended;
+possession measurements remain uncertified. The next ratings task is
+02: possession measurement certification. The
+[data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
+is the canonical queue/status page.
+
+V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
+contract 01 closes that independent diagnostic. The first V5 release uses a
+rating-to-margin/total Ridge bridge with separate non-offense translation offsets.
+Volume arithmetic is a later challenger. September 8 Phase 4A–6 contracts are
+Superseded, with only explicitly inherited mathematics retained. The original
+Phase 4B retained manifest remains prohibited as a forecasting parent. Football
+inputs require proven meaning, coverage and timing; polls/direct models are
+diagnostic-only. V4 production remains unchanged.
 
 ### Feature Engineering
 
@@ -248,7 +249,7 @@ make close-week YEAR=2026 WEEK=0 AS_OF=<ts> ENV=production
 make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 ```
 
-- Every mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.
+- Every production mutating op runs through `python -m cks_picks_cfb.ops` with explicit `ENV`; failed steps activate nothing.
 - `AS_OF` must be set ~5 minutes ahead of the publish run so the market capture falls before the cutoff.
 - Publication modes: `market` (fail-closed, no model output) vs `predictions`.
   Production currently uses the explicitly approved `predictions` mode; every

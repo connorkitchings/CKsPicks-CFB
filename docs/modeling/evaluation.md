@@ -11,39 +11,61 @@
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 
-## Current data-first evaluation contract (2026-09-08)
+## Current V5 evaluation contract (2026-09-13)
 
-The [review and common rules](../plans/2026-09-08/transformation-review-and-authority-reset.md)
-and its six replacement contracts govern new research. Original Phase 4B
-same-game context gains are invalid pregame evidence. Historical Phase 3/4A
-results remain reduced-population development comparisons.
+The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+and 02–06 govern current research. V5 ratings successor is distinct from V4
+feature schema v5. Repair v2 is verified and Phase 3 v2 is certified. The
+possession methodology is specified and amended; possession measurements remain
+uncertified. The next ratings task is 02: possession measurement certification;
+the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the status authority. The original Phase 4B retained manifest remains
+prohibited as a forecasting parent. Old reduced-population comparisons retain
+historical limits; the September 8 Phase 4A–6 runners are Superseded.
 
-Repair v2 is verified and the Phase 3 compact-state benchmark remains pending
-Preview certification. Its selection is benchmark evidence only. The agreed
-next methodology will evaluate scoring efficiency per possession first, model
-possession volume separately, then translate those states into expected scores,
-margin, and total. It must preserve the chronology and evidence rules below.
-The September 8 Ridge/NB2 and distribution rules remain approved historical
-records under execution hold pending replacement or explicit reaffirmation.
+Use complete schedule-derived populations, 2015–2019 and 2021–2025 development
+history, and outer seasons 2018, 2019, 2021–2025. Exclude 2020 everywhere and 2026
+outcomes from development selection. Inner validation starts in 2017 with at least
+two earlier fitting seasons. Every fitted transform, prior, noise parameter, head
+and calibration precedes its validation season. Fixed first-generation floor/
+fallback and exposure constants are not fit globally on 2015–2019.
 
-Use schedule-derived populations and outer seasons 2018, 2019, 2021–2025 with
-strictly preceding inner fitting/calibration. Retain the 2,000-replicate paired
-season/week bootstrap and 90% interval. New prior/rating selection may advance
-on >=0.5% early-game improvement with positive interval and full-season MAE
-within 1%, subject to target-season and completed-game-stage regression guards.
-Other phases keep their own specified gates; this exception is not global.
+Contract 03 evaluates both definitions across six priors and five updaters with
+identical alpha-10 Ridge bridges. Within-definition reference is fixed-rho/exposure.
+A challenger advances on >=0.5% pooled overall improvement with positive paired
+90% lower bound, or the same early-union gain with full-season MAE within 1%.
+Require <=5% target-season and pooled completed-game-stage regressions. Invalid
+references block advancement; valid simple references may win. Compare the retained
+EPA and PPP winners under the same rules, preferring PPP without an admissible
+EPA gain. Use 2,000 paired season/week bootstrap replicates, seed 20260908,
+common resamples and 5th/95th percentiles. These are development comparisons.
 
-Rating-based Ridge/NB2 forecasts use explicitly labeled moment-based Gaussian
-target distributions, Gaussian CRPS and 50/80/95% intervals. Calibration comes
-from earlier nested rolling-origin residuals; rating variance is not itself
-outcome variance. Direct-core Ridge and polls remain diagnostic-only.
+The first forecast release is **bridge-first**. Contract 04 uses fixed pregame
+non-offense offsets and bounded Ridge head selection. Full-game labels include
+OT and excluded offensive scoring; neither becomes a same-game predictor.
+After freezing the structural rating design, compare expanding fitting history
+with the latest five eligible seasons at each nested fit on identical 2022–2025
+games. Preserve continuous team-state history. Latest-five requires >=0.5% pooled
+MAE gain with a positive paired lower bound, each target MAE/CRPS within 1%, and
+<=5% season/stage regression. Otherwise retain expanding history. Report earlier
+and recent eras separately. No head/window gain establishes independent evidence.
 
-Prospective evidence requires six qualifying paired slates, >=40 games, T−2h
-target/T−1h hard freeze and >=24h outcome stabilization. Prespecified weekly
-state/context updates do not reset the window; design/fitting/calibration
-changes do. Heads, preseason parameters and calibration remain fixed during the
-prospective season. Genuine live availability is mandatory; reconstructed
-historical coverage cannot satisfy it. Phase 7 remains separately approved.
+Outcome variance is mean squared earlier nested rolling-origin prediction error
+(floor `1e-6`), requiring an eligible prior residual season. Rating posterior
+variance is reported separately and is not added again. Use Gaussian marginal
+target distributions, analytical CRPS and 50/80/95% intervals. No current-validation
+or training-fit residuals may calibrate uncertainty; no second calibration or
+mean-bias correction is in this registry. Separate margin/total heads do not
+claim a coherent joint team-score distribution. NB2/arithmetic are later challengers.
+
+Prospective evidence requires six qualifying normal-coverage paired slates,
+>=40 games, T−2h target/T−1h hard measured freeze, and >=24h after the last included
+game's completion for scoring. Week 0 and historical replays do not count. Contract
+05 separates tooling completion from authentic live readiness; 06 collects evidence.
+Prespecified prior-week state/offset updates do not reset the window; changes to
+design/fitting/calibration/source semantics do. Preseason/noise/head/calibration
+parameters stay fixed during the prospective season. Markets are comparison-only
+after football evaluation; promotion requires a separate contract.
 
 ## Ordered evaluation layers
 
@@ -68,14 +90,17 @@ V4 selected its ten routes with sealed 2022–2024 temporal OOF evidence, a
 frozen design, one locked-2025 anti-regression evaluation, and an unchanged
 2021–2025 refit. Its established metrics include MAE, RMSE, bias, sample count,
 paired bootstrap intervals, and season-level results. It remains the production
-champion and direct comparator.
+champion and direct comparator. Historical paired reporting requires valid V4
+training/cutoff lineage on the same games; do not imply clean V4 predictions for
+every expanded-history season. V4 uncertainty is currently unavailable; mark its
+missing CRPS/calibration as unavailable rather than invent variance.
 
 ## Protected prospective 2026 policy
 
 The successor-v2 research corpus is 2015–2019 and 2021–2025; 2020 is excluded
 from every input, label, prior, and fold. This is historical development and
 temporal-validation evidence, not an untouched test set. Candidate v1 remains
-an O2 diagnostic baseline; candidate v2 receives a new prospective lane. For
+an O2 diagnostic baseline; the V5 ratings successor receives a new prospective lane. For
 every 2026 candidate:
 
 1. Record immutable candidate identity, code/config lineage, training cutoff,

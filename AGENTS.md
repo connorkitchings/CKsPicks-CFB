@@ -70,7 +70,7 @@ print(f"✅ Data root verified: {data_root}")
 - Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
-- The approved 2026-09-08 replacement compares learned preseason priors and one Kalman challenger; the original Phase 4B manifest is ineligible for new forecasting. Polls and direct-core models are diagnostic-only.
+- The approved 2026-09-13 V5 package compares two possession definitions, learned preseason priors and one Kalman challenger. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Polls and direct-core models are diagnostic-only.
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
@@ -217,7 +217,9 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   same day: run `2026w3-68fe6a815bd6` activated 57/57/56 (Houston @ Texas
   Tech total not yet posted); progressive republish Mon-Wed, then freeze
   before kickoff. The v4 feature
-  chain is intentionally unchanged; the rebuild-2026 plan remains Draft.
+  chain is intentionally unchanged. The old rebuild is a superseded root-cause
+  record; the independent feature-v5 diagnostic resumes under
+  `docs/plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`.
 - 🧭 **Historical ratings evidence:** R1 is certified at
   `r1-full-corpus-20260831-5f2a384`; its immutable coverage report has
   `tournaments_permitted: true`. The fresh, code-bound Preview admission at
@@ -236,13 +238,16 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
   `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
   independently verified and idempotently rerun on 2026-09-11).
-  It is benchmark evidence before a dedicated possession-based methodology plan.
-  Ratings should represent scoring efficiency per possession with uncertainty;
-  possession volume is translated separately. Phase 4A–6 remain execution-held
-  approved records pending replacement or reaffirmation. Polls/direct models are
-  diagnostic-only.
-  O2 candidate-v1 at `ac1fba1` is diagnostic-only. See
-  `docs/planning/data-first-football-forecasting-roadmap.md`.
+  It is benchmark evidence. **V5 ratings successor checkpoint (2026-09-13):**
+  the possession methodology is specified and amended; possession measurements
+  remain uncertified. The next ratings task is 02: possession measurement
+  certification. V5 ratings successor is distinct from V4 feature schema v5;
+  contract 01 is the independent diagnostic closure. September 8 Phase 4A–6
+  contracts are Superseded by the V5 package; only explicitly inherited mathematics
+  carry forward. The first release uses a rating-to-margin/total Ridge bridge;
+  possession arithmetic is a later challenger. Polls/direct models and O2
+  candidate-v1 at `ac1fba1` are diagnostic-only. See the canonical
+  [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md).
 
 **Roadmap (2026 transition):** `docs/planning/roadmap.md` ·
 **Weekly ops:** `docs/ops/weekly_pipeline.md` ·

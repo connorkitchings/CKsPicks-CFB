@@ -28,24 +28,46 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
-### Data-first football forecasting
+### V5 ratings successor: current contracts
 
-The [2026-09-08 review and authority reset](2026-09-08/transformation-review-and-authority-reset.md)
-records the approved corrective checkpoint. The original Phase 4B result cannot
-be consumed by Phase 5. Ratings remain mandatory; polls/direct models are diagnostics.
+The [September 13 common contract](2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+is Approved; the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the canonical status page. Repair v2 is verified and Phase 3 v2 is certified.
+The possession methodology is specified and amended; possession measurements
+remain uncertified. The next ratings task is 02: possession measurement
+certification. V5 ratings successor is distinct from V4 feature schema v5.
+The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
-| Current contract or record | Status and dependency |
+| Contract | Status and dependency |
 | --- | --- |
-| [Repair and recertification v2](2026-09-08/data-first-repair-and-recertification-v2.md) | **Implemented and independently Preview-verified.** Sole repaired modeling parent. |
-| [Phase 3 compact-state measurement/core v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **Implemented.** Certified Preview apply `phase3-v2-compact-state-20260910-r2` (2026-09-11): preflight, apply, independent verifier (`verified`), and idempotent rerun (`already_applied`) all passed; selection `quality_core_epa_split`. Historical reconstructed benchmark evidence only — no production activation. The September 8/9 contracts retain inherited modeling decisions and historical context. |
-| [Documentation alignment and next research steps](2026-09-10/documentation-alignment-and-next-research-steps.md) | **Implemented.** Records the agreed possession-based direction and the required methodology-design handoff. |
-| [Possession-based rating methodology specification](2026-09-11/possession-rating-methodology-specification.md) | **Implemented.** Decision-complete first-generation specification persisted in [possession rating methodology](../modeling/possession_rating_methodology.md): two competing rating definitions, full carried-forward Phase 4A v2 prior/updater grid, plays-per-drive volume proxy, OT excluded from rating evidence, non-offense scoring as a translation-only state. Possession measurements remain uncertified; next is the measurement certification contract (annex A). |
-| [Phase 4A prior/dynamic ratings v2](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | **Approved record; execution held.** Its prior/updater grid is reaffirmed only as carried forward onto the possession rating definitions by the 2026-09-11 methodology contract. |
-| [Phase 4B pregame context v2](2026-09-08/phase4b-pregame-context-selection-v2.md) | **Approved record; execution held** pending replacement forecasting design. |
-| [Phase 5 rating-based forecasts v2](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | **Approved record; execution held** pending replacement forecasting design. |
-| [Phase 6 prospective evidence v2](2026-09-08/phase6-prospective-evidence-v2.md) | **Approved record; execution held** pending a verified replacement candidate. |
+| 00: [Documentation alignment](2026-09-13/00-v5-documentation-and-methodology-alignment.md) | **Implemented.** Completed 2026-09-13: documentation and authority tests aligned; no computational certification. |
+| 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
+| 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Approved.** Next ratings task after 00; requires verified Repair v2 sources. Possession measurements remain uncertified. |
+| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Approved.** Blocked on independently verified 02 measurements. |
+| 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Blocked on independently verified 03 ratings. |
+| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Blocked on verified 04 candidate; live readiness must pass separately. |
+| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |
 
-Each research phase requires a separate implementation task; documentation approval executes no phase.
+Each task names one exact contract. Approval does not satisfy a missing verified
+parent, certify data, or create prospective evidence. Contract 01 is independent
+of the rating sequence. No promotion or serving change is authorized.
+
+### Certified foundations and superseded execution records
+
+| Record | Status and permitted use |
+| --- | --- |
+| [Repair v2](2026-09-08/data-first-repair-and-recertification-v2.md) | **Implemented and independently Preview-verified.** Exact repaired source/population parent. |
+| [Phase 3 compact-state v2](2026-09-10/phase3-v2-compact-tournament-state.md) | **Implemented.** `phase3-v2-compact-state-20260910-r2`, selected `quality_core_epa_split`; independent verification and idempotent rerun passed 2026-09-11. Historical reconstructed benchmark only. |
+| [September 10 alignment](2026-09-10/documentation-alignment-and-next-research-steps.md) | **Implemented.** Historical documentation checkpoint. |
+| [September 11 methodology specification](2026-09-11/possession-rating-methodology-specification.md) | **Implemented.** Original documentation milestone; amended by the September 13 package and current [methodology](../modeling/possession_rating_methodology.md). Not possession certification. |
+| [September 8 Phase 4A](2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md) | **Superseded** by 03; only explicitly inherited mathematical sections remain binding. |
+| [September 8 Phase 4B](2026-09-08/phase4b-pregame-context-selection-v2.md) | **Superseded** by 04; additional context selection deferred. |
+| [September 8 Phase 5](2026-09-08/phase5-rating-based-forecast-selection-v2.md) | **Superseded** by 04; first release is the Ridge bridge, not the old family registry. |
+| [September 8 Phase 6](2026-09-08/phase6-prospective-evidence-v2.md) | **Superseded** by 05–06; old runners are not authorized by mathematical inheritance. |
+
+The [September 8 review](2026-09-08/transformation-review-and-authority-reset.md)
+retains its exact findings and historical approvals. Neither old manifest hashes
+nor historical implementation completion establish current forecast eligibility.
 
 ### Retained transformation engineering and superseded evidence
 
@@ -88,15 +110,13 @@ Each research phase requires a separate implementation task; documentation appro
   YTD: spread 380-366-16, total 340-292-5. Live `current_week` restored.
 
 - [2026 v5 shadow rebuild diagnostic](2026-09-10/2026-v5-shadow-rebuild-diagnostic.md)
-  — **In Progress — BLOCKED on W2 finals (Amendments 1–3).** All Tier 1 + Tier 2
-  gates pass (W0 confinement + 8/8 exact; W1/W2 byte-identical reruns + 43/43 and
-  49/49 exact controls, assembler path-equivalence byte-identical + exact).
-  Three strict v5 Golds + three shadow prediction artifacts in Preview R2; W0/W1
-  shadows scored. Interim (not a verdict): v5 predictions are bit-identical to
-  v4 for all 51 W0/W1 games. W2 first kickoff Fri 2026-09-11 → pooled W1+W2
-  verdict + kill criterion resume after the Week 2 close. W2 shadow frozen
-  pre-kickoff and grading-ready. Preview-only, no serving writes. Replaces the
-  contract below as the executable plan.
+  — **In Progress.** Completed parity gates and Week 0/1 scored artifacts remain
+  intact. The September 13 operations record establishes Week 2 closure; resume
+  Task 5 under [contract 01](2026-09-13/01-v4-feature-v5-diagnostic-closure.md)
+  only after fresh verification of exact final-outcome and shadow refs. The pooled
+  verdict is pending, not completed by this documentation update. This V4 feature
+  schema v5 diagnostic is independent of V5 ratings. Preserve its threshold
+  calculation and use paired prediction/error changes for causal interpretation.
 
 - [Rebuild 2026 predictions with correct features](2026-09-09/rebuild-2026-predictions.md)
   — **Superseded as executable plan** by the shadow diagnostic above;

@@ -38,8 +38,8 @@ The new program uses this flow:
 
 ```text
 audited immutable data → football measurements → opponent adjustment
-→ scoring-efficiency ratings + uncertainty → possession-volume translation
-→ expected scores → spread and total forecasts
+→ scoring-efficiency ratings + uncertainty → Ridge margin/total bridge
+→ prior-only non-offense translation offsets → calibrated forecasts
 → prospective evaluation → timestamped line comparison
 ```
 
@@ -55,17 +55,35 @@ development corpus, including 2025 as development evidence, applies only to
 this namespace. Existing V4 and named benchmark identities retain their
 original season policies and locations.
 
-The intended rating meaning is expected scoring efficiency per possession against
-an average opponent under standard conditions. Possession eligibility, scoring
-attribution, normalization, estimator, and update mechanics remain unimplemented
-until a dedicated methodology contract is approved. The existing Phase 3 v2 run
-is benchmark-only; the September 8 Phase 4A–6 contracts are execution-held
-records pending replacement or explicit reaffirmation.
+**V5 ratings successor checkpoint (2026-09-13):** Repair v2 is verified and
+Phase 3 v2 is certified. The possession methodology is specified and amended;
+possession measurements remain uncertified. The next ratings task is
+02: possession measurement certification. V5 ratings successor is distinct from
+V4 feature schema v5, the independent diagnostic. The
+[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the canonical status page.
 
-Research code cannot publish, freeze, close, migrate, deploy, or change live
-state. Timestamped market lines are joined after football evaluation for
-comparison. Betting selection, staking, bankroll management, and threshold
-optimization are outside the program.
+Current execution follows the [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
+The original Phase 4B retained manifest remains prohibited as a forecasting
+parent; September 8 Phase 4A–6 execution contracts are Superseded. Only explicitly
+inherited mathematics carry forward. Version new code/artifacts under
+`artifacts/research/data-first-football-v1/possession-v1/`; no catalog registration
+or production schema changes are authorized.
+
+Measurements record possession and scoring-ledger evidence. Four-pass opponent
+adjustment occurs upstream once. Ratings accumulate that evidence with uncertainty;
+non-offense expectations belong only to translation. The first release is
+bridge-first; volume arithmetic/clock tempo, normalization and expanded model
+families are later challengers. Outcome variance is calibrated from prior
+prediction errors and is distinct from rating variance. Parameter-fitting windows
+may vary while continuous football-state history remains intact.
+
+Research commands may freeze and score isolated shadow artifacts under contracts
+05–06; they cannot publish, freeze, close, migrate, deploy or alter **production**
+state. Live readiness and six-slate evidence are separate from implementation
+completion. Timestamped market quotes are joined after football evaluation only.
+Betting selection, staking, bankroll management and threshold optimization are
+outside this program.
 
 ## Dependency direction
 

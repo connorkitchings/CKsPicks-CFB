@@ -3,19 +3,21 @@
 CKsPicks-CFB is a college-football prediction system with a Python pipeline,
 an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Current posture
+## Current posture (2026-09-13)
 
-**V4 is the live 2026 production champion.** It publishes spread and total
-predictions through the fail-closed weekly operations workflow. New research is
-governed by the [data-first football forecasting roadmap](planning/data-first-football-forecasting-roadmap.md).
-Repair v2 is verified; the committed [Phase 3 v2 benchmark](plans/2026-09-10/phase3-v2-compact-tournament-state.md)
-still needs Preview certification. The next design task will define the
-possession-based rating methodology before replacement Phase 4A–6 contracts.
-The [2026-09-08 review](plans/2026-09-08/transformation-review-and-authority-reset.md)
-blocks the original Phase 4B manifest from new forecasting. Completed R1/R2 and
-earlier candidate work remain historical evidence subject to audit. 2020 is
-excluded globally; 2025 is development data only inside the new research
-namespace; future frozen predictions provide independent evidence.
+**V4 remains the live production champion.** The **V5 ratings successor** is
+isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
+Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). The possession
+methodology is specified and amended; possession measurements remain uncertified.
+The next ratings task is **02: possession measurement certification**; contract 01
+is the independent diagnostic closure. The [data-first roadmap](planning/data-first-football-forecasting-roadmap.md)
+is the canonical status and execution-queue authority.
+
+The original Phase 4B retained manifest remains prohibited as a forecasting
+parent. Earlier candidate results keep their historical audit limits. New research
+uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and requires
+future pre-kickoff freezes for independent evidence. Production operations remain
+under their existing runbooks.
 
 The target flow is:
 
@@ -39,7 +41,7 @@ deferred.
 - [2026 operations and historical roadmap](planning/roadmap.md) — current V4
   operations and the completed/superseded research record.
 - [Rating-system requirements](modeling/rating_system_requirements.md) — the
-  agreed rating meaning and unresolved possession-methodology decisions.
+  specified and amended V5 rating meaning, certification gates, and deferred challengers.
 - [Measurement catalog](modeling/measurement_catalog.md) — football
   measurements, provenance, and rating eligibility.
 - [V4 regime contract](modeling/early_season_regimes.md) — live production

@@ -11,6 +11,15 @@
 - **Implementation log:** `session_logs/2026-09-11/06-possession-methodology-implementation.md`
 - **Commit policy:** Commit with implementation (contained documentation work).
 
+> **Methodology amended (2026-09-13):** This remains an Implemented historical
+> documentation milestone with its original approval source. Current semantics
+> follow the [V5 common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> and [amended methodology](../../modeling/possession_rating_methodology.md): fixed
+> constants with earlier-only fitted scales, prior-dependent precision, explicit
+> scoring accounting, bridge-first forecasts, and a bounded fitting-window test.
+> The original text below records the September 11 design, not current execution
+> authority. Possession measurements remain uncertified until V5 contract 02 passes.
+
 ## Goal
 
 Settle every open methodology decision for the possession-based rating system

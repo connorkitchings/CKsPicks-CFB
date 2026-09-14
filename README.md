@@ -3,14 +3,21 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Research checkpoint
+## Research checkpoint (2026-09-13)
 
-Repair v2 is independently verified, while the committed [Phase 3 v2
-benchmark](docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md) still
-needs Preview certification. The next design task will define a possession-based
-rating methodology before any new rating, context, or forecasting contract can
-run. The [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
-is the current status authority; V4 remains unchanged.
+**V4 remains the live production champion.** The **V5 ratings successor** is
+isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
+Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). The possession
+methodology is specified and amended; possession measurements remain uncertified.
+The next ratings task is **02: possession measurement certification**; contract 01
+is the independent diagnostic closure. The [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
+is the canonical status and execution-queue authority.
+
+The original Phase 4B retained manifest remains prohibited as a forecasting
+parent. Earlier candidate results keep their historical audit limits. New research
+uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and requires
+future pre-kickoff freezes for independent evidence. Production operations remain
+under their existing runbooks.
 
 ## 2026 posture
 
@@ -29,8 +36,8 @@ audited football data → validated measurements → opponent adjustment
 The program uses 2015–2019 and 2021–2025 as development evidence and excludes
 2020. It starts by preserving and clarifying repository architecture, auditing
 and repairing data, then testing measurements, preseason priors, team ratings
-and rating-based forecasts. V4 remains isolated from research, Neon activation, and public
-publication. Future frozen forecasts provide independent evidence. Market lines
+and rating-based forecasts. Research cannot alter V4 bundles, Neon activation,
+or public publication. Future frozen forecasts provide independent evidence. Market lines
 are comparison evidence only; betting decisions are deferred.
 
 ## Documentation

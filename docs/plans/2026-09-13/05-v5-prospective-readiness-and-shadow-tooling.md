@@ -1,0 +1,160 @@
+# V5-05: Prospective Readiness and Shadow-Operation Tooling
+
+- **Status:** Approved
+- **Created:** 2026-09-13
+- **Planner:** Codex planning task
+- **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires verified forecast parents.
+- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-prospective-readiness-and-shadow-tooling.md`.
+- **Commit policy:** Separate code and rehearsal/readiness checkpoints; user executes Git.
+
+## Goal, current state, and entry gate
+
+Make the candidate from [04](04-v5-forecast-bridge-and-fitting-window.md)
+reproducibly operable in an isolated prospective lane, with honest live readiness.
+The [common contract](v5-ratings-successor-roadmap-and-contracts.md) is binding.
+Require independently verified candidate, rating, measurement and Repair refs.
+The existing candidate-v1 shadow system is historical compatibility evidence,
+not permission to reuse its six-slate counter or candidate identity.
+
+This contract completes tooling and a diagnostic rehearsal. Actual prospective
+slate collection and recommendations belong to [06](06-v5-prospective-evidence-and-recommendation.md).
+
+## Approach, scope, and interfaces
+
+Implement isolated research `readiness`, `freeze`, `score`, and evidence-ledger
+operations in the new possession namespace with CLIs under `scripts/research/`.
+Do not alter production `publish-week`, `freeze-week`, or `close-week`, V4 bundles,
+Neon activation, serving tables, or web publication. No catalog registration,
+new provider acquisition, subscription, or recurring automation is authorized.
+Use already permitted capture workflows and explicit immutable input refs.
+
+Common CLI flags apply. Require `--candidate-manifest-uri`; live readiness/freeze
+also require `--season`, `--week`, `--as-of`, `--v4-prediction-ref-uri`,
+`--input-refs-uri`, and the declared slate/schedule ref. Score requires an exact
+freeze manifest and outcome ref rather than a mutable current-week lookup.
+Stage: `shadow`. Output records: `readiness`, `shadow_freeze`,
+`shadow_prediction`, `shadow_evaluation`, `evidence_counter`, and
+`shadow_rehearsal`. Use candidate/season/week/run keys; predictions add game/target;
+evaluation adds outcome version. Diagnostic runs have an explicit permanently
+ineligible evidence class.
+
+## Implementation tasks
+
+### Task 1 — Validate authentic source availability and candidate readiness
+
+Resolve and independently verify every candidate parent. Check required live
+season schedule, completed-game sources, score/possession semantics, priors and
+auxiliary inputs, and the ability to reconstruct all team states at the cutoff.
+Source-capture timestamps and effective times must substantiate availability
+before the candidate freeze. A historically reconstructed preseason feature
+does not become authentic simply because it can be queried today.
+
+Use only the candidate's already declared optional-input fallbacks. Reject an
+unavailable mandatory input; do not add a new fallback, reinterpret a roster
+snapshot as preseason, or recapture and backdate data during readiness. Persist
+per-source available/unavailable status, timing class, selected fallback, and
+blocked reasons. The existing live capture path must be operationally usable.
+
+**Acceptance:** Readiness is `ready` only with reproducible complete candidate
+forecasts and authentic input evidence. A report can be technically verified
+and still `blocked`; no freeze is eligible until ready.
+
+### Task 2 — Replay only frozen algorithm updates
+
+Freeze the full candidate algorithm and fitted prior/noise/head/calibration
+parameters through the preceding completed season. Update ratings and non-offense
+offsets only from permitted finalized games in earlier canonical weeks whose
+source information was available before this freeze. The same rules apply to
+both candidate replay and information-cutoff comparison with V4.
+
+Do not refit priors, noise, heads, alpha choices or calibration on accumulating
+prospective outcomes. New state identities under unchanged candidate rules do
+not reset the window. A change to features, definitions, fitting/calibration,
+cutoffs, source semantics or algorithm creates a new identity and a fresh window.
+The next season may use the frozen annual fitting recipe; a changed design
+cannot inherit earlier protected counts.
+
+**Acceptance:** Replay proves one-use prior observations, no current-week outcome
+updates, and identical forecasts from identical candidate/state/input refs.
+
+### Task 3 — Implement measured immutable freezes
+
+Use the first kickoff of the declared normal-coverage slate. Target T−2h and
+require both V4 and candidate frozen at least T−1h before that kickoff. The
+measured freeze completion/object-availability time is authoritative; a supplied
+`--as-of` cannot backdate it. Bind the candidate identity, code/config/data/model/
+state refs, slate membership digest, source-availability proofs, and exact V4 ref.
+
+Require >=40 unique paired games with complete finite predictions for both
+targets and normal schedule coverage. Preserve the candidate's complete broader
+FBS-involving population, paired subset, and every exclusion separately; no
+post-kickoff subset construction to evade an earlier kickoff. Week 0, pre-candidate
+slates, diagnostic replays, late/incomplete/unverifiable/altered freezes never
+qualify. Quote omissions do not determine football eligibility.
+
+Preserve the declared population when schedule changes occur. A cancellation or
+postponement remains visible with its disposition; it cannot create a new
+retroactively convenient slate. Any scored paired count falling below 40 is
+ineligible. Replacement/rescheduled fixtures require authentic future forecasts
+under a separately declared slate, with no duplicate game evidence.
+
+**Acceptance:** Fail closed on timing, identity, population, source or prediction
+failure. Repeated freeze calls reuse the same immutable identity or reject an
+incompatible collision; they never rewrite evidence.
+
+### Task 4 — Implement outcome-versioned scoring and counting
+
+Score only finalized paired games, no earlier than 24 hours after the last
+included game's completion. Missing trustworthy completion timestamp or outcome
+blocks scoring, not the already-recorded freeze. Do not substitute kickoff plus
+an assumed game duration. Persist exact outcome versions and corrections as new
+evaluation versions; never overwrite original freeze or scoring evidence.
+
+Calculate MAE/RMSE/bias, candidate CRPS/interval coverage/width, stages, and
+paired/broader coverage. V4 uncertainty may be unavailable; report it as such.
+Maintain an explicit ledger of qualifying and nonqualifying slates with reasons.
+Count a candidate/season/week slate once, and ensure corrected evaluations cannot
+increment the counter again. Preserve old and current evaluation-version links.
+
+**Acceptance:** Scoring and counters independently reproduce from immutable refs.
+Outcome corrections retain history and never manufacture an earlier freeze.
+
+### Task 5 — Rehearse, independently verify, and publish readiness
+
+Run a full historical future-like rehearsal using exact source and model refs,
+with `diagnostic_only` permanently preventing prospective counting. Exercise
+readiness → forecast/state replay → freeze validation → stabilized scoring →
+counter reconstruction, including deliberate negative cases. No public outputs
+or serving writes. The verifier must recompute timing, source availability,
+population, predictions, scores and ledger counts from source artifacts.
+
+Then perform a read-only real-season readiness assessment using currently
+available exact inputs. Produce a ready or blocked report with concrete reasons;
+do not fix data/model semantics silently. Update a V5 shadow runbook with exact
+commands, refs, cutoffs, failure recovery, counter rules and the contract 06 handoff.
+This does not create a scheduler or start future slate collection automatically.
+
+## Testing strategy
+
+Run common computational gates plus exact T−2h/T−1h boundaries, 24-hour scoring
+boundaries, source-time contradictions, current-week outcomes, unavailable
+preseason inputs, failed mandatory versus optional fallback, missing scores,
+cancellations/postponements, unknown final timestamps, duplicate counts,
+corrections, immutable collision, and candidate-change reset tests. Independently
+verify a complete diagnostic rehearsal and idempotent rerun.
+
+## Risks, definition of done, and amendments
+
+Live availability can fail despite excellent reconstructed historical coverage.
+Do not mark live-ready based solely on engineering completion. This task is not
+permission to change V4's freeze schedule to make a pairing qualify.
+
+- [ ] Tooling, schemas, runbook and complete diagnostic rehearsal are independently verified.
+- [ ] Real-season readiness report lists exact available inputs/fallbacks/blockers.
+- [ ] No rehearsal contributes to prospective counts; zero production/serving writes.
+- [ ] Required checks/docs/session log complete and engineering status recorded.
+
+This contract may close its tooling work with a verified **blocked** readiness
+report, but its live-readiness dependency remains unmet and 06 cannot collect
+eligible evidence. A material source/model change requires a planning amendment;
+mechanical readiness follow-up preserves this contract's rules.

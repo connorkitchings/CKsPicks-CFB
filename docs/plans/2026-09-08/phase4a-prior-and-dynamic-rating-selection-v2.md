@@ -1,11 +1,18 @@
 # Phase 4A: Prior and Dynamic Rating Selection v2
 
-- **Status:** Approved
+- **Status:** Superseded
 - **Created:** 2026-09-08
 - **Planner:** Astra
 - **Approval source:** User approved the full replacement plan on 2026-09-08, including early-season advancement at full-season parity and a Kalman challenger without adaptive volatility.
 - **Implementation log:** Pending repaired Phase 3 and separate Phase 4A task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
+
+> **Superseded (2026-09-13):** Execution authority is [03: possession rating estimation](../2026-09-13/03-v5-possession-rating-estimation.md).
+> Preserve the original approval, historical hold notice, and mathematical record
+> below. Only sections explicitly inherited by the
+> [V5 common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> carry forward. This does not authorize executing old runners or consuming the
+> original Phase 4B retained manifest as a forecasting parent.
 
 > **Execution hold (2026-09-10):** This remains an Approved historical record
 > with its original approval source. Do not execute it until a verified Phase 3
