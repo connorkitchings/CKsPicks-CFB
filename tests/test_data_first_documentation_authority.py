@@ -134,7 +134,7 @@ def test_all_v5_contracts_are_linked_with_accurate_lifecycle(name: str):
     contract = (V5_DIR / name).read_text()
     status = re.search(r"^- \*\*Status:\*\* (.+)$", contract, re.MULTILINE)
     assert status is not None
-    if name.startswith("00-"):
+    if name.startswith(("00-", "02-")):
         assert status[1] in {"In Progress", "Implemented"}
     else:
         assert status[1] == "Approved"

@@ -1,10 +1,10 @@
 # V5-02: Possession Measurement Certification
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-possession-measurement-certification.md`.
+- **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate

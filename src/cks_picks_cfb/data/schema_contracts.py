@@ -73,6 +73,33 @@ from cks_picks_cfb.data.data_first_phase4b import (
 from cks_picks_cfb.data.data_first_phase4b import (
     PREDICTION_COLUMNS as PHASE4B_PREDICTION_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    COVERAGE_COLUMNS as POSSESSION_COVERAGE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    HISTORY_COLUMNS as POSSESSION_HISTORY_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    OBSERVATION_COLUMNS as POSSESSION_OBSERVATION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    POPULATION_COLUMNS as POSSESSION_POPULATION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    POSSESSION_COLUMNS as POSSESSION_LEDGER_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    POSSESSION_DATASETS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    SCORING_EVENT_COLUMNS as POSSESSION_SCORING_EVENT_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    SNAPSHOT_COLUMNS as POSSESSION_SNAPSHOT_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    TERMINAL_COLUMNS as POSSESSION_TERMINAL_COLUMNS,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import (
     AUXILIARY_COLUMNS as REPAIR_AUXILIARY_COLUMNS,
 )
@@ -815,6 +842,232 @@ _PHASE3_V2_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+_POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
+    POSSESSION_DATASETS["population"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["population"][0],
+        schema_version=POSSESSION_DATASETS["population"][1],
+        required=POSSESSION_POPULATION_COLUMNS,
+        keys=("season", "game_id"),
+        integer_columns=("season", "week", "game_id"),
+        boolean_columns=(
+            "schedule_completed",
+            "outcome_valid",
+            "forecast_eligible",
+            "measurement_usable",
+        ),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "kickoff_utc",
+            "home_team",
+            "away_team",
+            "schedule_completed",
+            "outcome_valid",
+            "forecast_eligible",
+            "measurement_usable",
+            "population_disposition",
+            "measurement_disposition",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["possessions"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["possessions"][0],
+        schema_version=POSSESSION_DATASETS["possessions"][1],
+        required=POSSESSION_LEDGER_COLUMNS,
+        keys=("season", "game_id", "drive_number", "offense"),
+        integer_columns=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "eligible_play_count",
+            "ineligible_play_count",
+        ),
+        boolean_columns=("mixed_eligibility", "possession_eligible"),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "drive_number",
+            "offense",
+            "period_class",
+            "eligible_play_count",
+            "ineligible_play_count",
+            "mixed_eligibility",
+            "possession_eligible",
+            "source_play_ids",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["scoring_events"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["scoring_events"][0],
+        schema_version=POSSESSION_DATASETS["scoring_events"][1],
+        required=POSSESSION_SCORING_EVENT_COLUMNS,
+        keys=("season", "game_id", "source_event_id", "team"),
+        integer_columns=("season", "game_id", "drive_number", "score_increment"),
+        nonnullable=(
+            "season",
+            "game_id",
+            "source_event_id",
+            "team",
+            "score_increment",
+            "scoring_category",
+            "unit_category",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["observations"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["observations"][0],
+        schema_version=POSSESSION_DATASETS["observations"][1],
+        required=POSSESSION_OBSERVATION_COLUMNS,
+        keys=("season", "game_id", "team", "measurement_id", "unit_role"),
+        integer_columns=("season", "week", "game_id"),
+        timestamp_columns=("kickoff_utc",),
+        nonnullable=(
+            "season",
+            "week",
+            "game_id",
+            "kickoff_utc",
+            "team",
+            "opponent",
+            "side",
+            "measurement_id",
+            "unit_role",
+            "numerator",
+            "denominator",
+            "usable_exposure",
+            "exposure_unit",
+            "coverage_status",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["snapshots"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["snapshots"][0],
+        schema_version=POSSESSION_DATASETS["snapshots"][1],
+        required=POSSESSION_SNAPSHOT_COLUMNS,
+        keys=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "team",
+            "measurement_id",
+            "unit_role",
+            "adjustment_iteration",
+        ),
+        integer_columns=("season", "week", "as_of_game_id", "adjustment_iteration"),
+        timestamp_columns=("as_of_kickoff_utc", "target_week_cutoff_utc"),
+        nonnullable=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "as_of_kickoff_utc",
+            "target_week_cutoff_utc",
+            "team",
+            "measurement_id",
+            "unit_role",
+            "adjustment_iteration",
+            "primary_exposure",
+            "games_exposure",
+            "source_game_count",
+            "timing_class",
+            "availability_policy",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["adjusted_history"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["adjusted_history"][0],
+        schema_version=POSSESSION_DATASETS["adjusted_history"][1],
+        required=POSSESSION_HISTORY_COLUMNS,
+        keys=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "source_season",
+            "source_game_id",
+            "team",
+            "measurement_id",
+            "unit_role",
+            "adjustment_iteration",
+        ),
+        integer_columns=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "source_season",
+            "source_week",
+            "source_game_id",
+            "adjustment_iteration",
+        ),
+        timestamp_columns=(
+            "target_week_cutoff_utc",
+            "source_kickoff_utc",
+            "source_available_utc",
+        ),
+        boolean_columns=("included",),
+        nonnullable=(
+            "season",
+            "week",
+            "as_of_game_id",
+            "target_week_cutoff_utc",
+            "source_season",
+            "source_week",
+            "source_game_id",
+            "source_kickoff_utc",
+            "source_available_utc",
+            "team",
+            "opponent",
+            "measurement_id",
+            "unit_role",
+            "adjustment_iteration",
+            "numerator",
+            "denominator",
+            "included",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["terminal"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["terminal"][0],
+        schema_version=POSSESSION_DATASETS["terminal"][1],
+        required=POSSESSION_TERMINAL_COLUMNS,
+        keys=("season", "team", "measurement_id", "unit_role", "adjustment_iteration"),
+        integer_columns=("season", "adjustment_iteration"),
+        nonnullable=(
+            "season",
+            "team",
+            "measurement_id",
+            "unit_role",
+            "adjustment_iteration",
+            "primary_exposure",
+            "games_exposure",
+            "source_game_count",
+            "timing_class",
+        ),
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+    POSSESSION_DATASETS["coverage"][0]: DatasetSchema(
+        dataset=POSSESSION_DATASETS["coverage"][0],
+        schema_version=POSSESSION_DATASETS["coverage"][1],
+        required=POSSESSION_COVERAGE_COLUMNS,
+        keys=("season", "slice", "measurement_id"),
+        integer_columns=(
+            "season",
+            "schedule_games",
+            "scoreable_games",
+            "usable_team_games",
+            "quarantined_team_games",
+        ),
+        nonnullable=POSSESSION_COVERAGE_COLUMNS,
+        allowed_values={"timing_class": ("historically_reconstructed",)},
+    ),
+}
+
 _RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -1508,6 +1761,13 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, "
                 f"got {schema_version}"
+            )
+        return schema
+    if dataset in _POSSESSION_SCHEMAS:
+        schema = _POSSESSION_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"
             )
         return schema
     if dataset in _SILVER_REQUIRED:
