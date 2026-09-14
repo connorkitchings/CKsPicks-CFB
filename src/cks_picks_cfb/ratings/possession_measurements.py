@@ -682,14 +682,40 @@ def replay_partitions(
         for week, games_in_week in games.groupby("week", sort=True):
             snapshots: list[dict[str, Any]] = []
             histories: list[dict[str, Any]] = []
+            candidates = eligible_obs[
+                eligible_obs["week"].astype(int) < int(week)
+            ].sort_values(["_available_utc", "game_id"], kind="mergesort")
+            source = candidates.iloc[0:0].copy()
+            source_end = 0
+            raw: dict[tuple[str, str, str], float] = {}
+            adjusted: dict[tuple[str, str, str], float] = {}
+            summaries: dict[tuple[str, str, str], tuple[float, float, int, int]] = {}
             for game in games_in_week.itertuples(index=False):
                 cutoff = pd.Timestamp(game.kickoff_utc)
-                source = eligible_obs[
-                    (eligible_obs["week"].astype(int) < int(game.week))
-                    & (eligible_obs["_available_utc"] <= cutoff)
-                ].copy()
-                # A source game has role rows for each side; adjustment consumes the team-side rows once.
-                raw, adjusted = _adjust(source)
+                while (
+                    source_end < len(candidates)
+                    and candidates.iloc[source_end]["_available_utc"] <= cutoff
+                ):
+                    source_end += 1
+                if source_end and source_end != len(source):
+                    # A source game has role rows for each side; calculate the
+                    # four-pass adjustment once per distinct prior source set,
+                    # then reuse it for all same-week target games that have
+                    # the identical availability boundary.
+                    source = candidates.iloc[:source_end].copy()
+                    raw, adjusted = _adjust(source)
+                    grouped = source.groupby(
+                        ["team", "unit_role", "measurement_id"], sort=False
+                    )
+                    summaries = {
+                        (str(key[0]), str(key[1]), str(key[2])): (
+                            float(rows["numerator"].sum()),
+                            float(rows["denominator"].sum()),
+                            int(rows["game_id"].nunique()),
+                            int(len(rows)),
+                        )
+                        for key, rows in grouped
+                    }
                 max_history = max(max_history, len(source))
                 for row in source.itertuples(index=False):
                     key = (str(row.team), str(row.unit_role), str(row.measurement_id))
@@ -723,20 +749,8 @@ def replay_partitions(
                     for role in ("offense", "defense"):
                         for measurement in ("ppp", "epa_per_possession"):
                             key = (team, role, measurement)
-                            rows = source[
-                                (source["team"] == team)
-                                & (source["unit_role"] == role)
-                                & (source["measurement_id"] == measurement)
-                            ]
-                            denom = (
-                                float(rows["denominator"].sum())
-                                if not rows.empty
-                                else 0.0
-                            )
-                            numerator = (
-                                float(rows["numerator"].sum())
-                                if not rows.empty
-                                else 0.0
+                            numerator, denom, games_exposure, source_game_count = (
+                                summaries.get(key, (0.0, 0.0, 0, 0))
                             )
                             for iteration, value in (
                                 (0, raw.get(key)),
@@ -758,10 +772,8 @@ def replay_partitions(
                                         else None,
                                         "adjusted_value": value,
                                         "primary_exposure": denom,
-                                        "games_exposure": int(rows["game_id"].nunique())
-                                        if not rows.empty
-                                        else 0,
-                                        "source_game_count": int(len(rows)),
+                                        "games_exposure": games_exposure,
+                                        "source_game_count": source_game_count,
                                         "timing_class": "historically_reconstructed",
                                         "availability_policy": "prior_week_and_source_kickoff_plus_6h",
                                     }

@@ -79,14 +79,22 @@
   partition boundaries and the fixed four-pass league-centered behavior. This
   does not alter possession definitions, source lineage, constants, schemas,
   or certification gates.
+- The first corrected no-write run at `377c479` still exceeded the operational
+  bound without emitting a result. It remained read-only and left
+  `possession-v1-measurements-20260913-377c479-r2` empty. The remaining hotspot
+  was redundant recalculation of identical strictly-prior source sets for each
+  target game in a week. The replay now advances source availability in kickoff
+  order and reuses the same four-pass result until a newly available source row
+  changes that set. This is another mechanical bounded-replay correction; a
+  new committed SHA and run ID are required before certification resumes.
 
 ## Handoff Notes
 
-- **Resume at:** User commits the bounded-replay correction, then capture its
-  SHA and select a new unused run ID containing that SHA. Invoke the possession
-  runner without `--apply` using the exact Repair manifest. Inspect source
-  reconciliation, coverage, counts, and digests before applying the same
-  identity.
+- **Resume at:** User commits the latest replay-cache correction, then capture
+  its SHA and select a new unused run ID containing that SHA. Invoke the
+  possession runner without `--apply` using the exact Repair manifest. Inspect
+  source reconciliation, coverage, counts, and digests before applying the
+  same identity.
 - **Watch out for:** No R2 apply, verifier, or idempotent rerun has occurred;
   do not mark the contract Implemented or unblock contract 03. The original
   no-write prefix remains empty; the next identity must bind the corrective
