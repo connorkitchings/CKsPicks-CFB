@@ -45,7 +45,7 @@ from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings.possession_measurements import (
     build_measurements,
-    build_replay,
+    replay_partitions,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -258,17 +258,11 @@ def preflight(
         outcomes=pd.concat(outcomes, ignore_index=True),
         population=population,
     )
-    snapshots, history, terminal, replay_evidence = build_replay(
-        population=population, observations=measurements.observations
-    )
     frames = {
         "population": population,
         "possessions": measurements.possessions,
         "scoring_events": measurements.scoring_events,
         "observations": measurements.observations,
-        "snapshots": snapshots,
-        "adjusted_history": history,
-        "terminal": terminal,
         "coverage": measurements.coverage,
     }
     plans = _plans()
@@ -285,6 +279,13 @@ def preflight(
                 part.reset_index(drop=True),
                 writers,
             )
+    replay_evidence = replay_partitions(
+        population=population,
+        observations=measurements.observations,
+        emit=lambda name, partition, frame: _add(
+            plans, name, partition, frame, writers
+        ),
+    )
     scale_diagnostics: dict[str, Any] = {
         "fixed_settings": {
             "ppp": {"floor": 0.30, "fallback": 1.0},

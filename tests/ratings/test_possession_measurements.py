@@ -5,8 +5,10 @@ from __future__ import annotations
 import pandas as pd
 
 from cks_picks_cfb.ratings.possession_measurements import (
+    _adjust,
     build_measurements,
     build_replay,
+    replay_partitions,
 )
 
 
@@ -164,7 +166,12 @@ def test_ppp_uses_offensive_attribution_and_defense_mirrors_opponent():
     )
     assert non_offense.loc[("Beta", "offense"), "raw_value"] == 7.0
     events = result.scoring_events[result.scoring_events["game_id"].eq(1)]
-    assert set(events.loc[(events["team"] == "Beta") & (events["score_increment"] == 7), "scoring_category"]) == {"regulation_non_offense"}
+    assert set(
+        events.loc[
+            (events["team"] == "Beta") & (events["score_increment"] == 7),
+            "scoring_category",
+        ]
+    ) == {"regulation_non_offense"}
 
 
 def test_missing_eligible_ppa_quarantines_epa_without_discarding_ppp():
@@ -183,7 +190,9 @@ def test_missing_eligible_ppa_quarantines_epa_without_discarding_ppp():
 def test_overtime_and_unknown_period_never_create_rating_possessions():
     plays = _plays()
     plays.loc[(plays["game_id"] == 1) & (plays["drive_number"] == 1), "quarter"] = 5
-    plays.loc[(plays["game_id"] == 1) & (plays["drive_number"].isin([2, 3])), "quarter"] = None
+    plays.loc[
+        (plays["game_id"] == 1) & (plays["drive_number"].isin([2, 3])), "quarter"
+    ] = None
     result = build_measurements(byplay=plays, population=_population())
     ledger = result.possessions[result.possessions["game_id"].eq(1)]
     assert not ledger["possession_eligible"].any()
@@ -206,3 +215,72 @@ def test_replay_is_strictly_prior_and_keeps_terminal_separate():
     assert snapshots[snapshots["week"].eq(2)]["source_game_count"].gt(0).any()
     assert not terminal.empty
     assert evidence["iterations"] == [0, 4]
+
+
+def test_replay_streams_declared_season_week_partitions():
+    result = build_measurements(byplay=_plays(), population=_population())
+    emitted: list[tuple[str, dict[str, int], pd.DataFrame]] = []
+    evidence = replay_partitions(
+        population=_population(),
+        observations=result.observations,
+        emit=lambda name, partition, frame: emitted.append((name, partition, frame)),
+    )
+    snapshots = [entry for entry in emitted if entry[0] == "snapshots"]
+    history = [entry for entry in emitted if entry[0] == "adjusted_history"]
+    terminal = [entry for entry in emitted if entry[0] == "terminal"]
+    assert [entry[1] for entry in snapshots] == [
+        {"season": 2025, "week": 1},
+        {"season": 2025, "week": 2},
+    ]
+    assert [entry[1] for entry in history] == [{"season": 2025, "week": 2}]
+    assert [entry[1] for entry in terminal] == [{"season": 2025}]
+    assert evidence["max_history_partition_rows"] > 0
+
+
+def test_four_pass_adjustment_matches_the_league_centered_definition():
+    history = pd.DataFrame(
+        [
+            {
+                "team": "Alpha",
+                "opponent": "Beta",
+                "unit_role": "offense",
+                "measurement_id": "ppp",
+                "numerator": 10.0,
+                "denominator": 10.0,
+            },
+            {
+                "team": "Gamma",
+                "opponent": "Delta",
+                "unit_role": "offense",
+                "measurement_id": "ppp",
+                "numerator": 30.0,
+                "denominator": 10.0,
+            },
+            {
+                "team": "Beta",
+                "opponent": "Alpha",
+                "unit_role": "defense",
+                "measurement_id": "ppp",
+                "numerator": 10.0,
+                "denominator": 10.0,
+            },
+            {
+                "team": "Delta",
+                "opponent": "Gamma",
+                "unit_role": "defense",
+                "measurement_id": "ppp",
+                "numerator": 30.0,
+                "denominator": 10.0,
+            },
+        ]
+    )
+    raw, adjusted = _adjust(history)
+    assert raw == {
+        ("Alpha", "offense", "ppp"): 1.0,
+        ("Gamma", "offense", "ppp"): 3.0,
+        ("Beta", "defense", "ppp"): 1.0,
+        ("Delta", "defense", "ppp"): 3.0,
+    }
+    # This symmetric fixture alternates between league center and raw values;
+    # the required fourth pass therefore returns to the original values.
+    assert adjusted == raw

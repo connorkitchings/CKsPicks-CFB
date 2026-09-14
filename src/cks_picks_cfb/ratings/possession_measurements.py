@@ -8,6 +8,8 @@ PPP requires.  All ambiguous evidence is quarantined rather than inferred.
 from __future__ import annotations
 
 import json
+from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,10 +18,13 @@ import pandas as pd
 
 from cks_picks_cfb.data.data_first_possession_v1 import (
     COVERAGE_COLUMNS,
+    HISTORY_COLUMNS,
     MEASUREMENTS,
     OBSERVATION_COLUMNS,
     POSSESSION_COLUMNS,
     SCORING_EVENT_COLUMNS,
+    SNAPSHOT_COLUMNS,
+    TERMINAL_COLUMNS,
 )
 
 _DEAD_MARKERS = ("timeout", "end of", "period end", "game end", "delay of game")
@@ -602,55 +607,63 @@ def _adjust(
             raw[(str(key[0]), str(key[1]), str(key[2]))] = (
                 float(group["numerator"].sum()) / denominator
             )
+    # Materialize the small, cutoff-bounded source once.  The original replay
+    # repeatedly filtered a full DataFrame for every team/role key and pass,
+    # which grows quadratically with season history.
+    rows = tuple(history.itertuples(index=False))
     adjusted = dict(raw)
     for _ in range(4):
-        centers: dict[tuple[str, str], float] = {}
-        for (role, metric), group in history.groupby(
-            ["unit_role", "measurement_id"], sort=False
-        ):
-            values, weights = [], []
-            for row in group.itertuples(index=False):
-                value = adjusted.get((str(row.team), str(role), str(metric)))
-                if value is not None and float(row.denominator) > 0:
-                    values.append(value)
-                    weights.append(float(row.denominator))
-            if weights:
-                centers[(str(role), str(metric))] = float(
-                    np.average(values, weights=weights)
-                )
-        next_values = dict(raw)
-        for (team, role, metric), baseline in raw.items():
+        center_numerators: dict[tuple[str, str], float] = defaultdict(float)
+        center_denominators: dict[tuple[str, str], float] = defaultdict(float)
+        for row in rows:
+            denominator = float(row.denominator)
+            key = (str(row.team), str(row.unit_role), str(row.measurement_id))
+            value = adjusted.get(key)
+            if value is not None and denominator > 0:
+                center_key = (str(row.unit_role), str(row.measurement_id))
+                center_numerators[center_key] += value * denominator
+                center_denominators[center_key] += denominator
+        centers = {
+            key: center_numerators[key] / denominator
+            for key, denominator in center_denominators.items()
+            if denominator > 0
+        }
+        delta_numerators: dict[tuple[str, str, str], float] = defaultdict(float)
+        delta_denominators: dict[tuple[str, str, str], float] = defaultdict(float)
+        for row in rows:
+            denominator = float(row.denominator)
+            role, metric = str(row.unit_role), str(row.measurement_id)
             opponent_role = "defense" if role == "offense" else "offense"
             center = centers.get((opponent_role, metric))
-            rows = history[
-                (history["team"] == team)
-                & (history["unit_role"] == role)
-                & (history["measurement_id"] == metric)
-            ]
-            if center is None or rows.empty:
-                continue
-            weighted_delta = 0.0
-            denominator = 0.0
-            for row in rows.itertuples(index=False):
-                opponent = adjusted.get((str(row.opponent), opponent_role, metric))
-                if opponent is not None and float(row.denominator) > 0:
-                    weighted_delta += (opponent - center) * float(row.denominator)
-                    denominator += float(row.denominator)
+            opponent = adjusted.get((str(row.opponent), opponent_role, metric))
+            key = (str(row.team), role, metric)
+            if center is not None and opponent is not None and denominator > 0:
+                delta_numerators[key] += (opponent - center) * denominator
+                delta_denominators[key] += denominator
+        next_values = dict(raw)
+        for key, baseline in raw.items():
+            denominator = delta_denominators[key]
             if denominator > 0:
-                next_values[(team, role, metric)] = (
-                    baseline - weighted_delta / denominator
-                )
+                next_values[key] = baseline - delta_numerators[key] / denominator
         adjusted = next_values
     return raw, adjusted
 
 
-def build_replay(
-    *, population: pd.DataFrame, observations: pd.DataFrame
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any]]:
-    """Replay strictly-prior possession evidence in bounded season/week slices."""
-    snapshots: list[dict[str, Any]] = []
-    histories: list[dict[str, Any]] = []
-    terminal: list[dict[str, Any]] = []
+ReplayPartSink = Callable[[str, dict[str, int], pd.DataFrame], None]
+
+
+def replay_partitions(
+    *,
+    population: pd.DataFrame,
+    observations: pd.DataFrame,
+    emit: ReplayPartSink,
+) -> dict[str, Any]:
+    """Emit replay records one declared season/week partition at a time.
+
+    Producers and verifiers use this streaming path so cutoff history is never
+    retained beyond a single logical partition.  ``build_replay`` remains a
+    small-fixture convenience wrapper for focused unit tests.
+    """
     max_history = 0
     for season in sorted(population["season"].astype(int).unique()):
         games = population[
@@ -661,91 +674,115 @@ def build_replay(
             & observations["measurement_id"].isin({"ppp", "epa_per_possession"})
         ].copy()
         season_obs["kickoff_utc"] = pd.to_datetime(season_obs["kickoff_utc"], utc=True)
-        for game in games.itertuples(index=False):
-            cutoff = pd.Timestamp(game.kickoff_utc)
-            source = season_obs[
-                (season_obs["week"].astype(int) < int(game.week))
-                & (season_obs["kickoff_utc"] + pd.Timedelta(hours=6) <= cutoff)
-                & (season_obs["coverage_status"] == "observed")
-                & (season_obs["denominator"].astype(float) > 0)
-            ].copy()
-            # A source game has role rows for each side; adjustment consumes the team-side rows once.
-            raw, adjusted = _adjust(source)
-            max_history = max(max_history, len(source))
-            for row in source.itertuples(index=False):
-                key = (str(row.team), str(row.unit_role), str(row.measurement_id))
-                histories.append(
-                    {
-                        "season": season,
-                        "week": int(game.week),
-                        "as_of_game_id": int(game.game_id),
-                        "target_week_cutoff_utc": cutoff,
-                        "source_season": int(row.season),
-                        "source_week": int(row.week),
-                        "source_game_id": int(row.game_id),
-                        "source_kickoff_utc": row.kickoff_utc,
-                        "source_available_utc": pd.Timestamp(row.kickoff_utc)
-                        + pd.Timedelta(hours=6),
-                        "team": row.team,
-                        "opponent": row.opponent,
-                        "measurement_id": row.measurement_id,
-                        "unit_role": row.unit_role,
-                        "adjustment_iteration": 4,
-                        "numerator": float(row.numerator),
-                        "denominator": float(row.denominator),
-                        "iteration_zero_value": raw.get(key),
-                        "iteration_four_value": adjusted.get(key),
-                        "included": True,
-                        "missing_reason": None,
-                        "timing_class": "historically_reconstructed",
-                    }
-                )
-            for team in (str(game.home_team), str(game.away_team)):
-                for role in ("offense", "defense"):
-                    for measurement in ("ppp", "epa_per_possession"):
-                        key = (team, role, measurement)
-                        rows = source[
-                            (source["team"] == team)
-                            & (source["unit_role"] == role)
-                            & (source["measurement_id"] == measurement)
-                        ]
-                        denom = (
-                            float(rows["denominator"].sum()) if not rows.empty else 0.0
-                        )
-                        numerator = (
-                            float(rows["numerator"].sum()) if not rows.empty else 0.0
-                        )
-                        for iteration, value in (
-                            (0, raw.get(key)),
-                            (4, adjusted.get(key)),
-                        ):
-                            snapshots.append(
-                                {
-                                    "season": season,
-                                    "week": int(game.week),
-                                    "as_of_game_id": int(game.game_id),
-                                    "as_of_kickoff_utc": cutoff,
-                                    "target_week_cutoff_utc": cutoff,
-                                    "team": team,
-                                    "measurement_id": measurement,
-                                    "unit_role": role,
-                                    "adjustment_iteration": iteration,
-                                    "raw_value": numerator / denom if denom else None,
-                                    "adjusted_value": value,
-                                    "primary_exposure": denom,
-                                    "games_exposure": int(rows["game_id"].nunique())
-                                    if not rows.empty
-                                    else 0,
-                                    "source_game_count": int(len(rows)),
-                                    "timing_class": "historically_reconstructed",
-                                    "availability_policy": "prior_week_and_source_kickoff_plus_6h",
-                                }
+        season_obs["_available_utc"] = season_obs["kickoff_utc"] + pd.Timedelta(hours=6)
+        eligible_obs = season_obs[
+            (season_obs["coverage_status"] == "observed")
+            & (season_obs["denominator"].astype(float) > 0)
+        ].copy()
+        for week, games_in_week in games.groupby("week", sort=True):
+            snapshots: list[dict[str, Any]] = []
+            histories: list[dict[str, Any]] = []
+            for game in games_in_week.itertuples(index=False):
+                cutoff = pd.Timestamp(game.kickoff_utc)
+                source = eligible_obs[
+                    (eligible_obs["week"].astype(int) < int(game.week))
+                    & (eligible_obs["_available_utc"] <= cutoff)
+                ].copy()
+                # A source game has role rows for each side; adjustment consumes the team-side rows once.
+                raw, adjusted = _adjust(source)
+                max_history = max(max_history, len(source))
+                for row in source.itertuples(index=False):
+                    key = (str(row.team), str(row.unit_role), str(row.measurement_id))
+                    histories.append(
+                        {
+                            "season": season,
+                            "week": int(game.week),
+                            "as_of_game_id": int(game.game_id),
+                            "target_week_cutoff_utc": cutoff,
+                            "source_season": int(row.season),
+                            "source_week": int(row.week),
+                            "source_game_id": int(row.game_id),
+                            "source_kickoff_utc": row.kickoff_utc,
+                            "source_available_utc": pd.Timestamp(row.kickoff_utc)
+                            + pd.Timedelta(hours=6),
+                            "team": row.team,
+                            "opponent": row.opponent,
+                            "measurement_id": row.measurement_id,
+                            "unit_role": row.unit_role,
+                            "adjustment_iteration": 4,
+                            "numerator": float(row.numerator),
+                            "denominator": float(row.denominator),
+                            "iteration_zero_value": raw.get(key),
+                            "iteration_four_value": adjusted.get(key),
+                            "included": True,
+                            "missing_reason": None,
+                            "timing_class": "historically_reconstructed",
+                        }
+                    )
+                for team in (str(game.home_team), str(game.away_team)):
+                    for role in ("offense", "defense"):
+                        for measurement in ("ppp", "epa_per_possession"):
+                            key = (team, role, measurement)
+                            rows = source[
+                                (source["team"] == team)
+                                & (source["unit_role"] == role)
+                                & (source["measurement_id"] == measurement)
+                            ]
+                            denom = (
+                                float(rows["denominator"].sum())
+                                if not rows.empty
+                                else 0.0
                             )
+                            numerator = (
+                                float(rows["numerator"].sum())
+                                if not rows.empty
+                                else 0.0
+                            )
+                            for iteration, value in (
+                                (0, raw.get(key)),
+                                (4, adjusted.get(key)),
+                            ):
+                                snapshots.append(
+                                    {
+                                        "season": season,
+                                        "week": int(game.week),
+                                        "as_of_game_id": int(game.game_id),
+                                        "as_of_kickoff_utc": cutoff,
+                                        "target_week_cutoff_utc": cutoff,
+                                        "team": team,
+                                        "measurement_id": measurement,
+                                        "unit_role": role,
+                                        "adjustment_iteration": iteration,
+                                        "raw_value": numerator / denom
+                                        if denom
+                                        else None,
+                                        "adjusted_value": value,
+                                        "primary_exposure": denom,
+                                        "games_exposure": int(rows["game_id"].nunique())
+                                        if not rows.empty
+                                        else 0,
+                                        "source_game_count": int(len(rows)),
+                                        "timing_class": "historically_reconstructed",
+                                        "availability_policy": "prior_week_and_source_kickoff_plus_6h",
+                                    }
+                                )
+            emit(
+                "snapshots",
+                {"season": int(season), "week": int(week)},
+                pd.DataFrame.from_records(snapshots, columns=SNAPSHOT_COLUMNS),
+            )
+            if histories:
+                emit(
+                    "adjusted_history",
+                    {"season": int(season), "week": int(week)},
+                    pd.DataFrame.from_records(histories, columns=HISTORY_COLUMNS),
+                )
         observed = season_obs[
             (season_obs["coverage_status"] == "observed")
             & (season_obs["denominator"].astype(float) > 0)
         ]
         raw, adjusted = _adjust(observed)
+        terminal: list[dict[str, Any]] = []
         for key, value in adjusted.items():
             team, role, measurement = key
             rows = observed[
@@ -768,16 +805,42 @@ def build_replay(
                     "timing_class": "historically_reconstructed",
                 }
             )
-    snapshot_frame = pd.DataFrame.from_records(snapshots)
-    history_frame = pd.DataFrame.from_records(histories)
-    terminal_frame = pd.DataFrame.from_records(terminal)
+        emit(
+            "terminal",
+            {"season": int(season)},
+            pd.DataFrame.from_records(terminal, columns=TERMINAL_COLUMNS),
+        )
+    return {
+        "max_history_partition_rows": max_history,
+        "iterations": [0, 4],
+        "adjustment_method": "iterative_additive_league_centered",
+    }
+
+
+def build_replay(
+    *, population: pd.DataFrame, observations: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    """Build replay frames for small fixtures; production callers stream parts."""
+    parts: dict[str, list[pd.DataFrame]] = defaultdict(list)
+
+    def collect(_: str, __: dict[str, int], frame: pd.DataFrame) -> None:
+        parts[_].append(frame)
+
+    evidence = replay_partitions(
+        population=population,
+        observations=observations,
+        emit=collect,
+    )
+
+    def frame_for(name: str, columns: tuple[str, ...]) -> pd.DataFrame:
+        return pd.DataFrame.from_records(
+            [record for frame in parts[name] for record in frame.to_dict("records")],
+            columns=columns,
+        )
+
     return (
-        snapshot_frame,
-        history_frame,
-        terminal_frame,
-        {
-            "max_history_partition_rows": max_history,
-            "iterations": [0, 4],
-            "adjustment_method": "iterative_additive_league_centered",
-        },
+        frame_for("snapshots", SNAPSHOT_COLUMNS),
+        frame_for("adjusted_history", HISTORY_COLUMNS),
+        frame_for("terminal", TERMINAL_COLUMNS),
+        evidence,
     )

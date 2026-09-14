@@ -65,15 +65,31 @@
 - Do not run `--apply` from this worktree: the contract requires matching
   committed code and a clean tracked worktree. The first R2 action must be a
   no-write Preview preflight after the user-controlled commit.
+- A no-write committed-code preflight was started for
+  `possession-v1-measurements-20260913-3881b3c-r2` after the original code
+  commit. The immutable target prefix was confirmed empty and no artifact was
+  written. The run was stopped after exceeding the operational bound without a
+  result; inspection found that replay retained every cutoff's adjusted-history
+  rows in memory and repeatedly filtered the full cutoff frame for each
+  adjustment key. This violated the contract's bounded season/week replay
+  requirement.
+- Corrected that mechanical defect by streaming replay records by declared
+  season/week partition and replacing the quadratic adjustment filtering with
+  equivalent cutoff-bounded accumulators. Added focused assertions for emitted
+  partition boundaries and the fixed four-pass league-centered behavior. This
+  does not alter possession definitions, source lineage, constants, schemas,
+  or certification gates.
 
 ## Handoff Notes
 
-- **Resume at:** Commit the listed code and documentation checkpoint, capture
-  its SHA, then invoke the possession runner without `--apply` using the exact
-  Repair manifest and an unused run ID. Inspect the source reconciliation,
-  coverage, counts, and digests before applying the same identity.
-- **Watch out for:** A failed partial run ID is immutable evidence and cannot
-  be reused. No R2 apply, verifier, or idempotent rerun has occurred yet; do
-  not mark the contract Implemented or unblock contract 03.
+- **Resume at:** User commits the bounded-replay correction, then capture its
+  SHA and select a new unused run ID containing that SHA. Invoke the possession
+  runner without `--apply` using the exact Repair manifest. Inspect source
+  reconciliation, coverage, counts, and digests before applying the same
+  identity.
+- **Watch out for:** No R2 apply, verifier, or idempotent rerun has occurred;
+  do not mark the contract Implemented or unblock contract 03. The original
+  no-write prefix remains empty; the next identity must bind the corrective
+  code commit, not `3881b3c`.
 
 **tags:** ["v5", "ratings", "possession", "research", "preview", "certification"]
