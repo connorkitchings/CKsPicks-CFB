@@ -26,6 +26,7 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     SNAPSHOT_COLUMNS,
     TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.preseason_features import canonical_team
 
 _DEAD_MARKERS = ("timeout", "end of", "period end", "game end", "delay of game")
 _NON_OFFENSE_MARKERS = (
@@ -109,10 +110,19 @@ def _required(frame: pd.DataFrame, columns: set[str], label: str) -> None:
         raise PossessionMeasurementError(f"{label} is missing columns: {missing}")
 
 
+def _canonicalize_byplay_teams(byplay: pd.DataFrame) -> pd.DataFrame:
+    """Align provider play labels with the Repair population's team identities."""
+    result = byplay.copy()
+    for column in ("offense", "defense"):
+        result[column] = result[column].map(canonical_team)
+    return result
+
+
 def build_possession_ledger(
     *, byplay: pd.DataFrame, population: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build regulation possession eligibility and score-attribution ledgers."""
+    byplay = _canonicalize_byplay_teams(byplay)
     _required(
         byplay,
         {
@@ -371,6 +381,7 @@ def build_measurements(
     outcomes: pd.DataFrame | None = None,
 ) -> PossessionMeasurementResult:
     """Build both role measurements while preserving every scoreable game row."""
+    byplay = _canonicalize_byplay_teams(byplay)
     possessions, scoring = build_possession_ledger(byplay=byplay, population=population)
     plays = byplay.copy()
     for name in ("season", "game_id", "drive_number", "play_number"):

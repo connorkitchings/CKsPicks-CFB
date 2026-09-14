@@ -98,10 +98,25 @@
   audit recorded 3,042 quarantined team streams; all remaining per-season rates
   clear 94% (minimum 94.21% in 2016; 95.93% overall). This implements the
   contract's explicit quarantine policy without fabricating score residuals.
+- The committed `3a44faa` preflight at
+  `possession-v1-measurements-20260914-3a44faa-r2` remained read-only and
+  correctly blocked on the same final-score reconciliation gate. A direct
+  ledger reconstruction isolated the cause: Repair population/outcome identities
+  are canonical while some source play labels retain provider aliases (for
+  example, `Southern Miss` versus `Southern Mississippi`). This left 107--127
+  otherwise valid team scores unmatched in each season. The possession source
+  boundary now applies the repository's existing `canonical_team` function
+  before both ledger attribution and eligible-play EPA aggregation. The
+  regression fixture asserts canonical population reconciliation from provider
+  aliases. A fresh pinned-source audit after the correction clears every
+  per-season 94% gate: 2015 98.95%, 2016 98.06%, 2017 99.30%, 2018 98.91%,
+  2019 99.53%, 2021 98.07%, 2022 98.75%, 2023 98.94%, 2024 99.13%, and 2025
+  99.45%. This is a mechanical source-identity correction; it preserves the
+  Repair lineage, possession semantics, thresholds, and configuration.
 
 ## Handoff Notes
 
-- **Resume at:** User commits the malformed-score quarantine correction, then
+- **Resume at:** User commits the canonical team-identity correction, then
   capture its SHA and select a new unused run ID containing that SHA. Invoke
   the possession runner without `--apply` using the exact Repair manifest.
   Inspect source reconciliation, coverage, counts, and digests before applying

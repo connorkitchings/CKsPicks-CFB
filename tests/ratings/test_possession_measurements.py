@@ -241,6 +241,37 @@ def test_unresolved_attribution_still_counts_for_final_reconciliation():
     assert result.final_reconciliation[2025]["quarantined_team_scores"] == 0.0
 
 
+def test_provider_team_aliases_reconcile_against_canonical_population():
+    population = _population()
+    population.loc[:, "home_team"] = "Southern Mississippi"
+    population.loc[:, "away_team"] = "Connecticut"
+    plays = _plays().replace(
+        {
+            "offense": {"Alpha": "Southern Miss", "Beta": "UConn"},
+            "defense": {"Alpha": "Southern Miss", "Beta": "UConn"},
+        }
+    )
+    result = build_measurements(
+        byplay=plays,
+        population=population,
+        outcomes=pd.DataFrame(
+            [
+                {
+                    "season": 2025,
+                    "game_id": 1,
+                    "home_points": 7,
+                    "away_points": 10,
+                }
+            ]
+        ),
+    )
+    assert result.final_reconciliation[2025]["exact_rate"] == 1.0
+    assert set(result.scoring_events["team"]) == {
+        "Southern Mississippi",
+        "Connecticut",
+    }
+
+
 def test_overtime_and_unknown_period_never_create_rating_possessions():
     plays = _plays()
     plays.loc[(plays["game_id"] == 1) & (plays["drive_number"] == 1), "quarter"] = 5
