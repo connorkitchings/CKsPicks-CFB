@@ -38,6 +38,11 @@ _NON_OFFENSE_MARKERS = (
     "return",
 )
 _CONVERSION_MARKERS = ("two point", "2-point", "extra point", "conversion")
+_MALFORMED_SCORE_REASONS = {
+    "missing_or_nonfinite_score",
+    "score_regression_or_nonintegral",
+    "impossible_score_increment",
+}
 
 
 class PossessionMeasurementError(ValueError):
@@ -190,18 +195,49 @@ def build_possession_ledger(
     events: list[dict[str, Any]] = []
     active_event: dict[tuple[int, int, str], str] = {}
     prior_scores: dict[tuple[int, int, str], float] = {}
+    malformed_scores: set[tuple[int, int, str]] = set()
     for row in plays.itertuples(index=False):
         event_id = _source_id(row)
         for team, score in (
             (str(row.offense), row.offense_score),
             (str(row.defense), row.defense_score),
         ):
-            current = _num(score)
             key = (int(row.season), int(row.game_id), team)
+            if key in malformed_scores:
+                continue
+            current = _num(score)
             previous = prior_scores.get(key, 0.0)
-            if current is None or current < previous or current != int(current):
-                if current is not None:
-                    prior_scores[key] = current
+            malformed_reason = (
+                "missing_or_nonfinite_score"
+                if current is None
+                else "score_regression_or_nonintegral"
+                if current < 0 or current < previous or current != int(current)
+                else "impossible_score_increment"
+                if current - previous > 8
+                else None
+            )
+            if malformed_reason is not None:
+                # Do not synthesize a balancing score from a malformed stream.
+                # The zero-point unresolved marker makes the quarantine explicit
+                # while preserving the schedule row and all independent EPA data.
+                events.append(
+                    {
+                        "season": int(row.season),
+                        "game_id": int(row.game_id),
+                        "source_event_id": event_id,
+                        "team": team,
+                        "drive_number": int(row.drive_number),
+                        "period_class": _period(row.quarter),
+                        "score_increment": 0,
+                        "scoring_category": "unresolved",
+                        "unit_category": "unknown",
+                        "associated_possession_id": None,
+                        "conversion_for_event_id": None,
+                        "quality_reason": malformed_reason,
+                        "timing_class": "historically_reconstructed",
+                    }
+                )
+                malformed_scores.add(key)
                 continue
             prior_scores[key] = current
             increment = current - previous
@@ -553,7 +589,7 @@ def build_measurements(
             validate="one_to_one",
         )
         for season, games in expected_by_game.groupby("season", sort=True):
-            exact, expected = 0, 0
+            exact, expected, quarantined = 0, 0, 0
             for game in games.itertuples(index=False):
                 for team, outcome_points in (
                     (game.home_team, game.home_points),
@@ -562,19 +598,25 @@ def build_measurements(
                     numeric = _num(outcome_points)
                     if numeric is None:
                         continue
+                    team_events = scoring[
+                        (scoring["season"] == game.season)
+                        & (scoring["game_id"] == game.game_id)
+                        & (scoring["team"] == team)
+                    ]
+                    if (
+                        team_events["quality_reason"]
+                        .isin(_MALFORMED_SCORE_REASONS)
+                        .any()
+                    ):
+                        quarantined += 1
+                        continue
                     expected += 1
-                    actual = float(
-                        scoring.loc[
-                            (scoring["season"] == game.season)
-                            & (scoring["game_id"] == game.game_id)
-                            & (scoring["team"] == team),
-                            "score_increment",
-                        ].sum()
-                    )
+                    actual = float(team_events["score_increment"].sum())
                     exact += int(actual == numeric)
             reconciliation[int(season)] = {
                 "exact_team_scores": float(exact),
                 "expected_team_scores": float(expected),
+                "quarantined_team_scores": float(quarantined),
                 "exact_rate": float(exact / expected) if expected else 0.0,
             }
         if any(

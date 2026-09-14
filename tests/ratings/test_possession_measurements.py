@@ -187,6 +187,60 @@ def test_missing_eligible_ppa_quarantines_epa_without_discarding_ppp():
     assert alpha.loc["ppp", "coverage_status"] == "observed"
 
 
+def test_malformed_score_stream_quarantines_ppp_but_preserves_epa():
+    plays = _plays()
+    plays.loc[
+        (plays["game_id"] == 1)
+        & (plays["offense"] == "Alpha")
+        & (plays["play_number"] == 2),
+        "offense_score",
+    ] = 24
+    result = build_measurements(byplay=plays, population=_population())
+    events = result.scoring_events[
+        (result.scoring_events["game_id"] == 1)
+        & (result.scoring_events["team"] == "Alpha")
+    ]
+    marker = events[events["scoring_category"].eq("unresolved")].iloc[0]
+    assert marker["score_increment"] == 0
+    assert marker["quality_reason"] == "impossible_score_increment"
+    observations = result.observations.set_index(
+        ["game_id", "team", "unit_role", "measurement_id"]
+    )
+    assert (
+        observations.loc[(1, "Alpha", "offense", "ppp"), "coverage_status"] == "missing"
+    )
+    assert (
+        observations.loc[(1, "Beta", "defense", "ppp"), "coverage_status"] == "missing"
+    )
+    assert (
+        observations.loc[
+            (1, "Alpha", "offense", "epa_per_possession"), "coverage_status"
+        ]
+        == "observed"
+    )
+
+
+def test_unresolved_attribution_still_counts_for_final_reconciliation():
+    plays = _plays()
+    plays.loc[plays["game_id"].eq(1), "quarter"] = None
+    result = build_measurements(
+        byplay=plays,
+        population=_population(),
+        outcomes=pd.DataFrame(
+            [
+                {
+                    "season": 2025,
+                    "game_id": 1,
+                    "home_points": 7,
+                    "away_points": 10,
+                }
+            ]
+        ),
+    )
+    assert result.final_reconciliation[2025]["exact_rate"] == 1.0
+    assert result.final_reconciliation[2025]["quarantined_team_scores"] == 0.0
+
+
 def test_overtime_and_unknown_period_never_create_rating_possessions():
     plays = _plays()
     plays.loc[(plays["game_id"] == 1) & (plays["drive_number"] == 1), "quarter"] = 5

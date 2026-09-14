@@ -87,14 +87,25 @@
   order and reuses the same four-pass result until a newly available source row
   changes that set. This is another mechanical bounded-replay correction; a
   new committed SHA and run ID are required before certification resumes.
+- The `8dbb5e2` no-write preflight reached the full source ledger and blocked
+  before writing because the original event bound treated malformed provider
+  score jumps as fatal. A pinned-source audit found 887 impossible transitions
+  across 1,521,061 plays. The ledger now emits one zero-point unresolved marker
+  for a malformed team score stream, stops attributing its later score changes,
+  and quarantines PPP/non-offense for that offense and paired defense while
+  retaining EPA and the schedule row. Final-score reconciliation excludes only
+  those malformed streams, not otherwise valid unresolved attribution. The
+  audit recorded 3,042 quarantined team streams; all remaining per-season rates
+  clear 94% (minimum 94.21% in 2016; 95.93% overall). This implements the
+  contract's explicit quarantine policy without fabricating score residuals.
 
 ## Handoff Notes
 
-- **Resume at:** User commits the latest replay-cache correction, then capture
-  its SHA and select a new unused run ID containing that SHA. Invoke the
-  possession runner without `--apply` using the exact Repair manifest. Inspect
-  source reconciliation, coverage, counts, and digests before applying the
-  same identity.
+- **Resume at:** User commits the malformed-score quarantine correction, then
+  capture its SHA and select a new unused run ID containing that SHA. Invoke
+  the possession runner without `--apply` using the exact Repair manifest.
+  Inspect source reconciliation, coverage, counts, and digests before applying
+  the same identity.
 - **Watch out for:** No R2 apply, verifier, or idempotent rerun has occurred;
   do not mark the contract Implemented or unblock contract 03. The original
   no-write prefix remains empty; the next identity must bind the corrective
