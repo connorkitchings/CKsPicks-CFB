@@ -249,3 +249,28 @@ schemas, output meanings, V4, production, Neon, catalog behavior, or the
 independent verifier. The stopped `ac1fd6b` apply prefix was verified empty. A
 new committed SHA and unused `r4` identity are required before restarting at
 preflight.
+
+### Amendment 3 — Bounded concurrent immutable-part materialization
+
+**Reason:** The `r4` dry preflight at `b6ec5fc` completed in time and matched
+the reviewed `r3` results, but its evidence-bound apply was still mid-replay at
+29 minutes. The writer was synchronously materializing thousands of immutable
+content-addressed child parts during replay. The stopped Preview run
+`possession-v1-measurements-20260915-b6ec5fc-r4` therefore has exactly one
+object, `publication-plan.json`, and is failed/ineligible; it must never be
+reused as a successful run.
+
+**Revised approach:** Keep the identical one-pass reconstruction, expected
+part plan, schema validation, per-part digest check, and final manifest gate.
+The generic partitioned writer may now perform independent immutable child-part
+materialization through a bounded worker pool while retaining the producer's
+strict logical partition order. It resolves every future before constructing
+the partitioned manifest, so a failed upload or digest mismatch still blocks
+publication. V5-02 uses eight workers only for its Preview apply, overlapping
+R2 I/O with the existing CPU replay rather than changing measurement results.
+
+**Impact:** This is a mechanical execution change only. It does not reuse the
+failed `r4` prefix, alter source lineage, chronology, schemas, measurement
+meaning, thresholds, output identity, V4, production, Neon, providers, or
+catalog state. It requires a new committed SHA, a fresh unused `r5` identity,
+and a complete restart at the no-write preflight.

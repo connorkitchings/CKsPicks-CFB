@@ -11,6 +11,7 @@ import hashlib
 import io
 import json
 import math
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Iterator, Literal, Mapping, Sequence
@@ -169,6 +170,7 @@ class PartitionedDatasetWriter:
         partition_keys: Sequence[str],
         row_partition_keys: Sequence[str] | None = None,
         expected_parts: Mapping[str, Mapping[str, Any]] | None = None,
+        max_workers: int = 1,
     ) -> None:
         if not partition_keys:
             raise ValueError("partitioned datasets require partition keys")
@@ -185,6 +187,20 @@ class PartitionedDatasetWriter:
         self.expected_parts = dict(expected_parts or {})
         self.parts: list[dict[str, Any]] = []
         self._last_key: tuple[tuple[str, int, Any], ...] | None = None
+        if max_workers < 1:
+            raise ValueError("partitioned dataset writer requires at least one worker")
+        self._executor = (
+            ThreadPoolExecutor(max_workers=max_workers) if max_workers > 1 else None
+        )
+        self._max_pending = max_workers * 2
+        self._pending: list[
+            tuple[dict[str, Any], Future[tuple[DatasetRef, DatasetManifest]]]
+        ] = []
+
+    def _resolve_next_pending(self) -> None:
+        item, future = self._pending.pop(0)
+        ref, _ = future.result()
+        item["ref"] = asdict(ref)
 
     def add(self, part: PartitionedDatasetPart) -> None:
         partition = dict(part.partition)
@@ -237,21 +253,41 @@ class PartitionedDatasetWriter:
             raise StorageError(
                 f"{self.build.dataset} partition differs from the preflight: {partition}"
             )
-        if not frame.empty:
-            ref, _ = build_dataset_version(
-                self.storage,
-                build=self.build,
-                records=frame.to_dict("records"),
-                partitions={
-                    "partitioned_dataset": PARTITIONED_DATASET_KIND,
-                    "partition": partition,
-                },
-                validation=validation,
-            )
-            item["ref"] = asdict(ref)
         self.parts.append(item)
+        if frame.empty:
+            return
+        kwargs = {
+            "build": self.build,
+            "records": frame.to_dict("records"),
+            "partitions": {
+                "partitioned_dataset": PARTITIONED_DATASET_KIND,
+                "partition": partition,
+            },
+            "validation": validation,
+        }
+        if self._executor is None:
+            ref, _ = build_dataset_version(self.storage, **kwargs)
+            item["ref"] = asdict(ref)
+        else:
+            self._pending.append(
+                (
+                    item,
+                    self._executor.submit(
+                        build_dataset_version, self.storage, **kwargs
+                    ),
+                )
+            )
+            if len(self._pending) >= self._max_pending:
+                self._resolve_next_pending()
 
     def finish(self) -> PartitionedDatasetRef:
+        try:
+            while self._pending:
+                self._resolve_next_pending()
+        finally:
+            if self._executor is not None:
+                self._executor.shutdown(wait=True)
+                self._executor = None
         actual_keys = {partition_key(part["partition"]) for part in self.parts}
         if self.expected_parts and actual_keys != set(self.expected_parts):
             raise StorageError(

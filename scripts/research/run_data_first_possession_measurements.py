@@ -546,6 +546,10 @@ def _writers(
             partition_keys=plan.partition_keys,
             row_partition_keys=plan.row_partition_keys,
             expected_parts=plan.expected(),
+            # The writer starts immutable, content-addressed part uploads as
+            # replay emits them. This overlaps bounded R2 I/O with the CPU
+            # replay and preserves the same ordered logical manifest.
+            max_workers=8,
         )
         for name, plan in plans.items()
     }

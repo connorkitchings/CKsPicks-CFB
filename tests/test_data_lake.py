@@ -378,6 +378,37 @@ def test_partitioned_dataset_streams_ordered_immutable_parts(tmp_path):
     assert repeated.finish() == ref
 
 
+def test_partitioned_dataset_parallel_upload_preserves_order_and_identity(tmp_path):
+    storage = LocalStorage(tmp_path)
+    build = BuildRequest(
+        dataset="phase3_population",
+        parent_refs=(),
+        code_sha="code",
+        config_sha="config",
+        as_of=datetime(2026, 9, 10, tzinfo=timezone.utc),
+        schema_version="data_first_phase3_population_v2",
+        tier="gold",
+    )
+    writer = PartitionedDatasetWriter(
+        storage, build=build, partition_keys=("season",), max_workers=2
+    )
+    writer.add(PartitionedDatasetPart({"season": 2024}, _phase3_population_frame(2024)))
+    writer.add(PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2025)))
+    ref = writer.finish()
+    manifest = json.loads(storage.read_bytes(ref.uri))
+    assert [part["partition"]["season"] for part in manifest["parts"]] == [2024, 2025]
+    repeated = PartitionedDatasetWriter(
+        storage, build=build, partition_keys=("season",)
+    )
+    repeated.add(
+        PartitionedDatasetPart({"season": 2024}, _phase3_population_frame(2024))
+    )
+    repeated.add(
+        PartitionedDatasetPart({"season": 2025}, _phase3_population_frame(2025))
+    )
+    assert repeated.finish() == ref
+
+
 def test_partitioned_dataset_orders_numeric_partition_values_naturally(tmp_path):
     storage = LocalStorage(tmp_path)
     build = BuildRequest(
