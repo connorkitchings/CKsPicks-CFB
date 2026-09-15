@@ -5,7 +5,8 @@
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
 - **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`;
-  `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`.
+  `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`;
+  `session_logs/2026-09-15/01-v5-possession-certification-apply-handoff.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -225,3 +226,26 @@ grouped-drive loop, so it still did not provide actionable unit progress. The
 target prefix remained empty. Producer and verifier must report completed and
 total grouped-drive counts, with bounded updates during the loop, before another
 committed-code retry under a new identity.
+
+### Amendment 2 — Reviewed preflight handoff for bounded apply
+
+**Reason:** The completed no-write preflight at `ac1fd6b` took 1,513 seconds.
+The existing `--apply` invocation first repeats that no-write preflight and then
+replays it a second time while writing. It therefore cannot finish under the
+user-selected 30-minute cap; interrupting it after the write phase starts would
+leave deliberately ineligible partial immutable output.
+
+**Revised approach:** A dry run now serializes its complete ordered logical part
+plan alongside its identity, rows, record digests, and certification checksum.
+`--apply --preflight-evidence <reviewed-json>` validates that evidence against
+the current identity, constructs writers from its exact part plan, performs one
+write-time replay, and requires the replay's certification, row counts, and
+record digests to match before finalizing a manifest. The legacy apply path is
+preserved for compatibility.
+
+**Impact:** This changes only the Preview research runner's operational CLI; it
+does not change possession semantics, source lineage, configuration, thresholds,
+schemas, output meanings, V4, production, Neon, catalog behavior, or the
+independent verifier. The stopped `ac1fd6b` apply prefix was verified empty. A
+new committed SHA and unused `r4` identity are required before restarting at
+preflight.

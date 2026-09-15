@@ -70,6 +70,14 @@ class PossessionRunError(ValueError):
     pass
 
 
+@dataclass(frozen=True)
+class PreflightEvidence:
+    """Reviewed dry-run plan used to avoid repeating an expensive apply preflight."""
+
+    plans: dict[str, "DatasetPlan"]
+    certification_sha256: str
+
+
 def _git_sha() -> str:
     return subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True
@@ -294,6 +302,88 @@ def _plans() -> dict[str, DatasetPlan]:
     }
 
 
+def _plan_payload(plans: Mapping[str, DatasetPlan]) -> dict[str, Any]:
+    """Serialize the complete logical part plan for a later write-only apply."""
+    return {
+        name: {
+            "partition_keys": list(plan.partition_keys),
+            "row_partition_keys": list(plan.row_partition_keys),
+            "parts": plan.parts,
+        }
+        for name, plan in plans.items()
+    }
+
+
+def _load_preflight_evidence(
+    path: Path, *, identity: Mapping[str, Any]
+) -> PreflightEvidence:
+    """Load an exact reviewed dry-run plan without trusting it blindly."""
+    try:
+        payload = json.loads(path.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise PossessionRunError("preflight evidence is unreadable") from exc
+    if payload.get("state") != "dry_run" or payload.get("identity") != dict(identity):
+        raise PossessionRunError("preflight evidence identity does not match apply")
+    raw_plans = payload.get("preflight_plans")
+    if not isinstance(raw_plans, dict) or set(raw_plans) != set(POSSESSION_DATASETS):
+        raise PossessionRunError("preflight evidence lacks the complete part plan")
+
+    plans: dict[str, DatasetPlan] = {}
+    for name, (partition_keys, row_partition_keys) in _PARTITIONS.items():
+        raw = raw_plans.get(name)
+        if not isinstance(raw, dict) or (
+            raw.get("partition_keys") != list(partition_keys)
+            or raw.get("row_partition_keys") != list(row_partition_keys)
+            or not isinstance(raw.get("parts"), list)
+        ):
+            raise PossessionRunError(f"preflight evidence has invalid {name} plan")
+        plan = DatasetPlan(name, partition_keys, row_partition_keys)
+        for part in raw["parts"]:
+            if not isinstance(part, dict):
+                raise PossessionRunError(
+                    f"preflight evidence has malformed {name} part"
+                )
+            partition = part.get("partition")
+            row_count = part.get("row_count")
+            records_sha = part.get("records_sha")
+            if (
+                not isinstance(partition, dict)
+                or tuple(partition) != partition_keys
+                or not isinstance(row_count, int)
+                or row_count < 0
+                or not isinstance(records_sha, str)
+                or len(records_sha) != 64
+            ):
+                raise PossessionRunError(f"preflight evidence has invalid {name} part")
+            if plan.parts and partition_order_key(partition) <= partition_order_key(
+                plan.parts[-1]["partition"]
+            ):
+                raise PossessionRunError(
+                    f"preflight evidence has unordered {name} partitions"
+                )
+            plan.parts.append(
+                {
+                    "partition": partition,
+                    "row_count": row_count,
+                    "records_sha": records_sha,
+                }
+            )
+        plans[name] = plan
+
+    row_counts = payload.get("row_counts")
+    output_digests = payload.get("output_records_sha256")
+    if row_counts != {
+        name: plan.row_count for name, plan in plans.items()
+    } or output_digests != {name: plan.records_sha for name, plan in plans.items()}:
+        raise PossessionRunError(
+            "preflight evidence summary does not match its part plan"
+        )
+    certification_sha256 = payload.get("certification_sha256")
+    if not isinstance(certification_sha256, str) or len(certification_sha256) != 64:
+        raise PossessionRunError("preflight evidence lacks its certification checksum")
+    return PreflightEvidence(plans=plans, certification_sha256=certification_sha256)
+
+
 def _add(
     plans: Mapping[str, DatasetPlan],
     name: str,
@@ -467,7 +557,7 @@ def apply(
     run_id: str,
     repair: Mapping[str, Any],
     identity: Mapping[str, Any],
-    preflight_result: Preflight,
+    expected: PreflightEvidence,
     progress: ResearchProgress | None = None,
 ) -> dict[str, Any]:
     prefix = f"{POSSESSION_OUTPUT_ROOT}/{run_id}"
@@ -494,13 +584,13 @@ def apply(
                     "records_sha": plan.records_sha,
                     "parts": plan.parts,
                 }
-                for name, plan in preflight_result.plans.items()
+                for name, plan in expected.plans.items()
             },
-            "certification_sha256": preflight_result.certification["manifest_sha256"],
+            "certification_sha256": expected.certification_sha256,
             "production_activation_authorized": False,
         },
     )
-    writers = _writers(storage, identity, repair, preflight_result.plans)
+    writers = _writers(storage, identity, repair, expected.plans)
     if progress is not None:
         progress.emit("apply_replay_started", force=True)
     repeated = preflight(
@@ -511,8 +601,11 @@ def apply(
         progress=progress,
     )
     if (
-        repeated.certification["manifest_sha256"]
-        != preflight_result.certification["manifest_sha256"]
+        repeated.certification["manifest_sha256"] != expected.certification_sha256
+        or {name: plan.row_count for name, plan in repeated.plans.items()}
+        != {name: plan.row_count for name, plan in expected.plans.items()}
+        or {name: plan.records_sha for name, plan in repeated.plans.items()}
+        != {name: plan.records_sha for name, plan in expected.plans.items()}
     ):
         raise PossessionRunError("apply replay differs from same-code preflight")
     refs = {name: asdict(writer.finish()) for name, writer in writers.items()}
@@ -560,6 +653,10 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--preflight-evidence",
+        help="reviewed dry-run JSON used for a write-only apply",
+    )
     args = parser.parse_args(argv)
     path = Path(args.config).resolve()
     if path != DEFAULT_CONFIG.resolve():
@@ -569,6 +666,8 @@ def main(argv: list[str] | None = None) -> None:
     _load_config(path)
     if _git_sha() != args.expected_code_sha:
         raise PossessionRunError("--expected-code-sha must equal committed HEAD")
+    if args.preflight_evidence and not args.apply:
+        raise PossessionRunError("--preflight-evidence requires --apply")
     if args.apply:
         if not _worktree_clean():
             raise PossessionRunError("apply requires a clean committed worktree")
@@ -601,26 +700,47 @@ def main(argv: list[str] | None = None) -> None:
     progress = ResearchProgress(run_id=args.run_id)
     progress.start()
     atexit.register(progress.close)
-    result = preflight(
-        storage=storage, repair=repair, identity=identity, progress=progress
+    expected = (
+        _load_preflight_evidence(Path(args.preflight_evidence), identity=identity)
+        if args.preflight_evidence
+        else None
+    )
+    result = (
+        None
+        if expected is not None
+        else preflight(
+            storage=storage, repair=repair, identity=identity, progress=progress
+        )
+    )
+    plans = expected.plans if expected is not None else result.plans
+    certification_sha256 = (
+        expected.certification_sha256
+        if expected is not None
+        else result.certification["manifest_sha256"]
     )
     summary: dict[str, Any] = {
-        "state": "dry_run",
+        "state": "write_only_apply" if expected is not None else "dry_run",
         "identity": identity,
-        "row_counts": {name: plan.row_count for name, plan in result.plans.items()},
+        "row_counts": {name: plan.row_count for name, plan in plans.items()},
         "output_records_sha256": {
-            name: plan.records_sha for name, plan in result.plans.items()
+            name: plan.records_sha for name, plan in plans.items()
         },
-        "certification_sha256": result.certification["manifest_sha256"],
-        "scale_diagnostics": result.scale_diagnostics,
+        "certification_sha256": certification_sha256,
+        "preflight_plans": _plan_payload(plans),
     }
+    if result is not None:
+        summary["scale_diagnostics"] = result.scale_diagnostics
     if args.apply:
         applied = apply(
             storage=storage,
             run_id=args.run_id,
             repair=repair,
             identity=identity,
-            preflight_result=result,
+            expected=expected
+            or PreflightEvidence(
+                plans=result.plans,
+                certification_sha256=result.certification["manifest_sha256"],
+            ),
             progress=progress,
         )
         summary |= {

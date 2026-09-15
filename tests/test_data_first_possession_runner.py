@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -11,9 +12,12 @@ import pytest
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.data.data_first_possession_v1 import POSSESSION_DATASETS
 from scripts.research.run_data_first_possession_measurements import (
+    DatasetPlan,
     PossessionRunError,
     _concat_source_frames,
     _existing_apply_manifest,
+    _load_preflight_evidence,
+    _plan_payload,
 )
 
 
@@ -114,3 +118,101 @@ def test_source_concat_handles_cross_season_all_null_dtype_without_warning() -> 
         ]
     )
     assert frame["optional"].tolist() == [None, 1.5]
+
+
+def _preflight_plans() -> dict[str, DatasetPlan]:
+    plans: dict[str, DatasetPlan] = {}
+    for name, (dataset, _) in POSSESSION_DATASETS.items():
+        partition_keys = (
+            ("season", "week")
+            if name
+            in {
+                "snapshots",
+                "adjusted_history",
+            }
+            else ("season",)
+        )
+        plan = DatasetPlan(name, partition_keys, partition_keys)
+        partition = {"season": 2015}
+        if "week" in partition_keys:
+            partition["week"] = 1
+        plan.parts.append(
+            {
+                "partition": partition,
+                "row_count": 0,
+                "records_sha": "a" * 64,
+            }
+        )
+        assert dataset
+        plans[name] = plan
+    return plans
+
+
+def test_load_preflight_evidence_reconstructs_the_complete_part_plan(
+    tmp_path: Path,
+) -> None:
+    identity = {"identity_sha256": "identity", "run_id": "example"}
+    plans = _preflight_plans()
+    payload = {
+        "state": "dry_run",
+        "identity": identity,
+        "row_counts": {name: plan.row_count for name, plan in plans.items()},
+        "output_records_sha256": {
+            name: plan.records_sha for name, plan in plans.items()
+        },
+        "certification_sha256": "b" * 64,
+        "preflight_plans": _plan_payload(plans),
+    }
+    path = tmp_path / "preflight.json"
+    path.write_text(json.dumps(payload))
+
+    loaded = _load_preflight_evidence(path, identity=identity)
+
+    assert loaded.certification_sha256 == "b" * 64
+    assert loaded.plans["adjusted_history"].parts == plans["adjusted_history"].parts
+
+
+def test_load_preflight_evidence_rejects_a_summary_mismatch(tmp_path: Path) -> None:
+    identity = {"identity_sha256": "identity", "run_id": "example"}
+    plans = _preflight_plans()
+    payload = {
+        "state": "dry_run",
+        "identity": identity,
+        "row_counts": {name: plan.row_count for name, plan in plans.items()},
+        "output_records_sha256": {
+            name: plan.records_sha for name, plan in plans.items()
+        },
+        "certification_sha256": "b" * 64,
+        "preflight_plans": _plan_payload(plans),
+    }
+    payload["row_counts"]["population"] = 1
+    path = tmp_path / "preflight.json"
+    path.write_text(json.dumps(payload))
+
+    with pytest.raises(PossessionRunError, match="summary does not match"):
+        _load_preflight_evidence(path, identity=identity)
+
+
+def test_load_preflight_evidence_rejects_a_different_apply_identity(
+    tmp_path: Path,
+) -> None:
+    identity = {"identity_sha256": "identity", "run_id": "example"}
+    plans = _preflight_plans()
+    payload = {
+        "state": "dry_run",
+        "identity": identity,
+        "row_counts": {name: plan.row_count for name, plan in plans.items()},
+        "output_records_sha256": {
+            name: plan.records_sha for name, plan in plans.items()
+        },
+        "certification_sha256": "b" * 64,
+        "preflight_plans": _plan_payload(plans),
+    }
+    path = tmp_path / "preflight.json"
+    path.write_text(json.dumps(payload))
+
+    with pytest.raises(PossessionRunError, match="identity does not match"):
+        _load_preflight_evidence(
+            path,
+            identity={"identity_sha256": "other", "run_id": "example"},
+        )
