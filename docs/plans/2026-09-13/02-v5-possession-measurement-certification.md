@@ -217,3 +217,11 @@ long drive-index build as `source_loaded`. The target prefix remained empty.
 Explicit drive-index, scoring-event, team-game measurement, and replay phase
 boundaries are required before retrying under another committed SHA and unused
 identity.
+
+The second no-write `r3` attempt at code SHA `7a3a7c6` was stopped after three
+minutes in `ledger_drive_index`. Its phase label was accurate, but the heartbeat
+reported play-count `total` with `completed: 0` and `rows: 0` throughout the
+grouped-drive loop, so it still did not provide actionable unit progress. The
+target prefix remained empty. Producer and verifier must report completed and
+total grouped-drive counts, with bounded updates during the loop, before another
+committed-code retry under a new identity.

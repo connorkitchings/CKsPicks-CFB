@@ -174,6 +174,30 @@ def test_ppp_uses_offensive_attribution_and_defense_mirrors_opponent():
     ) == {"regulation_non_offense"}
 
 
+def test_producer_reports_grouped_drive_progress() -> None:
+    progress_events: list[tuple[str, dict[str, object]]] = []
+    build_measurements(
+        byplay=_plays(),
+        population=_population(),
+        progress=lambda event, **fields: progress_events.append((event, fields)),
+    )
+    drive_events = [
+        fields for event, fields in progress_events if event == "ledger_drive_index"
+    ]
+    assert drive_events[0] == {
+        "force": True,
+        "completed": 0,
+        "total": 5,
+        "rows": 0,
+    }
+    assert drive_events[-1] == {
+        "force": True,
+        "completed": 5,
+        "total": 5,
+        "rows": 5,
+    }
+
+
 def test_missing_eligible_ppa_quarantines_epa_without_discarding_ppp():
     plays = _plays()
     plays.loc[(plays["game_id"] == 1) & (plays["offense"] == "Alpha"), "ppa"] = None

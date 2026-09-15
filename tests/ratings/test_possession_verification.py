@@ -167,12 +167,25 @@ def test_independent_reconstruction_matches_contract_fixture() -> None:
     ):
         pd.testing.assert_frame_equal(left, right, check_dtype=False)
     assert actual.final_reconciliation == expected.final_reconciliation
-    assert [event for event, _ in progress_events[:3]] == [
+    assert [event for event, _ in progress_events[:4]] == [
+        "ledger_drive_index",
         "ledger_drive_index",
         "ledger_scoring_events",
         "team_game_measurements",
     ]
-    assert all(fields["force"] is True for _, fields in progress_events[:3])
+    assert all(fields["force"] is True for _, fields in progress_events[:4])
+    assert progress_events[0][1] == {
+        "force": True,
+        "completed": 0,
+        "total": 4,
+        "rows": 0,
+    }
+    assert progress_events[1][1] == {
+        "force": True,
+        "completed": 4,
+        "total": 4,
+        "rows": 4,
+    }
 
 
 def test_producer_only_perturbation_does_not_change_independent_result(

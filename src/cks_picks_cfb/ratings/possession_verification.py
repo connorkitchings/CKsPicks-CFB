@@ -235,44 +235,50 @@ def _reconstruct_ledgers(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    grouped_drives = plays.groupby(
+        ["season", "game_id", "drive_number", "offense"], sort=False
+    )
+    drive_total = grouped_drives.ngroups
     if progress is not None:
         progress(
             "ledger_drive_index",
             force=True,
             completed=0,
-            total=len(plays),
+            total=drive_total,
             rows=0,
         )
 
     possession_rows: list[dict[str, Any]] = []
     drive_by_key: dict[tuple[int, int, int, str], dict[str, Any]] = {}
-    for key, drive_plays in plays.groupby(
-        ["season", "game_id", "drive_number", "offense"], sort=False
-    ):
+    for drive_index, (key, drive_frame) in enumerate(grouped_drives, start=1):
+        if progress is not None and drive_index % 1_000 == 0:
+            progress(
+                "ledger_drive_index",
+                completed=drive_index,
+                total=drive_total,
+                rows=len(possession_rows),
+            )
         season, game_id, drive_number, offense = key
-        defenses = drive_plays["defense"].dropna().astype(str).unique().tolist()
-        periods = {_period_class(value) for value in drive_plays["quarter"]}
+        defenses = drive_frame["defense"].dropna().astype(str).unique().tolist()
+        periods = {_period_class(value) for value in drive_frame["quarter"]}
         period = next(iter(periods)) if len(periods) == 1 else "unknown"
-        eligible_count = sum(
-            _scrimmage_eligible(row) for row in drive_plays.itertuples(index=False)
-        )
+        drive_plays = tuple(drive_frame.itertuples(index=False))
+        eligible_count = sum(_scrimmage_eligible(row) for row in drive_plays)
         row = {
             "season": int(season),
-            "week": int(drive_plays["week"].iloc[0]),
+            "week": int(drive_frame["week"].iloc[0]),
             "game_id": int(game_id),
             "drive_number": int(drive_number),
             "offense": str(offense),
             "defense": defenses[0] if len(defenses) == 1 else None,
             "period_class": period,
             "eligible_play_count": int(eligible_count),
-            "ineligible_play_count": int(len(drive_plays) - eligible_count),
+            "ineligible_play_count": int(len(drive_frame) - eligible_count),
             "mixed_eligibility": bool(
-                eligible_count and eligible_count != len(drive_plays)
+                eligible_count and eligible_count != len(drive_frame)
             ),
             "possession_eligible": bool(eligible_count),
-            "source_play_ids": json.dumps(
-                [_event_key(play) for play in drive_plays.itertuples(index=False)]
-            ),
+            "source_play_ids": json.dumps([_event_key(play) for play in drive_plays]),
             "quality_reason": None
             if len(defenses) == 1 and period != "unknown"
             else "ambiguous_drive_identity_or_period",
@@ -280,6 +286,14 @@ def _reconstruct_ledgers(
         }
         possession_rows.append(row)
         drive_by_key[(int(season), int(game_id), int(drive_number), str(offense))] = row
+    if progress is not None:
+        progress(
+            "ledger_drive_index",
+            force=True,
+            completed=drive_total,
+            total=drive_total,
+            rows=len(possession_rows),
+        )
     possessions = pd.DataFrame.from_records(possession_rows, columns=POSSESSION_COLUMNS)
     if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
         raise IndependentPossessionError(

@@ -164,25 +164,35 @@ def build_possession_ledger(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    grouped_drives = plays.groupby(
+        ["season", "game_id", "drive_number", "offense"], sort=False
+    )
+    drive_total = grouped_drives.ngroups
     if progress is not None:
         progress(
             "ledger_drive_index",
             force=True,
             completed=0,
-            total=len(plays),
+            total=drive_total,
             rows=0,
         )
 
     possession_records: list[dict[str, Any]] = []
     possession_lookup: dict[tuple[int, int, int, str], dict[str, Any]] = {}
-    for key, group in plays.groupby(
-        ["season", "game_id", "drive_number", "offense"], sort=False
-    ):
+    for drive_index, (key, group) in enumerate(grouped_drives, start=1):
+        if progress is not None and drive_index % 1_000 == 0:
+            progress(
+                "ledger_drive_index",
+                completed=drive_index,
+                total=drive_total,
+                rows=len(possession_records),
+            )
         season, game_id, drive, offense = key
         defenses = group["defense"].dropna().astype(str).unique().tolist()
         periods = {_period(value) for value in group["quarter"]}
         period_class = periods.pop() if len(periods) == 1 else "unknown"
-        eligible = [row for row in group.itertuples(index=False) if _eligible_play(row)]
+        drive_plays = tuple(group.itertuples(index=False))
+        eligible = [row for row in drive_plays if _eligible_play(row)]
         record = {
             "season": int(season),
             "week": int(group["week"].iloc[0]),
@@ -195,9 +205,7 @@ def build_possession_ledger(
             "ineligible_play_count": int(len(group) - len(eligible)),
             "mixed_eligibility": bool(eligible and len(eligible) != len(group)),
             "possession_eligible": bool(eligible),
-            "source_play_ids": json.dumps(
-                [_source_id(row) for row in group.itertuples(index=False)]
-            ),
+            "source_play_ids": json.dumps([_source_id(row) for row in drive_plays]),
             "quality_reason": None
             if len(defenses) == 1 and period_class != "unknown"
             else "ambiguous_drive_identity_or_period",
@@ -206,6 +214,14 @@ def build_possession_ledger(
         possession_records.append(record)
         possession_lookup[(int(season), int(game_id), int(drive), str(offense))] = (
             record
+        )
+    if progress is not None:
+        progress(
+            "ledger_drive_index",
+            force=True,
+            completed=drive_total,
+            total=drive_total,
+            rows=len(possession_records),
         )
     possessions = pd.DataFrame.from_records(
         possession_records, columns=POSSESSION_COLUMNS

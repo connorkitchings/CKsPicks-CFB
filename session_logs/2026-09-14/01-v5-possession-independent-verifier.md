@@ -43,6 +43,9 @@
 - Added structured stderr JSONL phase events and a true 30-second background
   heartbeat. Final machine-readable results remain stdout-only; secret-like fields
   are excluded from progress payloads.
+- Added grouped-drive totals, bounded completed/row counters, and final completion
+  events to both producer and verifier. Each drive's play iterator is materialized
+  once, preserving semantics while avoiding duplicate iteration.
 - Added early matching-manifest/certification validation so repeated apply returns
   `already_applied` before expensive preflight; incompatible identities still fail.
 - Tightened apply to require a fully clean committed worktree, including untracked
@@ -56,7 +59,8 @@
   independent verifier, source-contract checks, progress, and final evidence.
 - `src/cks_picks_cfb/data/research_progress.py` — producer progress and heartbeat.
 - `src/cks_picks_cfb/ratings/possession_measurements.py` — bounded producer progress
-  callbacks only; measurement semantics are unchanged.
+  callbacks with actionable grouped-drive counts; measurement semantics are
+  unchanged.
 - `scripts/research/run_data_first_possession_measurements.py` — progress,
   warning-safe source loading, strict clean-worktree enforcement, and fast
   idempotency.
@@ -68,13 +72,14 @@
 
 ## Validation
 
-- [x] Focused possession/schema/runner/verifier suite: 21 passed with `-W error`.
-- [x] Full coverage suite: 884 passed, 2 skipped, 67.41% coverage with `-W error`.
+- [x] Focused grouped-drive producer/verifier suite: 16 passed with `-W error`.
+- [x] Full coverage suite: 885 passed, 2 skipped, 67.44% coverage with `-W error`.
 - [x] Scoped Ruff format and lint.
 - [x] `make contracts-check`.
 - [x] Strict MkDocs build to
   `/private/tmp/ckspicks-v5-possession-verifier-20260914`.
 - [x] Producer and verifier CLI `--help` smoke checks.
+- [x] Both stopped Preview dry-run prefixes independently listed with zero objects.
 - [x] `git diff --check`.
 
 ## Amendments and Blockers
@@ -91,13 +96,20 @@
   not localize this long phase. No target objects were written. Explicit
   drive-index, scoring-event, team-game measurement, and replay boundaries were
   added; strict policy requires another code commit and new identity.
+- The next no-write run,
+  `possession-v1-measurements-20260914-7a3a7c6-r3`, was stopped after three
+  minutes in `ledger_drive_index`. The phase was correctly labeled, but its
+  heartbeat retained `completed: 0` and `rows: 0` because the grouped-drive loop
+  did not publish unit progress. No target objects were written. Producer and
+  verifier now report grouped-drive totals, bounded intermediate counts, and a
+  final completion event; strict policy again requires a new code commit and
+  unused run identity.
 - Contract 02 cannot be marked Implemented and Contract 03 remains blocked until
   the new artifact passes independent verification and idempotency.
 
 ## Handoff Notes
 
-- **Resume at:** User commits with
-  `fix(research): independently verify possession measurements`. Then derive
+- **Resume at:** User commits the grouped-drive progress correction. Then derive
   `possession-v1-measurements-20260914-<new-sha7>-r3`, reconfirm Preview R2
   credentials and empty identity, and run the committed-code dry run.
 - **Watch out for:** Use the exact Repair manifest, sealed config, and as-of value.
