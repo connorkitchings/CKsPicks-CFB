@@ -235,6 +235,14 @@ def _reconstruct_ledgers(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    if progress is not None:
+        progress(
+            "ledger_drive_index",
+            force=True,
+            completed=0,
+            total=len(plays),
+            rows=0,
+        )
 
     possession_rows: list[dict[str, Any]] = []
     drive_by_key: dict[tuple[int, int, int, str], dict[str, Any]] = {}
@@ -276,6 +284,14 @@ def _reconstruct_ledgers(
     if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
         raise IndependentPossessionError(
             "independent possession ledger has duplicate keys"
+        )
+    if progress is not None:
+        progress(
+            "ledger_scoring_events",
+            force=True,
+            completed=0,
+            total=len(plays),
+            rows=len(possessions),
         )
 
     event_rows: list[dict[str, Any]] = []
@@ -454,6 +470,14 @@ def reconstruct_measurements(
     plays, possessions, scoring = _reconstruct_ledgers(
         byplay=byplay, population=population, progress=progress
     )
+    if progress is not None:
+        progress(
+            "team_game_measurements",
+            force=True,
+            completed=0,
+            total=len(population),
+            rows=0,
+        )
     plays["eligible_for_possession"] = plays.apply(_scrimmage_eligible, axis=1)
     observations: list[dict[str, Any]] = []
     reconciliation: dict[int, dict[str, float]] = {}

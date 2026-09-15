@@ -164,6 +164,14 @@ def build_possession_ledger(
         ["season", "game_id", "quarter", "drive_number", "play_number"],
         kind="mergesort",
     )
+    if progress is not None:
+        progress(
+            "ledger_drive_index",
+            force=True,
+            completed=0,
+            total=len(plays),
+            rows=0,
+        )
 
     possession_records: list[dict[str, Any]] = []
     possession_lookup: dict[tuple[int, int, int, str], dict[str, Any]] = {}
@@ -204,6 +212,14 @@ def build_possession_ledger(
     )
     if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
         raise PossessionMeasurementError("possession ledger has duplicate keys")
+    if progress is not None:
+        progress(
+            "ledger_scoring_events",
+            force=True,
+            completed=0,
+            total=len(plays),
+            rows=len(possessions),
+        )
 
     events: list[dict[str, Any]] = []
     active_event: dict[tuple[int, int, str], str] = {}
@@ -391,6 +407,14 @@ def build_measurements(
     possessions, scoring = build_possession_ledger(
         byplay=byplay, population=population, progress=progress
     )
+    if progress is not None:
+        progress(
+            "team_game_measurements",
+            force=True,
+            completed=0,
+            total=len(population),
+            rows=0,
+        )
     plays = byplay.copy()
     for name in ("season", "game_id", "drive_number", "play_number"):
         plays[name] = pd.to_numeric(plays[name], errors="coerce")

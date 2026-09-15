@@ -355,9 +355,20 @@ def preflight(
                 total=len(refs),
                 rows=len(byplay_frame) + len(outcomes_frame),
             )
+    combined_byplay = _concat_source_frames(byplay)
+    combined_outcomes = _concat_source_frames(outcomes)
+    if progress is not None:
+        progress.emit(
+            "measurement_build_started",
+            force=True,
+            dataset="possession_measurements",
+            completed=0,
+            total=len(combined_byplay),
+            rows=0,
+        )
     measurements = build_measurements(
-        byplay=_concat_source_frames(byplay),
-        outcomes=_concat_source_frames(outcomes),
+        byplay=combined_byplay,
+        outcomes=combined_outcomes,
         population=population,
         progress=(progress.emit if progress is not None else None),
     )
@@ -382,6 +393,15 @@ def preflight(
                 part.reset_index(drop=True),
                 writers,
             )
+    if progress is not None:
+        progress.emit(
+            "replay_started",
+            force=True,
+            dataset="possession_replay",
+            completed=0,
+            total=int(population["forecast_eligible"].sum()),
+            rows=0,
+        )
     replay_evidence = replay_partitions(
         population=population,
         observations=measurements.observations,

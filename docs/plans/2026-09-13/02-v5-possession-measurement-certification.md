@@ -210,3 +210,10 @@ code SHA and immutable run identity.
 
 **Impact:** The existing artifact cannot be a Contract 03 parent. No V4,
 production, provider, database, catalog, or activation behavior changes.
+
+The first no-write `r3` attempt at code SHA `f7f7c4e` was stopped after its
+heartbeat correctly proved the process was alive but continued labeling the
+long drive-index build as `source_loaded`. The target prefix remained empty.
+Explicit drive-index, scoring-event, team-game measurement, and replay phase
+boundaries are required before retrying under another committed SHA and unused
+identity.

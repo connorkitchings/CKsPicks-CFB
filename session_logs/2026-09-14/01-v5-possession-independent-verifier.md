@@ -69,7 +69,7 @@
 ## Validation
 
 - [x] Focused possession/schema/runner/verifier suite: 21 passed with `-W error`.
-- [x] Full coverage suite: 884 passed, 2 skipped, 67.40% coverage with `-W error`.
+- [x] Full coverage suite: 884 passed, 2 skipped, 67.41% coverage with `-W error`.
 - [x] Scoped Ruff format and lint.
 - [x] `make contracts-check`.
 - [x] Strict MkDocs build to
@@ -84,6 +84,13 @@
   methodological amendment.
 - No R2 apply, catalog, provider, database, production, activation, or V4 change
   occurred in this checkpoint.
+- After the initial corrective commit, the no-write run
+  `possession-v1-measurements-20260914-f7f7c4e-r3` was stopped during drive
+  indexing. Background heartbeats were emitted, but their last phase remained
+  `source_loaded` until a later play-loop callback, so the progress label could
+  not localize this long phase. No target objects were written. Explicit
+  drive-index, scoring-event, team-game measurement, and replay boundaries were
+  added; strict policy requires another code commit and new identity.
 - Contract 02 cannot be marked Implemented and Contract 03 remains blocked until
   the new artifact passes independent verification and idempotency.
 
