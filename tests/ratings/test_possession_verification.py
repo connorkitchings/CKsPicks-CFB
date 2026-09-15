@@ -186,6 +186,10 @@ def test_independent_reconstruction_matches_contract_fixture() -> None:
         "total": 4,
         "rows": 4,
     }
+    assert progress_events[-1] == (
+        "measurement_reconstruction_complete",
+        {"force": True, "completed": 2, "total": 2, "rows": 64},
+    )
 
 
 def test_producer_only_perturbation_does_not_change_independent_result(

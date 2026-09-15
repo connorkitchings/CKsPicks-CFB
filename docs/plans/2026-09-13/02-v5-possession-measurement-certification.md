@@ -6,7 +6,8 @@
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
 - **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`;
   `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`;
-  `session_logs/2026-09-15/01-v5-possession-certification-apply-handoff.md`.
+  `session_logs/2026-09-15/01-v5-possession-certification-apply-handoff.md`;
+  `session_logs/2026-09-15/04-v5-possession-r6-performance-recovery.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -274,3 +275,29 @@ failed `r4` prefix, alter source lineage, chronology, schemas, measurement
 meaning, thresholds, output identity, V4, production, Neon, providers, or
 catalog state. It requires a new committed SHA, a fresh unused `r5` identity,
 and a complete restart at the no-write preflight.
+
+### Amendment 4 — Team-game aggregation performance recovery
+
+**Reason:** The `r5` apply reproduced all expected outputs but took
+2,171.445 seconds, exceeding the fixed 1,800-second cap. Its full-frame
+team-game measurement loop repeatedly filtered the complete possession, play,
+and scoring frames for every population team; concurrent immutable writing then
+amplified the remaining replay time. The immutable `r5` prefix remains failed
+and ineligible.
+
+**Revised approach:** Precompute keyed eligible-possession, eligible-play/PPA,
+score-category, malformed-stream, and game-reconciliation aggregates once per
+producer/verifier run. Retain population-major observation construction and the
+independent verifier implementation. Emit forced completion progress events for
+the producer and verifier measurement phases. Before another write attempt, run
+a new full no-write Preview preflight and require the established population,
+row-count, digest, and certification evidence; its elapsed time must be at most
+1,050 seconds before proceeding to evidence-bound apply.
+
+**Impact:** This changes only computational lookup strategy and additive stderr
+observability. Possession definitions, ordering, schemas, source lineage,
+constants, certification gates, output meanings, V4, production, Neon,
+providers, and catalog behavior remain unchanged. A new committed SHA and unused
+`r6` identity are required. Apply, independent verification, and idempotency
+still each require their own 1,800-second cap; any failure remains immutable,
+ineligible Preview evidence.

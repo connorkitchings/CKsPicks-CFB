@@ -411,6 +411,88 @@ def _observation(
     }
 
 
+def _team_game_aggregates(
+    *,
+    possessions: pd.DataFrame,
+    plays: pd.DataFrame,
+    scoring: pd.DataFrame,
+) -> tuple[
+    dict[tuple[int, int, str], tuple[float, bool]],
+    dict[tuple[int, int, str], tuple[float, bool, float]],
+    dict[tuple[int, int, str], tuple[float, float, bool, bool, float]],
+    dict[tuple[int, int], tuple[float, float]],
+]:
+    """Build lookup tables for the fixed team-game measurement grid.
+
+    The measurement contract emits observations in population order.  Building
+    these aggregates once avoids rescanning the full possession, play, and
+    scoring frames for each team while leaving that output order untouched.
+    """
+    key_columns = ["season", "game_id", "offense"]
+    eligible_possessions = possessions[possessions["possession_eligible"]]
+    possession_values = {
+        (int(season), int(game_id), str(team)): (
+            float(len(frame)),
+            bool(frame["mixed_eligibility"].any()),
+        )
+        for (season, game_id, team), frame in eligible_possessions.groupby(
+            key_columns, sort=False
+        )
+    }
+
+    eligible_plays = plays[plays["eligible_for_possession"]].copy()
+    eligible_plays["_numeric_ppa"] = pd.to_numeric(
+        eligible_plays["ppa"], errors="coerce"
+    )
+    play_values = {
+        (int(season), int(game_id), str(team)): (
+            float(len(frame)),
+            bool(
+                frame["_numeric_ppa"].isna().any()
+                or ~np.isfinite(frame["_numeric_ppa"].dropna()).all()
+            ),
+            float(frame["_numeric_ppa"].sum()),
+        )
+        for (season, game_id, team), frame in eligible_plays.groupby(
+            key_columns, sort=False
+        )
+    }
+
+    scoring_values: dict[
+        tuple[int, int, str], tuple[float, float, bool, bool, float]
+    ] = {}
+    for (season, game_id, team), frame in scoring.groupby(
+        ["season", "game_id", "team"], sort=False
+    ):
+        scoring_values[(int(season), int(game_id), str(team))] = (
+            float(
+                frame.loc[
+                    frame["scoring_category"] == "eligible_regulation_offense",
+                    "score_increment",
+                ].sum()
+            ),
+            float(
+                frame.loc[
+                    frame["scoring_category"] == "regulation_non_offense",
+                    "score_increment",
+                ].sum()
+            ),
+            bool((frame["scoring_category"] == "unresolved").any()),
+            bool(frame["quality_reason"].isin(_MALFORMED_SCORE_REASONS).any()),
+            float(frame["score_increment"].sum()),
+        )
+    game_totals = {
+        (int(season), int(game_id)): (
+            float(frame["score_increment"].sum()),
+            float(len(frame)),
+        )
+        for (season, game_id), frame in scoring.groupby(
+            ["season", "game_id"], sort=False
+        )
+    }
+    return possession_values, play_values, scoring_values, game_totals
+
+
 def build_measurements(
     *,
     byplay: pd.DataFrame,
@@ -436,6 +518,9 @@ def build_measurements(
         plays[name] = pd.to_numeric(plays[name], errors="coerce")
     eligible_play = plays.apply(lambda row: _eligible_play(row), axis=1)
     plays["eligible_for_possession"] = eligible_play
+    possession_values, play_values, scoring_values, game_totals = _team_game_aggregates(
+        possessions=possessions, plays=plays, scoring=scoring
+    )
     records: list[dict[str, Any]] = []
     reconciliation: dict[int, dict[str, float]] = {}
     for game_index, game in enumerate(population.itertuples(index=False), start=1):
@@ -454,46 +539,15 @@ def build_measurements(
             str, dict[str, tuple[float, float, bool, str | None, list[str]]]
         ] = {}
         for team, opponent, side in teams:
-            team_possessions = possessions[
-                (possessions["season"] == game.season)
-                & (possessions["game_id"] == game.game_id)
-                & (possessions["offense"] == team)
-            ]
-            eligible = team_possessions[team_possessions["possession_eligible"]]
-            count = float(len(eligible))
-            game_plays = plays[
-                (plays["season"] == game.season)
-                & (plays["game_id"] == game.game_id)
-                & (plays["offense"] == team)
-                & plays["eligible_for_possession"]
-            ]
-            ppa = pd.to_numeric(
-                game_plays.get("ppa", pd.Series(dtype=float)), errors="coerce"
+            key = (int(game.season), int(game.game_id), team)
+            count, mixed = possession_values.get(key, (0.0, False))
+            eligible_play_count, ppa_invalid, ppa_sum = play_values.get(
+                key, (0.0, False, 0.0)
             )
-            ppa_invalid = bool(ppa.isna().any() or ~np.isfinite(ppa.dropna()).all())
-            events = scoring[
-                (scoring["season"] == game.season)
-                & (scoring["game_id"] == game.game_id)
-                & (scoring["team"] == team)
-            ]
-            eligible_points = float(
-                events.loc[
-                    events["scoring_category"] == "eligible_regulation_offense",
-                    "score_increment",
-                ].sum()
+            eligible_points, non_offense, unresolved, _, _ = scoring_values.get(
+                key, (0.0, 0.0, False, False, 0.0)
             )
-            non_offense = float(
-                events.loc[
-                    events["scoring_category"] == "regulation_non_offense",
-                    "score_increment",
-                ].sum()
-            )
-            unresolved = bool((events["scoring_category"] == "unresolved").any())
-            flags = (
-                ["mixed_eligibility_drive"]
-                if bool(eligible.get("mixed_eligibility", pd.Series(dtype=bool)).any())
-                else []
-            )
+            flags = ["mixed_eligibility_drive"] if mixed else []
             ppp_usable = count > 0 and not unresolved
             epa_usable = count > 0 and not ppa_invalid
             noff_usable = not unresolved
@@ -513,7 +567,7 @@ def build_measurements(
                 ),
                 "ppp": (eligible_points, count, ppp_usable, reason, flags),
                 "eligible_epa": (
-                    float(ppa.sum()) if not ppa_invalid else 0.0,
+                    ppa_sum if not ppa_invalid else 0.0,
                     1.0,
                     epa_usable,
                     "missing_or_nonfinite_eligible_ppa"
@@ -522,7 +576,7 @@ def build_measurements(
                     flags,
                 ),
                 "epa_per_possession": (
-                    float(ppa.sum()) if not ppa_invalid else 0.0,
+                    ppa_sum if not ppa_invalid else 0.0,
                     count,
                     epa_usable,
                     "missing_or_nonfinite_eligible_ppa"
@@ -531,14 +585,14 @@ def build_measurements(
                     flags,
                 ),
                 "eligible_scrimmage_plays": (
-                    float(len(game_plays)),
+                    eligible_play_count,
                     1.0,
                     True,
                     None,
                     flags,
                 ),
                 "plays_per_possession": (
-                    float(len(game_plays)),
+                    eligible_play_count,
                     count,
                     count > 0,
                     "zero_eligible_possessions" if count == 0 else None,
@@ -588,12 +642,12 @@ def build_measurements(
                         flags=flags,
                     )
                 )
-        events_game = scoring[
-            (scoring["season"] == game.season) & (scoring["game_id"] == game.game_id)
-        ]
+        score_stream_points, event_count = game_totals.get(
+            (int(game.season), int(game.game_id)), (0.0, 0.0)
+        )
         reconciliation[int(game.game_id)] = {
-            "score_stream_points": float(events_game["score_increment"].sum()),
-            "event_count": float(len(events_game)),
+            "score_stream_points": score_stream_points,
+            "event_count": event_count,
         }
     observations = pd.DataFrame.from_records(records, columns=OBSERVATION_COLUMNS)
     if observations.duplicated(
@@ -664,20 +718,14 @@ def build_measurements(
                     numeric = _num(outcome_points)
                     if numeric is None:
                         continue
-                    team_events = scoring[
-                        (scoring["season"] == game.season)
-                        & (scoring["game_id"] == game.game_id)
-                        & (scoring["team"] == team)
-                    ]
-                    if (
-                        team_events["quality_reason"]
-                        .isin(_MALFORMED_SCORE_REASONS)
-                        .any()
-                    ):
+                    _, _, _, malformed, actual = scoring_values.get(
+                        (int(game.season), int(game.game_id), str(team)),
+                        (0.0, 0.0, False, False, 0.0),
+                    )
+                    if malformed:
                         quarantined += 1
                         continue
                     expected += 1
-                    actual = float(team_events["score_increment"].sum())
                     exact += int(actual == numeric)
             reconciliation[int(season)] = {
                 "exact_team_scores": float(exact),
@@ -693,6 +741,14 @@ def build_measurements(
             raise PossessionMeasurementError(
                 "season final-score reconciliation is below 94%"
             )
+    if progress is not None:
+        progress(
+            "team_game_measurements_complete",
+            force=True,
+            completed=len(population),
+            total=len(population),
+            rows=len(observations),
+        )
     return PossessionMeasurementResult(
         possessions,
         scoring,

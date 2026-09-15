@@ -196,6 +196,10 @@ def test_producer_reports_grouped_drive_progress() -> None:
         "total": 5,
         "rows": 5,
     }
+    assert progress_events[-1] == (
+        "team_game_measurements_complete",
+        {"force": True, "completed": 2, "total": 2, "rows": 64},
+    )
 
 
 def test_missing_eligible_ppa_quarantines_epa_without_discarding_ppp():
