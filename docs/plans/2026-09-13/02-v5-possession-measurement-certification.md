@@ -4,7 +4,8 @@
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
-- **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`.
+- **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`;
+  `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -192,3 +193,20 @@ gates or redefine possession semantics during execution.
 - [ ] Scoped/full required checks, docs, plan status and implementation log updated.
 
 Use the common amendment process. No estimator execution is part of this task.
+
+### Amendment 1 — Independent verifier correction and strict recertification
+
+**Reason:** The initial verifier imported the producer's possession measurement
+and replay functions. That is not an independent reconstruction under this
+contract.
+
+**Revised approach:** Preserve
+`possession-v1-measurements-20260914-f7b6fe4-r2` as a failed certification
+attempt and Preview-only diagnostic evidence, replace the verifier with a
+verifier-only ledger/measurement/replay
+implementation, add bounded structured progress and fast idempotency handling,
+then repeat preflight, apply, verification, and idempotency under a new committed
+code SHA and immutable run identity.
+
+**Impact:** The existing artifact cannot be a Contract 03 parent. No V4,
+production, provider, database, catalog, or activation behavior changes.

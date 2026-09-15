@@ -119,7 +119,10 @@ def _canonicalize_byplay_teams(byplay: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_possession_ledger(
-    *, byplay: pd.DataFrame, population: pd.DataFrame
+    *,
+    byplay: pd.DataFrame,
+    population: pd.DataFrame,
+    progress: Callable[..., None] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build regulation possession eligibility and score-attribution ledgers."""
     byplay = _canonicalize_byplay_teams(byplay)
@@ -206,7 +209,9 @@ def build_possession_ledger(
     active_event: dict[tuple[int, int, str], str] = {}
     prior_scores: dict[tuple[int, int, str], float] = {}
     malformed_scores: set[tuple[int, int, str]] = set()
-    for row in plays.itertuples(index=False):
+    for index, row in enumerate(plays.itertuples(index=False), start=1):
+        if progress is not None and index % 10_000 == 0:
+            progress("ledger", completed=index, total=len(plays), rows=index)
         event_id = _source_id(row)
         for team, score in (
             (str(row.offense), row.offense_score),
@@ -379,10 +384,13 @@ def build_measurements(
     byplay: pd.DataFrame,
     population: pd.DataFrame,
     outcomes: pd.DataFrame | None = None,
+    progress: Callable[..., None] | None = None,
 ) -> PossessionMeasurementResult:
     """Build both role measurements while preserving every scoreable game row."""
     byplay = _canonicalize_byplay_teams(byplay)
-    possessions, scoring = build_possession_ledger(byplay=byplay, population=population)
+    possessions, scoring = build_possession_ledger(
+        byplay=byplay, population=population, progress=progress
+    )
     plays = byplay.copy()
     for name in ("season", "game_id", "drive_number", "play_number"):
         plays[name] = pd.to_numeric(plays[name], errors="coerce")
@@ -390,7 +398,14 @@ def build_measurements(
     plays["eligible_for_possession"] = eligible_play
     records: list[dict[str, Any]] = []
     reconciliation: dict[int, dict[str, float]] = {}
-    for game in population.itertuples(index=False):
+    for game_index, game in enumerate(population.itertuples(index=False), start=1):
+        if progress is not None and game_index % 50 == 0:
+            progress(
+                "measurements",
+                completed=game_index,
+                total=len(population),
+                rows=len(records),
+            )
         teams = (
             (str(game.home_team), str(game.away_team), "home"),
             (str(game.away_team), str(game.home_team), "away"),
@@ -710,6 +725,7 @@ def replay_partitions(
     population: pd.DataFrame,
     observations: pd.DataFrame,
     emit: ReplayPartSink,
+    progress: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     """Emit replay records one declared season/week partition at a time.
 
@@ -733,6 +749,8 @@ def replay_partitions(
             & (season_obs["denominator"].astype(float) > 0)
         ].copy()
         for week, games_in_week in games.groupby("week", sort=True):
+            if progress is not None:
+                progress("replay", season=int(season), week=int(week))
             snapshots: list[dict[str, Any]] = []
             histories: list[dict[str, Any]] = []
             candidates = eligible_obs[
@@ -743,7 +761,18 @@ def replay_partitions(
             raw: dict[tuple[str, str, str], float] = {}
             adjusted: dict[tuple[str, str, str], float] = {}
             summaries: dict[tuple[str, str, str], tuple[float, float, int, int]] = {}
-            for game in games_in_week.itertuples(index=False):
+            for game_index, game in enumerate(
+                games_in_week.itertuples(index=False), start=1
+            ):
+                if progress is not None:
+                    progress(
+                        "replay",
+                        season=int(season),
+                        week=int(week),
+                        completed=game_index,
+                        total=len(games_in_week),
+                        rows=len(histories),
+                    )
                 cutoff = pd.Timestamp(game.kickoff_utc)
                 while (
                     source_end < len(candidates)
