@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
@@ -41,22 +42,46 @@ def _bootstrap(
     ].to_numpy(float)
     rng = np.random.default_rng(seed)
     # Hierarchical season/week resampling preserves the shared-game comparison.
-    means = []
+    # Construct each resampled group mean in vectorized batches instead of
+    # repeatedly filtering DataFrames inside 2,000 Python-level replicas.
     seasons = sorted(merged["season"].unique())
-    for _ in range(samples):
-        chosen_seasons = rng.choice(seasons, len(seasons), replace=True)
-        parts = []
-        for season in chosen_seasons:
-            season_rows = merged[merged["season"].eq(season)]
-            weeks = sorted(season_rows["week"].unique())
-            for week in rng.choice(weeks, len(weeks), replace=True):
-                values = season_rows[season_rows["week"].eq(week)][
-                    "absolute_error_reference"
-                ].to_numpy(float) - season_rows[season_rows["week"].eq(week)][
-                    "absolute_error_candidate"
-                ].to_numpy(float)
-                parts.append(values[rng.integers(0, len(values), len(values))])
-        means.append(float(np.concatenate(parts).mean()))
+    grouped = {
+        int(season): [
+            group["absolute_error_reference"].to_numpy(float)
+            - group["absolute_error_candidate"].to_numpy(float)
+            for _, group in season_rows.groupby("week", sort=True)
+        ]
+        for season, season_rows in merged.groupby("season", sort=True)
+    }
+    if set(grouped) != set(seasons) or any(
+        not values for values in grouped.values()
+    ):
+        raise PossessionTournamentError("paired bootstrap has an empty season/week")
+
+    season_choices = rng.integers(0, len(seasons), size=(samples, len(seasons)))
+    sums = np.zeros(samples, dtype=float)
+    counts = np.zeros(samples, dtype=np.int64)
+    for season_index, season in enumerate(seasons):
+        replica_indices, _ = np.where(season_choices == season_index)
+        week_values = grouped[int(season)]
+        selected_weeks = rng.integers(
+            0,
+            len(week_values),
+            size=(len(replica_indices), len(week_values)),
+        )
+        for week_index, values in enumerate(week_values):
+            occurrences, _ = np.where(selected_weeks == week_index)
+            if not len(occurrences):
+                continue
+            replicas = replica_indices[occurrences]
+            sampled = values[
+                rng.integers(0, len(values), size=(len(replicas), len(values)))
+            ].mean(axis=1)
+            np.add.at(sums, replicas, sampled * len(values))
+            np.add.at(counts, replicas, len(values))
+    if (counts == 0).any():
+        raise PossessionTournamentError("paired bootstrap generated an empty replica")
+    means = sums / counts
     return (
         float(differences.mean()),
         float(np.quantile(means, 0.05)),
@@ -176,9 +201,17 @@ def bridge_predictions(
     return pd.DataFrame(rows)
 
 
-def select_candidates(predictions: pd.DataFrame) -> pd.DataFrame:
-    """Apply the contract's within-definition and PPP-preferred cross-definition gates."""
-    if predictions.empty:
+def select_candidates(
+    predictions: pd.DataFrame,
+    validity: Mapping[str, str | None] | None = None,
+) -> pd.DataFrame:
+    """Apply the contract's within-definition and PPP-preferred cross-definition gates.
+
+    ``validity`` maps candidate IDs to an explicit failure reason (or ``None``).
+    A failed candidate is reported with sentinel metrics and can never advance;
+    an invalid reference blocks its definition entirely.
+    """
+    if predictions.empty and not validity:
         raise PossessionTournamentError("selection needs bridge predictions")
     expected = {
         candidate_id(d, p, u)
@@ -186,19 +219,49 @@ def select_candidates(predictions: pd.DataFrame) -> pd.DataFrame:
         for p in PRIOR_FAMILIES
         for u in UPDATERS
     }
-    if set(predictions["candidate_id"]) != expected:
+    failures = {key: value for key, value in (validity or {}).items() if value}
+    represented = set(predictions["candidate_id"]) | set(failures)
+    if represented != expected:
         raise PossessionTournamentError("selection requires all 60 candidates")
     records: list[dict[str, Any]] = []
     retained: dict[str, str] = {}
     for definition in DEFINITIONS:
         subset = predictions[predictions["definition"].eq(definition)]
         reference_id = candidate_id(definition, "rho_0_60", "exposure")
+        if reference_id in failures or reference_id not in set(subset["candidate_id"]):
+            raise PossessionTournamentError(
+                f"invalid or missing reference blocks definition: {reference_id}"
+            )
         reference = subset[subset["candidate_id"].eq(reference_id)]
-        if reference.empty:
-            raise PossessionTournamentError("missing definition reference")
         reference_mae = float(reference["absolute_error"].mean())
+        reference_stages = set(reference["completed_game_stage"])
+        reference_seasons = set(reference["season"])
         passing = [reference_id]
-        for candidate in sorted(subset["candidate_id"].unique()):
+        for candidate in sorted(expected):
+            if not candidate.startswith(f"{definition}__"):
+                continue
+            if candidate in failures:
+                records.append(
+                    {
+                        "candidate_id": candidate,
+                        "definition": definition,
+                        "prior_family": candidate.split("__")[1],
+                        "updater": candidate.split("__")[2],
+                        "reference_candidate": reference_id,
+                        "pooled_mae": -1.0,
+                        "reference_mae": reference_mae,
+                        "improvement_pct": -100.0,
+                        "bootstrap_90_lower": -1.0,
+                        "bootstrap_90_upper": -1.0,
+                        "full_gate": False,
+                        "early_gate": False,
+                        "regression_gate": False,
+                        "valid": False,
+                        "selected": False,
+                        "selection_reason": f"validity_failure: {failures[candidate]}",
+                    }
+                )
+                continue
             values = subset[subset["candidate_id"].eq(candidate)]
             if len(values) != len(reference):
                 raise PossessionTournamentError(
@@ -207,11 +270,25 @@ def select_candidates(predictions: pd.DataFrame) -> pd.DataFrame:
             mae = float(values["absolute_error"].mean())
             improvement, lower, upper = _bootstrap(values, reference)
             percent = 100 * (reference_mae - mae) / reference_mae
-            stage_ratio = (
-                values.groupby("completed_game_stage")["absolute_error"].mean()
-                / reference.groupby("completed_game_stage")["absolute_error"].mean()
-            )
-            regression = bool((stage_ratio <= 1.05).all())
+            candidate_stages = set(values["completed_game_stage"])
+            candidate_seasons = set(values["season"])
+            if not candidate_stages <= reference_stages:
+                stage_regression = False
+            else:
+                stage_ratio = (
+                    values.groupby("completed_game_stage")["absolute_error"].mean()
+                    / reference.groupby("completed_game_stage")["absolute_error"].mean()
+                )
+                stage_regression = bool((stage_ratio <= 1.05).all())
+            if not candidate_seasons <= reference_seasons:
+                season_regression = False
+            else:
+                season_ratio = (
+                    values.groupby("season")["absolute_error"].mean()
+                    / reference.groupby("season")["absolute_error"].mean()
+                )
+                season_regression = bool((season_ratio <= 1.05).all())
+            regression = stage_regression and season_regression
             full = percent >= 0.5 and lower > 0
             early_values, early_reference = (
                 values[values["completed_game_stage"].le(3)],

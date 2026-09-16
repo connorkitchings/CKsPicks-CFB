@@ -1,10 +1,10 @@
 # V5-03A: Possession Rating Materializer and Tournament
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-16
 - **Planner:** Codex planning task
 - **Approval source:** User explicitly approved this exact contract path on 2026-09-16.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-rating-materializer-and-tournament.md`.
+- **Implementation log:** `session_logs/2026-09-16/04-v5-rating-materializer-and-tournament.md`.
 - **Commit policy:** Separate code checkpoint; user executes Git before any Preview run identity is selected.
 
 ## Goal
@@ -20,11 +20,10 @@ selected identity can be reviewed before immutable publication.
 
 Commit `453ad7c` provides the sealed configuration, schemas, parent validation,
 pure prior/update/Kalman primitives, bridge/selection scaffolding, and Preview
-CLI boundaries. A read-only Preview preflight accepted the exact R6 measurement
-and Repair v2 manifests. The runner still rejects `--apply`; it does not yet load
-the source datasets or materialize a complete tournament. Two follow-up changes
-to the R6 lifecycle validator and implementation log are currently uncommitted
-and must be preserved.
+CLI boundaries. The in-progress checkpoint adds exact-parent input loading,
+chronological state construction, bridge/selection computation, and deterministic
+no-write partition planning. The runner still rejects `--apply`; immutable
+materialization remains exclusively in Contract 03B.
 
 The only eligible parents are:
 
