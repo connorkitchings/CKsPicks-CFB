@@ -100,6 +100,16 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
 from cks_picks_cfb.data.data_first_possession_v1 import (
     TERMINAL_COLUMNS as POSSESSION_TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    ATTRIBUTION_COLUMNS as POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+    NOISE_FIT_COLUMNS as POSSESSION_RATING_NOISE_FIT_COLUMNS,
+    PREDICTION_COLUMNS as POSSESSION_RATING_PREDICTION_COLUMNS,
+    PRIOR_COLUMNS as POSSESSION_RATING_PRIOR_COLUMNS,
+    RATING_DATASETS,
+    RATING_REGISTRY_COLUMNS as POSSESSION_RATING_REGISTRY_COLUMNS,
+    RATING_STATE_COLUMNS as POSSESSION_RATING_STATE_COLUMNS,
+    TEAM_STATE_COLUMNS as POSSESSION_RATING_TEAM_STATE_COLUMNS,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import (
     AUXILIARY_COLUMNS as REPAIR_AUXILIARY_COLUMNS,
 )
@@ -1068,6 +1078,42 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+_POSSESSION_RATING_SCHEMAS: dict[str, DatasetSchema] = {
+    RATING_DATASETS["rating_registry"][0]: DatasetSchema(
+        RATING_DATASETS["rating_registry"][0], RATING_DATASETS["rating_registry"][1],
+        POSSESSION_RATING_REGISTRY_COLUMNS, ("candidate_id",), nonnullable=POSSESSION_RATING_REGISTRY_COLUMNS,
+    ),
+    RATING_DATASETS["priors"][0]: DatasetSchema(
+        RATING_DATASETS["priors"][0], RATING_DATASETS["priors"][1], POSSESSION_RATING_PRIOR_COLUMNS,
+        ("candidate_id", "season", "team", "unit_role"), integer_columns=("season", "annual_decay_steps"),
+        nonnullable=("candidate_id", "season", "team", "unit_role", "prior_mean", "prior_variance", "prior_source", "annual_decay_steps"),
+    ),
+    RATING_DATASETS["noise_fits"][0]: DatasetSchema(
+        RATING_DATASETS["noise_fits"][0], RATING_DATASETS["noise_fits"][1], POSSESSION_RATING_NOISE_FIT_COLUMNS,
+        ("candidate_id", "season", "unit_role"), integer_columns=("season",),
+        boolean_columns=("converged", "cold_start"), nonnullable=("candidate_id", "season", "unit_role", "q", "r", "converged", "cold_start", "training_seasons"),
+    ),
+    RATING_DATASETS["rating_states"][0]: DatasetSchema(
+        RATING_DATASETS["rating_states"][0], RATING_DATASETS["rating_states"][1], POSSESSION_RATING_STATE_COLUMNS,
+        ("candidate_id", "season", "game_id", "team", "unit_role"), integer_columns=("season", "week", "game_id", "completed_games"),
+        timestamp_columns=("cutoff_utc",), nonnullable=tuple(c for c in POSSESSION_RATING_STATE_COLUMNS if c != "fallback_reason"),
+    ),
+    RATING_DATASETS["team_states"][0]: DatasetSchema(
+        RATING_DATASETS["team_states"][0], RATING_DATASETS["team_states"][1], POSSESSION_RATING_TEAM_STATE_COLUMNS,
+        ("candidate_id", "season", "game_id", "team"), integer_columns=("season", "week", "game_id"), timestamp_columns=("cutoff_utc",),
+        nonnullable=tuple(c for c in POSSESSION_RATING_TEAM_STATE_COLUMNS if c != "fallback_reason"),
+    ),
+    RATING_DATASETS["bridge_predictions"][0]: DatasetSchema(
+        RATING_DATASETS["bridge_predictions"][0], RATING_DATASETS["bridge_predictions"][1], POSSESSION_RATING_PREDICTION_COLUMNS,
+        ("candidate_id", "season", "game_id", "target"), integer_columns=("season", "week", "game_id", "completed_game_stage"),
+        boolean_columns=("venue_unknown",), nonnullable=POSSESSION_RATING_PREDICTION_COLUMNS,
+    ),
+    RATING_DATASETS["attribution"][0]: DatasetSchema(
+        RATING_DATASETS["attribution"][0], RATING_DATASETS["attribution"][1], POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+        ("candidate_id",), boolean_columns=("full_gate", "early_gate", "regression_gate", "valid", "selected"), nonnullable=POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+    ),
+}
+
 _RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -1765,6 +1811,13 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
         return schema
     if dataset in _POSSESSION_SCHEMAS:
         schema = _POSSESSION_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"
+            )
+        return schema
+    if dataset in _POSSESSION_RATING_SCHEMAS:
+        schema = _POSSESSION_RATING_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"

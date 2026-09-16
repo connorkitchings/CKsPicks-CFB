@@ -43,7 +43,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 00: [Documentation alignment](2026-09-13/00-v5-documentation-and-methodology-alignment.md) | **Implemented.** Completed 2026-09-13: documentation and authority tests aligned; no computational certification. |
 | 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
 | 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
-| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Approved.** Entry parent is the independently verified 02 R6 measurement manifest. |
+| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **In Progress.** Entry parent is the independently verified 02 R6 measurement manifest. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Blocked on independently verified 03 ratings. |
 | 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Blocked on verified 04 candidate; live readiness must pass separately. |
 | 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |

@@ -78,7 +78,7 @@ See the
 | **Week 1** | Published, frozen, and scored | ✅ Verified 2026-09-10: 43 games / 86 grade rows |
 | **Week 2** | Scored | ✅ Recorded 2026-09-13: `2026w2-43b25511a100`, 49 games; 90 graded targets |
 | **Week 3** | Published | Recorded 2026-09-13: `2026w3-68fe6a815bd6`, 57/57/56; freeze pending at that checkpoint |
-| Current research | 02: possession measurement certification, then rating and bridge selection | Preview-only; approved downstream contracts require verified parents |
+| Current research | 03: possession rating estimation, then bridge selection | Preview-only; R6 is the sole eligible measurement parent |
 | Subsequent weeks | Structured rating-to-game prediction, then frozen candidate shadow scoring | No Neon activation or publication |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
 | Any later point in 2026 | Operational rehearsal, rollback proof, and evidence-based promotion decision | V4 remains fallback |

@@ -59,7 +59,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 00 | [Documentation alignment and methodology amendment](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
 | 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Approved — independent side task; reverify Week 2 outcomes/refs before closure. |
 | 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 Preview measurement manifest independently verified and idempotent. |
-| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Approved — next ratings task; consume only the independently verified 02 R6 manifest. |
+| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | In Progress — consume only the independently verified 02 R6 manifest. |
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Approved — blocked on independently verified 03 ratings. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Approved — blocked on independently verified 04 candidate; authentic live readiness is a separate gate. |
 | 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved — blocked on verified, live-ready 05; six qualifying slates are not yet collected. |

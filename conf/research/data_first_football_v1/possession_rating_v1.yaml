@@ -1,0 +1,78 @@
+schema_version: data_first_possession_rating_config_v1
+environment: preview
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+output_root: artifacts/research/data-first-football-v1/possession-v1/ratings/runs
+candidates:
+  - ppp__neutral__exposure
+  - ppp__neutral__half_life_2
+  - ppp__neutral__half_life_4
+  - ppp__neutral__half_life_8
+  - ppp__neutral__kalman
+  - ppp__rho_0_60__exposure
+  - ppp__rho_0_60__half_life_2
+  - ppp__rho_0_60__half_life_4
+  - ppp__rho_0_60__half_life_8
+  - ppp__rho_0_60__kalman
+  - ppp__recruiting_ridge__exposure
+  - ppp__recruiting_ridge__half_life_2
+  - ppp__recruiting_ridge__half_life_4
+  - ppp__recruiting_ridge__half_life_8
+  - ppp__recruiting_ridge__kalman
+  - ppp__returning_production_ridge__exposure
+  - ppp__returning_production_ridge__half_life_2
+  - ppp__returning_production_ridge__half_life_4
+  - ppp__returning_production_ridge__half_life_8
+  - ppp__returning_production_ridge__kalman
+  - ppp__continuity_ridge__exposure
+  - ppp__continuity_ridge__half_life_2
+  - ppp__continuity_ridge__half_life_4
+  - ppp__continuity_ridge__half_life_8
+  - ppp__continuity_ridge__kalman
+  - ppp__all_context_ridge__exposure
+  - ppp__all_context_ridge__half_life_2
+  - ppp__all_context_ridge__half_life_4
+  - ppp__all_context_ridge__half_life_8
+  - ppp__all_context_ridge__kalman
+  - epa_per_possession__neutral__exposure
+  - epa_per_possession__neutral__half_life_2
+  - epa_per_possession__neutral__half_life_4
+  - epa_per_possession__neutral__half_life_8
+  - epa_per_possession__neutral__kalman
+  - epa_per_possession__rho_0_60__exposure
+  - epa_per_possession__rho_0_60__half_life_2
+  - epa_per_possession__rho_0_60__half_life_4
+  - epa_per_possession__rho_0_60__half_life_8
+  - epa_per_possession__rho_0_60__kalman
+  - epa_per_possession__recruiting_ridge__exposure
+  - epa_per_possession__recruiting_ridge__half_life_2
+  - epa_per_possession__recruiting_ridge__half_life_4
+  - epa_per_possession__recruiting_ridge__half_life_8
+  - epa_per_possession__recruiting_ridge__kalman
+  - epa_per_possession__returning_production_ridge__exposure
+  - epa_per_possession__returning_production_ridge__half_life_2
+  - epa_per_possession__returning_production_ridge__half_life_4
+  - epa_per_possession__returning_production_ridge__half_life_8
+  - epa_per_possession__returning_production_ridge__kalman
+  - epa_per_possession__continuity_ridge__exposure
+  - epa_per_possession__continuity_ridge__half_life_2
+  - epa_per_possession__continuity_ridge__half_life_4
+  - epa_per_possession__continuity_ridge__half_life_8
+  - epa_per_possession__continuity_ridge__kalman
+  - epa_per_possession__all_context_ridge__exposure
+  - epa_per_possession__all_context_ridge__half_life_2
+  - epa_per_possession__all_context_ridge__half_life_4
+  - epa_per_possession__all_context_ridge__half_life_8
+  - epa_per_possession__all_context_ridge__kalman
+fixed_settings:
+  ppp: {scale_floor: 0.30, fallback_scale: 1.00, equivalent_exposure: 8}
+  epa_per_possession: {scale_floor: 0.50, fallback_scale: 1.50, equivalent_exposure: 20}
+selection:
+  outer_seasons: [2018, 2019, 2021, 2022, 2023, 2024, 2025]
+  ridge_alpha: 10
+  minimum_improvement_pct: 0.5
+  maximum_regression_pct: 5.0
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260908
+  bootstrap_confidence: 0.90
+production_activation_authorized: false

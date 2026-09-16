@@ -1,10 +1,10 @@
 # V5-03: Possession Rating Estimation Tournament
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution is dependency-gated.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-possession-rating-estimation.md`.
+- **Implementation log:** `session_logs/2026-09-16/02-v5-possession-rating-estimation.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate

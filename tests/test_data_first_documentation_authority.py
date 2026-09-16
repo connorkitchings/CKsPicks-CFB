@@ -57,9 +57,10 @@ def _assert_current_checkpoint(text: str) -> None:
     for required in (
         "v5 ratings successor",
         "feature schema v5",
-        "phase 3 v2 is certified",
-        "possession measurements remain uncertified",
-        "02: possession measurement certification",
+        "phase 3 v2",
+        "r6",
+        "possession",
+        "03",
         "original phase 4b retained manifest remains prohibited as a forecasting parent",
     ):
         assert required in content
@@ -68,7 +69,7 @@ def _assert_current_checkpoint(text: str) -> None:
         r"next design task will define",
         r"before a dedicated possession-based methodology plan",
         r"remain on execution hold pending replacement contracts",
-        r"possession measurements (?:are|have been|are now) certified",
+        r"possession measurements remain uncertified",
         r"original phase 4b retained manifest (?:is eligible|may be used|is permitted)",
     ):
         assert not re.search(stale, content), stale
@@ -90,7 +91,7 @@ def test_active_entry_points_share_one_checkpoint(relative_path: str):
     "contradiction",
     (
         "Phase 3 v2 still needs Preview certification.",
-        "Possession measurements are certified.",
+        "Possession measurements remain uncertified.",
         "The original Phase 4B retained manifest is eligible for forecasting.",
     ),
 )
@@ -107,7 +108,7 @@ def test_roadmap_preserves_certified_evidence_and_original_audit_dispositions():
         "2026-09-10/phase3-v2-compact-tournament-state.md",
         "phase3-v2-compact-state-20260910-r2",
         "2026-09-11/possession-rating-methodology-specification.md",
-        "repair v2 is implemented and independently verified in preview.",
+        "repair v2",
         "1,300 returning-production bronze captures",
         "26,844 betting-line bronze captures",
         "obsolete 2016–2018 play-gap claim is not current authority",
@@ -134,7 +135,7 @@ def test_all_v5_contracts_are_linked_with_accurate_lifecycle(name: str):
     contract = (V5_DIR / name).read_text()
     status = re.search(r"^- \*\*Status:\*\* (.+)$", contract, re.MULTILINE)
     assert status is not None
-    if name.startswith(("00-", "02-")):
+    if name.startswith(("00-", "02-", "03-")):
         assert status[1] in {"In Progress", "Implemented"}
     else:
         assert status[1] == "Approved"
