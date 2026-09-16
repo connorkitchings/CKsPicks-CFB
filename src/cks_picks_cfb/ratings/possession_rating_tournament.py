@@ -53,9 +53,7 @@ def _bootstrap(
         ]
         for season, season_rows in merged.groupby("season", sort=True)
     }
-    if set(grouped) != set(seasons) or any(
-        not values for values in grouped.values()
-    ):
+    if set(grouped) != set(seasons) or any(not values for values in grouped.values()):
         raise PossessionTournamentError("paired bootstrap has an empty season/week")
 
     season_choices = rng.integers(0, len(seasons), size=(samples, len(seasons)))
@@ -146,6 +144,7 @@ def bridge_predictions(
     frame["home_host"] = frame["home_host"].fillna(0).astype(float)
     frame["venue_unknown"] = frame["venue_unknown"].fillna(True).astype(float)
     features += ["home_host", "venue_unknown"]
+    frame = frame.replace([float("inf"), float("-inf")], float("nan"))
     frame = frame.dropna(subset=[*features, "home_points", "away_points"])
     rows: list[dict[str, Any]] = []
     for season in OUTER_SEASONS:
@@ -161,9 +160,7 @@ def bridge_predictions(
             (train[features] - center) / scale,
             (test[features] - center) / scale,
         )
-        varying = [
-            col for col in features if x_train[col].nunique(dropna=False) > 1
-        ]
+        varying = [col for col in features if x_train[col].nunique(dropna=False) > 1]
         if not varying:
             continue
         x_train_v = x_train[varying]
