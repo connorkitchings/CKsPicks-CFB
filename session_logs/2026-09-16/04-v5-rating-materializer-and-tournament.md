@@ -12,10 +12,11 @@
 - **Plan Contract:** `docs/plans/2026-09-16/01-v5-rating-materializer-and-tournament.md`
 - **Approval / Status:** User explicitly authorized implementation on
   2026-09-16; Contract 03A is In Progress.
-- **Blockers:** No immutable run may start until this checkpoint is clean and
-  committed under a new SHA-bound identity.
-- **Next:** Complete final validations, then have the user commit the code and
-  documentation checkpoint before the deterministic Preview dry run.
+- **Blockers:** The first dry run exposed a keyword-only history-auditor call
+  defect before tournament output. Its identity is diagnostic-only; the repair
+  requires a new committed SHA and fresh no-write identity.
+- **Next:** Have the user commit the one-line keyword-only repair and this log,
+  then rerun the deterministic Preview dry run under the new SHA.
 
 ## Context and Decisions
 
@@ -50,8 +51,9 @@
 - [x] Documentation-authority regression with warnings as errors — 32 passed.
 - [x] Scoped Ruff, Python compile, and runner `--help` checks.
 - [x] `contracts/validation.py`, `make contracts-check`, and strict MkDocs build.
-- [ ] Full warning-as-error suite and repository contract/documentation checks.
-- [ ] `git diff --check` after the final documentation update.
+- [x] Full warning-as-error suite — 919 passed, 2 skipped (rerun after the
+  keyword-only repair).
+- [ ] `git diff --check` after this failure/repair log update.
 
 ## Amendments and Blockers
 
@@ -59,6 +61,13 @@
   warning-safety repairs: they preserve the sealed parents, registry, folds,
   gates, schemas, and no-write boundary.
 - No material contract amendment is required.
+- The first read-only Preview attempt used
+  `possession-v1-ratings-20260916-7f3b3f5-03a` at
+  `2026-09-16T17:13:53Z`. It failed during adjusted-history audit setup with a
+  positional argument passed to the keyword-only `storage` parameter; it did
+  not reach tournament output or apply/write code. The call now uses
+  `storage=storage`. This failure is not preflight evidence and that identity
+  must never be reused.
 
 ## Handoff Notes
 

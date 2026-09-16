@@ -463,7 +463,7 @@ def load_rating_inputs(
         outcomes[name] = pd.to_numeric(outcomes[name], errors="raise").astype(int)
 
     history_audit = _audit_adjusted_history(
-        storage,
+        storage=storage,
         value=output_refs["adjusted_history"],
         snapshots=snapshots,
         progress=progress,
