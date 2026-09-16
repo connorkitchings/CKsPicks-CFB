@@ -161,6 +161,13 @@ def bridge_predictions(
             (train[features] - center) / scale,
             (test[features] - center) / scale,
         )
+        varying = [
+            col for col in features if x_train[col].nunique(dropna=False) > 1
+        ]
+        if not varying:
+            continue
+        x_train_v = x_train[varying]
+        x_test_v = x_test[varying]
         targets = {
             "margin": train["home_points"] - train["away_points"],
             "total": train["home_points"] + train["away_points"],
@@ -170,8 +177,8 @@ def bridge_predictions(
             "total": test["home_points"] + test["away_points"],
         }
         for target, y in targets.items():
-            model = Ridge(alpha=alpha).fit(x_train, y)
-            prediction = model.predict(x_test)
+            model = Ridge(alpha=alpha).fit(x_train_v, y)
+            prediction = model.predict(x_test_v)
             for row, value, actual in zip(
                 test.itertuples(index=False),
                 prediction,
