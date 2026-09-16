@@ -15,9 +15,9 @@
 
 The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 and 02–06 govern current research. V5 ratings successor is distinct from V4
-feature schema v5. Repair v2 is verified and Phase 3 v2 is certified. The
-possession methodology is specified and amended; possession measurements remain
-uncertified. The next ratings task is 02: possession measurement certification;
+feature schema v5. Repair v2, Phase 3 v2, and R6 possession measurements are
+certified in Preview. The next ratings task is 03: possession rating estimation,
+using only `possession-v1-measurements-20260915-18fb0aa-r6`;
 the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the status authority. The original Phase 4B retained manifest remains
 prohibited as a forecasting parent. Old reduced-population comparisons retain

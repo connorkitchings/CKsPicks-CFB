@@ -32,18 +32,18 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 The [September 13 common contract](2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is Approved; the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the canonical status page. Repair v2 is verified and Phase 3 v2 is certified.
-The possession methodology is specified and amended; possession measurements
-remain uncertified. The next ratings task is 02: possession measurement
-certification. V5 ratings successor is distinct from V4 feature schema v5.
+is the canonical status page. Repair v2 and Phase 3 v2 are certified. Possession
+measurements are independently certified in Preview as
+`possession-v1-measurements-20260915-18fb0aa-r6`; the next ratings task is 03:
+possession rating estimation. V5 ratings successor is distinct from V4 feature schema v5.
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
 | --- | --- |
 | 00: [Documentation alignment](2026-09-13/00-v5-documentation-and-methodology-alignment.md) | **Implemented.** Completed 2026-09-13: documentation and authority tests aligned; no computational certification. |
 | 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
-| 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **In Progress.** Requires verified Repair v2 sources; possession measurements remain uncertified until committed-code Preview preflight, apply, and independent verification pass. |
-| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Approved.** Blocked on independently verified 02 measurements. |
+| 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
+| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Approved.** Entry parent is the independently verified 02 R6 measurement manifest. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Blocked on independently verified 03 ratings. |
 | 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Blocked on verified 04 candidate; live readiness must pass separately. |
 | 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |

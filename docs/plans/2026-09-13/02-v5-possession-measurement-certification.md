@@ -1,13 +1,14 @@
 # V5-02: Possession Measurement Certification
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires the dependencies below.
 - **Implementation log:** `session_logs/2026-09-13/04-v5-possession-measurement-certification.md`;
   `session_logs/2026-09-14/01-v5-possession-independent-verifier.md`;
   `session_logs/2026-09-15/01-v5-possession-certification-apply-handoff.md`;
-  `session_logs/2026-09-15/04-v5-possession-r6-performance-recovery.md`.
+  `session_logs/2026-09-15/04-v5-possession-r6-performance-recovery.md`;
+  `session_logs/2026-09-16/01-v5-possession-r6-certification-closure.md`.
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -189,10 +190,31 @@ Certify those separately. If the stronger eligibility rules materially reduce
 coverage, report the actual loss and block the affected reference; never lower
 gates or redefine possession semantics during execution.
 
-- [ ] Population and both measurement definitions are independently certified.
-- [ ] Ledger, replay, coverage and scale/fallback diagnostics are complete.
-- [ ] Committed-code preflight, Preview apply, independent verifier and idempotent rerun pass.
-- [ ] Scoped/full required checks, docs, plan status and implementation log updated.
+- [x] Population and both measurement definitions are independently certified.
+- [x] Ledger, replay, coverage and scale/fallback diagnostics are complete.
+- [x] Committed-code preflight, Preview apply, independent verifier and idempotent rerun pass.
+- [x] Scoped/full required checks, docs, plan status and implementation log updated.
+
+### Certified R6 evidence — 2026-09-15
+
+Committed code `18fb0aa2823f1af3e6f4b7d706b46ff32e233521` certified the fresh Preview
+identity `possession-v1-measurements-20260915-18fb0aa-r6` at shared cutoff
+`2026-09-15T19:16:30Z`. Its immutable manifest is
+`artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260915-18fb0aa-r6/measurement-manifest.json`.
+The no-write preflight completed in 910.150 seconds (under the 1,050-second
+readiness ceiling); evidence-bound apply in 1,538.772 seconds; and the
+independent verifier in 1,292.471 seconds. All remain under their separate
+1,800-second cap. The repeat apply returned `already_applied` in 1.295 seconds.
+
+Producer and verifier agreed on population 8,936, forecast-eligible population
+8,935, adjusted history 24,223,998, coverage 160, observations 285,952,
+possessions 316,257, scoring events 78,418, snapshots 142,960, and terminal
+states 8,580. Their certification SHA is
+`be4fcb6ec1e50356f1230b5831bb775e5383507f2c51cc736476a15badd15fa1`; the
+independent verifier recorded manifest canonical SHA
+`8672081ebb88723b97da1bca6acf23b998cf75a9e1a05cb82b5a060445a933e7`.
+This is eligible Contract 03 input only; it does not authorize V4 changes,
+production activation, catalog/Neon writes, or prospective evidence collection.
 
 Use the common amendment process. No estimator execution is part of this task.
 

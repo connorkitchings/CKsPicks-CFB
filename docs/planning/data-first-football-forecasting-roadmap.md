@@ -58,26 +58,30 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | --- | --- | --- |
 | 00 | [Documentation alignment and methodology amendment](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
 | 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Approved — independent side task; reverify Week 2 outcomes/refs before closure. |
-| 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Approved — next ratings task after 00; requires exact verified Repair v2 sources. |
-| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Approved — blocked on independently verified 02 measurements. |
+| 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 Preview measurement manifest independently verified and idempotent. |
+| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Approved — next ratings task; consume only the independently verified 02 R6 manifest. |
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Approved — blocked on independently verified 03 ratings. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Approved — blocked on independently verified 04 candidate; authentic live readiness is a separate gate. |
 | 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved — blocked on verified, live-ready 05; six qualifying slates are not yet collected. |
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
-satisfy an unmet data dependency. The next ratings task is **02: possession
-measurement certification**; no possession artifact is yet certified.
+satisfy an unmet data dependency. The next ratings task is **03: possession
+rating estimation**, which may consume only the certified R6 measurement parent.
 
 ## Current checkpoint
 
-**Repair v2 is implemented and independently verified in Preview. Phase 3 v2 is
-certified; possession measurements remain uncertified.** The recorded September
-11 apply `phase3-v2-compact-state-20260910-r2` passed preflight, independent
+**Repair v2, Phase 3 v2, and the R6 possession measurements are independently
+certified in Preview.** The recorded September 11 apply
+`phase3-v2-compact-state-20260910-r2` passed preflight, independent
 verification, and an idempotent rerun under the
 [Phase 3 compact-state contract](../plans/2026-09-10/phase3-v2-compact-tournament-state.md).
 Its selected `quality_core_epa_split` is historical reconstructed benchmark evidence,
-not the definition or automatic parent of possession ratings.
+not the definition or automatic parent of possession ratings. The R6 possession
+manifest `possession-v1-measurements-20260915-18fb0aa-r6` passed preflight
+(910.150s), apply (1,538.772s), independent verification (1,292.471s), and
+idempotent repeat under the fixed 1,800-second cap. It is the sole eligible
+measurement parent for Contract 03.
 
 The possession-based rating methodology is specified (2026-09-11), amended
 2026-09-13. Its [original specification contract](../plans/2026-09-11/possession-rating-methodology-specification.md)

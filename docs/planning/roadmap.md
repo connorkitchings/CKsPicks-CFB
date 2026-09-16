@@ -9,11 +9,11 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-13):** V5 ratings successor research
+> **Current research checkpoint (2026-09-15):** V5 ratings successor research
 > is distinct from the V4 feature schema v5 diagnostic. Repair v2 is verified;
-> Phase 3 v2 is certified. The possession methodology is specified and amended;
-> possession measurements remain uncertified. The next ratings task is
-> 02: possession measurement certification. See the
+> Phase 3 v2 and R6 possession measurements are certified in Preview. The next
+> ratings task is 03: possession rating estimation, using only
+> `possession-v1-measurements-20260915-18fb0aa-r6`. See the
 > [data-first roadmap](data-first-football-forecasting-roadmap.md) for the active
 > 00–06 queue. Contract 01 closes the independent V4 diagnostic. The original
 > Phase 4B retained manifest remains prohibited as a forecasting parent.

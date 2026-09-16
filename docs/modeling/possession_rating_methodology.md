@@ -1,7 +1,7 @@
 # Possession-Based Rating Methodology
 
-> **Status (2026-09-13):** Specified and amended; possession measurements remain
-> **uncertified** until contract 02 passes independent verification. The
+> **Status (2026-09-15):** Contract 02 is implemented: R6 possession measurements
+> are independently certified in Preview. The
 > [September 11 specification](../plans/2026-09-11/possession-rating-methodology-specification.md)
 > remains an Implemented documentation milestone. Current execution authority is
 > the [V5 common contract and 00–06 package](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
@@ -17,12 +17,13 @@ for literal points in a score equation. Keep native units and source/version
 metadata when available. V5 ratings successor is distinct from V4 feature schema
 v5, the independent operational diagnostic.
 
-Repair v2 is verified and Phase 3 v2 is certified. Its `quality_core_epa_split`
-selection is benchmark evidence, not a definition or automatic possession parent.
-The next ratings task is 02: possession measurement certification; see the
-[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) for
-current status. The original Phase 4B retained manifest remains prohibited as a
-forecasting parent.
+Repair v2 and Phase 3 v2 are certified. Its `quality_core_epa_split` selection
+is benchmark evidence, not a definition or automatic possession parent. The R6
+possession manifest `possession-v1-measurements-20260915-18fb0aa-r6` is the sole
+eligible Contract 03 parent. The next ratings task is 03: possession rating
+estimation; see the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+for current status. The original Phase 4B retained manifest remains prohibited
+as a forecasting parent.
 
 Retain the September 11 choices of two definitions, six priors, five updaters,
 OT exclusion from rating evidence, and separate non-offense scoring. The September

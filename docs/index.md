@@ -3,13 +3,13 @@
 CKsPicks-CFB is a college-football prediction system with a Python pipeline,
 an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Current posture (2026-09-13)
+## Current posture (2026-09-15)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
 isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
-Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). The possession
-methodology is specified and amended; possession measurements remain uncertified.
-The next ratings task is **02: possession measurement certification**; contract 01
+Repair v2, Phase 3 v2, and R6 possession measurements are certified in Preview.
+The next ratings task is **03: possession rating estimation**, using only
+`possession-v1-measurements-20260915-18fb0aa-r6`; contract 01
 is the independent diagnostic closure. The [data-first roadmap](planning/data-first-football-forecasting-roadmap.md)
 is the canonical status and execution-queue authority.
 

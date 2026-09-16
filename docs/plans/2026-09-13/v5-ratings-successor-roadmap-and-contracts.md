@@ -25,7 +25,7 @@ repeat cloud certification:
 | V4 production | Week 2 scored; Week 3 `2026w3-68fe6a815bd6` published, freeze pending | Unchanged production champion and rollback authority |
 | Repair v2 | `repair-v2-20260909T1417Z`, independently verified; manifest raw SHA `b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4` | Repaired source and population parent, reverified at consumption |
 | Phase 3 v2 | `phase3-v2-compact-state-20260910-r2`, certified September 11; selected `quality_core_epa_split` | Historical reconstructed benchmark, not the possession definition |
-| Possession methodology | Specified September 11; contract Implemented | Semantic baseline amended by this package; possession measurements remain uncertified |
+| Possession methodology | Specified September 11; Contract 02 implemented 2026-09-15 | R6 Preview measurements independently certified; eligible parent for Contract 03 only |
 | Feature-v5 diagnostic | Week 0/1 scored; formal pooled verdict awaiting Week 2 scoring | Separate V4 diagnostic; the finals dependency is now recorded as available, subject to fresh verification |
 
 Use **V5 ratings successor** as the human-facing research name. Preserve existing
