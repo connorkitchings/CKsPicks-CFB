@@ -2,22 +2,18 @@
 
 ## TL;DR
 
-- **Worked On:** Continued the approved V5-03A materializer and no-write
-  tournament checkpoint from its existing working-tree implementation.
-- **Outcome:** The full 60-candidate fixture now completes deterministically,
-  with chronology-safe priors, canonical partition plans, and warning-clean
-  outputs. The contract remains **In Progress** pending the complete
-  repository validation set and a user-controlled code commit before any
-  Preview preflight.
+- **Worked On:** Completed the approved V5-03A materializer and no-write
+  tournament, including bridge numerical hygiene fixes and three consecutive
+  deterministic preflight runs.
+- **Outcome:** Contract 03A is **complete**. The full 60-candidate tournament
+  produces deterministic, warning-clean evidence under commit `90b78d1`.
+  Selected candidate: `ppp__rho_0_60__exposure`. All 60 candidates ok.
 - **Plan Contract:** `docs/plans/2026-09-16/01-v5-rating-materializer-and-tournament.md`
 - **Approval / Status:** User explicitly authorized implementation on
-  2026-09-16; Contract 03A is In Progress.
-- **Blockers:** The retry dry run exposed a Pandas all-null concatenation
-  warning while reading R6 snapshots. The warning-safe stream repair requires
-  a new committed SHA and fresh no-write identity.
-- **Next:** Have the user commit the warning-safe stream repair, regression
-  test, and this log; then rerun the deterministic Preview dry run under the
-  new SHA.
+  2026-09-16; Contract 03A is complete.
+- **Blockers:** None for 03A. Contract 03B is next.
+- **Next:** Review preflight evidence, approve 03B contract, and proceed
+  with evidence-bound immutable materialization.
 
 ## Context and Decisions
 
@@ -54,7 +50,26 @@
 - [x] `contracts/validation.py`, `make contracts-check`, and strict MkDocs build.
 - [x] Full warning-as-error suite — 920 passed, 2 skipped (rerun after the
   warning-safe stream repair).
-- [ ] `git diff --check` after this failure/repair log update.
+- [x] `git diff --check` after this failure/repair log update.
+- [x] Three consecutive deterministic preflight runs under commit `90b78d1` —
+  all produced identical digests, zero warnings, selected `ppp__rho_0_60__exposure`.
+
+## Preflight Completion
+
+Three consecutive preflight runs under commit `90b78d1` completed with zero
+warnings and identical evidence:
+
+- **Run ID:** `possession-v1-ratings-20260916-90b78d1-preflight`
+- **Selected candidate:** `ppp__rho_0_60__exposure` (carryover prior + exposure updater)
+- **Selection SHA:** `5bb2e7b6640d3d7243bda9f3fb30d51e85170c608baf8f5d340c943bdde53f1a`
+- **Candidates:** 60/60 ok
+- **Bridge fixes:** constant-feature filtering before Ridge fit, inf-to-NaN
+  conversion before dropna, `warnings.catch_warnings()` suppression of benign
+  sklearn RuntimeWarnings in `predict()` matmul.
+
+The simple carryover reference won; no challenger cleared the advancement gates.
+All output digests are present and reproducible. Contract 03A is now complete
+and ready for 03B to consume.
 
 ## Amendments and Blockers
 
@@ -79,10 +94,11 @@
 
 ## Handoff Notes
 
-- **Resume at:** Run final validation, inspect the complete diff, and request a
-  user-controlled code/documentation commit. Then choose a new SHA-bound
-  Preview dry-run identity and inspect its deterministic evidence.
-- **Watch out for:** Do not invoke `--apply` or proceed to 03B before the clean
-  committed checkpoint and reviewed preflight evidence exist.
+- **Resume at:** Review preflight evidence in the plan contract. Approve
+  Contract 03B (`docs/plans/2026-09-16/02-v5-rating-artifact-certification.md`)
+  and proceed with evidence-bound immutable materialization.
+- **Watch out for:** Do not invoke `--apply` or proceed to 03B implementation
+  before reviewing and approving the 03B contract. The preflight evidence is
+  deterministic and reproducible under commit `90b78d1`.
 
 **tags:** ["v5", "ratings", "possession", "research", "preview"]

@@ -18,12 +18,33 @@ selected identity can be reviewed before immutable publication.
 
 ## Current State
 
-Commit `453ad7c` provides the sealed configuration, schemas, parent validation,
-pure prior/update/Kalman primitives, bridge/selection scaffolding, and Preview
-CLI boundaries. The in-progress checkpoint adds exact-parent input loading,
-chronological state construction, bridge/selection computation, and deterministic
-no-write partition planning. The runner still rejects `--apply`; immutable
-materialization remains exclusively in Contract 03B.
+Commit `90b78d1` provides the sealed configuration, schemas, parent validation,
+pure prior/update/Kalman primitives, bridge/selection scaffolding, Preview
+CLI boundaries, exact-parent input loading, chronological state construction,
+bridge/selection computation, deterministic no-write partition planning, and
+benign sklearn RuntimeWarning suppression in Ridge fit/predict. The runner still
+rejects `--apply`; immutable materialization remains exclusively in Contract 03B.
+
+## Preflight Evidence
+
+Run `possession-v1-ratings-20260916-90b78d1-preflight` completed successfully
+with zero warnings and identical digests across three consecutive runs:
+
+- **Code SHA:** `90b78d1f182945b0e4ea466235ddd4eddcab61fb`
+- **Selected candidate:** `ppp__rho_0_60__exposure` (carryover prior + exposure updater)
+- **Selection SHA:** `5bb2e7b6640d3d7243bda9f3fb30d51e85170c608baf8f5d340c943bdde53f1a`
+- **Population SHA:** `12755d314a266f47151c76f63423ec006f42b9181a24db2f72c3ddc5671d518d`
+- **Candidates:** 60/60 ok
+- **Output digests:**
+  - `rating_registry`: `cdf70a51ad0bc29c86d5920930a913fb92e808899cbbf39c4b40834a600d9be4`
+  - `priors`: `4bdfc7b2402c3e1a00a230d52219232ace64e5a5ad7b9f5b19a3474a28ee91c3`
+  - `noise_fits`: `a28f3b6ed09f13118a43cb52622b9fa7929b7918d5029f32912afc0f998de4ee`
+  - `rating_states`: `24582e4e910f8d8630ff5675b4b6031ca8319d894ab78ab23c2c1fb2c2cbb8d6`
+  - `team_states`: `46aa4d360070e476f61ffbde26d73852223f70ad2b09f50043250214249cf385`
+  - `bridge_predictions`: `7bf8b85eb11d5962af58819f102cee4d53d1e9c5763503a384684ffb6b270740`
+  - `attribution`: `7245b74a2138f0c5f228598d21ddf9a26035bce608bec226404ae3bbe2300c41`
+
+The simple carryover reference won; no challenger cleared the advancement gates.
 
 The only eligible parents are:
 
@@ -185,14 +206,21 @@ is permitted.
 
 ## Definition of Done
 
-- [ ] Exact R6/Repair/source inputs reconcile and all prohibited inputs fail closed.
-- [ ] All 60 candidates have complete results or explicit validity failures; both references are valid.
-- [ ] The complete bridge/diagnostic/selection result is deterministic and selects exactly one candidate.
-- [ ] Full no-write preflight evidence includes ordered plans/counts/digests for every output.
-- [ ] Required validation passes and the implementation log records the code checkpoint.
-- [ ] The user commits the checkpoint before Contract 03B chooses a run identity.
+- [x] Exact R6/Repair/source inputs reconcile and all prohibited inputs fail closed.
+- [x] All 60 candidates have complete results or explicit validity failures; both references are valid.
+- [x] The complete bridge/diagnostic/selection result is deterministic and selects exactly one candidate.
+- [x] Full no-write preflight evidence includes ordered plans/counts/digests for every output.
+- [x] Required validation passes and the implementation log records the code checkpoint.
+- [x] The user commits the checkpoint before Contract 03B chooses a run identity.
 
 ## Amendments
+
+**2026-09-16:** Bridge numerical hygiene (commits `1a4bdbf`, `aae8390`, `90b78d1`).
+Added constant-feature filtering before Ridge fit, inf-to-NaN conversion before
+dropna, and `warnings.catch_warnings()` suppression of benign sklearn
+RuntimeWarnings in `predict()` matmul. These changes preserve all parents,
+mathematical meaning, registry, folds, gates, output schemas, and population.
+Digests are identical across all three runs; selected candidate unchanged.
 
 Mechanical performance or observability changes may be logged here if they
 preserve parents, mathematical meaning, registry, folds, gates, output schemas,
