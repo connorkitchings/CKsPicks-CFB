@@ -12,11 +12,12 @@
 - **Plan Contract:** `docs/plans/2026-09-16/01-v5-rating-materializer-and-tournament.md`
 - **Approval / Status:** User explicitly authorized implementation on
   2026-09-16; Contract 03A is In Progress.
-- **Blockers:** The first dry run exposed a keyword-only history-auditor call
-  defect before tournament output. Its identity is diagnostic-only; the repair
-  requires a new committed SHA and fresh no-write identity.
-- **Next:** Have the user commit the one-line keyword-only repair and this log,
-  then rerun the deterministic Preview dry run under the new SHA.
+- **Blockers:** The retry dry run exposed a Pandas all-null concatenation
+  warning while reading R6 snapshots. The warning-safe stream repair requires
+  a new committed SHA and fresh no-write identity.
+- **Next:** Have the user commit the warning-safe stream repair, regression
+  test, and this log; then rerun the deterministic Preview dry run under the
+  new SHA.
 
 ## Context and Decisions
 
@@ -46,13 +47,13 @@
 
 ## Validation
 
-- [x] Materializer and pure-rating suite with warnings as errors — 30 passed.
+- [x] Materializer and pure-rating suite with warnings as errors — 31 passed.
 - [x] Possession measurement and verifier regressions with warnings as errors — 16 passed.
 - [x] Documentation-authority regression with warnings as errors — 32 passed.
 - [x] Scoped Ruff, Python compile, and runner `--help` checks.
 - [x] `contracts/validation.py`, `make contracts-check`, and strict MkDocs build.
-- [x] Full warning-as-error suite — 919 passed, 2 skipped (rerun after the
-  keyword-only repair).
+- [x] Full warning-as-error suite — 920 passed, 2 skipped (rerun after the
+  warning-safe stream repair).
 - [ ] `git diff --check` after this failure/repair log update.
 
 ## Amendments and Blockers
@@ -68,6 +69,13 @@
   not reach tournament output or apply/write code. The call now uses
   `storage=storage`. This failure is not preflight evidence and that identity
   must never be reused.
+- The retry used `possession-v1-ratings-20260916-4903017-03a` at
+  `2026-09-16T18:04:39Z`. It passed parent loading and began the bounded
+  adjusted-history audit, but emitted a Pandas FutureWarning while combining
+  the R6 snapshot partitions. It was stopped before tournament output and
+  cannot serve as reviewed preflight evidence. `_concat_frames` now normalizes
+  optional mixed-null columns before concat; focused coverage asserts that the
+  path is warning-safe. This identity must never be reused.
 
 ## Handoff Notes
 

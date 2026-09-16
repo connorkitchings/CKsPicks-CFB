@@ -317,10 +317,13 @@ def _stream_output(
             total=len(nonempty),
             rows=int(part["row_count"]),
             partition=part["partition"],
-        )
+    )
     if not frames:
         return pd.DataFrame(columns=schema_for(expected_dataset, expected_schema).required)
-    return pd.concat(frames, ignore_index=True, sort=False)
+    return _concat_frames(
+        frames,
+        columns=list(schema_for(expected_dataset, expected_schema).required),
+    )
 
 
 def _core_eligibility_refs(
@@ -1368,22 +1371,28 @@ def _merged_chunks(
     partitions: Mapping[tuple[int, ...], list[pd.DataFrame]], columns: list[str]
 ) -> pd.DataFrame:
     frames = [
-        frame.loc[:, columns].copy()
+        frame
         for key in sorted(partitions, key=lambda item: tuple(item))
         for frame in partitions[key]
     ]
+    return _concat_frames(frames, columns=columns)
+
+
+def _concat_frames(frames: list[pd.DataFrame], *, columns: list[str]) -> pd.DataFrame:
+    """Concatenate contract frames without dtype inference from all-null columns."""
     if not frames:
         return pd.DataFrame(columns=columns)
+    normalized = [frame.loc[:, columns].copy() for frame in frames]
     # Optional fields can be entirely null for one candidate and populated for
     # another.  Align their dtype before concatenation so warning-as-error runs
     # do not depend on pandas' deprecated all-null inference behavior.
     for column in columns:
-        if any(frame[column].isna().all() for frame in frames) and any(
-            frame[column].notna().any() for frame in frames
+        if any(frame[column].isna().all() for frame in normalized) and any(
+            frame[column].notna().any() for frame in normalized
         ):
-            for frame in frames:
+            for frame in normalized:
                 frame[column] = frame[column].astype(object)
-    return pd.concat(frames, ignore_index=True, sort=False)
+    return pd.concat(normalized, ignore_index=True, sort=False)
 
 
 def _run_candidate(

@@ -306,6 +306,21 @@ def _states_for(
     ]
 
 
+class TestFrameConcatenation:
+    def test_mixed_null_optional_columns_are_warning_safe(self):
+        result = materializer._concat_frames(
+            [
+                pd.DataFrame({"season": [2017], "source_season": [None]}),
+                pd.DataFrame({"season": [2018], "source_season": [2017]}),
+            ],
+            columns=["season", "source_season"],
+        )
+        assert result.to_dict("records") == [
+            {"season": 2017, "source_season": None},
+            {"season": 2018, "source_season": 2017},
+        ]
+
+
 class TestBoundaryTable:
     def test_boundary_requires_later_week_and_six_hour_buffer(self):
         population = _population(
