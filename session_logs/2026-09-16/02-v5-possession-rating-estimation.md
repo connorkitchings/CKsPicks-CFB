@@ -39,6 +39,10 @@
 - Added Preview-only CLI boundaries: dry-run parent/config/identity preflight,
   clean-commit apply gate, and retained-manifest verifier boundary. Apply
   intentionally refuses partial materialization.
+- Corrected the parent validator to recognize R6's signed immutable manifest
+  shape, which carries the reviewed certification SHA instead of a mutable
+  lifecycle field. A no-write R2 Preview preflight then accepted the exact R6
+  and Repair v2 parents and frozen 60-candidate registry.
 - Updated current V5 status in the README, planning/status pages, requirements,
   plan index, and authority regression test.
 
@@ -58,6 +62,8 @@
 - [x] Full warning-as-error suite — 895 passed, 2 skipped.
 - [x] Scoped Ruff and Python compile checks.
 - [x] `contracts/validation.py`, `make contracts-check`, strict MkDocs build, and `git diff --check`.
+- [x] Read-only R2 Preview parent preflight after commit `453ad7c` — accepted
+  R6 and Repair v2 with identity `b070c902…`; no objects were written.
 
 ## Amendments and Blockers
 

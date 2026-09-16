@@ -19,6 +19,9 @@ POSSESSION_RATING_MANIFEST_SCHEMA = "data_first_possession_retained_rating_v1"
 POSSESSION_RATING_OUTPUT_ROOT = (
     "artifacts/research/data-first-football-v1/possession-v1/ratings/runs"
 )
+REQUIRED_R6_CERTIFICATION_SHA256 = (
+    "be4fcb6ec1e50356f1230b5831bb775e5383507f2c51cc736476a15badd15fa1"
+)
 
 DEFINITIONS = ("ppp", "epa_per_possession")
 PRIOR_FAMILIES = (
@@ -272,8 +275,11 @@ def verify_parents(
         verify_signed_payload(measurement, label="possession measurement manifest")
     except ValueError as exc:
         raise PossessionRatingContractError(str(exc)) from exc
+    # The R6 producer manifest is a signed immutable result rather than a
+    # mutable lifecycle record; its reviewed certification checksum is the
+    # eligibility proof carried forward to V5-03.
     if (
-        measurement.get("state") != "certified"
+        measurement.get("certification_sha256") != REQUIRED_R6_CERTIFICATION_SHA256
         or measurement.get("production_activation_authorized") is not False
     ):
         raise PossessionRatingContractError(
