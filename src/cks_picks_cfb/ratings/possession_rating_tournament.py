@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from typing import Any
 
@@ -174,8 +175,10 @@ def bridge_predictions(
             "total": test["home_points"] + test["away_points"],
         }
         for target, y in targets.items():
-            model = Ridge(alpha=alpha).fit(x_train_v, y)
-            prediction = model.predict(x_test_v)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=RuntimeWarning)
+                model = Ridge(alpha=alpha).fit(x_train_v, y)
+                prediction = model.predict(x_test_v)
             for row, value, actual in zip(
                 test.itertuples(index=False),
                 prediction,
