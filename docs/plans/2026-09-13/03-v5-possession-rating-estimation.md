@@ -194,3 +194,20 @@ be rescued by removing hard games or calling an old manifest certified.
 
 Use the common amendment process. No final forecasting family/window selection
 or prospective execution occurs in this contract.
+
+## Execution decomposition (2026-09-16)
+
+The remaining implementation is split into two dependency-ordered contracts
+without changing this umbrella contract's architecture, interfaces, registry,
+mathematics, gates, or definition of done:
+
+1. [V5-03A: materializer and tournament](../2026-09-16/01-v5-rating-materializer-and-tournament.md)
+   completes exact-parent loading, all 60 chronological states, the common
+   bridge/selection tournament, and deterministic no-write preflight evidence.
+2. [V5-03B: artifact certification](../2026-09-16/02-v5-rating-artifact-certification.md)
+   performs evidence-bound immutable materialization, independent reconstruction,
+   idempotency, and final Contract 04 eligibility.
+
+03A was explicitly approved by the user on 2026-09-16. 03B remains Draft until
+03A has a clean committed SHA and reviewed deterministic preflight evidence.
+V5-03 remains In Progress and is not complete after 03A alone.
