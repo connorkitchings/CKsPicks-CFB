@@ -1,10 +1,11 @@
 # V5-03B: Possession Rating Artifact Certification
 
-- **Status:** Draft
+- **Status:** Approved
 - **Created:** 2026-09-16
+- **Approved:** 2026-09-16
 - **Planner:** Codex planning task
-- **Approval source:** Pending user approval of this execution decomposition.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-rating-artifact-certification.md`.
+- **Approval source:** User approved this execution decomposition on 2026-09-16.
+- **Implementation log:** Pending; create `session_logs/2026-09-16/05-v5-rating-artifact-certification.md`.
 - **Commit policy:** Separate materializer/verifier code commit and certified-evidence documentation commit; user executes Git.
 
 ## Goal
@@ -17,11 +18,17 @@ Contract 04 rating parent; code completion alone is not certification.
 
 ## Current State and Entry Gate
 
-This contract is blocked until V5-03A has a clean committed SHA and a reviewed,
-deterministic no-write preflight containing complete part plans and digests. It
-must consume the same exact R6 and Repair v2 parent URIs, configuration, cutoff,
-and run identity used by that preflight. Never reuse the diagnostic
-`possession-v1-ratings-20260916-453ad7c-preflight` identity or a failed/partial
+V5-03A is complete under commit `90b78d1f182945b0e4ea466235ddd4eddcab61fb`. The
+deterministic preflight evidence is:
+
+- **Selected candidate:** `ppp__rho_0_60__exposure`
+- **Selection SHA:** `5bb2e7b6640d3d7243bda9f3fb30d51e85170c608baf8f5d340c943bdde53f1a`
+- **Population SHA:** `12755d314a266f47151c76f63423ec006f42b9181a24db2f72c3ddc5671d518d`
+- **Output digests:** 7 datasets with reproducible SHA-256 checksums
+
+This contract must consume the same exact R6 and Repair v2 parent URIs, configuration,
+cutoff, and run identity used by that preflight. Never reuse the diagnostic
+`possession-v1-ratings-20260916-90b78d1-preflight` identity or a failed/partial
 prefix.
 
 The existing verifier checks only the retained manifest envelope. It is not yet
