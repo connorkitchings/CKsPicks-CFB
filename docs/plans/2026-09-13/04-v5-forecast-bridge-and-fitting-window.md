@@ -1,10 +1,10 @@
 # V5-04: Forecast Bridge, Fitting Window, and Candidate Freeze
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
-- **Approval source:** User selected bridge-first forecasting, a bounded older-data comparison, optional later arithmetic, and approved the package with “Implement the proposed plan.” on 2026-09-13.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-forecast-bridge-and-fitting-window.md`.
+- **Approval source:** User selected bridge-first forecasting, a bounded older-data comparison, optional later arithmetic, and approved the package with "Implement the proposed plan." on 2026-09-13.
+- **Implementation log:** `session_logs/2026-09-17/04-v5-04a-hardening-and-preflight.md`, `session_logs/2026-09-17/07-v5-04b-calibration-and-certification.md`, `session_logs/2026-09-17/08-v5-04b-certification-execution.md`.
 - **Commit policy:** Separate code and frozen-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -201,10 +201,10 @@ A shorter window may help recently without being a new independent test. The
 simple bridge may remain best. Do not add arithmetic/NB2/context experiments to
 rescue a failed candidate or tune intervals on protected 2026 outcomes.
 
-- [ ] Forecast registry and both fitting horizons evaluated as declared.
-- [ ] Candidate parameters, uncertainty, source policy and update recipe frozen.
-- [ ] Independent verifier and idempotent Preview apply pass.
-- [ ] Required checks, report, docs, plan status and implementation log complete.
+- [x] Forecast registry and both fitting horizons evaluated as declared.
+- [x] Candidate parameters, uncertainty, source policy and update recipe frozen.
+- [x] Independent verifier and idempotent Preview apply pass.
+- [x] Required checks, report, docs, plan status and implementation log complete.
 
 Use the common amendment process. This freeze establishes a research candidate,
 not a qualifying prospective slate or authority to activate production.

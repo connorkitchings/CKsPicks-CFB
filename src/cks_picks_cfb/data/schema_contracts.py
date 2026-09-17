@@ -161,6 +161,15 @@ from cks_picks_cfb.data.data_first_repair_v2 import (
     REPAIR_POPULATION_DATASET,
     REPAIR_POPULATION_SCHEMA,
 )
+from cks_picks_cfb.data.data_first_shadow_v1 import (
+    EVIDENCE_COUNTER_COLUMNS,
+    READINESS_COLUMNS,
+    SHADOW_DATASETS,
+    SHADOW_EVALUATION_COLUMNS,
+    SHADOW_FREEZE_COLUMNS,
+    SHADOW_PREDICTION_COLUMNS,
+    SHADOW_REHEARSAL_COLUMNS,
+)
 from cks_picks_cfb.ratings.contracts import (
     OBSERVATION_COLUMNS,
     OBSERVATION_KEYS,
@@ -1162,6 +1171,27 @@ _FORECAST_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+_SHADOW_SCHEMAS: dict[str, DatasetSchema] = {
+    SHADOW_DATASETS["readiness"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["readiness"][0], schema_version=SHADOW_DATASETS["readiness"][1], required=READINESS_COLUMNS, keys=("candidate", "season", "week", "source"), integer_columns=("season", "week"), nonnullable=tuple(column for column in READINESS_COLUMNS if column != "blocked_reason"),
+    ),
+    SHADOW_DATASETS["shadow_freeze"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["shadow_freeze"][0], schema_version=SHADOW_DATASETS["shadow_freeze"][1], required=SHADOW_FREEZE_COLUMNS, keys=("candidate", "season", "week", "run_id"), integer_columns=("season", "week", "lead_seconds", "paired_count", "broader_count", "excluded_count"), nonnullable=SHADOW_FREEZE_COLUMNS,
+    ),
+    SHADOW_DATASETS["shadow_prediction"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["shadow_prediction"][0], schema_version=SHADOW_DATASETS["shadow_prediction"][1], required=SHADOW_PREDICTION_COLUMNS, keys=("candidate", "season", "week", "game_id", "target"), integer_columns=("season", "week", "game_id"), nonnullable=SHADOW_PREDICTION_COLUMNS,
+    ),
+    SHADOW_DATASETS["shadow_evaluation"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["shadow_evaluation"][0], schema_version=SHADOW_DATASETS["shadow_evaluation"][1], required=SHADOW_EVALUATION_COLUMNS, keys=("candidate", "season", "week", "outcome_version", "game_id", "target"), integer_columns=("season", "week", "game_id"), boolean_columns=("coverage_95",), nonnullable=SHADOW_EVALUATION_COLUMNS,
+    ),
+    SHADOW_DATASETS["evidence_counter"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["evidence_counter"][0], schema_version=SHADOW_DATASETS["evidence_counter"][1], required=EVIDENCE_COUNTER_COLUMNS, keys=("candidate", "season", "week"), integer_columns=("season", "week"), boolean_columns=("qualifying",), nonnullable=tuple(column for column in EVIDENCE_COUNTER_COLUMNS if column != "evaluation_ref"),
+    ),
+    SHADOW_DATASETS["shadow_rehearsal"][0]: DatasetSchema(
+        dataset=SHADOW_DATASETS["shadow_rehearsal"][0], schema_version=SHADOW_DATASETS["shadow_rehearsal"][1], required=SHADOW_REHEARSAL_COLUMNS, keys=("candidate", "run_id"), integer_columns=("cases_passed", "cases_failed"), boolean_columns=("diagnostic_only",), nonnullable=SHADOW_REHEARSAL_COLUMNS,
+    ),
+}
+
 _RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -1873,6 +1903,13 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
         return schema
     if dataset in _FORECAST_SCHEMAS:
         schema = _FORECAST_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"
+            )
+        return schema
+    if dataset in _SHADOW_SCHEMAS:
+        schema = _SHADOW_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"

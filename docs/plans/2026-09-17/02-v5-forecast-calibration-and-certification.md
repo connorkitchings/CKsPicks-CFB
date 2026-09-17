@@ -440,9 +440,19 @@ After code commit:
 - [x] Independent verifier reconstructs the frozen design without producer imports.
 - [x] Exact repeat apply is idempotent; failed/partial prefixes remain ineligible.
 - [x] All quality gates pass.
-- [ ] Certification execution produces a verified, immutable Preview artifact. (Requires user to commit and run in proper environment with R2 access.)
-- [ ] Umbrella V5-04 and authority documentation name one frozen shadow candidate. (Pending certification execution.)
-- [ ] Required validation and full implementation/certification session logs are complete.
+- [x] Certification execution produces a verified, immutable Preview artifact.
+- [x] Umbrella V5-04 and authority documentation name one frozen shadow candidate.
+- [x] Required validation and full implementation/certification session logs are complete.
+
+## Certified artifact
+
+Run `forecast-v1-20260917-4600ddd-04b` at commit `4600dddd3e97373880d29a549f4447367940cf37`,
+cutoff `2026-09-17T16:40:02Z`. Selected shared `expanding` horizon, alpha-10 reference
+heads on both targets. Calibration variances: margin 361-375, total 311-326 across
+2022-2025. All 6 output datasets verified; manifest at
+`artifacts/research/data-first-football-v1/forecasts/runs/forecast-v1-20260917-4600ddd-04b/forecast-manifest.json`.
+`production_activation_authorized: false`. This is the frozen shadow candidate for
+Contract 05 prospective evaluation.
 
 ## Amendments
 

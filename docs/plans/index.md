@@ -45,7 +45,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Certified 2026-09-17: run `possession-v1-ratings-20260917-d029526-cert` passed preflight, evidence-bound apply, independent verification, and idempotent repeat. Selected `ppp__rho_0_60__exposure`; retained manifest is the sole eligible 04 parent. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Entry gate met: independently verified 03 ratings available. 04A Implemented 2026-09-17; 04B remains Draft pending separate approval. |
-| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Blocked on verified 04 candidate; live readiness must pass separately. |
+| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Entry gate met (certified 04 candidate). Decomposed 2026-09-17 into Draft phases 05A/05B/05C; 05A authorized on approval, 05B/05C gated on prior certification. |
 | 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
@@ -58,7 +58,15 @@ of the rating sequence. No promotion or serving change is authorized.
 | --- | --- |
 | 04A: [Forecast offsets, bridge, and horizons](2026-09-17/01-v5-forecast-offsets-bridge-and-horizons.md) | **Implemented 2026-09-17.** Hardened, preflighted three times byte-identical under `forecast-v1-20260917-19ca44b-04a` (selected shared `expanding` horizon, alpha-10 reference heads, equal 3,659-game populations). |
 | 04A hardening: [Hardening, preflight closure, and 04B rebase](2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md) | **Implemented 2026-09-17.** Exact three-URI binding, 2018/2019/2021 reporting, expanded metrics, two mechanical preflight repairs (Amendments 1–2); two dead diagnostic identities preserved. |
-| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Approved 2026-09-17.** Entry gate met (implemented 04A interfaces + reviewed evidence). Calibration in preflight, single Terra execution. Ready for implementation. |
+| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Implemented 2026-09-17.** Certified Preview artifact `forecast-v1-20260917-4600ddd-04b`: selected shared `expanding` horizon, alpha-10 reference heads, calibration variances 311-375 across 2022-2025. Frozen shadow candidate for Contract 05. |
+
+### V5-05 execution decomposition (2026-09-17)
+
+| Contract | Status and dependency |
+| --- | --- |
+| 05A: [Readiness validation and frozen replay](2026-09-17/04-v5-05a-readiness-and-replay.md) | **Draft.** Entry gate met (certified 04 candidate + parents); requires separate explicit user approval. Builds shadow schemas, `shadow_v1.yaml`, source-availability validation, frozen-replay proof; expected verified `blocked` readiness. |
+| 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Draft.** Blocked on Implemented 05A; requires separate explicit user approval. Measured freezes, outcome-versioned scoring, evidence ledger/counter. |
+| 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Draft.** Blocked on Implemented 05B; requires separate explicit user approval. Independent verifier, diagnostic rehearsal, refreshed readiness report, shadow runbook, Contract 06 handoff. |
 
 ### Certified foundations and superseded execution records
 

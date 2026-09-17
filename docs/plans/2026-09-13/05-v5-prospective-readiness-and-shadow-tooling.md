@@ -158,3 +158,28 @@ This contract may close its tooling work with a verified **blocked** readiness
 report, but its live-readiness dependency remains unmet and 06 cannot collect
 eligible evidence. A material source/model change requires a planning amendment;
 mechanical readiness follow-up preserves this contract's rules.
+
+## Execution decomposition (2026-09-17)
+
+The implementation is split into three dependency-ordered phases without
+changing this umbrella contract's goal, tasks, gates, or definition of done:
+
+1. [V5-05A: Readiness validation and frozen replay](../2026-09-17/04-v5-05a-readiness-and-replay.md)
+   implements Tasks 1–2: all six shadow schema contracts, `shadow_v1.yaml`,
+   source-availability validation with a verified ready/blocked report, and
+   frozen-algorithm replay proof, certified with its own Preview
+   preflight/apply/verify cycle.
+2. [V5-05B: Shadow freeze, scoring, and evidence ledger](../2026-09-17/05-v5-05b-freeze-score-ledger.md)
+   implements Tasks 3–4: measured immutable freezes, outcome-versioned
+   scoring, and the evidence ledger/counter, certified with its own Preview
+   preflight/apply/verify cycle. Blocked on Implemented 05A.
+3. [V5-05C: Diagnostic rehearsal, verification, and runbook](../2026-09-17/06-v5-05c-rehearsal-verification-runbook.md)
+   implements Task 5: independent shadow verifier, full historical diagnostic
+   rehearsal, refreshed real-season readiness report, and the V5 shadow
+   runbook with Contract 06 handoff. Blocked on Implemented 05B.
+
+All three phases are Draft pending approval. The user approved the
+decomposition on 2026-09-17, authorizing 05A execution on approval of its
+contract; 05B remains Draft until 05A has a clean committed SHA and reviewed
+deterministic preflight evidence, and 05C remains Draft until 05B certifies.
+V5-05 remains Approved and is not complete until 05C certifies.
