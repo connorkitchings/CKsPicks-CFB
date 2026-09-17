@@ -441,3 +441,35 @@ gates, registry, folds, selection/reporting populations, schemas, or evidence
 shape. The failed run 1 is a dead diagnostic identity under commit `367b4a3`;
 after the repair commit, the preflight repeats under a fresh run ID derived
 from the new commit's short SHA.
+
+### Amendment 2 — Regime stage comes from the schedule, not rating states
+
+**Reason:** Evidence review of the three byte-identical runs under
+`forecast-v1-20260917-820bb1d-04a` (commit `820bb1d`) found
+`by_completed_game_stage` collapsed to `{0, 1}`. Direct parent inspection
+(17,870 retained-candidate offense rows) shows the counter is ~96% zeros with
+maximum 3: `possession_rating_state.completed_games` counts assimilated
+usable observations whose `boundary_cutoff` has passed — an exposure
+credibility counter, not the program's completed-game regime (0/1/2/3/4+).
+Stage slices 2–4 were therefore silently absent, so the evidence fails the
+review gate ("no missing required slices") and the identity is dead.
+
+**Original approach (Amendment 1):** Source `completed_games` from the
+retained candidate's `possession_rating_state` offense rows.
+
+**Revised approach:** Compute pregame per-team counts of earlier
+forecast-eligible completed games within the season, ordered by
+`(kickoff_utc, game_id)`, directly from the assembled `games` frame in
+`_feature_frame` (self-excluded, strictly earlier). Drop the
+`rating_states` stream entirely. `completed_game_stage =
+min(home, away).clip(0..4)` then carries the regime meaning the stage
+regression gates and reporting slices require. Regressions cover kickoff
+ordering, pregame self-exclusion, and the stage-4 clip.
+
+**Impact:** Selection/reporting populations, row counts, parents, gates math,
+registry, and folds are unchanged; `completed_game_stage` values (and hence
+per-stage gate partitions, `by_completed_game_stage` slices, and the
+`forecast_prediction` record digests that include the column) change to the
+correct semantics. Both `forecast-v1-20260917-367b4a3-04a` and
+`forecast-v1-20260917-820bb1d-04a` are dead diagnostic identities; the
+preflight repeats under a fresh run ID after a new commit.

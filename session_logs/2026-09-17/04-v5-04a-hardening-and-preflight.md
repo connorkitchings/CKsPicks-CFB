@@ -47,19 +47,35 @@
 - **Amendment 1 (2026-09-17):** First preflight attempt (run 1 of
   `forecast-v1-20260917-367b4a3-04a`, commit `367b4a3`) failed at
   `_feature_frame`: `completed_games` does not exist in the 03
-  `possession_team_state` contract. Repair streams `possession_rating_state`
-  and sources per-team counts from the retained candidate's offense rows with
+  `possession_team_state` contract. Repair streamed `possession_rating_state`
+  and sourced per-team counts from the retained candidate's offense rows with
   uniqueness validation; `_feature_frame` gained direct unit coverage
   (16 focused tests). Mechanical only — recorded in the plan's Amendments.
   The failed run is a dead diagnostic identity; preflight repeats under a
   fresh run ID after the repair commit. Failed-run stderr (heartbeats through
   `offsets_built` at ~448 s, then the KeyError) is retained in the evidence
   temp directory.
+- **Amendment 2 (2026-09-17):** Three byte-identical runs under
+  `forecast-v1-20260917-820bb1d-04a` (commit `820bb1d`, evidence SHA
+  `f73cd574…`, identity `c9a2827f…`, selected horizon `expanding`, equal
+  3,659-row populations) passed byte-equivalence but **failed evidence
+  review**: `by_completed_game_stage` collapsed to `{0, 1}`. Direct parent
+  inspection (17,870 retained-candidate offense rows: 96% zeros, max 3)
+  proved `possession_rating_state.completed_games` counts assimilated
+  observations after their `boundary_cutoff` — an exposure counter, not the
+  0/1/2/3/4+ completed-game regime. Repair computes pregame per-team counts
+  from the eligible completed schedule (kickoff-ordered, self-excluded,
+  within season) in `_pregame_completed_counts`; the `rating_states` stream
+  is removed; regressions cover ordering, self-exclusion, the stage-4 clip,
+  and pregame invariance to later games. Both prior identities are dead;
+  fresh identity required after this commit.
 
 ## Handoff Notes
-- **Resume at:** User executes the repair commit, then Task 7 restarts with a fresh
-  run ID derived from the new commit short SHA, same captured cutoff
-  `2026-09-17T14:19:09Z`, three byte-equivalent runs.
-- **Watch out for:** No Preview identity before the commit; keep all three runs in one environment; long runtime expected (~8 min parent streaming + head evaluation; stderr heartbeat is the liveness signal); any mismatch/warning/gate failure = failed identity → repair + new commit; 04B rebase lands as Draft.
+- **Resume at:** User executes the Amendment-2 repair commit, then Task 7
+  restarts with a fresh run ID derived from the new commit short SHA, same
+  captured cutoff `2026-09-17T14:19:09Z`, three byte-equivalent runs followed
+  by the full evidence review (now including a non-degenerate stage
+  distribution check).
+- **Watch out for:** No Preview identity before the commit; keep all three runs in one environment; long runtime expected (~8 min streaming + evaluation; stderr heartbeat is the liveness signal); any mismatch/warning/gate failure = failed identity → repair + new commit; 04B rebase lands as Draft.
 
 **tags:** ["v5", "forecasting", "hardening", "preflight", "terra"]
