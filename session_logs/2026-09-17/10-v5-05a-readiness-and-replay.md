@@ -79,4 +79,10 @@ PYTHONPATH=.:src uv run python scripts/research/run_v5_shadow_readiness.py \
 - **Resume at:** After user commits, run 05A certification (Task 4) in a fresh session, then close 05A Implemented and open 05B authorization.
 - **Watch out for:** Do not amend the failing authority test or revert umbrella-04 as a drive-by — both need explicit user/Sol direction. 05B/05C must not execute before 05A certifies. Expected certification verdict: `blocked` (no 2026 pipeline); replay digest establishes the frozen-proof baseline.
 
+## End-Session Close (2026-09-17)
+- Code checkpoint committed as `0b66657` ("feat(research): implement V5-05A readiness validation and frozen replay", 18 files, +3454/−35). Worktree clean post-commit.
+- Post-commit validation: focused 05A suite 15/15 green, `git diff --check` clean.
+- Contract remains **In Progress**: Tasks 1–3 complete; Task 4 (Preview certification) is the only open item and requires the now-committed SHA.
+- Pre-existing blocker unchanged: single full-suite failure on umbrella-04 lifecycle (`Approved` vs `Implemented`) predates this work and belongs to Sol planning.
+
 **tags:** ["v5", "contract-05", "readiness", "shadow-operations", "terra"]
