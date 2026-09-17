@@ -230,10 +230,11 @@ def test_horizon_requires_identical_population():
         select_horizon(base, base.iloc[:1], seed=1, samples=5)
 
 
-def test_forecast_schemas_are_registered_and_apply_is_blocked():
+def test_forecast_schemas_are_registered_and_apply_requires_evidence():
     for dataset, (_name, version) in FORECAST_DATASETS.items():
         assert schema_for(_name, version).schema_version == version
-    with pytest.raises(runner.ForecastRunError, match="blocked"):
+    # --apply without --preflight-evidence is rejected (after SHA check)
+    with pytest.raises(runner.ForecastRunError, match="code SHA"):
         runner.main(
             [
                 "--run-id",
@@ -615,3 +616,81 @@ def test_head_metrics_block_is_deterministic_and_complete():
             value["n"] for value in block["selection"]["by_season"].values()
         )
         assert block["selection"]["by_completed_game_stage"]
+
+
+def test_calibration_plan_is_included_in_preflight_outputs():
+    """The preflight outputs dict includes forecast_calibration with correct columns."""
+    from cks_picks_cfb.forecast.calibration import calibrate_uncertainty
+
+    frame = _head_frame()
+    result = calibrate_uncertainty(
+        frame,
+        horizon="expanding",
+        development_seasons=(2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023),
+        outer_seasons=(2022, 2023),
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    plan = runner._plan(
+        "forecast_calibration",
+        result.records,
+        forecast_contracts.FORECAST_CALIBRATION_COLUMNS,
+        (),
+    )
+    assert plan["name"] == "forecast_calibration"
+    assert plan["partition_keys"] == []
+    assert plan["row_count"] == len(result.records)
+    assert len(plan["records_sha"]) == 64
+    assert set(result.records.columns) == set(
+        forecast_contracts.FORECAST_CALIBRATION_COLUMNS
+    )
+
+
+def test_calibration_summary_is_deterministic():
+    """Calibration variances are deterministic from identical inputs."""
+    from cks_picks_cfb.forecast.calibration import calibrate_uncertainty
+
+    frame = _head_frame()
+    kwargs = dict(
+        horizon="expanding",
+        development_seasons=(2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023),
+        outer_seasons=(2022, 2023),
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    first = calibrate_uncertainty(frame, **kwargs)
+    second = calibrate_uncertainty(frame, **kwargs)
+    assert first.variances == second.variances
+    pd.testing.assert_frame_equal(first.records, second.records)
+
+
+def test_calibration_summary_matches_plan_records():
+    """Calibration summary in evidence matches the plan records."""
+    from cks_picks_cfb.forecast.calibration import calibrate_uncertainty
+
+    frame = _head_frame()
+    result = calibrate_uncertainty(
+        frame,
+        horizon="expanding",
+        development_seasons=(2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023),
+        outer_seasons=(2022, 2023),
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    records_sha = runner.canonical_frame_digest(
+        result.records, columns=tuple(result.records.columns)
+    )
+    plan = runner._plan(
+        "forecast_calibration",
+        result.records,
+        forecast_contracts.FORECAST_CALIBRATION_COLUMNS,
+        (),
+    )
+    assert plan["records_sha"] == records_sha
+    assert plan["row_count"] == len(result.records)
+    for target in ("margin", "total"):
+        for season in (2022, 2023):
+            assert season in result.variances[target]
+            variance = result.variances[target][season]
+            assert isinstance(variance, float)
+            assert variance >= 1e-6

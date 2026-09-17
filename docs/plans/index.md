@@ -58,7 +58,7 @@ of the rating sequence. No promotion or serving change is authorized.
 | --- | --- |
 | 04A: [Forecast offsets, bridge, and horizons](2026-09-17/01-v5-forecast-offsets-bridge-and-horizons.md) | **Implemented 2026-09-17.** Hardened, preflighted three times byte-identical under `forecast-v1-20260917-19ca44b-04a` (selected shared `expanding` horizon, alpha-10 reference heads, equal 3,659-game populations). |
 | 04A hardening: [Hardening, preflight closure, and 04B rebase](2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md) | **Implemented 2026-09-17.** Exact three-URI binding, 2018/2019/2021 reporting, expanded metrics, two mechanical preflight repairs (Amendments 1–2); two dead diagnostic identities preserved. |
-| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Draft.** Entry gate met (implemented 04A interfaces + reviewed evidence); requires a separate explicit user approval before implementation in a fresh task. |
+| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Approved 2026-09-17.** Entry gate met (implemented 04A interfaces + reviewed evidence). Calibration in preflight, single Terra execution. Ready for implementation. |
 
 ### Certified foundations and superseded execution records
 

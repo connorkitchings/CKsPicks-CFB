@@ -1,46 +1,61 @@
 #!/usr/bin/env python3
-"""Read-only V5-04A forecast-offset, bridge, and horizon preflight.
+"""V5-04B forecast preflight, apply, and verification runner.
 
-This runner is deliberately incapable of publishing.  V5-04B owns calibration,
-immutable child writes, candidate manifests, and independent verification.
+Dry run produces deterministic evidence including calibration.  Apply path
+owns immutable child writes, candidate manifests, and idempotency.
 """
 
 from __future__ import annotations
 
 import argparse
+import atexit
 import hashlib
 import json
 import subprocess
 import sys
 import threading
 import time
+from collections.abc import Mapping
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.data_first_forecast_v1 import (
+    FORECAST_CALIBRATION_COLUMNS,
     FORECAST_DATASETS,
+    FORECAST_MANIFEST_NAME,
+    FORECAST_MANIFEST_SCHEMA,
     FORECAST_MODEL_COLUMNS,
+    FORECAST_OUTPUT_ROOT,
     FORECAST_PREDICTION_COLUMNS,
     FORECAST_REGISTRY_COLUMNS,
     FORECAST_SELECTION_COLUMNS,
     REQUIRED_RATING_CANDIDATE,
     WINDOW_COMPARISON_COLUMNS,
     forecast_identity,
+    forecast_manifest,
     validate_config,
     verify_rating_parent,
 )
+from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.data_first_possession_rating_v1 import TEAM_STATE_COLUMNS
 from cks_picks_cfb.data.lake import (
+    BuildRequest,
+    PartitionedDatasetPart,
+    PartitionedDatasetWriter,
+    build_dataset_version,
     canonical_frame_digest,
+    partition_key,
     partition_order_key,
     partitioned_records_sha,
 )
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.forecast.calibration import calibrate_uncertainty
 from cks_picks_cfb.forecast.heads import evaluate_heads
 from cks_picks_cfb.forecast.horizons import select_horizon
 from cks_picks_cfb.forecast.offsets import build_offsets
@@ -78,6 +93,8 @@ class _Progress:
             "horizon_started",
             "horizon_complete",
             "horizon_selected",
+            "calibration_started",
+            "calibration_complete",
             "evidence_constructed",
             "dry_run_complete",
         }
@@ -159,6 +176,612 @@ def _git_sha() -> str:
     return subprocess.check_output(
         ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
     ).strip()
+
+
+def _clean_worktree() -> bool:
+    return not subprocess.check_output(
+        ["git", "status", "--porcelain=v1"], cwd=ROOT, text=True
+    ).strip()
+
+
+def _utc(value: str) -> datetime:
+    parsed = pd.Timestamp(value)
+    if parsed.tzinfo is None:
+        raise ForecastRunError("--as-of must be timezone-aware")
+    return parsed.to_pydatetime().astimezone(timezone.utc)
+
+
+def _immutable_json(storage: object, uri: str, payload: Mapping[str, Any]) -> None:
+    encoded = json.dumps(
+        payload, sort_keys=True, separators=(",", ":"), default=str
+    ).encode()
+    if storage.exists(uri):
+        if storage.read_bytes(uri) != encoded:
+            raise ForecastRunError(f"immutable object collision at {uri}")
+        return
+    storage.write_bytes(encoded, uri)
+
+
+PARTITIONED_DATASETS = ("forecast_model", "forecast_prediction")
+COMPACT_DATASETS = (
+    "forecast_registry",
+    "forecast_calibration",
+    "window_comparison",
+    "forecast_selection",
+)
+DATASET_PARTITION_KEYS = {
+    "forecast_model": ("horizon", "outer_season"),
+    "forecast_prediction": ("season", "week"),
+}
+
+
+class DatasetPlan:
+    def __init__(
+        self,
+        dataset: str,
+        schema_version: str,
+        partition_keys: tuple[str, ...],
+        parts: tuple[dict[str, Any], ...],
+        row_count: int,
+        records_sha: str,
+    ) -> None:
+        self.dataset = dataset
+        self.schema_version = schema_version
+        self.partition_keys = partition_keys
+        self.parts = parts
+        self.row_count = row_count
+        self.records_sha = records_sha
+
+
+class ForecastPreflightEvidence:
+    def __init__(
+        self,
+        plans: dict[str, DatasetPlan],
+        selected_horizon: str,
+        horizon_sha256: str,
+        head_metrics: dict[str, Any],
+    ) -> None:
+        self.plans = plans
+        self.selected_horizon = selected_horizon
+        self.horizon_sha256 = horizon_sha256
+        self.head_metrics = head_metrics
+
+
+def _load_forecast_preflight_evidence(
+    path: Path, *, identity: Mapping[str, Any]
+) -> ForecastPreflightEvidence:
+    """Load an exact reviewed dry-run plan without trusting it blindly."""
+    try:
+        payload = json.loads(path.read_bytes())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ForecastRunError("preflight evidence is unreadable") from exc
+    if payload.get("state") != "dry_run" or payload.get("identity") != dict(identity):
+        raise ForecastRunError("preflight evidence identity does not match apply")
+    raw_plans = payload.get("preflight_plans")
+    if not isinstance(raw_plans, dict) or set(raw_plans) != set(FORECAST_DATASETS) - {
+        "candidate_manifest"
+    }:
+        raise ForecastRunError("preflight evidence lacks the complete part plan")
+    plans: dict[str, DatasetPlan] = {}
+    for name, (dataset, schema_version) in FORECAST_DATASETS.items():
+        if name == "candidate_manifest":
+            continue
+        raw = raw_plans.get(name)
+        expected_keys = list(DATASET_PARTITION_KEYS.get(name, ()))
+        if not isinstance(raw, dict) or (
+            raw.get("name") != name
+            or raw.get("partition_keys") != expected_keys
+            or not isinstance(raw.get("parts"), list)
+        ):
+            raise ForecastRunError(f"preflight evidence has invalid {name} plan")
+        parts: tuple[dict[str, Any], ...] = tuple()
+        for part in raw["parts"]:
+            if not isinstance(part, dict):
+                raise ForecastRunError(f"preflight evidence has malformed {name} part")
+            partition = part.get("partition")
+            row_count = part.get("row_count")
+            records_sha = part.get("records_sha")
+            if (
+                not isinstance(partition, dict)
+                or tuple(partition) != tuple(expected_keys)
+                or not isinstance(row_count, int)
+                or row_count <= 0
+                or not isinstance(records_sha, str)
+                or len(records_sha) != 64
+            ):
+                raise ForecastRunError(f"preflight evidence has invalid {name} part")
+            if parts and partition_order_key(partition) <= partition_order_key(
+                parts[-1]["partition"]
+            ):
+                raise ForecastRunError(
+                    f"preflight evidence has unordered {name} partitions"
+                )
+            parts = (
+                *parts,
+                {
+                    "partition": partition,
+                    "row_count": row_count,
+                    "records_sha": records_sha,
+                },
+            )
+        plans[name] = DatasetPlan(
+            dataset=dataset,
+            schema_version=schema_version,
+            partition_keys=tuple(expected_keys),
+            parts=parts,
+            row_count=int(raw.get("row_count") or 0),
+            records_sha=str(raw.get("records_sha") or ""),
+        )
+    row_counts = payload.get("row_counts")
+    output_digests = payload.get("output_records_sha256")
+    if row_counts != {
+        name: plan.row_count for name, plan in plans.items()
+    } or output_digests != {name: plan.records_sha for name, plan in plans.items()}:
+        raise ForecastRunError(
+            "preflight evidence summary does not match its part plan"
+        )
+    selected_horizon = payload.get("selected_horizon")
+    if selected_horizon not in ("expanding", "latest_five"):
+        raise ForecastRunError("preflight evidence has an unknown selected horizon")
+    horizon_sha256 = payload.get("horizon_sha256")
+    if not isinstance(horizon_sha256, str) or len(horizon_sha256) != 64:
+        raise ForecastRunError("preflight evidence lacks its horizon checksum")
+    head_metrics = payload.get("head_metrics")
+    if not isinstance(head_metrics, dict):
+        raise ForecastRunError("preflight evidence lacks head metrics")
+    return ForecastPreflightEvidence(
+        plans=plans,
+        selected_horizon=str(selected_horizon),
+        horizon_sha256=horizon_sha256,
+        head_metrics=head_metrics,
+    )
+
+
+def _existing_forecast_manifest(
+    storage: Any, *, manifest_uri: str, identity: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """Validate an existing terminal manifest without replaying its producer."""
+    if not storage.exists(manifest_uri):
+        return None
+    existing = json.loads(storage.read_bytes(manifest_uri))
+    try:
+        verify_signed_payload(existing, label="existing forecast manifest")
+    except ValueError as exc:
+        raise ForecastRunError(str(exc)) from exc
+    if (existing.get("identity") or {}).get("identity_sha256") != identity[
+        "identity_sha256"
+    ]:
+        raise ForecastRunError("forecast run ID already has a different identity")
+    outputs = existing.get("output_refs") or {}
+    expected_outputs = set(FORECAST_DATASETS) - {"candidate_manifest"}
+    if (
+        existing.get("state") != "frozen"
+        or existing.get("schema_version") != FORECAST_MANIFEST_SCHEMA
+        or existing.get("production_activation_authorized") is not False
+        or set(outputs) != expected_outputs
+    ):
+        raise ForecastRunError("existing forecast manifest is incomplete")
+    required_ref_fields = {
+        "artifact_kind",
+        "dataset",
+        "version_id",
+        "schema_version",
+        "content_sha",
+        "records_sha",
+        "uri",
+        "row_count",
+    }
+    for name, value in outputs.items():
+        dataset, schema_version = FORECAST_DATASETS[name]
+        if required_ref_fields - set(value) or (
+            value.get("dataset") != dataset
+            or value.get("schema_version") != schema_version
+        ):
+            raise ForecastRunError(f"existing {name} output reference is invalid")
+    return existing
+
+
+def _parent_ref(value: Mapping[str, Any], *, name: str):
+    from cks_picks_cfb.data.lake import DatasetRef
+
+    fields = ("dataset", "version_id", "schema_version", "content_sha", "uri")
+    if missing := [item for item in fields if not value.get(item)]:
+        raise ForecastRunError(
+            f"parent output reference is malformed: {name} {missing}"
+        )
+    return DatasetRef(**{item: value[item] for item in fields})
+
+
+def _writers(
+    storage: Any,
+    identity: Mapping[str, Any],
+    measurement: Mapping[str, Any],
+    repair: Mapping[str, Any],
+    evidence: ForecastPreflightEvidence,
+) -> dict[str, PartitionedDatasetWriter]:
+    parents = (
+        _parent_ref(measurement["output_refs"]["population"], name="R6 population"),
+        _parent_ref(repair["output_refs"]["population"], name="Repair population"),
+    )
+    as_of = _utc(str(identity["as_of"]))
+    return {
+        name: PartitionedDatasetWriter(
+            storage,
+            build=BuildRequest(
+                dataset=FORECAST_DATASETS[name][0],
+                parent_refs=parents,
+                code_sha=str(identity["code_sha"]),
+                config_sha=str(identity["config_sha"]),
+                as_of=as_of,
+                schema_version=FORECAST_DATASETS[name][1],
+                tier="gold",
+            ),
+            partition_keys=evidence.plans[name].partition_keys,
+            expected_parts={
+                partition_key(part["partition"]): dict(part)
+                for part in evidence.plans[name].parts
+            },
+            max_workers=8,
+        )
+        for name in PARTITIONED_DATASETS
+    }
+
+
+class _CompactWrite:
+    def __init__(self) -> None:
+        self.records: list[dict[str, Any]] = []
+        self.row_count: int = 0
+        self.records_sha: str = ""
+
+
+def apply(
+    *,
+    storage: Any,
+    args: argparse.Namespace,
+    identity: Mapping[str, Any],
+    evidence: ForecastPreflightEvidence,
+) -> dict[str, Any]:
+    """Recompute the forecast and publish it exactly as the evidence plans."""
+    prefix = f"{FORECAST_OUTPUT_ROOT}/{args.run_id}"
+    manifest_uri = f"{prefix}/{FORECAST_MANIFEST_NAME}"
+    if (
+        _existing_forecast_manifest(
+            storage, manifest_uri=manifest_uri, identity=identity
+        )
+        is not None
+    ):
+        return {"state": "already_applied", "manifest_uri": manifest_uri}
+    preexisting = sorted(storage.list_files(prefix))
+    if preexisting:
+        raise ForecastRunError(
+            "forecast run prefix has a partial artifact and is permanently ineligible"
+        )
+
+    rating_raw = storage.read_bytes(args.rating_manifest_uri)
+    measurement_raw = storage.read_bytes(args.measurement_manifest_uri)
+    repair_raw = storage.read_bytes(args.repair_manifest_uri)
+    rating, measurement, repair = (
+        json.loads(rating_raw),
+        json.loads(measurement_raw),
+        json.loads(repair_raw),
+    )
+    verify_rating_parent(
+        rating,
+        rating_manifest_uri=args.rating_manifest_uri,
+        rating_raw_sha256=hashlib.sha256(rating_raw).hexdigest(),
+        measurement=measurement,
+        measurement_manifest_uri=args.measurement_manifest_uri,
+        measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
+        repair=repair,
+        repair_manifest_uri=args.repair_manifest_uri,
+        repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
+    )
+
+    progress = _Progress(args.run_id)
+    progress.start()
+    atexit.register(progress.close)
+    progress.emit("apply_started", force=True)
+
+    config = yaml.safe_load(Path(args.config).read_text())
+    validate_config(config)
+    selection = config["selection"]
+    bridge = config["bridge"]
+
+    _immutable_json(
+        storage,
+        f"{prefix}/publication-plan.json",
+        {
+            "identity": dict(identity),
+            "selected_horizon": evidence.selected_horizon,
+            "horizon_sha256": evidence.horizon_sha256,
+            "plans": {
+                name: {
+                    "row_count": plan.row_count,
+                    "records_sha": plan.records_sha,
+                    "parts": [dict(part) for part in plan.parts],
+                }
+                for name, plan in evidence.plans.items()
+            },
+            "production_activation_authorized": False,
+        },
+    )
+
+    writers = _writers(storage, identity, measurement, repair, evidence)
+    compact: dict[str, _CompactWrite] = {
+        name: _CompactWrite() for name in COMPACT_DATASETS
+    }
+    dataset_of = {name: FORECAST_DATASETS[name][0] for name in FORECAST_DATASETS}
+
+    def sink(name: str, partition: Mapping[str, Any], frame: pd.DataFrame) -> None:
+        if name in compact:
+            plan = evidence.plans[name]
+            schema = schema_for(FORECAST_DATASETS[name][0], FORECAST_DATASETS[name][1])
+            records_sha = canonical_frame_digest(frame, columns=schema.required)
+            if len(frame) != plan.row_count or records_sha != plan.records_sha:
+                raise ForecastRunError(
+                    f"apply recomputation differs from preflight: {name}"
+                )
+            compact[name].records = frame.loc[:, list(schema.required)].to_dict(
+                "records"
+            )
+            compact[name].row_count = int(len(frame))
+            compact[name].records_sha = records_sha
+        else:
+            progress.emit(
+                "apply_partition",
+                dataset=dataset_of[name],
+                partition=dict(partition),
+                rows=int(len(frame)),
+            )
+            writers[name].add(PartitionedDatasetPart(dict(partition), frame))
+
+    rating_inputs = load_rating_inputs(
+        storage=storage,
+        measurement=measurement,
+        repair=repair,
+        progress=progress.emit,
+    )
+    scoring_events = _stream_output(
+        storage,
+        name="scoring_events",
+        value=measurement["output_refs"]["scoring_events"],
+        progress=progress.emit,
+    )
+    team_states = _stream_partitioned(
+        storage,
+        value=rating["output_refs"]["team_states"],
+        dataset="possession_team_state",
+        schema="data_first_possession_team_state_v1",
+        columns=list(TEAM_STATE_COLUMNS),
+    )
+    offsets = build_offsets(
+        rating_inputs.population,
+        scoring_events,
+        development_seasons=tuple(config["development_seasons"]),
+        equivalent_games=int(config["offsets"]["equivalent_games"]),
+    )
+    features = _feature_frame(
+        population=rating_inputs.population,
+        outcomes=rating_inputs.outcomes,
+        team_states=team_states,
+        offsets=offsets.offsets,
+    )
+    computations: dict[str, Any] = {}
+    for horizon in config["horizons"]:
+        computations[horizon] = evaluate_heads(
+            features,
+            horizon=horizon,
+            development_seasons=tuple(config["development_seasons"]),
+            outer_seasons=tuple(selection["outer_seasons"]),
+            reporting_seasons=tuple(selection["reporting_seasons"]),
+            alpha_grid=tuple(bridge["alpha_grid"]),
+            floor=float(bridge["scaling_floor"]),
+            bootstrap_seed=int(selection["bootstrap_seed"]),
+            bootstrap_samples=int(selection["bootstrap_replicates"]),
+        )
+    retained = {
+        horizon: computation.predictions.merge(
+            pd.DataFrame(
+                [
+                    {"target": target, "head": head}
+                    for target, head in computation.retained.items()
+                ]
+            ),
+            on=["target", "head"],
+            how="inner",
+            validate="many_to_one",
+        )
+        for horizon, computation in computations.items()
+    }
+    selected_horizon, comparison = select_horizon(
+        retained["expanding"],
+        retained["latest_five"],
+        seed=int(selection["bootstrap_seed"]),
+        samples=int(selection["bootstrap_replicates"]),
+    )
+    if selected_horizon != evidence.selected_horizon:
+        raise ForecastRunError(
+            "apply replay selected a different horizon than preflight"
+        )
+    calibration = calibrate_uncertainty(
+        features,
+        horizon=selected_horizon,
+        development_seasons=tuple(config["development_seasons"]),
+        outer_seasons=tuple(selection["outer_seasons"]),
+        alpha_grid=tuple(bridge["alpha_grid"]),
+        floor=float(bridge["scaling_floor"]),
+        residual_floor=float(config["calibration"]["residual_floor"]),
+    )
+    predictions = retained[selected_horizon].copy()
+    models = computations[selected_horizon].models.copy()
+    registry = pd.DataFrame.from_records(
+        [
+            {
+                "horizon": horizon,
+                "target": target,
+                "reference_alpha": 10.0,
+                "alpha_grid": ",".join(map(str, bridge["alpha_grid"])),
+            }
+            for horizon in config["horizons"]
+            for target in ("margin", "total")
+        ]
+    )
+    selection_frame = pd.DataFrame.from_records(
+        [
+            {
+                "selected_horizon": selected_horizon,
+                "target": target,
+                "selected_head": computations[selected_horizon].retained[target],
+                "selection_reason": "latest_five_gates_passed"
+                if selected_horizon == "latest_five"
+                else "retain_expanding",
+                "horizon_sha256": evidence.horizon_sha256,
+            }
+            for target in ("margin", "total")
+        ]
+    )
+    outputs = {
+        "forecast_registry": (registry, FORECAST_REGISTRY_COLUMNS, ()),
+        "forecast_model": (
+            models,
+            FORECAST_MODEL_COLUMNS,
+            ("horizon", "outer_season"),
+        ),
+        "forecast_prediction": (
+            predictions,
+            FORECAST_PREDICTION_COLUMNS,
+            ("season", "week"),
+        ),
+        "forecast_calibration": (
+            calibration.records,
+            FORECAST_CALIBRATION_COLUMNS,
+            (),
+        ),
+        "window_comparison": (comparison, WINDOW_COMPARISON_COLUMNS, ()),
+        "forecast_selection": (selection_frame, FORECAST_SELECTION_COLUMNS, ()),
+    }
+    for name, (frame, _columns, _keys) in outputs.items():
+        dataset, schema = FORECAST_DATASETS[name]
+        validate_frame(frame, schema_for(dataset, schema))
+        sink(name, {}, frame)
+
+    refs: dict[str, dict[str, Any]] = {}
+    for name, writer in writers.items():
+        ref = writer.finish()
+        plan = evidence.plans[name]
+        if ref.records_sha != plan.records_sha or ref.row_count != plan.row_count:
+            raise ForecastRunError(
+                f"apply replay differs from same-code preflight: {name}"
+            )
+        refs[name] = {
+            "artifact_kind": ref.artifact_kind,
+            "dataset": ref.dataset,
+            "version_id": ref.version_id,
+            "schema_version": ref.schema_version,
+            "content_sha": ref.content_sha,
+            "records_sha": ref.records_sha,
+            "uri": ref.uri,
+            "row_count": ref.row_count,
+        }
+    as_of = _utc(str(identity["as_of"]))
+    parents_ref = (
+        _parent_ref(measurement["output_refs"]["population"], name="R6 population"),
+        _parent_ref(repair["output_refs"]["population"], name="Repair population"),
+    )
+    for name, write in compact.items():
+        dataset, schema_version = FORECAST_DATASETS[name]
+        ref, _ = build_dataset_version(
+            storage,
+            build=BuildRequest(
+                dataset=dataset,
+                parent_refs=parents_ref,
+                code_sha=str(identity["code_sha"]),
+                config_sha=str(identity["config_sha"]),
+                as_of=as_of,
+                schema_version=schema_version,
+                tier="gold",
+            ),
+            records=write.records,
+        )
+        refs[name] = {
+            "artifact_kind": "dataset_v1",
+            "dataset": ref.dataset,
+            "version_id": ref.version_id,
+            "schema_version": ref.schema_version,
+            "content_sha": ref.content_sha,
+            "records_sha": write.records_sha,
+            "uri": ref.uri,
+            "row_count": write.row_count,
+        }
+
+    head_recipes = {
+        target: {
+            "head": computations[selected_horizon].retained[target],
+            "alpha": 10.0
+            if computations[selected_horizon].retained[target] == "reference"
+            else float(
+                models[
+                    (models["target"] == target)
+                    & (models["head"] == "challenger")
+                    & models["retained"].astype(bool)
+                ]["alpha"].iloc[0]
+            )
+            if not models[
+                (models["target"] == target)
+                & (models["head"] == "challenger")
+                & models["retained"].astype(bool)
+            ].empty
+            else 10.0,
+        }
+        for target in ("margin", "total")
+    }
+    calibration_summary = {
+        "records_sha": canonical_frame_digest(
+            calibration.records, columns=tuple(calibration.records.columns)
+        ),
+        "row_count": len(calibration.records),
+        "by_target": {
+            target: {int(season): variance for season, variance in seasons.items()}
+            for target, seasons in calibration.variances.items()
+        },
+    }
+    preflight_sha = hashlib.sha256(
+        json.dumps(
+            {name: plan.records_sha for name, plan in evidence.plans.items()},
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    manifest = forecast_manifest(
+        identity=identity,
+        parents={
+            "rating_manifest_uri": args.rating_manifest_uri,
+            "rating_manifest_raw_sha256": hashlib.sha256(rating_raw).hexdigest(),
+            "measurement_manifest_uri": args.measurement_manifest_uri,
+            "measurement_manifest_raw_sha256": hashlib.sha256(
+                measurement_raw
+            ).hexdigest(),
+            "repair_manifest_uri": args.repair_manifest_uri,
+            "repair_manifest_raw_sha256": hashlib.sha256(repair_raw).hexdigest(),
+        },
+        output_refs=refs,
+        selected_horizon=selected_horizon,
+        head_recipes=head_recipes,
+        calibration_summary=calibration_summary,
+        preflight_sha=preflight_sha,
+        horizon_sha=evidence.horizon_sha256,
+    )
+    _immutable_json(storage, f"{prefix}/identity.json", dict(identity))
+    for name, ref in refs.items():
+        _immutable_json(storage, f"{prefix}/{name}-ref.json", ref)
+    _immutable_json(storage, manifest_uri, manifest)
+    progress.emit("apply_complete", force=True, manifest_uri=manifest_uri)
+    progress.close()
+    return {
+        "state": "applied",
+        "manifest_uri": manifest_uri,
+        "selected_horizon": selected_horizon,
+        "already_applied": False,
+    }
 
 
 def _read_json(storage: Any, uri: str) -> tuple[dict[str, Any], bytes]:
@@ -534,6 +1157,17 @@ def preflight(
         samples=int(selection["bootstrap_replicates"]),
     )
     progress.emit("horizon_selected", selected_horizon=selected_horizon)
+    progress.emit("calibration_started")
+    calibration = calibrate_uncertainty(
+        features,
+        horizon=selected_horizon,
+        development_seasons=tuple(config["development_seasons"]),
+        outer_seasons=tuple(selection["outer_seasons"]),
+        alpha_grid=tuple(bridge["alpha_grid"]),
+        floor=float(bridge["scaling_floor"]),
+        residual_floor=float(config["calibration"]["residual_floor"]),
+    )
+    progress.emit("calibration_complete", rows=len(calibration.records))
     predictions = retained[selected_horizon].copy()
     models = computations[selected_horizon].models.copy()
     registry = pd.DataFrame.from_records(
@@ -579,6 +1213,11 @@ def preflight(
             FORECAST_PREDICTION_COLUMNS,
             ("season", "week"),
         ),
+        "forecast_calibration": (
+            calibration.records,
+            FORECAST_CALIBRATION_COLUMNS,
+            (),
+        ),
         "window_comparison": (comparison, WINDOW_COMPARISON_COLUMNS, ()),
         "forecast_selection": (selection_frame, FORECAST_SELECTION_COLUMNS, ()),
     }
@@ -614,7 +1253,16 @@ def preflight(
         "output_records_sha256": {
             name: value["records_sha"] for name, value in plans.items()
         },
-        "calibration": {"state": "deferred_to_v5_04b"},
+        "calibration": {
+            "records_sha": canonical_frame_digest(
+                calibration.records, columns=tuple(calibration.records.columns)
+            ),
+            "row_count": len(calibration.records),
+            "by_target": {
+                target: {int(season): variance for season, variance in seasons.items()}
+                for target, seasons in calibration.variances.items()
+            },
+        },
         "production_activation_authorized": False,
     }
     progress.emit("evidence_constructed")
@@ -634,17 +1282,57 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--repair-manifest-uri", required=True)
     parser.add_argument("--v4-benchmark-manifest-uri")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--preflight-evidence",
+        help="reviewed dry-run JSON used for a write-only apply",
+    )
     args = parser.parse_args(argv)
-    if args.apply:
-        raise ForecastRunError("--apply is blocked by V5-04B")
     if _git_sha() != args.expected_code_sha:
         raise ForecastRunError("expected code SHA does not match committed HEAD")
+    if bool(args.preflight_evidence) != bool(args.apply):
+        raise ForecastRunError("--apply and --preflight-evidence must be used together")
+    storage = get_storage(environment="preview")
+    if args.apply:
+        if not _clean_worktree():
+            raise ForecastRunError(
+                "apply requires a completely clean committed worktree"
+            )
+        validate_config(yaml.safe_load(Path(args.config).read_text()))
+        identity = forecast_identity(
+            run_id=args.run_id,
+            as_of=args.as_of,
+            code_sha=args.expected_code_sha,
+            config_sha=hashlib.sha256(Path(args.config).read_bytes()).hexdigest(),
+            parents={
+                "rating_manifest_uri": args.rating_manifest_uri,
+                "rating_raw_sha256": hashlib.sha256(
+                    storage.read_bytes(args.rating_manifest_uri)
+                ).hexdigest(),
+                "measurement_manifest_uri": args.measurement_manifest_uri,
+                "measurement_raw_sha256": hashlib.sha256(
+                    storage.read_bytes(args.measurement_manifest_uri)
+                ).hexdigest(),
+                "repair_manifest_uri": args.repair_manifest_uri,
+                "repair_raw_sha256": hashlib.sha256(
+                    storage.read_bytes(args.repair_manifest_uri)
+                ).hexdigest(),
+            },
+        )
+        evidence = _load_forecast_preflight_evidence(
+            Path(args.preflight_evidence), identity=identity
+        )
+        result = apply(
+            storage=storage,
+            args=args,
+            identity=identity,
+            evidence=evidence,
+        )
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return
     progress = _Progress(args.run_id)
     progress.start()
     try:
-        evidence = preflight(
-            storage=get_storage(environment="preview"), args=args, progress=progress
-        )
+        evidence = preflight(storage=storage, args=args, progress=progress)
         print(
             json.dumps(
                 evidence,

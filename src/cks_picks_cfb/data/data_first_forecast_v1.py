@@ -7,7 +7,11 @@ from collections.abc import Mapping
 from typing import Any
 
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS, FORBIDDEN_SEASONS
-from cks_picks_cfb.data.data_first_phase2d import sha256, verify_signed_payload
+from cks_picks_cfb.data.data_first_phase2d import (
+    sha256,
+    signed_payload,
+    verify_signed_payload,
+)
 from cks_picks_cfb.data.data_first_possession_rating_v1 import (
     POSSESSION_RATING_MANIFEST_SCHEMA,
     RATING_DATASETS,
@@ -16,6 +20,8 @@ from cks_picks_cfb.data.data_first_possession_rating_v1 import (
 
 FORECAST_CONFIG_SCHEMA = "data_first_forecast_config_v1"
 FORECAST_IDENTITY_SCHEMA = "data_first_forecast_identity_v1"
+FORECAST_MANIFEST_SCHEMA = "data_first_forecast_manifest_v1"
+FORECAST_MANIFEST_NAME = "forecast-manifest.json"
 FORECAST_OUTPUT_ROOT = "artifacts/research/data-first-football-v1/forecasts/runs"
 REQUIRED_RATING_RUN_ID = "possession-v1-ratings-20260917-d029526-cert"
 REQUIRED_RATING_MANIFEST_URI = (
@@ -241,3 +247,42 @@ def forecast_identity(
 
 def records_sha(records: Any) -> str:
     return hashlib.sha256(sha256(records).encode()).hexdigest()
+
+
+def forecast_manifest(
+    *,
+    identity: Mapping[str, Any],
+    parents: Mapping[str, Any],
+    output_refs: Mapping[str, Any],
+    selected_horizon: str,
+    head_recipes: Mapping[str, Any],
+    calibration_summary: Mapping[str, Any],
+    preflight_sha: str,
+    horizon_sha: str,
+) -> dict[str, Any]:
+    """Build the signed terminal forecast manifest.
+
+    The manifest is written last during apply. Its absence makes any partial
+    prefix permanently ineligible.
+    """
+    if selected_horizon not in HORIZONS:
+        raise ForecastContractError("forecast manifest has an unknown horizon")
+    if set(output_refs) != set(FORECAST_DATASETS) - {"candidate_manifest"}:
+        raise ForecastContractError(
+            "forecast manifest output refs do not match the six dataset roles"
+        )
+    return signed_payload(
+        {
+            "schema_version": FORECAST_MANIFEST_SCHEMA,
+            "state": "frozen",
+            "identity": dict(identity),
+            "parents": dict(parents),
+            "output_refs": dict(output_refs),
+            "selected_horizon": selected_horizon,
+            "head_recipes": dict(head_recipes),
+            "calibration_summary": dict(calibration_summary),
+            "preflight_sha256": preflight_sha,
+            "horizon_sha256": horizon_sha,
+            "production_activation_authorized": False,
+        }
+    )
