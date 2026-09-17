@@ -38,8 +38,10 @@ from cks_picks_cfb.data.data_first_possession_rating_v1 import (
     ATTRIBUTION_COLUMNS,
     DEFINITIONS,
     OUTER_SEASONS,
+    PREDICTION_COLUMNS,
     PRIOR_FAMILIES,
     RATING_DATASETS,
+    TEAM_STATE_COLUMNS,
     UPDATERS,
     candidate_id,
     candidate_registry,
@@ -1346,6 +1348,19 @@ def _partition_schemas() -> dict[str, tuple[str, str, tuple[str, ...]]]:
     }
 
 
+def _v_concat(frames: list[pd.DataFrame], *, columns: list[str]) -> pd.DataFrame:
+    if not frames:
+        return pd.DataFrame(columns=columns)
+    normalized = [frame.loc[:, columns].copy() for frame in frames]
+    for column in columns:
+        if any(frame[column].isna().all() for frame in normalized) and any(
+            frame[column].notna().any() for frame in normalized
+        ):
+            for frame in normalized:
+                frame[column] = frame[column].astype(object)
+    return pd.concat(normalized, ignore_index=True, sort=False)
+
+
 def _canonical_parts(
     name: str,
     partitions: Mapping[tuple[int, ...], list[dict[str, Any]]],
@@ -1653,7 +1668,6 @@ def reconstruct_tournament(
     append("rating_registry", (), registry_rows)
 
     candidate_status: dict[str, str] = {}
-    prediction_frames: list[pd.DataFrame] = []
     progress("tournament_started", completed=0, total=len(candidate_registry()))
     for index, entry in enumerate(candidate_registry(), start=1):
         candidate = str(entry["candidate_id"])
@@ -1927,14 +1941,14 @@ def reconstruct_tournament(
         for key, rows in team_partitions.items():
             append("team_states", key, rows)
 
-        team_frame = pd.concat(
+        team_frame = _v_concat(
             [
-                pd.DataFrame.from_records(rows)
+                pd.DataFrame.from_records(
+                    team_partitions[key], columns=list(TEAM_STATE_COLUMNS)
+                )
                 for key in sorted(team_partitions, key=lambda item: tuple(item))
-                for rows in [team_partitions[key]]
             ],
-            ignore_index=True,
-            sort=False,
+            columns=list(TEAM_STATE_COLUMNS),
         )
         predictions = _v_bridge_predictions(
             team_frame,
@@ -1942,7 +1956,6 @@ def reconstruct_tournament(
             parents.outcomes,
             candidate=candidate,
         )
-        prediction_frames.append(predictions)
         for record in predictions.to_dict("records"):
             append(
                 "bridge_predictions",
@@ -1957,7 +1970,16 @@ def reconstruct_tournament(
             status="ok",
         )
 
-    predictions_all = pd.concat(prediction_frames, ignore_index=True, sort=False)
+    bridge_partitions = partitions["bridge_predictions"]
+    predictions_all = _v_concat(
+        [
+            pd.DataFrame.from_records(
+                bridge_partitions[key], columns=list(PREDICTION_COLUMNS)
+            )
+            for key in sorted(bridge_partitions, key=lambda item: tuple(item))
+        ],
+        columns=list(PREDICTION_COLUMNS),
+    )
     valid_predictions = predictions_all[
         predictions_all["candidate_id"].map(candidate_status).eq("ok")
     ]
@@ -1985,18 +2007,35 @@ def reconstruct_tournament(
     result.selection_sha256 = _json_sha(selection_payload)
     for name in RATING_DATASETS:
         parts = _canonical_parts(name, partitions[name])
-        result.parts[name] = parts
+        partition_keys = _partition_schemas()[name][2]
+        # Compact datasets carry no partition plan in the producer evidence;
+        # their content is bound by the single canonical frame digest.
+        result.parts[name] = parts if partition_keys else []
         result.row_counts[name] = int(sum(part["row_count"] for part in parts))
-        result.records_shas[name] = (
-            partitioned_records_sha(parts, _partition_schemas()[name][2])
-            if parts
-            else _json_sha(
-                {
-                    "dataset": _partition_schemas()[name][0],
-                    "salt": _EMPTY_DATASET_SALT,
-                }
+        if not partition_keys:
+            # Compact datasets digest the single canonical frame, mirroring
+            # the producer plan exactly.
+            result.records_shas[name] = (
+                parts[0]["records_sha"]
+                if parts
+                else _json_sha(
+                    {
+                        "dataset": _partition_schemas()[name][0],
+                        "salt": _EMPTY_DATASET_SALT,
+                    }
+                )
             )
-        )
+        else:
+            result.records_shas[name] = (
+                partitioned_records_sha(parts, partition_keys)
+                if parts
+                else _json_sha(
+                    {
+                        "dataset": _partition_schemas()[name][0],
+                        "salt": _EMPTY_DATASET_SALT,
+                    }
+                )
+            )
     return result
 
 
