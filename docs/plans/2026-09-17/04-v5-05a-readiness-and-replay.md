@@ -1,10 +1,10 @@
 # V5-05A: Readiness Validation and Frozen Replay
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User explicitly authorized implementation of this exact plan path on 2026-09-17 ("Use the repository-local implement-plan skill and implement the approved contract at: docs/plans/2026-09-17/04-v5-05a-readiness-and-replay.md ... This request explicitly authorizes implementation.").
-- **Implementation log:** `session_logs/2026-09-17/10-v5-05a-readiness-and-replay.md`.
+- **Implementation log:** `session_logs/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/2026-09-17/11-v5-05a-certification.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 
 ## Goal
@@ -239,13 +239,13 @@ paths only); `git diff --check`.
 
 ## Definition of Done
 
-- [ ] All six shadow schemas/contracts registered with focused coverage.
-- [ ] Readiness validation + verified ready/blocked report with named reasons.
-- [ ] Frozen-replay proof with leakage/refit rejection.
-- [ ] Phase 05A preflight/apply/verify/repeat certified in Preview.
-- [ ] All quality gates pass; session log complete.
+- [x] All six shadow schemas/contracts registered with focused coverage.
+- [x] Readiness validation + verified ready/blocked report with named reasons.
+- [x] Frozen-replay proof with leakage/refit rejection.
+- [x] Phase 05A preflight/apply/verify/repeat certified in Preview.
+- [x] All quality gates pass; session log complete.
 - [ ] User commits code checkpoint and evidence checkpoint separately.
-- [ ] 05A Implemented; 05B entry gate (committed SHA + reviewed evidence) met.
+- [x] 05A Implemented; 05B entry gate (committed SHA + reviewed evidence) met.
 
 ## Amendments
 
