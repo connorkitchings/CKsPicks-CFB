@@ -18,34 +18,38 @@
 
 ## Implementation Plan
 
-**Task 4 (Evidence-bound apply):**
-- Extend `run_data_first_possession_ratings.py` with `--apply` path
-- Parse preflight evidence JSON
-- Verify R2 prefix is clean (no partial artifacts)
-- Materialize all 7 partitioned datasets with deterministic ordering
-- Write retained manifest last (manifest-last ordering)
-- Idempotent: re-running apply with same evidence returns `already_applied`
+**Task 4 (Evidence-bound apply):** COMPLETE
+- `--apply --preflight-evidence <json>` now performs the evidence-bound apply
+- Evidence loader validates identity, 7 plans, ordered parts, digests, summaries
+- Existing-manifest check returns `already_applied`; partial prefixes are
+  permanently ineligible (prefix inspection before any write)
+- Publication plan written first; 5 partitioned datasets written via
+  `PartitionedDatasetWriter` with `expected_parts` evidence binding; 2 compact
+  datasets via `build_dataset_version` with digest comparison
+- Dataset-level `records_sha`/`row_count` re-verified against evidence after
+  `finish()`; selection/candidate status re-verified against evidence
+- Retained-rating manifest signed and written LAST
+- Materializer gained a `PartitionSink` callback emitting each canonical
+  partition frame exactly as its digest is planned (mechanical; all math,
+  plans, digests unchanged — verified by 31 existing materializer tests)
+- 7 new runner lifecycle tests: manifest-last ordering, exact idempotency,
+  partial-prefix rejection, drifted-evidence rejection, identity mismatch,
+  unordered partitions, identity collision
 
-**Task 5 (Independent verifier):**
-- Create `possession_rating_verification.py` module
-- Must not import any producer code (enforced by AST import-boundary test)
-- Independently reconstruct: priors, states, bridge predictions, selection
-- Compare reconstructed digests to stored artifact digests
-- Report verification status with detailed mismatch diagnostics
+**Task 5 (Independent verifier):** Next — verifier-owned reconstruction in
+`src/cks_picks_cfb/ratings/possession_rating_verification.py` plus AST
+import-boundary test; replace envelope-only behavior in the verify script.
 
-**Task 6 (Certification execution):**
-- Run apply with 03A preflight evidence
-- Run independent verifier on materialized artifacts
-- Run idempotent repeat (expect `already_applied`)
-- Update umbrella V5-03 to Implemented
-- Write session log and commit documentation
+**Task 6 (Certification execution):** After Task 5 commits — fresh run ID,
+no-write preflight, evidence-bound apply, independent verify, repeat apply,
+documentation close.
 
 ## Validation
 
-- [ ] Focused tests for apply path (prefix checks, manifest ordering, idempotency)
+- [x] Focused tests for apply path (prefix checks, manifest ordering, idempotency) — 7 passed
 - [ ] Focused tests for verifier (import boundary, reconstruction accuracy)
-- [ ] Full warning-as-error suite passes
-- [ ] Ruff, ruff format, contracts-check, MkDocs strict
+- [x] Full warning-as-error suite passes — 927 passed, 2 skipped
+- [x] Ruff, ruff format, contracts-check, MkDocs, `git diff --check`, CLI help
 - [ ] Actual certification run produces immutable artifacts
 - [ ] Independent verifier confirms all digests match
 - [ ] Idempotent repeat returns `already_applied`

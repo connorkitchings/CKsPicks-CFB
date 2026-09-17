@@ -99,6 +99,10 @@ NOISE_FIT_MINIMUM_ROWS = 8
 NOISE_FIT_MINIMUM_SEASONS = 2
 EMPTY_DATASET_SALT = "data_first_possession_rating_empty_v1"
 
+# Evidence-bound consumers receive each canonical output partition exactly as
+# its digest is planned: (dataset name, logical partition, validated frame).
+PartitionSink = Callable[[str, Mapping[str, Any], pd.DataFrame], None]
+
 
 class PossessionMaterializerError(ValueError):
     """Raised when tournament inputs or construction escape the sealed contract."""
@@ -175,8 +179,7 @@ class RatingTournamentComputation:
             "selected_candidate": self.selected_candidate,
             "selection_sha256": selection_sha,
             "preflight_plans": {
-                name: plan.as_evidence()
-                for name, plan in sorted(self.plans.items())
+                name: plan.as_evidence() for name, plan in sorted(self.plans.items())
             },
             "row_counts": {
                 name: plan.row_count for name, plan in sorted(self.plans.items())
@@ -242,13 +245,9 @@ def _manifest_parts(
         )
     parts = list(manifest.get("parts") or [])
     if partitioned_records_sha(parts, ref.partition_keys) != ref.records_sha:
-        raise PossessionMaterializerError(
-            f"partition digest mismatch: {ref.dataset}"
-        )
+        raise PossessionMaterializerError(f"partition digest mismatch: {ref.dataset}")
     if sum(int(part["row_count"]) for part in parts) != ref.row_count:
-        raise PossessionMaterializerError(
-            f"partition count mismatch: {ref.dataset}"
-        )
+        raise PossessionMaterializerError(f"partition count mismatch: {ref.dataset}")
     return parts, [part for part in parts if int(part["row_count"]) > 0]
 
 
@@ -317,9 +316,11 @@ def _stream_output(
             total=len(nonempty),
             rows=int(part["row_count"]),
             partition=part["partition"],
-    )
+        )
     if not frames:
-        return pd.DataFrame(columns=schema_for(expected_dataset, expected_schema).required)
+        return pd.DataFrame(
+            columns=schema_for(expected_dataset, expected_schema).required
+        )
     return _concat_frames(
         frames,
         columns=list(schema_for(expected_dataset, expected_schema).required),
@@ -351,9 +352,7 @@ def _core_eligibility_refs(
     for value in payload.get("phase3_input_refs") or []:
         key = (int(value.get("season", -1)), str(value.get("dataset")))
         if value.get("eligible") is not True or key[1] not in PHASE3_DATASETS:
-            raise PossessionMaterializerError(
-                f"core eligibility rejects source {key}"
-            )
+            raise PossessionMaterializerError(f"core eligibility rejects source {key}")
         result.setdefault(key[0], {})[key[1]] = _dataset_ref(
             value, name=f"core:{key[0]}:{key[1]}"
         )
@@ -394,9 +393,7 @@ def _context_blocks(auxiliary: pd.DataFrame) -> dict[str, pd.DataFrame]:
             raise PossessionMaterializerError(
                 f"auxiliary source lacks admitted columns: {family} {missing}"
             )
-        subset = eligible.loc[
-            :, ["family", "season", "team", *source_columns]
-        ].copy()
+        subset = eligible.loc[:, ["family", "season", "team", *source_columns]].copy()
         subset = subset[subset["family"].eq(family)]
         subset = subset.rename(columns=dict(zip(source_columns, list(columns))))
         subset = subset.drop_duplicates(["season", "team"], keep=False)
@@ -456,8 +453,7 @@ def load_rating_inputs(
 
     refs = _core_eligibility_refs(storage, repair)
     outcome_frames = [
-        read_dataset(storage, refs[season]["game_outcomes"])
-        for season in sorted(refs)
+        read_dataset(storage, refs[season]["game_outcomes"]) for season in sorted(refs)
     ]
     outcomes = pd.concat(outcome_frames, ignore_index=True, sort=False).loc[
         :, ["season", "game_id", "completed", "home_points", "away_points"]
@@ -539,9 +535,9 @@ def _audit_adjusted_history(
         )
         available = pd.to_datetime(frame["source_available_utc"], utc=True)
         cutoff = pd.to_datetime(frame["target_week_cutoff_utc"], utc=True)
-        strictly_later = (
-            available <= cutoff
-        ) & frame["source_week"].astype(int).lt(frame["week"].astype(int))
+        strictly_later = (available <= cutoff) & frame["source_week"].astype(int).lt(
+            frame["week"].astype(int)
+        )
         violations += int((~strictly_later).sum())
         expected = pd.Series(
             [
@@ -606,9 +602,7 @@ def build_boundary_table(population: pd.DataFrame) -> pd.DataFrame:
         season_games = eligible[eligible["season"].eq(season)]
         if season_games.empty:
             continue
-        ordered = season_games.sort_values(
-            ["kickoff_utc", "game_id"], kind="mergesort"
-        )
+        ordered = season_games.sort_values(["kickoff_utc", "game_id"], kind="mergesort")
         kickoffs = ordered["kickoff_utc"].astype("int64").to_numpy()
         weeks = ordered["week"].astype(int).to_numpy()
         game_ids = ordered["game_id"].astype(int).to_numpy()
@@ -713,9 +707,7 @@ def build_observation_streams(
         observations["coverage_status"].eq("observed")
         & pd.to_numeric(observations["denominator"], errors="coerce").gt(0)
     ].copy()
-    observations["kickoff_utc"] = pd.to_datetime(
-        observations["kickoff_utc"], utc=True
-    )
+    observations["kickoff_utc"] = pd.to_datetime(observations["kickoff_utc"], utc=True)
     boundary_by_game = boundaries.set_index("game_id").loc[
         :, ["boundary_game_id", "boundary_cutoff_utc"]
     ]
@@ -755,11 +747,7 @@ def build_observation_streams(
                     z_values.append(float("nan"))
                     continue
                 z_values.append(
-                    float(
-                        table["sign"]
-                        * (value - table["center"])
-                        / table["scale"]
-                    )
+                    float(table["sign"] * (value - table["center"]) / table["scale"])
                 )
             role_rows["adjusted_z"] = z_values
             role_rows = role_rows.dropna(subset=["adjusted_z"]).reset_index(drop=True)
@@ -795,17 +783,19 @@ def build_prior_tables(
         "fallback_reason",
     ]
     labels: dict[tuple[str, str], list[dict[str, Any]]] = {
-        (definition, role): []
-        for definition in DEFINITIONS
-        for role in ROLES
+        (definition, role): [] for definition in DEFINITIONS for role in ROLES
     }
     for definition in DEFINITIONS:
         for role in ROLES:
             for season in DEVELOPMENT_SEASONS:
                 table = terminal_tables[(definition, role, season)]
-                previous = terminal_tables[(definition, role, _previous_season(season))][
-                    "teams"
-                ] if _previous_season(season) is not None else {}
+                previous = (
+                    terminal_tables[(definition, role, _previous_season(season))][
+                        "teams"
+                    ]
+                    if _previous_season(season) is not None
+                    else {}
+                )
                 gap = season - _previous_season(season) if previous else 0
                 for team, (terminal_z, _) in table["teams"].items():
                     prior_z = previous.get(team)
@@ -820,9 +810,7 @@ def build_prior_tables(
                             ),
                         }
                     )
-    training_labels = {
-        key: pd.DataFrame(rows) for key, rows in labels.items() if rows
-    }
+    training_labels = {key: pd.DataFrame(rows) for key, rows in labels.items() if rows}
     priors: dict[tuple[str, str], pd.DataFrame] = {}
     for definition in DEFINITIONS:
         k = K_BY_DEFINITION[definition]
@@ -912,7 +900,9 @@ def fit_noise_tables(
 ) -> dict[tuple[str, str, str, int], dict[str, Any]]:
     """Earlier-season-only prior-centered Kalman noise per definition/role/prior."""
     tables: dict[tuple[str, str, str, int], dict[str, Any]] = {}
-    total = len(DEFINITIONS) * len(ROLES) * len(PRIOR_FAMILIES) * len(DEVELOPMENT_SEASONS)
+    total = (
+        len(DEFINITIONS) * len(ROLES) * len(PRIOR_FAMILIES) * len(DEVELOPMENT_SEASONS)
+    )
     completed = 0
     for definition in DEFINITIONS:
         for role in ROLES:
@@ -939,9 +929,7 @@ def fit_noise_tables(
                     rows = [
                         (
                             float(row.adjusted_z)
-                            - prior_lookup.get(
-                                (int(row.season), str(row.team)), 0.0
-                            ),
+                            - prior_lookup.get((int(row.season), str(row.team)), 0.0),
                             float(row.usable_exposure),
                             7.0,
                         )
@@ -963,8 +951,7 @@ def fit_noise_tables(
                         continue
                     q, r, objective, converged = fit_kalman_noise(rows)
                     disqualifies = (
-                        not converged
-                        and len(earlier) >= NOISE_FIT_MINIMUM_SEASONS
+                        not converged and len(earlier) >= NOISE_FIT_MINIMUM_SEASONS
                     )
                     tables[(definition, family, role, season)] = {
                         "q": q,
@@ -1161,7 +1148,9 @@ def _fbs_universe(population: pd.DataFrame) -> set[tuple[int, str]]:
     }
 
 
-def _completed_counts(population: pd.DataFrame) -> dict[tuple[int, int], dict[str, int]]:
+def _completed_counts(
+    population: pd.DataFrame,
+) -> dict[tuple[int, int], dict[str, int]]:
     """Completed prior games per team at each scheduled cutoff."""
     eligible = population[population["forecast_eligible"]].copy()
     eligible["kickoff_utc"] = pd.to_datetime(eligible["kickoff_utc"], utc=True)
@@ -1230,6 +1219,7 @@ def compute_tournament(
     inputs: RatingTournamentInputs,
     progress: Progress,
     retain_frames: bool = False,
+    sink: PartitionSink | None = None,
 ) -> RatingTournamentComputation:
     """Run the complete sealed tournament and plan every immutable output."""
     boundaries = build_boundary_table(inputs.population)
@@ -1237,9 +1227,7 @@ def compute_tournament(
     streams = build_observation_streams(
         inputs=inputs, boundaries=boundaries, terminal_tables=terminal_tables
     )
-    priors = build_prior_tables(
-        context=inputs.context, terminal_tables=terminal_tables
-    )
+    priors = build_prior_tables(context=inputs.context, terminal_tables=terminal_tables)
     noise = fit_noise_tables(streams=streams, priors=priors, progress=progress)
     fbs = _fbs_universe(inputs.population)
     completed = _completed_counts(inputs.population)
@@ -1302,24 +1290,31 @@ def compute_tournament(
         columns=list(RATING_REGISTRY_COLUMNS),
     )
     plans = {
-        "rating_registry": _compact_plan("rating_registry", registry_rows),
-        "attribution": _compact_plan("attribution", attribution),
+        "rating_registry": _compact_plan("rating_registry", registry_rows, sink),
+        "attribution": _compact_plan("attribution", attribution, sink),
         "priors": _partitioned_plan(
-            "priors", chunks["priors"], partition_keys=("season",)
+            "priors", chunks["priors"], partition_keys=("season",), sink=sink
         ),
         "noise_fits": _partitioned_plan(
-            "noise_fits", chunks["noise_fits"], partition_keys=("season",)
+            "noise_fits", chunks["noise_fits"], partition_keys=("season",), sink=sink
         ),
         "rating_states": _partitioned_plan(
-            "rating_states", chunks["rating_states"], partition_keys=("season", "week")
+            "rating_states",
+            chunks["rating_states"],
+            partition_keys=("season", "week"),
+            sink=sink,
         ),
         "team_states": _partitioned_plan(
-            "team_states", chunks["team_states"], partition_keys=("season", "week")
+            "team_states",
+            chunks["team_states"],
+            partition_keys=("season", "week"),
+            sink=sink,
         ),
         "bridge_predictions": _partitioned_plan(
             "bridge_predictions",
             chunks["bridge_predictions"],
             partition_keys=("season", "week"),
+            sink=sink,
         ),
     }
     diagnostics = {
@@ -1469,7 +1464,9 @@ def _run_candidate(
         )
         for row in prior_rows.itertuples(index=False)
     }
-    streams_by_season: dict[tuple[str, str], dict[int, dict[str, list[dict[str, Any]]]]] = {}
+    streams_by_season: dict[
+        tuple[str, str], dict[int, dict[str, list[dict[str, Any]]]]
+    ] = {}
     for definition_name in (definition,):
         for role in ROLES:
             grouped: dict[int, dict[str, list[dict[str, Any]]]] = {}
@@ -1493,7 +1490,10 @@ def _run_candidate(
 
     state_partitions: dict[tuple[int, int], list[dict[str, Any]]] = {}
     team_partitions: dict[tuple[int, int], list[dict[str, Any]]] = {}
-    game_states: dict[tuple[int, str], dict[str, tuple[float, float, float, float, float, int, str | None]]] = {}
+    game_states: dict[
+        tuple[int, str],
+        dict[str, tuple[float, float, float, float, float, int, str | None]],
+    ] = {}
 
     for season in DEVELOPMENT_SEASONS:
         season_games = eligible[eligible["season"].eq(season)].sort_values(
@@ -1514,15 +1514,21 @@ def _run_candidate(
                 for team in (str(row.home_team), str(row.away_team))
             }
         )
-        fcs_history: dict[str, list[tuple[Any, float, float]]] = {role: [] for role in ROLES}
+        fcs_history: dict[str, list[tuple[Any, float, float]]] = {
+            role: [] for role in ROLES
+        }
         for team in teams:
             is_fcs = (int(season), team) not in fbs
             team_games = season_games[
                 season_games["home_team"].eq(team) | season_games["away_team"].eq(team)
             ]
             for role in ROLES:
-                own = streams_by_season[(definition, role)].get(season, {}).get(team, [])
-                own = sorted(own, key=lambda item: (item["kickoff_utc"], item["game_id"]))
+                own = (
+                    streams_by_season[(definition, role)].get(season, {}).get(team, [])
+                )
+                own = sorted(
+                    own, key=lambda item: (item["kickoff_utc"], item["game_id"])
+                )
                 prior = prior_lookup.get(
                     (season, role, team),
                     RatingPrior(0.0, 1.0, "neutral", None, "no_predecessor"),
@@ -1554,10 +1560,9 @@ def _run_candidate(
                     cutoff = pd.Timestamp(game.kickoff_utc)
                     while pending_index < len(own):
                         item = own[pending_index]
-                        if (
-                            pd.Timestamp(item["boundary_cutoff"]) <= cutoff
-                            and int(item["game_id"]) != int(game.game_id)
-                        ):
+                        if pd.Timestamp(item["boundary_cutoff"]) <= cutoff and int(
+                            item["game_id"]
+                        ) != int(game.game_id):
                             state.assimilate(
                                 item["kickoff_utc"],
                                 item["adjusted_z"],
@@ -1585,7 +1590,9 @@ def _run_candidate(
                         )
                         weight, process, exposure = 0.0, 0.0, 0.0
                     table = scale_table[role]
-                    state_partitions.setdefault((int(season), int(game.week)), []).append(
+                    state_partitions.setdefault(
+                        (int(season), int(game.week)), []
+                    ).append(
                         {
                             "candidate_id": candidate,
                             "definition": definition,
@@ -1595,7 +1602,8 @@ def _run_candidate(
                             "cutoff_utc": cutoff.isoformat(),
                             "team": team,
                             "unit_role": role,
-                            "native_mean": mean * table["scale"] / table["sign"] + table["center"],
+                            "native_mean": mean * table["scale"] / table["sign"]
+                            + table["center"],
                             "rating_mean": mean,
                             "rating_variance": variance,
                             "prior_mean": prior.mean,
@@ -1693,7 +1701,9 @@ def _fcs_partial_pool(
     means = [mean for mean, _ in values]
     variance = 1.0 / (1.0 + len(means) * 100.0 / 1.0)
     mean = variance * float(np.mean(means))
-    conservative = max(float(np.sqrt(variance)), max(float(np.sqrt(v)) for _, v in values))
+    conservative = max(
+        float(np.sqrt(variance)), max(float(np.sqrt(v)) for _, v in values)
+    )
     return mean, conservative**2, "preceding_fcs_partial_pool"
 
 
@@ -1717,15 +1727,19 @@ def _append_chunks(
             raise PossessionMaterializerError(
                 f"partition key width differs from {partition_keys}: {key}"
             )
-        target.setdefault(key, []).append(
-            pd.DataFrame.from_records(rows)
-        )
+        target.setdefault(key, []).append(pd.DataFrame.from_records(rows))
 
 
-def _compact_plan(name: str, frame: pd.DataFrame) -> DatasetPlan:
+def _compact_plan(
+    name: str,
+    frame: pd.DataFrame,
+    sink: PartitionSink | None = None,
+) -> DatasetPlan:
     dataset, schema_version = RATING_DATASETS[name]
     schema = schema_for(dataset, schema_version)
     validate_frame(frame, schema)
+    if sink is not None:
+        sink(name, {}, frame)
     return DatasetPlan(
         dataset=dataset,
         schema_version=schema_version,
@@ -1741,6 +1755,7 @@ def _partitioned_plan(
     partitions: Mapping[tuple[int, ...], list[pd.DataFrame]],
     *,
     partition_keys: tuple[str, ...],
+    sink: PartitionSink | None = None,
 ) -> DatasetPlan:
     dataset, schema_version = RATING_DATASETS[name]
     schema = schema_for(dataset, schema_version)
@@ -1764,16 +1779,14 @@ def _partitioned_plan(
                 raise PossessionMaterializerError(
                     f"{dataset} rows escape partition {key}"
                 )
-        partition = {
-            partition_keys[i]: int(key[i]) for i in range(len(partition_keys))
-        }
+        partition = {partition_keys[i]: int(key[i]) for i in range(len(partition_keys))}
+        if sink is not None:
+            sink(name, partition, frame)
         parts.append(
             {
                 "partition": partition,
                 "row_count": int(len(frame)),
-                "records_sha": canonical_frame_digest(
-                    frame, columns=schema.required
-                ),
+                "records_sha": canonical_frame_digest(frame, columns=schema.required),
             }
         )
     if parts and any(
