@@ -6,7 +6,7 @@
 - **Plan Contract:** `docs/plans/2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md` (Implemented).
 - **Approval / Status:** Approved plan; Terra executed.
 - **Blockers:** None. 04B approval is a separate explicit user action.
-- **Next:** User executes the two closure commits; a fresh task may then approve/implement 04B.
+- **Next:** Closed. User executed both closure commits (`bfe4929` close, `0ad1c63` 04B rebase). A fresh task may approve/implement 04B — it must generate its own complete preflight identity and never reuse `forecast-v1-20260917-19ca44b-04a` or the dead diagnostic identities.
 
 ## Context and Decisions
 - `verify_rating_parent` now binds all three parent URIs exactly (new `REQUIRED_RATING_MANIFEST_URI` constant; CLI R6/Repair URIs must equal the rating manifest's pinned `parents` URIs) in addition to every existing signature/state/run-id/candidate/hash check; mirrors the proven 03B verifier pattern.
