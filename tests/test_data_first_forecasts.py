@@ -3,14 +3,23 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-from cks_picks_cfb.data.data_first_forecast_v1 import FORECAST_DATASETS
+from cks_picks_cfb.data import data_first_forecast_v1 as forecast_contracts
+from cks_picks_cfb.data.data_first_forecast_v1 import (
+    FORECAST_DATASETS,
+    REQUIRED_RATING_MANIFEST_URI,
+    validate_config,
+    verify_rating_parent,
+)
+from cks_picks_cfb.data.data_first_phase2d import signed_payload
+from cks_picks_cfb.data.data_first_possession_rating_v1 import RATING_DATASETS
 from cks_picks_cfb.data.schema_contracts import schema_for
-from cks_picks_cfb.forecast.heads import evaluate_heads, select_inner_alpha
+from cks_picks_cfb.forecast.heads import HeadError, evaluate_heads, select_inner_alpha
 from cks_picks_cfb.forecast.horizons import (
     HorizonError,
     fitting_seasons,
@@ -29,6 +38,20 @@ _RUNNER_SPEC = importlib.util.spec_from_file_location("forecast_runner", _RUNNER
 assert _RUNNER_SPEC and _RUNNER_SPEC.loader
 runner = importlib.util.module_from_spec(_RUNNER_SPEC)
 _RUNNER_SPEC.loader.exec_module(runner)
+
+_MEASUREMENT_URI = (
+    "artifacts/research/data-first-football-v1/possession-v1/measurements/runs/"
+    "possession-v1-measurements-20260915-18fb0aa-r6/measurement-manifest.json"
+)
+_REPAIR_URI = (
+    "artifacts/research/data-first-football-v1/repair/v2/runs/"
+    "repair-v2-20260909T1417Z/repair-manifest.json"
+)
+_PARENT_URIS = {
+    "rating_manifest_uri": REQUIRED_RATING_MANIFEST_URI,
+    "measurement_manifest_uri": _MEASUREMENT_URI,
+    "repair_manifest_uri": _REPAIR_URI,
+}
 
 
 def _population() -> pd.DataFrame:
@@ -241,3 +264,243 @@ def test_preflight_partition_plan_is_naturally_ordered():
     )
     plan = runner._plan("test", frame, ("season", "week", "value"), ("season", "week"))
     assert [part["partition"]["week"] for part in plan["parts"]] == [2, 10]
+
+
+def _rating_manifest() -> dict:
+    return signed_payload(
+        {
+            "schema_version": "data_first_possession_retained_rating_v1",
+            "state": "frozen",
+            "identity": {
+                "environment": "preview",
+                "run_id": "possession-v1-ratings-20260917-d029526-cert",
+            },
+            "selected_candidate": "ppp__rho_0_60__exposure",
+            "production_activation_authorized": False,
+            "parents": {
+                "measurement_manifest_uri": _MEASUREMENT_URI,
+                "measurement_manifest_raw_sha256": "m" * 64,
+                "repair_manifest_uri": _REPAIR_URI,
+                "repair_manifest_raw_sha256": "r" * 64,
+            },
+            "output_refs": {name: {} for name in RATING_DATASETS},
+        }
+    )
+
+
+def _verify_parent(
+    *,
+    rating_manifest_uri: str,
+    measurement_manifest_uri: str,
+    repair_manifest_uri: str,
+):
+    return verify_rating_parent(
+        _rating_manifest(),
+        rating_manifest_uri=rating_manifest_uri,
+        rating_raw_sha256="a" * 64,
+        measurement={"identity": {"run_id": "measurement-parent"}},
+        measurement_manifest_uri=measurement_manifest_uri,
+        measurement_raw_sha256="m" * 64,
+        repair={"identity": {"run_id": "repair-parent"}},
+        repair_manifest_uri=repair_manifest_uri,
+        repair_raw_sha256="r" * 64,
+    )
+
+
+def test_rating_parent_uri_substitution_is_rejected(monkeypatch):
+    # A byte-identical measurement manifest (hash matches) served from a
+    # different URI must still be rejected: identity binds to the pinned URI.
+    with pytest.raises(
+        forecast_contracts.ForecastContractError, match="rating manifest URI"
+    ):
+        _verify_parent(
+            rating_manifest_uri=(
+                "artifacts/research/data-first-football-v1/possession-v1/ratings/"
+                "runs/other-run/retained-rating-manifest.json"
+            ),
+            measurement_manifest_uri=_MEASUREMENT_URI,
+            repair_manifest_uri=_REPAIR_URI,
+        )
+    with pytest.raises(
+        forecast_contracts.ForecastContractError, match="measurement manifest URI"
+    ):
+        _verify_parent(
+            rating_manifest_uri=REQUIRED_RATING_MANIFEST_URI,
+            measurement_manifest_uri=_MEASUREMENT_URI + "/substituted",
+            repair_manifest_uri=_REPAIR_URI,
+        )
+    with pytest.raises(
+        forecast_contracts.ForecastContractError, match="repair manifest URI"
+    ):
+        _verify_parent(
+            rating_manifest_uri=REQUIRED_RATING_MANIFEST_URI,
+            measurement_manifest_uri=_MEASUREMENT_URI,
+            repair_manifest_uri="wrong/" + _REPAIR_URI,
+        )
+    monkeypatch.setattr(
+        forecast_contracts,
+        "verify_parents",
+        lambda measurement, repair: (dict(measurement), dict(repair)),
+    )
+    parents = _verify_parent(
+        rating_manifest_uri=REQUIRED_RATING_MANIFEST_URI,
+        measurement_manifest_uri=_MEASUREMENT_URI,
+        repair_manifest_uri=_REPAIR_URI,
+    )
+    assert parents["measurement_manifest_uri"] == _MEASUREMENT_URI
+    assert parents["repair_manifest_uri"] == _REPAIR_URI
+
+
+def test_forecast_identity_requires_pinned_parent_uris():
+    kwargs = {
+        "run_id": "forecast-v1-test",
+        "as_of": "2026-09-17T00:00:00Z",
+        "code_sha": "a" * 40,
+        "config_sha": "b" * 64,
+    }
+    parents = _PARENT_URIS | {
+        "rating_raw_sha256": "c" * 64,
+        "measurement_raw_sha256": "d" * 64,
+        "repair_raw_sha256": "e" * 64,
+    }
+    identity = forecast_contracts.forecast_identity(parents=parents, **kwargs)
+    assert identity["parents"]["rating_manifest_uri"] == REQUIRED_RATING_MANIFEST_URI
+    incomplete = {
+        key: value for key, value in parents.items() if key != "repair_manifest_uri"
+    }
+    with pytest.raises(forecast_contracts.ForecastContractError, match="exact URIs"):
+        forecast_contracts.forecast_identity(parents=incomplete, **kwargs)
+
+
+def test_config_reporting_season_policy_is_enforced():
+    base = {
+        "schema_version": "data_first_forecast_config_v1",
+        "development_seasons": [
+            2015,
+            2016,
+            2017,
+            2018,
+            2019,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+        ],
+        "forbidden_seasons": [2020],
+        "rating_candidate": "ppp__rho_0_60__exposure",
+        "horizons": ["expanding", "latest_five"],
+        "bridge": {"reference_alpha": 10.0, "alpha_grid": [0.1, 1.0, 10.0, 100.0]},
+        "selection": {
+            "outer_seasons": [2022, 2023, 2024, 2025],
+            "reporting_seasons": [2018, 2019, 2021],
+        },
+        "production_activation_authorized": False,
+    }
+    validate_config(base)
+    drifted = json.loads(json.dumps(base))
+    drifted["selection"]["reporting_seasons"] = [2018, 2019]
+    with pytest.raises(
+        forecast_contracts.ForecastContractError, match="reporting season"
+    ):
+        validate_config(drifted)
+    overlapped = json.loads(json.dumps(base))
+    overlapped["selection"]["outer_seasons"] = [2018, 2022, 2023, 2024, 2025]
+    with pytest.raises(forecast_contracts.ForecastContractError, match="overlap"):
+        validate_config(overlapped)
+
+
+_HEAD_KWARGS = {
+    "development_seasons": (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023),
+    "outer_seasons": (2022, 2023),
+    "alpha_grid": (0.1, 1.0, 10.0, 100.0),
+    "floor": 0.05,
+    "bootstrap_seed": 2,
+    "bootstrap_samples": 25,
+}
+_REPORTING = (2018, 2019, 2021)
+
+
+def test_reporting_seasons_are_reported_without_touching_selection():
+    frame = _head_frame()
+    plain = evaluate_heads(frame, horizon="expanding", **_HEAD_KWARGS)
+    with_reporting = evaluate_heads(
+        frame, horizon="expanding", reporting_seasons=_REPORTING, **_HEAD_KWARGS
+    )
+    pd.testing.assert_frame_equal(plain.predictions, with_reporting.predictions)
+    pd.testing.assert_frame_equal(plain.models, with_reporting.models)
+    assert plain.retained == with_reporting.retained
+    reporting = with_reporting.reporting_predictions
+    assert set(reporting["season"]) == set(_REPORTING)
+    assert set(reporting["head"]) == {"reference", "challenger"}
+    assert set(reporting["target"]) == {"margin", "total"}
+    assert not set(plain.predictions["season"]) & set(_REPORTING)
+    # Reporting seasons are legitimate training history for later fits, so
+    # perturbing their outcomes may move fitted values and gate outcomes; what
+    # must hold is that the selection population identity is unchanged and the
+    # reporting rows themselves are genuinely evaluated (they respond to the
+    # perturbation) while never entering selection predictions or plans.
+    perturbed = frame.copy()
+    mask = perturbed["season"].isin(_REPORTING)
+    perturbed.loc[mask, "actual_margin"] = perturbed.loc[mask, "actual_margin"] + 25.0
+    perturbed_result = evaluate_heads(
+        perturbed, horizon="expanding", reporting_seasons=_REPORTING, **_HEAD_KWARGS
+    )
+    pd.testing.assert_frame_equal(
+        plain.predictions[["season", "week", "game_id", "target", "head"]],
+        perturbed_result.predictions[["season", "week", "game_id", "target", "head"]],
+    )
+    assert not perturbed_result.reporting_predictions.empty
+    assert not with_reporting.reporting_predictions[["prediction"]].equals(
+        perturbed_result.reporting_predictions[["prediction"]]
+    )
+
+
+def test_reporting_seasons_may_not_overlap_selection():
+    with pytest.raises(HeadError, match="overlap"):
+        evaluate_heads(
+            _head_frame(),
+            horizon="expanding",
+            reporting_seasons=(2021, 2022),
+            **_HEAD_KWARGS,
+        )
+
+
+def test_missing_reporting_population_fails_instead_of_silent_skip():
+    truncated = _head_frame()
+    truncated = truncated[~truncated["season"].eq(2019)]
+    with pytest.raises(HeadError, match="lacks scoreable"):
+        evaluate_heads(
+            truncated,
+            horizon="expanding",
+            reporting_seasons=_REPORTING,
+            **_HEAD_KWARGS,
+        )
+    # Without a reporting obligation the same truncated frame succeeds, so the
+    # failure above is the reporting gate, not a broken selection population.
+    result = evaluate_heads(truncated, horizon="expanding", **_HEAD_KWARGS)
+    assert set(result.predictions["season"]) == {2022, 2023}
+
+
+def test_head_metrics_block_is_deterministic_and_complete():
+    frame = _head_frame()
+    first_computation = evaluate_heads(
+        frame, horizon="expanding", reporting_seasons=_REPORTING, **_HEAD_KWARGS
+    )
+    second_computation = evaluate_heads(
+        frame, horizon="expanding", reporting_seasons=_REPORTING, **_HEAD_KWARGS
+    )
+    first = runner._head_metrics_block({"expanding": first_computation})
+    second = runner._head_metrics_block({"expanding": second_computation})
+    assert json.dumps(first, sort_keys=True) == json.dumps(second, sort_keys=True)
+    populations = runner._horizon_populations({"expanding": first_computation})
+    assert populations["expanding"]["margin"] > 0
+    assert populations["expanding"]["total"] > 0
+    for target in ("margin", "total"):
+        block = first["expanding"][target]
+        assert set(block["selection"]["by_season"]) == {"2022", "2023"}
+        assert set(block["reporting"]["by_season"]) == {"2018", "2019", "2021"}
+        assert block["selection"]["pooled"]["n"] == sum(
+            value["n"] for value in block["selection"]["by_season"].values()
+        )
+        assert block["selection"]["by_completed_game_stage"]

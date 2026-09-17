@@ -30,6 +30,7 @@ FEATURES = (
 @dataclass(frozen=True)
 class HeadComputation:
     predictions: pd.DataFrame
+    reporting_predictions: pd.DataFrame
     models: pd.DataFrame
     retained: dict[str, str]
 
@@ -132,8 +133,16 @@ def evaluate_heads(
     floor: float,
     bootstrap_seed: int,
     bootstrap_samples: int,
+    reporting_seasons: tuple[int, ...] = (),
 ) -> HeadComputation:
-    """Evaluate alpha-10 and an inner-selected challenger with earlier-only fits."""
+    """Evaluate alpha-10 and an inner-selected challenger with earlier-only fits.
+
+    Reporting seasons are evaluated with the identical procedure but their rows
+    are returned separately; they never enter retention gates, the bootstrap,
+    model recipes, or any selection population.
+    """
+    if set(reporting_seasons) & set(outer_seasons):
+        raise HeadError("reporting seasons may not overlap the selection population")
     required = {
         "season",
         "week",
@@ -151,9 +160,12 @@ def evaluate_heads(
         frame.replace([np.inf, -np.inf], np.nan).dropna(subset=list(required)).copy()
     )
     rows: list[dict[str, object]] = []
+    reporting_rows: list[dict[str, object]] = []
     models: list[dict[str, object]] = []
+    evaluation_seasons = tuple(outer_seasons) + tuple(reporting_seasons)
     for target in ("margin", "total"):
-        for season in outer_seasons:
+        for season in evaluation_seasons:
+            is_reporting = season in reporting_seasons
             test = clean[clean["season"].eq(season)].copy()
             seasons = fitting_seasons(season, development_seasons, horizon)
             train = clean[clean["season"].isin(seasons)].copy()
@@ -191,40 +203,41 @@ def evaluate_heads(
                     crps,
                     strict=True,
                 ):
-                    rows.append(
+                    record = {
+                        "horizon": horizon,
+                        "head": head,
+                        "target": target,
+                        "season": int(source.season),
+                        "week": int(source.week),
+                        "game_id": int(source.game_id),
+                        "actual": float(actual_value),
+                        "prediction": float(value),
+                        "absolute_error": float(error),
+                        "gaussian_crps": float(score),
+                        "offset": float(getattr(source, f"offset_{target}")),
+                        "training_seasons": ",".join(map(str, seasons)),
+                        "completed_game_stage": int(source.completed_game_stage),
+                        "venue_unknown": bool(source.venue_unknown),
+                    }
+                    (reporting_rows if is_reporting else rows).append(record)
+                if not is_reporting:
+                    models.append(
                         {
                             "horizon": horizon,
-                            "head": head,
                             "target": target,
-                            "season": int(source.season),
-                            "week": int(source.week),
-                            "game_id": int(source.game_id),
-                            "actual": float(actual_value),
-                            "prediction": float(value),
-                            "absolute_error": float(error),
-                            "gaussian_crps": float(score),
-                            "offset": float(getattr(source, f"offset_{target}")),
+                            "outer_season": season,
+                            "head": head,
+                            "alpha": alpha,
                             "training_seasons": ",".join(map(str, seasons)),
-                            "completed_game_stage": int(source.completed_game_stage),
-                            "venue_unknown": bool(source.venue_unknown),
+                            "inner_fallback": inner_fallback,
+                            "retained": False,
+                            "fallback_reason": "insufficient_inner_fold"
+                            if inner_fallback
+                            else None,
                         }
                     )
-                models.append(
-                    {
-                        "horizon": horizon,
-                        "target": target,
-                        "outer_season": season,
-                        "head": head,
-                        "alpha": alpha,
-                        "training_seasons": ",".join(map(str, seasons)),
-                        "inner_fallback": inner_fallback,
-                        "retained": False,
-                        "fallback_reason": "insufficient_inner_fold"
-                        if inner_fallback
-                        else None,
-                    }
-                )
     predictions = pd.DataFrame.from_records(rows)
+    reporting_predictions = pd.DataFrame.from_records(reporting_rows)
     model_frame = pd.DataFrame.from_records(models)
     retained: dict[str, str] = {}
     for target in ("margin", "total"):
@@ -274,5 +287,8 @@ def evaluate_heads(
             "retained",
         ] = True
     return HeadComputation(
-        predictions=predictions, models=model_frame, retained=retained
+        predictions=predictions,
+        reporting_predictions=reporting_predictions,
+        models=model_frame,
+        retained=retained,
     )

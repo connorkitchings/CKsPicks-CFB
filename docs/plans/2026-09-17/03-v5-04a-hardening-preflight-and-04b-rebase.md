@@ -1,10 +1,10 @@
 # V5-04A Hardening, Preview Preflight Closure, and 04B Rebase
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this plan in the 2026-09-17 planning session after the static review of committed checkpoint `d380765`.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-04a-hardening-and-preflight.md`.
+- **Implementation log:** `session_logs/2026-09-17/04-v5-04a-hardening-and-preflight.md`.
 - **Commit policy:** Separate hardening code commit (user executes) before any Preview preflight identity is chosen; separate 04A closure documentation commit; separate 04B rebase documentation commit.
 
 ## Goal

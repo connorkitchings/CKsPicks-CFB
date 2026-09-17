@@ -11,6 +11,9 @@ import argparse
 import hashlib
 import json
 import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -56,6 +59,100 @@ DEFAULT_CONFIG = ROOT / "conf/research/data_first_football_v1/forecast_v1.yaml"
 
 class ForecastRunError(ValueError):
     """Raised before a V5-04A preflight could produce reviewable evidence."""
+
+
+class _Progress:
+    """Bounded, secret-safe stderr progress heartbeat for long phases.
+
+    Mirrors the proven ratings-runner pattern: a daemon heartbeat thread, an
+    interval cap on routine events, forced emission for phase boundaries, and
+    a blocked-keyword filter so credentials can never reach stderr.  Stdout
+    stays pure JSON evidence.
+    """
+
+    _FORCED_EVENTS = frozenset(
+        {
+            "preflight_started",
+            "parents_loaded",
+            "offsets_built",
+            "horizon_started",
+            "horizon_complete",
+            "horizon_selected",
+            "evidence_constructed",
+            "dry_run_complete",
+        }
+    )
+    _BLOCKED_MARKERS = ("credential", "password", "secret", "token", "access_key")
+
+    def __init__(self, run_id: str, interval_seconds: float = 30.0) -> None:
+        self.run_id = run_id
+        self.interval_seconds = interval_seconds
+        self.started = time.monotonic()
+        self.last = float("-inf")
+        self.phase = "initializing"
+        self.fields: dict[str, Any] = {}
+        self.lock = threading.Lock()
+        self.stop = threading.Event()
+        self.thread: threading.Thread | None = None
+
+    @classmethod
+    def _safe(cls, fields: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            str(key): value
+            for key, value in fields.items()
+            if not any(marker in str(key).casefold() for marker in cls._BLOCKED_MARKERS)
+        }
+
+    def emit(self, event: str, /, **fields: Any) -> None:
+        now = time.monotonic()
+        force = bool(fields.pop("force", False)) or event in self._FORCED_EVENTS
+        safe = self._safe(fields)
+        with self.lock:
+            self.phase = str(safe.pop("phase", event))
+            self.fields = safe
+            if not force and now - self.last < self.interval_seconds:
+                return
+            self.last = now
+            self._write(event, self.phase, safe, now)
+
+    def _write(
+        self, event: str, phase: str, fields: Mapping[str, Any], now: float
+    ) -> None:
+        print(
+            json.dumps(
+                {
+                    "event": event,
+                    "phase": phase,
+                    "run_id": self.run_id,
+                    "elapsed_seconds": round(now - self.started, 3),
+                    **fields,
+                },
+                sort_keys=True,
+                default=str,
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+
+    def start(self) -> None:
+        def heartbeat() -> None:
+            while not self.stop.wait(self.interval_seconds):
+                with self.lock:
+                    now = time.monotonic()
+                    self._write("heartbeat", self.phase, self.fields, now)
+                    self.last = now
+
+        self.thread = threading.Thread(
+            target=heartbeat,
+            name=f"forecast-progress-{self.run_id}",
+            daemon=True,
+        )
+        self.thread.start()
+
+    def close(self) -> None:
+        self.stop.set()
+        if self.thread is not None:
+            self.thread.join(timeout=1.0)
 
 
 def _git_sha() -> str:
@@ -211,18 +308,89 @@ def _plan(
     }
 
 
-def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
+def _retained_rows(frame: pd.DataFrame, *, target: str, head: str) -> pd.DataFrame:
+    if frame.empty:
+        return frame
+    return frame[frame["target"].eq(target) & frame["head"].eq(head)]
+
+
+def _slice_metrics(frame: pd.DataFrame, key: str) -> dict[str, dict[str, float]]:
+    slices: dict[str, dict[str, float]] = {}
+    if frame.empty:
+        return slices
+    for value, group in frame.groupby(key, sort=True):
+        slices[str(int(value))] = {
+            "mae": float(group["absolute_error"].mean()),
+            "gaussian_crps": float(group["gaussian_crps"].mean()),
+            "n": int(len(group)),
+        }
+    return slices
+
+
+def _head_metrics_block(computations: Mapping[str, Any]) -> dict[str, Any]:
+    """Build the expanded, deterministic per-horizon/per-target metric block."""
+    block: dict[str, Any] = {}
+    for horizon, computation in computations.items():
+        block[horizon] = {}
+        for target, head in computation.retained.items():
+            selection = _retained_rows(
+                computation.predictions, target=target, head=head
+            )
+            reporting = _retained_rows(
+                computation.reporting_predictions, target=target, head=head
+            )
+            block[horizon][target] = {
+                "head": head,
+                "selection": {
+                    "pooled": {
+                        "mae": float(selection["absolute_error"].mean()),
+                        "gaussian_crps": float(selection["gaussian_crps"].mean()),
+                        "n": int(len(selection)),
+                    },
+                    "by_season": _slice_metrics(selection, "season"),
+                    "by_completed_game_stage": _slice_metrics(
+                        selection, "completed_game_stage"
+                    ),
+                },
+                "reporting": {
+                    "by_season": _slice_metrics(reporting, "season"),
+                },
+            }
+    return block
+
+
+def _horizon_populations(computations: Mapping[str, Any]) -> dict[str, Any]:
+    """Per-horizon retained-head selection row counts for population equality."""
+    return {
+        horizon: {
+            target: int(
+                len(_retained_rows(computation.predictions, target=target, head=head))
+            )
+            for target, head in computation.retained.items()
+        }
+        for horizon, computation in computations.items()
+    }
+
+
+def preflight(
+    *, storage: Any, args: argparse.Namespace, progress: _Progress
+) -> dict[str, Any]:
+    progress.emit("preflight_started", run_id=args.run_id, as_of=args.as_of)
     config = yaml.safe_load(Path(args.config).read_text())
     validate_config(config)
+    selection = config["selection"]
     rating, rating_raw = _read_json(storage, args.rating_manifest_uri)
     measurement, measurement_raw = _read_json(storage, args.measurement_manifest_uri)
     repair, repair_raw = _read_json(storage, args.repair_manifest_uri)
     parents = verify_rating_parent(
         rating,
+        rating_manifest_uri=args.rating_manifest_uri,
         rating_raw_sha256=hashlib.sha256(rating_raw).hexdigest(),
         measurement=measurement,
+        measurement_manifest_uri=args.measurement_manifest_uri,
         measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
         repair=repair,
+        repair_manifest_uri=args.repair_manifest_uri,
         repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
     )
     identity = forecast_identity(
@@ -231,13 +399,19 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         code_sha=args.expected_code_sha,
         config_sha=hashlib.sha256(Path(args.config).read_bytes()).hexdigest(),
         parents={
-            key: parents[key]
-            for key in (
-                "rating_raw_sha256",
-                "measurement_raw_sha256",
-                "repair_raw_sha256",
-            )
+            "rating_manifest_uri": parents["rating_manifest_uri"],
+            "rating_raw_sha256": parents["rating_raw_sha256"],
+            "measurement_manifest_uri": parents["measurement_manifest_uri"],
+            "measurement_raw_sha256": parents["measurement_raw_sha256"],
+            "repair_manifest_uri": parents["repair_manifest_uri"],
+            "repair_raw_sha256": parents["repair_raw_sha256"],
         },
+    )
+    progress.emit(
+        "parents_loaded",
+        rating_parent=rating["identity"]["run_id"],
+        measurement_parent=measurement["identity"]["run_id"],
+        repair_parent=repair["identity"]["run_id"],
     )
     # Reuse 03's audited source loading.  It validates bounded parent parts and
     # chronology before any forecast feature is formed.
@@ -245,26 +419,30 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         storage=storage,
         measurement=measurement,
         repair=repair,
-        progress=lambda *_a, **_k: None,
+        progress=progress.emit,
     )
+    progress.emit("source_streamed", source="rating_inputs")
     scoring_events = _stream_output(
         storage,
         name="scoring_events",
         value=measurement["output_refs"]["scoring_events"],
-        progress=lambda *_a, **_k: None,
+        progress=progress.emit,
     )
+    progress.emit("source_streamed", source="scoring_events", rows=len(scoring_events))
     team_states = _stream_partitioned(
         storage,
         value=rating["output_refs"]["team_states"],
         dataset="possession_team_state",
         schema="data_first_possession_team_state_v1",
     )
+    progress.emit("source_streamed", source="team_states", rows=len(team_states))
     offsets = build_offsets(
         rating_inputs.population,
         scoring_events,
         development_seasons=tuple(config["development_seasons"]),
         equivalent_games=int(config["offsets"]["equivalent_games"]),
     )
+    progress.emit("offsets_built", rows=len(offsets.offsets))
     features = _feature_frame(
         population=rating_inputs.population,
         outcomes=rating_inputs.outcomes,
@@ -272,20 +450,21 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         offsets=offsets.offsets,
     )
     bridge = config["bridge"]
-    selection = config["selection"]
-    computations = {
-        horizon: evaluate_heads(
+    computations: dict[str, Any] = {}
+    for horizon in config["horizons"]:
+        progress.emit("horizon_started", horizon=horizon)
+        computations[horizon] = evaluate_heads(
             features,
             horizon=horizon,
             development_seasons=tuple(config["development_seasons"]),
             outer_seasons=tuple(selection["outer_seasons"]),
+            reporting_seasons=tuple(selection["reporting_seasons"]),
             alpha_grid=tuple(bridge["alpha_grid"]),
             floor=float(bridge["scaling_floor"]),
             bootstrap_seed=int(selection["bootstrap_seed"]),
             bootstrap_samples=int(selection["bootstrap_replicates"]),
         )
-        for horizon in config["horizons"]
-    }
+        progress.emit("horizon_complete", horizon=horizon)
     retained = {
         horizon: computation.predictions.merge(
             pd.DataFrame(
@@ -306,6 +485,7 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         seed=int(selection["bootstrap_seed"]),
         samples=int(selection["bootstrap_replicates"]),
     )
+    progress.emit("horizon_selected", selected_horizon=selected_horizon)
     predictions = retained[selected_horizon].copy()
     models = computations[selected_horizon].models.copy()
     registry = pd.DataFrame.from_records(
@@ -361,34 +541,24 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         name: _plan(name, frame, columns, keys)
         for name, (frame, columns, keys) in outputs.items()
     }
-    return {
+    evidence = {
         "state": "dry_run",
         "identity": identity,
+        "parent_uris": {
+            "rating_manifest_uri": parents["rating_manifest_uri"],
+            "measurement_manifest_uri": parents["measurement_manifest_uri"],
+            "repair_manifest_uri": parents["repair_manifest_uri"],
+        },
         "rating_parent": rating["identity"]["run_id"],
         "measurement_parent": measurement["identity"]["run_id"],
         "repair_parent": repair["identity"]["run_id"],
+        "selection_seasons": list(selection["outer_seasons"]),
+        "reporting_seasons": list(selection["reporting_seasons"]),
         "offsets_sha256": canonical_frame_digest(
             offsets.offsets, columns=tuple(offsets.offsets.columns)
         ),
-        "head_metrics": {
-            horizon: {
-                target: {
-                    "head": computation.retained[target],
-                    "mae": float(
-                        computation.predictions[
-                            (computation.predictions["target"].eq(target))
-                            & (
-                                computation.predictions["head"].eq(
-                                    computation.retained[target]
-                                )
-                            )
-                        ].absolute_error.mean()
-                    ),
-                }
-                for target in ("margin", "total")
-            }
-            for horizon, computation in computations.items()
-        },
+        "head_metrics": _head_metrics_block(computations),
+        "horizon_populations": _horizon_populations(computations),
         "selected_horizon": selected_horizon,
         "horizon_sha256": horizon_sha,
         "preflight_plans": plans,
@@ -399,6 +569,8 @@ def preflight(*, storage: Any, args: argparse.Namespace) -> dict[str, Any]:
         "calibration": {"state": "deferred_to_v5_04b"},
         "production_activation_authorized": False,
     }
+    progress.emit("evidence_constructed")
+    return evidence
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -419,14 +591,25 @@ def main(argv: list[str] | None = None) -> None:
         raise ForecastRunError("--apply is blocked by V5-04B")
     if _git_sha() != args.expected_code_sha:
         raise ForecastRunError("expected code SHA does not match committed HEAD")
-    print(
-        json.dumps(
-            preflight(storage=get_storage(environment="preview"), args=args),
-            indent=2,
-            sort_keys=True,
-            default=str,
+    progress = _Progress(args.run_id)
+    progress.start()
+    try:
+        evidence = preflight(
+            storage=get_storage(environment="preview"), args=args, progress=progress
         )
-    )
+        print(
+            json.dumps(
+                evidence,
+                indent=2,
+                sort_keys=True,
+                default=str,
+            )
+        )
+        progress.emit(
+            "dry_run_complete", identity=evidence["identity"]["identity_sha256"]
+        )
+    finally:
+        progress.close()
 
 
 if __name__ == "__main__":

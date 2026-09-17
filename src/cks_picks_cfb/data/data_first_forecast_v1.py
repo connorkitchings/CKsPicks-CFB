@@ -18,10 +18,23 @@ FORECAST_CONFIG_SCHEMA = "data_first_forecast_config_v1"
 FORECAST_IDENTITY_SCHEMA = "data_first_forecast_identity_v1"
 FORECAST_OUTPUT_ROOT = "artifacts/research/data-first-football-v1/forecasts/runs"
 REQUIRED_RATING_RUN_ID = "possession-v1-ratings-20260917-d029526-cert"
+REQUIRED_RATING_MANIFEST_URI = (
+    "artifacts/research/data-first-football-v1/possession-v1/ratings/runs/"
+    "possession-v1-ratings-20260917-d029526-cert/retained-rating-manifest.json"
+)
 REQUIRED_RATING_CANDIDATE = "ppp__rho_0_60__exposure"
+REQUIRED_REPORTING_SEASONS = (2018, 2019, 2021)
 HORIZONS = ("expanding", "latest_five")
 TARGETS = ("margin", "total")
 ALPHAS = (0.1, 1.0, 10.0, 100.0)
+IDENTITY_PARENT_KEYS = (
+    "rating_manifest_uri",
+    "rating_raw_sha256",
+    "measurement_manifest_uri",
+    "measurement_raw_sha256",
+    "repair_manifest_uri",
+    "repair_raw_sha256",
+)
 
 FORECAST_DATASETS = {
     "forecast_registry": ("forecast_registry", "data_first_forecast_registry_v1"),
@@ -108,6 +121,21 @@ def validate_config(payload: Mapping[str, Any]) -> None:
         )
     if tuple(payload.get("horizons") or ()) != HORIZONS:
         raise ForecastContractError("forecast horizon registry drifted")
+    selection = payload.get("selection") or {}
+    outer = tuple(selection.get("outer_seasons") or ())
+    reporting = tuple(selection.get("reporting_seasons") or ())
+    if not outer:
+        raise ForecastContractError("forecast selection population is missing")
+    if reporting != REQUIRED_REPORTING_SEASONS:
+        raise ForecastContractError("forecast reporting season policy drifted")
+    if set(reporting) & set(outer):
+        raise ForecastContractError(
+            "forecast reporting seasons may not overlap the selection population"
+        )
+    if not set(reporting) <= set(DEVELOPMENT_SEASONS):
+        raise ForecastContractError(
+            "forecast reporting seasons must be development seasons"
+        )
     bridge = payload.get("bridge") or {}
     if (
         bridge.get("reference_alpha") != 10.0
@@ -121,10 +149,13 @@ def validate_config(payload: Mapping[str, Any]) -> None:
 def verify_rating_parent(
     rating: Mapping[str, Any],
     *,
+    rating_manifest_uri: str,
     rating_raw_sha256: str,
     measurement: Mapping[str, Any],
+    measurement_manifest_uri: str,
     measurement_raw_sha256: str,
     repair: Mapping[str, Any],
+    repair_manifest_uri: str,
     repair_raw_sha256: str,
 ) -> dict[str, Any]:
     """Validate exact 03 lineage at forecast consumption time."""
@@ -142,7 +173,19 @@ def verify_rating_parent(
         or rating.get("production_activation_authorized") is not False
     ):
         raise ForecastContractError("forecast requires the exact certified 03 parent")
+    if rating_manifest_uri != REQUIRED_RATING_MANIFEST_URI:
+        raise ForecastContractError(
+            "forecast rating manifest URI is not the certified 03 parent"
+        )
     parents = rating.get("parents") or {}
+    if parents.get("measurement_manifest_uri") != measurement_manifest_uri:
+        raise ForecastContractError(
+            "measurement manifest URI differs from the rating manifest's pinned parent"
+        )
+    if parents.get("repair_manifest_uri") != repair_manifest_uri:
+        raise ForecastContractError(
+            "repair manifest URI differs from the rating manifest's pinned parent"
+        )
     if (
         parents.get("measurement_manifest_raw_sha256") != measurement_raw_sha256
         or parents.get("repair_manifest_raw_sha256") != repair_raw_sha256
@@ -159,6 +202,9 @@ def verify_rating_parent(
         "rating": dict(rating),
         "measurement": measurement_verified,
         "repair": repair_verified,
+        "rating_manifest_uri": rating_manifest_uri,
+        "measurement_manifest_uri": measurement_manifest_uri,
+        "repair_manifest_uri": repair_manifest_uri,
         "rating_raw_sha256": rating_raw_sha256,
         "measurement_raw_sha256": measurement_raw_sha256,
         "repair_raw_sha256": repair_raw_sha256,
@@ -175,6 +221,10 @@ def forecast_identity(
 ) -> dict[str, Any]:
     if not all((run_id, as_of, code_sha, config_sha)):
         raise ForecastContractError("forecast identity is incomplete")
+    if any(not parents.get(key) for key in IDENTITY_PARENT_KEYS):
+        raise ForecastContractError(
+            "forecast identity parents must pin exact URIs and checksums"
+        )
     value = {
         "schema_version": FORECAST_IDENTITY_SCHEMA,
         "run_id": run_id,

@@ -19,6 +19,7 @@ bridge:
   maximum_regression_pct: 5.0
 selection:
   outer_seasons: [2022, 2023, 2024, 2025]
+  reporting_seasons: [2018, 2019, 2021]
   bootstrap_replicates: 2000
   bootstrap_seed: 20260908
   bootstrap_confidence: 0.90
