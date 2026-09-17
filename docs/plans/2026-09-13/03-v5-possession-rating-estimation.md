@@ -1,6 +1,6 @@
 # V5-03: Possession Rating Estimation Tournament
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution is dependency-gated.
@@ -186,11 +186,11 @@ The 60-candidate search is exploratory and must be reported in full. A simple
 reference can legitimately win. Insufficient data or an invalid reference cannot
 be rescued by removing hard games or calling an old manifest certified.
 
-- [ ] All 60 candidates have results or explicit validity failures.
-- [ ] Both reference definitions pass hard validity gates.
-- [ ] Selected design, state provenance, uncertainty and independent selection are verified.
-- [ ] Committed-code preflight, apply, independent verifier and idempotent rerun pass.
-- [ ] Required tests/docs/session log and lifecycle status are complete.
+- [x] All 60 candidates have results or explicit validity failures.
+- [x] Both reference definitions pass hard validity gates.
+- [x] Selected design, state provenance, uncertainty and independent selection are verified.
+- [x] Committed-code preflight, apply, independent verifier and idempotent rerun pass.
+- [x] Required tests/docs/session log and lifecycle status are complete.
 
 Use the common amendment process. No final forecasting family/window selection
 or prospective execution occurs in this contract.
@@ -208,6 +208,10 @@ mathematics, gates, or definition of done:
    performs evidence-bound immutable materialization, independent reconstruction,
    idempotency, and final Contract 04 eligibility.
 
-03A was explicitly approved by the user on 2026-09-16. 03B remains Draft until
-03A has a clean committed SHA and reviewed deterministic preflight evidence.
-V5-03 remains In Progress and is not complete after 03A alone.
+03A was explicitly approved by the user on 2026-09-16. 03B was approved the
+same day after 03A's committed SHA and reviewed deterministic preflight
+evidence. V5-03 closed as Implemented on 2026-09-17: run
+`possession-v1-ratings-20260917-d029526-cert` passed preflight, evidence-bound
+apply, independent verification, and idempotent repeat. The retained manifest
+names `ppp__rho_0_60__exposure` as the selected design and is the sole
+eligible Contract 04 rating parent.

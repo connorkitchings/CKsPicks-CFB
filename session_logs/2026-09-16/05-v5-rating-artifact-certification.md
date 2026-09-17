@@ -3,14 +3,12 @@
 ## TL;DR
 
 - **Worked On:** Implementing the approved V5-03B artifact certification contract (Tasks 4–6).
-- **Outcome:** Task 4 complete and committed. Task 5 proven: 7-test verifier
-  suite passes, including bit-exact producer-vs-verifier agreement on the
-  tournament fixture. Task 6 (Preview certification run) is next.
+- **Outcome:** All tasks complete. Task 6 certification run passed end to
+  end; Contract 03B and umbrella V5-03 are Implemented.
 - **Plan Contract:** `docs/plans/2026-09-16/02-v5-rating-artifact-certification.md`
-- **Approval / Status:** User approved this execution decomposition on 2026-09-16; Contract 03B is In Progress.
-- **Blockers:** None for Task 5. Task 6 requires a fresh Preview run identity
-  and R2 execution.
-- **Next:** Task 6 certification run (fresh run ID → preflight → apply → verify → idempotent repeat → close).
+- **Approval / Status:** User approved this execution decomposition on 2026-09-16 and the R2 apply on 2026-09-17; Contract 03B is Implemented.
+- **Blockers:** None.
+- **Next:** Contract 04 (forecast bridge and fitting-window selection) — entry gate met.
 
 ## Context and Decisions
 
@@ -60,9 +58,19 @@
   rejection, full apply→verify round trip with idempotent verifier manifest,
   CLI success + CLI tamper rejection.
 
-**Task 6 (Certification execution):** Blocked on Task 5 proof — fresh run ID,
-no-write preflight, evidence-bound apply, independent verify, repeat apply,
-documentation close.
+**Task 6 (Certification execution):** COMPLETE 2026-09-17
+- Fresh identity `possession-v1-ratings-20260917-d029526-cert` under committed
+  code `d029526`, shared cutoff `2026-09-17T01:55:00Z`, exact R6/Repair parents.
+- No-write preflight: zero warnings, 60/60 ok, selected
+  `ppp__rho_0_60__exposure`; all digests identical to reviewed 03A evidence.
+- Evidence-bound apply: recomputation matched evidence; 7 datasets written;
+  signed retained manifest published last (raw SHA `7568c910…`).
+- Independent verifier: full reconstruction from exact parents, no producer
+  imports; all digests/rows/selection confirmed; signed verifier manifest
+  (`fc3120d4…`).
+- Idempotent repeat returned `already_applied` with no recomputation.
+- Umbrella V5-03, plan index, roadmap, and authority docs name the retained
+  manifest as the sole eligible Contract 04 parent. V4 unchanged.
 
 ## Validation
 
@@ -70,10 +78,11 @@ documentation close.
 - [x] Focused tests for verifier (boundary, agreement, perturbation, tamper, CLI) — 7 passed
 - [x] Full warning-as-error suite — 934 passed, 2 skipped
 - [x] Ruff, ruff format, contracts-check, MkDocs, `git diff --check`
-- [ ] Actual certification run produces immutable artifacts (Task 6)
-- [ ] Independent verifier confirms all digests match (Task 6)
-- [ ] Idempotent repeat returns `already_applied` (Task 6)
-- [ ] Documentation updated (umbrella contract, roadmap, session logs)
+- [x] Certification preflight: zero warnings, 60/60 ok, digests match reviewed evidence
+- [x] Evidence-bound apply: manifest published last, `already_applied: false`
+- [x] Independent verifier: `verified`, all digests/rows/selection confirmed
+- [x] Idempotent repeat: `already_applied`, no recomputation
+- [x] Documentation updated (umbrella contract, roadmap, plan index, session logs)
 
 ## Amendments and Blockers
 
@@ -81,13 +90,14 @@ None. Contract 03B approved as specified.
 
 ## Handoff Notes
 
-- **Resume at (Task 6):** fresh run ID + new commit SHA → no-write preflight
-  → evidence review → `--apply --preflight-evidence` → verify script →
-  repeat apply (`already_applied`) → close umbrella V5-03 as Implemented →
-  commit documentation. Never reuse the `90b78d1-preflight` identity.
-- **Watch out for:** Task 6 executes real R2 Preview writes; each step needs
-  its gates (clean worktree, committed SHA, reviewed evidence). The verifier
-  manifest write is idempotent. `production_activation_authorized` stays
-  `False` throughout.
+- **Resume at (Contract 04):** entry gate met — independently verified 03
+  ratings at
+  `artifacts/research/data-first-football-v1/possession-v1/ratings/runs/possession-v1-ratings-20260917-d029526-cert/retained-rating-manifest.json`.
+  Contract 04 selects the frozen uncertainty-bearing shadow candidate
+  (fitting-history experiment). Use `plan-session` (Sol) for the 04 execution
+  contract since it affects forecasting architecture.
+- **Watch out for:** Historical selection is development evidence, not a
+  prospective win. `production_activation_authorized` is `False` on every
+  artifact. V4 production unchanged.
 
 **tags:** ["v5", "ratings", "certification", "preview"]

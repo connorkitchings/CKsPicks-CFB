@@ -83,6 +83,17 @@ manifest `possession-v1-measurements-20260915-18fb0aa-r6` passed preflight
 idempotent repeat under the fixed 1,800-second cap. It is the sole eligible
 measurement parent for Contract 03.
 
+**Contract 03 possession ratings are independently certified in Preview
+(2026-09-17).** Run `possession-v1-ratings-20260917-d029526-cert` passed a
+zero-warning no-write preflight (60/60 candidates ok), evidence-bound apply
+with the signed retained manifest published last, independent verifier-owned
+reconstruction of every prior, state, bridge prediction, and the complete
+selection, and an idempotent repeat. The retained manifest selects
+`ppp__rho_0_60__exposure` (carryover prior + exposure updater; no challenger
+cleared the advancement gates) and is the sole eligible rating parent for
+Contract 04. Historical selection remains development evidence, not a
+prospective win; V4 production is unchanged.
+
 The possession-based rating methodology is specified (2026-09-11), amended
 2026-09-13. Its [original specification contract](../plans/2026-09-11/possession-rating-methodology-specification.md)
 remains an Implemented documentation milestone; the current

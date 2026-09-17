@@ -1,12 +1,36 @@
 # V5-03B: Possession Rating Artifact Certification
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-16
 - **Approved:** 2026-09-16
+- **Certified:** 2026-09-17
 - **Planner:** Codex planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-16.
-- **Implementation log:** Pending; create `session_logs/2026-09-16/05-v5-rating-artifact-certification.md`.
+- **Implementation log:** `session_logs/2026-09-16/05-v5-rating-artifact-certification.md`.
 - **Commit policy:** Separate materializer/verifier code commit and certified-evidence documentation commit; user executes Git.
+
+## Certification Evidence
+
+Run `possession-v1-ratings-20260917-d029526-cert` executed the full sequence
+under committed code SHA `d0295261c1985cadd6f076ae9c60a007eac6ccb4`:
+
+- **No-write preflight:** deterministic, zero warnings; all 60 candidates ok;
+  selected `ppp__rho_0_60__exposure`; digests identical to the reviewed 03A evidence.
+- **Evidence-bound apply:** recomputed the tournament, bound every partition
+  and dataset digest to the preflight evidence, published the signed retained
+  manifest last (`already_applied: false`).
+- **Independent verifier:** reconstructed all priors, states, bridge
+  predictions, and selection from the exact R6/Repair v2 parents without
+  producer imports; all 7 digests, row counts, and selection fields confirmed;
+  signed verifier manifest
+  `.../runs/possession-v1-ratings-20260917-d029526-cert/verification/verifier-manifest.json`
+  (`fc3120d4…`).
+- **Idempotent repeat:** identical apply returned `already_applied` with no recomputation.
+
+Certified artifact:
+`artifacts/research/data-first-football-v1/possession-v1/ratings/runs/possession-v1-ratings-20260917-d029526-cert/retained-rating-manifest.json`
+(raw SHA `7568c910…`). Selected candidate `ppp__rho_0_60__exposure`, selection
+SHA `5bb2e7b6…`. This is the sole eligible Contract 04 rating parent.
 
 ## Goal
 
@@ -179,12 +203,12 @@ must return `already_applied` without recomputation or writes.
 
 ## Definition of Done
 
-- [ ] Complete preflight evidence is reproduced exactly by immutable apply.
-- [ ] All seven datasets and retained manifest pass schema, lineage, checksum, population, and uncertainty gates.
-- [ ] Independent verifier reconstructs the selected design and all selection evidence without producer imports.
-- [ ] Exact repeat apply is idempotent; failed/partial prefixes remain ineligible.
-- [ ] Umbrella V5-03 and authority documentation name one sole eligible Contract 04 parent.
-- [ ] Required validation and full implementation/certification session logs are complete.
+- [x] Complete preflight evidence is reproduced exactly by immutable apply.
+- [x] All seven datasets and retained manifest pass schema, lineage, checksum, population, and uncertainty gates.
+- [x] Independent verifier reconstructs the selected design and all selection evidence without producer imports.
+- [x] Exact repeat apply is idempotent; failed/partial prefixes remain ineligible.
+- [x] Umbrella V5-03 and authority documentation name one sole eligible Contract 04 parent.
+- [x] Required validation and full implementation/certification session logs are complete.
 
 ## Amendments
 
