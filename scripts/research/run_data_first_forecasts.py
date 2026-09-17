@@ -660,10 +660,19 @@ def apply(
         "window_comparison": (comparison, WINDOW_COMPARISON_COLUMNS, ()),
         "forecast_selection": (selection_frame, FORECAST_SELECTION_COLUMNS, ()),
     }
-    for name, (frame, _columns, _keys) in outputs.items():
+    for name, (frame, _columns, keys) in outputs.items():
         dataset, schema = FORECAST_DATASETS[name]
         validate_frame(frame, schema_for(dataset, schema))
-        sink(name, {}, frame)
+        if name in PARTITIONED_DATASETS and keys:
+            for partition_values, group in frame.groupby(list(keys), sort=True, dropna=False):
+                partition_values = partition_values if isinstance(partition_values, tuple) else (partition_values,)
+                partition = {
+                    key: value.item() if hasattr(value, "item") else value
+                    for key, value in zip(keys, partition_values, strict=True)
+                }
+                sink(name, partition, group)
+        else:
+            sink(name, {}, frame)
 
     refs: dict[str, dict[str, Any]] = {}
     for name, writer in writers.items():
