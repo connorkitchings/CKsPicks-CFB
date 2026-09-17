@@ -1,12 +1,12 @@
 # Session: V5-04A Hardening and Preflight (Terra)
 
 ## TL;DR
-- **Worked On:** Executing Tasks 1–6 of `docs/plans/2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md`.
-- **Outcome:** Hardening code complete and all quality gates pass (full warning-as-error suite 948 passed, 2 skipped). Awaiting user hardening commit; Tasks 7–8 (three-repeat no-write Preview preflight, review/closure, 04B rebase) execute after that commit.
-- **Plan Contract:** `docs/plans/2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md` (In Progress).
-- **Approval / Status:** Approved plan; Terra executing. Entry state verified: HEAD `da19a54`, clean worktree, 04A checkpoint `d380765` beneath.
-- **Blockers:** None. Preview preflight identity selection is gated on the user's hardening commit.
-- **Next:** User commits; then Task 7 preflight (`forecast-v1-20260917-<shortsha>-04a`, three byte-equivalent runs) and Task 8 closure/04B rebase.
+- **Worked On:** Executing all tasks of `docs/plans/2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md`.
+- **Outcome:** Complete. Code + gates; three identical no-write Preview preflights (evidence SHA `fcdad64c…`); review passed; 04A and hardening contracts Implemented; 04B rebased as Draft. Awaiting user closure commits.
+- **Plan Contract:** `docs/plans/2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md` (Implemented).
+- **Approval / Status:** Approved plan; Terra executed.
+- **Blockers:** None. 04B approval is a separate explicit user action.
+- **Next:** User executes the two closure commits; a fresh task may then approve/implement 04B.
 
 ## Context and Decisions
 - `verify_rating_parent` now binds all three parent URIs exactly (new `REQUIRED_RATING_MANIFEST_URI` constant; CLI R6/Repair URIs must equal the rating manifest's pinned `parents` URIs) in addition to every existing signature/state/run-id/candidate/hash check; mirrors the proven 03B verifier pattern.
@@ -42,6 +42,12 @@
 - [x] Strict MkDocs build.
 - [x] CLI `--help` and `py_compile` checks.
 - [x] `git diff --check`.
+
+## Reviewed Preflight Identity
+- Run `forecast-v1-20260917-19ca44b-04a`, cutoff `2026-09-17T14:19:09Z`, code `19ca44b7518c05a6810b1cf82f0c1c8e8137d289`, evidence SHA `fcdad64c8e496028d5a610513d0adfbae5d0d20d582f37d01a80f1415ef805d1`, identity `1bb2d6bc…`.
+- Selected shared `expanding` horizon; retained `reference` (alpha-10) both targets. Expanding pooled: margin MAE 14.6446 / CRPS 10.4413; total MAE 13.5433 / CRPS 9.5469.
+- Equal 3,659-game populations per target per horizon; stages {0: 573, 1: 301, 2: 244, 3: 253, 4: 2,288}; reporting 2018/2019/2021 (2,659/target); zero warnings.
+- Dead identities: `forecast-v1-20260917-367b4a3-04a` (Amendment 1), `forecast-v1-20260917-820bb1d-04a` (evidence `f73cd574…`, Amendment 2). Evidence temp dirs retained outside the repo (resolved `EVIDENCE_DIR` echoed at each run start).
 
 ## Amendments and Blockers
 - **Amendment 1 (2026-09-17):** First preflight attempt (run 1 of

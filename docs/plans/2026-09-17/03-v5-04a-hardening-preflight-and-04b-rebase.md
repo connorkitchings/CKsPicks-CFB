@@ -1,6 +1,6 @@
 # V5-04A Hardening, Preview Preflight Closure, and 04B Rebase
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this plan in the 2026-09-17 planning session after the static review of committed checkpoint `d380765`.
@@ -405,14 +405,30 @@ Preview identity is chosen before this commit.
 
 ## Definition of Done
 
-- [ ] Exact-URI binding rejects substitutions and passes exact parents.
-- [ ] 2018/2019/2021 reported per horizon/target without touching selection.
-- [ ] Expanded `head_metrics` and `horizon_populations` are complete and deterministic.
-- [ ] Bounded stderr progress exists; stdout evidence stays pure.
-- [ ] All Task 6 gates pass; user commits the hardening checkpoint.
-- [ ] Three byte-equivalent committed-SHA preflight runs pass review.
-- [ ] 04A and this contract are Implemented only after the preflights pass and closure docs are committed.
-- [ ] 04B is rebased (wording only) as **Draft**; moving it to Approved requires a separate explicit user approval; implementation deferred to a fresh task.
+- [x] Exact-URI binding rejects substitutions and passes exact parents.
+- [x] 2018/2019/2021 reported per horizon/target without touching selection.
+- [x] Expanded `head_metrics` and `horizon_populations` are complete and deterministic.
+- [x] Bounded stderr progress exists; stdout evidence stays pure.
+- [x] All Task 6 gates pass; user commits the hardening checkpoint.
+- [x] Three byte-equivalent committed-SHA preflight runs pass review.
+- [x] 04A and this contract are Implemented only after the preflights pass and closure docs are committed.
+- [x] 04B is rebased (wording only) as **Draft**; moving it to Approved requires a separate explicit user approval; implementation deferred to a fresh task.
+
+### Reviewed preflight identity
+
+- Run `forecast-v1-20260917-19ca44b-04a`, cutoff `2026-09-17T14:19:09Z`, code
+  `19ca44b7518c05a6810b1cf82f0c1c8e8137d289`, evidence SHA
+  `fcdad64c8e496028d5a610513d0adfbae5d0d20d582f37d01a80f1415ef805d1`,
+  identity `1bb2d6bc…`, offsets `d44f3c16…`, horizon SHA `9c1adef0…`.
+- Selected horizon `expanding` (both targets); retained head `reference`
+  (alpha-10) on margin and total. Expanding pooled: margin MAE 14.6446 /
+  CRPS 10.4413; total MAE 13.5433 / CRPS 9.5469 (n = 3,659 each).
+- Equal 3,659-game populations per target per horizon; stage distribution
+  {0: 573, 1: 301, 2: 244, 3: 253, 4: 2,288}; reporting 2018/2019/2021
+  (n = 2,659/target); zero warnings in all three runs.
+- Dead identities: `forecast-v1-20260917-367b4a3-04a` (feature-frame
+  KeyError, Amendment 1), `forecast-v1-20260917-820bb1d-04a` (evidence
+  `f73cd574…`, stage collapse, Amendment 2).
 
 ## Amendments
 

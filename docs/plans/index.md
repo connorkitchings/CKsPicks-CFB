@@ -44,13 +44,21 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
 | 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Certified 2026-09-17: run `possession-v1-ratings-20260917-d029526-cert` passed preflight, evidence-bound apply, independent verification, and idempotent repeat. Selected `ppp__rho_0_60__exposure`; retained manifest is the sole eligible 04 parent. |
-| 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Entry gate met: independently verified 03 ratings available. |
+| 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Entry gate met: independently verified 03 ratings available. 04A Implemented 2026-09-17; 04B remains Draft pending separate approval. |
 | 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Blocked on verified 04 candidate; live readiness must pass separately. |
 | 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
 parent, certify data, or create prospective evidence. Contract 01 is independent
 of the rating sequence. No promotion or serving change is authorized.
+
+### V5-04 execution decomposition (2026-09-17)
+
+| Contract | Status and dependency |
+| --- | --- |
+| 04A: [Forecast offsets, bridge, and horizons](2026-09-17/01-v5-forecast-offsets-bridge-and-horizons.md) | **Implemented 2026-09-17.** Hardened, preflighted three times byte-identical under `forecast-v1-20260917-19ca44b-04a` (selected shared `expanding` horizon, alpha-10 reference heads, equal 3,659-game populations). |
+| 04A hardening: [Hardening, preflight closure, and 04B rebase](2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md) | **Implemented 2026-09-17.** Exact three-URI binding, 2018/2019/2021 reporting, expanded metrics, two mechanical preflight repairs (Amendments 1–2); two dead diagnostic identities preserved. |
+| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Draft.** Entry gate met (implemented 04A interfaces + reviewed evidence); requires a separate explicit user approval before implementation in a fresh task. |
 
 ### Certified foundations and superseded execution records
 

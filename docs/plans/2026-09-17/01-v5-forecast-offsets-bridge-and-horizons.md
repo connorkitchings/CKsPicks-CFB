@@ -1,10 +1,10 @@
 # V5-04A: Forecast Offsets, Bridge Registry, and Horizon Tournament
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-17, authorizing 04A execution.
-- **Implementation log:** `session_logs/2026-09-17/02-v5-forecast-offsets-and-horizons.md`.
+- **Implementation log:** `session_logs/2026-09-17/02-v5-forecast-offsets-and-horizons.md`; hardening/preflight in `session_logs/2026-09-17/04-v5-04a-hardening-and-preflight.md`.
 - **Commit policy:** Separate code checkpoint; user executes Git before any Preview run identity is selected.
 
 ## Goal
@@ -217,14 +217,46 @@ write is permitted.
   cannot trigger registry, threshold, or population changes without a
   user-approved amendment.
 
+## Completion Record (2026-09-17)
+
+Implemented under
+[03-v5-04a-hardening-preflight-and-04b-rebase](03-v5-04a-hardening-preflight-and-04b-rebase.md),
+which closed the two static-review gaps (exact three-URI parent binding;
+2018/2019/2021 reported horizons excluded from selection), expanded
+`head_metrics` (MAE + Gaussian CRPS by season/stage), added bounded stderr
+progress, and repaired two latent defects exposed by preflight diagnostics
+(Amendments 1–2 of the hardening contract): the feature frame now sources
+per-team pregame completed-game counts from the kickoff-ordered eligible
+completed schedule (self-excluded, clipped 0–4) instead of the 03
+rating-state observation counter.
+
+Reviewed preflight evidence (three byte-identical no-write runs, evidence
+SHA `fcdad64c…`):
+
+- Identity `forecast-v1-20260917-19ca44b-04a`, cutoff `2026-09-17T14:19:09Z`,
+  code `19ca44b7518c05a6810b1cf82f0c1c8e8137d289`, evidence identity
+  `1bb2d6bc…`, offsets `d44f3c16…`, horizon SHA `9c1adef0…`.
+- Exact pinned parents (rating `possession-v1-ratings-20260917-d029526-cert`,
+  R6 `possession-v1-measurements-20260915-18fb0aa-r6`, Repair v2
+  `repair-v2-20260909T1417Z`) with matching raw checksums.
+- One shared selected horizon (`expanding`, both targets); retained head
+  `reference` (alpha-10) on margin and total.
+- Equal 3,659-game populations per target per horizon (7,318 planned
+  predictions); required 2022–2025 season slices and 2018/2019/2021 reporting
+  slices (2,659/target) complete; stage distribution {0: 573, 1: 301,
+  2: 244, 3: 253, 4: 2,288}; zero warnings.
+- Dead diagnostic identities preserved for audit:
+  `forecast-v1-20260917-367b4a3-04a` (feature-frame KeyError),
+  `forecast-v1-20260917-820bb1d-04a` (evidence `f73cd574…`, stage collapse).
+
 ## Definition of Done
 
-- [ ] Exact 03/R6/Repair parents reconcile and all prohibited inputs fail closed.
-- [ ] Offsets, both horizon registries, and the window comparison are complete and deterministic.
-- [ ] Exactly one horizon policy and one head recipe per target are selected reproducibly.
-- [ ] Full no-write preflight evidence includes ordered plans/counts/digests for every output.
-- [ ] Required validation passes and the implementation log records the code checkpoint.
-- [ ] The user commits the checkpoint before Contract 04B chooses a run identity.
+- [x] Exact 03/R6/Repair parents reconcile and all prohibited inputs fail closed.
+- [x] Offsets, both horizon registries, and the window comparison are complete and deterministic.
+- [x] Exactly one horizon policy and one head recipe per target are selected reproducibly.
+- [x] Full no-write preflight evidence includes ordered plans/counts/digests for every output.
+- [x] Required validation passes and the implementation log records the code checkpoint.
+- [x] The user commits the checkpoint before Contract 04B chooses a run identity.
 
 ## Amendments
 

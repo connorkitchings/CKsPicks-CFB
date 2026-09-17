@@ -228,3 +228,10 @@ Both were Draft pending this decomposition's approval. The user approved the
 decomposition on 2026-09-17, authorizing 04A execution; 04B remains Draft
 until 04A has a clean committed SHA and reviewed deterministic preflight
 evidence. V5-04 remains Approved and is not complete until 04B certifies.
+
+**04A closure (2026-09-17):** 04A is Implemented with a reviewed,
+deterministic, byte-equivalent no-write Preview preflight
+(`forecast-v1-20260917-19ca44b-04a`; selected shared `expanding` horizon,
+alpha-10 reference head on both targets; equal 3,659-game populations).
+04B is rebased onto the implemented 04A interfaces and remains Draft
+pending a separate explicit user approval.
