@@ -20,12 +20,27 @@ completion alone is not certification.
 
 ## Current State and Entry Gate
 
-This contract is blocked until V5-04A has a clean committed SHA and a reviewed,
-deterministic no-write preflight containing the selected horizon, head recipes,
-and complete part plans and digests. It must consume the same exact 03/R6/
-Repair v2 parent URIs, configuration, cutoff, and run identity used by that
-preflight. Never reuse a diagnostic preflight identity or a failed/partial
-prefix.
+The 04A entry gate is met. V5-04A is **Implemented** (2026-09-17): the
+hardened `scripts/research/run_data_first_forecasts.py` dry run binds all
+three parent URIs exactly (`parent_uris` in the forecast identity), emits
+expanded `head_metrics` (pooled + by-season + by-stage MAE/CRPS with counts),
+`horizon_populations`, and `selection_seasons`/`reporting_seasons` evidence,
+and reports 2018/2019/2021 retained-head diagnostics excluded from every
+selection gate, plan digest, and apply population. The reviewed no-write
+preflight (`forecast-v1-20260917-19ca44b-04a`, cutoff `2026-09-17T14:19:09Z`,
+code `19ca44b7518c05a6810b1cf82f0c1c8e8137d289`, evidence SHA
+`fcdad64c…`, three byte-identical runs) selected the shared `expanding`
+horizon with the alpha-10 reference head on both targets: margin MAE 14.6446
+/ CRPS 10.4413, total MAE 13.5433 / CRPS 9.5469, equal 3,659-game populations
+per target per horizon.
+
+This contract remains **Draft** until a separate explicit user approval.
+Once approved, an approved 04B apply must consume the same exact 03/R6/
+Repair v2 parent URIs, configuration, cutoff, and run lineage family as that
+reviewed preflight — but it must generate a fresh complete 04B preflight
+identity of its own. Never reuse a diagnostic preflight identity
+(`forecast-v1-20260917-367b4a3-04a` and `forecast-v1-20260917-820bb1d-04a`
+are dead) or a failed/partial prefix.
 
 No calibration, forecast-schema, forecast-runner, or forecast-verifier code
 exists yet. The existing verifier checks nothing about forecasts; full
