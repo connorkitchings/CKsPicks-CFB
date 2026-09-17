@@ -1,6 +1,6 @@
 # V5-03B: Possession Rating Artifact Certification
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-16
 - **Approved:** 2026-09-16
 - **Planner:** Codex planning task
