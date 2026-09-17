@@ -1,10 +1,10 @@
 # V5-05B: Shadow Freeze, Scoring, and Evidence Ledger
 
-- **Status:** Draft
+- **Status:** Approved
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
-- **Approval source:** Pending user approval of this execution decomposition.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-05b-freeze-score-ledger.md`.
+- **Approval source:** User explicitly approved implementation on 2026-09-17 ("proceed").
+- **Implementation log:** `session_logs/2026-09-17/12-v5-05b-freeze-score-ledger.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 
 ## Goal
