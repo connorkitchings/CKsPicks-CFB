@@ -208,3 +208,23 @@ rescue a failed candidate or tune intervals on protected 2026 outcomes.
 
 Use the common amendment process. This freeze establishes a research candidate,
 not a qualifying prospective slate or authority to activate production.
+
+## Execution decomposition (2026-09-17)
+
+The remaining implementation is split into two dependency-ordered contracts
+without changing this umbrella contract's architecture, interfaces, registry,
+mathematics, gates, or definition of done:
+
+1. [V5-04A: offsets, bridge, and horizons](../2026-09-17/01-v5-forecast-offsets-bridge-and-horizons.md)
+   completes exact-parent loading, fixed non-offense offsets, the bounded
+   bridge registry under both horizons, the window tournament, and
+   deterministic no-write preflight evidence.
+2. [V5-04B: calibration and certification](../2026-09-17/02-v5-forecast-calibration-and-certification.md)
+   performs uncertainty calibration, candidate freeze and serialization,
+   evidence-bound immutable materialization, independent reconstruction,
+   idempotency, and final Contract 05 eligibility.
+
+Both were Draft pending this decomposition's approval. The user approved the
+decomposition on 2026-09-17, authorizing 04A execution; 04B remains Draft
+until 04A has a clean committed SHA and reviewed deterministic preflight
+evidence. V5-04 remains Approved and is not complete until 04B certifies.
