@@ -416,6 +416,28 @@ Preview identity is chosen before this commit.
 
 ## Amendments
 
-None. Any change to gates, registry, folds, populations, schemas, or parent
-identity semantics requires user-approved replanning under Contract 04A's
-amendment rules.
+### Amendment 1 — Completed-game counts come from `possession_rating_state`
+
+**Reason:** The first committed no-write preflight (run 1 of
+`forecast-v1-20260917-367b4a3-04a`, commit `367b4a3`) failed at feature
+assembly: `_feature_frame` renamed a `completed_games` column that does not
+exist in the 03 `possession_team_state` contract. The committed 04A path had
+never executed end-to-end; this is exactly the defect class the preflight
+exists to expose.
+
+**Original approach:** Source home/away completed-game counts by renaming
+`completed_games` from the streamed `possession_team_state` frame.
+
+**Revised approach:** Also stream the 03 `possession_rating_state` output
+(`RATING_STATE_COLUMNS`), take the retained candidate's `unit_role ==
+"offense"` rows as the per-team-game `completed_games` source, and fail closed
+if counts are not unique per (season, game_id, team). `_stream_partitioned`
+gains a `columns` parameter. Two new regressions cover the sourcing and the
+duplicate rejection; the previously untested `_feature_frame` path now has
+direct unit coverage.
+
+**Impact:** Mechanical repair only — no change to parents, mathematics,
+gates, registry, folds, selection/reporting populations, schemas, or evidence
+shape. The failed run 1 is a dead diagnostic identity under commit `367b4a3`;
+after the repair commit, the preflight repeats under a fresh run ID derived
+from the new commit's short SHA.

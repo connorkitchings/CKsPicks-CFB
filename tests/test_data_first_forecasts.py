@@ -482,6 +482,136 @@ def test_missing_reporting_population_fails_instead_of_silent_skip():
     assert set(result.predictions["season"]) == {2022, 2023}
 
 
+def _feature_inputs():
+    population = pd.DataFrame.from_records(
+        [
+            {
+                "season": 2022,
+                "week": 1,
+                "game_id": 101,
+                "home_team": "Alpha",
+                "away_team": "Beta",
+                "forecast_eligible": True,
+            },
+            {
+                "season": 2022,
+                "week": 2,
+                "game_id": 102,
+                "home_team": "Beta",
+                "away_team": "Alpha",
+                "forecast_eligible": True,
+            },
+        ]
+    )
+    outcomes = pd.DataFrame.from_records(
+        [
+            {
+                "season": 2022,
+                "game_id": 101,
+                "completed": True,
+                "home_points": 35,
+                "away_points": 21,
+            },
+            {
+                "season": 2022,
+                "game_id": 102,
+                "completed": True,
+                "home_points": 14,
+                "away_points": 28,
+            },
+        ]
+    )
+    team_rows = []
+    for game_id, home, away in ((101, "Alpha", "Beta"), (102, "Beta", "Alpha")):
+        for team in (home, away):
+            team_rows.append(
+                {
+                    "candidate_id": "ppp__rho_0_60__exposure",
+                    "season": 2022,
+                    "game_id": game_id,
+                    "team": team,
+                    "offense_rating": 1.0,
+                    "defense_rating": -1.0,
+                }
+            )
+    team_states = pd.DataFrame.from_records(team_rows)
+    state_rows = []
+    for game_id, home, away, home_count, away_count in (
+        (101, "Alpha", "Beta", 5, 2),
+        (102, "Beta", "Alpha", 7, 9),
+    ):
+        for team, count in ((home, home_count), (away, away_count)):
+            for role in ("offense", "defense"):
+                state_rows.append(
+                    {
+                        "candidate_id": "ppp__rho_0_60__exposure",
+                        "season": 2022,
+                        "game_id": game_id,
+                        "team": team,
+                        "unit_role": role,
+                        "completed_games": count,
+                    }
+                )
+    rating_states = pd.DataFrame.from_records(state_rows)
+    offsets = pd.DataFrame.from_records(
+        [
+            {
+                "season": 2022,
+                "week": 1,
+                "game_id": 101,
+                "offset_margin": 0.5,
+                "offset_total": 1.0,
+            },
+            {
+                "season": 2022,
+                "week": 2,
+                "game_id": 102,
+                "offset_margin": 0.0,
+                "offset_total": 2.0,
+            },
+        ]
+    )
+    return population, outcomes, team_states, rating_states, offsets
+
+
+def test_feature_frame_sources_completed_games_from_rating_states():
+    population, outcomes, team_states, rating_states, offsets = _feature_inputs()
+    frame = runner._feature_frame(
+        population=population,
+        outcomes=outcomes,
+        team_states=team_states,
+        rating_states=rating_states,
+        offsets=offsets,
+    )
+    assert len(frame) == 2
+    by_game = frame.set_index("game_id")
+    assert int(by_game.loc[101, "completed_game_stage"]) == 2
+    assert int(by_game.loc[102, "completed_game_stage"]) == 4
+    # The 03 team-state parent carries no completed-game counter; the counts
+    # must come from the rating-state replay, never from a renamed team-state
+    # column (the latent defect the first Preview preflight exposed).
+    assert "completed_games" not in team_states.columns
+
+
+def test_feature_frame_rejects_duplicate_completed_counts():
+    population, outcomes, team_states, rating_states, offsets = _feature_inputs()
+    duplicated = pd.concat(
+        [
+            rating_states,
+            rating_states[rating_states["unit_role"].eq("offense")],
+        ],
+        ignore_index=True,
+    )
+    with pytest.raises(runner.ForecastRunError, match="not unique"):
+        runner._feature_frame(
+            population=population,
+            outcomes=outcomes,
+            team_states=team_states,
+            rating_states=duplicated,
+            offsets=offsets,
+        )
+
+
 def test_head_metrics_block_is_deterministic_and_complete():
     frame = _head_frame()
     first_computation = evaluate_heads(

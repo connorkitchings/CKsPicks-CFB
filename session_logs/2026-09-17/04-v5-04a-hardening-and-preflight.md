@@ -44,10 +44,22 @@
 - [x] `git diff --check`.
 
 ## Amendments and Blockers
-- None material. Test-premise corrections are mechanical and preserve the plan's acceptance criteria.
+- **Amendment 1 (2026-09-17):** First preflight attempt (run 1 of
+  `forecast-v1-20260917-367b4a3-04a`, commit `367b4a3`) failed at
+  `_feature_frame`: `completed_games` does not exist in the 03
+  `possession_team_state` contract. Repair streams `possession_rating_state`
+  and sources per-team counts from the retained candidate's offense rows with
+  uniqueness validation; `_feature_frame` gained direct unit coverage
+  (16 focused tests). Mechanical only — recorded in the plan's Amendments.
+  The failed run is a dead diagnostic identity; preflight repeats under a
+  fresh run ID after the repair commit. Failed-run stderr (heartbeats through
+  `offsets_built` at ~448 s, then the KeyError) is retained in the evidence
+  temp directory.
 
 ## Handoff Notes
-- **Resume at:** User executes the hardening commit, then Task 7: three identical no-write preflight runs under `forecast-v1-20260917-<shortsha>-04a` with the committed full SHA and one captured UTC cutoff, evidence via `EVIDENCE_DIR="$(mktemp -d)"`, byte-compare all three.
-- **Watch out for:** No Preview identity before the commit; keep all three runs in one environment; long runtime expected (R2 parents + two horizons) — stderr heartbeat is the liveness signal; any mismatch/warning/gate failure = failed identity → repair + new commit; 04B rebase lands as Draft.
+- **Resume at:** User executes the repair commit, then Task 7 restarts with a fresh
+  run ID derived from the new commit short SHA, same captured cutoff
+  `2026-09-17T14:19:09Z`, three byte-equivalent runs.
+- **Watch out for:** No Preview identity before the commit; keep all three runs in one environment; long runtime expected (~8 min parent streaming + head evaluation; stderr heartbeat is the liveness signal); any mismatch/warning/gate failure = failed identity → repair + new commit; 04B rebase lands as Draft.
 
 **tags:** ["v5", "forecasting", "hardening", "preflight", "terra"]

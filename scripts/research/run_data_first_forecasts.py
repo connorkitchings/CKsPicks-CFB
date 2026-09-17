@@ -33,7 +33,10 @@ from cks_picks_cfb.data.data_first_forecast_v1 import (
     validate_config,
     verify_rating_parent,
 )
-from cks_picks_cfb.data.data_first_possession_rating_v1 import TEAM_STATE_COLUMNS
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    RATING_STATE_COLUMNS,
+    TEAM_STATE_COLUMNS,
+)
 from cks_picks_cfb.data.lake import (
     canonical_frame_digest,
     partition_order_key,
@@ -170,7 +173,12 @@ def _read_json(storage: Any, uri: str) -> tuple[dict[str, Any], bytes]:
 
 
 def _stream_partitioned(
-    storage: Any, *, value: Mapping[str, Any], dataset: str, schema: str
+    storage: Any,
+    *,
+    value: Mapping[str, Any],
+    dataset: str,
+    schema: str,
+    columns: list[str],
 ) -> pd.DataFrame:
     ref = _partitioned_ref(value, name=dataset)
     if ref.dataset != dataset or ref.schema_version != schema:
@@ -180,11 +188,22 @@ def _stream_partitioned(
         _read_child(storage, dataset=dataset, schema_version=schema, part=part)
         for part in parts
     ]
-    return (
-        _concat_frames(frames, columns=list(TEAM_STATE_COLUMNS))
-        if frames
-        else pd.DataFrame()
-    )
+    return _concat_frames(frames, columns=columns) if frames else pd.DataFrame()
+
+
+def _completed_game_counts(rating_states: pd.DataFrame) -> pd.DataFrame:
+    """Per-team completed-game counts from the 03 rating-state replay.
+
+    ``completed_games`` lives in ``possession_rating_state`` (per unit role),
+    not in ``possession_team_state``; offense and defense rows must agree.
+    """
+    counts = rating_states[
+        rating_states["candidate_id"].eq(REQUIRED_RATING_CANDIDATE)
+        & rating_states["unit_role"].eq("offense")
+    ][["season", "game_id", "team", "completed_games"]]
+    if counts.duplicated(subset=["season", "game_id", "team"]).any():
+        raise ForecastRunError("completed-game counts are not unique per team-game")
+    return counts
 
 
 def _feature_frame(
@@ -192,6 +211,7 @@ def _feature_frame(
     population: pd.DataFrame,
     outcomes: pd.DataFrame,
     team_states: pd.DataFrame,
+    rating_states: pd.DataFrame,
     offsets: pd.DataFrame,
 ) -> pd.DataFrame:
     games = population[population["forecast_eligible"].astype(bool)].merge(
@@ -208,7 +228,6 @@ def _feature_frame(
             "team": "home_team",
             "offense_rating": "home_offense",
             "defense_rating": "home_defense",
-            "completed_games": "home_completed",
         }
     )
     away = selected.rename(
@@ -216,8 +235,14 @@ def _feature_frame(
             "team": "away_team",
             "offense_rating": "away_offense",
             "defense_rating": "away_defense",
-            "completed_games": "away_completed",
         }
+    )
+    counts = _completed_game_counts(rating_states)
+    home_counts = counts.rename(
+        columns={"team": "home_team", "completed_games": "home_completed"}
+    )
+    away_counts = counts.rename(
+        columns={"team": "away_team", "completed_games": "away_completed"}
     )
     frame = games.merge(
         home[
@@ -227,7 +252,6 @@ def _feature_frame(
                 "home_team",
                 "home_offense",
                 "home_defense",
-                "home_completed",
             ]
         ],
         on=["season", "game_id", "home_team"],
@@ -242,9 +266,20 @@ def _feature_frame(
                 "away_team",
                 "away_offense",
                 "away_defense",
-                "away_completed",
             ]
         ],
+        on=["season", "game_id", "away_team"],
+        how="inner",
+        validate="one_to_one",
+    )
+    frame = frame.merge(
+        home_counts[["season", "game_id", "home_team", "home_completed"]],
+        on=["season", "game_id", "home_team"],
+        how="inner",
+        validate="one_to_one",
+    )
+    frame = frame.merge(
+        away_counts[["season", "game_id", "away_team", "away_completed"]],
         on=["season", "game_id", "away_team"],
         how="inner",
         validate="one_to_one",
@@ -434,8 +469,17 @@ def preflight(
         value=rating["output_refs"]["team_states"],
         dataset="possession_team_state",
         schema="data_first_possession_team_state_v1",
+        columns=list(TEAM_STATE_COLUMNS),
     )
     progress.emit("source_streamed", source="team_states", rows=len(team_states))
+    rating_states = _stream_partitioned(
+        storage,
+        value=rating["output_refs"]["rating_states"],
+        dataset="possession_rating_state",
+        schema="data_first_possession_rating_state_v1",
+        columns=list(RATING_STATE_COLUMNS),
+    )
+    progress.emit("source_streamed", source="rating_states", rows=len(rating_states))
     offsets = build_offsets(
         rating_inputs.population,
         scoring_events,
@@ -447,6 +491,7 @@ def preflight(
         population=rating_inputs.population,
         outcomes=rating_inputs.outcomes,
         team_states=team_states,
+        rating_states=rating_states,
         offsets=offsets.offsets,
     )
     bridge = config["bridge"]
