@@ -1,10 +1,10 @@
 # V5-04A: Forecast Offsets, Bridge Registry, and Horizon Tournament
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-17, authorizing 04A execution.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-forecast-offsets-and-horizons.md`.
+- **Implementation log:** `session_logs/2026-09-17/02-v5-forecast-offsets-and-horizons.md`.
 - **Commit policy:** Separate code checkpoint; user executes Git before any Preview run identity is selected.
 
 ## Goal

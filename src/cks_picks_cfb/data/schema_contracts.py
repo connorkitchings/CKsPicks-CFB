@@ -9,6 +9,16 @@ from typing import Any, Mapping
 
 import pandas as pd
 
+from cks_picks_cfb.data.data_first_forecast_v1 import (
+    CANDIDATE_MANIFEST_COLUMNS,
+    FORECAST_CALIBRATION_COLUMNS,
+    FORECAST_DATASETS,
+    FORECAST_MODEL_COLUMNS,
+    FORECAST_PREDICTION_COLUMNS,
+    FORECAST_REGISTRY_COLUMNS,
+    FORECAST_SELECTION_COLUMNS,
+    WINDOW_COMPARISON_COLUMNS,
+)
 from cks_picks_cfb.data.data_first_phase3 import (
     PHASE3_ADJUSTED_COLUMNS,
     PHASE3_ADJUSTED_DATASET,
@@ -73,6 +83,30 @@ from cks_picks_cfb.data.data_first_phase4b import (
 from cks_picks_cfb.data.data_first_phase4b import (
     PREDICTION_COLUMNS as PHASE4B_PREDICTION_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    ATTRIBUTION_COLUMNS as POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    NOISE_FIT_COLUMNS as POSSESSION_RATING_NOISE_FIT_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    PREDICTION_COLUMNS as POSSESSION_RATING_PREDICTION_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    PRIOR_COLUMNS as POSSESSION_RATING_PRIOR_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    RATING_DATASETS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    RATING_REGISTRY_COLUMNS as POSSESSION_RATING_REGISTRY_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    RATING_STATE_COLUMNS as POSSESSION_RATING_STATE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    TEAM_STATE_COLUMNS as POSSESSION_RATING_TEAM_STATE_COLUMNS,
+)
 from cks_picks_cfb.data.data_first_possession_v1 import (
     COVERAGE_COLUMNS as POSSESSION_COVERAGE_COLUMNS,
 )
@@ -99,16 +133,6 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
 )
 from cks_picks_cfb.data.data_first_possession_v1 import (
     TERMINAL_COLUMNS as POSSESSION_TERMINAL_COLUMNS,
-)
-from cks_picks_cfb.data.data_first_possession_rating_v1 import (
-    ATTRIBUTION_COLUMNS as POSSESSION_RATING_ATTRIBUTION_COLUMNS,
-    NOISE_FIT_COLUMNS as POSSESSION_RATING_NOISE_FIT_COLUMNS,
-    PREDICTION_COLUMNS as POSSESSION_RATING_PREDICTION_COLUMNS,
-    PRIOR_COLUMNS as POSSESSION_RATING_PRIOR_COLUMNS,
-    RATING_DATASETS,
-    RATING_REGISTRY_COLUMNS as POSSESSION_RATING_REGISTRY_COLUMNS,
-    RATING_STATE_COLUMNS as POSSESSION_RATING_STATE_COLUMNS,
-    TEAM_STATE_COLUMNS as POSSESSION_RATING_TEAM_STATE_COLUMNS,
 )
 from cks_picks_cfb.data.data_first_repair_v2 import (
     AUXILIARY_COLUMNS as REPAIR_AUXILIARY_COLUMNS,
@@ -1114,6 +1138,30 @@ _POSSESSION_RATING_SCHEMAS: dict[str, DatasetSchema] = {
     ),
 }
 
+_FORECAST_SCHEMAS: dict[str, DatasetSchema] = {
+    FORECAST_DATASETS["forecast_registry"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["forecast_registry"][0], schema_version=FORECAST_DATASETS["forecast_registry"][1], required=FORECAST_REGISTRY_COLUMNS, keys=("horizon", "target"), nonnullable=FORECAST_REGISTRY_COLUMNS,
+    ),
+    FORECAST_DATASETS["forecast_model"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["forecast_model"][0], schema_version=FORECAST_DATASETS["forecast_model"][1], required=FORECAST_MODEL_COLUMNS, keys=("horizon", "target", "outer_season", "head"), integer_columns=("outer_season",), boolean_columns=("inner_fallback", "retained"), nonnullable=tuple(column for column in FORECAST_MODEL_COLUMNS if column != "fallback_reason"),
+    ),
+    FORECAST_DATASETS["forecast_prediction"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["forecast_prediction"][0], schema_version=FORECAST_DATASETS["forecast_prediction"][1], required=FORECAST_PREDICTION_COLUMNS, keys=("horizon", "head", "target", "season", "game_id"), integer_columns=("season", "week", "game_id", "completed_game_stage"), boolean_columns=("venue_unknown",), nonnullable=FORECAST_PREDICTION_COLUMNS,
+    ),
+    FORECAST_DATASETS["forecast_calibration"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["forecast_calibration"][0], schema_version=FORECAST_DATASETS["forecast_calibration"][1], required=FORECAST_CALIBRATION_COLUMNS, keys=("target", "season"), integer_columns=("season", "residual_count"), nonnullable=tuple(column for column in FORECAST_CALIBRATION_COLUMNS if column != "fallback_reason"),
+    ),
+    FORECAST_DATASETS["window_comparison"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["window_comparison"][0], schema_version=FORECAST_DATASETS["window_comparison"][1], required=WINDOW_COMPARISON_COLUMNS, keys=("target", "metric"), boolean_columns=("passes",), nonnullable=WINDOW_COMPARISON_COLUMNS,
+    ),
+    FORECAST_DATASETS["forecast_selection"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["forecast_selection"][0], schema_version=FORECAST_DATASETS["forecast_selection"][1], required=FORECAST_SELECTION_COLUMNS, keys=("selected_horizon", "target"), nonnullable=FORECAST_SELECTION_COLUMNS,
+    ),
+    FORECAST_DATASETS["candidate_manifest"][0]: DatasetSchema(
+        dataset=FORECAST_DATASETS["candidate_manifest"][0], schema_version=FORECAST_DATASETS["candidate_manifest"][1], required=CANDIDATE_MANIFEST_COLUMNS, keys=("identity_sha256",), nonnullable=CANDIDATE_MANIFEST_COLUMNS,
+    ),
+}
+
 _RATING_SCHEMA_BASES: dict[str, DatasetSchema] = {
     "rating_measurement_observations": DatasetSchema(
         dataset="rating_measurement_observations",
@@ -1818,6 +1866,13 @@ def schema_for(dataset: str, schema_version: str) -> DatasetSchema:
         return schema
     if dataset in _POSSESSION_RATING_SCHEMAS:
         schema = _POSSESSION_RATING_SCHEMAS[dataset]
+        if schema_version != schema.schema_version:
+            raise DatasetSchemaError(
+                f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"
+            )
+        return schema
+    if dataset in _FORECAST_SCHEMAS:
+        schema = _FORECAST_SCHEMAS[dataset]
         if schema_version != schema.schema_version:
             raise DatasetSchemaError(
                 f"{dataset} must use schema version {schema.schema_version}, got {schema_version}"

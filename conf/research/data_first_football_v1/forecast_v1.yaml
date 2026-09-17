@@ -1,0 +1,28 @@
+schema_version: data_first_forecast_config_v1
+environment: preview
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+rating_candidate: ppp__rho_0_60__exposure
+output_root: artifacts/research/data-first-football-v1/forecasts/runs
+horizons: [expanding, latest_five]
+offsets:
+  equivalent_games: 4
+  first_corpus_season: 2015
+  allowed_category: regulation_non_offense
+  allowed_period_class: regulation
+bridge:
+  reference_alpha: 10.0
+  alpha_grid: [0.1, 1.0, 10.0, 100.0]
+  scaling_floor: 0.05
+  inner_tolerance_pct: 0.5
+  minimum_improvement_pct: 0.5
+  maximum_regression_pct: 5.0
+selection:
+  outer_seasons: [2022, 2023, 2024, 2025]
+  bootstrap_replicates: 2000
+  bootstrap_seed: 20260908
+  bootstrap_confidence: 0.90
+calibration:
+  residual_floor: 1.0e-6
+  owned_by: v5_04b
+production_activation_authorized: false
