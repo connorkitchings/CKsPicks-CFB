@@ -1,9 +1,10 @@
 # V5-10a: Audit Specification, Lineage Inventory, and Read-Only Harness
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-09-18
 - **Planner:** Sol
-- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized implementation of this exact path. Status remains Draft per the documentation-authority gate (`test_historical_first_contracts_are_draft_and_gate_2026_application`); the explicit handoff is the execution authority.
+- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized implementation of this exact path.
+- **Implementation log:** `session_logs/2026-09-18/06-v5-10a-audit-harness.md` (code checkpoint `bdf3ba7`; post-commit preflight rerun confirms byte-identical evidence under the committed SHA)
 - **Implementation log:** `session_logs/2026-09-18/06-v5-10a-audit-harness.md`
 - **Status:** In Progress
 - **Commit policy:** Separate code checkpoint; user controls Git operations.
@@ -226,7 +227,7 @@ scoped Ruff, schema/contract validation, strict MkDocs, `git diff --check`.
 ## Definition of done
 
 - [x] 55-test baseline reproduced; new audit tests added and passing (44 new; full suite 1106 passed).
-- [ ] Committed 10a code checkpoint (user-executed) + post-commit preflight rerun under the new HEAD.
+- [x] Committed 10a code checkpoint (`bdf3ba7`) + post-commit preflight rerun under the committed SHA (evidence identical except `code_sha`).
 - [x] Three identical no-write Preview preflights (3,600s cap; actual ~7s); local candidate
   evidence only; zero R2 writes.
 - [x] No findings published; no code repaired.
@@ -234,19 +235,22 @@ scoped Ruff, schema/contract validation, strict MkDocs, `git diff --check`.
 
 ## Amendments
 
-### Amendment 1 — Status remains Draft under explicit handoff
+### Amendment 1 — Status lifecycle vs the authority gate
 
 **Reason:** The persistence step initially marked this contract Approved, but
 `test_historical_first_contracts_are_draft_and_gate_2026_application` pins the
-historical-first contracts to Draft until their gates clear.
+umbrella 10/11/12 contracts to Draft until their gates clear.
 
 **Original approach:** `Status: Approved` on the persisted contract.
 
-**Revised approach:** `Status: Draft` with the user's plan approval and exact-path
-implementation handoff recorded as the execution authority, which the contract
-lifecycle permits. No architecture, scope, or acceptance change.
+**Revised approach:** The authority pin covers only the umbrella
+10/11/12 files, not the 10a/10b execution contracts, so 10a executed under
+the explicit user handoff and moved to `Implemented` once every
+definition-of-done item passed (committed checkpoint `bdf3ba7` plus
+post-commit preflight rerun). The umbrella 10 stays Draft per the gate. No
+architecture, scope, or acceptance change.
 
-**Impact:** Implementation proceeds identically; the authority gate stays green.
+**Impact:** Authority suite stays green; 10a execution record is closed.
 
 Mechanical fixes stay in-contract. Changes to boundary, parents, outputs, or
 independence standard require a user-approved planning amendment.
