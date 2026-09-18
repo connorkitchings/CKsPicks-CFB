@@ -45,7 +45,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Certified 2026-09-17: run `possession-v1-ratings-20260917-d029526-cert` passed preflight, evidence-bound apply, independent verification, and idempotent repeat. Selected `ppp__rho_0_60__exposure`; retained manifest is the sole eligible 04 parent. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Approved.** Entry gate met: independently verified 03 ratings available. 04A Implemented 2026-09-17; 04B remains Draft pending separate approval. |
-| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Entry gate met (certified 04 candidate). Decomposed 2026-09-17 into Draft phases 05A/05B/05C; 05A authorized on approval, 05B/05C gated on prior certification. |
+| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Approved.** Entry gate met (certified 04 candidate). Decomposed 2026-09-17 into phases 05A/05B/05C; 05A and 05B Implemented and Preview-certified, 05C Approved 2026-09-18 pending implementation. |
 | 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
@@ -66,7 +66,7 @@ of the rating sequence. No promotion or serving change is authorized.
 | --- | --- |
 | 05A: [Readiness validation and frozen replay](2026-09-17/04-v5-05a-readiness-and-replay.md) | **Implemented 2026-09-17.** Certified Preview artifact `shadow-v1-20260917-cd07d8b-05a`: verified `blocked` readiness (no 2026 schedule/team-states), frozen-replay proof `e4d798bac7d3`, preflight/apply/verify/repeat passed. |
 | 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Implemented 2026-09-18.** Certified Preview freeze artifact `shadow-v1-20260918-73e8e9b-05b-freeze` and score artifact `shadow-v1-20260918-7aec1c8-05b-score`: measured freeze, outcome-versioned scoring, evidence counter, idempotent repeat verified. |
-| 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Draft.** Entry gate met (Implemented 05B); requires separate explicit user approval. Independent verifier, diagnostic rehearsal, refreshed readiness report, shadow runbook, Contract 06 handoff. |
+| 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Approved 2026-09-18.** Entry gate met (Implemented 05B); user approved the Draft contract as-is. Independent verifier, diagnostic rehearsal, refreshed readiness report, shadow runbook, Contract 06 handoff. |
 
 ### Certified foundations and superseded execution records
 
