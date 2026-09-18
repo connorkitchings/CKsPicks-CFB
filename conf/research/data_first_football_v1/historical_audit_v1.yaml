@@ -1,0 +1,30 @@
+schema_version: data_first_historical_audit_config_v1
+environment: preview
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+parents:
+  repair:
+    stage: repair
+    run_id: repair-v2-20260909T1417Z
+    manifest_uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json
+    config_path: conf/research/data_first_football_v1/repair_v2.yaml
+  measurements:
+    stage: measurements
+    run_id: possession-v1-measurements-20260915-18fb0aa-r6
+    manifest_uri: artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260915-18fb0aa-r6/measurement-manifest.json
+    config_path: conf/research/data_first_football_v1/possession_measurement_v1.yaml
+  ratings:
+    stage: ratings
+    run_id: possession-v1-ratings-20260917-d029526-cert
+    manifest_uri: artifacts/research/data-first-football-v1/possession-v1/ratings/runs/possession-v1-ratings-20260917-d029526-cert/retained-rating-manifest.json
+    config_path: conf/research/data_first_football_v1/possession_rating_v1.yaml
+  forecasts:
+    stage: forecasts
+    run_id: forecast-v1-20260917-4600ddd-04b
+    manifest_uri: artifacts/research/data-first-football-v1/forecasts/runs/forecast-v1-20260917-4600ddd-04b/forecast-manifest.json
+    config_path: conf/research/data_first_football_v1/forecast_v1.yaml
+output_root: artifacts/research/data-first-football-v1/audits/historical-foundation-v1/runs
+preflight_timeout_seconds: 3600
+apply_timeout_seconds: 600
+verify_timeout_seconds: 600
+production_activation_authorized: false
