@@ -278,10 +278,10 @@ def _build_synthetic_v5_predictions(
                     "game_id": gid,
                     "target": target,
                     "mean": 0.0,
-                    "variance": None,
-                    "interval_lower_95": None,
-                    "interval_upper_95": None,
-                    "offset": None,
+                    "variance": 100.0,
+                    "interval_lower_95": -19.6,
+                    "interval_upper_95": 19.6,
+                    "offset": 0.0,
                     "model_ref": candidate,
                     "state_ref": candidate,
                 }
@@ -303,6 +303,7 @@ def _plan_evidence(
     dataset_freeze, schema_freeze = SHADOW_DATASETS["shadow_freeze"]
     dataset_pred, schema_pred = SHADOW_DATASETS["shadow_prediction"]
     validate_frame(freeze_plan.freeze_record, schema_for(dataset_freeze, schema_freeze))
+    validate_frame(freeze_plan.predictions, schema_for(dataset_pred, schema_pred))
 
     freeze_sha = canonical_frame_digest(
         freeze_plan.freeze_record, columns=list(SHADOW_FREEZE_COLUMNS)

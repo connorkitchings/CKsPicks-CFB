@@ -591,16 +591,42 @@ def plan_freeze(
     pred_base["season"] = int(season)
     pred_base["week"] = int(week)
     pred_base["run_id"] = run_id
-    for col in (
-        "variance",
-        "interval_lower_95",
-        "interval_upper_95",
-        "offset",
-        "model_ref",
-        "state_ref",
+    if "variance" not in pred_base.columns or pred_base["variance"].isna().any():
+        pred_base["variance"] = pred_base.get(
+            "variance", pd.Series(dtype=float)
+        ).fillna(100.0)
+    if (
+        "interval_lower_95" not in pred_base.columns
+        or pred_base["interval_lower_95"].isna().any()
     ):
-        if col not in pred_base.columns:
-            pred_base[col] = None
+        pred_base["interval_lower_95"] = pred_base.get(
+            "interval_lower_95", pd.Series(dtype=float)
+        ).fillna(
+            pred_base["mean"].astype(float)
+            - 1.96 * pred_base["variance"].astype(float).apply(_math.sqrt)
+        )
+    if (
+        "interval_upper_95" not in pred_base.columns
+        or pred_base["interval_upper_95"].isna().any()
+    ):
+        pred_base["interval_upper_95"] = pred_base.get(
+            "interval_upper_95", pd.Series(dtype=float)
+        ).fillna(
+            pred_base["mean"].astype(float)
+            + 1.96 * pred_base["variance"].astype(float).apply(_math.sqrt)
+        )
+    if "offset" not in pred_base.columns or pred_base["offset"].isna().any():
+        pred_base["offset"] = pred_base.get("offset", pd.Series(dtype=float)).fillna(
+            0.0
+        )
+    if "model_ref" not in pred_base.columns or pred_base["model_ref"].isna().any():
+        pred_base["model_ref"] = pred_base.get(
+            "model_ref", pd.Series(dtype=str)
+        ).fillna(candidate)
+    if "state_ref" not in pred_base.columns or pred_base["state_ref"].isna().any():
+        pred_base["state_ref"] = pred_base.get(
+            "state_ref", pd.Series(dtype=str)
+        ).fillna(candidate)
 
     predictions_df = pred_base[
         [
@@ -772,15 +798,15 @@ def score_freeze(
         big_phi_z = 0.5 * (1 + _math.erf(z / _math.sqrt(2)))
         return sigma * (2 * phi_z + z * (2 * big_phi_z - 1) - 1 / _math.sqrt(_math.pi))
 
-    def _cov95(row: Any) -> Any:
+    def _cov95(row: Any) -> bool:
         lo, hi = row.get("interval_lower_95"), row.get("interval_upper_95")
         if lo is None or hi is None:
-            return None
+            return False
         try:
             actual = float(row["actual"])
-            return 1.0 if float(lo) <= actual <= float(hi) else 0.0
+            return bool(float(lo) <= actual <= float(hi))
         except (TypeError, ValueError):
-            return None
+            return False
 
     scored["crps"] = scored.apply(_crps, axis=1)
     scored["coverage_95"] = scored.apply(_cov95, axis=1)
