@@ -99,15 +99,24 @@ def check_adjustment_chronology(
 
 
 def accumulate_centering(state: dict[str, Any], frame: pd.DataFrame) -> None:
-    """Accumulate exposure-weighted means matching the four-pass procedure."""
+    """Accumulate exposure-weighted baseline and adjusted values by cutoff."""
     eligible = frame[pd.to_numeric(frame["denominator"], errors="coerce").fillna(0) > 0]
     for key, values in eligible.groupby(
         ["target_week_cutoff_utc", "measurement_id", "unit_role"], sort=False
     ):
         weights = pd.to_numeric(values["denominator"], errors="coerce").fillna(0)
+        baseline = pd.to_numeric(values["iteration_zero_value"], errors="coerce")
         adjusted = pd.to_numeric(values["iteration_four_value"], errors="coerce")
-        entry = state.setdefault(key, {"weighted_sum": 0.0, "weight": 0.0})
-        entry["weighted_sum"] += float((adjusted * weights).sum())
+        entry = state.setdefault(
+            key,
+            {
+                "baseline_weighted_sum": 0.0,
+                "adjusted_weighted_sum": 0.0,
+                "weight": 0.0,
+            },
+        )
+        entry["baseline_weighted_sum"] += float((baseline * weights).sum())
+        entry["adjusted_weighted_sum"] += float((adjusted * weights).sum())
         entry["weight"] += float(weights.sum())
 
 
@@ -117,20 +126,20 @@ def check_league_centering(
     *,
     tolerance: float = 0.05,
 ) -> list[dict[str, Any]]:
-    worst = 0.0
+    worst_delta = 0.0
     worst_key: Any = None
     groups = 0
     for key, entry in state.items():
-        if entry.get("weight", entry.get("count", 0)) == 0:
+        if entry.get("weight", 0) == 0:
             continue
         groups += 1
-        mean = entry.get("weighted_sum", entry.get("sum", 0.0)) / entry.get(
-            "weight", entry.get("count", 1)
-        )
-        if abs(mean) > abs(worst):
-            worst = mean
+        baseline_mean = entry["baseline_weighted_sum"] / entry["weight"]
+        adjusted_mean = entry["adjusted_weighted_sum"] / entry["weight"]
+        delta = adjusted_mean - baseline_mean
+        if abs(delta) > abs(worst_delta):
+            worst_delta = delta
             worst_key = key
-    status = "pass" if groups and abs(worst) <= tolerance else "fail"
+    status = "pass" if groups and abs(worst_delta) <= tolerance else "fail"
     if not groups:
         status = "fail"
     return [
@@ -139,8 +148,9 @@ def check_league_centering(
             "adjustment",
             "football_meaning",
             status,
-            f"exposure-weighted iteration-4 cutoff means within ±{tolerance} of league center",
-            f"groups={groups} worst_mean={worst:.4f} at {worst_key}",
+            "exposure-weighted iteration-4 cutoff means retain the iteration-0 league baseline "
+            f"within ±{tolerance}",
+            f"groups={groups} worst_baseline_delta={worst_delta:.4f} at {worst_key}",
             "adjusted history",
             [history_uri],
         )
@@ -392,19 +402,23 @@ def check_rating_states(
     kickoffs: Mapping[tuple[int, int], str],
     states_uri: str,
 ) -> list[dict[str, Any]]:
-    """States precede kickoff; variances positive; weights bounded."""
+    """State cutoffs equal their target kickoff; variances and weights are valid."""
     problems: list[str] = []
-    bad_cutoff = 0
+    mismatched_cutoff = 0
     checked = 0
     for row in states.itertuples():
         checked += 1
         kickoff = kickoffs.get((int(row.season), int(row.game_id)))
         cutoff = pd.to_datetime(row.cutoff_utc, utc=True, errors="coerce")
         kickoff_at = pd.to_datetime(kickoff, utc=True, errors="coerce")
-        if pd.isna(cutoff) or pd.isna(kickoff_at) or cutoff >= kickoff_at:
-            bad_cutoff += 1
-    if bad_cutoff:
-        problems.append(f"cutoff_at_or_after_kickoff={bad_cutoff}/{checked}")
+        if (
+            pd.isna(cutoff)
+            or pd.isna(kickoff_at)
+            or abs(cutoff - kickoff_at) > pd.Timedelta(seconds=1)
+        ):
+            mismatched_cutoff += 1
+    if mismatched_cutoff:
+        problems.append(f"cutoff_not_target_kickoff={mismatched_cutoff}/{checked}")
     bad_variance = states[states["rating_variance"].astype(float) <= 0]
     if len(bad_variance):
         problems.append(f"nonpositive_variance={len(bad_variance)}")
@@ -428,7 +442,7 @@ def check_rating_states(
             "ratings",
             "chronology",
             "pass" if not problems else "fail",
-            "cutoffs precede kickoff; positive variance; weights in [0, 1)",
+            "cutoffs equal target kickoff; positive variance; weights in [0, 1)",
             f"rows={len(states)} " + ("ok" if not problems else "; ".join(problems)),
             "rating states",
             [states_uri],

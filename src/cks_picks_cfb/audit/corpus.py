@@ -719,20 +719,36 @@ def check_unresolved_quarantine(
             nonzero[nonzero != 0].index.get_level_values("team").astype(str),
         )
     )
+    if not keys:
+        return [
+            result(
+                "corpus.ledger.unresolved_quarantine",
+                "football_semantics",
+                "coverage",
+                "pass",
+                "unresolved team-games quarantined from usable PPP",
+                json.dumps({"nonzero_unresolved_keys": 0, "affected_count": 0}),
+                "scoring events + observations",
+                [events_uri],
+            )
+        ]
     ppp = observations[
         (observations["measurement_id"] == "ppp")
         & (observations["usable_exposure"].fillna(0).astype(float) > 0)
-    ]
+    ].copy()
+    # A defense row records the opponent's offensive numerator.  Quarantine
+    # against that owner, not against the team whose defensive view is stored.
+    ppp["_offense_team"] = ppp["team"].astype(str)
+    defense = ppp["unit_role"].astype(str) == "defense"
+    if defense.any():
+        ppp.loc[defense, "_offense_team"] = ppp.loc[defense, "opponent"].astype(str)
     leaked = ppp[
-        ppp.apply(
-            lambda row: (
-                int(row["season"]),
-                int(row["game_id"]),
-                str(row["team"]),
-            )
-            in keys,
-            axis=1,
-        )
+        [
+            (int(season), int(game_id), str(offense_team)) in keys
+            for season, game_id, offense_team in ppp[
+                ["season", "game_id", "_offense_team"]
+            ].itertuples(index=False, name=None)
+        ]
     ]
     return [
         result(
@@ -745,7 +761,14 @@ def check_unresolved_quarantine(
                 {
                     "nonzero_unresolved_keys": len(keys),
                     **compact_keys(
-                        leaked, ["season", "game_id", "team", "measurement_id"]
+                        leaked,
+                        [
+                            "season",
+                            "game_id",
+                            "team",
+                            "_offense_team",
+                            "measurement_id",
+                        ],
                     ),
                 },
                 sort_keys=True,

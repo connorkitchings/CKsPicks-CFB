@@ -81,3 +81,27 @@
   and format check pass; the focused audit and corpus suites pass (`72
   passed`). A second user-controlled code checkpoint is required before the
   accepted full-corpus dry run can be bound to a clean SHA.
+
+## Continuation: committed full-corpus dry run review
+
+- A fresh read-only full-corpus run bound to clean checkpoint `f538ace`
+  completed in local temporary storage with 92 checks and seven findings. It
+  did not write R2. Its candidate evidence digest is
+  `1d9f108d5ff3792c31e203c6a382cd78ecea204a0b49d085d1f9128296015571` and
+  remains rejected diagnostic evidence because review found three more
+  audit-engine errors.
+- Corrected the audit checks rather than altering the candidate evidence:
+  unresolved scoring now follows the offensive owner for defense rows;
+  weighted four-pass centering preserves the iteration-zero league baseline
+  rather than asserting a zero mean; and a rating state correctly uses its
+  target game's kickoff as its cutoff. Added focused regression cases for all
+  three conditions.
+- The candidate score-ledger excess is a genuine data finding, not an audit
+  error: 2015 Kentucky game `400603867` records 28 ledger points against the
+  repaired final of 26, including two distinct two-point non-offense ledger
+  increments. The Repair import-boundary blocker and forecast final-fit and
+  reconstruction findings also remain candidates for the rerun.
+- Validation after the corrections: focused audit and corpus suites with
+  warnings as errors (`76 passed`), scoped Ruff check and format check, and
+  `git diff --check` pass. The next accepted dry run requires a new clean
+  user-controlled checkpoint and must not reuse the rejected candidate file.

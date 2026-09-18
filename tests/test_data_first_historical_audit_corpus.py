@@ -191,6 +191,36 @@ def test_zero_unresolved_increment_does_not_quarantine() -> None:
     assert check["status"] == "pass"
 
 
+def test_unresolved_quarantine_uses_offense_owner_for_defense_rows() -> None:
+    events = _pop(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "team": "A",
+                "scoring_category": "unresolved",
+                "score_increment": 2,
+            }
+        ]
+    )
+    observations = _pop(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "team": "B",
+                "opponent": "A",
+                "unit_role": "defense",
+                "measurement_id": "ppp",
+                "usable_exposure": 10.0,
+            }
+        ]
+    )
+    (check,) = corpus.check_unresolved_quarantine(events, observations, "uri")
+    assert check["status"] == "fail"
+    assert '"_offense_team": "A"' in check["observed"]
+
+
 def test_score_reconciliation_blocks_excess_but_reports_shortfall() -> None:
     population = _pop(
         [
@@ -258,17 +288,29 @@ def test_adjustment_chronology_compares_equivalent_timestamps() -> None:
     assert check["status"] == "fail"
 
 
-def test_league_centering_detects_drift() -> None:
+def test_league_centering_detects_baseline_drift() -> None:
     state = {
         ("2021-09-01T00:00:00Z", "ppp", "offense"): {
-            "sum": 50.0,
-            "count": 10,
-            "cutoff": "x",
+            "baseline_weighted_sum": 20.0,
+            "adjusted_weighted_sum": 50.0,
+            "weight": 10.0,
         }
     }
     (check,) = corpus_ratings.check_league_centering(state, "uri")
     assert check["status"] == "fail"
-    assert "worst_mean=5.0000" in check["observed"]
+    assert "worst_baseline_delta=3.0000" in check["observed"]
+
+
+def test_league_centering_allows_nonzero_preserved_baseline() -> None:
+    state = {
+        ("2021-09-01T00:00:00Z", "ppp", "offense"): {
+            "baseline_weighted_sum": 22.0,
+            "adjusted_weighted_sum": 22.0,
+            "weight": 10.0,
+        }
+    }
+    (check,) = corpus_ratings.check_league_centering(state, "uri")
+    assert check["status"] == "pass"
 
 
 def test_prior_chronology_detects_future_training_and_gap() -> None:
@@ -350,6 +392,43 @@ def test_registry_selection_detects_wrong_winner() -> None:
     )
     assert results[0]["status"] == "pass"
     assert results[1]["status"] == "fail"
+
+
+def test_rating_state_cutoff_matches_target_kickoff() -> None:
+    states = _pop(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "cutoff_utc": "2021-09-01 00:00:00+00:00",
+                "rating_variance": 1.0,
+                "evidence_weight": 0.0,
+                "rating_mean": 0.0,
+            }
+        ]
+    )
+    kickoffs = {(2021, 1): "2021-09-01T00:00:00Z"}
+    (check,) = corpus_ratings.check_rating_states(states, kickoffs, "uri")
+    assert check["status"] == "pass"
+
+
+def test_rating_state_cutoff_rejects_non_target_game_time() -> None:
+    states = _pop(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "cutoff_utc": "2021-09-01T00:00:01Z",
+                "rating_variance": 1.0,
+                "evidence_weight": 0.0,
+                "rating_mean": 0.0,
+            }
+        ]
+    )
+    kickoffs = {(2021, 1): "2021-09-01T00:00:03Z"}
+    (check,) = corpus_ratings.check_rating_states(states, kickoffs, "uri")
+    assert check["status"] == "fail"
+    assert "cutoff_not_target_kickoff=1/1" in check["observed"]
 
 
 def test_final_fit_missing_is_blocker_policy() -> None:
