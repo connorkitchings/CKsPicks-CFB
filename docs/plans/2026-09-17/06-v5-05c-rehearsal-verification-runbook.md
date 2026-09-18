@@ -1,11 +1,17 @@
 # V5-05C: Diagnostic Rehearsal, Verification, and Runbook
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved the Draft contract as-is on 2026-09-18, after 05B certification and its documentation commit (`edea961`).
 - **Implementation log:** `session_logs/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
+- **Certified rehearsal run:** `shadow-v1-20260918-6dc87e0-05c` (code checkpoint
+  `6dc87e0`; preflight 431.6s; apply; independent verify; idempotent
+  `already_applied` repeat). Rehearsal manifest: 7/7 cases pass, qualifying 0,
+  replay `e4d798bac7d3104e…` byte-identical to the certified 05A proof. The
+  independent verifier additionally confirms the certified 05A readiness,
+  05B freeze, and 05B score artifacts from source datasets.
 
 ## Goal
 
@@ -201,13 +207,30 @@ V4/Neon/web diffs); R2 inventory (Preview shadow paths only).
 
 ## Definition of Done
 
-- [ ] Independent verifier reconstructs all six records without producer imports.
-- [ ] Diagnostic rehearsal (with negatives) verified end-to-end + idempotent.
-- [ ] Real-season readiness report refreshed with verified verdict and reasons.
-- [ ] Shadow runbook complete with verbatim commands and 06 handoff.
-- [ ] No rehearsal counts prospectively; zero production/Neon/web writes proven.
-- [ ] All quality gates pass; session logs complete.
-- [ ] Umbrella V5-05 Implemented; Contract 06 entry state recorded (ready or still-blocked).
+- [x] Independent verifier reconstructs all six records without producer imports (AST-enforced; producer-perturbation, tampered-bytes, wrong-parent fixtures rejected with named errors).
+- [x] Diagnostic rehearsal (with negatives) verified end-to-end + idempotent.
+- [x] Real-season readiness report refreshed with verified verdict and reasons (2026 W4 `blocked`; historical sections preserved).
+- [x] Shadow runbook complete with verbatim commands and 06 handoff (`docs/ops/v5_shadow_runbook.md`).
+- [x] No rehearsal counts prospectively; zero production/Neon/web writes proven (16-object R2 shadow inventory; worktree diff touches only research/docs/test/lake-reader files).
+- [x] All quality gates pass; session logs complete.
+- [x] Umbrella V5-05 Implemented; Contract 06 entry state recorded (still-blocked).
+
+## Certification record (2026-09-18, Preview)
+
+- Preflight: `shadow-v1-20260918-6dc87e0-05c`, 431.6s — readiness `ready` on
+  the 2025 W10 historical slate, replay `e4d798bac7d3104e…` byte-identical,
+  freeze 45 paired at T-2h, score 45 paired (MAE margin 7.0), counter 0
+  qualifying, all 6 negatives disposed with expected reasons.
+- Apply: `publication-plan.json` first,
+  `lake/gold/dataset=shadow_rehearsal/...` record, terminal
+  `rehearsal-manifest.json` last.
+- Independent verify: rehearsal 7/7 cases confirmed, signed
+  `verification/verifier-manifest.json` written idempotently; certified 05A
+  readiness (`blocked`, all six sources), 05B freeze (45 paired, digest
+  `16ae8420df3a…`), and 05B score (MAE 7.0/51.0, 1 qualifying slate)
+  reconstructed from source datasets.
+- Idempotent repeat: rehearsal apply → `already_applied`; verifier rerun →
+  identical bytes.
 
 ## Amendments
 
@@ -216,3 +239,21 @@ logged if output order, bytes, plans, digests, identities, and acceptance
 criteria are unchanged. Any change to sources, math, timing rules, population
 gates, schemas, eligibility, verification independence, or production
 boundaries requires user-approved replanning.
+
+- **Amendment 1 (2026-09-18, Terra):** `iter_partitioned_dataset` part-key
+  check is set-based instead of order-based. The partitioned writer stores
+  part partitions with canonically sorted keys, so the check-order literal
+  made the certified 05B `shadow_evaluation` dataset (partition keys
+  `season, week, outcome_version`) unreadable through the generic reader. No
+  stored bytes, digests, or identities change; all alphabetical-key datasets
+  behave identically.
+- **Amendment 2 (2026-09-18, Terra):** the 05C verifier loads the readiness
+  population source through the compact-or-partitioned generic loader. The
+  certified R6 `population` output is partitioned, not compact. No stored
+  bytes or interfaces change; reconstruction semantics are unchanged.
+- **Authority-test lifecycle rule (2026-09-18, Terra):** the V5 contract
+  lifecycle test now accepts umbrella progression (`04-` may be Implemented;
+  umbrella contracts may move Approved → In Progress → Implemented) and the
+  plan-index 04 row was corrected to Implemented. Fixes a pre-existing
+  failure on clean `276fafc`; contract statuses and index rows remain
+  cross-checked for accuracy.

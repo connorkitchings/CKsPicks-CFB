@@ -304,12 +304,10 @@ def _load_readiness_sources(
     repair = chain["repair"]
     rating = chain["rating"]
 
-    population = read_dataset(
+    population = _load_ref_frame(
         storage,
-        _dataset_ref(
-            (measurement.get("output_refs") or {}).get("population") or {},
-            name="measurement:population",
-        ),
+        (measurement.get("output_refs") or {}).get("population") or {},
+        name="measurement:population",
     )
     scoring_events = _load_ref_frame(
         storage,

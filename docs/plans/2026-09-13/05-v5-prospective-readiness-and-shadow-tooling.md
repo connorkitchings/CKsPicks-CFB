@@ -1,10 +1,10 @@
 # V5-05: Prospective Readiness and Shadow-Operation Tooling
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; execution requires verified forecast parents.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-prospective-readiness-and-shadow-tooling.md`.
+- **Implementation log:** `session_logs/2026-09-17/09-v5-05-execution-decomposition-planning.md`, `session_logs/2026-09-17/10-v5-05a-readiness-and-replay.md`, `session_logs/2026-09-17/12-v5-05b-freeze-score-ledger.md`, `session_logs/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
 - **Commit policy:** Separate code and rehearsal/readiness checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -183,3 +183,15 @@ decomposition on 2026-09-17, authorizing 05A execution on approval of its
 contract; 05B remains Draft until 05A has a clean committed SHA and reviewed
 deterministic preflight evidence, and 05C remains Draft until 05B certifies.
 V5-05 remains Approved and is not complete until 05C certifies.
+
+## Umbrella closure (2026-09-18)
+
+All three phases are Implemented and Preview-certified:
+05A (`shadow-v1-20260917-cd07d8b-05a`), 05B freeze/score
+(`shadow-v1-20260918-73e8e9b-05b-freeze`,
+`shadow-v1-20260918-7aec1c8-05b-score`), 05C rehearsal
+(`shadow-v1-20260918-6dc87e0-05c`, 7/7 cases, qualifying 0). The independent
+verifier confirms every artifact end-to-end from source datasets. The verified
+real-season readiness remains `blocked` (no 2026 measurement/team-state
+parents): tooling is complete, Contract 06 cannot yet collect eligible
+evidence. Umbrella V5-05 is **Implemented**.
