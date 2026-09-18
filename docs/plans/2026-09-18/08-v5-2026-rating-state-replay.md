@@ -23,6 +23,12 @@ when that manifest exists in Preview R2. The historical 03 retained manifest
 (`possession-v1-ratings-20260917-d029526-cert`) and its selection stay
 frozen and untouched.
 
+**Historical-first deferral (2026-09-18):** Do not execute this approved
+contract until Contracts 10-12 close, the user explicitly accepts historical
+readiness, and 07/08 are re-reviewed with the frozen design, exact eligible
+artifacts, through-2025 final fit/calibration, selected-prior inputs, and
+timestamp provenance. Replaying 2026 results never creates prospective evidence.
+
 There are no 2026 team states at planning time. Historical rating states are
 not modified, re-selected, or inherited as 2026 evidence.
 

@@ -2,7 +2,7 @@
 
 > **Status:** Active (V5-05C, 2026-09-18) · **Environment:** Preview R2 only ·
 > **Production authority:** V4 is unchanged; nothing here writes Neon, web, or
-> production state · **Next gate:** Contract 06 (prospective evidence)
+> production state · **Next gate:** Historical Contracts 10–12
 
 ## Purpose and authority
 
@@ -22,8 +22,10 @@ Two evidence classes exist and never mix:
 
 Current verified state: **live readiness is `blocked`** (see the
 [verified readiness assessment](../research/2026-09-17-v5-live-readiness-assessment.md)).
-Only diagnostic operations may run until the 2026 measurement/rating pipelines
-exist.
+Only diagnostic operations may run. Contracts 10-12 must close and historical
+readiness must be explicitly accepted before the deferred 2026 application path
+is re-reviewed. A diagnostic rehearsal or retrospective replay never counts as
+forecast-quality or prospective evidence.
 
 ## Pinned parents (exact URIs)
 

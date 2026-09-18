@@ -1,6 +1,6 @@
 # V5-04B: Uncertainty Calibration, Candidate Freeze, and Artifact Certification
 
-- **Status:** Implemented
+- **Status:** In Progress
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-17.
@@ -460,3 +460,23 @@ Mechanical writer batching, checkpointing, or observability changes may be
 logged if output order, bytes, plans, digests, identities, and acceptance
 criteria are unchanged. Any change to sources, math, registry, folds, gates,
 schemas, eligibility, or verification independence requires user-approved replanning.
+
+### Amendment 2 — Historical-first verification correction (2026-09-18)
+
+**Reason:** Review of `forecast_verification.py` found that the present verifier
+checks manifest structure, signatures, identities, parent URIs, output labels,
+and selected horizon, but does not independently reconstruct the computations or
+read/compare the stored output datasets required by Task 5.
+
+**Original approach:** Treat the completed manifest-level verifier and recorded
+apply/repeat as computational certification of the forecast artifact.
+
+**Revised approach:** Preserve the artifact and all September 17 evidence as
+historical records, leave this contract `In Progress`, and require Contract 11
+to independently reconstruct and compare the complete forecast chain before
+restoring eligibility.
+
+**Impact:** No artifact, model, configuration, production system, or session log
+is changed. The artifact remains historical evidence but is not an eligible
+forecast parent and cannot supply certified downstream forecast eligibility;
+Contract 05 tooling completion does not remedy this gap.

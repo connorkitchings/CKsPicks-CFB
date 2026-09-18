@@ -58,16 +58,20 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | --- | --- | --- |
 | 00 | [Documentation alignment and methodology amendment](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
 | 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Approved — independent side task; reverify Week 2 outcomes/refs before closure. |
-| 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 Preview measurement manifest independently verified and idempotent. |
-| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — selected `ppp__rho_0_60__exposure`; retained manifest is the sole eligible rating parent for Contract 04. |
-| 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented 2026-09-17 — 04A offsets/bridge/horizons and 04B calibration/certification complete; frozen shadow candidate `forecast-v1-20260917-4600ddd-04b` at `expanding` horizon with alpha-10 reference heads and per-season calibration variances. |
-| 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — 05A readiness/replay, 05B freeze/score/ledger, and 05C verifier/rehearsal/runbook all certified; real-season readiness verified `blocked`. Contract 06 cannot collect eligible evidence until the 2026 measurement/rating pipelines exist. |
-| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved — blocked on verified, live-ready 05; six qualifying slates are not yet collected. |
+| 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 is retained historical evidence, subject to the full 10 audit. |
+| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
+| 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | In Progress — 04A is complete; 04B needs independent computational reconstruction before its historical forecast artifact can regain downstream eligibility. |
+| 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
+| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires 10-12, explicit acceptance of historical readiness, then later re-reviewed live application. |
+| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft — active next V5 work; audit the complete historical foundation through 2025. |
+| 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Draft — follows 10; independently reconstructs the forecast chain. |
+| 12 | [Historical results and readiness review](../plans/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Draft — follows 10/11; produces a historical readiness recommendation. |
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
-satisfy an unmet data dependency. The next ratings task is **03: possession
-rating estimation**, which may consume only the certified R6 measurement parent.
+satisfy an unmet data dependency. The active next work is Contracts 10-12:
+historical-foundation audit, independent forecast verification, and historical
+readiness review through 2025.
 
 ## Current checkpoint
 
@@ -90,15 +94,15 @@ and the complete selection, and an idempotent repeat. The retained manifest sele
 advancement gates) and is the sole eligible rating parent for Contract 04. Historical
 selection remains development evidence, not a prospective win; V4 production is unchanged.
 
-**Contract 04 forecast bridge is independently certified in Preview (2026-09-17).** Run
-`forecast-v1-20260917-4600ddd-04b` passed preflight (selected shared `expanding` horizon,
-alpha-10 reference heads on both targets), evidence-bound apply with the signed forecast
-manifest published last, independent verifier confirmation, and idempotent repeat. The
-retained candidate is the sole eligible forecast parent for Contract 05. Calibration
-variances: margin 361-375, total 311-326 across 2022-2025. Historical selection remains
-development evidence, not a prospective win; V4 production is unchanged.
+**Forecast eligibility correction (2026-09-18).** Run
+`forecast-v1-20260917-4600ddd-04b` remains an immutable historical artifact with recorded
+preflight, apply, and repeat evidence. The current verifier validates manifest metadata and
+reference labels, but it does not independently reconstruct the stored forecasts, offsets,
+bridge fits, calibration, or selection. Contract 04/04B is therefore In Progress and the
+artifact is not an eligible forecast parent until Contract 11 closes that gap. Historical
+selection remains development evidence, not a prospective win; V4 production is unchanged.
 
-**Contract 05 shadow tooling is independently certified in Preview (2026-09-18).**
+**Contract 05 shadow tooling is implemented in Preview (2026-09-18).**
 Rehearsal run `shadow-v1-20260918-6dc87e0-05c` passed a 431.6s preflight (readiness
 `ready` on the pinned 2025 W10 historical slate, replay byte-identical to the certified
 05A proof, freeze 45 paired at T-2h, score 45 paired, counter 0 qualifying, all 6
@@ -110,7 +114,10 @@ for 2026 W4 is re-verified `blocked` (no 2026 measurement rows, no 2026 team sta
 with the historical assessment preserved. The verifier fix for canonically sorted
 partition keys (Amendment 1) changes no stored bytes or digests.
 
-The possession-based rating methodology is specified (2026-09-11), amended
+The active next work is the full historical-foundation audit (Contract 10),
+forecast-verification closure (11), and historical results/readiness review
+(12), all through 2025. Only explicit acceptance of that review can trigger a
+re-review of the deferred 2026 application contracts. The possession-based rating methodology is specified (2026-09-11), amended
 2026-09-13. Its [original specification contract](../plans/2026-09-11/possession-rating-methodology-specification.md)
 remains an Implemented documentation milestone; the current
 [methodology](../modeling/possession_rating_methodology.md) reflects this package.

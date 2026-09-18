@@ -11,17 +11,24 @@
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 
-## Current V5 evaluation contract (2026-09-13)
+## Current V5 evaluation contract (2026-09-18)
 
 The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 and 02–06 govern current research. V5 ratings successor is distinct from V4
-feature schema v5. Repair v2, Phase 3 v2, and R6 possession measurements are
-certified in Preview. The next ratings task is 03: possession rating estimation,
-using only `possession-v1-measurements-20260915-18fb0aa-r6`;
+feature schema v5. Repair v2, Phase 3 v2, R6 possession measurements, and the
+retained rating artifact are historical evidence. The active work is the full
+audit through 2025, independent forecast verification, and historical readiness
+review;
 the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the status authority. The original Phase 4B retained manifest remains
 prohibited as a forecasting parent. Old reduced-population comparisons retain
 historical limits; the September 8 Phase 4A–6 runners are Superseded.
+
+The current forecast artifact does not have complete independent computational
+verification: its verifier checks the manifest and references without rebuilding
+the stored forecast chain. It cannot be treated as an eligible forecast parent.
+Contracts 06-09 are deferred until the historical review is accepted; a 2026
+replay or `live` timing field does not create prospective evidence.
 
 Use complete schedule-derived populations, 2015–2019 and 2021–2025 development
 history, and outer seasons 2018, 2019, 2021–2025. Exclude 2020 everywhere and 2026

@@ -1,6 +1,6 @@
 # V5-04: Forecast Bridge, Fitting Window, and Candidate Freeze
 
-- **Status:** Implemented
+- **Status:** In Progress
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User selected bridge-first forecasting, a bounded older-data comparison, optional later arithmetic, and approved the package with "Implement the proposed plan." on 2026-09-13.
@@ -235,3 +235,19 @@ deterministic, byte-equivalent no-write Preview preflight
 alpha-10 reference head on both targets; equal 3,659-game populations).
 04B is rebased onto the implemented 04A interfaces and remains Draft
 pending a separate explicit user approval.
+
+## Historical-first correction (2026-09-18)
+
+04A remains implemented and its historical preflight record is retained. The
+umbrella is reopened as **In Progress** because 04B's implemented verifier does
+not yet meet this contract's required independent reconstruction standard. It
+checks the forecast manifest and labels/references, but does not reconstruct the
+stored offsets, feature frames, bridge fits, calibration, horizon selection, or
+forecast records. The artifact remains inspectable historical evidence and
+`production_activation_authorized: false`; it is not an eligible forecast parent
+for downstream readiness or prospective collection.
+
+Contract [11](../2026-09-18/11-v5-forecast-verification-closure.md) must close
+the computational-verification gap after the full [10](../2026-09-18/10-v5-historical-foundation-audit.md).
+Only then may this umbrella return to `Implemented`. This correction preserves
+the September 17 record rather than changing it retroactively.

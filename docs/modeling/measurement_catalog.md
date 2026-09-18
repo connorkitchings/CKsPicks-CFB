@@ -8,9 +8,9 @@
 ## Current measurement checkpoint
 
 V5 ratings successor is distinct from V4 feature schema v5. Repair v2, Phase 3 v2,
-and R6 possession measurements are certified in Preview. The next ratings task is
-03: possession rating estimation, using only
-`possession-v1-measurements-20260915-18fb0aa-r6`. The original Phase 4B retained manifest
+and R6 possession measurements are certified in Preview. The active work is the
+full historical audit through 2025, then independent forecast verification and
+historical readiness review. The original Phase 4B retained manifest
 remains prohibited as a forecasting parent; same-game field position, plays per
 drive and turnovers are not pregame predictors.
 

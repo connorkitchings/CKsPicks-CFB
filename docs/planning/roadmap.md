@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-09-13
+> **Last updated:** 2026-09-18
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 > **Authority note (2026-09-05):** This page remains the current V4 operations
@@ -9,14 +9,15 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-15):** V5 ratings successor research
-> is distinct from the V4 feature schema v5 diagnostic. Repair v2 is verified;
-> Phase 3 v2 and R6 possession measurements are certified in Preview. The next
-> ratings task is 03: possession rating estimation, using only
-> `possession-v1-measurements-20260915-18fb0aa-r6`. See the
-> [data-first roadmap](data-first-football-forecasting-roadmap.md) for the active
-> 00–06 queue. Contract 01 closes the independent V4 diagnostic. The original
-> Phase 4B retained manifest remains prohibited as a forecasting parent.
+> **Current research checkpoint (2026-09-18):** V5 ratings successor research
+> is distinct from the V4 feature schema v5 diagnostic. The active priority is
+> a full historical-foundation audit through 2025, independent forecast
+> verification, and historical readiness review. Repair v2, Phase 3 v2, and
+> R6 possession measurements remain historical evidence; the current forecast
+> artifact is historical evidence only until its computations are independently
+> reconstructed. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
+> for the active 10–12 queue. The original Phase 4B retained manifest remains
+> prohibited as a forecasting parent.
 
 ## Direction
 

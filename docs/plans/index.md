@@ -34,19 +34,20 @@ The [September 13 common contract](2026-09-13/v5-ratings-successor-roadmap-and-c
 is Approved; the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the canonical status page. Repair v2 and Phase 3 v2 are certified. Possession
 measurements are independently certified in Preview as
-`possession-v1-measurements-20260915-18fb0aa-r6`; the next ratings task is 03:
-possession rating estimation. V5 ratings successor is distinct from V4 feature schema v5.
+`possession-v1-measurements-20260915-18fb0aa-r6`; the active V5 priority is the
+historical-foundation audit through 2025. V5 ratings successor is distinct from
+V4 feature schema v5.
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
 | --- | --- |
 | 00: [Documentation alignment](2026-09-13/00-v5-documentation-and-methodology-alignment.md) | **Implemented.** Completed 2026-09-13: documentation and authority tests aligned; no computational certification. |
 | 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
-| 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent: `possession-v1-measurements-20260915-18fb0aa-r6`. |
-| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Certified 2026-09-17: run `possession-v1-ratings-20260917-d029526-cert` passed preflight, evidence-bound apply, independent verification, and idempotent repeat. Selected `ppp__rho_0_60__exposure`; retained manifest is the sole eligible 04 parent. |
-| 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Implemented.** 04A and 04B certified 2026-09-17: frozen shadow candidate `forecast-v1-20260917-4600ddd-04b` (shared `expanding` horizon, alpha-10 reference heads, calibration variances 311-375). Sole eligible forecast parent for Contract 05. |
-| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Implemented.** Certified 2026-09-18: 05A/05B/05C Preview-certified; independent verifier confirms every artifact; real-season readiness verified `blocked`; runbook with Contract 06 handoff complete. |
-| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Blocked on live-ready 05; no six-slate evidence collected for this candidate. |
+| 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent; its methodology and evidence are subject to Contract 10's full historical audit. |
+| 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Historical rating artifact selected `ppp__rho_0_60__exposure`; its lineage and methodology are subject to Contract 10. |
+| 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **In Progress.** 04A remains implemented; 04B's manifest-level verifier does not reconstruct forecast computations/outputs, so Contract 11 must close eligibility. |
+| 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Implemented.** 05A/05B/05C certify shadow tooling and diagnostic rehearsal only; they do not certify forecast quality, live readiness, or prospective evidence. |
+| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Deferred behind 10-12, explicit acceptance of historical readiness, and later re-reviewed live application. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
 parent, certify data, or create prospective evidence. Contract 01 is independent
@@ -58,7 +59,7 @@ of the rating sequence. No promotion or serving change is authorized.
 | --- | --- |
 | 04A: [Forecast offsets, bridge, and horizons](2026-09-17/01-v5-forecast-offsets-bridge-and-horizons.md) | **Implemented 2026-09-17.** Hardened, preflighted three times byte-identical under `forecast-v1-20260917-19ca44b-04a` (selected shared `expanding` horizon, alpha-10 reference heads, equal 3,659-game populations). |
 | 04A hardening: [Hardening, preflight closure, and 04B rebase](2026-09-17/03-v5-04a-hardening-preflight-and-04b-rebase.md) | **Implemented 2026-09-17.** Exact three-URI binding, 2018/2019/2021 reporting, expanded metrics, two mechanical preflight repairs (Amendments 1–2); two dead diagnostic identities preserved. |
-| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **Implemented 2026-09-17.** Certified Preview artifact `forecast-v1-20260917-4600ddd-04b`: selected shared `expanding` horizon, alpha-10 reference heads, calibration variances 311-375 across 2022-2025. Frozen shadow candidate for Contract 05. |
+| 04B: [Calibration and certification](2026-09-17/02-v5-forecast-calibration-and-certification.md) | **In Progress.** The September 17 artifact remains historical evidence; Contract 11 must independently reconstruct outputs before forecast eligibility can be restored. |
 
 ### V5-05 execution decomposition (2026-09-17)
 
@@ -70,16 +71,25 @@ of the rating sequence. No promotion or serving change is authorized.
 
 ### V5-07/08/09 2026 extension sequence (2026-09-18)
 
-Approved 2026-09-18 to remove the Contract 06 bottleneck: extend the certified
-lineage to live 2026 data (Repair extension, three layered contracts, full
-season from Week 0). No implementation authorized yet. Each contract names its
-exact entry gate; approval does not satisfy an unmet data dependency.
+Approved 2026-09-18 as a possible later application path. Execution is deferred
+until Contracts 10-12 close, the user explicitly accepts historical readiness,
+and 07-09 are re-reviewed against the frozen design and exact eligible artifacts.
+Each contract names its exact entry gate; approval does not satisfy a deferral or
+unmet data dependency.
 
 | Contract | Status and dependency |
 | --- | --- |
-| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved.** Entry gate: Preview 2026 Silver synced through latest completed week (ops fast path). Exit: certified 2026 measurement manifest (`live` timing, W0→current), sole eligible 08 parent. |
-| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved.** Entry gate: 07 Implemented. Exit: certified 2026 rating replay of frozen `ppp__rho_0_60__exposure` (W0→current, no re-selection), sole eligible 09 parent. |
-| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved.** Entry gate: 07 and 08 Implemented. Exit: certified 2026 forecast manifest (frozen bridge, no refit) + `ready` live readiness report; Contract 06 entry gate met. |
+| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved, deferred.** Re-review only after 10-12 and explicit historical-readiness acceptance. |
+| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, deferred.** Requires re-reviewed 07 and frozen historically accepted design; replay does not create prospective evidence. |
+| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, deferred.** Requires re-reviewed 07/08 and exact frozen forecast artifact; `live` timing alone is not prospective proof. |
+
+### V5 historical-first review sequence (2026-09-18)
+
+| Contract | Status and dependency |
+| --- | --- |
+| 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Draft.** Full measurement-to-forecast audit through 2025; no selection or application work. |
+| 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Starts after 10 resolves forecast findings; independently reconstructs the forecast chain. |
+| 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Starts after 10/11; historical report and non-automatic readiness recommendation. |
 
 ### Certified foundations and superseded execution records
 

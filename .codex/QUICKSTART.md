@@ -8,10 +8,10 @@
 
 ## Environment Setup
 
-**Research checkpoint (2026-09-15):** V5 ratings successor is distinct from V4
+**Research checkpoint (2026-09-18):** V5 ratings successor is distinct from V4
 feature schema v5. Repair v2, Phase 3 v2, and R6 possession measurements are
-certified in Preview. The next ratings task is 03: possession rating estimation,
-using only `possession-v1-measurements-20260915-18fb0aa-r6`;
+certified in Preview. The active work is a full audit through 2025, independent
+forecast verification, and historical readiness review;
 contract 01 is the independent diagnostic closure. See the canonical
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md).
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.

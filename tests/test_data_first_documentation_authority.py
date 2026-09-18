@@ -14,6 +14,7 @@ PHASE2_PLAN = ROOT / "docs/plans/2026-09-05/02-data-repair-and-recertification.m
 PHASE3_PLAN = ROOT / "docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md"
 V5_DIR = ROOT / "docs/plans/2026-09-13"
 COMMON = V5_DIR / "v5-ratings-successor-roadmap-and-contracts.md"
+HISTORICAL_REVIEW_DIR = ROOT / "docs/plans/2026-09-18"
 V5_NAMES = (
     "00-v5-documentation-and-methodology-alignment.md",
     "01-v4-feature-v5-diagnostic-closure.md",
@@ -60,7 +61,9 @@ def _assert_current_checkpoint(text: str) -> None:
         "phase 3 v2",
         "r6",
         "possession",
-        "03",
+        "historical",
+        "2025",
+        "forecast",
         "original phase 4b retained manifest remains prohibited as a forecasting parent",
     ):
         assert required in content
@@ -70,6 +73,9 @@ def _assert_current_checkpoint(text: str) -> None:
         r"before a dedicated possession-based methodology plan",
         r"remain on execution hold pending replacement contracts",
         r"possession measurements remain uncertified",
+        r"next ratings task is 03",
+        r"next ratings task is 03: possession rating estimation",
+        r"sole eligible forecast parent for contract 05",
         r"original phase 4b retained manifest (?:is eligible|may be used|is permitted)",
     ):
         assert not re.search(stale, content), stale
@@ -92,6 +98,8 @@ def test_active_entry_points_share_one_checkpoint(relative_path: str):
     (
         "Phase 3 v2 still needs Preview certification.",
         "Possession measurements remain uncertified.",
+        "The next ratings task is 03: possession rating estimation.",
+        "The 04B artifact is the sole eligible forecast parent for Contract 05.",
         "The original Phase 4B retained manifest is eligible for forecasting.",
     ),
 )
@@ -149,6 +157,46 @@ def test_all_v5_contracts_are_linked_with_accurate_lifecycle(name: str):
         line for line in CONTRACT_INDEX.read_text().splitlines() if f"/{name})" in line
     )
     assert f"**{status[1]}.**" in index_row
+
+
+def test_historical_first_contracts_are_draft_and_gate_2026_application():
+    required = {
+        "10-v5-historical-foundation-audit.md": "audit the complete v5 foundation",
+        "11-v5-forecast-verification-closure.md": "independently reconstruct",
+        "12-v5-historical-results-and-readiness-review.md": "not prospective evidence",
+    }
+    for name, phrase in required.items():
+        content = _plain((HISTORICAL_REVIEW_DIR / name).read_text())
+        assert "status: draft" in content
+        assert phrase in content
+        assert f"2026-09-18/{name}" in CONTRACT_INDEX.read_text()
+
+    for name in (
+        "07-v5-2026-repair-and-measurement-extension.md",
+        "08-v5-2026-rating-state-replay.md",
+        "09-v5-2026-forecast-and-readiness.md",
+    ):
+        content = _plain((HISTORICAL_REVIEW_DIR / name).read_text())
+        for required_gate in (
+            "contracts 10-12",
+            "explicitly accepts",
+            "re-reviewed",
+        ):
+            assert required_gate in content
+
+
+def test_forecast_lifecycle_keeps_historical_artifact_but_reopens_eligibility():
+    umbrella = (V5_DIR / "04-v5-forecast-bridge-and-fitting-window.md").read_text()
+    certification = (
+        ROOT / "docs/plans/2026-09-17/02-v5-forecast-calibration-and-certification.md"
+    ).read_text()
+    assert "**Status:** In Progress" in umbrella
+    assert "**Status:** In Progress" in certification
+    for content in (umbrella, certification, ROADMAP.read_text()):
+        plain = _plain(content)
+        assert "historical evidence" in plain
+        assert "independently reconstruct" in plain
+        assert "not an eligible forecast parent" in plain
 
 
 @pytest.mark.parametrize("old_name, successors", REPLACEMENTS.items())

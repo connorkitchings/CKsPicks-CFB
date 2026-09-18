@@ -238,10 +238,10 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
   `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
   independently verified and idempotently rerun on 2026-09-11).
-  It is benchmark evidence. **V5 ratings successor checkpoint (2026-09-15):**
-  R6 possession measurements are independently certified in Preview
-  (`possession-v1-measurements-20260915-18fb0aa-r6`). The next ratings task is
-  03: possession rating estimation. V5 ratings successor is distinct from V4 feature schema v5;
+  It is benchmark evidence. **V5 historical-first checkpoint (2026-09-18):**
+  R6 possession measurements and the retained rating artifact are historical
+  evidence. The active next work is the full audit through 2025, independent
+  forecast verification, and historical readiness review. V5 ratings successor is distinct from V4 feature schema v5;
   contract 01 is the independent diagnostic closure. September 8 Phase 4A–6
   contracts are Superseded by the V5 package; only explicitly inherited mathematics
   carry forward. The first release uses a rating-to-margin/total Ridge bridge;

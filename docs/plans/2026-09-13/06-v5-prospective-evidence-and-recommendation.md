@@ -21,6 +21,14 @@ There are no qualifying slates for this not-yet-built candidate at planning time
 Earlier V4/candidate-v1/feature-v5 evidence cannot be inherited. No calendar date,
 historical gain, or completed development phase bypasses these gates.
 
+**Historical-first deferral (2026-09-18):** Before any 06 implementation,
+Contracts 10 and 11 must close, Contract 12 must report historical readiness,
+and the user must explicitly accept that review. The subsequent live-application
+contracts must be re-reviewed with the frozen design, eligible artifacts,
+through-2025 final fit/calibration, prior inputs, and timestamp provenance.
+Historical replay is not prospective evidence merely because a record uses a
+`live` timing label.
+
 ## Approach, scope, and interfaces
 
 Execute the frozen 05 tooling against exact candidate, V4, schedule, input and

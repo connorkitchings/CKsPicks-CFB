@@ -195,3 +195,13 @@ verifier confirms every artifact end-to-end from source datasets. The verified
 real-season readiness remains `blocked` (no 2026 measurement/team-state
 parents): tooling is complete, Contract 06 cannot yet collect eligible
 evidence. Umbrella V5-05 is **Implemented**.
+
+## Historical-first eligibility clarification (2026-09-18)
+
+This implemented contract certifies tooling behavior only. The 05C rehearsal's
+predictions are permanently `diagnostic_only`, so neither that rehearsal nor a
+retrospective replay establishes forecast quality, live readiness, or
+prospective evidence. Contract 04/04B is reopened pending independent
+computational verification; therefore 05 cannot establish a certified forecast
+parent. Contract 06 is deferred behind Contracts 10-12, explicit user acceptance
+of historical readiness, and a later re-reviewed live-application path.

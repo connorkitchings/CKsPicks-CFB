@@ -121,12 +121,13 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**V5 ratings successor checkpoint (2026-09-15):** Repair v2 is verified and
+**V5 historical-first checkpoint (2026-09-18):** Repair v2 is verified and
 Phase 3 v2 is certified in Preview (`phase3-v2-compact-state-20260910-r2`, selected
 `quality_core_epa_split`, verifier passed and idempotent rerun 2026-09-11). Its
 result is benchmark evidence. R6 possession measurements are independently
-certified in Preview (`possession-v1-measurements-20260915-18fb0aa-r6`). The next
-ratings task is 03: possession rating estimation. The
+certified in Preview (`possession-v1-measurements-20260915-18fb0aa-r6`). The active
+work is the full audit through 2025, independent forecast verification, and
+historical readiness review. The
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
 is the canonical queue/status page.
 

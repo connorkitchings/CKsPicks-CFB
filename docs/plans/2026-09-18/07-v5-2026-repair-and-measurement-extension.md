@@ -22,6 +22,13 @@ is binding.
 ops path — fast-path ops task, not this contract). This contract starts only
 when 2026 Silver refs for Weeks 0–current exist in Preview R2.
 
+**Historical-first deferral (2026-09-18):** Do not execute this approved
+contract until Contracts 10-12 close, the user explicitly accepts the historical
+readiness review, and 07 is re-reviewed against the frozen design, exact eligible
+artifacts, through-2025 final fit/calibration, prior inputs, and timestamp
+provenance. A later `live` timing class does not convert retrospective work into
+prospective evidence.
+
 There are no 2026 measurement rows at planning time. Historical R6 rows are not
 modified, re-certified, or inherited as 2026 evidence.
 

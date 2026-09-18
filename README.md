@@ -3,15 +3,15 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Research checkpoint (2026-09-16)
+## Research checkpoint (2026-09-18)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
 isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
 Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). R6 possession
-measurements are independently certified in Preview; the sole eligible parent is
-`possession-v1-measurements-20260915-18fb0aa-r6`. The current ratings task is
-**03: possession rating estimation**; contract 01 is the independent diagnostic
-closure. The [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
+measurements and the retained rating artifact are historical evidence. The active
+V5 priority is the full historical-foundation audit through 2025, followed by
+independent forecast verification and a historical readiness review. The
+[data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
 is the canonical status and execution-queue authority.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
@@ -19,6 +19,12 @@ parent. Earlier candidate results keep their historical audit limits. New resear
 uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and requires
 future pre-kickoff freezes for independent evidence. Production operations remain
 under their existing runbooks.
+
+The current forecast artifact is inspectable historical evidence, but its
+verifier has not independently reconstructed the forecasts and their inputs.
+It cannot yet support downstream eligibility. 2026 application is deferred;
+frozen rules may later update state from preceding finalized games, but 2026
+outcomes cannot choose or tune V5.
 
 ## 2026 posture
 

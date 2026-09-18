@@ -51,14 +51,35 @@ later challenger rather than a first-shadow prerequisite.
 | 01 | [V4 feature-v5 diagnostic closure](01-v4-feature-v5-diagnostic-closure.md) | Existing shadow refs and reverified Week 2 finals | Paired diagnostic verdict; independent of rating progress |
 | 02 | [Possession measurement certification](02-v5-possession-measurement-certification.md) | 00 complete; exact verified Repair v2 sources | Certified possession/scoring ledger, measurements, replay and quality evidence |
 | 03 | [Possession rating estimation](03-v5-possession-rating-estimation.md) | 02 independently verified | Selected definition/prior/updater design and state evidence |
-| 04 | [Forecast bridge and fitting-window selection](04-v5-forecast-bridge-and-fitting-window.md) | 03 independently verified | Frozen, uncertainty-bearing shadow candidate |
-| 05 | [Prospective readiness and shadow tooling](05-v5-prospective-readiness-and-shadow-tooling.md) | 04 independently verified | Rehearsed tooling and explicit live readiness |
-| 06 | [Prospective evidence and recommendation](06-v5-prospective-evidence-and-recommendation.md) | 05 live-ready | Six-slate evidence recommendation, or precise continued-shadow status |
+| 04 | [Forecast bridge and fitting-window selection](04-v5-forecast-bridge-and-fitting-window.md) | 03 independently verified | Historical forecast artifact; downstream forecast eligibility remains open pending 11 |
+| 05 | [Prospective readiness and shadow tooling](05-v5-prospective-readiness-and-shadow-tooling.md) | Tooling implementation | Diagnostic rehearsal and readiness tooling only; it does not certify forecast quality |
+| 06 | [Prospective evidence and recommendation](06-v5-prospective-evidence-and-recommendation.md) | 10, 11, and 12 accepted; then live readiness | Six-slate evidence recommendation, or precise continued-shadow status |
 
 Contract 01 is a side task; its result neither blocks nor chooses the ratings
 candidate. Every phase requires its own implementation session. Approval of a
 downstream contract does not satisfy its prerequisites. Unknown manifest URIs
 are runtime outputs, never invented planning constants.
+
+## Historical-first correction (2026-09-18)
+
+The historical V5 foundation through 2025 is the active priority. Contracts
+02 and 03 remain implemented historical evidence, and 04A retains its completed
+implementation/preflight record. Contract 04B and umbrella 04 are reopened
+because the current forecast verifier validates the signed manifest, identities,
+and reference labels but does not independently reconstruct forecast outputs,
+offsets, bridge fits, calibration, or horizon selection. The stored forecast
+artifact remains inspectable historical evidence but is not an eligible certified
+forecast parent until [11](../2026-09-18/11-v5-forecast-verification-closure.md)
+closes that gap.
+
+Contract 05 remains implemented as shadow-tooling work. Its historical rehearsal
+uses permanently diagnostic predictions and therefore establishes neither
+forecast quality, prospective evidence, nor live readiness. Contracts 10-12
+audit the complete foundation, close forecast verification, and report historical
+results before any 2026 application is reconsidered. A future frozen algorithm
+may update state from preceding finalized games, but 2026 outcomes cannot choose
+or tune its design. Retrospective replay, pre-kickoff prospective evidence, and
+production promotion are separate milestones.
 
 ## Binding methodology amendments
 

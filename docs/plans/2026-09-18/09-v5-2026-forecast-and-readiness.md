@@ -23,6 +23,13 @@ This contract starts only when both manifests exist in Preview R2. The
 historical 04B forecast manifest (`forecast-v1-20260917-4600ddd-04b`) and its
 selection stay frozen and untouched.
 
+**Historical-first deferral (2026-09-18):** Do not execute this approved
+contract until Contracts 10-12 close, the user explicitly accepts historical
+readiness, and 07-09 are re-reviewed with the frozen design, exact eligible
+artifacts, through-2025 final fit/calibration, selected-prior inputs, and
+timestamp provenance. A retrospective 2026 forecast or `live` timing label does
+not establish prospective evidence or satisfy Contract 06.
+
 There are no 2026 V5 predictions at planning time, and live readiness is
 verified `blocked`. Historical forecast predictions are not modified,
 re-selected, or inherited as 2026 evidence.

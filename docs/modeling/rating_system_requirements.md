@@ -20,8 +20,10 @@ Repair v2 is verified and Phase 3 v2 is certified. Its `quality_core_epa_split`
 selection is historical reconstructed benchmark evidence, not the possession
 definition. R6 possession measurements are independently certified in Preview
 at `possession-v1-measurements-20260915-18fb0aa-r6`; it is the sole eligible
-Contract 03 parent. The next ratings task is 03: possession rating estimation;
-contract 01 is the independent V4 diagnostic closure.
+Contract 03 parent in the completed historical sequence. The active work is a
+full audit through 2025, independent forecast verification, and historical
+readiness review. The completed measurement/rating artifacts remain historical
+evidence while that audit reviews their methodology and lineage.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
 parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only
