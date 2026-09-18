@@ -66,6 +66,20 @@ class BehavioralError(ValueError):
     """Raised when a behavioral cell cannot be constructed."""
 
 
+def _import_verifier(module_name: str) -> types.ModuleType:
+    """Import a verifier from either a direct CLI or package invocation.
+
+    Direct audit execution places ``scripts/research`` on ``sys.path`` rather
+    than the repository root.  Verifier entry points intentionally keep their
+    repository-qualified ``scripts.*`` names, so the harness establishes that
+    import root immediately before its dynamic import.
+    """
+    root = str(ROOT)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    return importlib.import_module(module_name)
+
+
 class _FakeStorage:
     """Minimal read-only storage double for behavioral probes."""
 
@@ -98,7 +112,7 @@ def _poisoned_import(module_name: str, markers: tuple[str, ...]) -> types.Module
         poison.__getattr__ = _raise  # type: ignore[attr-defined]
         sys.modules[marker] = poison
     try:
-        return importlib.import_module(module_name)
+        return _import_verifier(module_name)
     finally:
         sys.modules.clear()
         sys.modules.update(saved)
@@ -269,9 +283,9 @@ def _forecast_cells() -> list[dict[str, Any]]:
 
 
 def _rating_cells() -> list[dict[str, Any]]:
-    script = importlib.import_module(VERIFIER_MODULES["ratings"])
+    script = _import_verifier(VERIFIER_MODULES["ratings"])
     verify_manifest = script.verify_manifest
-    verify_artifact = importlib.import_module(
+    verify_artifact = _import_verifier(
         "cks_picks_cfb.ratings.possession_rating_verification"
     ).verify_rating_artifact
     # Restated (not imported) so the harness never touches producer-mixed
@@ -404,7 +418,7 @@ def _rating_cells() -> list[dict[str, Any]]:
 
 
 def _measurement_cells() -> list[dict[str, Any]]:
-    script = importlib.import_module(VERIFIER_MODULES["measurements"])
+    script = _import_verifier(VERIFIER_MODULES["measurements"])
     verify_repair = script._verify_repair
     cells: list[dict[str, Any]] = []
 

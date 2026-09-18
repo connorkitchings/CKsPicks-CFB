@@ -64,3 +64,20 @@
   checkpoint. It must use a clean worktree and the new committed SHA; the
   earlier run bound to `c7ef6c8` remains diagnostic-only because the 10B code
   was then uncommitted.
+
+## Continuation: direct-CLI import recovery
+
+- The user committed the accuracy-recovery checkpoint as `b304b39`. A fresh
+  read-only `--full-corpus` attempt bound to that exact SHA reached the frozen
+  R2 parents, then stopped before corpus checks when the behavioral harness
+  could not resolve its repository-qualified `scripts.*` verifier imports
+  under direct CLI execution. It made no R2 writes and produced no accepted
+  evidence.
+- Moved the import-root guarantee to the generic behavioral harness, where it
+  covers both direct runner execution and isolated harness invocation. Added a
+  regression test that removes the root from `sys.path` before a dynamic
+  verifier import.
+- Validation: direct runner `--help`, `git diff --check`, scoped Ruff check
+  and format check pass; the focused audit and corpus suites pass (`72
+  passed`). A second user-controlled code checkpoint is required before the
+  accepted full-corpus dry run can be bound to a clean SHA.

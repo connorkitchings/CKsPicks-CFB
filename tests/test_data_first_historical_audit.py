@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,19 @@ STAGE_RUN_IDS = {
     "ratings": "possession-v1-ratings-20260917-d029526-cert",
     "forecasts": "forecast-v1-20260917-4600ddd-04b",
 }
+
+
+def test_behavioral_harness_restores_repository_root_for_dynamic_verifiers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Behavioral checks support a runner executed directly from scripts/."""
+    from cks_picks_cfb.audit import behavioral
+
+    root = str(behavioral.ROOT)
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry != root])
+    behavioral._import_verifier(behavioral.VERIFIER_MODULES["ratings"])
+
+    assert sys.path[0] == root
 
 
 def _stage_spec(stage: str) -> Mapping[str, Any]:
