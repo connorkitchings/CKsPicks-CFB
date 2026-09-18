@@ -661,7 +661,7 @@ def apply(
                 "row_count": eval_ref.row_count,
             },
             "shadow_evidence_counter": {
-                "artifact_kind": ref_c.artifact_kind,
+                "artifact_kind": "dataset_v1",
                 "dataset": ref_c.dataset,
                 "version_id": ref_c.version_id,
                 "schema_version": ref_c.schema_version,
