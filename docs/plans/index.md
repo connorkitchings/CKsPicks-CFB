@@ -68,6 +68,19 @@ of the rating sequence. No promotion or serving change is authorized.
 | 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Implemented 2026-09-18.** Certified Preview freeze artifact `shadow-v1-20260918-73e8e9b-05b-freeze` and score artifact `shadow-v1-20260918-7aec1c8-05b-score`: measured freeze, outcome-versioned scoring, evidence counter, idempotent repeat verified. |
 | 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Implemented.** Certified 2026-09-18 Preview rehearsal `shadow-v1-20260918-6dc87e0-05c`: independent verifier, 7/7-case diagnostic rehearsal with qualifying 0, refreshed `blocked` readiness report, shadow runbook, Contract 06 handoff (still-blocked). |
 
+### V5-07/08/09 2026 extension sequence (2026-09-18)
+
+Approved 2026-09-18 to remove the Contract 06 bottleneck: extend the certified
+lineage to live 2026 data (Repair extension, three layered contracts, full
+season from Week 0). No implementation authorized yet. Each contract names its
+exact entry gate; approval does not satisfy an unmet data dependency.
+
+| Contract | Status and dependency |
+| --- | --- |
+| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved.** Entry gate: Preview 2026 Silver synced through latest completed week (ops fast path). Exit: certified 2026 measurement manifest (`live` timing, W0→current), sole eligible 08 parent. |
+| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved.** Entry gate: 07 Implemented. Exit: certified 2026 rating replay of frozen `ppp__rho_0_60__exposure` (W0→current, no re-selection), sole eligible 09 parent. |
+| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved.** Entry gate: 07 and 08 Implemented. Exit: certified 2026 forecast manifest (frozen bridge, no refit) + `ready` live readiness report; Contract 06 entry gate met. |
+
 ### Certified foundations and superseded execution records
 
 | Record | Status and permitted use |
