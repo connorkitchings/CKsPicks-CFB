@@ -1,0 +1,66 @@
+# Session: V5-10B Full-Corpus Audit Execution (part 1, incomplete)
+
+## TL;DR
+- **Worked On:** Began authorized 10B execution: corpus streaming engine, findings policy, `--full-corpus` runner mode, bounded-fixture tests, first full local dry run.
+- **Outcome:** Engine runs end-to-end (562s, 92 checks) but the mandatory pre-apply review caught bugs in the new audit checks — no findings accepted, nothing published, no R2 writes. Work intentionally left uncommitted.
+- **Plan Contract:** `docs/plans/2026-09-18/10b-v5-full-corpus-audit-execution.md` (Status: In Progress)
+- **Approval / Status:** User authorized task 2; 10B remains In Progress with its DoD untouched.
+- **Blockers:** Check-logic fixes required before rerun (see below); then review → apply → verify → report.
+- **Next:** Fix the five check defects, rerun `--full-corpus` dry run, review every finding, then apply.
+
+## Context and Decisions
+- Corpus scale ~28.7M rows: only adjusted_history (24.2M), rating_states (2.1M), team_states (1M) truly stream; observations/possessions/scoring/priors/snapshots fit in memory but use the same streaming code path. Partition keys come from root manifests (output refs omit them for small sets).
+- Design: `audit/corpus.py` (readers, population/ledger checks, findings policy), `audit/corpus_ratings.py` (adjustment/rating/forecast checks, orchestration), `--full-corpus` flag on the existing runner; full mode finalizes seeded findings, adds reconstruction record, enforces publication rules in apply.
+- First dry run (`historical-audit-10b-20260918-full`, digest `a704e135…` — NOT accepted as evidence): 8 failed checks / 12 findings, of which review shows most are audit-side defects, plus one orchestration bug (seeded findings appended twice → 12 instead of 10; fix: assemble all findings in the runner, orchestrator returns corpus-only).
+- Confirmed real data facts for the fixes: team names consistent; scoring categories are eligible/excluded/non-offense/OT/unresolved; duplicate source_event_ids are split-team attributions (not double counts); only 20 of 3,256 unresolved keys are nonzero; rating `cutoff_utc` uses `T` format vs space-format kickoffs.
+
+## Work Completed
+- `src/cks_picks_cfb/audit/corpus.py` (new): hash-verified readers, population/ledger checks, findings policy (severity/disposition/closure), behavioral finalization.
+- `src/cks_picks_cfb/audit/corpus_ratings.py` (new): adjustment/rating/forecast checks, full-corpus orchestration, final-fit existence check.
+- Runner `--full-corpus` mode + finalized-apply enforcement (provisional/severity/boundary/preflight-state refusal); config `rejected_seasons`.
+- `tests/test_data_first_historical_audit_corpus.py` (new, 12 tests); fixed latent fixture digest bug it exposed.
+- 10b contract Status → In Progress.
+
+## Files Modified
+- `src/cks_picks_cfb/audit/corpus.py`, `corpus_ratings.py` — new, uncommitted.
+- `scripts/research/run_data_first_historical_audit.py` — uncommitted.
+- `conf/research/data_first_football_v1/historical_audit_v1.yaml` — uncommitted.
+- `tests/test_data_first_historical_audit.py`, `test_data_first_historical_audit_corpus.py` — uncommitted.
+- `docs/plans/2026-09-18/10b-…md` — uncommitted (status only).
+- `session_logs/2026-09-18/09-v5-10b-historical-audit.md` — this log, uncommitted.
+
+## Validation
+- [x] Focused: 73 passed (`-W error` equivalent run without coverage).
+- [x] Ruff format + check clean on touched files; `git diff --check` clean.
+- [x] Full-corpus dry run completes (562s, within 3600s cap); zero R2 writes (dry-run reads + local evidence only).
+- [ ] Check-defect fixes + rerun + finding review (next session).
+- [ ] Apply, independent verification, `already_applied` repeat, report, lifecycle updates (all pending).
+
+## Amendments and Blockers
+- Required check fixes (all in new code, none in 10a harness): (1) parse timestamps for cutoff/kickoff compare; (2) role pairing via opponent join; (3) unresolved leak only on nonzero sums; (4) score reconciliation as exceed-vs-shortfall (ledger must never exceed finals; shortfalls reported by season); (5) centering tolerance methodology (small early groups); (6) snapshot/terminal structural check + divergence as info; (7) single findings assembly in runner.
+- Blocker: none structural. 10B DoD unchanged.
+
+## Handoff Notes
+- **Resume at:** Fix the seven items above, rerun `--full-corpus` dry run with `--run-id historical-audit-10b-<date>-full`, review every finding against raw data before any apply.
+- **Watch out for:** Do not publish the `a704e135…` evidence — its findings are unreviewed and partly audit-side artifacts. Seeded 001/002 remain the only confirmed findings so far. Forecast final-fit absence (`max_training_season=2024`) is the one failure that survived scrutiny and is expected to become a real blocker.
+
+**tags:** ["v5", "contract-10b", "implementation"]
+
+## Continuation: accuracy-recovery checkpoint
+
+- Corrected the first-run audit-side defects: UTC timestamp comparison,
+  opponent-based offense/defense pairing, nonzero-only unresolved quarantine,
+  excess-versus-shortfall score reconciliation, denominator-weighted league
+  centering, snapshot/terminal structural assurance, and two-team team-state
+  pairing.
+- Finding generation now uses code-owned stage routing and stable IDs instead
+  of text inference and ordinal execution order. The corpus orchestrator no
+  longer adds duplicate seeded/forecast reconstruction findings; the runner
+  owns final seeded-finding assembly.
+- Added bounded regression coverage for the corrected cases. Focused audit,
+  corpus, and documentation-authority tests pass (`107 passed`); scoped Ruff
+  format/check and `git diff --check` pass.
+- The next full-corpus dry run must wait for the user-controlled 10B code
+  checkpoint. It must use a clean worktree and the new committed SHA; the
+  earlier run bound to `c7ef6c8` remains diagnostic-only because the 10B code
+  was then uncommitted.

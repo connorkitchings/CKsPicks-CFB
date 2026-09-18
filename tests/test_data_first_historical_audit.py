@@ -666,7 +666,21 @@ def _finalized_evidence() -> dict[str, Any]:
     evidence["findings"][0]["disposition"] = "prohibited_until_closed"
     evidence["findings"][0]["closure_state"] = "open"
     evidence["gate_evaluation"] = audit_verification.evaluate_gate(evidence["findings"])
-    return dict(evidence) | {"evidence_sha256": sha256(evidence)}
+    evidence["summaries"] = {"corpus": "full"}
+    evidence["check_results"] = [
+        {
+            "check_id": "manifest.repair.signature",
+            "layer": "lineage",
+            "category": "signature",
+            "status": "pass",
+            "expected": "signed",
+            "observed": "ok",
+            "population": "repair",
+            "evidence_refs": ["uri://repair"],
+        }
+    ]
+    unsigned = {k: v for k, v in evidence.items() if k != "evidence_sha256"}
+    return dict(evidence) | {"evidence_sha256": sha256(unsigned)}
 
 
 def test_published_round_trip_through_runner_apply() -> None:
@@ -990,7 +1004,8 @@ def test_apply_collision_fails_closed() -> None:
         }
     )
     other["gate_evaluation"] = audit_verification.evaluate_gate(other["findings"])
-    other = dict(other) | {"evidence_sha256": sha256(other)}
+    other_unsigned = {k: v for k, v in other.items() if k != "evidence_sha256"}
+    other = dict(other) | {"evidence_sha256": sha256(other_unsigned)}
     with pytest.raises(runner.AuditError):
         runner.apply(
             storage=storage,

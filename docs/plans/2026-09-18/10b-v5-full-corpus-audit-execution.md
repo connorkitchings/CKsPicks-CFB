@@ -1,10 +1,10 @@
 # V5-10b: Full-Corpus Historical Audit Execution
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Created:** 2026-09-18
 - **Planner:** Sol
-- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18. Status remains Draft per the documentation-authority gate; see Amendment 1 in the 10a contract.
-- **Implementation log:** Pending; create `session_logs/YYYY-MM-DD/NN-v5-10b-historical-audit.md` when executing.
+- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized 10b execution.
+- **Implementation log:** `session_logs/2026-09-18/09-v5-10b-historical-audit.md`
 - **Commit policy:** Separate evidence and report checkpoints; user controls Git operations.
 
 ## Goal

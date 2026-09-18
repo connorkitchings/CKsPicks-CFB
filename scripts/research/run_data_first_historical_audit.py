@@ -49,6 +49,8 @@ from cks_picks_cfb.audit.checks import (
     check_state,
     seeded_provisional_findings,
 )
+from cks_picks_cfb.audit.corpus import finalize_behavioral_findings
+from cks_picks_cfb.audit.corpus_ratings import overall_disposition, run_full_corpus
 from cks_picks_cfb.audit.independence import run_independence_checks
 from cks_picks_cfb.audit.register import (
     AuditError,
@@ -125,6 +127,7 @@ def preflight(
     as_of: str,
     code_sha: str,
     config_sha: str,
+    full_corpus: bool = False,
 ) -> dict[str, Any]:
     """Run the complete read-only audit preflight and return unsigned evidence."""
     parents_cfg = config["parents"]
@@ -218,6 +221,26 @@ def preflight(
 
     findings = seeded_provisional_findings(conditions)
     findings.extend(behavioral_findings(behavioral_cells))
+    summaries: dict[str, Any] = {
+        "graph_nodes": len(graph["nodes"]),
+        "graph_edges": len(graph["edges"]),
+    }
+    if full_corpus:
+        corpus_checks, corpus_findings, corpus_summaries = run_full_corpus(
+            storage,
+            {stage: loaded[stage] for stage in order},
+            manifest_uris,
+        )
+        check_results.extend(corpus_checks)
+        # Full-corpus mode finalizes every provisional seeded finding and
+        # records the Contract 11 reconstruction scope.
+        from cks_picks_cfb.audit.corpus_ratings import finalize_seeded_findings
+
+        findings = finalize_seeded_findings()
+        findings.extend(finalize_behavioral_findings(behavioral_cells))
+        findings.extend(corpus_findings)
+        summaries.update(corpus_summaries)
+        summaries["corpus"] = "full"
     gate_evaluation = evaluate_gate([dict(finding) for finding in findings])
 
     return {
@@ -229,6 +252,7 @@ def preflight(
         "check_results": check_results,
         "findings": findings,
         "gate_evaluation": gate_evaluation,
+        "summaries": summaries,
     }
 
 
@@ -260,6 +284,7 @@ def _audit_manifest(
     digests: Mapping[str, str],
     counts: Mapping[str, int],
     gate_evaluation: Mapping[str, Any],
+    overall: str,
     finalized: bool,
 ) -> dict[str, Any]:
     unsigned = {
@@ -274,9 +299,7 @@ def _audit_manifest(
         },
         "output_digests": dict(digests),
         "output_counts": dict(counts),
-        "overall_disposition": "candidate-preflight-base"
-        if not finalized
-        else "audited",
+        "overall_disposition": overall,
         "gate_evaluation": dict(gate_evaluation),
         "finalized": finalized,
         "production_activation_authorized": False,
@@ -284,6 +307,77 @@ def _audit_manifest(
     return dict(unsigned) | {
         "manifest_sha256": hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
     }
+
+
+BOUNDARY_CHECK_IDS = {
+    "manifest.repair.signature",
+    "manifest.measurements.signature",
+    "manifest.ratings.signature",
+    "manifest.forecasts.signature",
+    "manifest.repair.identity",
+    "manifest.measurements.identity",
+    "manifest.ratings.identity",
+    "manifest.forecasts.identity",
+    "lineage.repair.code_config",
+    "lineage.measurements.code_config",
+    "lineage.ratings.code_config",
+    "lineage.forecasts.code_config",
+    "lineage.exhaustive",
+}
+
+
+def _enforce_final_publication(evidence: Mapping[str, Any]) -> None:
+    """Refuse a final publication that is not fully specified and bounded.
+
+    Provisional severities/dispositions, missing required fields, preflight
+    (non-full-corpus) state, and failed parent-identity/signature/code or
+    traversal checks each block publication. Parent check failures that are
+    recorded as findings remain publishable: the audit reports defects.
+    """
+    from cks_picks_cfb.audit import PROVISIONAL_SEVERITY
+    from cks_picks_cfb.audit.verification import verify_audit_evidence
+
+    for finding in evidence.get("findings") or []:
+        if finding.get("severity") == PROVISIONAL_SEVERITY:
+            raise AuditError(
+                f"final publication rejects provisional severity: {finding.get('finding_id')}"
+            )
+        if finding.get("disposition") == PROVISIONAL_SEVERITY:
+            raise AuditError(
+                f"final publication rejects provisional disposition: {finding.get('finding_id')}"
+            )
+        if finding.get("closure_state") not in (
+            "open",
+            "closed",
+            "incorporated_into_contract_11",
+        ):
+            raise AuditError(
+                f"final publication rejects open closure field: {finding.get('finding_id')}"
+            )
+    if (evidence.get("summaries") or {}).get("corpus") != "full":
+        raise AuditError("final publication requires full-corpus evidence")
+    failed_boundary = sorted(
+        check["check_id"]
+        for check in evidence.get("check_results") or []
+        if check.get("status") == "fail" and check.get("check_id") in BOUNDARY_CHECK_IDS
+    )
+    if failed_boundary:
+        raise AuditError(
+            f"final publication blocked by boundary failures: {failed_boundary}"
+        )
+    identity = evidence.get("identity") or {}
+    parents = {
+        stage: record.get("manifest_uri")
+        for stage, record in (identity.get("parents") or {}).items()
+    }
+    verify_audit_evidence(
+        evidence,
+        expected_run_id=str(identity.get("run_id")),
+        expected_code_sha=str(identity.get("code_sha")),
+        expected_parents=parents,
+        storage=None,
+        require_published=False,
+    )
 
 
 def apply(
@@ -334,8 +428,11 @@ def apply(
         digests=digests,
         counts=counts,
         gate_evaluation=evidence["gate_evaluation"],
+        overall=overall_disposition(evidence["findings"]),
         finalized=finalized,
     )
+    if finalized:
+        _enforce_final_publication(evidence)
     if storage.exists(manifest_uri):
         existing = json.loads(storage.read_bytes(manifest_uri))
         if (
@@ -370,6 +467,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rating-manifest-uri", default=None)
     parser.add_argument("--forecast-manifest-uri", default=None)
     parser.add_argument("--evidence-out", default=None)
+    parser.add_argument("--full-corpus", action="store_true")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--preflight-evidence", default=None)
     args = parser.parse_args(argv)
@@ -413,6 +511,7 @@ def main(argv: list[str] | None = None) -> int:
         as_of=as_of,
         code_sha=args.expected_code_sha,
         config_sha=_config_sha(config_path),
+        full_corpus=args.full_corpus,
     )
     evidence = _evidence_with_digest(unsigned)
     elapsed = round(time.monotonic() - started, 3)
@@ -460,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         evidence=evidence,
         prefix=prefix,
+        finalized=(evidence.get("summaries") or {}).get("corpus") == "full",
     )
     print(json.dumps(result | {"run_id": args.run_id}, sort_keys=True))
     return 0
