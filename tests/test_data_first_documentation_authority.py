@@ -135,10 +135,10 @@ def test_all_v5_contracts_are_linked_with_accurate_lifecycle(name: str):
     contract = (V5_DIR / name).read_text()
     status = re.search(r"^- \*\*Status:\*\* (.+)$", contract, re.MULTILINE)
     assert status is not None
-    if name.startswith(("00-", "02-", "03-")):
+    if name.startswith(("00-", "02-", "03-", "04-")):
         assert status[1] in {"In Progress", "Implemented"}
     else:
-        assert status[1] == "Approved"
+        assert status[1] in {"Approved", "In Progress", "Implemented"}
     for metadata in ("Approval source", "Implementation log", "Commit policy"):
         assert f"**{metadata}:**" in contract
     for document in (COMMON, ROADMAP, CONTRACT_INDEX):

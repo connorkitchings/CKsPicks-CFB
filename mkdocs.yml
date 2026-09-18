@@ -32,6 +32,7 @@ nav:
       - Weekly Pipeline: ops/weekly_pipeline.md
       - Production Runbook: ops/production_runbook.md
       - Data-First Capture: ops/data_first_capture.md
+      - V5 Shadow Runbook: ops/v5_shadow_runbook.md
       - Historical Successor-v2 Compatibility: ops/rating_successor_research.md
       - Historical Candidate-v1 Shadow: ops/rating_shadow_operations.md
       - Validation: ops/validation.md

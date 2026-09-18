@@ -2,9 +2,67 @@
 
 **Date:** 2026-09-17  
 **Assessor:** Sol planning task  
-**Status:** 🔴 **BLOCKED** — Requires 2026 data extension
+**Status:** 🔴 **BLOCKED** — Requires 2026 data extension  
+**Verified refresh:** 2026-09-18 (V5-05C Terra, read-only re-run of the 05A readiness logic) — **verdict unchanged: BLOCKED**
 
 ---
+
+## Verified Refresh (2026-09-18, V5-05C)
+
+The 05A readiness logic was re-run read-only against the current exact inputs
+(no writes; dry-run preflight of `scripts/research/run_v5_shadow_readiness.py`)
+for the next prospective slate **2026 Week 4**, cutoff
+`2026-09-18T13:43:12Z`, code SHA `276fafc…` (HEAD at run time; the
+certified-parent verdicts are structural and code-independent).
+
+### Verified per-source verdict (2026 W4)
+
+| Source | Status | Timing | Blocked reason |
+|---|---|---|---|
+| candidate | available | pre_cutoff | — |
+| completed_games | available | pre_cutoff | — |
+| priors | available | pre_cutoff | — |
+| schedule | **unavailable** | missing | no schedule rows for 2026 week 4 |
+| scoring | available | pre_cutoff | — |
+| team_states | **unavailable** | missing | no team states for 2026 |
+
+**Overall: `blocked`.** This matches the certified 05A assessment
+(`shadow-v1-20260917-cd07d8b-05a`, same slate 2026 W4, same two structural
+blockers).
+
+### Input inventory (exact, verified)
+
+- Forecast candidate: `forecast-v1-20260917-4600ddd-04b` (as-of 2026-09-17, frozen, Preview)
+- Rating parent: `possession-v1-ratings-20260917-d029526-cert` (as-of 2026-09-17T01:55:00Z)
+- Measurement parent: `possession-v1-measurements-20260915-18fb0aa-r6` (as-of 2026-09-15T19:16:30Z)
+- Repair parent: `repair-v2-20260909T1417Z`
+- All certified parents cover development seasons only (2015–2019, 2021–2025); **none contains 2026 rows**.
+
+### Blockers (verified, current)
+
+1. **No 2026 possession measurements.** The certified R6 population contains no
+   2026 season rows, so the schedule source resolves `missing` for any 2026
+   slate. Requires the measurement pipeline extension (separate contract).
+2. **No 2026 team states.** The certified rating parent stops at 2025, so
+   `team_states` resolves `missing` for 2026. Requires the rating pipeline
+   extension and updated priors for 2026 (blocked on 1).
+3. **Preview environment lag** (context, not separately re-verified in this
+   refresh): the 2026-09-17 finding that Preview trails production (2026 weeks
+   0–1 vs 0–3) stands as recorded below; clearing blockers 1–2 requires a
+   Preview data synchronization step regardless.
+
+### Live-state note (2026-09-18)
+
+Week 3 (`2026w3-68fe6a815bd6`) is frozen and in progress (earliest kickoff
+2026-09-17 23:30Z); close is pending. Nothing in this assessment mutated any
+production or Preview serving state. A verified `blocked` readiness is the
+contractually complete 05C outcome: Contract 06 cannot collect eligible
+prospective evidence until the blockers above clear and six qualifying
+pre-frozen slates accumulate thereafter.
+
+---
+
+## Historical Assessment (2026-09-17, preserved)
 
 ## Executive Summary
 

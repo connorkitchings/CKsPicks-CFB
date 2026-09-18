@@ -1,10 +1,10 @@
 # V5-05C: Diagnostic Rehearsal, Verification, and Runbook
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved the Draft contract as-is on 2026-09-18, after 05B certification and its documentation commit (`edea961`).
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-05c-rehearsal-verification-runbook.md`.
+- **Implementation log:** `session_logs/2026-09-18/02-v5-05c-rehearsal-verification-runbook.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
 
 ## Goal

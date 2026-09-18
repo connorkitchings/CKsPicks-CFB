@@ -390,8 +390,10 @@ def iter_partitioned_dataset(
     for part in parts:
         partition = dict(part["partition"])
         key = partition_order_key(partition)
-        if tuple(partition) != ref.partition_keys or (
-            previous is not None and key <= previous
+        if (
+            len(partition) != len(ref.partition_keys)
+            or set(partition) != set(ref.partition_keys)
+            or (previous is not None and key <= previous)
         ):
             raise StorageError("partitioned dataset has malformed part order")
         previous = key
