@@ -1,11 +1,13 @@
 # V5-05B: Shadow Freeze, Scoring, and Evidence Ledger
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User explicitly approved implementation on 2026-09-17 ("proceed").
 - **Implementation log:** `session_logs/2026-09-17/12-v5-05b-freeze-score-ledger.md`.
 - **Commit policy:** Separate code checkpoint and certified-evidence documentation checkpoint; user executes Git.
+- **Certified Freeze Artifact:** `artifacts/research/data-first-football-v1/possession-v1/shadow/runs/shadow-v1-20260918-73e8e9b-05b-freeze/freeze-manifest.json`
+- **Certified Score Artifact:** `artifacts/research/data-first-football-v1/possession-v1/shadow/runs/shadow-v1-20260918-7aec1c8-05b-score/score-manifest.json`
 
 ## Goal
 
@@ -192,12 +194,12 @@ only); `git diff --check`.
 
 ## Definition of Done
 
-- [ ] Measured freeze tooling with fail-closed timing/population/identity gates.
-- [ ] Outcome-versioned scoring with correction history and ledger/counter.
-- [ ] Phase 05B preflight/apply/repeat certified in Preview for both pipelines.
-- [ ] All quality gates pass; session log complete.
-- [ ] User commits code and evidence checkpoints separately.
-- [ ] 05B Implemented; 05C entry gate met.
+- [x] Measured freeze tooling with fail-closed timing/population/identity gates.
+- [x] Outcome-versioned scoring with correction history and ledger/counter.
+- [x] Phase 05B preflight/apply/repeat certified in Preview for both pipelines.
+- [x] All quality gates pass; session log complete.
+- [x] User commits code and evidence checkpoints separately.
+- [x] 05B Implemented; 05C entry gate met.
 
 ## Amendments
 

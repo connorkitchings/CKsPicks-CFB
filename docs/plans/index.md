@@ -65,8 +65,8 @@ of the rating sequence. No promotion or serving change is authorized.
 | Contract | Status and dependency |
 | --- | --- |
 | 05A: [Readiness validation and frozen replay](2026-09-17/04-v5-05a-readiness-and-replay.md) | **Implemented 2026-09-17.** Certified Preview artifact `shadow-v1-20260917-cd07d8b-05a`: verified `blocked` readiness (no 2026 schedule/team-states), frozen-replay proof `e4d798bac7d3`, preflight/apply/verify/repeat passed. |
-| 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Draft.** Blocked on Implemented 05A; requires separate explicit user approval. Measured freezes, outcome-versioned scoring, evidence ledger/counter. |
-| 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Draft.** Blocked on Implemented 05B; requires separate explicit user approval. Independent verifier, diagnostic rehearsal, refreshed readiness report, shadow runbook, Contract 06 handoff. |
+| 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Implemented 2026-09-18.** Certified Preview freeze artifact `shadow-v1-20260918-73e8e9b-05b-freeze` and score artifact `shadow-v1-20260918-7aec1c8-05b-score`: measured freeze, outcome-versioned scoring, evidence counter, idempotent repeat verified. |
+| 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Draft.** Entry gate met (Implemented 05B); requires separate explicit user approval. Independent verifier, diagnostic rehearsal, refreshed readiness report, shadow runbook, Contract 06 handoff. |
 
 ### Certified foundations and superseded execution records
 
