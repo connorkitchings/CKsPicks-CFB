@@ -29,6 +29,7 @@ DISPOSITIONS = (
     "historical_evidence_only",
     "prohibited_until_closed",
 )
+CLOSURE_STATES = ("open", "closed", "incorporated_into_contract_11")
 # Provisional severity used only in local 10a preflight evidence; 10b assigns
 # a final severity from SEVERITIES to every finding.
 PROVISIONAL_SEVERITY = "unassigned"

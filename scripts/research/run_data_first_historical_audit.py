@@ -15,6 +15,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Mapping
 from datetime import datetime, timezone
@@ -32,9 +33,13 @@ from cks_picks_cfb.audit import (
     FORBIDDEN_SEASONS,
     PARENT_STAGES,
 )
+from cks_picks_cfb.audit.behavioral import run_behavioral_matrix
 from cks_picks_cfb.audit.checks import (
+    behavioral_cells_to_checks,
+    behavioral_findings,
     check_code_config,
     check_identity,
+    check_lineage_exhaustive,
     check_output_refs,
     check_parent_links,
     check_production_flags,
@@ -49,11 +54,15 @@ from cks_picks_cfb.audit.register import (
     AuditError,
     build_graph,
     build_register_row,
-    collect_nested_manifests,
+    collect_lineage,
     read_manifest,
     validate_config,
 )
-from cks_picks_cfb.audit.verification import canonical_bytes, evaluate_gate
+from cks_picks_cfb.audit.verification import (
+    canonical_bytes,
+    evaluate_gate,
+    evidence_digest_for_manifest,
+)
 from cks_picks_cfb.data.data_first_phase2d import sha256
 from cks_picks_cfb.data.storage import get_storage
 
@@ -130,7 +139,7 @@ def preflight(
         loaded[stage] = payload
         raw_shas[stage] = raw_sha
         manifest_uris[stage] = uri
-        for nested_uri, record in collect_nested_manifests(storage, payload).items():
+        for nested_uri, record in collect_lineage(storage, payload).items():
             nested.setdefault(nested_uri, record)
 
     identity = {
@@ -146,6 +155,7 @@ def preflight(
         },
         "development_seasons": list(ELIGIBLE_SEASONS),
         "forbidden_seasons": list(FORBIDDEN_SEASONS),
+        "rejected_seasons": list(config["rejected_seasons"]),
     }
 
     register = [
@@ -184,7 +194,11 @@ def preflight(
         check_results.append(check_production_flags(stage, loaded[stage], uri))
         check_results.append(check_output_refs(stage, loaded[stage], uri, storage))
         check_results.append(check_row_counts(stage, loaded, uri))
-        check_results.append(check_seasons(stage, loaded[stage], uri))
+        check_results.append(
+            check_seasons(
+                stage, loaded[stage], uri, rejected=tuple(config["rejected_seasons"])
+            )
+        )
         check_results.append(
             check_code_config(
                 stage,
@@ -194,10 +208,16 @@ def preflight(
             )
         )
     check_results.extend(check_parent_links(loaded, manifest_uris, raw_shas))
+    check_results.append(check_lineage_exhaustive(nested))
     independence_results, conditions = run_independence_checks()
     check_results.extend(independence_results)
 
+    with tempfile.TemporaryDirectory(prefix="historical-audit-10a-") as tmp:
+        behavioral_cells = run_behavioral_matrix(tmp_dir=Path(tmp))
+    check_results.extend(behavioral_cells_to_checks(behavioral_cells))
+
     findings = seeded_provisional_findings(conditions)
+    findings.extend(behavioral_findings(behavioral_cells))
     gate_evaluation = evaluate_gate([dict(finding) for finding in findings])
 
     return {
@@ -246,7 +266,7 @@ def _audit_manifest(
         "schema_version": AUDIT_MANIFEST_SCHEMA,
         "identity": dict(identity),
         "parents": dict(identity["parents"]),
-        "evidence_sha256": evidence_sha256,
+        "evidence_sha256": evidence_digest_for_manifest(identity, digests),
         "output_refs": {
             "evidence_register": f"{prefix}/evidence-register.json",
             "check_results": f"{prefix}/check-results.json",
@@ -273,20 +293,15 @@ def apply(
     run_id: str,
     evidence: Mapping[str, Any],
     prefix: str,
+    finalized: bool = False,
 ) -> dict[str, Any]:
-    """Publish versioned audit outputs to the Preview audit prefix."""
-    manifest_uri = f"{prefix}/audit-manifest.json"
-    if storage.exists(manifest_uri):
-        existing = json.loads(storage.read_bytes(manifest_uri))
-        if (existing.get("identity") or {}).get("run_id") == run_id and (
-            existing.get("identity") or {}
-        ).get("code_sha") == evidence["identity"]["code_sha"]:
-            return {
-                "state": "already_applied",
-                "manifest_uri": manifest_uri,
-            }
-        raise AuditError("audit run ID already has a different identity")
+    """Publish versioned audit outputs to the Preview audit prefix.
 
+    An existing run returns ``already_applied`` only when the complete
+    identity, evidence digest, parents, and output hashes match; any
+    collision fails closed.
+    """
+    manifest_uri = f"{prefix}/audit-manifest.json"
     register_payload = {
         "schema_version": evidence["schema_version"],
         "identity": evidence["identity"],
@@ -319,8 +334,20 @@ def apply(
         digests=digests,
         counts=counts,
         gate_evaluation=evidence["gate_evaluation"],
-        finalized=False,
+        finalized=finalized,
     )
+    if storage.exists(manifest_uri):
+        existing = json.loads(storage.read_bytes(manifest_uri))
+        if (
+            (existing.get("identity") or {}) == dict(evidence["identity"])
+            and existing.get("evidence_sha256") == manifest["evidence_sha256"]
+            and dict(existing.get("output_digests") or {}) == digests
+        ):
+            return {
+                "state": "already_applied",
+                "manifest_uri": manifest_uri,
+            }
+        raise AuditError("audit run ID already has a different identity")
     # The terminal manifest is written last; its absence keeps any partial
     # prefix permanently ineligible.
     _immutable_json(storage, f"{prefix}/evidence-register.json", register_payload)

@@ -53,3 +53,14 @@
 - **Watch out for:** Preflight evidence lives at `/var/folders/b5/wrh935896v148pd_2rvkcbz00000gn/T/opencode/audit-10a-preflight-{1,2,3}.json` (local only, digest `29235642…`). Do not publish anything to R2 during 10a. Never check out the worktree during historical commit hashing.
 
 **tags:** ["v5", "contract-10a", "audit", "implementation"]
+
+## Dated correction — 10A reclosure (Amendment 2 implementation)
+
+The Implemented label above was premature. Post-close review found six
+assurance gaps (duplicated contract header, depth-limited traversal, static-only
+assurance, non-final publishable manifest, run-only idempotence, no digest
+reconstruction/parent reread, disposition/closure conflation). The code
+checkpoint `bdf3ba7` and its preflights remain valid history; the reclosure
+work is recorded in `session_logs/2026-09-18/08-v5-10a-reclosure.md` and
+executed under Amendment 2 of the 10a contract. No R2 writes occurred in
+either phase.

@@ -1,12 +1,10 @@
 # V5-10a: Audit Specification, Lineage Inventory, and Read-Only Harness
 
-- **Status:** Implemented
+- **Status:** In Progress
 - **Created:** 2026-09-18
 - **Planner:** Sol
-- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized implementation of this exact path.
+- **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, explicitly authorized 10a implementation, and on 2026-09-18 approved the 10a-reclosure plan (Amendment 2) with four corrections.
 - **Implementation log:** `session_logs/2026-09-18/06-v5-10a-audit-harness.md` (code checkpoint `bdf3ba7`; post-commit preflight rerun confirms byte-identical evidence under the committed SHA)
-- **Implementation log:** `session_logs/2026-09-18/06-v5-10a-audit-harness.md`
-- **Status:** In Progress
 - **Commit policy:** Separate code checkpoint; user controls Git operations.
 
 ## Goal
@@ -186,8 +184,20 @@ uses generic storage readers, schema contracts, and signing utilities only.
 - Static import-boundary scan: the audit harness must not import Repair,
   possession, rating, or forecast producer computations; assessed verifiers
   must not import their producers.
-- Behavioral perturbation tests: producer-only perturbations, missing
-  datasets, corrupted outputs, and wrong parents must each be detected.
+- Behavioral assurance matrix: for each assessed verifier (Repair,
+  measurement, rating, forecast), all four cases must execute
+  deterministically — wrong parent, missing dataset, corrupted output, and
+  self-consistent producer-only perturbation. A case passes when the
+  verifier's observed behavior matches the expected behavior for that case;
+  Repair and forecast verification are already expected to fail parts of the
+  matrix.
+- A verifier's classification must match its observed boundary and behavioral
+  results; it is independent only when the boundary holds and every
+  behavioral case behaves as expected for an independent verifier. Every
+  failure is converted into a fully specified provisional finding (severity
+  assigned by 10b). A failed assessed verifier never blocks closure of the
+  audit harness itself; the audit reports defects but does not repair the
+  assessed producers.
 - Audit verifier scope (implemented here, exercised in 10b): may import only
   audit schemas/constants, generic storage readers, and signing utilities —
   never the audit runner or check implementations. It verifies exact parent
@@ -198,8 +208,8 @@ uses generic storage readers, schema contracts, and signing utilities only.
 
 **Acceptance criteria:**
 
-- A verifier is classified independent only with both an enforced
-  producer-import boundary and passing behavioral tests. Existing
+- A verifier is classified by matching its classification to its observed
+  boundary and behavioral results, per the matrix above. Existing
   certification labels do not override this standard.
 
 **Validation:**
@@ -224,14 +234,16 @@ scoped Ruff, schema/contract validation, strict MkDocs, `git diff --check`.
 - Progress timing leaking into digests would break determinism — elapsed time
   and progress events are excluded from signed evidence.
 
-## Definition of done
+## Definition of done (reclosure)
 
 - [x] 55-test baseline reproduced; new audit tests added and passing (44 new; full suite 1106 passed).
 - [x] Committed 10a code checkpoint (`bdf3ba7`) + post-commit preflight rerun under the committed SHA (evidence identical except `code_sha`).
-- [x] Three identical no-write Preview preflights (3,600s cap; actual ~7s); local candidate
-  evidence only; zero R2 writes.
+- [x] Header duplication removed (planning step); lineage traversal is cycle-safe and exhaustive with every nested edge preserved; unreadable/untraceable nodes fail closed.
+- [x] All 16 behavioral-assurance cases execute deterministically (55 audit tests green); each verifier's classification matches the observed boundary and behavioral results; every failure is converted into a fully specified provisional finding (zero mismatches; dependence carried by seeded findings).
+- [x] Publication interface hardened (rejected seasons declared; provisional output rejected; exact idempotence; final-manifest enforcement; verifier rereads parent bytes) without any R2 write.
+- [x] Three new byte-identical no-write Preview preflights (61 checks; digest `a26ba122…`; only expected `independence.repair.boundary` fail), independently verified; local candidate evidence only; zero R2 writes.
 - [x] No findings published; no code repaired.
-- [x] Session log created; `git diff --check` clean.
+- [ ] Session log corrected and extended; user commit + post-commit rerun pending; `git diff --check` clean.
 
 ## Amendments
 
@@ -251,6 +263,43 @@ post-commit preflight rerun). The umbrella 10 stays Draft per the gate. No
 architecture, scope, or acceptance change.
 
 **Impact:** Authority suite stays green; 10a execution record is closed.
+
+### Amendment 2 — 10a reclosure: assurance gaps (2026-09-18)
+
+**Reason:** Post-close review found the 10a label premature: duplicated
+header fields, depth-limited lineage traversal without nested edges, static
+only verifier assurance, a publishable non-final manifest, run-only
+idempotence, no evidence-digest reconstruction or parent-byte reread in
+verification, and gate logic conflating disposition with closure. The
+implementation itself was directionally correct; the assurance standard was
+not met.
+
+**Original approach:** 10a Implemented at checkpoint `bdf3ba7`; behavioral
+tests as an undifferentiated requirement; publication validity and the
+Contract 11 gate treated as one decision; only 2020 declared forbidden.
+
+**Revised approach (user-approved with four corrections):**
+
+1. Reopen 10a to `In Progress`; fix the header; preserve the earlier
+   completion claim as history. Exhaustive cycle-safe traversal replaces the
+   depth limit; every nested manifest, parent, and output edge is recorded.
+2. The 16-case behavioral matrix must execute deterministically with
+   classifications matching observed results; failures become provisional
+   findings and never block harness closure.
+3. Publication validity (independent verification agreement) is decided
+   separately from the Contract 11 gate (finding closure). The contract
+   publishes exactly four outputs; the verification record remains
+   local/session-log evidence carrying the verified manifest hash.
+4. Findings carry `closure_state` (`open`/`closed`/`incorporated_into_contract_11`)
+   alongside severity and disposition. Contract 11 requires all upstream
+   blockers closed, all forecast findings closed or incorporated, and exact
+   manifest–verification agreement.
+5. The config declares `rejected_seasons: [2020, 2026]` alongside the
+   unchanged development seasons; the season gate enforces both everywhere.
+
+**Impact:** Terra task 1 closes these gaps with zero R2 writes, then three
+new preflights under a new committed SHA return 10a to Implemented. Terra
+task 2 (10b) follows. Contract 11 remains Draft throughout.
 
 Mechanical fixes stay in-contract. Changes to boundary, parents, outputs, or
 independence standard require a user-approved planning amendment.

@@ -19,6 +19,7 @@ from cks_picks_cfb.audit import (
     ELIGIBLE_SEASONS,
     FORBIDDEN_SEASONS,
     PARENT_STAGES,
+    REJECTED_SEASONS,
     SEALED_REPAIR_POPULATION,
 )
 from cks_picks_cfb.data.data_first_phase2d import sha256
@@ -42,6 +43,8 @@ def validate_config(payload: Mapping[str, Any]) -> dict[str, Any]:
         raise AuditError("historical audit development season policy drifted")
     if tuple(payload.get("forbidden_seasons") or ()) != FORBIDDEN_SEASONS:
         raise AuditError("historical audit forbidden season policy drifted")
+    if tuple(payload.get("rejected_seasons") or ()) != REJECTED_SEASONS:
+        raise AuditError("historical audit rejected season policy drifted")
     parents = payload.get("parents")
     if not isinstance(parents, dict):
         raise AuditError("historical audit config parents are missing")
@@ -114,34 +117,69 @@ def iter_manifest_uris(payload: Mapping[str, Any]) -> list[tuple[str, str]]:
     return found
 
 
-def collect_nested_manifests(
-    storage: Any, payload: Mapping[str, Any], *, max_depth: int = 3
-) -> dict[str, dict[str, Any]]:
-    """Read recursively referenced parent manifests (metadata only).
+def _is_manifest_uri(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and value.startswith("artifacts/")
+        and value.endswith(".json")
+    )
 
-    Returns a mapping of manifest URI to ``{"payload": ..., "raw_sha256": ...}``
-    or ``{"error": ...}`` when a nested reference cannot be read. Unreadable
-    nested evidence becomes a lineage finding in 10b; it never stops the
-    top-level inventory.
+
+def collect_lineage(
+    storage: Any, payload: Mapping[str, Any]
+) -> dict[str, dict[str, Any]]:
+    """Exhaustively collect every reachable parent manifest (cycle-safe).
+
+    Breadth-first traversal from the root manifest follows every manifest
+    URI under ``parents``/``identity`` keys until no unvisited reference
+    remains; visited URIs are never re-read, so reference cycles terminate.
+    Each record is ``{"payload": ..., "raw_sha256": ...}``,
+    ``{"opaque": True, "exists": ...}`` for traceable non-JSON leaves, or
+    ``{"error": ...}`` for unreadable or untraceable nodes. Unreadable nodes
+    fail closed downstream; nothing is truncated by depth.
     """
     collected: dict[str, dict[str, Any]] = {}
     frontier = [uri for _, uri in iter_manifest_uris(payload)]
-    depth = 0
-    while frontier and depth < max_depth:
+    while frontier:
         pending = [uri for uri in frontier if uri not in collected]
         frontier = []
         for uri in pending:
             try:
-                nested, raw_sha = read_manifest(storage, uri)
-            except AuditError as exc:
-                collected[uri] = {"error": str(exc)}
+                raw = storage.read_bytes(uri)
+            except Exception as exc:
+                collected[uri] = {"error": f"unreadable: {exc}"}
                 continue
-            collected[uri] = {"payload": nested, "raw_sha256": raw_sha}
+            try:
+                nested = json.loads(raw)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                collected[uri] = {
+                    "opaque": True,
+                    "raw_sha256": hashlib.sha256(raw).hexdigest(),
+                }
+                continue
+            if not isinstance(nested, dict):
+                collected[uri] = {"error": "untraceable: manifest is not an object"}
+                continue
+            collected[uri] = {
+                "payload": nested,
+                "raw_sha256": hashlib.sha256(raw).hexdigest(),
+            }
             frontier.extend(
                 child for _, child in iter_manifest_uris(nested) if child != uri
             )
-        depth += 1
     return collected
+
+
+def collect_nested_manifests(
+    storage: Any, payload: Mapping[str, Any], *, max_depth: int = 3
+) -> dict[str, dict[str, Any]]:
+    """Deprecated depth-limited traversal; use :func:`collect_lineage`.
+
+    Retained for backward compatibility with existing tests. New code must
+    use the exhaustive traversal, which never truncates by depth.
+    """
+    del max_depth
+    return collect_lineage(storage, payload)
 
 
 def build_graph(
@@ -174,7 +212,20 @@ def build_graph(
                 )
     for uri, record in nested.items():
         if "payload" in record:
+            nested_manifest = record["payload"]
             add_node(uri, "manifest")
+            for _, child in iter_manifest_uris(nested_manifest):
+                add_node(child, "manifest")
+                edges.append({"from": child, "to": uri, "role": "parent"})
+            for role, ref in (nested_manifest.get("output_refs") or {}).items():
+                if isinstance(ref, Mapping) and ref.get("uri"):
+                    ref_uri = str(ref["uri"])
+                    add_node(ref_uri, "dataset")
+                    edges.append({"from": uri, "to": ref_uri, "role": f"output:{role}"})
+        elif record.get("opaque"):
+            add_node(uri, "opaque_leaf")
+        else:
+            add_node(uri, "unreadable")
     edges.sort(key=lambda edge: (edge["from"], edge["to"], edge["role"]))
     return {
         "nodes": [nodes[uri] for uri in sorted(nodes)],

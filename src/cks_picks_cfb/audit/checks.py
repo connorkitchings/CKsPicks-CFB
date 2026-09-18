@@ -374,15 +374,19 @@ def _season_ints(node: Any, key: str | None, *, found: list[tuple[str, int]]) ->
 
 
 def check_seasons(
-    stage: str, manifest: Mapping[str, Any], manifest_uri: str
+    stage: str,
+    manifest: Mapping[str, Any],
+    manifest_uri: str,
+    *,
+    rejected: tuple[int, ...] = REJECTED_SEASONS,
 ) -> dict[str, Any]:
     found: list[tuple[str, int]] = []
     _season_ints(manifest, None, found=found)
-    rejected = sorted({(key, year) for key, year in found if year in REJECTED_SEASONS})
+    rejected_hits = sorted({(key, year) for key, year in found if year in rejected})
     ineligible = sorted({year for _, year in found if year not in ELIGIBLE_SEASONS})
     problems: list[str] = []
-    if rejected:
-        problems.append(f"rejected seasons present: {rejected}")
+    if rejected_hits:
+        problems.append(f"rejected seasons present: {rejected_hits}")
     if ineligible:
         problems.append(f"non-development seasons present: {ineligible}")
     return _result(
@@ -390,7 +394,7 @@ def check_seasons(
         "population",
         "season_gate",
         "fail" if problems else "pass",
-        f"only {list(ELIGIBLE_SEASONS)}; never {list(REJECTED_SEASONS)}",
+        f"only {list(ELIGIBLE_SEASONS)}; never {list(rejected)}",
         "ok" if not problems else "; ".join(problems),
         f"parent manifest: {stage}",
         [manifest_uri],
@@ -436,6 +440,33 @@ def check_code_config(
     )
 
 
+def check_lineage_exhaustive(
+    nested: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Fail closed when any reachable lineage node is unreadable."""
+    unreadable = sorted(
+        uri
+        for uri, record in nested.items()
+        if "payload" not in record and not record.get("opaque")
+    )
+    opaque = sorted(uri for uri, record in nested.items() if record.get("opaque"))
+    observed = (
+        f"reachable={len(nested)}, opaque_leaves={len(opaque)}"
+        if not unreadable
+        else f"unreadable={unreadable[:8]}"
+    )
+    return _result(
+        "lineage.exhaustive",
+        "lineage",
+        "traversal",
+        "fail" if unreadable else "pass",
+        "every reachable node decoded or recorded as an opaque leaf",
+        observed,
+        "recursive parent manifests",
+        [],
+    )
+
+
 def seeded_provisional_findings(
     conditions: Mapping[str, bool],
 ) -> list[dict[str, Any]]:
@@ -452,6 +483,7 @@ def seeded_provisional_findings(
                 "finding_id": key,
                 "severity": PROVISIONAL_SEVERITY,
                 "disposition": PROVISIONAL_SEVERITY,
+                "closure_state": "open",
                 "title": seed["title"],
                 "description": seed["description"],
                 "condition_confirmed": bool(conditions.get(key, False)),
@@ -465,6 +497,64 @@ def seeded_provisional_findings(
                         "src/cks_picks_cfb/forecast/forecast_verification.py",
                     ],
                 }[key],
+                "permitted_use": "to be determined by 10b",
+                "required_action": "10b determines scope, severity, disposition, closure criteria",
+                "closure_criteria": "to be determined by 10b",
+                "blocking_dependencies": [],
+            }
+        )
+    return findings
+
+
+def behavioral_cells_to_checks(
+    cells: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert behavioral matrix cells to check-result records."""
+    return [
+        _result(
+            str(cell["cell_id"]),
+            "assurance",
+            "behavioral",
+            "pass" if cell["match"] else "fail",
+            f"expected behavior: {cell['expected']}",
+            f"observed behavior: {cell['observed']} (method: {cell['method']})",
+            f"{cell['verifier']} verifier / {cell['case']}",
+            [],
+        )
+        for cell in cells
+    ]
+
+
+def behavioral_findings(
+    cells: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Convert behavioral mismatches into fully specified provisional findings.
+
+    One finding per verifier with any mismatching cell. A failed assessed
+    verifier becomes a finding; it never blocks harness closure.
+    """
+    mismatched: dict[str, list[Mapping[str, Any]]] = {}
+    for cell in cells:
+        if not cell["match"]:
+            mismatched.setdefault(str(cell["verifier"]), []).append(cell)
+    findings: list[dict[str, Any]] = []
+    for verifier in sorted(mismatched):
+        bad = mismatched[verifier]
+        findings.append(
+            {
+                "finding_id": f"audit-behavioral-{verifier}",
+                "severity": PROVISIONAL_SEVERITY,
+                "disposition": PROVISIONAL_SEVERITY,
+                "closure_state": "open",
+                "title": f"{verifier} verifier behavioral mismatch",
+                "description": (
+                    f"{len(bad)} behavioral case(s) did not match the "
+                    "independent-verifier expectation."
+                ),
+                "condition_confirmed": True,
+                "affected_stages": [verifier],
+                "evidence": [str(cell["cell_id"]) for cell in bad],
+                "cells": [dict(cell) for cell in bad],
                 "permitted_use": "to be determined by 10b",
                 "required_action": "10b determines scope, severity, disposition, closure criteria",
                 "closure_criteria": "to be determined by 10b",

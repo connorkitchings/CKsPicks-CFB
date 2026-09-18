@@ -6,6 +6,7 @@ independence, audit evidence verification, runner gates, and determinism.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -490,7 +491,10 @@ def _evidence_fixture(**overrides: Any) -> dict[str, Any]:
             "code_sha": "aa" * 20,
             "config_sha": "bb" * 32,
             "parents": {
-                stage: {"manifest_uri": f"uri://{stage}", "raw_sha256": "cc" * 32}
+                stage: {
+                    "manifest_uri": f"uri://{stage}",
+                    "raw_sha256": _stage_raw(stage),
+                }
                 for stage in STAGE_RUN_IDS
             },
         },
@@ -499,7 +503,7 @@ def _evidence_fixture(**overrides: Any) -> dict[str, Any]:
                 "component": f"v5-{stage}",
                 "role": "audit_parent",
                 "uri": f"uri://{stage}",
-                "raw_sha256": "cc" * 32,
+                "raw_sha256": _stage_raw(stage),
                 "code_sha": "aa" * 20,
                 "config_sha": "bb" * 32,
                 "seasons": list(ELIGIBLE_SEASONS),
@@ -527,6 +531,7 @@ def _evidence_fixture(**overrides: Any) -> dict[str, Any]:
                 "finding_id": "audit-structural-001",
                 "severity": PROVISIONAL_SEVERITY,
                 "disposition": PROVISIONAL_SEVERITY,
+                "closure_state": "open",
                 "affected_stages": ["repair"],
                 "evidence": ["scripts/research/verify_data_first_repair_v2.py"],
                 "required_action": "10b",
@@ -541,6 +546,14 @@ def _evidence_fixture(**overrides: Any) -> dict[str, Any]:
     }
     evidence.update(overrides)
     return dict(evidence) | {"evidence_sha256": sha256(evidence)}
+
+
+def _stage_bytes(stage: str) -> bytes:
+    return f"fixture-bytes:{stage}".encode()
+
+
+def _stage_raw(stage: str) -> str:
+    return hashlib.sha256(_stage_bytes(stage)).hexdigest()
 
 
 def _expected_parents() -> dict[str, str]:
@@ -614,6 +627,7 @@ def test_evaluate_gate_blocks_upstream_blocker() -> None:
             {
                 "severity": "blocker",
                 "disposition": "prohibited_until_closed",
+                "closure_state": "open",
                 "affected_stages": ["ratings"],
             }
         ]
@@ -625,29 +639,32 @@ def test_evaluate_gate_blocks_upstream_blocker() -> None:
     }
 
 
-def test_evaluate_gate_permits_resolved_findings() -> None:
+def test_evaluate_gate_uses_closure_not_disposition() -> None:
     gate = audit_verification.evaluate_gate(
         [
             {
                 "severity": "blocker",
-                "disposition": "eligible_for_next_contract",
+                "disposition": "prohibited_until_closed",
+                "closure_state": "closed",
                 "affected_stages": ["repair"],
             },
             {
                 "severity": "info",
                 "disposition": "historical_evidence_only",
+                "closure_state": "open",
                 "affected_stages": ["forecasts"],
             },
         ]
     )
     assert gate["contract11_permitted"] is False  # forecast finding still pending
-    assert gate["upstream_blocker_open"] is False
+    assert gate["upstream_blocker_open"] is False  # closed blocker does not block
 
 
 def _finalized_evidence() -> dict[str, Any]:
     evidence = _evidence_fixture()
     evidence["findings"][0]["severity"] = "blocker"
     evidence["findings"][0]["disposition"] = "prohibited_until_closed"
+    evidence["findings"][0]["closure_state"] = "open"
     evidence["gate_evaluation"] = audit_verification.evaluate_gate(evidence["findings"])
     return dict(evidence) | {"evidence_sha256": sha256(evidence)}
 
@@ -664,6 +681,7 @@ def test_published_round_trip_through_runner_apply() -> None:
         run_id="audit-test",
         evidence=evidence,
         prefix=prefix,
+        finalized=True,
     )
     assert first["state"] == "applied"
     repeat = runner.apply(
@@ -690,9 +708,15 @@ def test_published_round_trip_through_runner_apply() -> None:
         expected_run_id="audit-test",
         expected_code_sha="aa" * 20,
         expected_parents=_expected_parents(),
-        storage=_FakeStorage({row["uri"]: b"x" for row in register_doc["rows"]}),
+        storage=_FakeStorage(
+            {
+                row["uri"]: _stage_bytes(row["uri"].rsplit("://", 1)[1])
+                for row in register_doc["rows"]
+            }
+        ),
     )
     assert result["verified"] is True
+    assert result["publication_valid"] is True
     assert result["gate_evaluation"]["contract11_permitted"] is False
 
     # Tampering with published findings after the fact must be detected.
@@ -709,11 +733,7 @@ def test_published_round_trip_through_runner_apply() -> None:
             expected_parents=_expected_parents(),
         )
 
-
-# --- Runner gates -----------------------------------------------------------
-
-
-def test_runner_rejects_non_preview_environment() -> None:
+    # --- Runner gates -----------------------------------------------------------def test_runner_rejects_non_preview_environment() -> None:
     from scripts.research import run_data_first_historical_audit as runner
 
     with pytest.raises(SystemExit):
@@ -766,4 +786,307 @@ def test_runner_apply_requires_preflight_evidence(
             ]
         )
         == 1
+    )
+
+
+# --- Exhaustive traversal ---------------------------------------------------
+
+
+def _signed_json(payload: dict[str, Any]) -> bytes:
+    from cks_picks_cfb.data.data_first_phase2d import signed_payload as _sign
+
+    return json.dumps(_sign(payload), sort_keys=True, separators=(",", ":")).encode()
+
+
+def test_traversal_is_exhaustive_not_depth_limited() -> None:
+    chain = {}
+    depth = 8
+    for level in range(depth):
+        uri = f"artifacts/chain/{level}.json"
+        nxt = f"artifacts/chain/{level + 1}.json" if level + 1 < depth else None
+        chain[uri] = _signed_json(
+            {
+                "schema_version": "chain_v1",
+                "parents": {"next_uri": nxt} if nxt else {},
+                "identity": {},
+            }
+        )
+    root = {"parents": {"next_uri": "artifacts/chain/0.json"}, "identity": {}}
+    storage = _FakeStorage(chain)
+    collected = audit_register.collect_lineage(storage, root)
+    assert len(collected) == depth
+    assert all("payload" in record for record in collected.values())
+
+
+def test_traversal_terminates_on_cycles() -> None:
+    storage = _FakeStorage(
+        {
+            "artifacts/a.json": _signed_json(
+                {"parents": {"b_uri": "artifacts/b.json"}, "identity": {}}
+            ),
+            "artifacts/b.json": _signed_json(
+                {"parents": {"a_uri": "artifacts/a.json"}, "identity": {}}
+            ),
+        }
+    )
+    collected = audit_register.collect_lineage(
+        storage, {"parents": {"a_uri": "artifacts/a.json"}, "identity": {}}
+    )
+    assert set(collected) == {"artifacts/a.json", "artifacts/b.json"}
+
+
+def test_traversal_records_unreadable_and_opaque() -> None:
+    storage = _FakeStorage(
+        {
+            "artifacts/ok.json": _signed_json({"parents": {}, "identity": {}}),
+            "artifacts/blob.json": b"\x00\x01not-json",
+            "artifacts/list.json": b"[1, 2]",
+        }
+    )
+    root = {
+        "parents": {
+            "ok_uri": "artifacts/ok.json",
+            "blob_uri": "artifacts/blob.json",
+            "list_uri": "artifacts/list.json",
+            "gone_uri": "artifacts/gone.json",
+        },
+        "identity": {},
+    }
+    collected = audit_register.collect_lineage(storage, root)
+    assert "payload" in collected["artifacts/ok.json"]
+    assert collected["artifacts/blob.json"].get("opaque") is True
+    assert "error" in collected["artifacts/list.json"]
+    assert "error" in collected["artifacts/gone.json"]
+    assert (
+        audit_register.build_graph({}, collected, {})["nodes"]
+        and audit_checks.check_lineage_exhaustive(collected)["status"] == "fail"
+    )
+    clean = {k: v for k, v in collected.items() if "payload" in v or v.get("opaque")}
+    assert audit_checks.check_lineage_exhaustive(clean)["status"] == "pass"
+
+
+# --- Behavioral matrix ------------------------------------------------------
+
+
+def test_behavioral_matrix_executes_all_16_cells(tmp_path: Path) -> None:
+    from cks_picks_cfb.audit.behavioral import run_behavioral_matrix
+
+    cells = run_behavioral_matrix(tmp_dir=tmp_path)
+    assert len(cells) == 16
+    assert {(cell["verifier"], cell["case"]) for cell in cells} == {
+        (verifier, case)
+        for verifier in ("repair", "measurements", "ratings", "forecasts")
+        for case in (
+            "wrong_parent",
+            "missing_dataset",
+            "corrupted_output",
+            "producer_perturbation",
+        )
+    }
+    for cell in cells:
+        for key in (
+            "cell_id",
+            "verifier",
+            "case",
+            "method",
+            "expected",
+            "observed",
+            "match",
+        ):
+            assert cell[key] is not None
+
+
+def test_behavioral_matrix_is_deterministic(tmp_path: Path) -> None:
+    from cks_picks_cfb.audit.behavioral import run_behavioral_matrix
+
+    first = run_behavioral_matrix(tmp_dir=tmp_path / "a")
+    second = run_behavioral_matrix(tmp_dir=tmp_path / "b")
+    assert first == second
+
+
+def test_behavioral_mismatches_become_findings() -> None:
+    cells = [
+        {
+            "cell_id": "behavioral.ratings.wrong_parent",
+            "verifier": "ratings",
+            "case": "wrong_parent",
+            "method": "m",
+            "expected": "reject",
+            "observed": "accepted",
+            "match": False,
+        },
+        {
+            "cell_id": "behavioral.ratings.missing_dataset",
+            "verifier": "ratings",
+            "case": "missing_dataset",
+            "method": "m",
+            "expected": "reject",
+            "observed": "reject",
+            "match": True,
+        },
+    ]
+    findings = audit_checks.behavioral_findings(cells)
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding["finding_id"] == "audit-behavioral-ratings"
+    assert finding["severity"] == PROVISIONAL_SEVERITY
+    assert finding["closure_state"] == "open"
+    assert finding["condition_confirmed"] is True
+    assert audit_checks.behavioral_findings([c for c in cells if c["match"]]) == []
+    checks = audit_checks.behavioral_cells_to_checks(cells)
+    assert [c["status"] for c in checks] == ["fail", "pass"]
+
+
+# --- Publication hardening --------------------------------------------------
+
+
+def test_config_rejects_rejected_season_drift() -> None:
+    config = yaml.safe_load(AUDIT_CONFIG.read_bytes())
+    config["rejected_seasons"] = [2020]
+    with pytest.raises(audit_register.AuditError):
+        audit_register.validate_config(config)
+
+
+def test_verify_evidence_rejects_unknown_closure_state() -> None:
+    evidence = _evidence_fixture()
+    evidence["findings"][0]["closure_state"] = "pending"
+    evidence["evidence_sha256"] = sha256(
+        {k: v for k, v in evidence.items() if k != "evidence_sha256"}
+    )
+    with pytest.raises(audit_verification.AuditVerificationError):
+        audit_verification.verify_audit_evidence(
+            evidence,
+            expected_run_id="audit-test",
+            expected_code_sha="aa" * 20,
+            expected_parents=_expected_parents(),
+        )
+
+
+def test_apply_collision_fails_closed() -> None:
+    from scripts.research import run_data_first_historical_audit as runner
+
+    evidence = _finalized_evidence()
+    storage = _FakeStorage({})
+    prefix = "artifacts/runs/audit-test"
+    runner.apply(
+        storage=storage,
+        config={},
+        run_id="audit-test",
+        evidence=evidence,
+        prefix=prefix,
+        finalized=True,
+    )
+    other = _finalized_evidence()
+    other["findings"].append(
+        {
+            "finding_id": "extra",
+            "severity": "info",
+            "disposition": "historical_evidence_only",
+            "closure_state": "open",
+            "affected_stages": [],
+            "evidence": [],
+            "required_action": "none",
+            "closure_criteria": "none",
+        }
+    )
+    other["gate_evaluation"] = audit_verification.evaluate_gate(other["findings"])
+    other = dict(other) | {"evidence_sha256": sha256(other)}
+    with pytest.raises(runner.AuditError):
+        runner.apply(
+            storage=storage,
+            config={},
+            run_id="audit-test",
+            evidence=other,
+            prefix=prefix,
+            finalized=True,
+        )
+
+
+def test_published_rejects_non_final_manifest() -> None:
+    from scripts.research import run_data_first_historical_audit as runner
+
+    evidence = _finalized_evidence()
+    storage = _FakeStorage({})
+    prefix = "artifacts/runs/audit-test"
+    runner.apply(
+        storage=storage,
+        config={},
+        run_id="audit-test",
+        evidence=evidence,
+        prefix=prefix,
+        finalized=False,
+    )
+    manifest = json.loads(storage.writes[f"{prefix}/audit-manifest.json"])
+    assert manifest["finalized"] is False
+    with pytest.raises(audit_verification.AuditVerificationError):
+        audit_verification.verify_published_audit(
+            manifest,
+            json.loads(storage.writes[f"{prefix}/evidence-register.json"]),
+            json.loads(storage.writes[f"{prefix}/check-results.json"]),
+            json.loads(storage.writes[f"{prefix}/findings.json"]),
+            expected_run_id="audit-test",
+            expected_code_sha="aa" * 20,
+            expected_parents=_expected_parents(),
+        )
+
+
+def test_published_rereads_parent_bytes() -> None:
+    from scripts.research import run_data_first_historical_audit as runner
+
+    evidence = _finalized_evidence()
+    storage = _FakeStorage({})
+    prefix = "artifacts/runs/audit-test"
+    runner.apply(
+        storage=storage,
+        config={},
+        run_id="audit-test",
+        evidence=evidence,
+        prefix=prefix,
+        finalized=True,
+    )
+    manifest = json.loads(storage.writes[f"{prefix}/audit-manifest.json"])
+    register_doc = json.loads(storage.writes[f"{prefix}/evidence-register.json"])
+    checks_doc = json.loads(storage.writes[f"{prefix}/check-results.json"])
+    findings_doc = json.loads(storage.writes[f"{prefix}/findings.json"])
+    # Register URIs resolve to tampered bytes: reread must detect the change.
+    tampered = _FakeStorage({row["uri"]: b"tampered" for row in register_doc["rows"]})
+    with pytest.raises(audit_verification.AuditVerificationError):
+        audit_verification.verify_published_audit(
+            manifest,
+            register_doc,
+            checks_doc,
+            findings_doc,
+            expected_run_id="audit-test",
+            expected_code_sha="aa" * 20,
+            expected_parents=_expected_parents(),
+            storage=tampered,
+        )
+
+
+def test_evidence_digest_reconstructs_from_outputs() -> None:
+    import hashlib
+
+    from scripts.research import run_data_first_historical_audit as runner
+
+    evidence = _finalized_evidence()
+    storage = _FakeStorage({})
+    prefix = "artifacts/runs/audit-test"
+    runner.apply(
+        storage=storage,
+        config={},
+        run_id="audit-test",
+        evidence=evidence,
+        prefix=prefix,
+        finalized=True,
+    )
+    manifest = json.loads(storage.writes[f"{prefix}/audit-manifest.json"])
+    register_doc = json.loads(storage.writes[f"{prefix}/evidence-register.json"])
+    assert manifest["evidence_sha256"] == (
+        audit_verification.evidence_digest_for_manifest(
+            manifest["identity"], manifest["output_digests"]
+        )
+    )
+    assert (
+        manifest["output_digests"]["evidence_register"]
+        == hashlib.sha256(audit_verification.canonical_bytes(register_doc)).hexdigest()
     )

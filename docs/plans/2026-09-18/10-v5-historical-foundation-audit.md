@@ -18,7 +18,8 @@ two ordered execution contracts:
 
 The [common V5 contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 and historical-first reset are binding. The audit covers development seasons
-2015–2019 and 2021–2025; 2020 and 2026 are excluded everywhere, and no 2026
+2015–2019 and 2021–2025 with explicitly declared `rejected_seasons: [2020, 2026]`;
+no 2026
 data is read as model-development evidence. Contract 10 audits and reports; it
 does not repair, retune, reselect, or modify artifacts. Existing artifacts
 remain immutable regardless of findings; a failed independence check changes
@@ -99,16 +100,24 @@ Severities:
 - `info`: limitation or evidence note.
 
 Dispositions: `eligible_for_next_contract`, `historical_evidence_only`,
-`prohibited_until_closed`.
+`prohibited_until_closed`. Findings additionally carry `closure_state`
+(`open`/`closed`/`incorporated_into_contract_11`); severity and disposition
+describe the defect and artifact use, while `closure_state` alone drives the
+Contract 11 gate.
 
 Contract 10 is complete when the audit evidence is published and every finding
-has a disposition and closure criterion, even if blockers remain.
+has a severity, disposition, `closure_state`, and closure criterion, even if blockers remain.
+
+A publication is valid only when the audit manifest and the independent
+audit-verification record agree exactly. Validity and the Contract 11 gate
+are separate decisions: validity never implies Contract 11 permission. The
+verification record stays local/session-log evidence carrying the verified
+manifest hash; exactly four outputs are published.
 
 [Contract 11](11-v5-forecast-verification-closure.md) may begin only when:
 
-- No upstream Repair, measurement, or rating blocker remains open.
-- Forecast-related findings are either resolved by separately approved
-  corrective contracts or explicitly incorporated into Contract 11.
+- Every upstream Repair, measurement, or rating blocker is closed.
+- Every forecast-related finding is closed or explicitly incorporated into Contract 11.
 - The audit manifest and independent audit-verification record agree exactly.
 
 Required execution sequence:
@@ -132,7 +141,7 @@ remains an unrelated V4 diagnostic.
 
 - [ ] 10a harness built; three byte-identical no-write preflights pass.
 - [ ] 10b full-corpus audit executed; four versioned outputs published in Preview.
-- [ ] Every finding has severity, disposition, and closure criteria.
+- [ ] Every finding has severity, disposition, `closure_state`, and closure criteria.
 - [ ] Contract 11 entry gate explicitly evaluated and recorded.
 - [ ] Report, lifecycle, roadmap, index, and session log updated.
 

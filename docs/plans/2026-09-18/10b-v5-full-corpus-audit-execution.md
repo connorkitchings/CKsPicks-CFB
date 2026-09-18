@@ -138,22 +138,41 @@ idempotent repeat, and write the human-readable report.
 **Changes:**
 
 - Classify every finding with severity (`blocker/major/minor/info`),
-  disposition (`eligible_for_next_contract/historical_evidence_only/prohibited_until_closed`),
+  artifact disposition
+  (`eligible_for_next_contract/historical_evidence_only/prohibited_until_closed`),
+  `closure_state` (`open`/`closed`/`incorporated_into_contract_11`),
   required action, closure criteria, and blocking dependencies — including
-  the two seeded structural findings.
-- Run the audit verifier: exact parent bytes, output bytes/hashes,
-  manifest-last publication, internal count/findings consistency,
-  source-reference existence, disposition/gate arithmetic.
+  the two seeded structural findings. Severity/disposition describe the
+  defect and artifact use; `closure_state` alone drives the Contract 11 gate.
+- Run the local full audit first and review every generated finding. Then
+  perform the evidence-bound Preview apply with `audit-manifest.json`
+  written last carrying `finalized: true`, `overall_disposition`, exact
+  parent raw hashes, and a digest derived from the three published evidence
+  documents and their identity. Final publication rejects provisional
+  severities/dispositions, open required fields, failed integrity checks,
+  and preflight state.
+- Run the audit verifier against the published prefix: it must require final
+  state, recompute all published hashes and gate arithmetic, and reread and
+  hash the exact parent manifests. Publication validity (manifest–verification
+  agreement) and the Contract 11 gate (finding closure) are separate
+  decisions: validity is required for a legitimate publication; closure
+  determines whether Contract 11 may start. The verification record itself
+  stays local/session-log evidence carrying the verified manifest hash —
+  the contract publishes exactly four outputs, never a fifth file.
+- Enforce the declared `rejected_seasons: [2020, 2026]` in every 10b check;
+  development seasons remain 2015–2019 and 2021–2025.
 - Publish the four outputs (compact per umbrella), then the human-readable
   report under `docs/research/`, then lifecycle/roadmap/index/session-log updates.
-- Evaluate and record the Contract 11 entry gate explicitly.
+- Evaluate and record publication validity and the Contract 11 entry gate
+  explicitly and separately.
 
 **Acceptance criteria:**
 
 - Contract 10 is complete when evidence is published and every finding has a
-  disposition and closure criterion — even with open blockers.
-- Audit manifest and independent audit-verification record agree exactly;
-  otherwise Contract 11 stays closed.
+  severity, disposition, `closure_state`, and closure criterion — even with open blockers.
+- A publication is valid only when the audit manifest and the independent
+  audit-verification record agree exactly; validity never implies Contract 11
+  permission.
 - R2 writes confined to the new Preview audit prefix; production, Neon,
   catalog, web, V4, and the four parents unchanged.
 
@@ -183,11 +202,12 @@ tests (every finding dispositioned; gate evaluates exactly per umbrella).
 
 - [ ] Reviewed evidence-bound 10b apply passes (600s cap).
 - [ ] Four versioned outputs published; manifest written last with
-  `production_activation_authorized: false`.
-- [ ] Independent re-read agrees exactly; idempotent repeat returns
-  `already_applied`.
-- [ ] Every finding has severity, disposition, and closure criteria.
-- [ ] Contract 11 gate evaluated and recorded; report and lifecycle docs updated.
+  `finalized: true`, `overall_disposition`, exact parent raw hashes,
+  `production_activation_authorized: false`, and the evidence-derived digest.
+- [ ] Independent re-read agrees exactly (publication valid); idempotent repeat
+  returns `already_applied` on full identity + digest + parent + output-hash match.
+- [ ] Every finding has severity, disposition, `closure_state`, and closure criteria.
+- [ ] Publication validity and the Contract 11 gate evaluated and recorded separately; report and lifecycle docs updated.
 - [ ] All validation green; `git diff --check` clean.
 
 ## Amendments

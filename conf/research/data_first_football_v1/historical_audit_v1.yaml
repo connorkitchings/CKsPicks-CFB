@@ -2,6 +2,7 @@ schema_version: data_first_historical_audit_config_v1
 environment: preview
 development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 forbidden_seasons: [2020]
+rejected_seasons: [2020, 2026]
 parents:
   repair:
     stage: repair

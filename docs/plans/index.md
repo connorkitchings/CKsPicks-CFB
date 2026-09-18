@@ -88,7 +88,7 @@ unmet data dependency.
 | Contract | Status and dependency |
 | --- | --- |
 | 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Draft.** Umbrella: frozen parents, outputs, severities/dispositions, Contract 11 gate. |
-| 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **Implemented.** Read-only harness with three byte-identical preflights; zero R2 writes. Code checkpoint `bdf3ba7`. |
+| 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **In Progress.** Reclosure under Amendment 2 (exhaustive traversal, behavioral matrix, interface hardening); zero R2 writes. |
 | 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **Draft.** Full-corpus checks, independent verification, findings, publication; requires completed 10a. |
 | 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Starts after 10 resolves forecast findings; independently reconstructs the forecast chain. |
 | 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Starts after 10/11; historical report and non-automatic readiness recommendation. |
