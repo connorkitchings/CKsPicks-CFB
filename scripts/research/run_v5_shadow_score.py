@@ -237,30 +237,31 @@ def _load_freeze_datasets(
 
     # Load shadow_freeze
     freeze_ref = DatasetRef(
-        artifact_kind=freeze_ref_dict["artifact_kind"],
         dataset=freeze_ref_dict["dataset"],
         version_id=freeze_ref_dict["version_id"],
         schema_version=freeze_ref_dict["schema_version"],
         content_sha=freeze_ref_dict["content_sha"],
         uri=freeze_ref_dict["uri"],
-        row_count=int(freeze_ref_dict["row_count"]),
     )
     freeze_record = read_dataset(storage, freeze_ref)
 
     # Load shadow_prediction
     if pred_ref_dict["artifact_kind"] == "partitioned_dataset_v1":
+        part_manifest = json.loads(storage.read_bytes(pred_ref_dict["uri"]))
         pred_ref = PartitionedDatasetRef(
             artifact_kind=pred_ref_dict["artifact_kind"],
             dataset=pred_ref_dict["dataset"],
             version_id=pred_ref_dict["version_id"],
             schema_version=pred_ref_dict["schema_version"],
             content_sha=pred_ref_dict["content_sha"],
+            records_sha=part_manifest.get("records_sha", ""),
             uri=pred_ref_dict["uri"],
             row_count=int(pred_ref_dict["row_count"]),
             partition_keys=tuple(
-                pred_ref_dict.get("partition_keys") or ("season", "week")
+                part_manifest.get("partition_keys")
+                or pred_ref_dict.get("partition_keys")
+                or ("season", "week")
             ),
-            records_sha=pred_ref_dict.get("records_sha", ""),
         )
         pred_frames = list(iter_partitioned_dataset(storage, pred_ref))
         predictions = (
@@ -268,13 +269,11 @@ def _load_freeze_datasets(
         )
     else:
         pred_compact = DatasetRef(
-            artifact_kind=pred_ref_dict["artifact_kind"],
             dataset=pred_ref_dict["dataset"],
             version_id=pred_ref_dict["version_id"],
             schema_version=pred_ref_dict["schema_version"],
             content_sha=pred_ref_dict["content_sha"],
             uri=pred_ref_dict["uri"],
-            row_count=int(pred_ref_dict["row_count"]),
         )
         predictions = read_dataset(storage, pred_compact)
 
