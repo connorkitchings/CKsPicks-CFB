@@ -1,6 +1,6 @@
 # V5-10a: Audit Specification, Lineage Inventory, and Read-Only Harness
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, explicitly authorized 10a implementation, and on 2026-09-18 approved the 10a-reclosure plan (Amendment 2) with four corrections.
@@ -243,7 +243,7 @@ scoped Ruff, schema/contract validation, strict MkDocs, `git diff --check`.
 - [x] Publication interface hardened (rejected seasons declared; provisional output rejected; exact idempotence; final-manifest enforcement; verifier rereads parent bytes) without any R2 write.
 - [x] Three new byte-identical no-write Preview preflights (61 checks; digest `a26ba122…`; only expected `independence.repair.boundary` fail), independently verified; local candidate evidence only; zero R2 writes.
 - [x] No findings published; no code repaired.
-- [ ] Session log corrected and extended; user commit + post-commit rerun pending; `git diff --check` clean.
+- [x] Session log corrected and extended; committed reclosure checkpoint (`6af0392`) + post-commit rerun identical except `code_sha`; `git diff --check` clean.
 
 ## Amendments
 
