@@ -8,6 +8,7 @@ disposition, closure) and the overall disposition. Read-only.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator, Mapping
 from typing import Any
 
@@ -16,6 +17,7 @@ import pandas as pd
 
 from cks_picks_cfb.audit import REJECTED_SEASONS
 from cks_picks_cfb.audit.corpus import (
+    compact_keys,
     finding_from_check,
     rejected_seasons_present,
     result,
@@ -573,8 +575,15 @@ def check_forecast_model(
 
 
 def check_forecast_predictions(
-    predictions: pd.DataFrame, predictions_uri: str
+    predictions: pd.DataFrame,
+    predictions_uri: str,
+    repair_population: pd.DataFrame | None = None,
 ) -> list[dict[str, Any]]:
+    """Check stored forecast targets against the repaired final-score meaning.
+
+    This validates only the stored target columns.  Reconstructing forecast
+    features, offsets, fits, and calibration remains Contract 11 work.
+    """
     problems: list[str] = []
     by_horizon = predictions["horizon"].astype(str).value_counts().to_dict()
     if len(set(by_horizon.values())) != 1:
@@ -594,10 +603,68 @@ def check_forecast_predictions(
     ]
     if len(bad_training):
         problems.append(f"predictions_trained_on_current_or_future={len(bad_training)}")
-    stages = sorted(predictions["completed_game_stage"].astype(str).unique().tolist())
     bad_seasons = rejected_seasons_present(predictions)
     if bad_seasons:
         problems.append(f"rejected_seasons={bad_seasons}")
+    target_mismatches = pd.DataFrame()
+    if repair_population is not None:
+        finals = repair_population.loc[
+            repair_population["outcome_valid"].fillna(False).astype(bool),
+            ["season", "game_id", "home_points", "away_points"],
+        ].copy()
+        finals["expected_margin"] = finals["home_points"].astype(float) - finals[
+            "away_points"
+        ].astype(float)
+        finals["expected_total"] = finals["home_points"].astype(float) + finals[
+            "away_points"
+        ].astype(float)
+        compared = predictions.merge(
+            finals.loc[:, ["season", "game_id", "expected_margin", "expected_total"]],
+            on=["season", "game_id"],
+            how="left",
+            validate="many_to_one",
+        )
+        compared["expected_actual"] = np.where(
+            compared["target"].astype(str).eq("margin"),
+            compared["expected_margin"],
+            compared["expected_total"],
+        )
+        target_mismatches = compared.loc[
+            compared["expected_actual"].isna()
+            | ~np.isclose(
+                compared["actual"].astype(float),
+                compared["expected_actual"].astype(float),
+                equal_nan=False,
+            )
+        ].copy()
+        if len(target_mismatches):
+            problems.append(f"target_actual_mismatches={len(target_mismatches)}")
+    observed: dict[str, Any] = {
+        "rows": int(len(predictions)),
+        "horizons": by_horizon,
+        "completed_game_stage_counts": {
+            str(stage): int(count)
+            for stage, count in predictions["completed_game_stage"]
+            .astype(str)
+            .value_counts()
+            .sort_index()
+            .items()
+        },
+    }
+    if len(target_mismatches):
+        observed["target_actual_mismatches"] = compact_keys(
+            target_mismatches,
+            [
+                "season",
+                "game_id",
+                "target",
+                "horizon",
+                "actual",
+                "expected_actual",
+            ],
+        )
+    if problems:
+        observed["problems"] = problems
     return [
         result(
             "corpus.forecast.predictions",
@@ -605,8 +672,7 @@ def check_forecast_predictions(
             "chronology",
             "pass" if not problems else "fail",
             "equal horizon populations on 2022–2025; finite predictions/offsets; earlier-only training",
-            f"rows={len(predictions)} horizons={by_horizon} stages={stages} "
-            + ("ok" if not problems else "; ".join(problems)),
+            json.dumps(observed, sort_keys=True),
             "forecast predictions",
             [predictions_uri],
         )
@@ -680,6 +746,12 @@ def finalize_seeded_findings() -> list[dict[str, Any]]:
                 required_action=action,
                 closure_criteria=criteria,
                 blocking_dependencies=["contract-11"] if key.endswith("002") else [],
+                check_id=(
+                    "independence.repair.boundary"
+                    if key.endswith("001")
+                    else "forecast.verification.reconstruction"
+                ),
+                affected_artifacts=[str(ref) for ref in seed.get("evidence", [])],
             )
         )
     return findings
@@ -709,6 +781,8 @@ def forecast_reconstruction_finding() -> dict[str, Any]:
             "Contract 11 records signed verification of reconstructed outputs."
         ),
         blocking_dependencies=["contract-11"],
+        check_id="forecast.verification.reconstruction",
+        affected_artifacts=["src/cks_picks_cfb/forecast/forecast_verification.py"],
     )
 
 
@@ -738,8 +812,10 @@ def run_full_corpus(
     and the Contract 11 reconstruction record. Read-only.
     """
     from cks_picks_cfb.audit.corpus import (
+        CorpusError,
         check_coverage_slices,
         check_denominator_parity,
+        check_ledger_identities,
         check_missing_dispositions,
         check_offensive_drive_range,
         check_population_agreement,
@@ -803,6 +879,7 @@ def run_full_corpus(
     summaries["scoring_events_rows"] = int(len(events))
     summaries["observations_rows"] = int(len(observations))
     checks.extend(check_scoring_increments(events, uri("measurements")))
+    checks.extend(check_ledger_identities(events, possessions, uri("measurements")))
     checks.extend(check_offensive_drive_range(events, possessions, uri("measurements")))
     checks.extend(check_denominator_parity(observations, uri("measurements")))
     checks.extend(check_role_orientation(observations, uri("measurements")))
@@ -877,6 +954,7 @@ def run_full_corpus(
             + ("ok" if not iteration_problems else "; ".join(iteration_problems)),
             "population": "adjusted history",
             "evidence_refs": [history_uri],
+            "affected_stages": ["measurements"],
         }
     )
     chrono_problems: list[str] = []
@@ -899,6 +977,7 @@ def run_full_corpus(
             + ("ok" if not chrono_problems else "; ".join(chrono_problems)),
             "population": "adjusted history",
             "evidence_refs": [history_uri],
+            "affected_stages": ["measurements"],
         }
     )
     checks.extend(check_league_centering(centering, history_uri))
@@ -1002,6 +1081,7 @@ def run_full_corpus(
             + ("ok" if not state_problems else "; ".join(state_problems)),
             "population": "rating states",
             "evidence_refs": [uri("ratings")],
+            "affected_stages": ["ratings"],
         }
     )
 
@@ -1042,6 +1122,7 @@ def run_full_corpus(
             f"games_with_non_two_participants={non_two_participant_games}",
             "population": "team states",
             "evidence_refs": [uri("ratings")],
+            "affected_stages": ["ratings"],
         }
     )
     del team_key_counts, game_participants
@@ -1082,6 +1163,7 @@ def run_full_corpus(
             + ("ok" if not bridge_problems else "; ".join(bridge_problems)),
             "population": "bridge predictions",
             "evidence_refs": [uri("ratings")],
+            "affected_stages": ["ratings"],
         }
     )
     del attribution_full
@@ -1098,7 +1180,7 @@ def run_full_corpus(
     checks.extend(
         check_forecast_model(model, registry_f, selection_f, uri("forecasts"))
     )
-    checks.extend(check_forecast_predictions(predictions, uri("forecasts")))
+    checks.extend(check_forecast_predictions(predictions, uri("forecasts"), repair_pop))
     checks.extend(check_calibration(calibration, uri("forecasts")))
     summaries["forecast_model_max_training"] = 0
     for _, row in model.iterrows():
@@ -1117,20 +1199,13 @@ def run_full_corpus(
 
     # -- Findings ---------------------------------------------------------------------
     findings: list[dict[str, Any]] = []
-    stage_by_prefix = {
-        "corpus.adjustment.": ["measurements"],
-        "corpus.rating.": ["ratings"],
-        "corpus.forecast.": ["forecasts"],
-        "corpus.ledger.": ["measurements"],
-        "corpus.population.": ["repair", "measurements"],
-    }
     for check in checks:
+        if not check.get("affected_stages"):
+            raise CorpusError(
+                "full-corpus check lacks explicit affected stages: "
+                f"{check.get('check_id')}"
+            )
         if check.get("status") == "fail":
-            if not check.get("affected_stages"):
-                for prefix, stages in stage_by_prefix.items():
-                    if str(check["check_id"]).startswith(prefix):
-                        check["affected_stages"] = stages
-                        break
             findings.append(
                 finding_from_check(
                     check,

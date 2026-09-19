@@ -161,6 +161,7 @@ def verify_audit_evidence(
                 "observed",
                 "population",
                 "evidence_refs",
+                "affected_stages",
             ),
             "check result",
         )
@@ -182,10 +183,12 @@ def verify_audit_evidence(
             finding,
             (
                 "finding_id",
+                "check_id",
                 "severity",
                 "disposition",
                 "closure_state",
                 "affected_stages",
+                "affected_artifacts",
                 "evidence",
                 "required_action",
                 "closure_criteria",
@@ -362,6 +365,7 @@ def verify_published_audit(
                 "observed",
                 "population",
                 "evidence_refs",
+                "affected_stages",
             ),
             "check result",
         )
@@ -372,10 +376,12 @@ def verify_published_audit(
             finding,
             (
                 "finding_id",
+                "check_id",
                 "severity",
                 "disposition",
                 "closure_state",
                 "affected_stages",
+                "affected_artifacts",
                 "evidence",
                 "required_action",
                 "closure_criteria",

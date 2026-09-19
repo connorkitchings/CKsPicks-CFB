@@ -481,6 +481,7 @@ def seeded_provisional_findings(
         findings.append(
             {
                 "finding_id": key,
+                "check_id": f"seeded.{key}",
                 "severity": PROVISIONAL_SEVERITY,
                 "disposition": PROVISIONAL_SEVERITY,
                 "closure_state": "open",
@@ -488,6 +489,15 @@ def seeded_provisional_findings(
                 "description": seed["description"],
                 "condition_confirmed": bool(conditions.get(key, False)),
                 "affected_stages": list(seed["affected_stages"]),
+                "affected_artifacts": {
+                    "audit-structural-001": [
+                        "scripts/research/verify_data_first_repair_v2.py",
+                        "scripts/research/run_data_first_repair_v2.py",
+                    ],
+                    "audit-structural-002": [
+                        "src/cks_picks_cfb/forecast/forecast_verification.py",
+                    ],
+                }[key],
                 "evidence": {
                     "audit-structural-001": [
                         "scripts/research/verify_data_first_repair_v2.py",
@@ -543,6 +553,7 @@ def behavioral_findings(
         findings.append(
             {
                 "finding_id": f"audit-behavioral-{verifier}",
+                "check_id": f"behavioral.{verifier}",
                 "severity": PROVISIONAL_SEVERITY,
                 "disposition": PROVISIONAL_SEVERITY,
                 "closure_state": "open",
@@ -553,6 +564,7 @@ def behavioral_findings(
                 ),
                 "condition_confirmed": True,
                 "affected_stages": [verifier],
+                "affected_artifacts": [str(cell["cell_id"]) for cell in bad],
                 "evidence": [str(cell["cell_id"]) for cell in bad],
                 "cells": [dict(cell) for cell in bad],
                 "permitted_use": "to be determined by 10b",

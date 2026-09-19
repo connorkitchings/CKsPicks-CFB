@@ -142,3 +142,25 @@
   missing through-2025 final forecast fit, and forecast reconstruction
   absence. Validation after this correction: focused suites with warnings as
   errors (`77 passed`), scoped Ruff check/format, and `git diff --check` pass.
+
+## Continuation: evidence-interface and target-semantics recovery
+
+- The full-corpus check-results interface now requires explicit affected stages
+  and fails closed when a check omits them. Final findings carry their stable
+  source check ID and affected-artifact references; evidence verification
+  rejects either field when absent.
+- Population summaries now retain the per-season schedule, valid-outcome,
+  forecast-eligible, and measurement-usable counts. Ledger checks now retain
+  stable event-team and possession identities without rejecting legitimate
+  split-team event attribution.
+- Forecast checks now reconcile stored `actual` values to the repaired final:
+  `margin = home_points - away_points` and `total = home_points + away_points`.
+  This is a stored-output semantic check only; feature, offset, fitted-head,
+  and calibration reconstruction remain assigned to Contract 11.
+- Added regression coverage for duplicate ledger identities, forecast target
+  semantics, and missing check-stage rejection. Focused audit suites pass with
+  warnings as errors (`81 passed`); scoped Ruff format/check and
+  `git diff --check` pass.
+- **Next:** user-controlled code checkpoint, followed by a clean-SHA
+  read-only full-corpus run and review of every result before any Preview
+  publication. No R2 write occurred in this continuation.

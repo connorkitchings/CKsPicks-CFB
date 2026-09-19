@@ -147,6 +147,8 @@ def finding(
     required_action: str,
     closure_criteria: str,
     blocking_dependencies: list[str] | None = None,
+    check_id: str | None = None,
+    affected_artifacts: list[str] | None = None,
 ) -> dict[str, Any]:
     if severity not in SEVERITIES:
         raise CorpusError(f"unknown severity: {severity}")
@@ -154,6 +156,7 @@ def finding(
         raise CorpusError(f"unknown disposition: {disposition}")
     return {
         "finding_id": finding_id,
+        "check_id": check_id or finding_id,
         "severity": severity,
         "disposition": disposition,
         "closure_state": "open",
@@ -161,6 +164,7 @@ def finding(
         "description": description,
         "condition_confirmed": True,
         "affected_stages": list(affected_stages),
+        "affected_artifacts": list(affected_artifacts or []),
         "evidence": list(evidence),
         "permitted_use": disposition,
         "required_action": required_action,
@@ -261,7 +265,9 @@ def finding_from_check(check: Mapping[str, Any], *, finding_id: str) -> dict[str
             f"Expected {check.get('expected')}; observed {check.get('observed')}."
         ),
         affected_stages=stages,
+        affected_artifacts=[str(ref) for ref in (check.get("evidence_refs") or [])],
         evidence=[str(ref) for ref in (check.get("evidence_refs") or [])],
+        check_id=str(check["check_id"]),
         required_action=(
             "Approve a corrective contract that repairs the defect and replaces "
             "the affected evidence under a new identity, or record renewed "
@@ -288,11 +294,17 @@ def compact_keys(frame: pd.DataFrame, columns: list[str]) -> dict[str, Any]:
     encoded = "\n".join(
         "|".join(row) for row in rows.itertuples(index=False, name=None)
     )
-    return {
+    result: dict[str, Any] = {
         "affected_count": int(len(rows)),
         "affected_keys_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
         "examples": rows.head(8).to_dict(orient="records"),
     }
+    if "season" in rows.columns:
+        result["affected_by_season"] = {
+            str(season): int(count)
+            for season, count in rows["season"].value_counts().sort_index().items()
+        }
+    return result
 
 
 def finalize_behavioral_findings(
@@ -329,6 +341,8 @@ def finalize_behavioral_findings(
                     "All behavioral cases match the independent-verifier "
                     "expectation on renewed evidence."
                 ),
+                check_id=f"behavioral.{verifier}",
+                affected_artifacts=[str(cell["cell_id"]) for cell in bad],
             )
         )
     return findings
@@ -344,6 +358,28 @@ def check_population_agreement(
     measurement_uri: str,
 ) -> list[dict[str, Any]]:
     """Reconcile Repair and measurement populations game by game."""
+
+    def summary(frame: pd.DataFrame) -> dict[str, dict[str, int]]:
+        metrics = (
+            "schedule_completed",
+            "outcome_valid",
+            "forecast_eligible",
+            "measurement_usable",
+        )
+        return {
+            str(season): {
+                "games": int(len(group)),
+                **{
+                    metric: int(
+                        group[metric].astype(str).isin(("True", "true", "1")).sum()
+                    )
+                    for metric in metrics
+                    if metric in group
+                },
+            }
+            for season, group in frame.groupby("season", sort=True)
+        }
+
     results: list[dict[str, Any]] = []
     repair_keys = keyset(repair_pop)
     measurement_keys = keyset(measurement_pop)
@@ -356,8 +392,15 @@ def check_population_agreement(
             "population",
             "pass" if not only_repair and not only_measurement else "fail",
             "identical (season, game_id) sets",
-            f"repair={len(repair_keys)} measurement={len(measurement_keys)} "
-            f"only_repair={only_repair[:8]} only_measurement={only_measurement[:8]}",
+            json.dumps(
+                {
+                    "repair": summary(repair_pop),
+                    "measurements": summary(measurement_pop),
+                    "only_repair": only_repair[:8],
+                    "only_measurement": only_measurement[:8],
+                },
+                sort_keys=True,
+            ),
             "schedule population",
             [repair_uri, measurement_uri],
         )
@@ -477,7 +520,16 @@ def check_coverage_slices(
         ("measurements", measurement_coverage, measurement_uri),
     ):
         slices = (
-            frame["slice"].astype(str).value_counts().to_dict()
+            {
+                str(season): {
+                    str(slice_name): int(count)
+                    for slice_name, count in group["slice"]
+                    .astype(str)
+                    .value_counts()
+                    .items()
+                }
+                for season, group in frame.groupby("season", sort=True)
+            }
             if "slice" in frame
             else {}
         )
@@ -488,7 +540,7 @@ def check_coverage_slices(
                 "coverage",
                 "pass" if not frame.empty and slices else "fail",
                 "nonempty coverage with FBS/FCS slices",
-                f"slices={slices}",
+                json.dumps({"slices_by_season": slices}, sort_keys=True),
                 f"{stage} coverage",
                 [uri],
             )
@@ -497,6 +549,48 @@ def check_coverage_slices(
 
 
 # --- Scoring-ledger semantics -----------------------------------------------
+
+
+def check_ledger_identities(
+    events: pd.DataFrame, possessions: pd.DataFrame, events_uri: str
+) -> list[dict[str, Any]]:
+    """Require stable event and possession identities without collapsing team splits."""
+    event_key = ["season", "game_id", "source_event_id", "team"]
+    possession_key = ["season", "game_id", "drive_number", "offense"]
+    duplicate_events = events[events.duplicated(event_key, keep=False)]
+    duplicate_possessions = possessions[
+        possessions.duplicated(possession_key, keep=False)
+    ]
+    problems = []
+    if not duplicate_events.empty:
+        problems.append("duplicate_event_team_keys")
+    if not duplicate_possessions.empty:
+        problems.append("duplicate_possession_keys")
+    return [
+        result(
+            "corpus.ledger.stable_identities",
+            "football_semantics",
+            "football_meaning",
+            "pass" if not problems else "fail",
+            "unique event-team and possession identities; split-team event attribution permitted",
+            json.dumps(
+                {
+                    "event_duplicates": compact_keys(duplicate_events, event_key)
+                    if not duplicate_events.empty
+                    else {"affected_count": 0},
+                    "possession_duplicates": compact_keys(
+                        duplicate_possessions, possession_key
+                    )
+                    if not duplicate_possessions.empty
+                    else {"affected_count": 0},
+                    "problems": problems,
+                },
+                sort_keys=True,
+            ),
+            "possession and scoring ledgers",
+            [events_uri],
+        )
+    ]
 
 
 def scoring_category_totals(events: pd.DataFrame) -> pd.DataFrame:

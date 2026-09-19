@@ -56,7 +56,7 @@ def test_key_agreement_detects_omitted_game() -> None:
         if c["check_id"] == "corpus.population.key_agreement"
     ]
     assert check["status"] == "fail"
-    assert "only_repair=[(2021, 2)]" in check["observed"]
+    assert '"only_repair": [[2021, 2]]' in check["observed"]
 
 
 def test_denominator_parity_detects_mismatch() -> None:
@@ -87,6 +87,31 @@ def test_denominator_parity_detects_mismatch() -> None:
     (check,) = corpus.check_denominator_parity(observations, "uri")
     assert check["status"] == "fail"
     assert "mismatched=1" in check["observed"]
+
+
+def test_ledger_identities_reject_duplicate_event_team_key() -> None:
+    events = _pop(
+        [
+            {
+                "season": 2021,
+                "game_id": 1,
+                "source_event_id": "event-1",
+                "team": "A",
+            },
+            {
+                "season": 2021,
+                "game_id": 1,
+                "source_event_id": "event-1",
+                "team": "A",
+            },
+        ]
+    )
+    possessions = _pop(
+        [{"season": 2021, "game_id": 1, "drive_number": 1, "offense": "A"}]
+    )
+    (check,) = corpus.check_ledger_identities(events, possessions, "uri")
+    assert check["status"] == "fail"
+    assert '"affected_count": 2' in check["observed"]
 
 
 def test_role_orientation_detects_reversal() -> None:
@@ -480,6 +505,91 @@ def test_final_fit_missing_is_blocker_policy() -> None:
     assert found["severity"] == "blocker"
     assert found["disposition"] == "historical_evidence_only"
     assert found["closure_state"] == "open"
+
+
+def test_forecast_targets_match_repaired_final_scores() -> None:
+    predictions = _pop(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "horizon": "expanding",
+                "target": "margin",
+                "prediction": 1.0,
+                "offset": 0.0,
+                "actual": 7.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "completed_game_stage": "4+",
+            },
+            {
+                "season": 2025,
+                "game_id": 1,
+                "horizon": "expanding",
+                "target": "total",
+                "prediction": 40.0,
+                "offset": 0.0,
+                "actual": 49.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "completed_game_stage": "4+",
+            },
+        ]
+    )
+    repair = _pop(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "outcome_valid": True,
+                "home_points": 28,
+                "away_points": 21,
+            }
+        ]
+    )
+    (check,) = corpus_ratings.check_forecast_predictions(predictions, "uri", repair)
+    assert check["status"] == "pass"
+
+
+def test_forecast_targets_reject_wrong_final_score_meaning() -> None:
+    predictions = _pop(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "horizon": "expanding",
+                "target": "margin",
+                "prediction": 1.0,
+                "offset": 0.0,
+                "actual": -7.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "completed_game_stage": "4+",
+            },
+            {
+                "season": 2025,
+                "game_id": 1,
+                "horizon": "expanding",
+                "target": "total",
+                "prediction": 40.0,
+                "offset": 0.0,
+                "actual": 49.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "completed_game_stage": "4+",
+            },
+        ]
+    )
+    repair = _pop(
+        [
+            {
+                "season": 2025,
+                "game_id": 1,
+                "outcome_valid": True,
+                "home_points": 28,
+                "away_points": 21,
+            }
+        ]
+    )
+    (check,) = corpus_ratings.check_forecast_predictions(predictions, "uri", repair)
+    assert check["status"] == "fail"
+    assert '"target_actual_mismatches"' in check["observed"]
 
 
 def test_policy_maps_categories() -> None:

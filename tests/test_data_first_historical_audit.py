@@ -538,15 +538,18 @@ def _evidence_fixture(**overrides: Any) -> dict[str, Any]:
                 "observed": "repair verifier imports producer",
                 "population": "repair",
                 "evidence_refs": ["uri://repair"],
+                "affected_stages": ["repair"],
             }
         ],
         "findings": [
             {
                 "finding_id": "audit-structural-001",
+                "check_id": "independence.repair.boundary",
                 "severity": PROVISIONAL_SEVERITY,
                 "disposition": PROVISIONAL_SEVERITY,
                 "closure_state": "open",
                 "affected_stages": ["repair"],
+                "affected_artifacts": ["uri://repair"],
                 "evidence": ["scripts/research/verify_data_first_repair_v2.py"],
                 "required_action": "10b",
                 "closure_criteria": "10b",
@@ -624,6 +627,21 @@ def test_verify_evidence_rejects_gate_mismatch() -> None:
         )
 
 
+def test_verify_evidence_rejects_check_without_explicit_stages() -> None:
+    evidence = _evidence_fixture()
+    evidence["check_results"][0].pop("affected_stages")
+    evidence["evidence_sha256"] = sha256(
+        {key: value for key, value in evidence.items() if key != "evidence_sha256"}
+    )
+    with pytest.raises(audit_verification.AuditVerificationError):
+        audit_verification.verify_audit_evidence(
+            evidence,
+            expected_run_id="audit-test",
+            expected_code_sha="aa" * 20,
+            expected_parents=_expected_parents(),
+        )
+
+
 def test_verify_evidence_requires_final_severity_when_published() -> None:
     with pytest.raises(audit_verification.AuditVerificationError):
         audit_verification.verify_audit_evidence(
@@ -691,6 +709,7 @@ def _finalized_evidence() -> dict[str, Any]:
             "observed": "ok",
             "population": "repair",
             "evidence_refs": ["uri://repair"],
+            "affected_stages": ["repair"],
         }
     ]
     unsigned = {k: v for k, v in evidence.items() if k != "evidence_sha256"}
@@ -1008,10 +1027,12 @@ def test_apply_collision_fails_closed() -> None:
     other["findings"].append(
         {
             "finding_id": "extra",
+            "check_id": "fixture.extra",
             "severity": "info",
             "disposition": "historical_evidence_only",
             "closure_state": "open",
             "affected_stages": [],
+            "affected_artifacts": [],
             "evidence": [],
             "required_action": "none",
             "closure_criteria": "none",
