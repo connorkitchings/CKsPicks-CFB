@@ -10,23 +10,68 @@ agreement.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import warnings
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
 from typing import Any
 
 import numpy as np
 import pandas as pd
+from scipy.special import ndtr
 from sklearn.linear_model import Ridge
 
 from cks_picks_cfb.data.data_first_forecast_v1 import (
+    FORECAST_CALIBRATION_COLUMNS,
     FORECAST_DATASETS,
     FORECAST_MANIFEST_SCHEMA,
+    FORECAST_MODEL_COLUMNS,
+    FORECAST_PREDICTION_COLUMNS,
+    FORECAST_REGISTRY_COLUMNS,
+    FORECAST_SELECTION_COLUMNS,
     HORIZONS,
     REQUIRED_RATING_CANDIDATE,
+    WINDOW_COMPARISON_COLUMNS,
 )
-from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
+from cks_picks_cfb.data.data_first_phase2 import (
+    DEVELOPMENT_SEASONS,
+    FORBIDDEN_SEASONS,
+)
+from cks_picks_cfb.data.data_first_phase2d import (
+    PHASE3_DATASETS,
+    REPLACEMENT_ELIGIBILITY_SCHEMA,
+    verify_signed_payload,
+)
+from cks_picks_cfb.data.data_first_possession_rating_v1 import (
+    POSSESSION_RATING_MANIFEST_SCHEMA,
+    RATING_DATASETS,
+    TEAM_STATE_COLUMNS,
+)
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    POPULATION_COLUMNS,
+    POSSESSION_DATASETS,
+)
+from cks_picks_cfb.data.lake import (
+    PARTITIONED_DATASET_KIND,
+    DatasetRef,
+    PartitionedDatasetRef,
+    canonical_frame_digest,
+    partition_order_key,
+    partitioned_records_sha,
+    read_dataset,
+)
+from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 
 VERIFICATION_MANIFEST_SCHEMA = "data_first_forecast_verification_v1"
+OUTER_SEASONS = (2022, 2023, 2024, 2025)
+REPORTING_SEASONS = (2018, 2019, 2021)
+ALPHA_GRID = (0.1, 1.0, 10.0, 100.0)
+SCALING_FLOOR = 0.05
+BOOTSTRAP_SEED = 20260908
+BOOTSTRAP_REPLICATES = 2000
+EQUIVALENT_GAMES = 4
+RESIDUAL_FLOOR = 1e-6
 FEATURES = (
     "home_offense",
     "home_defense",
@@ -39,6 +84,214 @@ FEATURES = (
 
 class VerificationError(ValueError):
     """Raised when verification cannot proceed or stored outputs disagree."""
+
+
+@dataclass(frozen=True)
+class StoredOutput:
+    """One fully validated stored forecast output."""
+
+    ref: Mapping[str, Any]
+    frame: pd.DataFrame
+    parts: tuple[Mapping[str, Any], ...] = ()
+
+
+def _read_json(storage: Any, uri: str, *, label: str) -> tuple[dict[str, Any], bytes]:
+    try:
+        raw = storage.read_bytes(uri)
+        payload = json.loads(raw)
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        raise VerificationError(f"{label} is unreadable") from exc
+    if not isinstance(payload, dict):
+        raise VerificationError(f"{label} is not a JSON object")
+    return payload, raw
+
+
+def _require_raw_sha(raw: bytes, expected: str, *, label: str) -> None:
+    if not expected or hashlib.sha256(raw).hexdigest() != expected:
+        raise VerificationError(f"{label} raw checksum mismatch")
+
+
+def _dataset_ref(value: Mapping[str, Any], *, label: str) -> DatasetRef:
+    fields = ("dataset", "version_id", "schema_version", "content_sha", "uri")
+    if missing := [field for field in fields if not value.get(field)]:
+        raise VerificationError(f"{label} dataset reference is malformed: {missing}")
+    return DatasetRef(**{field: str(value[field]) for field in fields})
+
+
+def _partitioned_ref(
+    value: Mapping[str, Any],
+    *,
+    label: str,
+    expected_partition_keys: Sequence[str] | None = None,
+) -> PartitionedDatasetRef:
+    try:
+        return PartitionedDatasetRef(
+            artifact_kind=str(value["artifact_kind"]),
+            dataset=str(value["dataset"]),
+            version_id=str(value["version_id"]),
+            schema_version=str(value["schema_version"]),
+            content_sha=str(value["content_sha"]),
+            records_sha=str(value["records_sha"]),
+            uri=str(value["uri"]),
+            row_count=int(value["row_count"]),
+            partition_keys=tuple(
+                value.get("partition_keys") or expected_partition_keys or ()
+            ),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise VerificationError(f"{label} partitioned reference is malformed") from exc
+
+
+def _concat_frames(
+    frames: Sequence[pd.DataFrame], columns: Sequence[str]
+) -> pd.DataFrame:
+    if not frames:
+        return pd.DataFrame(columns=list(columns))
+    normalized = [frame.loc[:, list(columns)].copy() for frame in frames]
+    for column in columns:
+        if any(frame[column].isna().all() for frame in normalized) and any(
+            frame[column].notna().any() for frame in normalized
+        ):
+            for frame in normalized:
+                frame[column] = frame[column].astype(object)
+    return pd.concat(normalized, ignore_index=True, sort=False)
+
+
+def _read_partitioned(
+    storage: Any,
+    value: Mapping[str, Any],
+    *,
+    expected_dataset: str,
+    expected_schema: str,
+    label: str,
+) -> StoredOutput:
+    forecast_partition_keys = {
+        "forecast_model": ("horizon", "outer_season"),
+        "forecast_prediction": ("season", "week"),
+    }
+    ref = _partitioned_ref(
+        value,
+        label=label,
+        expected_partition_keys=forecast_partition_keys.get(expected_dataset),
+    )
+    if (
+        ref.artifact_kind != PARTITIONED_DATASET_KIND
+        or ref.dataset != expected_dataset
+        or ref.schema_version != expected_schema
+    ):
+        raise VerificationError(f"{label} identity mismatch")
+    raw = storage.read_bytes(ref.uri)
+    if hashlib.sha256(raw).hexdigest() != ref.content_sha:
+        raise VerificationError(f"{label} manifest checksum mismatch")
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise VerificationError(f"{label} manifest is unreadable") from exc
+    parts = list(manifest.get("parts") or [])
+    if (
+        manifest.get("artifact_kind") != PARTITIONED_DATASET_KIND
+        or manifest.get("dataset") != expected_dataset
+        or manifest.get("schema_version") != expected_schema
+        or tuple(manifest.get("partition_keys") or ()) != ref.partition_keys
+        or partitioned_records_sha(parts, ref.partition_keys) != ref.records_sha
+        or sum(int(part.get("row_count", -1)) for part in parts) != ref.row_count
+    ):
+        raise VerificationError(f"{label} partition manifest mismatch")
+    schema = schema_for(expected_dataset, expected_schema)
+    frames: list[pd.DataFrame] = []
+    previous: tuple[tuple[str, int, Any], ...] | None = None
+    for part in parts:
+        partition = dict(part.get("partition") or {})
+        order_key = partition_order_key(partition)
+        if tuple(partition) != ref.partition_keys or (
+            previous is not None and order_key <= previous
+        ):
+            raise VerificationError(f"{label} partitions are malformed or unordered")
+        previous = order_key
+        row_count = int(part.get("row_count", -1))
+        child = part.get("ref")
+        if child is None:
+            if row_count != 0:
+                raise VerificationError(f"{label} nonempty partition lacks a child")
+            frame = pd.DataFrame(columns=list(schema.required))
+        else:
+            try:
+                frame = read_dataset(
+                    storage, _dataset_ref(child, label=f"{label} child")
+                )
+            except Exception as exc:
+                raise VerificationError(f"{label} child is unreadable") from exc
+            validate_frame(frame, schema)
+        if len(frame) != row_count or canonical_frame_digest(
+            frame, columns=schema.required
+        ) != str(part.get("records_sha")):
+            raise VerificationError(f"{label} child digest mismatch")
+        frames.append(frame)
+    return StoredOutput(
+        ref=asdict(ref),
+        frame=_concat_frames(frames, schema.required),
+        parts=tuple(parts),
+    )
+
+
+def _read_compact(
+    storage: Any,
+    value: Mapping[str, Any],
+    *,
+    expected_dataset: str,
+    expected_schema: str,
+    label: str,
+) -> StoredOutput:
+    ref = _dataset_ref(value, label=label)
+    if ref.dataset != expected_dataset or ref.schema_version != expected_schema:
+        raise VerificationError(f"{label} identity mismatch")
+    try:
+        frame = read_dataset(storage, ref)
+    except Exception as exc:
+        raise VerificationError(f"{label} is unreadable") from exc
+    schema = schema_for(expected_dataset, expected_schema)
+    validate_frame(frame, schema)
+    if len(frame) != int(value.get("row_count", -1)) or canonical_frame_digest(
+        frame, columns=schema.required
+    ) != str(value.get("records_sha")):
+        raise VerificationError(f"{label} content mismatch")
+    return StoredOutput(ref=dict(value), frame=frame.loc[:, list(schema.required)])
+
+
+def _read_output(
+    storage: Any,
+    value: Mapping[str, Any],
+    *,
+    expected_dataset: str,
+    expected_schema: str,
+    label: str,
+) -> StoredOutput:
+    if value.get("artifact_kind") == PARTITIONED_DATASET_KIND:
+        return _read_partitioned(
+            storage,
+            value,
+            expected_dataset=expected_dataset,
+            expected_schema=expected_schema,
+            label=label,
+        )
+    return _read_compact(
+        storage,
+        value,
+        expected_dataset=expected_dataset,
+        expected_schema=expected_schema,
+        label=label,
+    )
+
+
+def _assert_allowed_seasons(frame: pd.DataFrame, *, label: str) -> None:
+    if "season" not in frame:
+        return
+    seasons = set(pd.to_numeric(frame["season"], errors="raise").astype(int))
+    rejected = seasons & (set(FORBIDDEN_SEASONS) | {2026})
+    if rejected:
+        raise VerificationError(
+            f"{label} contains rejected seasons: {sorted(rejected)}"
+        )
 
 
 def _design(
@@ -505,6 +758,630 @@ def _calibrate_uncertainty(
     return pd.DataFrame.from_records(records), variances
 
 
+def _gaussian_crps(actual: np.ndarray, mean: np.ndarray, variance: float) -> np.ndarray:
+    sigma = max(float(variance), 1e-6) ** 0.5
+    z = (actual - mean) / sigma
+    phi = np.exp(-0.5 * z * z) / np.sqrt(2.0 * np.pi)
+    return sigma * (z * (2.0 * ndtr(z) - 1.0) + 2.0 * phi - 1.0 / np.sqrt(np.pi))
+
+
+def _paired_bootstrap(
+    candidate: pd.DataFrame,
+    reference: pd.DataFrame,
+    *,
+    seed: int,
+    samples: int,
+) -> tuple[float, float, float]:
+    keys = ["season", "week", "game_id", "target"]
+    merged = candidate.merge(
+        reference, on=keys, suffixes=("_candidate", "_reference"), validate="one_to_one"
+    )
+    if len(merged) != len(candidate) or len(merged) != len(reference) or merged.empty:
+        raise VerificationError("paired comparison populations differ")
+    difference = merged["absolute_error_reference"].to_numpy(float) - merged[
+        "absolute_error_candidate"
+    ].to_numpy(float)
+    rng = np.random.default_rng(seed)
+    groups = [
+        group.index.to_numpy()
+        for _, group in merged.groupby(["season", "week"], sort=True)
+    ]
+    if not groups:
+        raise VerificationError("paired bootstrap lacks season/week groups")
+    estimates: list[float] = []
+    for _ in range(samples):
+        selected = rng.integers(0, len(groups), size=len(groups))
+        sampled = np.concatenate(
+            [
+                groups[index][rng.integers(0, len(groups[index]), len(groups[index]))]
+                for index in selected
+            ]
+        )
+        estimates.append(float(difference[sampled].mean()))
+    return (
+        float(difference.mean()),
+        float(np.quantile(estimates, 0.05)),
+        float(np.quantile(estimates, 0.95)),
+    )
+
+
+def _evaluate_heads(
+    frame: pd.DataFrame,
+    *,
+    horizon: str,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str]]:
+    required = {
+        "season",
+        "week",
+        "game_id",
+        "actual_margin",
+        "actual_total",
+        "offset_margin",
+        "offset_total",
+        *FEATURES,
+        "completed_game_stage",
+    }
+    if missing := sorted(required - set(frame)):
+        raise VerificationError(f"forecast frame lacks columns: {missing}")
+    clean = frame.replace([np.inf, -np.inf], np.nan).dropna(subset=list(required))
+    rows: list[dict[str, object]] = []
+    models: list[dict[str, object]] = []
+    for target in ("margin", "total"):
+        for season in (*OUTER_SEASONS, *REPORTING_SEASONS):
+            reporting = season in REPORTING_SEASONS
+            test = clean[clean["season"].eq(season)].copy()
+            seasons = _fitting_seasons(season, DEVELOPMENT_SEASONS, horizon)
+            train = clean[clean["season"].isin(seasons)].copy()
+            if train.empty or test.empty:
+                raise VerificationError(
+                    f"{horizon}/{target}/{season} lacks train or test rows"
+                )
+            alpha, inner_fallback = _select_inner_alpha(
+                train,
+                target=target,
+                seasons=seasons,
+                alpha_grid=ALPHA_GRID,
+                floor=SCALING_FLOOR,
+            )
+            for head, value in (("reference", 10.0), ("challenger", alpha)):
+                predicted, variance = _fit_one(
+                    train,
+                    test,
+                    target=target,
+                    alpha=value,
+                    floor=SCALING_FLOOR,
+                )
+                offset = test[f"offset_{target}"].to_numpy(float)
+                actual = test[f"actual_{target}"].to_numpy(float)
+                final = predicted + offset
+                if not np.isfinite(final).all():
+                    raise VerificationError("bridge emitted a non-finite forecast")
+                if not reporting:
+                    scores = _gaussian_crps(actual, final, variance)
+                    for source, forecast, actual_value, error, score in zip(
+                        test.itertuples(index=False),
+                        final,
+                        actual,
+                        np.abs(final - actual),
+                        scores,
+                        strict=True,
+                    ):
+                        rows.append(
+                            {
+                                "horizon": horizon,
+                                "head": head,
+                                "target": target,
+                                "season": int(source.season),
+                                "week": int(source.week),
+                                "game_id": int(source.game_id),
+                                "actual": float(actual_value),
+                                "prediction": float(forecast),
+                                "absolute_error": float(error),
+                                "gaussian_crps": float(score),
+                                "offset": float(getattr(source, f"offset_{target}")),
+                                "training_seasons": ",".join(map(str, seasons)),
+                                "completed_game_stage": int(
+                                    source.completed_game_stage
+                                ),
+                                "venue_unknown": bool(source.venue_unknown),
+                            }
+                        )
+                    models.append(
+                        {
+                            "horizon": horizon,
+                            "target": target,
+                            "outer_season": season,
+                            "head": head,
+                            "alpha": value,
+                            "training_seasons": ",".join(map(str, seasons)),
+                            "inner_fallback": inner_fallback,
+                            "retained": False,
+                            "fallback_reason": "insufficient_inner_fold"
+                            if inner_fallback
+                            else None,
+                        }
+                    )
+    predictions = pd.DataFrame.from_records(rows)
+    model_frame = pd.DataFrame.from_records(models)
+    retained: dict[str, str] = {}
+    for target in ("margin", "total"):
+        reference = predictions[
+            predictions["target"].eq(target) & predictions["head"].eq("reference")
+        ]
+        challenger = predictions[
+            predictions["target"].eq(target) & predictions["head"].eq("challenger")
+        ]
+        _, lower, _ = _paired_bootstrap(
+            challenger,
+            reference,
+            seed=BOOTSTRAP_SEED,
+            samples=BOOTSTRAP_REPLICATES,
+        )
+        ref_mae = float(reference["absolute_error"].mean())
+        challenger_mae = float(challenger["absolute_error"].mean())
+        ref_crps = float(reference["gaussian_crps"].mean())
+        challenger_crps = float(challenger["gaussian_crps"].mean())
+        improvement = 100.0 * (ref_mae - challenger_mae) / ref_mae if ref_mae else 0.0
+        regressions_ok = True
+        combined = pd.concat(
+            [
+                reference.assign(kind="reference"),
+                challenger.assign(kind="challenger"),
+            ]
+        )
+        for _, values in combined.groupby(
+            ["season", "completed_game_stage"], sort=True
+        ):
+            base = values[values["kind"].eq("reference")]
+            other = values[values["kind"].eq("challenger")]
+            if (
+                len(base) != len(other)
+                or float(other["absolute_error"].mean())
+                > float(base["absolute_error"].mean()) * 1.05
+            ):
+                regressions_ok = False
+        keep = (
+            challenger_mae <= ref_mae * 1.01
+            and challenger_crps <= ref_crps * 1.01
+            and regressions_ok
+            and improvement >= 0.5
+            and lower > 0
+        )
+        retained[target] = "challenger" if keep else "reference"
+        model_frame.loc[
+            model_frame["target"].eq(target) & model_frame["head"].eq(retained[target]),
+            "retained",
+        ] = True
+    return predictions, model_frame, retained
+
+
+def _select_horizon(
+    expanding: pd.DataFrame, latest_five: pd.DataFrame
+) -> tuple[str, pd.DataFrame]:
+    rows: list[dict[str, object]] = []
+    latest_passes = True
+    for target in ("margin", "total"):
+        reference = expanding[expanding["target"].eq(target)].copy()
+        candidate = latest_five[latest_five["target"].eq(target)].copy()
+        _, lower, upper = _paired_bootstrap(
+            candidate,
+            reference,
+            seed=BOOTSTRAP_SEED,
+            samples=BOOTSTRAP_REPLICATES,
+        )
+        ref_mae = float(reference["absolute_error"].mean())
+        cand_mae = float(candidate["absolute_error"].mean())
+        ref_crps = float(reference["gaussian_crps"].mean())
+        cand_crps = float(candidate["gaussian_crps"].mean())
+        improvement = 100.0 * (ref_mae - cand_mae) / ref_mae if ref_mae else 0.0
+        slices = pd.concat(
+            [
+                reference.assign(policy="expanding"),
+                candidate.assign(policy="latest_five"),
+            ]
+        )
+        regressions_ok = True
+        for _, group in slices.groupby(["season", "completed_game_stage"], sort=True):
+            base = group[group["policy"].eq("expanding")]
+            short = group[group["policy"].eq("latest_five")]
+            if (
+                len(base) != len(short)
+                or base.empty
+                or float(short["absolute_error"].mean())
+                > float(base["absolute_error"].mean()) * 1.05
+            ):
+                regressions_ok = False
+        passes = (
+            improvement >= 0.5
+            and lower > 0
+            and cand_mae <= ref_mae * 1.01
+            and cand_crps <= ref_crps * 1.01
+            and regressions_ok
+        )
+        latest_passes &= passes
+        rows.extend(
+            [
+                {
+                    "target": target,
+                    "metric": "mae",
+                    "expanding": ref_mae,
+                    "latest_five": cand_mae,
+                    "improvement_pct": improvement,
+                    "bootstrap_90_lower": lower,
+                    "bootstrap_90_upper": upper,
+                    "passes": passes,
+                },
+                {
+                    "target": target,
+                    "metric": "gaussian_crps",
+                    "expanding": ref_crps,
+                    "latest_five": cand_crps,
+                    "improvement_pct": 100.0 * (ref_crps - cand_crps) / ref_crps
+                    if ref_crps
+                    else 0.0,
+                    "bootstrap_90_lower": lower,
+                    "bootstrap_90_upper": upper,
+                    "passes": passes,
+                },
+            ]
+        )
+    return (
+        "latest_five" if latest_passes else "expanding",
+        pd.DataFrame.from_records(rows),
+    )
+
+
+def _core_outcomes(storage: Any, repair: Mapping[str, Any]) -> pd.DataFrame:
+    parent = (repair.get("parents") or {}).get("core_eligibility") or {}
+    uri = str(parent.get("uri") or "")
+    if not uri:
+        raise VerificationError("Repair parent lacks core eligibility lineage")
+    payload, raw = _read_json(storage, uri, label="core eligibility")
+    _require_raw_sha(raw, str(parent.get("raw_sha256") or ""), label="core eligibility")
+    try:
+        verify_signed_payload(payload, label="core eligibility")
+    except ValueError as exc:
+        raise VerificationError(str(exc)) from exc
+    if (
+        payload.get("schema_version") != REPLACEMENT_ELIGIBILITY_SCHEMA
+        or payload.get("state") != "eligible"
+        or payload.get("production_activation_authorized") is not False
+        or tuple(payload.get("development_seasons") or ()) != DEVELOPMENT_SEASONS
+        or tuple(payload.get("forbidden_seasons") or ()) != FORBIDDEN_SEASONS
+    ):
+        raise VerificationError("core eligibility policy mismatch")
+    refs: dict[int, dict[str, DatasetRef]] = {}
+    for value in payload.get("phase3_input_refs") or []:
+        season = int(value.get("season", -1))
+        dataset = str(value.get("dataset") or "")
+        if value.get("eligible") is not True or dataset not in PHASE3_DATASETS:
+            raise VerificationError(
+                f"core eligibility rejects source {(season, dataset)}"
+            )
+        refs.setdefault(season, {})[dataset] = _dataset_ref(
+            value, label=f"core {season} {dataset}"
+        )
+    expected = {
+        (season, dataset)
+        for season in DEVELOPMENT_SEASONS
+        for dataset in PHASE3_DATASETS
+    }
+    seen = {(season, dataset) for season, values in refs.items() for dataset in values}
+    if seen != expected:
+        raise VerificationError("core eligibility does not expose the exact source set")
+    frames = [
+        read_dataset(storage, refs[season]["game_outcomes"])
+        for season in DEVELOPMENT_SEASONS
+    ]
+    outcomes = pd.concat(frames, ignore_index=True, sort=False).loc[
+        :, ["season", "game_id", "completed", "home_points", "away_points"]
+    ]
+    outcomes["season"] = pd.to_numeric(outcomes["season"], errors="raise").astype(int)
+    outcomes["game_id"] = pd.to_numeric(outcomes["game_id"], errors="raise").astype(int)
+    _assert_allowed_seasons(outcomes, label="game outcomes")
+    return outcomes
+
+
+def _verify_parent_manifests(
+    storage: Any,
+    *,
+    manifest: Mapping[str, Any],
+    rating_manifest_uri: str,
+    measurement_manifest_uri: str,
+    repair_manifest_uri: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, str]]:
+    parents = manifest.get("parents") or {}
+    expected_uris = {
+        "rating_manifest_uri": rating_manifest_uri,
+        "measurement_manifest_uri": measurement_manifest_uri,
+        "repair_manifest_uri": repair_manifest_uri,
+    }
+    for key, value in expected_uris.items():
+        if parents.get(key) != value:
+            raise VerificationError(f"forecast manifest {key} mismatch")
+    payloads: dict[str, dict[str, Any]] = {}
+    hashes: dict[str, str] = {}
+    for role, uri in (
+        ("rating", rating_manifest_uri),
+        ("measurement", measurement_manifest_uri),
+        ("repair", repair_manifest_uri),
+    ):
+        payload, raw = _read_json(storage, uri, label=f"{role} manifest")
+        raw_sha = hashlib.sha256(raw).hexdigest()
+        if raw_sha != parents.get(f"{role}_manifest_raw_sha256"):
+            raise VerificationError(f"{role} parent raw checksum mismatch")
+        try:
+            verify_signed_payload(payload, label=f"{role} manifest")
+        except ValueError as exc:
+            raise VerificationError(str(exc)) from exc
+        payloads[role] = payload
+        hashes[role] = raw_sha
+    rating, measurement, repair = (
+        payloads["rating"],
+        payloads["measurement"],
+        payloads["repair"],
+    )
+    rating_identity = rating.get("identity") or {}
+    measurement_identity = measurement.get("identity") or {}
+    repair_identity = repair.get("identity") or {}
+    if (
+        rating.get("schema_version") != POSSESSION_RATING_MANIFEST_SCHEMA
+        or rating.get("state") != "frozen"
+        or rating_identity.get("run_id")
+        != "possession-v1-ratings-20260917-d029526-cert"
+        or rating.get("selected_candidate") != REQUIRED_RATING_CANDIDATE
+        or rating.get("production_activation_authorized") is not False
+        or set(rating.get("output_refs") or {}) != set(RATING_DATASETS)
+    ):
+        raise VerificationError("rating parent identity mismatch")
+    if (
+        measurement_identity.get("run_id")
+        != "possession-v1-measurements-20260915-18fb0aa-r6"
+        or measurement.get("production_activation_authorized") is not False
+        or set(measurement.get("output_refs") or {}) != set(POSSESSION_DATASETS)
+    ):
+        raise VerificationError("measurement parent identity mismatch")
+    if (
+        repair_identity.get("run_id") != "repair-v2-20260909T1417Z"
+        or repair.get("production_activation_authorized") is not False
+    ):
+        raise VerificationError("Repair parent identity mismatch")
+    rating_parents = rating.get("parents") or {}
+    if (
+        rating_parents.get("measurement_manifest_uri") != measurement_manifest_uri
+        or rating_parents.get("repair_manifest_uri") != repair_manifest_uri
+        or rating_parents.get("measurement_manifest_raw_sha256")
+        != hashes["measurement"]
+        or rating_parents.get("repair_manifest_raw_sha256") != hashes["repair"]
+        or measurement.get("repair_manifest_uri") != repair_manifest_uri
+        or measurement.get("repair_manifest_raw_sha256") != hashes["repair"]
+    ):
+        raise VerificationError("recursive forecast parent lineage mismatch")
+    return rating, measurement, repair, hashes
+
+
+def _load_reconstruction_inputs(
+    storage: Any,
+    *,
+    rating: Mapping[str, Any],
+    measurement: Mapping[str, Any],
+    repair: Mapping[str, Any],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    measurement_refs = measurement.get("output_refs") or {}
+    population_dataset, population_schema = POSSESSION_DATASETS["population"]
+    scoring_dataset, scoring_schema = POSSESSION_DATASETS["scoring_events"]
+    population = _read_partitioned(
+        storage,
+        measurement_refs["population"],
+        expected_dataset=population_dataset,
+        expected_schema=population_schema,
+        label="measurement population",
+    ).frame.loc[:, list(POPULATION_COLUMNS)]
+    scoring_events = _read_partitioned(
+        storage,
+        measurement_refs["scoring_events"],
+        expected_dataset=scoring_dataset,
+        expected_schema=scoring_schema,
+        label="measurement scoring events",
+    ).frame
+    team_dataset, team_schema = RATING_DATASETS["team_states"]
+    team_states = _read_partitioned(
+        storage,
+        (rating.get("output_refs") or {})["team_states"],
+        expected_dataset=team_dataset,
+        expected_schema=team_schema,
+        label="rating team states",
+    ).frame.loc[:, list(TEAM_STATE_COLUMNS)]
+    outcomes = _core_outcomes(storage, repair)
+    for label, frame in (
+        ("measurement population", population),
+        ("measurement scoring events", scoring_events),
+        ("rating team states", team_states),
+    ):
+        _assert_allowed_seasons(frame, label=label)
+    if len(population) != 8936 or int(population["forecast_eligible"].sum()) != 8935:
+        raise VerificationError("measurement population reconciliation changed")
+    return population, scoring_events, team_states, outcomes
+
+
+def _retained_predictions(
+    predictions: pd.DataFrame, retained: Mapping[str, str]
+) -> pd.DataFrame:
+    return predictions.merge(
+        pd.DataFrame(
+            [{"target": target, "head": head} for target, head in retained.items()]
+        ),
+        on=["target", "head"],
+        how="inner",
+        validate="many_to_one",
+    )
+
+
+def _reconstruct_outputs(
+    *,
+    population: pd.DataFrame,
+    scoring_events: pd.DataFrame,
+    team_states: pd.DataFrame,
+    outcomes: pd.DataFrame,
+) -> tuple[dict[str, pd.DataFrame], dict[str, Any]]:
+    offsets = _build_offsets(
+        population,
+        scoring_events,
+        development_seasons=DEVELOPMENT_SEASONS,
+        equivalent_games=EQUIVALENT_GAMES,
+    )
+    features = _feature_frame(
+        population=population,
+        outcomes=outcomes,
+        team_states=team_states,
+        offsets=offsets,
+    )
+    computations: dict[str, tuple[pd.DataFrame, pd.DataFrame, dict[str, str]]] = {}
+    retained: dict[str, pd.DataFrame] = {}
+    for horizon in HORIZONS:
+        computation = _evaluate_heads(features, horizon=horizon)
+        computations[horizon] = computation
+        retained[horizon] = _retained_predictions(computation[0], computation[2])
+    selected_horizon, comparison = _select_horizon(
+        retained["expanding"], retained["latest_five"]
+    )
+    calibration, variances = _calibrate_uncertainty(
+        features,
+        horizon=selected_horizon,
+        development_seasons=DEVELOPMENT_SEASONS,
+        outer_seasons=OUTER_SEASONS,
+        alpha_grid=ALPHA_GRID,
+        floor=SCALING_FLOOR,
+        residual_floor=RESIDUAL_FLOOR,
+    )
+    registry = pd.DataFrame.from_records(
+        [
+            {
+                "horizon": horizon,
+                "target": target,
+                "reference_alpha": 10.0,
+                "alpha_grid": ",".join(map(str, ALPHA_GRID)),
+            }
+            for horizon in HORIZONS
+            for target in ("margin", "total")
+        ]
+    )
+    horizon_sha = hashlib.sha256(
+        comparison.to_json(
+            orient="records", date_format="iso", double_precision=15
+        ).encode()
+    ).hexdigest()
+    selected_heads = computations[selected_horizon][2]
+    selection = pd.DataFrame.from_records(
+        [
+            {
+                "selected_horizon": selected_horizon,
+                "target": target,
+                "selected_head": selected_heads[target],
+                "selection_reason": "latest_five_gates_passed"
+                if selected_horizon == "latest_five"
+                else "retain_expanding",
+                "horizon_sha256": horizon_sha,
+            }
+            for target in ("margin", "total")
+        ]
+    )
+    outputs = {
+        "forecast_registry": registry,
+        "forecast_model": computations[selected_horizon][1],
+        "forecast_prediction": retained[selected_horizon],
+        "forecast_calibration": calibration,
+        "window_comparison": comparison,
+        "forecast_selection": selection,
+    }
+    for name, frame in outputs.items():
+        dataset, version = FORECAST_DATASETS[name]
+        validate_frame(frame, schema_for(dataset, version))
+    return outputs, {
+        "selected_horizon": selected_horizon,
+        "selected_heads": selected_heads,
+        "horizon_sha256": horizon_sha,
+        "calibration_variances": variances,
+        "offsets_sha256": canonical_frame_digest(
+            offsets, columns=tuple(offsets.columns)
+        ),
+    }
+
+
+_OUTPUT_COLUMNS: dict[str, tuple[str, ...]] = {
+    "forecast_registry": FORECAST_REGISTRY_COLUMNS,
+    "forecast_model": FORECAST_MODEL_COLUMNS,
+    "forecast_prediction": FORECAST_PREDICTION_COLUMNS,
+    "forecast_calibration": FORECAST_CALIBRATION_COLUMNS,
+    "window_comparison": WINDOW_COMPARISON_COLUMNS,
+    "forecast_selection": FORECAST_SELECTION_COLUMNS,
+}
+_PARTITION_KEYS = {
+    "forecast_model": ("horizon", "outer_season"),
+    "forecast_prediction": ("season", "week"),
+}
+
+
+def _reconstructed_digest(
+    name: str, frame: pd.DataFrame
+) -> tuple[str, tuple[dict[str, Any], ...]]:
+    columns = _OUTPUT_COLUMNS[name]
+    partition_keys = _PARTITION_KEYS.get(name, ())
+    if not partition_keys:
+        return canonical_frame_digest(frame, columns=columns), ()
+    parts: list[dict[str, Any]] = []
+    for values, group in frame.groupby(list(partition_keys), sort=True, dropna=False):
+        values = values if isinstance(values, tuple) else (values,)
+        partition = {
+            key: value.item() if hasattr(value, "item") else value
+            for key, value in zip(partition_keys, values, strict=True)
+        }
+        parts.append(
+            {
+                "partition": partition,
+                "row_count": int(len(group)),
+                "records_sha": canonical_frame_digest(group, columns=columns),
+            }
+        )
+    parts.sort(key=lambda part: partition_order_key(part["partition"]))
+    return partitioned_records_sha(parts, partition_keys), tuple(parts)
+
+
+def _compare_outputs(
+    *,
+    stored: Mapping[str, StoredOutput],
+    reconstructed: Mapping[str, pd.DataFrame],
+) -> dict[str, Any]:
+    comparisons: dict[str, Any] = {}
+    for name in sorted(reconstructed):
+        expected = reconstructed[name]
+        actual = stored[name]
+        digest, parts = _reconstructed_digest(name, expected)
+        if len(expected) != int(actual.ref.get("row_count", -1)):
+            raise VerificationError(f"{name} row count differs from reconstruction")
+        if digest != str(actual.ref.get("records_sha")):
+            raise VerificationError(f"{name} differs from independent reconstruction")
+        if parts:
+            declared = tuple(
+                {
+                    "partition": dict(part["partition"]),
+                    "row_count": int(part["row_count"]),
+                    "records_sha": str(part["records_sha"]),
+                }
+                for part in actual.parts
+            )
+            if parts != declared:
+                raise VerificationError(
+                    f"{name} partition plan differs from reconstruction"
+                )
+        comparisons[name] = {
+            "row_count": int(len(expected)),
+            "records_sha": digest,
+            "partition_count": len(parts),
+        }
+    return comparisons
+
+
 def verify_forecast_artifact(
     storage: Any,
     *,
@@ -517,10 +1394,12 @@ def verify_forecast_artifact(
     progress: Any = None,
 ) -> dict[str, Any]:
     """Independently reconstruct and verify a frozen forecast artifact."""
+    emit = progress or (lambda *_args, **_kwargs: None)
     if environment != "preview":
         raise VerificationError("forecast verification is preview-only")
-    manifest_raw = storage.read_bytes(manifest_uri)
-    manifest = json.loads(manifest_raw)
+    manifest, manifest_raw = _read_json(
+        storage, manifest_uri, label="forecast manifest"
+    )
     try:
         verify_signed_payload(manifest, label="forecast manifest")
     except ValueError as exc:
@@ -534,15 +1413,12 @@ def verify_forecast_artifact(
     identity = manifest.get("identity") or {}
     if identity.get("code_sha") != expected_code_sha:
         raise VerificationError("forecast manifest code SHA mismatch")
-    if identity.get("environment") != "preview":
-        raise VerificationError("forecast manifest environment mismatch")
-    parents = manifest.get("parents") or {}
-    if parents.get("rating_manifest_uri") != rating_manifest_uri:
-        raise VerificationError("forecast manifest rating parent URI mismatch")
-    if parents.get("measurement_manifest_uri") != measurement_manifest_uri:
-        raise VerificationError("forecast manifest measurement parent URI mismatch")
-    if parents.get("repair_manifest_uri") != repair_manifest_uri:
-        raise VerificationError("forecast manifest repair parent URI mismatch")
+    if (
+        identity.get("environment") != "preview"
+        or tuple(identity.get("development_seasons") or ()) != DEVELOPMENT_SEASONS
+        or tuple(identity.get("forbidden_seasons") or ()) != FORBIDDEN_SEASONS
+    ):
+        raise VerificationError("forecast manifest identity policy mismatch")
     output_refs = manifest.get("output_refs") or {}
     if set(output_refs) != set(FORECAST_DATASETS) - {"candidate_manifest"}:
         raise VerificationError("forecast manifest output refs mismatch")
@@ -553,10 +1429,103 @@ def verify_forecast_artifact(
     selected_horizon = manifest.get("selected_horizon")
     if selected_horizon not in HORIZONS:
         raise VerificationError("forecast manifest selected horizon unknown")
+    emit("manifest_verified", manifest_uri=manifest_uri)
+
+    rating, measurement, repair, parent_hashes = _verify_parent_manifests(
+        storage,
+        manifest=manifest,
+        rating_manifest_uri=rating_manifest_uri,
+        measurement_manifest_uri=measurement_manifest_uri,
+        repair_manifest_uri=repair_manifest_uri,
+    )
+    emit("parents_verified")
+
+    stored: dict[str, StoredOutput] = {}
+    for name, value in output_refs.items():
+        dataset, schema = FORECAST_DATASETS[name]
+        stored[name] = _read_output(
+            storage,
+            value,
+            expected_dataset=dataset,
+            expected_schema=schema,
+            label=f"forecast output {name}",
+        )
+        _assert_allowed_seasons(stored[name].frame, label=f"forecast output {name}")
+        emit("stored_output_verified", dataset=name, rows=len(stored[name].frame))
+
+    population, scoring_events, team_states, outcomes = _load_reconstruction_inputs(
+        storage,
+        rating=rating,
+        measurement=measurement,
+        repair=repair,
+    )
+    emit("reconstruction_inputs_loaded")
+    reconstructed, details = _reconstruct_outputs(
+        population=population,
+        scoring_events=scoring_events,
+        team_states=team_states,
+        outcomes=outcomes,
+    )
+    emit("reconstruction_complete")
+    comparisons = _compare_outputs(stored=stored, reconstructed=reconstructed)
+
+    if details["selected_horizon"] != selected_horizon:
+        raise VerificationError("selected horizon differs from reconstruction")
+    if details["horizon_sha256"] != manifest.get("horizon_sha256"):
+        raise VerificationError("horizon selection digest differs from reconstruction")
+    model = reconstructed["forecast_model"]
+    head_recipes: dict[str, Any] = {}
+    for target, head in details["selected_heads"].items():
+        rows = model[
+            model["target"].eq(target)
+            & model["head"].eq(head)
+            & model["retained"].eq(True)
+        ]
+        alphas = sorted(set(pd.to_numeric(rows["alpha"], errors="raise").astype(float)))
+        if len(alphas) != 1:
+            raise VerificationError(f"{target} retained head alpha is inconsistent")
+        head_recipes[target] = {"head": head, "alpha": alphas[0]}
+    if head_recipes != manifest.get("head_recipes"):
+        raise VerificationError("head recipes differ from reconstruction")
+
+    calibration = reconstructed["forecast_calibration"]
+    calibration_summary = {
+        "records_sha": canonical_frame_digest(
+            calibration, columns=FORECAST_CALIBRATION_COLUMNS
+        ),
+        "row_count": int(len(calibration)),
+        "by_target": {
+            target: {str(int(season)): variance for season, variance in seasons.items()}
+            for target, seasons in details["calibration_variances"].items()
+        },
+    }
+    if calibration_summary != manifest.get("calibration_summary"):
+        raise VerificationError("calibration summary differs from reconstruction")
+    preflight_sha = hashlib.sha256(
+        json.dumps(
+            {
+                name: str(value.get("records_sha"))
+                for name, value in output_refs.items()
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
+    if preflight_sha != manifest.get("preflight_sha256"):
+        raise VerificationError("forecast preflight digest mismatch")
+    emit("outputs_compared")
     return {
         "verified": True,
         "manifest_uri": manifest_uri,
+        "manifest_raw_sha256": hashlib.sha256(manifest_raw).hexdigest(),
+        "manifest_canonical_sha256": manifest.get("manifest_sha256"),
+        "run_id": identity.get("run_id"),
+        "code_sha": identity.get("code_sha"),
         "identity_sha256": identity.get("identity_sha256"),
         "selected_horizon": selected_horizon,
         "output_count": len(output_refs),
+        "comparisons": comparisons,
+        "parent_raw_sha256": parent_hashes,
+        "offsets_sha256": details["offsets_sha256"],
+        "horizon_sha256": details["horizon_sha256"],
+        "rejected_seasons": [2020, 2026],
     }

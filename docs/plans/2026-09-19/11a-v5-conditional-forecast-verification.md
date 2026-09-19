@@ -1,10 +1,10 @@
 # V5-11A: Conditional Forecast Verification
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Created:** 2026-09-19
 - **Planner:** Sol
-- **Approval source:** Pending; this contract records future conditional work and is not authorized for execution by the documentation reset.
-- **Implementation log:** Pending; create `session_logs/YYYY-MM-DD/NN-v5-11a-conditional-forecast-verification.md` when separately authorized.
+- **Approval source:** User explicitly authorized Contract 11A with “Let's go to 11A” on 2026-09-19.
+- **Implementation log:** `session_logs/2026-09-19/02-v5-11a-conditional-forecast-verification.md`
 - **Commit policy:** Separate verifier-code and Preview-evidence checkpoints; user controls Git operations.
 
 ## Goal and entry gate
@@ -27,6 +27,17 @@ All source/output references must be resolved recursively from those manifests.
 Development evidence is limited to 2015–2019 and 2021–2025; reject 2020 and
 2026 everywhere. The entry record must name the Repair verifier-dependence and
 forecast-verification limitations still open at that time.
+
+## Current implementation state
+
+The verifier-code checkpoint is complete but uncommitted. The independent
+no-write diagnostic reconstructed the exact frozen artifact and matched all six
+stored output digests: 7,318 prediction rows, 16 model rows, eight calibration
+rows, four registry rows, four window-comparison rows, and two selection rows.
+Focused tests cover the import boundary, frozen lineage, missing/wrong inputs,
+rejected seasons, output perturbation, signed conditional publication,
+independent re-read, and idempotency. Preview publication remains blocked until
+the user commits this code checkpoint and a clean-SHA preflight is reviewed.
 
 ## Conditional-use boundary
 
@@ -83,9 +94,9 @@ partial pass and not permission for Contract 12A.
 
 ## Definition of done and amendments
 
-- [ ] 10A lineage/preflight evidence and exact frozen parents are reverified.
-- [ ] Independent reconstruction compares every required forecast output.
-- [ ] Required negative tests and a positive frozen fixture pass.
+- [x] 10A lineage/preflight evidence and exact frozen parents are reverified.
+- [x] Independent reconstruction compares every required forecast output.
+- [x] Required negative tests and a positive frozen fixture pass.
 - [ ] Signed Preview evidence is independently re-read and idempotent.
 - [ ] The evidence states `conditional_historical_results_only`, all frozen
   identities/hashes, and open limitations.

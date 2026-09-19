@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Independent verification of a frozen V5-04B forecast artifact.
 
-This CLI loads the forecast manifest and verifies its identity, parents, and
-output references. Full reconstruction verification is deferred to a later
-task; this initial version validates the manifest structure and signatures.
+This CLI recursively verifies the frozen parents, reconstructs every stored
+forecast computation independently, and compares all six outputs by canonical
+digest and partition. It performs no writes.
 """
 
 from __future__ import annotations

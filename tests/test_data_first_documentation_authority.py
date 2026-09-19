@@ -160,15 +160,24 @@ def test_all_v5_contracts_are_linked_with_accurate_lifecycle(name: str):
     assert f"**{status[1]}.**" in index_row
 
 
-def test_historical_first_contracts_are_draft_and_gate_2026_application():
+def test_historical_first_contracts_preserve_lifecycle_and_gate_2026_application():
     required = {
-        "10-v5-historical-foundation-audit.md": "audit the complete v5 foundation",
-        "11-v5-forecast-verification-closure.md": "independently reconstruct",
-        "12-v5-historical-results-and-readiness-review.md": "not prospective evidence",
+        "10-v5-historical-foundation-audit.md": (
+            "status: implemented",
+            "audit the complete v5 foundation",
+        ),
+        "11-v5-forecast-verification-closure.md": (
+            "status: draft",
+            "independently reconstruct",
+        ),
+        "12-v5-historical-results-and-readiness-review.md": (
+            "status: draft",
+            "not prospective evidence",
+        ),
     }
-    for name, phrase in required.items():
+    for name, (status, phrase) in required.items():
         content = _plain((HISTORICAL_REVIEW_DIR / name).read_text())
-        assert "status: draft" in content
+        assert status in content
         assert phrase in content
         assert f"2026-09-18/{name}" in CONTRACT_INDEX.read_text()
 
@@ -193,9 +202,10 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
     scorecard = (
         CONDITIONAL_RESULTS_DIR / "12a-v5-conditional-historical-scorecard.md"
     ).read_text()
+    assert "status: in progress" in _plain(verification)
+    assert "status: draft" in _plain(scorecard)
     for content in (verification, scorecard):
         plain = _plain(content)
-        assert "status: draft" in plain
         assert "conditional_historical_results_only" in content
         assert "never restores forecast eligibility" in plain
         assert "prospective evidence" in plain
