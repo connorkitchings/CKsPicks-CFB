@@ -105,3 +105,20 @@
   warnings as errors (`76 passed`), scoped Ruff check and format check, and
   `git diff --check` pass. The next accepted dry run requires a new clean
   user-controlled checkpoint and must not reuse the rejected candidate file.
+
+## Continuation: bounded-memory centering recovery
+
+- Replacement full-corpus attempts bound to `a59e451` stopped before emitting
+  either a Python exception or candidate evidence, while the shared R2
+  preflight completed successfully. The regression coincided with retaining
+  separate baseline and adjusted numeric vectors in the 24M-row adjustment
+  stream, so it is treated as an audit-engine memory defect, not historical
+  evidence.
+- The centering accumulator now retains only the exposure-weighted
+  iteration-four-minus-iteration-zero delta. This is algebraically identical
+  to the preserved-baseline test and avoids materializing both numeric vectors
+  for each streamed group.
+- Validation after the memory correction: focused suites with warnings as
+  errors (`76 passed`), scoped Ruff check/format, and `git diff --check` pass.
+  A clean committed checkpoint remains required before the next accepted full
+  run.

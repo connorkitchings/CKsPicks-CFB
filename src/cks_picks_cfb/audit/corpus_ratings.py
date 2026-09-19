@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterator, Mapping
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.audit import REJECTED_SEASONS
@@ -99,24 +100,28 @@ def check_adjustment_chronology(
 
 
 def accumulate_centering(state: dict[str, Any], frame: pd.DataFrame) -> None:
-    """Accumulate exposure-weighted baseline and adjusted values by cutoff."""
-    eligible = frame[pd.to_numeric(frame["denominator"], errors="coerce").fillna(0) > 0]
+    """Accumulate one weighted adjustment delta per cutoff group.
+
+    Retaining separate baseline and adjusted vectors is needlessly expensive
+    for the 24M-row history.  Their difference is the asserted quantity, and
+    preserving only that weighted sum keeps the streamed audit bounded.
+    """
+    eligible = frame[frame["denominator"].astype(float) > 0]
     for key, values in eligible.groupby(
         ["target_week_cutoff_utc", "measurement_id", "unit_role"], sort=False
     ):
-        weights = pd.to_numeric(values["denominator"], errors="coerce").fillna(0)
-        baseline = pd.to_numeric(values["iteration_zero_value"], errors="coerce")
-        adjusted = pd.to_numeric(values["iteration_four_value"], errors="coerce")
+        weights = values["denominator"].to_numpy(dtype=float, copy=False)
+        delta = values["iteration_four_value"].to_numpy(
+            dtype=float, copy=False
+        ) - values["iteration_zero_value"].to_numpy(dtype=float, copy=False)
         entry = state.setdefault(
             key,
             {
-                "baseline_weighted_sum": 0.0,
-                "adjusted_weighted_sum": 0.0,
+                "weighted_delta_sum": 0.0,
                 "weight": 0.0,
             },
         )
-        entry["baseline_weighted_sum"] += float((baseline * weights).sum())
-        entry["adjusted_weighted_sum"] += float((adjusted * weights).sum())
+        entry["weighted_delta_sum"] += float(np.dot(delta, weights))
         entry["weight"] += float(weights.sum())
 
 
@@ -133,9 +138,7 @@ def check_league_centering(
         if entry.get("weight", 0) == 0:
             continue
         groups += 1
-        baseline_mean = entry["baseline_weighted_sum"] / entry["weight"]
-        adjusted_mean = entry["adjusted_weighted_sum"] / entry["weight"]
-        delta = adjusted_mean - baseline_mean
+        delta = entry["weighted_delta_sum"] / entry["weight"]
         if abs(delta) > abs(worst_delta):
             worst_delta = delta
             worst_key = key

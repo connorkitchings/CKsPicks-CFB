@@ -291,8 +291,7 @@ def test_adjustment_chronology_compares_equivalent_timestamps() -> None:
 def test_league_centering_detects_baseline_drift() -> None:
     state = {
         ("2021-09-01T00:00:00Z", "ppp", "offense"): {
-            "baseline_weighted_sum": 20.0,
-            "adjusted_weighted_sum": 50.0,
+            "weighted_delta_sum": 30.0,
             "weight": 10.0,
         }
     }
@@ -304,8 +303,7 @@ def test_league_centering_detects_baseline_drift() -> None:
 def test_league_centering_allows_nonzero_preserved_baseline() -> None:
     state = {
         ("2021-09-01T00:00:00Z", "ppp", "offense"): {
-            "baseline_weighted_sum": 22.0,
-            "adjusted_weighted_sum": 22.0,
+            "weighted_delta_sum": 0.0,
             "weight": 10.0,
         }
     }
