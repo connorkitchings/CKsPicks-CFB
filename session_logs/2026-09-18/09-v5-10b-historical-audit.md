@@ -185,3 +185,19 @@
   contract now state this status explicitly. Next work should be replanned
   around the shortest defensible path to verified 2025 results, rather than
   continuing unconstrained full-corpus audit iteration.
+
+## Continuation: preflight-interface recovery (2026-09-19)
+
+- Resumed the interrupted 10B implementation with one incomplete change in
+  `audit/checks.py`. The change now compiles and requires every base harness
+  check to emit a nonempty, explicit `affected_stages` list. Manifest,
+  lineage, output, and behavioral checks name the stage or stages they affect;
+  a missing route fails closed before evidence can be constructed.
+- Validation: focused audit suites with warnings as errors (`81 passed`),
+  scoped Ruff check and format check, `git diff --check`, and the full Python
+  suite with warnings as errors (`1144 passed, 2 skipped`).
+- No R2 read or write, artifact, configuration, model, production, catalog,
+  Neon, V4, or documentation-authority change occurred.
+- **Next:** user-controlled code checkpoint for this recovery. Once committed,
+  rerun the clean-SHA full-corpus preflight under a fresh run ID and review its
+  complete evidence before considering Preview publication.

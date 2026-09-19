@@ -37,7 +37,10 @@ def _result(
     observed: Any,
     population: str,
     evidence_refs: list[str],
+    affected_stages: list[str],
 ) -> dict[str, Any]:
+    if not affected_stages:
+        raise AuditCheckError(f"check {check_id} must declare explicit affected stages")
     return {
         "check_id": check_id,
         "layer": layer,
@@ -47,6 +50,7 @@ def _result(
         "observed": observed,
         "population": population,
         "evidence_refs": list(evidence_refs),
+        "affected_stages": list(affected_stages),
     }
 
 
@@ -65,6 +69,7 @@ def check_signature(
             str(exc),
             f"parent manifest: {stage}",
             [manifest_uri],
+            [stage],
         )
     return _result(
         f"manifest.{stage}.signature",
@@ -75,6 +80,7 @@ def check_signature(
         str(manifest.get("manifest_sha256")),
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -111,6 +117,7 @@ def check_identity(
         "ok" if not problems else "; ".join(problems),
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -132,6 +139,7 @@ def check_state(
             f"state={observed!r}",
             f"parent manifest: {stage}",
             [manifest_uri],
+            [stage],
         )
     return _result(
         f"manifest.{stage}.state",
@@ -142,6 +150,7 @@ def check_state(
         f"state={observed!r}",
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -165,6 +174,7 @@ def check_production_flags(
         "ok" if not problems else "; ".join(problems),
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -221,6 +231,7 @@ def check_parent_links(
                 observed,
                 f"{child} -> {parent}",
                 [child_uri, expected_uri],
+                [child, parent],
             )
         )
     return results
@@ -265,6 +276,7 @@ def check_output_refs(
             "; ".join(problems),
             f"parent manifest: {stage}",
             [manifest_uri],
+            [stage],
         )
     missing: list[str] = []
     for role in sorted(expected):
@@ -298,6 +310,7 @@ def check_output_refs(
         "ok" if not problems else "; ".join(problems),
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -350,6 +363,7 @@ def check_row_counts(
         observed,
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -398,6 +412,7 @@ def check_seasons(
         "ok" if not problems else "; ".join(problems),
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -437,6 +452,7 @@ def check_code_config(
         observed,
         f"parent manifest: {stage}",
         [manifest_uri],
+        [stage],
     )
 
 
@@ -464,6 +480,7 @@ def check_lineage_exhaustive(
         observed,
         "recursive parent manifests",
         [],
+        [entry["stage"] for entry in PARENT_STAGES],
     )
 
 
@@ -530,6 +547,7 @@ def behavioral_cells_to_checks(
             f"observed behavior: {cell['observed']} (method: {cell['method']})",
             f"{cell['verifier']} verifier / {cell['case']}",
             [],
+            [str(cell["verifier"])],
         )
         for cell in cells
     ]
