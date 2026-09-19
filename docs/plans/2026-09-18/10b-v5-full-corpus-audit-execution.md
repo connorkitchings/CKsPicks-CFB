@@ -24,6 +24,13 @@ local preflight evidence, and the two seeded structural findings awaiting
 scope/severity/disposition determination. The 55-test baseline plus new 10a
 audit tests must keep passing; 10b adds execution coverage on top.
 
+**Progress record (2026-09-19):** the 10B audit-engine checkpoint is committed
+at `787ae715`. Earlier full-corpus candidates remain rejected diagnostic
+evidence because they exposed audit-engine defects. The current read-only full
+run was intentionally paused before producing a candidate; there is no
+accepted full-corpus evidence, Preview audit publication, independent re-read,
+or human-readable findings report. No audit-prefix R2 object has been written.
+
 ## Proposed approach
 
 Run every check family across the complete eligible corpus (streaming large

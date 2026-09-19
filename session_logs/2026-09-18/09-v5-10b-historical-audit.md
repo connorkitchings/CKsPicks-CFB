@@ -164,3 +164,24 @@
 - **Next:** user-controlled code checkpoint, followed by a clean-SHA
   read-only full-corpus run and review of every result before any Preview
   publication. No R2 write occurred in this continuation.
+
+## Continuation: pause and results-path clarification (2026-09-19)
+
+- User requested that the full-corpus audit pause while the V5 path is
+  reconciled against the actual goal: a defensible historical scorecard through
+  2025 before any 2026 application. Two in-progress read-only runner processes
+  bound to `787ae715` were stopped before either produced candidate evidence.
+- The clean 10B code checkpoint is `787ae715`
+  (`fix(research): harden V5 historical audit evidence checks`). The small
+  read-only probe passed its 61 boundary checks except for the known Repair
+  verifier-dependence condition; it made no R2 write. No full-corpus candidate
+  is accepted and no audit artifact exists under the Preview audit prefix.
+- The retained forecast artifact has stored historical prediction fields for
+  2022–2025, including `actual`, `prediction`, `absolute_error`, and
+  `gaussian_crps`. It is not independently reconstructed, so no V5 2025 metric
+  is currently authoritative. Contract 12 is the scorecard contract, after 10B
+  and Contract 11; 2026 remains deferred.
+- Canonical roadmap, contract index, documentation home, and this execution
+  contract now state this status explicitly. Next work should be replanned
+  around the shortest defensible path to verified 2025 results, rather than
+  continuing unconstrained full-corpus audit iteration.

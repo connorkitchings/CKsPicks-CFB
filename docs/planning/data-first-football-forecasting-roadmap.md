@@ -63,7 +63,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | In Progress — 04A is complete; 04B needs independent computational reconstruction before its historical forecast artifact can regain downstream eligibility. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
 | 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires 10-12, explicit acceptance of historical readiness, then later re-reviewed live application. |
-| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft — active next V5 work; audit the complete historical foundation through 2025. |
+| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft umbrella — 10A is Implemented and 10B is In Progress at code checkpoint `787ae715`; no full-corpus candidate is accepted or published. Audit the complete historical foundation through 2025. |
 | 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Draft — follows 10; independently reconstructs the forecast chain. |
 | 12 | [Historical results and readiness review](../plans/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Draft — follows 10/11; produces a historical readiness recommendation. |
 
@@ -113,6 +113,14 @@ runbook (with the Contract 06 handoff) close umbrella V5-05. Real-season readine
 for 2026 W4 is re-verified `blocked` (no 2026 measurement rows, no 2026 team states)
 with the historical assessment preserved. The verifier fix for canonically sorted
 partition keys (Amendment 1) changes no stored bytes or digests.
+
+**2026-09-19 progress clarification.** Contract 10A remains completed. Contract
+10B's audit engine has a clean committed checkpoint `787ae715`, but its full
+corpus run is paused before an accepted local candidate, Preview publication,
+or independent re-read. No R2 audit-prefix object has been written. The stored
+forecast artifact contains 2022–2025 scored rows, but no V5 2025 scorecard is
+authoritative until Contracts 10B, 11, and 12 complete in order. Contract 11
+has not started, and Contract 12 has not started.
 
 The active next work is the full historical-foundation audit (Contract 10),
 forecast-verification closure (11), and historical results/readiness review

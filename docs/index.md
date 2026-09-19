@@ -3,7 +3,7 @@
 CKsPicks-CFB is a college-football prediction system with a Python pipeline,
 an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Current posture (2026-09-18)
+## Current posture (2026-09-19)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
 isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
@@ -22,6 +22,14 @@ under their existing runbooks.
 The current forecast artifact is not an eligible certified downstream parent
 until its computations and output datasets are independently reconstructed.
 2026 application is deferred pending historical readiness and explicit review.
+
+The retained artifact includes scored historical prediction rows through 2025,
+but **no V5 2025 accuracy scorecard is currently authoritative**. Contract 10B
+has not published its audit evidence; Contract 11 has not independently
+reconstructed the stored computations; and Contract 12 has not issued the
+required MAE, bias, CRPS, interval-coverage, population, exclusion, and
+comparison report. Stored results may be inspected only as unverified
+historical-artifact diagnostics until those gates close.
 
 The target flow is:
 
