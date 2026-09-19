@@ -20,10 +20,15 @@ Repair v2 is verified and Phase 3 v2 is certified. Its `quality_core_epa_split`
 selection is historical reconstructed benchmark evidence, not the possession
 definition. R6 possession measurements are independently certified in Preview
 at `possession-v1-measurements-20260915-18fb0aa-r6`; it is the sole eligible
-Contract 03 parent in the completed historical sequence. The active work is a
-full audit through 2025, independent forecast verification, and historical
-readiness review. The completed measurement/rating artifacts remain historical
-evidence while that audit reviews their methodology and lineage.
+Contract 03 parent in the completed historical sequence. The active work has
+two historical lanes: Contract 10B audits the full foundation through 2025,
+while Draft 11A/12A may independently verify the frozen forecast artifact and
+publish a V5-only scorecard with permitted use
+`conditional_historical_results_only`. Conditional results are development
+evidence only; they do not restore forecast eligibility, authorize 2026 work,
+or replace the final Contract 11/12 eligibility and readiness gates. The
+completed measurement/rating artifacts remain historical evidence while the
+audit reviews their methodology and lineage.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
 parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only

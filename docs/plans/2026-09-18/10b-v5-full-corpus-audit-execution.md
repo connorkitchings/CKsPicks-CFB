@@ -15,7 +15,7 @@ evidence verification, and publish the findings report. The
 severities/dispositions, and Contract 11 gate; [10a](10a-v5-audit-harness-and-lineage.md)
 must be complete (committed checkpoint + three identical preflights) before
 the evidence-bound 10b apply. Contract 10 completes even with open blockers;
-open blockers prevent Contract 11 from starting.
+open blockers prevent the full forecast-eligibility Contract 11 from starting.
 
 ## Current state
 
@@ -218,6 +218,13 @@ tests (every finding dispositioned; gate evaluates exactly per umbrella).
 - [ ] All validation green; `git diff --check` clean.
 
 ## Amendments
+
+**Conditional-results clarification (2026-09-19):** Draft 11A/12A may pursue a
+separately bounded `conditional_historical_results_only` scorecard from 10A
+lineage/preflight evidence. They neither replace this full-corpus audit nor
+clear its findings. Completion of 10B remains required for foundation
+readiness, full forecast eligibility, final Contract 12, and every 2026 gate.
+No 10B execution is authorized by this documentation amendment.
 
 Mechanical fixes stay in-contract. New blockers requiring code,
 methodology, schema, or artifact changes need separately approved corrective

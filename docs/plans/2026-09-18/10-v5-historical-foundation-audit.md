@@ -26,7 +26,7 @@ remain immutable regardless of findings; a failed independence check changes
 permitted use, not historical bytes.
 
 Contract 10 completes even when it discovers blockers; unresolved blockers
-prevent Contract 11 from starting.
+prevent the full forecast-eligibility Contract 11 from starting.
 
 ## Frozen audit boundary and evidence interfaces
 
@@ -114,7 +114,8 @@ are separate decisions: validity never implies Contract 11 permission. The
 verification record stays local/session-log evidence carrying the verified
 manifest hash; exactly four outputs are published.
 
-[Contract 11](11-v5-forecast-verification-closure.md) may begin only when:
+The full forecast-eligibility [Contract 11](11-v5-forecast-verification-closure.md)
+may begin only when:
 
 - Every upstream Repair, measurement, or rating blocker is closed.
 - Every forecast-related finding is closed or explicitly incorporated into Contract 11.
@@ -147,3 +148,15 @@ remains an unrelated V4 diagnostic.
 
 Any change to boundary, parents, outputs, severities/dispositions, or gate
 conditions requires a separately approved amendment before implementation.
+
+## Amendment 1 — Conditional historical-results lane (2026-09-19)
+
+Contract 10 remains the full-foundation authority. 10A's completed lineage and
+preflight evidence may support the separate Draft
+[11A](../2026-09-19/11a-v5-conditional-forecast-verification.md), followed by
+Draft [12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md), solely
+for `conditional_historical_results_only`. This does not complete 10B, clear
+its findings, grant forecast eligibility, or change this umbrella's final
+Contract 11 gate. 10B remains required for foundation readiness, final artifact
+eligibility, final Contract 12, and any 2026 work; all upstream blockers remain
+open until their recorded closure criteria are met.

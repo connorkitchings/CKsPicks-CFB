@@ -62,16 +62,19 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | In Progress — 04A is complete; 04B needs independent computational reconstruction before its historical forecast artifact can regain downstream eligibility. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
-| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires 10-12, explicit acceptance of historical readiness, then later re-reviewed live application. |
+| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires full 10B/11/12 readiness, explicit acceptance, then later re-reviewed live application; 11A/12A conditional results do not satisfy this gate. |
 | 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft umbrella — 10A is Implemented and 10B is In Progress at code checkpoint `787ae715`; no full-corpus candidate is accepted or published. Audit the complete historical foundation through 2025. |
-| 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Draft — follows 10; independently reconstructs the forecast chain. |
-| 12 | [Historical results and readiness review](../plans/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Draft — follows 10/11; produces a historical readiness recommendation. |
+| 11A | [Conditional forecast verification](../plans/2026-09-19/11a-v5-conditional-forecast-verification.md) | Draft — after 10A lineage/preflight, independently reconstructs the frozen artifact only for `conditional_historical_results_only`; it does not restore eligibility. |
+| 12A | [Conditional historical scorecard](../plans/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Draft — after successful 11A, reports V5-only conditional 2025 results and 2022–2025 context; it is not readiness or 2026 authority. |
+| 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Draft full forecast-eligibility closure — follows completed 10B and resolves the eligibility gap. |
+| 12 | [Historical results and readiness review](../plans/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Draft final readiness review — follows completed 10B, successful 11A/12A, and required blocker closure. Full 11 remains required before eligibility or 2026 re-review. |
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
-satisfy an unmet data dependency. The active next work is Contracts 10-12:
-historical-foundation audit, independent forecast verification, and historical
-readiness review through 2025.
+satisfy an unmet data dependency. The conditional-results lane is 11A then
+12A; it proceeds independently of 10B but cannot clear foundation findings,
+forecast eligibility, final readiness, or a 2026 gate. The final lane remains
+10B, full 11, then 12 through 2025.
 
 ## Current checkpoint
 
@@ -119,13 +122,17 @@ partition keys (Amendment 1) changes no stored bytes or digests.
 corpus run is paused before an accepted local candidate, Preview publication,
 or independent re-read. No R2 audit-prefix object has been written. The stored
 forecast artifact contains 2022–2025 scored rows, but no V5 2025 scorecard is
-authoritative until Contracts 10B, 11, and 12 complete in order. Contract 11
-has not started, and Contract 12 has not started.
+currently authoritative. Draft 11A/12A may produce a verified scorecard with
+permitted use `conditional_historical_results_only`; it remains historical
+development evidence, never forecast eligibility, prospective evidence, or
+2026 authority. Full 10B, 11, and 12 remain the final eligibility/readiness
+sequence. None of 11, 11A, 12, or 12A has started.
 
-The active next work is the full historical-foundation audit (Contract 10),
-forecast-verification closure (11), and historical results/readiness review
-(12), all through 2025. Only explicit acceptance of that review can trigger a
-re-review of the deferred 2026 application contracts. The possession-based rating methodology is specified (2026-09-11), amended
+The ordered future work is conditional forecast verification (11A), conditional
+historical scorecard (12A), the independently continuing foundation audit
+(10B), full forecast-eligibility closure (11), and final historical readiness
+review (12), all through 2025. Only explicit acceptance of final Contract 12
+can trigger a re-review of the deferred 2026 application contracts. The possession-based rating methodology is specified (2026-09-11), amended
 2026-09-13. Its [original specification contract](../plans/2026-09-11/possession-rating-methodology-specification.md)
 remains an Implemented documentation milestone; the current
 [methodology](../modeling/possession_rating_methodology.md) reflects this package.

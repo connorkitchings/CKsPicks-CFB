@@ -240,8 +240,12 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   independently verified and idempotently rerun on 2026-09-11).
   It is benchmark evidence. **V5 historical-first checkpoint (2026-09-18):**
   R6 possession measurements and the retained rating artifact are historical
-  evidence. The active next work is the full audit through 2025, independent
-  forecast verification, and historical readiness review. V5 ratings successor is distinct from V4 feature schema v5;
+  evidence. The V5 historical work now has two lanes: Draft Contracts 11A/12A
+  may independently verify the frozen forecast artifact and publish a V5-only
+  scorecard with permitted use `conditional_historical_results_only`, while
+  Contract 10B continues the full audit through 2025. Conditional results do
+  not restore forecast eligibility, authorize 2026 work, or replace the final
+  Contract 11/12 readiness gates. V5 ratings successor is distinct from V4 feature schema v5;
   contract 01 is the independent diagnostic closure. September 8 Phase 4A–6
   contracts are Superseded by the V5 package; only explicitly inherited mathematics
   carry forward. The first release uses a rating-to-margin/total Ridge bridge;

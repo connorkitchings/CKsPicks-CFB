@@ -34,9 +34,10 @@ The [September 13 common contract](2026-09-13/v5-ratings-successor-roadmap-and-c
 is Approved; the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the canonical status page. Repair v2 and Phase 3 v2 are certified. Possession
 measurements are independently certified in Preview as
-`possession-v1-measurements-20260915-18fb0aa-r6`; the active V5 priority is the
-historical-foundation audit through 2025. V5 ratings successor is distinct from
-V4 feature schema v5.
+`possession-v1-measurements-20260915-18fb0aa-r6`. The active V5 work has a
+conditional-results lane (11A then 12A) and a full-foundation/readiness lane
+(10B, full 11, then 12); conditional 2025 results cannot clear the latter
+lane's gates. V5 ratings successor is distinct from V4 feature schema v5.
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
@@ -47,7 +48,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Historical rating artifact selected `ppp__rho_0_60__exposure`; its lineage and methodology are subject to Contract 10. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **In Progress.** 04A remains implemented; 04B's manifest-level verifier does not reconstruct forecast computations/outputs, so Contract 11 must close eligibility. |
 | 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Implemented.** 05A/05B/05C certify shadow tooling and diagnostic rehearsal only; they do not certify forecast quality, live readiness, or prospective evidence. |
-| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Deferred behind 10-12, explicit acceptance of historical readiness, and later re-reviewed live application. |
+| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Deferred behind full 10B/11/12 readiness, explicit acceptance, and later re-reviewed live application; conditional 11A/12A results do not satisfy this gate. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
 parent, certify data, or create prospective evidence. Contract 01 is independent
@@ -79,9 +80,9 @@ unmet data dependency.
 
 | Contract | Status and dependency |
 | --- | --- |
-| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved, deferred.** Re-review only after 10-12 and explicit historical-readiness acceptance. |
-| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, deferred.** Requires re-reviewed 07 and frozen historically accepted design; replay does not create prospective evidence. |
-| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, deferred.** Requires re-reviewed 07/08 and exact frozen forecast artifact; `live` timing alone is not prospective proof. |
+| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved, deferred.** Re-review only after full 10B/11/12 readiness and explicit historical-readiness acceptance; conditional 11A/12A results do not satisfy the gate. |
+| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, deferred.** Requires re-reviewed 07 and frozen historically accepted design; conditional results do not create prospective evidence. |
+| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, deferred.** Requires re-reviewed 07/08 and exact frozen forecast artifact; conditional results and `live` timing alone are not prospective proof. |
 
 ### V5 historical-first review sequence (2026-09-18)
 
@@ -90,8 +91,16 @@ unmet data dependency.
 | 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Draft.** Umbrella: frozen parents, outputs, severities/dispositions, Contract 11 gate. |
 | 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **Implemented.** Hardened harness (Amendment 2) with three byte-identical preflights; zero R2 writes. Checkpoint `6af0392`. |
 | 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **In Progress.** Code checkpoint `787ae715` is complete; no full-corpus candidate has been accepted and no audit output has been published to R2. Full findings, independent verification, and publication remain required. |
-| 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Starts after 10 resolves forecast findings; independently reconstructs the forecast chain. |
-| 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Starts after 10/11; historical report and non-automatic readiness recommendation. |
+| 11A: [Conditional forecast verification](2026-09-19/11a-v5-conditional-forecast-verification.md) | **Draft.** Starts after 10A lineage/preflight; reconstructs the frozen artifact for `conditional_historical_results_only` and never restores eligibility. |
+| 12A: [Conditional historical scorecard](2026-09-19/12a-v5-conditional-historical-scorecard.md) | **Draft.** After successful 11A, reports V5-only conditional historical results; it is not readiness or 2026 authority. |
+| 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Full forecast-eligibility closure starts after 10B resolves forecast findings; it restores 04/04B only after every reconstruction check passes. |
+| 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Final review starts after 10B, successful 11A/12A, and required blocker closure; full 11 remains required before eligibility or 2026 re-review. It issues the only readiness recommendation. |
+
+### V5 results-first documentation reset (2026-09-19)
+
+| Contract | Status and dependency |
+| --- | --- |
+| [Conditional-results gate reset](2026-09-19/v5-conditional-results-gate-reset.md) | **Implemented.** Established the separate 11A/12A conditional historical-results lane. It preserves 10B and final Contract 12 as readiness gates and leaves 06–09 deferred. |
 
 ### Certified foundations and superseded execution records
 

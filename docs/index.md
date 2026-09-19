@@ -8,9 +8,11 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 **V4 remains the live production champion.** The **V5 ratings successor** is
 isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
 Repair v2, Phase 3 v2, R6 possession measurements, and the retained rating
-artifact are historical evidence. The active V5 sequence is the full audit
-through 2025, independent forecast verification, then historical results and
-readiness review. The [data-first roadmap](planning/data-first-football-forecasting-roadmap.md)
+artifact are historical evidence. V5 now has two coordinated historical lanes:
+Contract 11A/12A may verify the frozen artifact and publish a conditional
+V5-only scorecard, while Contract 10B continues the full foundation audit.
+The final forecast-eligibility and historical-readiness sequence remains
+Contracts 10B, 11, and 12. The [data-first roadmap](planning/data-first-football-forecasting-roadmap.md)
 is the canonical status and execution-queue authority.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
@@ -24,12 +26,13 @@ until its computations and output datasets are independently reconstructed.
 2026 application is deferred pending historical readiness and explicit review.
 
 The retained artifact includes scored historical prediction rows through 2025,
-but **no V5 2025 accuracy scorecard is currently authoritative**. Contract 10B
-has not published its audit evidence; Contract 11 has not independently
-reconstructed the stored computations; and Contract 12 has not issued the
-required MAE, bias, CRPS, interval-coverage, population, exclusion, and
-comparison report. Stored results may be inspected only as unverified
-historical-artifact diagnostics until those gates close.
+but **no V5 2025 accuracy scorecard is currently authoritative**. Draft
+Contracts 11A and 12A define a narrower route to a verified scorecard with
+permitted use `conditional_historical_results_only`. That status is historical
+development evidence only: it does not restore forecast eligibility, authorize
+a final fit or 2026 work, establish prospective evidence, permit market or V4
+comparison, or replace 10B and final Contract 12. Until 11A passes, stored
+results may be inspected only as unverified historical-artifact diagnostics.
 
 The target flow is:
 

@@ -29,6 +29,12 @@ through-2025 final fit/calibration, prior inputs, and timestamp provenance.
 Historical replay is not prospective evidence merely because a record uses a
 `live` timing label.
 
+**Conditional-results clarification (2026-09-19):** Draft Contracts 11A/12A
+may produce `conditional_historical_results_only` development evidence. That
+status does not restore forecast eligibility, close Contracts 10-12, establish
+prospective evidence, or satisfy this contract's final-readiness, explicit-user-
+acceptance, and re-reviewed-application gate.
+
 ## Approach, scope, and interfaces
 
 Execute the frozen 05 tooling against exact candidate, V4, schedule, input and

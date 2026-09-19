@@ -74,14 +74,39 @@ closes that gap.
 
 Contract 05 remains implemented as shadow-tooling work. Its historical rehearsal
 uses permanently diagnostic predictions and therefore establishes neither
-forecast quality, prospective evidence, nor live readiness. Contracts 10-12
-audit the complete foundation, close forecast verification, and report historical
-results before any 2026 application is reconsidered. A future frozen algorithm
+forecast quality, prospective evidence, nor live readiness. Full Contracts
+10B, 11, and 12 audit the complete foundation, close forecast eligibility, and
+report historical readiness before any 2026 application is reconsidered. The
+separate 11A/12A lane can report conditional historical results only. A future frozen algorithm
 may update state from preceding finalized games, but 2026 outcomes cannot choose
 or tune its design. Retrospective replay, pre-kickoff prospective evidence, and
 production promotion are separate milestones.
 
 ## Binding methodology amendments
+
+### Conditional historical-results lane (2026-09-19)
+
+The historical-first foundation remains binding. Contract 10A is implemented;
+Contract 10B remains In Progress and is required for foundation readiness,
+final artifact eligibility, and any later 2026 application. Open Repair,
+measurement, rating, or lineage findings remain visible readiness blockers.
+
+Draft [11A](../2026-09-19/11a-v5-conditional-forecast-verification.md) may,
+after 10A lineage/preflight evidence, independently reconstruct the frozen
+forecast artifact for a narrowly bounded historical scorecard. Draft
+[12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) may then report
+V5-only historical results. Their sole permitted use is exactly
+`conditional_historical_results_only`: neither restores forecast eligibility
+nor authorizes a final 2025 fit, 2026 replay/live forecast, production
+promotion, market comparison, or V4 change. Conditional results are not
+prospective evidence.
+
+The full [11](../2026-09-18/11-v5-forecast-verification-closure.md) remains
+the forecast-eligibility closure. Final [12](../2026-09-18/12-v5-historical-results-and-readiness-review.md)
+cannot begin until 10B, 11A, and 12A complete and every foundation blocker
+required for readiness is resolved. Full 11 remains necessary before any
+forecast can regain eligibility or 2026 application can be re-reviewed. Only
+explicit user acceptance of final Contract 12 permits re-review of 06–09.
 
 ### Quantities, accounting, and first-release forecasting
 

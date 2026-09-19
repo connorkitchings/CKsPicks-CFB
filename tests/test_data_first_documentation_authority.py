@@ -15,6 +15,7 @@ PHASE3_PLAN = ROOT / "docs/plans/2026-09-10/phase3-v2-compact-tournament-state.m
 V5_DIR = ROOT / "docs/plans/2026-09-13"
 COMMON = V5_DIR / "v5-ratings-successor-roadmap-and-contracts.md"
 HISTORICAL_REVIEW_DIR = ROOT / "docs/plans/2026-09-18"
+CONDITIONAL_RESULTS_DIR = ROOT / "docs/plans/2026-09-19"
 V5_NAMES = (
     "00-v5-documentation-and-methodology-alignment.md",
     "01-v4-feature-v5-diagnostic-closure.md",
@@ -183,6 +184,58 @@ def test_historical_first_contracts_are_draft_and_gate_2026_application():
             "re-reviewed",
         ):
             assert required_gate in content
+
+
+def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
+    verification = (
+        CONDITIONAL_RESULTS_DIR / "11a-v5-conditional-forecast-verification.md"
+    ).read_text()
+    scorecard = (
+        CONDITIONAL_RESULTS_DIR / "12a-v5-conditional-historical-scorecard.md"
+    ).read_text()
+    for content in (verification, scorecard):
+        plain = _plain(content)
+        assert "status: draft" in plain
+        assert "conditional_historical_results_only" in content
+        assert "never restores forecast eligibility" in plain
+        assert "prospective evidence" in plain
+        assert "2026" in plain
+
+    assert "if any reconstruction comparison fails" in _plain(verification)
+    assert "do not calculate or publish any scorecard values" in _plain(verification)
+    assert "no v4 comparison" in _plain(scorecard)
+    assert "no readiness recommendation" in _plain(scorecard)
+
+    final_review = _plain(
+        (
+            HISTORICAL_REVIEW_DIR / "12-v5-historical-results-and-readiness-review.md"
+        ).read_text()
+    )
+    for required in (
+        "10b is complete",
+        "draft 11a and 12a have successfully completed",
+        "every foundation blocker",
+    ):
+        assert required in final_review
+
+    for document in (ROADMAP, CONTRACT_INDEX, COMMON, ROOT / "docs/index.md"):
+        plain = _plain(document.read_text())
+        assert "conditional_historical_results_only" in plain
+        assert "10b" in plain
+        assert "2026" in plain
+
+    for name in (
+        "06-v5-prospective-evidence-and-recommendation.md",
+        "07-v5-2026-repair-and-measurement-extension.md",
+        "08-v5-2026-rating-state-replay.md",
+        "09-v5-2026-forecast-and-readiness.md",
+    ):
+        directory = V5_DIR if name.startswith("06-") else HISTORICAL_REVIEW_DIR
+        plain = _plain((directory / name).read_text())
+        assert "conditional-results clarification (2026-09-19)" in plain
+        assert "conditional_historical_results_only" in plain
+        assert "contracts 10-12" in plain
+        assert "re-reviewed-application gate" in plain
 
 
 def test_forecast_lifecycle_keeps_historical_artifact_but_reopens_eligibility():
