@@ -474,6 +474,23 @@ def test_measurement_and_rating_verifiers_pass_boundary() -> None:
     assert by_id["independence.forecasts.boundary"]["status"] == "pass"
 
 
+def test_independence_checks_name_explicit_affected_stages() -> None:
+    results, _ = audit_independence.run_independence_checks()
+    by_id = {result["check_id"]: result for result in results}
+    assert all(result["affected_stages"] for result in results)
+    assert by_id["independence.harness.boundary"]["affected_stages"] == [
+        "repair",
+        "measurements",
+        "ratings",
+        "forecasts",
+    ]
+    assert by_id["independence.repair.boundary"]["affected_stages"] == ["repair"]
+    assert by_id["independence.seeded_conditions"]["affected_stages"] == [
+        "repair",
+        "forecasts",
+    ]
+
+
 def test_classify_verifier_requires_both_gates() -> None:
     assert audit_independence.classify_verifier(True, True) == "independent"
     assert audit_independence.classify_verifier(True, False) == "dependent"

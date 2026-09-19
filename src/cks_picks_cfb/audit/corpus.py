@@ -92,10 +92,21 @@ def read_any(storage: Any, ref: Mapping[str, Any]) -> Iterator[pd.DataFrame]:
 
 
 def concat_all(frames: Iterator[pd.DataFrame]) -> pd.DataFrame:
+    """Concatenate nonempty frames without allowing all-NA dtype drift."""
     parts = [frame for frame in frames if not frame.empty]
     if not parts:
         return pd.DataFrame()
-    return pd.concat(parts, ignore_index=True)
+    columns = list(dict.fromkeys(column for frame in parts for column in frame.columns))
+    # Pandas excludes all-NA columns from dtype resolution today, then warns
+    # that the behavior will change. Exclude those columns explicitly per
+    # input frame so dtype resolution is stable, then restore any column that
+    # was all-NA across the complete result.
+    normalized = [frame.dropna(axis=1, how="all") for frame in parts]
+    combined = pd.concat(normalized, ignore_index=True)
+    for column in columns:
+        if column not in combined:
+            combined[column] = pd.NA
+    return combined.reindex(columns=columns)
 
 
 def result(

@@ -228,6 +228,12 @@ def run_independence_checks() -> tuple[list[dict[str, Any]], dict[str, bool]]:
             else f"violations={harness_violations[:4]}",
             "population": "audit harness files",
             "evidence_refs": [str(path) for path in HARNESS_FILES],
+            "affected_stages": [
+                "repair",
+                "measurements",
+                "ratings",
+                "forecasts",
+            ],
         }
     )
 
@@ -244,6 +250,7 @@ def run_independence_checks() -> tuple[list[dict[str, Any]], dict[str, bool]]:
                 "observed": "ok" if not violations else f"violations={violations[:4]}",
                 "population": f"{stage} verifier",
                 "evidence_refs": [str(path)],
+                "affected_stages": [stage],
             }
         )
 
@@ -264,6 +271,7 @@ def run_independence_checks() -> tuple[list[dict[str, Any]], dict[str, bool]]:
                 str(ASSESSED_VERIFIERS["repair"]["path"]),
                 str(ASSESSED_VERIFIERS["forecasts"]["path"]),
             ],
+            "affected_stages": ["repair", "forecasts"],
         }
     )
     return results, conditions

@@ -201,3 +201,33 @@
 - **Next:** user-controlled code checkpoint for this recovery. Once committed,
   rerun the clean-SHA full-corpus preflight under a fresh run ID and review its
   complete evidence before considering Preview publication.
+
+## Continuation: rejected full-corpus preflight recovery (2026-09-19)
+
+- Clean checkpoint `718459e` produced a read-only full-corpus candidate under
+  `/private/tmp/cfb-10b/historical-audit-10b-20260919-718459e/` in 517.029
+  seconds. Its candidate digest is
+  `7f492947069072fbe1713238692ef4dc95d28b4eda79824fc9ea637af44adfd4`.
+  It is diagnostic-only and must never be used for apply because the run
+  emitted a pandas `FutureWarning` and the independent local verifier rejected
+  six independence check records without `affected_stages`.
+- The candidate's substantive observations remain evidence-backed but are not
+  accepted findings until the replacement run: Repair verifier dependence;
+  81 score-ledger excess keys (stable digest
+  `b72f18e1236e01f42d9a5d9b90db6d3d4b0f167de19b59a8f1bd7565801741ed`);
+  missing through-2025 forecast final fit (`max_training_season=2024`); and
+  the forecast-output reconstruction gap. Its gate arithmetic was correctly
+  closed (`contract11_permitted: false`).
+- Corrected audit-engine defects rather than the candidate evidence:
+  independence checks now name their explicitly affected stages, and
+  `concat_all` excludes per-frame all-NA columns during dtype resolution,
+  preserving columns afterward. Regressions cover both conditions.
+- Validation: focused audit suites with warnings as errors (`82 passed`),
+  scoped Ruff check and format check, `git diff --check`, and the full Python
+  suite with warnings as errors (`1145 passed, 2 skipped`). Preview audit-root
+  inventory was zero objects both before and after the dry run; no R2 write,
+  artifact, model, configuration, production, catalog, Neon, V4, or web state
+  changed.
+- **Next:** user-controlled replacement code checkpoint. Use a new run ID and
+  the resulting clean committed SHA for the next read-only full-corpus
+  preflight; do not reuse this candidate's evidence or run ID.

@@ -14,13 +14,24 @@ def _pop(rows: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def test_concat_all_skips_empty_partitions_without_warning() -> None:
+def test_concat_all_skips_empty_and_all_na_partitions_without_warning() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error", FutureWarning)
         combined = corpus.concat_all(
-            iter([pd.DataFrame(), _pop([{"season": 2021, "game_id": 1}])])
+            iter(
+                [
+                    pd.DataFrame(),
+                    _pop([{"season": 2021, "game_id": 1, "offset": 4.0}]),
+                    _pop([{"season": 2022, "game_id": 2, "offset": None}]),
+                ]
+            )
         )
-    assert combined.to_dict(orient="records") == [{"season": 2021, "game_id": 1}]
+    assert combined.loc[0, ["season", "game_id", "offset"]].to_dict() == {
+        "season": 2021.0,
+        "game_id": 1.0,
+        "offset": 4.0,
+    }
+    assert pd.isna(combined.loc[1, "offset"])
 
 
 def test_key_agreement_detects_omitted_game() -> None:
