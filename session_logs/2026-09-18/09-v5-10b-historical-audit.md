@@ -122,3 +122,23 @@
   errors (`76 passed`), scoped Ruff check/format, and `git diff --check` pass.
   A clean committed checkpoint remains required before the next accepted full
   run.
+
+## Continuation: streamed-path alignment
+
+- The persistent-terminal full run bound to `ca4537b` completed in 499.52
+  seconds and produced local candidate evidence
+  `ec17c3805670238a94408b2d44edafd77059803b4b934a09a72f42968f9aba50`.
+  It was not accepted because the streamed rating-state path retained the
+  obsolete `cutoff < kickoff` assertion even though the direct check had been
+  corrected. It also emitted a pandas `FutureWarning` when concatenating an
+  empty partition.
+- The streamed path now requires a state cutoff to equal its target kickoff,
+  and independently checks that each game/candidate has exactly two team
+  participants. Generic concatenation skips empty partitions, eliminating the
+  warning without dropping nonempty evidence. Added a warning-as-error
+  regression test for the empty-partition case.
+- The candidate's other four failed checks remain substantive review
+  candidates: Repair verifier dependence, 81 score-ledger excess keys,
+  missing through-2025 final forecast fit, and forecast reconstruction
+  absence. Validation after this correction: focused suites with warnings as
+  errors (`77 passed`), scoped Ruff check/format, and `git diff --check` pass.

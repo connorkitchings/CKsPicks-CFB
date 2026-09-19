@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import pandas as pd
 
 from cks_picks_cfb.audit import corpus, corpus_ratings
@@ -10,6 +12,15 @@ from cks_picks_cfb.audit.corpus import finding
 
 def _pop(rows: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(rows)
+
+
+def test_concat_all_skips_empty_partitions_without_warning() -> None:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        combined = corpus.concat_all(
+            iter([pd.DataFrame(), _pop([{"season": 2021, "game_id": 1}])])
+        )
+    assert combined.to_dict(orient="records") == [{"season": 2021, "game_id": 1}]
 
 
 def test_key_agreement_detects_omitted_game() -> None:

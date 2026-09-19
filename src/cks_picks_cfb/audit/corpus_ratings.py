@@ -944,7 +944,7 @@ def run_full_corpus(
 
     state_problems: list[str] = []
     state_rows = 0
-    bad_cutoff = 0
+    mismatched_cutoff = 0
     bad_variance = 0
     bad_weight = 0
     nonfinite = 0
@@ -958,13 +958,13 @@ def run_full_corpus(
     for batch in read_any(storage, rating_refs["rating_states"]):
         state_rows += len(batch)
         joined = batch.merge(kickoff_frame, on=["season", "game_id"], how="left")
-        bad_cutoff += int(
+        cutoff = pd.to_datetime(joined["cutoff_utc"], utc=True, errors="coerce")
+        kickoff = pd.to_datetime(joined["kickoff_utc"], utc=True, errors="coerce")
+        mismatched_cutoff += int(
             (
-                joined["kickoff_utc"].notna()
-                & (
-                    pd.to_datetime(joined["cutoff_utc"], utc=True, errors="coerce")
-                    >= pd.to_datetime(joined["kickoff_utc"], utc=True, errors="coerce")
-                )
+                cutoff.isna()
+                | kickoff.isna()
+                | (cutoff - kickoff).abs().gt(pd.Timedelta(seconds=1))
             ).sum()
         )
         bad_variance += int((batch["rating_variance"].astype(float) <= 0).sum())
@@ -979,8 +979,10 @@ def run_full_corpus(
             set(batch["season"].astype(int).unique().tolist()) & set(REJECTED_SEASONS)
         )
     summaries["rating_states_rows"] = int(state_rows)
-    if bad_cutoff:
-        state_problems.append(f"cutoff_at_or_after_kickoff={bad_cutoff}/{state_rows}")
+    if mismatched_cutoff:
+        state_problems.append(
+            f"cutoff_not_target_kickoff={mismatched_cutoff}/{state_rows}"
+        )
     if bad_variance:
         state_problems.append(f"nonpositive_variance={bad_variance}")
     if bad_weight:
@@ -995,7 +997,7 @@ def run_full_corpus(
             "layer": "ratings",
             "category": "chronology",
             "status": "pass" if not state_problems else "fail",
-            "expected": "cutoffs precede kickoff; positive variance; weights in [0, 1)",
+            "expected": "cutoffs equal target kickoff; positive variance; weights in [0, 1)",
             "observed": f"rows={state_rows} "
             + ("ok" if not state_problems else "; ".join(state_problems)),
             "population": "rating states",
@@ -1004,6 +1006,7 @@ def run_full_corpus(
     )
 
     team_key_counts: dict[tuple[Any, ...], int] = {}
+    game_participants: dict[tuple[Any, ...], set[str]] = {}
     team_rows = 0
     for batch in read_any(storage, rating_refs["team_states"]):
         team_rows += len(batch)
@@ -1015,21 +1018,33 @@ def run_full_corpus(
             team_key_counts[tuple(key)] = team_key_counts.get(tuple(key), 0) + int(
                 count
             )
+        for key, teams in batch.groupby(
+            ["season", "week", "game_id", "candidate_id"], sort=False
+        )["team"]:
+            game_participants.setdefault(tuple(key), set()).update(
+                teams.astype(str).tolist()
+            )
     summaries["team_states_rows"] = int(team_rows)
     unpaired = sum(1 for count in team_key_counts.values() if count != 1)
+    non_two_participant_games = sum(
+        1 for teams in game_participants.values() if len(teams) != 2
+    )
     checks.append(
         {
             "check_id": "corpus.rating.team_state_pairing",
             "layer": "ratings",
             "category": "football_meaning",
-            "status": "pass" if unpaired == 0 else "fail",
-            "expected": "one offense/defense-paired row per team-game-candidate",
-            "observed": f"rows={team_rows} unpaired_groups={unpaired}",
+            "status": "pass"
+            if unpaired == 0 and non_two_participant_games == 0
+            else "fail",
+            "expected": "two scheduled participants and one combined offense/defense row per participant",
+            "observed": f"rows={team_rows} unpaired_groups={unpaired} "
+            f"games_with_non_two_participants={non_two_participant_games}",
             "population": "team states",
             "evidence_refs": [uri("ratings")],
         }
     )
-    del team_key_counts
+    del team_key_counts, game_participants
 
     attribution_full = attribution
     bridge_candidates: set[str] = set()

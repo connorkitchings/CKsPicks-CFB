@@ -92,7 +92,7 @@ def read_any(storage: Any, ref: Mapping[str, Any]) -> Iterator[pd.DataFrame]:
 
 
 def concat_all(frames: Iterator[pd.DataFrame]) -> pd.DataFrame:
-    parts = list(frames)
+    parts = [frame for frame in frames if not frame.empty]
     if not parts:
         return pd.DataFrame()
     return pd.concat(parts, ignore_index=True)
