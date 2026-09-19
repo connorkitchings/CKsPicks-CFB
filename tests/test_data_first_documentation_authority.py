@@ -202,7 +202,7 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
     scorecard = (
         CONDITIONAL_RESULTS_DIR / "12a-v5-conditional-historical-scorecard.md"
     ).read_text()
-    assert "status: in progress" in _plain(verification)
+    assert "status: implemented" in _plain(verification)
     assert "status: draft" in _plain(scorecard)
     for content in (verification, scorecard):
         plain = _plain(content)

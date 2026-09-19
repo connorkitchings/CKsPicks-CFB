@@ -1,6 +1,6 @@
 # V5-11A: Conditional Forecast Verification
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-19
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized Contract 11A with “Let's go to 11A” on 2026-09-19.
@@ -30,14 +30,19 @@ forecast-verification limitations still open at that time.
 
 ## Current implementation state
 
-The verifier-code checkpoint is complete but uncommitted. The independent
-no-write diagnostic reconstructed the exact frozen artifact and matched all six
-stored output digests: 7,318 prediction rows, 16 model rows, eight calibration
-rows, four registry rows, four window-comparison rows, and two selection rows.
-Focused tests cover the import boundary, frozen lineage, missing/wrong inputs,
-rejected seasons, output perturbation, signed conditional publication,
-independent re-read, and idempotency. Preview publication remains blocked until
-the user commits this code checkpoint and a clean-SHA preflight is reviewed.
+The committed verifier checkpoint (`9265314`) passed a clean-SHA no-write
+preflight at `2026-09-19T20:31:28Z`, then published and independently re-read
+the signed Preview record for
+`conditional-v1-20260919-9265314-11a`. The terminal manifest is
+`artifacts/research/data-first-football-v1/forecast-verification/conditional-v1/runs/conditional-v1-20260919-9265314-11a/verification-manifest.json`
+with canonical SHA-256
+`7ce47863e1e34874357f3f503ef1d8f1f232e48c9b199c5aff99dfb5606b93ad`.
+Its idempotent repeat returned `already_applied`. The exact frozen artifact
+matched all six stored output digests: 7,318 prediction rows, 16 model rows,
+eight calibration rows, four registry rows, four window-comparison rows, and
+two selection rows. The signed record carries permitted use only
+`conditional_historical_results_only` and explicitly denies production
+activation, prospective evidence, and forecast-eligibility restoration.
 
 ## Conditional-use boundary
 
@@ -97,8 +102,8 @@ partial pass and not permission for Contract 12A.
 - [x] 10A lineage/preflight evidence and exact frozen parents are reverified.
 - [x] Independent reconstruction compares every required forecast output.
 - [x] Required negative tests and a positive frozen fixture pass.
-- [ ] Signed Preview evidence is independently re-read and idempotent.
-- [ ] The evidence states `conditional_historical_results_only`, all frozen
+- [x] Signed Preview evidence is independently re-read and idempotent.
+- [x] The evidence states `conditional_historical_results_only`, all frozen
   identities/hashes, and open limitations.
 
 This contract does not replace Contract 10B or full Contract 11. Changes to the

@@ -240,8 +240,8 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   independently verified and idempotently rerun on 2026-09-11).
   It is benchmark evidence. **V5 historical-first checkpoint (2026-09-18):**
   R6 possession measurements and the retained rating artifact are historical
-  evidence. The V5 historical work now has two lanes: Contract 11A is In
-  Progress and Contract 12A remains Draft in the conditional-results lane;
+  evidence. The V5 historical work now has two lanes: Contract 11A is
+  Implemented and Contract 12A remains Draft in the conditional-results lane;
   together they may verify the frozen forecast artifact and publish a V5-only
   scorecard with permitted use `conditional_historical_results_only`. The full
   lane has completed Contract 10B and now requires corrective closure of
