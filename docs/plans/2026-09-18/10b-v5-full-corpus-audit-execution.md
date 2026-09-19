@@ -1,6 +1,6 @@
 # V5-10b: Full-Corpus Historical Audit Execution
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18, and explicitly authorized 10b execution.
@@ -24,12 +24,15 @@ local preflight evidence, and the two seeded structural findings awaiting
 scope/severity/disposition determination. The 55-test baseline plus new 10a
 audit tests must keep passing; 10b adds execution coverage on top.
 
-**Progress record (2026-09-19):** the 10B audit-engine checkpoint is committed
-at `787ae715`. Earlier full-corpus candidates remain rejected diagnostic
-evidence because they exposed audit-engine defects. The current read-only full
-run was intentionally paused before producing a candidate; there is no
-accepted full-corpus evidence, Preview audit publication, independent re-read,
-or human-readable findings report. No audit-prefix R2 object has been written.
+**Progress record (2026-09-19 — Implemented):** Full-corpus audit complete. Run
+`historical-audit-10b-20260919-full` at code SHA `7a476648` produced 93 checks and 4
+findings (3 failed checks). Evidence digest
+`edeebe85498f2b7935c3f03a31dde03cc44d08876ded45f8c8c42b7a67e84d42` was reviewed and
+accepted. Apply published four versioned outputs to the Preview audit prefix; manifest
+SHA `0a95002ce42c28d2d588e3c6a0d327adbe95f95e0232ab16036ff8b6967aabe3`. Independent
+verifier confirmed `publication_valid: true`, `verified: true`. Idempotent repeat
+returned `already_applied`. All four findings are open blockers; `contract11_permitted:
+false`. Human-readable report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`.
 
 ## Proposed approach
 
@@ -207,15 +210,15 @@ tests (every finding dispositioned; gate evaluates exactly per umbrella).
 
 ## Definition of done
 
-- [ ] Reviewed evidence-bound 10b apply passes (600s cap).
-- [ ] Four versioned outputs published; manifest written last with
+- [x] Reviewed evidence-bound 10b apply passes (600s cap).
+- [x] Four versioned outputs published; manifest written last with
   `finalized: true`, `overall_disposition`, exact parent raw hashes,
   `production_activation_authorized: false`, and the evidence-derived digest.
-- [ ] Independent re-read agrees exactly (publication valid); idempotent repeat
+- [x] Independent re-read agrees exactly (publication valid); idempotent repeat
   returns `already_applied` on full identity + digest + parent + output-hash match.
-- [ ] Every finding has severity, disposition, `closure_state`, and closure criteria.
-- [ ] Publication validity and the Contract 11 gate evaluated and recorded separately; report and lifecycle docs updated.
-- [ ] All validation green; `git diff --check` clean.
+- [x] Every finding has severity, disposition, `closure_state`, and closure criteria.
+- [x] Publication validity and the Contract 11 gate evaluated and recorded separately; report and lifecycle docs updated.
+- [x] All validation green; `git diff --check` clean.
 
 ## Amendments
 

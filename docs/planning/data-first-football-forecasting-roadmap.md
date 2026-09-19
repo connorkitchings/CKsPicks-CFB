@@ -63,7 +63,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | In Progress — 04A is complete; 04B needs independent computational reconstruction before its historical forecast artifact can regain downstream eligibility. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
 | 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires full 10B/11/12 readiness, explicit acceptance, then later re-reviewed live application; 11A/12A conditional results do not satisfy this gate. |
-| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft umbrella — 10A is Implemented and 10B is In Progress at code checkpoint `787ae715`; no full-corpus candidate is accepted or published. Audit the complete historical foundation through 2025. |
+| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Draft umbrella — 10A and 10B are both Implemented. 10B published run `historical-audit-10b-20260919-full` (SHA `7a476648`): 93 checks, 4 open-blocker findings, `publication_valid: true`. `contract11_permitted: false`. |
 | 11A | [Conditional forecast verification](../plans/2026-09-19/11a-v5-conditional-forecast-verification.md) | Draft — after 10A lineage/preflight, independently reconstructs the frozen artifact only for `conditional_historical_results_only`; it does not restore eligibility. |
 | 12A | [Conditional historical scorecard](../plans/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Draft — after successful 11A, reports V5-only conditional 2025 results and 2022–2025 context; it is not readiness or 2026 authority. |
 | 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Draft full forecast-eligibility closure — follows completed 10B and resolves the eligibility gap. |
@@ -117,16 +117,18 @@ for 2026 W4 is re-verified `blocked` (no 2026 measurement rows, no 2026 team sta
 with the historical assessment preserved. The verifier fix for canonically sorted
 partition keys (Amendment 1) changes no stored bytes or digests.
 
-**2026-09-19 progress clarification.** Contract 10A remains completed. Contract
-10B's audit engine has a clean committed checkpoint `787ae715`, but its full
-corpus run is paused before an accepted local candidate, Preview publication,
-or independent re-read. No R2 audit-prefix object has been written. The stored
-forecast artifact contains 2022–2025 scored rows, but no V5 2025 scorecard is
-currently authoritative. Draft 11A/12A may produce a verified scorecard with
-permitted use `conditional_historical_results_only`; it remains historical
-development evidence, never forecast eligibility, prospective evidence, or
-2026 authority. Full 10B, 11, and 12 remain the final eligibility/readiness
-sequence. None of 11, 11A, 12, or 12A has started.
+**2026-09-19: Contract 10B implemented.** Run `historical-audit-10b-20260919-full`
+(code SHA `7a476648`) completed the full-corpus audit across the complete 2015–2025
+development corpus (24.2M adjusted-history rows). 93 checks ran; 3 failed on
+substantive data findings. Four findings published to the Preview audit prefix with
+`finalized: true` and `publication_valid: true`; idempotent repeat returned
+`already_applied`. All four findings are blockers with `closure_state: open`;
+`contract11_permitted: false`. Findings summary: (001) Repair verifier independence —
+`prohibited_until_closed`; (002) Forecast outputs not reconstructed — Contract 11 scope,
+`historical_evidence_only`; (003) 81 score-ledger excess keys — `prohibited_until_closed`;
+(004) No through-2025 final forecast fit (`max_training_season=2024`) —
+`historical_evidence_only`. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`.
+The next step is corrective contracts for Findings 001 and 003, then Contract 11.
 
 The ordered future work is conditional forecast verification (11A), conditional
 historical scorecard (12A), the independently continuing foundation audit

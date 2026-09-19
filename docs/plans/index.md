@@ -88,9 +88,9 @@ unmet data dependency.
 
 | Contract | Status and dependency |
 | --- | --- |
-| 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Draft.** Umbrella: frozen parents, outputs, severities/dispositions, Contract 11 gate. |
+| 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Implemented 2026-09-19.** 10a and 10b both complete. All DoD items met; 4 open-blocker findings published; `contract11_permitted: false`. |
 | 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **Implemented.** Hardened harness (Amendment 2) with three byte-identical preflights; zero R2 writes. Checkpoint `6af0392`. |
-| 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **In Progress.** Code checkpoint `787ae715` is complete; no full-corpus candidate has been accepted and no audit output has been published to R2. Full findings, independent verification, and publication remain required. |
+| 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **Implemented 2026-09-19.** Run `historical-audit-10b-20260919-full` (SHA `7a476648`): 93 checks, 4 findings (all blockers, all open), `publication_valid: true`, `already_applied` confirmed. `contract11_permitted: false`. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`. |
 | 11A: [Conditional forecast verification](2026-09-19/11a-v5-conditional-forecast-verification.md) | **Draft.** Starts after 10A lineage/preflight; reconstructs the frozen artifact for `conditional_historical_results_only` and never restores eligibility. |
 | 12A: [Conditional historical scorecard](2026-09-19/12a-v5-conditional-historical-scorecard.md) | **Draft.** After successful 11A, reports V5-only conditional historical results; it is not readiness or 2026 authority. |
 | 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Full forecast-eligibility closure starts after 10B resolves forecast findings; it restores 04/04B only after every reconstruction check passes. |

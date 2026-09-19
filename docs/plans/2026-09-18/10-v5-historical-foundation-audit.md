@@ -1,10 +1,11 @@
 # V5-10: Historical Foundation Audit (Umbrella)
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the revised umbrella + 10a/10b plan with "go" on 2026-09-18. Status remains Draft per the documentation-authority gate; see Amendment 1 in the 10a contract.
-- **Implementation log:** `session_logs/2026-09-18/05-v5-contract-10-umbrella-planning.md`
+- **Completed:** 2026-09-19 — 10a and 10b both Implemented; all DoD items met.
+- **Implementation log:** `session_logs/2026-09-18/05-v5-contract-10-umbrella-planning.md`, `session_logs/2026-09-19/01-v5-10b-completion.md`
 - **Commit policy:** Separate plan-package commit; user controls Git operations.
 
 ## Goal and entry gate
@@ -140,11 +141,11 @@ remains an unrelated V4 diagnostic.
 
 ## Definition of done and amendments
 
-- [ ] 10a harness built; three byte-identical no-write preflights pass.
-- [ ] 10b full-corpus audit executed; four versioned outputs published in Preview.
-- [ ] Every finding has severity, disposition, `closure_state`, and closure criteria.
-- [ ] Contract 11 entry gate explicitly evaluated and recorded.
-- [ ] Report, lifecycle, roadmap, index, and session log updated.
+- [x] 10a harness built; three byte-identical no-write preflights pass.
+- [x] 10b full-corpus audit executed; four versioned outputs published in Preview.
+- [x] Every finding has severity, disposition, `closure_state`, and closure criteria.
+- [x] Contract 11 entry gate explicitly evaluated and recorded.
+- [x] Report, lifecycle, roadmap, index, and session log updated.
 
 Any change to boundary, parents, outputs, severities/dispositions, or gate
 conditions requires a separately approved amendment before implementation.
