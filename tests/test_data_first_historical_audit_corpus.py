@@ -663,3 +663,69 @@ def test_finding_builder_validates() -> None:
             required_action="a",
             closure_criteria="c",
         )
+
+
+def test_final_fit_rows_pass_model_registry_and_close_existence() -> None:
+    """Sentinel-0 final-fit rows skip the earlier-only rule but count for existence."""
+    from cks_picks_cfb.forecast.heads import FINAL_FIT_SEASON
+
+    rows = []
+    for target in ("margin", "total"):
+        rows.append(
+            {
+                "horizon": "expanding",
+                "target": target,
+                "outer_season": 2025,
+                "head": "reference",
+                "alpha": 10.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "inner_fallback": False,
+                "retained": True,
+                "fallback_reason": "",
+            }
+        )
+        rows.append(
+            {
+                "horizon": "expanding",
+                "target": target,
+                "outer_season": FINAL_FIT_SEASON,
+                "head": "reference",
+                "alpha": 10.0,
+                "training_seasons": "2015 2016 2017 2018 2019 2021 2022 2023 2024 2025",
+                "inner_fallback": False,
+                "retained": True,
+                "fallback_reason": "",
+            }
+        )
+    model = _pop(rows)
+    registry = _pop([{"horizon": "expanding"}])
+    selection = _pop([{"selected_horizon": "expanding"}])
+    results = corpus_ratings.check_forecast_model(model, registry, selection, "uri")
+    assert results[0]["status"] == "pass"
+    assert results[1]["status"] == "pass"
+    assert results[1]["check_id"] == "corpus.forecast.final_fit_existence"
+    assert "max_training_season=2025" in results[1]["observed"]
+
+
+def test_validation_row_training_on_outer_season_still_fails() -> None:
+    """The sentinel carve-out does not weaken the earlier-only rule itself."""
+    model = _pop(
+        [
+            {
+                "horizon": "expanding",
+                "target": "margin",
+                "outer_season": 2024,
+                "head": "reference",
+                "alpha": 10.0,
+                "training_seasons": "2021 2022 2023 2024",
+                "inner_fallback": False,
+                "retained": True,
+                "fallback_reason": "",
+            },
+        ]
+    )
+    registry = _pop([{"horizon": "expanding"}])
+    selection = _pop([{"selected_horizon": "expanding"}])
+    results = corpus_ratings.check_forecast_model(model, registry, selection, "uri")
+    assert results[0]["status"] == "fail"
+    assert "model trains on outer season" in results[0]["observed"]

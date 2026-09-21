@@ -23,6 +23,7 @@ from cks_picks_cfb.audit.corpus import (
     result,
     stable_finding_id,
 )
+from cks_picks_cfb.forecast.heads import FINAL_FIT_SEASON
 
 
 def stream_frames(batches: Iterator[pd.DataFrame]) -> Iterator[pd.DataFrame]:
@@ -539,8 +540,13 @@ def check_forecast_model(
             problems.append(f"no_retained_head_{target}")
     training_max = 0
     max_year = max_training_year(model)
-    bad_fit = model[
-        max_year.fillna(-1).astype(int) >= model["outer_season"].astype(int)
+    # Final-fit rows (outer_season == FINAL_FIT_SEASON) have no validation
+    # season by design; the earlier-only rule applies to validation fits only.
+    # Artifacts predating final fits contain no sentinel rows and are unaffected.
+    validation_fits = model[model["outer_season"].astype(int) != FINAL_FIT_SEASON]
+    validation_max = max_year.loc[validation_fits.index].fillna(-1).astype(int)
+    bad_fit = validation_fits[
+        validation_max >= validation_fits["outer_season"].astype(int)
     ]
     if len(bad_fit):
         first = bad_fit.iloc[0]

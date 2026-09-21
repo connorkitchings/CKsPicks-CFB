@@ -179,5 +179,29 @@ pre-declared.
 
 ## Amendments
 
-None. A flipped selection that breaks an adjacent consumer, or a population
+### Amendment 1 — `model_registry` earlier-only carve-out for final-fit rows (2026-09-21)
+
+**Reason:** The preflight Halo revealed that `check_forecast_model`'s earlier-only
+rule (`max_training_year >= outer_season` → fail) flags the new final-fit rows,
+whose training window (through 2025) necessarily covers their sentinel season
+(`outer_season == 0`). Final-fit rows have no validation season by design, so
+the rule — written before final fits existed — misfires on them while
+`final_fit_existence` correctly passes.
+
+**Original approach:** No harness edits; targeted check re-run only.
+
+**Revised approach:** Minimal carve-out in `check_forecast_model`: the
+`bad_fit` computation excludes `outer_season == FINAL_FIT_SEASON` rows
+(imported from `forecast.heads`, single source of truth);
+`training_max` still counts all rows. `check_calibration` needs no change
+(carried variances/counts already satisfy it). Covered by two new unit tests:
+final rows pass both checks; a validation row training on its own outer
+season still fails. Old artifacts contain no sentinel rows and behave
+identically.
+
+**Impact:** No architecture, scope, or acceptance change. The preflight
+evidence predating this amendment is superseded; preflight re-runs under the
+amended code SHA with a fresh run-id before apply.
+
+A flipped selection that breaks an adjacent consumer, or a population
 deviation, returns to Sol — the design is frozen.
