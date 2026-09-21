@@ -1,10 +1,10 @@
 # V5-11D: Forecast Verification and Findings Closure
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); targeted-closure vehicle (no renewed full audit) confirmed by structured decision the same day.
-- **Implementation log:** Pending; create `session_logs/2026-09-21/NN-v5-11d-forecast-verification-and-finding-closure.md` when a fresh Terra task executes this contract.
+- **Implementation log:** `session_logs/2026-09-21/09-v5-11d-forecast-verification-and-finding-closure.md`
 - **Commit policy:** Separate commits — verifier checkpoint, then evidence checkpoints per phase. User controls Git operations.
 
 ## Goal

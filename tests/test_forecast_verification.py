@@ -22,6 +22,7 @@ from cks_picks_cfb.data.data_first_phase2 import (
     FORBIDDEN_SEASONS,
 )
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
+from cks_picks_cfb.data.data_first_possession_rating_v1 import RATING_DATASETS
 from cks_picks_cfb.data.lake import canonical_frame_digest
 from cks_picks_cfb.forecast import forecast_verification as fv
 from cks_picks_cfb.forecast.conditional_verification import (
@@ -75,17 +76,41 @@ def _calibration() -> pd.DataFrame:
 
 
 def _models() -> pd.DataFrame:
-    return pd.DataFrame.from_records(
-        [
+    rows = []
+    for target in ("margin", "total"):
+        rows.append(
             {
                 "target": target,
                 "head": "reference",
                 "retained": True,
                 "alpha": 10.0,
+                "outer_season": 2025,
+                "training_seasons": "2015,2016,2017,2018,2019,2021,2022,2023,2024",
             }
-            for target in ("margin", "total")
-        ]
-    )
+        )
+        rows.append(
+            {
+                "target": target,
+                "head": "reference",
+                "retained": True,
+                "alpha": 10.0,
+                "outer_season": fv.FINAL_FIT_SEASON,
+                "training_seasons": ",".join(map(str, DEVELOPMENT_SEASONS)),
+            }
+        )
+    return pd.DataFrame.from_records(rows)
+
+
+def _final_recipes() -> dict:
+    return {
+        target: {
+            "head": "reference",
+            "alpha": 10.0,
+            "final_alpha": 10.0,
+            "final_training_seasons": ",".join(map(str, DEVELOPMENT_SEASONS)),
+        }
+        for target in ("margin", "total")
+    }
 
 
 def _output_refs() -> dict[str, dict]:
@@ -130,10 +155,7 @@ def _forecast_manifest(
             },
             "output_refs": output_refs,
             "selected_horizon": selected_horizon,
-            "head_recipes": {
-                "margin": {"head": "reference", "alpha": 10.0},
-                "total": {"head": "reference", "alpha": 10.0},
-            },
+            "head_recipes": _final_recipes(),
             "calibration_summary": {
                 "records_sha": canonical_frame_digest(
                     calibration, columns=FORECAST_CALIBRATION_COLUMNS
@@ -416,3 +438,303 @@ def test_conditional_failure_evidence_grants_no_scorecard_permission():
     assert manifest["permitted_use"] is record["permitted_use"] is None
     assert manifest["scorecard_authorized"] is record["scorecard_authorized"] is False
     assert manifest["output_hashes"] == record["output_hashes"] == FROZEN_OUTPUT_HASHES
+
+
+# ---------------------------------------------------------------------------
+# Contract 11D battery: final-fit reconstruction, stale parents, publication
+# ---------------------------------------------------------------------------
+
+
+def _feature_frame_fixture() -> pd.DataFrame:
+    from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
+
+    rows = []
+    game_id = 0
+    for season in DEVELOPMENT_SEASONS:
+        for week in (1, 2):
+            game_id += 1
+            value = float(season - 2014 + week)
+            rows.append(
+                {
+                    "season": season,
+                    "week": week,
+                    "game_id": game_id,
+                    "home_offense": value,
+                    "home_defense": value / 2,
+                    "away_offense": -value / 3,
+                    "away_defense": value / 4,
+                    "home_host": 1.0,
+                    "venue_unknown": True,
+                    "actual_margin": value * 1.5,
+                    "actual_total": 35 + value,
+                    "offset_margin": 0.2,
+                    "offset_total": 0.4,
+                    "completed_game_stage": min(week, 4),
+                }
+            )
+    return pd.DataFrame.from_records(rows)
+
+
+def test_final_fit_mirror_matches_producer_recipe_exactly():
+    """Positive anchor: the hand mirror reproduces the producer recipe bit-exactly."""
+    from cks_picks_cfb.forecast.heads import fit_final
+
+    frame = _feature_frame_fixture()
+    window = tuple(sorted(frame["season"].unique().tolist()))
+    for target in ("margin", "total"):
+        for head in ("reference", "challenger"):
+            expected = fit_final(
+                frame,
+                target=target,
+                head=head,
+                development_seasons=window,
+                alpha_grid=(0.1, 1.0, 10.0, 100.0),
+                floor=0.05,
+            )
+            actual = fv._fit_final_mirror(frame, target=target, head=head)
+            assert actual["target"] == expected["target"]
+            assert actual["head"] == expected["head"]
+            assert actual["alpha"] == expected["alpha"]
+            assert actual["training_seasons"] == expected["training_seasons"]
+            assert actual["inner_fallback"] == expected["inner_fallback"]
+
+
+def test_final_fit_mirror_uses_full_window_and_rejects_unknown_head():
+    frame = _feature_frame_fixture()
+    recipe = fv._fit_final_mirror(frame, target="margin", head="reference")
+    assert recipe["training_seasons"] == tuple(
+        sorted(frame["season"].unique().tolist())
+    )
+    assert recipe["alpha"] == 10.0
+    with pytest.raises(fv.VerificationError, match="unknown head"):
+        fv._fit_final_mirror(frame, target="margin", head="oracle")
+
+
+def test_final_fit_rows_carry_2025_variance_and_reject_fallback():
+    calibration = pd.DataFrame.from_records(
+        [
+            {
+                "target": target,
+                "season": season,
+                "residual_count": 600,
+                "variance": 210.0,
+                "fallback_reason": "",
+            }
+            for target in ("margin", "total")
+            for season in (2024, 2025)
+        ]
+    )
+    models, carried, recipes = fv._final_fit_rows(
+        _feature_frame_fixture(),
+        calibration,
+        horizon="expanding",
+        retained={"margin": "reference", "total": "reference"},
+    )
+    assert len(models) == 2 and len(carried) == 2
+    assert set(models["outer_season"].tolist()) == {fv.FINAL_FIT_SEASON}
+    assert carried["variance"].tolist() == [210.0, 210.0]
+    assert set(recipes) == {"margin", "total"}
+    tampered = calibration.copy()
+    tampered.loc[tampered["season"] == 2025, "fallback_reason"] = "no_valid_residuals"
+    with pytest.raises(fv.VerificationError, match="fallback"):
+        fv._final_fit_rows(
+            _feature_frame_fixture(),
+            tampered,
+            horizon="expanding",
+            retained={"margin": "reference", "total": "reference"},
+        )
+
+
+def _parent_manifests(*, rating_run_id: str, measurement_run_id: str) -> dict:
+    from cks_picks_cfb.data.data_first_possession_v1 import POSSESSION_DATASETS
+
+    rating = signed_payload(
+        {
+            "schema_version": "data_first_possession_retained_rating_v1",
+            "state": "frozen",
+            "identity": {"environment": "preview", "run_id": rating_run_id},
+            "selected_candidate": "ppp__rho_0_60__exposure",
+            "production_activation_authorized": False,
+            "parents": {
+                "measurement_manifest_uri": "measurement/uri",
+                "measurement_manifest_raw_sha256": "m" * 64,
+                "repair_manifest_uri": "repair/uri",
+                "repair_manifest_raw_sha256": "r" * 64,
+            },
+            "output_refs": {name: {} for name in RATING_DATASETS},
+        }
+    )
+    measurement = signed_payload(
+        {
+            "schema_version": "data_first_possession_measurement_manifest_v1",
+            "identity": {"environment": "preview", "run_id": measurement_run_id},
+            "production_activation_authorized": False,
+            "repair_manifest_uri": "repair/uri",
+            "repair_manifest_raw_sha256": "r" * 64,
+            "output_refs": {name: {} for name in POSSESSION_DATASETS},
+        }
+    )
+    repair = signed_payload(
+        {
+            "schema_version": "data_first_repair_manifest_v2",
+            "identity": {
+                "environment": "preview",
+                "run_id": "repair-v2-20260909T1417Z",
+            },
+            "production_activation_authorized": False,
+        }
+    )
+    encoded = {
+        uri: json.dumps(payload, sort_keys=True).encode()
+        for uri, payload in (
+            ("rating/uri", rating),
+            ("measurement/uri", measurement),
+            ("repair/uri", repair),
+        )
+    }
+    forecast = signed_payload(
+        {
+            "schema_version": FORECAST_MANIFEST_SCHEMA,
+            "state": "frozen",
+            "identity": {"environment": "preview", "run_id": "forecast-v1-test"},
+            "production_activation_authorized": False,
+            "parents": {
+                "rating_manifest_uri": "rating/uri",
+                "rating_manifest_raw_sha256": hashlib.sha256(
+                    encoded["rating/uri"]
+                ).hexdigest(),
+                "measurement_manifest_uri": "measurement/uri",
+                "measurement_manifest_raw_sha256": hashlib.sha256(
+                    encoded["measurement/uri"]
+                ).hexdigest(),
+                "repair_manifest_uri": "repair/uri",
+                "repair_manifest_raw_sha256": hashlib.sha256(
+                    encoded["repair/uri"]
+                ).hexdigest(),
+            },
+        }
+    )
+    encoded["forecast/uri"] = json.dumps(forecast, sort_keys=True).encode()
+    return encoded
+
+
+def test_verifier_rejects_stale_04b_rating_parent():
+    objects = _parent_manifests(
+        rating_run_id="possession-v1-ratings-20260917-d029526-cert",
+        measurement_run_id="possession-v1-measurements-20260921-r9",
+    )
+    storage = _MemoryStorage(objects)
+    manifest = json.loads(objects["forecast/uri"])
+    with pytest.raises(fv.VerificationError, match="rating parent identity"):
+        fv._verify_parent_manifests(
+            storage,
+            manifest=manifest,
+            rating_manifest_uri="rating/uri",
+            measurement_manifest_uri="measurement/uri",
+            repair_manifest_uri="repair/uri",
+        )
+
+
+def test_verifier_rejects_stale_r6_measurement_parent():
+    objects = _parent_manifests(
+        rating_run_id="possession-v1-ratings-20260921-11d59ee-r9cert",
+        measurement_run_id="possession-v1-measurements-20260915-18fb0aa-r6",
+    )
+    storage = _MemoryStorage(objects)
+    manifest = json.loads(objects["forecast/uri"])
+    with pytest.raises(fv.VerificationError, match="measurement parent identity"):
+        fv._verify_parent_manifests(
+            storage,
+            manifest=manifest,
+            rating_manifest_uri="rating/uri",
+            measurement_manifest_uri="measurement/uri",
+            repair_manifest_uri="repair/uri",
+        )
+
+
+def test_tampered_final_row_digest_detected():
+    frame = pd.DataFrame.from_records(
+        [
+            {
+                "horizon": "expanding",
+                "target": "margin",
+                "outer_season": 2025,
+                "head": "reference",
+                "alpha": 10.0,
+                "training_seasons": "2021,2022,2023,2024",
+                "inner_fallback": False,
+                "retained": True,
+                "fallback_reason": None,
+            },
+            {
+                "horizon": "expanding",
+                "target": "margin",
+                "outer_season": fv.FINAL_FIT_SEASON,
+                "head": "reference",
+                "alpha": 10.0,
+                "training_seasons": "2015,2016,2017,2018,2019,2021,2022,2023,2024,2025",
+                "inner_fallback": False,
+                "retained": True,
+                "fallback_reason": None,
+            },
+        ],
+        columns=[
+            "horizon",
+            "target",
+            "outer_season",
+            "head",
+            "alpha",
+            "training_seasons",
+            "inner_fallback",
+            "retained",
+            "fallback_reason",
+        ],
+    )
+    digest, parts = fv._reconstructed_digest("forecast_model", frame)
+    stored = fv.StoredOutput(
+        ref={"row_count": 2, "records_sha": digest}, frame=frame, parts=parts
+    )
+    result = fv._compare_outputs(
+        stored={"forecast_model": stored},
+        reconstructed={"forecast_model": frame},
+    )
+    assert result["forecast_model"]["row_count"] == 2
+    perturbed = frame.copy()
+    perturbed.loc[perturbed["outer_season"] == fv.FINAL_FIT_SEASON, "alpha"] = 1.0
+    with pytest.raises(fv.VerificationError, match="reconstruction"):
+        fv._compare_outputs(
+            stored={"forecast_model": stored},
+            reconstructed={"forecast_model": perturbed},
+        )
+
+
+def _publication_result() -> dict:
+    return {
+        "manifest_uri": "artifacts/runs/test-run/forecast-manifest.json",
+        "manifest_raw_sha256": "a" * 64,
+        "manifest_canonical_sha256": "b" * 64,
+        "run_id": "test-run",
+        "selected_horizon": "expanding",
+        "comparisons": {"forecast_model": {"row_count": 18}},
+    }
+
+
+def test_verification_publication_is_idempotent_and_collision_fail_closed():
+    storage = _MemoryStorage()
+    kwargs = dict(
+        result=_publication_result(),
+        verifier_code_sha="c" * 40,
+        rating_manifest_uri="rating/uri",
+        measurement_manifest_uri="measurement/uri",
+        repair_manifest_uri="repair/uri",
+    )
+    first = fv.publish_verification_manifest(storage, **kwargs)
+    assert first["published"] is True
+    assert first["verifier_manifest_uri"].endswith(
+        "verification/verifier-manifest.json"
+    )
+    second = fv.publish_verification_manifest(storage, **kwargs)
+    assert second["verifier_manifest_sha256"] == first["verifier_manifest_sha256"]
+    storage.objects[first["verifier_manifest_uri"]] = b"tampered"
+    with pytest.raises(fv.VerificationError, match="collision"):
+        fv.publish_verification_manifest(storage, **kwargs)

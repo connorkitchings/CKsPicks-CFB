@@ -41,6 +41,7 @@ from cks_picks_cfb.data.data_first_phase2 import (
 from cks_picks_cfb.data.data_first_phase2d import (
     PHASE3_DATASETS,
     REPLACEMENT_ELIGIBILITY_SCHEMA,
+    signed_payload,
     verify_signed_payload,
 )
 from cks_picks_cfb.data.data_first_possession_rating_v1 import (
@@ -72,6 +73,10 @@ BOOTSTRAP_SEED = 20260908
 BOOTSTRAP_REPLICATES = 2000
 EQUIVALENT_GAMES = 4
 RESIDUAL_FLOOR = 1e-6
+# Independent mirror of the producer's final-fit sentinel (heads.FINAL_FIT_SEASON).
+# Defined here by hand: the verifier must not import producer modules. Sentinel 0
+# marks through-development-window final rows that have no validation season.
+FINAL_FIT_SEASON = 0
 FEATURES = (
     "home_offense",
     "home_defense",
@@ -1128,15 +1133,14 @@ def _verify_parent_manifests(
         rating.get("schema_version") != POSSESSION_RATING_MANIFEST_SCHEMA
         or rating.get("state") != "frozen"
         or rating_identity.get("run_id")
-        != "possession-v1-ratings-20260917-d029526-cert"
+        != "possession-v1-ratings-20260921-11d59ee-r9cert"
         or rating.get("selected_candidate") != REQUIRED_RATING_CANDIDATE
         or rating.get("production_activation_authorized") is not False
         or set(rating.get("output_refs") or {}) != set(RATING_DATASETS)
     ):
         raise VerificationError("rating parent identity mismatch")
     if (
-        measurement_identity.get("run_id")
-        != "possession-v1-measurements-20260915-18fb0aa-r6"
+        measurement_identity.get("run_id") != "possession-v1-measurements-20260921-r9"
         or measurement.get("production_activation_authorized") is not False
         or set(measurement.get("output_refs") or {}) != set(POSSESSION_DATASETS)
     ):
@@ -1217,6 +1221,131 @@ def _retained_predictions(
     )
 
 
+def _fit_final_mirror(
+    frame: pd.DataFrame,
+    *,
+    target: str,
+    head: str,
+) -> dict[str, object]:
+    """Hand-written mirror of the producer final-fit recipe (no imports).
+
+    Reference heads pin alpha 10.0; challenger heads re-run inner-alpha over
+    the full development window. A proof Ridge fit on the window must succeed.
+    Returns the recipe only — no values are persisted from the proof fit.
+    """
+    if head not in ("reference", "challenger"):
+        raise VerificationError(f"final fit has an unknown head: {head!r}")
+    required = {
+        "season",
+        "actual_margin",
+        "actual_total",
+        "offset_margin",
+        "offset_total",
+        *FEATURES,
+    }
+    if missing := sorted(required - set(frame)):
+        raise VerificationError(f"final-fit frame lacks columns: {missing}")
+    if set(DEVELOPMENT_SEASONS) & {FINAL_FIT_SEASON}:
+        raise VerificationError("final-fit window contains the sentinel season")
+    clean = (
+        frame.replace([np.inf, -np.inf], np.nan).dropna(subset=list(required)).copy()
+    )
+    train = clean[clean["season"].isin(tuple(DEVELOPMENT_SEASONS))].copy()
+    if train.empty:
+        raise VerificationError("final fit has no training rows on the window")
+    if head == "reference":
+        alpha, inner_fallback = 10.0, False
+    else:
+        alpha, inner_fallback = _select_inner_alpha(
+            train,
+            target=target,
+            seasons=tuple(DEVELOPMENT_SEASONS),
+            alpha_grid=ALPHA_GRID,
+            floor=SCALING_FLOOR,
+        )
+    try:
+        _fit_one(train, train, target=target, alpha=alpha, floor=SCALING_FLOOR)
+    except (VerificationError, ValueError) as exc:
+        raise VerificationError(
+            f"final fit failed on the full window: {target}"
+        ) from exc
+    return {
+        "target": target,
+        "head": head,
+        "alpha": float(alpha),
+        "training_seasons": tuple(int(season) for season in DEVELOPMENT_SEASONS),
+        "inner_fallback": bool(inner_fallback),
+    }
+
+
+def _final_fit_rows(
+    features: pd.DataFrame,
+    calibration: pd.DataFrame,
+    *,
+    horizon: str,
+    retained: Mapping[str, str],
+    calibration_source_season: int = 2025,
+) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, dict[str, object]]]:
+    """Mirror the producer's final model/calibration row construction.
+
+    Carries the design's latest rolling-origin variance (2025) forward under
+    sentinel season 0; fails closed when the source entry is missing or a
+    fallback. In-sample final-fit residuals are never used.
+    """
+    model_rows: list[dict[str, object]] = []
+    calibration_rows: list[dict[str, object]] = []
+    recipes: dict[str, dict[str, object]] = {}
+    for target in ("margin", "total"):
+        recipe = _fit_final_mirror(features, target=target, head=retained[target])
+        recipes[target] = recipe
+        model_rows.append(
+            {
+                "horizon": horizon,
+                "target": target,
+                "outer_season": FINAL_FIT_SEASON,
+                "head": recipe["head"],
+                "alpha": recipe["alpha"],
+                "training_seasons": ",".join(map(str, recipe["training_seasons"])),
+                "inner_fallback": recipe["inner_fallback"],
+                "retained": True,
+                "fallback_reason": "insufficient_inner_fold"
+                if recipe["inner_fallback"]
+                else None,
+            }
+        )
+        source = calibration[
+            (calibration["target"] == target)
+            & (calibration["season"] == calibration_source_season)
+        ]
+        if source.empty:
+            raise VerificationError(
+                f"final fit has no {calibration_source_season} calibration entry "
+                f"for {target!r}"
+            )
+        entry = source.iloc[0]
+        if (
+            str(entry["fallback_reason"] or "") != ""
+            or int(entry["residual_count"]) <= 0
+        ):
+            raise VerificationError(
+                f"final fit cannot carry a fallback calibration entry for {target!r}"
+            )
+        calibration_rows.append(
+            {
+                "target": target,
+                "season": FINAL_FIT_SEASON,
+                "residual_count": int(entry["residual_count"]),
+                "variance": float(entry["variance"]),
+                "fallback_reason": "",
+            }
+        )
+    return (
+        pd.DataFrame.from_records(model_rows),
+        pd.DataFrame.from_records(calibration_rows),
+        recipes,
+    )
+
+
 def _reconstruct_outputs(
     *,
     population: pd.DataFrame,
@@ -1245,6 +1374,7 @@ def _reconstruct_outputs(
     selected_horizon, comparison = _select_horizon(
         retained["expanding"], retained["latest_five"]
     )
+    selected_heads = computations[selected_horizon][2]
     calibration, variances = _calibrate_uncertainty(
         features,
         horizon=selected_horizon,
@@ -1254,6 +1384,16 @@ def _reconstruct_outputs(
         floor=SCALING_FLOOR,
         residual_floor=RESIDUAL_FLOOR,
     )
+    final_models, final_calibration, final_recipes = _final_fit_rows(
+        features,
+        calibration,
+        horizon=selected_horizon,
+        retained=selected_heads,
+    )
+    models = pd.concat(
+        [computations[selected_horizon][1], final_models], ignore_index=True
+    )
+    calibration = pd.concat([calibration, final_calibration], ignore_index=True)
     registry = pd.DataFrame.from_records(
         [
             {
@@ -1271,7 +1411,6 @@ def _reconstruct_outputs(
             orient="records", date_format="iso", double_precision=15
         ).encode()
     ).hexdigest()
-    selected_heads = computations[selected_horizon][2]
     selection = pd.DataFrame.from_records(
         [
             {
@@ -1288,7 +1427,7 @@ def _reconstruct_outputs(
     )
     outputs = {
         "forecast_registry": registry,
-        "forecast_model": computations[selected_horizon][1],
+        "forecast_model": models,
         "forecast_prediction": retained[selected_horizon],
         "forecast_calibration": calibration,
         "window_comparison": comparison,
@@ -1302,6 +1441,15 @@ def _reconstruct_outputs(
         "selected_heads": selected_heads,
         "horizon_sha256": horizon_sha,
         "calibration_variances": variances,
+        "final_fit_recipes": {
+            target: {
+                "head": recipe["head"],
+                "alpha": recipe["alpha"],
+                "training_seasons": recipe["training_seasons"],
+                "inner_fallback": recipe["inner_fallback"],
+            }
+            for target, recipe in final_recipes.items()
+        },
         "offsets_sha256": canonical_frame_digest(
             offsets, columns=tuple(offsets.columns)
         ),
@@ -1474,17 +1622,42 @@ def verify_forecast_artifact(
     if details["horizon_sha256"] != manifest.get("horizon_sha256"):
         raise VerificationError("horizon selection digest differs from reconstruction")
     model = reconstructed["forecast_model"]
+    outer = pd.to_numeric(model["outer_season"], errors="raise").astype(int)
+    final_rows = model[outer.eq(FINAL_FIT_SEASON)]
+    validation_rows = model[outer.ne(FINAL_FIT_SEASON)]
+    if final_rows.empty or len(final_rows) != 2:
+        raise VerificationError("final-fit rows missing from reconstruction")
     head_recipes: dict[str, Any] = {}
     for target, head in details["selected_heads"].items():
-        rows = model[
-            model["target"].eq(target)
-            & model["head"].eq(head)
-            & model["retained"].eq(True)
+        rows = validation_rows[
+            validation_rows["target"].eq(target)
+            & validation_rows["head"].eq(head)
+            & validation_rows["retained"].eq(True)
         ]
         alphas = sorted(set(pd.to_numeric(rows["alpha"], errors="raise").astype(float)))
         if len(alphas) != 1:
             raise VerificationError(f"{target} retained head alpha is inconsistent")
-        head_recipes[target] = {"head": head, "alpha": alphas[0]}
+        sentinel = final_rows[final_rows["target"].eq(target)]
+        if len(sentinel) != 1 or not bool(sentinel.iloc[0]["retained"]):
+            raise VerificationError(
+                f"{target} final-fit row missing or unretained in reconstruction"
+            )
+        row = sentinel.iloc[0]
+        window = [
+            int(token)
+            for token in str(row["training_seasons"]).replace(",", " ").split()
+            if token.strip().isdigit()
+        ]
+        if not window or max(window) < 2025:
+            raise VerificationError(
+                f"{target} final-fit window does not train through 2025"
+            )
+        head_recipes[target] = {
+            "head": head,
+            "alpha": alphas[0],
+            "final_alpha": float(pd.to_numeric(row["alpha"], errors="raise")),
+            "final_training_seasons": str(row["training_seasons"]),
+        }
     if head_recipes != manifest.get("head_recipes"):
         raise VerificationError("head recipes differ from reconstruction")
 
@@ -1528,4 +1701,69 @@ def verify_forecast_artifact(
         "offsets_sha256": details["offsets_sha256"],
         "horizon_sha256": details["horizon_sha256"],
         "rejected_seasons": [2020, 2026],
+    }
+
+
+def publish_verification_manifest(
+    storage: Any,
+    *,
+    result: Mapping[str, Any],
+    verifier_code_sha: str,
+    rating_manifest_uri: str,
+    measurement_manifest_uri: str,
+    repair_manifest_uri: str,
+) -> dict[str, Any]:
+    """Publish the signed Preview verification record for Contract 11D.
+
+    Writes ``verification/verifier-manifest.json`` under the verified run
+    prefix. Idempotent: an existing byte-identical manifest is a no-op; any
+    different bytes are a permanent collision.
+    """
+    manifest_uri = str(result["manifest_uri"])
+    prefix = manifest_uri.rsplit("/", 1)[0]
+    verifier_manifest = signed_payload(
+        {
+            "schema_version": VERIFICATION_MANIFEST_SCHEMA,
+            "state": "verified",
+            "run_id": result.get("run_id"),
+            "forecast_manifest_uri": manifest_uri,
+            "forecast_manifest_raw_sha256": result.get("manifest_raw_sha256"),
+            "forecast_manifest_canonical_sha256": result.get(
+                "manifest_canonical_sha256"
+            ),
+            "parents": {
+                "rating_manifest_uri": rating_manifest_uri,
+                "measurement_manifest_uri": measurement_manifest_uri,
+                "repair_manifest_uri": repair_manifest_uri,
+            },
+            "selected_horizon": result.get("selected_horizon"),
+            "comparisons": dict(result.get("comparisons") or {}),
+            "final_fit_verified": True,
+            "training_max_season": 2025,
+            "verifier_code_sha": verifier_code_sha,
+            "closes_findings": [
+                "audit-structural-002",
+                "audit-forecast-final_fit_existence-b1bc852294",
+            ],
+            "permitted_use": "full_lane_forecast_eligibility_closure_only",
+            "production_activation_authorized": False,
+            "readiness_recommendation": None,
+        }
+    )
+    verifier_uri = f"{prefix}/verification/verifier-manifest.json"
+    encoded = json.dumps(
+        verifier_manifest, sort_keys=True, separators=(",", ":"), default=str
+    ).encode()
+    if storage.exists(verifier_uri):
+        if storage.read_bytes(verifier_uri) != encoded:
+            raise VerificationError(
+                "verifier manifest collision; the run is already bound to "
+                "different verification evidence"
+            )
+    else:
+        storage.write_bytes(encoded, verifier_uri)
+    return {
+        "published": True,
+        "verifier_manifest_uri": verifier_uri,
+        "verifier_manifest_sha256": verifier_manifest["manifest_sha256"],
     }
