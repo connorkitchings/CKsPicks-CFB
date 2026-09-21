@@ -16,6 +16,9 @@ V5_DIR = ROOT / "docs/plans/2026-09-13"
 COMMON = V5_DIR / "v5-ratings-successor-roadmap-and-contracts.md"
 HISTORICAL_REVIEW_DIR = ROOT / "docs/plans/2026-09-18"
 CONDITIONAL_RESULTS_DIR = ROOT / "docs/plans/2026-09-19"
+BLOCKER_DIAGNOSIS = (
+    ROOT / "docs/plans/2026-09-20/02-v5-foundation-blocker-diagnosis.md"
+)
 V5_NAMES = (
     "00-v5-documentation-and-methodology-alignment.md",
     "01-v4-feature-v5-diagnostic-closure.md",
@@ -203,7 +206,7 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
         CONDITIONAL_RESULTS_DIR / "12a-v5-conditional-historical-scorecard.md"
     ).read_text()
     assert "status: implemented" in _plain(verification)
-    assert "status: draft" in _plain(scorecard)
+    assert "status: approved" in _plain(scorecard)
     for content in (verification, scorecard):
         plain = _plain(content)
         assert "conditional_historical_results_only" in content
@@ -223,7 +226,7 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
     )
     for required in (
         "10b is complete",
-        "draft 11a and 12a have successfully completed",
+        "implemented 11a and approved 12a have successfully completed",
         "every foundation blocker",
     ):
         assert required in final_review
@@ -242,7 +245,7 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
     ):
         directory = V5_DIR if name.startswith("06-") else HISTORICAL_REVIEW_DIR
         plain = _plain((directory / name).read_text())
-        assert "conditional-results clarification (2026-09-19)" in plain
+        assert "conditional-results clarification (2026-09-20)" in plain
         assert "conditional_historical_results_only" in plain
         assert "contracts 10-12" in plain
         assert "re-reviewed-application gate" in plain
@@ -360,3 +363,30 @@ def test_quickstart_examples_are_not_live_execution_authority():
         "not instructions to execute a research phase or the current live configuration"
         in content
     )
+
+
+def test_current_authority_records_the_approved_scorecard_and_blocker_diagnosis():
+    assert "**Status:** Draft" in BLOCKER_DIAGNOSIS.read_text()
+    diagnosis = _plain(BLOCKER_DIAGNOSIS.read_text())
+    for required in (
+        "finding 001",
+        "finding 003",
+        "read-only",
+        "does not authorize diagnosis or cloud access",
+        "must not repair data",
+        "one subsequent corrective execution contract",
+    ):
+        assert required in diagnosis
+
+    for document in (ROADMAP, CONTRACT_INDEX, COMMON, ROOT / "docs/index.md"):
+        content = _plain(document.read_text())
+        assert "approved" in content
+        assert "12a" in content
+        assert "conditional_historical_results_only" in content
+        assert "contract11_permitted: false" in content or "full contract 11" in content
+
+    for document in (ROADMAP, CONTRACT_INDEX, COMMON):
+        content = _plain(document.read_text())
+        assert "12a | draft" not in content
+        assert "10b remains in progress" not in content
+        assert "draft 11a" not in content

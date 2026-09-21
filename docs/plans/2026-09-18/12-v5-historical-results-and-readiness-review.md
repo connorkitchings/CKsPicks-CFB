@@ -54,9 +54,9 @@ approved amendment or a separate contract.
 ## Amendment 1 — Conditional historical-results lane (2026-09-19)
 
 This Draft contract remains the sole historical-readiness review. It cannot
-begin until 10B is complete, Draft 11A and 12A have successfully completed,
-and every foundation blocker required for readiness is resolved. Draft
-[12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) publishes only
+begin until 10B is complete, implemented 11A and approved 12A have successfully
+completed, and every foundation blocker required for readiness is resolved.
+Approved [12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) publishes only
 `conditional_historical_results_only` development evidence: it issues no
 readiness recommendation and cannot authorize 2026 application. Only explicit
 user acceptance of this final Contract 12 review may trigger re-review of 06–09.

@@ -29,8 +29,9 @@ readiness, and 07/08 are re-reviewed with the frozen design, exact eligible
 artifacts, through-2025 final fit/calibration, selected-prior inputs, and
 timestamp provenance. Replaying 2026 results never creates prospective evidence.
 
-**Conditional-results clarification (2026-09-19):** Draft Contracts 11A/12A
-may produce `conditional_historical_results_only` development evidence only.
+**Conditional-results clarification (2026-09-20):** Implemented Contract 11A
+and approved Contract 12A may produce `conditional_historical_results_only`
+development evidence only.
 They do not close Contracts 10-12, restore forecast eligibility, establish
 prospective evidence, or satisfy this contract's explicit-user-acceptance and
 re-reviewed-application gate.

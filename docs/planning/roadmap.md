@@ -1,6 +1,6 @@
 # 2026 Operations and Ratings Research Roadmap
 
-> **Last updated:** 2026-09-18
+> **Last updated:** 2026-09-20
 > **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
 
 > **Authority note (2026-09-05):** This page remains the current V4 operations
@@ -9,14 +9,15 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-18):** V5 ratings successor research
-> is distinct from the V4 feature schema v5 diagnostic. The active priority is
-> a full historical-foundation audit through 2025, independent forecast
-> verification, and historical readiness review. Repair v2, Phase 3 v2, and
-> R6 possession measurements remain historical evidence; the current forecast
-> artifact is historical evidence only until its computations are independently
-> reconstructed. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
-> for the active 10–12 queue. The original Phase 4B retained manifest remains
+> **Current research checkpoint (2026-09-20):** V5 ratings successor research
+> is distinct from the V4 feature schema v5 diagnostic. Contract 10B completed
+> the full historical-foundation audit with four open blockers. Repair v2,
+> Phase 3 v2, and R6 possession measurements remain historical evidence.
+> Contract 11A independently reconstructed the frozen forecast artifact for
+> conditional-only use, and approved 12A is the immediate scorecard task. Full
+> readiness still requires diagnosis/correction of Findings 001/003, full
+> Contract 11, and final Contract 12. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
+> for the active critical path. The original Phase 4B retained manifest remains
 > prohibited as a forecasting parent.
 
 ## Direction
@@ -79,8 +80,8 @@ See the
 | **Week 1** | Published, frozen, and scored | ✅ Verified 2026-09-10: 43 games / 86 grade rows |
 | **Week 2** | Scored | ✅ Recorded 2026-09-13: `2026w2-43b25511a100`, 49 games; 90 graded targets |
 | **Week 3** | Published | Recorded 2026-09-13: `2026w3-68fe6a815bd6`, 57/57/56; freeze pending at that checkpoint |
-| Current research | 03: possession rating estimation, then bridge selection | Preview-only; R6 is the sole eligible measurement parent |
-| Subsequent weeks | Structured rating-to-game prediction, then frozen candidate shadow scoring | No Neon activation or publication |
+| Current research | Approved 12A conditional scorecard; parallel diagnosis/correction of Findings 001/003 | Conditional results cannot restore eligibility; full 11/12 remain required |
+| Subsequent work | Re-reviewed 07–09 application only after final historical readiness, then frozen candidate shadow scoring | No Neon activation or publication |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
 | Any later point in 2026 | Operational rehearsal, rollback proof, and evidence-based promotion decision | V4 remains fallback |
 

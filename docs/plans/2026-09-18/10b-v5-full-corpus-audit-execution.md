@@ -222,12 +222,13 @@ tests (every finding dispositioned; gate evaluates exactly per umbrella).
 
 ## Amendments
 
-**Conditional-results clarification (2026-09-19):** Draft 11A/12A may pursue a
-separately bounded `conditional_historical_results_only` scorecard from 10A
-lineage/preflight evidence. They neither replace this full-corpus audit nor
-clear its findings. Completion of 10B remains required for foundation
-readiness, full forecast eligibility, final Contract 12, and every 2026 gate.
-No 10B execution is authorized by this documentation amendment.
+**Conditional-results clarification (2026-09-20):** Implemented 11A and
+approved 12A may pursue a separately bounded
+`conditional_historical_results_only` scorecard from 10A lineage/preflight
+evidence. They neither replace this full-corpus audit nor clear its findings.
+Completion of 10B remains required evidence for foundation readiness, full
+forecast eligibility, final Contract 12, and every 2026 gate. No audit finding
+is closed by this documentation amendment.
 
 Mechanical fixes stay in-contract. New blockers requiring code,
 methodology, schema, or artifact changes need separately approved corrective

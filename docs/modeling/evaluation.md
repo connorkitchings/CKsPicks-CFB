@@ -11,22 +11,27 @@
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 
-## Current V5 evaluation contract (2026-09-18)
+## Current V5 evaluation contract (2026-09-20)
 
 The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 and 02–06 govern current research. V5 ratings successor is distinct from V4
 feature schema v5. Repair v2, Phase 3 v2, R6 possession measurements, and the
-retained rating artifact are historical evidence. The active work is the full
-audit through 2025, independent forecast verification, and historical readiness
-review;
+retained rating artifact are historical evidence. Contract 10B completed the
+full audit and published four open blockers. Contract 11A independently
+reconstructed the frozen forecast artifact for conditional-only use, and
+approved Contract 12A is the immediate scorecard task. Full historical
+readiness still requires diagnosis/correction of Findings 001/003, full
+Contract 11, and final Contract 12;
 the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the status authority. The original Phase 4B retained manifest remains
 prohibited as a forecasting parent. Old reduced-population comparisons retain
 historical limits; the September 8 Phase 4A–6 runners are Superseded.
 
-The current forecast artifact does not have complete independent computational
-verification: its verifier checks the manifest and references without rebuilding
-the stored forecast chain. It cannot be treated as an eligible forecast parent.
+The original forecast verifier checks the manifest and references without
+rebuilding the stored forecast chain. Contract 11A separately reconstructs the
+frozen chain, but only for `conditional_historical_results_only`; it cannot be
+treated as an eligible forecast parent until full Contract 11 also closes the
+remaining forecast findings.
 Contracts 06-09 are deferred until the historical review is accepted; a 2026
 replay or `live` timing field does not create prospective evidence.
 

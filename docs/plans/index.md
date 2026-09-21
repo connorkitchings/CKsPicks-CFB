@@ -35,9 +35,10 @@ is Approved; the [data-first roadmap](../planning/data-first-football-forecastin
 is the canonical status page. Repair v2 and Phase 3 v2 are certified. Possession
 measurements are independently certified in Preview as
 `possession-v1-measurements-20260915-18fb0aa-r6`. The active V5 work has a
-conditional-results lane (11A then 12A) and a full-foundation/readiness lane
-(10B, full 11, then 12); conditional 2025 results cannot clear the latter
-lane's gates. V5 ratings successor is distinct from V4 feature schema v5.
+conditional-results lane (implemented 11A then approved 12A) and a
+full-foundation/readiness lane (blocker diagnosis/correction, full 11, then
+12); conditional 2025 results cannot clear the latter lane's gates. V5 ratings
+successor is distinct from V4 feature schema v5.
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
@@ -92,7 +93,8 @@ unmet data dependency.
 | 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **Implemented.** Hardened harness (Amendment 2) with three byte-identical preflights; zero R2 writes. Checkpoint `6af0392`. |
 | 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **Implemented 2026-09-19.** Run `historical-audit-10b-20260919-full` (SHA `7a476648`): 93 checks, 4 findings (all blockers, all open), `publication_valid: true`, `already_applied` confirmed. `contract11_permitted: false`. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`. |
 | 11A: [Conditional forecast verification](2026-09-19/11a-v5-conditional-forecast-verification.md) | **Implemented 2026-09-19.** Preview run `conditional-v1-20260919-9265314-11a` passed clean-SHA reconstruction, signed publication, independent re-read, and idempotent repeat. It grants only `conditional_historical_results_only`. |
-| 12A: [Conditional historical scorecard](2026-09-19/12a-v5-conditional-historical-scorecard.md) | **Draft.** After successful 11A, reports V5-only conditional historical results; it is not readiness or 2026 authority. |
+| 12A: [Conditional historical scorecard](2026-09-19/12a-v5-conditional-historical-scorecard.md) | **Approved.** Immediate independent task after successful 11A; reports V5-only conditional historical results, not readiness or 2026 authority. |
+| 02: [Foundation-blocker diagnosis](2026-09-20/02-v5-foundation-blocker-diagnosis.md) | **Draft.** Read-only diagnosis of Findings 001/003 determines the surviving Repair identity and corrective blast radius before any repair execution is planned. |
 | 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Full forecast-eligibility closure starts after 10B resolves forecast findings; it restores 04/04B only after every reconstruction check passes. |
 | 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Final review starts after 10B, successful 11A/12A, and required blocker closure; full 11 remains required before eligibility or 2026 re-review. It issues the only readiness recommendation. |
 

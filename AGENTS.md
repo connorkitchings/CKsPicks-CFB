@@ -238,14 +238,15 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
   `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
   independently verified and idempotently rerun on 2026-09-11).
-  It is benchmark evidence. **V5 historical-first checkpoint (2026-09-18):**
+  It is benchmark evidence. **V5 historical-first checkpoint (2026-09-20):**
   R6 possession measurements and the retained rating artifact are historical
   evidence. The V5 historical work now has two lanes: Contract 11A is
-  Implemented and Contract 12A remains Draft in the conditional-results lane;
-  together they may verify the frozen forecast artifact and publish a V5-only
-  scorecard with permitted use `conditional_historical_results_only`. The full
-  lane has completed Contract 10B and now requires corrective closure of
-  Findings 001/003 before full Contract 11. Conditional results do
+  Implemented and Contract 12A is Approved in the conditional-results lane;
+  11A independently reconstructed the frozen artifact and 12A may publish a
+  V5-only scorecard with permitted use `conditional_historical_results_only`.
+  The full lane has completed Contract 10B, which published four open blockers;
+  it now requires diagnosis/corrective closure of Findings 001/003 before full
+  Contract 11. Conditional results do
   not restore forecast eligibility, authorize 2026 work, or replace the final
   Contract 11/12 readiness gates. V5 ratings successor is distinct from V4 feature schema v5;
   contract 01 is the independent diagnostic closure. September 8 Phase 4A–6

@@ -8,9 +8,11 @@
 ## Current measurement checkpoint
 
 V5 ratings successor is distinct from V4 feature schema v5. Repair v2, Phase 3 v2,
-and R6 possession measurements are certified in Preview. The active work is the
-full historical audit through 2025, then independent forecast verification and
-historical readiness review. The original Phase 4B retained manifest
+and R6 possession measurements are certified in Preview. Contract 10B completed
+the full historical audit with four open blockers. Contract 11A independently
+reconstructed the frozen forecast artifact for conditional-only use, and approved
+12A is the immediate scorecard task; full readiness through 2025 still requires
+diagnosis/correction of Findings 001/003, full 11, and final 12. The original Phase 4B retained manifest
 remains prohibited as a forecasting parent; same-game field position, plays per
 drive and turnovers are not pregame predictors.
 

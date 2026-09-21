@@ -62,7 +62,7 @@ requires a new identity and an approved amendment before execution.
 This Draft contract remains the full forecast-eligibility closure. It begins
 only after completed 10B resolves forecast findings or formally incorporates
 them, and it is the only contract that can return 04/04B to `Implemented`.
-Draft [11A](../2026-09-19/11a-v5-conditional-forecast-verification.md) is a
-separate, earlier conditional reconstruction for
+Implemented [11A](../2026-09-19/11a-v5-conditional-forecast-verification.md)
+is a separate, earlier conditional reconstruction for
 `conditional_historical_results_only`. A successful 11A does not alter this
 contract's lifecycle, entry gate, verification scope, or 2026 restrictions.

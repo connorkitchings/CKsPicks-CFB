@@ -22,13 +22,15 @@ definition. R6 possession measurements are independently certified in Preview
 at `possession-v1-measurements-20260915-18fb0aa-r6`; it is the sole eligible
 Contract 03 parent in the completed historical sequence. The active work has
 two historical lanes: Contract 10B audits the full foundation through 2025,
-while Draft 11A/12A may independently verify the frozen forecast artifact and
-publish a V5-only scorecard with permitted use
+while implemented 11A independently verified the frozen forecast artifact and
+approved 12A may publish a V5-only scorecard with permitted use
 `conditional_historical_results_only`. Conditional results are development
 evidence only; they do not restore forecast eligibility, authorize 2026 work,
-or replace the final Contract 11/12 eligibility and readiness gates. The
-completed measurement/rating artifacts remain historical evidence while the
-audit reviews their methodology and lineage.
+or replace the final Contract 11/12 eligibility and readiness gates. Contract
+10B is implemented with four open blockers; the full lane requires diagnosis/
+correction of Findings 001/003, full 11, and final 12. The completed
+measurement/rating artifacts remain historical evidence while the audit findings
+are resolved.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
 parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only

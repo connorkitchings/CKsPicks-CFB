@@ -1,6 +1,6 @@
 # Possession-Based Rating Methodology
 
-> **Status (2026-09-18):** Contract 02 is implemented: R6 possession measurements
+> **Status (2026-09-20):** Contract 02 is implemented: R6 possession measurements
 > are retained historical evidence. The
 > [September 11 specification](../plans/2026-09-11/possession-rating-methodology-specification.md)
 > remains an Implemented documentation milestone. Current execution authority is
@@ -20,9 +20,12 @@ v5, the independent operational diagnostic.
 Repair v2 and Phase 3 v2 are certified. Its `quality_core_epa_split` selection
 is benchmark evidence, not a definition or automatic possession parent. The R6
 possession manifest `possession-v1-measurements-20260915-18fb0aa-r6` is the sole
-eligible Contract 03 parent in the completed historical sequence. The active
-work is the full historical-foundation audit through 2025, followed by forecast
-verification closure and historical readiness review; see the
+eligible Contract 03 parent in the completed historical sequence. Contract 10B
+completed the full historical-foundation audit with four open blockers. Contract
+11A independently reconstructed the frozen forecast artifact for conditional
+use, and approved 12A is the immediate scorecard task; full eligibility through
+2025 still requires diagnosis/correction of Findings 001/003, full 11, and
+final 12. See the
 [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md).
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 

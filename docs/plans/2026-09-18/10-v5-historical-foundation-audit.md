@@ -152,12 +152,11 @@ conditions requires a separately approved amendment before implementation.
 
 ## Amendment 1 — Conditional historical-results lane (2026-09-19)
 
-Contract 10 remains the full-foundation authority. 10A's completed lineage and
-preflight evidence may support the separate Draft
-[11A](../2026-09-19/11a-v5-conditional-forecast-verification.md), followed by
-Draft [12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md), solely
-for `conditional_historical_results_only`. This does not complete 10B, clear
-its findings, grant forecast eligibility, or change this umbrella's final
-Contract 11 gate. 10B remains required for foundation readiness, final artifact
-eligibility, final Contract 12, and any 2026 work; all upstream blockers remain
-open until their recorded closure criteria are met.
+Contract 10 remains the full-foundation authority. Implemented 11A independently
+reconstructed the frozen forecast artifact, and approved
+[12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) may publish a
+scorecard solely for `conditional_historical_results_only`. This does not clear
+10B's findings, grant forecast eligibility, or change this umbrella's final
+Contract 11 gate. 10B is complete as an audit and remains required evidence for
+foundation readiness, final Contract 12, and any 2026 work; all four blockers
+remain open until their recorded closure criteria are met.

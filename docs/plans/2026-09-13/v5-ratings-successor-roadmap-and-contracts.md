@@ -74,10 +74,12 @@ closes that gap.
 
 Contract 05 remains implemented as shadow-tooling work. Its historical rehearsal
 uses permanently diagnostic predictions and therefore establishes neither
-forecast quality, prospective evidence, nor live readiness. Full Contracts
-10B, 11, and 12 audit the complete foundation, close forecast eligibility, and
-report historical readiness before any 2026 application is reconsidered. The
-separate 11A/12A lane can report conditional historical results only. A future frozen algorithm
+forecast quality, prospective evidence, nor live readiness. Completed Contract
+10B audited the complete foundation and published four open blockers. A
+diagnosis/correction sequence, full Contract 11, and final Contract 12 must
+close forecast eligibility and report historical readiness before any 2026
+application is reconsidered. Implemented 11A and approved 12A are a separate
+lane for conditional historical results only. A future frozen algorithm
 may update state from preceding finalized games, but 2026 outcomes cannot choose
 or tune its design. Retrospective replay, pre-kickoff prospective evidence, and
 production promotion are separate milestones.
@@ -86,16 +88,17 @@ production promotion are separate milestones.
 
 ### Conditional historical-results lane (2026-09-19)
 
-The historical-first foundation remains binding. Contract 10A is implemented;
-Contract 10B remains In Progress and is required for foundation readiness,
-final artifact eligibility, and any later 2026 application. Open Repair,
-measurement, rating, or lineage findings remain visible readiness blockers.
+The historical-first foundation remains binding. Contracts 10A and 10B are
+Implemented; 10B's valid publication records four open blockers and
+`contract11_permitted: false`. Foundation readiness, final artifact eligibility,
+and any later 2026 application remain blocked by the required corrective work.
 
-Draft [11A](../2026-09-19/11a-v5-conditional-forecast-verification.md) may,
-after 10A lineage/preflight evidence, independently reconstruct the frozen
-forecast artifact for a narrowly bounded historical scorecard. Draft
-[12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) may then report
-V5-only historical results. Their sole permitted use is exactly
+Implemented [11A](../2026-09-19/11a-v5-conditional-forecast-verification.md)
+independently reconstructed the frozen forecast artifact for a narrowly bounded
+historical scorecard. Approved
+[12A](../2026-09-19/12a-v5-conditional-historical-scorecard.md) is the next
+independent executable task and may report V5-only historical results. Their
+sole permitted use is exactly
 `conditional_historical_results_only`: neither restores forecast eligibility
 nor authorizes a final 2025 fit, 2026 replay/live forecast, production
 promotion, market comparison, or V4 change. Conditional results are not

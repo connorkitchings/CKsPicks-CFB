@@ -3,14 +3,17 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Research checkpoint (2026-09-18)
+## Research checkpoint (2026-09-20)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
 isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
 Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). R6 possession
-measurements and the retained rating artifact are historical evidence. The active
-V5 priority is the full historical-foundation audit through 2025, followed by
-independent forecast verification and a historical readiness review. The
+measurements and the retained rating artifact are historical evidence. Contract
+10B completed the full historical-foundation audit and published four open
+blockers. Contract 11A independently reconstructed the frozen forecast artifact
+for conditional-only use, and approved Contract 12A is the immediate scorecard
+task. The full readiness path is blocker diagnosis/correction, full Contract
+11, and final Contract 12. The
 [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
 is the canonical status and execution-queue authority.
 
@@ -20,11 +23,13 @@ uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and req
 future pre-kickoff freezes for independent evidence. Production operations remain
 under their existing runbooks.
 
-The current forecast artifact is inspectable historical evidence, but its
-verifier has not independently reconstructed the forecasts and their inputs.
-It cannot yet support downstream eligibility. 2026 application is deferred;
-frozen rules may later update state from preceding finalized games, but 2026
-outcomes cannot choose or tune V5.
+The original forecast verifier did not independently reconstruct the forecasts
+and their inputs. Contract 11A now reconstructs the frozen artifact exactly for
+`conditional_historical_results_only`; that narrow evidence does not restore
+downstream eligibility, close audit findings, provide a through-2025 final fit,
+or authorize 2026 work. 2026 application remains deferred; frozen rules may
+later update state from preceding finalized games, but 2026 outcomes cannot
+choose or tune V5.
 
 ## 2026 posture
 

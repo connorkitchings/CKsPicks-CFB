@@ -8,10 +8,14 @@
 
 ## Environment Setup
 
-**Research checkpoint (2026-09-18):** V5 ratings successor is distinct from V4
+**Research checkpoint (2026-09-20):** V5 ratings successor is distinct from V4
 feature schema v5. Repair v2, Phase 3 v2, and R6 possession measurements are
-certified in Preview. The active work is a full audit through 2025, independent
-forecast verification, and historical readiness review;
+certified in Preview. Contract 10B completed the full audit with four open
+blockers; 11A independently reconstructed the frozen forecast artifact for
+conditional-only use, and approved 12A is the immediate scorecard task. Full
+eligibility still requires blocker diagnosis/correction, full 11, and final 12;
+conditional results remain historical development evidence only;
+2025 remains development evidence rather than an independent V5 test;
 contract 01 is the independent diagnostic closure. See the canonical
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md).
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
