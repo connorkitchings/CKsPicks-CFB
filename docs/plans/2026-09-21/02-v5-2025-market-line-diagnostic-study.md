@@ -1,6 +1,6 @@
 # V5-02: 2025 Market-Line Diagnostic Study
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized with "proceed" on 2026-09-21 for
@@ -212,14 +212,14 @@ which would violate the quarantine invariant for zero diagnostic gain.
 
 ## Definition of Done
 
-- [ ] Entry-gate SHAs verified fail-closed for forecasts and market snapshots.
-- [ ] Sign-convention validation passes with recorded evidence before metrics.
-- [ ] Intersection accounting complete per target; integrity checks fail closed.
-- [ ] Deterministic paired metrics, stage slices, and edge distributions computed.
-- [ ] Signed Preview publication, independent re-read verify, idempotent repeat.
-- [ ] Report published with `diagnostic_comparison_only` labeling; no readiness claims.
-- [ ] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
-- [ ] This contract and `docs/plans/index.md` updated to `Implemented`.
+- [x] Entry-gate SHAs verified fail-closed for forecasts and market snapshots.
+- [x] Sign-convention validation passes with recorded evidence before metrics.
+- [x] Intersection accounting complete per target; integrity checks fail closed.
+- [x] Deterministic paired metrics, stage slices, and edge distributions computed.
+- [x] Signed Preview publication, independent re-read verify, idempotent repeat.
+- [x] Report published with `diagnostic_comparison_only` labeling; no readiness claims.
+- [x] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
+- [x] This contract and `docs/plans/index.md` updated to `Implemented`.
 
 ## Amendments
 
