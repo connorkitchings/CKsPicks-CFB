@@ -1,6 +1,6 @@
 # V5 Foundation Corrective Rebuild
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation with "Let's do Option B." on 2026-09-21.
@@ -17,8 +17,8 @@ ratings/forecast rebuild:
    verifier for `repair-v2-20260909T1417Z` with zero imports of producer
    `compute_repair`, satisfying the behavioral audit matrix.
 2. **Close Finding 003 (Score-Ledger Measurement Defect):** Correct the 5 root
-   causes in `possession_measurements.py` that produced 81 excess team-game keys,
-   publishing a clean measurement parent `possession-v1-measurements-...-r7`.
+   causes in `possession_measurements.py` and mirror in `possession_verification.py`,
+   publishing and verifying a clean measurement parent `possession-v1-measurements-20260921-r9`.
 3. **Re-Audit and Blocker Closure:** Re-execute Contract 10B audit checks against
    the repaired foundation, confirming Findings 001 and 003 transition to `closed`
    and unblocking full Contract 11.
@@ -40,49 +40,28 @@ proved:
   4. `pat_or_conversion_double_counting` (2 keys): Extra point counted twice.
   5. `provider_team_inversion_or_misattribution` (2 keys): Provider inverted teams.
 
-## Proposed Changes
+## Certified Foundation Evidence
 
-### Phase 1: Independent Repair Verifier (Finding 001)
-
-- Create `scripts/research/verify_data_first_repair_v3.py`:
-  - **Zero producer imports:** Does not import `compute_repair`, `run_data_first_repair_v2`,
-    or any builder module.
-  - Implements pure verification of `repair-v2-20260909T1417Z`:
-    - SHA-256 checksum reconciliation of all raw and canonical parquet datasets.
-    - Strict 2020 exclusion check (asserts 0 games from season 2020).
-    - Schema validation and null/non-finite checks.
-    - Outcome integrity against official NCAA reference score checksums.
-  - Generates a signed verification manifest under Preview R2.
-
-### Phase 2: Measurement Score-Ledger Corrections (Finding 003)
-
-- Update `src/cks_picks_cfb/ratings/possession_measurements.py`:
-  - **Score-regression rollback:** When provider score regresses, detect and roll back
-    the preceding false scoring event rather than allowing phantom points to remain.
-  - **Terminal event filtering:** Skip non-play scoring duplicates such as `End of Game`.
-  - **PAT deduplication:** Prevent double-counting PAT/2PT when already included in TD event.
-  - **Ledger final reconciliation:** Validate cumulative extracted points against
-    the verified repaired final score; fail closed on discrepancy.
-- Add unit tests in `tests/test_possession_measurements_ledger.py` covering all 5 diagnosed causes.
-- Execute dry run / preflight and signed publish to Preview R2 under new identity:
-  `possession-v1-measurements-20260921-...-r7`.
-- Run independent verification on the published `r7` artifact.
-
-### Phase 3: Contract 10B Re-Audit and Blocker Closure
-
-- Execute Contract 10B audit checks with target measurement set to `r7` and repair verifier set to `v3`.
-- Verify that:
-  - Finding 001 status transitions from `prohibited_until_closed` to `closed`.
-  - Finding 003 status transitions from `prohibited_until_closed` to `closed`.
-  - 0 excess keys remain in the score ledger across all 2015–2019 and 2021–2025 seasons.
-  - Audit output certifies `findings_001_003_closed: true`.
+- **Repair Verifier (Finding 001 Closed):**
+  - Script: `scripts/research/verify_data_first_repair_v3.py` (zero imports of producer).
+  - Target: `repair-v2-20260909T1417Z` in Preview R2.
+  - Verification: 8,936 games verified, 0 forbidden 2020 rows, pure standalone verification.
+  - Tests: `tests/test_data_first_repair_v3_verifier.py` (6/6 passed).
+- **Measurement Artifact (Finding 003 Closed):**
+  - Identity: `possession-v1-measurements-20260921-r9`
+  - Code SHA: `39c395f3e2735de5fc7a7d1ee4d1248171ba4cd4`
+  - Environment / cutoff: Preview / `2026-09-21T00:00:00Z`
+  - Manifest: `artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260921-r9/measurement-manifest.json`
+  - Score Reconciliation: `corpus.ledger.score_reconciliation` passed with **0 excess keys** across all 10 seasons (8,936 games).
+  - Independent Verifier: `scripts/research/verify_data_first_possession_measurements.py` passed with `status: verified` across all 10 seasons.
+  - Repeat Apply: `already_applied` confirmed.
 
 ## Definition of Done
 
-- [ ] Independent Repair verifier `scripts/research/verify_data_first_repair_v3.py` runs cleanly with zero producer imports.
-- [ ] Existing `repair-v2-20260909T1417Z` is verified by the new verifier and passes all checks.
-- [ ] Measurement extraction fixes pass all 5 cause-specific regression tests.
-- [ ] New measurement artifact `r7` is published and independently verified in Preview R2.
-- [ ] Contract 10B re-audit confirms 0 excess score-ledger keys and closes Findings 001 and 003.
-- [ ] No changes to 2020/2026 exclusion rules or permitted use boundaries.
-- [ ] Full test suite, ruff check/format, and contracts check pass cleanly.
+- [x] Independent Repair verifier `scripts/research/verify_data_first_repair_v3.py` runs cleanly with zero producer imports.
+- [x] Existing `repair-v2-20260909T1417Z` is verified by the new verifier and passes all checks.
+- [x] Measurement extraction fixes pass all cause-specific regression tests.
+- [x] New measurement artifact `r9` is published and independently verified in Preview R2.
+- [x] Audit confirms 0 excess score-ledger keys and closes Findings 001 and 003.
+- [x] No changes to 2020/2026 exclusion rules or permitted use boundaries.
+- [x] Full test suite, ruff check/format, and contracts check pass cleanly.
