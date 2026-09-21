@@ -19,8 +19,8 @@ POSSESSION_RATING_MANIFEST_SCHEMA = "data_first_possession_retained_rating_v1"
 POSSESSION_RATING_OUTPUT_ROOT = (
     "artifacts/research/data-first-football-v1/possession-v1/ratings/runs"
 )
-REQUIRED_R6_CERTIFICATION_SHA256 = (
-    "be4fcb6ec1e50356f1230b5831bb775e5383507f2c51cc736476a15badd15fa1"
+REQUIRED_R9_CERTIFICATION_SHA256 = (
+    "fc26a3d03416e688dc437ad863653dfac7df6faad51b478a7b94f466c0d870c3"
 )
 
 DEFINITIONS = ("ppp", "epa_per_possession")
@@ -275,11 +275,11 @@ def verify_parents(
         verify_signed_payload(measurement, label="possession measurement manifest")
     except ValueError as exc:
         raise PossessionRatingContractError(str(exc)) from exc
-    # The R6 producer manifest is a signed immutable result rather than a
+    # The r9 producer manifest is a signed immutable result rather than a
     # mutable lifecycle record; its reviewed certification checksum is the
-    # eligibility proof carried forward to V5-03.
+    # eligibility proof carried forward to V5-11B.
     if (
-        measurement.get("certification_sha256") != REQUIRED_R6_CERTIFICATION_SHA256
+        measurement.get("certification_sha256") != REQUIRED_R9_CERTIFICATION_SHA256
         or measurement.get("production_activation_authorized") is not False
     ):
         raise PossessionRatingContractError(
@@ -288,10 +288,10 @@ def verify_parents(
     identity = measurement.get("identity") or {}
     if (
         identity.get("environment") != "preview"
-        or identity.get("run_id") != "possession-v1-measurements-20260915-18fb0aa-r6"
+        or identity.get("run_id") != "possession-v1-measurements-20260921-r9"
     ):
         raise PossessionRatingContractError(
-            "V5-03 accepts only independently verified R6 measurements"
+            "V5-11B accepts only independently verified r9 measurements"
         )
     try:
         repair_verified = verify_repair_manifest(repair)

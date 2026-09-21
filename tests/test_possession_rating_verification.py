@@ -15,7 +15,7 @@ import pytest
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.data.data_first_possession_rating_v1 import (
     RATING_DATASETS,
-    REQUIRED_R6_CERTIFICATION_SHA256,
+    REQUIRED_R9_CERTIFICATION_SHA256,
 )
 from cks_picks_cfb.data.data_first_possession_v1 import POSSESSION_MANIFEST_SCHEMA
 from cks_picks_cfb.ratings import possession_rating_verification as verifier
@@ -66,9 +66,9 @@ def _seed_parents(storage: _VStorage) -> None:
             "schema_version": POSSESSION_MANIFEST_SCHEMA,
             "identity": {
                 "environment": "preview",
-                "run_id": "possession-v1-measurements-20260915-18fb0aa-r6",
+                "run_id": "possession-v1-measurements-20260921-r9",
             },
-            "certification_sha256": REQUIRED_R6_CERTIFICATION_SHA256,
+            "certification_sha256": REQUIRED_R9_CERTIFICATION_SHA256,
             "output_refs": {"population": population_ref},
             "production_activation_authorized": False,
         }
