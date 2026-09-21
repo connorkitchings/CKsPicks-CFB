@@ -328,3 +328,43 @@ def test_audit_score_reconciliation_zero_excess() -> None:
 
     obs = json.loads(results[0]["observed"])
     assert obs["excess"]["affected_count"] == 0
+
+
+def test_outcomes_merging_when_population_lacks_score_columns() -> None:
+    """Outcomes dataframe supplies final score when population schema drops home/away points."""
+    pop = _make_population()
+    # Drop score columns from population, simulating data_first_possession_v1 schema
+    pop_without_scores = pop.drop(columns=["home_points", "away_points"])
+    outcomes = pd.DataFrame(
+        [
+            {"season": 2024, "game_id": 1001, "home_points": 34.0, "away_points": 3.0},
+        ]
+    )
+    plays = pd.DataFrame(
+        [
+            _base_play(offense="Clemson", defense="Georgia", play=1, off_score=0),
+            _base_play(
+                offense="Clemson",
+                defense="Georgia",
+                play=2,
+                off_score=3,
+                play_type="Field Goal",
+            ),
+            # Spurious increment beyond final 3
+            _base_play(
+                offense="Clemson",
+                defense="Georgia",
+                play=3,
+                off_score=7,
+                play_type="Touchdown",
+            ),
+        ]
+    )
+    _, scoring = build_possession_ledger(
+        byplay=plays, population=pop_without_scores, outcomes=outcomes
+    )
+    clemson_events = scoring[
+        (scoring["game_id"] == 1001) & (scoring["team"] == "Clemson")
+    ]
+    assert clemson_events["score_increment"].sum() == 3
+

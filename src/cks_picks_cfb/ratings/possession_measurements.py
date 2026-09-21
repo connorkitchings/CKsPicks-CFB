@@ -122,6 +122,7 @@ def build_possession_ledger(
     *,
     byplay: pd.DataFrame,
     population: pd.DataFrame,
+    outcomes: pd.DataFrame | None = None,
     progress: Callable[..., None] | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build regulation possession eligibility and score-attribution ledgers."""
@@ -238,7 +239,20 @@ def build_possession_ledger(
         )
 
     final_score_lookup: dict[tuple[int, int, str], float] = {}
-    for prow in population.itertuples(index=False):
+    pop_scores = population
+    if outcomes is not None and "home_points" not in population.columns:
+        score_cols = [
+            c
+            for c in ("season", "game_id", "home_points", "away_points")
+            if c in outcomes.columns
+        ]
+        if "home_points" in score_cols and "away_points" in score_cols:
+            pop_scores = population.merge(
+                outcomes[score_cols].drop_duplicates(["season", "game_id"]),
+                on=["season", "game_id"],
+                how="left",
+            )
+    for prow in pop_scores.itertuples(index=False):
         if getattr(prow, "outcome_valid", False):
             s = int(prow.season)
             g = int(prow.game_id)
@@ -578,7 +592,10 @@ def build_measurements(
     """Build both role measurements while preserving every scoreable game row."""
     byplay = _canonicalize_byplay_teams(byplay)
     possessions, scoring = build_possession_ledger(
-        byplay=byplay, population=population, progress=progress
+        byplay=byplay,
+        population=population,
+        outcomes=outcomes,
+        progress=progress,
     )
     if progress is not None:
         progress(
