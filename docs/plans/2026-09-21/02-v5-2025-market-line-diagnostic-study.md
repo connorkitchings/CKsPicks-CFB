@@ -1,13 +1,11 @@
 # V5-02: 2025 Market-Line Diagnostic Study
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized with "proceed" on 2026-09-21 for
   the exact plan presented (replay lines now as a labeled diagnostic, V5-only).
-- **Implementation log:** Pending; create
-  `session_logs/2026-09-21/NN-v5-2025-market-line-diagnostic-study.md` when a
-  fresh Terra task executes this contract.
+- **Implementation log:** `session_logs/2026-09-21/05-v5-2025-market-line-diagnostic-study.md`
 - **Commit policy:** Separate commits — a plan checkpoint (this contract + index
   row + planning log), then implementation checkpoints per Terra's evidence
   stages. User controls Git operations.
