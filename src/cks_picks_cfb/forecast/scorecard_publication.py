@@ -279,7 +279,9 @@ def publish_scorecard(
     }
     rerun_evidence["evidence_sha256"] = sha256(rerun_evidence)
 
-    if rerun_evidence != dict(reviewed_evidence):
+    rerun_normalized = json.loads(json.dumps(rerun_evidence))
+    reviewed_normalized = json.loads(json.dumps(dict(reviewed_evidence)))
+    if rerun_normalized != reviewed_normalized:
         raise ScorecardPublicationError(
             "Apply recomputation differs from reviewed evidence — do not publish"
         )
