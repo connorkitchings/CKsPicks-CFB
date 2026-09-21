@@ -1,10 +1,10 @@
 # V5 Foundation-Blocker Diagnosis
 
-- **Status:** Draft
+- **Status:** Implemented
 - **Created:** 2026-09-20
 - **Planner:** Sol
-- **Approval source:** Pending; this contract does not authorize diagnosis or cloud access.
-- **Implementation log:** Pending; create `session_logs/YYYY-MM-DD/NN-v5-foundation-blocker-diagnosis.md` when explicitly authorized.
+- **Approval source:** User explicitly approved during the 2026-09-20 planning session with "Approve Contract 02 now — both lanes are ready to go."
+- **Implementation log:** `session_logs/2026-09-21/02-v5-foundation-blocker-diagnosis.md`
 - **Commit policy:** Separate diagnostic-code/report checkpoint; user controls Git operations.
 
 ## Goal
@@ -236,14 +236,14 @@ implemented diagnosis.
 
 ## Definition of Done
 
-- [ ] Exact evidence binding passes before diagnosis.
-- [ ] All 81 keys are reconstructed, classified, and reconciled to a complete
+- [x] Exact evidence binding passes before diagnosis.
+- [x] All 81 keys are reconstructed, classified, and reconciled to a complete
   digest.
-- [ ] Independent Repair-verifier design and import boundary are proven on
+- [x] Independent Repair-verifier design and import boundary are proven on
   bounded fixtures.
-- [ ] A signed read-only diagnosis/report and lineage impact graph are available.
-- [ ] One decision-complete corrective execution contract is proposed.
-- [ ] No findings are closed and no mutable state changes occur.
+- [x] A signed read-only diagnosis/report and lineage impact graph are available.
+- [x] One decision-complete corrective execution contract is proposed.
+- [x] No findings are closed and no mutable state changes occur.
 
 ## Amendments
 

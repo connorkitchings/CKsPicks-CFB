@@ -1,11 +1,11 @@
 # V5-12A: Conditional Historical Scorecard
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-19
 - **Planner:** Sol
-- **Approval source:** User explicitly authorized this exact Contract 12A plan with “PLEASE IMPLEMENT THIS PLAN” on 2026-09-19.
+- **Approval source:** User explicitly authorized this exact Contract 12A plan with "PLEASE IMPLEMENT THIS PLAN" on 2026-09-19.
 - **Planning log:** `session_logs/2026-09-19/03-v5-12a-conditional-historical-scorecard-planning.md`
-- **Implementation log:** Pending; create `session_logs/YYYY-MM-DD/NN-v5-12a-conditional-historical-scorecard.md` in the fresh Terra implementation task.
+- **Implementation log:** `session_logs/2026-09-21/01-v5-12a-conditional-historical-scorecard.md`
 - **Commit policy:** Separate scorecard-code and Preview-evidence/report checkpoints; user controls Git operations.
 
 ## Goal and entry gate
