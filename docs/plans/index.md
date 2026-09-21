@@ -97,8 +97,23 @@ unmet data dependency.
 | 02: [Foundation-blocker diagnosis](2026-09-20/02-v5-foundation-blocker-diagnosis.md) | **Implemented 2026-09-21.** Read-only diagnosis of Findings 001/003 completed: Repair finals 100% verified; Finding 003 classified across 5 causes in measurement layer; independent Repair verifier boundary specified; report published. |
 | 01 (Corrective): [Foundation corrective rebuild](2026-09-21/01-v5-foundation-corrective-rebuild.md) | **Implemented 2026-09-21.** Independent Repair verifier v3 implemented with zero producer imports (Finding 001 closed); measurement scoring extraction fixes implemented, published, and independently verified in `r9` with 0 excess score-ledger keys (Finding 003 closed). |
 | 02 (Market study): [2025 market-line diagnostic study](2026-09-21/02-v5-2025-market-line-diagnostic-study.md) | **Implemented 2026-09-21.** Run `market-diagnostic-2025-v1-20260921` (manifest SHA `e879b6b4...`): 762/762 intersection per target; conditional V5 trails provider-recorded lines on margin (ΔMAE −2.32) and total (ΔMAE −0.91). Labeled `diagnostic_comparison_only`; no readiness effect. Report: `docs/research/2026-09-21-v5-2025-market-line-diagnostic-report.md`. |
-| 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Draft.** Full forecast-eligibility closure starts after 10B resolves forecast findings; it restores 04/04B only after every reconstruction check passes. |
+| 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Approved 2026-09-21 (Amendment 2).** Full forecast-eligibility closure executes via the 11B/11C/11D decomposition below on the r9 descendant line; it restores 04/04B only after every reconstruction check passes. |
 | 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Draft.** Final review starts after 10B, successful 11A/12A, and required blocker closure; full 11 remains required before eligibility or 2026 re-review. It issues the only readiness recommendation. |
+
+### V5-11 execution decomposition (2026-09-21)
+
+Approved 2026-09-21 as the full-lane Contract 11 execution path on the
+certified r9 descendant line. Each sub-contract runs as its own Terra task
+with phased user commits; entry gates are sequential (11B → 11C → 11D).
+Findings 002/004 close via signed verification plus targeted check re-runs
+(the 001/003 precedent); a renewed full-corpus audit publication is deferred
+to Contract 12 planning. 11A/12A/10B evidence and the 04B artifact stay frozen.
+
+| Contract | Status and dependency |
+| --- | --- |
+| 11B: [Possession ratings rebuild from r9](2026-09-21/03-v5-11b-possession-ratings-r9-rebuild.md) | **Approved.** Entry: certified r9 measurements. Swap two ratings-layer pins, re-run the 60-candidate grid, verify independently; selection may flip and is user-reviewed before 11C. |
+| 11C: [Forecast bridge rebuild and through-2025 final fit](2026-09-21/04-v5-11c-forecast-bridge-and-final-fit.md) | **Approved.** Entry: 11B Implemented + reviewed selection. Re-pin rating parent, recompute all selections from new parents, add the approved same-run final-fit design (`training_max = 2025`). Closes Finding 004 on a targeted check re-run. |
+| 11D: [Forecast verification and findings closure](2026-09-21/05-v5-11d-forecast-verification-and-finding-closure.md) | **Approved.** Entry: 11C Implemented. Re-point reconstruction verifier at new parents, extend to final-fit rows, run the umbrella Task 3 battery, publish signed verification, close 002/004, close umbrella 11. |
 
 ### V5 results-first documentation reset (2026-09-19)
 
