@@ -26,7 +26,7 @@ from cks_picks_cfb.forecast.shadow import (
 
 _MEASUREMENT_URI = (
     "artifacts/research/data-first-football-v1/possession-v1/measurements/runs/"
-    "possession-v1-measurements-20260915-18fb0aa-r6/measurement-manifest.json"
+    "possession-v1-measurements-20260921-r9/measurement-manifest.json"
 )
 _REPAIR_URI = (
     "artifacts/research/data-first-football-v1/repair/v2/runs/"
@@ -112,7 +112,7 @@ def _rating_manifest() -> dict:
             "state": "frozen",
             "identity": {
                 "environment": "preview",
-                "run_id": "possession-v1-ratings-20260917-d029526-cert",
+                "run_id": "possession-v1-ratings-20260921-11d59ee-r9cert",
             },
             "selected_candidate": "ppp__rho_0_60__exposure",
             "production_activation_authorized": False,
