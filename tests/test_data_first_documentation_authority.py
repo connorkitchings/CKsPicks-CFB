@@ -172,7 +172,7 @@ def test_historical_first_contracts_preserve_lifecycle_and_gate_2026_application
             "independently reconstruct",
         ),
         "12-v5-historical-results-and-readiness-review.md": (
-            "status: draft",
+            "status: implemented",
             "not prospective evidence",
         ),
     }

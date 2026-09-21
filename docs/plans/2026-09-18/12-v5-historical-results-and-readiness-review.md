@@ -1,6 +1,6 @@
 # V5-12: Historical Results and Readiness Review
 
-- **Status:** Approved
+- **Status:** Implemented 2026-09-21 (Amendment 2)
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User explicit approval of `implementation_plan.md` ("The user has approved this document")
@@ -43,10 +43,10 @@ calculations with focused tests, source/identity checks, strict MkDocs, and
 
 ## Definition of done and amendments
 
-- [ ] Historical report has all required target, slice, coverage, and exclusion data.
-- [ ] Comparisons are either point-in-time comparable or explicitly unavailable.
-- [ ] Recommendation separates historical readiness from 2026 authority.
-- [ ] Explicit user acceptance is recorded before any re-review of 07-09.
+- [x] Historical report has all required target, slice, coverage, and exclusion data.
+- [x] Comparisons are either point-in-time comparable or explicitly unavailable.
+- [x] Recommendation separates historical readiness from 2026 authority.
+- [x] Explicit user acceptance is recorded before any re-review of 07-09.
 
 Changes to metrics, gates, design, or later application scope require an
 approved amendment or a separate contract.

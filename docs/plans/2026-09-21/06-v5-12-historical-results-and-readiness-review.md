@@ -1,6 +1,6 @@
 # V5-12: Historical Results and Readiness Review Execution Contract
 
-- **Status:** In Progress
+- **Status:** Implemented 2026-09-21
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User explicit approval of `implementation_plan.md` ("The user has approved this document")
@@ -184,12 +184,12 @@ Contract 12 implements a dedicated, independent review module and CLI runner tha
 
 ## Definition of Done
 
-- [ ] `final_historical_scorecard.py` implemented with fail-closed 11D entry gate and first-principles metric calculations.
-- [ ] `run_v5_historical_readiness_review.py` implemented with `preflight`, `apply`, and `verify`.
-- [ ] Unit tests pass in `tests/test_final_historical_scorecard.py` (and full suite passes).
-- [ ] Scorecard artifact and signed manifest published to Preview R2 under `historical-scorecards/full-v1/runs/<run-id>/`.
-- [ ] Idempotent repeat check passes (`already_applied`).
-- [ ] Storage verification check passes (`verified: true`).
-- [ ] Research report published at `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`.
-- [ ] Umbrella Contract 12, roadmap, and plans index updated.
-- [ ] Implementation session log documented.
+- [x] `final_historical_scorecard.py` implemented with fail-closed 11D entry gate and first-principles metric calculations.
+- [x] `run_v5_historical_readiness_review.py` implemented with `preflight`, `apply`, and `verify`.
+- [x] Unit tests pass in `tests/test_final_historical_scorecard.py` (and full suite passes).
+- [x] Scorecard artifact and signed manifest published to Preview R2 under `historical-scorecards/full-v1/runs/<run-id>/`.
+- [x] Idempotent repeat check passes (`already_applied`).
+- [x] Storage verification check passes (`verified: true`).
+- [x] Research report published at `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`.
+- [x] Umbrella Contract 12, roadmap, and plans index updated.
+- [x] Implementation session log documented.
