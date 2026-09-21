@@ -45,6 +45,7 @@ _OTHER_UNIT = (
     "safety",
     "return",
 )
+_DEAD_MARKERS = ("timeout", "end of", "period end", "game end", "delay of game")
 _TRY_MARKERS = ("two point", "2-point", "extra point", "conversion")
 _BROKEN_SCORE_REASONS = {
     "missing_or_nonfinite_score",
@@ -197,7 +198,11 @@ def _require(frame: pd.DataFrame, required: set[str], label: str) -> None:
 
 
 def _reconstruct_ledgers(
-    *, byplay: pd.DataFrame, population: pd.DataFrame, progress: ProgressCallback | None
+    *,
+    byplay: pd.DataFrame,
+    population: pd.DataFrame,
+    outcomes: pd.DataFrame | None = None,
+    progress: ProgressCallback | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     plays = _canonicalize_teams(byplay)
     _require(
@@ -308,6 +313,35 @@ def _reconstruct_ledgers(
             rows=len(possessions),
         )
 
+    final_score_lookup: dict[tuple[int, int, str], float] = {}
+    pop_scores = population
+    if outcomes is not None and "home_points" not in population.columns:
+        score_cols = [
+            c
+            for c in ("season", "game_id", "home_points", "away_points")
+            if c in outcomes.columns
+        ]
+        if "home_points" in score_cols and "away_points" in score_cols:
+            pop_scores = population.merge(
+                outcomes[score_cols].drop_duplicates(["season", "game_id"]),
+                on=["season", "game_id"],
+                how="left",
+            )
+    for prow in pop_scores.itertuples(index=False):
+        if getattr(prow, "outcome_valid", False):
+            s = int(prow.season)
+            g = int(prow.game_id)
+            if hasattr(prow, "home_team") and hasattr(prow, "home_points"):
+                if pd.notna(prow.home_points):
+                    final_score_lookup[(s, g, str(prow.home_team))] = float(
+                        prow.home_points
+                    )
+            if hasattr(prow, "away_team") and hasattr(prow, "away_points"):
+                if pd.notna(prow.away_points):
+                    final_score_lookup[(s, g, str(prow.away_team))] = float(
+                        prow.away_points
+                    )
+
     event_rows: list[dict[str, Any]] = []
     score_state: dict[tuple[int, int, str], float] = {}
     last_scoring_event: dict[tuple[int, int, str], str] = {}
@@ -316,6 +350,8 @@ def _reconstruct_ledgers(
     for index, play in enumerate(plays.itertuples(index=False), start=1):
         if progress is not None and index % 10_000 == 0:
             progress("ledger_reconstruction", completed=index, total=total, rows=index)
+        if _contains(play.play_type, _DEAD_MARKERS):
+            continue
         source_event_id = _event_key(play)
         for team, reported_score in (
             (str(play.offense), play.offense_score),
@@ -326,11 +362,37 @@ def _reconstruct_ledgers(
                 continue
             score = _finite_number(reported_score)
             prior_score = score_state.get(stream_key, 0.0)
+
+            # Score regression handling
+            if (
+                score is not None
+                and score >= 0
+                and score == int(score)
+                and score < prior_score
+            ):
+                excess = int(prior_score - score)
+                for item in reversed(event_rows):
+                    if (item["season"], item["game_id"], item["team"]) == stream_key and item[
+                        "score_increment"
+                    ] > 0:
+                        inc = item["score_increment"]
+                        if inc <= excess:
+                            excess -= inc
+                            item["score_increment"] = 0
+                            item["quality_reason"] = "score_regression_rollback"
+                        else:
+                            item["score_increment"] -= excess
+                            excess = 0
+                        if excess == 0:
+                            break
+                score_state[stream_key] = score
+                continue
+
             reason = (
                 "missing_or_nonfinite_score"
                 if score is None
                 else "score_regression_or_nonintegral"
-                if score < 0 or score < prior_score or score != int(score)
+                if score < 0 or score != int(score)
                 else "impossible_score_increment"
                 if score - prior_score > 8
                 else None
@@ -355,8 +417,37 @@ def _reconstruct_ledgers(
                 )
                 broken_streams.add(stream_key)
                 continue
-            score_state[stream_key] = score
+
             increment = score - prior_score
+            if increment == 0:
+                continue
+
+            final_score = final_score_lookup.get(stream_key)
+            if final_score is not None and prior_score + increment > final_score:
+                rem = max(0.0, final_score - prior_score)
+                if rem == 0.0:
+                    event_rows.append(
+                        {
+                            "season": int(play.season),
+                            "game_id": int(play.game_id),
+                            "source_event_id": source_event_id,
+                            "team": team,
+                            "drive_number": int(play.drive_number),
+                            "period_class": _period_class(play.quarter),
+                            "score_increment": 0,
+                            "scoring_category": "unresolved",
+                            "unit_category": "unknown",
+                            "associated_possession_id": None,
+                            "conversion_for_event_id": None,
+                            "quality_reason": "exceeds_repaired_final",
+                            "timing_class": RECONSTRUCTED_TIMING,
+                        }
+                    )
+                    continue
+                increment = rem
+                score = prior_score + increment
+
+            score_state[stream_key] = score
             if increment == 0:
                 continue
             period = _period_class(play.quarter)
@@ -563,7 +654,10 @@ def reconstruct_measurements(
 ) -> IndependentMeasurements:
     """Independently derive team-game possession measurements and paired defense."""
     plays, possessions, scoring = _reconstruct_ledgers(
-        byplay=byplay, population=population, progress=progress
+        byplay=byplay,
+        population=population,
+        outcomes=outcomes,
+        progress=progress,
     )
     if progress is not None:
         progress(
