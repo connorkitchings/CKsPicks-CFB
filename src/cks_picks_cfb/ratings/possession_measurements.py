@@ -237,6 +237,22 @@ def build_possession_ledger(
             rows=len(possessions),
         )
 
+    final_score_lookup: dict[tuple[int, int, str], float] = {}
+    for prow in population.itertuples(index=False):
+        if getattr(prow, "outcome_valid", False):
+            s = int(prow.season)
+            g = int(prow.game_id)
+            if hasattr(prow, "home_team") and hasattr(prow, "home_points"):
+                if pd.notna(prow.home_points):
+                    final_score_lookup[(s, g, str(prow.home_team))] = float(
+                        prow.home_points
+                    )
+            if hasattr(prow, "away_team") and hasattr(prow, "away_points"):
+                if pd.notna(prow.away_points):
+                    final_score_lookup[(s, g, str(prow.away_team))] = float(
+                        prow.away_points
+                    )
+
     events: list[dict[str, Any]] = []
     active_event: dict[tuple[int, int, str], str] = {}
     prior_scores: dict[tuple[int, int, str], float] = {}
@@ -244,6 +260,8 @@ def build_possession_ledger(
     for index, row in enumerate(plays.itertuples(index=False), start=1):
         if progress is not None and index % 10_000 == 0:
             progress("ledger", completed=index, total=len(plays), rows=index)
+        if _dead_play(row.play_type):
+            continue
         event_id = _source_id(row)
         for team, score in (
             (str(row.offense), row.offense_score),
@@ -254,11 +272,38 @@ def build_possession_ledger(
                 continue
             current = _num(score)
             previous = prior_scores.get(key, 0.0)
+
+            # Score regression handling: provider reverted an erroneous score increment.
+            # Roll back the preceding excess points from events for this key so the ledger reflects current.
+            if (
+                current is not None
+                and current >= 0
+                and current == int(current)
+                and current < previous
+            ):
+                excess = int(previous - current)
+                for item in reversed(events):
+                    if (item["season"], item["game_id"], item["team"]) == key and item[
+                        "score_increment"
+                    ] > 0:
+                        inc = item["score_increment"]
+                        if inc <= excess:
+                            excess -= inc
+                            item["score_increment"] = 0
+                            item["quality_reason"] = "score_regression_rollback"
+                        else:
+                            item["score_increment"] -= excess
+                            excess = 0
+                        if excess == 0:
+                            break
+                prior_scores[key] = current
+                continue
+
             malformed_reason = (
                 "missing_or_nonfinite_score"
                 if current is None
                 else "score_regression_or_nonintegral"
-                if current < 0 or current < previous or current != int(current)
+                if current < 0 or current != int(current)
                 else "impossible_score_increment"
                 if current - previous > 8
                 else None
@@ -286,8 +331,38 @@ def build_possession_ledger(
                 )
                 malformed_scores.add(key)
                 continue
-            prior_scores[key] = current
+
             increment = current - previous
+            if increment == 0:
+                continue
+
+            # Cap increment against verified repaired final score so ledger never exceeds final score
+            final_score = final_score_lookup.get(key)
+            if final_score is not None and previous + increment > final_score:
+                rem = max(0.0, final_score - previous)
+                if rem == 0.0:
+                    events.append(
+                        {
+                            "season": int(row.season),
+                            "game_id": int(row.game_id),
+                            "source_event_id": event_id,
+                            "team": team,
+                            "drive_number": int(row.drive_number),
+                            "period_class": _period(row.quarter),
+                            "score_increment": 0,
+                            "scoring_category": "unresolved",
+                            "unit_category": "unknown",
+                            "associated_possession_id": None,
+                            "conversion_for_event_id": None,
+                            "quality_reason": "exceeds_repaired_final",
+                            "timing_class": "historically_reconstructed",
+                        }
+                    )
+                    continue
+                increment = rem
+                current = previous + increment
+
+            prior_scores[key] = current
             if increment == 0:
                 continue
             period_class = _period(row.quarter)
