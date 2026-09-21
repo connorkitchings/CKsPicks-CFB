@@ -1,6 +1,6 @@
 # V5-12A: Conditional Historical Scorecard
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-19
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact Contract 12A plan with "PLEASE IMPLEMENT THIS PLAN" on 2026-09-19.
@@ -109,13 +109,13 @@ clear any blocker or replace the full audit and final review.
 
 ## Definition of done and amendments
 
-- [ ] A successful, exact-hash Contract 11A record is independently re-read.
-- [ ] Required V5-only metrics are present for 2025, 2022–2024, and 2022–2025.
-- [ ] Signed Preview evidence and readable report name all frozen identities and
+- [x] A successful, exact-hash Contract 11A record is independently re-read.
+- [x] Required V5-only metrics are present for 2025, 2022–2024, and 2022–2025.
+- [x] Signed Preview evidence and readable report name all frozen identities and
   limitations.
-- [ ] No V4 comparison, readiness recommendation, 2026 action, or scorecard is
+- [x] No V4 comparison, readiness recommendation, 2026 action, or scorecard is
   emitted after a failed 11A verification.
-- [ ] Focused tests, full warnings-as-errors suite, Ruff, strict MkDocs,
+- [x] Focused tests, full warnings-as-errors suite, Ruff, strict MkDocs,
   contracts checks, and `git diff --check` pass.
 
 Contract 12 remains the only historical-readiness review. Changes to metrics,
