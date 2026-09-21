@@ -26,6 +26,13 @@ FEATURES = (
     "venue_unknown",
 )
 
+# Sentinel season marking through-development-window final-fit rows. There is
+# no held-out validation season for a final fit, and 2026 must never appear as
+# a season label; 0 is outside every development/forbidden/outer registry and
+# keeps the integer schema contracts intact. The full training window is
+# recorded explicitly in each final row's training_seasons.
+FINAL_FIT_SEASON = 0
+
 
 @dataclass(frozen=True)
 class HeadComputation:
@@ -292,3 +299,67 @@ def evaluate_heads(
         models=model_frame,
         retained=retained,
     )
+
+
+def fit_final(
+    frame: pd.DataFrame,
+    *,
+    target: str,
+    head: str,
+    development_seasons: tuple[int, ...],
+    alpha_grid: tuple[float, ...],
+    floor: float,
+) -> dict[str, object]:
+    """Fit the retained head recipe on the full development window.
+
+    There is no test season and no prediction emitted: the final fit is a
+    through-window model recipe for downstream use, recorded as a single
+    ``forecast_model`` row with ``outer_season == FINAL_FIT_SEASON``.  Alpha
+    follows the head recipe: ``reference`` uses fixed 10.0, ``challenger``
+    re-runs inner-alpha selection over the full window.  A proof Ridge fit on
+    the training window must succeed (fail closed otherwise); its in-sample
+    outputs are discarded and never persisted or calibrated.
+    """
+    if head not in ("reference", "challenger"):
+        raise HeadError(f"final fit has an unknown head: {head!r}")
+    if target not in ("margin", "total"):
+        raise HeadError(f"final fit has an unknown target: {target!r}")
+    required = {
+        "season",
+        "actual_margin",
+        "actual_total",
+        "offset_margin",
+        "offset_total",
+        *FEATURES,
+    }
+    if missing := sorted(required - set(frame)):
+        raise HeadError(f"final-fit frame lacks columns: {missing}")
+    if set(development_seasons) & {FINAL_FIT_SEASON}:
+        raise HeadError("final-fit training window contains the sentinel season")
+    clean = (
+        frame.replace([np.inf, -np.inf], np.nan).dropna(subset=list(required)).copy()
+    )
+    train = clean[clean["season"].isin(tuple(development_seasons))].copy()
+    if train.empty:
+        raise HeadError("final fit has no training rows on the development window")
+    if head == "reference":
+        alpha, inner_fallback = 10.0, False
+    else:
+        alpha, inner_fallback = select_inner_alpha(
+            train,
+            target=target,
+            seasons=tuple(development_seasons),
+            alpha_grid=alpha_grid,
+            floor=floor,
+        )
+    try:
+        _fit_one(train, train, target=target, alpha=alpha, floor=floor)
+    except (HeadError, ValueError) as exc:
+        raise HeadError(f"final fit failed on the full window: {target}") from exc
+    return {
+        "target": target,
+        "head": head,
+        "alpha": float(alpha),
+        "training_seasons": tuple(int(season) for season in development_seasons),
+        "inner_fallback": bool(inner_fallback),
+    }

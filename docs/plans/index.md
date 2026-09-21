@@ -112,7 +112,7 @@ to Contract 12 planning. 11A/12A/10B evidence and the 04B artifact stay frozen.
 | Contract | Status and dependency |
 | --- | --- |
 | 11B: [Possession ratings rebuild from r9](2026-09-21/03-v5-11b-possession-ratings-r9-rebuild.md) | **Implemented 2026-09-21.** Run `possession-v1-ratings-20260921-11d59ee-r9cert` (manifest SHA `2f1cdc5f...`, verifier `85d1ae64...`): 60/60 candidates ok, retained `ppp__rho_0_60__exposure` (no flip from r6), 8,935 eligible games, independently verified + idempotent repeat. Sole eligible rating parent for 11C. |
-| 11C: [Forecast bridge rebuild and through-2025 final fit](2026-09-21/04-v5-11c-forecast-bridge-and-final-fit.md) | **Approved.** Entry: 11B Implemented + reviewed selection. Re-pin rating parent, recompute all selections from new parents, add the approved same-run final-fit design (`training_max = 2025`). Closes Finding 004 on a targeted check re-run. |
+| 11C: [Forecast bridge rebuild and through-2025 final fit](2026-09-21/04-v5-11c-forecast-bridge-and-final-fit.md) | **In Progress.** Entry: 11B Implemented + reviewed selection. Re-pin rating parent, recompute all selections from new parents, add the approved same-run final-fit design (`training_max = 2025`). Closes Finding 004 on a targeted check re-run. |
 | 11D: [Forecast verification and findings closure](2026-09-21/05-v5-11d-forecast-verification-and-finding-closure.md) | **Approved.** Entry: 11C Implemented. Re-point reconstruction verifier at new parents, extend to final-fit rows, run the umbrella Task 3 battery, publish signed verification, close 002/004, close umbrella 11. |
 
 ### V5 results-first documentation reset (2026-09-19)

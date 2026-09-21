@@ -1,10 +1,10 @@
 # V5-11C: Forecast Bridge Rebuild and Through-2025 Final Fit
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); final-fit design (same run, recipe refit, alpha policy, 2025 calibration carry-forward) confirmed by structured decision the same day.
-- **Implementation log:** Pending; create `session_logs/2026-09-21/NN-v5-11c-forecast-bridge-and-final-fit.md` when a fresh Terra task executes this contract.
+- **Implementation log:** `session_logs/2026-09-21/08-v5-11c-forecast-bridge-and-final-fit.md`
 - **Commit policy:** Separate commits — schema/pin checkpoint, then evidence checkpoints per phase. User controls Git operations.
 
 ## Goal

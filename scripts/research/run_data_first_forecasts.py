@@ -56,7 +56,7 @@ from cks_picks_cfb.data.lake import (
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.forecast.calibration import calibrate_uncertainty
-from cks_picks_cfb.forecast.heads import evaluate_heads
+from cks_picks_cfb.forecast.heads import FINAL_FIT_SEASON, evaluate_heads, fit_final
 from cks_picks_cfb.forecast.horizons import select_horizon
 from cks_picks_cfb.forecast.offsets import build_offsets
 from cks_picks_cfb.ratings.possession_rating_materializer import (
@@ -614,6 +614,23 @@ def apply(
     )
     predictions = retained[selected_horizon].copy()
     models = computations[selected_horizon].models.copy()
+    final_models, final_calibration = _final_fit_outputs(
+        features,
+        calibration.records,
+        horizon=selected_horizon,
+        retained=computations[selected_horizon].retained,
+        development_seasons=tuple(config["development_seasons"]),
+        alpha_grid=tuple(bridge["alpha_grid"]),
+        floor=float(bridge["scaling_floor"]),
+    )
+    progress.emit(
+        "final_fit_complete",
+        rows=int(len(final_models) + len(final_calibration)),
+    )
+    models = pd.concat([models, final_models], ignore_index=True)
+    calibration_records = pd.concat(
+        [calibration.records, final_calibration], ignore_index=True
+    )
     registry = pd.DataFrame.from_records(
         [
             {
@@ -653,7 +670,7 @@ def apply(
             ("season", "week"),
         ),
         "forecast_calibration": (
-            calibration.records,
+            calibration_records,
             FORECAST_CALIBRATION_COLUMNS,
             (),
         ),
@@ -664,8 +681,14 @@ def apply(
         dataset, schema = FORECAST_DATASETS[name]
         validate_frame(frame, schema_for(dataset, schema))
         if name in PARTITIONED_DATASETS and keys:
-            for partition_values, group in frame.groupby(list(keys), sort=True, dropna=False):
-                partition_values = partition_values if isinstance(partition_values, tuple) else (partition_values,)
+            for partition_values, group in frame.groupby(
+                list(keys), sort=True, dropna=False
+            ):
+                partition_values = (
+                    partition_values
+                    if isinstance(partition_values, tuple)
+                    else (partition_values,)
+                )
                 partition = {
                     key: value.item() if hasattr(value, "item") else value
                     for key, value in zip(keys, partition_values, strict=True)
@@ -723,32 +746,34 @@ def apply(
             "row_count": write.row_count,
         }
 
-    head_recipes = {
-        target: {
-            "head": computations[selected_horizon].retained[target],
+    validation_models = models[models["outer_season"] != FINAL_FIT_SEASON]
+    final_rows = models[models["outer_season"] == FINAL_FIT_SEASON]
+    head_recipes = {}
+    for target in ("margin", "total"):
+        retained_head = computations[selected_horizon].retained[target]
+        challenger_rows = validation_models[
+            (validation_models["target"] == target)
+            & (validation_models["head"] == "challenger")
+            & validation_models["retained"].astype(bool)
+        ]
+        final_row = final_rows[final_rows["target"] == target]
+        if final_row.empty:
+            raise ForecastRunError(f"final fit is missing for {target!r}")
+        head_recipes[target] = {
+            "head": retained_head,
             "alpha": 10.0
-            if computations[selected_horizon].retained[target] == "reference"
-            else float(
-                models[
-                    (models["target"] == target)
-                    & (models["head"] == "challenger")
-                    & models["retained"].astype(bool)
-                ]["alpha"].iloc[0]
-            )
-            if not models[
-                (models["target"] == target)
-                & (models["head"] == "challenger")
-                & models["retained"].astype(bool)
-            ].empty
+            if retained_head == "reference"
+            else float(challenger_rows["alpha"].iloc[0])
+            if not challenger_rows.empty
             else 10.0,
+            "final_alpha": float(final_row["alpha"].iloc[0]),
+            "final_training_seasons": str(final_row["training_seasons"].iloc[0]),
         }
-        for target in ("margin", "total")
-    }
     calibration_summary = {
         "records_sha": canonical_frame_digest(
-            calibration.records, columns=tuple(calibration.records.columns)
+            calibration_records, columns=tuple(calibration_records.columns)
         ),
-        "row_count": len(calibration.records),
+        "row_count": len(calibration_records),
         "by_target": {
             target: {int(season): variance for season, variance in seasons.items()}
             for target, seasons in calibration.variances.items()
@@ -1051,6 +1076,84 @@ def _horizon_populations(computations: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _final_fit_outputs(
+    features: pd.DataFrame,
+    calibration_records: pd.DataFrame,
+    *,
+    horizon: str,
+    retained: Mapping[str, str],
+    development_seasons: tuple[int, ...],
+    alpha_grid: tuple[float, ...],
+    floor: float,
+    calibration_source_season: int = 2025,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Build through-window final-fit model and calibration rows (Contract 11C).
+
+    One ``forecast_model`` row per target with ``outer_season == 0``
+    (``FINAL_FIT_SEASON``: no validation season exists for a final fit) trained
+    on every development season, plus one ``forecast_calibration`` row per
+    target carrying the design's latest rolling-origin variance.  No
+    predictions are emitted.  Fail closed when the carried calibration entry
+    is a fallback or missing.
+    """
+    model_rows: list[dict[str, object]] = []
+    calibration_rows: list[dict[str, object]] = []
+    for target in ("margin", "total"):
+        recipe = fit_final(
+            features,
+            target=target,
+            head=retained[target],
+            development_seasons=tuple(development_seasons),
+            alpha_grid=tuple(alpha_grid),
+            floor=float(floor),
+        )
+        model_rows.append(
+            {
+                "horizon": horizon,
+                "target": target,
+                "outer_season": FINAL_FIT_SEASON,
+                "head": recipe["head"],
+                "alpha": recipe["alpha"],
+                "training_seasons": ",".join(map(str, recipe["training_seasons"])),
+                "inner_fallback": recipe["inner_fallback"],
+                "retained": True,
+                "fallback_reason": "insufficient_inner_fold"
+                if recipe["inner_fallback"]
+                else None,
+            }
+        )
+        source = calibration_records[
+            (calibration_records["target"] == target)
+            & (calibration_records["season"] == calibration_source_season)
+        ]
+        if source.empty:
+            raise ForecastRunError(
+                f"final fit has no {calibration_source_season} calibration entry "
+                f"for {target!r}"
+            )
+        entry = source.iloc[0]
+        if (
+            str(entry["fallback_reason"] or "") != ""
+            or int(entry["residual_count"]) <= 0
+        ):
+            raise ForecastRunError(
+                f"final fit cannot carry a fallback calibration entry for {target!r}"
+            )
+        calibration_rows.append(
+            {
+                "target": target,
+                "season": FINAL_FIT_SEASON,
+                "residual_count": int(entry["residual_count"]),
+                "variance": float(entry["variance"]),
+                "fallback_reason": "",
+            }
+        )
+    return (
+        pd.DataFrame.from_records(model_rows),
+        pd.DataFrame.from_records(calibration_rows),
+    )
+
+
 def preflight(
     *, storage: Any, args: argparse.Namespace, progress: _Progress
 ) -> dict[str, Any]:
@@ -1179,6 +1282,23 @@ def preflight(
     progress.emit("calibration_complete", rows=len(calibration.records))
     predictions = retained[selected_horizon].copy()
     models = computations[selected_horizon].models.copy()
+    final_models, final_calibration = _final_fit_outputs(
+        features,
+        calibration.records,
+        horizon=selected_horizon,
+        retained=computations[selected_horizon].retained,
+        development_seasons=tuple(config["development_seasons"]),
+        alpha_grid=tuple(bridge["alpha_grid"]),
+        floor=float(bridge["scaling_floor"]),
+    )
+    progress.emit(
+        "final_fit_complete",
+        rows=int(len(final_models) + len(final_calibration)),
+    )
+    models = pd.concat([models, final_models], ignore_index=True)
+    calibration_records = pd.concat(
+        [calibration.records, final_calibration], ignore_index=True
+    )
     registry = pd.DataFrame.from_records(
         [
             {
@@ -1223,7 +1343,7 @@ def preflight(
             ("season", "week"),
         ),
         "forecast_calibration": (
-            calibration.records,
+            calibration_records,
             FORECAST_CALIBRATION_COLUMNS,
             (),
         ),
@@ -1264,9 +1384,9 @@ def preflight(
         },
         "calibration": {
             "records_sha": canonical_frame_digest(
-                calibration.records, columns=tuple(calibration.records.columns)
+                calibration_records, columns=tuple(calibration_records.columns)
             ),
-            "row_count": len(calibration.records),
+            "row_count": len(calibration_records),
             "by_target": {
                 target: {int(season): variance for season, variance in seasons.items()}
                 for target, seasons in calibration.variances.items()

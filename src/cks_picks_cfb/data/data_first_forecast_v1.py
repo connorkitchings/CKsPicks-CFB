@@ -23,10 +23,10 @@ FORECAST_IDENTITY_SCHEMA = "data_first_forecast_identity_v1"
 FORECAST_MANIFEST_SCHEMA = "data_first_forecast_manifest_v1"
 FORECAST_MANIFEST_NAME = "forecast-manifest.json"
 FORECAST_OUTPUT_ROOT = "artifacts/research/data-first-football-v1/forecasts/runs"
-REQUIRED_RATING_RUN_ID = "possession-v1-ratings-20260917-d029526-cert"
+REQUIRED_RATING_RUN_ID = "possession-v1-ratings-20260921-11d59ee-r9cert"
 REQUIRED_RATING_MANIFEST_URI = (
     "artifacts/research/data-first-football-v1/possession-v1/ratings/runs/"
-    "possession-v1-ratings-20260917-d029526-cert/retained-rating-manifest.json"
+    "possession-v1-ratings-20260921-11d59ee-r9cert/retained-rating-manifest.json"
 )
 REQUIRED_RATING_CANDIDATE = "ppp__rho_0_60__exposure"
 REQUIRED_REPORTING_SEASONS = (2018, 2019, 2021)

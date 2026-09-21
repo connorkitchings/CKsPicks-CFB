@@ -41,7 +41,7 @@ _RUNNER_SPEC.loader.exec_module(runner)
 
 _MEASUREMENT_URI = (
     "artifacts/research/data-first-football-v1/possession-v1/measurements/runs/"
-    "possession-v1-measurements-20260915-18fb0aa-r6/measurement-manifest.json"
+    "possession-v1-measurements-20260921-r9/measurement-manifest.json"
 )
 _REPAIR_URI = (
     "artifacts/research/data-first-football-v1/repair/v2/runs/"
@@ -274,7 +274,7 @@ def _rating_manifest() -> dict:
             "state": "frozen",
             "identity": {
                 "environment": "preview",
-                "run_id": "possession-v1-ratings-20260917-d029526-cert",
+                "run_id": "possession-v1-ratings-20260921-11d59ee-r9cert",
             },
             "selected_candidate": "ppp__rho_0_60__exposure",
             "production_activation_authorized": False,
@@ -694,3 +694,180 @@ def test_calibration_summary_matches_plan_records():
             variance = result.variances[target][season]
             assert isinstance(variance, float)
             assert variance >= 1e-6
+
+
+def test_fit_final_reference_uses_fixed_alpha_and_full_window():
+    """Reference final fit pins alpha 10.0 over the full development window."""
+    from cks_picks_cfb.forecast.heads import fit_final
+
+    frame = _head_frame()
+    window = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023)
+    recipe = fit_final(
+        frame,
+        target="margin",
+        head="reference",
+        development_seasons=window,
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    assert recipe == {
+        "target": "margin",
+        "head": "reference",
+        "alpha": 10.0,
+        "training_seasons": window,
+        "inner_fallback": False,
+    }
+
+
+def test_fit_final_challenger_selects_alpha_deterministically():
+    """Challenger final fit re-runs inner-alpha on the full window."""
+    from cks_picks_cfb.forecast.heads import fit_final
+
+    frame = _head_frame()
+    window = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023)
+    first = fit_final(
+        frame,
+        target="total",
+        head="challenger",
+        development_seasons=window,
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    second = fit_final(
+        frame,
+        target="total",
+        head="challenger",
+        development_seasons=window,
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+    )
+    assert first == second
+    assert first["alpha"] in (0.1, 1.0, 10.0, 100.0)
+    assert first["training_seasons"] == window
+    assert isinstance(first["inner_fallback"], bool)
+
+
+def test_fit_final_rejects_bad_inputs():
+    """Unknown heads/targets, empty windows, and sentinel seasons fail closed."""
+    from cks_picks_cfb.forecast.heads import FINAL_FIT_SEASON, HeadError, fit_final
+
+    frame = _head_frame()
+    window = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023)
+    with pytest.raises(HeadError, match="unknown head"):
+        fit_final(
+            frame,
+            target="margin",
+            head="oracle",
+            development_seasons=window,
+            alpha_grid=(10.0,),
+            floor=0.05,
+        )
+    with pytest.raises(HeadError, match="unknown target"):
+        fit_final(
+            frame,
+            target="spread",
+            head="reference",
+            development_seasons=window,
+            alpha_grid=(10.0,),
+            floor=0.05,
+        )
+    with pytest.raises(HeadError, match="no training rows"):
+        fit_final(
+            frame,
+            target="margin",
+            head="reference",
+            development_seasons=(2030,),
+            alpha_grid=(10.0,),
+            floor=0.05,
+        )
+    with pytest.raises(HeadError, match="sentinel"):
+        fit_final(
+            frame,
+            target="margin",
+            head="reference",
+            development_seasons=(2015, FINAL_FIT_SEASON),
+            alpha_grid=(10.0,),
+            floor=0.05,
+        )
+
+
+def _calibration_records_fixture(*, fallback: bool = False) -> pd.DataFrame:
+    rows = []
+    for target in ("margin", "total"):
+        rows.append(
+            {
+                "target": target,
+                "season": 2024,
+                "residual_count": 500,
+                "variance": 200.0,
+                "fallback_reason": "",
+            }
+        )
+        rows.append(
+            {
+                "target": target,
+                "season": 2025,
+                "residual_count": 0 if fallback else 600,
+                "variance": 1e-6 if fallback else 210.0,
+                "fallback_reason": "no_valid_residuals" if fallback else "",
+            }
+        )
+    return pd.DataFrame.from_records(rows)
+
+
+def test_final_fit_outputs_carry_2025_variance_and_pass_schema():
+    """Final model/calibration rows assemble with sentinel season and validate."""
+    from cks_picks_cfb.data.schema_contracts import validate_frame
+    from cks_picks_cfb.forecast.heads import FINAL_FIT_SEASON
+
+    frame = _head_frame()
+    window = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023)
+    models, calibration = runner._final_fit_outputs(
+        frame,
+        _calibration_records_fixture(),
+        horizon="expanding",
+        retained={"margin": "reference", "total": "reference"},
+        development_seasons=window,
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+        calibration_source_season=2025,
+    )
+    assert len(models) == 2 and len(calibration) == 2
+    assert set(models["outer_season"].tolist()) == {FINAL_FIT_SEASON}
+    assert set(calibration["season"].tolist()) == {FINAL_FIT_SEASON}
+    assert bool(models["retained"].all())
+    assert models["training_seasons"].tolist() == [",".join(map(str, window))] * 2
+    assert calibration["variance"].tolist() == [210.0, 210.0]
+    assert calibration["fallback_reason"].tolist() == ["", ""]
+    validate_frame(
+        models,
+        schema_for(*forecast_contracts.FORECAST_DATASETS["forecast_model"]),
+    )
+    validate_frame(
+        calibration,
+        schema_for(*forecast_contracts.FORECAST_DATASETS["forecast_calibration"]),
+    )
+
+
+def test_final_fit_outputs_reject_fallback_or_missing_calibration():
+    """Fallback or absent 2025 calibration entries fail closed."""
+    frame = _head_frame()
+    window = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023)
+    kwargs = dict(
+        horizon="expanding",
+        retained={"margin": "reference", "total": "reference"},
+        development_seasons=window,
+        alpha_grid=(0.1, 1.0, 10.0, 100.0),
+        floor=0.05,
+        calibration_source_season=2025,
+    )
+    with pytest.raises(runner.ForecastRunError, match="fallback"):
+        runner._final_fit_outputs(
+            frame, _calibration_records_fixture(fallback=True), **kwargs
+        )
+    with pytest.raises(runner.ForecastRunError, match="no 2025"):
+        runner._final_fit_outputs(
+            frame,
+            _calibration_records_fixture().query("season != 2025"),
+            **kwargs,
+        )
