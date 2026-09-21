@@ -1,11 +1,12 @@
 # V5-11: Forecast Verification Closure
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** Original: pending. Decomposition authorized by the user on 2026-09-21 ("Ok, let's plan out the final steps of phase 11. Let's do it all"); executes via sub-contracts 11B/11C/11D (`docs/plans/2026-09-21/03-`, `04-`, `05-`).
-- **Implementation log:** `session_logs/2026-09-21/06-v5-contract-11-decomposition-planning.md` (planning); per-sub-contract Terra logs on execution.
+- **Implementation log:** `session_logs/2026-09-21/06-v5-contract-11-decomposition-planning.md` (planning); `session_logs/2026-09-21/07-v5-11b-ratings-r9-rebuild.md`, `08-v5-11c-forecast-bridge-and-final-fit.md`, `09-v5-11d-forecast-verification-and-finding-closure.md` (execution).
 - **Commit policy:** Separate code and certified-evidence checkpoints; user controls Git operations.
+- **Closure record (2026-09-21):** Findings 002/004 closed. Finding 002: signed Preview verification record `artifacts/research/data-first-football-v1/forecasts/runs/forecast-v1-20260921-5afd577-11c/verification/verifier-manifest.json` (raw SHA `4cfe5ef8...`) reconstructing all six outputs including final-fit rows bit-exactly. Finding 004: targeted `corpus.forecast.final_fit_existence` pass (`max_training_season=2025`) on the 11C artifact. Contracts 04/04B return to Implemented via this decomposition; the original 04B artifact remains frozen historical evidence.
 
 ## Goal and entry gate
 

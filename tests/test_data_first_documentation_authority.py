@@ -168,7 +168,7 @@ def test_historical_first_contracts_preserve_lifecycle_and_gate_2026_application
             "audit the complete v5 foundation",
         ),
         "11-v5-forecast-verification-closure.md": (
-            "status: approved",
+            "status: implemented",
             "independently reconstruct",
         ),
         "12-v5-historical-results-and-readiness-review.md": (
@@ -257,8 +257,8 @@ def test_forecast_lifecycle_keeps_historical_artifact_but_reopens_eligibility():
     certification = (
         ROOT / "docs/plans/2026-09-17/02-v5-forecast-calibration-and-certification.md"
     ).read_text()
-    assert "**Status:** In Progress" in umbrella
-    assert "**Status:** In Progress" in certification
+    assert "**Status:** Implemented" in umbrella
+    assert "**Status:** Implemented" in certification
     for content in (umbrella, certification, ROADMAP.read_text()):
         plain = _plain(content)
         assert "historical evidence" in plain

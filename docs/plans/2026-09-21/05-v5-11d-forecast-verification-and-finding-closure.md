@@ -1,6 +1,6 @@
 # V5-11D: Forecast Verification and Findings Closure
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); targeted-closure vehicle (no renewed full audit) confirmed by structured decision the same day.
@@ -173,12 +173,12 @@ targeted evidence (no harness edits, no full re-audit, no catalog writes).
 
 ## Definition of Done
 
-- [ ] 11C is Implemented and its artifact is the only accepted target.
-- [ ] All outputs including final-fit rows independently reconstructed.
-- [ ] Negative and positive reconstruction tests pass.
-- [ ] Signed verification evidence records the exact result and artifact use.
-- [ ] Findings 002/004 closed with recorded dispositions; umbrella 11 Implemented.
-- [ ] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
+- [x] 11C is Implemented and its artifact is the only accepted target.
+- [x] All outputs including final-fit rows independently reconstructed.
+- [x] Negative and positive reconstruction tests pass.
+- [x] Signed verification evidence records the exact result and artifact use.
+- [x] Findings 002/004 closed with recorded dispositions; umbrella 11 Implemented.
+- [x] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
 
 ## Amendments
 

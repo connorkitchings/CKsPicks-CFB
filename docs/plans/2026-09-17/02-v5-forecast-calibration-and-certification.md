@@ -1,11 +1,12 @@
 # V5-04B: Uncertainty Calibration, Candidate Freeze, and Artifact Certification
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-17
 - **Planner:** Sol planning task
 - **Approval source:** User approved this execution decomposition on 2026-09-17.
 - **Implementation log:** `session_logs/2026-09-17/07-v5-04b-calibration-and-certification.md`.
 - **Commit policy:** Separate calibration/verifier code commit and certified-evidence documentation commit; user executes Git.
+- **Resolution (2026-09-21):** Returned to Implemented via umbrella Contract 11, closed through the 11B/11C/11D decomposition with independent reconstruction of all outputs on the r9 descendant line. The September 17 artifact remains frozen historical evidence. It is not an eligible forecast parent; eligibility lives only on the independently verified r9 descendant line.
 
 ## Goal
 

@@ -1,11 +1,12 @@
 # V5-04: Forecast Bridge, Fitting Window, and Candidate Freeze
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User selected bridge-first forecasting, a bounded older-data comparison, optional later arithmetic, and approved the package with "Implement the proposed plan." on 2026-09-13.
 - **Implementation log:** `session_logs/2026-09-17/04-v5-04a-hardening-and-preflight.md`, `session_logs/2026-09-17/07-v5-04b-calibration-and-certification.md`, `session_logs/2026-09-17/08-v5-04b-certification-execution.md`.
 - **Commit policy:** Separate code and frozen-evidence checkpoints; user executes Git.
+- **Resolution (2026-09-21):** Returned to Implemented via umbrella Contract 11 (`docs/plans/2026-09-18/11-v5-forecast-verification-closure.md`), closed through the 11B/11C/11D decomposition on the r9 descendant line. The September 13/17 artifacts remain frozen historical evidence.
 
 ## Goal, current state, and entry gate
 
