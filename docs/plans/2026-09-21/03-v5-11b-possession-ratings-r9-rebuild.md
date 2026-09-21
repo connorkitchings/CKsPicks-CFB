@@ -1,6 +1,6 @@
 # V5-11B: Possession Ratings Rebuild from r9 Measurements
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-21
 - **Planner:** Sol
 - **Approval source:** User authorized the full Contract 11 decomposition on 2026-09-21 ("Let's do it all"); final-fit design and targeted-closure vehicle confirmed by structured decision the same day.
@@ -141,11 +141,11 @@ manifest) is resolved from R2 during implementation and pinned in code.
 
 ## Definition of Done
 
-- [ ] r9 pins resolve from R2 and are the only accepted measurement identity.
-- [ ] New `-r9cert` run completes preflight/apply/verify/repeat in Preview.
-- [ ] Retained candidate recorded with selection evidence; user has reviewed it.
-- [ ] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
-- [ ] This contract and `docs/plans/index.md` updated to `Implemented`.
+- [x] r9 pins resolve from R2 and are the only accepted measurement identity.
+- [x] New `-r9cert` run completes preflight/apply/verify/repeat in Preview.
+- [x] Retained candidate recorded with selection evidence; user has reviewed it.
+- [x] Tests, ruff, contracts validation, strict MkDocs, `git diff --check` pass.
+- [x] This contract and `docs/plans/index.md` updated to `Implemented`.
 
 ## Amendments
 

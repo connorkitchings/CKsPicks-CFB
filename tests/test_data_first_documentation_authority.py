@@ -168,7 +168,7 @@ def test_historical_first_contracts_preserve_lifecycle_and_gate_2026_application
             "audit the complete v5 foundation",
         ),
         "11-v5-forecast-verification-closure.md": (
-            "status: draft",
+            "status: approved",
             "independently reconstruct",
         ),
         "12-v5-historical-results-and-readiness-review.md": (
