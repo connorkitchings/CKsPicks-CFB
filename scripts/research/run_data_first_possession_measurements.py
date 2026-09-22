@@ -646,6 +646,9 @@ def apply(
     repair: Mapping[str, Any],
     identity: Mapping[str, Any],
     expected: PreflightEvidence,
+    scope: str = "historical",
+    expected_rows: int | None = None,
+    expected_eligible: int | None = None,
     progress: ResearchProgress | None = None,
 ) -> dict[str, Any]:
     prefix = f"{POSSESSION_OUTPUT_ROOT}/{run_id}"
@@ -685,6 +688,9 @@ def apply(
         storage=storage,
         repair=repair,
         identity=identity,
+        scope=scope,
+        expected_rows=expected_rows,
+        expected_eligible=expected_eligible,
         writers=writers,
         progress=progress,
     )
@@ -850,6 +856,9 @@ def main(argv: list[str] | None = None) -> None:
                 plans=result.plans,
                 certification_sha256=result.certification["manifest_sha256"],
             ),
+            scope=scope,
+            expected_rows=expected_rows,
+            expected_eligible=expected_eligible,
             progress=progress,
         )
         summary |= {
