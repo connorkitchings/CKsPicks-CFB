@@ -520,7 +520,8 @@ def test_repair_runner_2026_silver_pins_match_verified_versions() -> None:
     assert SEASON_2026_SILVER_INPUTS["game_outcomes"]["version_id"].startswith(
         "669856aa"
     )
-    assert SEASON_2026_SILVER_INPUTS["byplay"]["version_id"].startswith("4d463206")
+    assert SEASON_2026_SILVER_INPUTS["byplay"]["version_id"].startswith("7a79eb05")
+    assert SEASON_2026_SILVER_INPUTS["byplay"]["dataset"] == "byplay"
     assert SEASON_2026_SILVER_INPUTS["team_games"]["version_id"].startswith("2f58910d")
     assert EXTENSION_2026_SEASONS == (2026,)
     assert 2020 in FORBIDDEN_SEASONS

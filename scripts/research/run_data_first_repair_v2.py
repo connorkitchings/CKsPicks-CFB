@@ -112,11 +112,11 @@ SEASON_2026_SILVER_INPUTS = {
         "uri": "lake/silver/dataset=game_outcomes/version=669856aa8ebddabfd5cd8ff4/data.parquet",
     },
     "byplay": {
-        "dataset": "plays",
-        "version_id": "4d4632065618d8c02fcdcae3",
-        "schema_version": "plays_v1",
-        "content_sha": "6484a7f964bdc1ac18d1406b5597fc2f28661bfb4b0ee1fc07c9e4b86d4a4efb",
-        "uri": "lake/silver/dataset=plays/version=4d4632065618d8c02fcdcae3/data.parquet",
+        "dataset": "byplay",
+        "version_id": "7a79eb05d0912a490cbeeaa2",
+        "schema_version": "byplay_v1",
+        "content_sha": "40af053e1106a9cabe542a652b2e521d01c57e783200d97c0eb42b4cd84905fa",
+        "uri": "lake/silver/dataset=byplay/version=7a79eb05d0912a490cbeeaa2/data.parquet",
     },
     "team_games": {
         "dataset": "reconciled_team_game",
