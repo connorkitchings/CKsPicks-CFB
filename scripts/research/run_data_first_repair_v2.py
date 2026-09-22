@@ -946,6 +946,7 @@ def _build_dataset(
     identity: Mapping[str, Any],
     as_of: datetime,
     seasons: tuple[int, ...] = DEVELOPMENT_SEASONS,
+    register: bool = True,
 ) -> DatasetRef:
     validation = validate_frame(frame, schema_for(dataset, schema))
     ref, manifest = build_dataset_version(
@@ -968,7 +969,8 @@ def _build_dataset(
         },
         validation=validation,
     )
-    register_dataset_version(conn_url, ref, manifest)
+    if register:
+        register_dataset_version(conn_url, ref, manifest)
     return ref
 
 
@@ -1171,6 +1173,11 @@ def main(argv: list[str] | None = None) -> None:
         parents = (
             season_2026_parents if scope == "season_2026" else details["core_refs"]
         )
+        # The 2026 extension writes R2 only (measurement-runner precedent): the
+        # Preview catalog registry rejects same-name schema drift by design, and
+        # the amended schemas (live timing admitted) must not disturb the sealed
+        # historical registrations. Lineage lives in the repair manifest.
+        register_datasets = scope != "season_2026"
         source_ids = tuple(
             sorted(
                 {
@@ -1192,6 +1199,7 @@ def main(argv: list[str] | None = None) -> None:
                 identity=identity,
                 as_of=as_of,
                 seasons=dataset_seasons,
+                register=register_datasets,
             ),
             "auxiliary": _build_dataset(
                 storage,
@@ -1204,6 +1212,7 @@ def main(argv: list[str] | None = None) -> None:
                 identity=identity,
                 as_of=as_of,
                 seasons=dataset_seasons,
+                register=register_datasets,
             ),
             "coverage": _build_dataset(
                 storage,
@@ -1216,6 +1225,7 @@ def main(argv: list[str] | None = None) -> None:
                 identity=identity,
                 as_of=as_of,
                 seasons=dataset_seasons,
+                register=register_datasets,
             ),
             "issues": _build_dataset(
                 storage,
@@ -1228,6 +1238,7 @@ def main(argv: list[str] | None = None) -> None:
                 identity=identity,
                 as_of=as_of,
                 seasons=dataset_seasons,
+                register=register_datasets,
             ),
             "capture_plan": _build_dataset(
                 storage,
@@ -1240,6 +1251,7 @@ def main(argv: list[str] | None = None) -> None:
                 identity=identity,
                 as_of=as_of,
                 seasons=dataset_seasons,
+                register=register_datasets,
             ),
         }
         output_refs = {name: asdict(ref) for name, ref in refs.items()}
