@@ -185,7 +185,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Weeks 0-2 scored (Week 2 closed 2026-09-13, 49 games); Week 3 published `2026w3-68fe6a815bd6` (57/57/56) 2026-09-13, freeze pending before Thu kickoff
+**Status:** 🏈 Season live — Weeks 0-2 scored; Week 3 `2026w3-68fe6a815bd6` frozen; Week 4 published (active run `2026w4-da5d98761831`, serving state verified 2026-09-22)
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -238,18 +238,27 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `docs/plans/2026-09-10/phase3-v2-compact-tournament-state.md` (run
   `phase3-v2-compact-state-20260910-r2`, selection `quality_core_epa_split`,
   independently verified and idempotently rerun on 2026-09-11).
-  It is benchmark evidence. **V5 historical-first checkpoint (2026-09-20):**
-  R6 possession measurements and the retained rating artifact are historical
-  evidence. The V5 historical work now has two lanes: Contract 11A is
-  Implemented and Contract 12A is Approved in the conditional-results lane;
-  11A independently reconstructed the frozen artifact and 12A may publish a
-  V5-only scorecard with permitted use `conditional_historical_results_only`.
-  The full lane has completed Contract 10B, which published four open blockers;
-  it now requires diagnosis/corrective closure of Findings 001/003 before full
-  Contract 11. Conditional results do
-  not restore forecast eligibility, authorize 2026 work, or replace the final
-  Contract 11/12 readiness gates. V5 ratings successor is distinct from V4 feature schema v5;
-  contract 01 is the independent diagnostic closure. September 8 Phase 4A–6
+  It is benchmark evidence. **V5 checkpoint (2026-09-22):** the historical lane
+  is complete and accepted. All four 10B blockers are closed on the corrected
+  lineage — Repair v2 (verifier v3), measurements
+  `possession-v1-measurements-20260921-r9` (superseding the R6
+  `possession-v1-measurements-20260915-18fb0aa-r6` historical evidence), ratings
+  `possession-v1-ratings-20260921-11d59ee-r9cert` (no selection flip:
+  `ppp__rho_0_60__exposure`), forecast bridge
+  `forecast-v1-20260921-5afd577-11c` with through-2025 final fit (11D verifier
+  `4cfe5ef8…`). Contract 12 issued
+  `accepted_for_prospective_evaluation` (`readiness-v1-20260921-scorecard`)
+  and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
+  re-reviewed against the corrected parents with deferrals lifted under
+  `docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`;
+  the authorized sequence is 07 (Repair-2026 + 2026 measurements) → 08
+  (rating replay) → 09 (final-fit forecasts + readiness `ready` on the Week 5
+  slate, ~Oct 1) → 06 (first freeze T−2h; six qualifying slates W5–W10
+  target). Conditional results remain `conditional_historical_results_only`.
+  V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not
+  confirmed (pooled W1+W2 shadow spread 38.46% < 45%), predictions
+  value-identical on all 100 games. V5 ratings successor is distinct from V4
+  feature schema v5. September 8 Phase 4A–6
   contracts are Superseded by the V5 package; only explicitly inherited mathematics
   carry forward. The first release uses a rating-to-margin/total Ridge bridge;
   possession arithmetic is a later challenger. Polls/direct models and O2

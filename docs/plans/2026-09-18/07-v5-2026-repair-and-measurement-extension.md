@@ -1,6 +1,6 @@
 # V5-07: 2026 Repair and Possession Measurement Extension
 
-- **Status:** Approved
+- **Status:** Approved — re-reviewed 2026-09-22 (Amendment 1); deferral lifted, execution authorized
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
@@ -10,11 +10,12 @@
 ## Goal, current state, and entry gate
 
 Extend the certified V5 measurement lineage to live 2026 data so downstream
-rating replay (08) and forecasting (09) have eligible parents. The certified R6
-parent `possession-v1-measurements-20260915-18fb0aa-r6` covers only 2015–2019
-and 2021–2025; readiness for any 2026 slate resolves `schedule` as `missing`
-("no schedule rows for 2026"), and Contract 06 cannot collect evidence until
-this chain exists. The [common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+rating replay (08) and forecasting (09) have eligible parents. The certified
+measurement parent `possession-v1-measurements-20260921-r9` (Amendment 1;
+supersedes R6 `possession-v1-measurements-20260915-18fb0aa-r6`) covers only
+2015–2019 and 2021–2025; readiness for any 2026 slate resolves `schedule` as
+`missing` ("no schedule rows for 2026"), and Contract 06 cannot collect
+evidence until this chain exists. The [common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is binding.
 
 **Entry gate:** Preview 2026 Silver is synced through the latest completed week
@@ -36,7 +37,19 @@ They do not close Contracts 10-12, restore forecast eligibility, establish
 prospective evidence, or satisfy this contract's explicit-user-acceptance and
 re-reviewed-application gate.
 
-There are no 2026 measurement rows at planning time. Historical R6 rows are not
+**Re-review record (2026-09-22):** The deferral gates are satisfied — Contracts
+10, 11, and 12 are Implemented, and the user explicitly accepted the Contract 12
+historical readiness recommendation on 2026-09-22
+(`docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`;
+scorecard run `readiness-v1-20260921-scorecard`, manifest SHA
+`a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`).
+Contracts 07–09 were re-reviewed under
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+the historical-first deferral is **lifted** and execution is authorized against
+the corrected certified lineage (Amendment 1). The first Contract 06 slate
+target is Week 5 (~Thu Oct 1 first kickoff).
+
+There are no 2026 measurement rows at planning time. Historical r9 rows are not
 modified, re-certified, or inherited as 2026 evidence.
 
 ## Approach, scope, and interfaces
@@ -55,7 +68,7 @@ certified Repair v2 manifest as the historical anchor. Output versioned
 No Neon/production/web writes.
 
 The 2026 measurement manifest becomes the sole eligible measurement parent for
-Contract 08. The historical R6 manifest remains the sole eligible parent for
+Contract 08. The historical r9 manifest remains the sole eligible parent for
 historical replay; neither substitutes for the other.
 
 ## Implementation tasks
@@ -69,7 +82,7 @@ V4 weekly pipeline already records these), distinct from
 allow-lists so 2026 datasets accept `live` while every historical dataset
 continues to require `historically_reconstructed`. Extend season validation so
 a 2026 measurement config accepts 2026 in addition to the development seasons;
-2020 remains forbidden everywhere; the historical R6 config and its
+2020 remains forbidden everywhere; the historical r9 config and its
 8936/8935 population reconciliation counts are untouched.
 
 **Acceptance:** Authority tests pass with both timing classes admitted in
@@ -86,7 +99,9 @@ anchored on the certified Repair v2 manifest
 (`repair-v2-20260909T1417Z`) as the historical parent. Reuse the Repair v2
 capture and reconciliation logic; bind the exact 2026 Silver input refs
 (games, outcomes, plays) in the run manifest. New run-ID; independent
-verification of population, sources, and reconciliation; idempotent repeat.
+verification of population, sources, and reconciliation (using the corrected
+independent Repair verifier v3 per the Finding 001 closure — zero producer
+imports); idempotent repeat.
 
 **Acceptance:** Certified Repair-2026 manifest in Preview R2 with exact input
 refs, passing preflight/apply/verify/repeat; historical Repair v2 artifact
@@ -100,7 +115,8 @@ idempotent repeat; R2 inventory confined to the Preview research prefix.
 Execute the possession measurement pipeline against the certified Repair-2026
 parent for the full 2026 season (Week 0 through latest completed week) under
 a new versioned config (2026 seasons pinned, `live` timing, same adjustment
-procedure, floors, fallbacks, and exposure settings as R6). Full
+procedure, floors, fallbacks, and exposure settings **as r9**, including the
+corrected 4-part scoring extraction that closed Finding 003). Full
 preflight/apply/independent-verify/idempotent-repeat cycle in Preview; terminal
 `measurement-manifest.json` published last with
 `production_activation_authorized: false`.
@@ -133,10 +149,48 @@ run-IDs, reconciliation counts) requires explicit amendment per layer.
 - [ ] `live` timing admitted with historical guarantees intact; authority tests pass.
 - [ ] Certified Repair-2026 manifest in Preview (preflight/apply/verify/repeat).
 - [ ] Certified 2026 measurement manifest in Preview (preflight/apply/verify/repeat).
-- [ ] Historical R6 and Repair v2 artifacts byte-identical and untouched.
+- [ ] Historical r9 and Repair v2 artifacts byte-identical and untouched.
 - [ ] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
 - [ ] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
 
 Follow the common amendment process for timing, season, population, or
 procedure changes. While 2026 measurement certification is incomplete, leave
 this contract In Progress and Contract 08 unstarted.
+
+## Amendments
+
+### Amendment 1 — Re-reviewed lineage and lifted deferral (Sol, 2026-09-22)
+
+**Reason:** The historical-first lane completed 2026-09-21 — all four 10B
+blocker findings closed on the corrected lineage — and Contract 12 issued
+`accepted_for_prospective_evaluation`, which the user explicitly accepted on
+2026-09-22. The 2026-09-18 deferral required re-review against the corrected
+certified artifacts before any execution.
+
+**Original approach:** This contract bound the certified measurement parent to
+R6 (`possession-v1-measurements-20260915-18fb0aa-r6`), required 2026
+measurement settings "as R6", deferred Repair-2026 verification to the then-
+current verifier, and deferred all execution behind Contracts 10–12, explicit
+user acceptance, and re-review.
+
+**Revised approach:** The certified measurement parent is
+`possession-v1-measurements-20260921-r9` (certification SHA
+`fc26a3d03416e688dc437ad863653dfac7df6faad51b478a7b94f466c0d870c3`;
+re-materialized 2026-09-21 with the corrected 4-part scoring extraction;
+zero score-ledger excess keys across all 10 seasons). The 2026 measurement run
+uses the same adjustment procedure, floors, fallbacks, exposure settings, and
+corrected scoring extraction **as r9**. Repair-2026 independent verification
+uses the corrected independent Repair verifier (v3) per the Finding 001
+closure (zero producer imports); the historical anchor
+`repair-v2-20260909T1417Z` is unchanged. The historical-first deferral is
+lifted; execution is authorized. All other guarantees are unchanged: 2020
+forbidden everywhere, `live` timing scoped to 2026 rows only with historical
+reconstructed-only requirements intact, `production_activation_authorized:
+false`, no Neon/production/web writes.
+
+**Impact:** No design, scope, or acceptance-criteria change; parent identities
+and the verification requirement are re-pointed to the corrected certified
+lineage with no selection or procedure change (r9 settings are R6's settings
+plus the corrected scoring extraction). Re-review authority and the authorized
+execution sequence:
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).

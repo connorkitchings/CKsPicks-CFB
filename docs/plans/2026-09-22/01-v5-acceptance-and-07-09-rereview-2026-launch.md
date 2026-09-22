@@ -1,10 +1,10 @@
 # V5: Contract 12 Acceptance and 07–09 Re-Review for the 2026 Extension
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-22
 - **Planner:** Sol
 - **Approval source:** User approved this plan and its sequencing decisions in the 2026-09-22 planning session ("proceed"): (1) Contract 12 historical readiness review accepted 2026-09-22; (2) Contract 01 executes first; (3) due weekly V4 ops (Week 3 close, Week 4 prepare/publish/freeze) fold in as the Contract 07 entry-gate prerequisite; (4) first Contract 06 slate target is Week 5 (~Thu Oct 1 first kickoff), not Week 4.
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v5-acceptance-and-07-09-rereview.md`.
+- **Implementation log:** `session_logs/2026-09-22/03-v5-acceptance-and-07-09-rereview.md`
 - **Commit policy:** Separate plan commit; user executes Git.
 
 ## Goal
@@ -284,14 +284,14 @@ product code, no new unit tests, no R2/Neon writes.
 
 ## Definition of Done
 
-- [ ] Contract 12 acceptance recorded with date, approver, and citations.
-- [ ] Contracts 07/08/09 amended with corrected parents, final-fit application
+- [x] Contract 12 acceptance recorded with date, approver, and citations.
+- [x] Contracts 07/08/09 amended with corrected parents, final-fit application
       (09), dated deferral lifts, and unchanged guarantees.
-- [ ] Index, roadmap, and AGENTS.md checkpoint reflect the post-acceptance
+- [x] Index, roadmap, and AGENTS.md checkpoint reflect the post-acceptance
       state and authorized execution sequence.
-- [ ] `uv run python contracts/validation.py`, strict MkDocs, documentation
+- [x] `uv run python contracts/validation.py`, strict MkDocs, documentation
       tests, and `git diff --check` pass.
-- [ ] Implementation session log created; this contract marked Implemented.
+- [x] Implementation session log created; this contract marked Implemented.
 
 ## Amendments
 

@@ -1,6 +1,6 @@
 # V5-08: 2026 Rating-State Replay
 
-- **Status:** Approved
+- **Status:** Approved — re-reviewed 2026-09-22 (Amendment 1); deferral lifted, execution authorized
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
@@ -19,8 +19,9 @@ is binding.
 
 **Entry gate:** Contract 07 Implemented with a certified 2026 measurement
 manifest recorded as the sole eligible 08 parent. This contract starts only
-when that manifest exists in Preview R2. The historical 03 retained manifest
-(`possession-v1-ratings-20260917-d029526-cert`) and its selection stay
+when that manifest exists in Preview R2. The historical certified rating
+identity is `possession-v1-ratings-20260921-11d59ee-r9cert` (Amendment 1;
+supersedes `possession-v1-ratings-20260917-d029526-cert`); its selection stays
 frozen and untouched.
 
 **Historical-first deferral (2026-09-18):** Do not execute this approved
@@ -35,6 +36,18 @@ development evidence only.
 They do not close Contracts 10-12, restore forecast eligibility, establish
 prospective evidence, or satisfy this contract's explicit-user-acceptance and
 re-reviewed-application gate.
+
+**Re-review record (2026-09-22):** The deferral gates are satisfied — Contracts
+10, 11, and 12 are Implemented, and the user explicitly accepted the Contract 12
+historical readiness recommendation on 2026-09-22
+(`docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`;
+scorecard run `readiness-v1-20260921-scorecard`, manifest SHA
+`a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`).
+Contracts 07–09 were re-reviewed under
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+the historical-first deferral is **lifted** and execution is authorized against
+the corrected certified lineage (Amendment 1). The first Contract 06 slate
+target is Week 5 (~Thu Oct 1 first kickoff).
 
 There are no 2026 team states at planning time. Historical rating states are
 not modified, re-selected, or inherited as 2026 evidence.
@@ -56,7 +69,8 @@ marked as a replay (not a selection) with
 `production_activation_authorized: false`. No Neon/production/web writes.
 
 The 2026 rating manifest becomes the sole eligible rating parent for
-Contract 09. The historical 03 retained manifest remains the sole eligible
+Contract 09. The historical 11B retained manifest
+(`possession-v1-ratings-20260921-11d59ee-r9cert`) remains the sole eligible
 parent for historical replay; neither substitutes for the other.
 
 ## Implementation tasks
@@ -131,10 +145,46 @@ advance states on partial outcomes. Sealed 03 code (candidate registry,
 - [ ] 2026 priors assembled with exact input refs; nothing fitted on 2026 outcomes.
 - [ ] Certified 2026 rating replay manifest in Preview (preflight/apply/verify/repeat).
 - [ ] Continuous 2026 state history from Week 0; readiness `team_states` source resolvable.
-- [ ] Historical 03 retained manifest and selection byte-identical and untouched.
+- [ ] Historical rating artifacts (`possession-v1-ratings-20260921-11d59ee-r9cert` certified; superseded `possession-v1-ratings-20260917-d029526-cert`) byte-identical, selection untouched.
 - [ ] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
 - [ ] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
 
 Follow the common amendment process for prior, updater, timing, or replay
 changes. While 2026 replay certification is incomplete, leave this contract
 In Progress and Contract 09 unstarted.
+
+## Amendments
+
+### Amendment 1 — Re-reviewed lineage and lifted deferral (Sol, 2026-09-22)
+
+**Reason:** The historical-first lane completed 2026-09-21 and the user
+explicitly accepted the Contract 12 recommendation on 2026-09-22. The
+2026-09-18 deferral required re-review against the corrected certified
+artifacts — frozen design, eligible artifacts, through-2025 final
+fit/calibration, selected-prior inputs, and timestamp provenance — before any
+execution.
+
+**Original approach:** This contract bound the frozen winner's certified
+identity to the 03 retained manifest
+(`possession-v1-ratings-20260917-d029526-cert`, r6-derived) and deferred all
+execution behind Contracts 10–12, explicit user acceptance, and re-review.
+
+**Revised approach:** The frozen winner `ppp__rho_0_60__exposure` is unchanged;
+its certified identity is re-pointed to the r9-derived 11B retained manifest
+`possession-v1-ratings-20260921-11d59ee-r9cert` (manifest SHA
+`2f1cdc5f26743ddd25a01b9a4a1d84ce562ab15bbaa810b15df8e9055c4c3f65`; selected
+`ppp__rho_0_60__exposure` with **no selection flip** versus the r6-derived
+run — recorded in `session_logs/2026-09-21/07-v5-11b-ratings-r9-rebuild.md`).
+The replay consumes the certified 2026 measurement manifest from amended
+Contract 07 (whose settings inherit r9, including the corrected scoring
+extraction). Priors apply the frozen carryover prior structure with 2026
+preseason context; no learned quantity is fitted on any 2026 outcome. The
+historical-first deferral is lifted; execution is authorized. All replay-only
+guarantees are unchanged: no refit, no re-selection, no tuning, sealed 03/11B
+code admits the 2026 replay parent only by explicit amendment,
+`production_activation_authorized: false`, no Neon/production/web writes.
+
+**Impact:** No design, scope, or acceptance-criteria change; the certified
+parent identity is re-pointed with the recorded no-flip evidence. Re-review
+authority and the authorized execution sequence:
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).

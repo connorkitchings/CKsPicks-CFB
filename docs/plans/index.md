@@ -71,19 +71,23 @@ of the rating sequence. No promotion or serving change is authorized.
 | 05B: [Shadow freeze, scoring, and evidence ledger](2026-09-17/05-v5-05b-freeze-score-ledger.md) | **Implemented 2026-09-18.** Certified Preview freeze artifact `shadow-v1-20260918-73e8e9b-05b-freeze` and score artifact `shadow-v1-20260918-7aec1c8-05b-score`: measured freeze, outcome-versioned scoring, evidence counter, idempotent repeat verified. |
 | 05C: [Diagnostic rehearsal, verification, and runbook](2026-09-17/06-v5-05c-rehearsal-verification-runbook.md) | **Implemented.** Certified 2026-09-18 Preview rehearsal `shadow-v1-20260918-6dc87e0-05c`: independent verifier, 7/7-case diagnostic rehearsal with qualifying 0, refreshed `blocked` readiness report, shadow runbook, Contract 06 handoff (still-blocked). |
 
-### V5-07/08/09 2026 extension sequence (2026-09-18)
+### V5-07/08/09 2026 extension sequence (2026-09-18; re-reviewed 2026-09-22)
 
-Approved 2026-09-18 as a possible later application path. Execution is deferred
-until Contracts 10-12 close, the user explicitly accepts historical readiness,
-and 07-09 are re-reviewed against the frozen design and exact eligible artifacts.
-Each contract names its exact entry gate; approval does not satisfy a deferral or
-unmet data dependency.
+Approved 2026-09-18 as a possible later application path. The deferral gates
+were satisfied and the contracts re-reviewed on 2026-09-22 under
+[the Contract 12 acceptance and re-review contract](2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+Contracts 10-12 Implemented, user acceptance recorded, and parents re-pointed
+to the corrected certified lineage (r9 measurements, 11B ratings, 11C forecast
+with through-2025 final fit). Deferrals are lifted; execution is authorized.
+Each contract still names its exact entry gate; approval does not satisfy an
+unmet data dependency, and no run creates prospective evidence by itself.
 
 | Contract | Status and dependency |
 | --- | --- |
-| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved, deferred.** Re-review only after full 10B/11/12 readiness and explicit historical-readiness acceptance; conditional 11A/12A results do not satisfy the gate. |
-| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, deferred.** Requires re-reviewed 07 and frozen historically accepted design; conditional results do not create prospective evidence. |
-| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, deferred.** Requires re-reviewed 07/08 and exact frozen forecast artifact; conditional results and `live` timing alone are not prospective proof. |
+| Re-review: [Contract 12 acceptance and 07–09 re-review for the 2026 extension](2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md) | **Implemented 2026-09-22.** Records the user's Contract 12 acceptance (2026-09-22), re-points 07/08/09 to the corrected certified parents, lifts the deferrals, and authorizes the execution sequence (ops prerequisite → 07 → 08 → W4-finals refresh → 09 → 06 first freeze Week 5). |
+| 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted.** Measurement parent re-pointed R6 → r9 `possession-v1-measurements-20260921-r9` (cert SHA `fc26a3d0...`); 2026 settings inherit r9's corrected 4-part scoring extraction; Repair-2026 independent verification uses Repair verifier v3 (Finding 001 closure); historical anchor `repair-v2-20260909T1417Z` unchanged. Entry gate: Preview 2026 Silver synced through the latest completed week. |
+| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted.** Frozen winner `ppp__rho_0_60__exposure` unchanged; certified identity re-pointed to 11B `possession-v1-ratings-20260921-11d59ee-r9cert` (manifest SHA `2f1cdc5f...`, no selection flip). Replay-only; starts when 07's certified 2026 measurement manifest exists. |
+| 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted.** Bridge re-pointed 04B → 11C `forecast-v1-20260921-5afd577-11c` (11D verified `4cfe5ef8...`, `final_fit_verified: true`); 2026 forecasts apply the through-2025 final-fit heads (alpha-10, expanding) + final calibration; first readiness target is the Week 5 slate (~Oct 1) — a skipped Week 4 slate is expected. Starts when 08's certified 2026 rating manifest exists. |
 
 ### V5 historical-first review sequence (2026-09-18)
 
@@ -98,7 +102,7 @@ unmet data dependency.
 | 01 (Corrective): [Foundation corrective rebuild](2026-09-21/01-v5-foundation-corrective-rebuild.md) | **Implemented 2026-09-21.** Independent Repair verifier v3 implemented with zero producer imports (Finding 001 closed); measurement scoring extraction fixes implemented, published, and independently verified in `r9` with 0 excess score-ledger keys (Finding 003 closed). |
 | 02 (Market study): [2025 market-line diagnostic study](2026-09-21/02-v5-2025-market-line-diagnostic-study.md) | **Implemented 2026-09-21.** Run `market-diagnostic-2025-v1-20260921` (manifest SHA `e879b6b4...`): 762/762 intersection per target; conditional V5 trails provider-recorded lines on margin (ΔMAE −2.32) and total (ΔMAE −0.91). Labeled `diagnostic_comparison_only`; no readiness effect. Report: `docs/research/2026-09-21-v5-2025-market-line-diagnostic-report.md`. |
 | 11: [Forecast verification closure](2026-09-18/11-v5-forecast-verification-closure.md) | **Implemented 2026-09-21 (Amendment 2).** Closed via the 11B/11C/11D decomposition on the r9 line: signed verification manifest SHA `4cfe5ef8...` (Finding 002) + targeted `final_fit_existence` pass with `training_max = 2025` (Finding 004). Full forecast eligibility restored; final Contract 12 is next. |
-| 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Implemented 2026-09-21 (Amendment 2).** Execution complete under [06-v5-12](2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`, canonical `9d966c72...`): verified 7,318 rows with 0 exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report. |
+| 12: [Historical results and readiness review](2026-09-18/12-v5-historical-results-and-readiness-review.md) | **Implemented 2026-09-21 (Amendment 2); user-accepted 2026-09-22.** Execution complete under [06-v5-12](2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`, canonical `9d966c72...`): verified 7,318 rows with 0 exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report; the user explicitly accepted that recommendation on 2026-09-22 (report `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`, scorecard manifest `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`). |
 
 ### V5-11 execution decomposition (2026-09-21)
 
