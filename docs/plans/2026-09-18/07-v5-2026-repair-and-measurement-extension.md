@@ -147,7 +147,7 @@ historical reconstructed-only guarantee. Sealed code (season pins, parent
 run-IDs, reconciliation counts) requires explicit amendment per layer.
 
 - [x] `live` timing admitted with historical guarantees intact; authority tests pass. (2026-09-22: constants, scope branches, seals, verifiers, methodology, 2026 config, input bundle; full suite 1259 passed.)
-- [ ] Certified Repair-2026 manifest in Preview (preflight/apply/verify/repeat).
+- [x] Certified Repair-2026 manifest in Preview (preflight/apply/verify/repeat). (2026-09-22: run `repair-2026-20260922T144500Z`, 157/157/157, verifier-v3 `verified`, repeat refuses; manifest SHA `eeab3cca…`; R2-only per the catalog-drift resolution; Repair v2 byte-identical; zero provider calls, zero catalog writes.)
 - [ ] Certified 2026 measurement manifest in Preview (preflight/apply/verify/repeat).
 - [ ] Historical r9 and Repair v2 artifacts byte-identical and untouched.
 - [ ] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
