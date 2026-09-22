@@ -393,23 +393,38 @@ def _load_core_frames(
 
 def _verify_repair_v2_anchor(storage: Any, uri: str) -> dict[str, Any]:
     """Verify the certified Repair v2 manifest anchoring the 2026 extension."""
-    from cks_picks_cfb.data.data_first_repair_v2 import REPAIR_MANIFEST_SCHEMA
+    from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
+    from cks_picks_cfb.data.data_first_repair_v2 import (
+        DEVELOPMENT_SEASONS,
+        FORBIDDEN_SEASONS,
+        REPAIR_MANIFEST_SCHEMA,
+    )
 
     raw = storage.read_bytes(uri)
     raw_sha = hashlib.sha256(raw).hexdigest()
+    if raw_sha != REQUIRED_REPAIR_RAW_SHA256:
+        raise RepairV2Error("Repair v2 anchor raw checksum is not approved")
     payload = json.loads(raw)
-    verify_parent(
-        payload,
-        raw_sha256=raw_sha,
-        expected_raw_sha256=REQUIRED_REPAIR_RAW_SHA256,
-        expected_manifest_sha256=REQUIRED_REPAIR_CANONICAL_SHA256,
-        schema_version=REPAIR_MANIFEST_SCHEMA,
-        state="repaired_reconstructed_only",
-        label="Repair v2 historical anchor",
-    )
+    if (
+        payload.get("schema_version") != REPAIR_MANIFEST_SCHEMA
+        or payload.get("state") != "repaired_reconstructed_only"
+    ):
+        raise RepairV2Error("Repair v2 anchor schema or state is not approved")
+    try:
+        verify_signed_payload(payload, label="Repair v2 anchor")
+    except ValueError as exc:
+        raise RepairV2Error(str(exc)) from exc
+    if payload.get("manifest_sha256") != REQUIRED_REPAIR_CANONICAL_SHA256:
+        raise RepairV2Error("Repair v2 anchor canonical checksum is not approved")
+    identity = dict(payload.get("identity") or {})
+    if (
+        tuple(identity.get("development_seasons") or ()) != tuple(DEVELOPMENT_SEASONS)
+        or tuple(identity.get("forbidden_seasons") or ()) != tuple(FORBIDDEN_SEASONS)
+    ):
+        raise RepairV2Error("Repair v2 anchor season set changed")
     if (
         payload.get("production_activation_authorized") is not False
-        or (payload.get("identity") or {}).get("environment") != "preview"
+        or identity.get("environment") != "preview"
     ):
         raise RepairV2Error("Repair v2 anchor is not eligible Preview evidence")
     return payload
