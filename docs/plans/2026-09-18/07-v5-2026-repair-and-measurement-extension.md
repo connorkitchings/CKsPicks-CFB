@@ -1,6 +1,6 @@
 # V5-07: 2026 Repair and Possession Measurement Extension
 
-- **Status:** In Progress — Task 1 Implemented 2026-09-22; Tasks 2–3 pending
+- **Status:** Implemented 2026-09-22 (all tasks complete; sole eligible 08 parent recorded below)
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
@@ -148,10 +148,10 @@ run-IDs, reconciliation counts) requires explicit amendment per layer.
 
 - [x] `live` timing admitted with historical guarantees intact; authority tests pass. (2026-09-22: constants, scope branches, seals, verifiers, methodology, 2026 config, input bundle; full suite 1259 passed.)
 - [x] Certified Repair-2026 manifest in Preview (preflight/apply/verify/repeat). (2026-09-22: run `repair-2026-20260922T144500Z`, 157/157/157, verifier-v3 `verified`, repeat refuses; manifest SHA `eeab3cca…`; R2-only per the catalog-drift resolution; Repair v2 byte-identical; zero provider calls, zero catalog writes.)
-- [ ] Certified 2026 measurement manifest in Preview (preflight/apply/verify/repeat).
-- [ ] Historical r9 and Repair v2 artifacts byte-identical and untouched.
-- [ ] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
-- [ ] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
+- [x] Certified 2026 measurement manifest in Preview (preflight/apply/verify/repeat). (2026-09-22: run `possession-v1-measurements-20260922-2026c`, manifest SHA `ec96fe51…`, 8 datasets, population 157 across W0–W3 all live; independently verified end-to-end; repeat `already_applied`. Sole eligible 08 parent.)
+- [x] Historical r9 and Repair v2 artifacts byte-identical and untouched.
+- [x] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
+- [x] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
 
 Follow the common amendment process for timing, season, population, or
 procedure changes. While 2026 measurement certification is incomplete, leave

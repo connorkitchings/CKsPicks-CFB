@@ -152,7 +152,11 @@ lifted with execution authorized. Authorized sequence:
    publish was observed in serving state 2026-09-22; confirm the close and
    prepare steps completed before 07 executes.)
 3. Execute 07: `live` timing amendment + 2026 season validation → Repair-2026
-   (verifier v3) → 2026 possession measurements W0–W3.
+   (verifier v3) → 2026 possession measurements W0–W3. **Implemented 2026-09-22:**
+   Repair-2026 `repair-2026-20260922T145500Z` (157/157/157, verified) +
+   measurements `possession-v1-measurements-20260922-2026c` (manifest
+   `ec96fe51…`, 8 datasets, all live, verified, `already_applied`; sole
+   eligible 08 parent).
 4. Execute 08: 2026 priors (zero 2026-outcome fitting) → replay W0–W3 →
    independent verification.
 5. After Week 4 finals stabilize (~Sep 28), re-run 07/08 through W4 under new
