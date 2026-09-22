@@ -202,6 +202,17 @@ class DatasetSchemaError(ValueError):
     """Raised when a frame does not satisfy its published schema contract."""
 
 
+RECONSTRUCTED_TIMING_CLASS = "historically_reconstructed"
+LIVE_TIMING_CLASS = "live"
+# Timing admission is scoped by the producer/validator layer, not by this
+# registry alone: historical datasets require reconstructed rows, while the
+# Repair-2026 and 2026 possession runs admit live rows on their own eight
+# (repair population/auxiliary/coverage) plus eight (possession) datasets.
+# Every other registry below stays reconstructed-only.
+RECONSTRUCTED_ONLY_TIMING = (RECONSTRUCTED_TIMING_CLASS,)
+RECONSTRUCTED_OR_LIVE_TIMING = (RECONSTRUCTED_TIMING_CLASS, LIVE_TIMING_CLASS)
+
+
 @dataclass(frozen=True)
 class DatasetSchema:
     dataset: str
@@ -600,7 +611,7 @@ _REPAIR_V2_SCHEMAS: dict[str, DatasetSchema] = {
             "disposition",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     REPAIR_AUXILIARY_DATASET: DatasetSchema(
         dataset=REPAIR_AUXILIARY_DATASET,
@@ -624,7 +635,7 @@ _REPAIR_V2_SCHEMAS: dict[str, DatasetSchema] = {
             "permitted_role",
             "source_capture_ids",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     REPAIR_COVERAGE_DATASET: DatasetSchema(
         dataset=REPAIR_COVERAGE_DATASET,
@@ -642,7 +653,7 @@ _REPAIR_V2_SCHEMAS: dict[str, DatasetSchema] = {
         ),
         boolean_columns=("constant_warning", "historical_eligible", "live_eligible"),
         nonnullable=REPAIR_COVERAGE_COLUMNS,
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     REPAIR_ISSUE_DATASET: DatasetSchema(
         dataset=REPAIR_ISSUE_DATASET,
@@ -914,7 +925,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "measurement_disposition",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["possessions"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["possessions"][0],
@@ -944,7 +955,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "source_play_ids",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["scoring_events"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["scoring_events"][0],
@@ -962,7 +973,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "unit_category",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["observations"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["observations"][0],
@@ -988,7 +999,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "coverage_status",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["snapshots"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["snapshots"][0],
@@ -1021,7 +1032,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "timing_class",
             "availability_policy",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["adjusted_history"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["adjusted_history"][0],
@@ -1073,7 +1084,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "included",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["terminal"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["terminal"][0],
@@ -1092,7 +1103,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "source_game_count",
             "timing_class",
         ),
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
     POSSESSION_DATASETS["coverage"][0]: DatasetSchema(
         dataset=POSSESSION_DATASETS["coverage"][0],
@@ -1107,7 +1118,7 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
             "quarantined_team_games",
         ),
         nonnullable=POSSESSION_COVERAGE_COLUMNS,
-        allowed_values={"timing_class": ("historically_reconstructed",)},
+        allowed_values={"timing_class": RECONSTRUCTED_OR_LIVE_TIMING},
     ),
 }
 

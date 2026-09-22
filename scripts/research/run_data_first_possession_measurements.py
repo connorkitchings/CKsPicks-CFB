@@ -17,9 +17,12 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
+from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.data_first_phase3 import verify_core_eligibility
 from cks_picks_cfb.data.data_first_phase3_v2 import verify_repair_manifest
 from cks_picks_cfb.data.data_first_possession_v1 import (
+    EXTENSION_2026_SEASONS_LIST,
+    LIVE_TIMING,
     POSSESSION_DATASETS,
     POSSESSION_MANIFEST_SCHEMA,
     POSSESSION_OUTPUT_ROOT,
@@ -31,6 +34,7 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     sha256,
     validate_config,
 )
+from cks_picks_cfb.data.data_first_repair_v2 import REPAIRED_LIVE_STATE
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
@@ -54,8 +58,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = (
     REPO_ROOT / "conf/research/data_first_football_v1/possession_measurement_v1.yaml"
 )
+CONFIG_2026 = (
+    REPO_ROOT
+    / "conf/research/data_first_football_v1/possession_measurement_2026_v1.yaml"
+)
+SEALED_CONFIGS = (DEFAULT_CONFIG.resolve(), CONFIG_2026.resolve())
 RELEVANT_PATHS = (
     "conf/research/data_first_football_v1/possession_measurement_v1.yaml",
+    "conf/research/data_first_football_v1/possession_measurement_2026_v1.yaml",
     "src/cks_picks_cfb/data/data_first_possession_v1.py",
     "src/cks_picks_cfb/ratings/possession_measurements.py",
     "src/cks_picks_cfb/ratings/possession_verification.py",
@@ -210,9 +220,13 @@ def _concat_source_frames(frames: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(normalized, ignore_index=True)
 
 
-def _repair(storage: Any, uri: str) -> tuple[dict[str, Any], str]:
+def _repair(
+    storage: Any, uri: str, *, scope: str = "historical", config: Mapping | None = None
+) -> tuple[dict[str, Any], str]:
     raw = storage.read_bytes(uri)
     raw_sha = hashlib.sha256(raw).hexdigest()
+    if scope == "season_2026":
+        return _repair_2026(storage, raw, raw_sha, config=config)
     if raw_sha != REQUIRED_REPAIR_RAW_SHA256:
         raise PossessionRunError(
             "Repair manifest raw checksum is not the approved parent"
@@ -225,9 +239,43 @@ def _repair(storage: Any, uri: str) -> tuple[dict[str, Any], str]:
     return payload, raw_sha
 
 
+def _repair_2026(
+    storage: Any, raw: bytes, raw_sha: str, *, config: Mapping | None = None
+) -> tuple[dict[str, Any], str]:
+    """Bind the certified Repair-2026 parent by manifest chain, not module pins."""
+    from cks_picks_cfb.data.data_first_repair_v2 import REPAIR_MANIFEST_SCHEMA
+
+    payload = json.loads(raw)
+    verify_signed_payload(payload, label="Repair-2026 manifest")
+    if payload.get("schema_version") != REPAIR_MANIFEST_SCHEMA:
+        raise PossessionRunError("Repair-2026 source is not a repair manifest")
+    if (
+        payload.get("state") != REPAIRED_LIVE_STATE
+        or payload.get("timing_class") != LIVE_TIMING
+        or payload.get("production_activation_authorized") is not False
+        or (payload.get("identity") or {}).get("environment") != "preview"
+    ):
+        raise PossessionRunError(
+            "Repair-2026 source is not eligible Preview live evidence"
+        )
+    expected = (config or {}).get("expected_population") or {}
+    summary = payload.get("population") or {}
+    if (
+        summary.get("scheduled_games") != int(expected.get("rows", -1))
+        or summary.get("forecast_eligible_games")
+        != int(expected.get("forecast_eligible", -1))
+    ):
+        raise PossessionRunError(
+            "Repair-2026 population summary differs from the 2026 config declaration"
+        )
+    return payload, raw_sha
+
+
 def _sources(
-    storage: Any, repair: Mapping[str, Any]
+    storage: Any, repair: Mapping[str, Any], *, scope: str = "historical"
 ) -> dict[int, dict[str, DatasetRef]]:
+    if scope == "season_2026":
+        return _sources_2026(storage, repair)
     uri = ((repair.get("parents") or {}).get("core_eligibility") or {}).get("uri")
     if not uri:
         raise PossessionRunError("Repair manifest does not bind core eligibility")
@@ -238,6 +286,31 @@ def _sources(
     if any({"byplay", "game_outcomes"} - set(refs) for refs in result.values()):
         raise PossessionRunError("Repair core sources lack byplay or outcome evidence")
     return result
+
+
+def _sources_2026(
+    storage: Any, repair: Mapping[str, Any]
+) -> dict[int, dict[str, DatasetRef]]:
+    """Resolve 2026 byplay/outcome sources through the Repair-2026 input bundle."""
+    bundle_uri = ((repair.get("parents") or {}).get("season_2026_inputs") or {}).get(
+        "uri"
+    )
+    if not bundle_uri:
+        raise PossessionRunError("Repair-2026 manifest does not bind 2026 inputs")
+    bundle = json.loads(storage.read_bytes(str(bundle_uri)))
+    if bundle.get("schema_version") != "data_first_2026_silver_inputs_v1":
+        raise PossessionRunError("2026 input bundle schema mismatch")
+    refs = dict(bundle.get("refs") or {})
+    if set(refs) != {"byplay", "game_outcomes"}:
+        raise PossessionRunError("2026 input bundle must bind byplay and game_outcomes")
+    result: dict[str, DatasetRef] = {}
+    for name, value in refs.items():
+        ref = _ref(value)
+        parquet_bytes = storage.read_bytes(ref.uri)
+        if hashlib.sha256(parquet_bytes).hexdigest() != ref.content_sha:
+            raise PossessionRunError(f"2026 {name} content SHA mismatch")
+        result[name] = ref
+    return {2026: result}
 
 
 @dataclass
@@ -410,6 +483,9 @@ def preflight(
     storage: Any,
     repair: Mapping[str, Any],
     identity: Mapping[str, Any],
+    scope: str = "historical",
+    expected_rows: int | None = None,
+    expected_eligible: int | None = None,
     writers: Mapping[str, PartitionedDatasetWriter] | None = None,
     progress: ResearchProgress | None = None,
 ) -> Preflight:
@@ -417,8 +493,13 @@ def preflight(
         progress.emit("preflight_started", force=True)
     population_ref = _ref(repair["output_refs"]["population"])
     repair_population = read_dataset(storage, population_ref)
-    population = build_population(repair_population)
-    refs = _sources(storage, repair)
+    population = build_population(
+        repair_population,
+        scope=scope,
+        expected_rows=expected_rows,
+        expected_eligible=expected_eligible,
+    )
+    refs = _sources(storage, repair, scope=scope)
     byplay, outcomes = [], []
     for season in sorted(refs):
         if progress is not None:
@@ -515,6 +596,9 @@ def preflight(
         output_digests=output_digests,
         coverage=measurements.coverage,
         scale_diagnostics=scale_diagnostics,
+        scope=scope,
+        expected_rows=expected_rows,
+        expected_eligible=expected_eligible,
     )
     if not signed["all_checks_passed"]:
         raise PossessionRunError("possession measurement certification failed")
@@ -663,11 +747,25 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
     path = Path(args.config).resolve()
-    if path != DEFAULT_CONFIG.resolve():
+    if path not in SEALED_CONFIGS:
         raise PossessionRunError(
-            "possession measurement runner requires sealed default config"
+            "possession measurement runner requires a sealed versioned config "
+            "(historical default or 2026 extension)"
         )
     _load_config(path)
+    config = _load_config(path)
+    scope = (
+        "season_2026"
+        if list(config.get("development_seasons") or []) == EXTENSION_2026_SEASONS_LIST
+        else "historical"
+    )
+    expected_population = config.get("expected_population") or {}
+    expected_rows = (
+        int(expected_population["rows"]) if scope == "season_2026" else None
+    )
+    expected_eligible = (
+        int(expected_population["forecast_eligible"]) if scope == "season_2026" else None
+    )
     if _git_sha() != args.expected_code_sha:
         raise PossessionRunError("--expected-code-sha must equal committed HEAD")
     if args.preflight_evidence and not args.apply:
@@ -677,7 +775,7 @@ def main(argv: list[str] | None = None) -> None:
             raise PossessionRunError("apply requires a clean committed worktree")
         _require_committed_paths()
     storage = get_storage(environment="preview")
-    repair, raw_sha = _repair(storage, args.repair_manifest_uri)
+    repair, raw_sha = _repair(storage, args.repair_manifest_uri, scope=scope, config=config)
     identity = possession_identity(
         run_id=args.run_id,
         as_of=_utc(args.as_of).isoformat().replace("+00:00", "Z"),
@@ -686,6 +784,7 @@ def main(argv: list[str] | None = None) -> None:
         repair_manifest_uri=args.repair_manifest_uri,
         repair_manifest_raw_sha256=raw_sha,
         repair_manifest_canonical_sha256=repair["manifest_sha256"],
+        development_seasons=tuple(config.get("development_seasons") or ()),
     )
     manifest_uri = f"{POSSESSION_OUTPUT_ROOT}/{args.run_id}/measurement-manifest.json"
     existing = (
@@ -713,7 +812,13 @@ def main(argv: list[str] | None = None) -> None:
         None
         if expected is not None
         else preflight(
-            storage=storage, repair=repair, identity=identity, progress=progress
+            storage=storage,
+            repair=repair,
+            identity=identity,
+            scope=scope,
+            expected_rows=expected_rows,
+            expected_eligible=expected_eligible,
+            progress=progress,
         )
     )
     plans = expected.plans if expected is not None else result.plans

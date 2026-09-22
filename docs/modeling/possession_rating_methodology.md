@@ -279,6 +279,28 @@ post-result tuning, and adding a new grid to rescue a failure are not allowed.
 There is no first-release arithmetic shrink lambda, league-HFA constant, or
 volume-Ridge fitting prerequisite; venue effects are in the bridge.
 
+## Timing classes
+
+Every possession row carries a `timing_class` recording how its evidence
+availability is substantiated:
+
+- `historically_reconstructed`: all rows of the 2015–2019 and 2021–2025
+  development corpus. Captures post-date the games; pre-kickoff availability
+  is proven by kickoff-ordered replay, not by capture time. Historical
+  datasets, configs, runners, and verifiers require this class exclusively —
+  a non-reconstructed row in historical scope fails closed.
+- `live`: 2026-season rows only, admitted under Contract 07. Availability is
+  substantiated by source-capture timestamps and effective times recorded by
+  the weekly pipeline before kickoff. `live` rows never enter historical
+  datasets, configs, or selections.
+
+Season 2020 is forbidden in every class. Timing admission is enforced at three
+independent layers: dataset schemas admit a class per dataset family, the
+producer and validator functions require the exact class per run scope, and
+the independent verifiers reconstruct and compare per scope. Sealed season
+pins, parent run-IDs, and reconciliation counts are amended explicitly per
+layer; the historical r9 configuration and its 8936/8935 counts are untouched.
+
 ## Data gaps and certification limits
 
 Possession counting, unit scoring attribution and OT filtering are specified

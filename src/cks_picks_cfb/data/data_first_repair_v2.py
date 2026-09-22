@@ -38,6 +38,9 @@ REPAIR_ISSUE_SCHEMA = "data_first_repair_issue_v2"
 REPAIR_CAPTURE_PLAN_DATASET = "repair_capture_plan"
 REPAIR_CAPTURE_PLAN_SCHEMA = "data_first_repair_capture_plan_v2"
 RECONSTRUCTED_TIMING = "historically_reconstructed"
+LIVE_TIMING = "live"
+EXTENSION_2026_SEASONS = (2026,)
+REPAIRED_LIVE_STATE = "repaired_live_only"
 FOOTBALL_FAMILIES = (
     "recruiting",
     "returning_production",
@@ -274,11 +277,20 @@ def repair_identity(
     auxiliary_eligibility_raw_sha256: str,
     phase3_retained_uri: str,
     phase3_retained_raw_sha256: str,
+    scope: str = "historical",
+    historical_anchor: Mapping[str, Any] | None = None,
+    season_2026_inputs: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     if environment != "preview":
         raise RepairV2Error("Repair v2 is Preview-only")
     if not run_id or not code_sha or not config_sha:
         raise RepairV2Error("Repair v2 identity is incomplete")
+    if scope == "season_2026":
+        seasons = list(EXTENSION_2026_SEASONS)
+    elif scope == "historical":
+        seasons = list(DEVELOPMENT_SEASONS)
+    else:
+        raise RepairV2Error(f"Repair v2 identity has unknown scope: {scope}")
     value = {
         "schema_version": REPAIR_IDENTITY_SCHEMA,
         "run_id": run_id,
@@ -292,9 +304,14 @@ def repair_identity(
         "auxiliary_eligibility_raw_sha256": auxiliary_eligibility_raw_sha256,
         "phase3_retained_uri": phase3_retained_uri,
         "phase3_retained_raw_sha256": phase3_retained_raw_sha256,
-        "development_seasons": list(DEVELOPMENT_SEASONS),
+        "development_seasons": seasons,
         "forbidden_seasons": list(FORBIDDEN_SEASONS),
+        "scope": scope,
     }
+    if historical_anchor is not None:
+        value["historical_anchor"] = dict(historical_anchor)
+    if season_2026_inputs is not None:
+        value["season_2026_inputs"] = dict(season_2026_inputs)
     value["identity_sha256"] = sha256(value)
     return value
 
@@ -324,8 +341,15 @@ def _clean_universe(universe: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def build_team_universe(schedule: pd.DataFrame) -> pd.DataFrame:
+def build_team_universe(
+    schedule: pd.DataFrame, scope: str = "historical"
+) -> pd.DataFrame:
     """Return the FBS schedule-side team-season universe without outcome filtering."""
+    allowed_seasons = (
+        EXTENSION_2026_SEASONS if scope == "season_2026" else DEVELOPMENT_SEASONS
+    )
+    if scope not in ("historical", "season_2026"):
+        raise RepairV2Error(f"team universe has unknown scope: {scope}")
     _require_columns(
         schedule,
         {
@@ -349,7 +373,7 @@ def build_team_universe(schedule: pd.DataFrame) -> pd.DataFrame:
         ignore_index=True,
     )
     sides["season"] = pd.to_numeric(sides["season"], errors="raise").astype(int)
-    if set(sides["season"]) - set(DEVELOPMENT_SEASONS):
+    if set(sides["season"]) - set(allowed_seasons):
         raise RepairV2Error("team universe contains an impermissible season")
     sides = _canonical_team_frame(sides)
     result = sides.loc[
@@ -369,8 +393,15 @@ def reconcile_population(
     observed_games: pd.DataFrame,
     reconciliation: pd.DataFrame,
     omissions: Mapping[str, Sequence[Mapping[str, Any]]],
+    scope: str = "historical",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Separate completed-game evaluation from measurement availability."""
+    allowed_seasons = (
+        EXTENSION_2026_SEASONS if scope == "season_2026" else DEVELOPMENT_SEASONS
+    )
+    if scope not in ("historical", "season_2026"):
+        raise RepairV2Error(f"Repair population has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     _require_columns(
         schedule,
         {
@@ -409,7 +440,7 @@ def reconcile_population(
     base["game_id"] = pd.to_numeric(base["game_id"], errors="raise").astype(int)
     base["week"] = pd.to_numeric(base["week"], errors="raise").astype(int)
     if (
-        set(base["season"]) - set(DEVELOPMENT_SEASONS)
+        set(base["season"]) - set(allowed_seasons)
         or base["season"].isin(FORBIDDEN_SEASONS).any()
     ):
         raise RepairV2Error("population contains impermissible seasons")
@@ -505,7 +536,7 @@ def reconcile_population(
                 "missing_reason": missing_reason,
                 "reconciliation_classification": row.classification,
                 "disposition": disposition,
-                "timing_class": RECONSTRUCTED_TIMING,
+                "timing_class": row_timing,
             }
         )
     frame = (
@@ -955,7 +986,11 @@ def assemble_auxiliary(
     coaching: pd.DataFrame,
     roster_continuity: pd.DataFrame,
     source_capture_ids: Mapping[str, Sequence[str]],
+    scope: str = "historical",
 ) -> pd.DataFrame:
+    if scope not in ("historical", "season_2026"):
+        raise RepairV2Error(f"auxiliary assembly has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     universe = _clean_universe(universe)
     frames = {
         "recruiting": recruiting,
@@ -971,7 +1006,7 @@ def assemble_auxiliary(
             frame, on=["season", "team"], how="left", validate="one_to_one"
         )
         frame["family"] = family
-        frame["timing_class"] = RECONSTRUCTED_TIMING
+        frame["timing_class"] = row_timing
         frame["historical_eligible"] = False
         frame["live_eligible"] = False
         frame["permitted_role"] = "phase4a_prior_research_only"
@@ -994,7 +1029,11 @@ def assemble_auxiliary(
 
 def coverage_and_admission(
     auxiliary: pd.DataFrame,
+    scope: str = "historical",
 ) -> tuple[pd.DataFrame, dict[str, dict[str, Any]]]:
+    if scope not in ("historical", "season_2026"):
+        raise RepairV2Error(f"coverage admission has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     _require_columns(
         auxiliary, {"family", "season", "team", "missing_reason"}, "auxiliary"
     )
@@ -1042,7 +1081,7 @@ def coverage_and_admission(
                     "structural_missing_rows": structural,
                     "historical_eligible": False,
                     "live_eligible": False,
-                    "timing_class": RECONSTRUCTED_TIMING,
+                    "timing_class": row_timing,
                 }
             )
             for feature in FAMILY_FEATURES[family]:
@@ -1065,7 +1104,7 @@ def coverage_and_admission(
                         "structural_missing_rows": structural,
                         "historical_eligible": not constant and len(values) > 0,
                         "live_eligible": False,
-                        "timing_class": RECONSTRUCTED_TIMING,
+                        "timing_class": row_timing,
                     }
                 )
         feature_admitted = []
@@ -1107,6 +1146,8 @@ def repair_manifest(
     population: pd.DataFrame,
     family_admission: Mapping[str, Any],
     capture_plan_ref: Mapping[str, Any] | None,
+    state: str = "repaired_reconstructed_only",
+    timing_class: str = RECONSTRUCTED_TIMING,
 ) -> dict[str, Any]:
     summary = {
         "scheduled_games": int(len(population)),
@@ -1117,10 +1158,16 @@ def repair_manifest(
             population.loc[:, POPULATION_COLUMNS].to_dict("records")
         ),
     }
+    if state not in ("repaired_reconstructed_only", REPAIRED_LIVE_STATE):
+        raise RepairV2Error(f"Repair manifest has unknown state: {state}")
+    if timing_class not in (RECONSTRUCTED_TIMING, LIVE_TIMING):
+        raise RepairV2Error(f"Repair manifest has unknown timing class: {timing_class}")
+    if (state == REPAIRED_LIVE_STATE) != (timing_class == LIVE_TIMING):
+        raise RepairV2Error("Repair manifest state and timing class disagree")
     return signed_payload(
         {
             "schema_version": REPAIR_MANIFEST_SCHEMA,
-            "state": "repaired_reconstructed_only",
+            "state": state,
             "identity": dict(identity),
             "parents": dict(parents),
             "output_refs": dict(output_refs),
@@ -1128,7 +1175,7 @@ def repair_manifest(
             "population": summary,
             "family_admission": dict(family_admission),
             "capture_plan_ref": dict(capture_plan_ref) if capture_plan_ref else None,
-            "timing_class": RECONSTRUCTED_TIMING,
+            "timing_class": timing_class,
             "production_activation_authorized": False,
             "model_selection_authorized": False,
         }

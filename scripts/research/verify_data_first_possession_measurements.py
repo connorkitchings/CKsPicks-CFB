@@ -31,10 +31,12 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     REQUIRED_REPAIR_RAW_SHA256,
 )
 from cks_picks_cfb.data.data_first_repair_v2 import (
+    LIVE_TIMING,
     RECONSTRUCTED_TIMING,
     REPAIR_MANIFEST_SCHEMA,
     REPAIR_POPULATION_DATASET,
     REPAIR_POPULATION_SCHEMA,
+    REPAIRED_LIVE_STATE,
 )
 from cks_picks_cfb.data.lake import (
     PARTITIONED_DATASET_KIND,
@@ -185,7 +187,39 @@ def _concat_source_frames(frames: list[pd.DataFrame]) -> pd.DataFrame:
     return pd.concat(normalized, ignore_index=True)
 
 
-def _verify_repair(raw: bytes) -> dict[str, Any]:
+def _verify_repair_2026(raw: bytes) -> dict[str, Any]:
+    """Verify a Repair-2026 parent by manifest chain, not historical pins."""
+    payload = json.loads(raw)
+    if payload.get("schema_version") != REPAIR_MANIFEST_SCHEMA:
+        raise PossessionVerificationError("Repair-2026 source is not a repair manifest")
+    verify_signed_payload(payload, label="Repair-2026 manifest")
+    if (
+        payload.get("state") != REPAIRED_LIVE_STATE
+        or payload.get("timing_class") != LIVE_TIMING
+        or payload.get("production_activation_authorized") is not False
+        or (payload.get("identity") or {}).get("environment") != "preview"
+    ):
+        raise PossessionVerificationError(
+            "Repair-2026 source is not eligible Preview live evidence"
+        )
+    summary = payload.get("population") or {}
+    if (
+        int(summary.get("scheduled_games", -1)) <= 0
+        or int(summary.get("forecast_eligible_games", -1)) <= 0
+    ):
+        raise PossessionVerificationError("Repair-2026 population summary is missing")
+    population_ref = (payload.get("output_refs") or {}).get("population") or {}
+    if (
+        population_ref.get("dataset") != REPAIR_POPULATION_DATASET
+        or population_ref.get("schema_version") != REPAIR_POPULATION_SCHEMA
+    ):
+        raise PossessionVerificationError("Repair-2026 source lacks its declared population")
+    return payload
+
+
+def _verify_repair(raw: bytes, *, scope: str = "historical") -> dict[str, Any]:
+    if scope == "season_2026":
+        return _verify_repair_2026(raw)
     if hashlib.sha256(raw).hexdigest() != REQUIRED_REPAIR_RAW_SHA256:
         raise PossessionVerificationError("Repair raw checksum mismatch")
     payload = json.loads(raw)
@@ -224,8 +258,10 @@ def _verify_repair(raw: bytes) -> dict[str, Any]:
 
 
 def _source_refs(
-    storage: Any, repair: Mapping[str, Any]
+    storage: Any, repair: Mapping[str, Any], *, scope: str = "historical"
 ) -> dict[int, dict[str, DatasetRef]]:
+    if scope == "season_2026":
+        return _source_refs_2026(storage, repair)
     uri = ((repair.get("parents") or {}).get("core_eligibility") or {}).get("uri")
     if not uri:
         raise PossessionVerificationError(
@@ -282,9 +318,39 @@ def _source_refs(
         )
     if any({"byplay", "game_outcomes"} - set(values) for values in result.values()):
         raise PossessionVerificationError(
-            "certified sources lack byplay or game outcomes"
+            "Repair core sources lack byplay or outcome evidence"
         )
     return result
+
+
+def _source_refs_2026(
+    storage: Any, repair: Mapping[str, Any]
+) -> dict[int, dict[str, DatasetRef]]:
+    """Resolve 2026 byplay/outcome sources through the Repair-2026 input bundle."""
+    bundle_uri = ((repair.get("parents") or {}).get("season_2026_inputs") or {}).get(
+        "uri"
+    )
+    if not bundle_uri:
+        raise PossessionVerificationError(
+            "Repair-2026 manifest does not bind 2026 inputs"
+        )
+    bundle = json.loads(storage.read_bytes(str(bundle_uri)))
+    if (
+        bundle.get("schema_version") != "data_first_2026_silver_inputs_v1"
+        or int(bundle.get("season", -1)) != 2026
+    ):
+        raise PossessionVerificationError("2026 input bundle identity mismatch")
+    refs = dict(bundle.get("refs") or {})
+    if set(refs) != {"byplay", "game_outcomes"}:
+        raise PossessionVerificationError("2026 input bundle refs are incomplete")
+    result: dict[str, DatasetRef] = {}
+    for name, value in refs.items():
+        ref = _ref(dict(value))
+        parquet_bytes = storage.read_bytes(ref.uri)
+        if hashlib.sha256(parquet_bytes).hexdigest() != ref.content_sha:
+            raise PossessionVerificationError(f"2026 {name} content SHA mismatch")
+        result[name] = ref
+    return {2026: result}
 
 
 def _read_output(
@@ -439,10 +505,22 @@ def main(argv: list[str] | None = None) -> None:
     atexit.register(progress.close)
     progress.emit("verification_started", force=True, manifest_uri=args.manifest_uri)
 
-    repair = _verify_repair(
-        storage.read_bytes(str(manifest.get("repair_manifest_uri") or ""))
+    scope = (
+        "season_2026"
+        if list(identity.get("development_seasons") or []) == [2026]
+        else "historical"
     )
-    refs = _source_refs(storage, repair)
+    repair = _verify_repair(
+        storage.read_bytes(str(manifest.get("repair_manifest_uri") or "")),
+        scope=scope,
+    )
+    if scope == "season_2026":
+        repair_summary = repair.get("population") or {}
+        expected_rows = int(repair_summary.get("scheduled_games", -1))
+        expected_eligible = int(repair_summary.get("forecast_eligible_games", -1))
+    else:
+        expected_rows, expected_eligible = None, None
+    refs = _source_refs(storage, repair, scope=scope)
     output_values = manifest.get("output_refs") or {}
     if set(output_values) != set(POSSESSION_DATASETS):
         raise PossessionVerificationError(
@@ -471,7 +549,12 @@ def main(argv: list[str] | None = None) -> None:
         raise PossessionVerificationError("stored output summary differs from manifest")
 
     population_ref = _ref((repair.get("output_refs") or {})["population"])
-    population = reconstruct_population(read_dataset(storage, population_ref))
+    population = reconstruct_population(
+        read_dataset(storage, population_ref),
+        scope=scope,
+        expected_rows=expected_rows,
+        expected_eligible=expected_eligible,
+    )
     byplay_parts: list[pd.DataFrame] = []
     outcome_parts: list[pd.DataFrame] = []
     for completed, season in enumerate(sorted(refs), start=1):
@@ -510,6 +593,7 @@ def main(argv: list[str] | None = None) -> None:
         outcomes=outcomes,
         population=population,
         progress=progress.emit,
+        scope=scope,
     )
     expected_static = {
         "population": population,
@@ -588,6 +672,7 @@ def main(argv: list[str] | None = None) -> None:
         observations=rebuilt.observations,
         emit=compare_replay,
         progress=progress.emit,
+        scope=scope,
     )
     for name, seen in replay_seen.items():
         expected = {

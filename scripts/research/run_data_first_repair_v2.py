@@ -33,7 +33,14 @@ from cks_picks_cfb.data.catalog import (
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.data_first_phase2e import validate_capture_set_manifest
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    REQUIRED_REPAIR_CANONICAL_SHA256,
+    REQUIRED_REPAIR_RAW_SHA256,
+)
 from cks_picks_cfb.data.data_first_repair_v2 import (
+    EXTENSION_2026_SEASONS,
+    LIVE_TIMING,
+    RECONSTRUCTED_TIMING,
     REPAIR_AUXILIARY_DATASET,
     REPAIR_AUXILIARY_SCHEMA,
     REPAIR_CAPTURE_PLAN_DATASET,
@@ -44,6 +51,7 @@ from cks_picks_cfb.data.data_first_repair_v2 import (
     REPAIR_ISSUE_SCHEMA,
     REPAIR_POPULATION_DATASET,
     REPAIR_POPULATION_SCHEMA,
+    REPAIRED_LIVE_STATE,
     RepairV2Error,
     assemble_auxiliary,
     build_team_universe,
@@ -84,10 +92,54 @@ PHASE3_RAW_SHA = "c8bc1ebd8a369c59cf298844dfdb2167baaa17dc72a3b29ceebd119eeacaf2
 PHASE3_CANONICAL_SHA = (
     "25219c6f5cce932531a1f4f3eed7f17c1842c1966444f4e7956d342ae03cbf44"
 )
+# Exact 2026 Silver inputs for the Repair-2026 extension (Contract 07), verified
+# 2026-09-22 from Preview R2 (prepare-week W4 run 1feb87fc...): 157 completed
+# games across Weeks 0-3 with full play-by-play coverage. A later extension
+# window (e.g. through Week 4) mints a new bundle and amends these pins.
+SEASON_2026_SILVER_INPUTS = {
+    "games": {
+        "dataset": "games",
+        "version_id": "e3ead5813aaf3e7a983f49f3",
+        "schema_version": "games_v2",
+        "content_sha": "6f4fd4f77bd0cda27b0097e54078bd5a11e00bfceb4fe5a5fc82f9635b8e2081",
+        "uri": "lake/silver/dataset=games/version=e3ead5813aaf3e7a983f49f3/data.parquet",
+    },
+    "game_outcomes": {
+        "dataset": "game_outcomes",
+        "version_id": "669856aa8ebddabfd5cd8ff4",
+        "schema_version": "game_outcomes_v1",
+        "content_sha": "7954c259e7c2d8dc8cd9ab90c7aa739bef96fea8a1215cf16e78b211f56eb76b",
+        "uri": "lake/silver/dataset=game_outcomes/version=669856aa8ebddabfd5cd8ff4/data.parquet",
+    },
+    "byplay": {
+        "dataset": "plays",
+        "version_id": "4d4632065618d8c02fcdcae3",
+        "schema_version": "plays_v1",
+        "content_sha": "6484a7f964bdc1ac18d1406b5597fc2f28661bfb4b0ee1fc07c9e4b86d4a4efb",
+        "uri": "lake/silver/dataset=plays/version=4d4632065618d8c02fcdcae3/data.parquet",
+    },
+    "team_games": {
+        "dataset": "reconciled_team_game",
+        "version_id": "2f58910d908fc59a9347d043",
+        "schema_version": "team_game_v1",
+        "content_sha": "18b6a8860044a1212a86ef84307d6c98110a78637b5ae239ef8ad7f6f96fc8bf",
+        "uri": "lake/silver/dataset=reconciled_team_game/version=2f58910d908fc59a9347d043/data.parquet",
+    },
+}
+SEASON_2026_INPUT_BUNDLE_SCHEMA = "data_first_2026_silver_inputs_v1"
+# Certified Repair v2 manifest anchoring the 2026 extension (historical parent,
+# verified by pins, never recomputed).
+REPAIR_V2_ANCHOR_URI = (
+    "artifacts/research/data-first-football-v1/repair/v2/"
+    "runs/repair-v2-20260909T1417Z/repair-manifest.json"
+)
 RELEVANT_PATHS = (
     "conf/research/data_first_football_v1/repair_v2.yaml",
+    "conf/research/data_first_football_v1/possession_measurement_2026_v1.yaml",
     "scripts/research/run_data_first_repair_v2.py",
     "scripts/research/verify_data_first_repair_v2.py",
+    "scripts/research/verify_data_first_repair_v3.py",
+    "src/cks_picks_cfb/data/data_first_possession_v1.py",
     "src/cks_picks_cfb/data/data_first_repair_v2.py",
     "src/cks_picks_cfb/data/lake.py",
     "src/cks_picks_cfb/data/schema_contracts.py",
@@ -337,6 +389,128 @@ def _load_core_frames(
         storage, _ref(dict(phase3["output_refs"])["observations"])
     )
     return schedule, outcomes, observations, reconciliation, tuple(by_key.values())
+
+
+def _verify_repair_v2_anchor(storage: Any, uri: str) -> dict[str, Any]:
+    """Verify the certified Repair v2 manifest anchoring the 2026 extension."""
+    from cks_picks_cfb.data.data_first_repair_v2 import REPAIR_MANIFEST_SCHEMA
+
+    raw = storage.read_bytes(uri)
+    raw_sha = hashlib.sha256(raw).hexdigest()
+    payload = json.loads(raw)
+    verify_parent(
+        payload,
+        raw_sha256=raw_sha,
+        expected_raw_sha256=REQUIRED_REPAIR_RAW_SHA256,
+        expected_manifest_sha256=REQUIRED_REPAIR_CANONICAL_SHA256,
+        schema_version=REPAIR_MANIFEST_SCHEMA,
+        state="repaired_reconstructed_only",
+        label="Repair v2 historical anchor",
+    )
+    if (
+        payload.get("production_activation_authorized") is not False
+        or (payload.get("identity") or {}).get("environment") != "preview"
+    ):
+        raise RepairV2Error("Repair v2 anchor is not eligible Preview evidence")
+    return payload
+
+
+def _validate_2026_auxiliary(storage: Any, anchor: Mapping[str, Any]) -> dict[str, Any]:
+    """Bind the historical auxiliary capture set through the anchor's lineage."""
+    anchor_aux = dict((anchor.get("parents") or {}).get("auxiliary_eligibility") or {})
+    uri = str(anchor_aux.get("uri") or "")
+    if not uri:
+        raise RepairV2Error("Repair v2 anchor does not bind auxiliary eligibility")
+    raw = storage.read_bytes(uri)
+    if hashlib.sha256(raw).hexdigest() != str(anchor_aux.get("raw_sha256") or ""):
+        raise RepairV2Error("auxiliary eligibility raw checksum differs from anchor")
+    auxiliary = json.loads(raw)
+    if auxiliary.get("schema_version") != "data_first_phase2e_eligibility_v1":
+        raise RepairV2Error("auxiliary eligibility schema is not approved")
+    capture_set_uri = f"{uri.rsplit('/', 1)[0]}/capture-set.json"
+    capture_raw = storage.read_bytes(capture_set_uri)
+    if hashlib.sha256(capture_raw).hexdigest() != str(
+        anchor_aux.get("capture_set_raw_sha256") or ""
+    ):
+        raise RepairV2Error("auxiliary capture set differs from anchor lineage")
+    return auxiliary
+
+
+def _load_2026_frames(
+    storage: Any, bundle_uri: str
+) -> tuple[
+    pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any], tuple
+]:
+    """Load completed-game 2026 Silver inputs through exact pinned versions."""
+    bundle = json.loads(storage.read_bytes(bundle_uri))
+    if bundle.get("schema_version") != SEASON_2026_INPUT_BUNDLE_SCHEMA:
+        raise RepairV2Error("2026 input bundle schema mismatch")
+    if int(bundle.get("season", -1)) != 2026:
+        raise RepairV2Error("2026 input bundle is not season 2026")
+    refs = dict(bundle.get("refs") or {})
+    if set(refs) != {"byplay", "game_outcomes"}:
+        raise RepairV2Error("2026 input bundle refs must bind byplay and game_outcomes")
+    schedule_ref = dict(bundle.get("schedule_ref") or {})
+    team_games_ref = dict(bundle.get("team_games_ref") or {})
+    if not schedule_ref or not team_games_ref:
+        raise RepairV2Error("2026 input bundle lacks schedule or team-games refs")
+    role_refs = {
+        "game_outcomes": refs["game_outcomes"],
+        "byplay": refs["byplay"],
+        "games": schedule_ref,
+        "team_games": team_games_ref,
+    }
+    frames: dict[str, pd.DataFrame] = {}
+    parent_refs = []
+    for name in ("games", "game_outcomes", "byplay", "team_games"):
+        value = dict(role_refs[name] or {})
+        expected = SEASON_2026_SILVER_INPUTS[name]
+        if any(value.get(key) != expected[key] for key in expected):
+            raise RepairV2Error(f"2026 {name} ref is not the approved Silver version")
+        ref = _ref(value)
+        parquet_bytes = storage.read_bytes(ref.uri)
+        if hashlib.sha256(parquet_bytes).hexdigest() != ref.content_sha:
+            raise RepairV2Error(f"2026 {name} content SHA mismatch")
+        if name in ("games", "game_outcomes", "byplay"):
+            frames[name] = read_dataset(storage, ref)
+            parent_refs.append(ref)
+    games = frames["games"]
+    games = games[pd.to_numeric(games["season"], errors="raise").astype(int).eq(2026)]
+    schedule = games[games["completed"].fillna(False).astype(bool)].copy()
+    if schedule.empty:
+        raise RepairV2Error("2026 Silver has no completed games")
+    outcomes = frames["game_outcomes"]
+    outcomes = outcomes[
+        pd.to_numeric(outcomes["season"], errors="raise").astype(int).eq(2026)
+        & outcomes["completed"].fillna(False).astype(bool)
+    ].copy()
+    plays = frames["byplay"]
+    observed = pd.DataFrame(
+        {"season": 2026, "game_id": pd.to_numeric(plays["game_id"], errors="raise").astype(int)}
+    ).drop_duplicates()
+    completed_ids = set(pd.to_numeric(schedule["game_id"], errors="raise").astype(int))
+    stray = set(observed["game_id"]) - completed_ids
+    if stray:
+        raise RepairV2Error(
+            f"2026 plays cover games outside the completed schedule: {sorted(stray)[:5]}"
+        )
+    reconciliation = pd.DataFrame(
+        {
+            "season": 2026,
+            "game_id": pd.to_numeric(schedule["game_id"], errors="raise").astype(int),
+            "classification": "prepare_week_concordant",
+        }
+    ).drop_duplicates()
+    bundle_record = {
+        "uri": bundle_uri,
+        "schema_version": bundle.get("schema_version"),
+        "season": 2026,
+        "prepare_week_run": bundle.get("prepare_week_run"),
+        "refs": {name: dict(refs[name]) for name in ("byplay", "game_outcomes")},
+        "schedule_ref": dict(schedule_ref),
+        "team_games_ref": dict(team_games_ref),
+    }
+    return schedule, outcomes, observed, reconciliation, bundle_record, tuple(parent_refs)
 
 
 def _capture_set(
@@ -649,23 +823,39 @@ def _capture_gaps(
 def compute_repair(
     storage: Any,
     *,
-    core: Mapping[str, Any],
-    auxiliary_uri: str,
-    auxiliary: Mapping[str, Any],
-    phase3: Mapping[str, Any],
+    core: Mapping[str, Any] | None = None,
+    auxiliary_uri: str = "",
+    auxiliary: Mapping[str, Any] | None = None,
+    phase3: Mapping[str, Any] | None = None,
     extra_captures: list[SourceCapture] | None = None,
+    scope: str = "historical",
+    season_2026: Mapping[str, pd.DataFrame] | None = None,
 ) -> tuple[dict[str, pd.DataFrame], dict[str, Any], dict[str, Any]]:
-    schedule, outcomes, observations, reconciliation, core_refs = _load_core_frames(
-        storage, core, phase3
-    )
+    if scope not in ("historical", "season_2026"):
+        raise RepairV2Error(f"Repair compute has unknown scope: {scope}")
+    if scope == "season_2026":
+        if season_2026 is None or auxiliary is None:
+            raise RepairV2Error("2026 repair scope requires loaded Silver frames")
+        schedule = season_2026["schedule"]
+        outcomes = season_2026["outcomes"]
+        observations = season_2026["observed"]
+        reconciliation = season_2026["reconciliation"]
+        core_refs: tuple[DatasetRef, ...] = ()
+        omissions: dict[str, list] = {}
+    else:
+        schedule, outcomes, observations, reconciliation, core_refs = _load_core_frames(
+            storage, core, phase3
+        )
+        omissions = dict(core["omissions"])
     population, population_issues = reconcile_population(
         schedule=schedule,
         outcomes=outcomes,
         observed_games=observations[["season", "game_id"]],
         reconciliation=reconciliation,
-        omissions=dict(core["omissions"]),
+        omissions=omissions,
+        scope=scope,
     )
-    universe = build_team_universe(schedule)
+    universe = build_team_universe(schedule, scope=scope)
     capture_set, capture_set_raw = _capture_set(storage, auxiliary_uri, auxiliary)
     raw, capture_ids = _raw_captures(storage, [*capture_set, *(extra_captures or [])])
     if extra_captures:
@@ -693,8 +883,9 @@ def compute_repair(
         coaching=coaching,
         roster_continuity=roster,
         source_capture_ids=source_ids,
+        scope=scope,
     )
-    coverage, family_admission = coverage_and_admission(auxiliary_frame)
+    coverage, family_admission = coverage_and_admission(auxiliary_frame, scope=scope)
     issues = pd.concat(
         [
             population_issues,
@@ -739,6 +930,7 @@ def _build_dataset(
     source_capture_ids: tuple[str, ...],
     identity: Mapping[str, Any],
     as_of: datetime,
+    seasons: tuple[int, ...] = DEVELOPMENT_SEASONS,
 ) -> DatasetRef:
     validation = validate_frame(frame, schema_for(dataset, schema))
     ref, manifest = build_dataset_version(
@@ -755,7 +947,7 @@ def _build_dataset(
         ),
         records=frame.to_dict("records"),
         partitions={
-            "seasons": list(DEVELOPMENT_SEASONS),
+            "seasons": list(seasons),
             "environment": "preview",
             "stage": "repair_v2",
         },
@@ -768,15 +960,32 @@ def _build_dataset(
 def main(argv: list[str] | None = None) -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--core-eligibility-uri", required=True)
-    parser.add_argument("--auxiliary-eligibility-uri", required=True)
-    parser.add_argument("--phase3-retained-uri", required=True)
+    parser.add_argument("--core-eligibility-uri", default=None)
+    parser.add_argument("--auxiliary-eligibility-uri", default=None)
+    parser.add_argument("--phase3-retained-uri", default=None)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--expected-code-sha", required=True)
     parser.add_argument("--environment", choices=["preview"], required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument(
+        "--scope",
+        choices=["historical", "season_2026"],
+        default="historical",
+        help="historical rebuilds the sealed development corpus; season_2026 "
+        "extends the certified lineage to live 2026 completed games (Contract 07)",
+    )
+    parser.add_argument(
+        "--season-2026-inputs-uri",
+        default=None,
+        help="R2 URI of the season-2026 Silver input bundle (required for season_2026)",
+    )
+    parser.add_argument(
+        "--repair-v2-anchor-uri",
+        default=REPAIR_V2_ANCHOR_URI,
+        help="certified Repair v2 manifest anchoring the 2026 extension",
+    )
     args = parser.parse_args(argv)
     config_path = Path(args.config).resolve()
     if config_path != DEFAULT_CONFIG.resolve():
@@ -790,7 +999,51 @@ def main(argv: list[str] | None = None) -> None:
             raise RepairV2Error("apply requires a clean tracked worktree")
         _require_committed_paths()
     storage = get_storage(environment="preview")
-    core, auxiliary, phase3, raw_shas = _validate_parents(storage, args)
+    scope = str(args.scope)
+    if scope == "historical" and not (
+        args.core_eligibility_uri
+        and args.auxiliary_eligibility_uri
+        and args.phase3_retained_uri
+    ):
+        raise RepairV2Error(
+            "historical scope requires --core-eligibility-uri, "
+            "--auxiliary-eligibility-uri, and --phase3-retained-uri"
+        )
+    season_2026_inputs: dict[str, Any] | None = None
+    anchor: dict[str, Any] | None = None
+    season_2026_frames: dict[str, pd.DataFrame] | None = None
+    season_2026_parents: tuple = ()
+    if scope == "season_2026":
+        if not args.season_2026_inputs_uri:
+            raise RepairV2Error("season_2026 scope requires --season-2026-inputs-uri")
+        anchor = _verify_repair_v2_anchor(storage, str(args.repair_v2_anchor_uri))
+        anchor_parents = dict(anchor.get("parents") or {})
+        auxiliary = _validate_2026_auxiliary(storage, anchor)
+        anchor_core = dict(anchor_parents.get("core_eligibility") or {})
+        anchor_aux = dict(anchor_parents.get("auxiliary_eligibility") or {})
+        anchor_phase3 = dict(anchor_parents.get("phase3_retained_diagnostic_only") or {})
+        args.core_eligibility_uri = str(anchor_core.get("uri") or "")
+        args.auxiliary_eligibility_uri = str(anchor_aux.get("uri") or "")
+        args.phase3_retained_uri = str(anchor_phase3.get("uri") or "")
+        raw_shas = {
+            "core": str(anchor_core.get("raw_sha256") or ""),
+            "auxiliary": str(anchor_aux.get("raw_sha256") or ""),
+            "phase3": str(anchor_phase3.get("raw_sha256") or ""),
+        }
+        schedule, outcomes, observed, reconciliation, bundle_record, parent_refs = (
+            _load_2026_frames(storage, str(args.season_2026_inputs_uri))
+        )
+        season_2026_frames = {
+            "schedule": schedule,
+            "outcomes": outcomes,
+            "observed": observed,
+            "reconciliation": reconciliation,
+        }
+        season_2026_parents = parent_refs
+        season_2026_inputs = bundle_record
+        core, phase3 = None, None
+    else:
+        core, auxiliary, phase3, raw_shas = _validate_parents(storage, args)
     identity = repair_identity(
         run_id=args.run_id,
         environment="preview",
@@ -803,6 +1056,17 @@ def main(argv: list[str] | None = None) -> None:
         auxiliary_eligibility_raw_sha256=raw_shas["auxiliary"],
         phase3_retained_uri=args.phase3_retained_uri,
         phase3_retained_raw_sha256=raw_shas["phase3"],
+        scope=scope,
+        historical_anchor=(
+            {
+                "uri": str(args.repair_v2_anchor_uri),
+                "raw_sha256": REQUIRED_REPAIR_RAW_SHA256,
+                "canonical_sha256": REQUIRED_REPAIR_CANONICAL_SHA256,
+            }
+            if scope == "season_2026"
+            else None
+        ),
+        season_2026_inputs=season_2026_inputs,
     )
     run_prefix = f"{OUTPUT_ROOT}/{args.run_id}"
     if args.apply and storage.exists(f"{run_prefix}/repair-manifest.json"):
@@ -847,6 +1111,11 @@ def main(argv: list[str] | None = None) -> None:
         auxiliary=auxiliary,
         phase3=phase3,
         extra_captures=extra_captures,
+        scope=scope,
+        season_2026=season_2026_frames,
+    )
+    dataset_seasons = (
+        tuple(EXTENSION_2026_SEASONS) if scope == "season_2026" else DEVELOPMENT_SEASONS
     )
     for name, dataset, schema in (
         ("population", REPAIR_POPULATION_DATASET, REPAIR_POPULATION_SCHEMA),
@@ -884,7 +1153,9 @@ def main(argv: list[str] | None = None) -> None:
     }
     if args.apply:
         conn_url = catalog_connection_url("preview")
-        parents = details["core_refs"]
+        parents = (
+            season_2026_parents if scope == "season_2026" else details["core_refs"]
+        )
         source_ids = tuple(
             sorted(
                 {
@@ -905,6 +1176,7 @@ def main(argv: list[str] | None = None) -> None:
                 source_capture_ids=source_ids,
                 identity=identity,
                 as_of=as_of,
+                seasons=dataset_seasons,
             ),
             "auxiliary": _build_dataset(
                 storage,
@@ -916,6 +1188,7 @@ def main(argv: list[str] | None = None) -> None:
                 source_capture_ids=source_ids,
                 identity=identity,
                 as_of=as_of,
+                seasons=dataset_seasons,
             ),
             "coverage": _build_dataset(
                 storage,
@@ -927,6 +1200,7 @@ def main(argv: list[str] | None = None) -> None:
                 source_capture_ids=source_ids,
                 identity=identity,
                 as_of=as_of,
+                seasons=dataset_seasons,
             ),
             "issues": _build_dataset(
                 storage,
@@ -938,6 +1212,7 @@ def main(argv: list[str] | None = None) -> None:
                 source_capture_ids=source_ids,
                 identity=identity,
                 as_of=as_of,
+                seasons=dataset_seasons,
             ),
             "capture_plan": _build_dataset(
                 storage,
@@ -949,35 +1224,53 @@ def main(argv: list[str] | None = None) -> None:
                 source_capture_ids=source_ids,
                 identity=identity,
                 as_of=as_of,
+                seasons=dataset_seasons,
             ),
         }
         output_refs = {name: asdict(ref) for name, ref in refs.items()}
+        manifest_parents: dict[str, Any] = {
+            "core_eligibility": {
+                "uri": args.core_eligibility_uri,
+                "raw_sha256": raw_shas["core"],
+                "canonical_sha256": CORE_CANONICAL_SHA,
+            },
+            "auxiliary_eligibility": {
+                "uri": args.auxiliary_eligibility_uri,
+                "raw_sha256": raw_shas["auxiliary"],
+                "canonical_sha256": AUXILIARY_CANONICAL_SHA,
+                "capture_set_raw_sha256": details["capture_set_raw_sha256"],
+            },
+            "phase3_retained_diagnostic_only": {
+                "uri": args.phase3_retained_uri,
+                "raw_sha256": raw_shas["phase3"],
+                "canonical_sha256": PHASE3_CANONICAL_SHA,
+            },
+        }
+        manifest_state = "repaired_reconstructed_only"
+        manifest_timing = RECONSTRUCTED_TIMING
+        if scope == "season_2026":
+            assert anchor is not None and season_2026_inputs is not None
+            manifest_parents = {
+                "historical_anchor_repair_v2": {
+                    "uri": str(args.repair_v2_anchor_uri),
+                    "raw_sha256": REQUIRED_REPAIR_RAW_SHA256,
+                    "canonical_sha256": REQUIRED_REPAIR_CANONICAL_SHA256,
+                },
+                "season_2026_inputs": season_2026_inputs,
+            }
+            manifest_state = REPAIRED_LIVE_STATE
+            manifest_timing = LIVE_TIMING
         manifest = repair_manifest(
             identity=identity,
-            parents={
-                "core_eligibility": {
-                    "uri": args.core_eligibility_uri,
-                    "raw_sha256": raw_shas["core"],
-                    "canonical_sha256": CORE_CANONICAL_SHA,
-                },
-                "auxiliary_eligibility": {
-                    "uri": args.auxiliary_eligibility_uri,
-                    "raw_sha256": raw_shas["auxiliary"],
-                    "canonical_sha256": AUXILIARY_CANONICAL_SHA,
-                    "capture_set_raw_sha256": details["capture_set_raw_sha256"],
-                },
-                "phase3_retained_diagnostic_only": {
-                    "uri": args.phase3_retained_uri,
-                    "raw_sha256": raw_shas["phase3"],
-                    "canonical_sha256": PHASE3_CANONICAL_SHA,
-                },
-            },
+            parents=manifest_parents,
             output_refs=output_refs,
             output_rows={name: len(frame) for name, frame in frames.items()}
             | {"capture_plan": len(capture_plan)},
             population=frames["population"],
             family_admission=family_admission,
             capture_plan_ref=output_refs["capture_plan"],
+            state=manifest_state,
+            timing_class=manifest_timing,
         )
         _immutable_json(storage, f"{run_prefix}/repair-manifest.json", manifest)
         summary |= {

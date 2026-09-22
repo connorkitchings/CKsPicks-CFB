@@ -1,10 +1,10 @@
 # V5-07: 2026 Repair and Possession Measurement Extension
 
-- **Status:** Approved — re-reviewed 2026-09-22 (Amendment 1); deferral lifted, execution authorized
+- **Status:** In Progress — Task 1 Implemented 2026-09-22; Tasks 2–3 pending
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
-- **Implementation log:** Pending; create one log per execution session (measurement preflight/apply/verify/repeat).
+- **Implementation log:** `session_logs/2026-09-22/04-v5-07-task1-live-timing-and-season-validation.md` (Task 1); create one log per execution session for Tasks 2–3 (preflight/apply/verify/repeat).
 - **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
@@ -146,7 +146,7 @@ reconstructed substitutes. The `live` amendment must not weaken any
 historical reconstructed-only guarantee. Sealed code (season pins, parent
 run-IDs, reconciliation counts) requires explicit amendment per layer.
 
-- [ ] `live` timing admitted with historical guarantees intact; authority tests pass.
+- [x] `live` timing admitted with historical guarantees intact; authority tests pass. (2026-09-22: constants, scope branches, seals, verifiers, methodology, 2026 config, input bundle; full suite 1259 passed.)
 - [ ] Certified Repair-2026 manifest in Preview (preflight/apply/verify/repeat).
 - [ ] Certified 2026 measurement manifest in Preview (preflight/apply/verify/repeat).
 - [ ] Historical r9 and Repair v2 artifacts byte-identical and untouched.

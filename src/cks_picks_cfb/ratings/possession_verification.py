@@ -30,7 +30,11 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     SNAPSHOT_COLUMNS,
     TERMINAL_COLUMNS,
 )
-from cks_picks_cfb.data.data_first_repair_v2 import RECONSTRUCTED_TIMING
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    EXTENSION_2026_SEASONS,
+    LIVE_TIMING,
+    RECONSTRUCTED_TIMING,
+)
 
 ProgressCallback = Callable[..., None]
 PartCallback = Callable[[str, dict[str, int], pd.DataFrame], None]
@@ -67,8 +71,28 @@ class IndependentMeasurements:
     final_reconciliation: dict[int, dict[str, float]]
 
 
-def reconstruct_population(repair_population: pd.DataFrame) -> pd.DataFrame:
+def reconstruct_population(
+    repair_population: pd.DataFrame,
+    *,
+    scope: str = "historical",
+    expected_rows: int | None = None,
+    expected_eligible: int | None = None,
+) -> pd.DataFrame:
     """Reconstruct Contract 02 population membership without producer helpers."""
+    if scope == "season_2026":
+        allowed_seasons = tuple(EXTENSION_2026_SEASONS)
+        row_timing = LIVE_TIMING
+        if expected_rows is None or expected_eligible is None:
+            raise IndependentPossessionError(
+                "2026 population reconstruction requires pinned counts"
+            )
+        expected_counts = (int(expected_rows), int(expected_eligible))
+    elif scope == "historical":
+        allowed_seasons = tuple(DEVELOPMENT_SEASONS)
+        row_timing = RECONSTRUCTED_TIMING
+        expected_counts = (8936, 8935)
+    else:
+        raise IndependentPossessionError(f"population has unknown scope: {scope}")
     needed = {
         "season",
         "week",
@@ -96,7 +120,7 @@ def reconstruct_population(repair_population: pd.DataFrame) -> pd.DataFrame:
         raise IndependentPossessionError(
             "Repair population contains duplicate game keys"
         )
-    if set(source["season"]) - set(DEVELOPMENT_SEASONS):
+    if set(source["season"]) - set(allowed_seasons):
         raise IndependentPossessionError(
             "Repair population contains undeclared seasons"
         )
@@ -104,7 +128,7 @@ def reconstruct_population(repair_population: pd.DataFrame) -> pd.DataFrame:
         raise IndependentPossessionError(
             "Repair population includes a forbidden season"
         )
-    if not source["timing_class"].eq(RECONSTRUCTED_TIMING).all():
+    if not source["timing_class"].eq(row_timing).all():
         raise IndependentPossessionError(
             "Repair timing class differs from the contract"
         )
@@ -133,9 +157,11 @@ def reconstruct_population(repair_population: pd.DataFrame) -> pd.DataFrame:
         .sort_values(["season", "week", "game_id"], kind="mergesort")
         .reset_index(drop=True)
     )
-    if len(result) != 8936 or int(result["forecast_eligible"].sum()) != 8935:
+    if (len(result), int(result["forecast_eligible"].sum())) != expected_counts:
         raise IndependentPossessionError(
-            "Repair population totals differ from Contract 02"
+            "Repair population totals differ from the 2026 extension declaration"
+            if scope == "season_2026"
+            else "Repair population totals differ from Contract 02"
         )
     return result
 
@@ -203,7 +229,13 @@ def _reconstruct_ledgers(
     population: pd.DataFrame,
     outcomes: pd.DataFrame | None = None,
     progress: ProgressCallback | None = None,
+    scope: str = "historical",
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    if scope not in ("historical", "season_2026"):
+        raise IndependentPossessionError(
+            f"ledger reconstruction has unknown scope: {scope}"
+        )
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     plays = _canonicalize_teams(byplay)
     _require(
         plays,
@@ -287,7 +319,7 @@ def _reconstruct_ledgers(
             "quality_reason": None
             if len(defenses) == 1 and period != "unknown"
             else "ambiguous_drive_identity_or_period",
-            "timing_class": RECONSTRUCTED_TIMING,
+            "timing_class": row_timing,
         }
         possession_rows.append(row)
         drive_by_key[(int(season), int(game_id), int(drive_number), str(offense))] = row
@@ -412,7 +444,7 @@ def _reconstruct_ledgers(
                         "associated_possession_id": None,
                         "conversion_for_event_id": None,
                         "quality_reason": reason,
-                        "timing_class": RECONSTRUCTED_TIMING,
+                        "timing_class": row_timing,
                     }
                 )
                 broken_streams.add(stream_key)
@@ -440,7 +472,7 @@ def _reconstruct_ledgers(
                             "associated_possession_id": None,
                             "conversion_for_event_id": None,
                             "quality_reason": "exceeds_repaired_final",
-                            "timing_class": RECONSTRUCTED_TIMING,
+                            "timing_class": row_timing,
                         }
                     )
                     continue
@@ -513,7 +545,7 @@ def _reconstruct_ledgers(
                     "associated_possession_id": associated,
                     "conversion_for_event_id": conversion_for,
                     "quality_reason": quality_reason,
-                    "timing_class": RECONSTRUCTED_TIMING,
+                    "timing_class": row_timing,
                 }
             )
             if category not in {"overtime", "unresolved"}:
@@ -539,7 +571,11 @@ def _observation_row(
     usable: bool,
     reason: str | None,
     flags: list[str],
+    scope: str = "historical",
 ) -> dict[str, Any]:
+    if scope not in ("historical", "season_2026"):
+        raise IndependentPossessionError(f"observation row has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     return {
         "season": int(game.season),
         "week": int(game.week),
@@ -560,7 +596,7 @@ def _observation_row(
         "coverage_status": "observed" if usable else "missing",
         "missing_reason": reason,
         "quality_flags": "|".join(sorted(set(flags))) or None,
-        "timing_class": RECONSTRUCTED_TIMING,
+        "timing_class": row_timing,
     }
 
 
@@ -651,13 +687,18 @@ def reconstruct_measurements(
     outcomes: pd.DataFrame,
     population: pd.DataFrame,
     progress: ProgressCallback | None = None,
+    scope: str = "historical",
 ) -> IndependentMeasurements:
     """Independently derive team-game possession measurements and paired defense."""
+    if scope not in ("historical", "season_2026"):
+        raise IndependentPossessionError(f"reconstruction has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     plays, possessions, scoring = _reconstruct_ledgers(
         byplay=byplay,
         population=population,
         outcomes=outcomes,
         progress=progress,
+        scope=scope,
     )
     if progress is not None:
         progress(
@@ -769,6 +810,7 @@ def reconstruct_measurements(
                         usable=values[2],
                         reason=values[3],
                         flags=values[4],
+                        scope=scope,
                     )
                 )
                 paired = measures[opponent][measurement]
@@ -785,6 +827,7 @@ def reconstruct_measurements(
                         usable=paired[2],
                         reason=paired[3],
                         flags=paired[4],
+                        scope=scope,
                     )
                 )
         score_stream_points, event_count = game_values.get(
@@ -837,7 +880,7 @@ def reconstruct_measurements(
                         .sort_index()
                         .to_dict()
                     ),
-                    "timing_class": RECONSTRUCTED_TIMING,
+                    "timing_class": row_timing,
                 }
             )
     _require(outcomes, {"season", "game_id", "home_points", "away_points"}, "outcomes")
@@ -958,8 +1001,14 @@ def reconstruct_replay_partitions(
     observations: pd.DataFrame,
     emit: PartCallback,
     progress: ProgressCallback | None = None,
+    scope: str = "historical",
 ) -> dict[str, Any]:
     """Reconstruct replay one season/week partition at a time."""
+    if scope not in ("historical", "season_2026"):
+        raise IndependentPossessionError(
+            f"replay reconstruction has unknown scope: {scope}"
+        )
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     maximum_history_rows = 0
     for season in sorted(population["season"].astype(int).unique()):
         games = population[
@@ -1054,7 +1103,7 @@ def reconstruct_replay_partitions(
                             "iteration_four_value": adjusted.get(key),
                             "included": True,
                             "missing_reason": None,
-                            "timing_class": RECONSTRUCTED_TIMING,
+                            "timing_class": row_timing,
                         }
                     )
                 for team in (str(game.home_team), str(game.away_team)):
@@ -1086,7 +1135,7 @@ def reconstruct_replay_partitions(
                                         "primary_exposure": exposure,
                                         "games_exposure": games_exposure,
                                         "source_game_count": source_count,
-                                        "timing_class": RECONSTRUCTED_TIMING,
+                                        "timing_class": row_timing,
                                         "availability_policy": "prior_week_and_source_kickoff_plus_6h",
                                     }
                                 )
@@ -1126,7 +1175,7 @@ def reconstruct_replay_partitions(
                     "primary_exposure": float(rows["denominator"].sum()),
                     "games_exposure": int(rows["game_id"].nunique()),
                     "source_game_count": int(len(rows)),
-                    "timing_class": RECONSTRUCTED_TIMING,
+                    "timing_class": row_timing,
                 }
             )
         emit(

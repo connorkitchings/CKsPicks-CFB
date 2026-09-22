@@ -15,7 +15,11 @@ import pandas as pd
 
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS, FORBIDDEN_SEASONS
 from cks_picks_cfb.data.data_first_phase2d import canonical_bytes, signed_payload
-from cks_picks_cfb.data.data_first_repair_v2 import RECONSTRUCTED_TIMING
+from cks_picks_cfb.data.data_first_repair_v2 import (
+    EXTENSION_2026_SEASONS,
+    LIVE_TIMING,
+    RECONSTRUCTED_TIMING,
+)
 
 POSSESSION_IDENTITY_SCHEMA = "data_first_possession_measurement_identity_v1"
 POSSESSION_MANIFEST_SCHEMA = "data_first_possession_measurement_manifest_v1"
@@ -204,10 +208,26 @@ def sha256(value: Any) -> str:
     ).hexdigest()
 
 
+EXTENSION_2026_SEASONS_LIST = list(EXTENSION_2026_SEASONS)
+EXTENSION_2026_FIXED_SETTINGS = {
+    "ppp_scale_floor": 0.30,
+    "epa_per_possession_scale_floor": 0.50,
+    "ppp_fallback_scale": 1.00,
+    "epa_per_possession_fallback_scale": 1.50,
+    "ppp_equivalent_exposure": 8,
+    "epa_per_possession_equivalent_exposure": 20,
+}
+
+
 def validate_config(payload: Mapping[str, Any]) -> None:
     if payload.get("schema_version") != "data_first_possession_measurement_config_v1":
         raise PossessionContractError("unexpected possession measurement config schema")
-    if tuple(payload.get("development_seasons") or ()) != DEVELOPMENT_SEASONS:
+    seasons = tuple(payload.get("development_seasons") or ())
+    if seasons == tuple(DEVELOPMENT_SEASONS):
+        _validate_historical_config(payload)
+    elif seasons == tuple(EXTENSION_2026_SEASONS):
+        _validate_extension_2026_config(payload)
+    else:
         raise PossessionContractError("possession config development seasons drifted")
     if tuple(payload.get("forbidden_seasons") or ()) != FORBIDDEN_SEASONS:
         raise PossessionContractError("possession config forbidden seasons drifted")
@@ -221,7 +241,53 @@ def validate_config(payload: Mapping[str, Any]) -> None:
         )
 
 
-def build_population(repair_population: pd.DataFrame) -> pd.DataFrame:
+def _validate_historical_config(payload: Mapping[str, Any]) -> None:
+    if payload.get("availability_policy", {}).get("classification") != (
+        RECONSTRUCTED_TIMING
+    ):
+        raise PossessionContractError(
+            "historical possession config must stay historically_reconstructed"
+        )
+
+
+def _validate_extension_2026_config(payload: Mapping[str, Any]) -> None:
+    if payload.get("availability_policy", {}).get("classification") != LIVE_TIMING:
+        raise PossessionContractError("2026 possession config must use live timing")
+    fixed = payload.get("fixed_settings") or {}
+    for key, expected in EXTENSION_2026_FIXED_SETTINGS.items():
+        if float(fixed.get(key, float("nan"))) != expected:
+            raise PossessionContractError(
+                f"2026 possession config must keep r9 fixed setting {key}={expected}"
+            )
+    population = payload.get("expected_population") or {}
+    for key in ("rows", "forecast_eligible"):
+        if int(population.get(key, -1)) <= 0:
+            raise PossessionContractError(
+                f"2026 possession config must declare positive {key}"
+            )
+
+
+def build_population(
+    repair_population: pd.DataFrame,
+    *,
+    scope: str = "historical",
+    expected_rows: int | None = None,
+    expected_eligible: int | None = None,
+) -> pd.DataFrame:
+    if scope == "season_2026":
+        allowed_seasons = EXTENSION_2026_SEASONS_LIST
+        row_timing = LIVE_TIMING
+        if expected_rows is None or expected_eligible is None:
+            raise PossessionContractError(
+                "2026 population requires pinned reconciliation counts"
+            )
+        expected_counts = (int(expected_rows), int(expected_eligible))
+    elif scope == "historical":
+        allowed_seasons = list(DEVELOPMENT_SEASONS)
+        row_timing = RECONSTRUCTED_TIMING
+        expected_counts = (8936, 8935)
+    else:
+        raise PossessionContractError(f"population has unknown scope: {scope}")
     required = {
         "season",
         "week",
@@ -253,13 +319,13 @@ def build_population(repair_population: pd.DataFrame) -> pd.DataFrame:
             "Repair population has duplicate season/game keys"
         )
     if (
-        set(frame["season"]) - set(DEVELOPMENT_SEASONS)
+        set(frame["season"]) - set(allowed_seasons)
         or frame["season"].isin(FORBIDDEN_SEASONS).any()
     ):
         raise PossessionContractError(
             "Repair population contains an impermissible season"
         )
-    if not frame["timing_class"].eq(RECONSTRUCTED_TIMING).all():
+    if not frame["timing_class"].eq(row_timing).all():
         raise PossessionContractError("Repair population timing class changed")
     result = pd.DataFrame(
         {
@@ -281,7 +347,7 @@ def build_population(repair_population: pd.DataFrame) -> pd.DataFrame:
             "timing_class": frame["timing_class"],
         }
     )
-    if (len(result), int(result["forecast_eligible"].sum())) != (8936, 8935):
+    if (len(result), int(result["forecast_eligible"].sum())) != expected_counts:
         raise PossessionContractError("Repair population reconciliation changed")
     return (
         result.loc[:, POPULATION_COLUMNS]
@@ -325,6 +391,7 @@ def possession_identity(
     repair_manifest_uri: str,
     repair_manifest_raw_sha256: str,
     repair_manifest_canonical_sha256: str,
+    development_seasons: tuple[int, ...] = DEVELOPMENT_SEASONS,
 ) -> dict[str, Any]:
     value = {
         "schema_version": POSSESSION_IDENTITY_SCHEMA,
@@ -336,7 +403,7 @@ def possession_identity(
         "repair_manifest_uri": repair_manifest_uri,
         "repair_manifest_raw_sha256": repair_manifest_raw_sha256,
         "repair_manifest_canonical_sha256": repair_manifest_canonical_sha256,
-        "development_seasons": list(DEVELOPMENT_SEASONS),
+        "development_seasons": list(development_seasons),
         "forbidden_seasons": list(FORBIDDEN_SEASONS),
     }
     value["identity_sha256"] = sha256(value)
@@ -350,14 +417,29 @@ def certification(
     output_digests: Mapping[str, str],
     coverage: pd.DataFrame,
     scale_diagnostics: Mapping[str, Any],
+    scope: str = "historical",
+    expected_rows: int | None = None,
+    expected_eligible: int | None = None,
 ) -> dict[str, Any]:
+    if scope == "season_2026":
+        if expected_rows is None or expected_eligible is None:
+            raise PossessionContractError(
+                "2026 certification requires pinned reconciliation counts"
+            )
+        row_timing = LIVE_TIMING
+        expected_counts = (int(expected_rows), int(expected_eligible))
+    elif scope == "historical":
+        row_timing = RECONSTRUCTED_TIMING
+        expected_counts = (8936, 8935)
+    else:
+        raise PossessionContractError(f"certification has unknown scope: {scope}")
     checks = {
-        "population_complete": len(population) == 8936
-        and int(population["forecast_eligible"].sum()) == 8935,
+        "population_complete": (len(population), int(population["forecast_eligible"].sum()))
+        == expected_counts,
         "forbidden_2020_absent": not population["season"].astype(int).eq(2020).any(),
-        "reconstructed_timing_only": population["timing_class"]
-        .eq(RECONSTRUCTED_TIMING)
-        .all(),
+        "live_timing_only" if scope == "season_2026" else "reconstructed_timing_only": (
+            population["timing_class"].eq(row_timing).all()
+        ),
         "both_efficiency_definitions_present": {"ppp", "epa_per_possession"}.issubset(
             set(coverage["measurement_id"])
         ),
@@ -374,7 +456,7 @@ def certification(
                 population.loc[:, POPULATION_COLUMNS].to_dict("records")
             ),
             "scale_diagnostics": dict(scale_diagnostics),
-            "timing_class": RECONSTRUCTED_TIMING,
+            "timing_class": row_timing,
             "production_activation_authorized": False,
         }
     )

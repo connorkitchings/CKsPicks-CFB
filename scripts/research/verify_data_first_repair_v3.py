@@ -67,6 +67,7 @@ def verify_repair_artifact(
     manifest_uri: str,
     *,
     expected_code_sha: str | None = None,
+    expected_state: str = "repaired_reconstructed_only",
 ) -> dict[str, Any]:
     """Verify Repair artifact from first principles with zero producer imports."""
     raw_manifest = storage.read_bytes(manifest_uri)
@@ -80,7 +81,7 @@ def verify_repair_artifact(
 
     if (
         manifest.get("schema_version") != REPAIR_MANIFEST_SCHEMA
-        or manifest.get("state") != "repaired_reconstructed_only"
+        or manifest.get("state") != expected_state
     ):
         raise RepairV2Error(
             f"Repair manifest schema or state mismatch: "
@@ -200,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional expected code SHA to verify against manifest identity",
     )
     parser.add_argument(
+        "--expected-state",
+        default="repaired_reconstructed_only",
+        help="Expected manifest state (default preserves the Finding-001 closure "
+        "gate; pass repaired_live_only for the Repair-2026 extension)",
+    )
+    parser.add_argument(
         "--environment",
         choices=["preview", "production"],
         default="preview",
@@ -212,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         storage,
         args.manifest_uri,
         expected_code_sha=args.expected_code_sha,
+        expected_state=args.expected_state,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
