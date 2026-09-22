@@ -1,11 +1,11 @@
 # V5-09: 2026 Forecast Generation and Live Readiness
 
-- **Status:** Approved — re-reviewed 2026-09-22 (Amendment 1); deferral lifted, execution authorized
+- **Status:** In Progress — preparation only pending the required Week 4 refresh
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
-- **Implementation log:** Pending; create one log per execution session (forecast generation, verification, readiness).
-- **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
+- **Implementation log:** `session_logs/2026-09-22/08-v5-09-forecast-preparation.md`
+- **Commit policy:** Separate code and certified-evidence checkpoints; user explicitly authorized Git add and commit.
 
 ## Goal, current state, and entry gate
 
