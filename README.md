@@ -10,9 +10,11 @@ isolated Preview research and is distinct from **feature schema v5**, the separa
 V4 diagnostic. Its historical development and verification lane is complete and
 accepted: all four historical audit findings are closed. Contract 07 is
 Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-the immediate research task, followed by the Week 4 refresh, Contract 09 live
-readiness, Contract 06's six-slate prospective evaluation, and a conditional
-Phase 7 promotion review. The
+Implemented for Weeks 0–3 as replay
+`possession-v1-rating-replay-20260922-fcaa571`, independently verified with the
+frozen `ppp__rho_0_60__exposure` design. The Week 4 refresh of Contracts 07 and
+08 is next, followed by Contract 09 live readiness, Contract 06's six-slate
+prospective evaluation, and a conditional Phase 7 promotion review. The
 [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
 is the detailed status and execution authority.
 

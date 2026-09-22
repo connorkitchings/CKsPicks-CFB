@@ -1,11 +1,11 @@
 # V5-08: 2026 Rating-State Replay
 
-- **Status:** Approved — re-reviewed 2026-09-22 (Amendment 1); deferral lifted, execution authorized
+- **Status:** Implemented 2026-09-22
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.
-- **Implementation log:** Pending; create one log per execution session (priors assembly, replay, verification).
-- **Commit policy:** Separate code and certified-evidence checkpoints; user executes Git.
+- **Implementation log:** `session_logs/2026-09-22/07-v5-documentation-authority-reset-and-08-rating-replay.md`
+- **Commit policy:** Separate code and certified-evidence checkpoints; user explicitly authorized Git add and commit.
 
 ## Goal, current state, and entry gate
 
@@ -49,7 +49,8 @@ the historical-first deferral is **lifted** and execution is authorized against
 the corrected certified lineage (Amendment 1). The first Contract 06 slate
 target is Week 5 (~Thu Oct 1 first kickoff).
 
-There are no 2026 team states at planning time. Historical rating states are
+At implementation close, the independently verified Weeks 0–3 replay is
+`possession-v1-rating-replay-20260922-fcaa571`. Historical rating states were
 not modified, re-selected, or inherited as 2026 evidence.
 
 ## Approach, scope, and interfaces
@@ -133,6 +134,30 @@ Reuse the existing rating-verifier patterns; do not add mirror tests for
 certification-only runs. Strict MkDocs and `git diff --check` for
 documentation updates.
 
+## Implementation evidence (2026-09-22)
+
+- Replay run: `possession-v1-rating-replay-20260922-fcaa571` at code SHA
+  `fcaa57168702e6005dfe786c0e3489a6c04c6df2`.
+- Retained manifest:
+  `artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/possession-v1-rating-replay-20260922-fcaa571/retained-rating-replay-manifest.json`,
+  raw SHA
+  `0c7bca598dcf5a377b7c619edba7eca34bb31dd7c61d489d47c06a5bfc38e3f0`.
+- Independently verified output: 276 priors, 628 rating states, and 314 team
+  states across 157 eligible games in Weeks 0–3. Output record digests are
+  `6978743191ffdb44205c8b11b4ae28edff84bec044e623913b12c062f005d9ea`,
+  `792eb65e529aee698255ed7ce5de73d251babc44fd71be59fe4f15b78270c14e`,
+  and `e4e93ce24f47cc8f8ab61ea7c487442bf6f4efcebf4712001aa43a64a3481244`.
+- Verifier manifest:
+  `artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/possession-v1-rating-replay-20260922-fcaa571/verification/verifier-manifest.json`,
+  signed SHA
+  `568113873d5a1329d68f54b46bd0f507e79c24ebe770e76accc9db1d6557a709`.
+- Producer repeat returned `already_applied`; verifier repeat returned the same
+  signed SHA. The 11B historical parent raw SHA remains
+  `9d00e63564691c0323fa203b76b4ee49a9fff5aa945fdb8fa000142f640e4ba0`.
+- All artifacts remain Preview-only with
+  `production_activation_authorized: false`; no Neon, V4 production, or web
+  state changed.
+
 ## Risks, definition of done, and amendments
 
 Any refit of priors, updater parameters, or selection on 2026 outcomes is
@@ -142,16 +167,17 @@ advance states on partial outcomes. Sealed 03 code (candidate registry,
 `OUTER_SEASONS`, parent run-IDs) requires explicit amendment to admit the
 2026 replay parent.
 
-- [ ] 2026 priors assembled with exact input refs; nothing fitted on 2026 outcomes.
-- [ ] Certified 2026 rating replay manifest in Preview (preflight/apply/verify/repeat).
-- [ ] Continuous 2026 state history from Week 0; readiness `team_states` source resolvable.
-- [ ] Historical rating artifacts (`possession-v1-ratings-20260921-11d59ee-r9cert` certified; superseded `possession-v1-ratings-20260917-d029526-cert`) byte-identical, selection untouched.
-- [ ] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
-- [ ] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
+- [x] 2026 priors assembled with exact input refs; nothing fitted on 2026 outcomes.
+- [x] Certified 2026 rating replay manifest in Preview (preflight/apply/verify/repeat).
+- [x] Continuous 2026 state history from Week 0; readiness `team_states` source resolvable.
+- [x] Historical rating artifacts (`possession-v1-ratings-20260921-11d59ee-r9cert` certified; superseded `possession-v1-ratings-20260917-d029526-cert`) byte-identical, selection untouched.
+- [x] No production/Neon/web writes; manifest carries `production_activation_authorized: false`.
+- [x] Reports, plan index, roadmap status, contract lifecycle, and session logs are current.
 
 Follow the common amendment process for prior, updater, timing, or replay
-changes. While 2026 replay certification is incomplete, leave this contract
-In Progress and Contract 09 unstarted.
+changes. Contract 09 may consume only the independently verified live replay
+parent, after Contracts 07 and 08 are refreshed through stabilized Week 4 finals
+under new immutable identities.
 
 ## Amendments
 

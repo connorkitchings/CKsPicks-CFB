@@ -3,9 +3,11 @@
 > **Status (2026-09-22):** R6 possession measurements are superseded historical
 > evidence. The historical V5 lane is complete and accepted: all four audit
 > findings are closed, Contract 07 is Implemented with 157 certified live 2026
-> games through Week 3, and Contract 08 is the immediate task. Contract 08 is
-> followed by the Week 4 refresh, Contract 09 live readiness, Contract 06's
-> six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+> games through Week 3, and Contract 08 is Implemented for Weeks 0–3 as replay
+> `possession-v1-rating-replay-20260922-fcaa571` with independent verification.
+> The Week 4 refresh of Contracts 07 and 08 is next, followed by Contract 09 live
+> readiness, Contract 06's six-slate prospective evaluation, and a conditional
+> Phase 7 promotion review.
 > V4 remains the production champion. The
 > [September 11 specification](../plans/2026-09-11/possession-rating-methodology-specification.md)
 > remains an Implemented documentation milestone. Current execution authority is

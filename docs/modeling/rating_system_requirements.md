@@ -22,9 +22,11 @@ definition. R6 is a superseded historical measurement lineage. The corrected r9
 measurements, 11B ratings, 11C through-2025 final fit, and 11D verification
 completed and accepted the historical V5 lane, closing all four audit findings.
 Contract 07 is Implemented with 157 certified live 2026 games through Week 3.
-Contract 08 is next, followed by the Week 4 refresh, Contract 09 readiness,
-Contract 06's six-slate prospective evaluation, and a conditional Phase 7
-promotion review. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+Contract 08 is Implemented for Weeks 0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
+07 and 08 is next, followed by Contract 09 readiness, Contract 06's six-slate
+prospective evaluation, and a conditional Phase 7 promotion review. The
+[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the detailed status authority. V5 remains Preview-only and no 2026 outcome
 may select or tune its frozen rating design.
 

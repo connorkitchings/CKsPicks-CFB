@@ -250,10 +250,12 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `accepted_for_prospective_evaluation` (`readiness-v1-20260921-scorecard`)
   and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
   re-reviewed against the corrected parents with deferrals lifted under
-  `docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`;
-  Contract 08 is the immediate research task. The authorized sequence is
-  Contract 07 (Repair-2026 + 2026 measurements) → Contract 08 (rating replay)
-  → Contract 09 (final-fit forecasts + readiness `ready` on the Week 5 slate,
+  `docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`.
+  Contract 08 is Implemented for Weeks 0–3 as independently verified replay
+  `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 refresh of
+  Contracts 07 and 08 is next. The authorized sequence is Contract 07
+  (Repair-2026 + 2026 measurements) → Contract 08 (rating replay) → Contract
+  09 (final-fit forecasts + readiness `ready` on the Week 5 slate,
   ~Oct 1) → Contract 06 (first freeze T−2h; six qualifying slates W5–W10
   target) → conditional Phase 7 promotion review. Conditional results remain
   `conditional_historical_results_only`.

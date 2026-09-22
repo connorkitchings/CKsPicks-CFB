@@ -125,9 +125,11 @@ and later rating-assisted adjustment is a separately attributable challenger.
 lane is complete and accepted. Repair v2, r9 measurements, 11B ratings, the 11C
 through-2025 final fit, and 11D verification closed all four historical audit
 findings. Contract 07 is Implemented with 157 certified live 2026 games through
-Week 3. Contract 08 is next, followed by the Week 4 refresh, Contract 09 live
-readiness, Contract 06's six-slate prospective evaluation, and a conditional
-Phase 7 promotion review. The
+Week 3. Contract 08 is Implemented for Weeks 0–3 as independently verified
+replay `possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of
+Contracts 07 and 08 is next, followed by Contract 09 live readiness, Contract
+06's six-slate prospective evaluation, and a conditional Phase 7 promotion
+review. The
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
 is the canonical queue/status page. Repair v2 and Phase 3 v2 remain historical
 evidence; R6 is superseded.

@@ -3,11 +3,11 @@
 ## TL;DR
 
 - **Worked On:** Task 1 of [the V5 documentation reset and completion-sequence contract](../../docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md), followed by Contract 08 runner and Preview-parent reconciliation.
-- **Outcome:** Active documentation now reflects the accepted September 22 V5 state and the `07 → 08 → 09 → 06 → conditional Phase 7` sequence. Contract 08 now has an isolated live replay producer and an independently implemented verifier; both reconstruct the same three output datasets from the frozen lineage.
+- **Outcome:** Active documentation reflects the accepted September 22 V5 state and the `07 → 08 → 09 → 06 → conditional Phase 7` sequence. Contract 08 is Implemented for Weeks 0–3 as independently verified Preview replay `possession-v1-rating-replay-20260922-fcaa571`.
 - **Plan Contract:** `docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md` — In Progress; Task 1 complete.
 - **Approval / Status:** User explicitly authorized the contract on 2026-09-22.
-- **Blockers:** None in code. The immutable Preview apply/verify/repeat cycle remains to be executed from the clean committed verifier checkpoint.
-- **Next:** Commit the verifier checkpoint, run the exact new-HEAD preflight/apply/verify/idempotent-repeat cycle under a new immutable run ID, and record the certified replay evidence.
+- **Blockers:** None. Week 4 finals must stabilize before the required new-ID refresh of Contracts 07 and 08 and Contract 09 readiness work.
+- **Next:** After Week 4 finals stabilize, refresh Contracts 07 and 08 under new immutable IDs through Week 4, then execute Contract 09 for Week 5 readiness.
 
 ## Context and Decisions
 
@@ -39,6 +39,17 @@
   the producer, historical tournament materializer, or research runners.
 - Added agreement, perturbation, and import-boundary tests. Producer and
   verifier frames match exactly for priors, rating states, and team states.
+- Applied replay `possession-v1-rating-replay-20260922-fcaa571` from clean code
+  SHA `fcaa57168702e6005dfe786c0e3489a6c04c6df2`. The retained manifest raw SHA
+  is `0c7bca598dcf5a377b7c619edba7eca34bb31dd7c61d489d47c06a5bfc38e3f0`.
+- Independently verified 276 priors, 628 rating states, and 314 team states
+  across 157 eligible games in Weeks 0–3. Verifier SHA is
+  `568113873d5a1329d68f54b46bd0f507e79c24ebe770e76accc9db1d6557a709`.
+- Repeated both producer and verifier idempotently. The producer returned
+  `already_applied`; the verifier returned the same signed SHA. Historical 11B
+  parent raw SHA remained `9d00e63564691c0323fa203b76b4ee49a9fff5aa945fdb8fa000142f640e4ba0`.
+- Marked Contract 08 Implemented and advanced active documentation to the Week
+  4 refresh of Contracts 07 and 08, followed by Contract 09.
 
 ## Files Modified
 
@@ -63,20 +74,26 @@
 - [x] Ruff formatting check — passed.
 - [x] Verifier CLI help smoke test — passed.
 - [x] Read-only real-parent preflight — passed; no R2 writes.
+- [x] Committed-HEAD Preview preflight/apply/verify/repeat — passed.
+- [x] Preview object inventory confined to the replay run prefix; historical
+  11B parent checksum unchanged.
+- [x] Final documentation authority tests — 38 passed.
+- [x] `uv run python contracts/validation.py` — passed.
+- [x] `uv run mkdocs build --strict --quiet` — passed.
 
 ## Amendments and Blockers
 
 - Contract 08 Amendment 2 defines the isolated live replay and independent
   verification interfaces. The historical tournament code and artifacts remain
   unchanged.
-- No R2 write has occurred yet. The apply is intentionally deferred until this
-  verifier checkpoint is committed and the authoritative preflight binds the
-  clean HEAD.
+- The Weeks 0–3 replay is now immutable Preview evidence. Its required Week 4
+  refresh must use new Contract 07 and 08 run identities after finals stabilize.
 
 ## Handoff Notes
 
-- **Resume at:** Commit this verifier checkpoint, then run the exact new-HEAD
-  preflight/apply/verify/repeat cycle under a new immutable run ID.
+- **Resume at:** Run the final documentation and contract checks, commit the
+  evidence checkpoint, then wait for stabilized Week 4 finals before the
+  required 07/08 refresh and Contract 09.
 - **Watch out for:** The historical runner and verifier are sealed to R6/Repair-v2 and the 60-candidate selection tournament. Do not add a CLI-only parent override, reuse the selection path, or apply an R2 run while the repository is uncommitted; the existing runner's apply gate requires a clean committed worktree.
 
 **tags:** ["v5", "documentation", "authority", "contract-08", "rating-replay"]

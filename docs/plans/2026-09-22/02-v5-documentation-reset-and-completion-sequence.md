@@ -5,15 +5,15 @@
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact plan on 2026-09-22.
 - **Implementation log:** `session_logs/2026-09-22/07-v5-documentation-authority-reset-and-08-rating-replay.md`
-- **Commit policy:** Separate documentation and certified-evidence checkpoints; user executes Git.
+- **Commit policy:** Separate documentation and certified-evidence checkpoints; user explicitly authorized Git add and commit.
 
 ## Goal
 
 Make the September 22 V5 state unambiguous across active documentation, then
 coordinate the remaining live-research sequence without replacing its approved
 implementation contracts. Success means active entry points name the canonical
-roadmap, show Contract 08 as next, and preserve the exact historical evidence
-record; subsequent work advances only through 08, 09, 06, and a conditional
+roadmap, preserve the exact historical evidence record, and advance the live
+sequence only through 08, 09, 06, and a conditional
 Phase 7 review.
 
 ## Current State
@@ -22,7 +22,9 @@ V4 is the public 2026 production champion. V5 historical development is complete
 and accepted: Repair v2, r9 measurements, 11B ratings, the 11C through-2025
 forecast fit, and 11D independent verification closed all four 10B findings.
 Contract 07 is Implemented with 157 certified 2026 games through Week 3.
-Contract 08 is approved, re-reviewed, and has its verified entry parent.
+Contract 08 is Implemented for Weeks 0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. Its immutable artifacts remain
+Preview-only. The required Week 4 refresh of Contracts 07 and 08 is next.
 
 Contracts 08, 09, and 06 remain the sole implementation authorities for their
 respective stages. V5 stays Preview-only; no step changes V4, Neon serving
@@ -76,8 +78,9 @@ Update README, documentation home, assistant/context guides, quickstart,
 operations roadmap, data-first roadmap, rating/evaluation references, and the
 plans index to state: historical V5 is complete and accepted; all four audit
 findings are closed; 07 is Implemented with 157 certified Weeks 0–3 games; 08
-is next; V4 remains champion. Link every concise checkpoint to the data-first
-roadmap. Keep dated 10B, 11A, and 12A findings intact and label their timing.
+is Implemented for Weeks 0–3; the Week 4 refresh is next; V4 remains champion.
+Link every concise checkpoint to the data-first roadmap. Keep dated 10B, 11A,
+and 12A findings intact and label their timing.
 
 **Acceptance criteria:** no active checkpoint claims that 12A is next, findings
 remain open, 11 is pending, the scorecard is unauthoritative, or all 2026
@@ -87,6 +90,9 @@ from historical evidence and require the sequence `07 → 08 → 09 → 06 → P
 **Validation:** `uv run pytest tests/test_data_first_documentation_authority.py`,
 `uv run python contracts/validation.py`, `uv run mkdocs build --strict --quiet`,
 and `git diff --check`.
+
+**Implemented checkpoint (2026-09-22):** The active checkpoints now identify
+the Week 4 07/08 refresh as next and retain dated records as historical evidence.
 
 ### Task 2 — Execute Contract 08
 
@@ -98,6 +104,15 @@ terminal replay manifest becomes Contract 09's only live rating parent.
 
 After Week 4 finals stabilize, rerun 07 and 08 under new immutable identities
 through Week 4. Do not alter Weeks 0–3 artifacts.
+
+**Implemented checkpoint (2026-09-22):** The Weeks 0–3 replay is frozen as
+`possession-v1-rating-replay-20260922-fcaa571` with 276 priors, 628 rating
+states, and 314 team states. Retained manifest raw SHA is
+`0c7bca598dcf5a377b7c619edba7eca34bb31dd7c61d489d47c06a5bfc38e3f0`;
+independent verifier SHA is
+`568113873d5a1329d68f54b46bd0f507e79c24ebe770e76accc9db1d6557a709`.
+Producer and verifier repeats were idempotent, and the historical 11B parent
+remained byte-identical.
 
 ### Task 3 — Execute Contract 09
 
@@ -145,7 +160,7 @@ starting each stage instead of relying on narrative status.
 ## Definition of Done
 
 - [x] Active documentation and authority tests reflect the September 22 state.
-- [ ] Contract 08 has a certified and independently verified 2026 replay.
+- [x] Contract 08 has a certified and independently verified 2026 replay.
 - [ ] Contract 09 has a certified forecast and verified Week 5 readiness.
 - [ ] Contract 06 has published its verified six-slate recommendation.
 - [ ] A Phase 7 contract exists only when the recommendation supports one, or

@@ -36,9 +36,11 @@ is the canonical detailed status page. V5 ratings successor is distinct from V4
 feature schema v5. Its historical development and verification lane is complete
 and accepted: all four audit findings are closed. Repair v2 and Phase 3 v2 remain
 historical evidence; r9 supersedes R6. Contract 07 is Implemented with 157
-certified live 2026 games through Week 3. Contract 08 is next, followed by the
-Week 4 refresh, Contract 09 live readiness, Contract 06's six-slate prospective
-evaluation, and a conditional Phase 7 promotion review. The original Phase 4B
+certified live 2026 games through Week 3. Contract 08 is Implemented for Weeks
+0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
+07 and 08 is next, followed by Contract 09 live readiness, Contract 06's
+six-slate prospective evaluation, and a conditional Phase 7 promotion review. The original Phase 4B
 retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
@@ -87,7 +89,7 @@ unmet data dependency, and no run creates prospective evidence by itself.
 | Re-review: [Contract 12 acceptance and 07–09 re-review for the 2026 extension](2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md) | **Implemented 2026-09-22.** Records the user's Contract 12 acceptance (2026-09-22), re-points 07/08/09 to the corrected certified parents, lifts the deferrals, and authorizes the execution sequence (ops prerequisite → 07 → 08 → W4-finals refresh → 09 → 06 first freeze Week 5). |
 | Orchestration: [Documentation reset and completion sequence](2026-09-22/02-v5-documentation-reset-and-completion-sequence.md) | **In Progress.** Aligns active documentation with the accepted historical state and coordinates 08 → Week 4 refresh → 09 → 06 → conditional Phase 7 without replacing their implementation contracts. |
 | 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Implemented 2026-09-22.** Repair-2026 `repair-2026-20260922T145500Z` (157/157/157, v3 verified) + certified 2026 measurements `possession-v1-measurements-20260922-2026c` (manifest `ec96fe51…`, 8 datasets, all live, independently verified, `already_applied`). Sole eligible 08 parent recorded; Contract 08 entry gate met. |
-| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted; entry gate met 2026-09-22.** Frozen winner `ppp__rho_0_60__exposure` unchanged; certified identity re-pointed to 11B `possession-v1-ratings-20260921-11d59ee-r9cert` (manifest SHA `2f1cdc5f...`, no selection flip). Certified 2026 measurement parent `possession-v1-measurements-20260922-2026c` exists — replay may start. Replay-only; nothing fitted on 2026 outcomes. |
+| 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Implemented 2026-09-22.** Frozen winner `ppp__rho_0_60__exposure` replayed across 157 Weeks 0–3 games with no 2026-outcome fitting. Run `possession-v1-rating-replay-20260922-fcaa571`: 276 priors, 628 rating states, 314 team states; retained manifest raw SHA `0c7bca59…`; independent verifier `56811387…`; producer/verifier repeats were idempotent. Preview-only; historical 11B parent remains byte-identical. |
 | 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted.** Bridge re-pointed 04B → 11C `forecast-v1-20260921-5afd577-11c` (11D verified `4cfe5ef8...`, `final_fit_verified: true`); 2026 forecasts apply the through-2025 final-fit heads (alpha-10, expanding) + final calibration; first readiness target is the Week 5 slate (~Oct 1) — a skipped Week 4 slate is expected. Starts when 08's certified 2026 rating manifest exists. |
 
 ### V5 historical-first review sequence (2026-09-18)

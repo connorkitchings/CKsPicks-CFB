@@ -60,7 +60,9 @@ schema v5, the independent diagnostic. Its historical development and verificati
 lane is complete and accepted: all four audit findings are closed. Repair v2 and
 Phase 3 v2 remain historical evidence; R6 is superseded. Contract 07 is
 Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-next, followed by the Week 4 refresh, Contract 09 live readiness, Contract 06's
+Implemented for Weeks 0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
+07 and 08 is next, followed by Contract 09 live readiness, Contract 06's
 six-slate prospective evaluation, and a conditional Phase 7 promotion review.
 The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the canonical status page.

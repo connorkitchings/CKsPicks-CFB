@@ -12,8 +12,10 @@ V5 ratings successor is distinct from V4 feature schema v5. Repair v2 and Phase
 lineage, ratings, forecast fit, and independent verification completed and
 accepted the historical V5 lane, closing all four audit findings. Contract 07 is
 Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-next, followed by the Week 4 refresh, Contract 09 readiness, Contract 06's
-six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+Implemented for Weeks 0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
+07 and 08 is next, followed by Contract 09 readiness, Contract 06's six-slate
+prospective evaluation, and a conditional Phase 7 promotion review.
 The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the detailed status authority. The original Phase 4B retained manifest remains
 prohibited as a forecasting parent; same-game field position, plays per drive and

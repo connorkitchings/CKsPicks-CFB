@@ -13,9 +13,11 @@
 > is distinct from the V4 feature schema v5 diagnostic. Its historical development
 > and verification lane is complete and accepted; all four historical audit findings
 > are closed. Contract 07 is Implemented with 157 certified live 2026 games through
-> Week 3. Contract 08 is next, followed by the Week 4 refresh, Contract 09 live
-> readiness, Contract 06's six-slate prospective evaluation, and a conditional
-> Phase 7 promotion review. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
+> Week 3. Contract 08 is Implemented for Weeks 0–3 as independently verified
+> replay `possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of
+> Contracts 07 and 08 is next, followed by Contract 09 live readiness, Contract
+> 06's six-slate prospective evaluation, and a conditional Phase 7 promotion
+> review. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
 > for the detailed active path. Repair v2 and Phase 3 v2 remain historical evidence,
 > R6 is superseded, and the original Phase 4B retained manifest remains prohibited
 > as a forecasting parent.
@@ -80,8 +82,8 @@ See the
 | **Week 1** | Published, frozen, and scored | ✅ Verified 2026-09-10: 43 games / 86 grade rows |
 | **Week 2** | Scored | ✅ Recorded 2026-09-13: `2026w2-43b25511a100`, 49 games; 90 graded targets |
 | **Week 3** | Published | Recorded 2026-09-13: `2026w3-68fe6a815bd6`, 57/57/56; freeze pending at that checkpoint |
-| Current research | Contract 08 2026 rating-state replay | Uses the certified Contract 07 measurement parent; Preview-only, no 2026-outcome fitting |
-| Subsequent work | Week 4 refresh → Contract 09 readiness → Contract 06 six-slate evidence | No Neon activation or publication; Phase 7 remains conditional on the final recommendation |
+| Current research | Week 4 refresh of Contracts 07 and 08 | Weeks 0–3 replay is certified and immutable; refresh under new IDs after finals stabilize |
+| Subsequent work | Contract 09 readiness → Contract 06 six-slate evidence | No Neon activation or publication; Phase 7 remains conditional on the final recommendation |
 | Six completed full slates | First promotion review, if every candidate prediction was frozen before kickoff | Separate approval required |
 | Any later point in 2026 | Operational rehearsal, rollback proof, and evidence-based promotion decision | V4 remains fallback |
 

@@ -62,6 +62,7 @@ def _assert_current_checkpoint(text: str) -> None:
         "feature schema v5",
         "historical",
         "contract 08",
+        "possession-v1-rating-replay-20260922-fcaa571",
         "contract 09",
         "contract 06",
         "phase 7",

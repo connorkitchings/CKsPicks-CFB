@@ -24,9 +24,11 @@ the V4 feature-schema-v5 diagnostic, remains Preview-only, and has completed its
 historical development and verification lane: all four historical audit findings
 are closed and the historical readiness recommendation was accepted. Contract 07
 is Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-the immediate research task; after the required Week 4 refresh, Contract 09 must
-establish live readiness, then Contract 06 may collect six qualifying prospective
-slates. A Phase 7 promotion review is conditional on Contract 06's recommendation.
+Implemented for Weeks 0–3 as independently verified replay
+`possession-v1-rating-replay-20260922-fcaa571`. After the required Week 4 refresh
+of Contracts 07 and 08, Contract 09 must establish live readiness, then Contract
+06 may collect six qualifying prospective slates. A Phase 7 promotion review is
+conditional on Contract 06's recommendation.
 
 Repair v2 and Phase 3 v2 remain historical evidence; r9 supersedes R6. The
 original Phase 4B retained manifest remains prohibited as a forecasting parent.
@@ -174,7 +176,9 @@ lifted with execution authorized. Authorized sequence:
    `ec96fe51…`, 8 datasets, all live, verified, `already_applied`; sole
    eligible 08 parent).
 4. Execute 08: 2026 priors (zero 2026-outcome fitting) → replay W0–W3 →
-   independent verification.
+   independent verification. **Implemented 2026-09-22:** replay
+   `possession-v1-rating-replay-20260922-fcaa571` (276 priors, 628 rating
+   states, 314 team states; verifier `56811387…`; idempotent repeat).
 5. After Week 4 finals stabilize (~Sep 28), re-run 07/08 through W4 under new
    run-IDs so Week 5 forecasts use current states.
 6. Execute 09: 2026 forecasts via the through-2025 final-fit bridge →
