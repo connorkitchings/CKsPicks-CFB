@@ -1,10 +1,10 @@
 # V5-01: Close the Independent V4 Feature-v5 Diagnostic
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
-- **Approval source:** User explicitly selected separate diagnostic closure and approved the full package on 2026-09-13 with “Implement the proposed plan.”
-- **Implementation log:** Pending; create `session_logs/<execution-date>/NN-v4-feature-v5-diagnostic-closure.md`.
+- **Approval source:** User explicitly selected separate diagnostic closure and approved the full package on 2026-09-13 with “Implement the proposed plan.” Execution authorized 2026-09-22 ("Use the repository-local implement-plan skill and implement the approved contract…").
+- **Implementation log:** `session_logs/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
 - **Commit policy:** Separate diagnostic evidence/documentation checkpoint; user executes Git.
 
 ## Goal and current state
@@ -102,10 +102,16 @@ artifact/code differences must be explained rather than treated as feature gains
 
 ## Definition of done and amendments
 
-- [ ] Final Week 2 scored artifact and independently recomputed pooled report exist.
-- [ ] Original threshold calculation and causal limitations are both explicit.
-- [ ] No production, catalog, or Preview serving writes occurred.
-- [ ] Contracts/index/session log reflect completion with exact refs and validation.
+- [x] Final Week 2 scored artifact and independently recomputed pooled report exist. (`…/scored/year=2026/week=2/run_id=shadow-2026-v5-w2/scored.csv`; `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`)
+- [x] Original threshold calculation and causal limitations are both explicit. (38.46% < 45% → cause not confirmed; value-identical predictions across 100/100 games refute the mismatch as cause.)
+- [x] No production, catalog, or Preview serving writes occurred. (Counts/current_week identical before/after in both databases; idempotent rerun.)
+- [x] Contracts/index/session log reflect completion with exact refs and validation.
+
+**Closure record (2026-09-22):** Verdict — pooled W1+W2 shadow spread 35-56-1
+on 91 graded (38.46%) < 45% → **cause not confirmed**; shadow ≡ official on all
+100 games (drift 0.0), refuting the feature mismatch as the cause of the 2026
+spread underperformance. Full record, tables, and reproduction:
+[`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
 
 Use the common amendment process. Production repair or activation is a separate
 future contract regardless of this diagnostic's result. This task never selects

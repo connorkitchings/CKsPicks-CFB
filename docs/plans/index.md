@@ -44,7 +44,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | Contract | Status and dependency |
 | --- | --- |
 | 00: [Documentation alignment](2026-09-13/00-v5-documentation-and-methodology-alignment.md) | **Implemented.** Completed 2026-09-13: documentation and authority tests aligned; no computational certification. |
-| 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Approved.** Independent side task; exact Week 2 outcomes/refs must be reverified. |
+| 01: [V4 feature-v5 diagnostic closure](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | **Implemented.** W2 shadow scored against the Week 2 close outcomes (`cb75ca88…`, 49/49 verified); pooled W1+W2 spread 35-56-1 on 91 graded (38.46%) < 45% → cause not confirmed; predictions value-identical to official on all 100 games, refuting the mismatch as cause. Report: `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
 | 02: [Possession measurement certification](2026-09-13/02-v5-possession-measurement-certification.md) | **Implemented.** R6 Preview manifest independently verified and idempotent; its methodology and evidence are subject to Contract 10's full historical audit. |
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Historical rating artifact selected `ppp__rho_0_60__exposure`; its lineage and methodology are subject to Contract 10. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Implemented.** Resolved 2026-09-21 via umbrella Contract 11 (closed through the 11B/11C/11D decomposition on the r9 line); 04A remains implemented and the original 04B artifact stays frozen historical evidence. |
@@ -179,13 +179,16 @@ nor historical implementation completion establish current forecast eligibility.
   YTD: spread 380-366-16, total 340-292-5. Live `current_week` restored.
 
 - [2026 v5 shadow rebuild diagnostic](2026-09-10/2026-v5-shadow-rebuild-diagnostic.md)
-  — **In Progress.** Completed parity gates and Week 0/1 scored artifacts remain
-  intact. The September 13 operations record establishes Week 2 closure; resume
-  Task 5 under [contract 01](2026-09-13/01-v4-feature-v5-diagnostic-closure.md)
-  only after fresh verification of exact final-outcome and shadow refs. The pooled
-  verdict is pending, not completed by this documentation update. This V4 feature
-  schema v5 diagnostic is independent of V5 ratings. Preserve its threshold
-  calculation and use paired prediction/error changes for causal interpretation.
+  — **Implemented 2026-09-22.** Tasks 1–4 (parity gates, v5 Gold, shadow
+  predictions) completed 2026-09-10; Task 5 closed under
+  [contract 01](2026-09-13/01-v4-feature-v5-diagnostic-closure.md) after the
+  Week 2 close: pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% →
+  **cause not confirmed**, and shadow predictions are value-identical to the
+  official record on all 100/100 W0–W2 games (drift 0.0), refuting the feature
+  mismatch as the underperformance cause. Verdict record:
+  `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. This V4
+  feature schema v5 diagnostic is independent of V5 ratings and creates no
+  prospective evidence.
 
 - [Rebuild 2026 predictions with correct features](2026-09-09/rebuild-2026-predictions.md)
   — **Superseded as executable plan** by the shadow diagnostic above;

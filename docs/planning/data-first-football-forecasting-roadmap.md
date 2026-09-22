@@ -57,7 +57,7 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | Order | Contract | Status and dependency |
 | --- | --- | --- |
 | 00 | [Documentation alignment and methodology amendment](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
-| 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Approved — independent side task; reverify Week 2 outcomes/refs before closure. |
+| 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Implemented 2026-09-22 — pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% → cause not confirmed; predictions value-identical to official on all 100 W0–W2 games. Report: `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
 | 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 is retained historical evidence, subject to the full 10 audit. |
 | 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented (resolved 2026-09-21) — 04A remains implemented; 04B's verification gap closed by the 11B/11C/11D re-derivation and independent verification on the r9 line. |
@@ -164,9 +164,9 @@ not automatic promotion; Phase 7 requires a separate approved contract.
 
 **Dated operations record (2026-09-13):** Week 2 `2026w2-43b25511a100` is scored;
 Week 3 `2026w3-68fe6a815bd6` was published with 57/57/56 coverage and freeze pending.
-The V4 feature-v5 diagnostic can resume final scoring only after contract 01
-reverifies exact Week 2 outcomes/refs. Its absolute win-rate threshold is a
-reported diagnostic; paired prediction/error changes are needed for interpretation.
+The V4 feature-v5 diagnostic closed 2026-09-22 under contract 01: cause not
+confirmed (pooled W1+W2 shadow spread 38.46% < 45%), with value-identical
+predictions on all 100 games refuting the mismatch hypothesis.
 See the operating runbooks for current weekly actions.
 
 ## Retained and superseded evidence

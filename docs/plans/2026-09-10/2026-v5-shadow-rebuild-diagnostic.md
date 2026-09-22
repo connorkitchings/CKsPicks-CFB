@@ -1,10 +1,10 @@
 # 2026 v5 Shadow Rebuild Diagnostic (Preview-only)
 
-- **Status:** In Progress — BLOCKED on W2 finals (fresh Terra run under Amendment 2 two-tier gate; user re-approval 2026-09-10, Amendment 2). Tasks 1–4 complete; Task 5 partial (W0/W1 scored, interim evidence recorded, kill criterion NOT applied — pooled W1+W2 verdict requires W2 finals, unavailable until after the 2026-09-11 kickoff + Week 2 close).
+- **Status:** Implemented 2026-09-22 — Task 5 closed under [Contract 01](../2026-09-13/01-v4-feature-v5-diagnostic-closure.md): W2 shadow scored against the Week 2 close outcomes (`cb75ca88…`); pooled W1+W2 verdict rendered — shadow spread 35-56-1 on 91 graded (38.46%) < 45% → **cause not confirmed**; predictions value-identical to official on all 100/100 games, refuting the feature mismatch as the underperformance cause. Full record: [`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
 - **Created:** 2026-09-10
 - **Planner:** Sol
 - **Approval source:** Original: user go-ahead 2026-09-10 (→ STOPPED, Amendment 1). Amendment 1: user re-approval 2026-09-10 (→ STOPPED on Task 2 byte-parity: code drift, zero writes). Amendment 2: user re-approval 2026-09-10, Amendment 2 (explicit authorization of this exact plan path for a fresh Terra run).
-- **Implementation log:** `session_logs/2026-09-10/11-v5-shadow-rebuild-implementation-two-tier.md` (this fresh run; `session_logs/2026-09-10/09-v5-shadow-rebuild-implementation-fresh.md` and `session_logs/2026-09-10/07-v5-shadow-rebuild-implementation.md` are stopped-run evidence, read-only; `session_logs/2026-09-10/06-v5-shadow-rebuild-planning.md` is the planning log)
+- **Implementation log:** `session_logs/2026-09-10/11-v5-shadow-rebuild-implementation-two-tier.md` (Tasks 1–4 + partial Task 5; `session_logs/2026-09-10/09-v5-shadow-rebuild-implementation-fresh.md` and `session_logs/2026-09-10/07-v5-shadow-rebuild-implementation.md` are stopped-run evidence, read-only; `session_logs/2026-09-10/06-v5-shadow-rebuild-planning.md` is the planning log); Task 5 closure under Contract 01: `session_logs/2026-09-22/02-v4-feature-v5-diagnostic-closure.md`
 - **Commit policy:** Separate plan commit (production-adjacent diagnostic; difficult-to-reverse conclusions must stay reviewable)
 - **Supersedes (as executable plan):** `docs/plans/2026-09-09/rebuild-2026-predictions.md` (retained as the root-cause record; its Step 5 is not executable — see Current State §4)
 
@@ -198,15 +198,15 @@ Byte-parity is stale relative to HEAD: the W0 rerun from immutable parents produ
 
 - Independent recomputation of the table from the scored artifacts; `git diff --check`.
 
-**Terra execution note (2026-09-10, BLOCKER — not an amendment):** W2 first
-kickoff is Fri 2026-09-11 23:30 UTC (verified in games Silver `5dabf61a`;
-today 2026-09-10), so no W2 finals exist and the pooled-W1+W2 verdict + kill
-criterion cannot execute yet. W0/W1 shadows scored per this task; W2 shadow
-(`shadow-2026-v5-w2`, `--as-of 2026-09-08T17:50:00Z`) stands frozen pre-kickoff
-in Preview R2. Resume after the Week 2 close: score with the Week 2 close
-`game_outcomes_ref.json`, render the pooled table, apply the kill criterion.
-Interim evidence (not a verdict): v5 predictions are value-identical to v4 for
-all 8 W0 and all 43 W1 games. See implementation log `11-…`.
+**Terra execution note (2026-09-10, resolved 2026-09-22):** W2 finals blocked
+the pooled verdict at planning time. Resolved under
+[Contract 01](../2026-09-13/01-v4-feature-v5-diagnostic-closure.md): the W2
+shadow was scored against the Week 2 close `game_outcomes_ref.json`
+(pipeline run `cb75ca881f3a49d5bd115c4fdeaa7dcb`, 49/49 coverage verified), the
+pooled table rendered, and the kill criterion applied (38.46% < 45% → cause
+not confirmed). Interim evidence (W0/W1 value-identity) was confirmed final:
+v5 predictions are value-identical to v4 for all 100 W0–W2 games. See
+implementation log `11-…` and the closure research report.
 
 ## Testing Strategy
 
@@ -225,12 +225,12 @@ all 8 W0 and all 43 W1 games. See implementation log `11-…`.
 
 ## Definition of Done
 
-- [ ] Tasks 1–5 complete or stopped early per the stated stop rules with gaps recorded.
-- [ ] Verdict table published in the implementation log with kill criterion applied.
-- [ ] No new rows in `prediction_runs`/`predictions`/`prediction_grades` in either database; `current_week` untouched (SELECT evidence).
-- [ ] Official record unchanged: W0/W1 scored, W2 frozen runs intact.
-- [ ] `git diff --check` clean; plan status updated to `Implemented` (or closed as stopped with findings).
-- [ ] `docs/plans/index.md` entry accurate for the final status.
+- [x] Tasks 1–5 complete or stopped early per the stated stop rules with gaps recorded.
+- [x] Verdict table published in the implementation log with kill criterion applied. (Pooled W1+W2 shadow spread 38.46% < 45% → cause not confirmed; closure log 2026-09-22/02 + research report.)
+- [x] No new rows in `prediction_runs`/`predictions`/`prediction_grades` in either database; `current_week` untouched (SELECT evidence, both sessions).
+- [x] Official record unchanged: W0/W1 scored, W2 frozen runs intact.
+- [x] `git diff --check` clean; plan status updated to `Implemented` (2026-09-22).
+- [x] `docs/plans/index.md` entry accurate for the final status.
 
 ## Amendments
 
