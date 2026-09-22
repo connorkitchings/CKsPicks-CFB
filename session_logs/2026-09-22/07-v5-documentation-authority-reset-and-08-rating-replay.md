@@ -3,11 +3,11 @@
 ## TL;DR
 
 - **Worked On:** Task 1 of [the V5 documentation reset and completion-sequence contract](../../docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md), followed by Contract 08 runner and Preview-parent reconciliation.
-- **Outcome:** Active documentation now reflects the accepted September 22 V5 state and the `07 → 08 → 09 → 06 → conditional Phase 7` sequence. The first Contract 08 implementation check found that no live replay runner or independent live verifier exists yet; the historical runner is deliberately sealed to the R6/Repair-v2 60-candidate tournament.
+- **Outcome:** Active documentation now reflects the accepted September 22 V5 state and the `07 → 08 → 09 → 06 → conditional Phase 7` sequence. Contract 08 now has an isolated live replay producer and an independently implemented verifier; both reconstruct the same three output datasets from the frozen lineage.
 - **Plan Contract:** `docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md` — In Progress; Task 1 complete.
 - **Approval / Status:** User explicitly authorized the contract on 2026-09-22.
-- **Blockers:** Contract 08 needs a narrow implementation amendment that specifies a distinct live replay runner/verifier and its immutable 2026 preseason-input binding. The approved contract already requires an explicit amendment before sealed 03/11B code may admit a 2026 parent.
-- **Next:** Amend Contract 08 with the isolated live-replay interfaces, then implement and certify it. Do not alter the historical tournament runner or its artifacts.
+- **Blockers:** None in code. The immutable Preview apply/verify/repeat cycle remains to be executed from the clean committed verifier checkpoint.
+- **Next:** Commit the verifier checkpoint, run the exact new-HEAD preflight/apply/verify/idempotent-repeat cycle under a new immutable run ID, and record the certified replay evidence.
 
 ## Context and Decisions
 
@@ -33,6 +33,12 @@
   snapshots are keyed to the team playing in the target game. The corrected
   team-specific rule resolves 326 source observations without changing a
   selected parameter, historical artifact, or production boundary.
+- Added a verifier-owned reconstruction module and CLI. They independently
+  validate all parent raw checksums, the exact three preseason manifests,
+  output schemas, row counts, partitions, and record digests without importing
+  the producer, historical tournament materializer, or research runners.
+- Added agreement, perturbation, and import-boundary tests. Producer and
+  verifier frames match exactly for priors, rating states, and team states.
 
 ## Files Modified
 
@@ -41,6 +47,9 @@
 - `docs/modeling/` and `docs/architecture/repository_boundaries.md` — current V5 authority alignment.
 - `tests/test_data_first_documentation_authority.py` — current-sequence coverage and historical-record handling.
 - `docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md` — governing contract.
+- `src/cks_picks_cfb/ratings/possession_live_replay_verification.py` — independent replay reconstruction and artifact verifier.
+- `scripts/research/verify_data_first_possession_rating_replay.py` — Preview verifier CLI and parent-envelope checks.
+- `tests/ratings/test_possession_live_replay.py` — producer/verifier agreement, perturbation, and isolation tests.
 
 ## Validation
 
@@ -49,19 +58,24 @@
 - [x] `uv run mkdocs build --strict --quiet` — passed.
 - [x] `git diff --check` — passed.
 - [x] Focused replay core tests — 3 passed.
+- [x] Replay producer/verifier and historical rating regression tests — 20 passed.
 - [x] Focused Ruff — passed.
+- [x] Ruff formatting check — passed.
+- [x] Verifier CLI help smoke test — passed.
 - [x] Read-only real-parent preflight — passed; no R2 writes.
 
 ## Amendments and Blockers
 
-- The Contract 08 implementation interface is a material unresolved detail, not a failing data gate. Its exact approved text requires a separate amendment before admitting a 2026 replay parent to sealed historical code.
-- The independent live-replay verifier is still required before the replay can
-  be applied. The current code checkpoint intentionally has no R2 writes.
+- Contract 08 Amendment 2 defines the isolated live replay and independent
+  verification interfaces. The historical tournament code and artifacts remain
+  unchanged.
+- No R2 write has occurred yet. The apply is intentionally deferred until this
+  verifier checkpoint is committed and the authoritative preflight binds the
+  clean HEAD.
 
 ## Handoff Notes
 
-- **Resume at:** Implement the verifier-owned live-replay reconstruction,
-  verifier CLI, and idempotency tests; then commit and run the exact new-HEAD
+- **Resume at:** Commit this verifier checkpoint, then run the exact new-HEAD
   preflight/apply/verify/repeat cycle under a new immutable run ID.
 - **Watch out for:** The historical runner and verifier are sealed to R6/Repair-v2 and the 60-candidate selection tournament. Do not add a CLI-only parent override, reuse the selection path, or apply an R2 run while the repository is uncommitted; the existing runner's apply gate requires a clean committed worktree.
 

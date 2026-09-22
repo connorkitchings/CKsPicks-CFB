@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import ast
 import copy
+from pathlib import Path
 
 import pandas as pd
 import pytest
 
+from cks_picks_cfb.ratings import possession_live_replay_verification as verifier
 from cks_picks_cfb.ratings.possession_live_replay import (
     FROZEN_CANDIDATE,
     LiveReplayError,
@@ -58,7 +61,9 @@ def _inputs() -> LiveReplayInputs:
                         "measurement_id": "ppp",
                         "unit_role": role,
                         "adjustment_iteration": 4,
-                        "adjusted_value": 2.0 + week + (0.5 if team == "Alpha" else -0.5),
+                        "adjusted_value": 2.0
+                        + week
+                        + (0.5 if team == "Alpha" else -0.5),
                         "timing_class": "live",
                     }
                 )
@@ -103,9 +108,7 @@ def test_future_snapshot_cannot_change_an_earlier_state() -> None:
     baseline = build_live_replay(_inputs())
     original = copy.deepcopy(_inputs())
     snapshots = original.snapshots.copy()
-    snapshots.loc[
-        snapshots["as_of_game_id"].eq(102), "adjusted_value"
-    ] += 100.0
+    snapshots.loc[snapshots["as_of_game_id"].eq(102), "adjusted_value"] += 100.0
     altered = LiveReplayInputs(
         population=original.population,
         observations=original.observations,
@@ -116,7 +119,9 @@ def test_future_snapshot_cannot_change_an_earlier_state() -> None:
     replayed = build_live_replay(altered)
     before = baseline.rating_states[baseline.rating_states["week"].lt(2)]
     after = replayed.rating_states[replayed.rating_states["week"].lt(2)]
-    pd.testing.assert_frame_equal(before.reset_index(drop=True), after.reset_index(drop=True))
+    pd.testing.assert_frame_equal(
+        before.reset_index(drop=True), after.reset_index(drop=True)
+    )
 
 
 def test_replay_rejects_a_gap_in_week_history() -> None:
@@ -130,3 +135,65 @@ def test_replay_rejects_a_gap_in_week_history() -> None:
 
     with pytest.raises(LiveReplayError, match="continuous"):
         build_live_replay(inputs)
+
+
+def _verifier_inputs(inputs: LiveReplayInputs) -> verifier.VerifierInputs:
+    return verifier.VerifierInputs(
+        population=inputs.population,
+        observations=inputs.observations,
+        snapshots=inputs.snapshots,
+        historical_terminal=inputs.historical_terminal,
+    )
+
+
+def test_independent_verifier_matches_all_producer_frames() -> None:
+    inputs = _inputs()
+    produced = build_live_replay(inputs)
+    rebuilt = verifier.reconstruct_replay(_verifier_inputs(inputs))
+
+    pd.testing.assert_frame_equal(produced.priors, rebuilt.frames["priors"])
+    pd.testing.assert_frame_equal(
+        produced.rating_states, rebuilt.frames["rating_states"]
+    )
+    pd.testing.assert_frame_equal(produced.team_states, rebuilt.frames["team_states"])
+
+
+def test_independent_verifier_detects_parent_perturbation() -> None:
+    inputs = _inputs()
+    baseline = verifier.reconstruct_replay(_verifier_inputs(inputs))
+    snapshots = inputs.snapshots.copy()
+    snapshots.loc[snapshots["as_of_game_id"].eq(101), "adjusted_value"] += 5.0
+    changed = verifier.reconstruct_replay(
+        verifier.VerifierInputs(
+            population=inputs.population,
+            observations=inputs.observations,
+            snapshots=snapshots,
+            historical_terminal=inputs.historical_terminal,
+        )
+    )
+    assert (
+        baseline.plans["rating_states"]["records_sha"]
+        != changed.plans["rating_states"]["records_sha"]
+    )
+
+
+def test_independent_verifier_import_boundary() -> None:
+    paths = (
+        Path(verifier.__file__),
+        Path("scripts/research/verify_data_first_possession_rating_replay.py"),
+    )
+    forbidden = {
+        "cks_picks_cfb.ratings.possession_live_replay",
+        "cks_picks_cfb.ratings.possession_rating_materializer",
+        "cks_picks_cfb.ratings.possession_rating_tournament",
+        "scripts.research.run_data_first_possession_rating_replay",
+        "scripts.research.run_data_first_possession_ratings",
+    }
+    for path in paths:
+        tree = ast.parse(path.read_text())
+        imports = {
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module
+        }
+        assert not imports & forbidden
