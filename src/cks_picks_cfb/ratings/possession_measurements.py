@@ -26,6 +26,7 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     SNAPSHOT_COLUMNS,
     TERMINAL_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_repair_v2 import LIVE_TIMING, RECONSTRUCTED_TIMING
 from cks_picks_cfb.preseason_features import canonical_team
 
 _DEAD_MARKERS = ("timeout", "end of", "period end", "game end", "delay of game")
@@ -124,8 +125,12 @@ def build_possession_ledger(
     population: pd.DataFrame,
     outcomes: pd.DataFrame | None = None,
     progress: Callable[..., None] | None = None,
+    scope: str = "historical",
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Build regulation possession eligibility and score-attribution ledgers."""
+    if scope not in ("historical", "season_2026"):
+        raise PossessionMeasurementError(f"ledger build has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
     _required(
         byplay,
@@ -210,7 +215,7 @@ def build_possession_ledger(
             "quality_reason": None
             if len(defenses) == 1 and period_class != "unknown"
             else "ambiguous_drive_identity_or_period",
-            "timing_class": "historically_reconstructed",
+            "timing_class": row_timing,
         }
         possession_records.append(record)
         possession_lookup[(int(season), int(game_id), int(drive), str(offense))] = (
@@ -340,7 +345,7 @@ def build_possession_ledger(
                         "associated_possession_id": None,
                         "conversion_for_event_id": None,
                         "quality_reason": malformed_reason,
-                        "timing_class": "historically_reconstructed",
+                        "timing_class": row_timing,
                     }
                 )
                 malformed_scores.add(key)
@@ -369,7 +374,7 @@ def build_possession_ledger(
                             "associated_possession_id": None,
                             "conversion_for_event_id": None,
                             "quality_reason": "exceeds_repaired_final",
-                            "timing_class": "historically_reconstructed",
+                            "timing_class": row_timing,
                         }
                     )
                     continue
@@ -441,7 +446,7 @@ def build_possession_ledger(
                 "associated_possession_id": associated,
                 "conversion_for_event_id": conversion_for,
                 "quality_reason": reason,
-                "timing_class": "historically_reconstructed",
+                "timing_class": row_timing,
             }
             events.append(item)
             if category != "overtime" and category != "unresolved":
@@ -474,7 +479,11 @@ def _observation(
     usable: bool,
     reason: str | None,
     flags: list[str],
+    scope: str = "historical",
 ) -> dict[str, Any]:
+    if scope not in ("historical", "season_2026"):
+        raise PossessionMeasurementError(f"observation has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     value = numerator / denominator if usable and denominator > 0 else None
     return {
         "season": int(game.season),
@@ -496,7 +505,7 @@ def _observation(
         "coverage_status": "observed" if usable else "missing",
         "missing_reason": reason,
         "quality_flags": "|".join(sorted(set(flags))) or None,
-        "timing_class": "historically_reconstructed",
+        "timing_class": row_timing,
     }
 
 
@@ -588,14 +597,19 @@ def build_measurements(
     population: pd.DataFrame,
     outcomes: pd.DataFrame | None = None,
     progress: Callable[..., None] | None = None,
+    scope: str = "historical",
 ) -> PossessionMeasurementResult:
     """Build both role measurements while preserving every scoreable game row."""
+    if scope not in ("historical", "season_2026"):
+        raise PossessionMeasurementError(f"measurement build has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
     possessions, scoring = build_possession_ledger(
         byplay=byplay,
         population=population,
         outcomes=outcomes,
         progress=progress,
+        scope=scope,
     )
     if progress is not None:
         progress(
@@ -714,6 +728,7 @@ def build_measurements(
                         usable=usable,
                         reason=reason,
                         flags=flags,
+                        scope=scope,
                     )
                 )
                 numerator, denominator, usable, reason, flags = base[opponent][
@@ -732,6 +747,7 @@ def build_measurements(
                         usable=usable,
                         reason=reason,
                         flags=flags,
+                        scope=scope,
                     )
                 )
         score_stream_points, event_count = game_totals.get(
@@ -780,7 +796,7 @@ def build_measurements(
                         .sort_index()
                         .to_dict()
                     ),
-                    "timing_class": "historically_reconstructed",
+                    "timing_class": row_timing,
                 }
             )
     if outcomes is not None:
@@ -914,6 +930,7 @@ def replay_partitions(
     observations: pd.DataFrame,
     emit: ReplayPartSink,
     progress: Callable[..., None] | None = None,
+    scope: str = "historical",
 ) -> dict[str, Any]:
     """Emit replay records one declared season/week partition at a time.
 
@@ -921,6 +938,9 @@ def replay_partitions(
     retained beyond a single logical partition.  ``build_replay`` remains a
     small-fixture convenience wrapper for focused unit tests.
     """
+    if scope not in ("historical", "season_2026"):
+        raise PossessionMeasurementError(f"replay has unknown scope: {scope}")
+    row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     max_history = 0
     for season in sorted(population["season"].astype(int).unique()):
         games = population[
@@ -1012,7 +1032,7 @@ def replay_partitions(
                             "iteration_four_value": adjusted.get(key),
                             "included": True,
                             "missing_reason": None,
-                            "timing_class": "historically_reconstructed",
+                            "timing_class": row_timing,
                         }
                     )
                 for team in (str(game.home_team), str(game.away_team)):
@@ -1044,7 +1064,7 @@ def replay_partitions(
                                         "primary_exposure": denom,
                                         "games_exposure": games_exposure,
                                         "source_game_count": source_game_count,
-                                        "timing_class": "historically_reconstructed",
+                                        "timing_class": row_timing,
                                         "availability_policy": "prior_week_and_source_kickoff_plus_6h",
                                     }
                                 )
@@ -1084,7 +1104,7 @@ def replay_partitions(
                     "primary_exposure": float(rows["denominator"].sum()),
                     "games_exposure": int(rows["game_id"].nunique()),
                     "source_game_count": int(len(rows)),
-                    "timing_class": "historically_reconstructed",
+                    "timing_class": row_timing,
                 }
             )
         emit(

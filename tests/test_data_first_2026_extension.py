@@ -665,3 +665,72 @@ def test_repair_v3_expected_state_override_verifies_live() -> None:
     assert result["verified_games"] == 2
     assert result["forbidden_2020_rows"] == 0
     assert result["producer_imports_present"] is False
+
+
+# --- producer ledger scope ---
+
+
+class _FakeGame:
+    season = 2026
+    week = 1
+    game_id = 401800001
+    kickoff_utc = "2026-08-29T16:00:00Z"
+
+
+def test_producer_observation_stamps_live_for_2026() -> None:
+    from cks_picks_cfb.ratings.possession_measurements import _observation
+
+    row = _observation(
+        game=_FakeGame(),
+        team="A",
+        opponent="B",
+        side="home",
+        measurement="ppp",
+        role="offense",
+        numerator=3.0,
+        denominator=8.0,
+        usable=True,
+        reason=None,
+        flags=[],
+        scope="season_2026",
+    )
+    assert row["timing_class"] == "live"
+    row = _observation(
+        game=_FakeGame(),
+        team="A",
+        opponent="B",
+        side="home",
+        measurement="ppp",
+        role="offense",
+        numerator=3.0,
+        denominator=8.0,
+        usable=True,
+        reason=None,
+        flags=[],
+    )
+    assert row["timing_class"] == "historically_reconstructed"
+
+
+def test_producer_builders_reject_unknown_scope() -> None:
+    from cks_picks_cfb.ratings.possession_measurements import (
+        PossessionMeasurementError,
+        build_measurements,
+        build_possession_ledger,
+        replay_partitions,
+    )
+
+    with pytest.raises(PossessionMeasurementError, match="unknown scope"):
+        build_possession_ledger(
+            byplay=pd.DataFrame(), population=pd.DataFrame(), scope="season_1999"
+        )
+    with pytest.raises(PossessionMeasurementError, match="unknown scope"):
+        build_measurements(
+            byplay=pd.DataFrame(), population=pd.DataFrame(), scope="season_1999"
+        )
+    with pytest.raises(PossessionMeasurementError, match="unknown scope"):
+        replay_partitions(
+            population=pd.DataFrame(),
+            observations=pd.DataFrame(),
+            emit=lambda *a: None,
+            scope="season_1999",
+        )

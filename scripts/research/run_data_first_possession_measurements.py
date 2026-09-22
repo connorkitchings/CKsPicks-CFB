@@ -542,6 +542,7 @@ def preflight(
         outcomes=combined_outcomes,
         population=population,
         progress=(progress.emit if progress is not None else None),
+        scope=scope,
     )
     frames = {
         "population": population,
@@ -580,6 +581,7 @@ def preflight(
             plans, name, partition, frame, writers
         ),
         progress=(progress.emit if progress is not None else None),
+        scope=scope,
     )
     scale_diagnostics: dict[str, Any] = {
         "fixed_settings": {
