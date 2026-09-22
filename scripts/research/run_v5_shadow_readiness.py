@@ -27,6 +27,10 @@ import yaml
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.data_first_forecast_v1 import REQUIRED_RATING_CANDIDATE
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_MANIFEST_SCHEMA,
+    validate_prediction_frame,
+)
 from cks_picks_cfb.data.data_first_phase2 import DEVELOPMENT_SEASONS
 from cks_picks_cfb.data.data_first_possession_rating_v1 import (
     PRIOR_COLUMNS,
@@ -45,12 +49,16 @@ from cks_picks_cfb.data.data_first_shadow_v1 import (
 )
 from cks_picks_cfb.data.lake import (
     BuildRequest,
+    PartitionedDatasetRef,
     canonical_frame_digest,
+    read_dataset,
 )
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.forecast.offsets import build_offsets
 from cks_picks_cfb.forecast.shadow import (
+    SourceStatus,
+    _timing,
     perturbation_invariance_proof,
     replay_frozen_forecast,
 )
@@ -496,6 +504,13 @@ def _load_parents(
     rating, rating_raw = _read_json(storage, args.rating_manifest_uri)
     measurement, measurement_raw = _read_json(storage, args.measurement_manifest_uri)
     repair, repair_raw = _read_json(storage, args.repair_manifest_uri)
+    bridge = None
+    bridge_raw = b""
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        bridge_uri = str((forecast.get("parents") or {}).get("bridge_uri") or "")
+        if not bridge_uri:
+            raise ShadowRunError("live forecast does not bind its 11C bridge manifest")
+        bridge, bridge_raw = _read_json(storage, bridge_uri)
     parents = verify_candidate_parents(
         forecast,
         rating,
@@ -509,6 +524,8 @@ def _load_parents(
         measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
         repair_manifest_uri=args.repair_manifest_uri,
         repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
+        bridge=bridge,
+        bridge_raw_sha256=hashlib.sha256(bridge_raw).hexdigest() if bridge_raw else "",
     )
     progress.emit(
         "parents_loaded",
@@ -528,6 +545,50 @@ def _load_sources(
 ) -> dict[str, Any]:
     measurement = parents["measurement"]
     repair = parents["repair"]
+    forecast = parents["forecast"]
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        from cks_picks_cfb.forecast.live_sources import load_live_forecast_sources
+
+        live = load_live_forecast_sources(
+            storage=storage,
+            measurement_uri=parents["measurement_manifest_uri"],
+            rating_uri=parents["rating_manifest_uri"],
+            schedule_uri=str(
+                (forecast.get("parents") or {}).get("schedule_ref_uri", "")
+            ),
+            bridge_uri=str((forecast.get("parents") or {}).get("bridge_uri", "")),
+            as_of=str((forecast.get("identity") or {}).get("as_of", "")),
+        )
+        population = live["population"]
+        outcomes = (
+            population[
+                population["schedule_completed"].astype(bool)
+                & population["outcome_valid"].astype(bool)
+            ]
+            .loc[:, ["season", "week", "game_id", "schedule_completed"]]
+            .rename(columns={"schedule_completed": "completed"})
+        )
+        priors = _stream_partitioned(
+            storage,
+            value=rating["output_refs"]["priors"],
+            dataset="possession_rating_prior",
+            schema="data_first_possession_rating_prior_v1",
+            columns=list(PRIOR_COLUMNS),
+        )
+        progress.emit(
+            "sources_streamed",
+            scoring_events=len(live["scoring_events"]),
+            team_states=len(live["states"]),
+            priors=len(priors),
+        )
+        return {
+            "population": population,
+            "outcomes": outcomes,
+            "scoring_events": live["scoring_events"],
+            "team_states": live["states"],
+            "priors": priors,
+            "historical_features": live["historical_features"],
+        }
     rating_inputs = load_rating_inputs(
         storage=storage,
         measurement=measurement,
@@ -569,6 +630,89 @@ def _load_sources(
     }
 
 
+def _live_candidate_status(
+    *,
+    storage: Any,
+    forecast: Mapping[str, Any],
+    population: pd.DataFrame,
+    season: int,
+    week: int,
+    cutoff: str,
+) -> SourceStatus:
+    """Require complete outcome-free predictions for the requested live slate."""
+    ref = forecast.get("output_ref") or {}
+    try:
+        part_manifest = json.loads(storage.read_bytes(ref["uri"]))
+        stored_ref = PartitionedDatasetRef(
+            artifact_kind=ref["artifact_kind"],
+            dataset=ref["dataset"],
+            version_id=ref["version_id"],
+            schema_version=ref["schema_version"],
+            content_sha=ref["content_sha"],
+            records_sha=part_manifest.get("records_sha", ""),
+            uri=ref["uri"],
+            row_count=int(ref["row_count"]),
+            partition_keys=tuple(
+                part_manifest.get("partition_keys") or ("season", "week")
+            ),
+        )
+        predictions = read_dataset(storage, stored_ref)
+        validate_prediction_frame(
+            predictions, run_id=str(forecast["identity"]["run_id"])
+        )
+        observed = set(
+            predictions.loc[
+                predictions["season"].eq(season) & predictions["week"].eq(week),
+                ["game_id", "target"],
+            ]
+            .assign(game_id=lambda value: value["game_id"].astype(int))
+            .itertuples(index=False, name=None)
+        )
+        declared = population[
+            population["season"].eq(season) & population["week"].eq(week)
+        ]
+        if "forecast_eligible" in declared:
+            declared = declared[declared["forecast_eligible"].astype(bool)]
+        expected = set(declared["game_id"].astype(int))
+        if not expected:
+            return SourceStatus(
+                "candidate",
+                "unavailable",
+                "missing",
+                "",
+                f"no schedule rows for {season} week {week}",
+            )
+        expected_pairs = {
+            (game_id, target) for game_id in expected for target in ("margin", "total")
+        }
+        if observed != expected_pairs:
+            missing = sorted(expected_pairs - observed)
+            extra = sorted(observed - expected_pairs)
+            return SourceStatus(
+                "candidate",
+                "unavailable",
+                "missing",
+                "",
+                "live forecast population mismatch; "
+                f"missing game/target={missing[:5]}, extra game/target={extra[:5]}",
+            )
+        return SourceStatus(
+            "candidate",
+            "available",
+            _timing(str(forecast["identity"]["as_of"]), cutoff),
+            "",
+            "",
+        )
+    except (KeyError, OSError, ValueError, TypeError):
+        return SourceStatus(
+            "candidate",
+            "unavailable",
+            "missing",
+            "",
+            "live forecast output unavailable or invalid",
+        )
+
+
 def preflight(
     *, storage: Any, args: argparse.Namespace, progress: _Progress
 ) -> dict[str, Any]:
@@ -593,6 +737,7 @@ def preflight(
             "repair_manifest_uri": parents["repair_manifest_uri"],
             "repair_raw_sha256": parents["repair_raw_sha256"],
         },
+        candidate=forecast["identity"]["run_id"],
     )
     sources = _load_sources(storage, parents, rating, progress)
     from cks_picks_cfb.forecast.shadow import check_source_availability as check
@@ -611,6 +756,19 @@ def preflight(
         measurement_as_of=measurement_as_of,
         rating_as_of=rating_as_of,
     )
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        candidate_status = _live_candidate_status(
+            storage=storage,
+            forecast=forecast,
+            population=sources["population"],
+            season=int(args.season),
+            week=int(args.week),
+            cutoff=str(args.as_of),
+        )
+        statuses = [
+            candidate_status if status.source == "candidate" else status
+            for status in statuses
+        ]
     from cks_picks_cfb.forecast.shadow import build_readiness_report as build
 
     records, overall = build(
@@ -624,18 +782,23 @@ def preflight(
     replay_sha: str | None = None
     if args.replay:
         progress.emit("replay_started")
-        offsets = build_offsets(
-            sources["population"],
-            sources["scoring_events"],
-            development_seasons=tuple(DEVELOPMENT_SEASONS),
-            equivalent_games=int(config.get("offsets", {}).get("equivalent_games", 4)),
-        )
-        features = _assemble_feature_frame(
-            population=sources["population"],
-            outcomes=sources["outcomes"],
-            team_states=sources["team_states"],
-            offsets=offsets.offsets,
-        )
+        if "historical_features" in sources:
+            features = sources["historical_features"]
+        else:
+            offsets = build_offsets(
+                sources["population"],
+                sources["scoring_events"],
+                development_seasons=tuple(DEVELOPMENT_SEASONS),
+                equivalent_games=int(
+                    config.get("offsets", {}).get("equivalent_games", 4)
+                ),
+            )
+            features = _assemble_feature_frame(
+                population=sources["population"],
+                outcomes=sources["outcomes"],
+                team_states=sources["team_states"],
+                offsets=offsets.offsets,
+            )
         first = replay_frozen_forecast(
             features=features,
             horizon="expanding",
@@ -773,6 +936,19 @@ def apply(
         measurement_as_of=measurement_as_of,
         rating_as_of=rating_as_of,
     )
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        candidate_status = _live_candidate_status(
+            storage=storage,
+            forecast=forecast,
+            population=sources["population"],
+            season=int(args.season),
+            week=int(args.week),
+            cutoff=str(args.as_of),
+        )
+        statuses = [
+            candidate_status if status.source == "candidate" else status
+            for status in statuses
+        ]
     from cks_picks_cfb.forecast.shadow import build_readiness_report as build
 
     records, overall = build(

@@ -9,18 +9,7 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current research checkpoint (2026-09-22):** V5 ratings successor research
-> is distinct from the V4 feature schema v5 diagnostic. Its historical development
-> and verification lane is complete and accepted; all four historical audit findings
-> are closed. Contract 07 is Implemented with 157 certified live 2026 games through
-> Week 3. Contract 08 is Implemented for Weeks 0–3 as independently verified
-> replay `possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of
-> Contracts 07 and 08 is next, followed by Contract 09 live readiness, Contract
-> 06's six-slate prospective evaluation, and a conditional Phase 7 promotion
-> review. See the [data-first roadmap](data-first-football-forecasting-roadmap.md)
-> for the detailed active path. Repair v2 and Phase 3 v2 remain historical evidence,
-> R6 is superseded, and the original Phase 4B retained manifest remains prohibited
-> as a forecasting parent.
+> **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V4 remains public. Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement.
 
 ## Direction
 

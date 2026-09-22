@@ -1,5 +1,7 @@
 # Weekly Pipeline — 2026 Season
 
+> **V5 Preview path:** The [current V5 status](../modeling/v5_status.md) and [cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) govern the future replacement of V4. `conf/weekly_bets/v5_preview_2026.yaml` selects the explicit V5 live-forecast adapter only after it pins an independently verified current forecast. The adapter emits the existing immutable prediction-run artifact and keeps production activation disabled until a separate decision. V4 remains the rollback configuration.
+
 R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when the explicit publication policy permits it; any non-`predictions` mode is fail-closed market-only rendering. Production never depends on repository-local data, model files, or mutable R2 pointers. V4 remains the active production/rollback bundle while rating work is isolated in shadow artifacts. See [2026 Data Platform](../architecture/data_platform_2026.md), the [Production Runbook](production_runbook.md), and the [2026 roadmap](../planning/roadmap.md).
 
 ## Required setup

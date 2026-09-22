@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-- **Worked On:** Task 1 of [the V5 documentation reset and completion-sequence contract](../../docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md), followed by Contract 08 runner and Preview-parent reconciliation.
+- **Worked On:** Task 1 of [the V5 documentation reset and completion-sequence contract](../../docs/archive/v5-contracts/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md), followed by Contract 08 runner and Preview-parent reconciliation.
 - **Outcome:** Active documentation reflects the accepted September 22 V5 state and the `07 → 08 → 09 → 06 → conditional Phase 7` sequence. Contract 08 is Implemented for Weeks 0–3 as independently verified Preview replay `possession-v1-rating-replay-20260922-fcaa571`.
 - **Plan Contract:** `docs/plans/2026-09-22/02-v5-documentation-reset-and-completion-sequence.md` — In Progress; Task 1 complete.
 - **Approval / Status:** User explicitly authorized the contract on 2026-09-22.

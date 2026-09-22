@@ -2,7 +2,7 @@
 
 > **Authority (2026-09-13):** Current V5 semantics follow the
 > [methodology](possession_rating_methodology.md) and
-> [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
+> [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
 > The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 > is the canonical status page. V4 remains unchanged; historical sections below
 > retain their original experiment boundaries and do not authorize execution.
@@ -21,37 +21,7 @@ Repair v2 and Phase 3 v2 remain certified historical evidence; its
 definition. R6 is a superseded historical measurement lineage. The corrected r9
 measurements, 11B ratings, 11C through-2025 final fit, and 11D verification
 completed and accepted the historical V5 lane, closing all four audit findings.
-Contract 07 is Implemented with 157 certified live 2026 games through Week 3.
-Contract 08 is Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
-07 and 08 is next, followed by Contract 09 readiness, Contract 06's six-slate
-prospective evaluation, and a conditional Phase 7 promotion review. The
-[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the detailed status authority. V5 remains Preview-only and no 2026 outcome
-may select or tune its frozen rating design.
-
-The original Phase 4B retained manifest remains prohibited as a forecasting
-parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only
-explicitly inherited mathematics carry forward. Preserve the two possession
-definitions, six priors and five updaters, four-pass upstream opponent adjustment,
-and no second schedule adjustment inside ratings.
-
-The first release is **bridge-first**, with a prior-only non-offense translation
-offset. Possession arithmetic, volume models, clock tempo, field-position
-normalization, NB2 and residual ML are later challengers. Ledger categories must
-account for eligible/excluded regulation offense, regulation non-offense, overtime
-and unresolved scoring; full-game labels include all valid scoring.
-
-Scale floor/fallback values 0.30/1.00 (PPP), 0.50/1.50 (EPA), and equivalent
-exposures 8/20 possessions are fixed first-generation settings, not empirically
-certified optima. Seasonal scales use preceding-season evidence; no global
-2015–2019 fitting is permitted. Analytic evidence weight depends on prior variance
-as documented in D9; `n/(n+k)` applies only when prior variance is one.
-
-After structural rating selection, compare expanding fitting history with the
-latest five eligible seasons on identical 2022–2025 validation games. Preserve
-continuous state carryover, earlier-only fitting/calibration, and a single shared
-window policy for both targets. Historical results remain development evidence.
+See the [current V5 status](v5_status.md) for operational gates and the revised site cutover policy.
 
 ## Goal
 
@@ -230,7 +200,7 @@ is mandatory.
 
 ## Follow-on implementation contracts
 
-The [V5 package](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+The [V5 package](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 defines 02 possession certification → 03 rating estimation → 04 bridge/window
 selection → 05 shadow tooling and authentic live readiness → 06 six-slate evidence.
 Each exact contract requires its own authorized task and verified parents. Approval,

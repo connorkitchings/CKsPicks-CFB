@@ -14,7 +14,7 @@ Replay the **frozen** Contract 03 winner `ppp__rho_0_60__exposure`
 from Week 0 through the latest completed week, producing certified 2026
 `team_states` so readiness resolves and Contract 09 can forecast. No
 re-selection, no candidate comparison, no tuning: 2026 is replay, not a new
-validation season. The [common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+validation season. The [common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is binding.
 
 **Entry gate:** Contract 07 Implemented with a certified 2026 measurement
@@ -44,7 +44,7 @@ historical readiness recommendation on 2026-09-22
 scorecard run `readiness-v1-20260921-scorecard`, manifest SHA
 `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`).
 Contracts 07–09 were re-reviewed under
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
 the historical-first deferral is **lifted** and execution is authorized against
 the corrected certified lineage (Amendment 1). The first Contract 06 slate
 target is Week 5 (~Thu Oct 1 first kickoff).
@@ -213,7 +213,7 @@ code admits the 2026 replay parent only by explicit amendment,
 **Impact:** No design, scope, or acceptance-criteria change; the certified
 parent identity is re-pointed with the recorded no-flip evidence. Re-review
 authority and the authorized execution sequence:
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
 
 ### Amendment 2 — Isolated live-replay interface (Terra, 2026-09-22)
 
@@ -251,3 +251,23 @@ idempotency. Historical 11B artifacts remain read-only parents.
 **Impact:** This implements the original contract's explicit sealed-code
 amendment requirement. It does not change the candidate, mathematics,
 admission rules, production boundary, or Contract 09 entry gate.
+
+### Amendment 3 — Refreshed Contract 07 parent identity (Terra, 2026-09-22)
+
+**Reason:** Contract 09 requires the Week 4 Contract 07 refresh to have a new
+immutable run identity. The initial Contract 08 runner and verifier had
+hard-coded the prior Weeks 0–3 measurement run ID, which would reject the
+required refreshed parent.
+
+**Revised interface:** Contract 08 now admits a signed Preview Contract 07
+manifest for the 2026 extension when it carries the complete measurement
+output set and certification digest. Contract 08 continues to bind
+the exact measurement manifest URI and raw checksum into its replay identity
+and terminal parent record; the independent verifier enforces the same
+identity-bound lineage. The Week 4 stabilized-finals gate remains in Contract
+09 and still blocks live forecasts until the 07/08 refresh is complete.
+
+**Impact:** No historical parent, rating candidate, replay mathematics, or
+existing Preview artifact changes. The amendment removes only the stale 07
+run-ID pin so a new immutable Week 4 parent can pass the already approved
+Contract 08 replay path.

@@ -64,8 +64,8 @@ idempotent repeat, and write the human-readable report.
 - Code: `src/cks_picks_cfb/audit/` check suites; `scripts/research/verify_data_first_historical_audit.py`.
 - Outputs: `artifacts/research/data-first-football-v1/audits/historical-foundation-v1/runs/<run-id>/`
   (Preview only) plus `docs/research/` report.
-- Consumers: [Contract 11](../2026-09-18/11-v5-forecast-verification-closure.md)
-  (gated) and [Contract 12](../2026-09-18/12-v5-historical-results-and-readiness-review.md).
+- Consumers: [Contract 11](11-v5-forecast-verification-closure.md)
+  (gated) and [Contract 12](12-v5-historical-results-and-readiness-review.md).
 
 ## Implementation tasks
 

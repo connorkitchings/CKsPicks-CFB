@@ -13,67 +13,7 @@
 
 ## Current V5 evaluation contract (2026-09-22)
 
-The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
-and the re-reviewed 07–09 extension govern current research. V5 ratings
-successor is distinct from V4 feature schema v5. Its historical development and
-verification lane is complete and accepted: all four historical audit findings
-are closed, and the through-2025 forecast fit is independently verified. Contract
-07 is Implemented with 157 certified live 2026 games through Week 3. Contract 08
-is Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
-07 and 08 is next, followed by Contract 09 live readiness, Contract 06's
-six-slate prospective evaluation, and a conditional Phase 7 promotion review.
-The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the status authority.
-
-Repair v2 and Phase 3 v2 remain historical evidence, and R6 is superseded by
-r9. The original Phase 4B retained manifest remains prohibited as a forecasting
-parent. A 2026 replay or `live` timing field does not create prospective evidence;
-only Contract 06's verified pre-kickoff freezes can do so.
-
-Use complete schedule-derived populations, 2015–2019 and 2021–2025 development
-history, and outer seasons 2018, 2019, 2021–2025. Exclude 2020 everywhere and 2026
-outcomes from development selection. Inner validation starts in 2017 with at least
-two earlier fitting seasons. Every fitted transform, prior, noise parameter, head
-and calibration precedes its validation season. Fixed first-generation floor/
-fallback and exposure constants are not fit globally on 2015–2019.
-
-Contract 03 evaluates both definitions across six priors and five updaters with
-identical alpha-10 Ridge bridges. Within-definition reference is fixed-rho/exposure.
-A challenger advances on >=0.5% pooled overall improvement with positive paired
-90% lower bound, or the same early-union gain with full-season MAE within 1%.
-Require <=5% target-season and pooled completed-game-stage regressions. Invalid
-references block advancement; valid simple references may win. Compare the retained
-EPA and PPP winners under the same rules, preferring PPP without an admissible
-EPA gain. Use 2,000 paired season/week bootstrap replicates, seed 20260908,
-common resamples and 5th/95th percentiles. These are development comparisons.
-
-The first forecast release is **bridge-first**. Contract 04 uses fixed pregame
-non-offense offsets and bounded Ridge head selection. Full-game labels include
-OT and excluded offensive scoring; neither becomes a same-game predictor.
-After freezing the structural rating design, compare expanding fitting history
-with the latest five eligible seasons at each nested fit on identical 2022–2025
-games. Preserve continuous team-state history. Latest-five requires >=0.5% pooled
-MAE gain with a positive paired lower bound, each target MAE/CRPS within 1%, and
-<=5% season/stage regression. Otherwise retain expanding history. Report earlier
-and recent eras separately. No head/window gain establishes independent evidence.
-
-Outcome variance is mean squared earlier nested rolling-origin prediction error
-(floor `1e-6`), requiring an eligible prior residual season. Rating posterior
-variance is reported separately and is not added again. Use Gaussian marginal
-target distributions, analytical CRPS and 50/80/95% intervals. No current-validation
-or training-fit residuals may calibrate uncertainty; no second calibration or
-mean-bias correction is in this registry. Separate margin/total heads do not
-claim a coherent joint team-score distribution. NB2/arithmetic are later challengers.
-
-Prospective evidence requires six qualifying normal-coverage paired slates,
->=40 games, T−2h target/T−1h hard measured freeze, and >=24h after the last included
-game's completion for scoring. Week 0 and historical replays do not count. Contract
-05 separates tooling completion from authentic live readiness; 06 collects evidence.
-Prespecified prior-week state/offset updates do not reset the window; changes to
-design/fitting/calibration/source semantics do. Preseason/noise/head/calibration
-parameters stay fixed during the prospective season. Markets are comparison-only
-after football evaluation; promotion requires a separate contract.
+[V5 model development is complete and accepted](v5_status.md). The historical scorecard supports prospective use but offers no like-for-like point-in-time V4 backtest. Current live forecasts require refreshed Week 4 07/08 parents and independent verification. A Preview serving rehearsal and rollback proof govern site cutover; six slates remain a monitoring window, not a prelaunch gate. No 2026 outcome may refit this V5 identity.
 
 ## Ordered evaluation layers
 

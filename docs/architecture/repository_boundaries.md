@@ -67,7 +67,7 @@ six-slate prospective evaluation, and a conditional Phase 7 promotion review.
 The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the canonical status page.
 
-Current execution follows the [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
+Current execution follows the [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
 The original Phase 4B retained manifest remains prohibited as a forecasting
 parent; September 8 Phase 4A–6 execution contracts are Superseded. Only explicitly
 inherited mathematics carry forward. Version new code/artifacts under

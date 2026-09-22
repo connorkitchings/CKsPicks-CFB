@@ -26,6 +26,11 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_COLUMNS,
+    LIVE_FORECAST_MANIFEST_SCHEMA,
+    validate_prediction_frame,
+)
 from cks_picks_cfb.data.data_first_shadow_v1 import (
     SHADOW_DATASETS,
     SHADOW_FREEZE_COLUMNS,
@@ -38,9 +43,11 @@ from cks_picks_cfb.data.data_first_shadow_v1 import (
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     PartitionedDatasetPart,
+    PartitionedDatasetRef,
     PartitionedDatasetWriter,
     build_dataset_version,
     canonical_frame_digest,
+    read_dataset,
 )
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
@@ -183,6 +190,13 @@ def _load_parents(storage: Any, args: argparse.Namespace, progress: _Progress) -
     rating, rating_raw = _read_json(storage, args.rating_manifest_uri)
     measurement, measurement_raw = _read_json(storage, args.measurement_manifest_uri)
     repair, repair_raw = _read_json(storage, args.repair_manifest_uri)
+    bridge = None
+    bridge_raw = b""
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        bridge_uri = str((forecast.get("parents") or {}).get("bridge_uri") or "")
+        if not bridge_uri:
+            raise FreezeRunError("live forecast does not bind its 11C bridge manifest")
+        bridge, bridge_raw = _read_json(storage, bridge_uri)
     parents = verify_candidate_parents(
         forecast,
         rating,
@@ -196,6 +210,8 @@ def _load_parents(storage: Any, args: argparse.Namespace, progress: _Progress) -
         measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
         repair_manifest_uri=args.repair_manifest_uri,
         repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
+        bridge=bridge,
+        bridge_raw_sha256=hashlib.sha256(bridge_raw).hexdigest() if bridge_raw else "",
     )
     progress.emit(
         "parents_loaded",
@@ -260,6 +276,19 @@ def _load_schedule_from_slate(storage: Any, args: argparse.Namespace) -> pd.Data
             ) from exc
 
 
+def _verify_live_schedule_source(
+    *, storage: Any, args: argparse.Namespace, forecast: Mapping[str, Any]
+) -> None:
+    if forecast.get("schema_version") != LIVE_FORECAST_MANIFEST_SCHEMA:
+        return
+    parents = forecast.get("parents") or {}
+    if args.slate_ref_uri != parents.get("schedule_ref_uri"):
+        raise FreezeRunError("freeze schedule URI differs from live forecast parent")
+    actual = hashlib.sha256(storage.read_bytes(args.slate_ref_uri)).hexdigest()
+    if actual != parents.get("schedule_raw_sha256"):
+        raise FreezeRunError("freeze schedule bytes differ from live forecast parent")
+
+
 def _build_synthetic_v5_predictions(
     schedule: pd.DataFrame, season: int, week: int, candidate: str
 ) -> pd.DataFrame:
@@ -287,6 +316,82 @@ def _build_synthetic_v5_predictions(
                 }
             )
     return pd.DataFrame(rows)
+
+
+def _load_live_v5_predictions(
+    storage: Any, forecast: Mapping[str, Any]
+) -> pd.DataFrame:
+    """Read outcome-free live forecasts from the verified candidate manifest."""
+    ref = forecast.get("output_ref")
+    if not ref or ref.get("artifact_kind") != "partitioned_dataset_v1":
+        raise FreezeRunError("live forecast lacks its partitioned prediction output")
+    raw_manifest = json.loads(storage.read_bytes(ref["uri"]))
+    dataset_ref = PartitionedDatasetRef(
+        artifact_kind=ref["artifact_kind"],
+        dataset=ref["dataset"],
+        version_id=ref["version_id"],
+        schema_version=ref["schema_version"],
+        content_sha=ref["content_sha"],
+        records_sha=raw_manifest.get("records_sha", ""),
+        uri=ref["uri"],
+        row_count=int(ref["row_count"]),
+        partition_keys=tuple(raw_manifest.get("partition_keys") or ("season", "week")),
+    )
+    frame = read_dataset(storage, dataset_ref)
+    try:
+        validate_prediction_frame(frame, run_id=str(forecast["identity"]["run_id"]))
+    except ValueError as exc:
+        raise FreezeRunError(f"live forecast output is invalid: {exc}") from exc
+    if set(LIVE_FORECAST_COLUMNS) - set(frame.columns):
+        raise FreezeRunError("live forecast output schema is incomplete")
+    return frame.rename(columns={"run_id": "candidate"})
+
+
+def _v5_predictions_for_candidate(
+    *,
+    storage: Any,
+    forecast: Mapping[str, Any],
+    schedule: pd.DataFrame,
+    season: int,
+    week: int,
+    diagnostic: bool,
+) -> pd.DataFrame:
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        rows = _load_live_v5_predictions(storage, forecast)
+        rows = rows[rows["season"].eq(season) & rows["week"].eq(week)].copy()
+        expected = set(
+            schedule.loc[
+                schedule["season"].eq(season) & schedule["week"].eq(week), "game_id"
+            ].astype(int)
+        )
+        observed = set(rows["game_id"].astype(int))
+        if observed != expected:
+            raise FreezeRunError(
+                "live forecast population does not match the slate schedule"
+            )
+        expected_pairs = {
+            (game_id, target) for game_id in expected for target in ("margin", "total")
+        }
+        observed_pairs = set(
+            map(
+                tuple,
+                rows[["game_id", "target"]]
+                .assign(game_id=lambda frame: frame["game_id"].astype(int))
+                .to_numpy(),
+            )
+        )
+        if observed_pairs != expected_pairs:
+            raise FreezeRunError(
+                "live forecast target coverage does not match the slate schedule"
+            )
+        return rows
+    if not diagnostic:
+        raise FreezeRunError(
+            "historical candidate cannot supply prospective freeze predictions"
+        )
+    return _build_synthetic_v5_predictions(
+        schedule, season, week, forecast["identity"]["run_id"]
+    )
 
 
 def _plan_evidence(
@@ -405,18 +510,22 @@ def preflight(
             "repair_manifest_uri": parents["repair_manifest_uri"],
             "repair_raw_sha256": parents["repair_raw_sha256"],
         },
+        candidate=forecast["identity"]["run_id"],
     )
     schedule = _load_schedule_from_slate(storage, args)
     if schedule.empty:
         raise FreezeRunError(
             "schedule is required for freeze planning (--slate-ref-uri)"
         )
+    _verify_live_schedule_source(storage=storage, args=args, forecast=forecast)
     v4_predictions = _load_v4_predictions(storage, args)
-    v5_predictions = _build_synthetic_v5_predictions(
-        schedule,
-        int(args.season),
-        int(args.week),
-        candidate=forecast["identity"]["run_id"],
+    v5_predictions = _v5_predictions_for_candidate(
+        storage=storage,
+        forecast=forecast,
+        schedule=schedule,
+        season=int(args.season),
+        week=int(args.week),
+        diagnostic=bool(args.diagnostic),
     )
     freeze_plan = plan_freeze(
         candidate=forecast["identity"]["run_id"],
@@ -498,12 +607,15 @@ def apply(
     schedule = _load_schedule_from_slate(storage, args)
     if schedule.empty:
         raise FreezeRunError("schedule required for apply")
+    _verify_live_schedule_source(storage=storage, args=args, forecast=forecast)
     v4_predictions = _load_v4_predictions(storage, args)
-    v5_predictions = _build_synthetic_v5_predictions(
-        schedule,
-        int(args.season),
-        int(args.week),
-        candidate=forecast["identity"]["run_id"],
+    v5_predictions = _v5_predictions_for_candidate(
+        storage=storage,
+        forecast=forecast,
+        schedule=schedule,
+        season=int(args.season),
+        week=int(args.week),
+        diagnostic=bool(args.diagnostic),
     )
     freeze_plan = plan_freeze(
         candidate=forecast["identity"]["run_id"],
@@ -615,6 +727,7 @@ def apply(
             "broader_count": freeze_plan.broader_count,
             "excluded_count": freeze_plan.excluded_count,
         },
+        "diagnostic_only": bool(args.diagnostic),
         "production_activation_authorized": False,
     }
     _immutable_json(storage, freeze_manifest_uri, freeze_manifest)

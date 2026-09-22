@@ -19,6 +19,10 @@ from cks_picks_cfb.data.data_first_forecast_v1 import (
     FORECAST_SELECTION_COLUMNS,
     WINDOW_COMPARISON_COLUMNS,
 )
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_COLUMNS,
+    LIVE_FORECAST_DATASET,
+)
 from cks_picks_cfb.data.data_first_phase3 import (
     PHASE3_ADJUSTED_COLUMNS,
     PHASE3_ADJUSTED_DATASET,
@@ -1124,82 +1128,229 @@ _POSSESSION_SCHEMAS: dict[str, DatasetSchema] = {
 
 _POSSESSION_RATING_SCHEMAS: dict[str, DatasetSchema] = {
     RATING_DATASETS["rating_registry"][0]: DatasetSchema(
-        RATING_DATASETS["rating_registry"][0], RATING_DATASETS["rating_registry"][1],
-        POSSESSION_RATING_REGISTRY_COLUMNS, ("candidate_id",), nonnullable=POSSESSION_RATING_REGISTRY_COLUMNS,
+        RATING_DATASETS["rating_registry"][0],
+        RATING_DATASETS["rating_registry"][1],
+        POSSESSION_RATING_REGISTRY_COLUMNS,
+        ("candidate_id",),
+        nonnullable=POSSESSION_RATING_REGISTRY_COLUMNS,
     ),
     RATING_DATASETS["priors"][0]: DatasetSchema(
-        RATING_DATASETS["priors"][0], RATING_DATASETS["priors"][1], POSSESSION_RATING_PRIOR_COLUMNS,
-        ("candidate_id", "season", "team", "unit_role"), integer_columns=("season", "annual_decay_steps"),
-        nonnullable=("candidate_id", "season", "team", "unit_role", "prior_mean", "prior_variance", "prior_source", "annual_decay_steps"),
+        RATING_DATASETS["priors"][0],
+        RATING_DATASETS["priors"][1],
+        POSSESSION_RATING_PRIOR_COLUMNS,
+        ("candidate_id", "season", "team", "unit_role"),
+        integer_columns=("season", "annual_decay_steps"),
+        nonnullable=(
+            "candidate_id",
+            "season",
+            "team",
+            "unit_role",
+            "prior_mean",
+            "prior_variance",
+            "prior_source",
+            "annual_decay_steps",
+        ),
     ),
     RATING_DATASETS["noise_fits"][0]: DatasetSchema(
-        RATING_DATASETS["noise_fits"][0], RATING_DATASETS["noise_fits"][1], POSSESSION_RATING_NOISE_FIT_COLUMNS,
-        ("candidate_id", "season", "unit_role"), integer_columns=("season",),
-        boolean_columns=("converged", "cold_start"), nonnullable=("candidate_id", "season", "unit_role", "q", "r", "converged", "cold_start", "training_seasons"),
+        RATING_DATASETS["noise_fits"][0],
+        RATING_DATASETS["noise_fits"][1],
+        POSSESSION_RATING_NOISE_FIT_COLUMNS,
+        ("candidate_id", "season", "unit_role"),
+        integer_columns=("season",),
+        boolean_columns=("converged", "cold_start"),
+        nonnullable=(
+            "candidate_id",
+            "season",
+            "unit_role",
+            "q",
+            "r",
+            "converged",
+            "cold_start",
+            "training_seasons",
+        ),
     ),
     RATING_DATASETS["rating_states"][0]: DatasetSchema(
-        RATING_DATASETS["rating_states"][0], RATING_DATASETS["rating_states"][1], POSSESSION_RATING_STATE_COLUMNS,
-        ("candidate_id", "season", "game_id", "team", "unit_role"), integer_columns=("season", "week", "game_id", "completed_games"),
-        timestamp_columns=("cutoff_utc",), nonnullable=tuple(c for c in POSSESSION_RATING_STATE_COLUMNS if c != "fallback_reason"),
+        RATING_DATASETS["rating_states"][0],
+        RATING_DATASETS["rating_states"][1],
+        POSSESSION_RATING_STATE_COLUMNS,
+        ("candidate_id", "season", "game_id", "team", "unit_role"),
+        integer_columns=("season", "week", "game_id", "completed_games"),
+        timestamp_columns=("cutoff_utc",),
+        nonnullable=tuple(
+            c for c in POSSESSION_RATING_STATE_COLUMNS if c != "fallback_reason"
+        ),
     ),
     RATING_DATASETS["team_states"][0]: DatasetSchema(
-        RATING_DATASETS["team_states"][0], RATING_DATASETS["team_states"][1], POSSESSION_RATING_TEAM_STATE_COLUMNS,
-        ("candidate_id", "season", "game_id", "team"), integer_columns=("season", "week", "game_id"), timestamp_columns=("cutoff_utc",),
-        nonnullable=tuple(c for c in POSSESSION_RATING_TEAM_STATE_COLUMNS if c != "fallback_reason"),
+        RATING_DATASETS["team_states"][0],
+        RATING_DATASETS["team_states"][1],
+        POSSESSION_RATING_TEAM_STATE_COLUMNS,
+        ("candidate_id", "season", "game_id", "team"),
+        integer_columns=("season", "week", "game_id"),
+        timestamp_columns=("cutoff_utc",),
+        nonnullable=tuple(
+            c for c in POSSESSION_RATING_TEAM_STATE_COLUMNS if c != "fallback_reason"
+        ),
     ),
     RATING_DATASETS["bridge_predictions"][0]: DatasetSchema(
-        RATING_DATASETS["bridge_predictions"][0], RATING_DATASETS["bridge_predictions"][1], POSSESSION_RATING_PREDICTION_COLUMNS,
-        ("candidate_id", "season", "game_id", "target"), integer_columns=("season", "week", "game_id", "completed_game_stage"),
-        boolean_columns=("venue_unknown",), nonnullable=POSSESSION_RATING_PREDICTION_COLUMNS,
+        RATING_DATASETS["bridge_predictions"][0],
+        RATING_DATASETS["bridge_predictions"][1],
+        POSSESSION_RATING_PREDICTION_COLUMNS,
+        ("candidate_id", "season", "game_id", "target"),
+        integer_columns=("season", "week", "game_id", "completed_game_stage"),
+        boolean_columns=("venue_unknown",),
+        nonnullable=POSSESSION_RATING_PREDICTION_COLUMNS,
     ),
     RATING_DATASETS["attribution"][0]: DatasetSchema(
-        RATING_DATASETS["attribution"][0], RATING_DATASETS["attribution"][1], POSSESSION_RATING_ATTRIBUTION_COLUMNS,
-        ("candidate_id",), boolean_columns=("full_gate", "early_gate", "regression_gate", "valid", "selected"), nonnullable=POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+        RATING_DATASETS["attribution"][0],
+        RATING_DATASETS["attribution"][1],
+        POSSESSION_RATING_ATTRIBUTION_COLUMNS,
+        ("candidate_id",),
+        boolean_columns=(
+            "full_gate",
+            "early_gate",
+            "regression_gate",
+            "valid",
+            "selected",
+        ),
+        nonnullable=POSSESSION_RATING_ATTRIBUTION_COLUMNS,
     ),
 }
 
 _FORECAST_SCHEMAS: dict[str, DatasetSchema] = {
     FORECAST_DATASETS["forecast_registry"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["forecast_registry"][0], schema_version=FORECAST_DATASETS["forecast_registry"][1], required=FORECAST_REGISTRY_COLUMNS, keys=("horizon", "target"), nonnullable=FORECAST_REGISTRY_COLUMNS,
+        dataset=FORECAST_DATASETS["forecast_registry"][0],
+        schema_version=FORECAST_DATASETS["forecast_registry"][1],
+        required=FORECAST_REGISTRY_COLUMNS,
+        keys=("horizon", "target"),
+        nonnullable=FORECAST_REGISTRY_COLUMNS,
     ),
     FORECAST_DATASETS["forecast_model"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["forecast_model"][0], schema_version=FORECAST_DATASETS["forecast_model"][1], required=FORECAST_MODEL_COLUMNS, keys=("horizon", "target", "outer_season", "head"), integer_columns=("outer_season",), boolean_columns=("inner_fallback", "retained"), nonnullable=tuple(column for column in FORECAST_MODEL_COLUMNS if column != "fallback_reason"),
+        dataset=FORECAST_DATASETS["forecast_model"][0],
+        schema_version=FORECAST_DATASETS["forecast_model"][1],
+        required=FORECAST_MODEL_COLUMNS,
+        keys=("horizon", "target", "outer_season", "head"),
+        integer_columns=("outer_season",),
+        boolean_columns=("inner_fallback", "retained"),
+        nonnullable=tuple(
+            column for column in FORECAST_MODEL_COLUMNS if column != "fallback_reason"
+        ),
     ),
     FORECAST_DATASETS["forecast_prediction"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["forecast_prediction"][0], schema_version=FORECAST_DATASETS["forecast_prediction"][1], required=FORECAST_PREDICTION_COLUMNS, keys=("horizon", "head", "target", "season", "game_id"), integer_columns=("season", "week", "game_id", "completed_game_stage"), boolean_columns=("venue_unknown",), nonnullable=FORECAST_PREDICTION_COLUMNS,
+        dataset=FORECAST_DATASETS["forecast_prediction"][0],
+        schema_version=FORECAST_DATASETS["forecast_prediction"][1],
+        required=FORECAST_PREDICTION_COLUMNS,
+        keys=("horizon", "head", "target", "season", "game_id"),
+        integer_columns=("season", "week", "game_id", "completed_game_stage"),
+        boolean_columns=("venue_unknown",),
+        nonnullable=FORECAST_PREDICTION_COLUMNS,
     ),
     FORECAST_DATASETS["forecast_calibration"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["forecast_calibration"][0], schema_version=FORECAST_DATASETS["forecast_calibration"][1], required=FORECAST_CALIBRATION_COLUMNS, keys=("target", "season"), integer_columns=("season", "residual_count"), nonnullable=tuple(column for column in FORECAST_CALIBRATION_COLUMNS if column != "fallback_reason"),
+        dataset=FORECAST_DATASETS["forecast_calibration"][0],
+        schema_version=FORECAST_DATASETS["forecast_calibration"][1],
+        required=FORECAST_CALIBRATION_COLUMNS,
+        keys=("target", "season"),
+        integer_columns=("season", "residual_count"),
+        nonnullable=tuple(
+            column
+            for column in FORECAST_CALIBRATION_COLUMNS
+            if column != "fallback_reason"
+        ),
     ),
     FORECAST_DATASETS["window_comparison"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["window_comparison"][0], schema_version=FORECAST_DATASETS["window_comparison"][1], required=WINDOW_COMPARISON_COLUMNS, keys=("target", "metric"), boolean_columns=("passes",), nonnullable=WINDOW_COMPARISON_COLUMNS,
+        dataset=FORECAST_DATASETS["window_comparison"][0],
+        schema_version=FORECAST_DATASETS["window_comparison"][1],
+        required=WINDOW_COMPARISON_COLUMNS,
+        keys=("target", "metric"),
+        boolean_columns=("passes",),
+        nonnullable=WINDOW_COMPARISON_COLUMNS,
     ),
     FORECAST_DATASETS["forecast_selection"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["forecast_selection"][0], schema_version=FORECAST_DATASETS["forecast_selection"][1], required=FORECAST_SELECTION_COLUMNS, keys=("selected_horizon", "target"), nonnullable=FORECAST_SELECTION_COLUMNS,
+        dataset=FORECAST_DATASETS["forecast_selection"][0],
+        schema_version=FORECAST_DATASETS["forecast_selection"][1],
+        required=FORECAST_SELECTION_COLUMNS,
+        keys=("selected_horizon", "target"),
+        nonnullable=FORECAST_SELECTION_COLUMNS,
     ),
     FORECAST_DATASETS["candidate_manifest"][0]: DatasetSchema(
-        dataset=FORECAST_DATASETS["candidate_manifest"][0], schema_version=FORECAST_DATASETS["candidate_manifest"][1], required=CANDIDATE_MANIFEST_COLUMNS, keys=("identity_sha256",), nonnullable=CANDIDATE_MANIFEST_COLUMNS,
+        dataset=FORECAST_DATASETS["candidate_manifest"][0],
+        schema_version=FORECAST_DATASETS["candidate_manifest"][1],
+        required=CANDIDATE_MANIFEST_COLUMNS,
+        keys=("identity_sha256",),
+        nonnullable=CANDIDATE_MANIFEST_COLUMNS,
+    ),
+    LIVE_FORECAST_DATASET[0]: DatasetSchema(
+        dataset=LIVE_FORECAST_DATASET[0],
+        schema_version=LIVE_FORECAST_DATASET[1],
+        required=LIVE_FORECAST_COLUMNS,
+        keys=("run_id", "season", "week", "game_id", "target"),
+        integer_columns=("season", "week", "game_id", "completed_game_stage"),
+        nonnullable=LIVE_FORECAST_COLUMNS,
+        allowed_values={"target": ("margin", "total"), "timing_class": ("live",)},
     ),
 }
 
 _SHADOW_SCHEMAS: dict[str, DatasetSchema] = {
     SHADOW_DATASETS["readiness"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["readiness"][0], schema_version=SHADOW_DATASETS["readiness"][1], required=READINESS_COLUMNS, keys=("candidate", "season", "week", "source"), integer_columns=("season", "week"), nonnullable=tuple(column for column in READINESS_COLUMNS if column != "blocked_reason"),
+        dataset=SHADOW_DATASETS["readiness"][0],
+        schema_version=SHADOW_DATASETS["readiness"][1],
+        required=READINESS_COLUMNS,
+        keys=("candidate", "season", "week", "source"),
+        integer_columns=("season", "week"),
+        nonnullable=tuple(
+            column for column in READINESS_COLUMNS if column != "blocked_reason"
+        ),
     ),
     SHADOW_DATASETS["shadow_freeze"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["shadow_freeze"][0], schema_version=SHADOW_DATASETS["shadow_freeze"][1], required=SHADOW_FREEZE_COLUMNS, keys=("candidate", "season", "week", "run_id"), integer_columns=("season", "week", "lead_seconds", "paired_count", "broader_count", "excluded_count"), nonnullable=SHADOW_FREEZE_COLUMNS,
+        dataset=SHADOW_DATASETS["shadow_freeze"][0],
+        schema_version=SHADOW_DATASETS["shadow_freeze"][1],
+        required=SHADOW_FREEZE_COLUMNS,
+        keys=("candidate", "season", "week", "run_id"),
+        integer_columns=(
+            "season",
+            "week",
+            "lead_seconds",
+            "paired_count",
+            "broader_count",
+            "excluded_count",
+        ),
+        nonnullable=SHADOW_FREEZE_COLUMNS,
     ),
     SHADOW_DATASETS["shadow_prediction"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["shadow_prediction"][0], schema_version=SHADOW_DATASETS["shadow_prediction"][1], required=SHADOW_PREDICTION_COLUMNS, keys=("candidate", "season", "week", "game_id", "target"), integer_columns=("season", "week", "game_id"), nonnullable=SHADOW_PREDICTION_COLUMNS,
+        dataset=SHADOW_DATASETS["shadow_prediction"][0],
+        schema_version=SHADOW_DATASETS["shadow_prediction"][1],
+        required=SHADOW_PREDICTION_COLUMNS,
+        keys=("candidate", "season", "week", "game_id", "target"),
+        integer_columns=("season", "week", "game_id"),
+        nonnullable=SHADOW_PREDICTION_COLUMNS,
     ),
     SHADOW_DATASETS["shadow_evaluation"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["shadow_evaluation"][0], schema_version=SHADOW_DATASETS["shadow_evaluation"][1], required=SHADOW_EVALUATION_COLUMNS, keys=("candidate", "season", "week", "outcome_version", "game_id", "target"), integer_columns=("season", "week", "game_id"), boolean_columns=("coverage_95",), nonnullable=SHADOW_EVALUATION_COLUMNS,
+        dataset=SHADOW_DATASETS["shadow_evaluation"][0],
+        schema_version=SHADOW_DATASETS["shadow_evaluation"][1],
+        required=SHADOW_EVALUATION_COLUMNS,
+        keys=("candidate", "season", "week", "outcome_version", "game_id", "target"),
+        integer_columns=("season", "week", "game_id"),
+        boolean_columns=("coverage_95",),
+        nonnullable=SHADOW_EVALUATION_COLUMNS,
     ),
     SHADOW_DATASETS["evidence_counter"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["evidence_counter"][0], schema_version=SHADOW_DATASETS["evidence_counter"][1], required=EVIDENCE_COUNTER_COLUMNS, keys=("candidate", "season", "week"), integer_columns=("season", "week"), boolean_columns=("qualifying",), nonnullable=tuple(column for column in EVIDENCE_COUNTER_COLUMNS if column != "evaluation_ref"),
+        dataset=SHADOW_DATASETS["evidence_counter"][0],
+        schema_version=SHADOW_DATASETS["evidence_counter"][1],
+        required=EVIDENCE_COUNTER_COLUMNS,
+        keys=("candidate", "season", "week"),
+        integer_columns=("season", "week"),
+        boolean_columns=("qualifying",),
+        nonnullable=tuple(
+            column for column in EVIDENCE_COUNTER_COLUMNS if column != "evaluation_ref"
+        ),
     ),
     SHADOW_DATASETS["shadow_rehearsal"][0]: DatasetSchema(
-        dataset=SHADOW_DATASETS["shadow_rehearsal"][0], schema_version=SHADOW_DATASETS["shadow_rehearsal"][1], required=SHADOW_REHEARSAL_COLUMNS, keys=("candidate", "run_id"), integer_columns=("cases_passed", "cases_failed"), boolean_columns=("diagnostic_only",), nonnullable=SHADOW_REHEARSAL_COLUMNS,
+        dataset=SHADOW_DATASETS["shadow_rehearsal"][0],
+        schema_version=SHADOW_DATASETS["shadow_rehearsal"][1],
+        required=SHADOW_REHEARSAL_COLUMNS,
+        keys=("candidate", "run_id"),
+        integer_columns=("cases_passed", "cases_failed"),
+        boolean_columns=("diagnostic_only",),
+        nonnullable=SHADOW_REHEARSAL_COLUMNS,
     ),
 }
 

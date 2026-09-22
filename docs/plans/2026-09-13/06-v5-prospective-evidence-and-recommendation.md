@@ -1,20 +1,22 @@
 # V5-06: Prospective Evidence and Promotion Recommendation
 
-- **Status:** Approved
+> **Current policy amendment (2026-09-22):** This contract's immutable attempt ledger, eligibility checks, outcome-versioned evaluations, and quote diagnostics remain active as prospective monitoring. Its six-slate count and three-category recommendation are no longer prerequisites for completing V5 development or reviewing a site cutover. The [current V5 status](../../modeling/v5_status.md) and [verified-cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md) govern those milestones. Diagnostic and retrospective records never count, and 2026 outcomes cannot refit this V5 identity.
+
+- **Status:** In Progress — monitoring tooling ready; no qualifying live slate yet
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
 - **Approval source:** User approved the complete package with “Implement the proposed plan.” on 2026-09-13; collection starts only after the verified live-readiness dependency passes.
-- **Implementation log:** Pending; create a log for each collection session and a final `NN-v5-prospective-evidence-review.md`.
+- **Implementation log:** Code-readiness implementation: `session_logs/2026-09-22/11-v5-live-research-tooling-completion.md`. Create a separate log for each evidence-collection session and the final `NN-v5-prospective-evidence-review.md`.
 - **Commit policy:** Separate evidence/review checkpoints; user executes Git.
 
 ## Goal, current state, and entry gate
 
 Collect and independently verify six normal-coverage paired slates, then recommend
 retaining V4, continued shadowing, or a separate promotion contract. The
-[common contract](v5-ratings-successor-roadmap-and-contracts.md) is binding.
-Require a verified candidate from [04](04-v5-forecast-bridge-and-fitting-window.md)
+[common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md) is binding.
+Require a verified candidate from [04](../../archive/v5-contracts/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md)
 and **ready**, independently verified live inputs/tooling from
-[05](05-v5-prospective-readiness-and-shadow-tooling.md). A blocked readiness report
+[05](../../archive/v5-contracts/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md). A blocked readiness report
 or mere code completion is not sufficient.
 
 There are no qualifying slates for this not-yet-built candidate at planning time.
@@ -158,3 +160,67 @@ While fewer than six slates exist, issue a precise continued-shadow report and
 leave this contract In Progress. Do not mark six-slate collection Implemented
 because one execution session ended or tooling is finished. Follow the common
 amendment process for design, timing, counting, calibration or source changes.
+
+### Amendment 1 — Evidence tooling code-readiness (Sol, 2026-09-22)
+
+**Reason:** The approved live-research tooling completion plan implements the
+prospective ledger and report path before the Week 4 refresh. Implementation
+must not be mistaken for readiness certification or prospective evidence.
+
+**Revised approach:** Contract 06 evidence tooling may be implemented and
+synthetically tested while its entry gate remains closed. Operational attempts
+must bind the independently verified live forecast and `ready` Contract 05
+report, and retain exact immutable freeze, outcome, evaluation, and optional
+quote parents. The qualifying count is independently reconstructed from those
+parents. No diagnostic or historical replay can qualify, and quote diagnostics
+remain independent of football metrics and eligibility.
+
+**Impact:** No evidence is admitted by this amendment, and the six-slate window
+does not start. The contract remains Approved until verified readiness opens
+collection; the six-slate recommendation remains future work. V4 remains the
+production champion and activation is outside this contract.
+
+### Amendment 2 — Preview evidence runner and independent verifier (2026-09-22)
+
+**Reason:** The approved V5 live tooling plan completed the implementation
+layer for immutable prospective attempts, outcome-versioned reports, separate
+quote diagnostics, and recommendations before the Week 4 parent refresh.
+
+**Revised approach:** `scripts/research/run_v5_prospective_evidence.py`
+provides Preview preflight, immutable apply, idempotent repeat, and verification;
+`scripts/research/verify_v5_prospective_evidence.py` independently reconstructs
+attempt dispositions, qualifying counts, football metrics, corrections, quote
+diagnostics, and recommendation. Inputs must carry independently verified
+Contract 05 readiness, freeze, and score refs. Authentic quote diagnostics are
+separate and cannot change football calculations or eligibility. Diagnostic,
+late, incomplete, or unverifiable attempts are retained with reasons and
+excluded from the protected count.
+
+**Impact:** Synthetic tests establish code behavior only. The entry gate remains
+closed until Contract 09 has independently verified live readiness. No slate
+was attempted or counted, and the six-slate evidence program is not complete.
+Contract 06 remains Approved; only collection sessions with eligible live
+evidence may advance its evidence lifecycle.
+
+### Amendment 3 — Monitoring replaces the prelaunch count gate (2026-09-22)
+
+**Reason:** The user accepted historical V5 model completion and chose a
+verified live cutover with Preview rehearsal and rollback proof. The original
+six-slate wait conflated ongoing prospective measurement with model completion
+and site readiness.
+
+**Revised approach:** Preserve every immutable attempt, freeze, correction,
+football report, and separate authentic-quote diagnostic. Continue deriving
+the qualifying count independently, but use it as a monitoring statistic and
+periodic review window. The three original recommendation categories may be
+reported descriptively after six slates; they are not prerequisites for a site
+cutover. Live readiness, exact lineage, pre-kickoff timing, and diagnostic
+exclusions remain unchanged. The [current V5 guide](../../modeling/v5_status.md)
+and [cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md)
+govern activation review.
+
+**Impact:** Contract 06 is now In Progress as an ongoing monitoring program.
+No slate has been counted, no historical or diagnostic record becomes
+prospective, and no 2026 outcome may refit V5. The earlier six-slate
+definition of done is superseded for site promotion; it remains a descriptive
+research milestone. Production activation still requires a separate decision.

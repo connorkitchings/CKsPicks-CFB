@@ -1,19 +1,6 @@
 # Possession-Based Rating Methodology
 
-> **Status (2026-09-22):** R6 possession measurements are superseded historical
-> evidence. The historical V5 lane is complete and accepted: all four audit
-> findings are closed, Contract 07 is Implemented with 157 certified live 2026
-> games through Week 3, and Contract 08 is Implemented for Weeks 0–3 as replay
-> `possession-v1-rating-replay-20260922-fcaa571` with independent verification.
-> The Week 4 refresh of Contracts 07 and 08 is next, followed by Contract 09 live
-> readiness, Contract 06's six-slate prospective evaluation, and a conditional
-> Phase 7 promotion review.
-> V4 remains the production champion. The
-> [September 11 specification](../plans/2026-09-11/possession-rating-methodology-specification.md)
-> remains an Implemented documentation milestone. Current execution authority is
-> the [V5 common contract and 00–06 package](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
-> Semantic authority is this page and [rating-system requirements](rating_system_requirements.md);
-> detailed status is the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md).
+> **Current status:** [V5 model development is complete and accepted](v5_status.md). The selected PPP rating and through-2025 bridge are frozen. Week 4 finals and refreshed 07/08 parents gate the first current live forecast; Preview serving rehearsal and rollback proof precede a separate activation decision. V4 remains public. The detailed equations below remain the V5 semantic authority.
 
 ## Purpose
 
@@ -320,8 +307,8 @@ benchmark's immutable identity and meaning separate from these new measurements.
 
 ## Follow-on contract interfaces
 
-- [02: possession certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md): population, scoring/possession ledgers, both role measurements, cutoff replay, independent certification; no catalog registration.
-- [03: rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md): 60 structural candidates, inherited prior/updater mathematics, fixed bridge comparison and verified selected states.
-- [04: forecast bridge and fitting windows](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md): non-offense offsets, bounded Ridge/head-window comparison, outcome calibration and candidate freeze.
-- [05: readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md): independently verified rehearsal and separate authentic live-readiness result.
+- [02: possession certification](../archive/v5-contracts/2026-09-13/02-v5-possession-measurement-certification.md): population, scoring/possession ledgers, both role measurements, cutoff replay, independent certification; no catalog registration.
+- [03: rating estimation](../archive/v5-contracts/2026-09-13/03-v5-possession-rating-estimation.md): 60 structural candidates, inherited prior/updater mathematics, fixed bridge comparison and verified selected states.
+- [04: forecast bridge and fitting windows](../archive/v5-contracts/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md): non-offense offsets, bounded Ridge/head-window comparison, outcome calibration and candidate freeze.
+- [05: readiness and shadow tooling](../archive/v5-contracts/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md): independently verified rehearsal and separate authentic live-readiness result.
 - [06: prospective evidence](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md): immutable six-slate ledger and recommendation; no automatic promotion.

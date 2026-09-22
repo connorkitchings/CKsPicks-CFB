@@ -26,6 +26,7 @@ import pandas as pd
 import yaml
 from dotenv import load_dotenv
 
+from cks_picks_cfb.data.data_first_live_forecast_v1 import LIVE_FORECAST_MANIFEST_SCHEMA
 from cks_picks_cfb.data.data_first_shadow_v1 import (
     EVIDENCE_COUNTER_COLUMNS,
     SHADOW_DATASETS,
@@ -189,6 +190,13 @@ def _load_parents(storage: Any, args: argparse.Namespace, progress: _Progress) -
     rating, rating_raw = _read_json(storage, args.rating_manifest_uri)
     measurement, measurement_raw = _read_json(storage, args.measurement_manifest_uri)
     repair, repair_raw = _read_json(storage, args.repair_manifest_uri)
+    bridge = None
+    bridge_raw = b""
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        bridge_uri = str((forecast.get("parents") or {}).get("bridge_uri") or "")
+        if not bridge_uri:
+            raise ScoreRunError("live forecast does not bind its 11C bridge manifest")
+        bridge, bridge_raw = _read_json(storage, bridge_uri)
     parents = verify_candidate_parents(
         forecast,
         rating,
@@ -202,6 +210,8 @@ def _load_parents(storage: Any, args: argparse.Namespace, progress: _Progress) -
         measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
         repair_manifest_uri=args.repair_manifest_uri,
         repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
+        bridge=bridge,
+        bridge_raw_sha256=hashlib.sha256(bridge_raw).hexdigest() if bridge_raw else "",
     )
     progress.emit(
         "parents_loaded",
@@ -429,6 +439,7 @@ def preflight(
             "repair_manifest_uri": parents["repair_manifest_uri"],
             "repair_raw_sha256": parents["repair_raw_sha256"],
         },
+        candidate=forecast["identity"]["run_id"],
     )
 
     freeze_manifest = _load_freeze_manifest(storage, args.freeze_manifest_uri)

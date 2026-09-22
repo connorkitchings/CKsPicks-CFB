@@ -1,0 +1,12 @@
+schema_version: data_first_v5_prospective_evidence_config_v1
+environment: preview
+candidate_schema: data_first_live_forecast_manifest_v1
+minimum_paired_games: 40
+freeze_hard_lead_seconds: 3600
+score_stabilization_seconds: 86400
+required_qualifying_slates: 6
+allowed_recommendations:
+  - retain_v4
+  - continue_shadowing
+  - prepare_phase7
+production_activation_authorized: false

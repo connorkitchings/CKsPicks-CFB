@@ -102,7 +102,8 @@ def _inputs(storage: Any, manifest: Mapping[str, Any]) -> VerifierInputs:
         measurement.get("schema_version") != POSSESSION_MANIFEST_SCHEMA
         or identity.get("environment") != "preview"
         or tuple(identity.get("development_seasons") or ()) != (2026,)
-        or identity.get("run_id") != "possession-v1-measurements-20260922-2026c"
+        or not identity.get("run_id")
+        or not measurement.get("certification_sha256")
         or set(measurement.get("output_refs") or {}) != set(POSSESSION_DATASETS)
         or measurement.get("production_activation_authorized") is not False
     ):

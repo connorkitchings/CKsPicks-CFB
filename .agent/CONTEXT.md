@@ -121,18 +121,7 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**V5 checkpoint (2026-09-22):** V5's historical development and verification
-lane is complete and accepted. Repair v2, r9 measurements, 11B ratings, the 11C
-through-2025 final fit, and 11D verification closed all four historical audit
-findings. Contract 07 is Implemented with 157 certified live 2026 games through
-Week 3. Contract 08 is Implemented for Weeks 0–3 as independently verified
-replay `possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of
-Contracts 07 and 08 is next, followed by Contract 09 live readiness, Contract
-06's six-slate prospective evaluation, and a conditional Phase 7 promotion
-review. The
-[data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
-is the canonical queue/status page. Repair v2 and Phase 3 v2 remain historical
-evidence; R6 is superseded.
+**V5 checkpoint (2026-09-22):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V4 still serves the site. Stabilized Week 4 finals and refreshed 07/08 parents gate a current V5 forecast. Verified Preview serving, rollback proof, and a separate activation decision govern replacement. Prospective monitoring continues without a six-slate prelaunch wait. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a

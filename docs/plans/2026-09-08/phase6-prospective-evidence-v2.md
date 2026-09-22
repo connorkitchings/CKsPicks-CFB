@@ -7,10 +7,10 @@
 - **Implementation log:** Pending corrected Phase 5 and separate Phase 6 task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
-> **Superseded (2026-09-13):** Execution authority is [05: readiness and shadow tooling](../2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) and [06: prospective evidence and recommendation](../2026-09-13/06-v5-prospective-evidence-and-recommendation.md).
+> **Superseded (2026-09-13):** Execution authority is [05: readiness and shadow tooling](../../archive/v5-contracts/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) and [06: prospective evidence and recommendation](../2026-09-13/06-v5-prospective-evidence-and-recommendation.md).
 > Preserve the original approval, historical hold notice, and mathematical record
 > below. Only sections explicitly inherited by the
-> [V5 common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> [V5 common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 > carry forward. This does not authorize executing old runners or consuming the
 > original Phase 4B retained manifest as a forecasting parent.
 

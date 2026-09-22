@@ -9,6 +9,10 @@ from cks_picks_cfb.forecast.shadow import (
     ShadowError,
     plan_freeze,
 )
+from scripts.research.run_v5_shadow_freeze import (
+    FreezeRunError,
+    _v5_predictions_for_candidate,
+)
 
 
 def _schedule(n: int = 45, season: int = 2025, week: int = 10) -> pd.DataFrame:
@@ -53,6 +57,39 @@ def _freeze_kwargs(
         "min_paired_games": 40,
         "freeze_hard_lead_seconds": 3600.0,
     }
+
+
+def test_historical_candidate_has_no_synthetic_live_predictions():
+    forecast = {
+        "schema_version": "data_first_forecast_manifest_v1",
+        "identity": {"run_id": "historical-candidate"},
+    }
+    with pytest.raises(FreezeRunError, match="prospective freeze"):
+        _v5_predictions_for_candidate(
+            storage=None,
+            forecast=forecast,
+            schedule=_schedule(45, season=2026, week=5),
+            season=2026,
+            week=5,
+            diagnostic=False,
+        )
+
+
+def test_historical_synthetic_predictions_are_diagnostic_only():
+    forecast = {
+        "schema_version": "data_first_forecast_manifest_v1",
+        "identity": {"run_id": "historical-candidate"},
+    }
+    rows = _v5_predictions_for_candidate(
+        storage=None,
+        forecast=forecast,
+        schedule=_schedule(45, season=2026, week=5),
+        season=2026,
+        week=5,
+        diagnostic=True,
+    )
+    assert rows["mean"].eq(0.0).all()
+    assert len(rows) == 90
 
 
 # Timing gate tests

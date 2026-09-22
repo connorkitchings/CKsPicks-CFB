@@ -27,8 +27,8 @@
   Possession measurements remain uncertified; no estimator, cloud data, serving
   state, or V4 production behavior changes. Authentic readiness, six paired slates,
   and separate promotion authorization remain mandatory.
-- **Source:** [Approved common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
-  and [documentation implementation](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md).
+- **Source:** [Approved common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+  and [documentation implementation](../archive/v5-contracts/2026-09-13/00-v5-documentation-and-methodology-alignment.md).
 
 
 ## 2026-09-11: Possession-Based Rating Methodology Specification

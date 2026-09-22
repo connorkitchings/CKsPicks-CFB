@@ -19,21 +19,9 @@ identities when a shared change could affect production.
 
 ## Current V5 checkpoint (2026-09-22)
 
-V4 remains the production champion. The V5 ratings successor is distinct from
-the V4 feature-schema-v5 diagnostic, remains Preview-only, and has completed its
-historical development and verification lane: all four historical audit findings
-are closed and the historical readiness recommendation was accepted. Contract 07
-is Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. After the required Week 4 refresh
-of Contracts 07 and 08, Contract 09 must establish live readiness, then Contract
-06 may collect six qualifying prospective slates. A Phase 7 promotion review is
-conditional on Contract 06's recommendation.
+The [current V5 status guide](../modeling/v5_status.md) is the concise authority for model completion, certified lineage, results, and remaining operational work. V5 historical model development is complete and accepted; V4 still serves the public site. The Week 4 refresh of 07/08 remains a current-input gate for Contract 09, not an unfinished modeling milestone. Code for live forecasts, shadow readiness, and prospective reporting is ready; no operational 09 apply or qualifying slate exists yet.
 
-Repair v2 and Phase 3 v2 remain historical evidence; r9 supersedes R6. The
-original Phase 4B retained manifest remains prohibited as a forecasting parent.
-Neither live timing nor replayed 2026 results create prospective evidence, and no
-V5 result changes V4, Neon serving state, or public publication.
+The [verified cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) replaces the older six-slate prelaunch sequence. A current independently verified forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision precede site replacement. Contract 06 keeps prospective freezes and outcome reports as monitoring after launch; 2026 outcomes never refit the frozen V5 identity. The original Phase 4B retained manifest remains prohibited as a forecasting parent. Detailed dated sections below preserve research history and should not override this current checkpoint.
 
 ## Governing boundaries
 
@@ -68,24 +56,24 @@ research entry points under `scripts/research/`, exploratory work under
 
 ## Ordered phases
 
-The [V5 roadmap and common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+The [V5 roadmap and common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is the approved execution package (2026-09-13). Use **V5 ratings successor** for
 the research model; **feature schema v5** is a separate V4 diagnostic.
 
 | Order | Contract | Status and dependency |
 | --- | --- | --- |
-| 00 | [Documentation alignment and methodology amendment](../plans/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
-| 01 | [V4 feature-v5 diagnostic closure](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Implemented 2026-09-22 — pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% → cause not confirmed; predictions value-identical to official on all 100 W0–W2 games. Report: `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
-| 02 | [Possession measurement certification](../plans/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 is retained historical evidence, subject to the full 10 audit. |
-| 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
-| 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented (resolved 2026-09-21) — 04A remains implemented; 04B's verification gap closed by the 11B/11C/11D re-derivation and independent verification on the r9 line. |
-| 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
-| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved — historical and re-review gates are complete; begins only after Contract 09 independently verifies live readiness, then collects six qualifying slates before a conditional Phase 7 review. |
-| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Implemented — 10A and 10B are complete. At publication, 10B recorded four open findings and `contract11_permitted: false`; all four are now closed by the accepted corrected lineage. |
-| 11A | [Conditional forecast verification](../plans/2026-09-19/11a-v5-conditional-forecast-verification.md) | Implemented 2026-09-19 — Preview run `conditional-v1-20260919-9265314-11a` independently reconstructed the frozen artifact, published signed evidence, passed independent re-read, and was idempotent. Its only permitted use is `conditional_historical_results_only`; it does not restore eligibility. |
-| 12A | [Conditional historical scorecard](../plans/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Implemented 2026-09-21 — Preview run `conditional-v1-20260921-scorecard` (manifest SHA `0f4fbf33`): reported V5-only conditional results and context under `conditional_historical_results_only`. |
-| 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Implemented 2026-09-21 via the 11B/11C/11D decomposition — signed verification (`4cfe5ef8...`) closes Finding 002; targeted `final_fit_existence` pass closes Finding 004. |
-| 12 | [Historical results and readiness review](../plans/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Implemented 2026-09-21 (Amendment 2) — execution complete under [06-v5-12](../plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`): 7,318 rows, zero exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report. **User explicitly accepted the recommendation on 2026-09-22** (report `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`; scorecard manifest `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`). |
+| 00 | [Documentation alignment and methodology amendment](../archive/v5-contracts/2026-09-13/00-v5-documentation-and-methodology-alignment.md) | Implemented 2026-09-13 — documentation and authority tests aligned; no research execution. |
+| 01 | [V4 feature-v5 diagnostic closure](../archive/v5-contracts/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) | Implemented 2026-09-22 — pooled W1+W2 shadow spread 38.46% (35-56-1, 91 graded) < 45% → cause not confirmed; predictions value-identical to official on all 100 W0–W2 games. Report: `docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`. |
+| 02 | [Possession measurement certification](../archive/v5-contracts/2026-09-13/02-v5-possession-measurement-certification.md) | Implemented 2026-09-15 — R6 is retained historical evidence, subject to the full 10 audit. |
+| 03 | [Possession rating estimation](../archive/v5-contracts/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
+| 04 | [Forecast bridge and fitting-window selection](../archive/v5-contracts/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented (resolved 2026-09-21) — 04A remains implemented; 04B's verification gap closed by the 11B/11C/11D re-derivation and independent verification on the r9 line. |
+| 05 | [Prospective readiness and shadow tooling](../archive/v5-contracts/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
+| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved; evidence tooling implemented under plan 03. Begins only after Contract 09 independently verifies live readiness, then collects six qualifying slates before a conditional Phase 7 review. |
+| 10 | [Historical foundation audit](../archive/v5-contracts/2026-09-18/10-v5-historical-foundation-audit.md) | Implemented — 10A and 10B are complete. At publication, 10B recorded four open findings and `contract11_permitted: false`; all four are now closed by the accepted corrected lineage. |
+| 11A | [Conditional forecast verification](../archive/v5-contracts/2026-09-19/11a-v5-conditional-forecast-verification.md) | Implemented 2026-09-19 — Preview run `conditional-v1-20260919-9265314-11a` independently reconstructed the frozen artifact, published signed evidence, passed independent re-read, and was idempotent. Its only permitted use is `conditional_historical_results_only`; it does not restore eligibility. |
+| 12A | [Conditional historical scorecard](../archive/v5-contracts/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Implemented 2026-09-21 — Preview run `conditional-v1-20260921-scorecard` (manifest SHA `0f4fbf33`): reported V5-only conditional results and context under `conditional_historical_results_only`. |
+| 11 | [Forecast verification closure](../archive/v5-contracts/2026-09-18/11-v5-forecast-verification-closure.md) | Implemented 2026-09-21 via the 11B/11C/11D decomposition — signed verification (`4cfe5ef8...`) closes Finding 002; targeted `final_fit_existence` pass closes Finding 004. |
+| 12 | [Historical results and readiness review](../archive/v5-contracts/2026-09-18/12-v5-historical-results-and-readiness-review.md) | Implemented 2026-09-21 (Amendment 2) — execution complete under [06-v5-12](../archive/v5-contracts/2026-09-21/06-v5-12-historical-results-and-readiness-review.md). Preview run `readiness-v1-20260921-scorecard` (manifest SHA `a8351fb3...`): 7,318 rows, zero exclusions. Recommendation `accepted_for_prospective_evaluation` issued in research report. **User explicitly accepted the recommendation on 2026-09-22** (report `docs/research/2026-09-21-v5-12-historical-results-and-readiness-review-report.md`; scorecard manifest `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`). |
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
@@ -159,7 +147,7 @@ substantive data findings. Four findings published to the Preview audit prefix w
 authorized.** The user explicitly accepted the
 `accepted_for_prospective_evaluation` recommendation on 2026-09-22, and
 Contracts 07–09 were re-reviewed under
-[the acceptance and re-review contract](../plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md)
+[the acceptance and re-review contract](../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md)
 against the corrected certified lineage (r9 measurements, 11B ratings, 11C
 forecast with through-2025 final fit); their historical-first deferrals are
 lifted with execution authorized. Authorized sequence:
@@ -194,7 +182,7 @@ W3 states plus a recorded limitation rather than rushed finals. V4 production
 is unchanged throughout.
 
 The possession-based rating methodology is specified (2026-09-11), amended
-2026-09-13. Its [original specification contract](../plans/2026-09-11/possession-rating-methodology-specification.md)
+2026-09-13. Its [original specification contract](../archive/v5-contracts/2026-09-11/possession-rating-methodology-specification.md)
 remains an Implemented documentation milestone; the current
 [methodology](../modeling/possession_rating_methodology.md) reflects this package.
 The first forecast release is **bridge-first**: Ridge maps four role ratings and

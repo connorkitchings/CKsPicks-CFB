@@ -1,6 +1,6 @@
 # Measurement Catalog
 
-> **Authority (2026-09-13):** The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> **Authority (2026-09-13):** The [V5 common contract](../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 > governs new possession work. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 > is current status authority. Historical measurements below retain their original
 > certification scope; they do not certify possession scoring or change V4 inputs.
@@ -10,16 +10,7 @@
 V5 ratings successor is distinct from V4 feature schema v5. Repair v2 and Phase
 3 v2 remain historical evidence; R6 is superseded by r9. The r9 measurement
 lineage, ratings, forecast fit, and independent verification completed and
-accepted the historical V5 lane, closing all four audit findings. Contract 07 is
-Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
-07 and 08 is next, followed by Contract 09 readiness, Contract 06's six-slate
-prospective evaluation, and a conditional Phase 7 promotion review.
-The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the detailed status authority. The original Phase 4B retained manifest remains
-prohibited as a forecasting parent; same-game field position, plays per drive and
-turnovers are not pregame predictors.
+accepted the historical V5 lane, closing all four audit findings. See the [current V5 status](v5_status.md) for operational gates and the revised site cutover policy.
 
 The repaired source/population manifest supplies the exact parent roles.
 [Phase 3 v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) is certified

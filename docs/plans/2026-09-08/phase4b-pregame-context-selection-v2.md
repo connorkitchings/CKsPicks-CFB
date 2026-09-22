@@ -7,10 +7,10 @@
 - **Implementation log:** Pending repaired Phase 4A and separate Phase 4B task
 - **Commit policy:** Separate code/evidence checkpoints; user executes Git.
 
-> **Superseded (2026-09-13):** Execution authority is [04: forecast bridge and fitting-window selection](../2026-09-13/04-v5-forecast-bridge-and-fitting-window.md).
+> **Superseded (2026-09-13):** Execution authority is [04: forecast bridge and fitting-window selection](../../archive/v5-contracts/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md).
 > Preserve the original approval, historical hold notice, and mathematical record
 > below. Only sections explicitly inherited by the
-> [V5 common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+> [V5 common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 > carry forward. This does not authorize executing old runners or consuming the
 > original Phase 4B retained manifest as a forecasting parent.
 

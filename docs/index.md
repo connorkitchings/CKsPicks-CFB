@@ -5,23 +5,7 @@ an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 ## Current posture (2026-09-22)
 
-**V4 remains the live production champion.** The **V5 ratings successor** is
-isolated Preview research, distinct from **feature schema v5**. Its historical
-development and verification lane is complete and accepted: all four historical
-audit findings are closed and the authoritative scorecard covers 7,318 verified
-rows through 2025. Contract 07 is Implemented with 157 certified live 2026 games
-through Week 3. Contract 08 is Implemented for Weeks 0–3 as independently
-verified replay `possession-v1-rating-replay-20260922-fcaa571`. The Week 4
-refresh of Contracts 07 and 08 is next, followed by Contract 09 live readiness,
-Contract 06's six-slate prospective evaluation, and a conditional Phase 7
-promotion review. The
-[data-first roadmap](planning/data-first-football-forecasting-roadmap.md) is the
-detailed status and execution authority.
-
-Repair v2 and Phase 3 v2 remain certified historical evidence; R6 is a
-superseded historical measurement lineage. The original Phase 4B retained
-manifest remains prohibited as a forecasting parent. V5 never uses 2026 outcomes
-to choose or tune its frozen design, and it remains isolated from V4 publication.
+[V5 model development is complete and accepted](modeling/v5_status.md), with four historical audit findings closed and 7,318 verified historical prediction rows. V4 still serves the site. Current 2026 data and ratings are verified through Week 3; Week 4 finals and refreshed parents gate the first operational V5 forecast. The [cutover contract](plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) requires a verified forecast, Preview serving rehearsal, rollback proof, and a separate activation decision. Six prospective slates are not a prelaunch requirement.
 
 The target flow is:
 

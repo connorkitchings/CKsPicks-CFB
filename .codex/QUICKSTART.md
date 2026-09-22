@@ -8,19 +8,7 @@
 
 ## Environment Setup
 
-**Research checkpoint (2026-09-22):** V5 ratings successor is distinct from V4
-feature schema v5. Its historical development and verification lane is complete
-and accepted; all four historical audit findings are closed. Contract 07 is
-Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-Implemented for Weeks 0–3 as independently verified replay
-`possession-v1-rating-replay-20260922-fcaa571`. The Week 4 refresh of Contracts
-07 and 08 is next, followed by Contract 09 live readiness, Contract 06's
-six-slate prospective evaluation, and a conditional Phase 7 promotion review.
-V4 remains the production champion; V5 stays Preview-only and never uses 2026
-outcomes to select or tune its design. See the canonical
-[data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md).
-Repair v2 and Phase 3 v2 remain historical evidence, R6 is superseded, and the
-original Phase 4B retained manifest remains prohibited as a forecasting parent.
+**V5 checkpoint (2026-09-22):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V4 remains public. Stabilized Week 4 finals and refreshed 07/08 parents gate a current live forecast; verified Preview serving and V4 rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement. The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.

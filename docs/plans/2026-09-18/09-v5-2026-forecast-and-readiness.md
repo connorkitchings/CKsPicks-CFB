@@ -1,5 +1,7 @@
 # V5-09: 2026 Forecast Generation and Live Readiness
 
+> **Current completion boundary (2026-09-22):** [V5 model development is complete](../../modeling/v5_status.md). This contract certifies a current operational forecast after stabilized Week 4 finals and fresh independently verified 07/08 parents. The [site cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md) requires a Preview serving rehearsal and V4 rollback proof, then a separate activation decision; six prospective slates are not its entry gate.
+
 - **Status:** In Progress — preparation only pending the required Week 4 refresh
 - **Created:** 2026-09-18
 - **Planner:** Sol
@@ -15,7 +17,7 @@ through-2025 final fit) to the certified
 2026 team states to produce 2026 V5 predictions, then re-verify live
 readiness to `ready` — satisfying the Contract 06 entry gate so prospective
 slate collection can begin. No bridge refitting on 2026 outcomes: 2026 is
-application, not selection. The [common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+application, not selection. The [common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is binding.
 
 **Entry gate:** Contracts 07 and 08 Implemented, with certified 2026
@@ -48,7 +50,7 @@ historical readiness recommendation on 2026-09-22
 scorecard run `readiness-v1-20260921-scorecard`, manifest SHA
 `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`).
 Contracts 07–09 were re-reviewed under
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
 the historical-first deferral is **lifted** and execution is authorized against
 the corrected certified lineage (Amendment 1). 2026 forecasts apply the
 through-2025 final-fit heads and final calibration — nothing is fitted on 2026
@@ -204,4 +206,73 @@ false`; no Neon/production/web writes.
 re-pointed and the final-fit application is made explicit (this is what
 closing Finding 004 unlocked). Re-review authority and the authorized
 execution sequence:
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
+
+### Amendment 2 — Outcome-free live forecast application (Sol, 2026-09-22)
+
+**Reason:** The certified 11C historical prediction dataset requires actuals,
+absolute error, and CRPS. It cannot represent future pre-kickoff forecasts.
+Contract 05 also pins its historical candidate manifest. A distinct live
+interface is required to make the approved 2026 application and prospective
+readiness executable while preserving the historical artifacts.
+
+**Original approach:** Contract 09 referred to 2026 `forecast_prediction`
+records and the Contract 05 readiness tooling, without defining an outcome-free
+live record or a live candidate identity accepted by the shadow contracts.
+
+**Revised approach:** The 2026 application uses the additive
+`data_first_live_forecast_prediction_v1` and
+`data_first_live_forecast_manifest_v1`. Rows contain finite mean, variance,
+95% interval, offset, completed-game stage, `live` timing, and exact model,
+state, and source refs; they contain no actual, absolute error, or CRPS. The
+terminal signed manifest binds exact refreshed Contract 07 measurement and
+Contract 08 replay URIs/raw checksums, the certified 11C bridge manifest
+`forecast-v1-20260921-5afd577-11c`, source cutoff, complete 2026 schedule
+population, output digest, and `production_activation_authorized: false`.
+
+Apply reconstructs and applies the frozen `expanding` design and target recipes
+from 11C through-2025 evidence. Any fitted Ridge coefficients are deterministically
+reconstructed using the fixed 11C development population and retained recipe;
+there is no selection, calibration, or fitting on 2026 outcomes. The
+independent verifier owns its reconstruction and does not import the producer
+or historical selection runner. Contract 05 support is versioned to accept this
+live identity while preserving the old historical identity and all readiness,
+freeze, scoring, and eligibility gates.
+
+**Entry and apply gate:** Code implementation and synthetic tests may proceed
+now. Operational preflight/apply/verification must use stabilized Week 4
+finals and fresh, independently verified Contract 07 and 08 manifests through
+Week 4, under new run identities. The Weeks 0–3 replay cannot substitute for
+these parents. The forecast identity also binds an explicit immutable 2026
+schedule source URI and raw checksum because the measurement population records
+completed games while the forecast population must include future scheduled
+games. Only games strictly after the forecast cutoff receive live prediction
+rows. This amendment does not authorize a live apply during code-readiness work.
+
+**Impact:** No historical 11C output/schema, V4 behavior, database/serving
+interface, or production activation path changes. Contract 09 remains In
+Progress until its future Preview forecast and Week 5 readiness cycles are
+certified. Only verified `ready` opens Contract 06; a verified `blocked`
+result records the exact missing dependency.
+
+### Amendment 3 — Code-ready Preview runner (2026-09-22)
+
+**Reason:** Amendment 2 defined the permitted live data interface and future
+execution gate. Its implementation was completed under the approved
+[V5 live research tooling completion plan](../../archive/v5-contracts/2026-09-22/03-v5-live-research-tooling-completion.md).
+
+**Revised approach:** `scripts/research/run_v5_live_forecast.py` now provides
+the Contract 09 Preview preflight, evidence-bound apply, independent verify,
+and idempotent repeat path. The runner requires exact measurement, rating, and
+schedule refs; validates the stabilized Week 4 gate; applies the frozen 11C
+final-fit bridge; and writes the outcome-free live prediction manifest last.
+Contract 05's versioned live adapter carries that identity through readiness,
+freeze, scoring, and verification. Synthetic tests exercise these paths without
+publishing operational artifacts.
+
+**Impact:** This amendment records code readiness only. No Preview preflight,
+apply, readiness certification, or Contract 06 slate count was run. Execution
+still requires stabilized Week 4 finals and new independently verified 07/08
+manifests under fresh IDs. Contract 09 remains In Progress until the live
+forecast and Week 5 readiness cycles are certified; a verified `blocked`
+readiness remains valid output but does not open Contract 06.

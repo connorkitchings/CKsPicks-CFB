@@ -111,7 +111,7 @@ artifact/code differences must be explained rather than treated as feature gains
 on 91 graded (38.46%) < 45% → **cause not confirmed**; shadow ≡ official on all
 100 games (drift 0.0), refuting the feature mismatch as the cause of the 2026
 spread underperformance. Full record, tables, and reproduction:
-[`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
+[`docs/research/2026-09-22-v4-feature-v5-diagnostic-closure.md`](../../../research/2026-09-22-v4-feature-v5-diagnostic-closure.md).
 
 Use the common amendment process. Production repair or activation is a separate
 future contract regardless of this diagnostic's result. This task never selects

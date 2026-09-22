@@ -1,0 +1,14 @@
+schema_version: data_first_live_forecast_config_v1
+environment: preview
+bridge_manifest_uri: artifacts/research/data-first-football-v1/forecasts/runs/forecast-v1-20260921-5afd577-11c/forecast-manifest.json
+output_root: artifacts/research/data-first-football-v1/forecasts/live-runs
+season: 2026
+horizon: expanding
+reference_alpha: 10.0
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+forbidden_seasons: [2020]
+offsets:
+  equivalent_games: 4
+  allowed_category: regulation_non_offense
+  allowed_period_class: regulation
+production_activation_authorized: false

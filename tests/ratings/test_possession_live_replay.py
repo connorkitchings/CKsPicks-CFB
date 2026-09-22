@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import ast
 import copy
+import json
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
+from cks_picks_cfb.data.data_first_phase2d import signed_payload
+from cks_picks_cfb.data.data_first_possession_v1 import (
+    POSSESSION_DATASETS,
+    POSSESSION_MANIFEST_SCHEMA,
+)
 from cks_picks_cfb.ratings import possession_live_replay_verification as verifier
 from cks_picks_cfb.ratings.possession_live_replay import (
     FROZEN_CANDIDATE,
@@ -16,6 +22,7 @@ from cks_picks_cfb.ratings.possession_live_replay import (
     LiveReplayInputs,
     build_live_replay,
 )
+from scripts.research import run_data_first_possession_rating_replay as runner
 
 
 def _inputs() -> LiveReplayInputs:
@@ -197,3 +204,71 @@ def test_independent_verifier_import_boundary() -> None:
             if isinstance(node, ast.ImportFrom) and node.module
         }
         assert not imports & forbidden
+
+
+def test_replay_parent_accepts_a_new_certified_contract07_run_id() -> None:
+    uri = "measurement/week4/measurement-manifest.json"
+    manifest = signed_payload(
+        {
+            "schema_version": POSSESSION_MANIFEST_SCHEMA,
+            "identity": {
+                "run_id": "possession-v1-measurements-week4-refresh",
+                "environment": "preview",
+                "development_seasons": [2026],
+            },
+            "certification_sha256": "signed-certification-digest",
+            "output_refs": {name: {} for name in POSSESSION_DATASETS},
+            "production_activation_authorized": False,
+        }
+    )
+    raw = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+
+    class Storage:
+        def read_bytes(self, requested_uri: str) -> bytes:
+            assert requested_uri == uri
+            return raw
+
+    loaded, loaded_raw = runner._measurement_parent(Storage(), uri)
+    assert loaded["identity"]["run_id"] == "possession-v1-measurements-week4-refresh"
+    assert loaded_raw == raw
+
+
+def test_rating_replay_verifier_does_not_pin_the_old_contract07_run_id() -> None:
+    old_run_id = "possession-v1-measurements-20260922-2026c"
+    verifier_script = Path(
+        "scripts/research/verify_data_first_possession_rating_replay.py"
+    )
+    runner_script = Path("scripts/research/run_data_first_possession_rating_replay.py")
+    assert old_run_id not in verifier_script.read_text()
+    assert old_run_id not in runner_script.read_text()
+
+
+def test_replay_parent_rejects_uncertified_or_historical_measurements() -> None:
+    base = {
+        "schema_version": POSSESSION_MANIFEST_SCHEMA,
+        "identity": {
+            "run_id": "possession-v1-measurements-week4-refresh",
+            "environment": "preview",
+            "development_seasons": [2026],
+        },
+        "certification_sha256": "signed-certification-digest",
+        "output_refs": {name: {} for name in POSSESSION_DATASETS},
+        "production_activation_authorized": False,
+    }
+
+    class Storage:
+        def __init__(self, payload: dict) -> None:
+            self.raw = json.dumps(
+                signed_payload(payload), sort_keys=True, separators=(",", ":")
+            ).encode()
+
+        def read_bytes(self, _uri: str) -> bytes:
+            return self.raw
+
+    for patch in (
+        {"certification_sha256": ""},
+        {"identity": {**base["identity"], "development_seasons": [2015, 2025]}},
+    ):
+        payload = {**base, **patch}
+        with pytest.raises(runner.RatingReplayRunError, match="certified Contract 07"):
+            runner._measurement_parent(Storage(payload), "measurement.json")

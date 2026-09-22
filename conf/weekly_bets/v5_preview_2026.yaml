@@ -1,0 +1,15 @@
+# V5 serving rehearsal. Pin a verified live forecast before running.
+# Production activation requires a separate reviewed decision and config change.
+system_name: "Trench Warfare V5"
+model_id: "v5-possession-ppp-rho060-exposure"
+year: 2026
+week: 5
+spread_edge_threshold: 0.0
+spread_edge_threshold_high_conf: 8.0
+total_edge_threshold: 1.5
+v5_live_forecast:
+  schema_version: v5_weekly_serving_v1
+  forecast_manifest_uri: null
+  forecast_manifest_sha256: null
+  forecast_config: conf/research/data_first_football_v1/live_forecast_v1.yaml
+  production_activation_authorized: false

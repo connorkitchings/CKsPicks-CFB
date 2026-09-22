@@ -18,13 +18,20 @@ from cks_picks_cfb.data.data_first_forecast_v1 import (
     REQUIRED_RATING_CANDIDATE,
     verify_rating_parent,
 )
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_MANIFEST_SCHEMA,
+    LiveForecastContractError,
+    verify_application_parents,
+)
 from cks_picks_cfb.data.data_first_phase2d import (
     sha256,
     signed_payload,
     verify_signed_payload,
 )
+from cks_picks_cfb.data.data_first_phase3_v2 import verify_repair_manifest
 
 SHADOW_CONFIG_SCHEMA = "data_first_shadow_config_v1"
+LIVE_SHADOW_CONFIG_SCHEMA = "data_first_shadow_live_config_v1"
 SHADOW_IDENTITY_SCHEMA = "data_first_shadow_identity_v1"
 SHADOW_MANIFEST_SCHEMA = "data_first_shadow_manifest_v1"
 SHADOW_MANIFEST_NAME = "shadow-manifest.json"
@@ -169,12 +176,20 @@ class ShadowContractError(ValueError):
 
 
 def validate_shadow_config(payload: Mapping[str, Any]) -> None:
-    if payload.get("schema_version") != SHADOW_CONFIG_SCHEMA:
+    schema_version = payload.get("schema_version")
+    if schema_version not in (SHADOW_CONFIG_SCHEMA, LIVE_SHADOW_CONFIG_SCHEMA):
         raise ShadowContractError("unexpected shadow config schema")
     if payload.get("environment") != "preview":
         raise ShadowContractError("shadow config must target preview")
-    if payload.get("candidate_manifest_uri") != REQUIRED_FORECAST_MANIFEST_URI:
-        raise ShadowContractError("shadow config must pin the certified 04 candidate")
+    if schema_version == SHADOW_CONFIG_SCHEMA:
+        if payload.get("candidate_manifest_uri") != REQUIRED_FORECAST_MANIFEST_URI:
+            raise ShadowContractError(
+                "shadow config must pin the certified 04 candidate"
+            )
+    elif payload.get("candidate_manifest_source") != "explicit_cli_parent":
+        raise ShadowContractError(
+            "live shadow config must use the explicit CLI candidate parent"
+        )
     if payload.get("rating_candidate") != REQUIRED_RATING_CANDIDATE:
         raise ShadowContractError(
             "shadow config must pin the retained rating candidate"
@@ -207,8 +222,27 @@ def verify_candidate_parents(
     measurement_raw_sha256: str,
     repair_manifest_uri: str,
     repair_raw_sha256: str,
+    bridge: Mapping[str, Any] | None = None,
+    bridge_raw_sha256: str = "",
 ) -> dict[str, Any]:
     """Validate the exact certified 04 candidate and its full parent chain."""
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        return verify_live_candidate_parents(
+            forecast,
+            rating,
+            measurement,
+            repair,
+            bridge=bridge,
+            bridge_raw_sha256=bridge_raw_sha256,
+            forecast_manifest_uri=forecast_manifest_uri,
+            forecast_raw_sha256=forecast_raw_sha256,
+            rating_manifest_uri=rating_manifest_uri,
+            rating_raw_sha256=rating_raw_sha256,
+            measurement_manifest_uri=measurement_manifest_uri,
+            measurement_raw_sha256=measurement_raw_sha256,
+            repair_manifest_uri=repair_manifest_uri,
+            repair_raw_sha256=repair_raw_sha256,
+        )
     try:
         verify_signed_payload(forecast, label="certified forecast manifest")
     except ValueError as exc:
@@ -276,6 +310,119 @@ def verify_candidate_parents(
     }
 
 
+def verify_live_candidate_parents(
+    forecast: Mapping[str, Any],
+    rating: Mapping[str, Any],
+    measurement: Mapping[str, Any],
+    repair: Mapping[str, Any],
+    *,
+    bridge: Mapping[str, Any] | None,
+    bridge_raw_sha256: str,
+    forecast_manifest_uri: str,
+    forecast_raw_sha256: str,
+    rating_manifest_uri: str,
+    rating_raw_sha256: str,
+    measurement_manifest_uri: str,
+    measurement_raw_sha256: str,
+    repair_manifest_uri: str,
+    repair_raw_sha256: str,
+) -> dict[str, Any]:
+    """Validate the versioned live forecast and exact 07/08/11C parent chain."""
+    from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+        LIVE_FORECAST_DATASET,
+        LIVE_FORECAST_MANIFEST_SCHEMA,
+    )
+
+    if bridge is None:
+        raise ShadowContractError("live forecast bridge manifest is required")
+    try:
+        verify_signed_payload(forecast, label="live forecast manifest")
+    except ValueError as exc:
+        raise ShadowContractError(str(exc)) from exc
+    if (
+        forecast.get("schema_version") != LIVE_FORECAST_MANIFEST_SCHEMA
+        or forecast.get("state") != "frozen"
+        or (forecast.get("identity") or {}).get("environment") != "preview"
+        or (forecast.get("identity") or {}).get("season") != 2026
+        or forecast.get("production_activation_authorized") is not False
+        or not forecast_raw_sha256
+    ):
+        raise ShadowContractError("live forecast manifest is not eligible")
+    parents = forecast.get("parents") or {}
+    expected = {
+        "measurement_uri": measurement_manifest_uri,
+        "measurement_raw_sha256": measurement_raw_sha256,
+        "rating_replay_uri": rating_manifest_uri,
+        "rating_replay_raw_sha256": rating_raw_sha256,
+        "bridge_uri": parents.get("bridge_uri"),
+        "bridge_raw_sha256": bridge_raw_sha256,
+    }
+    if any(parents.get(key) != value for key, value in expected.items()):
+        raise ShadowContractError(
+            "live forecast parent envelope differs from supplied manifests"
+        )
+    if parents.get("bridge_uri") != (
+        "artifacts/research/data-first-football-v1/forecasts/runs/"
+        "forecast-v1-20260921-5afd577-11c/forecast-manifest.json"
+    ):
+        raise ShadowContractError("live forecast does not use the certified 11C bridge")
+    if not parents.get("schedule_ref_uri") or not parents.get("schedule_raw_sha256"):
+        raise ShadowContractError(
+            "live forecast does not bind its full schedule source"
+        )
+    measured_repair_uri = measurement.get("repair_manifest_uri")
+    measured_repair_sha = measurement.get("repair_manifest_raw_sha256")
+    if (
+        measured_repair_uri != repair_manifest_uri
+        or measured_repair_sha != repair_raw_sha256
+    ):
+        raise ShadowContractError(
+            "measurement parent does not bind the supplied Repair parent"
+        )
+    try:
+        verify_repair_manifest(repair)
+    except ValueError as exc:
+        raise ShadowContractError(str(exc)) from exc
+    try:
+        chain = verify_application_parents(
+            measurement=measurement,
+            measurement_uri=measurement_manifest_uri,
+            measurement_raw_sha256=measurement_raw_sha256,
+            rating_replay=rating,
+            rating_replay_uri=rating_manifest_uri,
+            rating_replay_raw_sha256=rating_raw_sha256,
+            bridge=bridge,
+            bridge_uri=str(parents.get("bridge_uri") or ""),
+            bridge_raw_sha256=bridge_raw_sha256,
+        )
+    except (LiveForecastContractError, ValueError) as exc:
+        raise ShadowContractError(str(exc)) from exc
+    output_ref = forecast.get("output_ref") or {}
+    if (
+        output_ref.get("dataset") != LIVE_FORECAST_DATASET[0]
+        or output_ref.get("schema_version") != LIVE_FORECAST_DATASET[1]
+        or int(output_ref.get("row_count", 0)) != int(forecast.get("row_count", -1))
+        or not output_ref.get("uri")
+        or int(forecast.get("row_count", 0)) <= 0
+    ):
+        raise ShadowContractError("live forecast output reference is malformed")
+    return {
+        "forecast": dict(forecast),
+        "rating": chain["rating_replay"],
+        "measurement": chain["measurement"],
+        "repair": dict(repair),
+        "bridge": chain["bridge"],
+        "forecast_manifest_uri": forecast_manifest_uri,
+        "forecast_raw_sha256": forecast_raw_sha256,
+        "rating_manifest_uri": rating_manifest_uri,
+        "rating_raw_sha256": rating_raw_sha256,
+        "measurement_manifest_uri": measurement_manifest_uri,
+        "measurement_raw_sha256": measurement_raw_sha256,
+        "repair_manifest_uri": repair_manifest_uri,
+        "repair_raw_sha256": repair_raw_sha256,
+    }
+
+
 def shadow_identity(
     *,
     run_id: str,
@@ -283,6 +430,7 @@ def shadow_identity(
     code_sha: str,
     config_sha: str,
     parents: Mapping[str, Any],
+    candidate: str = REQUIRED_FORECAST_RUN_ID,
 ) -> dict[str, Any]:
     if not all((run_id, as_of, code_sha, config_sha)):
         raise ShadowContractError("shadow identity is incomplete")
@@ -298,7 +446,7 @@ def shadow_identity(
         "code_sha": code_sha,
         "config_sha": config_sha,
         "parents": dict(parents),
-        "candidate": REQUIRED_FORECAST_RUN_ID,
+        "candidate": candidate,
     }
     return value | {"identity_sha256": sha256(value)}
 

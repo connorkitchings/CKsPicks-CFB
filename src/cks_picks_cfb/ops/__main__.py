@@ -1970,7 +1970,8 @@ def build_steps(
         )
         config = str(getattr(options, "config", "conf/weekly_bets/v2_champion.yaml"))
         prepared_gold_ref_uri = getattr(options, "prepared_gold_ref_uri", None)
-        if week > 0 and not prepared_gold_ref_uri:
+        v5_mode = bool(OmegaConf.load(config).get("v5_live_forecast"))
+        if week > 0 and not prepared_gold_ref_uri and not v5_mode:
             raise ValueError(
                 "publish-week after Week 0 requires --prepared-gold-ref-uri from prepare-week"
             )
@@ -1989,8 +1990,14 @@ def build_steps(
                     config,
                 ),
             ),
-            PipelineStep(
-                "audit_data", _audit_data_action(conn_url, mode="model-ready")
+            *(
+                []
+                if v5_mode
+                else [
+                    PipelineStep(
+                        "audit_data", _audit_data_action(conn_url, mode="model-ready")
+                    )
+                ]
             ),
             subprocess_step(
                 "ingest_schedule",
@@ -2044,6 +2051,8 @@ def build_steps(
                     as_of,
                     "--pipeline-run-id",
                     context.pipeline_run_id,
+                    "--config",
+                    config,
                     "--market-ref-uri",
                     market_ref_uri,
                 )

@@ -3,27 +3,9 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Research checkpoint (2026-09-22)
+## V5 checkpoint (2026-09-22)
 
-**V4 remains the live production champion.** The **V5 ratings successor** is
-isolated Preview research and is distinct from **feature schema v5**, the separate
-V4 diagnostic. Its historical development and verification lane is complete and
-accepted: all four historical audit findings are closed. Contract 07 is
-Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
-Implemented for Weeks 0–3 as replay
-`possession-v1-rating-replay-20260922-fcaa571`, independently verified with the
-frozen `ppp__rho_0_60__exposure` design. The Week 4 refresh of Contracts 07 and
-08 is next, followed by Contract 09 live readiness, Contract 06's six-slate
-prospective evaluation, and a conditional Phase 7 promotion review. The
-[data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
-is the detailed status and execution authority.
-
-Repair v2 and Phase 3 v2 remain certified historical evidence; R6 is a
-superseded historical measurement lineage. The original Phase 4B retained
-manifest remains prohibited as a forecasting parent. New research uses
-2015–2019 and 2021–2025 as development evidence, excludes 2020, and never uses
-2026 outcomes to choose or tune V5. Production operations remain under their
-existing runbooks.
+[V5 model development is complete and accepted](docs/modeling/v5_status.md). Its historical measurement, rating, forecast, and verification lineage is certified. V4 remains the live site model. The first current-state V5 forecast awaits stabilized Week 4 finals and refreshed verified 07/08 parents. A verified forecast, Preview serving rehearsal, and rollback proof will support a separate site activation decision. Prospective outcome tracking continues after launch without a six-slate prelaunch wait. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic.
 
 ## 2026 posture
 

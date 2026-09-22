@@ -32,6 +32,28 @@ class RecordingNotifier:
             raise self.error
 
 
+def test_v5_publish_plan_uses_forecast_parents_without_v4_gold(tmp_path):
+    config = tmp_path / "v5.yaml"
+    config.write_text("v5_live_forecast:\n  schema_version: v5_weekly_serving_v1\n")
+    context = new_context(
+        command="publish-week",
+        environment="preview",
+        season=2026,
+        week=5,
+        as_of="2026-10-01T12:00:00Z",
+        pipeline_run_id="v5-preview-plan",
+    )
+    steps = build_steps(
+        context,
+        conn_url="postgresql://unused",
+        options=SimpleNamespace(config=str(config), prepared_gold_ref_uri=None),
+    )
+    names = [step.name for step in steps]
+    assert "audit_data" not in names
+    snapshot = next(step for step in steps if step.name == "snapshot_inputs")
+    assert str(config) in snapshot.definition["argv"]
+
+
 def test_source_subprocess_timeout_is_positive_and_configurable(monkeypatch):
     monkeypatch.setenv("CFB_SOURCE_SUBPROCESS_TIMEOUT_SECONDS", "123.5")
     assert _source_subprocess_timeout_seconds() == 123.5

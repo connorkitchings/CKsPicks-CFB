@@ -74,8 +74,10 @@ print(f"✅ Data root verified: {data_root}")
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
-  A first promotion review requires six completed, normal-coverage slates with
-  V4 and candidate predictions frozen before kickoff; Week 0 does not count.
+  V5 model development is complete and accepted. A site cutover review requires
+  a verified current live forecast, Preview serving rehearsal, V4 rollback proof,
+  and a separate activation decision. Prospective paired-slate evidence continues
+  as monitoring; six slates are not a prelaunch gate.
 - New research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
@@ -249,16 +251,16 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   `4cfe5ef8…`). Contract 12 issued
   `accepted_for_prospective_evaluation` (`readiness-v1-20260921-scorecard`)
   and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
-  re-reviewed against the corrected parents with deferrals lifted under
-  `docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`.
+  re-reviewed against the corrected parents with deferrals lifted under the
+  archived September 22 acceptance and re-review record.
   Contract 08 is Implemented for Weeks 0–3 as independently verified replay
   `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 refresh of
-  Contracts 07 and 08 is next. The authorized sequence is Contract 07
-  (Repair-2026 + 2026 measurements) → Contract 08 (rating replay) → Contract
-  09 (final-fit forecasts + readiness `ready` on the Week 5 slate,
-  ~Oct 1) → Contract 06 (first freeze T−2h; six qualifying slates W5–W10
-  target) → conditional Phase 7 promotion review. Conditional results remain
-  `conditional_historical_results_only`.
+  Contracts 07 and 08 is next. [V5 model development is complete and accepted](docs/modeling/v5_status.md).
+  The operational sequence is fresh 07/08 parents after stabilized Week 4 finals,
+  verified Contract 09 forecast and readiness, Preview serving rehearsal and V4
+  rollback proof, then a separate production activation decision. Contract 06
+  continues prospective monitoring; six slates are not a prelaunch condition.
+  Conditional results remain `conditional_historical_results_only`.
   V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not
   confirmed (pooled W1+W2 shadow spread 38.46% < 45%), predictions
   value-identical on all 100 games. V5 ratings successor is distinct from V4

@@ -1,5 +1,7 @@
 # V5 Ratings Successor: Roadmap and Common Contract
 
+> **Current policy (2026-09-22):** [V5 model development is complete and accepted](../../../modeling/v5_status.md). The six-slate promotion prerequisite recorded below is superseded by the approved [verified-cutover contract](../../../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md). A current independently verified live forecast, Preview serving rehearsal, V4 rollback proof, and a separate activation decision now govern site replacement. Prospective evidence continues as monitoring, and no 2026 outcome may refit this V5 identity.
+
 - **Status:** Approved
 - **Created:** 2026-09-13
 - **Planner:** Codex planning task
@@ -53,7 +55,7 @@ later challenger rather than a first-shadow prerequisite.
 | 03 | [Possession rating estimation](03-v5-possession-rating-estimation.md) | 02 independently verified | Selected definition/prior/updater design and state evidence |
 | 04 | [Forecast bridge and fitting-window selection](04-v5-forecast-bridge-and-fitting-window.md) | 03 independently verified | Historical forecast artifact; downstream forecast eligibility remains open pending 11 |
 | 05 | [Prospective readiness and shadow tooling](05-v5-prospective-readiness-and-shadow-tooling.md) | Tooling implementation | Diagnostic rehearsal and readiness tooling only; it does not certify forecast quality |
-| 06 | [Prospective evidence and recommendation](06-v5-prospective-evidence-and-recommendation.md) | 10, 11, and 12 accepted; then live readiness | Six-slate evidence recommendation, or precise continued-shadow status |
+| 06 | [Prospective evidence and recommendation](../../../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | 10, 11, and 12 accepted; then live readiness | Six-slate evidence recommendation, or precise continued-shadow status |
 
 Contract 01 is a side task; its result neither blocks nor chooses the ratings
 candidate. Every phase requires its own implementation session. Approval of a
@@ -238,7 +240,7 @@ preflight membership and part plan; a failed partial run cannot become eligible.
 ## Shared evaluation and validation
 
 Unless explicitly replaced here, inherit the mathematical bootstrap, population,
-stage, fallback, and validation rules from the September 8 [common contract](../2026-09-08/transformation-review-and-authority-reset.md#binding-common-execution-contract).
+stage, fallback, and validation rules from the September 8 [common contract](../../../plans/2026-09-08/transformation-review-and-authority-reset.md#binding-common-execution-contract).
 This inheritance does not authorize running its execution-held scripts.
 
 - Paired hierarchical season/week bootstrap: 2,000 replicates, seed 20260908,

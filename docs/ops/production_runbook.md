@@ -1,5 +1,7 @@
 # Production Runbook — 2026 Season
 
+> **V5 cutover status:** [V5 model development is complete](../modeling/v5_status.md), but V4 remains the public site model. The V5 weekly adapter is configured only for Preview rehearsal until a current forecast is independently verified, a Preview publication and V4 rollback are proven, and a separate production activation decision is recorded. Six prospective slates are not a prelaunch condition.
+
 > **As-built operations for the live system** (deployed 2026-08-18).
 > This runbook reflects production reality: Vercel + Neon + Cloudflare R2 with
 > the V4 launch bundle. Superseded V2 deployment and rollback material is in
@@ -156,6 +158,13 @@ in production was truncated at hydration (preview-specific data) and
 repopulates as production audits run — this is expected.
 
 ## Rollback / recovery
+
+For the planned V5 cutover, rehearse rollback on Preview first: identify the
+last good V4 immutable run, publish or reselect it using the normal Preview
+activation path, then verify `current_week.active_run_id`, `/api/health`, and
+the rendered system name. Preserve both V4 and V5 artifacts. Production V5
+activation is a separate decision after the [current V5 cutover checks](../modeling/v5_status.md)
+pass; this runbook's existing V4 procedure remains active until then.
 
 There is no MLflow/joblib rollback in this system. Runs are immutable; rollback = reselection:
 

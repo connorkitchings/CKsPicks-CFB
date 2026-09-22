@@ -189,7 +189,8 @@ def _measurement_parent(storage: Any, uri: str) -> tuple[dict[str, Any], bytes]:
         payload.get("schema_version") != POSSESSION_MANIFEST_SCHEMA
         or identity.get("environment") != "preview"
         or tuple(identity.get("development_seasons") or ()) != (2026,)
-        or identity.get("run_id") != "possession-v1-measurements-20260922-2026c"
+        or not identity.get("run_id")
+        or not payload.get("certification_sha256")
         or payload.get("production_activation_authorized") is not False
         or set(payload.get("output_refs") or {}) != set(POSSESSION_DATASETS)
     ):

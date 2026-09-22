@@ -17,7 +17,7 @@ The existing candidate-v1 shadow system is historical compatibility evidence,
 not permission to reuse its six-slate counter or candidate identity.
 
 This contract completes tooling and a diagnostic rehearsal. Actual prospective
-slate collection and recommendations belong to [06](06-v5-prospective-evidence-and-recommendation.md).
+slate collection and recommendations belong to [06](../../../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md).
 
 ## Approach, scope, and interfaces
 
@@ -205,3 +205,25 @@ prospective evidence. Contract 04/04B is reopened pending independent
 computational verification; therefore 05 cannot establish a certified forecast
 parent. Contract 06 is deferred behind Contracts 10-12, explicit user acceptance
 of historical readiness, and a later re-reviewed live-application path.
+
+## Amendment 2 — Versioned 2026 live candidate interface (2026-09-22)
+
+**Reason:** Contract 09's outcome-free 2026 forecasts use a distinct manifest
+and row schema. The original Contract 05 source loader and independent verifier
+were sealed to the historical candidate identity and a fixed historical
+population.
+
+**Revised approach:** Contract 05 now accepts the explicit
+`data_first_live_forecast_manifest_v1` through a versioned adapter in readiness,
+freeze, scoring, and independent verification. Live readiness checks the exact
+Contract 07/08 ancestry, requested 2026 schedule coverage, outcome-free
+prediction schema, and pre-kickoff timing. A blocked report retains its precise
+missing dependency. Freeze and score continue to require verified readiness,
+measured pre-kickoff availability, complete paired coverage, and stabilized
+outcomes; `diagnostic_only` remains permanently excluded.
+
+**Impact:** The historical Contract 05 path and certified diagnostic artifacts
+remain unchanged. The adapter is code-ready only: no Week 4 readiness or
+certification was performed. Contract 09 still requires stabilized Week 4
+finals and fresh, independently verified 07/08 Preview manifests. Contract 06
+remains gated on verified `ready`.

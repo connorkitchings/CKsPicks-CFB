@@ -12,9 +12,15 @@ from cks_picks_cfb.data.data_first_forecast_v1 import (
     FORECAST_DATASETS,
     REQUIRED_RATING_MANIFEST_URI,
 )
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_COLUMNS,
+    LIVE_FORECAST_DATASET,
+)
 from cks_picks_cfb.data.data_first_phase2d import signed_payload
 from cks_picks_cfb.data.data_first_possession_rating_v1 import RATING_DATASETS
+from cks_picks_cfb.data.lake import canonical_frame_digest
 from cks_picks_cfb.data.schema_contracts import schema_for
+from cks_picks_cfb.forecast import shadow_verification
 from cks_picks_cfb.forecast.shadow import (
     ShadowError,
     build_readiness_report,
@@ -54,6 +60,130 @@ def test_shadow_schemas_resolve():
     for name, (_dataset, version) in shadow_contracts.SHADOW_DATASETS.items():
         schema = schema_for(_dataset, version)
         assert schema.schema_version == version, name
+
+
+def test_independent_live_readiness_verifier_checks_exact_slate_coverage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    predictions = pd.DataFrame(
+        [
+            {
+                "run_id": "live-run",
+                "season": 2026,
+                "week": 5,
+                "game_id": game,
+                "target": target,
+                "mean": 1.0,
+                "variance": 4.0,
+                "interval_lower_95": -2.92,
+                "interval_upper_95": 4.92,
+                "offset": 0.0,
+                "completed_game_stage": 0,
+                "timing_class": "live",
+                "model_ref": "bridge",
+                "state_ref": "state",
+                "source_ref": "source",
+            }
+            for game in (10, 11)
+            for target in ("margin", "total")
+        ],
+        columns=list(LIVE_FORECAST_COLUMNS),
+    )
+    monkeypatch.setattr(
+        shadow_verification,
+        "_load_ref_frame",
+        lambda storage, ref, name: predictions.copy(),
+    )
+    forecast = {
+        "identity": {"run_id": "live-run", "as_of": "2026-09-30T20:00:00Z"},
+        "output_ref": {
+            "dataset": LIVE_FORECAST_DATASET[0],
+            "schema_version": LIVE_FORECAST_DATASET[1],
+            "row_count": len(predictions),
+            "uri": "forecast-output",
+        },
+        "row_count": len(predictions),
+        "prediction_records_sha256": canonical_frame_digest(
+            predictions, columns=list(LIVE_FORECAST_COLUMNS)
+        ),
+    }
+    population = pd.DataFrame(
+        {
+            "season": [2026, 2026],
+            "week": [5, 5],
+            "game_id": [10, 11],
+            "kickoff_utc": ["2026-10-01T23:30:00Z", "2026-10-02T00:00:00Z"],
+        }
+    )
+    shadow_verification._verify_live_prediction_coverage(
+        object(), forecast=forecast, population=population, season=2026, week=5
+    )
+    with pytest.raises(
+        shadow_verification.ShadowVerificationError, match="game coverage"
+    ):
+        shadow_verification._verify_live_prediction_coverage(
+            object(),
+            forecast=forecast,
+            population=population.iloc[:1].copy(),
+            season=2026,
+            week=5,
+        )
+    late_forecast = {
+        **forecast,
+        "identity": {"run_id": "live-run", "as_of": "2026-10-03T00:00:00Z"},
+    }
+    with pytest.raises(
+        shadow_verification.ShadowVerificationError, match="source cutoff"
+    ):
+        shadow_verification._verify_live_prediction_coverage(
+            object(),
+            forecast=late_forecast,
+            population=population,
+            season=2026,
+            week=5,
+        )
+
+
+def test_live_readiness_verifier_preserves_exact_candidate_blocker(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    population = pd.DataFrame(
+        {
+            "season": [2026, 2026],
+            "week": [5, 5],
+            "game_id": [10, 11],
+        }
+    )
+    partial = pd.DataFrame(
+        {
+            "season": [2026],
+            "week": [5],
+            "game_id": [10],
+            "target": ["margin"],
+        }
+    )
+    monkeypatch.setattr(
+        shadow_verification,
+        "_load_ref_frame",
+        lambda storage, ref, name: partial.copy(),
+    )
+    status = shadow_verification._live_readiness_candidate_status(
+        object(),
+        forecast={
+            "identity": {"run_id": "live-run", "as_of": "2026-09-30T20:00:00Z"},
+            "output_ref": {"uri": "live-output"},
+        },
+        population=population,
+        season=2026,
+        week=5,
+        cutoff="2026-09-30T20:00:00Z",
+    )
+    assert status["status"] == "unavailable"
+    assert status["timing_class"] == "missing"
+    assert status["blocked_reason"] == (
+        "live forecast population mismatch; missing game/target="
+        "[(10, 'total'), (11, 'margin'), (11, 'total')], extra game/target=[]"
+    )
 
 
 def test_shadow_config_accepts_sealed_values():

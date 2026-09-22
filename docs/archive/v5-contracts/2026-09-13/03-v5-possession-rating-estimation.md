@@ -31,7 +31,7 @@ the common contract. No V4 changes, catalog registration, live forecasts,
 market inputs, auxiliary acquisition, or registry expansion.
 
 Explicitly inherit the following sections of the execution-held
-[September 8 rating contract](../2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md):
+[September 8 rating contract](../../../plans/2026-09-08/phase4a-prior-and-dynamic-rating-selection-v2.md):
 Prior registry, deterministic q/r fitting settings, stage definitions,
 within-definition selection gates and tie order, and named FCS fallback.
 Replace its composite parent/observation, component-information formula,

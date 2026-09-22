@@ -1,0 +1,11 @@
+schema_version: data_first_shadow_live_config_v1
+environment: preview
+candidate_manifest_source: explicit_cli_parent
+rating_candidate: ppp__rho_0_60__exposure
+output_root: artifacts/research/data-first-football-v1/possession-v1/shadow/runs
+freeze_target_lead_seconds: 7200
+freeze_hard_lead_seconds: 3600
+score_stabilization_seconds: 86400
+minimum_paired_games: 40
+diagnostic_class: diagnostic_only
+production_activation_authorized: false

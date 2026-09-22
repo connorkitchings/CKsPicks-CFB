@@ -22,6 +22,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.data_first_live_forecast_v1 import (
+    LIVE_FORECAST_COLUMNS,
+    LIVE_FORECAST_DATASET,
+    LIVE_FORECAST_MANIFEST_SCHEMA,
+)
 from cks_picks_cfb.data.data_first_phase2d import (
     signed_payload,
     verify_signed_payload,
@@ -241,6 +246,12 @@ def _verify_parent_chain(storage: Any, identity: Mapping[str, Any]) -> dict[str,
     repair, repair_raw = _read_json(
         storage, str(parents.get("repair_manifest_uri", ""))
     )
+    bridge = None
+    bridge_raw = b""
+    if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        bridge_uri = str((forecast.get("parents") or {}).get("bridge_uri", ""))
+        _require(bool(bridge_uri), "live forecast does not bind its 11C bridge")
+        bridge, bridge_raw = _read_json(storage, bridge_uri)
     try:
         return verify_candidate_parents(
             forecast,
@@ -255,12 +266,34 @@ def _verify_parent_chain(storage: Any, identity: Mapping[str, Any]) -> dict[str,
             measurement_raw_sha256=hashlib.sha256(measurement_raw).hexdigest(),
             repair_manifest_uri=str(parents.get("repair_manifest_uri", "")),
             repair_raw_sha256=hashlib.sha256(repair_raw).hexdigest(),
+            bridge=bridge,
+            bridge_raw_sha256=(
+                hashlib.sha256(bridge_raw).hexdigest() if bridge_raw else ""
+            ),
         )
     except ValueError as exc:
         raise ShadowVerificationError(f"parent chain rejected: {exc}") from exc
 
 
-def _require_pinned_manifest_uris(parents: Mapping[str, Any]) -> None:
+def _require_pinned_manifest_uris(
+    parents: Mapping[str, Any], *, live: bool = False
+) -> None:
+    if live:
+        required = {
+            "forecast_manifest_uri",
+            "forecast_raw_sha256",
+            "rating_manifest_uri",
+            "rating_raw_sha256",
+            "measurement_manifest_uri",
+            "measurement_raw_sha256",
+            "repair_manifest_uri",
+            "repair_raw_sha256",
+        }
+        _require(
+            required <= set(parents) and all(parents.get(key) for key in required),
+            "live readiness must bind exact refreshed forecast, 07, 08, and repair parents",
+        )
+        return
     _require(
         parents.get("forecast_manifest_uri") == REQUIRED_FORECAST_MANIFEST_URI,
         "forecast parent is not the certified 04 candidate",
@@ -303,6 +336,91 @@ def _load_readiness_sources(
     measurement = chain["measurement"]
     repair = chain["repair"]
     rating = chain["rating"]
+
+    if (chain["forecast"].get("schema_version")) == LIVE_FORECAST_MANIFEST_SCHEMA:
+        population = _load_ref_frame(
+            storage,
+            (measurement.get("output_refs") or {}).get("population") or {},
+            name="measurement:population",
+        )
+        scoring_events = _load_ref_frame(
+            storage,
+            (measurement.get("output_refs") or {}).get("scoring_events") or {},
+            name="measurement:scoring_events",
+        )
+        schedule_uri = str(
+            (chain["forecast"].get("parents") or {}).get("schedule_ref_uri", "")
+        )
+        _require(bool(schedule_uri), "live forecast lacks its full schedule source")
+        schedule_raw = storage.read_bytes(schedule_uri)
+        expected_schedule_sha = str(
+            (chain["forecast"].get("parents") or {}).get("schedule_raw_sha256", "")
+        )
+        _require(
+            hashlib.sha256(schedule_raw).hexdigest() == expected_schedule_sha,
+            "live forecast schedule bytes differ from its parent checksum",
+        )
+        full_schedule = _read_frame(storage, schedule_uri, name="live schedule")
+        _require(
+            {"season", "week", "game_id"} <= set(full_schedule),
+            "live full schedule lacks game identity columns",
+        )
+        _require(
+            set(
+                map(
+                    tuple,
+                    full_schedule.loc[
+                        full_schedule["season"].eq(2026),
+                        ["season", "week", "game_id"],
+                    ]
+                    .astype(int)
+                    .to_numpy(),
+                )
+            )
+            == set(
+                map(
+                    tuple,
+                    population.loc[
+                        population["season"].eq(2026),
+                        ["season", "week", "game_id"],
+                    ]
+                    .astype(int)
+                    .to_numpy(),
+                )
+            ),
+            "live schedule and Contract 07 population membership differ",
+        )
+        team_states = _load_ref_frame(
+            storage,
+            (rating.get("output_refs") or {}).get("team_states") or {},
+            name="rating:team_states",
+        )
+        priors = _load_ref_frame(
+            storage,
+            (rating.get("output_refs") or {}).get("priors") or {},
+            name="rating:priors",
+        )
+        outcomes = population[
+            population.get(
+                "schedule_completed", pd.Series(False, index=population.index)
+            ).astype(bool)
+            & population.get(
+                "outcome_valid", pd.Series(False, index=population.index)
+            ).astype(bool)
+        ].copy()
+        if {"season", "week", "game_id"} <= set(outcomes):
+            outcomes = outcomes.loc[:, ["season", "week", "game_id"]].assign(
+                completed=True
+            )
+        else:
+            outcomes = pd.DataFrame(columns=["season", "week", "game_id", "completed"])
+        return {
+            "schedule": population,
+            "outcomes": outcomes,
+            "scoring_events": scoring_events,
+            "team_states": team_states,
+            "priors": priors,
+        }
 
     population = _load_ref_frame(
         storage,
@@ -368,12 +486,208 @@ def _load_readiness_sources(
     }
 
 
+def _verify_live_prediction_coverage(
+    storage: Any,
+    *,
+    forecast: Mapping[str, Any],
+    population: pd.DataFrame,
+    season: int,
+    week: int,
+) -> None:
+    """Verify live output bytes and exact game/target coverage independently."""
+    output_ref = forecast.get("output_ref") or {}
+    _require(
+        output_ref.get("dataset") == LIVE_FORECAST_DATASET[0]
+        and output_ref.get("schema_version") == LIVE_FORECAST_DATASET[1],
+        "live forecast output identity mismatch",
+    )
+    predictions = _load_ref_frame(storage, output_ref, name="live forecast predictions")
+    _require(
+        int(output_ref.get("row_count", -1))
+        == len(predictions)
+        == int(forecast.get("row_count", -2)),
+        "live forecast output row count mismatch",
+    )
+    _require(
+        set(LIVE_FORECAST_COLUMNS) <= set(predictions),
+        "live forecast rows lack required outcome-free fields",
+    )
+    _require(
+        not ({"actual", "absolute_error", "gaussian_crps"} & set(predictions)),
+        "live forecast output contains outcome-bearing fields",
+    )
+    _require(
+        not predictions.duplicated(
+            ["run_id", "season", "week", "game_id", "target"]
+        ).any(),
+        "live forecast output duplicates a prediction key",
+    )
+    _require(
+        set(predictions["season"].astype(int)) == {2026}
+        and predictions["target"].isin(("margin", "total")).all(),
+        "live forecast output includes an invalid season or target",
+    )
+    _require(
+        predictions["run_id"]
+        .astype(str)
+        .eq(str((forecast.get("identity") or {}).get("run_id", "")))
+        .all()
+        and predictions["timing_class"].eq("live").all(),
+        "live forecast output identity or timing class mismatch",
+    )
+    for column in (
+        "mean",
+        "variance",
+        "interval_lower_95",
+        "interval_upper_95",
+        "offset",
+    ):
+        values = pd.to_numeric(predictions[column], errors="coerce").to_numpy(float)
+        _require(
+            np.isfinite(values).all(), f"live forecast {column} contains invalid values"
+        )
+    _require(
+        (pd.to_numeric(predictions["variance"], errors="coerce") > 0).all(),
+        "live forecast variance must be positive",
+    )
+    _require(
+        canonical_frame_digest(predictions, columns=list(LIVE_FORECAST_COLUMNS))
+        == str(forecast.get("prediction_records_sha256", "")),
+        "live forecast output digest mismatch",
+    )
+    declared = population[population["season"].eq(season) & population["week"].eq(week)]
+    if "forecast_eligible" in declared:
+        declared = declared[declared["forecast_eligible"].astype(bool)]
+    expected_games = set(declared["game_id"].astype(int))
+    observed_games = set(
+        predictions.loc[
+            predictions["season"].eq(season) & predictions["week"].eq(week),
+            "game_id",
+        ].astype(int)
+    )
+    _require(
+        bool(expected_games), f"no declared schedule rows for {season} week {week}"
+    )
+    if "kickoff_utc" in declared:
+        kickoff = pd.to_datetime(declared["kickoff_utc"], utc=True, errors="coerce")
+        cutoff = pd.Timestamp(str((forecast.get("identity") or {}).get("as_of", "")))
+        _require(
+            not kickoff.isna().any()
+            and cutoff.tzinfo is not None
+            and kickoff.gt(cutoff.tz_convert("UTC")).all(),
+            "live forecast includes a game not strictly after its source cutoff",
+        )
+    _require(
+        expected_games == observed_games,
+        "live forecast game coverage differs from Contract 07 schedule",
+    )
+    expected_pairs = {
+        (game, target) for game in expected_games for target in ("margin", "total")
+    }
+    actual_pairs = set(
+        map(
+            tuple,
+            predictions.loc[
+                predictions["season"].eq(season) & predictions["week"].eq(week),
+                ["game_id", "target"],
+            ]
+            .assign(game_id=lambda frame: frame["game_id"].astype(int))
+            .to_numpy(),
+        )
+    )
+    _require(
+        expected_pairs == actual_pairs,
+        "live forecast target coverage differs from Contract 07 schedule",
+    )
+
+
+def _live_readiness_candidate_status(
+    storage: Any,
+    *,
+    forecast: Mapping[str, Any],
+    population: pd.DataFrame,
+    season: int,
+    week: int,
+    cutoff: str,
+) -> dict[str, str]:
+    """Independently derive the live candidate readiness row, including blockers."""
+    try:
+        predictions = _load_ref_frame(
+            storage,
+            forecast.get("output_ref") or {},
+            name="live forecast predictions",
+        )
+        declared = population[
+            population["season"].eq(season) & population["week"].eq(week)
+        ]
+        if "forecast_eligible" in declared:
+            declared = declared[declared["forecast_eligible"].astype(bool)]
+        expected_games = set(declared["game_id"].astype(int))
+        if not expected_games:
+            return {
+                "status": "unavailable",
+                "timing_class": "missing",
+                "fallback": "",
+                "blocked_reason": f"no schedule rows for {season} week {week}",
+            }
+        expected_pairs = {
+            (game_id, target)
+            for game_id in expected_games
+            for target in ("margin", "total")
+        }
+        observed_pairs = set(
+            map(
+                tuple,
+                predictions.loc[
+                    predictions["season"].eq(season) & predictions["week"].eq(week),
+                    ["game_id", "target"],
+                ]
+                .assign(game_id=lambda frame: frame["game_id"].astype(int))
+                .to_numpy(),
+            )
+        )
+        if observed_pairs != expected_pairs:
+            missing = sorted(expected_pairs - observed_pairs)
+            extra = sorted(observed_pairs - expected_pairs)
+            return {
+                "status": "unavailable",
+                "timing_class": "missing",
+                "fallback": "",
+                "blocked_reason": (
+                    "live forecast population mismatch; "
+                    f"missing game/target={missing[:5]}, extra game/target={extra[:5]}"
+                ),
+            }
+        _verify_live_prediction_coverage(
+            storage,
+            forecast=forecast,
+            population=population,
+            season=season,
+            week=week,
+        )
+        forecast_as_of = str((forecast.get("identity") or {}).get("as_of", ""))
+        return {
+            "status": "available",
+            "timing_class": _verifier_timing_class(forecast_as_of, cutoff),
+            "fallback": "",
+            "blocked_reason": "",
+        }
+    except (KeyError, OSError, ValueError, TypeError, StorageError):
+        return {
+            "status": "unavailable",
+            "timing_class": "missing",
+            "fallback": "",
+            "blocked_reason": "live forecast output unavailable or invalid",
+        }
+
+
 def _reconstruct_readiness(
     *,
     cutoff: str,
     chain: Mapping[str, Any],
     stored: pd.DataFrame,
     sources: Mapping[str, Any],
+    candidate_status: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Re-derive every readiness row and verdict from source artifacts."""
     _require(len(stored) > 0, "stored readiness record is empty")
@@ -396,12 +710,16 @@ def _reconstruct_readiness(
 
     candidate_as_of = str((forecast.get("identity") or {}).get("as_of") or "")
     _require(bool(candidate_as_of), "forecast manifest as-of is missing")
-    rows["candidate"] = {
-        "status": "available",
-        "timing_class": _verifier_timing_class(candidate_as_of, cutoff),
-        "fallback": "",
-        "blocked_reason": "",
-    }
+    rows["candidate"] = (
+        dict(candidate_status)
+        if candidate_status is not None
+        else {
+            "status": "available",
+            "timing_class": _verifier_timing_class(candidate_as_of, cutoff),
+            "fallback": "",
+            "blocked_reason": "",
+        }
+    )
 
     week_schedule = (
         schedule[schedule["season"].eq(season) & schedule["week"].eq(week)]
@@ -749,6 +1067,11 @@ def _reconstruct_freeze(
         == str(record["v4_ref_uri"]),
         "freeze manifest v4 parent disagrees with the freeze record",
     )
+    if "diagnostic_only" in manifest:
+        _require(
+            isinstance(manifest["diagnostic_only"], bool),
+            "freeze diagnostic classification must be boolean",
+        )
     summary = manifest.get("freeze_summary") or {}
     for key in (
         "season",
@@ -1119,8 +1442,12 @@ def _verify_dispatch(
             expected_schema=SHADOW_MANIFEST_SCHEMA,
             expected_code_sha=expected_code_sha,
         )
-        _require_pinned_manifest_uris(identity.get("parents") or {})
         chain = _verify_parent_chain(storage, identity)
+        _require_pinned_manifest_uris(
+            identity.get("parents") or {},
+            live=chain["forecast"].get("schema_version")
+            == LIVE_FORECAST_MANIFEST_SCHEMA,
+        )
         _require(
             set(manifest.get("output_refs") or {}) == {"readiness"},
             "05A manifest must reference exactly the readiness output",
@@ -1135,8 +1462,22 @@ def _verify_dispatch(
         if not loaded:
             loaded = _load_readiness_sources(storage, chain=chain)
         cutoff = readiness_cutoff or str(identity.get("as_of", ""))
+        live_candidate_status = None
+        if chain["forecast"].get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+            live_candidate_status = _live_readiness_candidate_status(
+                storage,
+                forecast=chain["forecast"],
+                population=loaded["schedule"],
+                season=int(stored["season"].iloc[0]),
+                week=int(stored["week"].iloc[0]),
+                cutoff=cutoff,
+            )
         rebuilt = _reconstruct_readiness(
-            cutoff=cutoff, chain=chain, stored=stored, sources=loaded
+            cutoff=cutoff,
+            chain=chain,
+            stored=stored,
+            sources=loaded,
+            candidate_status=live_candidate_status,
         )
         _compare_readiness(
             stored,
@@ -1188,6 +1529,7 @@ def _verify_dispatch(
             "slate_digest": freeze["slate_digest"],
             "season": freeze["season"],
             "week": freeze["week"],
+            "diagnostic_only": bool(manifest.get("diagnostic_only", False)),
         }
         return result
 

@@ -10,10 +10,22 @@ from dataclasses import asdict
 from datetime import datetime, time, timezone
 
 from dotenv import load_dotenv
+from omegaconf import OmegaConf
 
 from cks_picks_cfb.data.catalog import dataset_ref_for_partition_as_of
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
+
+
+def required_inputs(*, v5_mode: bool) -> tuple[tuple[str, str], ...]:
+    inputs = (
+        ("games", "games"),
+        ("betting_lines", "market_snapshots"),
+        ("betting_lines_quotes", "market_quotes"),
+    )
+    if v5_mode:
+        return inputs
+    return (*inputs, ("point_in_time_matchups", "point_in_time_matchups"))
 
 
 def main() -> None:
@@ -23,6 +35,9 @@ def main() -> None:
     parser.add_argument("--week", type=int, required=True)
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--pipeline-run-id", required=True)
+    parser.add_argument(
+        "--config", help="Weekly model config selecting explicit V5 mode."
+    )
     parser.add_argument("--market-ref-uri")
     parser.add_argument(
         "--prepared-gold-ref-uri",
@@ -39,12 +54,8 @@ def main() -> None:
     if not conn_url:
         raise SystemExit("DATABASE_URL is not set")
     cutoff_iso = cutoff.astimezone(timezone.utc).isoformat()
-    inputs = (
-        ("games", "games"),
-        ("betting_lines", "market_snapshots"),
-        ("betting_lines_quotes", "market_quotes"),
-        ("point_in_time_matchups", "point_in_time_matchups"),
-    )
+    v5_mode = bool(args.config and OmegaConf.load(args.config).get("v5_live_forecast"))
+    inputs = required_inputs(v5_mode=v5_mode)
     refs = []
     for entity, dataset in inputs:
         if dataset == "market_snapshots" and args.market_ref_uri:
@@ -82,28 +93,29 @@ def main() -> None:
                 **asdict(ref),
             }
         )
-    gold = next(ref for ref in refs if ref["entity"] == "point_in_time_matchups")
-    gold_frame = read_dataset(
-        storage,
-        DatasetRef(
-            **{
-                field: gold[field]
-                for field in (
-                    "dataset",
-                    "version_id",
-                    "schema_version",
-                    "content_sha",
-                    "uri",
-                )
-            }
-        ),
-    )
-    target = gold_frame[
-        (gold_frame["season"].astype(int) == args.year)
-        & (gold_frame["week"].astype(int) == args.week)
-    ]
-    if target.empty:
-        raise SystemExit("Selected Gold contains no target-week rows")
+    if not v5_mode:
+        gold = next(ref for ref in refs if ref["entity"] == "point_in_time_matchups")
+        gold_frame = read_dataset(
+            storage,
+            DatasetRef(
+                **{
+                    field: gold[field]
+                    for field in (
+                        "dataset",
+                        "version_id",
+                        "schema_version",
+                        "content_sha",
+                        "uri",
+                    )
+                }
+            ),
+        )
+        target = gold_frame[
+            (gold_frame["season"].astype(int) == args.year)
+            & (gold_frame["week"].astype(int) == args.week)
+        ]
+        if target.empty:
+            raise SystemExit("Selected Gold contains no target-week rows")
     output_uri = (
         f"artifacts/{os.getenv('CFB_ARTIFACT_ENV', 'production')}/"
         f"pipeline-runs/{args.pipeline_run_id}/input_refs.json"

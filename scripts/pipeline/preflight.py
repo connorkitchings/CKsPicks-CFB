@@ -174,6 +174,19 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
     try:
         cfg = OmegaConf.load(config_path)
         storage = get_storage()
+        if cfg.get("v5_live_forecast"):
+            from scripts.pipeline.generate_v5_weekly_bets import verify_v5_source
+
+            manifest, _, _ = verify_v5_source(cfg.v5_live_forecast, storage)
+            identity = manifest["identity"]
+            _, cutoff = _parse_as_of(as_of)
+            forecast_cutoff = datetime.fromisoformat(str(identity["as_of"]))
+            if forecast_cutoff.tzinfo is None or forecast_cutoff > cutoff:
+                raise ValueError(
+                    "V5 forecast cutoff is invalid or after readiness cutoff"
+                )
+            _ok("V5 live forecast independently reconstructed from exact parents.")
+            return
         if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
             raise ValueError(
                 "Weekly configuration may select only one model bundle version"
@@ -346,6 +359,9 @@ def check_week_data(
                 _fail("Schedule has missing or duplicate game IDs.", failures)
             else:
                 _ok(f"Schedule has {len(week_games)} unique FBS-vs-FBS games.")
+        if OmegaConf.load(config_path).get("v5_live_forecast"):
+            _ok("V5 uses its independently verified schedule and rating parents.")
+            return
         snapshot_as_of = snapshot_date.isoformat()
         if not snapshot_is_complete(storage, year, snapshot_as_of):
             if not _prior_only_fallback_is_ready(

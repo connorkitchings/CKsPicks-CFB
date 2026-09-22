@@ -1,7 +1,7 @@
 # V4 Feature-v5 Diagnostic Closure: Pooled Week 1+2 Verdict and Causal Interpretation
 
 > **Date:** 2026-09-22
-> **Contracts:** [`docs/plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`](../plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) (closure authority) executing Task 5 of [`docs/plans/2026-09-10/2026-v5-shadow-rebuild-diagnostic.md`](../plans/2026-09-10/2026-v5-shadow-rebuild-diagnostic.md) (Amendments 1–3 preserved)
+> **Contracts:** [`docs/plans/2026-09-13/01-v4-feature-v5-diagnostic-closure.md`](../archive/v5-contracts/2026-09-13/01-v4-feature-v5-diagnostic-closure.md) (closure authority) executing Task 5 of [`docs/plans/2026-09-10/2026-v5-shadow-rebuild-diagnostic.md`](../archive/v5-contracts/2026-09-10/2026-v5-shadow-rebuild-diagnostic.md) (Amendments 1–3 preserved)
 > **Scope:** V4 inference diagnostic on feature schema v5. Independent of the V5 ratings-successor program; not prospective evidence for it.
 > **Production impact:** None. V4 production runs, serving tables, and the official record are unchanged (verified before/after).
 

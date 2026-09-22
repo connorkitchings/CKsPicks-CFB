@@ -15,7 +15,7 @@ measurement parent `possession-v1-measurements-20260921-r9` (Amendment 1;
 supersedes R6 `possession-v1-measurements-20260915-18fb0aa-r6`) covers only
 2015–2019 and 2021–2025; readiness for any 2026 slate resolves `schedule` as
 `missing` ("no schedule rows for 2026"), and Contract 06 cannot collect
-evidence until this chain exists. The [common contract](../2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
+evidence until this chain exists. The [common contract](../../archive/v5-contracts/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is binding.
 
 **Entry gate:** Preview 2026 Silver is synced through the latest completed week
@@ -44,7 +44,7 @@ historical readiness recommendation on 2026-09-22
 scorecard run `readiness-v1-20260921-scorecard`, manifest SHA
 `a8351fb3cabd7edbd1f78c961aa563a110b585db6c410e2b3f5973c8a2278b29`).
 Contracts 07–09 were re-reviewed under
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md):
 the historical-first deferral is **lifted** and execution is authorized against
 the corrected certified lineage (Amendment 1). The first Contract 06 slate
 target is Week 5 (~Thu Oct 1 first kickoff).
@@ -193,4 +193,4 @@ and the verification requirement are re-pointed to the corrected certified
 lineage with no selection or procedure change (r9 settings are R6's settings
 plus the corrected scoring extraction). Re-review authority and the authorized
 execution sequence:
-[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
+[`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../../archive/v5-contracts/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
