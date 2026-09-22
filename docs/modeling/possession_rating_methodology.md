@@ -1,11 +1,17 @@
 # Possession-Based Rating Methodology
 
-> **Status (2026-09-20):** Contract 02 is implemented: R6 possession measurements
-> are retained historical evidence. The
+> **Status (2026-09-22):** R6 possession measurements are superseded historical
+> evidence. The historical V5 lane is complete and accepted: all four audit
+> findings are closed, Contract 07 is Implemented with 157 certified live 2026
+> games through Week 3, and Contract 08 is the immediate task. Contract 08 is
+> followed by the Week 4 refresh, Contract 09 live readiness, Contract 06's
+> six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+> V4 remains the production champion. The
 > [September 11 specification](../plans/2026-09-11/possession-rating-methodology-specification.md)
 > remains an Implemented documentation milestone. Current execution authority is
 > the [V5 common contract and 00–06 package](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).
-> Semantic authority is this page and [rating-system requirements](rating_system_requirements.md).
+> Semantic authority is this page and [rating-system requirements](rating_system_requirements.md);
+> detailed status is the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md).
 
 ## Purpose
 
@@ -17,15 +23,11 @@ for literal points in a score equation. Keep native units and source/version
 metadata when available. V5 ratings successor is distinct from V4 feature schema
 v5, the independent operational diagnostic.
 
-Repair v2 and Phase 3 v2 are certified. Its `quality_core_epa_split` selection
-is benchmark evidence, not a definition or automatic possession parent. The R6
-possession manifest `possession-v1-measurements-20260915-18fb0aa-r6` is the sole
-eligible Contract 03 parent in the completed historical sequence. Contract 10B
-completed the full historical-foundation audit with four open blockers. Contract
-11A independently reconstructed the frozen forecast artifact for conditional
-use, and approved 12A is the immediate scorecard task; full eligibility through
-2025 still requires diagnosis/correction of Findings 001/003, full 11, and
-final 12. See the
+Repair v2 and Phase 3 v2 are certified historical evidence. Its
+`quality_core_epa_split` selection is benchmark evidence, not a definition or
+automatic possession parent. R6 is superseded by r9; r9 measurements, 11B
+ratings, the 11C through-2025 final fit, and 11D verification complete the
+accepted historical V5 lane. See the
 [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md).
 The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 

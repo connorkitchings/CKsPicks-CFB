@@ -251,10 +251,12 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
   re-reviewed against the corrected parents with deferrals lifted under
   `docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`;
-  the authorized sequence is 07 (Repair-2026 + 2026 measurements) → 08
-  (rating replay) → 09 (final-fit forecasts + readiness `ready` on the Week 5
-  slate, ~Oct 1) → 06 (first freeze T−2h; six qualifying slates W5–W10
-  target). Conditional results remain `conditional_historical_results_only`.
+  Contract 08 is the immediate research task. The authorized sequence is
+  Contract 07 (Repair-2026 + 2026 measurements) → Contract 08 (rating replay)
+  → Contract 09 (final-fit forecasts + readiness `ready` on the Week 5 slate,
+  ~Oct 1) → Contract 06 (first freeze T−2h; six qualifying slates W5–W10
+  target) → conditional Phase 7 promotion review. Conditional results remain
+  `conditional_historical_results_only`.
   V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not
   confirmed (pooled W1+W2 shadow spread 38.46% < 45%), predictions
   value-identical on all 100 games. V5 ratings successor is distinct from V4

@@ -3,39 +3,23 @@
 CKsPicks-CFB is a college-football prediction system with a Python pipeline,
 an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Current posture (2026-09-20)
+## Current posture (2026-09-22)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
-isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
-Repair v2, Phase 3 v2, R6 possession measurements, and the retained rating
-artifact are historical evidence. Contract 10B is implemented with four open
-blockers. Contract 11A independently reconstructed the frozen forecast artifact
-for conditional use, and approved Contract 12A is the immediate task for a
-V5-only scorecard. The full forecast-eligibility and historical-readiness lane
-requires diagnosis/correction of Findings 001/003, then full Contracts 11 and
-12. The [data-first roadmap](planning/data-first-football-forecasting-roadmap.md)
-is the canonical status and execution-queue authority.
+isolated Preview research, distinct from **feature schema v5**. Its historical
+development and verification lane is complete and accepted: all four historical
+audit findings are closed and the authoritative scorecard covers 7,318 verified
+rows through 2025. Contract 07 is Implemented with 157 certified live 2026 games
+through Week 3. Contract 08 is the immediate research task, followed by the Week
+4 refresh, Contract 09 live readiness, Contract 06's six-slate prospective
+evaluation, and a conditional Phase 7 promotion review. The
+[data-first roadmap](planning/data-first-football-forecasting-roadmap.md) is the
+detailed status and execution authority.
 
-The original Phase 4B retained manifest remains prohibited as a forecasting
-parent. Earlier candidate results keep their historical audit limits. New research
-uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and requires
-future pre-kickoff freezes for independent evidence. Production operations remain
-under their existing runbooks.
-
-The original forecast verifier does not establish full eligibility. Contract
-11A independently reconstructed the frozen outputs, but its signed evidence is
-conditional only; the artifact remains ineligible until full Contract 11 also
-closes the remaining forecast findings. 2026 application is deferred pending
-historical readiness and explicit review.
-
-The retained artifact includes scored historical prediction rows through 2025,
-but **no V5 2025 accuracy scorecard is currently authoritative**. Draft
-Implemented Contract 11A and approved Contract 12A define a narrower route to a verified scorecard with
-permitted use `conditional_historical_results_only`. That status is historical
-development evidence only: it does not restore forecast eligibility, authorize
-a final fit or 2026 work, establish prospective evidence, permit market or V4
-comparison, or replace 10B and final Contract 12. Until 11A passes, stored
-results may be inspected only as unverified historical-artifact diagnostics.
+Repair v2 and Phase 3 v2 remain certified historical evidence; R6 is a
+superseded historical measurement lineage. The original Phase 4B retained
+manifest remains prohibited as a forecasting parent. V5 never uses 2026 outcomes
+to choose or tune its frozen design, and it remains isolated from V4 publication.
 
 The target flow is:
 

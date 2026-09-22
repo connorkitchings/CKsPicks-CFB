@@ -8,17 +8,17 @@
 
 ## Environment Setup
 
-**Research checkpoint (2026-09-20):** V5 ratings successor is distinct from V4
-feature schema v5. Repair v2, Phase 3 v2, and R6 possession measurements are
-certified in Preview. Contract 10B completed the full audit with four open
-blockers; 11A independently reconstructed the frozen forecast artifact for
-conditional-only use, and approved 12A is the immediate scorecard task. Full
-eligibility still requires blocker diagnosis/correction, full 11, and final 12;
-conditional results remain historical development evidence only;
-2025 remains development evidence rather than an independent V5 test;
-contract 01 is the independent diagnostic closure. See the canonical
+**Research checkpoint (2026-09-22):** V5 ratings successor is distinct from V4
+feature schema v5. Its historical development and verification lane is complete
+and accepted; all four historical audit findings are closed. Contract 07 is
+Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
+next, followed by the Week 4 refresh, Contract 09 live readiness, Contract 06's
+six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+V4 remains the production champion; V5 stays Preview-only and never uses 2026
+outcomes to select or tune its design. See the canonical
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md).
-The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+Repair v2 and Phase 3 v2 remain historical evidence, R6 is superseded, and the
+original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.

@@ -121,18 +121,16 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**V5 historical-first checkpoint (2026-09-20):** Repair v2 is verified and
-Phase 3 v2 is certified in Preview (`phase3-v2-compact-state-20260910-r2`, selected
-`quality_core_epa_split`, verifier passed and idempotent rerun 2026-09-11). Its
-result is benchmark evidence. R6 possession measurements are independently
-certified in Preview (`possession-v1-measurements-20260915-18fb0aa-r6`). Contract
-10B completed the full audit and published four open blockers. Contract 11A
-independently reconstructed the frozen forecast artifact for
-`conditional_historical_results_only`; approved Contract 12A is the immediate
-scorecard task. The full readiness path is blocker diagnosis/correction, full
-Contract 11, and final Contract 12. The
+**V5 checkpoint (2026-09-22):** V5's historical development and verification
+lane is complete and accepted. Repair v2, r9 measurements, 11B ratings, the 11C
+through-2025 final fit, and 11D verification closed all four historical audit
+findings. Contract 07 is Implemented with 157 certified live 2026 games through
+Week 3. Contract 08 is next, followed by the Week 4 refresh, Contract 09 live
+readiness, Contract 06's six-slate prospective evaluation, and a conditional
+Phase 7 promotion review. The
 [data-first roadmap](../docs/planning/data-first-football-forecasting-roadmap.md)
-is the canonical queue/status page.
+is the canonical queue/status page. Repair v2 and Phase 3 v2 remain historical
+evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a

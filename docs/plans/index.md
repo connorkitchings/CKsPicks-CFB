@@ -32,14 +32,14 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 The [September 13 common contract](2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
 is Approved; the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the canonical status page. Repair v2 and Phase 3 v2 are certified. Possession
-measurements are independently certified in Preview as
-`possession-v1-measurements-20260915-18fb0aa-r6`. The active V5 work has a
-conditional-results lane (implemented 11A then approved 12A) and a
-full-foundation/readiness lane (blocker diagnosis/correction, full 11, then
-12); conditional 2025 results cannot clear the latter lane's gates. V5 ratings
-successor is distinct from V4 feature schema v5.
-The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+is the canonical detailed status page. V5 ratings successor is distinct from V4
+feature schema v5. Its historical development and verification lane is complete
+and accepted: all four audit findings are closed. Repair v2 and Phase 3 v2 remain
+historical evidence; r9 supersedes R6. Contract 07 is Implemented with 157
+certified live 2026 games through Week 3. Contract 08 is next, followed by the
+Week 4 refresh, Contract 09 live readiness, Contract 06's six-slate prospective
+evaluation, and a conditional Phase 7 promotion review. The original Phase 4B
+retained manifest remains prohibited as a forecasting parent.
 
 | Contract | Status and dependency |
 | --- | --- |
@@ -49,7 +49,7 @@ The original Phase 4B retained manifest remains prohibited as a forecasting pare
 | 03: [Possession rating estimation](2026-09-13/03-v5-possession-rating-estimation.md) | **Implemented.** Historical rating artifact selected `ppp__rho_0_60__exposure`; its lineage and methodology are subject to Contract 10. |
 | 04: [Forecast bridge and fitting windows](2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | **Implemented.** Resolved 2026-09-21 via umbrella Contract 11 (closed through the 11B/11C/11D decomposition on the r9 line); 04A remains implemented and the original 04B artifact stays frozen historical evidence. |
 | 05: [Prospective readiness and shadow tooling](2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | **Implemented.** 05A/05B/05C certify shadow tooling and diagnostic rehearsal only; they do not certify forecast quality, live readiness, or prospective evidence. |
-| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Deferred behind full 10B/11/12 readiness, explicit acceptance, and later re-reviewed live application; conditional 11A/12A results do not satisfy this gate. |
+| 06: [Prospective evidence and recommendation](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | **Approved.** Historical and re-review gates are complete; starts only after Contract 09 independently verifies live readiness. It then collects six qualifying prospective slates before a conditional Phase 7 review. |
 
 Each task names one exact contract. Approval does not satisfy a missing verified
 parent, certify data, or create prospective evidence. Contract 01 is independent
@@ -85,6 +85,7 @@ unmet data dependency, and no run creates prospective evidence by itself.
 | Contract | Status and dependency |
 | --- | --- |
 | Re-review: [Contract 12 acceptance and 07–09 re-review for the 2026 extension](2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md) | **Implemented 2026-09-22.** Records the user's Contract 12 acceptance (2026-09-22), re-points 07/08/09 to the corrected certified parents, lifts the deferrals, and authorizes the execution sequence (ops prerequisite → 07 → 08 → W4-finals refresh → 09 → 06 first freeze Week 5). |
+| Orchestration: [Documentation reset and completion sequence](2026-09-22/02-v5-documentation-reset-and-completion-sequence.md) | **In Progress.** Aligns active documentation with the accepted historical state and coordinates 08 → Week 4 refresh → 09 → 06 → conditional Phase 7 without replacing their implementation contracts. |
 | 07: [2026 Repair and possession measurement extension](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | **Implemented 2026-09-22.** Repair-2026 `repair-2026-20260922T145500Z` (157/157/157, v3 verified) + certified 2026 measurements `possession-v1-measurements-20260922-2026c` (manifest `ec96fe51…`, 8 datasets, all live, independently verified, `already_applied`). Sole eligible 08 parent recorded; Contract 08 entry gate met. |
 | 08: [2026 rating-state replay](2026-09-18/08-v5-2026-rating-state-replay.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted; entry gate met 2026-09-22.** Frozen winner `ppp__rho_0_60__exposure` unchanged; certified identity re-pointed to 11B `possession-v1-ratings-20260921-11d59ee-r9cert` (manifest SHA `2f1cdc5f...`, no selection flip). Certified 2026 measurement parent `possession-v1-measurements-20260922-2026c` exists — replay may start. Replay-only; nothing fitted on 2026 outcomes. |
 | 09: [2026 forecast generation and live readiness](2026-09-18/09-v5-2026-forecast-and-readiness.md) | **Approved, re-reviewed 2026-09-22 (Amendment 1); deferral lifted.** Bridge re-pointed 04B → 11C `forecast-v1-20260921-5afd577-11c` (11D verified `4cfe5ef8...`, `final_fit_verified: true`); 2026 forecasts apply the through-2025 final-fit heads (alpha-10, expanding) + final calibration; first readiness target is the Week 5 slate (~Oct 1) — a skipped Week 4 slate is expected. Starts when 08's certified 2026 rating manifest exists. |
@@ -93,9 +94,9 @@ unmet data dependency, and no run creates prospective evidence by itself.
 
 | Contract | Status and dependency |
 | --- | --- |
-| 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Implemented 2026-09-19.** 10a and 10b both complete. All DoD items met; 4 open-blocker findings published; `contract11_permitted: false`. |
+| 10: [Historical foundation audit](2026-09-18/10-v5-historical-foundation-audit.md) | **Implemented 2026-09-19.** 10a and 10b both complete. The published audit recorded four then-open findings and `contract11_permitted: false`; all four were subsequently closed by the accepted 11B/11C/11D and Contract 12 lineage. |
 | 10a: [Audit harness and lineage](2026-09-18/10a-v5-audit-harness-and-lineage.md) | **Implemented.** Hardened harness (Amendment 2) with three byte-identical preflights; zero R2 writes. Checkpoint `6af0392`. |
-| 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **Implemented 2026-09-19.** Run `historical-audit-10b-20260919-full` (SHA `7a476648`): 93 checks, 4 findings (all blockers, all open), `publication_valid: true`, `already_applied` confirmed. `contract11_permitted: false`. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`. |
+| 10b: [Full-corpus audit execution](2026-09-18/10b-v5-full-corpus-audit-execution.md) | **Implemented 2026-09-19.** At publication, run `historical-audit-10b-20260919-full` (SHA `7a476648`) reported 93 checks, four open findings, and `contract11_permitted: false`. The dated record is preserved; all four findings were later closed by the accepted historical lineage. Report: `docs/research/2026-09-19-v5-10b-historical-foundation-audit-report.md`. |
 | 11A: [Conditional forecast verification](2026-09-19/11a-v5-conditional-forecast-verification.md) | **Implemented 2026-09-19.** Preview run `conditional-v1-20260919-9265314-11a` passed clean-SHA reconstruction, signed publication, independent re-read, and idempotent repeat. It grants only `conditional_historical_results_only`. |
 | 12A: [Conditional historical scorecard](2026-09-19/12a-v5-conditional-historical-scorecard.md) | **Implemented 2026-09-21.** Preview run `conditional-v1-20260921-scorecard` (manifest SHA `0f4fbf33`): independent re-read, publication, and idempotent repeat passed. Published 2025 headline and pooled metrics for 7,318 rows under `conditional_historical_results_only`. Report: `docs/research/2026-09-21-v5-12a-conditional-historical-scorecard-report.md`. |
 | 02: [Foundation-blocker diagnosis](2026-09-20/02-v5-foundation-blocker-diagnosis.md) | **Implemented 2026-09-21.** Read-only diagnosis of Findings 001/003 completed: Repair finals 100% verified; Finding 003 classified across 5 causes in measurement layer; independent Repair verifier boundary specified; report published. |

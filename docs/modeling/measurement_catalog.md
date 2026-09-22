@@ -7,14 +7,17 @@
 
 ## Current measurement checkpoint
 
-V5 ratings successor is distinct from V4 feature schema v5. Repair v2, Phase 3 v2,
-and R6 possession measurements are certified in Preview. Contract 10B completed
-the full historical audit with four open blockers. Contract 11A independently
-reconstructed the frozen forecast artifact for conditional-only use, and approved
-12A is the immediate scorecard task; full readiness through 2025 still requires
-diagnosis/correction of Findings 001/003, full 11, and final 12. The original Phase 4B retained manifest
-remains prohibited as a forecasting parent; same-game field position, plays per
-drive and turnovers are not pregame predictors.
+V5 ratings successor is distinct from V4 feature schema v5. Repair v2 and Phase
+3 v2 remain historical evidence; R6 is superseded by r9. The r9 measurement
+lineage, ratings, forecast fit, and independent verification completed and
+accepted the historical V5 lane, closing all four audit findings. Contract 07 is
+Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
+next, followed by the Week 4 refresh, Contract 09 readiness, Contract 06's
+six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the detailed status authority. The original Phase 4B retained manifest remains
+prohibited as a forecasting parent; same-game field position, plays per drive and
+turnovers are not pregame predictors.
 
 The repaired source/population manifest supplies the exact parent roles.
 [Phase 3 v2](../plans/2026-09-10/phase3-v2-compact-tournament-state.md) is certified

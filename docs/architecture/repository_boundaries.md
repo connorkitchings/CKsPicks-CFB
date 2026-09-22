@@ -55,14 +55,14 @@ development corpus, including 2025 as development evidence, applies only to
 this namespace. Existing V4 and named benchmark identities retain their
 original season policies and locations.
 
-**V5 historical-first checkpoint (2026-09-20):** Repair v2, Phase 3 v2, and
-R6 possession measurements are retained historical evidence. Contract 10B
-completed the full audit with four open blockers; 11A independently reconstructed
-the frozen forecast artifact for conditional-only use, and approved 12A is the
-immediate scorecard task. Full readiness requires diagnosis/correction of
-Findings 001/003, full 11, and final 12. V5 ratings successor is distinct from
-V4 feature schema v5, the independent diagnostic. The
-[data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+**V5 checkpoint (2026-09-22):** V5 ratings successor is distinct from V4 feature
+schema v5, the independent diagnostic. Its historical development and verification
+lane is complete and accepted: all four audit findings are closed. Repair v2 and
+Phase 3 v2 remain historical evidence; R6 is superseded. Contract 07 is
+Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
+next, followed by the Week 4 refresh, Contract 09 live readiness, Contract 06's
+six-slate prospective evaluation, and a conditional Phase 7 promotion review.
+The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
 is the canonical status page.
 
 Current execution follows the [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md).

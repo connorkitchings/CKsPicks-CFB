@@ -16,21 +16,17 @@ added expected value, not literal points. Diagnostic components are not separate
 first-generation rating states. V5 ratings successor is distinct from the V4
 feature schema v5 diagnostic.
 
-Repair v2 is verified and Phase 3 v2 is certified. Its `quality_core_epa_split`
-selection is historical reconstructed benchmark evidence, not the possession
-definition. R6 possession measurements are independently certified in Preview
-at `possession-v1-measurements-20260915-18fb0aa-r6`; it is the sole eligible
-Contract 03 parent in the completed historical sequence. The active work has
-two historical lanes: Contract 10B audits the full foundation through 2025,
-while implemented 11A independently verified the frozen forecast artifact and
-approved 12A may publish a V5-only scorecard with permitted use
-`conditional_historical_results_only`. Conditional results are development
-evidence only; they do not restore forecast eligibility, authorize 2026 work,
-or replace the final Contract 11/12 eligibility and readiness gates. Contract
-10B is implemented with four open blockers; the full lane requires diagnosis/
-correction of Findings 001/003, full 11, and final 12. The completed
-measurement/rating artifacts remain historical evidence while the audit findings
-are resolved.
+Repair v2 and Phase 3 v2 remain certified historical evidence; its
+`quality_core_epa_split` selection is benchmark evidence, not the possession
+definition. R6 is a superseded historical measurement lineage. The corrected r9
+measurements, 11B ratings, 11C through-2025 final fit, and 11D verification
+completed and accepted the historical V5 lane, closing all four audit findings.
+Contract 07 is Implemented with 157 certified live 2026 games through Week 3.
+Contract 08 is next, followed by the Week 4 refresh, Contract 09 readiness,
+Contract 06's six-slate prospective evaluation, and a conditional Phase 7
+promotion review. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the detailed status authority. V5 remains Preview-only and no 2026 outcome
+may select or tune its frozen rating design.
 
 The original Phase 4B retained manifest remains prohibited as a forecasting
 parent. September 8 Phase 4A–6 contracts are Superseded by the V5 package; only

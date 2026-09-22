@@ -60,12 +60,11 @@ def _assert_current_checkpoint(text: str) -> None:
     for required in (
         "v5 ratings successor",
         "feature schema v5",
-        "phase 3 v2",
-        "r6",
-        "possession",
         "historical",
-        "2025",
-        "forecast",
+        "contract 08",
+        "contract 09",
+        "contract 06",
+        "phase 7",
         "original phase 4b retained manifest remains prohibited as a forecasting parent",
     ):
         assert required in content
@@ -232,7 +231,7 @@ def test_conditional_results_lane_cannot_bypass_eligibility_or_readiness():
     ):
         assert required in final_review
 
-    for document in (ROADMAP, CONTRACT_INDEX, COMMON, ROOT / "docs/index.md"):
+    for document in (ROADMAP, CONTRACT_INDEX, COMMON):
         plain = _plain(document.read_text())
         assert "conditional_historical_results_only" in plain
         assert "10b" in plain
@@ -366,7 +365,7 @@ def test_quickstart_examples_are_not_live_execution_authority():
     )
 
 
-def test_current_authority_records_the_approved_scorecard_and_blocker_diagnosis():
+def test_current_authority_records_closed_findings_and_the_live_sequence():
     assert any(
         status in _plain(BLOCKER_DIAGNOSIS.read_text())
         for status in ("status: approved", "status: in progress", "status: implemented")
@@ -381,12 +380,21 @@ def test_current_authority_records_the_approved_scorecard_and_blocker_diagnosis(
     ):
         assert required in diagnosis
 
-    for document in (ROADMAP, CONTRACT_INDEX, COMMON, ROOT / "docs/index.md"):
+    for document in (ROADMAP, CONTRACT_INDEX, ROOT / "docs/index.md"):
         content = _plain(document.read_text())
-        assert "approved" in content
-        assert "12a" in content
-        assert "conditional_historical_results_only" in content
-        assert "contract11_permitted: false" in content or "full contract 11" in content
+        assert "contract 07" in content
+        assert "contract 08" in content
+        assert "contract 09" in content
+        assert "contract 06" in content
+
+    for document in (ROADMAP, CONTRACT_INDEX):
+        content = _plain(document.read_text())
+        assert (
+            "all four historical audit findings are closed" in content
+            or "all four audit findings are closed" in content
+            or "all four are now closed" in content
+        )
+        assert "at publication" in content or "dated record" in content
 
     for document in (ROADMAP, CONTRACT_INDEX, COMMON):
         content = _plain(document.read_text())

@@ -11,29 +11,23 @@
 > **Status:** V4 evaluation authority and the protected 2026 policy for the
 > approved rating-centric successor.
 
-## Current V5 evaluation contract (2026-09-20)
+## Current V5 evaluation contract (2026-09-22)
 
 The [V5 common contract](../plans/2026-09-13/v5-ratings-successor-roadmap-and-contracts.md)
-and 02–06 govern current research. V5 ratings successor is distinct from V4
-feature schema v5. Repair v2, Phase 3 v2, R6 possession measurements, and the
-retained rating artifact are historical evidence. Contract 10B completed the
-full audit and published four open blockers. Contract 11A independently
-reconstructed the frozen forecast artifact for conditional-only use, and
-approved Contract 12A is the immediate scorecard task. Full historical
-readiness still requires diagnosis/correction of Findings 001/003, full
-Contract 11, and final Contract 12;
-the [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
-is the status authority. The original Phase 4B retained manifest remains
-prohibited as a forecasting parent. Old reduced-population comparisons retain
-historical limits; the September 8 Phase 4A–6 runners are Superseded.
+and the re-reviewed 07–09 extension govern current research. V5 ratings
+successor is distinct from V4 feature schema v5. Its historical development and
+verification lane is complete and accepted: all four historical audit findings
+are closed, and the through-2025 forecast fit is independently verified. Contract
+07 is Implemented with 157 certified live 2026 games through Week 3. Contract 08
+is next, followed by the Week 4 refresh, Contract 09 live readiness, Contract
+06's six-slate prospective evaluation, and a conditional Phase 7 promotion
+review. The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md)
+is the status authority.
 
-The original forecast verifier checks the manifest and references without
-rebuilding the stored forecast chain. Contract 11A separately reconstructs the
-frozen chain, but only for `conditional_historical_results_only`; it cannot be
-treated as an eligible forecast parent until full Contract 11 also closes the
-remaining forecast findings.
-Contracts 06-09 are deferred until the historical review is accepted; a 2026
-replay or `live` timing field does not create prospective evidence.
+Repair v2 and Phase 3 v2 remain historical evidence, and R6 is superseded by
+r9. The original Phase 4B retained manifest remains prohibited as a forecasting
+parent. A 2026 replay or `live` timing field does not create prospective evidence;
+only Contract 06's verified pre-kickoff freezes can do so.
 
 Use complete schedule-derived populations, 2015–2019 and 2021–2025 development
 history, and outer seasons 2018, 2019, 2021–2025. Exclude 2020 everywhere and 2026

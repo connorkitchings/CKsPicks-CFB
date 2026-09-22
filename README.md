@@ -3,33 +3,25 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Research checkpoint (2026-09-20)
+## Research checkpoint (2026-09-22)
 
 **V4 remains the live production champion.** The **V5 ratings successor** is
-isolated research, distinct from **feature schema v5**, the separate V4 diagnostic.
-Repair v2 is verified and Phase 3 v2 is certified (2026-09-11). R6 possession
-measurements and the retained rating artifact are historical evidence. Contract
-10B completed the full historical-foundation audit and published four open
-blockers. Contract 11A independently reconstructed the frozen forecast artifact
-for conditional-only use, and approved Contract 12A is the immediate scorecard
-task. The full readiness path is blocker diagnosis/correction, full Contract
-11, and final Contract 12. The
+isolated Preview research and is distinct from **feature schema v5**, the separate
+V4 diagnostic. Its historical development and verification lane is complete and
+accepted: all four historical audit findings are closed. Contract 07 is
+Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
+the immediate research task, followed by the Week 4 refresh, Contract 09 live
+readiness, Contract 06's six-slate prospective evaluation, and a conditional
+Phase 7 promotion review. The
 [data-first roadmap](docs/planning/data-first-football-forecasting-roadmap.md)
-is the canonical status and execution-queue authority.
+is the detailed status and execution authority.
 
-The original Phase 4B retained manifest remains prohibited as a forecasting
-parent. Earlier candidate results keep their historical audit limits. New research
-uses 2015–2019 and 2021–2025 as development evidence, excludes 2020, and requires
-future pre-kickoff freezes for independent evidence. Production operations remain
-under their existing runbooks.
-
-The original forecast verifier did not independently reconstruct the forecasts
-and their inputs. Contract 11A now reconstructs the frozen artifact exactly for
-`conditional_historical_results_only`; that narrow evidence does not restore
-downstream eligibility, close audit findings, provide a through-2025 final fit,
-or authorize 2026 work. 2026 application remains deferred; frozen rules may
-later update state from preceding finalized games, but 2026 outcomes cannot
-choose or tune V5.
+Repair v2 and Phase 3 v2 remain certified historical evidence; R6 is a
+superseded historical measurement lineage. The original Phase 4B retained
+manifest remains prohibited as a forecasting parent. New research uses
+2015–2019 and 2021–2025 as development evidence, excludes 2020, and never uses
+2026 outcomes to choose or tune V5. Production operations remain under their
+existing runbooks.
 
 ## 2026 posture
 

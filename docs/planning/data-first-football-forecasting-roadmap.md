@@ -17,6 +17,22 @@ production predictions, weekly operations, publication, bundle loading, or
 rollback behavior. Corrected research behavior receives new versioned
 identities when a shared change could affect production.
 
+## Current V5 checkpoint (2026-09-22)
+
+V4 remains the production champion. The V5 ratings successor is distinct from
+the V4 feature-schema-v5 diagnostic, remains Preview-only, and has completed its
+historical development and verification lane: all four historical audit findings
+are closed and the historical readiness recommendation was accepted. Contract 07
+is Implemented with 157 certified live 2026 games through Week 3. Contract 08 is
+the immediate research task; after the required Week 4 refresh, Contract 09 must
+establish live readiness, then Contract 06 may collect six qualifying prospective
+slates. A Phase 7 promotion review is conditional on Contract 06's recommendation.
+
+Repair v2 and Phase 3 v2 remain historical evidence; r9 supersedes R6. The
+original Phase 4B retained manifest remains prohibited as a forecasting parent.
+Neither live timing nor replayed 2026 results create prospective evidence, and no
+V5 result changes V4, Neon serving state, or public publication.
+
 ## Governing boundaries
 
 - Target all games involving at least one FBS team, including FBS-FCS games.
@@ -62,8 +78,8 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 | 03 | [Possession rating estimation](../plans/2026-09-13/03-v5-possession-rating-estimation.md) | Implemented 2026-09-17 — retained historical rating artifact, subject to the full 10 audit. |
 | 04 | [Forecast bridge and fitting-window selection](../plans/2026-09-13/04-v5-forecast-bridge-and-fitting-window.md) | Implemented (resolved 2026-09-21) — 04A remains implemented; 04B's verification gap closed by the 11B/11C/11D re-derivation and independent verification on the r9 line. |
 | 05 | [Prospective readiness and shadow tooling](../plans/2026-09-13/05-v5-prospective-readiness-and-shadow-tooling.md) | Implemented 2026-09-18 — tooling and diagnostic rehearsal only; it does not certify forecast quality or live readiness. |
-| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved, deferred — requires full 10B/11/12 readiness, explicit acceptance, then later re-reviewed live application; 11A/12A conditional results do not satisfy this gate. |
-| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Implemented — 10A and 10B are complete. 10B published run `historical-audit-10b-20260919-full` (SHA `7a476648`): 93 checks, 4 open-blocker findings, `publication_valid: true`. `contract11_permitted: false`. |
+| 06 | [Prospective evidence and recommendation](../plans/2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Approved — historical and re-review gates are complete; begins only after Contract 09 independently verifies live readiness, then collects six qualifying slates before a conditional Phase 7 review. |
+| 10 | [Historical foundation audit](../plans/2026-09-18/10-v5-historical-foundation-audit.md) | Implemented — 10A and 10B are complete. At publication, 10B recorded four open findings and `contract11_permitted: false`; all four are now closed by the accepted corrected lineage. |
 | 11A | [Conditional forecast verification](../plans/2026-09-19/11a-v5-conditional-forecast-verification.md) | Implemented 2026-09-19 — Preview run `conditional-v1-20260919-9265314-11a` independently reconstructed the frozen artifact, published signed evidence, passed independent re-read, and was idempotent. Its only permitted use is `conditional_historical_results_only`; it does not restore eligibility. |
 | 12A | [Conditional historical scorecard](../plans/2026-09-19/12a-v5-conditional-historical-scorecard.md) | Implemented 2026-09-21 — Preview run `conditional-v1-20260921-scorecard` (manifest SHA `0f4fbf33`): reported V5-only conditional results and context under `conditional_historical_results_only`. |
 | 11 | [Forecast verification closure](../plans/2026-09-18/11-v5-forecast-verification-closure.md) | Implemented 2026-09-21 via the 11B/11C/11D decomposition — signed verification (`4cfe5ef8...`) closes Finding 002; targeted `final_fit_existence` pass closes Finding 004. |
@@ -71,10 +87,10 @@ the research model; **feature schema v5** is a separate V4 diagnostic.
 
 Contract 01 neither blocks nor selects the ratings model. Each implementation
 task names one exact contract and verifies its entry gate. Approval does not
-satisfy an unmet data dependency. The conditional-results lane is 11A then
-12A; it proceeds independently of 10B but cannot clear foundation findings,
-forecast eligibility, final readiness, or a 2026 gate. The final lane remains
-10B, full 11, then 12 through 2025.
+satisfy an unmet data dependency. The historical lane is complete and accepted;
+the remaining live sequence is 07 → 08 → Week 4 refresh → 09 → 06 → conditional
+Phase 7 review. Historical conditional-results evidence remains preserved in its
+original context and is not prospective evidence.
 
 ## Current checkpoint
 
