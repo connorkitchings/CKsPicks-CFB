@@ -37,8 +37,14 @@
 
 ## Validation
 
-- [ ] Focused preparation checks.
-- [ ] `git diff --check`.
+- [x] Read-only 11C manifest inspection — frozen expanding/reference alpha-10
+  final-fit recipe and 2025 carried calibration variances confirmed.
+- [x] Static runner/schema inspection — historical runner and outcome-required
+  prediction schema are ineligible for live Week 5 application.
+- [x] `uv run mkdocs build --strict --quiet` — passed.
+- [x] `uv run pytest tests/test_data_first_documentation_authority.py -q` —
+  38 passed.
+- [x] `git diff --check` — passed.
 
 ## Amendments and Blockers
 
@@ -47,6 +53,7 @@
   it must define a separate live forecast dataset and manifest, frozen final-fit
   model reconstruction, independent verifier boundary, and readiness handoff.
   The historical forecast runner and schema must remain sealed.
+- Preparation checkpoint committed as `01b47b7`.
 
 ## Handoff Notes
 
@@ -57,5 +64,9 @@
 - **Watch out for:** Do not use the Weeks 0–3 replay to generate a readiness
   verdict or open Contract 06. Do not alter the historical forecast runner,
   verifier, or outcome-required prediction schema.
+- **Proposed Terra handoff after amendment approval:** `Use the repository-local
+  implement-plan skill and implement the approved live-forecast application
+  amendment. Treat it as authoritative, preserve the Week 4 immutable-parent
+  gate, run its validation, and stop for any material conflict.`
 
 **tags:** ["v5", "contract-09", "forecast", "readiness", "preparation"]
