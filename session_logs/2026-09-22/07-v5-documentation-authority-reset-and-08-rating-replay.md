@@ -22,6 +22,17 @@
 - Updated README, documentation home, assistant guides, quickstart, operations and data-first roadmaps, plans index, methodology, measurement, evaluation, rating requirements, and repository boundaries.
 - Updated authority regression tests to require the current live sequence while preserving dated conditional/audit records.
 - Inspected Contract 08's runner, verifier, input interfaces, and live Preview parents without writing R2, Neon, production, or web state.
+- Added Amendment 2 and the isolated Contract 08 replay core, configuration,
+  and Preview-only preflight/apply runner. The runner binds the certified 07
+  measurement manifest, frozen 11B definition, r9 terminal parent, and three
+  2026 preseason manifests. Its first real-parent dry run is deterministic:
+  276 priors, 628 rating states, and 314 team states across Weeks 0–3.
+- Replaced an inapplicable global next-game boundary with the frozen
+  pre-kickoff rule applied to each source team's next certified weekly game.
+  The global rule could resolve only seven live PPP observations because live
+  snapshots are keyed to the team playing in the target game. The corrected
+  team-specific rule resolves 326 source observations without changing a
+  selected parameter, historical artifact, or production boundary.
 
 ## Files Modified
 
@@ -37,14 +48,21 @@
 - [x] `uv run python contracts/validation.py` — passed.
 - [x] `uv run mkdocs build --strict --quiet` — passed.
 - [x] `git diff --check` — passed.
+- [x] Focused replay core tests — 3 passed.
+- [x] Focused Ruff — passed.
+- [x] Read-only real-parent preflight — passed; no R2 writes.
 
 ## Amendments and Blockers
 
 - The Contract 08 implementation interface is a material unresolved detail, not a failing data gate. Its exact approved text requires a separate amendment before admitting a 2026 replay parent to sealed historical code.
+- The independent live-replay verifier is still required before the replay can
+  be applied. The current code checkpoint intentionally has no R2 writes.
 
 ## Handoff Notes
 
-- **Resume at:** Amend `docs/plans/2026-09-18/08-v5-2026-rating-state-replay.md` to use a dedicated 2026 single-candidate replay runner and a verifier-owned counterpart. Bind r9-derived historical terminal state, live 2026 measurement/repair manifests, and the three existing 2026 preseason snapshots by exact immutable reference.
+- **Resume at:** Implement the verifier-owned live-replay reconstruction,
+  verifier CLI, and idempotency tests; then commit and run the exact new-HEAD
+  preflight/apply/verify/repeat cycle under a new immutable run ID.
 - **Watch out for:** The historical runner and verifier are sealed to R6/Repair-v2 and the 60-candidate selection tournament. Do not add a CLI-only parent override, reuse the selection path, or apply an R2 run while the repository is uncommitted; the existing runner's apply gate requires a clean committed worktree.
 
 **tags:** ["v5", "documentation", "authority", "contract-08", "rating-replay"]

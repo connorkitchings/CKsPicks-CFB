@@ -1,0 +1,11 @@
+schema_version: data_first_possession_rating_replay_config_v1
+environment: preview
+season: 2026
+candidate_id: ppp__rho_0_60__exposure
+definition: ppp
+prior_family: rho_0_60
+annual_carryover_rho: 0.60
+updater: exposure
+snapshot_adjustment_iteration: 4
+availability_buffer_hours: 6
+production_activation_authorized: false

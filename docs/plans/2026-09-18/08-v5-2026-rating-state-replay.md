@@ -188,3 +188,40 @@ code admits the 2026 replay parent only by explicit amendment,
 parent identity is re-pointed with the recorded no-flip evidence. Re-review
 authority and the authorized execution sequence:
 [`docs/plans/2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md`](../2026-09-22/01-v5-acceptance-and-07-09-rereview-2026-launch.md).
+
+### Amendment 2 — Isolated live-replay interface (Terra, 2026-09-22)
+
+**Reason:** The sealed historical rating runner and its verifier reconstruct the
+complete 60-candidate historical tournament from the r9 measurement and Repair
+v2 parents. They cannot accept the Contract 07 live measurement parent without
+either re-selecting on 2026 results or changing historical artifact behavior.
+
+**Revised interface:** Add a dedicated Preview-only `rating-replay` runner and
+an independently owned verifier. Both bind, by raw checksum and signed
+manifest, the Contract 07 measurement manifest, the frozen 11B retained-rating
+manifest, its r9 historical measurement terminal reference, and the three
+existing 2026 preseason capture manifests (recruiting, returning production,
+and coaches). The fixed candidate is exactly
+`ppp__rho_0_60__exposure`; the replay emits only versioned `priors`,
+`rating_states`, and `team_states` under a new live-replay root. It performs no
+candidate registry traversal, noise fitting, bridge fitting, calibration, or
+2026-outcome selection.
+
+**Frozen replay semantics:** 2026 priors use the 2025 terminal PPP states with
+the 11B carryover coefficient `rho=0.60`; the fixed exposure updater consumes
+only iteration-four live snapshots that have crossed the next certified weekly
+cutoff for that same team. Scaling remains the prior-season 2025 team-equal center and scale. The
+three preseason manifests are bound as immutable provenance inputs; this prior
+family has no learned context term, so their values cannot alter a prior. The
+last completed week's observations do not enter a state until the next
+certified replay refresh, preserving strict pre-kickoff availability.
+
+**Independent verification:** The verifier must not import the replay producer
+or historical tournament producer. It re-reads the stored inputs and output
+partitions, independently reconstructs all three outputs, checks source timing,
+continuous weeks, state/cutoff lineage, manifest signature, and deterministic
+idempotency. Historical 11B artifacts remain read-only parents.
+
+**Impact:** This implements the original contract's explicit sealed-code
+amendment requirement. It does not change the candidate, mathematics,
+admission rules, production boundary, or Contract 09 entry gate.
