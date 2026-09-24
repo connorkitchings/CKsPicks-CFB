@@ -24,6 +24,10 @@ Focused model timing/equivalence tests; migrations and shared contracts; publica
 
 No 2026 outcome fitting, retroactive claim of live evidence, V4 public aggregate, or changed FBS-vs-FBS scope. Model/schema/release-policy changes outside this contract require an explicit amendment. The contract stays In Progress until every acceptance item has passed.
 
+## 2026-09-24 replay rehearsal checkpoint
+
+The [replay and Preview rehearsal](../2026-09-24/01-v5-replay-preview-rehearsal.md) is Implemented. Immutable Weeks 0–3 replay `v5-replay-20260924-cb2252a` (157 games, 314 rows, zero gaps) is pinned in `conf/weekly_bets/v5_replay_2026.yaml`. Preview Week 0 run `2026w0-cb2252a0w0v5` is published, scored, and explicitly selected; populated Preview serving rendered V5, a legacy fallback, true V4-strict rollback, and V5 restoration with measured sub-minute reselections. Two corrections were recorded under that contract: binding proof ran functionally post-deploy (Sensitive Preview DB value is undecryptable), and the rollback drill targeted the true V4 run after the named run proved to be V2-preview lineage. V4 still serves production; no production writes occurred. Week 4 07/08 refresh remains the next dependency.
+
 ## 2026-09-24 implementation checkpoint
 
 The certified 157-game 2026 measurement artifact and validated 761-game schedule now produce 58 outcome-free Week 4 target rows in a read-only R2 dry run. Source names are reconciled through the existing canonical team mapping. An independent as-of calculation agrees with the producer on that real lineage, and the ratings projection reads 452 rows from the partitioned replay artifact. The inference exporter now compares the complete eligible historical feature corpus and fails on nonfinite outputs. Its corrected dry run was interrupted during historical adjusted-history verification before reaching the equivalence comparison; that read path needs a bounded/runtime improvement. No inference bundle has been written or pinned.

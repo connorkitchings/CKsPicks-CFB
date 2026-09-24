@@ -1,6 +1,6 @@
 # V5 Replay and Preview Rehearsal
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-24
 - **Planner:** Sol (plan-session)
 - **Approval source:** User selected the full Preview rehearsal and replay-first scope, then requested this plan be documented. This does not authorize production activation.
@@ -83,12 +83,41 @@ Run focused replay, publication, selection, scoring, and web tests; contracts va
 
 ## Definition of Done
 
-- [ ] Both clean committed checkpoints exist and the replay manifest/receipt match their reviewed inputs.
-- [ ] Preview Week 0 publication, scoring, selection, browser serving, V4 rollback, and V5 restoration pass with recorded evidence.
-- [ ] Focused tests, contracts validation, web quality gates, strict docs build, and diff check pass.
-- [ ] The product transformation contract, operating docs, and implementation session log reflect the exact outcome and any blockers.
-- [ ] This plan's status is changed to `Implemented` only after every item passes.
+- [x] Both clean committed checkpoints exist and the replay manifest/receipt match their reviewed inputs.
+- [x] Preview Week 0 publication, scoring, selection, browser serving, V4 rollback, and V5 restoration pass with recorded evidence.
+- [x] Focused tests, contracts validation, web quality gates, strict docs build, and diff check pass.
+- [x] The product transformation contract, operating docs, and implementation session log reflect the exact outcome and any blockers.
+- [x] This plan's status is changed to `Implemented` only after every item passes.
 
 ## Amendments
 
 Any change to parent lineage, clean-code requirement, replay evidence class, selected-run semantics, or Preview/production boundary requires a recorded amendment before implementation. Stop for a material conflict with the parent transformation contract.
+
+### Amendment 1 (2026-09-24, user-authorized): Task 4 binding proof reordered
+
+The Vercel Preview `DATABASE_URL` (created 2026-08-14 as a Sensitive value) is
+non-decryptable via CLI (`env pull` is Development-only) or API (ciphertext),
+and unrecoverable locally (Keychain holds only pipeline/migrator; the Preview
+branch `cks_preview_web` password is unknown). No current Preview deployment
+exists to probe. The user explicitly chose deploy-then-verify over rotation and
+over stopping. Isolation will therefore be proven on the fresh Preview
+deployment itself via unambiguous discriminators: `/api/health` must show the
+Preview-only singleton `(2025, 16, v4replay-2025-w16)`, and
+`/api/health?season=2026&week=0` must show the Preview-only selection
+`2026w0-cb2252a0w0v5`. Production Neon can show neither (its singleton is the
+live 2026 season; it lacks migration 0013). If any discriminator fails, the
+deployment is torn down immediately and the binding is treated as unproven.
+The Preview-only mutation boundary and zero-production-writes rule are
+unchanged; the web role is read-only and a mispointed deployment could only
+ever read already-public data.
+
+### Amendment 2 (2026-09-24, user-authorized): rollback target lineage correction
+
+The contract's Current State and Task 4 attributed frozen run
+`2026w0-a0edb9e72cb1` to V4. The Preview database shows it is
+`Trench Warfare V2 Preview` (`week0-2026-preview-20260814`, frozen, 8/8/8):
+eligible legacy fallback mechanics, but not the V4-serving view. The true V4
+run is published `2026w0-3e4fa1b9b07d` (`Trench Warfare V4`,
+`week0-2026-v4-strict-20260818-r2`, 8/8/8). The user directed the rollback
+drill at the true V4 run so the rehearsal proves return to V4 serving. The
+V2-preview selection remains as fallback-mechanics evidence.
