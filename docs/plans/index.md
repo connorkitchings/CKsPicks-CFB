@@ -28,6 +28,10 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
+The [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) is the approved implementation contract for the V5-only site and operating path. It supersedes the narrower [V4-to-V5 site transition draft](2026-09-22/05-v4-to-v5-site-transition.md) where their release or public-history policies differ. The older contract remains as an audit record.
+
+The approved [V5 replay and Preview rehearsal](2026-09-24/01-v5-replay-preview-rehearsal.md) is the next bounded execution contract under the product transformation. It covers clean-code replay publication, Preview scoring and serving, and same-week V4 rollback. It does not authorize the current-slate or production cutover.
+
 The [V5 current status guide](../modeling/v5_status.md) is the entry point for the accepted model, exact lineage, historical results, and remaining operational work. V5 model development is complete. V4 still serves the public site.
 
 | Current contract | Purpose | State |
