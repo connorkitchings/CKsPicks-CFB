@@ -8,6 +8,6 @@ spread_edge_threshold_high_conf: 8.0
 total_edge_threshold: 1.5
 v5_replay:
   schema_version: v5_replay_serving_v1
-  replay_manifest_uri: null
-  replay_manifest_sha256: null
+  replay_manifest_uri: artifacts/research/data-first-football-v1/forecasts/replay-runs/v5-replay-20260924-cb2252a/replay-manifest.json
+  replay_manifest_sha256: 3e32a091420e3c09b0f80c4fe9a03a54c942ebebc1cb835f1ea64afe2f0b5605
   forecast_config: conf/research/data_first_football_v1/live_forecast_v1.yaml
