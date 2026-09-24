@@ -97,6 +97,7 @@ export const predictionRuns = pgTable(
     codeSha: text("code_sha"),
     configSha: text("config_sha"),
     modelBundleSha256: text("model_bundle_sha256"),
+    ratingManifestSha256: text("rating_manifest_sha256"),
     artifactUri: text("artifact_uri").notNull(),
     artifactSha256: text("artifact_sha256").notNull(),
     inputDatasetRefs: jsonb("input_dataset_refs").notNull().default([]),
@@ -105,6 +106,7 @@ export const predictionRuns = pgTable(
     publishedAt: timestamp("published_at", { withTimezone: true }),
     frozenAt: timestamp("frozen_at", { withTimezone: true }),
     scoredAt: timestamp("scored_at", { withTimezone: true }),
+    evidenceClass: text("evidence_class").notNull().default("legacy"),
   },
   (table) => [
     index("idx_prediction_runs_week_state").on(
@@ -121,6 +123,69 @@ export const predictionRuns = pgTable(
 );
 
 export type PredictionRun = typeof predictionRuns.$inferSelect;
+
+export const siteWeekSelections = pgTable(
+  "site_week_selections",
+  {
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    runId: text("run_id").notNull().references(() => predictionRuns.runId, { onDelete: "restrict" }),
+    selectedAt: timestamp("selected_at", { withTimezone: true }).notNull().defaultNow(),
+    reason: text("reason").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.season, table.week] })],
+);
+
+export const siteWeekSelectionHistory = pgTable(
+  "site_week_selection_history",
+  {
+    selectionId: bigint("selection_id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    priorRunId: text("prior_run_id").references(() => predictionRuns.runId, { onDelete: "restrict" }),
+    runId: text("run_id").notNull().references(() => predictionRuns.runId, { onDelete: "restrict" }),
+    reason: text("reason").notNull(),
+    selectedAt: timestamp("selected_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_site_week_selection_history_week").on(table.season, table.week, table.selectedAt)],
+);
+
+export const v5ReleasePolicy = pgTable("v5_release_policy", {
+  id: integer("id").primaryKey(),
+  modelId: text("model_id").notNull(),
+  inferenceBundleSha256: text("inference_bundle_sha256").notNull(),
+  firstLiveSeason: integer("first_live_season").notNull(),
+  firstLiveWeek: integer("first_live_week").notNull(),
+  decisionRef: text("decision_ref").notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const v5RatingSnapshots = pgTable(
+  "v5_rating_snapshots",
+  {
+    snapshotId: text("snapshot_id").primaryKey(),
+    sourceRunId: text("source_run_id").notNull(),
+    sourceManifestSha256: text("source_manifest_sha256").notNull(),
+    team: text("team").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    gameId: bigint("game_id", { mode: "number" }),
+    snapshotClass: text("snapshot_class").notNull(),
+    cutoffUtc: timestamp("cutoff_utc", { withTimezone: true }).notNull(),
+    offenseRating: doublePrecision("offense_rating").notNull(),
+    offenseVariance: doublePrecision("offense_variance").notNull(),
+    defenseRating: doublePrecision("defense_rating").notNull(),
+    defenseVariance: doublePrecision("defense_variance").notNull(),
+    overallRating: doublePrecision("overall_rating").notNull(),
+    overallVariance: doublePrecision("overall_variance").notNull(),
+    fallbackReason: text("fallback_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("idx_v5_rating_snapshots_team").on(table.season, table.team, table.cutoffUtc),
+    index("idx_v5_rating_snapshots_current").on(table.season, table.cutoffUtc),
+  ],
+);
 
 export const predictions = pgTable(
   "predictions",

@@ -1,7 +1,7 @@
 # V5 Ratings Successor: Current Status
 
 > **Model development:** Complete and accepted on 2026-09-22.
-> **Live 2026 forecasts:** Code ready; first current-state certification awaits stabilized Week 4 finals and refreshed, independently verified 07/08 parents.
+> **Live 2026 forecasts:** The full-corpus inference bundle is pinned and a read-only Week 4 preflight passed. First current-state certification awaits stabilized Week 4 finals and refreshed, independently verified 07/08 parents.
 > **Public site:** V4 remains active. V5 activation requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
 
 ## What V5 is
@@ -19,10 +19,11 @@ For 2025, V5 margin MAE was 14.160 and total MAE was 13.356 across 934 games per
 ## What remains operational
 
 1. Contract 07 certified 157 2026 games through Week 3. Contract 08 independently verified the Weeks 0–3 rating replay `possession-v1-rating-replay-20260922-fcaa571`.
+   The inference bundle SHA-256 is `f80b63ef01211bc9679b4b65769a3f16c7302c06cfa2b7806f6b8d830f19da0b`; full-corpus equivalence covered 8,935 games. Preview holds 452 version-bound rating snapshots. Retrospective Weeks 0–3 forecast reconstruction passed a 157-game zero-gap dry run, but its immutable replay and public selection are still pending a clean committed build.
 2. Once Week 4 finals stabilize, refresh 07 and 08 under new immutable IDs. Contract 09 then applies the fixed V5 bridge to the next eligible slate, independently verifies its forecast and readiness, and repeats idempotently. The current [shadow runbook](../ops/v5_shadow_runbook.md) carries the exact commands and gates.
 3. Rehearse V5's conversion to the existing public prediction format on Preview, checking schedule coverage, pregame timing, sign conventions, health, and V4 rollback. Present the evidence for a separate production activation decision. No Week 4 or later result is allowed to refit this V5 identity.
 4. Keep immutable prospective freezes and outcome-versioned reports after launch. Six slates are a useful review window, not a prerequisite for declaring V5 developed or proposing a site cutover. Historical and diagnostic runs never become prospective observations.
 
 ## Contract map
 
-The many numbered contracts record **how the evidence was produced**, not a list of unfinished model features. Contracts 00–04 built the original method; 10–12 audited, corrected, verified, and accepted the historical result. Contract 05 built live shadow tooling. Contracts 07–09 are the 2026 application chain. Contract 06 operates prospective monitoring. The [contracts index](../plans/index.md) links current procedures and the [archive](../archive.md) preserves completed and superseded decisions. The [current cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) tracks the remaining implementation work.
+The many numbered contracts record **how the evidence was produced**, not a list of unfinished model features. Contracts 00–04 built the original method; 10–12 audited, corrected, verified, and accepted the historical result. Contract 05 built live shadow tooling. Contracts 07–09 are the 2026 application chain. Contract 06 operates prospective monitoring. The [contracts index](../plans/index.md) links current procedures and the [archive](../archive.md) preserves completed and superseded decisions. The [current product transformation contract](../plans/2026-09-23/01-v5-product-transformation.md) tracks the remaining implementation work.

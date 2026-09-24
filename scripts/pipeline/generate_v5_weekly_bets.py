@@ -170,6 +170,7 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
     lined = int(rows[["home_team_spread_line", "total_line"]].notna().all(axis=1).sum())
     run_manifest = {
         "state": "preview",
+        "evidence_class": "pending",
         "data_as_of": args.as_of,
         "feature_snapshot_uri": feature_uri,
         "feature_snapshot_sha256": hashlib.sha256(feature_bytes).hexdigest(),
@@ -178,7 +179,7 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         "lined_games": lined,
         "code_sha": code_sha,
         "config_sha": hashlib.sha256(Path(args.config).read_bytes()).hexdigest(),
-        "model_bundle_sha256": expected_sha,
+        "model_bundle_sha256": source_fields["inference_bundle_sha256"],
         "input_dataset_refs": refs,
         "source_config": str(args.config),
         "system_name": str(cfg.system_name),

@@ -1,7 +1,28 @@
 import type { Game, HistoricalModelContext, Stats } from "@/lib/queries";
 import type { PublicationMode } from "@/lib/publication";
+import type { Performance, Rating } from "@/lib/v5";
 
 const startDate = new Date("2026-08-29T19:30:00.000Z");
+
+export const v5RatingFixture: Rating = {
+  team: "Texas", week: 0, cutoffUtc: startDate,
+  offenseRating: 3.4, offenseVariance: 1.44,
+  defenseRating: 2.1, defenseVariance: 1.21,
+  overallRating: 5.5, overallVariance: 2.65,
+  fallbackReason: null,
+};
+
+export const v5PerformanceFixture: Performance[] = [
+  { classification: "all", games: 2, evaluated: 2, marginMae: 4.5,
+    totalMae: 6, marginCoverage95: 1, totalCoverage95: 0.5,
+    spread: { win: 1, loss: 0, push: 0 }, total: { win: 0, loss: 1, push: 0 } },
+  { classification: "replay", games: 1, evaluated: 1, marginMae: 5,
+    totalMae: 7, marginCoverage95: 1, totalCoverage95: 0,
+    spread: { win: 0, loss: 0, push: 0 }, total: { win: 0, loss: 0, push: 0 } },
+  { classification: "live", games: 1, evaluated: 1, marginMae: 4,
+    totalMae: 5, marginCoverage95: 1, totalCoverage95: 1,
+    spread: { win: 1, loss: 0, push: 0 }, total: { win: 0, loss: 1, push: 0 } },
+];
 
 const base = {
   gameId: 401000001,

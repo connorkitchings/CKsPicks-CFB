@@ -145,10 +145,17 @@ ON CONFLICT (game_id) DO UPDATE SET
 
 RECOMPUTE_STATS_SQL = """
 WITH selected_runs AS (
-    SELECT DISTINCT ON (season, week) run_id
-    FROM prediction_runs
-    WHERE season = %(season)s AND state = 'scored'
-    ORDER BY season, week, scored_at DESC NULLS LAST, created_at DESC
+    SELECT DISTINCT ON (pr.week) pr.run_id
+    FROM prediction_runs pr
+    LEFT JOIN site_week_selections sws
+      ON sws.season = pr.season AND sws.week = pr.week
+    LEFT JOIN current_week cw
+      ON cw.id = 1 AND cw.season = pr.season AND cw.week = pr.week
+    WHERE pr.season = %(season)s AND pr.state = 'scored'
+      AND (pr.run_id = sws.run_id OR
+           (sws.run_id IS NULL AND (pr.run_id = cw.active_run_id OR pr.state = 'scored')))
+    ORDER BY pr.week, (pr.run_id = sws.run_id) DESC,
+             (pr.run_id = cw.active_run_id) DESC, pr.created_at DESC
 )
 INSERT INTO system_stats (
     season, as_of_week,
@@ -185,6 +192,40 @@ ON CONFLICT (season) DO UPDATE SET
     total_profit_units = EXCLUDED.total_profit_units,
     updated_at    = NOW()
 """
+
+# Production can still be on the pre-V5 schema while the Preview migration is
+# rehearsed. Keep the existing V4 scoring path usable until 0013 is deployed.
+LEGACY_RECOMPUTE_STATS_SQL = RECOMPUTE_STATS_SQL.replace(
+    """    SELECT DISTINCT ON (pr.week) pr.run_id
+    FROM prediction_runs pr
+    LEFT JOIN site_week_selections sws
+      ON sws.season = pr.season AND sws.week = pr.week
+    LEFT JOIN current_week cw
+      ON cw.id = 1 AND cw.season = pr.season AND cw.week = pr.week
+    WHERE pr.season = %(season)s AND pr.state = 'scored'
+      AND (pr.run_id = sws.run_id OR
+           (sws.run_id IS NULL AND (pr.run_id = cw.active_run_id OR pr.state = 'scored')))
+    ORDER BY pr.week, (pr.run_id = sws.run_id) DESC,
+             (pr.run_id = cw.active_run_id) DESC, pr.created_at DESC""",
+    """    SELECT DISTINCT ON (season, week) run_id
+    FROM prediction_runs
+    WHERE season = %(season)s AND state = 'scored'
+    ORDER BY season, week, scored_at DESC NULLS LAST, created_at DESC""",
+)
+
+
+def _recompute_stats(cur: psycopg.Cursor, season: int) -> None:
+    migrated = _v5_schema_present(cur)
+    cur.execute(
+        RECOMPUTE_STATS_SQL if migrated else LEGACY_RECOMPUTE_STATS_SQL,
+        {"season": season},
+    )
+
+
+def _v5_schema_present(cur: psycopg.Cursor) -> bool:
+    cur.execute("SELECT to_regclass('public.site_week_selections') IS NOT NULL")
+    return bool(cur.fetchone()[0])
+
 
 UPSERT_GRADE_SQL = """
 INSERT INTO prediction_grades (
@@ -287,25 +328,32 @@ def mark_run_scored(conn_url: str, run_id: str) -> None:
 def publish_scored_run(
     df: pd.DataFrame, conn_url: str, *, run_id: str, season: int
 ) -> tuple[int, dict]:
-    """Atomically publish results, refresh stats, and mark the frozen run scored."""
+    """Score a frozen live run or a verified retrospective replay."""
     count = 0
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             assert_active_pipeline_lease(cur)
+            migrated = _v5_schema_present(cur)
             cur.execute(
-                "SELECT state FROM prediction_runs WHERE run_id = %s FOR UPDATE",
+                "SELECT state, evidence_class FROM prediction_runs WHERE run_id = %s FOR UPDATE"
+                if migrated
+                else "SELECT state, NULL FROM prediction_runs WHERE run_id = %s FOR UPDATE",
                 (run_id,),
             )
             row = cur.fetchone()
-            if not row or row[0] not in {"frozen", "scored"}:
+            if not row or not (
+                row[0] in {"frozen", "scored"}
+                or (row[0] == "published" and row[1] == "replay")
+            ):
                 raise RuntimeError(
-                    f"Run {run_id} must exist and be frozen before scoring"
+                    f"Run {run_id} must be frozen or a published replay before scoring"
                 )
             already_scored = row[0] == "scored"
             if already_scored:
                 cur.execute(
-                    "SELECT COUNT(DISTINCT game_id) FROM prediction_grades "
-                    "WHERE run_id = %s",
+                    "SELECT COUNT(*) FROM predictions p JOIN game_results gr "
+                    "ON gr.game_id = p.game_id WHERE p.run_id = %s "
+                    "AND gr.completion_state = 'completed'",
                     (run_id,),
                 )
                 count = int(cur.fetchone()[0])
@@ -329,6 +377,10 @@ def publish_scored_run(
                     count += 1
                 cur.execute(
                     "UPDATE prediction_runs SET state = 'scored', scored_at = NOW() "
+                    "WHERE run_id = %s AND (state = 'frozen' OR "
+                    "(state = 'published' AND evidence_class = 'replay'))"
+                    if migrated
+                    else "UPDATE prediction_runs SET state = 'scored', scored_at = NOW() "
                     "WHERE run_id = %s AND state = 'frozen'",
                     (run_id,),
                 )
@@ -343,7 +395,7 @@ def publish_scored_run(
                     "ON CONFLICT (run_id, action) DO NOTHING",
                     (os.getenv("CFB_ARTIFACT_ENV", "production"), run_id),
                 )
-            cur.execute(RECOMPUTE_STATS_SQL, {"season": season})
+            _recompute_stats(cur, season)
             cur.execute(
                 "SELECT season, as_of_week, spread_wins, spread_losses, spread_pushes, "
                 "total_wins, total_losses, total_pushes FROM system_stats WHERE season = %s",
@@ -371,7 +423,7 @@ def publish_scored_run(
 def recompute_stats(conn_url: str, season: int) -> dict:
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
-            cur.execute(RECOMPUTE_STATS_SQL, {"season": season})
+            _recompute_stats(cur, season)
             cur.execute(
                 "SELECT season, as_of_week, spread_wins, spread_losses, spread_pushes, "
                 "total_wins, total_losses, total_pushes FROM system_stats WHERE season = %s",

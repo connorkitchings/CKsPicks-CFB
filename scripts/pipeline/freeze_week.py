@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import datetime, timezone
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -33,7 +33,10 @@ def freeze_run(
                 """
                 SELECT pr.run_id, pr.state, pr.expected_games,
                        pr.predicted_games, pr.lined_games, pr.artifact_uri,
-                       pr.artifact_sha256
+                       pr.artifact_sha256, pr.evidence_class,
+                       (SELECT MIN(g.start_date) FROM predictions p
+                        JOIN games g ON g.game_id = p.game_id
+                        WHERE p.run_id = pr.run_id), NOW()
                 FROM current_week cw
                 JOIN prediction_runs pr ON pr.run_id = cw.active_run_id
                 WHERE cw.id = 1 AND cw.season = %s AND cw.week = %s
@@ -44,7 +47,18 @@ def freeze_run(
             row = cur.fetchone()
             if not row:
                 raise RuntimeError(f"No active prediction run for {year} week {week}")
-            run_id, state, expected, predicted, lined, artifact_uri, artifact_sha = row
+            (
+                run_id,
+                state,
+                expected,
+                predicted,
+                lined,
+                artifact_uri,
+                artifact_sha,
+                evidence_class,
+                first_kickoff,
+                db_now,
+            ) = row
             if state in {"frozen", "scored"}:
                 return {
                     "run_id": run_id,
@@ -55,6 +69,34 @@ def freeze_run(
                     "artifact_uri": artifact_uri,
                     "artifact_sha256": artifact_sha,
                 }
+            if evidence_class == "replay":
+                raise RuntimeError("Reconstructed replay cannot receive a live freeze")
+            if evidence_class == "missed":
+                return {
+                    "run_id": run_id,
+                    "state": "missed",
+                    "reason": "freeze deadline passed",
+                }
+            if evidence_class == "pending":
+                if first_kickoff is None:
+                    raise RuntimeError("V5 run has no scheduled kickoff")
+                if db_now >= first_kickoff - timedelta(hours=1):
+                    cur.execute(
+                        "UPDATE prediction_runs SET evidence_class = 'missed', "
+                        "validation = validation || %s::jsonb WHERE run_id = %s",
+                        (
+                            json.dumps(
+                                {"freeze_missed": "one-hour hard boundary passed"}
+                            ),
+                            run_id,
+                        ),
+                    )
+                    conn.commit()
+                    return {
+                        "run_id": run_id,
+                        "state": "missed",
+                        "reason": "freeze deadline passed",
+                    }
             if predicted != expected:
                 raise RuntimeError(
                     f"Cannot freeze {run_id}: predicted {predicted}/{expected} games"
@@ -73,11 +115,14 @@ def freeze_run(
                 """
                 UPDATE prediction_runs
                 SET state = 'frozen', frozen_at = NOW(),
+                    evidence_class = CASE WHEN evidence_class = 'pending' THEN 'live' ELSE evidence_class END,
                     validation = validation || %s::jsonb
                 WHERE run_id = %s
+                RETURNING frozen_at
                 """,
                 (validation_patch, run_id),
             )
+            frozen_at = cur.fetchone()[0]
             if waiver:
                 cur.execute(
                     "INSERT INTO ops.waivers (run_id, waiver_type, reason) "
@@ -106,7 +151,7 @@ def freeze_run(
         "lined_games": lined,
         "artifact_uri": artifact_uri,
         "artifact_sha256": artifact_sha,
-        "frozen_at": datetime.now(timezone.utc).isoformat(),
+        "frozen_at": frozen_at.isoformat(),
         "waiver": waiver,
     }
 
@@ -123,6 +168,10 @@ def main() -> None:
     if not conn_url:
         raise SystemExit("DATABASE_URL is not set")
     metadata = freeze_run(conn_url, year=args.year, week=args.week, waiver=args.waiver)
+    if metadata["state"] == "missed":
+        raise SystemExit(
+            f"Missed freeze boundary for {metadata['run_id']} in {args.year} week {args.week}"
+        )
     print(f"Frozen {metadata['run_id']} for {args.year} week {args.week}")
 
 

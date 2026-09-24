@@ -134,6 +134,32 @@ def test_pipeline_reruns_unverified_step_after_forced_crash():
     assert context.lease_epoch == 0
 
 
+def test_v5_replay_week_uses_resumable_steps_without_live_ingestion():
+    context = new_context(
+        command="publish-replay-week",
+        environment="preview",
+        season=2026,
+        week=2,
+        as_of="2026-09-24T00:00:00Z",
+        pipeline_run_id="replay-fixture",
+    )
+    steps = build_steps(
+        context,
+        conn_url="postgresql://unused",
+        options=SimpleNamespace(config="conf/weekly_bets/v5_replay_2026.yaml"),
+    )
+    assert context.prediction_run_id == "2026w2-replay-fixtu"
+    assert [step.name for step in steps] == [
+        "contracts",
+        "verify_replay",
+        "write_replay_artifact",
+        "publish_replay",
+    ]
+    publication = steps[-1].definition["argv"]
+    assert "--no-update-current" in publication
+    assert not any("ingest" in step.name for step in steps)
+
+
 def test_pipeline_rejects_changed_step_definition_on_resume():
     store = InMemoryStateStore()
     context = new_context(

@@ -915,8 +915,14 @@ def _resolve_frozen_run(conn_url: str, season: int, week: int) -> str:
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT run_id FROM prediction_runs WHERE season = %s AND week = %s "
-                "AND state = 'frozen' ORDER BY frozen_at DESC LIMIT 1",
+                "SELECT pr.run_id FROM prediction_runs pr "
+                "LEFT JOIN site_week_selections sws "
+                "ON sws.season = pr.season AND sws.week = pr.week "
+                "LEFT JOIN current_week cw "
+                "ON cw.id = 1 AND cw.season = pr.season AND cw.week = pr.week "
+                "WHERE pr.season = %s AND pr.week = %s "
+                "AND pr.run_id = COALESCE(sws.run_id, cw.active_run_id) "
+                "AND pr.state = 'frozen'",
                 (season, week),
             )
             row = cur.fetchone()
@@ -1956,6 +1962,105 @@ def build_steps(
                 "audit_data", _audit_data_action(conn_url, mode="model-ready")
             ),
         ]
+    if context.command == "score-replay-week":
+        assert week is not None
+        run_id = str(getattr(options, "run_id", "") or "")
+        outcomes_uri = str(getattr(options, "outcomes_ref_uri", "") or "")
+        if not run_id or not outcomes_uri:
+            raise ValueError("score-replay-week requires exact run and outcome refs")
+        return [
+            subprocess_step(
+                "score_replay",
+                _python(
+                    "scripts/pipeline/score_weekly_bets.py",
+                    "--year",
+                    year,
+                    "--week",
+                    week,
+                    "--run-id",
+                    run_id,
+                    "--from-artifact",
+                    "--outcomes-ref-uri",
+                    outcomes_uri,
+                    "--upload-artifact",
+                ),
+            ),
+            subprocess_step(
+                "publish_replay_results",
+                _python(
+                    "scripts/pipeline/score_to_db.py",
+                    "--year",
+                    year,
+                    "--week",
+                    week,
+                    "--run-id",
+                    run_id,
+                    "--from-artifact",
+                ),
+            ),
+        ]
+    if context.command == "project-v5-ratings":
+        rating_uri = str(getattr(options, "rating_manifest_uri", "") or "")
+        if not rating_uri:
+            raise ValueError("project-v5-ratings requires a verified rating manifest")
+        return [
+            subprocess_step(
+                "project_v5_ratings",
+                _python(
+                    "scripts/pipeline/publish_v5_ratings.py",
+                    "--rating-manifest-uri",
+                    rating_uri,
+                    "--environment",
+                    context.environment,
+                    "--apply",
+                ),
+            )
+        ]
+    if context.command == "publish-replay-week":
+        assert week is not None and as_of is not None
+        if not context.prediction_run_id:
+            raise ValueError("publish-replay-week requires a prediction run ID")
+        config = str(getattr(options, "config", "conf/weekly_bets/v5_replay_2026.yaml"))
+        if not OmegaConf.load(config).get("v5_replay"):
+            raise ValueError("publish-replay-week requires a V5 replay config")
+        generate = _python(
+            "scripts/pipeline/generate_weekly_bets.py",
+            "--year",
+            year,
+            "--week",
+            week,
+            "--as-of",
+            as_of,
+            "--run-id",
+            context.prediction_run_id,
+            "--run-state",
+            "preview",
+            "--config",
+            config,
+        )
+        return [
+            subprocess_step("contracts", _python("contracts/validation.py")),
+            subprocess_step("verify_replay", generate),
+            subprocess_step("write_replay_artifact", [*generate, "--upload-artifact"]),
+            subprocess_step(
+                "publish_replay",
+                _python(
+                    "scripts/pipeline/publish_to_db.py",
+                    "--year",
+                    year,
+                    "--week",
+                    week,
+                    "--run-id",
+                    context.prediction_run_id,
+                    "--state",
+                    "published",
+                    "--from-artifact",
+                    "--no-update-current",
+                    "--config",
+                    config,
+                ),
+            ),
+        ]
     if context.command == "publish-week":
         assert week is not None and as_of is not None
         if not context.prediction_run_id:
@@ -2320,6 +2425,9 @@ def parse_args() -> argparse.Namespace:
         "prepare-week",
         "readiness",
         "publish-week",
+        "publish-replay-week",
+        "project-v5-ratings",
+        "score-replay-week",
         "freeze-week",
         "close-week",
         "replay-season",
@@ -2341,6 +2449,7 @@ def parse_args() -> argparse.Namespace:
             "build-baselines",
             "assemble-model-ready",
             "fetch-source",
+            "project-v5-ratings",
             "prepare-rating-history",
             "verify-history-play-sample",
             "reconcile-history-play-captures",
@@ -2349,6 +2458,7 @@ def parse_args() -> argparse.Namespace:
         if command in {
             "readiness",
             "publish-week",
+            "publish-replay-week",
             "build-silver",
             "build-team-game",
             "build-features",
@@ -2359,14 +2469,23 @@ def parse_args() -> argparse.Namespace:
             "close-week",
         }:
             sub.add_argument("--as-of", required=True)
-        if command in {"readiness", "publish-week"}:
+        if command in {"readiness", "publish-week", "publish-replay-week"}:
             sub.add_argument(
                 "--config",
-                default="conf/weekly_bets/v2_champion.yaml",
+                default=(
+                    "conf/weekly_bets/v5_replay_2026.yaml"
+                    if command == "publish-replay-week"
+                    else "conf/weekly_bets/v2_champion.yaml"
+                ),
                 help="Weekly model configuration used by preflight and publication.",
             )
         if command == "publish-week":
             sub.add_argument("--prepared-gold-ref-uri")
+        if command == "project-v5-ratings":
+            sub.add_argument("--rating-manifest-uri", required=True)
+        if command == "score-replay-week":
+            sub.add_argument("--run-id", required=True)
+            sub.add_argument("--outcomes-ref-uri", required=True)
         sub.add_argument(
             "--environment", choices=("preview", "production"), required=True
         )

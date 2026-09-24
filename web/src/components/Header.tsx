@@ -8,6 +8,7 @@ export function Header({
   systemName,
   updatedAt,
   runState,
+  evidenceClass,
   publicationMode,
   allowedSeasons,
 }: {
@@ -16,6 +17,7 @@ export function Header({
   systemName: string | null;
   updatedAt: Date | null;
   runState: string | null;
+  evidenceClass?: "legacy" | "pending" | "replay" | "live" | "missed" | null;
   publicationMode: PublicationMode;
   allowedSeasons?: number[];
 }) {
@@ -37,6 +39,9 @@ export function Header({
               <span className="rounded bg-surface-inset px-1.5 py-0.5 font-semibold uppercase tracking-wide text-ink-muted">
                 {runState}
               </span>
+            )}
+            {publicationMode === "predictions" && evidenceClass && evidenceClass !== "legacy" && (
+              <span className="rounded bg-accent-soft px-1.5 py-0.5 font-semibold uppercase tracking-wide text-accent-ink">{evidenceClass}</span>
             )}
             {updatedAt && (
               <span>

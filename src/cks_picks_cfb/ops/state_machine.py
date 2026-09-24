@@ -585,7 +585,7 @@ def new_context(
     run_id = pipeline_run_id or uuid4().hex
     prediction_run_id = (
         f"{season}w{week}-{run_id[:12]}"
-        if command == "publish-week" and week is not None
+        if command in {"publish-week", "publish-replay-week"} and week is not None
         else None
     )
     return OperationContext(

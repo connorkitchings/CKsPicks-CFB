@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS prediction_runs (
     code_sha               TEXT,
     config_sha             TEXT,
     model_bundle_sha256    TEXT,
+    rating_manifest_sha256 TEXT CHECK (rating_manifest_sha256 IS NULL OR length(rating_manifest_sha256) = 64),
     artifact_uri           TEXT NOT NULL,
     artifact_sha256        TEXT NOT NULL,
     input_dataset_refs     JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(input_dataset_refs) = 'array'),
@@ -111,6 +112,8 @@ CREATE TABLE IF NOT EXISTS prediction_runs (
     published_at           TIMESTAMPTZ,
     frozen_at              TIMESTAMPTZ,
     scored_at              TIMESTAMPTZ,
+    evidence_class         TEXT NOT NULL DEFAULT 'legacy'
+                           CHECK (evidence_class IN ('legacy', 'pending', 'replay', 'live', 'missed')),
     UNIQUE (season, week, run_id),
     CHECK (predicted_games <= expected_games),
     CHECK (lined_games <= expected_games)
@@ -230,6 +233,62 @@ CREATE TABLE IF NOT EXISTS current_week (
 INSERT INTO current_week (id, season, week)
 VALUES (1, 0, 0)
 ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS site_week_selections (
+    season INTEGER NOT NULL,
+    week INTEGER NOT NULL,
+    run_id TEXT NOT NULL REFERENCES prediction_runs(run_id) ON DELETE RESTRICT,
+    selected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reason TEXT NOT NULL,
+    PRIMARY KEY (season, week)
+);
+
+CREATE TABLE IF NOT EXISTS site_week_selection_history (
+    selection_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    season INTEGER NOT NULL,
+    week INTEGER NOT NULL,
+    prior_run_id TEXT REFERENCES prediction_runs(run_id) ON DELETE RESTRICT,
+    run_id TEXT NOT NULL REFERENCES prediction_runs(run_id) ON DELETE RESTRICT,
+    reason TEXT NOT NULL,
+    selected_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_site_week_selection_history_week
+    ON site_week_selection_history (season, week, selected_at DESC);
+
+CREATE TABLE IF NOT EXISTS v5_release_policy (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    model_id TEXT NOT NULL,
+    inference_bundle_sha256 TEXT NOT NULL CHECK (length(inference_bundle_sha256) = 64),
+    first_live_season INTEGER NOT NULL,
+    first_live_week INTEGER NOT NULL,
+    decision_ref TEXT NOT NULL,
+    approved_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS v5_rating_snapshots (
+    snapshot_id TEXT PRIMARY KEY,
+    source_run_id TEXT NOT NULL,
+    source_manifest_sha256 TEXT NOT NULL CHECK (length(source_manifest_sha256) = 64),
+    team TEXT NOT NULL,
+    season INTEGER NOT NULL,
+    week INTEGER NOT NULL,
+    game_id BIGINT,
+    snapshot_class TEXT NOT NULL CHECK (snapshot_class IN ('pregame', 'current')),
+    cutoff_utc TIMESTAMPTZ NOT NULL,
+    offense_rating DOUBLE PRECISION NOT NULL,
+    offense_variance DOUBLE PRECISION NOT NULL,
+    defense_rating DOUBLE PRECISION NOT NULL,
+    defense_variance DOUBLE PRECISION NOT NULL,
+    overall_rating DOUBLE PRECISION NOT NULL,
+    overall_variance DOUBLE PRECISION NOT NULL,
+    fallback_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_v5_rating_snapshots_team
+    ON v5_rating_snapshots (season, team, cutoff_utc DESC);
+CREATE INDEX IF NOT EXISTS idx_v5_rating_snapshots_current
+    ON v5_rating_snapshots (season, cutoff_utc DESC)
+    WHERE snapshot_class = 'current';
 
 -- ---------------------------------------------------------------------------
 -- Canonical market observations and run-specific grades
@@ -554,7 +613,7 @@ END $$;
 GRANT USAGE ON SCHEMA public TO cks_web;
 GRANT SELECT ON games, game_results, prediction_runs, predictions,
     prediction_grades, market_snapshots, system_stats, historical_model_context,
-    current_week TO cks_web;
+    current_week, site_week_selections, v5_rating_snapshots TO cks_web;
 GRANT USAGE ON SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, catalog, ops TO cks_pipeline;
@@ -564,6 +623,10 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public, catalog, ops TO cks_migr
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO cks_web;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public, catalog, ops
     GRANT SELECT, INSERT, UPDATE ON TABLES TO cks_pipeline;
+-- Approval is owned by the migration/administrative role, never by the
+-- operational publisher, even though that role writes other public tables.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON v5_release_policy FROM cks_pipeline;
+GRANT SELECT ON v5_release_policy TO cks_pipeline;
 
 -- ---------------------------------------------------------------------------
 -- Views for convenience
@@ -614,26 +677,18 @@ SELECT
     updated_at
 FROM system_stats;
 
--- Canonical serving view. Historical weeks prefer the newest frozen/scored
--- run; the active week follows current_week.active_run_id.
+-- Canonical serving view follows the same explicit selection as the site.
 CREATE OR REPLACE VIEW active_game_predictions AS
 WITH selected_runs AS (
-    SELECT DISTINCT ON (pr.season, pr.week)
+    SELECT
         pr.run_id,
         pr.season,
         pr.week,
         pr.state,
         pr.created_at
-    FROM prediction_runs pr
-    LEFT JOIN current_week cw
-      ON cw.id = 1 AND cw.season = pr.season AND cw.week = pr.week
-    WHERE pr.run_id = cw.active_run_id OR pr.state IN ('frozen', 'scored')
-    ORDER BY
-        pr.season,
-        pr.week,
-        (pr.run_id = cw.active_run_id) DESC,
-        (pr.state IN ('frozen', 'scored')) DESC,
-        pr.created_at DESC
+    FROM site_week_selections sws
+    JOIN prediction_runs pr ON pr.run_id = sws.run_id
+      AND pr.season = sws.season AND pr.week = sws.week
 )
 SELECT
     g.game_id,

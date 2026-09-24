@@ -146,6 +146,79 @@ def reconstruct_predictions(
     return actual
 
 
+def verify_bundle_predictions(
+    bundle: Mapping[str, Any],
+    features: pd.DataFrame,
+    *,
+    run_id: str,
+    model_ref: str,
+    state_refs: Mapping[int, str],
+    source_ref: str,
+    timing_class: str = "live",
+) -> pd.DataFrame:
+    """Evaluate signed coefficients independently, without historical refitting."""
+    if bundle.get("schema_version") != "v5_inference_bundle_v1":
+        raise LiveForecastVerificationError("verifier bundle schema differs")
+    models = bundle.get("targets") or {}
+    if set(models) != {"margin", "total"}:
+        raise LiveForecastVerificationError("verifier bundle lacks a target")
+    if timing_class not in {"live", "replay"}:
+        raise LiveForecastVerificationError("verifier timing class is invalid")
+    rows: list[dict[str, Any]] = []
+    for game in features.itertuples(index=False):
+        game_id = int(game.game_id)
+        if game_id not in state_refs:
+            raise LiveForecastVerificationError("verifier lacks a state reference")
+        for target in ("margin", "total"):
+            model = models[target]
+            names = model["feature_names"]
+            coefficients = model["coefficients"]
+            if not names or len(names) != len(coefficients):
+                raise LiveForecastVerificationError(
+                    "verifier bundle coefficients differ"
+                )
+            offset = float(getattr(game, f"offset_{target}"))
+            mean = offset + float(model["intercept"])
+            for name, coefficient in zip(names, coefficients, strict=True):
+                scale = float(model["scale"][name])
+                if scale <= 0 or not np.isfinite(scale):
+                    raise LiveForecastVerificationError(
+                        "verifier bundle scale is invalid"
+                    )
+                mean += (
+                    (float(getattr(game, name)) - float(model["center"][name]))
+                    / scale
+                    * float(coefficient)
+                )
+            variance = float(model["calibration_variance"])
+            if variance <= 0 or not np.isfinite(variance):
+                raise LiveForecastVerificationError("verifier calibration is invalid")
+            interval = 1.959963984540054 * float(np.sqrt(variance))
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "season": int(game.season),
+                    "week": int(game.week),
+                    "game_id": game_id,
+                    "target": target,
+                    "mean": mean,
+                    "variance": variance,
+                    "interval_lower_95": mean - interval,
+                    "interval_upper_95": mean + interval,
+                    "offset": offset,
+                    "completed_game_stage": min(int(game.completed_game_stage), 4),
+                    "timing_class": timing_class,
+                    "model_ref": f"{model_ref}#{target}:{model['head']}:{float(model['alpha']):g}",
+                    "state_ref": state_refs[game_id],
+                    "source_ref": source_ref,
+                }
+            )
+    frame = pd.DataFrame.from_records(rows, columns=list(LIVE_FORECAST_COLUMNS))
+    return frame.sort_values(
+        ["season", "week", "game_id", "target"], kind="mergesort"
+    ).reset_index(drop=True)
+
+
 def verify_manifest_envelope(
     manifest: Mapping[str, Any], *, raw_sha256: str
 ) -> dict[str, Any]:
@@ -194,11 +267,14 @@ def verify_predictions(
     manifest: Mapping[str, Any],
     stored: pd.DataFrame,
     reconstructed: pd.DataFrame,
+    timing_class: str = "live",
 ) -> dict[str, Any]:
     """Confirm complete canonical records and row count against the signed manifest."""
     try:
         validate_prediction_frame(
-            stored, run_id=str((manifest.get("identity") or {}).get("run_id"))
+            stored,
+            run_id=str((manifest.get("identity") or {}).get("run_id")),
+            timing_class=timing_class,
         )
     except LiveForecastContractError as exc:
         raise LiveForecastVerificationError(str(exc)) from exc
@@ -209,15 +285,27 @@ def verify_predictions(
             "live forecast prediction row count differs"
         )
     stored_sha = canonical_frame_digest(stored, columns=LIVE_FORECAST_COLUMNS)
-    reconstructed_sha = canonical_frame_digest(
-        reconstructed, columns=LIVE_FORECAST_COLUMNS
-    )
-    if stored_sha != reconstructed_sha or stored_sha != manifest.get(
-        "prediction_records_sha256"
-    ):
+    if stored_sha != manifest.get("prediction_records_sha256"):
         raise LiveForecastVerificationError(
-            "live forecast predictions differ from reconstruction"
+            "stored live forecast predictions differ from the signed digest"
         )
+    numeric = {"mean", "variance", "interval_lower_95", "interval_upper_95", "offset"}
+    for column in LIVE_FORECAST_COLUMNS:
+        left = stored[column].to_numpy()
+        right = reconstructed[column].to_numpy()
+        if column in numeric:
+            if (
+                not np.isfinite(left.astype(float)).all()
+                or not np.isfinite(right.astype(float)).all()
+                or not np.allclose(left, right, rtol=0, atol=1e-9)
+            ):
+                raise LiveForecastVerificationError(
+                    f"live forecast {column} differs from reconstruction"
+                )
+        elif not np.array_equal(left, right):
+            raise LiveForecastVerificationError(
+                f"live forecast {column} differs from reconstruction"
+            )
     return {
         "verified": True,
         "row_count": int(len(stored)),

@@ -178,6 +178,7 @@ def test_v5_source_calls_independent_reconstruction(monkeypatch, tmp_path):
         "parents": {
             "measurement_uri": "m",
             "rating_replay_uri": "r",
+            "rating_replay_raw_sha256": "b" * 64,
             "schedule_ref_uri": "s",
         },
     }

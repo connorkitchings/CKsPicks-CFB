@@ -224,6 +224,127 @@ def _streams(
     return streams
 
 
+def verify_current_state(
+    *,
+    population: pd.DataFrame,
+    observations: pd.DataFrame,
+    snapshots: pd.DataFrame,
+    terminal: pd.DataFrame,
+    priors: pd.DataFrame,
+    historical_terminal: pd.DataFrame,
+    current: pd.DataFrame,
+    target_week: int,
+    target_teams: set[str],
+) -> None:
+    """Check each as-of state using verifier-owned evidence and Bayes arithmetic."""
+    games = population[
+        population["season"].eq(2026) & population["forecast_eligible"].eq(True)
+    ].copy()
+    games["kickoff_utc"] = pd.to_datetime(games["kickoff_utc"], utc=True)
+    if games["week"].ge(target_week).any():
+        raise IndependentReplayError("as-of verifier received future games")
+    boundaries = _boundary_map(games)
+    scales = {role: _scale(historical_terminal, role) for role in ROLES}
+    streams = _streams(
+        VerifierInputs(games, observations, snapshots, historical_terminal),
+        boundaries,
+        scales,
+    )
+    candidate = observations[
+        observations["season"].eq(2026)
+        & observations["measurement_id"].eq("ppp")
+        & observations["coverage_status"].eq("observed")
+        & pd.to_numeric(observations["denominator"], errors="coerce").gt(0)
+    ]
+    values = current.set_index("team")
+    teams = (
+        set(games["home_team"].astype(str))
+        | set(games["away_team"].astype(str))
+        | target_teams
+    )
+    if set(values.index) != teams:
+        raise IndependentReplayError("as-of verifier team coverage differs")
+    for team in sorted(teams):
+        estimates: dict[str, tuple[float, float]] = {}
+        for role in ROLES:
+            prior = priors[priors["team"].eq(team) & priors["unit_role"].eq(role)]
+            if len(prior) != 1:
+                raise IndependentReplayError("as-of verifier lacks a unique prior")
+            p = prior.iloc[0]
+            exposure = 0.0
+            weighted = 0.0
+            for source in candidate[
+                candidate["team"].eq(team) & candidate["unit_role"].eq(role)
+            ].itertuples(index=False):
+                game_id = int(source.game_id)
+                if (game_id, team) in boundaries:
+                    adjusted = next(
+                        (
+                            item
+                            for item in streams.get((role, team), [])
+                            if item["game_id"] == game_id
+                        ),
+                        None,
+                    )
+                    if adjusted is None:
+                        continue
+                    z = float(adjusted["z"])
+                else:
+                    final = terminal[
+                        terminal["season"].eq(2026)
+                        & terminal["team"].eq(team)
+                        & terminal["unit_role"].eq(role)
+                        & terminal["measurement_id"].eq("ppp")
+                        & terminal["adjustment_iteration"].eq(4)
+                    ]
+                    if len(final) != 1:
+                        raise IndependentReplayError(
+                            "as-of verifier lacks terminal adjustment"
+                        )
+                    center, spread, sign = scales[role]
+                    z = (
+                        sign
+                        * (float(final.iloc[0]["adjusted_value"]) - center)
+                        / spread
+                    )
+                weight = float(source.denominator)
+                exposure += weight
+                weighted += weight * z
+            precision = 1.0 / float(p["prior_variance"]) + exposure / 8.0
+            variance = 1.0 / precision
+            mean = variance * (
+                float(p["prior_mean"]) / float(p["prior_variance"]) + weighted / 8.0
+            )
+            estimates[role] = (mean, variance)
+            for field, expected in (
+                (f"{role}_rating", mean),
+                (f"{role}_variance", variance),
+            ):
+                if not np.isclose(
+                    float(values.loc[team, field]), expected, rtol=0, atol=1e-9
+                ):
+                    raise IndependentReplayError(
+                        f"as-of verifier differs for {team} {field}"
+                    )
+        overall = (estimates["offense"][0] + estimates["defense"][0]) / 2.0
+        if not np.isclose(
+            float(values.loc[team, "overall_rating"]), overall, rtol=0, atol=1e-9
+        ):
+            raise IndependentReplayError(
+                f"as-of verifier differs for {team} overall rating"
+            )
+        overall_variance = (estimates["offense"][1] + estimates["defense"][1]) / 4.0
+        if not np.isclose(
+            float(values.loc[team, "overall_variance"]),
+            overall_variance,
+            rtol=0,
+            atol=1e-9,
+        ):
+            raise IndependentReplayError(
+                f"as-of verifier differs for {team} overall variance"
+            )
+
+
 def _plans(frames: Mapping[str, pd.DataFrame]) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
     for name, frame in frames.items():

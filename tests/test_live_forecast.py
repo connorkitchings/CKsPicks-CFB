@@ -22,11 +22,14 @@ from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.forecast.live import (
     DEVELOPMENT_SEASONS,
     LiveForecastError,
+    apply_exported_bridge,
     apply_frozen_bridge,
     build_live_application_frame,
+    export_frozen_bridge,
 )
 from cks_picks_cfb.forecast.live_verification import (
     reconstruct_predictions,
+    verify_bundle_predictions,
     verify_predictions,
 )
 from scripts.research import run_v5_live_forecast as live_runner
@@ -153,8 +156,44 @@ def test_bridge_apply_is_deterministic_and_has_no_live_outcome_dependency() -> N
         and "gaussian_crps" not in first
     )
     assert first["timing_class"].eq("live").all()
+
+
+def test_exported_inference_bundle_matches_historical_reconstruction() -> None:
+    historical, live = _frames()
+    recipes = {
+        "margin": {"head": "reference", "alpha": 10.0},
+        "total": {"head": "reference", "alpha": 10.0},
+    }
+    variances = {"margin": 9.0, "total": 16.0}
+    kwargs = {
+        "run_id": "live-test",
+        "model_ref": "11c-final-fit",
+        "state_refs": {1001: "state/1001", 1002: "state/1002"},
+        "source_ref": "week4-refresh",
+    }
+    original = apply_frozen_bridge(
+        historical,
+        live,
+        recipes=recipes,
+        calibration_variances=variances,
+        **kwargs,
+    ).predictions
+    bundle = export_frozen_bridge(
+        historical,
+        recipes=recipes,
+        calibration_variances=variances,
+    )
+    loaded = json.loads(json.dumps(bundle))
+    exported = apply_exported_bridge(loaded, live, **kwargs).predictions
+    independent = verify_bundle_predictions(loaded, live, **kwargs)
+    pd.testing.assert_frame_equal(
+        original, exported, check_exact=False, atol=1e-12, rtol=1e-12
+    )
+    pd.testing.assert_frame_equal(
+        original, independent, check_exact=False, atol=1e-12, rtol=1e-12
+    )
     for target, sigma in (("margin", 3.0), ("total", 4.0)):
-        rows = first[first["target"].eq(target)]
+        rows = original[original["target"].eq(target)]
         assert np.allclose(
             rows["interval_upper_95"] - rows["mean"],
             1.959963984540054 * sigma,
@@ -198,6 +237,16 @@ def test_independent_verifier_reconstructs_and_detects_prediction_perturbation()
     assert verify_predictions(
         manifest=signed, stored=produced, reconstructed=reconstructed
     )["verified"]
+    rounded_differently = reconstructed.copy()
+    rounded_differently.loc[0, "mean"] += 1e-13
+    assert verify_predictions(
+        manifest=signed, stored=produced, reconstructed=rounded_differently
+    )["verified"]
+    rounded_differently.loc[0, "mean"] += 1e-5
+    with pytest.raises(ValueError, match="mean differs"):
+        verify_predictions(
+            manifest=signed, stored=produced, reconstructed=rounded_differently
+        )
     perturbed = produced.copy()
     perturbed.loc[0, "mean"] += 0.25
     with pytest.raises(ValueError, match="differ"):
@@ -482,6 +531,18 @@ def test_application_uses_only_states_and_completed_games_before_cutoff() -> Non
     )
     assert frame.loc[0, "home_offense"] == 1.0
     assert frame.loc[0, "completed_game_stage"] == 0
+    later = schedule.iloc[[0]].assign(
+        week=6, game_id=701, kickoff_utc="2026-10-08T20:00:00Z"
+    )
+    selected, _ = build_live_application_frame(
+        pd.concat([schedule, later], ignore_index=True),
+        completed.iloc[[0]],
+        states,
+        offsets,
+        as_of="2026-09-24T00:00:00Z",
+        target_week=5,
+    )
+    assert selected["game_id"].tolist() == [700]
 
     future_final = completed.iloc[[1]].assign(kickoff_utc="2026-09-25T12:00:00Z")
     with pytest.raises(LiveForecastError, match="after the forecast cutoff"):

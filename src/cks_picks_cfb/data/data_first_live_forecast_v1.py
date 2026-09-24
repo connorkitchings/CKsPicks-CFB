@@ -89,9 +89,19 @@ def validate_config(value: Mapping[str, Any]) -> None:
         raise LiveForecastContractError("2020 must remain forbidden")
     if value.get("production_activation_authorized") is not False:
         raise LiveForecastContractError("live forecast cannot authorize activation")
+    if bool(value.get("inference_bundle_uri")) != bool(
+        value.get("inference_bundle_sha256")
+    ):
+        raise LiveForecastContractError(
+            "inference bundle URI and SHA must be pinned together"
+        )
 
 
-def validate_prediction_frame(frame: pd.DataFrame, *, run_id: str) -> None:
+def validate_prediction_frame(
+    frame: pd.DataFrame, *, run_id: str, timing_class: str = "live"
+) -> None:
+    if timing_class not in {"live", "replay"}:
+        raise LiveForecastContractError("forecast timing class is invalid")
     missing = sorted(set(LIVE_FORECAST_COLUMNS) - set(frame.columns))
     if missing:
         raise LiveForecastContractError(f"live forecast columns missing: {missing}")
@@ -105,8 +115,10 @@ def validate_prediction_frame(frame: pd.DataFrame, *, run_id: str) -> None:
         raise LiveForecastContractError("live forecast rows must be for 2026")
     if not frame["target"].isin(("margin", "total")).all():
         raise LiveForecastContractError("live forecast has an unknown target")
-    if not frame["timing_class"].eq("live").all():
-        raise LiveForecastContractError("live forecast rows must retain live timing")
+    if not frame["timing_class"].eq(timing_class).all():
+        raise LiveForecastContractError(
+            f"forecast rows must retain {timing_class} timing"
+        )
     if frame.loc[:, ["model_ref", "state_ref", "source_ref"]].isna().any().any():
         raise LiveForecastContractError("live forecast lineage refs cannot be null")
     for column in (
@@ -213,6 +225,7 @@ def live_forecast_manifest(
     population_sha256: str,
     bridge_recipes: Mapping[str, Any],
     source_cutoff: str,
+    inference_bundle_sha256: str | None = None,
 ) -> dict[str, Any]:
     if prediction_count <= 0 or not population_sha256 or not prediction_records_sha256:
         raise LiveForecastContractError(
@@ -241,6 +254,7 @@ def live_forecast_manifest(
         "population_sha256": population_sha256,
         "bridge_recipes": dict(bridge_recipes),
         "source_cutoff": source_cutoff,
+        "inference_bundle_sha256": inference_bundle_sha256,
         "production_activation_authorized": False,
     }
     return signed_payload(payload)

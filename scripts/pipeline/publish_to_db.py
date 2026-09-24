@@ -24,6 +24,7 @@ import argparse
 import hashlib
 import hmac
 import json
+import math
 import os
 import time
 from datetime import datetime, timezone
@@ -244,17 +245,18 @@ INSERT INTO prediction_runs (
     run_id, season, week, state,
     expected_games, predicted_games, lined_games,
     data_as_of, source_config, system_name, model_id,
-    code_sha, config_sha, model_bundle_sha256,
+    code_sha, config_sha, model_bundle_sha256, rating_manifest_sha256,
     artifact_uri, artifact_sha256, input_dataset_refs, validation,
-    published_at
+    published_at, evidence_class
 ) VALUES (
     %(run_id)s, %(season)s, %(week)s, %(state)s,
     %(expected_games)s, %(predicted_games)s, %(lined_games)s,
     %(data_as_of)s, %(source_config)s, %(system_name)s, %(model_id)s,
-    %(code_sha)s, %(config_sha)s, %(model_bundle_sha256)s,
+    %(code_sha)s, %(config_sha)s, %(model_bundle_sha256)s, %(rating_manifest_sha256)s,
     %(artifact_uri)s, %(artifact_sha256)s, %(input_dataset_refs)s::jsonb,
     %(validation)s::jsonb,
-    CASE WHEN %(state)s = 'published' THEN NOW() ELSE NULL END
+    CASE WHEN %(state)s = 'published' THEN NOW() ELSE NULL END,
+    %(evidence_class)s
 )
 ON CONFLICT (run_id) DO NOTHING
 """
@@ -531,6 +533,32 @@ def publish_week(
     if state not in {"preview", "published"}:
         raise ValueError(f"Unsupported initial run state: {state}")
     manifest = dict(run_manifest or {})
+    evidence_class = str(manifest.get("evidence_class", "legacy"))
+    if evidence_class not in {"legacy", "pending", "replay", "live", "missed"}:
+        raise ValueError("Unknown prediction evidence class")
+    if model_id.startswith("v5-"):
+        if not manifest or evidence_class not in {"pending", "replay"}:
+            raise ValueError("V5 publication requires an immutable classified run")
+        if manifest.get("model_id") != model_id:
+            raise ValueError("V5 model identity differs from the run manifest")
+        if evidence_class == "pending":
+            verify_v5_publication_boundary(
+                manifest=manifest,
+                config_path=Path(source_config),
+                model_id=model_id,
+                season=season,
+                week=week,
+                predictions=df,
+            )
+        else:
+            verify_v5_replay_publication_boundary(
+                manifest=manifest,
+                config_path=Path(source_config),
+                model_id=model_id,
+                season=season,
+                week=week,
+                predictions=df,
+            )
     run_id = str(manifest.get("run_id") or f"legacy-{season}-w{week}")
     if df["game_id"].isna().any() or df["game_id"].duplicated().any():
         raise ValueError("Prediction run has missing or duplicate game IDs")
@@ -590,10 +618,40 @@ def publish_week(
         "artifact_sha256": manifest.get("artifact_sha256", "legacy"),
         "input_dataset_refs": json.dumps(manifest.get("input_dataset_refs", [])),
         "validation": json.dumps(manifest.get("validation", {})),
+        "evidence_class": evidence_class,
+        "rating_manifest_sha256": manifest.get("v5_rating_replay_manifest_sha256"),
     }
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             assert_active_pipeline_lease(cur)
+            if model_id.startswith("v5-"):
+                cur.execute(
+                    "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
+                    "FROM v5_release_policy WHERE id = 1"
+                )
+                policy = cur.fetchone()
+                if (
+                    not policy
+                    or policy[0] != model_id
+                    or (
+                        evidence_class == "pending"
+                        and (season, week) < (policy[2], policy[3])
+                    )
+                ):
+                    raise RuntimeError(
+                        "V5 production release policy is absent or does not cover this slate"
+                    )
+                if (
+                    manifest.get("inference_bundle_sha256") != policy[1]
+                    or manifest.get("model_bundle_sha256") != policy[1]
+                ):
+                    raise RuntimeError(
+                        "V5 prediction artifact does not use the approved inference bundle"
+                    )
+                if evidence_class == "replay" and not manifest.get(
+                    "replay_verification_sha256"
+                ):
+                    raise RuntimeError("V5 replay lacks independent verification")
             cur.execute(
                 "SELECT state FROM prediction_runs WHERE run_id = %s", (run_id,)
             )
@@ -663,6 +721,16 @@ def publish_week(
                 count += 1
 
             if update_current:
+                if model_id.startswith("v5-"):
+                    from cks_picks_cfb.ops.public_selection import select_week_run
+
+                    select_week_run(
+                        cur,
+                        season=season,
+                        week=week,
+                        run_id=run_id,
+                        reason="validated V5 publication",
+                    )
                 cur.execute(
                     UPDATE_CURRENT_WEEK_SQL,
                     {"season": season, "week": week, "run_id": run_id},
@@ -740,6 +808,129 @@ def _load_provenance(config_path: Path | None) -> tuple[str, str, str, float]:
     except Exception as exc:
         print(f"WARNING: could not read config {config_path}: {exc}")
         return (str(config_path), default_name, default_id, default_threshold)
+
+
+def _assert_v5_artifact_matches_forecast(
+    df: pd.DataFrame, forecasts: pd.DataFrame, *, season: int, week: int
+) -> None:
+    """Reject a durable CSV whose model values differ from its verified source."""
+    source = forecasts.loc[forecasts["season"].eq(season) & forecasts["week"].eq(week)]
+    if source.duplicated(["game_id", "target"]).any():
+        raise ValueError("V5 source forecast duplicates a game and target")
+    pairs = source.pivot(index="game_id", columns="target", values=["mean", "variance"])
+    if set(pairs.get("mean", pd.DataFrame()).columns) != {"margin", "total"}:
+        raise ValueError("V5 source forecast lacks complete target pairs")
+    rows = df.set_index("game_id", verify_integrity=True)
+    if set(rows.index.astype(int)) != set(pairs.index.astype(int)):
+        raise ValueError("V5 prediction artifact differs from verified source coverage")
+    for game_id in rows.index:
+        row = rows.loc[game_id]
+        for target, mean_field, sigma_field in (
+            ("margin", "Spread Prediction", "predicted_spread_std_dev"),
+            ("total", "Total Prediction", "predicted_total_std_dev"),
+        ):
+            expected_mean = float(pairs.loc[game_id, ("mean", target)])
+            expected_sigma = math.sqrt(float(pairs.loc[game_id, ("variance", target)]))
+            actual_mean = _safe_float(row.get(mean_field))
+            actual_sigma = _safe_float(row.get(sigma_field))
+            if (
+                actual_mean is None
+                or actual_sigma is None
+                or not math.isclose(actual_mean, expected_mean, abs_tol=1e-6, rel_tol=0)
+                or not math.isclose(
+                    actual_sigma, expected_sigma, abs_tol=1e-6, rel_tol=0
+                )
+            ):
+                raise ValueError(
+                    f"V5 prediction artifact differs from verified {target} forecast for game {game_id}"
+                )
+
+
+def verify_v5_publication_boundary(
+    *,
+    manifest: dict,
+    config_path: Path,
+    model_id: str,
+    season: int,
+    week: int,
+    predictions: pd.DataFrame,
+) -> None:
+    """Reconstruct the pinned V5 source before any Neon publication write."""
+    import hashlib
+
+    from omegaconf import OmegaConf
+
+    from cks_picks_cfb.data.storage import get_storage
+    from scripts.pipeline.generate_v5_weekly_bets import verify_v5_source
+
+    if not manifest or manifest.get("evidence_class") != "pending":
+        raise ValueError("V5 live publication requires its immutable run manifest")
+    if (
+        manifest.get("model_id") != model_id
+        or int(manifest.get("year", season)) != season
+        or int(manifest.get("week", week)) != week
+    ):
+        raise ValueError("V5 publication identity differs from the requested slate")
+    if hashlib.sha256(config_path.read_bytes()).hexdigest() != manifest.get(
+        "config_sha"
+    ):
+        raise ValueError("V5 serving config differs from the prediction artifact")
+    config = OmegaConf.load(config_path)
+    if not config.get("v5_live_forecast"):
+        raise ValueError("V5 serving config lacks a forecast source")
+    _, forecasts, source_fields = verify_v5_source(
+        config.v5_live_forecast,
+        get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "production")),
+    )
+    if any(manifest.get(key) != value for key, value in source_fields.items()):
+        raise ValueError("V5 source verification differs from the prediction artifact")
+    if manifest.get("model_bundle_sha256") != source_fields["inference_bundle_sha256"]:
+        raise ValueError("V5 prediction artifact is bound to another model source")
+    _assert_v5_artifact_matches_forecast(
+        predictions, forecasts, season=season, week=week
+    )
+
+
+def verify_v5_replay_publication_boundary(
+    *,
+    manifest: dict,
+    config_path: Path,
+    model_id: str,
+    season: int,
+    week: int,
+    predictions: pd.DataFrame,
+) -> None:
+    """Reconstruct a selected replay from certified parents before a DB write."""
+    from omegaconf import OmegaConf
+
+    from cks_picks_cfb.data.storage import get_storage
+    from scripts.pipeline.generate_v5_replay_weekly_bets import (
+        verify_v5_replay_source,
+    )
+
+    if (
+        manifest.get("evidence_class") != "replay"
+        or manifest.get("model_id") != model_id
+    ):
+        raise ValueError("V5 replay publication identity differs")
+    if hashlib.sha256(config_path.read_bytes()).hexdigest() != manifest.get(
+        "config_sha"
+    ):
+        raise ValueError("V5 replay serving config differs from the artifact")
+    config = OmegaConf.load(config_path)
+    if not config.get("v5_replay"):
+        raise ValueError("V5 replay publication lacks its source config")
+    _, forecasts, source_fields = verify_v5_replay_source(
+        config.v5_replay,
+        get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "preview")),
+    )
+    if any(manifest.get(key) != value for key, value in source_fields.items()):
+        raise ValueError("V5 replay source differs from the prediction artifact")
+    if manifest.get("model_bundle_sha256") != source_fields["inference_bundle_sha256"]:
+        raise ValueError("V5 replay uses another inference bundle")
+    _assert_v5_artifact_matches_forecast(
+        predictions, forecasts, season=season, week=week
+    )
 
 
 def main() -> None:
@@ -825,6 +1016,11 @@ def main() -> None:
     else:
         df = load_predictions(csv_path)
     print(f"  loaded {len(df)} rows from CSV")
+
+    if model_id.startswith("v5-") and (not args.from_artifact or args.artifact_path):
+        raise SystemExit(
+            "V5 publication requires --from-artifact and an exact --run-id"
+        )
 
     market_quotes = None
     if run_manifest:

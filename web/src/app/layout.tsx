@@ -2,28 +2,29 @@ import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
+import { SiteNav } from "@/components/SiteNav";
 
 const siteUrl = "https://ckspicks-cfb.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "CK's Picks · CFB Model Leans",
+  title: "CK's Picks · V5 College Football Forecasts",
   description:
-    "Weekly model leans for every FBS game — spread and total edges from the CK's Picks college football model.",
+    "V5 college football forecasts, team ratings, and season performance.",
   applicationName: "CK's Picks · CFB",
   openGraph: {
-    title: "CK's Picks · CFB Model Leans",
+    title: "CK's Picks · V5 College Football Forecasts",
     description:
-      "Weekly model leans for every FBS game — spread and total edges from the CK's Picks college football model.",
+      "V5 college football forecasts, team ratings, and season performance.",
     url: siteUrl,
     siteName: "CK's Picks · CFB",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "CK's Picks · CFB Model Leans",
+    title: "CK's Picks · V5 College Football Forecasts",
     description:
-      "Weekly model leans for every FBS game — spread and total edges from the CK's Picks college football model.",
+      "V5 college football forecasts, team ratings, and season performance.",
   },
   robots: { index: true, follow: true },
 };
@@ -55,7 +56,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><SiteNav />{children}</body>
     </html>
   );
 }

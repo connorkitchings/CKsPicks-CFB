@@ -25,6 +25,7 @@ from cks_picks_cfb.data.data_first_live_forecast_v1 import (
     validate_config,
     validate_prediction_frame,
 )
+from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
@@ -36,12 +37,13 @@ from cks_picks_cfb.data.lake import (
     read_dataset,
 )
 from cks_picks_cfb.data.storage import get_storage
-from cks_picks_cfb.forecast.live import apply_frozen_bridge
+from cks_picks_cfb.forecast.live import apply_exported_bridge, apply_frozen_bridge
 from cks_picks_cfb.forecast.live_sources import (
     load_live_forecast_sources,
 )
 from cks_picks_cfb.forecast.live_verification import (
     reconstruct_predictions,
+    verify_bundle_predictions,
     verify_manifest_envelope,
     verify_predictions,
 )
@@ -122,6 +124,7 @@ def _identity(
 
 
 def _compute(args: argparse.Namespace, config: dict[str, Any], storage: Any):
+    bundle_uri = config.get("inference_bundle_uri")
     sources = load_live_forecast_sources(
         storage=storage,
         measurement_uri=args.measurement_manifest_uri,
@@ -129,20 +132,40 @@ def _compute(args: argparse.Namespace, config: dict[str, Any], storage: Any):
         schedule_uri=args.schedule_ref_uri,
         bridge_uri=str(config["bridge_manifest_uri"]),
         as_of=args.as_of,
+        include_historical_features=not bool(bundle_uri),
     )
-    result = apply_frozen_bridge(
-        sources["historical_features"],
-        sources["live_features"],
-        recipes=sources["recipes"],
-        calibration_variances=sources["variances"],
-        run_id=args.run_id,
-        model_ref=BRIDGE_MANIFEST_URI,
-        state_refs=sources["state_refs"],
-        source_ref=(
+    kwargs = {
+        "run_id": args.run_id,
+        "model_ref": BRIDGE_MANIFEST_URI,
+        "state_refs": sources["state_refs"],
+        "source_ref": (
             f"measurement:{args.measurement_manifest_uri}"
             f"|schedule:{args.schedule_ref_uri}"
         ),
-    )
+    }
+    if bundle_uri:
+        raw_bundle = storage.read_bytes(str(bundle_uri))
+        if hashlib.sha256(raw_bundle).hexdigest() != config["inference_bundle_sha256"]:
+            raise LiveForecastRunError("pinned V5 inference bundle checksum differs")
+        bundle = json.loads(raw_bundle)
+        verify_signed_payload(bundle, label="V5 inference bundle")
+        if (
+            bundle.get("bridge_manifest_uri") != BRIDGE_MANIFEST_URI
+            or bundle.get("bridge_manifest_raw_sha256")
+            != sources["parents"]["bridge_raw_sha256"]
+        ):
+            raise LiveForecastRunError(
+                "V5 inference bundle has another accepted bridge parent"
+            )
+        result = apply_exported_bridge(bundle, sources["live_features"], **kwargs)
+    else:
+        result = apply_frozen_bridge(
+            sources["historical_features"],
+            sources["live_features"],
+            recipes=sources["recipes"],
+            calibration_variances=sources["variances"],
+            **kwargs,
+        )
     validate_prediction_frame(result.predictions, run_id=args.run_id)
     membership = sources["live_features"].loc[:, ["season", "week", "game_id"]]
     return (
@@ -174,6 +197,28 @@ def preflight(
     sources, computation, population_sha = _compute(args, config, storage)
     frame = computation.predictions
     digest = canonical_frame_digest(frame, columns=LIVE_FORECAST_COLUMNS)
+    independent = None
+    if bundle_uri := config.get("inference_bundle_uri"):
+        bundle = json.loads(storage.read_bytes(str(bundle_uri)))
+        independent = verify_predictions(
+            manifest={
+                "identity": {"run_id": args.run_id},
+                "row_count": len(frame),
+                "prediction_records_sha256": digest,
+            },
+            stored=frame,
+            reconstructed=verify_bundle_predictions(
+                bundle,
+                sources["live_features"],
+                run_id=args.run_id,
+                model_ref=BRIDGE_MANIFEST_URI,
+                state_refs=sources["state_refs"],
+                source_ref=(
+                    f"measurement:{args.measurement_manifest_uri}"
+                    f"|schedule:{args.schedule_ref_uri}"
+                ),
+            ),
+        )
     return {
         "state": "dry_run",
         "identity": identity,
@@ -181,6 +226,7 @@ def preflight(
         "prediction_records_sha256": digest,
         "population_sha256": population_sha,
         "bridge_recipes": dict(computation.recipes),
+        "independent_bundle_verification": independent,
         "partitions": _partition_evidence(frame),
         "production_activation_authorized": False,
     }
@@ -230,6 +276,22 @@ def verify(
         raise LiveForecastRunError(
             "live forecast identity differs from the requested code, config, or parents"
         )
+    bundle_uri = config.get("inference_bundle_uri")
+    bundle_sha = config.get("inference_bundle_sha256")
+    if bundle_uri:
+        raw_bundle = storage.read_bytes(str(bundle_uri))
+        if hashlib.sha256(raw_bundle).hexdigest() != bundle_sha:
+            raise LiveForecastRunError(
+                "live verifier inference bundle checksum differs"
+            )
+        bundle = json.loads(raw_bundle)
+        verify_signed_payload(bundle, label="V5 inference bundle")
+        if bundle.get("bridge_manifest_raw_sha256") != (
+            manifest.get("parents") or {}
+        ).get("bridge_raw_sha256"):
+            raise LiveForecastRunError("live verifier inference bundle bridge differs")
+    if manifest.get("inference_bundle_sha256") != bundle_sha:
+        raise LiveForecastRunError("live forecast manifest inference bundle differs")
     parents = manifest["parents"]
     for uri_name, checksum_name, arg_value in (
         ("measurement_uri", "measurement_raw_sha256", args.measurement_manifest_uri),
@@ -249,6 +311,7 @@ def verify(
         schedule_uri=args.schedule_ref_uri,
         bridge_uri=str(config["bridge_manifest_uri"]),
         as_of=str(identity["as_of"]),
+        include_historical_features=not bool(bundle_uri),
     )
     if parents != sources["parents"]:
         raise LiveForecastRunError(
@@ -264,24 +327,33 @@ def verify(
     ):
         raise LiveForecastRunError("live forecast schedule population digest differs")
     stored = _load_stored_predictions(storage, manifest)
-    reconstructed = reconstruct_predictions(
-        sources["historical_features"],
-        sources["live_features"],
-        recipes=manifest["bridge_recipes"],
-        variances=sources["variances"],
-        run_id=str(identity["run_id"]),
-        model_ref=BRIDGE_MANIFEST_URI,
-        state_refs=sources["state_refs"],
-        source_ref=(
+    verification_inputs = {
+        "run_id": str(identity["run_id"]),
+        "model_ref": BRIDGE_MANIFEST_URI,
+        "state_refs": sources["state_refs"],
+        "source_ref": (
             f"measurement:{args.measurement_manifest_uri}"
             f"|schedule:{args.schedule_ref_uri}"
         ),
-    )
+    }
+    if bundle_uri:
+        reconstructed = verify_bundle_predictions(
+            bundle, sources["live_features"], **verification_inputs
+        )
+    else:
+        reconstructed = reconstruct_predictions(
+            sources["historical_features"],
+            sources["live_features"],
+            recipes=manifest["bridge_recipes"],
+            variances=sources["variances"],
+            **verification_inputs,
+        )
     prediction_result = verify_predictions(
         manifest=manifest, stored=stored, reconstructed=reconstructed
     )
     return {
         "verified": True,
+        "inference_bundle_sha256": bundle_sha,
         "manifest_uri": args.verify_manifest_uri,
         "identity": verified_envelope,
         **prediction_result,
@@ -381,6 +453,7 @@ def apply(
         population_sha256=population_sha,
         bridge_recipes=computation.recipes,
         source_cutoff=args.as_of,
+        inference_bundle_sha256=config.get("inference_bundle_sha256"),
     )
     _immutable_json(storage, manifest_uri, manifest)
     return {"state": "applied", "manifest_uri": manifest_uri, "row_count": len(frame)}

@@ -22,6 +22,49 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 import publish_to_db  # noqa: E402
 
+
+def test_v5_publication_rejects_modified_forecast_values():
+    verified = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "week": 5,
+                "game_id": 101,
+                "target": "margin",
+                "mean": 3.0,
+                "variance": 4.0,
+            },
+            {
+                "season": 2026,
+                "week": 5,
+                "game_id": 101,
+                "target": "total",
+                "mean": 47.0,
+                "variance": 9.0,
+            },
+        ]
+    )
+    rows = pd.DataFrame(
+        [
+            {
+                "game_id": 101,
+                "Spread Prediction": 3.0,
+                "Total Prediction": 47.0,
+                "predicted_spread_std_dev": 2.0,
+                "predicted_total_std_dev": 3.0,
+            }
+        ]
+    )
+    publish_to_db._assert_v5_artifact_matches_forecast(
+        rows, verified, season=2026, week=5
+    )
+    rows.loc[0, "Spread Prediction"] = 8.0
+    with pytest.raises(ValueError, match="differs from verified margin"):
+        publish_to_db._assert_v5_artifact_matches_forecast(
+            rows, verified, season=2026, week=5
+        )
+
+
 # ---------------------------------------------------------------------------
 # _safe_float
 # ---------------------------------------------------------------------------

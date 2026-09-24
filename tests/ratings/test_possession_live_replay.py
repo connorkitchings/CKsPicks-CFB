@@ -20,6 +20,7 @@ from cks_picks_cfb.ratings.possession_live_replay import (
     FROZEN_CANDIDATE,
     LiveReplayError,
     LiveReplayInputs,
+    build_current_team_states,
     build_live_replay,
 )
 from scripts.research import run_data_first_possession_rating_replay as runner
@@ -109,6 +110,135 @@ def test_replay_keeps_frozen_candidate_and_continuous_week_history() -> None:
     week_one = result.rating_states[result.rating_states["week"].eq(1)]
     assert week_one["completed_games"].eq(1).all()
     assert week_one["evidence_weight"].gt(0).all()
+
+
+def test_current_state_includes_latest_completed_game() -> None:
+    inputs = _inputs()
+    replay = build_live_replay(inputs)
+    terminal = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "team": team,
+                "measurement_id": "ppp",
+                "unit_role": role,
+                "adjustment_iteration": 4,
+                "adjusted_value": 5.0 if team == "Alpha" else 1.0,
+                "primary_exposure": 30.0,
+                "timing_class": "live",
+            }
+            for team in ("Alpha", "Beta")
+            for role in ("offense", "defense")
+        ]
+    )
+    current = build_current_team_states(
+        population=inputs.population,
+        observations=inputs.observations,
+        snapshots=inputs.snapshots,
+        terminal=terminal,
+        priors=replay.priors,
+        historical_terminal=inputs.historical_terminal,
+        as_of="2026-09-04T01:00:00Z",
+        target_week=3,
+    )
+    assert set(current["game_id"]) == {102}
+    previous = replay.team_states[replay.team_states["game_id"].eq(102)].set_index(
+        "team"
+    )
+    now = current.set_index("team")
+    assert now.loc["Alpha", "offense_rating"] != previous.loc["Alpha", "offense_rating"]
+    assert now.loc["Beta", "defense_rating"] != previous.loc["Beta", "defense_rating"]
+    verification_inputs = {
+        "population": inputs.population,
+        "observations": inputs.observations,
+        "snapshots": inputs.snapshots,
+        "terminal": terminal,
+        "priors": replay.priors,
+        "historical_terminal": inputs.historical_terminal,
+        "target_week": 3,
+        "target_teams": {"Alpha", "Beta"},
+    }
+    verifier.verify_current_state(current=current, **verification_inputs)
+    altered = current.copy()
+    altered.loc[altered["team"].eq("Alpha"), "offense_rating"] += 0.1
+    with pytest.raises(verifier.IndependentReplayError, match="differs"):
+        verifier.verify_current_state(current=altered, **verification_inputs)
+    with pytest.raises(LiveReplayError, match="availability buffer"):
+        build_current_team_states(
+            population=inputs.population,
+            observations=inputs.observations,
+            snapshots=inputs.snapshots,
+            terminal=terminal,
+            priors=replay.priors,
+            historical_terminal=inputs.historical_terminal,
+            as_of="2026-09-03T20:00:00Z",
+            target_week=3,
+        )
+
+
+def test_current_state_rejects_future_or_foreign_observations() -> None:
+    inputs = _inputs()
+    replay = build_live_replay(inputs)
+    terminal = inputs.snapshots[inputs.snapshots["as_of_game_id"].eq(102)].copy()
+    terminal["primary_exposure"] = 20.0
+    kwargs = {
+        "population": inputs.population,
+        "snapshots": inputs.snapshots,
+        "terminal": terminal,
+        "priors": replay.priors,
+        "historical_terminal": inputs.historical_terminal,
+        "as_of": "2026-09-04T01:00:00Z",
+        "target_week": 3,
+    }
+    future = inputs.observations.iloc[[0]].copy()
+    future["game_id"] = 999
+    future["kickoff_utc"] = "2026-12-01T18:00:00Z"
+    with pytest.raises(LiveReplayError, match="ineligible source game"):
+        build_current_team_states(
+            **kwargs,
+            observations=pd.concat([inputs.observations, future], ignore_index=True),
+        )
+    foreign = inputs.observations.iloc[[0]].copy()
+    foreign["team"] = "Unrelated"
+    with pytest.raises(LiveReplayError, match="not a game participant"):
+        build_current_team_states(
+            **kwargs,
+            observations=pd.concat([inputs.observations, foreign], ignore_index=True),
+        )
+    with pytest.raises(LiveReplayError, match="target-week"):
+        build_current_team_states(
+            population=inputs.population,
+            observations=inputs.observations,
+            snapshots=inputs.snapshots,
+            terminal=terminal,
+            priors=replay.priors,
+            historical_terminal=inputs.historical_terminal,
+            as_of="2026-09-04T01:00:00Z",
+            target_week=2,
+        )
+
+
+def test_asof_state_matches_accepted_next_pregame_equation() -> None:
+    inputs = _inputs()
+    replay = build_live_replay(inputs)
+    terminal = inputs.snapshots[inputs.snapshots["as_of_game_id"].eq(102)].copy()
+    terminal["primary_exposure"] = 20.0
+    current = build_current_team_states(
+        population=inputs.population[inputs.population["week"].lt(2)],
+        observations=inputs.observations[inputs.observations["game_id"].lt(102)],
+        snapshots=inputs.snapshots[inputs.snapshots["as_of_game_id"].lt(102)],
+        terminal=terminal,
+        priors=replay.priors,
+        historical_terminal=inputs.historical_terminal,
+        as_of="2026-09-03T12:00:00Z",
+        target_week=2,
+    )
+    expected = replay.team_states[replay.team_states["game_id"].eq(102)]
+    for team in ("Alpha", "Beta"):
+        actual_row = current[current["team"].eq(team)].iloc[0]
+        expected_row = expected[expected["team"].eq(team)].iloc[0]
+        for key in ("offense_rating", "defense_rating", "overall_variance"):
+            assert actual_row[key] == pytest.approx(expected_row[key])
 
 
 def test_future_snapshot_cannot_change_an_earlier_state() -> None:

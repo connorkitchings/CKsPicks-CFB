@@ -1,4 +1,4 @@
-import { desc, eq, asc, and, inArray, lte, sql } from "drizzle-orm";
+import { eq, asc, and, inArray, lte, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 
@@ -43,6 +43,7 @@ export type PredictionGame = BaseGame & {
   highConfidence: boolean;
   systemName: string | null;
   modelId: string | null;
+  evidenceClass?: "legacy" | "pending" | "replay" | "live" | "missed";
   regime: "preseason" | "one_game" | "two_games" | "three_games" | "game_1" | "game_2" | "game_3" | "game_4" | "established" | null;
   homeCompletedGames: number;
   awayCompletedGames: number;
@@ -116,44 +117,37 @@ export type RunSummary = {
   expectedGames: number;
   predictedGames: number;
   linedGames: number;
+  evidenceClass: "legacy" | "pending" | "replay" | "live" | "missed";
 };
 
-/** Active run for the live week; latest immutable frozen/scored run historically. */
+/** One explicitly selected public run; missing selection never guesses. */
 export const getRunForWeek = cache(async (season: number, week: number): Promise<RunSummary | null> => {
-  const current = await getCurrentWeek();
-  if (current?.season === season && current.week === week && current.activeRunId) {
-    const rows = await db.select().from(schema.predictionRuns)
-      .where(eq(schema.predictionRuns.runId, current.activeRunId)).limit(1);
-    return (rows[0] as RunSummary | undefined) ?? null;
-  }
-  const rows = await db.select().from(schema.predictionRuns)
+  const rows = await db.select().from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      eq(schema.siteWeekSelections.week, week),
       eq(schema.predictionRuns.season, season),
       eq(schema.predictionRuns.week, week),
-      inArray(schema.predictionRuns.state, ["frozen", "scored"]),
+      sql`${schema.predictionRuns.modelId} LIKE 'v5-%'`,
+      inArray(schema.predictionRuns.evidenceClass, ["pending", "replay", "live"]),
     ))
-    .orderBy(desc(schema.predictionRuns.createdAt)).limit(1);
-  return (rows[0] as RunSummary | undefined) ?? null;
+    .limit(1);
+  return (rows[0]?.prediction_runs as RunSummary | undefined) ?? null;
 });
 
 /** Distinct weeks with published games for a season, ascending. Used by the week nav. */
 export async function getAvailableWeeks(season: number): Promise<number[]> {
-  const [runRows, legacyRows, current] = await Promise.all([db
-    .select({ week: schema.predictionRuns.week })
-    .from(schema.predictionRuns)
+  const rows = await db.select({ week: schema.siteWeekSelections.week })
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .where(and(
-      eq(schema.predictionRuns.season, season),
-      inArray(schema.predictionRuns.state, ["frozen", "scored"]),
+      eq(schema.siteWeekSelections.season, season),
+      sql`${schema.predictionRuns.modelId} LIKE 'v5-%'`,
+      inArray(schema.predictionRuns.evidenceClass, ["pending", "replay", "live"]),
     ))
-    .groupBy(schema.predictionRuns.week), db
-    .select({ week: schema.games.week })
-    .from(schema.games)
-    .where(eq(schema.games.season, season))
-    .groupBy(schema.games.week)
-    .orderBy(asc(schema.games.week)), getCurrentWeek()]);
-  const weeks = [...runRows, ...legacyRows].map((r) => r.week);
-  if (current?.season === season && current.activeRunId) weeks.push(current.week);
-  return [...new Set(weeks)].sort((a, b) => a - b);
+    .orderBy(asc(schema.siteWeekSelections.week));
+  return rows.map((row) => row.week);
 }
 
 type CompletedGameRow = {
@@ -301,10 +295,13 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,
+        evidenceClass: run.evidenceClass,
       })),
       completed,
     ) as PredictionGame[];
   }
+
+  if (season === 2026) return getMarketGamesForWeek(season, week);
 
   // Temporary compatibility path for rows published before run versioning.
   const rows = await db
@@ -380,7 +377,7 @@ export async function getMarketGamesForWeek(
           AND pg.target = 'spread'
         LIMIT 1
       )`
-    : schema.gameResults.spreadResult;
+    : season === 2026 ? sql<"win" | "loss" | "push" | null>`NULL` : schema.gameResults.spreadResult;
   const totalResult = run
     ? sql<"win" | "loss" | "push" | null>`(
         SELECT pg.result FROM prediction_grades pg
@@ -389,7 +386,7 @@ export async function getMarketGamesForWeek(
           AND pg.target = 'total'
         LIMIT 1
       )`
-    : schema.gameResults.totalResult;
+    : season === 2026 ? sql<"win" | "loss" | "push" | null>`NULL` : schema.gameResults.totalResult;
   const rows = await db
     .select({
       gameId: schema.games.gameId,
@@ -446,19 +443,16 @@ export const getSystemStatsThroughWeek = cache(async (
       runId: schema.predictionRuns.runId,
       week: schema.predictionRuns.week,
     })
-    .from(schema.predictionRuns)
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .where(
       and(
-        eq(schema.predictionRuns.season, season),
-        lte(schema.predictionRuns.week, throughWeek),
+        eq(schema.siteWeekSelections.season, season),
+        lte(schema.siteWeekSelections.week, throughWeek),
         eq(schema.predictionRuns.state, "scored"),
       ),
     )
-    .orderBy(
-      asc(schema.predictionRuns.week),
-      sql`${schema.predictionRuns.scoredAt} DESC NULLS LAST`,
-      desc(schema.predictionRuns.createdAt),
-    );
+    .orderBy(asc(schema.siteWeekSelections.week));
 
   const selectedWeeks = new Map<number, string>();
   for (const candidate of candidates) {

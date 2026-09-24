@@ -187,6 +187,16 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
                 )
             _ok("V5 live forecast independently reconstructed from exact parents.")
             return
+        if cfg.get("v5_replay"):
+            from scripts.pipeline.generate_v5_replay_weekly_bets import (
+                verify_v5_replay_source,
+            )
+
+            manifest, _, _ = verify_v5_replay_source(cfg.v5_replay, storage)
+            if manifest.get("evidence_class") != "replay":
+                raise ValueError("V5 replay evidence class differs")
+            _ok("V5 replay independently reconstructed from exact parents.")
+            return
         if cfg.get("model_bundle_v2") and cfg.get("model_bundle_v3"):
             raise ValueError(
                 "Weekly configuration may select only one model bundle version"

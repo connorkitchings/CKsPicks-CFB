@@ -1,6 +1,8 @@
 schema_version: data_first_live_forecast_config_v1
 environment: preview
 bridge_manifest_uri: artifacts/research/data-first-football-v1/forecasts/runs/forecast-v1-20260921-5afd577-11c/forecast-manifest.json
+inference_bundle_uri: artifacts/research/data-first-football-v1/forecasts/inference/f80b63ef01211bc9679b4b65769a3f16c7302c06cfa2b7806f6b8d830f19da0b/bundle.json
+inference_bundle_sha256: f80b63ef01211bc9679b4b65769a3f16c7302c06cfa2b7806f6b8d830f19da0b
 output_root: artifacts/research/data-first-football-v1/forecasts/live-runs
 season: 2026
 horizon: expanding

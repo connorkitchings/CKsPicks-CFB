@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Mapping
 from typing import Any
 
@@ -38,6 +39,7 @@ def build_v5_serving_rows(
     spread_threshold: float,
     spread_threshold_high: float,
     total_threshold: float,
+    timing_class: str = "live",
 ) -> pd.DataFrame:
     """Require one pregame margin/total pair for every scheduled serving game.
 
@@ -47,7 +49,9 @@ def build_v5_serving_rows(
     if year != 2026 or not forecast_manifest_sha256 or not forecast_run_id:
         raise V5ServingError("V5 serving requires a bound 2026 forecast identity")
     try:
-        validate_prediction_frame(forecasts, run_id=forecast_run_id)
+        validate_prediction_frame(
+            forecasts, run_id=forecast_run_id, timing_class=timing_class
+        )
     except LiveForecastContractError as exc:
         raise V5ServingError(str(exc)) from exc
     cutoff = pd.Timestamp(as_of)
@@ -65,7 +69,7 @@ def build_v5_serving_rows(
     ):
         raise V5ServingError("serving schedule is empty or duplicates a game")
     kickoff = pd.to_datetime(slate["start_date"], utc=True, errors="raise")
-    if kickoff.le(cutoff).any():
+    if timing_class == "live" and kickoff.le(cutoff).any():
         raise V5ServingError("V5 serving schedule includes a game at or before cutoff")
     source_required = {
         "season",
@@ -172,8 +176,14 @@ def v5_serving_manifest_fields(
     if verification.get("verified") is not True:
         raise V5ServingError("V5 source forecast lacks independent verification")
     digest = hashlib.sha256(manifest_raw).hexdigest()
+    source = json.loads(manifest_raw)
+    rating_digest = (source.get("parents") or {}).get("rating_replay_raw_sha256")
+    if not isinstance(rating_digest, str) or len(rating_digest) != 64:
+        raise V5ServingError("V5 source forecast lacks certified rating lineage")
     return {
         "v5_live_forecast_manifest_uri": manifest_uri,
         "v5_live_forecast_manifest_sha256": digest,
         "v5_verification_records_sha256": verification.get("records_sha256"),
+        "v5_rating_replay_manifest_sha256": rating_digest,
+        "inference_bundle_sha256": (verification.get("inference_bundle_sha256")),
     }

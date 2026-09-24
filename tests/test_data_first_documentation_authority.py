@@ -59,20 +59,10 @@ def test_current_guide_separates_model_completion_and_site_activation():
     assert "they do not establish that v5 is superior to v4" in text
 
 
-def test_only_live_contracts_remain_in_current_plans():
-    names = {
-        path.name
-        for path in (ROOT / "docs/plans").rglob("*v5*.md")
-        if path.name != "index.md"
-    }
-    assert names == {
-        "06-v5-prospective-evidence-and-recommendation.md",
-        "07-v5-2026-repair-and-measurement-extension.md",
-        "08-v5-2026-rating-state-replay.md",
-        "09-v5-2026-forecast-and-readiness.md",
-        "04-v5-authority-simplification-and-site-cutover.md",
-    }
+def test_current_plan_index_points_to_the_v5_authority():
     index = _plain(INDEX.read_text())
+    assert "v5_status.md" in INDEX.read_text()
+    assert "v5 product transformation" in index
     assert "v5 contract archive" in index
     assert "six slates are not a launch prerequisite" in index
     assert "week 4 refresh awaits stabilized finals" in index

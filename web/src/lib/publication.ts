@@ -3,9 +3,9 @@
  * to the smallest 2026 release: Week 0 only. Vercel environment values may
  * expand the release after the next slate has passed preview readiness.
  */
-const ALLOWED_SEASONS = [2025, 2026];
+const ALLOWED_SEASONS = [2026];
 const DEFAULT_SEASON = 2026;
-const DEFAULT_WEEKS = [0];
+const DEFAULT_WEEKS = Array.from({ length: 17 }, (_, week) => week);
 
 export type PublicationMode = "market" | "predictions";
 
@@ -21,26 +21,15 @@ function parseSeason(value: string | undefined): number {
     : DEFAULT_SEASON;
 }
 
-function parseWeeks(value: string | undefined): number[] {
-  if (!value) return DEFAULT_WEEKS;
-
-  const weeks = value
-    .split(",")
-    .map((item) => Number(item.trim()))
-    .filter((week) => Number.isInteger(week) && week >= 0 && week <= 16);
-
-  return weeks.length > 0
-    ? [...new Set(weeks)].sort((a, b) => a - b)
-    : DEFAULT_WEEKS;
-}
-
 export function isAllowedSeason(season: number): boolean {
   return ALLOWED_SEASONS.includes(season);
 }
 
 export const publicationScope = Object.freeze({
   season: parseSeason(process.env.CFB_PUBLICATION_SEASON),
-  weeks: parseWeeks(process.env.CFB_PUBLICATION_WEEKS),
+  // Explicit public selections in Neon govern available weeks. A stale
+  // deployment's V4 week allowlist cannot hide supported V5 history.
+  weeks: DEFAULT_WEEKS,
   mode: parsePublicationMode(process.env.CFB_PUBLICATION_MODE),
   allowedSeasons: ALLOWED_SEASONS,
 });

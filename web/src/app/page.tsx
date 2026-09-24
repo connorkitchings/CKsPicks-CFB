@@ -2,16 +2,12 @@ import {
   getCurrentWeek,
   getGamesForWeek,
   getMarketGamesForWeek,
-  getSystemStatsThroughWeek,
-  getHistoricalModelContext,
   getAvailableWeeks,
   type Game,
-  type HistoricalModelContext,
-  type Stats,
 } from "@/lib/queries";
+import { getV5Performance, type Performance } from "@/lib/v5";
 import { Header, Footer } from "@/components/Header";
-import { RecordBanner } from "@/components/RecordBanner";
-import { HistoricalModelContext as HistoricalModelContextBanner } from "@/components/HistoricalModelContext";
+import { V5PerformanceBanner } from "@/components/V5PerformanceBanner";
 import { WeekNav } from "@/components/WeekNav";
 import { GamesList } from "@/components/GamesList";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
@@ -24,8 +20,7 @@ type SearchParams = Promise<{ season?: string; week?: string; mode?: string }>;
 
 /**
  * Resolve the target season and week from URL params and publication scope.
- * URL params can select an allowed season and week; invalid values fall back
- * to defaults. Historical seasons (2025) show all available weeks.
+ * A valid requested week remains the target even when it has no V5 selection.
  */
 async function resolveTarget(
   searchParams: SearchParams,
@@ -68,14 +63,18 @@ async function resolveTarget(
     ? allAvailableWeeks
     : allAvailableWeeks.filter((week) => publicationScope.weeks.includes(week));
 
-  const requestedWeek = params.week ? Number(params.week) : activeWeek;
+  const parsedWeek = params.week === undefined ? null : Number(params.week);
+  const requestedWeek = parsedWeek !== null
+    && Number.isInteger(parsedWeek)
+    && parsedWeek >= 0
+    && publicationScope.weeks.includes(parsedWeek)
+    ? parsedWeek
+    : null;
 
-  let week = availableWeeks.includes(requestedWeek ?? -1)
-    ? requestedWeek!
-    : activeWeek ?? availableWeeks[availableWeeks.length - 1] ?? (isHistoricalSeason ? allAvailableWeeks[0] : publicationScope.weeks[0]);
-  if (availableWeeks.length > 0 && !availableWeeks.includes(week)) {
-    week = availableWeeks[availableWeeks.length - 1];
-  }
+  const week = requestedWeek
+    ?? (activeWeek !== null && availableWeeks.includes(activeWeek) ? activeWeek : null)
+    ?? availableWeeks[availableWeeks.length - 1]
+    ?? (isHistoricalSeason ? allAvailableWeeks[0] : publicationScope.weeks[0]);
 
   return {
     season: season ?? 0,
@@ -99,34 +98,45 @@ export default async function Home({
     && params.mode === "predictions"
     ? "predictions"
     : publicationScope.mode;
-  const { season, week, weeks, currentUpdatedAt } = await resolveTarget(
-    Promise.resolve(params),
-  );
+  let targetError = false;
+  let target: Awaited<ReturnType<typeof resolveTarget>>;
+  try {
+    target = await resolveTarget(Promise.resolve(params));
+  } catch (error) {
+    console.error("Weekly target query failed", error);
+    targetError = true;
+    const requested = Number(params.week);
+    target = {
+      season: publicationScope.season,
+      week: Number.isInteger(requested) && publicationScope.weeks.includes(requested)
+        ? requested : publicationScope.weeks[0],
+      weeks: [], activeSeason: null, activeWeek: null, currentUpdatedAt: null,
+    };
+  }
+  const { season, week, weeks, currentUpdatedAt } = target;
 
   let games: Game[] = [];
-  let stats: Stats | null = null;
-  let historicalContext: HistoricalModelContext | null = null;
-  let dbError: string | null = null;
+  let performance: Performance[] = [];
+  let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
   let runState: string | null = null;
+  let evidenceClass: "legacy" | "pending" | "replay" | "live" | "missed" | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
     const fixture = uiFixture(publicationMode, week);
     games = fixture.games;
-    stats = fixture.stats;
-    historicalContext = fixture.historicalContext;
     if (games[0]?.publicationMode === "predictions") {
       systemName = games[0].systemName;
       runState = games[0].runState;
+      evidenceClass = games[0].evidenceClass ?? null;
     }
-  } else {
+  } else if (!targetError) {
     try {
       if (season > 0 && week >= 0) {
         if (publicationMode === "predictions") {
-        [games, stats, historicalContext] = await Promise.all([
+        [games, performance] = await Promise.all([
           getGamesForWeek(season, week),
-          getSystemStatsThroughWeek(season, week),
-          getHistoricalModelContext(season - 1, week),
+          getV5Performance(season),
         ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
@@ -134,6 +144,7 @@ export default async function Home({
         if (games.length > 0 && games[0].publicationMode === "predictions") {
           systemName = games[0].systemName;
           runState = games[0].runState;
+          evidenceClass = games[0].evidenceClass ?? null;
         }
       }
     } catch (err) {
@@ -166,6 +177,7 @@ export default async function Home({
         systemName={systemName}
         updatedAt={updatedAt}
         runState={runState}
+        evidenceClass={evidenceClass}
         publicationMode={publicationMode}
         allowedSeasons={publicationScope.allowedSeasons}
       />
@@ -173,11 +185,7 @@ export default async function Home({
       <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
         {dbError && (
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
-            <strong>Database not connected.</strong> Set <code>DATABASE_URL</code>{" "}
-            (see <code>web/.env.example</code>) and run the migration in{" "}
-            <code>web/db/migrations/0001_init.sql</code>. Then publish a week with{" "}
-            <code>scripts/pipeline/publish_to_db.py</code>.
-            <p className="mt-2">{dbError}</p>
+            Forecast data is temporarily unavailable. Please try again shortly.
           </div>
         )}
 
@@ -190,13 +198,7 @@ export default async function Home({
 
         {season > 0 && (
           <>
-            {stats && (
-              <RecordBanner season={season} week={week} stats={stats} />
-            )}
-
-            {publicationMode === "predictions" && historicalContext && (
-              <HistoricalModelContextBanner context={historicalContext} selectedWeek={week} />
-            )}
+            {publicationMode === "predictions" && <V5PerformanceBanner performance={performance} />}
 
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />

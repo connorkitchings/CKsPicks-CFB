@@ -38,6 +38,7 @@ def build_live_application_frame(
     offsets: pd.DataFrame,
     *,
     as_of: str,
+    target_week: int | None = None,
 ) -> tuple[pd.DataFrame, dict[int, str]]:
     """Join each scheduled 2026 game to only the latest earlier team state.
 
@@ -91,6 +92,8 @@ def build_live_application_frame(
         games["kickoff_utc"], utc=True, errors="raise"
     )
     games = games[games["kickoff_utc"].gt(cutoff)].copy()
+    if target_week is not None:
+        games = games[games["week"].eq(target_week)].copy()
     if games.empty:
         raise LiveForecastError("no future eligible 2026 games remain after as-of")
     if games.duplicated(["season", "game_id"]).any():
@@ -187,6 +190,215 @@ def _design(train: pd.DataFrame, test: pd.DataFrame) -> tuple[np.ndarray, np.nda
     return x_train.loc[:, varying].to_numpy(float), x_test.loc[:, varying].to_numpy(
         float
     )
+
+
+def export_frozen_bridge(
+    historical_features: pd.DataFrame,
+    *,
+    recipes: Mapping[str, Mapping[str, object]],
+    calibration_variances: Mapping[str, float],
+) -> dict[str, object]:
+    """Fit only the accepted through-2025 recipes for immutable inference."""
+    required = {
+        "season",
+        "actual_margin",
+        "actual_total",
+        "offset_margin",
+        "offset_total",
+        *FEATURES,
+    }
+    if required - set(historical_features):
+        raise LiveForecastError("historical bundle training frame is incomplete")
+    if historical_features["season"].isin((2020, 2026)).any() or set(
+        historical_features["season"].astype(int)
+    ) - set(DEVELOPMENT_SEASONS):
+        raise LiveForecastError("bundle training includes a forbidden season")
+    if set(recipes) != {"margin", "total"} or set(calibration_variances) != {
+        "margin",
+        "total",
+    }:
+        raise LiveForecastError("bundle needs both frozen target recipes and variances")
+    training = historical_features[
+        historical_features["season"].isin(DEVELOPMENT_SEASONS)
+    ]
+    if training.empty:
+        raise LiveForecastError("bundle training population is empty")
+    targets: dict[str, object] = {}
+    for target in ("margin", "total"):
+        recipe = recipes[target]
+        if recipe.get("head") not in {"reference", "challenger"}:
+            raise LiveForecastError("bundle recipe has an unknown head")
+        alpha = float(recipe.get("final_alpha", recipe.get("alpha", float("nan"))))
+        variance = float(calibration_variances[target])
+        if (
+            not np.isfinite(alpha)
+            or alpha <= 0
+            or not np.isfinite(variance)
+            or variance <= 0
+        ):
+            raise LiveForecastError("bundle recipe has invalid alpha or variance")
+        actual = f"actual_{target}"
+        offset = f"offset_{target}"
+        clean = training.replace([np.inf, -np.inf], np.nan).dropna(
+            subset=[actual, offset, *FEATURES]
+        )
+        center = clean.loc[:, FEATURES].mean()
+        scale = clean.loc[:, FEATURES].std(ddof=0).clip(lower=SCALING_FLOOR)
+        standardized = (clean.loc[:, FEATURES] - center) / scale
+        varying = [
+            name for name in FEATURES if standardized[name].nunique(dropna=False) > 1
+        ]
+        if not varying:
+            raise LiveForecastError("bundle has no varying feature")
+        model = Ridge(alpha=alpha).fit(
+            standardized.loc[:, varying].to_numpy(float),
+            clean[actual].to_numpy(float) - clean[offset].to_numpy(float),
+        )
+        targets[target] = {
+            "head": str(recipe["head"]),
+            "alpha": alpha,
+            "feature_names": varying,
+            "center": {name: float(center[name]) for name in varying},
+            "scale": {name: float(scale[name]) for name in varying},
+            "coefficients": [float(value) for value in model.coef_],
+            "intercept": float(model.intercept_),
+            "calibration_variance": variance,
+            "training_rows": int(len(clean)),
+        }
+    return {
+        "schema_version": "v5_inference_bundle_v1",
+        "development_seasons": list(DEVELOPMENT_SEASONS),
+        "feature_order": list(FEATURES),
+        "targets": targets,
+    }
+
+
+def apply_exported_bridge(
+    bundle: Mapping[str, object],
+    live_features: pd.DataFrame,
+    *,
+    run_id: str,
+    model_ref: str,
+    state_refs: Mapping[int, str],
+    source_ref: str,
+    timing_class: str = "live",
+) -> LiveForecastComputation:
+    """Predict with exported coefficients, with no historical refit."""
+    if bundle.get("schema_version") != "v5_inference_bundle_v1" or bundle.get(
+        "feature_order"
+    ) != list(FEATURES):
+        raise LiveForecastError("inference bundle schema or feature order changed")
+    if bundle.get("development_seasons") != list(DEVELOPMENT_SEASONS):
+        raise LiveForecastError("inference bundle training window changed")
+    if (
+        live_features.empty
+        or not live_features["season"].eq(2026).all()
+        or live_features.duplicated(["season", "game_id"]).any()
+    ):
+        raise LiveForecastError("bundle application requires unique live 2026 games")
+    if not all((run_id, model_ref, source_ref)):
+        raise LiveForecastError("bundle application lacks lineage refs")
+    if timing_class not in {"live", "replay"}:
+        raise LiveForecastError("bundle application timing class is invalid")
+    targets = bundle.get("targets")
+    if not isinstance(targets, Mapping) or set(targets) != {"margin", "total"}:
+        raise LiveForecastError("bundle lacks paired target models")
+    predictions: list[pd.DataFrame] = []
+    used_recipes: dict[str, Mapping[str, object]] = {}
+    for target in ("margin", "total"):
+        spec = targets[target]
+        if not isinstance(spec, Mapping):
+            raise LiveForecastError("bundle target is malformed")
+        names = list(spec["feature_names"])
+        if (
+            not names
+            or any(name not in FEATURES for name in names)
+            or len(names) != len(spec["coefficients"])
+        ):
+            raise LiveForecastError("bundle coefficients or features are malformed")
+        offset_column = f"offset_{target}"
+        required = {"season", "week", "game_id", offset_column, *names}
+        if required - set(live_features):
+            raise LiveForecastError("bundle application frame is incomplete")
+        clean = live_features.replace([np.inf, -np.inf], np.nan).dropna(
+            subset=[offset_column, *names]
+        )
+        if len(clean) != len(live_features):
+            raise LiveForecastError("bundle application has incomplete model inputs")
+        x = np.column_stack(
+            [
+                (clean[name].to_numpy(float) - float(spec["center"][name]))
+                / float(spec["scale"][name])
+                for name in names
+            ]
+        )
+        mean = (
+            x @ np.asarray(spec["coefficients"], dtype=float)
+            + float(spec["intercept"])
+            + clean[offset_column].to_numpy(float)
+        )
+        variance = float(spec["calibration_variance"])
+        sigma = float(np.sqrt(variance))
+        output = clean.loc[:, ["season", "week", "game_id"]].copy()
+        output["run_id"] = run_id
+        output["target"] = target
+        output["mean"] = mean
+        output["variance"] = variance
+        output["interval_lower_95"] = mean - 1.959963984540054 * sigma
+        output["interval_upper_95"] = mean + 1.959963984540054 * sigma
+        output["offset"] = clean[offset_column].to_numpy(float)
+        output["completed_game_stage"] = (
+            pd.to_numeric(
+                clean.get("completed_game_stage", pd.Series(0, index=clean.index)),
+                errors="raise",
+            )
+            .clip(upper=4)
+            .astype(int)
+            .to_numpy()
+        )
+        output["timing_class"] = timing_class
+        output["model_ref"] = (
+            f"{model_ref}#{target}:{spec['head']}:{float(spec['alpha']):g}"
+        )
+        output["state_ref"] = (
+            clean["game_id"]
+            .map(lambda game_id: state_refs.get(int(game_id), ""))
+            .to_numpy()
+        )
+        output["source_ref"] = source_ref
+        if output["state_ref"].eq("").any():
+            raise LiveForecastError("bundle application lacks a state reference")
+        predictions.append(output)
+        used_recipes[target] = {
+            "head": spec["head"],
+            "alpha": float(spec["alpha"]),
+            "training_seasons": list(DEVELOPMENT_SEASONS),
+            "calibration_variance": variance,
+        }
+    result = pd.concat(predictions, ignore_index=True)
+    columns = [
+        "run_id",
+        "season",
+        "week",
+        "game_id",
+        "target",
+        "mean",
+        "variance",
+        "interval_lower_95",
+        "interval_upper_95",
+        "offset",
+        "completed_game_stage",
+        "timing_class",
+        "model_ref",
+        "state_ref",
+        "source_ref",
+    ]
+    ordered = (
+        result.loc[:, columns]
+        .sort_values(["season", "week", "game_id", "target"], kind="mergesort")
+        .reset_index(drop=True)
+    )
+    return LiveForecastComputation(ordered, used_recipes)
 
 
 def apply_frozen_bridge(

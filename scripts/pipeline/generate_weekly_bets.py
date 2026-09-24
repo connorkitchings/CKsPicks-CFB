@@ -119,6 +119,17 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
 
         print(json.dumps(run_v5_weekly_bets(args, cfg), sort_keys=True, default=str))
         return
+    if cfg.get("v5_replay"):
+        from scripts.pipeline.generate_v5_replay_weekly_bets import (
+            run_v5_replay_weekly_bets,
+        )
+
+        print(
+            json.dumps(
+                run_v5_replay_weekly_bets(args, cfg), sort_keys=True, default=str
+            )
+        )
+        return
 
     year = args.year if args.year is not None else cfg.year
     week = args.week if args.week is not None else cfg.week
