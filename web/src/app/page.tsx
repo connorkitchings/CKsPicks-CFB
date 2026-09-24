@@ -3,9 +3,11 @@ import {
   getGamesForWeek,
   getMarketGamesForWeek,
   getAvailableWeeks,
+  getRunForWeek,
   type Game,
 } from "@/lib/queries";
 import { getV5Performance, type Performance } from "@/lib/v5";
+import { selectsV5 } from "@/lib/run-selection";
 import { Header, Footer } from "@/components/Header";
 import { V5PerformanceBanner } from "@/components/V5PerformanceBanner";
 import { WeekNav } from "@/components/WeekNav";
@@ -94,9 +96,13 @@ export default async function Home({
   const params = await searchParams;
   // Test fixtures are opt-in at process start; production ignores this query
   // parameter and remains governed exclusively by server environment values.
-  const publicationMode = process.env.CFB_UI_TEST_MODE === "1"
-    && params.mode === "predictions"
-    ? "predictions"
+  // In test mode an explicit param must win in both directions so market-mode
+  // checks stay deterministic even when a local env file opts into predictions.
+  const testModeParam = params.mode === "predictions" || params.mode === "market"
+    ? params.mode
+    : null;
+  const publicationMode = process.env.CFB_UI_TEST_MODE === "1" && testModeParam
+    ? testModeParam
     : publicationScope.mode;
   let targetError = false;
   let target: Awaited<ReturnType<typeof resolveTarget>>;
@@ -129,15 +135,22 @@ export default async function Home({
       systemName = games[0].systemName;
       runState = games[0].runState;
       evidenceClass = games[0].evidenceClass ?? null;
+      performance = selectsV5(games[0].modelId) ? fixture.performance : [];
     }
   } else if (!targetError) {
     try {
       if (season > 0 && week >= 0) {
         if (publicationMode === "predictions") {
-        [games, performance] = await Promise.all([
-          getGamesForWeek(season, week),
-          getV5Performance(season),
-        ]);
+          // The V5 performance banner belongs to weeks whose explicit
+          // selection is V5; a legacy V4 fallback week renders its own
+          // record without it.
+          const selectedRun = await getRunForWeek(season, week);
+          [games, performance] = await Promise.all([
+            getGamesForWeek(season, week),
+            selectsV5(selectedRun?.modelId)
+              ? getV5Performance(season)
+              : Promise.resolve([]),
+          ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
         }

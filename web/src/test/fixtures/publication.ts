@@ -40,10 +40,28 @@ const base = {
   awayRecord: "1-0",
 };
 
+const v5PredictionRun = {
+  runId: "fixture-v5-run",
+  systemName: "Trench Warfare V5",
+  modelId: "v5-possession-ppp-rho060-exposure",
+  evidenceClass: "replay" as const,
+  spreadModelVersion: "fixture-v5",
+  totalModelVersion: "fixture-v5",
+};
+
+const v4FallbackRun = {
+  runId: "fixture-v4-run",
+  systemName: "Trench Warfare V4",
+  modelId: "week0-2026-v4-strict-20260818-r2",
+  evidenceClass: "legacy" as const,
+  spreadModelVersion: "fixture-v4",
+  totalModelVersion: "fixture-v4",
+};
+
 export function uiFixture(
   mode: PublicationMode,
   week = 0,
-): { games: Game[]; stats: Stats | null; historicalContext: HistoricalModelContext | null; weeks: number[] } {
+): { games: Game[]; stats: Stats | null; historicalContext: HistoricalModelContext | null; weeks: number[]; performance: Performance[] } {
   const shared = { ...base, week };
   if (mode === "market") {
     return {
@@ -58,14 +76,18 @@ export function uiFixture(
       stats: null,
       historicalContext: null,
       weeks: [0, 1],
+      performance: [],
     };
   }
+  // Week 0 selects V5 (replay evidence); week 1 exercises a legacy V4
+  // fallback selection, which renders its own model without the V5 banner.
+  const run = week === 1 ? v4FallbackRun : v5PredictionRun;
   return {
     games: [
       {
         ...shared,
         publicationMode: "predictions",
-        runId: "fixture-run",
+        runId: run.runId,
         runState: "scored",
         predictedSpread: 3.5,
         predictedTotal: 52.0,
@@ -76,15 +98,16 @@ export function uiFixture(
         edgeSpread: 1,
         edgeTotal: 0.5,
         highConfidence: false,
-        systemName: "Fixture Model",
-        modelId: "fixture-v1",
+        systemName: run.systemName,
+        modelId: run.modelId,
         regime: "game_1",
         homeCompletedGames: 0,
         awayCompletedGames: 0,
-        spreadModelVersion: "fixture-v1",
-        totalModelVersion: "fixture-v1",
+        spreadModelVersion: run.spreadModelVersion,
+        totalModelVersion: run.totalModelVersion,
         spreadResult: "loss",
         totalResult: "win",
+        evidenceClass: run.evidenceClass,
       },
     ],
     stats: {
@@ -104,5 +127,6 @@ export function uiFixture(
       matchingWeek: week === 0 ? null : { comparisonSeason: 2025, comparisonWeek: week, spreadWins: 26, spreadLosses: 22, spreadPushes: 2, spreadComparedGames: 50, totalWins: 28, totalLosses: 22, totalPushes: 0, totalComparedGames: 50 },
     },
     weeks: [0, 1],
+    performance: run === v5PredictionRun ? v5PerformanceFixture : [],
   };
 }

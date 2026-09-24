@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts",
+    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts src/lib/run-selection.test.ts",
     "test:ui": "NO_COLOR= FORCE_COLOR= playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "psql \"$DATABASE_URL\" -f db/migrations/0001_init.sql && echo 'migration applied'",

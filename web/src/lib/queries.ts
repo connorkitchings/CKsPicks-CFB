@@ -1,6 +1,7 @@
 import { eq, asc, and, inArray, lte, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
+import { isSelectableRun } from "./run-selection";
 
 type BaseGame = {
   gameId: number;
@@ -112,42 +113,67 @@ export const getCurrentWeek = cache(async (): Promise<{
 
 export type RunSummary = {
   runId: string;
+  modelId: string;
   state: "preview" | "published" | "frozen" | "scored";
+  evidenceClass: "legacy" | "pending" | "replay" | "live" | "missed";
   createdAt: Date;
   expectedGames: number;
   predictedGames: number;
   linedGames: number;
-  evidenceClass: "legacy" | "pending" | "replay" | "live" | "missed";
 };
 
-/** One explicitly selected public run; missing selection never guesses. */
+/**
+ * One explicitly selected public run; missing selection never guesses. The
+ * selected run may be V5 or an eligible legacy V4 rollback (same slate),
+ * so eligibility is validated after the join rather than filtered to V5.
+ */
 export const getRunForWeek = cache(async (season: number, week: number): Promise<RunSummary | null> => {
-  const rows = await db.select().from(schema.siteWeekSelections)
+  const rows = await db.select({
+    runId: schema.predictionRuns.runId,
+    modelId: schema.predictionRuns.modelId,
+    state: schema.predictionRuns.state,
+    evidenceClass: schema.predictionRuns.evidenceClass,
+    createdAt: schema.predictionRuns.createdAt,
+    expectedGames: schema.predictionRuns.expectedGames,
+    predictedGames: schema.predictionRuns.predictedGames,
+    linedGames: schema.predictionRuns.linedGames,
+  })
+    .from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
     .where(and(
       eq(schema.siteWeekSelections.season, season),
       eq(schema.siteWeekSelections.week, week),
       eq(schema.predictionRuns.season, season),
       eq(schema.predictionRuns.week, week),
-      sql`${schema.predictionRuns.modelId} LIKE 'v5-%'`,
-      inArray(schema.predictionRuns.evidenceClass, ["pending", "replay", "live"]),
     ))
     .limit(1);
-  return (rows[0]?.prediction_runs as RunSummary | undefined) ?? null;
+  const row = rows[0];
+  if (!row || !isSelectableRun(row)) return null;
+  return {
+    runId: row.runId,
+    modelId: row.modelId ?? "",
+    state: row.state as RunSummary["state"],
+    evidenceClass: row.evidenceClass as RunSummary["evidenceClass"],
+    createdAt: row.createdAt,
+    expectedGames: row.expectedGames,
+    predictedGames: row.predictedGames,
+    linedGames: row.linedGames,
+  };
 });
 
 /** Distinct weeks with published games for a season, ascending. Used by the week nav. */
 export async function getAvailableWeeks(season: number): Promise<number[]> {
-  const rows = await db.select({ week: schema.siteWeekSelections.week })
+  const rows = await db.select({
+    week: schema.siteWeekSelections.week,
+    modelId: schema.predictionRuns.modelId,
+    state: schema.predictionRuns.state,
+    evidenceClass: schema.predictionRuns.evidenceClass,
+  })
     .from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
-    .where(and(
-      eq(schema.siteWeekSelections.season, season),
-      sql`${schema.predictionRuns.modelId} LIKE 'v5-%'`,
-      inArray(schema.predictionRuns.evidenceClass, ["pending", "replay", "live"]),
-    ))
+    .where(eq(schema.siteWeekSelections.season, season))
     .orderBy(asc(schema.siteWeekSelections.week));
-  return rows.map((row) => row.week);
+  return rows.filter(isSelectableRun).map((row) => row.week);
 }
 
 type CompletedGameRow = {
