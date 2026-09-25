@@ -5,20 +5,14 @@ import { SeasonSelector } from "./SeasonSelector";
 
 export function Header({
   season,
-  week,
   systemName,
   updatedAt,
-  runState,
-  evidenceClass,
   publicationMode,
   allowedSeasons,
 }: {
   season: number | null;
-  week: number | null;
   systemName: string | null;
   updatedAt: Date | null;
-  runState: string | null;
-  evidenceClass?: "legacy" | "pending" | "replay" | "live" | "missed" | null;
   publicationMode: PublicationMode;
   allowedSeasons?: number[];
 }) {
@@ -35,23 +29,6 @@ export function Header({
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
             {publicationMode === "predictions" && systemName && (
               <span className="font-medium text-ink-muted">{displaySystemName(systemName)}</span>
-            )}
-            {publicationMode === "predictions" && runState && (
-              <span className="rounded bg-surface-inset px-1.5 py-0.5 font-semibold uppercase tracking-wide text-ink-muted">
-                {runState}
-              </span>
-            )}
-            {publicationMode === "predictions" && evidenceClass && evidenceClass !== "legacy" && (
-              <span
-                className="rounded bg-accent-soft px-1.5 py-0.5 font-semibold uppercase tracking-wide text-accent-ink"
-                title={
-                  evidenceClass === "replay"
-                    ? "Retrospective replay — reconstructed from pre-kickoff data and published after games began; not a live pick"
-                    : evidenceClass === "live"
-                      ? "Live forecast — frozen before kickoff"
-                      : `Evidence class: ${evidenceClass}`
-                }
-              >{evidenceClass}</span>
             )}
             {updatedAt && (
               <span>
@@ -70,9 +47,9 @@ export function Header({
           {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
             <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
           )}
-          {season !== null && week !== null && (
+          {season !== null && (
             <div className="text-sm font-medium tabular-nums text-ink-muted">
-              {season} · Week {week}
+              {season}
             </div>
           )}
           <ThemeToggle />

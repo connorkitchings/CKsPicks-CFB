@@ -1,10 +1,7 @@
 import Link from "next/link";
 
 const items = [
-  ["Forecasts", "/"],
-  ["Ratings", "/ratings"],
-  ["Performance", "/performance"],
-  ["Method", "/methodology"],
+  ["Predictions", "/"],
 ] as const;
 
 export function SiteNav() {

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 
@@ -189,7 +189,10 @@ function summarize(rows: PerformanceRow[], classification: Performance["classifi
   };
 }
 
-export const getV5Performance = cache(async (season: number): Promise<Performance[]> => {
+export const getV5Performance = cache(async (
+  season: number,
+  beforeWeek?: number,
+): Promise<Performance[]> => {
   const rows = await db.select({
     evidenceClass: schema.predictionRuns.evidenceClass,
     predictedMargin: schema.predictions.predictedSpread,
@@ -214,6 +217,7 @@ export const getV5Performance = cache(async (season: number): Promise<Performanc
     .where(and(
       eq(schema.siteWeekSelections.season, season),
       inArray(schema.predictionRuns.evidenceClass, ["replay", "live"]),
+      beforeWeek === undefined ? undefined : lt(schema.siteWeekSelections.week, beforeWeek),
     ));
   const typed = rows as PerformanceRow[];
   return [

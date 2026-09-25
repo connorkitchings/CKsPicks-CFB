@@ -59,7 +59,7 @@ export function WeekNav({
         <span aria-hidden>&larr;</span>
       </a>
 
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center text-sm">
         <label htmlFor="week-select" className="sr-only">
           Week
         </label>
@@ -75,9 +75,6 @@ export function WeekNav({
             </option>
           ))}
         </select>
-        <span className="text-xs tabular-nums text-ink-faint">
-          {safeIdx + 1} / {weeks.length}
-        </span>
       </div>
 
       <a

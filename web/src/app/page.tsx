@@ -36,11 +36,12 @@ async function resolveTarget(
 }> {
   const params = await searchParams;
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    const week = params.week === "1" ? 1 : 0;
+    const requestedWeek = Number(params.week);
+    const week = [0, 1, 2].includes(requestedWeek) ? requestedWeek : 0;
     return {
       season: 2026,
       week,
-      weeks: [0, 1],
+      weeks: [0, 1, 2],
       activeSeason: 2026,
       activeWeek: 0,
       currentUpdatedAt: new Date("2026-08-29T19:30:00.000Z"),
@@ -125,16 +126,12 @@ export default async function Home({
   let performance: Performance[] = [];
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
-  let runState: string | null = null;
-  let evidenceClass: "legacy" | "pending" | "replay" | "live" | "missed" | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
     const fixture = uiFixture(publicationMode, week);
     games = fixture.games;
     if (games[0]?.publicationMode === "predictions") {
       systemName = games[0].systemName;
-      runState = games[0].runState;
-      evidenceClass = games[0].evidenceClass ?? null;
       performance = selectsV5(games[0].modelId) ? fixture.performance : [];
     }
   } else if (!targetError) {
@@ -148,7 +145,7 @@ export default async function Home({
           [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
             selectsV5(selectedRun?.modelId)
-              ? getV5Performance(season)
+              ? getV5Performance(season, week)
               : Promise.resolve([]),
           ]);
         } else {
@@ -156,8 +153,6 @@ export default async function Home({
         }
         if (games.length > 0 && games[0].publicationMode === "predictions") {
           systemName = games[0].systemName;
-          runState = games[0].runState;
-          evidenceClass = games[0].evidenceClass ?? null;
         }
       }
     } catch (err) {
@@ -186,11 +181,8 @@ export default async function Home({
       </a>
       <Header
         season={season > 0 ? season : null}
-        week={season > 0 ? week : null}
         systemName={systemName}
         updatedAt={updatedAt}
-        runState={runState}
-        evidenceClass={evidenceClass}
         publicationMode={publicationMode}
         allowedSeasons={publicationScope.allowedSeasons}
       />
@@ -213,24 +205,13 @@ export default async function Home({
           <>
             {publicationMode === "predictions" && <V5PerformanceBanner performance={performance} />}
 
-            {publicationMode === "predictions" && evidenceClass === "replay" && (
-              <p className="rounded-xl border border-line bg-surface-card px-4 py-3 text-xs leading-relaxed text-ink-muted">
-                Retrospective replay &mdash; these V5 forecasts were
-                reconstructed from pre-kickoff data and published after games
-                began. They are labeled history, not live picks, and never
-                count toward prospective performance.
-              </p>
-            )}
-
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />
             )}
 
             {publicationMode === "predictions" && (
               <p className="px-1 text-xs text-ink-faint">
-                Market lines are consensus snapshots; your sportsbook may
-                differ. Edge shows how far the model and market disagree. It
-                is not a confidence score or a promise of profit.
+                Market consensus varies by sportsbook; edge shows the model&rsquo;s difference.
               </p>
             )}
 

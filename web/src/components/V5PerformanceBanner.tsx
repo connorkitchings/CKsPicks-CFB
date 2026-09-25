@@ -1,15 +1,37 @@
 import type { Performance } from "@/lib/v5";
 
+type Record = Performance["spread"];
+
+function winRate(record: Record): string {
+  const decisions = record.win + record.loss;
+  return decisions ? `${((record.win / decisions) * 100).toFixed(1)}%` : "—";
+}
+
+function Scoreboard({ label, record }: { label: string; record: Record }) {
+  return (
+    <div className="rounded-lg bg-surface-inset p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{label}</p>
+      <p className="mt-2 font-mono text-xl text-ink">
+        {record.win}–{record.loss}–{record.push}
+      </p>
+      <p className="mt-1 text-xs text-ink-faint">{winRate(record)} win rate</p>
+    </div>
+  );
+}
+
 export function V5PerformanceBanner({ performance }: { performance: Performance[] }) {
-  // Classifications with no picks yet (e.g. live before the first live
-  // slate) carry no signal; the detailed performance page still lists them.
-  const rows = performance.filter((row) => row.games > 0);
-  const replay = rows.find((row) => row.classification === "replay");
-  const live = rows.find((row) => row.classification === "live");
-  if (!replay && !live) return null;
-  return <section aria-label="V5 season performance" className="grid gap-3 sm:grid-cols-2">
-    {[replay, live].filter((row): row is Performance => Boolean(row)).map((row) =>
-      <div key={row.classification} className="rounded-xl border border-line bg-surface-card p-4 shadow-sm"><h2 className="text-sm font-semibold capitalize text-ink">{row.classification} forecasts</h2><p className="mt-1 text-xs text-ink-faint">{row.games} selected games</p><p className="mt-3 font-mono text-xl text-ink">{row.marginMae === null ? "—" : row.marginMae.toFixed(1)} <span className="text-xs font-sans text-ink-faint">margin MAE</span></p><p className="text-xs text-ink-muted">Spread grades: {row.spread.win}–{row.spread.loss}–{row.spread.push}</p></div>
-    )}
-  </section>;
+  const season = performance.find((row) => row.classification === "all");
+  if (!season) return null;
+  return (
+    <section aria-label="2026 so far" className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">2026 so far</h2>
+        <p className="text-xs text-ink-faint">{season.games} games</p>
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <Scoreboard label="Spread" record={season.spread} />
+        <Scoreboard label="Total" record={season.total} />
+      </div>
+    </section>
+  );
 }

@@ -24,6 +24,18 @@ export const v5PerformanceFixture: Performance[] = [
     spread: { win: 1, loss: 0, push: 0 }, total: { win: 0, loss: 1, push: 0 } },
 ];
 
+export const v5PerformanceBeforeWeekZeroFixture: Performance[] = [
+  { classification: "all", games: 0, evaluated: 0, marginMae: null,
+    totalMae: null, marginCoverage95: null, totalCoverage95: null,
+    spread: { win: 0, loss: 0, push: 0 }, total: { win: 0, loss: 0, push: 0 } },
+  { classification: "replay", games: 0, evaluated: 0, marginMae: null,
+    totalMae: null, marginCoverage95: null, totalCoverage95: null,
+    spread: { win: 0, loss: 0, push: 0 }, total: { win: 0, loss: 0, push: 0 } },
+  { classification: "live", games: 0, evaluated: 0, marginMae: null,
+    totalMae: null, marginCoverage95: null, totalCoverage95: null,
+    spread: { win: 0, loss: 0, push: 0 }, total: { win: 0, loss: 0, push: 0 } },
+];
+
 const base = {
   gameId: 401000001,
   season: 2026,
@@ -75,7 +87,7 @@ export function uiFixture(
       ],
       stats: null,
       historicalContext: null,
-      weeks: [0, 1],
+      weeks: [0, 1, 2],
       performance: [],
     };
   }
@@ -126,7 +138,9 @@ export function uiFixture(
       fullSeason: { comparisonSeason: 2025, comparisonWeek: null, spreadWins: 379, spreadLosses: 366, spreadPushes: 16, spreadComparedGames: 761, totalWins: 398, totalLosses: 358, totalPushes: 5, totalComparedGames: 761 },
       matchingWeek: week === 0 ? null : { comparisonSeason: 2025, comparisonWeek: week, spreadWins: 26, spreadLosses: 22, spreadPushes: 2, spreadComparedGames: 50, totalWins: 28, totalLosses: 22, totalPushes: 0, totalComparedGames: 50 },
     },
-    weeks: [0, 1],
-    performance: run === v5PredictionRun ? v5PerformanceFixture : [],
+    weeks: [0, 1, 2],
+    performance: run === v5PredictionRun
+      ? week === 0 ? v5PerformanceBeforeWeekZeroFixture : v5PerformanceFixture
+      : [],
   };
 }
