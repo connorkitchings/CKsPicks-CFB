@@ -41,7 +41,16 @@ export function Header({
               </span>
             )}
             {publicationMode === "predictions" && evidenceClass && evidenceClass !== "legacy" && (
-              <span className="rounded bg-accent-soft px-1.5 py-0.5 font-semibold uppercase tracking-wide text-accent-ink">{evidenceClass}</span>
+              <span
+                className="rounded bg-accent-soft px-1.5 py-0.5 font-semibold uppercase tracking-wide text-accent-ink"
+                title={
+                  evidenceClass === "replay"
+                    ? "Retrospective replay — reconstructed from pre-kickoff data and published after games began; not a live pick"
+                    : evidenceClass === "live"
+                      ? "Live forecast — frozen before kickoff"
+                      : `Evidence class: ${evidenceClass}`
+                }
+              >{evidenceClass}</span>
             )}
             {updatedAt && (
               <span>

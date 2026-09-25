@@ -213,6 +213,15 @@ export default async function Home({
           <>
             {publicationMode === "predictions" && <V5PerformanceBanner performance={performance} />}
 
+            {publicationMode === "predictions" && evidenceClass === "replay" && (
+              <p className="rounded-xl border border-line bg-surface-card px-4 py-3 text-xs leading-relaxed text-ink-muted">
+                Retrospective replay &mdash; these V5 forecasts were
+                reconstructed from pre-kickoff data and published after games
+                began. They are labeled history, not live picks, and never
+                count toward prospective performance.
+              </p>
+            )}
+
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />
             )}
