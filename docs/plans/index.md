@@ -34,6 +34,8 @@ The [V5 replay and Preview rehearsal](2026-09-24/01-v5-replay-preview-rehearsal.
 
 The [V5 weekly operator and exact release gates](2026-09-24/02-v5-weekly-operator-and-release-gates.md) contract is Implemented (2026-09-25) under its approved production-role amendment: the exact dual-identity guard, Keychain production wrapper, restricted `cks_prod_pipeline` role, and production migration 0014 are verified, and a fixture-class Preview operator rehearsal exercised the full controller. No production V5 authorization or activation is approved, and the stabilized Week 4 finals gate remains.
 
+The [Week 4 finals to live Preview evidence](2026-09-25/01-v5-week4-finals-to-live-preview.md) plan is Approved (user handoff, 2026-09-25). It sequences the existing 07→08→09→05 authority, Preview serving and rollback proof, and exact packet review after the finals gate. Execution awaits complete certified Week 4 finals plus the 24-hour stabilization interval; it authorizes no production V5 activation.
+
 The [V5 current status guide](../modeling/v5_status.md) is the entry point for the accepted model, exact lineage, historical results, and remaining operational work. V5 model development is complete. V4 still serves the public site.
 
 | Current contract | Purpose | State |
