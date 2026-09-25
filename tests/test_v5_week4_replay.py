@@ -269,6 +269,15 @@ def test_week4_replay_manifest_verifies_and_records_creation_time(monkeypatch):
     assert receipt["evidence_class"] == "replay"
 
 
+def test_week4_replay_manifest_freezes_without_dry_run_state():
+    evidence = {"state": "dry_run", "identity": {"run_id": "x"}, "extra": 1}
+    manifest = week4_replay._manifest(evidence, "2026-09-25T16:00:00Z")
+    assert manifest["state"] == "frozen"
+    assert manifest["created_at_utc"] == "2026-09-25T16:00:00Z"
+    assert manifest["identity"] == {"run_id": "x"}
+    assert manifest["extra"] == 1
+
+
 def test_week4_replay_rejects_prospective_or_live_labels(monkeypatch):
     storage = MemoryStorage()
     sources = _sources(storage.objects)

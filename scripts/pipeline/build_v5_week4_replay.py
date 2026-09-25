@@ -185,6 +185,19 @@ def _compute(args: argparse.Namespace, config: dict[str, Any], storage: Any):
     )
 
 
+def _manifest(evidence: dict[str, Any], created_at_utc: str) -> dict[str, Any]:
+    """Freeze reviewed evidence without letting its dry-run state leak through."""
+    return signed_payload(
+        {
+            "schema_version": "v5_week4_replay_manifest_v1",
+            "state": "frozen",
+            "created_at_utc": created_at_utc,
+            **{name: value for name, value in evidence.items() if name != "state"},
+            "production_activation_authorized": False,
+        }
+    )
+
+
 def _evidence(args: argparse.Namespace, config: dict[str, Any], storage: Any):
     sources, features, produced, parents, timing, verification = _compute(
         args, config, storage
@@ -321,16 +334,9 @@ def main() -> None:
     if not storage.exists(uri) and storage.list_files(prefix):
         raise Week4ReplayError("replay prefix has partial immutable output")
     _write_immutable(storage, f"{prefix}/predictions.csv", prediction_raw)
-    manifest = signed_payload(
-        {
-            "schema_version": "v5_week4_replay_manifest_v1",
-            "state": "frozen",
-            "created_at_utc": datetime.now(timezone.utc)
-            .isoformat()
-            .replace("+00:00", "Z"),
-            **evidence,
-            "production_activation_authorized": False,
-        }
+    manifest = _manifest(
+        evidence,
+        datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     )
     _write_immutable(storage, uri, _json_bytes(manifest))
     args.verify_manifest_uri = uri
