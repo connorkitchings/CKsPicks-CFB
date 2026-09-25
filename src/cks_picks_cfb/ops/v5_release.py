@@ -281,7 +281,9 @@ def validate_replay_release_record(
     """Validate exact replay identities and the verifier receipt before a write.
 
     Replay records never satisfy prospective, readiness, or live gates. A live
-    09/05 authorization is a different record in a different table.
+    09/05 authorization is a different record in a different table. The
+    prediction artifact bytes are always read from the record's own URI, so a
+    reviewable candidate must already exist at the bound production location.
     """
     expected = {
         "environment": environment,
