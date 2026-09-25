@@ -404,9 +404,11 @@ def _reconstruct_ledgers(
             ):
                 excess = int(prior_score - score)
                 for item in reversed(event_rows):
-                    if (item["season"], item["game_id"], item["team"]) == stream_key and item[
-                        "score_increment"
-                    ] > 0:
+                    if (
+                        item["season"],
+                        item["game_id"],
+                        item["team"],
+                    ) == stream_key and item["score_increment"] > 0:
                         inc = item["score_increment"]
                         if inc <= excess:
                             excess -= inc

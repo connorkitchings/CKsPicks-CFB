@@ -213,7 +213,9 @@ def _verify_repair_2026(raw: bytes) -> dict[str, Any]:
         population_ref.get("dataset") != REPAIR_POPULATION_DATASET
         or population_ref.get("schema_version") != REPAIR_POPULATION_SCHEMA
     ):
-        raise PossessionVerificationError("Repair-2026 source lacks its declared population")
+        raise PossessionVerificationError(
+            "Repair-2026 source lacks its declared population"
+        )
     return payload
 
 

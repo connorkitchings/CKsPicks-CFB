@@ -46,7 +46,9 @@ def test_current_guide_separates_model_completion_and_site_activation():
     text = _plain(CURRENT.read_text())
     for required in (
         "model development: complete and accepted",
-        "v4 remains active",
+        # Since the 2026-09-25 replay cutover, V5 replay (not V4) is the
+        # primary public view; V4 remains only as the tested rollback.
+        "tested rollback",
         "stabilized week 4 finals",
         "preview serving rehearsal",
         "rollback proof",

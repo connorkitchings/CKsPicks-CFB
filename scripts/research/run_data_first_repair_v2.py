@@ -417,10 +417,9 @@ def _verify_repair_v2_anchor(storage: Any, uri: str) -> dict[str, Any]:
     if payload.get("manifest_sha256") != REQUIRED_REPAIR_CANONICAL_SHA256:
         raise RepairV2Error("Repair v2 anchor canonical checksum is not approved")
     identity = dict(payload.get("identity") or {})
-    if (
-        tuple(identity.get("development_seasons") or ()) != tuple(DEVELOPMENT_SEASONS)
-        or tuple(identity.get("forbidden_seasons") or ()) != tuple(FORBIDDEN_SEASONS)
-    ):
+    if tuple(identity.get("development_seasons") or ()) != tuple(
+        DEVELOPMENT_SEASONS
+    ) or tuple(identity.get("forbidden_seasons") or ()) != tuple(FORBIDDEN_SEASONS):
         raise RepairV2Error("Repair v2 anchor season set changed")
     if (
         payload.get("production_activation_authorized") is not False
@@ -501,7 +500,10 @@ def _load_2026_frames(
     ].copy()
     plays = frames["byplay"]
     observed = pd.DataFrame(
-        {"season": 2026, "game_id": pd.to_numeric(plays["game_id"], errors="raise").astype(int)}
+        {
+            "season": 2026,
+            "game_id": pd.to_numeric(plays["game_id"], errors="raise").astype(int),
+        }
     ).drop_duplicates()
     completed_ids = set(pd.to_numeric(schedule["game_id"], errors="raise").astype(int))
     stray = set(observed["game_id"]) - completed_ids
@@ -525,7 +527,14 @@ def _load_2026_frames(
         "schedule_ref": dict(schedule_ref),
         "team_games_ref": dict(team_games_ref),
     }
-    return schedule, outcomes, observed, reconciliation, bundle_record, tuple(parent_refs)
+    return (
+        schedule,
+        outcomes,
+        observed,
+        reconciliation,
+        bundle_record,
+        tuple(parent_refs),
+    )
 
 
 def _capture_set(
@@ -1038,7 +1047,9 @@ def main(argv: list[str] | None = None) -> None:
         auxiliary = _validate_2026_auxiliary(storage, anchor)
         anchor_core = dict(anchor_parents.get("core_eligibility") or {})
         anchor_aux = dict(anchor_parents.get("auxiliary_eligibility") or {})
-        anchor_phase3 = dict(anchor_parents.get("phase3_retained_diagnostic_only") or {})
+        anchor_phase3 = dict(
+            anchor_parents.get("phase3_retained_diagnostic_only") or {}
+        )
         args.core_eligibility_uri = str(anchor_core.get("uri") or "")
         args.auxiliary_eligibility_uri = str(anchor_aux.get("uri") or "")
         args.phase3_retained_uri = str(anchor_phase3.get("uri") or "")

@@ -601,7 +601,9 @@ def build_measurements(
 ) -> PossessionMeasurementResult:
     """Build both role measurements while preserving every scoreable game row."""
     if scope not in ("historical", "season_2026"):
-        raise PossessionMeasurementError(f"measurement build has unknown scope: {scope}")
+        raise PossessionMeasurementError(
+            f"measurement build has unknown scope: {scope}"
+        )
     row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
     possessions, scoring = build_possession_ledger(

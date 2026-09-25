@@ -227,8 +227,8 @@ def _fixture(
                 for team, opponent in ((home, away), (away, home)):
                     for measurement in MEASUREMENTS:
                         for role in ROLES:
-                            value = 2.0 + 0.4 * week + (
-                                0.7 if team == teams[0] else -0.5
+                            value = (
+                                2.0 + 0.4 * week + (0.7 if team == teams[0] else -0.5)
                             )
                             observation_rows.append(
                                 _observation(
@@ -277,8 +277,7 @@ def _fixture(
                             "unit_role": role,
                             "adjustment_iteration": 4,
                             "raw_value": 2.2,
-                            "adjusted_value": 2.2
-                            + (0.3 if team == teams[0] else -0.3),
+                            "adjusted_value": 2.2 + (0.3 if team == teams[0] else -0.3),
                             "primary_exposure": 33.0,
                             "games_exposure": 3,
                             "source_game_count": 3,
@@ -298,9 +297,7 @@ def _fixture(
     )
 
 
-def _states_for(
-    computation, candidate: str
-) -> pd.DataFrame:
+def _states_for(computation, candidate: str) -> pd.DataFrame:
     return computation.predictions[
         computation.predictions["candidate_id"].eq(candidate)
     ]
@@ -371,9 +368,7 @@ class TestBoundaryTable:
         for row in boundaries.itertuples(index=False):
             source = population.set_index("game_id").loc[int(row.game_id)]
             assert int(row.boundary_game_id) != int(row.game_id)
-            boundary = population.set_index("game_id").loc[
-                int(row.boundary_game_id)
-            ]
+            boundary = population.set_index("game_id").loc[int(row.boundary_game_id)]
             assert int(boundary.week) > int(source.week)
 
 
@@ -572,11 +567,15 @@ class TestPriors:
         priors = build_prior_tables(context={}, terminal_tables=tables)
         rho = priors[("ppp", "rho_0_60")]
         first = rho[
-            rho["season"].eq(2019) & rho["team"].eq("Alpha") & rho["unit_role"].eq("offense")
+            rho["season"].eq(2019)
+            & rho["team"].eq("Alpha")
+            & rho["unit_role"].eq("offense")
         ].iloc[0]
         assert first["prior_source"] == "neutral"
         gap = rho[
-            rho["season"].eq(2021) & rho["team"].eq("Alpha") & rho["unit_role"].eq("offense")
+            rho["season"].eq(2021)
+            & rho["team"].eq("Alpha")
+            & rho["unit_role"].eq("offense")
         ].iloc[0]
         assert gap["annual_decay_steps"] == 2
         assert gap["prior_variance"] == pytest.approx(
@@ -649,11 +648,7 @@ class TestTournamentSelection:
             current = item["candidate_id"]
             if current == reference and omit_reference:
                 continue
-            stages = (
-                [4]
-                if restrict_stages and current != reference
-                else range(5)
-            )
+            stages = [4] if restrict_stages and current != reference else range(5)
             for season in seasons:
                 for target in ("margin", "total"):
                     for stage in stages:
@@ -738,9 +733,7 @@ class TestTournamentSelection:
         )
         rows = self._all_sixty_rows()
         challenger = candidate_id("ppp", "neutral", "exposure")
-        rows = rows[
-            ~(rows["candidate_id"].eq(challenger) & rows["game_id"].eq(1))
-        ]
+        rows = rows[~(rows["candidate_id"].eq(challenger) & rows["game_id"].eq(1))]
         with pytest.raises(
             tournament.PossessionTournamentError, match="population differs"
         ):
@@ -774,7 +767,9 @@ class TestFullTournament:
         ):
             assert field in evidence
 
-    def test_all_sixty_candidates_reported_with_equal_bridge_population(self, monkeypatch):
+    def test_all_sixty_candidates_reported_with_equal_bridge_population(
+        self, monkeypatch
+    ):
         _lower_fbs_threshold(monkeypatch)
         inputs = _fixture()
         computation = compute_tournament(inputs=inputs, progress=_noop)
@@ -791,7 +786,9 @@ class TestFullTournament:
         )
         assert computation.diagnostics["fbs_team_seasons"] >= 4
 
-    def test_same_game_and_future_perturbations_leave_earlier_states_unchanged(self, monkeypatch):
+    def test_same_game_and_future_perturbations_leave_earlier_states_unchanged(
+        self, monkeypatch
+    ):
         _lower_fbs_threshold(monkeypatch)
         inputs = _fixture()
         baseline = compute_tournament(inputs=inputs, progress=_noop, retain_frames=True)
@@ -821,7 +818,9 @@ class TestFullTournament:
     def test_fcs_team_without_predecessor_uses_partial_pool(self, monkeypatch):
         _lower_fbs_threshold(monkeypatch)
         inputs = _fixture()
-        computation = compute_tournament(inputs=inputs, progress=_noop, retain_frames=True)
+        computation = compute_tournament(
+            inputs=inputs, progress=_noop, retain_frames=True
+        )
         states = computation.frames["rating_states"]
         candidate = candidate_id("ppp", "rho_0_60", "exposure")
         fcs_rows = states[
@@ -840,7 +839,9 @@ class TestFullTournament:
     def test_fbs_team_without_predecessor_keeps_neutral_prior(self, monkeypatch):
         _lower_fbs_threshold(monkeypatch)
         inputs = _fixture()
-        computation = compute_tournament(inputs=inputs, progress=_noop, retain_frames=True)
+        computation = compute_tournament(
+            inputs=inputs, progress=_noop, retain_frames=True
+        )
         states = computation.frames["rating_states"]
         candidate = candidate_id("ppp", "rho_0_60", "exposure")
         rows = states[

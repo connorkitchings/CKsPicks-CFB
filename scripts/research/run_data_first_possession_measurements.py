@@ -260,11 +260,9 @@ def _repair_2026(
         )
     expected = (config or {}).get("expected_population") or {}
     summary = payload.get("population") or {}
-    if (
-        summary.get("scheduled_games") != int(expected.get("rows", -1))
-        or summary.get("forecast_eligible_games")
-        != int(expected.get("forecast_eligible", -1))
-    ):
+    if summary.get("scheduled_games") != int(expected.get("rows", -1)) or summary.get(
+        "forecast_eligible_games"
+    ) != int(expected.get("forecast_eligible", -1)):
         raise PossessionRunError(
             "Repair-2026 population summary differs from the 2026 config declaration"
         )
@@ -768,11 +766,11 @@ def main(argv: list[str] | None = None) -> None:
         else "historical"
     )
     expected_population = config.get("expected_population") or {}
-    expected_rows = (
-        int(expected_population["rows"]) if scope == "season_2026" else None
-    )
+    expected_rows = int(expected_population["rows"]) if scope == "season_2026" else None
     expected_eligible = (
-        int(expected_population["forecast_eligible"]) if scope == "season_2026" else None
+        int(expected_population["forecast_eligible"])
+        if scope == "season_2026"
+        else None
     )
     if _git_sha() != args.expected_code_sha:
         raise PossessionRunError("--expected-code-sha must equal committed HEAD")
@@ -783,7 +781,9 @@ def main(argv: list[str] | None = None) -> None:
             raise PossessionRunError("apply requires a clean committed worktree")
         _require_committed_paths()
     storage = get_storage(environment="preview")
-    repair, raw_sha = _repair(storage, args.repair_manifest_uri, scope=scope, config=config)
+    repair, raw_sha = _repair(
+        storage, args.repair_manifest_uri, scope=scope, config=config
+    )
     identity = possession_identity(
         run_id=args.run_id,
         as_of=_utc(args.as_of).isoformat().replace("+00:00", "Z"),

@@ -367,4 +367,3 @@ def test_outcomes_merging_when_population_lacks_score_columns() -> None:
         (scoring["game_id"] == 1001) & (scoring["team"] == "Clemson")
     ]
     assert clemson_events["score_increment"].sum() == 3
-

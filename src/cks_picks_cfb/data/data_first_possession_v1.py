@@ -434,7 +434,10 @@ def certification(
     else:
         raise PossessionContractError(f"certification has unknown scope: {scope}")
     checks = {
-        "population_complete": (len(population), int(population["forecast_eligible"].sum()))
+        "population_complete": (
+            len(population),
+            int(population["forecast_eligible"].sum()),
+        )
         == expected_counts,
         "forbidden_2020_absent": not population["season"].astype(int).eq(2020).any(),
         "live_timing_only" if scope == "season_2026" else "reconstructed_timing_only": (
