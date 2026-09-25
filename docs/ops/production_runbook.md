@@ -2,6 +2,13 @@
 
 > **V5 cutover status:** [V5 model development is complete](../modeling/v5_status.md), but V4 remains the public site model. The V5 weekly adapter is configured only for Preview rehearsal until a current forecast is independently verified, a Preview publication and V4 rollback are proven, and a separate production activation decision is recorded. Six prospective slates are not a prelaunch condition.
 
+The [manual V5 weekly operator](v5_weekly_operator.md) is the prepared
+post-acceptance cadence. Its exact release guard is deployed only on Preview
+(migration 0014); production remains on the V4 path. An immutable candidate
+can be prepared without Neon activation, but production V5 publication and
+selection fail closed until migration 0014 and a separately approved,
+admin-written authorization for that exact slate and artifact are present.
+
 > **As-built operations for the live system** (deployed 2026-08-18).
 > This runbook reflects production reality: Vercel + Neon + Cloudflare R2 with
 > the V4 launch bundle. Superseded V2 deployment and rollback material is in
@@ -199,6 +206,7 @@ pipeline's original failure or activation boundary.
 
 - Production credentials live in `.env` / macOS Keychain per the preview pattern; never commit them.
 - Preview operations use `zsh scripts/ops/with_preview_env.sh <cmd>` so legacy `.env` values cannot target the wrong branch. (The stale `PREVIEW_DATABASE_URL` entry pointing at the deleted `ep-delicate-sun` branch was removed from `.env` on 2026-08-20; duplicate lines were collapsed.)
+- Production V5 publisher, selector, and operator commands must run through `zsh scripts/ops/with_production_pipeline_env.sh <cmd>`. The wrapper reads only the restricted `cks_prod_pipeline` branch URL from macOS Keychain (`ckspicks-cfb/production/pipeline-url`); the `.env` owner URL is an admin/migration credential and is rejected by the V5 publication and selection guards (`session_user` and `current_user` must both equal `cks_prod_pipeline`).
 - On-demand revalidation (2026-08-20): `REVALIDATION_SECRET` is set in Vercel (production) and `.env` (`CFB_REVALIDATION_URL=https://c-ks-picks-cfb.vercel.app/api/revalidate`); the route rejects missing/invalid signatures (401) and stale timestamps (>5 min). Rotating the secret requires updating both sides and redeploying.
 - R2 source/destination separation guard still applies to import workflows; the shared preview/production artifact bucket is an explicit, approved exception (launch contract Amendment 2).
 

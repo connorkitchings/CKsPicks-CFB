@@ -81,6 +81,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Also write the predictions CSV to durable storage (R2/S3/local backend).",
     )
     parser.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="Prepare an immutable V5 candidate without Neon publication or selection.",
+    )
+    parser.add_argument(
         "--run-id",
         default=None,
         help="Immutable run identifier. Defaults to a UTC timestamp plus random suffix.",
@@ -119,6 +124,8 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
 
         print(json.dumps(run_v5_weekly_bets(args, cfg), sort_keys=True, default=str))
         return
+    if args.prepare_only:
+        raise ValueError("--prepare-only is available only for V5 live serving")
     if cfg.get("v5_replay"):
         from scripts.pipeline.generate_v5_replay_weekly_bets import (
             run_v5_replay_weekly_bets,

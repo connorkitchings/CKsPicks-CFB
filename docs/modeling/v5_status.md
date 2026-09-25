@@ -4,6 +4,12 @@
 > **Live 2026 forecasts:** The full-corpus inference bundle is pinned and a read-only Week 4 preflight passed. First current-state certification awaits stabilized Week 4 finals and refreshed, independently verified 07/08 parents.
 > **Public site:** V4 remains active. V5 activation requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
 
+The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
+release guard are in implementation preparation. Preview migration 0014 has
+an empty authorization table; no production release record or V5 activation
+has been created. The existing Weeks 0–3 replay rehearsal does not replace
+the stabilized Week 4 07/08 refresh or a prospective 09/05 certification.
+
 ## What V5 is
 
 V5 estimates each team's offensive and defensive scoring efficiency per possession, adjusts for opponents, and updates one continuous season-long rating as games finish. The selected candidate is `ppp__rho_0_60__exposure`: true points per possession, a 0.60 carryover prior, and exposure-weighted rating updates. A fixed Ridge bridge turns pregame team states and earlier-only non-offense offsets into predicted home margin and game total. The selected bridge uses an expanding fitting history, alpha 10 reference heads, and a verified through-2025 final fit. Neither bookmaker lines nor 2026 outcomes select or refit V5. See the [full methodology](possession_rating_methodology.md).

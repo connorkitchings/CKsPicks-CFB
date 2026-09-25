@@ -541,6 +541,8 @@ def publish_week(
             raise ValueError("V5 publication requires an immutable classified run")
         if manifest.get("model_id") != model_id:
             raise ValueError("V5 model identity differs from the run manifest")
+        if manifest.get("system_name") != system_name:
+            raise ValueError("V5 system name differs from the run manifest")
         if evidence_class == "pending":
             verify_v5_publication_boundary(
                 manifest=manifest,
@@ -625,6 +627,16 @@ def publish_week(
         with conn.cursor() as cur:
             assert_active_pipeline_lease(cur)
             if model_id.startswith("v5-"):
+                from cks_picks_cfb.ops.v5_release import (
+                    assert_v5_database_environment,
+                )
+
+                target_environment = os.getenv("CFB_ARTIFACT_ENV", "production")
+                assert_v5_database_environment(cur, target_environment)
+                if target_environment == "production" and evidence_class != "pending":
+                    raise RuntimeError(
+                        "production V5 publication requires a live prospective run"
+                    )
                 cur.execute(
                     "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
                     "FROM v5_release_policy WHERE id = 1"
@@ -652,6 +664,17 @@ def publish_week(
                     "replay_verification_sha256"
                 ):
                     raise RuntimeError("V5 replay lacks independent verification")
+                if evidence_class == "pending" and target_environment == "production":
+                    from cks_picks_cfb.data.storage import get_storage
+                    from cks_picks_cfb.ops.v5_release import require_release_record
+
+                    require_release_record(
+                        cur,
+                        manifest=manifest,
+                        storage=get_storage(environment="production"),
+                        season=season,
+                        week=week,
+                    )
             cur.execute(
                 "SELECT state FROM prediction_runs WHERE run_id = %s", (run_id,)
             )
@@ -730,6 +753,7 @@ def publish_week(
                         week=week,
                         run_id=run_id,
                         reason="validated V5 publication",
+                        environment=os.getenv("CFB_ARTIFACT_ENV", "production"),
                     )
                 cur.execute(
                     UPDATE_CURRENT_WEEK_SQL,

@@ -160,6 +160,32 @@ def test_v5_replay_week_uses_resumable_steps_without_live_ingestion():
     assert not any("ingest" in step.name for step in steps)
 
 
+def test_v5_close_scores_the_reviewed_outcomes_ref(monkeypatch):
+    monkeypatch.setattr(
+        "cks_picks_cfb.ops.__main__._resolve_frozen_run", lambda *_: "2026w5-v5"
+    )
+    context = new_context(
+        command="close-week",
+        environment="preview",
+        season=2026,
+        week=5,
+        as_of="2026-10-07T12:00:00Z",
+        pipeline_run_id="v5-close-fixture",
+    )
+    steps = build_steps(
+        context,
+        conn_url="postgresql://unused",
+        options=SimpleNamespace(
+            outcomes_ref_uri="artifacts/preview/refs/certified-outcomes.json",
+            cancellation_waiver=[],
+        ),
+    )
+    assert "ingest_finals" not in [step.name for step in steps]
+    assert "build_game_outcomes" not in [step.name for step in steps]
+    score = next(step for step in steps if step.name == "score")
+    assert "artifacts/preview/refs/certified-outcomes.json" in score.definition["argv"]
+
+
 def test_pipeline_rejects_changed_step_definition_on_resume():
     store = InMemoryStateStore()
     context = new_context(

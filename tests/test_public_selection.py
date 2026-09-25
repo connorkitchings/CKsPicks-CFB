@@ -10,14 +10,17 @@ V5_BUNDLE = "b" * 64
 
 
 class FakeCursor:
-    def __init__(self, results):
+    def __init__(self, results, identities=("cks_preview_pipeline",) * 2):
         self.results = list(results)
+        self.identities = identities
         self.executed = []
 
     def execute(self, sql, params=()):
         self.executed.append(sql)
 
     def fetchone(self):
+        if self.executed and "session_user" in self.executed[-1]:
+            return self.identities
         return self.results.pop(0) if self.results else None
 
 
@@ -146,7 +149,12 @@ def test_v5_selection_enforces_the_release_policy():
         ]
     )
     previous = select_week_run(
-        cur, season=2026, week=0, run_id="2026w0-v5", reason="rehearsal"
+        cur,
+        season=2026,
+        week=0,
+        run_id="2026w0-v5",
+        reason="rehearsal",
+        environment="preview",
     )
     assert previous is None
     assert any("v5_release_policy" in sql for sql in cur.executed)
@@ -164,8 +172,47 @@ def test_v5_selection_rejects_an_unapproved_bundle():
     )
     with pytest.raises(PublicSelectionError, match="approved model bundle"):
         select_week_run(
-            cur, season=2026, week=0, run_id="2026w0-v5", reason="rehearsal"
+            cur,
+            season=2026,
+            week=0,
+            run_id="2026w0-v5",
+            reason="rehearsal",
+            environment="preview",
         )
+
+
+@pytest.mark.parametrize(
+    "identities",
+    [
+        ("neondb_owner", "neondb_owner"),
+        ("cks_preview_migrator", "cks_preview_migrator"),
+        ("cks_prod_web", "cks_prod_web"),
+        ("cks_prod_pipeline", "cks_prod_pipeline"),
+        ("cks_preview_pipeline_admin", "cks_preview_pipeline_admin"),
+        ("neondb_owner", "cks_preview_pipeline"),
+        ("cks_preview_pipeline", "neondb_owner"),
+    ],
+)
+def test_v5_selection_rejects_non_pipeline_identities(identities):
+    cur = FakeCursor(
+        [
+            _candidate(
+                model_id=V5_MODEL, evidence_class="replay", bundle_sha256=V5_BUNDLE
+            )
+        ],
+        identities=identities,
+    )
+    with pytest.raises(PublicSelectionError, match="exact restricted pipeline role"):
+        select_week_run(
+            cur,
+            season=2026,
+            week=0,
+            run_id="2026w0-v5",
+            reason="rehearsal",
+            environment="preview",
+        )
+    assert not any("INSERT" in sql for sql in cur.executed)
+    assert not any("UPDATE current_week" in sql for sql in cur.executed)
 
 
 def test_reselecting_the_same_run_writes_nothing():

@@ -2218,32 +2218,40 @@ def build_steps(
     if context.command == "close-week":
         assert week is not None and as_of is not None
         run_id = _resolve_frozen_run(conn_url, year, week)
-        outcomes_ref_uri = (
+        pinned_outcomes_ref_uri = getattr(options, "outcomes_ref_uri", None)
+        outcomes_ref_uri = pinned_outcomes_ref_uri or (
             f"artifacts/{context.environment}/pipeline-runs/"
             f"{context.pipeline_run_id}/game_outcomes_ref.json"
         )
-        return [
-            _fetch_source_step(
-                name="ingest_finals",
-                argv=_python(
-                    "scripts/data/ingest_season.py",
-                    "--year",
-                    year,
-                    "--entities",
-                    "games",
+        source_steps = (
+            []
+            if pinned_outcomes_ref_uri
+            else [
+                _fetch_source_step(
+                    name="ingest_finals",
+                    argv=_python(
+                        "scripts/data/ingest_season.py",
+                        "--year",
+                        year,
+                        "--entities",
+                        "games",
+                    ),
+                    conn_url=conn_url,
+                    entity="games",
                 ),
-                conn_url=conn_url,
-                entity="games",
-            ),
-            _silver_from_ingestion_step(
-                name="build_game_outcomes",
-                dataset="game_outcomes",
-                entity="games",
-                conn_url=conn_url,
-                output_ref_uri=outcomes_ref_uri,
-                as_of=as_of,
-                environment=context.environment,
-            ),
+                _silver_from_ingestion_step(
+                    name="build_game_outcomes",
+                    dataset="game_outcomes",
+                    entity="games",
+                    conn_url=conn_url,
+                    output_ref_uri=outcomes_ref_uri,
+                    as_of=as_of,
+                    environment=context.environment,
+                ),
+            ]
+        )
+        return [
+            *source_steps,
             subprocess_step(
                 "ingest_completed_week",
                 _python(
@@ -2499,6 +2507,10 @@ def parse_args() -> argparse.Namespace:
                 action="append",
                 default=[],
                 metavar="GAME_ID:REASON",
+            )
+            sub.add_argument(
+                "--outcomes-ref-uri",
+                help="Exact certified Silver game_outcomes DatasetRef to score without a new capture.",
             )
         if command == "fetch-source":
             sub.add_argument("--entity", required=True)

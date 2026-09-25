@@ -13,6 +13,7 @@ import {
   jsonb,
   primaryKey,
   numeric,
+  unique,
 } from "drizzle-orm/pg-core";
 
 // Enums ---------------------------------------------------------------------
@@ -159,6 +160,29 @@ export const v5ReleasePolicy = pgTable("v5_release_policy", {
   decisionRef: text("decision_ref").notNull(),
   approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const v5ServingAuthorizations = pgTable(
+  "v5_serving_authorizations",
+  {
+    authorizationId: text("authorization_id").primaryKey(),
+    environment: text("environment").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    predictionRunId: text("prediction_run_id").notNull(),
+    modelId: text("model_id").notNull(),
+    inferenceBundleSha256: text("inference_bundle_sha256").notNull(),
+    forecastManifestUri: text("forecast_manifest_uri").notNull(),
+    forecastManifestSha256: text("forecast_manifest_sha256").notNull(),
+    readinessVerifierUri: text("readiness_verifier_uri").notNull(),
+    readinessVerifierSha256: text("readiness_verifier_sha256").notNull(),
+    servingConfigSha256: text("serving_config_sha256").notNull(),
+    predictionArtifactUri: text("prediction_artifact_uri").notNull(),
+    predictionArtifactSha256: text("prediction_artifact_sha256").notNull(),
+    decisionRef: text("decision_ref").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("uq_v5_serving_authorization_run").on(table.environment, table.season, table.week, table.predictionRunId)],
+);
 
 export const v5RatingSnapshots = pgTable(
   "v5_rating_snapshots",

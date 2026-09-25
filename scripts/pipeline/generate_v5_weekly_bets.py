@@ -96,13 +96,8 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
     if args.run_state != "preview":
         raise V5ServingError("V5 prediction artifact must begin in preview state")
     from_env = os.environ.get("CFB_ARTIFACT_ENV", "production")
-    if (
-        from_env == "production"
-        and spec.get("production_activation_authorized") is not True
-    ):
-        raise V5ServingError(
-            "V5 production publication lacks an explicit activation decision"
-        )
+    if from_env == "production" and not getattr(args, "prepare_only", False):
+        raise V5ServingError("production V5 generation requires --prepare-only")
     storage = get_storage(environment=from_env)
     manifest, forecasts, source_fields = verify_v5_source(spec, storage)
     identity = manifest["identity"]
@@ -193,8 +188,8 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
     existing_uri = prediction_run_manifest_path(year, week, args.run_id)
     if storage.exists(existing_uri):
         existing = read_json_artifact(existing_uri, storage)
-        if any(existing.get(key) != value for key, value in source_fields.items()):
-            raise FileExistsError("V5 run ID is bound to a different forecast identity")
+        if any(existing.get(key) != value for key, value in run_manifest.items()):
+            raise FileExistsError("V5 run ID is bound to different serving inputs")
     return write_prediction_run(
         rows,
         year=year,

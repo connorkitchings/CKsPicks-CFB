@@ -41,6 +41,7 @@ def main() -> None:
                 run_id=args.run_id,
                 reason=args.reason,
                 allow_v4_fallback=args.allow_v4_fallback,
+                environment=args.environment,
             )
     print(
         f"Selected {args.run_id} for {args.year} week {args.week}; previous={previous}"

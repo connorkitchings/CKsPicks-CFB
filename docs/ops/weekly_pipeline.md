@@ -14,6 +14,14 @@ The [product transformation contract](../plans/2026-09-23/01-v5-product-transfor
 
 The resumable operator supports `project-v5-ratings`, `publish-replay-week`, and `score-replay-week` with `--environment preview` and stable `--pipeline-run-id` values on retry. Replay publication uses `--no-update-current`; selecting a public run is a separate `scripts/pipeline/select_public_run.py` action with exact season, week, run ID, reason, and environment. A same-slate V4 rollback uses that command's `--allow-v4-fallback` and the reviewed V4 run ID. Inspect `site_week_selection_history`, `current_week`, `/api/health`, and populated browser pages after each selection. Do not use this procedure to claim prospective evidence for replay.
 
+The [manual V5 weekly operator](v5_weekly_operator.md) prepares a separate
+reviewed preflight and apply for each refreshed-parent, forecast, readiness,
+publication, freeze, and close component. It records stable ops receipts and
+does not schedule runs. Production V5 publication requires an admin-written,
+one-slate `v5_serving_authorizations` record bound to exact forecast,
+readiness, config, model, and prediction artifact checksums; no such record
+exists yet. V4 publication and fallback remain available.
+
 After stabilized Week 4 finals, refresh Contracts 07 and 08 under new immutable IDs, run and independently verify Contract 09 on the current slate, and rehearse Preview publication, freeze, close, and V4 rollback. Assemble the exact artifacts and observations for a separate production activation decision. V4 execution remains available until one V5 publish/freeze/close cycle succeeds.
 
 Upload route artifacts and configure the ten-cell manifest URI/checksum in the launch config `conf/weekly_bets/v4_2026.yaml` (V4 bundle `week0-2026-v4-strict-20260818-r2`; `conf/weekly_bets/v2_preview_2026.yaml` remains the wired fallback). Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.

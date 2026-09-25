@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 
@@ -17,6 +18,7 @@ def select_week_run(
     run_id: str,
     reason: str,
     allow_v4_fallback: bool = False,
+    environment: str | None = None,
 ) -> str | None:
     """Select a verified run inside the caller's transaction.
 
@@ -25,6 +27,9 @@ def select_week_run(
     """
     if not reason.strip():
         raise PublicSelectionError("selection reason is required")
+    environment = environment or os.getenv("CFB_ARTIFACT_ENV", "production")
+    if environment not in {"preview", "production"}:
+        raise PublicSelectionError("invalid selection environment")
     # A row lock cannot serialize the first selection because no row exists yet.
     cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", (season, week))
     cur.execute(
@@ -63,6 +68,15 @@ def select_week_run(
     elif evidence_class not in {"pending", "replay", "live"}:
         raise PublicSelectionError("V5 run lacks a truthful evidence class")
     else:
+        from cks_picks_cfb.ops.v5_release import (
+            V5ReleaseError,
+            assert_v5_database_environment,
+        )
+
+        try:
+            assert_v5_database_environment(cur, environment)
+        except V5ReleaseError as exc:
+            raise PublicSelectionError(str(exc)) from exc
         cur.execute(
             "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
             "FROM v5_release_policy WHERE id = 1"
@@ -70,9 +84,33 @@ def select_week_run(
         policy = cur.fetchone()
         if not policy or policy[0] != model_id or policy[1] != bundle_sha:
             raise PublicSelectionError("V5 run differs from approved model bundle")
-        if evidence_class == "pending" and (season, week) < (policy[2], policy[3]):
+        if evidence_class in {"pending", "live"} and (season, week) < (
+            policy[2],
+            policy[3],
+        ):
             raise PublicSelectionError(
                 "prospective V5 slate predates approved activation"
+            )
+        if environment == "production":
+            if evidence_class not in {"pending", "live"}:
+                raise PublicSelectionError(
+                    "production V5 selection requires a live run"
+                )
+            from cks_picks_cfb.artifacts import (
+                prediction_run_manifest_path,
+                read_json_artifact,
+            )
+            from cks_picks_cfb.data.storage import get_storage
+            from cks_picks_cfb.ops.v5_release import require_release_record
+
+            storage = get_storage(environment="production")
+            manifest = read_json_artifact(
+                prediction_run_manifest_path(season, week, run_id), storage
+            )
+            if manifest.get("artifact_sha256") != artifact_sha:
+                raise PublicSelectionError("stored run differs from immutable artifact")
+            require_release_record(
+                cur, manifest=manifest, storage=storage, season=season, week=week
             )
     cur.execute(
         "SELECT COUNT(*), COUNT(*) FILTER (WHERE g.season <> %s OR g.week <> %s) "

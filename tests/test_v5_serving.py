@@ -214,7 +214,7 @@ def test_v5_source_calls_independent_reconstruction(monkeypatch, tmp_path):
     assert fields["v5_live_forecast_manifest_sha256"] == hashlib.sha256(raw).hexdigest()
 
 
-def test_v5_production_mode_requires_separate_decision(monkeypatch):
+def test_v5_production_generation_requires_prepare_only(monkeypatch):
     monkeypatch.setenv("CFB_ARTIFACT_ENV", "production")
     cfg = OmegaConf.create(
         {
@@ -234,5 +234,38 @@ def test_v5_production_mode_requires_separate_decision(monkeypatch):
         run_id="2026w5-test",
         run_state="preview",
     )
-    with pytest.raises(V5ServingError, match="activation decision"):
+    with pytest.raises(V5ServingError, match="prepare-only"):
+        serving_script.run_v5_weekly_bets(args, cfg)
+
+
+def test_production_prepare_only_does_not_require_activation_flag(monkeypatch):
+    monkeypatch.setenv("CFB_ARTIFACT_ENV", "production")
+    cfg = OmegaConf.create(
+        {
+            "year": 2026,
+            "week": 5,
+            "v5_live_forecast": {
+                "schema_version": "v5_weekly_serving_v1",
+                "production_activation_authorized": False,
+            },
+        }
+    )
+    args = argparse.Namespace(
+        year=2026,
+        week=5,
+        as_of="2026-10-01T00:00:00Z",
+        dataset_refs_uri="refs.json",
+        run_id="2026w5-test",
+        run_state="preview",
+        prepare_only=True,
+    )
+    monkeypatch.setattr(serving_script, "get_storage", lambda **_: object())
+
+    def reached_forecast_verification(*_):
+        raise RuntimeError("source verification reached")
+
+    monkeypatch.setattr(
+        serving_script, "verify_v5_source", reached_forecast_verification
+    )
+    with pytest.raises(RuntimeError, match="source verification reached"):
         serving_script.run_v5_weekly_bets(args, cfg)
