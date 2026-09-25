@@ -962,7 +962,7 @@ def verify_v5_replay_publication_boundary(
     config = OmegaConf.load(config_path)
     if not config.get("v5_replay"):
         raise ValueError("V5 replay publication lacks its source config")
-    _, forecasts, source_fields = verify_v5_replay_source(
+    _, forecasts, source_fields, _ = verify_v5_replay_source(
         config.v5_replay,
         get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "preview")),
     )

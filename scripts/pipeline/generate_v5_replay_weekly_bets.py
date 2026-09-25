@@ -22,6 +22,7 @@ from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import V5ServingError, build_v5_serving_rows
 from scripts.pipeline.build_v5_replay import verify as verify_replay
+from scripts.pipeline.build_v5_week4_replay import verify as verify_week4_replay
 
 
 def verify_v5_replay_source(spec: Any, storage: Any):
@@ -43,15 +44,36 @@ def verify_v5_replay_source(spec: Any, storage: Any):
         raise V5ServingError("V5 replay forecast config is absent")
     import yaml
 
-    args = argparse.Namespace(
-        run_id=str(identity.get("run_id")),
-        expected_code_sha=str(identity.get("code_sha")),
-        measurement_manifest_uri=str(parents.get("measurement_uri")),
-        rating_manifest_uri=str(parents.get("rating_uri")),
-        config=str(config_path),
-        verify_manifest_uri=uri,
-    )
-    receipt = verify_replay(args, yaml.safe_load(config_path.read_text()), storage)
+    schema = manifest.get("schema_version")
+    if schema == "v5_replay_manifest_v1":
+        args = argparse.Namespace(
+            run_id=str(identity.get("run_id")),
+            expected_code_sha=str(identity.get("code_sha")),
+            measurement_manifest_uri=str(parents.get("measurement_uri")),
+            rating_manifest_uri=str(parents.get("rating_uri")),
+            config=str(config_path),
+            verify_manifest_uri=uri,
+        )
+        receipt = verify_replay(args, yaml.safe_load(config_path.read_text()), storage)
+    elif schema == "v5_week4_replay_manifest_v1":
+        timing = manifest.get("timing") or {}
+        args = argparse.Namespace(
+            run_id=str(identity.get("run_id")),
+            expected_code_sha=str(identity.get("code_sha")),
+            measurement_manifest_uri=str(parents.get("measurement_uri")),
+            rating_manifest_uri=str(parents.get("rating_replay_uri")),
+            schedule_ref_uri=str(
+                parents.get("schedule_ref_uri") or parents.get("schedule_uri")
+            ),
+            as_of=str(timing.get("source_cutoff_as_of")),
+            config=str(config_path),
+            verify_manifest_uri=uri,
+        )
+        receipt = verify_week4_replay(
+            args, yaml.safe_load(config_path.read_text()), storage
+        )
+    else:
+        raise V5ServingError("unexpected V5 replay manifest schema")
     receipt_uri = f"{uri.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
     receipt_raw = storage.read_bytes(receipt_uri)
     if (
@@ -67,14 +89,20 @@ def verify_v5_replay_source(spec: Any, storage: Any):
     ):
         raise V5ServingError("V5 replay prediction artifact checksum differs")
     forecasts = pd.read_csv(io.BytesIO(predictions_raw))
+    schedule_uri = parents.get("schedule_uri") or parents.get("schedule_ref_uri")
+    rating_raw_sha256 = parents.get("rating_replay_raw_sha256") or parents.get(
+        "rating_raw_sha256"
+    )
+    if not schedule_uri or not rating_raw_sha256:
+        raise V5ServingError("V5 replay manifest lacks schedule or rating lineage")
     fields = {
         "v5_replay_manifest_uri": uri,
         "v5_replay_manifest_sha256": expected_sha,
         "replay_verification_sha256": hashlib.sha256(receipt_raw).hexdigest(),
-        "v5_rating_replay_manifest_sha256": parents["rating_raw_sha256"],
+        "v5_rating_replay_manifest_sha256": rating_raw_sha256,
         "inference_bundle_sha256": parents["bundle_sha256"],
     }
-    return manifest, forecasts, fields
+    return manifest, forecasts, fields, str(schedule_uri)
 
 
 def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
@@ -85,8 +113,10 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
             "V5 replay requires a 2026 week, timestamp, and preview run"
         )
     storage = get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "preview"))
-    manifest, forecasts, fields = verify_v5_replay_source(cfg.v5_replay, storage)
-    schedule_raw = storage.read_bytes(manifest["parents"]["schedule_uri"])
+    manifest, forecasts, fields, schedule_uri = verify_v5_replay_source(
+        cfg.v5_replay, storage
+    )
+    schedule_raw = storage.read_bytes(schedule_uri)
     schedule = pd.read_parquet(io.BytesIO(schedule_raw))
     if {"home_classification", "away_classification"} <= set(schedule):
         schedule = schedule[

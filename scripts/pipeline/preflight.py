@@ -192,7 +192,7 @@ def check_model_bundle(config_path: Path, as_of: str, failures: list[str]) -> No
                 verify_v5_replay_source,
             )
 
-            manifest, _, _ = verify_v5_replay_source(cfg.v5_replay, storage)
+            manifest, _, _, _ = verify_v5_replay_source(cfg.v5_replay, storage)
             if manifest.get("evidence_class") != "replay":
                 raise ValueError("V5 replay evidence class differs")
             _ok("V5 replay independently reconstructed from exact parents.")

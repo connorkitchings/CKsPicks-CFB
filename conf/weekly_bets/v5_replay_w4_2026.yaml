@@ -1,0 +1,16 @@
+# Late-publication V5 Week 4 replay. Pin the independently verified Week 4
+# replay before use. All 58 predictions carry evidence_class replay with
+# actual publication timestamps; this is retrospective site history, never
+# prospective evidence.
+system_name: "Trench Warfare V5"
+model_id: "v5-possession-ppp-rho060-exposure"
+year: 2026
+week: 4
+spread_edge_threshold: 0.0
+spread_edge_threshold_high_conf: 8.0
+total_edge_threshold: 1.5
+v5_replay:
+  schema_version: v5_replay_serving_v1
+  replay_manifest_uri: artifacts/research/data-first-football-v1/forecasts/replay-runs/v5-week4-replay-20260925/week4-replay-manifest.json
+  replay_manifest_sha256: 2ba06bb037062a134315ec27dbfc8d3ede305bcfed3faf05bcc68fe50bc89043
+  forecast_config: conf/research/data_first_football_v1/live_forecast_v1.yaml
