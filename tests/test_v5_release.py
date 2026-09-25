@@ -199,6 +199,44 @@ def test_missing_admin_record_fails_before_any_insert():
     assert len(cur.sql) == 1 and cur.sql[0].startswith("SELECT")
 
 
+def test_authorization_reads_take_no_row_locks():
+    """Row locks need write privilege; the SELECT-only pipeline role has none.
+
+    Both authorization reads must therefore avoid locking clauses, or every
+    authorized production V5 write would fail closed at the read.
+    """
+    _, manifest, storage = release_fixture()
+    _, replay_manifest, _ = replay_fixture()
+
+    class Cursor:
+        def __init__(self):
+            self.sql = []
+
+        def execute(self, sql, params=None):
+            self.sql.append(sql)
+
+        def fetchone(self):
+            return None
+
+    live_cur, replay_cur = Cursor(), Cursor()
+    with pytest.raises(V5ReleaseError):
+        require_release_record(
+            live_cur, manifest=manifest, storage=storage, season=2026, week=5
+        )
+    with pytest.raises(V5ReleaseError):
+        require_replay_release_record(
+            replay_cur,
+            manifest=replay_manifest,
+            storage=storage,
+            environment="production",
+            season=2026,
+            week=4,
+        )
+    for sql in live_cur.sql + replay_cur.sql:
+        for clause in ("FOR UPDATE", "FOR SHARE", "FOR KEY SHARE", "FOR NO KEY UPDATE"):
+            assert clause not in sql.upper()
+
+
 class RoleCursor:
     def __init__(self, session_user, current_user):
         self.session_user = session_user

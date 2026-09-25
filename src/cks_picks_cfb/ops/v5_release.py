@@ -199,10 +199,14 @@ def require_release_record(
     week: int,
 ) -> None:
     """Read the admin-only record under the publication transaction."""
+    # No locking clause: the restricted pipeline role is SELECT-only on the
+    # authorization tables, and row locks require write privilege. Records are
+    # append-only with no concurrent writer in any approved flow; integrity
+    # comes from the exact byte revalidation inside the transaction.
     cur.execute(
         "SELECT " + ", ".join(AUTH_COLUMNS) + " FROM v5_serving_authorizations "
         "WHERE environment = 'production' AND season = %s AND week = %s "
-        "AND prediction_run_id = %s FOR SHARE",
+        "AND prediction_run_id = %s",
         (season, week, manifest.get("run_id")),
     )
     row = cur.fetchone()
@@ -334,12 +338,14 @@ def require_replay_release_record(
     week: int,
 ) -> None:
     """Read the admin-only replay record under the publication transaction."""
+    # No locking clause: see require_release_record. The replay table is
+    # append-only with the same SELECT-only pipeline access.
     cur.execute(
         "SELECT "
         + ", ".join(REPLAY_AUTH_COLUMNS)
         + " FROM v5_replay_release_authorizations "
         "WHERE environment = %s AND season = %s AND week = %s "
-        "AND prediction_run_id = %s FOR SHARE",
+        "AND prediction_run_id = %s",
         (environment, season, week, manifest.get("run_id")),
     )
     row = cur.fetchone()

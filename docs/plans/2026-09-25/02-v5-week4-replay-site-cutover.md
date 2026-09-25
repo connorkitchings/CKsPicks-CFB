@@ -130,3 +130,11 @@ This plan was a proposed material departure from the approved first-live-slate a
 ### Amendment 1 — Week 4 replay market grades (2026-09-25)
 
 The plan left Week 4 market grades optional ("may be absent if there are no legitimate point-in-time quotes"). The frozen V4 Week 4 run `2026w4-da5d98761831` captured timestamped pre-kickoff market quotes for all 58 lined games. The user approved grading V5 Week 4 replay leans against exactly those frozen quotes, displayed and recorded as replay grades and never counted as live or prospective performance. This introduces no feature leakage: V5 consumes no bookmaker data, the quotes predate kickoff, and the predictions keep their replay evidence class and actual publication timestamps.
+
+### Amendment 3 — Weeks 0–3 replay grades vs frozen quotes (2026-09-25)
+
+During production execution the user extended Amendment 1's frozen-quote grading to the Weeks 0–3 V5 replay leans, using the same mechanism (each week's frozen V4 pre-kickoff quotes, frozen-line rule, replay-labeled grades, never prospective). Reason: selecting ungraded V5 weeks would show a 0–0–0 public season record until Week 4 grades land, while legitimate point-in-time quotes exist for every completed week. V5 consumes no bookmaker data, so this introduces no leakage.
+
+### Amendment 2 — no row locks on authorization reads (2026-09-25)
+
+Production execution proved that `SELECT ... FOR SHARE` requires write privilege on this Postgres, so the restricted pipeline role (SELECT-only by design) cannot take row locks on either authorization table. Both `require_release_record` and `require_replay_release_record` now read without a locking clause; this was blocking every authorized production V5 write, including the previously approved live path. Integrity is unchanged: both tables are append-only with no concurrent writer in any approved flow, and every record is revalidated byte-for-byte against R2 inside the publication/selection transaction. Covered by a dedicated no-locking-clause regression test.
