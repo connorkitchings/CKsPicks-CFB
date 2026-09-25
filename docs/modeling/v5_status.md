@@ -42,6 +42,8 @@ For 2025, V5 margin MAE was 14.160 and total MAE was 13.356 across 934 games per
 2. Once Week 4 finals stabilize, refresh 07 and 08 under new immutable IDs. Contract 09 then applies the fixed V5 bridge to the next eligible slate, independently verifies its forecast and readiness, and repeats idempotently. The current [shadow runbook](../ops/v5_shadow_runbook.md) carries the exact commands and gates.
 3. Rehearse V5's conversion to the existing public prediction format on Preview, checking schedule coverage, pregame timing, sign conventions, health, and V4 rollback. Present the evidence for a separate production activation decision. No Week 4 or later result is allowed to refit this V5 identity.
 4. Keep immutable prospective freezes and outcome-versioned reports after launch. Six slates are a useful review window, not a prerequisite for declaring V5 developed or proposing a site cutover. Historical and diagnostic runs never become prospective observations.
+5. **Best-quote line policy (`model_side_best_quote_v1`) — in progress (2026-09-25).** The `prediction_market_selections` schema (migration 0016) and the `select_best_quote()` selection service are implemented and tested. Future runs select the best pre-kickoff executable quote for each target before freezing. V5 Weeks 0–4 historical replacement runs, Preview rehearsal, and production release remain gated on separate authorizations per `docs/plans/2026-09-25/03-permanent-best-quote-line-selection.md`.
+
 
 ## Contract map
 

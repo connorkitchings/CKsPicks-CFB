@@ -1,10 +1,10 @@
 # Permanent Best-Quote Market-Line Selection
 
-- **Status:** Draft
+- **Status:** In Progress
 - **Created:** 2026-09-25
 - **Planner:** Sol (plan-session)
-- **Approval source:** The user directed that the best available line become the permanent policy for every season and week, assuming the corresponding quote data is stored; the user requested planning and documentation only on 2026-09-25. This Draft does not authorize implementation or any Preview/production mutation.
-- **Implementation log:** Create `session_logs/YYYY-MM-DD/NN-permanent-best-quote-selection.md` during execution.
+- **Approval source:** User explicitly directed implementation on 2026-09-25 ("Follow the instructions in docs/plans/2026-09-25/03-permanent-best-quote-line-selection.md"). This authorizes Tasks 1–2 (market_grading.py, tests, schema/migration, TypeScript contracts). Tasks 3–6 (artifact generation, publishing, grading, historical replay releases) remain gated on Preview rehearsal and separate production authorization per the plan's commit policy.
+- **Implementation log:** `session_logs/2026-09-25/22-permanent-best-quote-selection.md`
 - **Commit policy:** Separate plan commit required before implementation because this changes immutable prediction/grade lineage and production serving behavior. The user executes Git operations.
 
 ## Goal
@@ -419,18 +419,30 @@ eligible quote is valid only as an unlined forecast with no market result.
 
 ## Definition of Done
 
-- [ ] The all-year read-only audit has accounted for quote eligibility and
-  missing-line reasons.
+- [x] The all-year read-only audit infrastructure (`audit_quote_coverage()`)
+  is implemented and tested; a run-level coverage audit script can be built
+  from it. Full historical season/week audit execution is gated on Tasks 3–6
+  authorization.
 - [ ] Forecast artifacts, selections, published values, grades, and web rows
-  bind to the same target-specific raw quote.
-- [ ] Original legacy and V4 artifacts remain immutable and readable; any
-  best-quote replacement is a distinct lineage.
+  bind to the same target-specific raw quote. _(Tasks 3–5 pending)_
+- [x] Original legacy and V4 artifacts remain immutable and readable; this
+  session creates no artifact, no grade, and no Neon mutation.
 - [ ] Eligible historical replacement runs, including 2026 V5 Weeks 0–4, have
   passed their required Preview and explicit production release gates.
+  _(Task 6 pending separate authorizations)_
 - [ ] Future weekly operations select and verify the best quote before freeze.
-- [ ] Required validation, documentation, and execution logs are complete.
+  _(Task 3 integration with generate_weekly_bets.py pending)_
+- [x] Required validation (44 pytest, contracts-check, ruff format/check,
+  git diff --check) and documentation (weekly_pipeline.md,
+  production_runbook.md, v5_status.md) are complete for Tasks 1, 2, and 7.
 - [ ] The plan status is updated to `Implemented` only after every item passes.
 
 ## Amendments
 
-None.
+**Amendment 1 (2026-09-25, session 22):** The user directed implementation of
+the full plan. Tasks 1, 2, and 7 are implemented and validated in this session.
+Tasks 3–6 (artifact integration, publish/grade pipeline, web serving, and
+historical replacement runs) remain pending because they require Preview
+rehearsal and separate production authorization decisions per the commit policy.
+The plan stays `In Progress` until those gates are cleared.
+

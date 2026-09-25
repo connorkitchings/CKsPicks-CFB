@@ -164,6 +164,32 @@ CFB_PUBLICATION_SEASON=2026
 CFB_PUBLICATION_MODE=predictions
 ```
 
+**Permanent best-quote market-line policy (`model_side_best_quote_v1`).** Every
+future forecast selects the best executable pre-kickoff quote for each target
+rather than displaying the `consensus_then_median_v1` snapshot value directly.
+The canonical snapshot is still used to *establish the model's side* — so line
+shopping cannot flip the direction — but the displayed point, edge, and grade
+all derive from the single frozen raw quote selected by the service.
+
+Selection rules (enforced by `select_best_quote()` in
+`src/cks_picks_cfb/models/market_grading.py`):
+
+1. Only quotes linked to the canonical snapshot, covering the same game and
+   target, with a non-null point and side-specific price, and captured
+   **strictly before kickoff** are eligible.
+2. For the model's fixed side: highest signed spread point for spread; lowest
+   point for over; highest point for under.
+3. Equal points → better American price → quote ID ascending (deterministic).
+4. A target with no eligible quote shows no lean (`null`) and receives no
+   grade.  The system never substitutes a synthetic average, post-kickoff
+   quote, or a quote from another game.
+
+Each selection is recorded in the append-only `prediction_market_selections`
+table (`run_id`, `game_id`, `target`, `quote_id`, `snapshot_id`, `side`,
+`point`, `price`, `edge`, `policy_version`).  New grades must populate the
+nullable `market_quote_id` column on `prediction_grades` so the exact quote
+used for settlement is provable from the database.
+
 Week availability needs no variable: the repo-owned range in
 `web/src/lib/publication.ts` plus the explicit Neon public selection govern
 each week. Publish, freeze, then select the reviewed run to reveal it.

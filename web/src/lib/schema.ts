@@ -323,6 +323,7 @@ export const predictionGrades = pgTable(
     gameId: bigint("game_id", { mode: "number" }).notNull().references(() => games.gameId, { onDelete: "restrict" }),
     target: text("target").notNull(),
     marketSnapshotId: text("market_snapshot_id").references(() => marketSnapshots.snapshotId, { onDelete: "restrict" }),
+    marketQuoteId: text("market_quote_id").references(() => marketQuotes.quoteId, { onDelete: "restrict" }),
     side: text("side").notNull(),
     result: betResult("result").notNull(),
     profitUnits: numeric("profit_units", { precision: 10, scale: 4 }).notNull(),
@@ -411,3 +412,33 @@ export const currentWeek = pgTable(
 );
 
 export type CurrentWeek = typeof currentWeek.$inferSelect;
+
+// ---------------------------------------------------------------------------
+// prediction_market_selections: append-only target-level best-quote lineage
+// ---------------------------------------------------------------------------
+// One immutable row per (run_id, game_id, target).  Records the exact quote
+// used to derive the public line, edge, and grade.
+
+export const predictionMarketSelections = pgTable(
+  "prediction_market_selections",
+  {
+    runId: text("run_id").notNull().references(() => predictionRuns.runId, { onDelete: "restrict" }),
+    gameId: bigint("game_id", { mode: "number" }).notNull().references(() => games.gameId, { onDelete: "restrict" }),
+    target: text("target").notNull(),
+    snapshotId: text("snapshot_id").notNull().references(() => marketSnapshots.snapshotId, { onDelete: "restrict" }),
+    quoteId: text("quote_id").notNull().references(() => marketQuotes.quoteId, { onDelete: "restrict" }),
+    side: text("side").notNull(),
+    point: doublePrecision("point").notNull(),
+    price: doublePrecision("price").notNull(),
+    edge: doublePrecision("edge").notNull(),
+    policyVersion: text("policy_version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.runId, table.gameId, table.target] }),
+    index("idx_pms_run_id").on(table.runId),
+    index("idx_pms_game_id").on(table.gameId),
+  ],
+);
+
+export type PredictionMarketSelection = typeof predictionMarketSelections.$inferSelect;

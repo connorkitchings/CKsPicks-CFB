@@ -58,6 +58,18 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
   unblock, unset `CFB_ODDS_API_ENABLED` and rerun; never debug with the flag
   on in production. Resumes never re-issue the paid request.
 
+- **Best-quote market-line policy (`model_side_best_quote_v1`).** Before
+  each freeze, the selection service picks the best pre-kickoff executable
+  quote for each target from the frozen snapshot's linked quotes.  The
+  canonical snapshot still sets the model's side; the selected raw quote
+  determines the public point, edge, and grade.  Targets with no eligible
+  pre-kickoff quote show no lean and receive no grade.  The selection is
+  stored in `prediction_market_selections` and the quote ID is written to
+  `prediction_grades.market_quote_id`.  Do not display or grade against a
+  synthetic consensus average for any new run.
+
+
+
 ### 2. Manual snapshot ledger and final freeze (before kickoff)
 
 Every progressive publish is a durable timing observation, not a replacement

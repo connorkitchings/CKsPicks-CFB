@@ -393,6 +393,7 @@ CREATE TABLE IF NOT EXISTS prediction_grades (
     game_id            BIGINT NOT NULL REFERENCES games(game_id) ON DELETE RESTRICT,
     target             TEXT NOT NULL CHECK (target IN ('spread', 'total')),
     market_snapshot_id TEXT REFERENCES market_snapshots(snapshot_id) ON DELETE RESTRICT,
+    market_quote_id    TEXT REFERENCES market_quotes(quote_id) ON DELETE RESTRICT,
     side               TEXT NOT NULL CHECK (side IN ('home', 'away', 'over', 'under')),
     result             bet_result NOT NULL,
     profit_units       NUMERIC(10, 4) NOT NULL,
@@ -404,6 +405,58 @@ CREATE TABLE IF NOT EXISTS prediction_grades (
 CREATE INDEX IF NOT EXISTS idx_prediction_grades_game ON prediction_grades (game_id);
 CREATE INDEX IF NOT EXISTS idx_prediction_grades_run_result
     ON prediction_grades (run_id, target, result);
+
+-- ---------------------------------------------------------------------------
+-- prediction_market_selections: append-only target-level best-quote lineage
+-- ---------------------------------------------------------------------------
+-- One immutable row per (run_id, game_id, target).  Records the exact quote
+-- used to derive the public line, edge, and grade.  The selected quote must
+-- belong to the same game (enforced by trigger below).
+CREATE TABLE IF NOT EXISTS prediction_market_selections (
+    run_id          TEXT NOT NULL REFERENCES prediction_runs(run_id) ON DELETE RESTRICT,
+    game_id         BIGINT NOT NULL REFERENCES games(game_id) ON DELETE RESTRICT,
+    target          TEXT NOT NULL CHECK (target IN ('spread', 'total')),
+    snapshot_id     TEXT NOT NULL REFERENCES market_snapshots(snapshot_id) ON DELETE RESTRICT,
+    quote_id        TEXT NOT NULL REFERENCES market_quotes(quote_id) ON DELETE RESTRICT,
+    side            TEXT NOT NULL CHECK (side IN ('home', 'away', 'over', 'under')),
+    point           DOUBLE PRECISION NOT NULL,
+    price           DOUBLE PRECISION NOT NULL,
+    edge            DOUBLE PRECISION NOT NULL CHECK (edge >= 0),
+    policy_version  TEXT NOT NULL CHECK (length(trim(policy_version)) > 0),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (run_id, game_id, target)
+);
+
+CREATE OR REPLACE FUNCTION trg_pms_quote_game_match()
+RETURNS TRIGGER AS $$
+DECLARE
+    quote_game_id BIGINT;
+BEGIN
+    SELECT mq.game_id INTO quote_game_id
+    FROM market_quotes mq
+    WHERE mq.quote_id = NEW.quote_id;
+
+    IF quote_game_id IS DISTINCT FROM NEW.game_id THEN
+        RAISE EXCEPTION
+            'prediction_market_selections: quote_id % belongs to game_id % but selection is for game_id %',
+            NEW.quote_id, quote_game_id, NEW.game_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS pms_quote_game_match ON prediction_market_selections;
+CREATE TRIGGER pms_quote_game_match
+    BEFORE INSERT ON prediction_market_selections
+    FOR EACH ROW
+    EXECUTE FUNCTION trg_pms_quote_game_match();
+
+CREATE INDEX IF NOT EXISTS idx_pms_run_id
+    ON prediction_market_selections (run_id);
+
+CREATE INDEX IF NOT EXISTS idx_pms_game_id
+    ON prediction_market_selections (game_id);
+
 
 -- Objective outcomes remain independent of any line or prediction run.  The
 -- legacy result columns are retained only until the post-Week-1 compatibility
@@ -655,7 +708,8 @@ END $$;
 GRANT USAGE ON SCHEMA public TO cks_web;
 GRANT SELECT ON games, game_results, prediction_runs, predictions,
     prediction_grades, market_snapshots, system_stats, historical_model_context,
-    current_week, site_week_selections, v5_rating_snapshots TO cks_web;
+    current_week, site_week_selections, v5_rating_snapshots,
+    prediction_market_selections TO cks_web;
 GRANT USAGE ON SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, catalog, ops TO cks_pipeline;
