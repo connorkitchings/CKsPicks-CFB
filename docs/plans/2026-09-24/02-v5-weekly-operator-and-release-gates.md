@@ -1,10 +1,10 @@
 # V5 Weekly Operator and Exact Release Gates
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-09-24
 - **Planner:** Sol (plan-session)
 - **Approval source:** User selected workflow preparation and an operator CLI in the planning conversation, then said “Proceed” after reviewing the complete plan on 2026-09-24. On 2026-09-25 the user approved the production-role correction, chose to provision the role and apply migration 0014 now, then instructed Sol to document the amendment without implementing it. Neither approval authorizes production V5 activation.
-- **Implementation log:** `session_logs/2026-09-25/01-v5-weekly-operator-and-release-gates.md`
+- **Implementation log:** `session_logs/2026-09-25/03-v5-weekly-operator-implementation.md` (initial paused implementation recorded in `session_logs/2026-09-25/01-v5-weekly-operator-and-release-gates.md`)
 - **Commit policy:** Separate plan commit recommended because the work spans an append-only migration and production publication policy. Git operations remain user-controlled.
 
 ## Goal and current state
@@ -71,10 +71,18 @@ Update `docs/ops/weekly_pipeline.md`, `docs/ops/production_runbook.md`, and `doc
 
 The candidate-preparation split must preserve the existing final source reconstruction; a local CSV or caller-supplied label must not bypass it. A partial R2 prefix is ineligible and requires a new run ID after diagnosis. The operator must not conceal the approval step by chaining preflight into apply. The V5 release record is a serving authorization, not a change to the research manifest or a claim of model superiority over V4.
 
-- [ ] Manual stage CLI, status, retries, and negative gates pass.
-- [ ] Exact release schema and final publication/selection checks pass; no production authorization row or activation was created.
-- [ ] Candidate preparation, Preview/fixture rehearsal, focused tests, contracts, lint, and docs checks pass.
-- [ ] Runbooks and implementation session log record the actual result; plan status changes to `Implemented` only after all items pass.
+- [x] Manual stage CLI, status, retries, and negative gates pass.
+- [x] Exact release schema and final publication/selection checks pass; no production authorization row or activation was created.
+- [x] Candidate preparation, Preview/fixture rehearsal, focused tests, contracts, lint, and docs checks pass.
+- [x] Runbooks and implementation session log record the actual result; plan status changes to `Implemented` only after all items pass.
+
+## Implementation evidence (2026-09-25)
+
+- Dual-identity guard: `assert_v5_database_environment` now requires `session_user` and `current_user` to equal `cks_prod_pipeline` (production) or `cks_preview_pipeline` (Preview) at the publisher and selection boundaries; negative tests cover owner, migrator, web, wrong-branch, prefix-impostor, and `SET ROLE` sessions with zero writes, and V4 fallback remains usable. Full suite: 1364 passed, 2 skipped; Ruff, contracts validation, `make contracts-check`, strict MkDocs, web typecheck/lint, and `git diff --check` all passed.
+- Production wrapper: `scripts/ops/with_production_pipeline_env.sh` reads only the `ckspicks-cfb/production/pipeline-url` Keychain item and fails closed when absent; documented as the production V5 operator/publisher/selector entry point.
+- Production role: `cks_prod_pipeline` provisioned as a LOGIN role (NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION) whose only membership is the `cks_pipeline` group. Verified through the real wrapper connection: exact identity, serving INSERT grants, authorization-table SELECT with INSERT/UPDATE/DELETE/TRUNCATE denied, no database or schema CREATE, zero owned tables. `cks_prod_web` has no authorization-table access. The owner URL remains admin/migration-only.
+- Production migration: the user applied 0013→0014 (`e5d7c93`); both checksums verified byte-identical to the committed files and to the Preview-applied 0014. `v5_serving_authorizations` exists with zero rows; the V4 serving view and frozen active run `2026w4-da5d98761831` (58/58) are unchanged. No authorization row, V5 publication, public selection, or activation was created.
+- Preview operator rehearsal: cycle `v5-rehearsal-2026w4` applied the repair component against the pinned stabilized Weeks 0–3 inputs (bundle `season-2026-w0-w3-byplay.json`, anchor `repair-v2-20260909T1417Z`), producing immutable rehearsal run `repair-2026-rehearsal-20260925` (state `repaired_live_only`, 157/157/157 games, zero omissions) with independent verification, receipt `v5-cycle-v5-rehearsal-2026w4-repair` succeeded, exact `status` output, and an idempotent `resume_skip` on repeated identical apply. This rehearsal is fixture-class evidence, not a certified live forecast.
 
 ## Amendments
 

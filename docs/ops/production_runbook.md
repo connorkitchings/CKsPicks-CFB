@@ -3,11 +3,13 @@
 > **V5 cutover status:** [V5 model development is complete](../modeling/v5_status.md), but V4 remains the public site model. The V5 weekly adapter is configured only for Preview rehearsal until a current forecast is independently verified, a Preview publication and V4 rollback are proven, and a separate production activation decision is recorded. Six prospective slates are not a prelaunch condition.
 
 The [manual V5 weekly operator](v5_weekly_operator.md) is the prepared
-post-acceptance cadence. Its exact release guard is deployed only on Preview
-(migration 0014); production remains on the V4 path. An immutable candidate
+post-acceptance cadence. Its exact release guard is deployed on Preview and
+production (migration 0014; authorization table empty in both), and production
+V5 publication and selection require the restricted `cks_prod_pipeline` login
+via `zsh scripts/ops/with_production_pipeline_env.sh`. An immutable candidate
 can be prepared without Neon activation, but production V5 publication and
-selection fail closed until migration 0014 and a separately approved,
-admin-written authorization for that exact slate and artifact are present.
+selection fail closed until a separately approved, admin-written authorization
+for that exact slate and artifact is present.
 
 > **As-built operations for the live system** (deployed 2026-08-18).
 > This runbook reflects production reality: Vercel + Neon + Cloudflare R2 with

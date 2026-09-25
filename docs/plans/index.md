@@ -32,7 +32,7 @@ The [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) is t
 
 The [V5 replay and Preview rehearsal](2026-09-24/01-v5-replay-preview-rehearsal.md) is Implemented under the product transformation. It covered clean-code replay publication, Preview scoring and serving, and same-week V4 rollback with V5 restoration. It does not authorize the current-slate or production cutover.
 
-The [V5 weekly operator and exact release gates](2026-09-24/02-v5-weekly-operator-and-release-gates.md) contract is In Progress, with an approved 2026-09-25 amendment for a restricted production pipeline role and production migrations through 0014. Terra paused at the role conflict; the amendment is documented but not implemented. No production V5 authorization or activation is approved, and the stabilized Week 4 finals gate remains.
+The [V5 weekly operator and exact release gates](2026-09-24/02-v5-weekly-operator-and-release-gates.md) contract is Implemented (2026-09-25) under its approved production-role amendment: the exact dual-identity guard, Keychain production wrapper, restricted `cks_prod_pipeline` role, and production migration 0014 are verified, and a fixture-class Preview operator rehearsal exercised the full controller. No production V5 authorization or activation is approved, and the stabilized Week 4 finals gate remains.
 
 The [V5 current status guide](../modeling/v5_status.md) is the entry point for the accepted model, exact lineage, historical results, and remaining operational work. V5 model development is complete. V4 still serves the public site.
 

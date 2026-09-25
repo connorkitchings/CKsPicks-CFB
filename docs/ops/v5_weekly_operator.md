@@ -1,8 +1,11 @@
 # Manual V5 Weekly Operator
 
-> **Status:** Code preparation and Preview rehearsal only. V4 remains public.
-> The first live 07/08 refresh requires stabilized Week 4 finals. A production
+> **Status:** Implemented and rehearsed on Preview; V4 remains public. The
+> first live 07/08 refresh requires stabilized Week 4 finals. A production
 > V5 publish requires a separately approved, exact one-slate release record.
+> The fixture-class rehearsal (cycle `v5-rehearsal-2026w4`, repair component
+> on stabilized Weeks 0–3 inputs) exercised every controller mechanic; it is
+> not live evidence.
 
 ## One cycle, reviewed stages
 

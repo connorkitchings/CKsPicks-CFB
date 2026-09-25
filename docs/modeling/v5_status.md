@@ -5,10 +5,18 @@
 > **Public site:** V4 remains active. V5 activation requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
 
 The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
-release guard are in implementation preparation. Preview migration 0014 has
-an empty authorization table; no production release record or V5 activation
-has been created. The existing Weeks 0–3 replay rehearsal does not replace
-the stabilized Week 4 07/08 refresh or a prospective 09/05 certification.
+release guard are implemented and rehearsed. Migration 0014 is applied on both
+Preview and production with an empty authorization table in each, and
+production V5 publication/selection now requires the restricted
+`cks_prod_pipeline` login through `scripts/ops/with_production_pipeline_env.sh`
+(both `session_user` and `current_user` are checked; the owner credential is
+rejected). A fixture-class Preview operator rehearsal (cycle
+`v5-rehearsal-2026w4`, repair run `repair-2026-rehearsal-20260925` on the
+stabilized Weeks 0–3 inputs, 157/157/157 games) exercised preflight, apply with
+independent verification, status, and idempotent resume. That rehearsal is not
+live evidence. No production release record or V5 activation has been created.
+The existing Weeks 0–3 replay rehearsal does not replace the stabilized Week 4
+07/08 refresh or a prospective 09/05 certification.
 
 ## What V5 is
 
