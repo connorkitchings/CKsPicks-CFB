@@ -115,13 +115,15 @@ Only after the exact decision, insert replay authorizations with the admin role 
 
 ## Definition of Done
 
-- [ ] Material release-policy amendment approved before implementation; exact authorization design reviewed.
+- [x] Material release-policy amendment approved before implementation; exact authorization design reviewed.
 - [ ] 2025 historical research coverage audited and represented honestly; Weeks 0–3 V5 site history complete, scored, and selected.
-- [ ] All 58 Week 4 V5 predictions independently verified from pre-slate inputs and labeled replay with actual timestamps.
-- [ ] Preview publication, scoring, page checks, and V4 Week 4 rollback proven.
-- [ ] Exact production replay packet reviewed and separately approved; only then are Week 0–4 replay authorizations and selection applied.
+- [x] All 58 Week 4 V5 predictions independently verified from pre-slate inputs and labeled replay with actual timestamps.
+- [x] Preview publication, scoring, page checks, and V4 Week 4 rollback proven.
+- [x] Exact production replay packet reviewed and separately approved; only then are Week 0–4 replay authorizations and selection applied.
 - [ ] Public V5-only 2026 view through Week 4 verified; V4 frozen run preserved; Week 4 retrospective scoring completed after certified finals.
 - [ ] Focused validation, documentation, and implementation log complete; status changed to `Implemented` only after every item passes.
+
+Execution status 2026-09-25: all engineering and the production release are done — five replay authorizations inserted, Weeks 0–4 published and selected in production (W0–3 scored with frozen-quote grades; W4 published, 58/58 predictions, 0 finals), V4 runs untouched, public health confirms serving. Open: the 2025 coverage audit, Week 4 retrospective scoring after its 58 finals certify, and the final log/validation pass before marking Implemented.
 
 ## Amendments
 

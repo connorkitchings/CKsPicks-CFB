@@ -2,7 +2,7 @@
 
 > **Model development:** Complete and accepted on 2026-09-22.
 > **Live 2026 forecasts:** The full-corpus inference bundle is pinned and a read-only Week 4 preflight passed. First current-state certification awaits stabilized Week 4 finals and refreshed, independently verified 07/08 parents.
-> **Public site:** V4 remains active. V5 activation requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
+> **Public site:** V5 replay is primary for 2026 Weeks 0–4 since 2026-09-25 (clearly labeled retrospective; W0–3 scored vs frozen quotes, W4 pending finals). V4 runs stay frozen/scored as the tested rollback. First *live* V5 activation still requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
 
 The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
 release guard are implemented and rehearsed. Migration 0014 is applied on both
@@ -14,8 +14,13 @@ rejected). A fixture-class Preview operator rehearsal (cycle
 `v5-rehearsal-2026w4`, repair run `repair-2026-rehearsal-20260925` on the
 stabilized Weeks 0–3 inputs, 157/157/157 games) exercised preflight, apply with
 independent verification, status, and idempotent resume. That rehearsal is not
-live evidence. No production release record or V5 activation has been created.
-The existing Weeks 0–3 replay rehearsal does not replace the stabilized Week 4
+live evidence. On 2026-09-25 the replay cutover released V5 to production under
+separate exact replay authorizations (migration 0015, five rows, pipeline
+SELECT-only): Weeks 0–4 select V5 replay runs, Weeks 0–3 are scored against
+frozen pre-kickoff quotes (spread 72-82-3, total 67-54-0, labeled replay), and
+Week 4 awaits its 58 certified finals for scoring. No live authorization or
+prospective V5 activation has been created. The existing Weeks 0–3 replay
+rehearsal does not replace the stabilized Week 4
 07/08 refresh or a prospective 09/05 certification.
 
 ## What V5 is
