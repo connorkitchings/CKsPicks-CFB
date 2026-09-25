@@ -11,6 +11,40 @@ const PUBLISHED_WEEKS = Array.from({ length: 17 }, (_, week) => week);
 
 export type PublicationMode = "market" | "predictions";
 
+/** Public display names. Manifest and database identities are unchanged. */
+const DISPLAY_SYSTEM_NAMES: Record<string, string> = {
+  "Trench Warfare V5": "Blitzkrieg",
+};
+
+/** Map an internal model system name to its public display name. */
+export function displaySystemName(systemName: string | null): string | null {
+  if (systemName === null) return null;
+  return DISPLAY_SYSTEM_NAMES[systemName] ?? systemName;
+}
+
+/** Lean/edge twins of the pipeline _derive_lean rules, for replay display. */
+export function deriveSpreadView(
+  predictedSpread: number | null,
+  homeLine: number | null,
+): { lean: "home" | "away" | null; edge: number | null } {
+  if (predictedSpread === null || homeLine === null) return { lean: null, edge: null };
+  return {
+    lean: predictedSpread > -homeLine ? "home" : "away",
+    edge: Math.abs(predictedSpread + homeLine),
+  };
+}
+
+export function deriveTotalView(
+  predictedTotal: number | null,
+  totalLine: number | null,
+): { lean: "over" | "under" | null; edge: number | null } {
+  if (predictedTotal === null || totalLine === null) return { lean: null, edge: null };
+  return {
+    lean: predictedTotal > totalLine ? "over" : "under",
+    edge: Math.abs(predictedTotal - totalLine),
+  };
+}
+
 /** Fail closed: model output is public only after an exact server-side opt-in. */
 export function parsePublicationMode(value: string | undefined): PublicationMode {
   return value === "predictions" ? "predictions" : "market";

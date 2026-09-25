@@ -1,4 +1,5 @@
 import type { PublicationMode } from "@/lib/publication";
+import { displaySystemName } from "@/lib/publication";
 import { ThemeToggle } from "./ThemeToggle";
 import { SeasonSelector } from "./SeasonSelector";
 
@@ -33,7 +34,7 @@ export function Header({
           </h1>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
             {publicationMode === "predictions" && systemName && (
-              <span className="font-medium text-ink-muted">{systemName}</span>
+              <span className="font-medium text-ink-muted">{displaySystemName(systemName)}</span>
             )}
             {publicationMode === "predictions" && runState && (
               <span className="rounded bg-surface-inset px-1.5 py-0.5 font-semibold uppercase tracking-wide text-ink-muted">

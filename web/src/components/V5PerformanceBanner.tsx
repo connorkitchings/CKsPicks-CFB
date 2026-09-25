@@ -1,8 +1,11 @@
 import type { Performance } from "@/lib/v5";
 
 export function V5PerformanceBanner({ performance }: { performance: Performance[] }) {
-  const replay = performance.find((row) => row.classification === "replay");
-  const live = performance.find((row) => row.classification === "live");
+  // Classifications with no picks yet (e.g. live before the first live
+  // slate) carry no signal; the detailed performance page still lists them.
+  const rows = performance.filter((row) => row.games > 0);
+  const replay = rows.find((row) => row.classification === "replay");
+  const live = rows.find((row) => row.classification === "live");
   if (!replay && !live) return null;
   return <section aria-label="V5 season performance" className="grid gap-3 sm:grid-cols-2">
     {[replay, live].filter((row): row is Performance => Boolean(row)).map((row) =>

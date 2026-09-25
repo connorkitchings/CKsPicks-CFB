@@ -1,7 +1,8 @@
-import { eq, asc, and, inArray, lte, sql } from "drizzle-orm";
+import { eq, asc, and, inArray, lte, sql, notLike } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 import { isSelectableRun } from "./run-selection";
+import { deriveSpreadView, deriveTotalView } from "./publication";
 
 type BaseGame = {
   gameId: number;
@@ -260,6 +261,98 @@ function withRecords<
   });
 }
 
+type FrozenLine = { spread: number | null; total: number | null };
+
+/** Frozen pre-kickoff snapshot lines from the week's closed non-V5 run. */
+async function frozenLinesForWeek(
+  season: number,
+  week: number,
+): Promise<Map<number, FrozenLine>> {
+  const runs = await db
+    .select({
+      runId: schema.predictionRuns.runId,
+      state: schema.predictionRuns.state,
+    })
+    .from(schema.predictionRuns)
+    .where(
+      and(
+        eq(schema.predictionRuns.season, season),
+        eq(schema.predictionRuns.week, week),
+        notLike(schema.predictionRuns.modelId, "v5-%"),
+        inArray(schema.predictionRuns.state, ["frozen", "scored"]),
+      ),
+    );
+  const ordered = [...runs].sort((a, b) =>
+    a.state === b.state ? 0 : a.state === "scored" ? -1 : 1,
+  );
+  const lines = new Map<number, FrozenLine>();
+  for (const run of ordered) {
+    const snapshotRows = await db
+      .select({
+        gameId: schema.predictions.gameId,
+        spread: schema.marketSnapshots.spread,
+        total: schema.marketSnapshots.total,
+      })
+      .from(schema.predictions)
+      .innerJoin(
+        schema.marketSnapshots,
+        eq(schema.predictions.marketSnapshotId, schema.marketSnapshots.snapshotId),
+      )
+      .where(eq(schema.predictions.runId, run.runId));
+    for (const row of snapshotRows) {
+      if (!lines.has(row.gameId)) {
+        lines.set(row.gameId, { spread: row.spread, total: row.total });
+      }
+    }
+    if (lines.size > 0) break;
+  }
+  return lines;
+}
+
+/**
+ * Fill market lines missing from serv­ing rows (replay runs are built without
+ * a market feed) from the week's frozen snapshots — the same quotes the
+ * grades use — and derive the matching leans and edges. Stored values are
+ * never overwritten; the immutable prediction bytes are untouched.
+ */
+export async function withFrozenLines<
+  T extends {
+    gameId: number;
+    homeTeamSpreadLine: number | null;
+    totalLine: number | null;
+    predictedSpread: number | null;
+    predictedTotal: number | null;
+    spreadLean: "home" | "away" | null;
+    totalLean: "over" | "under" | null;
+    edgeSpread: number | null;
+    edgeTotal: number | null;
+  },
+>(rows: T[], season: number, week: number): Promise<T[]> {
+  if (!rows.some((row) => row.homeTeamSpreadLine === null || row.totalLine === null)) {
+    return rows;
+  }
+  const lines = await frozenLinesForWeek(season, week);
+  if (lines.size === 0) return rows;
+  return rows.map((row) => {
+    const frozen = lines.get(row.gameId);
+    if (!frozen) return row;
+    const homeTeamSpreadLine = row.homeTeamSpreadLine ?? frozen.spread;
+    const totalLine = row.totalLine ?? frozen.total;
+    let { spreadLean, totalLean, edgeSpread, edgeTotal } = row;
+    if (spreadLean === null) {
+      const view = deriveSpreadView(row.predictedSpread, homeTeamSpreadLine);
+      spreadLean = view.lean;
+      if (edgeSpread === null) edgeSpread = view.edge;
+    }
+    if (totalLean === null) {
+      const view = deriveTotalView(row.predictedTotal, totalLine);
+      totalLean = view.lean;
+      if (edgeTotal === null) edgeTotal = view.edge;
+    }
+    return { ...row, homeTeamSpreadLine, totalLine, spreadLean, totalLean, edgeSpread, edgeTotal };
+  });
+}
+
 /** Return all games (with optional results) for a given season/week, sorted by start time. */
 export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
   const run = await getRunForWeek(season, week);
@@ -316,15 +409,17 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       .where(eq(schema.predictions.runId, run.runId))
       .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
     const completed = await getSeasonCompletedGames(season);
-    return withRecords(
+    const games = await withFrozenLines(
       rows.map((row) => ({
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,
         evidenceClass: run.evidenceClass,
       })),
-      completed,
-    ) as PredictionGame[];
+      season,
+      week,
+    );
+    return withRecords(games, completed) as PredictionGame[];
   }
 
   if (season === 2026) return getMarketGamesForWeek(season, week);
