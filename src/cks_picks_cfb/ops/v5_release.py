@@ -29,6 +29,32 @@ AUTH_COLUMNS = (
     "decision_ref",
 )
 
+REPLAY_AUTH_COLUMNS = (
+    "authorization_id",
+    "environment",
+    "season",
+    "week",
+    "prediction_run_id",
+    "model_id",
+    "inference_bundle_sha256",
+    "replay_manifest_uri",
+    "replay_manifest_sha256",
+    "verifier_uri",
+    "verifier_sha256",
+    "serving_config_sha256",
+    "prediction_artifact_uri",
+    "prediction_artifact_sha256",
+    "decision_ref",
+)
+
+REPLAY_MANIFEST_SCHEMAS = frozenset(
+    {"v5_replay_manifest_v1", "v5_week4_replay_manifest_v1"}
+)
+
+REPLAY_VERIFIER_SCHEMAS = frozenset(
+    {"v5_replay_verification_v1", "v5_week4_replay_verification_v1"}
+)
+
 
 class V5ReleaseError(ValueError):
     """The reviewed release does not authorize this exact immutable run."""
@@ -188,6 +214,141 @@ def require_release_record(
         manifest=manifest,
         storage=storage,
         environment="production",
+        season=season,
+        week=week,
+    )
+
+
+def _replay_manifest(storage: Any, uri: str, expected_sha: str) -> dict[str, Any]:
+    """Load one frozen replay manifest and bind its exact bytes."""
+    raw = storage.read_bytes(str(uri))
+    if hashlib.sha256(raw).hexdigest() != expected_sha:
+        raise V5ReleaseError(f"replay manifest checksum changed: {uri}")
+    manifest = json.loads(raw)
+    if not isinstance(manifest, dict):
+        raise V5ReleaseError("replay manifest is not a JSON object")
+    verify_signed_payload(manifest, label="replay release manifest")
+    if (
+        manifest.get("schema_version") not in REPLAY_MANIFEST_SCHEMAS
+        or manifest.get("state") != "frozen"
+        or manifest.get("evidence_class") != "replay"
+        or manifest.get("production_activation_authorized") is not False
+    ):
+        raise V5ReleaseError("replay release manifest is not frozen replay evidence")
+    return manifest
+
+
+def _replay_verifier(
+    storage: Any,
+    uri: str,
+    expected_sha: str,
+    *,
+    replay_manifest_sha256: str,
+    replay_records_sha256: str | None,
+) -> None:
+    """Confirm the independent verifier receipt binds this exact replay run."""
+    raw = storage.read_bytes(str(uri))
+    if hashlib.sha256(raw).hexdigest() != expected_sha:
+        raise V5ReleaseError(f"replay verifier checksum changed: {uri}")
+    receipt = json.loads(raw)
+    if not isinstance(receipt, dict):
+        raise V5ReleaseError("replay verifier is not a JSON object")
+    verify_signed_payload(receipt, label="replay release verifier")
+    if (
+        receipt.get("schema_version") not in REPLAY_VERIFIER_SCHEMAS
+        or receipt.get("state") != "verified"
+        or receipt.get("verified", True) is not True
+        or receipt.get("production_activation_authorized") is not False
+        or receipt.get("replay_manifest_raw_sha256") != replay_manifest_sha256
+    ):
+        raise V5ReleaseError("replay verifier does not certify this replay run")
+    if (
+        replay_records_sha256
+        and receipt.get("prediction_records_sha256") != replay_records_sha256
+    ):
+        raise V5ReleaseError("replay verifier binds another prediction record")
+
+
+def validate_replay_release_record(
+    record: Mapping[str, Any],
+    *,
+    manifest: Mapping[str, Any],
+    storage: Any,
+    environment: str,
+    season: int,
+    week: int,
+) -> None:
+    """Validate exact replay identities and the verifier receipt before a write.
+
+    Replay records never satisfy prospective, readiness, or live gates. A live
+    09/05 authorization is a different record in a different table.
+    """
+    expected = {
+        "environment": environment,
+        "season": season,
+        "week": week,
+        "prediction_run_id": manifest.get("run_id"),
+        "model_id": manifest.get("model_id"),
+        "inference_bundle_sha256": manifest.get("inference_bundle_sha256"),
+        "serving_config_sha256": manifest.get("config_sha"),
+        "prediction_artifact_uri": manifest.get("artifact_uri"),
+        "prediction_artifact_sha256": manifest.get("artifact_sha256"),
+        "replay_manifest_uri": manifest.get("v5_replay_manifest_uri"),
+        "replay_manifest_sha256": manifest.get("v5_replay_manifest_sha256"),
+        "verifier_sha256": manifest.get("replay_verification_sha256"),
+    }
+    if (
+        not record.get("authorization_id")
+        or not str(record.get("decision_ref", "")).strip()
+    ):
+        raise V5ReleaseError("replay decision identity is missing")
+    for key, value in expected.items():
+        if value is None or record.get(key) != value:
+            raise V5ReleaseError(f"replay release does not match {key}")
+    artifact = storage.read_bytes(str(record["prediction_artifact_uri"]))
+    if hashlib.sha256(artifact).hexdigest() != record["prediction_artifact_sha256"]:
+        raise V5ReleaseError("replay prediction artifact checksum changed")
+    replay = _replay_manifest(
+        storage,
+        str(record["replay_manifest_uri"]),
+        str(record["replay_manifest_sha256"]),
+    )
+    _replay_verifier(
+        storage,
+        str(record["verifier_uri"]),
+        str(record["verifier_sha256"]),
+        replay_manifest_sha256=str(record["replay_manifest_sha256"]),
+        replay_records_sha256=replay.get("prediction_records_sha256"),
+    )
+
+
+def require_replay_release_record(
+    cur: Any,
+    *,
+    manifest: Mapping[str, Any],
+    storage: Any,
+    environment: str,
+    season: int,
+    week: int,
+) -> None:
+    """Read the admin-only replay record under the publication transaction."""
+    cur.execute(
+        "SELECT "
+        + ", ".join(REPLAY_AUTH_COLUMNS)
+        + " FROM v5_replay_release_authorizations "
+        "WHERE environment = %s AND season = %s AND week = %s "
+        "AND prediction_run_id = %s FOR SHARE",
+        (environment, season, week, manifest.get("run_id")),
+    )
+    row = cur.fetchone()
+    if row is None:
+        raise V5ReleaseError("exact V5 replay release authorization is absent")
+    record = dict(zip(REPLAY_AUTH_COLUMNS, row, strict=True))
+    validate_replay_release_record(
+        record,
+        manifest=manifest,
+        storage=storage,
+        environment=environment,
         season=season,
         week=week,
     )

@@ -633,9 +633,13 @@ def publish_week(
 
                 target_environment = os.getenv("CFB_ARTIFACT_ENV", "production")
                 assert_v5_database_environment(cur, target_environment)
-                if target_environment == "production" and evidence_class != "pending":
+                if target_environment == "production" and evidence_class not in {
+                    "pending",
+                    "replay",
+                }:
                     raise RuntimeError(
-                        "production V5 publication requires a live prospective run"
+                        "production V5 publication requires a reviewed "
+                        "prospective or replay release"
                     )
                 cur.execute(
                     "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
@@ -672,6 +676,20 @@ def publish_week(
                         cur,
                         manifest=manifest,
                         storage=get_storage(environment="production"),
+                        season=season,
+                        week=week,
+                    )
+                if evidence_class == "replay" and target_environment == "production":
+                    from cks_picks_cfb.data.storage import get_storage
+                    from cks_picks_cfb.ops.v5_release import (
+                        require_replay_release_record,
+                    )
+
+                    require_replay_release_record(
+                        cur,
+                        manifest=manifest,
+                        storage=get_storage(environment="production"),
+                        environment="production",
                         season=season,
                         week=week,
                     )

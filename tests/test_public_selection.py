@@ -215,6 +215,44 @@ def test_v5_selection_rejects_non_pipeline_identities(identities):
     assert not any("UPDATE current_week" in sql for sql in cur.executed)
 
 
+def test_production_replay_selection_requires_exact_authorization(monkeypatch):
+    import cks_picks_cfb.artifacts as artifacts_module
+    import cks_picks_cfb.data.storage as storage_module
+    from cks_picks_cfb.ops.v5_release import V5ReleaseError
+
+    artifact_sha = "a" * 64
+    monkeypatch.setattr(storage_module, "get_storage", lambda **_: object())
+    monkeypatch.setattr(
+        artifacts_module,
+        "read_json_artifact",
+        lambda *_: {"artifact_sha256": artifact_sha},
+    )
+    cur = FakeCursor(
+        [
+            _candidate(
+                model_id=V5_MODEL,
+                evidence_class="replay",
+                bundle_sha256=V5_BUNDLE,
+                artifact_sha256=artifact_sha,
+                state="published",
+            ),
+            (V5_MODEL, V5_BUNDLE, 2026, 5),
+        ],
+        identities=("cks_prod_pipeline", "cks_prod_pipeline"),
+    )
+    with pytest.raises(V5ReleaseError, match="replay release authorization is absent"):
+        select_week_run(
+            cur,
+            season=2026,
+            week=0,
+            run_id="2026w0-v5",
+            reason="replay rehearsal",
+            environment="production",
+        )
+    assert not any("INSERT" in sql for sql in cur.executed)
+    assert not any("UPDATE current_week" in sql for sql in cur.executed)
+
+
 def test_reselecting_the_same_run_writes_nothing():
     cur = FakeCursor(
         [

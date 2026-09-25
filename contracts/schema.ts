@@ -184,6 +184,29 @@ export const v5ServingAuthorizations = pgTable(
   (table) => [unique("uq_v5_serving_authorization_run").on(table.environment, table.season, table.week, table.predictionRunId)],
 );
 
+export const v5ReplayReleaseAuthorizations = pgTable(
+  "v5_replay_release_authorizations",
+  {
+    authorizationId: text("authorization_id").primaryKey(),
+    environment: text("environment").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    predictionRunId: text("prediction_run_id").notNull(),
+    modelId: text("model_id").notNull(),
+    inferenceBundleSha256: text("inference_bundle_sha256").notNull(),
+    replayManifestUri: text("replay_manifest_uri").notNull(),
+    replayManifestSha256: text("replay_manifest_sha256").notNull(),
+    verifierUri: text("verifier_uri").notNull(),
+    verifierSha256: text("verifier_sha256").notNull(),
+    servingConfigSha256: text("serving_config_sha256").notNull(),
+    predictionArtifactUri: text("prediction_artifact_uri").notNull(),
+    predictionArtifactSha256: text("prediction_artifact_sha256").notNull(),
+    decisionRef: text("decision_ref").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("uq_v5_replay_release_authorization_run").on(table.environment, table.season, table.week, table.predictionRunId)],
+);
+
 export const v5RatingSnapshots = pgTable(
   "v5_rating_snapshots",
   {

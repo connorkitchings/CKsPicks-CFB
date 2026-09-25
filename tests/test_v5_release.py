@@ -14,7 +14,9 @@ from cks_picks_cfb.ops.v5_release import (
     V5ReleaseError,
     assert_v5_database_environment,
     require_release_record,
+    require_replay_release_record,
     validate_release_record,
+    validate_replay_release_record,
 )
 
 
@@ -274,3 +276,173 @@ def test_guard_rejects_an_unknown_environment():
         assert_v5_database_environment(
             RoleCursor("cks_prod_pipeline", "cks_prod_pipeline"), "staging"
         )
+
+
+def replay_fixture():
+    replay = signed_payload(
+        {
+            "schema_version": "v5_week4_replay_manifest_v1",
+            "state": "frozen",
+            "evidence_class": "replay",
+            "production_activation_authorized": False,
+            "prediction_records_sha256": "d" * 64,
+        }
+    )
+    replay_raw = _raw(replay)
+    receipt = signed_payload(
+        {
+            "schema_version": "v5_week4_replay_verification_v1",
+            "state": "verified",
+            "replay_manifest_raw_sha256": _sha(replay_raw),
+            "prediction_records_sha256": "d" * 64,
+            "production_activation_authorized": False,
+        }
+    )
+    receipt_raw = _raw(receipt)
+    artifact = b"game_id,model\n123,v5\n"
+    objects = {
+        "replay.json": replay_raw,
+        "receipt.json": receipt_raw,
+        "predictions.csv": artifact,
+    }
+    record = {
+        "authorization_id": "replay-approval-2026w4",
+        "environment": "production",
+        "season": 2026,
+        "week": 4,
+        "prediction_run_id": "2026w4-v5-replay",
+        "model_id": "v5-possession-ppp-rho060-exposure",
+        "inference_bundle_sha256": "a" * 64,
+        "replay_manifest_uri": "replay.json",
+        "replay_manifest_sha256": _sha(replay_raw),
+        "verifier_uri": "receipt.json",
+        "verifier_sha256": _sha(receipt_raw),
+        "serving_config_sha256": "b" * 64,
+        "prediction_artifact_uri": "predictions.csv",
+        "prediction_artifact_sha256": _sha(artifact),
+        "decision_ref": "review/2026w4-replay",
+    }
+    manifest = {
+        "run_id": record["prediction_run_id"],
+        "model_id": record["model_id"],
+        "inference_bundle_sha256": record["inference_bundle_sha256"],
+        "config_sha": record["serving_config_sha256"],
+        "artifact_uri": record["prediction_artifact_uri"],
+        "artifact_sha256": record["prediction_artifact_sha256"],
+        "v5_replay_manifest_uri": record["replay_manifest_uri"],
+        "v5_replay_manifest_sha256": record["replay_manifest_sha256"],
+        "replay_verification_sha256": record["verifier_sha256"],
+    }
+    return record, manifest, MemoryStorage(objects)
+
+
+def test_replay_release_packet_validates():
+    record, manifest, storage = replay_fixture()
+    validate_replay_release_record(
+        record,
+        manifest=manifest,
+        storage=storage,
+        environment="production",
+        season=2026,
+        week=4,
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "season",
+        "week",
+        "prediction_run_id",
+        "model_id",
+        "inference_bundle_sha256",
+        "replay_manifest_uri",
+        "replay_manifest_sha256",
+        "verifier_sha256",
+        "serving_config_sha256",
+        "prediction_artifact_uri",
+        "prediction_artifact_sha256",
+    ],
+)
+def test_replay_release_rejects_changed_identity(field):
+    record, manifest, storage = replay_fixture()
+    record[field] = "changed"
+    with pytest.raises(V5ReleaseError, match="replay release does not match"):
+        validate_replay_release_record(
+            record,
+            manifest=manifest,
+            storage=storage,
+            environment="production",
+            season=2026,
+            week=4,
+        )
+
+
+def test_replay_release_rejects_a_live_manifest():
+    record, _, _ = replay_fixture()
+    _, live_manifest, live_storage = release_fixture()
+    with pytest.raises(V5ReleaseError, match="replay"):
+        validate_replay_release_record(
+            record,
+            manifest=live_manifest,
+            storage=live_storage,
+            environment="production",
+            season=2026,
+            week=5,
+        )
+
+
+def test_replay_release_rejects_an_unfrozen_replay():
+    record, manifest, storage = replay_fixture()
+    replay = signed_payload(
+        {
+            "schema_version": "v5_week4_replay_manifest_v1",
+            "state": "dry_run",
+            "evidence_class": "replay",
+            "production_activation_authorized": False,
+            "prediction_records_sha256": "d" * 64,
+        }
+    )
+    replay_raw = _raw(replay)
+    storage.objects["replay.json"] = replay_raw
+    record = dict(record)
+    record["replay_manifest_sha256"] = _sha(replay_raw)
+    manifest = dict(manifest)
+    manifest["v5_replay_manifest_sha256"] = _sha(replay_raw)
+    with pytest.raises(V5ReleaseError, match="not frozen replay"):
+        validate_replay_release_record(
+            record,
+            manifest=manifest,
+            storage=storage,
+            environment="production",
+            season=2026,
+            week=4,
+        )
+
+
+def test_missing_replay_record_fails_before_any_insert():
+    record, manifest, storage = replay_fixture()
+
+    class Cursor:
+        def __init__(self):
+            self.sql = []
+
+        def execute(self, sql, params=None):
+            self.sql.append(sql)
+
+        def fetchone(self):
+            return None
+
+    cur = Cursor()
+    with pytest.raises(V5ReleaseError, match="replay release authorization is absent"):
+        require_replay_release_record(
+            cur,
+            manifest=manifest,
+            storage=storage,
+            environment="production",
+            season=2026,
+            week=4,
+        )
+    assert len(cur.sql) == 1
+    assert "v5_replay_release_authorizations" in cur.sql[0]
+    assert "v5_serving_authorizations" not in cur.sql[0]

@@ -192,6 +192,92 @@ def test_direct_v5_publish_rejects_non_pipeline_identities(monkeypatch, identiti
     )
 
 
+def test_direct_v5_replay_publish_requires_exact_authorization(monkeypatch):
+    """Production replay publication fails before an INSERT without approval."""
+    monkeypatch.setenv("CFB_ARTIFACT_ENV", "production")
+    monkeypatch.setattr(
+        publish_to_db, "verify_v5_replay_publication_boundary", lambda **_: None
+    )
+    from cks_picks_cfb.data import storage as storage_module
+
+    monkeypatch.setattr(storage_module, "get_storage", lambda **_: object())
+
+    class Cursor:
+        def __init__(self):
+            self.queries = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def execute(self, sql, params=None):
+            self.queries.append(sql)
+
+        def fetchone(self):
+            sql = self.queries[-1]
+            if "session_user" in sql:
+                return ("cks_prod_pipeline", "cks_prod_pipeline")
+            if "v5_release_policy" in sql:
+                return ("v5-possession-test", "a" * 64, 2026, 5)
+            return None
+
+    class Connection:
+        def __init__(self):
+            self.cursor_instance = Cursor()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+        def cursor(self):
+            return self.cursor_instance
+
+    conn = Connection()
+    monkeypatch.setattr(publish_to_db.psycopg, "connect", lambda *_: conn)
+    rows = pd.DataFrame(columns=["game_id", "home_team_spread_line", "total_line"])
+    manifest = {
+        "run_id": "2026w4-v5-replay",
+        "model_id": "v5-possession-test",
+        "system_name": "V5",
+        "evidence_class": "replay",
+        "year": 2026,
+        "week": 4,
+        "row_count": 0,
+        "expected_games": 0,
+        "predicted_games": 0,
+        "validation": {"all_predictions_present": True},
+        "inference_bundle_sha256": "a" * 64,
+        "model_bundle_sha256": "a" * 64,
+        "replay_verification_sha256": "c" * 64,
+        "artifact_uri": "predictions.csv",
+        "artifact_sha256": "b" * 64,
+    }
+    with pytest.raises(ValueError, match="replay release authorization is absent"):
+        publish_to_db.publish_week(
+            rows,
+            "database-url",
+            season=2026,
+            week=4,
+            high_conf_threshold=8.0,
+            source_config="v5.yaml",
+            system_name="V5",
+            model_id="v5-possession-test",
+            update_current=True,
+            run_manifest=manifest,
+        )
+    assert any(
+        "v5_replay_release_authorizations" in sql
+        for sql in conn.cursor_instance.queries
+    )
+    assert not any(
+        "INSERT" in sql or "UPDATE" in sql for sql in conn.cursor_instance.queries
+    )
+
+
 def test_v5_publication_rejects_modified_forecast_values():
     verified = pd.DataFrame(
         [

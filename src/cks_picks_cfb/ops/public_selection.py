@@ -92,16 +92,15 @@ def select_week_run(
                 "prospective V5 slate predates approved activation"
             )
         if environment == "production":
-            if evidence_class not in {"pending", "live"}:
+            if evidence_class not in {"pending", "live", "replay"}:
                 raise PublicSelectionError(
-                    "production V5 selection requires a live run"
+                    "production V5 selection requires a reviewed release"
                 )
             from cks_picks_cfb.artifacts import (
                 prediction_run_manifest_path,
                 read_json_artifact,
             )
             from cks_picks_cfb.data.storage import get_storage
-            from cks_picks_cfb.ops.v5_release import require_release_record
 
             storage = get_storage(environment="production")
             manifest = read_json_artifact(
@@ -109,9 +108,25 @@ def select_week_run(
             )
             if manifest.get("artifact_sha256") != artifact_sha:
                 raise PublicSelectionError("stored run differs from immutable artifact")
-            require_release_record(
-                cur, manifest=manifest, storage=storage, season=season, week=week
-            )
+            if evidence_class == "replay":
+                from cks_picks_cfb.ops.v5_release import (
+                    require_replay_release_record,
+                )
+
+                require_replay_release_record(
+                    cur,
+                    manifest=manifest,
+                    storage=storage,
+                    environment="production",
+                    season=season,
+                    week=week,
+                )
+            else:
+                from cks_picks_cfb.ops.v5_release import require_release_record
+
+                require_release_record(
+                    cur, manifest=manifest, storage=storage, season=season, week=week
+                )
     cur.execute(
         "SELECT COUNT(*), COUNT(*) FILTER (WHERE g.season <> %s OR g.week <> %s) "
         "FROM predictions p JOIN games g ON g.game_id = p.game_id "
