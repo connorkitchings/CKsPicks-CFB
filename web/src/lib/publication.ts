@@ -1,11 +1,13 @@
 /**
- * Server-side launch boundary for the public site. It deliberately defaults
- * to the smallest 2026 release: Week 0 only. Vercel environment values may
- * expand the release after the next slate has passed preview readiness.
+ * Server-side launch boundary for the public site. The public week range is
+ * owned by this repository (PUBLISHED_WEEKS below), not by a deployment
+ * variable: there is no weekly Vercel edit. Within that range, only weeks
+ * with an explicit Neon public selection render; unpublished weeks stay
+ * hidden until their run is published and selected through the ops flow.
  */
 const ALLOWED_SEASONS = [2026];
 const DEFAULT_SEASON = 2026;
-const DEFAULT_WEEKS = Array.from({ length: 17 }, (_, week) => week);
+const PUBLISHED_WEEKS = Array.from({ length: 17 }, (_, week) => week);
 
 export type PublicationMode = "market" | "predictions";
 
@@ -27,9 +29,10 @@ export function isAllowedSeason(season: number): boolean {
 
 export const publicationScope = Object.freeze({
   season: parseSeason(process.env.CFB_PUBLICATION_SEASON),
-  // Explicit public selections in Neon govern available weeks. A stale
-  // deployment's V4 week allowlist cannot hide supported V5 history.
-  weeks: DEFAULT_WEEKS,
+  // Explicit public selections in Neon govern available weeks. The retired
+  // CFB_PUBLICATION_WEEKS variable is ignored; edit PUBLISHED_WEEKS above to
+  // change the repo-owned range.
+  weeks: PUBLISHED_WEEKS,
   mode: parsePublicationMode(process.env.CFB_PUBLICATION_MODE),
   allowedSeasons: ALLOWED_SEASONS,
 });

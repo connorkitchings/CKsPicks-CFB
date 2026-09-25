@@ -161,9 +161,12 @@ For Week 0, Vercel now exposes the reviewed active run in predictions mode:
 
 ```bash
 CFB_PUBLICATION_SEASON=2026
-CFB_PUBLICATION_WEEKS=0,1   # comma-separated; add each week after publish + freeze
 CFB_PUBLICATION_MODE=predictions
 ```
+
+Week availability needs no variable: the repo-owned range in
+`web/src/lib/publication.ts` plus the explicit Neon public selection govern
+each week. Publish, freeze, then select the reviewed run to reveal it.
 
 Each progressive manual publish remains a separate immutable market/prediction
 snapshot. Record its run ID, checksum, market-capture time, and cutoff after a

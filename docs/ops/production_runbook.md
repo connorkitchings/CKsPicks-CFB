@@ -24,7 +24,7 @@ for that exact slate and artifact is present.
 | Component | Value |
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
-| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026`; `CFB_PUBLICATION_WEEKS=0,1,2` (2026-09-02, set via Vercel CLI). Weeks may be pre-authorized — the app shows only weeks with an activated run, so an early entry stays hidden until that week publishes |
+| Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026` (Vercel env). Week availability is owned by `web/src/lib/publication.ts` (`PUBLISHED_WEEKS`) plus explicit Neon public selections — there is no weeks variable to update; the retired `CFB_PUBLICATION_WEEKS` value is ignored |
 | Database | Neon **production branch** (separate from `preview-2026`); migrations 0002–0008 applied |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
@@ -120,8 +120,8 @@ make readiness  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 ```
 
 Then publish progressively as lines arrive, freeze before kickoff, and
-close after finals. Update `CFB_PUBLICATION_WEEKS` in Vercel to add the
-new week number (comma-separated from prior weeks) before going live.
+close after finals. Weeks appear publicly once their run is published and
+explicitly selected — no Vercel variable change is needed.
 
 ### 4. Postgame close (after finals)
 
