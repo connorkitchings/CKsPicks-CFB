@@ -1,6 +1,6 @@
 # Permanent Best-Quote Market-Line Selection
 
-- **Status:** In Progress
+- **Status:** Implemented (2026-09-26, Amendments 1–4)
 - **Created:** 2026-09-25
 - **Planner:** Sol (plan-session)
 - **Approval source:** User explicitly directed implementation on 2026-09-25 ("Follow the instructions in docs/plans/2026-09-25/03-permanent-best-quote-line-selection.md"). This authorizes Tasks 1–2 (market_grading.py, tests, schema/migration, TypeScript contracts). Tasks 3–6 (artifact generation, publishing, grading, historical replay releases) remain gated on Preview rehearsal and separate production authorization per the plan's commit policy.
@@ -417,6 +417,30 @@ eligible quote is valid only as an unlined forecast with no market result.
 - The stored quote corpus may not cover every historical year/week despite the
   permanent policy. The audit must report coverage before any rebuild begins.
 
+**Amendment 4 (2026-09-26, Task 6 production release):** All five weeks
+released to production under the Approved contract
+`docs/plans/2026-09-26/01-v5-bestquote-production-release.md` and the user's
+explicit all-five-weeks release decision (decision ref
+`v5-bestquote-replacement-review-2026-09-26`).
+
+- Migration 0016 applied on production with privilege readback (pipeline
+  SELECT+INSERT, web SELECT-only). Five authorization rows inserted by
+  admin; pipeline-role SELECT proven.
+- Production candidates prepared byte-identical to the reviewed Preview
+  builds; all five packets validated `{"valid": true}` before any Neon write.
+- Published, scored (W0–3), and selected replacement runs
+  `2026w{0..4}-v5replay-bestquote-20260926-r2`: forecasts identical to the
+  previously selected runs, every line a real market tick, 281 grades
+  settled at the exact selected quotes (W0 15, W1 80, W2 87, W3 99;
+  spread 157, total 124). W4 published 58/58 and selected, unscored
+  (0 certified finals).
+- Production readback: all five weeks select the replacements; public
+  health confirms the W4 replacement active at 58/58/58. V4 runs and the
+  original V5 replay runs verified untouched (states and grade counts);
+  rollback is a single recorded selection per week (Preview drill proven).
+- W4 replacement scoring and the production debut of future-week best-quote
+  runs wait at their own gates; this amendment grants no new release.
+
 ## Definition of Done
 
 - [x] The all-year read-only audit infrastructure (`audit_quote_coverage()`)
@@ -427,15 +451,19 @@ eligible quote is valid only as an unlined forecast with no market result.
   bind to the same target-specific raw quote. _(Tasks 3–5 implemented)_
 - [x] Original legacy and V4 artifacts remain immutable and readable; this
   session creates no artifact, no grade, and no Neon mutation.
-- [ ] Eligible historical replacement runs, including 2026 V5 Weeks 0–4, have
+- [x] Eligible historical replacement runs, including 2026 V5 Weeks 0–4, have
   passed their required Preview and explicit production release gates.
-  _(Preview rehearsal complete 2026-09-26 per Amendment 3; production release
-  gates remain, separately authorized per week.)_
+  _(Released 2026-09-26 per Amendment 4: batch
+  `2026w{0..4}-v5replay-bestquote-20260926-r2`, five authorizations under
+  `v5-bestquote-replacement-review-2026-09-26`; W4 published+selected,
+  unscored.)_
 - [x] Future weekly operations select and verify the best quote before freeze.
   _(Task 3 integrated in weekly.py, generate_weekly_bets.py, generate_v5_weekly_bets.py, generate_v5_replay_weekly_bets.py)_
 - [x] Required validation (1,439 pytest, contracts-check, ruff format/check,
   web lint/typecheck/tests/build, git diff --check) and documentation are complete.
-- [ ] The plan status is updated to `Implemented` only after every item passes.
+- [x] The plan status is updated to `Implemented` only after every item passes.
+
+- **Status:** Implemented (2026-09-26)
 
 ## Amendments
 
