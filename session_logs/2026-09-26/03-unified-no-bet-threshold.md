@@ -1,12 +1,12 @@
-# Session: Unified 1.0 no-bet rule — implemented, Preview verified, release pending
+# Session: Unified 1.0 no-bet rule — implemented, released to production
 
 ## TL;DR
 - **Worked On:** Implemented the unified sub-1.0 no-bet rule (Tasks 1–4), rebuilt the replacement batch on Preview (`-r3`), verified it fully, and built + validated five production packets (Task 5).
-- **Outcome:** Preview `-r3` batch green on every gate; production packets validate. No production mutation performed. Awaiting a fresh release decision.
-- **Plan Contract:** `docs/plans/2026-09-26/02-unified-no-bet-threshold.md` (Approved; DoD code/docs/packets done, release pending)
-- **Approval / Status:** User approved scope ("go"): unified 1.0, rebuild history, lean-only totals zone.
-- **Blockers:** None. Production re-release needs a fresh authorization decision.
-- **Next:** User commits; then the release decision gate for the `-r3` batch.
+- **Outcome:** The public site now serves the `-r3` batch.
+- **Plan Contract:** `docs/plans/2026-09-26/02-unified-no-bet-threshold.md` (Implemented)
+- **Approval / Status:** User release approval recorded; execution complete.
+- **Blockers:** None. W4 scoring waits at its finals gate.
+- **Next:** Commit; W4 scoring at finals gate; Week 5 live weekly config must carry the 1.0 thresholds.
 
 ## Context and Decisions
 
@@ -53,9 +53,9 @@ None. Production re-release of the `-r3` batch needs a fresh explicit decision (
 
 ## Handoff Notes
 
-- **Resume at:** User commits; then present the five `-r3` packets for the release decision. On approval: admin inserts → publish/score/select W0–3 + publish/select W4 → readback/health → close-out (Amendment pattern as before).
-- **Watch out for:** Never select the `-r2` (old-rule, now superseded for display) or unsuffixed debris batches; the Week 5 live weekly config must carry the 1.0 thresholds when created; W4 scoring still waits at its finals gate.
+- **Resume at:** User commits. Release complete: 5 admin authorization rows (`v5-bestquote-2026w{0..4}-{00632b2e,469d2df8,3cd45db9,e9481c48,4f1e8436}`); W0–3 published/scored/selected (15/76/82/97 = 270 grades); W4 published/selected 58/58 unscored; health `ok`; V4/original/`-r2` runs untouched.
+- **Watch out for:** Never select the `-r2` (old-rule, superseded) or unsuffixed debris batches; the Week 5 live weekly config must carry the 1.0 thresholds when created; W4 scoring still waits at its finals gate.
 
-**Suggested commit message:** `feat(model): unified 1.0 no-bet rule with Preview rebuild and release packets`
+**Suggested commit message:** `feat(release): activate unified no-bet r3 replacement weeks on production`
 
 **tags:** ["v5", "best-quote", "no-bet", "lean", "preview", "packet"]

@@ -1,6 +1,6 @@
 # Unified 1.0 No-Bet Rule (Lean, Display, Grades)
 
-- **Status:** Approved
+- **Status:** Implemented (2026-09-26)
 - **Created:** 2026-09-26
 - **Planner:** Sol (plan-session)
 - **Approval source:** User approved scope and execution on 2026-09-26 ("go"): unified 1.0 rule, rebuild history (W0–3 + W4 in one batch), totals 1.0–1.5 lean-only.
@@ -152,4 +152,14 @@ schema migration (lean columns already nullable).
 - [x] Preview rebuild batch verified (forecasts identical; −11 spread grades;
       totals graded unchanged; all lines real ticks).
 - [x] Production packets built and validated; release decision pending.
-- [ ] Docs updated; no production mutation performed in this contract.
+- [x] Docs updated; no production mutation performed in this contract.
+
+## Release record (user-authorized 2026-09-26, same decision ref)
+
+- Five `-r3` authorizations inserted (IDs
+  `v5-bestquote-2026w{0..4}-{00632b2e,469d2df8,3cd45db9,e9481c48,4f1e8436}`);
+  W0–3 published/scored/selected with 270 grades (15/76/82/97; 146 spread +
+  124 total); W4 published/selected 58/58, unscored (0 certified finals).
+- Production readback: all five weeks on the `-r3` runs; health `ok` with
+  the W4 replacement active; V4, original, and `-r2` runs untouched with
+  original grade counts. Rollback = single recorded selection per week.
