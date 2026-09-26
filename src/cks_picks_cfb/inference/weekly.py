@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.features.regimes import canonical_prediction_regime
+from cks_picks_cfb.models.market_grading import (
+    SELECTION_POLICY_VERSION,
+    select_best_quote,
+)
 
 
 @dataclass(frozen=True)
@@ -20,6 +26,7 @@ class PreparedInferenceInputs:
     market_snapshot: pd.DataFrame | None = None
     schedule_snapshot: pd.DataFrame | None = None
     dataset_refs: tuple[Mapping[str, Any], ...] = ()
+    market_quotes: pd.DataFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +85,7 @@ def prepare_inference_features(
     market_snapshot: pd.DataFrame | None = None,
     schedule_snapshot: pd.DataFrame | None = None,
     dataset_refs: Sequence[Mapping[str, Any]] = (),
+    market_quotes: pd.DataFrame | None = None,
 ) -> PreparedInferenceInputs:
     """Filter one point-in-time Gold frame and merge its latest market snapshot."""
     result = features[
@@ -131,6 +139,7 @@ def prepare_inference_features(
         market_snapshot=market_snapshot,
         schedule_snapshot=schedule_snapshot,
         dataset_refs=tuple(dataset_refs),
+        market_quotes=market_quotes,
     )
 
 
@@ -209,37 +218,224 @@ def calculate_edges_and_leans(
     spread_threshold_high: float,
     total_threshold: float,
     run_id: str,
+    market_quotes: pd.DataFrame | None = None,
+    allow_default_price: bool = True,
 ) -> pd.DataFrame:
-    """Apply the existing spread-sign, threshold, and lean display contract."""
+    """Apply the existing spread-sign, threshold, and lean display contract.
+
+    When ``market_quotes`` is provided, selects the best pre-kickoff quote
+    for each target using :func:`select_best_quote`.
+    """
     if len(predictions) != len(features):
         raise ValueError("Predictions and feature rows must have identical lengths")
+
+    quotes_by_game: dict[int, list[dict[str, Any]]] = {}
+    if market_quotes is not None and not market_quotes.empty:
+        for _, q_row in market_quotes.iterrows():
+            gid_val = q_row.get("game_id")
+            if pd.isna(gid_val):
+                continue
+            gid = int(gid_val)
+            cap = q_row.get("captured_at")
+            h_price = q_row.get("home_spread_price")
+            a_price = q_row.get("away_spread_price")
+            o_price = q_row.get("over_price")
+            u_price = q_row.get("under_price")
+            quotes_by_game.setdefault(gid, []).append(
+                {
+                    "quote_id": str(q_row["quote_id"]),
+                    "game_id": gid,
+                    "captured_at": cap,
+                    "spread": (
+                        float(q_row["spread"])
+                        if q_row.get("spread") is not None
+                        and not pd.isna(q_row["spread"])
+                        else None
+                    ),
+                    "total": (
+                        float(q_row["total"])
+                        if q_row.get("total") is not None
+                        and not pd.isna(q_row["total"])
+                        else None
+                    ),
+                    "home_spread_price": (
+                        float(h_price)
+                        if h_price is not None and not pd.isna(h_price)
+                        else None
+                    ),
+                    "away_spread_price": (
+                        float(a_price)
+                        if a_price is not None and not pd.isna(a_price)
+                        else None
+                    ),
+                    "over_price": (
+                        float(o_price)
+                        if o_price is not None and not pd.isna(o_price)
+                        else None
+                    ),
+                    "under_price": (
+                        float(u_price)
+                        if u_price is not None and not pd.isna(u_price)
+                        else None
+                    ),
+                    "provider": q_row.get("provider"),
+                }
+            )
+
     rows: list[dict[str, Any]] = []
     for index, feature in features.reset_index(drop=True).iterrows():
         prediction = predictions.iloc[index]
         spread = float(prediction["predicted_spread"])
         total = float(prediction["predicted_total"])
-        book_spread, book_total = (
-            feature.get("home_team_spread_line"),
-            feature.get("total_line"),
-        )
-        spread_edge = 0.0 if pd.isna(book_spread) else abs(spread + float(book_spread))
-        if pd.isna(book_spread) or spread_edge < spread_threshold:
-            spread_bet, confidence = "No Bet", ""
+        game_id = int(feature["id"])
+        canonical_spread = feature.get("home_team_spread_line")
+        canonical_total = feature.get("total_line")
+        snap_id = feature.get("market_snapshot_id")
+        start_date_val = feature.get("start_date")
+        if start_date_val is not None and not pd.isna(start_date_val):
+            start_date_dt = pd.to_datetime(start_date_val, utc=True).to_pydatetime()
         else:
-            spread_bet = "Home" if spread + float(book_spread) > 0 else "Away"
-            confidence = "High" if spread_edge >= spread_threshold_high else "Medium"
-        if pd.isna(book_total):
-            total_edge, total_bet = 0.0, "No Bet"
+            start_date_dt = datetime.now(timezone.utc)
+
+        raw_sq_ids = feature.get("source_quote_ids", "[]")
+        if isinstance(raw_sq_ids, str):
+            try:
+                source_q_ids = json.loads(raw_sq_ids)
+            except Exception:
+                source_q_ids = []
+        elif isinstance(raw_sq_ids, list):
+            source_q_ids = raw_sq_ids
         else:
-            total_delta = total - float(book_total)
-            total_edge = abs(total_delta)
-            total_bet = (
-                "Over"
-                if total_delta > total_threshold
-                else "Under"
-                if total_delta < -total_threshold
-                else "No Bet"
+            source_q_ids = []
+
+        spread_quote_id = None
+        spread_quote_price = None
+        spread_policy_ver = None
+        total_quote_id = None
+        total_quote_price = None
+        total_policy_ver = None
+
+        if market_quotes is not None and snap_id:
+            cands = quotes_by_game.get(game_id, [])
+            if source_q_ids:
+                linked_ids = set(str(qid) for qid in source_q_ids)
+                cands = [c for c in cands if c["quote_id"] in linked_ids]
+
+            spread_cands = [
+                {
+                    "quote_id": c["quote_id"],
+                    "game_id": c["game_id"],
+                    "snapshot_id": snap_id,
+                    "target": "spread",
+                    "point": c["spread"],
+                    "captured_at": c["captured_at"],
+                    "home_spread_price": c["home_spread_price"],
+                    "away_spread_price": c["away_spread_price"],
+                }
+                for c in cands
+                if c["spread"] is not None
+            ]
+            selected_spread = select_best_quote(
+                target="spread",
+                prediction=spread,
+                canonical_snapshot_id=snap_id,
+                canonical_line=(
+                    None if pd.isna(canonical_spread) else float(canonical_spread)
+                ),
+                game_id=game_id,
+                kickoff_utc=start_date_dt,
+                quote_candidates=spread_cands,
+                require_price=not allow_default_price,
             )
+
+            total_cands = [
+                {
+                    "quote_id": c["quote_id"],
+                    "game_id": c["game_id"],
+                    "snapshot_id": snap_id,
+                    "target": "total",
+                    "point": c["total"],
+                    "captured_at": c["captured_at"],
+                    "over_price": c["over_price"],
+                    "under_price": c["under_price"],
+                }
+                for c in cands
+                if c["total"] is not None
+            ]
+            selected_total = select_best_quote(
+                target="total",
+                prediction=total,
+                canonical_snapshot_id=snap_id,
+                canonical_line=(
+                    None if pd.isna(canonical_total) else float(canonical_total)
+                ),
+                game_id=game_id,
+                kickoff_utc=start_date_dt,
+                quote_candidates=total_cands,
+                require_price=not allow_default_price,
+            )
+
+            if selected_spread is not None:
+                book_spread = selected_spread.point
+                spread_edge = selected_spread.edge
+                if spread_edge < spread_threshold:
+                    spread_bet, confidence = "No Bet", ""
+                else:
+                    spread_bet = "Home" if selected_spread.side == "home" else "Away"
+                    confidence = (
+                        "High" if spread_edge >= spread_threshold_high else "Medium"
+                    )
+                spread_quote_id = selected_spread.quote_id
+                spread_quote_price = selected_spread.price
+                spread_policy_ver = selected_spread.policy_version
+            else:
+                book_spread, spread_edge, spread_bet, confidence = (
+                    None,
+                    0.0,
+                    "No Bet",
+                    "",
+                )
+
+            if selected_total is not None:
+                book_total = selected_total.point
+                total_edge = selected_total.edge
+                if total_edge < total_threshold:
+                    total_bet = "No Bet"
+                else:
+                    total_bet = "Over" if selected_total.side == "over" else "Under"
+                total_quote_id = selected_total.quote_id
+                total_quote_price = selected_total.price
+                total_policy_ver = selected_total.policy_version
+            else:
+                book_total, total_edge, total_bet = None, 0.0, "No Bet"
+        else:
+            book_spread, book_total = (
+                canonical_spread,
+                canonical_total,
+            )
+            spread_edge = (
+                0.0 if pd.isna(book_spread) else abs(spread + float(book_spread))
+            )
+            if pd.isna(book_spread) or spread_edge < spread_threshold:
+                spread_bet, confidence = "No Bet", ""
+            else:
+                spread_bet = "Home" if spread + float(book_spread) > 0 else "Away"
+                confidence = (
+                    "High" if spread_edge >= spread_threshold_high else "Medium"
+                )
+            if pd.isna(book_total):
+                total_edge, total_bet = 0.0, "No Bet"
+            else:
+                total_delta = total - float(book_total)
+                total_edge = abs(total_delta)
+                total_bet = (
+                    "Over"
+                    if total_delta > total_threshold
+                    else "Under"
+                    if total_delta < -total_threshold
+                    else "No Bet"
+                )
+
         home_count = pd.to_numeric(
             feature.get("home_current_season_games", 0), errors="coerce"
         )
@@ -275,6 +471,13 @@ def calculate_edges_and_leans(
                 "total_provider_count": feature.get("total_provider_count", 0),
                 "source_quote_ids": feature.get("source_quote_ids", "[]"),
                 "market_captured_at": feature.get("market_captured_at"),
+                "spread_market_quote_id": spread_quote_id,
+                "total_market_quote_id": total_quote_id,
+                "spread_market_quote_price": spread_quote_price,
+                "total_market_quote_price": total_quote_price,
+                "market_selection_policy": spread_policy_ver or total_policy_ver,
+                "canonical_spread_line": canonical_spread,
+                "canonical_total_line": canonical_total,
                 "run_id": run_id,
             }
         )
@@ -335,5 +538,20 @@ def build_publication_manifest(
                 .all(axis=None)
             ),
             "line_coverage_complete": lined_games == len(prepared_inputs.features),
+            "best_quote_selection_policy": (
+                SELECTION_POLICY_VERSION
+                if "spread_market_quote_id" in results
+                and results["spread_market_quote_id"].notna().any()
+                else None
+            ),
+            "selected_quotes_count": int(
+                results[["spread_market_quote_id", "total_market_quote_id"]]
+                .notna()
+                .sum()
+                .sum()
+            )
+            if {"spread_market_quote_id", "total_market_quote_id"}
+            <= set(results.columns)
+            else 0,
         },
     }

@@ -96,12 +96,46 @@ def main() -> None:
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """
+                "SELECT to_regclass('public.prediction_market_selections') IS NOT NULL"
+            )
+            has_selections = bool(cur.fetchone()[0])
+            if has_selections:
+                query = """
                 SELECT g.week, p.run_id, p.game_id,
                        p.home_team_spread_line, p.total_line,
                        p.spread_lean, p.total_lean, p.market_snapshot_id,
                        gr.home_points, gr.away_points,
-                       pg_s.result AS spread_grade, pg_t.result AS total_grade
+                       pg_s.result AS spread_grade, pg_t.result AS total_grade,
+                       pms_s.quote_id AS spread_quote_id, pms_s.price AS spread_quote_price,
+                       pms_t.quote_id AS total_quote_id, pms_t.price AS total_quote_price
+                FROM predictions p
+                JOIN prediction_runs pr ON p.run_id = pr.run_id
+                JOIN games g ON p.game_id = g.game_id
+                LEFT JOIN game_results gr ON g.game_id = gr.game_id
+                LEFT JOIN prediction_grades pg_s
+                  ON pg_s.run_id = p.run_id AND pg_s.game_id = p.game_id
+                 AND pg_s.target = 'spread'
+                LEFT JOIN prediction_grades pg_t
+                  ON pg_t.run_id = p.run_id AND pg_t.game_id = p.game_id
+                 AND pg_t.target = 'total'
+                LEFT JOIN prediction_market_selections pms_s
+                  ON pms_s.run_id = p.run_id AND pms_s.game_id = p.game_id
+                 AND pms_s.target = 'spread'
+                LEFT JOIN prediction_market_selections pms_t
+                  ON pms_t.run_id = p.run_id AND pms_t.game_id = p.game_id
+                 AND pms_t.target = 'total'
+                WHERE pr.model_id = %s AND g.season = %s
+                ORDER BY g.week, p.game_id
+                """
+            else:
+                query = """
+                SELECT g.week, p.run_id, p.game_id,
+                       p.home_team_spread_line, p.total_line,
+                       p.spread_lean, p.total_lean, p.market_snapshot_id,
+                       gr.home_points, gr.away_points,
+                       pg_s.result AS spread_grade, pg_t.result AS total_grade,
+                       NULL AS spread_quote_id, NULL AS spread_quote_price,
+                       NULL AS total_quote_id, NULL AS total_quote_price
                 FROM predictions p
                 JOIN prediction_runs pr ON p.run_id = pr.run_id
                 JOIN games g ON p.game_id = g.game_id
@@ -114,9 +148,8 @@ def main() -> None:
                  AND pg_t.target = 'total'
                 WHERE pr.model_id = %s AND g.season = %s
                 ORDER BY g.week, p.game_id
-                """,
-                (args.model_id, args.year),
-            )
+                """
+            cur.execute(query, (args.model_id, args.year))
             rows = cur.fetchall()
     inserted = {"spread": 0, "total": 0}
     pending: list[dict] = []
@@ -133,6 +166,10 @@ def main() -> None:
         away_points,
         spread_grade,
         total_grade,
+        spread_quote_id,
+        spread_quote_price,
+        total_quote_id,
+        total_quote_price,
     ) in rows:
         home = float(home_points) if home_points is not None else None
         away = float(away_points) if away_points is not None else None
@@ -142,27 +179,34 @@ def main() -> None:
                 spread_grade,
                 spread_result(home, away, spread_line, (spread_lean or "").lower()),
                 (spread_lean or "").lower(),
+                spread_quote_id,
+                spread_quote_price,
             ),
             (
                 "total",
                 total_grade,
                 total_result(home, away, total_line, (total_lean or "").lower()),
                 (total_lean or "").lower(),
+                total_quote_id,
+                total_quote_price,
             ),
         )
-        for target, existing, result, side in candidates:
+        for target, existing, result, side, quote_id, quote_price in candidates:
             if existing is not None or result is None:
                 continue
+            grading_ver = "model_side_best_quote_v1" if quote_id else "frozen_line_v2"
+            price = float(quote_price) if quote_price is not None else None
             pending.append(
                 {
                     "run_id": run_id,
                     "game_id": int(game_id),
                     "target": target,
                     "market_snapshot_id": snapshot_id,
+                    "market_quote_id": quote_id,
                     "side": side,
                     "result": result,
-                    "profit_units": _profit(result),
-                    "grading_version": "frozen_line_v2",
+                    "profit_units": _profit(result, price=price),
+                    "grading_version": grading_ver,
                 }
             )
             inserted[target] += 1

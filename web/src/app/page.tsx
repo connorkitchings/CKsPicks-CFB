@@ -211,7 +211,7 @@ export default async function Home({
 
             {publicationMode === "predictions" && (
               <p className="px-1 text-xs text-ink-faint">
-                Market consensus varies by sportsbook; edge shows the model&rsquo;s difference.
+                Market lines reflect the selected pre-kickoff quote; edge shows the model&rsquo;s difference.
               </p>
             )}
 

@@ -125,6 +125,10 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         forecast_schedule = pd.DataFrame(json.loads(forecast_schedule_raw))
     market_item = by_entity.get(("betting_lines", year))
     markets = read_dataset(storage, _ref(market_item)) if market_item else None
+    quotes_item = by_entity.get(("betting_lines_quotes", year)) or by_entity.get(
+        ("market_quotes", year)
+    )
+    market_quotes = read_dataset(storage, _ref(quotes_item)) if quotes_item else None
     rows = build_v5_serving_rows(
         forecasts,
         schedule,
@@ -139,6 +143,7 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         spread_threshold=float(cfg.spread_edge_threshold),
         spread_threshold_high=float(cfg.spread_edge_threshold_high_conf),
         total_threshold=float(cfg.total_edge_threshold),
+        market_quotes=market_quotes,
     )
     output_path = args.output_csv or local_prediction_path(year, week)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -182,6 +187,7 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         "validation": {
             "all_predictions_present": True,
             "line_coverage_complete": lined == len(rows),
+            "best_quote_selection_policy": "model_side_best_quote_v1",
         },
         **source_fields,
     }

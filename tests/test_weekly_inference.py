@@ -221,3 +221,107 @@ def test_publication_manifest_counts_hashes_and_refs():
     assert manifest["config_sha"] == hashlib.sha256(b"config").hexdigest()
     assert manifest["lined_games"] == manifest["predicted_games"] == 1
     assert manifest["input_dataset_refs"] == [{"dataset": "gold"}]
+
+
+def test_calculate_edges_and_leans_with_best_quote_selection():
+    features = _features().rename(columns={"game_id": "id"})
+    features["home_team_spread_line"] = [-3.0]
+    features["total_line"] = [50.0]
+    features["market_snapshot_id"] = ["snap-1"]
+    features["source_quote_ids"] = '["q-dk", "q-bov"]'
+
+    # Quotes: Bovada has -2.5 (better for home than -3.0), DraftKings has -3.5
+    # Total: DraftKings has 48.5 (better for over than 50.0)
+    market_quotes = pd.DataFrame(
+        [
+            {
+                "quote_id": "q-bov",
+                "game_id": 1,
+                "provider": "Bovada",
+                "captured_at": "2026-08-30T12:00:00Z",
+                "spread": -2.5,
+                "total": 51.0,
+                "home_spread_price": -110.0,
+                "away_spread_price": -110.0,
+                "over_price": -110.0,
+                "under_price": -110.0,
+            },
+            {
+                "quote_id": "q-dk",
+                "game_id": 1,
+                "provider": "DraftKings",
+                "captured_at": "2026-08-30T12:00:00Z",
+                "spread": -3.5,
+                "total": 48.5,
+                "home_spread_price": -110.0,
+                "away_spread_price": -110.0,
+                "over_price": -110.0,
+                "under_price": -110.0,
+            },
+        ]
+    )
+
+    predictions = pd.DataFrame(
+        [
+            {
+                "predicted_spread": 4.0,  # Leans Home (+4 + (-3) = +1 > 0)
+                "predicted_total": 52.0,  # Leans Over (52 > 50)
+                "spread_model_version": "v5",
+                "total_model_version": "v5",
+                "high_confidence_eligible": True,
+            }
+        ]
+    )
+
+    result = calculate_edges_and_leans(
+        predictions,
+        features,
+        spread_threshold=1.0,
+        spread_threshold_high=5.0,
+        total_threshold=1.0,
+        run_id="test-run",
+        market_quotes=market_quotes,
+    )
+
+    # For home spread, highest point -2.5 (Bovada) should be selected over -3.5 (DraftKings)
+    assert result.loc[0, "spread_market_quote_id"] == "q-bov"
+    assert result.loc[0, "home_team_spread_line"] == -2.5
+    assert result.loc[0, "canonical_spread_line"] == -3.0
+    assert result.loc[0, "Spread Bet"] == "Home"
+    # Edge is |4.0 + (-2.5)| = 1.5
+    assert abs(result.loc[0, "edge_spread"] - 1.5) < 1e-6
+
+    # For total over, lowest point 48.5 (DraftKings) should be selected over 51.0 (Bovada)
+    assert result.loc[0, "total_market_quote_id"] == "q-dk"
+    assert result.loc[0, "total_line"] == 48.5
+    assert result.loc[0, "canonical_total_line"] == 50.0
+    assert result.loc[0, "Total Bet"] == "Over"
+    # Edge is |52.0 - 48.5| = 3.5
+    assert abs(result.loc[0, "edge_total"] - 3.5) < 1e-6
+
+    # Manifest should validate quote selection
+    manifest = build_publication_manifest(
+        result,
+        state="preview",
+        data_as_of="2026-09-01T00:00:00Z",
+        feature_snapshot_uri="features.csv",
+        feature_snapshot_sha256="sha",
+        code_sha="code",
+        config_bytes=b"config",
+        model_context=InferenceModelContext(
+            bundle=None, bundle_version=None, model_bundle_sha256="sha"
+        ),
+        prepared_inputs=PreparedInferenceInputs(
+            features=features,
+            dataset_refs=({"dataset": "gold"},),
+            market_quotes=market_quotes,
+        ),
+        source_config="conf/test.yaml",
+        system_name="CKsPicks",
+        model_id="v5",
+    )
+    assert (
+        manifest["validation"]["best_quote_selection_policy"]
+        == "model_side_best_quote_v1"
+    )
+    assert manifest["validation"]["selected_quotes_count"] == 2

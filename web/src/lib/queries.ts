@@ -366,16 +366,34 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
         startDate: schema.games.startDate,
         homeTeam: schema.games.homeTeam,
         awayTeam: schema.games.awayTeam,
-        homeTeamSpreadLine: schema.predictions.homeTeamSpreadLine,
-        totalLine: schema.predictions.totalLine,
+        homeTeamSpreadLine: sql<number | null>`COALESCE(
+          (SELECT pms.point FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
+          ${schema.predictions.homeTeamSpreadLine}
+        )`,
+        totalLine: sql<number | null>`COALESCE(
+          (SELECT pms.point FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
+          ${schema.predictions.totalLine}
+        )`,
         predictedSpread: schema.predictions.predictedSpread,
         predictedTotal: schema.predictions.predictedTotal,
         predictedSpreadStdDev: schema.predictions.predictedSpreadStdDev,
         predictedTotalStdDev: schema.predictions.predictedTotalStdDev,
-        spreadLean: schema.predictions.spreadLean,
-        totalLean: schema.predictions.totalLean,
-        edgeSpread: schema.predictions.edgeSpread,
-        edgeTotal: schema.predictions.edgeTotal,
+        spreadLean: sql<"home" | "away" | null>`COALESCE(
+          (SELECT pms.side FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
+          ${schema.predictions.spreadLean}
+        )`,
+        totalLean: sql<"over" | "under" | null>`COALESCE(
+          (SELECT pms.side FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
+          ${schema.predictions.totalLean}
+        )`,
+        edgeSpread: sql<number | null>`COALESCE(
+          (SELECT pms.edge FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
+          ${schema.predictions.edgeSpread}
+        )`,
+        edgeTotal: sql<number | null>`COALESCE(
+          (SELECT pms.edge FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
+          ${schema.predictions.edgeTotal}
+        )`,
         highConfidence: schema.predictions.highConfidence,
         regime: schema.predictions.regime,
         homeCompletedGames: schema.predictions.homeCompletedGames,

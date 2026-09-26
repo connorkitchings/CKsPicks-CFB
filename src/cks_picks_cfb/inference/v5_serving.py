@@ -40,6 +40,8 @@ def build_v5_serving_rows(
     spread_threshold_high: float,
     total_threshold: float,
     timing_class: str = "live",
+    market_quotes: pd.DataFrame | None = None,
+    allow_default_price: bool = True,
 ) -> pd.DataFrame:
     """Require one pregame margin/total pair for every scheduled serving game.
 
@@ -132,6 +134,7 @@ def build_v5_serving_rows(
         week=week,
         market_snapshot=markets,
         schedule_snapshot=slate,
+        market_quotes=market_quotes,
     )
     features = prepared.features.reset_index(drop=True)
     pairs = pairs.loc[pd.to_numeric(features["id"], errors="raise").astype(int)]
@@ -158,6 +161,8 @@ def build_v5_serving_rows(
         spread_threshold_high=spread_threshold_high,
         total_threshold=total_threshold,
         run_id=run_id,
+        market_quotes=market_quotes,
+        allow_default_price=allow_default_price,
     )
     rows["predicted_spread_std_dev"] = np.sqrt(
         pairs[("variance", "margin")].to_numpy(float)

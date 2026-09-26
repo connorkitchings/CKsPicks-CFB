@@ -19,10 +19,20 @@ from cks_picks_cfb.artifacts import (
     write_prediction_run,
 )
 from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import V5ServingError, build_v5_serving_rows
 from scripts.pipeline.build_v5_replay import verify as verify_replay
 from scripts.pipeline.build_v5_week4_replay import verify as verify_week4_replay
+
+
+def _ref(value: dict[str, Any]) -> DatasetRef:
+    return DatasetRef(
+        **{
+            key: value[key]
+            for key in ("dataset", "version_id", "schema_version", "content_sha", "uri")
+        }
+    )
 
 
 def verify_v5_replay_source(spec: Any, storage: Any):
@@ -124,11 +134,35 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
             & schedule["away_classification"].eq("fbs")
         ].copy()
     schedule["start_date"] = schedule["kickoff_utc"]
+    markets = None
+    market_quotes = None
+    input_dataset_refs: list[dict[str, Any]] = []
+    if getattr(args, "dataset_refs_uri", None):
+        refs = json.loads(storage.read_bytes(args.dataset_refs_uri))
+        input_dataset_refs = refs
+        by_entity = {(str(item["entity"]), int(item["year"])): item for item in refs}
+        market_item = by_entity.get(("betting_lines", year))
+        markets = read_dataset(storage, _ref(market_item)) if market_item else None
+        quotes_item = by_entity.get(("betting_lines_quotes", year)) or by_entity.get(
+            ("market_quotes", year)
+        )
+        market_quotes = (
+            read_dataset(storage, _ref(quotes_item)) if quotes_item else None
+        )
+    else:
+        if cfg.v5_replay.get("markets_ref_uri"):
+            markets_ref_uri = str(cfg.v5_replay["markets_ref_uri"])
+            raw_ref = json.loads(storage.read_bytes(markets_ref_uri).decode())
+            markets = read_dataset(storage, DatasetRef(**raw_ref))
+        if cfg.v5_replay.get("market_quotes_ref_uri"):
+            quotes_ref_uri = str(cfg.v5_replay["market_quotes_ref_uri"])
+            raw_ref = json.loads(storage.read_bytes(quotes_ref_uri).decode())
+            market_quotes = read_dataset(storage, DatasetRef(**raw_ref))
     rows = build_v5_serving_rows(
         forecasts,
         schedule,
         schedule,
-        None,
+        markets,
         forecast_run_id=manifest["identity"]["run_id"],
         forecast_manifest_sha256=fields["v5_replay_manifest_sha256"],
         year=year,
@@ -139,6 +173,7 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
         spread_threshold_high=float(cfg.spread_edge_threshold_high_conf),
         total_threshold=float(cfg.total_edge_threshold),
         timing_class="replay",
+        market_quotes=market_quotes,
     )
     if args.output_csv:
         args.output_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -155,6 +190,7 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
     else:
         storage.write_bytes(feature_bytes, feature_uri)
     code_sha = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    lined = int(rows[["home_team_spread_line", "total_line"]].notna().all(axis=1).sum())
     run_manifest = {
         "state": "preview",
         "evidence_class": "replay",
@@ -163,17 +199,18 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
         "feature_snapshot_sha256": hashlib.sha256(feature_bytes).hexdigest(),
         "expected_games": len(rows),
         "predicted_games": len(rows),
-        "lined_games": 0,
+        "lined_games": lined,
         "code_sha": code_sha,
         "config_sha": hashlib.sha256(Path(args.config).read_bytes()).hexdigest(),
         "model_bundle_sha256": fields["inference_bundle_sha256"],
-        "input_dataset_refs": [],
+        "input_dataset_refs": input_dataset_refs,
         "source_config": str(args.config),
         "system_name": str(cfg.system_name),
         "model_id": str(cfg.model_id),
         "validation": {
             "all_predictions_present": True,
-            "line_coverage_complete": False,
+            "line_coverage_complete": lined == len(rows),
+            "best_quote_selection_policy": "model_side_best_quote_v1",
         },
         **fields,
     }

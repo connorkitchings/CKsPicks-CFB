@@ -388,8 +388,27 @@ def test_missing_side_price_skipped():
         game_id=GAME_ID,
         kickoff_utc=KICKOFF,
         quote_candidates=[q],
+        require_price=True,
     )
     assert result is None
+
+
+def test_unpriced_quote_defaults_to_standard_price():
+    """Unpriced CFBD lines default to -110 standard American odds."""
+    q = _spread_quote("q1", -3.0, home_price=None)
+    result = select_best_quote(
+        target="spread",
+        prediction=4.0,
+        canonical_snapshot_id=SNAP_ID,
+        canonical_line=-3.0,
+        game_id=GAME_ID,
+        kickoff_utc=KICKOFF,
+        quote_candidates=[q],
+        require_price=False,
+    )
+    assert result is not None
+    assert result.quote_id == "q1"
+    assert result.price == -110.0
 
 
 def test_post_kickoff_quote_rejected():

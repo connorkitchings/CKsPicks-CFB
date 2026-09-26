@@ -161,6 +161,7 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
     explicit_reader = None
     gold_inference_df = None
     market_snapshots_df = None
+    market_quotes_df = None
     schedule_snapshot_df = None
     prepared_inputs: PreparedInferenceInputs | None = None
     bundle_version = None
@@ -218,6 +219,8 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
                 gold_inference_df = read_dataset(storage, ref)
             if entity == "betting_lines" and ref_year == year:
                 market_snapshots_df = read_dataset(storage, ref)
+            if entity in ("market_quotes", "betting_lines_quotes") and ref_year == year:
+                market_quotes_df = read_dataset(storage, ref)
             if entity == "games" and ref_year == year:
                 schedule_snapshot_df = read_dataset(storage, ref)
 
@@ -340,6 +343,7 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
                 market_snapshot=market_snapshots_df,
                 schedule_snapshot=schedule_snapshot_df,
                 dataset_refs=input_dataset_refs,
+                market_quotes=market_quotes_df,
             )
             data_df = prepared_inputs.features
         elif use_recency:
@@ -682,6 +686,7 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
             spread_threshold_high=spread_threshold_high,
             total_threshold=total_threshold,
             run_id=run_id,
+            market_quotes=market_quotes_df,
         )
 
         output_path = args.output_csv or local_prediction_path(year, week)

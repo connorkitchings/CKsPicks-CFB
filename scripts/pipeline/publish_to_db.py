@@ -319,6 +319,16 @@ VALUES (%(snapshot_id)s, %(quote_id)s, %(target)s)
 ON CONFLICT (snapshot_id, quote_id, target) DO NOTHING
 """
 
+INSERT_PREDICTION_MARKET_SELECTION_SQL = """
+INSERT INTO prediction_market_selections (
+    run_id, game_id, target, snapshot_id, quote_id, side, point, price, edge, policy_version
+) VALUES (
+    %(run_id)s, %(game_id)s, %(target)s, %(snapshot_id)s, %(quote_id)s,
+    %(side)s, %(point)s, %(price)s, %(edge)s, %(policy_version)s
+)
+ON CONFLICT (run_id, game_id, target) DO NOTHING
+"""
+
 
 def _row_to_record(
     row: pd.Series,
@@ -410,6 +420,11 @@ def _row_to_record(
         ),
         "total_provider_count": int(_safe_float(row.get("total_provider_count")) or 0),
         "source_quote_ids": json.dumps(source_quote_ids),
+        "spread_market_quote_id": row.get("spread_market_quote_id"),
+        "total_market_quote_id": row.get("total_market_quote_id"),
+        "spread_market_quote_price": _safe_float(row.get("spread_market_quote_price")),
+        "total_market_quote_price": _safe_float(row.get("total_market_quote_price")),
+        "market_selection_policy": row.get("market_selection_policy"),
         "source_config": source_config,
         "system_name": system_name,
         "model_id": model_id,
@@ -756,6 +771,103 @@ def publish_week(
                                     "snapshot_id": record["market_snapshot_id"],
                                     "quote_id": quote_id,
                                     "target": target,
+                                },
+                            )
+                    # Target-level best-quote selections
+                    if (
+                        record.get("spread_market_quote_id")
+                        and record.get("home_team_spread_line") is not None
+                    ):
+                        sq_id = str(record["spread_market_quote_id"])
+                        if sq_id in quote_by_id:
+                            quote_rec = quote_by_id[sq_id]
+                            expected_spread = _safe_float(quote_rec.get("spread"))
+                            if (
+                                expected_spread is not None
+                                and abs(
+                                    float(record["home_team_spread_line"])
+                                    - expected_spread
+                                )
+                                > 1e-6
+                            ):
+                                raise ValueError(
+                                    f"Selected spread point {record['home_team_spread_line']} differs "
+                                    f"from quote {sq_id} point {expected_spread}"
+                                )
+                            sq_price = record.get(
+                                "spread_market_quote_price"
+                            ) or _safe_float(
+                                quote_rec.get(
+                                    "home_spread_price"
+                                    if record.get("spread_lean") == "home"
+                                    else "away_spread_price"
+                                )
+                            )
+                            if sq_price is None:
+                                sq_price = -110.0
+                            cur.execute(
+                                INSERT_PREDICTION_MARKET_SELECTION_SQL,
+                                {
+                                    "run_id": run_id,
+                                    "game_id": record["game_id"],
+                                    "target": "spread",
+                                    "snapshot_id": record["market_snapshot_id"],
+                                    "quote_id": sq_id,
+                                    "side": record.get("spread_lean") or "home",
+                                    "point": record["home_team_spread_line"],
+                                    "price": float(sq_price),
+                                    "edge": float(record.get("edge_spread") or 0.0),
+                                    "policy_version": record.get(
+                                        "market_selection_policy"
+                                    )
+                                    or "model_side_best_quote_v1",
+                                },
+                            )
+
+                    if (
+                        record.get("total_market_quote_id")
+                        and record.get("total_line") is not None
+                    ):
+                        tq_id = str(record["total_market_quote_id"])
+                        if tq_id in quote_by_id:
+                            quote_rec = quote_by_id[tq_id]
+                            expected_total = _safe_float(quote_rec.get("total"))
+                            if (
+                                expected_total is not None
+                                and abs(float(record["total_line"]) - expected_total)
+                                > 1e-6
+                            ):
+                                raise ValueError(
+                                    f"Selected total point {record['total_line']} differs "
+                                    f"from quote {tq_id} point {expected_total}"
+                                )
+                            tq_price = record.get(
+                                "total_market_quote_price"
+                            ) or _safe_float(
+                                quote_rec.get(
+                                    "over_price"
+                                    if record.get("total_lean") == "over"
+                                    else "under_price"
+                                )
+                            )
+                            if tq_price is None:
+                                tq_price = -110.0
+                            cur.execute(
+                                INSERT_PREDICTION_MARKET_SELECTION_SQL,
+                                {
+                                    "run_id": run_id,
+                                    "game_id": record["game_id"],
+                                    "target": "total",
+                                    "snapshot_id": record["market_snapshot_id"],
+                                    "quote_id": tq_id,
+                                    "side": record.get("total_lean") or "over",
+                                    "point": record["total_line"],
+                                    "price": float(tq_price),
+                                    "edge": float(record.get("edge_total") or 0.0),
+                                    "policy_version": record.get(
+                                        "market_selection_policy"
+                                    )
+                                    or "model_side_best_quote_v1",
                                 },
                             )
                 cur.execute(INSERT_PREDICTION_SQL, {**record, "run_id": run_id})

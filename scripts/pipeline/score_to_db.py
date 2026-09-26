@@ -229,14 +229,15 @@ def _v5_schema_present(cur: psycopg.Cursor) -> bool:
 
 UPSERT_GRADE_SQL = """
 INSERT INTO prediction_grades (
-    run_id, game_id, target, market_snapshot_id, side, result,
+    run_id, game_id, target, market_snapshot_id, market_quote_id, side, result,
     profit_units, grading_version, graded_at
 ) VALUES (
-    %(run_id)s, %(game_id)s, %(target)s, %(market_snapshot_id)s,
+    %(run_id)s, %(game_id)s, %(target)s, %(market_snapshot_id)s, %(market_quote_id)s,
     %(side)s, %(result)s, %(profit_units)s, %(grading_version)s, NOW()
 )
 ON CONFLICT (run_id, game_id, target) DO UPDATE SET
     market_snapshot_id = EXCLUDED.market_snapshot_id,
+    market_quote_id = EXCLUDED.market_quote_id,
     side = EXCLUDED.side,
     result = EXCLUDED.result,
     profit_units = EXCLUDED.profit_units,
@@ -245,8 +246,16 @@ ON CONFLICT (run_id, game_id, target) DO UPDATE SET
 """
 
 
-def _profit(result: str) -> float:
-    return {"win": 1.0, "loss": -1.1, "push": 0.0}[result]
+def _profit(result: str, price: float | None = None) -> float:
+    if result == "push":
+        return 0.0
+    if result == "loss":
+        return -1.1 if price is None else -1.0
+    if price is not None:
+        from cks_picks_cfb.models.market_grading import american_profit_per_unit
+
+        return american_profit_per_unit(price)
+    return 1.0
 
 
 def _upsert_run_grades(cur, scored: pd.Series, *, run_id: str) -> None:
@@ -263,6 +272,40 @@ def _upsert_run_grades(cur, scored: pd.Series, *, run_id: str) -> None:
         snapshot_id = scored.get("market_snapshot_id")
         if pd.isna(snapshot_id):
             snapshot_id = None
+
+        quote_id_col = (
+            "spread_market_quote_id" if target == "spread" else "total_market_quote_id"
+        )
+        market_quote_id = scored.get(quote_id_col)
+        price_val = None
+        if pd.isna(market_quote_id) or not market_quote_id:
+            cur.execute(
+                """
+                SELECT quote_id, price FROM prediction_market_selections
+                WHERE run_id = %s AND game_id = %s AND target = %s
+                """,
+                (run_id, game_id, target),
+            )
+            pms_row = cur.fetchone()
+            if pms_row:
+                market_quote_id = pms_row[0]
+                price_val = float(pms_row[1]) if pms_row[1] is not None else None
+            else:
+                market_quote_id = None
+        else:
+            price_col = (
+                "spread_market_quote_price"
+                if target == "spread"
+                else "total_market_quote_price"
+            )
+            raw_price = scored.get(price_col)
+            if raw_price is not None and not pd.isna(raw_price):
+                price_val = float(raw_price)
+
+        grading_ver = (
+            "model_side_best_quote_v1" if market_quote_id else "frozen_line_v2"
+        )
+
         cur.execute(
             UPSERT_GRADE_SQL,
             {
@@ -270,10 +313,11 @@ def _upsert_run_grades(cur, scored: pd.Series, *, run_id: str) -> None:
                 "game_id": game_id,
                 "target": target,
                 "market_snapshot_id": snapshot_id,
+                "market_quote_id": market_quote_id,
                 "side": str(side).lower(),
                 "result": result,
-                "profit_units": _profit(result),
-                "grading_version": "frozen_line_v2",
+                "profit_units": _profit(result, price=price_val),
+                "grading_version": grading_ver,
             },
         )
 

@@ -100,6 +100,7 @@ def select_best_quote(
     game_id: int | str,
     kickoff_utc: datetime,
     quote_candidates: list[dict[str, Any]],
+    require_price: bool = False,
 ) -> NormalizedQuote | None:
     """Select the best executable pre-kickoff quote for a single target.
 
@@ -130,7 +131,11 @@ def select_best_quote(
           - ``captured_at``:   datetime (timezone-aware)
           - ``point``:         float
           - ``home_spread_price`` / ``away_spread_price`` /
-            ``over_price`` / ``under_price``: float (side-specific price)
+            ``over_price`` / ``under_price``: float (side-specific price;
+            if missing, defaults to -110.0 standard American vig unless require_price is True)
+    require_price:
+        If True, rejects quotes that lack an explicit price. If False (default),
+        unpriced quotes (e.g. CFBD standard lines) default to -110.0.
 
     Returns
     -------
@@ -163,8 +168,8 @@ def select_best_quote(
         point = q.get("point")
         if qt_id is None or point is None or pd.isna(point):
             continue
-        # Side-specific price
-        price = _side_price(q, direction, target)
+        # Side-specific price (default -110 for standard lines if not require_price)
+        price = _side_price(q, direction, target, require_price=require_price)
         if price is None or pd.isna(price):
             continue
         # Pre-kickoff capture
@@ -218,16 +223,28 @@ def _side_price(
     q: dict[str, Any],
     direction: str,
     target: str,
+    *,
+    require_price: bool = False,
 ) -> float | None:
-    """Return the side-specific American price for a quote dict."""
+    """Return the side-specific American price for a quote dict.
+
+    If explicit price is missing and require_price is False, defaults to -110.0.
+    """
+    price = None
     if target == "spread":
-        if direction == "home":
-            return q.get("home_spread_price")
-        return q.get("away_spread_price")
-    # total
-    if direction == "over":
-        return q.get("over_price")
-    return q.get("under_price")
+        price = (
+            q.get("home_spread_price")
+            if direction == "home"
+            else q.get("away_spread_price")
+        )
+    elif target == "total":
+        price = q.get("over_price") if direction == "over" else q.get("under_price")
+
+    if price is None or pd.isna(price):
+        if require_price:
+            return None
+        return -110.0
+    return float(price)
 
 
 def _sort_key(
@@ -345,6 +362,7 @@ def audit_quote_coverage(
     canonical_line: float | None,
     kickoff_utc: datetime,
     quote_candidates: list[dict[str, Any]],
+    require_price: bool = False,
 ) -> dict[str, Any]:
     """Return a read-only audit record for one prediction target.
 
@@ -395,7 +413,7 @@ def audit_quote_coverage(
         if qt_id is None or point is None or pd.isna(point):
             reasons.append("missing_point_or_id")
             continue
-        price = _side_price(q, direction, target)
+        price = _side_price(q, direction, target, require_price=require_price)
         if price is None or pd.isna(price):
             reasons.append("missing_side_price")
             continue

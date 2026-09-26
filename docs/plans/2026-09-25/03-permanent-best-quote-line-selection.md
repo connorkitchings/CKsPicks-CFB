@@ -423,18 +423,17 @@ eligible quote is valid only as an unlined forecast with no market result.
   is implemented and tested; a run-level coverage audit script can be built
   from it. Full historical season/week audit execution is gated on Tasks 3–6
   authorization.
-- [ ] Forecast artifacts, selections, published values, grades, and web rows
-  bind to the same target-specific raw quote. _(Tasks 3–5 pending)_
+- [x] Forecast artifacts, selections, published values, grades, and web rows
+  bind to the same target-specific raw quote. _(Tasks 3–5 implemented)_
 - [x] Original legacy and V4 artifacts remain immutable and readable; this
   session creates no artifact, no grade, and no Neon mutation.
 - [ ] Eligible historical replacement runs, including 2026 V5 Weeks 0–4, have
   passed their required Preview and explicit production release gates.
-  _(Task 6 pending separate authorizations)_
-- [ ] Future weekly operations select and verify the best quote before freeze.
-  _(Task 3 integration with generate_weekly_bets.py pending)_
-- [x] Required validation (44 pytest, contracts-check, ruff format/check,
-  git diff --check) and documentation (weekly_pipeline.md,
-  production_runbook.md, v5_status.md) are complete for Tasks 1, 2, and 7.
+  _(Task 6 pending separate operational authorizations)_
+- [x] Future weekly operations select and verify the best quote before freeze.
+  _(Task 3 integrated in weekly.py, generate_weekly_bets.py, generate_v5_weekly_bets.py, generate_v5_replay_weekly_bets.py)_
+- [x] Required validation (1,439 pytest, contracts-check, ruff format/check,
+  web lint/typecheck/tests/build, git diff --check) and documentation are complete.
 - [ ] The plan status is updated to `Implemented` only after every item passes.
 
 ## Amendments
@@ -445,4 +444,13 @@ Tasks 3–6 (artifact integration, publish/grade pipeline, web serving, and
 historical replacement runs) remain pending because they require Preview
 rehearsal and separate production authorization decisions per the commit policy.
 The plan stays `In Progress` until those gates are cleared.
+
+**Amendment 2 (2026-09-25, session 23):** Tasks 3, 4, and 5 implemented:
+- Read-only audit CLI `scripts/pipeline/audit_market_quote_coverage.py` accounts for all 2,188 stored prediction targets.
+- Quote selection defaults unpriced quotes (CFBD) to standard -110.0 American odds (`require_price=False`) while supporting explicit prices.
+- Pipeline integration in `weekly.py`, `v5_serving.py`, `generate_weekly_bets.py`, `generate_v5_weekly_bets.py`, and `generate_v5_replay_weekly_bets.py` selects best quotes and writes selection lineage into artifacts and manifests.
+- Publishing (`publish_to_db.py`) inserts verified selections into `prediction_market_selections` and rejects point mismatches.
+- Scoring (`score_to_db.py`, `backfill_replay_grades.py`) links grades to `market_quote_id` and sets `model_side_best_quote_v1`.
+- Web serving (`queries.ts`, `page.tsx`) reads from `prediction_market_selections` via COALESCE and updates footnote copy.
+- Full test suites pass: 1,439 Python tests, 11 web tests, web typecheck, build, contracts-check. Task 6 (generating/activating replacement replay runs on Preview/Production) is staged for subsequent operational execution.
 
