@@ -18,7 +18,7 @@ import { uiFixture } from "@/test/fixtures/publication";
 // Revalidate every 5 minutes (ISR).
 export const revalidate = 300;
 
-type SearchParams = Promise<{ season?: string; week?: string; mode?: string }>;
+type SearchParams = Promise<{ season?: string; week?: string; mode?: string; sort?: string }>;
 
 /**
  * Resolve the target season and week from URL params and publication scope.
@@ -220,8 +220,16 @@ export default async function Home({
                 No games loaded for {season} week {week}.
               </div>
             ) : (
-              <GamesList games={games} />
+              <GamesList
+                games={games}
+                initialSort={
+                  params.sort === "spreadEdge" || params.sort === "totalEdge"
+                    ? params.sort
+                    : "kickoff"
+                }
+              />
             )}
+
           </>
         )}
       </main>

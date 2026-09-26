@@ -67,3 +67,13 @@ test("predictions query decouples market selections from main select", () => {
   );
   assert.match(getGamesBody, /getMarketSelectionsForRun/);
 });
+
+test("GamesList provides Kickoff time, Spread Edge, and Totals Edge sort descending by absolute size", () => {
+  const source = readFileSync(new URL("../components/GamesList.tsx", import.meta.url), "utf8");
+  assert.match(source, /kickoff:\s*"Kickoff time"/);
+  assert.match(source, /spreadEdge:\s*"Spread Edge"/);
+  assert.match(source, /totalEdge:\s*"Totals Edge"/);
+  assert.match(source, /Math\.abs\(aRaw\)/);
+  assert.match(source, /Math\.abs\(bRaw\)/);
+  assert.match(source, /return bEdge - aEdge;/);
+});

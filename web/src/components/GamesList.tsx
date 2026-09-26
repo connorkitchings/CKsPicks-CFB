@@ -5,19 +5,12 @@ import clsx from "clsx";
 import { GameRow } from "./GameRow";
 import type { Game } from "@/lib/queries";
 
-type SortKey =
-  | "kickoff"
-  | "spreadEdge"
-  | "spreadEdgeAsc"
-  | "totalEdge"
-  | "totalEdgeAsc";
+type SortKey = "kickoff" | "spreadEdge" | "totalEdge";
 
 const SORT_LABEL: Record<SortKey, string> = {
   kickoff: "Kickoff time",
-  spreadEdge: "Spread gap (large first)",
-  spreadEdgeAsc: "Spread gap (small first)",
-  totalEdge: "Total gap (large first)",
-  totalEdgeAsc: "Total gap (small first)",
+  spreadEdge: "Spread Edge",
+  totalEdge: "Totals Edge",
 };
 
 /**
@@ -25,10 +18,16 @@ const SORT_LABEL: Record<SortKey, string> = {
  * ~70 games per week fits comfortably in the browser; no server round-trip
  * needed when the user types or toggles.
  */
-export function GamesList({ games }: { games: Game[] }) {
+export function GamesList({
+  games,
+  initialSort = "kickoff",
+}: {
+  games: Game[];
+  initialSort?: SortKey;
+}) {
   const [query, setQuery] = useState("");
   const [hcOnly, setHcOnly] = useState(false);
-  const [sort, setSort] = useState<SortKey>("kickoff");
+  const [sort, setSort] = useState<SortKey>(initialSort);
   const predictionsVisible = games[0]?.publicationMode === "predictions";
   const hasHighConfidence =
     predictionsVisible &&
@@ -57,24 +56,23 @@ export function GamesList({ games }: { games: Game[] }) {
       if (sort === "kickoff" || !predictionsVisible) {
         return a.startDate.getTime() - b.startDate.getTime();
       }
-      // Stored edges are magnitudes (|model − market|), so descending puts
-      // the biggest model/market disagreement first and ascending puts the
-      // smallest first. Direction (home/away, over/under) comes from the
-      // lean shown on each card. Unlined games (null edge) stay at the
-      // bottom in both directions.
-      const edgeField = sort.startsWith("spread") ? "edgeSpread" : "edgeTotal";
-      const ascending = sort.endsWith("Asc");
-      const aEdge =
-        a.publicationMode === "predictions" ? a[edgeField] : null;
-      const bEdge =
-        b.publicationMode === "predictions" ? b[edgeField] : null;
+      // Sort edges descending by absolute size (|model − market|), putting
+      // the biggest model/market disagreement first. Direction (home/away,
+      // over/under) comes from the lean shown on each card. Unlined games
+      // (null edge) stay at the bottom.
+      const edgeField = sort === "spreadEdge" ? "edgeSpread" : "edgeTotal";
+      const aRaw = a.publicationMode === "predictions" ? a[edgeField] : null;
+      const bRaw = b.publicationMode === "predictions" ? b[edgeField] : null;
+      const aEdge = aRaw !== null ? Math.abs(aRaw) : null;
+      const bEdge = bRaw !== null ? Math.abs(bRaw) : null;
       if (aEdge === null && bEdge === null) return 0;
       if (aEdge === null) return 1;
       if (bEdge === null) return -1;
-      return ascending ? aEdge - bEdge : bEdge - aEdge;
+      return bEdge - aEdge;
     });
     return sorted;
   }, [games, query, hcOnly, predictionsVisible, sort]);
+
 
   const inputCls =
     "w-full rounded-md border border-line bg-surface-card px-2 py-1.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent";
