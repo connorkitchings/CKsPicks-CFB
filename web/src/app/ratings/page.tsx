@@ -49,9 +49,14 @@ export default async function RatingsPage({ searchParams }: {
     }
   }
 
-  const visible = ratings
-    .filter((rating) => rating.team.toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => Number(b[fields[sort]]) - Number(a[fields[sort]]));
+  // rank computed pre-filter so search doesn't renumber
+  const ranked = [...ratings]
+    .sort((a, b) => Number(b[fields[sort]]) - Number(a[fields[sort]]))
+    .map((rating, i) => ({ rating, rank: i + 1 }));
+
+  const visible = ranked.filter(({ rating }) =>
+    rating.team.toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
@@ -77,8 +82,8 @@ export default async function RatingsPage({ searchParams }: {
         </p>
       </section>
 
-      {/* Rating Period Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Ratings timeline">
+      {/* Rating Period Navigation */}
+      <nav className="flex flex-wrap items-center gap-2" aria-label="Ratings timeline">
         <span className="mr-1 text-xs font-semibold text-ink-muted">Ratings timeline:</span>
         {RATING_PERIODS.map((p) => {
           const isActive = period === p.id;
@@ -86,6 +91,7 @@ export default async function RatingsPage({ searchParams }: {
             <Link
               key={p.id}
               href={`/ratings?${buildQuery({ period: p.id, sort, q: query, season: String(season) })}`}
+              aria-current={isActive ? "page" : undefined}
               className={clsx(
                 "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent",
                 isActive
@@ -97,7 +103,7 @@ export default async function RatingsPage({ searchParams }: {
             </Link>
           );
         })}
-      </div>
+      </nav>
 
       {/* Search and Sort Form */}
       <form action="/ratings" className="flex flex-wrap gap-3" role="search">
@@ -159,9 +165,9 @@ export default async function RatingsPage({ searchParams }: {
               </tr>
             </thead>
             <tbody>
-              {visible.map((rating, index) => (
+              {visible.map(({ rating, rank }) => (
                 <tr key={rating.team} className="border-b border-line last:border-0 hover:bg-surface-inset/50">
-                  <td className="px-3 py-3 text-center font-mono text-xs text-ink-faint">{index + 1}</td>
+                  <td className="px-3 py-3 text-center font-mono text-xs text-ink-faint">{rank}</td>
                   <th scope="row" className="px-4 py-3 text-left font-semibold text-ink">
                     <Link
                       className="hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent"

@@ -151,7 +151,12 @@ export function GameRow({ game }: { game: Game }) {
           ariaLabel="Market and model comparison"
           tableClassName="w-full tabular-nums text-xs"
           headerCellClassName="pl-2 text-right"
-          bodyCellClassName="py-1.5 pl-2 text-right font-mono tabular-nums"
+          bodyCellClassName={[
+            "py-1.5 pl-2 text-right font-mono tabular-nums",
+            "py-1.5 pl-2 text-right font-mono tabular-nums",
+            "py-1.5 pl-2 text-right font-mono tabular-nums",
+            "py-1.5 pl-2 text-right",
+          ]}
           columns={[
             { header: "Market" },
             { header: "Model" },
@@ -195,7 +200,7 @@ export function GameRow({ game }: { game: Game }) {
           bodyCellClassName={[
             "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
             "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
-            "break-words py-1.5 pl-2 text-right font-mono tabular-nums",
+            "break-words py-1.5 pl-2 text-right",
           ]}
           columns={[
             { header: "Market", widthClass: "w-[28%]" },
@@ -285,7 +290,10 @@ function MarketGameRow({
         ariaLabel="Market and results"
         tableClassName="mt-3 w-full tabular-nums text-[11px] sm:text-xs"
         headerCellClassName="pl-2 text-right"
-        bodyCellClassName="py-1.5 pl-2 text-right font-mono tabular-nums text-ink"
+        bodyCellClassName={[
+          "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
+          "py-1.5 pl-2 text-right text-ink",
+        ]}
         columns={[{ header: "Market" }, { header: "Bet Result" }]}
         rows={[
           {

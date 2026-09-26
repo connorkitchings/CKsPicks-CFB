@@ -11,9 +11,12 @@ test("SiteNav includes Predictions and Ratings in navigation items", () => {
 test("ratings page includes rank column, methodology explainer, and disambiguated empty states", () => {
   const source = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
 
-  // Rank column in table header and body
+  // Rank column in table header and body (computed pre-filter)
   assert.match(source, /<th scope="col"[^>]*>#<\/th>/);
-  assert.match(source, /index \+ 1/);
+  assert.match(source, /\{rank\}/);
+  assert.match(source, /rank computed pre-filter/);
+  assert.match(source, /aria-label="Ratings timeline"/);
+  assert.match(source, /aria-current=/);
 
   // Methodology explainer citing possession scoring efficiency (PPP) and Ridge bridge
   assert.match(source, /scoring efficiency per possession \(PPP\)/);
