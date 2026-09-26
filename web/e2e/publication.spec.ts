@@ -88,12 +88,12 @@ test("legacy V4 fallback week renders its own model without the V5 banner", asyn
   await expect(page.getByRole("region", { name: "2026 so far" })).toHaveCount(0);
 });
 
-test("navigation exposes predictions only", async ({ page }) => {
+test("navigation exposes predictions and ratings only", async ({ page }) => {
   await page.goto("/?mode=predictions");
 
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link", { name: "Predictions" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Ratings" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Ratings" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Performance" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Method" })).toHaveCount(0);
 });
