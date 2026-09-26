@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getCurrentRatings, type Rating } from "@/lib/v5";
+import clsx from "clsx";
+import { getWeeklyRatings, RATING_PERIODS, type Rating, type RatingPeriod } from "@/lib/v5";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 
 export const revalidate = 300;
@@ -11,22 +12,37 @@ const fields: Record<Sort, keyof Rating> = {
   defense: "defenseRating",
 };
 
+function buildQuery(params: Record<string, string | undefined>): string {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== "") q.set(k, v);
+  }
+  return q.toString();
+}
+
 export default async function RatingsPage({ searchParams }: {
-  searchParams: Promise<{ q?: string; sort?: string; season?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; season?: string; week?: string; period?: string }>;
 }) {
   const params = await searchParams;
   const sort: Sort = params.sort === "offense" || params.sort === "defense" ? params.sort : "overall";
   const query = (params.q ?? "").trim().slice(0, 80);
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
+  const requestedPeriod = params.period ?? params.week ?? "post-3";
 
   let ratings: Rating[] = [];
+  let period: RatingPeriod = "post-3";
+  let periodMeta = RATING_PERIODS[0];
   let unavailable = false;
+
   if (process.env.CFB_UI_TEST_MODE === "1") {
     ratings = [v5RatingFixture];
   } else {
     try {
-      ratings = await getCurrentRatings(season);
+      const result = await getWeeklyRatings(season, requestedPeriod);
+      ratings = result.ratings;
+      period = result.period;
+      periodMeta = result.periodMeta;
     } catch (error) {
       console.error("V5 ratings query failed", error);
       unavailable = true;
@@ -40,10 +56,12 @@ export default async function RatingsPage({ searchParams }: {
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">{season} · V5</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
+          {season} · {periodMeta.label} · V5
+        </p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">Team ratings</h1>
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-          Possession-based team ratings and efficiency rankings. Higher is better for overall, offense, and defense.
+          {periodMeta.description} Higher is better for overall, offense, and defense.
         </p>
       </div>
 
@@ -59,7 +77,32 @@ export default async function RatingsPage({ searchParams }: {
         </p>
       </section>
 
+      {/* Rating Period Navigation Tabs */}
+      <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Ratings timeline">
+        <span className="mr-1 text-xs font-semibold text-ink-muted">Ratings timeline:</span>
+        {RATING_PERIODS.map((p) => {
+          const isActive = period === p.id;
+          return (
+            <Link
+              key={p.id}
+              href={`/ratings?${buildQuery({ period: p.id, sort, q: query, season: String(season) })}`}
+              className={clsx(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent",
+                isActive
+                  ? "bg-accent text-white shadow-xs"
+                  : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset"
+              )}
+            >
+              {p.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Search and Sort Form */}
       <form action="/ratings" className="flex flex-wrap gap-3" role="search">
+        <input type="hidden" name="period" value={period} />
+        {params.season && <input type="hidden" name="season" value={String(season)} />}
         <label className="sr-only" htmlFor="team-search">Search team</label>
         <input
           id="team-search"
@@ -102,7 +145,9 @@ export default async function RatingsPage({ searchParams }: {
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-surface-card">
           <table className="w-full min-w-[580px] text-sm tabular-nums">
-            <caption className="sr-only">Current V5 team ratings</caption>
+            <caption className="sr-only">
+              {season} {periodMeta.label} V5 team ratings
+            </caption>
             <thead className="border-b border-line bg-surface-inset text-xs uppercase tracking-wide text-ink-faint">
               <tr>
                 <th scope="col" className="w-12 px-3 py-3 text-center">#</th>
@@ -138,7 +183,9 @@ export default async function RatingsPage({ searchParams }: {
 
       {ratings[0] && (
         <p className="text-xs text-ink-faint">
-          Evidence updated {ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC. Uncertainty is one rating standard deviation.
+          {period === "preseason"
+            ? "Preseason baseline priors before 2026 kickoff. Uncertainty is one rating standard deviation."
+            : `Evidence cutoff: ${ratings[0].cutoffUtc.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC. Uncertainty is one rating standard deviation.`}
         </p>
       )}
     </main>

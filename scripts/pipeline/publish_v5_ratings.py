@@ -68,6 +68,7 @@ def load_verified_snapshots(storage, rating_uri: str) -> tuple[list[dict], str]:
     measurement_outputs = measurement["output_refs"]
     population = _read_frame(storage, measurement_outputs["population"], "population")
     pregame = _read_frame(storage, rating_outputs["team_states"], "team_states")
+    priors_df = _read_frame(storage, rating_outputs["priors"], "priors")
     current = build_current_team_states(
         population=population,
         observations=_read_frame(
@@ -75,7 +76,7 @@ def load_verified_snapshots(storage, rating_uri: str) -> tuple[list[dict], str]:
         ),
         snapshots=_read_frame(storage, measurement_outputs["snapshots"], "snapshots"),
         terminal=_read_frame(storage, measurement_outputs["terminal"], "terminal"),
-        priors=_read_frame(storage, rating_outputs["priors"], "priors"),
+        priors=priors_df,
         historical_terminal=_read_frame(
             storage,
             historical_measurement["output_refs"]["terminal"],
@@ -87,6 +88,40 @@ def load_verified_snapshots(storage, rating_uri: str) -> tuple[list[dict], str]:
     )
     run_id = str((rating.get("identity") or {})["run_id"])
     records: list[dict] = []
+    p_off = priors_df[priors_df["unit_role"] == "offense"].set_index("team")
+    p_def = priors_df[priors_df["unit_role"] == "defense"].set_index("team")
+    common_teams = sorted(set(p_off.index) & set(p_def.index))
+    preseason_cutoff = pd.Timestamp("2026-08-20T00:00:00Z").to_pydatetime()
+    for team in common_teams:
+        off_mean = float(p_off.loc[team, "prior_mean"])
+        off_var = float(p_off.loc[team, "prior_variance"])
+        def_mean = float(p_def.loc[team, "prior_mean"])
+        def_var = float(p_def.loc[team, "prior_variance"])
+        fallbacks = [
+            p_off.loc[team, "fallback_reason"],
+            p_def.loc[team, "fallback_reason"],
+        ]
+        fb = ";".join(sorted(set(f for f in fallbacks if f))) or None
+        records.append(
+            {
+                "snapshot_id": f"{run_id}:pregame:{team}:preseason",
+                "source_run_id": run_id,
+                "source_manifest_sha256": rating_sha,
+                "team": str(team),
+                "season": 2026,
+                "week": 0,
+                "game_id": None,
+                "snapshot_class": "pregame",
+                "cutoff_utc": preseason_cutoff,
+                "offense_rating": off_mean,
+                "offense_variance": off_var,
+                "defense_rating": def_mean,
+                "defense_variance": def_var,
+                "overall_rating": (off_mean + def_mean) / 2.0,
+                "overall_variance": (off_var + def_var) / 4.0,
+                "fallback_reason": fb,
+            }
+        )
     for classification, frame in (("pregame", pregame), ("current", current)):
         for row in frame.to_dict("records"):
             if row["candidate_id"] != FROZEN_CANDIDATE:
