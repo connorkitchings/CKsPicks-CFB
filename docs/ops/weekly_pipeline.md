@@ -1,28 +1,37 @@
 # Weekly Pipeline — 2026 Season
 
-> **V5 Preview path:** The [current V5 status](../modeling/v5_status.md) and [cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) govern the future replacement of V4. `conf/weekly_bets/v5_preview_2026.yaml` selects the explicit V5 live-forecast adapter only after it pins an independently verified current forecast. The adapter emits the existing immutable prediction-run artifact and keeps production activation disabled until a separate decision. V4 remains the rollback configuration.
+> **V5 production status:** The [current V5 status](../modeling/v5_status.md) and [cutover contract](../plans/2026-09-22/04-v5-authority-simplification-and-site-cutover.md) document the accepted V5 model family. Production serves V5 best-quote replay replacement runs (`2026w{0..4}-v5replay-bestquote-20260926-r3`) since 2026-09-26, displaying truthful historical replay for Weeks 0–3 and published Week 4 forecasts. Certified V5 team ratings are served from `v5_rating_snapshots`.
 
-R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when the explicit publication policy permits it; any non-`predictions` mode is fail-closed market-only rendering. Production never depends on repository-local data, model files, or mutable R2 pointers. V4 remains the active production/rollback bundle while rating work is isolated in shadow artifacts. See [2026 Data Platform](../architecture/data_platform_2026.md), the [Production Runbook](production_runbook.md), and the [2026 roadmap](../planning/roadmap.md).
+R2 is the durable content source of truth. Neon is the dataset/workflow control plane and derived serving database. The Next.js app reads the selected immutable run only when the explicit publication policy permits it; any non-`predictions` mode is fail-closed market-only rendering. Production never depends on repository-local data, model files, or mutable R2 pointers. See [2026 Data Platform](../architecture/data_platform_2026.md), the [Production Runbook](production_runbook.md), and the [2026 roadmap](../planning/roadmap.md).
 
 ## Required setup
 
-Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations, currently through 0013 on Preview). On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles rather than the `.env` placeholder URL.
+Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations through 0015). On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles and `zsh scripts/ops/with_production_pipeline_env.sh <command>` for the restricted `cks_prod_pipeline` role on production.
 
-### V5 transition operations (Preview only until activation)
+### V5 weekly operations & ratings publication
 
-The [product transformation contract](../plans/2026-09-23/01-v5-product-transformation.md) governs the release gates. The inference bundle is pinned in `conf/research/data_first_football_v1/live_forecast_v1.yaml`. Reconstruct retrospective 2026 games with `scripts/pipeline/build_v5_replay.py`: first save and review its dry-run JSON, then apply with the same arguments plus `--preflight-evidence` from a clean committed code SHA. Pin the resulting manifest URI and raw SHA-256 in `conf/weekly_bets/v5_replay_2026.yaml`. Replay has `evidence_class=replay`; it is never a frozen-before-kickoff forecast.
+The [product transformation contract](../plans/2026-09-23/01-v5-product-transformation.md) and [ratings publication contract](../plans/2026-09-26/03-v5-ratings-publication-and-navigation.md) govern active V5 operations.
 
-The resumable operator supports `project-v5-ratings`, `publish-replay-week`, and `score-replay-week` with `--environment preview` and stable `--pipeline-run-id` values on retry. Replay publication uses `--no-update-current`; selecting a public run is a separate `scripts/pipeline/select_public_run.py` action with exact season, week, run ID, reason, and environment. A same-slate V4 rollback uses that command's `--allow-v4-fallback` and the reviewed V4 run ID. Inspect `site_week_selection_history`, `current_week`, `/api/health`, and populated browser pages after each selection. Do not use this procedure to claim prospective evidence for replay.
+1. **Ratings Projection (`project-v5-ratings`):**
+   Team ratings snapshots are projected into `v5_rating_snapshots` after the `rating` stage produces a certified, independently verified rating replay manifest and `publish` records the selected `prediction_runs` row:
+   ```bash
+   zsh scripts/ops/with_production_pipeline_env.sh \
+     uv run python -m cks_picks_cfb.ops project-v5-ratings \
+       --year 2026 \
+       --environment production \
+       --rating-manifest-uri artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/<run_id>/retained-rating-replay-manifest.json
+   ```
+   - **Ordering & Preconditions:** Requires a verified rating manifest in R2 with matching independent verifier, verified parents, active pipeline lease (`assert_active_pipeline_lease`), and `v5_release_policy`.
+   - **Idempotency & Fail-Closed:** Snapshots use `ON CONFLICT (snapshot_id) DO NOTHING`. If projection fails, transactions roll back; predictions remain served while `/ratings` displays a graceful empty/unavailable state.
+   - **No `v5_cycle.py` edits required:** The command is already wired in `src/cks_picks_cfb/ops/__main__.py:2002-2018`.
+   - **Exceptional Rollback:**
+     ```sql
+     -- Executed via with_production_pipeline_env.sh under active pipeline lease:
+     DELETE FROM v5_rating_snapshots WHERE source_manifest_sha256 = '<sha>';
+     ```
 
-The [manual V5 weekly operator](v5_weekly_operator.md) prepares a separate
-reviewed preflight and apply for each refreshed-parent, forecast, readiness,
-publication, freeze, and close component. It records stable ops receipts and
-does not schedule runs. Production V5 publication requires an admin-written,
-one-slate `v5_serving_authorizations` record bound to exact forecast,
-readiness, config, model, and prediction artifact checksums; no such record
-exists yet. V4 publication and fallback remain available.
-
-After stabilized Week 4 finals, refresh Contracts 07 and 08 under new immutable IDs, run and independently verify Contract 09 on the current slate, and rehearse Preview publication, freeze, close, and V4 rollback. Assemble the exact artifacts and observations for a separate production activation decision. V4 execution remains available until one V5 publish/freeze/close cycle succeeds.
+2. **Weekly Run Replay & Serving:**
+   The resumable operator supports `project-v5-ratings`, `publish-replay-week`, and `score-replay-week` with stable `--pipeline-run-id` values on retry. Public selection is managed via `scripts/pipeline/select_public_run.py` with exact season, week, run ID, reason, and environment. Inspect `site_week_selection_history`, `current_week`, `/api/health`, and populated browser pages after each selection.
 
 Upload route artifacts and configure the ten-cell manifest URI/checksum in the launch config `conf/weekly_bets/v4_2026.yaml` (V4 bundle `week0-2026-v4-strict-20260818-r2`; `conf/weekly_bets/v2_preview_2026.yaml` remains the wired fallback). Weekly dataset refs are selected from the catalog and frozen in each pipeline-run manifest, never in static configuration.
 

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Fragment } from "react";
 import { clsx } from "clsx";
 import { logoUrl } from "@/lib/teams";
@@ -333,14 +334,15 @@ function TeamLine({
         className="h-7 w-7 shrink-0 object-contain"
         unoptimized
       />
-      <span
+      <Link
+        href={`/teams/${encodeURIComponent(name)}`}
         className={clsx(
-          "min-w-0 truncate text-sm text-ink",
+          "min-w-0 truncate text-sm text-ink hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent",
           highlighted && "font-semibold",
         )}
       >
         {name}
-      </span>
+      </Link>
       {record && (
         <span className="text-xs tabular-nums text-ink-faint">({record})</span>
       )}
