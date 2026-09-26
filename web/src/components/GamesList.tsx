@@ -5,12 +5,19 @@ import clsx from "clsx";
 import { GameRow } from "./GameRow";
 import type { Game } from "@/lib/queries";
 
-type SortKey = "kickoff" | "spreadEdge" | "totalEdge";
+type SortKey =
+  | "kickoff"
+  | "spreadEdge"
+  | "spreadEdgeAsc"
+  | "totalEdge"
+  | "totalEdgeAsc";
 
 const SORT_LABEL: Record<SortKey, string> = {
   kickoff: "Kickoff time",
-  spreadEdge: "Spread edge",
-  totalEdge: "Total edge",
+  spreadEdge: "Spread gap (large first)",
+  spreadEdgeAsc: "Spread gap (small first)",
+  totalEdge: "Total gap (large first)",
+  totalEdgeAsc: "Total gap (small first)",
 };
 
 /**
@@ -50,14 +57,21 @@ export function GamesList({ games }: { games: Game[] }) {
       if (sort === "kickoff" || !predictionsVisible) {
         return a.startDate.getTime() - b.startDate.getTime();
       }
-      if (sort === "spreadEdge") {
-        const aEdge = a.publicationMode === "predictions" ? a.edgeSpread : null;
-        const bEdge = b.publicationMode === "predictions" ? b.edgeSpread : null;
-        return (bEdge ?? -Infinity) - (aEdge ?? -Infinity);
-      }
-      const aEdge = a.publicationMode === "predictions" ? a.edgeTotal : null;
-      const bEdge = b.publicationMode === "predictions" ? b.edgeTotal : null;
-      return (bEdge ?? -Infinity) - (aEdge ?? -Infinity);
+      // Stored edges are magnitudes (|model − market|), so descending puts
+      // the biggest model/market disagreement first and ascending puts the
+      // smallest first. Direction (home/away, over/under) comes from the
+      // lean shown on each card. Unlined games (null edge) stay at the
+      // bottom in both directions.
+      const edgeField = sort.startsWith("spread") ? "edgeSpread" : "edgeTotal";
+      const ascending = sort.endsWith("Asc");
+      const aEdge =
+        a.publicationMode === "predictions" ? a[edgeField] : null;
+      const bEdge =
+        b.publicationMode === "predictions" ? b[edgeField] : null;
+      if (aEdge === null && bEdge === null) return 0;
+      if (aEdge === null) return 1;
+      if (bEdge === null) return -1;
+      return ascending ? aEdge - bEdge : bEdge - aEdge;
     });
     return sorted;
   }, [games, query, hcOnly, predictionsVisible, sort]);

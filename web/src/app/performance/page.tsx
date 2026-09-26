@@ -1,21 +1,21 @@
 import { getV5Performance, type Performance } from "@/lib/v5";
 import { v5PerformanceFixture } from "@/test/fixtures/publication";
+import { StatCard, winRatePercent } from "@/components/StatCard";
 
 export const dynamic = "force-dynamic";
 
 type Record = Performance["spread"];
 
-function winRate(record: Record): string {
-  const decisions = record.win + record.loss;
-  return decisions ? `${((record.win / decisions) * 100).toFixed(1)}%` : "—";
-}
-
 function Scoreboard({ label, record }: { label: string; record: Record }) {
   return (
     <section className="rounded-xl border border-line bg-surface-card p-5 shadow-sm">
-      <h2 className="text-lg font-semibold text-ink">{label}</h2>
-      <p className="mt-4 font-mono text-3xl text-ink">{record.win}–{record.loss}–{record.push}</p>
-      <p className="mt-1 text-sm text-ink-muted">{winRate(record)} win rate</p>
+      <StatCard
+        label={label}
+        labelAs="h2"
+        stat={`${record.win}–${record.loss}–${record.push}`}
+        statLarge
+        subline={`${winRatePercent(record.win, record.loss)} win rate`}
+      />
       <p className="mt-4 text-xs text-ink-faint">Wins · losses · pushes</p>
     </section>
   );

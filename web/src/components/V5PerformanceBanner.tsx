@@ -1,21 +1,15 @@
 import type { Performance } from "@/lib/v5";
+import { StatCard, winRatePercent } from "./StatCard";
 
 type Record = Performance["spread"];
 
-function winRate(record: Record): string {
-  const decisions = record.win + record.loss;
-  return decisions ? `${((record.win / decisions) * 100).toFixed(1)}%` : "—";
-}
-
 function Scoreboard({ label, record }: { label: string; record: Record }) {
   return (
-    <div className="rounded-lg bg-surface-inset p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{label}</p>
-      <p className="mt-2 font-mono text-xl text-ink">
-        {record.win}–{record.loss}–{record.push}
-      </p>
-      <p className="mt-1 text-xs text-ink-faint">{winRate(record)} win rate</p>
-    </div>
+    <StatCard
+      label={label}
+      stat={`${record.win}–${record.loss}–${record.push}`}
+      subline={`${winRatePercent(record.win, record.loss)} win rate`}
+    />
   );
 }
 

@@ -1,17 +1,13 @@
 import type { HistoricalModelContext as Context } from "@/lib/queries";
-
-function pct(wins: number, losses: number): string {
-  const denominator = wins + losses;
-  return denominator === 0 ? "—" : `${((100 * wins) / denominator).toFixed(1)}%`;
-}
+import { StatCard, winRatePercent } from "./StatCard";
 
 function target(label: string, wins: number, losses: number, pushes: number) {
   return (
-    <div className="rounded-lg bg-surface-inset p-3">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">{label}</div>
-      <div className="font-mono text-xl font-semibold tabular-nums text-ink">{pct(wins, losses)}</div>
-      <div className="text-xs tabular-nums text-ink-muted">{wins}–{losses}–{pushes}</div>
-    </div>
+    <StatCard
+      label={label}
+      stat={winRatePercent(wins, losses)}
+      subline={`${wins}–${losses}–${pushes}`}
+    />
   );
 }
 

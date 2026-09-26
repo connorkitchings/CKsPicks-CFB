@@ -47,11 +47,12 @@ export function Header({
           {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
             <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
           )}
-          {season !== null && (
-            <div className="text-sm font-medium tabular-nums text-ink-muted">
-              {season}
-            </div>
-          )}
+          {season !== null &&
+            !(allowedSeasons && allowedSeasons.length > 1) && (
+              <div className="text-sm font-medium tabular-nums text-ink-muted">
+                {season}
+              </div>
+            )}
           <ThemeToggle />
         </div>
       </div>

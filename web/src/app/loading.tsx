@@ -1,6 +1,6 @@
 /**
  * Route-level loading skeleton shown during ISR refreshes and initial render.
- * Mirrors the shape of Header + RecordBanner + the matchup-centric GameRow
+ * Mirrors the shape of Header + V5PerformanceBanner + the matchup-centric GameRow
  * list so the layout doesn't shift when real data arrives.
  */
 export default function Loading() {

@@ -1,6 +1,8 @@
 import Image from "next/image";
+import { Fragment } from "react";
 import { clsx } from "clsx";
 import { logoUrl } from "@/lib/teams";
+import { BetTable } from "./BetTable";
 import type { Game } from "@/lib/queries";
 
 function formatKickoff(startDate: Date): string {
@@ -96,15 +98,21 @@ function totalBetLabel(
   return `${lean === "over" ? "↑ Over" : "↓ Under"} ${totalLine.toFixed(1)}`;
 }
 
-const colHeaderCls =
-  "py-1 text-[10px] font-medium uppercase tracking-wide text-ink-faint";
-const rowHeaderCls = "py-1.5 pr-2 text-left font-medium text-ink-muted";
-const numberCellCls = "py-1.5 pl-2 text-right font-mono tabular-nums text-ink";
+/** Editorial cutoffs for edge coloring (points): below LOW is faint,
+ * LOW–HIGH is medium, above HIGH is strong. Not derived from a fitted
+ * threshold — retune against observed spread/total MAE if they change. */
+const SPREAD_EDGE_LOW = 3;
+const SPREAD_EDGE_HIGH = 8;
+const TOTAL_EDGE_LOW = 2;
+const TOTAL_EDGE_HIGH = 7;
 
 /** Color reflects the size of the disagreement; the signed number preserves direction. */
 function edgeTone(edge: number, target: "spread" | "total"): string {
   const magnitude = Math.abs(edge);
-  const [lowThreshold, highThreshold] = target === "spread" ? [3, 8] : [2, 7];
+  const [lowThreshold, highThreshold] =
+    target === "spread"
+      ? [SPREAD_EDGE_LOW, SPREAD_EDGE_HIGH]
+      : [TOTAL_EDGE_LOW, TOTAL_EDGE_HIGH];
   if (magnitude < lowThreshold) return "edge-low";
   if (magnitude <= highThreshold) return "edge-medium";
   return "edge-high";
@@ -209,91 +217,92 @@ export function GameRow({ game }: { game: Game }) {
 
       {/* Desktop keeps the full comparison table; phone cards use three value columns. */}
       <div className="mt-3 hidden sm:block">
-        <table className="w-full tabular-nums text-xs" aria-label="Market and model comparison">
-          <thead>
-            <tr>
-              <th scope="col" className={colHeaderCls}>
-                <span className="sr-only">Bet type</span>
-              </th>
-              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-                Market
-              </th>
-              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-                Model
-              </th>
-              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-                Model Bet
-              </th>
-              <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-                Bet Result
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-line">
-              <th scope="row" className={rowHeaderCls}>Spread</th>
-              <td className={numberCellCls}>{spreadLabel(marketSpread)}</td>
-              <td className={numberCellCls}>
-                {spreadLabel(modelSpread)}
-                <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
-              </td>
-              <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
-                {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
-              </td>
-              <td className="py-1.5 pl-2 text-right"><ResultCell result={game.spreadResult} /></td>
-            </tr>
-            <tr className="border-y border-line">
-              <th scope="row" className={rowHeaderCls}>Total</th>
-              <td className={numberCellCls}>{game.totalLine === null ? "—" : game.totalLine.toFixed(1)}</td>
-              <td className={numberCellCls}>
-                {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-                <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
-              </td>
-              <td className="py-1.5 pl-2 text-right font-mono tabular-nums">
-                {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
-              </td>
-              <td className="py-1.5 pl-2 text-right"><ResultCell result={game.totalResult} /></td>
-            </tr>
-          </tbody>
-        </table>
+        <BetTable
+          ariaLabel="Market and model comparison"
+          tableClassName="w-full tabular-nums text-xs"
+          headerCellClassName="pl-2 text-right"
+          bodyCellClassName="py-1.5 pl-2 text-right font-mono tabular-nums"
+          columns={[
+            { header: "Market" },
+            { header: "Model" },
+            { header: "Model Bet" },
+            { header: "Bet Result" },
+          ]}
+          rows={[
+            {
+              label: "Spread",
+              cells: [
+                spreadLabel(marketSpread),
+                <Fragment key="model">
+                  {spreadLabel(modelSpread)}
+                  <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
+                </Fragment>,
+                spreadBet ? <span key="bet" className="font-medium text-accent-ink">{spreadBet}</span> : <span key="bet" className="text-ink-faint">No lean</span>,
+                <ResultCell key="result" result={game.spreadResult} />,
+              ],
+            },
+            {
+              label: "Total",
+              cells: [
+                game.totalLine === null ? "—" : game.totalLine.toFixed(1),
+                <Fragment key="model">
+                  {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
+                  <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
+                </Fragment>,
+                totalBet ? <span key="bet" className="font-medium text-accent-ink">{totalBet}</span> : <span key="bet" className="text-ink-faint">No lean</span>,
+                <ResultCell key="result" result={game.totalResult} />,
+              ],
+            },
+          ]}
+        />
       </div>
       <div className="mt-3 sm:hidden">
-        <table className="w-full table-fixed tabular-nums text-[11px]" aria-label="Market and model comparison">
-          <thead>
-            <tr>
-              <th scope="col" className={`${colHeaderCls} w-[16%] text-left`}><span className="sr-only">Bet type</span></th>
-              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Market</th>
-              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Model</th>
-              <th scope="col" className={`${colHeaderCls} w-[28%] pl-2 text-right`}>Bet</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t border-line">
-              <th scope="row" className={rowHeaderCls}>Spread</th>
-              <td className={`${numberCellCls} break-words`}>{spreadLabel(marketSpread)}</td>
-              <td className={`${numberCellCls} break-words`}>
-                {spreadLabel(modelSpread)}
-                <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
-              </td>
-              <td className="break-words py-1.5 pl-2 text-right font-mono tabular-nums">
-                {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
-                {game.spreadResult && <div className="mt-1"><ResultCell result={game.spreadResult} /></div>}
-              </td>
-            </tr>
-            <tr className="border-y border-line">
-              <th scope="row" className={rowHeaderCls}>Total</th>
-              <td className={numberCellCls}>{game.totalLine === null ? "—" : game.totalLine.toFixed(1)}</td>
-              <td className={numberCellCls}>
-                {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-                <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
-              </td>
-              <td className="break-words py-1.5 pl-2 text-right font-mono tabular-nums">
-                {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
-                {game.totalResult && <div className="mt-1"><ResultCell result={game.totalResult} /></div>}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <BetTable
+          ariaLabel="Market and model comparison"
+          tableClassName="w-full table-fixed tabular-nums text-[11px]"
+          rowHeaderWidthClass="w-[16%] text-left"
+          headerCellClassName="pl-2 text-right"
+          bodyCellClassName={[
+            "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
+            "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
+            "break-words py-1.5 pl-2 text-right font-mono tabular-nums",
+          ]}
+          columns={[
+            { header: "Market", widthClass: "w-[28%]" },
+            { header: "Model", widthClass: "w-[28%]" },
+            { header: "Bet", widthClass: "w-[28%]" },
+          ]}
+          rows={[
+            {
+              label: "Spread",
+              cells: [
+                spreadLabel(marketSpread),
+                <Fragment key="model">
+                  {spreadLabel(modelSpread)}
+                  <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
+                </Fragment>,
+                <Fragment key="bet">
+                  {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
+                  {game.spreadResult && <div className="mt-1"><ResultCell result={game.spreadResult} /></div>}
+                </Fragment>,
+              ],
+            },
+            {
+              label: "Total",
+              cells: [
+                game.totalLine === null ? "—" : game.totalLine.toFixed(1),
+                <Fragment key="model">
+                  {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
+                  <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
+                </Fragment>,
+                <Fragment key="bet">
+                  {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
+                  {game.totalResult && <div className="mt-1"><ResultCell result={game.totalResult} /></div>}
+                </Fragment>,
+              ],
+            },
+          ]}
+        />
       </div>
 
       {!hasAnyLine && (
@@ -342,45 +351,31 @@ function MarketGameRow({
           highlighted={false}
         />
       </div>
-      <table className="mt-3 w-full tabular-nums text-[11px] sm:text-xs" aria-label="Market and results">
-        <thead>
-          <tr>
-            <th scope="col" className={colHeaderCls}>
-              <span className="sr-only">Bet type</span>
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Market
-            </th>
-            <th scope="col" className={`${colHeaderCls} pl-2 text-right`}>
-              Bet Result
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-t border-line">
-            <th scope="row" className={rowHeaderCls}>
-              Spread
-            </th>
-            <td className={numberCellCls}>{spreadLabel(marketSpread)}</td>
-            <td className="py-1.5 pl-2 text-right">
-              <ResultCell result={game.spreadResult} />
-            </td>
-          </tr>
-          <tr className="border-t border-b border-line">
-            <th scope="row" className={rowHeaderCls}>
-              Total
-            </th>
-            <td className={numberCellCls}>
-              {game.totalLine === null
+      <BetTable
+        ariaLabel="Market and results"
+        tableClassName="mt-3 w-full tabular-nums text-[11px] sm:text-xs"
+        headerCellClassName="pl-2 text-right"
+        bodyCellClassName="py-1.5 pl-2 text-right font-mono tabular-nums text-ink"
+        columns={[{ header: "Market" }, { header: "Bet Result" }]}
+        rows={[
+          {
+            label: "Spread",
+            cells: [
+              spreadLabel(marketSpread),
+              <ResultCell key="result" result={game.spreadResult} />,
+            ],
+          },
+          {
+            label: "Total",
+            cells: [
+              game.totalLine === null
                 ? "O/U —"
-                : `O/U ${game.totalLine.toFixed(1)}`}
-            </td>
-            <td className="py-1.5 pl-2 text-right">
-              <ResultCell result={game.totalResult} />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                : `O/U ${game.totalLine.toFixed(1)}`,
+              <ResultCell key="result" result={game.totalResult} />,
+            ],
+          },
+        ]}
+      />
     </li>
   );
 }

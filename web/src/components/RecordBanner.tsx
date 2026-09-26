@@ -1,10 +1,5 @@
 import type { Stats } from "@/lib/queries";
-
-function pct(w: number, l: number): string {
-  const n = w + l;
-  if (n === 0) return "—";
-  return `${((100 * w) / n).toFixed(1)}%`;
-}
+import { StatCard, winRatePercent } from "./StatCard";
 
 export function RecordBanner({
   season,
@@ -17,17 +12,11 @@ export function RecordBanner({
 }) {
   const card = (label: string, w: number, l: number, p: number) => {
     return (
-      <div className="flex flex-col gap-1 rounded-lg bg-surface-inset p-3">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
-          {label}
-        </div>
-        <div className="font-mono text-2xl font-semibold tabular-nums text-ink">
-          {w}–{l}–{p}
-        </div>
-        <div className="text-xs tabular-nums text-ink-muted">
-          {pct(w, l)} hit rate
-        </div>
-      </div>
+      <StatCard
+        label={label}
+        stat={`${w}–${l}–${p}`}
+        subline={`${winRatePercent(w, l)} hit rate`}
+      />
     );
   };
 
