@@ -9,16 +9,16 @@ from scripts.pipeline.release_v5_bestquote_replacement_production import (
 )
 
 SAMPLE_MANIFEST = {
-    "run_id": "2026w1-v5replay-bestquote-20260926-r2",
+    "run_id": "2026w1-v5replay-bestquote-20260926-r3",
     "model_id": "v5-possession-ppp-rho060-exposure",
     "inference_bundle_sha256": "f" * 64,
     "v5_replay_manifest_uri": "artifacts/research/data-first-football-v1/forecasts/replay-runs/v5-replay-20260924-cb2252a/replay-manifest.json",
     "v5_replay_manifest_sha256": "3" * 64,
     "replay_verification_sha256": "1" * 64,
     "config_sha": "9" * 64,
-    "artifact_uri": "artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5replay-bestquote-20260926-r2/predictions.csv",
+    "artifact_uri": "artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5replay-bestquote-20260926-r3/predictions.csv",
     "artifact_sha256": "a" * 64,
-    "feature_snapshot_uri": "artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5replay-bestquote-20260926-r2/point_in_time_features.csv",
+    "feature_snapshot_uri": "artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5replay-bestquote-20260926-r3/point_in_time_features.csv",
 }
 
 
@@ -26,7 +26,7 @@ def test_production_manifest_rewrites_only_artifact_uris():
     manifest = production_manifest(dict(SAMPLE_MANIFEST))
     assert manifest["artifact_uri"] == (
         "artifacts/production/predictions/year=2026/week=1/"
-        "run_id=2026w1-v5replay-bestquote-20260926-r2/predictions.csv"
+        "run_id=2026w1-v5replay-bestquote-20260926-r3/predictions.csv"
     )
     assert manifest["feature_snapshot_uri"].startswith("artifacts/production/")
     preserved = dict(SAMPLE_MANIFEST)
@@ -53,7 +53,7 @@ def test_authorization_record_binds_manifest_identities():
     assert (
         record["prediction_artifact_uri"]
         == "artifacts/production/predictions/year=2026/week=1/"
-        "run_id=2026w1-v5replay-bestquote-20260926-r2/predictions.csv"
+        "run_id=2026w1-v5replay-bestquote-20260926-r3/predictions.csv"
     )
     assert record["prediction_artifact_sha256"] == "a" * 64
     assert record["verifier_sha256"] == "1" * 64

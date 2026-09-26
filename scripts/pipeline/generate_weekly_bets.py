@@ -34,6 +34,7 @@ from cks_picks_cfb.inference.weekly import (
     execute_regime_routing,
     load_inference_model_context,
     prepare_inference_features,
+    resolve_label_thresholds,
 )
 from cks_picks_cfb.model_bundle import (
     load_model_artifact,
@@ -144,10 +145,9 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
         f"{year}w{week}-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{uuid4().hex[:8]}"
     )
     production_mode = os.getenv("CFB_ARTIFACT_ENV", "production") == "production"
-    spread_threshold = cfg.spread_edge_threshold
-    # Support dual-threshold betting strategy (default + high confidence)
-    spread_threshold_high = cfg.get("spread_edge_threshold_high_conf", spread_threshold)
-    total_threshold = cfg.total_edge_threshold
+    spread_threshold, spread_threshold_high, total_threshold = resolve_label_thresholds(
+        cfg
+    )
 
     print(f"Generating bets for {year} Week {week}")
     print(

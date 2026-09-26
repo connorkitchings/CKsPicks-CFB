@@ -279,8 +279,28 @@ def verify_forecast_equality(db_url: str, week: int, run_id: str) -> None:
     print(f"  forecasts: {len(new)} games identical to {SOURCE_RUNS[week]} ✓")
 
 
-def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
-    """Every selection must bind to its frozen quote, snapshot, side, point."""
+def _lean_thresholds(week: int) -> tuple[float, float]:
+    """Lean (bet-label) thresholds: unified 1.0 no-bet rule for both targets."""
+    cfg = OmegaConf.load(WEEK_DATASETS[week]["config"])
+    total_lean = cfg.get("total_lean_threshold", cfg.total_edge_threshold)
+    return float(cfg.spread_edge_threshold), float(total_lean)
+
+
+def verify_selections(
+    db_url: str,
+    week: int,
+    run_id: str,
+    *,
+    spread_lean_threshold: float,
+    total_lean_threshold: float,
+) -> dict[str, int]:
+    """Every selection must bind to its frozen quote, snapshot, side, point.
+
+    Selections exist for every lined target (quote lineage for the displayed
+    market point). Leans are null exactly for sub-threshold (No Bet) targets:
+    a null lean must pair with an edge below the lean threshold, and a set
+    lean must equal the selection side.
+    """
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -298,7 +318,8 @@ def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
                        q.spread AS quote_spread, q.total AS quote_total,
                        p.game_id AS pred_game,
                        p.home_team_spread_line, p.total_line,
-                       p.spread_lean, p.total_lean, p.market_snapshot_id
+                       p.spread_lean, p.total_lean, p.market_snapshot_id,
+                       p.edge_spread, p.edge_total
                 FROM prediction_market_selections s
                 LEFT JOIN market_quotes q ON q.quote_id = s.quote_id
                 JOIN predictions p
@@ -311,8 +332,8 @@ def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
             cur.execute(
                 """
                 SELECT
-                  COUNT(*) FILTER (WHERE spread_lean IS NOT NULL) AS lined_spread,
-                  COUNT(*) FILTER (WHERE total_lean IS NOT NULL) AS lined_total
+                  COUNT(*) FILTER (WHERE home_team_spread_line IS NOT NULL) AS lined_spread,
+                  COUNT(*) FILTER (WHERE total_line IS NOT NULL) AS lined_total
                 FROM predictions WHERE run_id = %s
                 """,
                 (run_id,),
@@ -338,6 +359,8 @@ def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
         spread_lean,
         total_lean,
         pred_snapshot_id,
+        pred_edge_spread,
+        pred_edge_total,
     ) in rows:
         assert quote_game is not None, (
             f"{run_id} {target} selection cites quote {quote_id} absent "
@@ -362,7 +385,13 @@ def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
             assert abs(float(point) - float(pred_spread_line)) < 1e-9, (
                 f"spread point {point} != prediction line {pred_spread_line}"
             )
-            assert side == spread_lean, f"side {side} != lean {spread_lean}"
+            if spread_lean is None:
+                assert float(pred_edge_spread) < spread_lean_threshold, (
+                    f"null spread lean with edge {pred_edge_spread} >= "
+                    f"threshold {spread_lean_threshold}"
+                )
+            else:
+                assert side == spread_lean, f"side {side} != lean {spread_lean}"
         else:
             assert side in ("over", "under"), f"bad total side {side}"
             assert abs(float(point) - float(quote_total)) < 1e-9, (
@@ -371,7 +400,13 @@ def verify_selections(db_url: str, week: int, run_id: str) -> dict[str, int]:
             assert abs(float(point) - float(pred_total_line)) < 1e-9, (
                 f"total point {point} != prediction line {pred_total_line}"
             )
-            assert side == total_lean, f"side {side} != lean {total_lean}"
+            if total_lean is None:
+                assert float(pred_edge_total) < total_lean_threshold, (
+                    f"null total lean with edge {pred_edge_total} >= "
+                    f"threshold {total_lean_threshold}"
+                )
+            else:
+                assert side == total_lean, f"side {side} != lean {total_lean}"
         assert price is not None, "selection price must not be null"
         counts[target] += 1
 
@@ -681,9 +716,16 @@ def rehearse_week(
     print("==========================================")
 
     verify_refs(week, storage)
+    spread_lean_threshold, total_lean_threshold = _lean_thresholds(week)
     if verify_only:
         verify_forecast_equality(db_url, week, run_id)
-        verify_selections(db_url, week, run_id)
+        verify_selections(
+            db_url,
+            week,
+            run_id,
+            spread_lean_threshold=spread_lean_threshold,
+            total_lean_threshold=total_lean_threshold,
+        )
         if week in SCORED_WEEKS:
             verify_grades(
                 db_url,
@@ -757,7 +799,13 @@ def rehearse_week(
         )
 
     verify_forecast_equality(db_url, week, run_id)
-    verify_selections(db_url, week, run_id)
+    verify_selections(
+        db_url,
+        week,
+        run_id,
+        spread_lean_threshold=spread_lean_threshold,
+        total_lean_threshold=total_lean_threshold,
+    )
     if week in SCORED_WEEKS:
         verify_grades(
             db_url,

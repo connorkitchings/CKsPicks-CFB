@@ -30,6 +30,7 @@ from cks_picks_cfb.inference.v5_serving import (
     build_v5_serving_rows,
     v5_serving_manifest_fields,
 )
+from cks_picks_cfb.inference.weekly import resolve_label_thresholds
 from scripts.research.run_v5_live_forecast import _load_stored_predictions, verify
 
 
@@ -129,6 +130,9 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         ("market_quotes", year)
     )
     market_quotes = read_dataset(storage, _ref(quotes_item)) if quotes_item else None
+    spread_threshold, spread_threshold_high, total_threshold = resolve_label_thresholds(
+        cfg
+    )
     rows = build_v5_serving_rows(
         forecasts,
         schedule,
@@ -140,9 +144,9 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
         week=week,
         as_of=args.as_of,
         run_id=args.run_id,
-        spread_threshold=float(cfg.spread_edge_threshold),
-        spread_threshold_high=float(cfg.spread_edge_threshold_high_conf),
-        total_threshold=float(cfg.total_edge_threshold),
+        spread_threshold=spread_threshold,
+        spread_threshold_high=spread_threshold_high,
+        total_threshold=total_threshold,
         market_quotes=market_quotes,
     )
     output_path = args.output_csv or local_prediction_path(year, week)

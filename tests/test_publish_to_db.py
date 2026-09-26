@@ -349,6 +349,64 @@ def test_safe_float_handles_valid():
 # ---------------------------------------------------------------------------
 
 
+def test_derive_lean_honors_no_bet_label():
+    row = pd.Series(
+        {
+            "Spread Prediction": -2.5,
+            "home_team_spread_line": 14.0,
+            "Spread Bet": "No Bet",
+            "Total Prediction": 49.0,
+            "total_line": 48.5,
+            "Total Bet": "No Bet",
+        }
+    )
+    lean, edge = publish_to_db._derive_lean(row)
+    assert lean is None
+    assert edge == pytest.approx(11.5)
+    total_lean, total_edge = publish_to_db._derive_total_lean(row)
+    assert total_lean is None
+    assert total_edge == pytest.approx(0.5)
+
+
+def test_derive_lean_honors_bet_labels():
+    row = pd.Series(
+        {
+            "Spread Prediction": -9.5,
+            "home_team_spread_line": -7.5,
+            "Spread Bet": "Away",
+            "Total Prediction": 51.0,
+            "total_line": 55.5,
+            "Total Bet": "Under",
+        }
+    )
+    assert publish_to_db._derive_lean(row) == ("away", pytest.approx(17.0))
+    assert publish_to_db._derive_total_lean(row) == ("under", pytest.approx(4.5))
+
+
+def test_derive_lean_falls_back_without_label_columns():
+    row = pd.Series(
+        {
+            "Spread Prediction": -2.5687901540513085,
+            "home_team_spread_line": 14.166666666666666,
+            "Total Prediction": 49.429388690382034,
+            "total_line": 44.5,
+        }
+    )
+    lean, _ = publish_to_db._derive_lean(row)
+    assert lean == "home"
+    total_lean, _ = publish_to_db._derive_total_lean(row)
+    assert total_lean == "over"
+
+
+def test_prepare_predictions_nulls_lean_for_no_bet_labels():
+    raw = pd.read_csv(StringIO(SAMPLE_CSV))
+    # SAMPLE_CSV carries bet labels; row 1 total edge 4.5 >= 1.0 keeps "under".
+    raw.loc[0, "Total Bet"] = "No Bet"
+    df = publish_to_db.prepare_predictions(raw)
+    assert df.loc[1, "total_lean"] == "under"
+    assert df.loc[0, "total_lean"] is None or pd.isna(df.loc[0, "total_lean"])
+
+
 def test_derive_lean_home_favorite_covers():
     # Model: home wins by ~7 (-7). Vegas: home favored by 3 (-3).
     # bet = home if pred > -line: -7 > -(-3)=3? No  -> away.
@@ -507,6 +565,41 @@ def test_row_to_record_high_confidence_flag():
     assert rec["spread_lean"] == "home"
     assert rec["predicted_spread"] == -3.0
     assert rec["model_id"] == "TEST-001"
+
+
+def test_row_to_record_normalizes_nan_leans_and_quote_ids_to_none():
+    """Null leans/quote IDs must reach the DB as NULL, never float NaN."""
+    row = pd.Series(
+        {
+            "game_id": 123,
+            "home_team": "HomeU",
+            "away_team": "AwayU",
+            "start_date_dt": pd.Timestamp("2026-09-05 12:00:00", tz="UTC"),
+            "home_team_spread_line": 14.0,
+            "total_line": 50.0,
+            "Spread Prediction": -3.0,
+            "Total Prediction": 55.0,
+            "spread_lean": "home",
+            "total_lean": float("nan"),
+            "edge_spread": 11.0,
+            "edge_total": 0.5,
+            "spread_market_quote_id": float("nan"),
+            "total_market_quote_id": "q-total-1",
+        }
+    )
+    rec = publish_to_db._row_to_record(
+        row,
+        season=2026,
+        week=1,
+        high_conf_threshold=8.0,
+        source_config="conf/weekly_bets/v2_champion.yaml",
+        system_name="Test Model",
+        model_id="TEST-001",
+    )
+    assert rec["spread_lean"] == "home"
+    assert rec["total_lean"] is None
+    assert rec["spread_market_quote_id"] is None
+    assert rec["total_market_quote_id"] == "q-total-1"
 
 
 def test_row_to_record_low_confidence_flag():

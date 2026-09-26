@@ -183,6 +183,14 @@ Selection rules (enforced by `select_best_quote()` in
 4. A target with no eligible quote shows no lean (`null`) and receives no
    grade.  The system never substitutes a synthetic average, post-kickoff
    quote, or a quote from another game.
+5. Unified no-bet rule: an edge below 1.0 point publishes no lean and no
+   side for either target (`Spread Bet`/`Total Bet` = "No Bet"; lean columns
+   `null`). Sub-1.0 targets keep their quote selection (lineage for the
+   displayed market point) but receive no grade. Totals in [1.0, 1.5) keep
+   their displayed side but stay ungraded (lean-only zone); the total grade
+   threshold remains 1.5. Label thresholds come from the weekly config
+   (`spread_edge_threshold`, `total_lean_threshold`); the artifact bet
+   labels are authoritative for published leans.
 
 Each selection is recorded in the append-only `prediction_market_selections`
 table (`run_id`, `game_id`, `target`, `quote_id`, `snapshot_id`, `side`,

@@ -6,8 +6,10 @@ system_name: "Trench Warfare V5"
 model_id: "v5-possession-ppp-rho060-exposure"
 year: 2026
 week: 4
-spread_edge_threshold: 0.0
+spread_edge_threshold: 1.0
 spread_edge_threshold_high_conf: 8.0
+# Bet-label threshold for totals (lean-only below the 1.5 grade threshold).
+total_lean_threshold: 1.0
 total_edge_threshold: 1.5
 v5_replay:
   schema_version: v5_replay_serving_v1

@@ -77,6 +77,25 @@ def load_inference_model_context(
     )
 
 
+def resolve_label_thresholds(config: Any) -> tuple[float, float, float]:
+    """Resolve (spread, spread_high, total_lean) bet-label thresholds.
+
+    ``total_lean_threshold`` is optional: configs without it fall back to
+    ``total_edge_threshold``, preserving the legacy single-threshold
+    behavior (e.g. the frozen V4 configs). ``total_edge_threshold`` keeps
+    its independent meaning as the total *grade* threshold wherever the
+    scoring path reads it.
+    """
+    spread = float(config["spread_edge_threshold"])
+    spread_high = float(
+        config.get("spread_edge_threshold_high_conf", config["spread_edge_threshold"])
+    )
+    total_lean = float(
+        config.get("total_lean_threshold", config["total_edge_threshold"])
+    )
+    return spread, spread_high, total_lean
+
+
 def prepare_inference_features(
     features: pd.DataFrame,
     *,

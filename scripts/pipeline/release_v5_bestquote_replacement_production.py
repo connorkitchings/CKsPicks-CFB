@@ -49,6 +49,7 @@ from cks_picks_cfb.data.storage import get_storage  # noqa: E402
 from scripts.pipeline.rehearse_v5_bestquote_replay_preview import (  # noqa: E402
     SCORED_WEEKS,
     WEEK_DATASETS,
+    _lean_thresholds,
     _score_week,
     verify_forecast_equality,
     verify_grades,
@@ -58,11 +59,11 @@ from scripts.pipeline.rehearse_v5_bestquote_replay_preview import (  # noqa: E40
 DECISION_REF = "v5-bestquote-replacement-review-2026-09-26"
 
 RELEASE_RUNS = {
-    0: "2026w0-v5replay-bestquote-20260926-r2",
-    1: "2026w1-v5replay-bestquote-20260926-r2",
-    2: "2026w2-v5replay-bestquote-20260926-r2",
-    3: "2026w3-v5replay-bestquote-20260926-r2",
-    4: "2026w4-v5replay-bestquote-20260926-r2",
+    0: "2026w0-v5replay-bestquote-20260926-r3",
+    1: "2026w1-v5replay-bestquote-20260926-r3",
+    2: "2026w2-v5replay-bestquote-20260926-r3",
+    3: "2026w3-v5replay-bestquote-20260926-r3",
+    4: "2026w4-v5replay-bestquote-20260926-r3",
 }
 
 
@@ -255,7 +256,14 @@ def verify_week(week: int) -> dict[str, Any]:
     run_id = run_id_for(week)
     spread_threshold, total_threshold = _thresholds(week)
     verify_forecast_equality(db_url, week, run_id)
-    verify_selections(db_url, week, run_id)
+    spread_lean_threshold, total_lean_threshold = _lean_thresholds(week)
+    verify_selections(
+        db_url,
+        week,
+        run_id,
+        spread_lean_threshold=spread_lean_threshold,
+        total_lean_threshold=total_lean_threshold,
+    )
     if week in SCORED_WEEKS:
         verify_grades(
             db_url,

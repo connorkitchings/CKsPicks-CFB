@@ -66,7 +66,10 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DDTHH:MM:SSZ \
   pre-kickoff quote show no lean and receive no grade.  The selection is
   stored in `prediction_market_selections` and the quote ID is written to
   `prediction_grades.market_quote_id`.  Do not display or grade against a
-  synthetic consensus average for any new run.
+  synthetic consensus average for any new run.  Unified no-bet rule: an edge
+  below 1.0 publishes no lean for either target (artifact "No Bet" labels
+  are authoritative); sub-1.0 targets keep quote lineage but get no grade,
+  and totals in [1.0, 1.5) display a side without a grade.
 
 
 

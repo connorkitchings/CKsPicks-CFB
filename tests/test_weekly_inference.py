@@ -13,6 +13,7 @@ from cks_picks_cfb.inference.weekly import (
     execute_regime_routing,
     load_inference_model_context,
     prepare_inference_features,
+    resolve_label_thresholds,
 )
 
 
@@ -129,6 +130,65 @@ def test_edge_calculation_preserves_spread_sign_thresholds_and_missing_lines():
         run_id="run",
     )
     assert result.loc[0, "Spread Bet"] == "No Bet"
+
+
+def test_resolve_label_thresholds_uses_total_lean_override():
+    cfg = {
+        "spread_edge_threshold": 1.0,
+        "spread_edge_threshold_high_conf": 8.0,
+        "total_lean_threshold": 1.0,
+        "total_edge_threshold": 1.5,
+    }
+    assert resolve_label_thresholds(cfg) == (1.0, 8.0, 1.0)
+
+
+def test_resolve_label_thresholds_falls_back_to_total_edge():
+    cfg = {
+        "spread_edge_threshold": 0.0,
+        "spread_edge_threshold_high_conf": 8.0,
+        "total_edge_threshold": 1.5,
+    }
+    assert resolve_label_thresholds(cfg) == (0.0, 8.0, 1.5)
+
+
+def test_unified_no_bet_labels_below_one_point_edge():
+    features = _features().rename(columns={"game_id": "id"})
+    features["home_team_spread_line"] = [-3.0]
+    features["total_line"] = [50.0]
+    predictions = pd.DataFrame(
+        [
+            {
+                # spread edge |3.5 + -3.0| = 0.5 < 1.0, total edge |50.8-50| = 0.8 < 1.0
+                "predicted_spread": 3.5,
+                "predicted_total": 50.8,
+                "spread_model_version": "s",
+                "total_model_version": "t",
+                "high_confidence_eligible": True,
+            }
+        ]
+    )
+    result = calculate_edges_and_leans(
+        predictions,
+        features,
+        spread_threshold=1.0,
+        spread_threshold_high=8.0,
+        total_threshold=1.0,
+        run_id="run",
+    )
+    assert result.loc[0, "Spread Bet"] == "No Bet"
+    assert result.loc[0, "Total Bet"] == "No Bet"
+    # A 1.2-point total edge keeps its side (lean-only zone below the grade
+    # threshold lives downstream of labels).
+    predictions.loc[0, "predicted_total"] = 51.2
+    result = calculate_edges_and_leans(
+        predictions,
+        features,
+        spread_threshold=1.0,
+        spread_threshold_high=8.0,
+        total_threshold=1.0,
+        run_id="run",
+    )
+    assert result.loc[0, "Total Bet"] == "Over"
 
 
 def test_routing_normalizes_v3_and_compatibility_predictions():

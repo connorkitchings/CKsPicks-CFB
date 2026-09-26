@@ -22,6 +22,7 @@ from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.inference.v5_serving import V5ServingError, build_v5_serving_rows
+from cks_picks_cfb.inference.weekly import resolve_label_thresholds
 from scripts.pipeline.build_v5_replay import verify as verify_replay
 from scripts.pipeline.build_v5_week4_replay import verify as verify_week4_replay
 
@@ -158,6 +159,9 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
             quotes_ref_uri = str(cfg.v5_replay["market_quotes_ref_uri"])
             raw_ref = json.loads(storage.read_bytes(quotes_ref_uri).decode())
             market_quotes = read_dataset(storage, DatasetRef(**raw_ref))
+    spread_threshold, spread_threshold_high, total_threshold = resolve_label_thresholds(
+        cfg
+    )
     rows = build_v5_serving_rows(
         forecasts,
         schedule,
@@ -169,9 +173,9 @@ def run_v5_replay_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, A
         week=week,
         as_of=args.as_of,
         run_id=args.run_id,
-        spread_threshold=float(cfg.spread_edge_threshold),
-        spread_threshold_high=float(cfg.spread_edge_threshold_high_conf),
-        total_threshold=float(cfg.total_edge_threshold),
+        spread_threshold=spread_threshold,
+        spread_threshold_high=spread_threshold_high,
+        total_threshold=total_threshold,
         timing_class="replay",
         market_quotes=market_quotes,
     )

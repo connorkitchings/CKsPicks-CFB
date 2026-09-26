@@ -106,12 +106,27 @@ def _derive_lean(row: pd.Series) -> tuple[str | None, float | None]:
     """
     Return (spread_lean, edge_spread) for a prediction row.
 
+    The artifact's "Spread Bet" label is authoritative when present: "No Bet"
+    (edge below the label threshold) publishes no lean. Otherwise fall back
+    to the arithmetic rule below (legacy artifacts without bet labels).
+
     predicted_spread  = predicted HOME margin (+home wins, -home loses)
     home_team_spread_line = market line on home team (+home dog, -home favorite)
 
     Lean: bet HOME if predicted_spread > -home_team_spread_line else AWAY
     Edge: |predicted_spread + home_team_spread_line|
     """
+    label = str(row.get("Spread Bet", "")).strip().lower()
+    if label == "no bet":
+        pred = _safe_float(row.get("Spread Prediction"))
+        line = _safe_float(row.get("home_team_spread_line"))
+        edge = abs(pred + line) if pred is not None and line is not None else None
+        return None, edge
+    if label in ("home", "away"):
+        pred = _safe_float(row.get("Spread Prediction"))
+        line = _safe_float(row.get("home_team_spread_line"))
+        edge = abs(pred + line) if pred is not None and line is not None else None
+        return label, edge
     pred = _safe_float(row.get("Spread Prediction"))
     line = _safe_float(row.get("home_team_spread_line"))
     if pred is None or line is None:
@@ -122,6 +137,18 @@ def _derive_lean(row: pd.Series) -> tuple[str | None, float | None]:
 
 
 def _derive_total_lean(row: pd.Series) -> tuple[str | None, float | None]:
+    """Return (total_lean, edge_total), honoring the "Total Bet" label."""
+    label = str(row.get("Total Bet", "")).strip().lower()
+    if label == "no bet":
+        pred = _safe_float(row.get("Total Prediction"))
+        line = _safe_float(row.get("total_line"))
+        edge = abs(pred - line) if pred is not None and line is not None else None
+        return None, edge
+    if label in ("over", "under"):
+        pred = _safe_float(row.get("Total Prediction"))
+        line = _safe_float(row.get("total_line"))
+        edge = abs(pred - line) if pred is not None and line is not None else None
+        return label, edge
     pred = _safe_float(row.get("Total Prediction"))
     line = _safe_float(row.get("total_line"))
     if pred is None or line is None:
@@ -357,6 +384,18 @@ def _row_to_record(
     market_snapshot_id = row.get("market_snapshot_id")
     if pd.isna(market_snapshot_id):
         market_snapshot_id = None
+    spread_lean = row.get("spread_lean")
+    if pd.isna(spread_lean):
+        spread_lean = None
+    total_lean = row.get("total_lean")
+    if pd.isna(total_lean):
+        total_lean = None
+    spread_market_quote_id = row.get("spread_market_quote_id")
+    if pd.isna(spread_market_quote_id):
+        spread_market_quote_id = None
+    total_market_quote_id = row.get("total_market_quote_id")
+    if pd.isna(total_market_quote_id):
+        total_market_quote_id = None
     source_quote_ids = row.get("source_quote_ids", "[]")
     if isinstance(source_quote_ids, str):
         source_quote_ids = json.loads(source_quote_ids)
@@ -398,8 +437,8 @@ def _row_to_record(
         "predicted_total": _safe_float(row.get("Total Prediction")),
         "predicted_spread_std_dev": _safe_float(row.get("predicted_spread_std_dev")),
         "predicted_total_std_dev": _safe_float(row.get("predicted_total_std_dev")),
-        "spread_lean": row.get("spread_lean"),
-        "total_lean": row.get("total_lean"),
+        "spread_lean": spread_lean,
+        "total_lean": total_lean,
         "edge_spread": edge_spread,
         "edge_total": _safe_float(row.get("edge_total")),
         "high_confidence": high_conf,
@@ -420,8 +459,8 @@ def _row_to_record(
         ),
         "total_provider_count": int(_safe_float(row.get("total_provider_count")) or 0),
         "source_quote_ids": json.dumps(source_quote_ids),
-        "spread_market_quote_id": row.get("spread_market_quote_id"),
-        "total_market_quote_id": row.get("total_market_quote_id"),
+        "spread_market_quote_id": spread_market_quote_id,
+        "total_market_quote_id": total_market_quote_id,
         "spread_market_quote_price": _safe_float(row.get("spread_market_quote_price")),
         "total_market_quote_price": _safe_float(row.get("total_market_quote_price")),
         "market_selection_policy": row.get("market_selection_policy"),
