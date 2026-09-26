@@ -353,82 +353,157 @@ export async function withFrozenLines<
   });
 }
 
+type TargetSelection = {
+  point: number;
+  side: string;
+  edge: number | null;
+};
+
+type GameSelections = {
+  spread?: TargetSelection;
+  total?: TargetSelection;
+};
+
+/**
+ * Check whether prediction_market_selections table exists in the current database.
+ * Cached to avoid querying the catalog repeatedly.
+ */
+export const hasSelectionsTable = cache(async (): Promise<boolean> => {
+  try {
+    const res = await db.execute(
+      sql`SELECT to_regclass('public.prediction_market_selections') IS NOT NULL AS exists`
+    );
+    const rows = res as unknown as Array<{ exists?: boolean }>;
+    return Boolean(rows?.[0]?.exists);
+  } catch {
+    return false;
+  }
+});
+
+/**
+ * Fetch target-level market selections for a run, if the table exists.
+ * Returns an empty map if unmigrated or no selections exist.
+ */
+export async function getMarketSelectionsForRun(
+  runId: string
+): Promise<Map<number, GameSelections>> {
+  const tableExists = await hasSelectionsTable();
+  if (!tableExists) return new Map();
+
+  try {
+    const selections = await db
+      .select({
+        gameId: schema.predictionMarketSelections.gameId,
+        target: schema.predictionMarketSelections.target,
+        side: schema.predictionMarketSelections.side,
+        point: schema.predictionMarketSelections.point,
+        edge: schema.predictionMarketSelections.edge,
+      })
+      .from(schema.predictionMarketSelections)
+      .where(eq(schema.predictionMarketSelections.runId, runId));
+
+    const map = new Map<number, GameSelections>();
+    for (const sel of selections) {
+      let entry = map.get(sel.gameId);
+      if (!entry) {
+        entry = {};
+        map.set(sel.gameId, entry);
+      }
+      if (sel.target === "spread") {
+        entry.spread = {
+          point: sel.point,
+          side: sel.side,
+          edge: sel.edge,
+        };
+      } else if (sel.target === "total") {
+        entry.total = {
+          point: sel.point,
+          side: sel.side,
+          edge: sel.edge,
+        };
+      }
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+
 /** Return all games (with optional results) for a given season/week, sorted by start time. */
 export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
   const run = await getRunForWeek(season, week);
   if (run) {
-    const rows = await db
-      .select({
-        runId: schema.predictions.runId,
-        gameId: schema.games.gameId,
-        season: schema.games.season,
-        week: schema.games.week,
-        startDate: schema.games.startDate,
-        homeTeam: schema.games.homeTeam,
-        awayTeam: schema.games.awayTeam,
-        homeTeamSpreadLine: sql<number | null>`COALESCE(
-          (SELECT pms.point FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
-          ${schema.predictions.homeTeamSpreadLine}
-        )`,
-        totalLine: sql<number | null>`COALESCE(
-          (SELECT pms.point FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
-          ${schema.predictions.totalLine}
-        )`,
-        predictedSpread: schema.predictions.predictedSpread,
-        predictedTotal: schema.predictions.predictedTotal,
-        predictedSpreadStdDev: schema.predictions.predictedSpreadStdDev,
-        predictedTotalStdDev: schema.predictions.predictedTotalStdDev,
-        spreadLean: sql<"home" | "away" | null>`COALESCE(
-          (SELECT pms.side FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
-          ${schema.predictions.spreadLean}
-        )`,
-        totalLean: sql<"over" | "under" | null>`COALESCE(
-          (SELECT pms.side FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
-          ${schema.predictions.totalLean}
-        )`,
-        edgeSpread: sql<number | null>`COALESCE(
-          (SELECT pms.edge FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'spread' LIMIT 1),
-          ${schema.predictions.edgeSpread}
-        )`,
-        edgeTotal: sql<number | null>`COALESCE(
-          (SELECT pms.edge FROM prediction_market_selections pms WHERE pms.run_id = ${schema.predictions.runId} AND pms.game_id = ${schema.predictions.gameId} AND pms.target = 'total' LIMIT 1),
-          ${schema.predictions.edgeTotal}
-        )`,
-        highConfidence: schema.predictions.highConfidence,
-        regime: schema.predictions.regime,
-        homeCompletedGames: schema.predictions.homeCompletedGames,
-        awayCompletedGames: schema.predictions.awayCompletedGames,
-        spreadModelVersion: schema.predictions.spreadModelVersion,
-        totalModelVersion: schema.predictions.totalModelVersion,
-        systemName: schema.predictionRuns.systemName,
-        modelId: schema.predictionRuns.modelId,
-        updatedAt: schema.predictionRuns.createdAt,
-        homePoints: schema.gameResults.homePoints,
-        awayPoints: schema.gameResults.awayPoints,
-        spreadResult: sql<"win" | "loss" | "push" | null>`(
-          SELECT pg.result FROM prediction_grades pg
-          WHERE pg.run_id = ${schema.predictions.runId}
-            AND pg.game_id = ${schema.predictions.gameId}
-            AND pg.target = 'spread'
-          LIMIT 1
-        )`,
-        totalResult: sql<"win" | "loss" | "push" | null>`(
-          SELECT pg.result FROM prediction_grades pg
-          WHERE pg.run_id = ${schema.predictions.runId}
-            AND pg.game_id = ${schema.predictions.gameId}
-            AND pg.target = 'total'
-          LIMIT 1
-        )`,
-      })
-      .from(schema.predictions)
-      .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
-      .innerJoin(schema.predictionRuns, eq(schema.predictions.runId, schema.predictionRuns.runId))
-      .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
-      .where(eq(schema.predictions.runId, run.runId))
-      .orderBy(asc(schema.games.startDate), asc(schema.games.gameId));
+    const [rows, selectionsMap] = await Promise.all([
+      db
+        .select({
+          runId: schema.predictions.runId,
+          gameId: schema.games.gameId,
+          season: schema.games.season,
+          week: schema.games.week,
+          startDate: schema.games.startDate,
+          homeTeam: schema.games.homeTeam,
+          awayTeam: schema.games.awayTeam,
+          homeTeamSpreadLine: schema.predictions.homeTeamSpreadLine,
+          totalLine: schema.predictions.totalLine,
+          predictedSpread: schema.predictions.predictedSpread,
+          predictedTotal: schema.predictions.predictedTotal,
+          predictedSpreadStdDev: schema.predictions.predictedSpreadStdDev,
+          predictedTotalStdDev: schema.predictions.predictedTotalStdDev,
+          spreadLean: schema.predictions.spreadLean,
+          totalLean: schema.predictions.totalLean,
+          edgeSpread: schema.predictions.edgeSpread,
+          edgeTotal: schema.predictions.edgeTotal,
+          highConfidence: schema.predictions.highConfidence,
+          regime: schema.predictions.regime,
+          homeCompletedGames: schema.predictions.homeCompletedGames,
+          awayCompletedGames: schema.predictions.awayCompletedGames,
+          spreadModelVersion: schema.predictions.spreadModelVersion,
+          totalModelVersion: schema.predictions.totalModelVersion,
+          systemName: schema.predictionRuns.systemName,
+          modelId: schema.predictionRuns.modelId,
+          updatedAt: schema.predictionRuns.createdAt,
+          homePoints: schema.gameResults.homePoints,
+          awayPoints: schema.gameResults.awayPoints,
+          spreadResult: sql<"win" | "loss" | "push" | null>`(
+            SELECT pg.result FROM prediction_grades pg
+            WHERE pg.run_id = ${schema.predictions.runId}
+              AND pg.game_id = ${schema.predictions.gameId}
+              AND pg.target = 'spread'
+            LIMIT 1
+          )`,
+          totalResult: sql<"win" | "loss" | "push" | null>`(
+            SELECT pg.result FROM prediction_grades pg
+            WHERE pg.run_id = ${schema.predictions.runId}
+              AND pg.game_id = ${schema.predictions.gameId}
+              AND pg.target = 'total'
+            LIMIT 1
+          )`,
+        })
+        .from(schema.predictions)
+        .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
+        .innerJoin(schema.predictionRuns, eq(schema.predictions.runId, schema.predictionRuns.runId))
+        .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+        .where(eq(schema.predictions.runId, run.runId))
+        .orderBy(asc(schema.games.startDate), asc(schema.games.gameId)),
+      getMarketSelectionsForRun(run.runId),
+    ]);
+
+    const rowsWithSelections = rows.map((row) => {
+      const sel = selectionsMap.get(row.gameId);
+      return {
+        ...row,
+        homeTeamSpreadLine: sel?.spread?.point ?? row.homeTeamSpreadLine,
+        spreadLean: (sel?.spread?.side as "home" | "away" | undefined) ?? row.spreadLean,
+        edgeSpread: sel?.spread?.edge ?? row.edgeSpread,
+        totalLine: sel?.total?.point ?? row.totalLine,
+        totalLean: (sel?.total?.side as "over" | "under" | undefined) ?? row.totalLean,
+        edgeTotal: sel?.total?.edge ?? row.edgeTotal,
+      };
+    });
+
     const completed = await getSeasonCompletedGames(season);
     const games = await withFrozenLines(
-      rows.map((row) => ({
+      rowsWithSelections.map((row) => ({
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,

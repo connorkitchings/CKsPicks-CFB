@@ -54,3 +54,16 @@ test("total lean follows predicted total versus the line", () => {
   assert.deepEqual(deriveTotalView(null, 48.5), { lean: null, edge: null });
   assert.deepEqual(deriveTotalView(52, null), { lean: null, edge: null });
 });
+
+test("predictions query decouples market selections from main select", () => {
+  const source = readFileSync(new URL("./queries.ts", import.meta.url), "utf8");
+  const getGamesStart = source.indexOf("export async function getGamesForWeek");
+  const getMarketStart = source.indexOf("export async function getMarketGamesForWeek", getGamesStart);
+  const getGamesBody = source.slice(getGamesStart, getMarketStart);
+  assert.doesNotMatch(
+    getGamesBody,
+    /FROM prediction_market_selections/i,
+    "predictions main query must not contain inline SQL subqueries on prediction_market_selections"
+  );
+  assert.match(getGamesBody, /getMarketSelectionsForRun/);
+});
