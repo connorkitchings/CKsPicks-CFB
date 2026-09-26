@@ -1,6 +1,8 @@
 import type { Stats } from "@/lib/queries";
 import { StatCard, winRatePercent } from "./StatCard";
 
+/** Not yet wired into a route — reserved for the season-record display. Do not delete as dead code. */
+
 export function RecordBanner({
   season,
   week,

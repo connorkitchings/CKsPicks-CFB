@@ -1,6 +1,8 @@
 import type { HistoricalModelContext as Context } from "@/lib/queries";
 import { StatCard, winRatePercent } from "./StatCard";
 
+/** Not yet wired into a route — reserved for retrospective model context. Do not delete as dead code. */
+
 function target(label: string, wins: number, losses: number, pushes: number) {
   return (
     <StatCard

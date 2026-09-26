@@ -16,87 +16,16 @@ function formatKickoff(startDate: Date): string {
   });
 }
 
-function signedSpread(n: number): string {
-  return n > 0 ? `+${n.toFixed(1)}` : n.toFixed(1);
-}
-
-/** Favorite-relative spread view: the team the number favors plus its line. */
-type SpreadView = { team: string; line: number } | "PK" | null;
-
-/** Market line is the home team's spread: -home favorite, +home dog. */
-function marketSpreadView(
-  homeTeam: string,
-  awayTeam: string,
-  homeLine: number | null,
-): SpreadView {
-  if (homeLine === null) return null;
-  if (homeLine === 0) return "PK";
-  return homeLine < 0
-    ? { team: homeTeam, line: homeLine }
-    : { team: awayTeam, line: -homeLine };
-}
-
-/** predictedSpread is the home margin (+home wins); flip to favorite-relative. */
-function modelSpreadView(
-  homeTeam: string,
-  awayTeam: string,
-  predictedSpread: number | null,
-): SpreadView {
-  if (predictedSpread === null) return null;
-  if (predictedSpread === 0) return "PK";
-  return predictedSpread > 0
-    ? { team: homeTeam, line: -predictedSpread }
-    : { team: awayTeam, line: predictedSpread };
-}
-
-function spreadLabel(view: SpreadView): string {
-  if (view === null) return "—";
-  if (view === "PK") return "PK";
-  return `${view.team} ${signedSpread(view.line)}`;
-}
-
-/** Signed difference between the displayed model and market spread numbers. */
-function spreadEdge(model: SpreadView, market: SpreadView): number | null {
-  if (
-    model === null ||
-    market === null ||
-    model === "PK" ||
-    market === "PK"
-  ) {
-    return null;
-  }
-  return model.line - market.line;
-}
-
-/** Signed difference between the model and market totals. */
-function totalEdge(
-  predictedTotal: number | null,
-  totalLine: number | null,
-): number | null {
-  if (predictedTotal === null || totalLine === null) return null;
-  return predictedTotal - totalLine;
-}
-
-/** The bet the model would place: the leaned team and the line it would take. */
-function spreadBetLabel(
-  homeTeam: string,
-  awayTeam: string,
-  lean: "home" | "away" | null,
-  homeLine: number | null,
-): string | null {
-  if (lean === null || homeLine === null) return null;
-  return lean === "home"
-    ? `${homeTeam} ${signedSpread(homeLine)}`
-    : `${awayTeam} ${signedSpread(-homeLine)}`;
-}
-
-function totalBetLabel(
-  lean: "over" | "under" | null,
-  totalLine: number | null,
-): string | null {
-  if (lean === null || totalLine === null) return null;
-  return `${lean === "over" ? "↑ Over" : "↓ Under"} ${totalLine.toFixed(1)}`;
-}
+import {
+  modelSpreadView,
+  marketSpreadView,
+  signedSpread,
+  spreadBetLabel,
+  spreadEdge,
+  spreadLabel,
+  totalBetLabel,
+  totalEdge,
+} from "@/lib/betting-format";
 
 /** Editorial cutoffs for edge coloring (points): below LOW is faint,
  * LOW–HIGH is medium, above HIGH is strong. Not derived from a fitted

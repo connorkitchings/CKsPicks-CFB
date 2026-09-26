@@ -37,11 +37,32 @@ export function BetTable({
   tableClassName: string;
   rowHeaderWidthClass?: string;
   headerCellClassName: string;
-  /** One class for every body cell, or one per column. */
+  /** One class for every body cell, or one per column.
+   * The array form must stay the same length as `columns`; a mismatch is a
+   * caller bug and throws in development instead of rendering unstyled cells. */
   bodyCellClassName: string | string[];
   columns: BetTableColumn[];
   rows: BetTableRow[];
 }) {
+  if (process.env.NODE_ENV !== "production") {
+    if (
+      Array.isArray(bodyCellClassName) &&
+      bodyCellClassName.length !== columns.length
+    ) {
+      throw new Error(
+        `BetTable bodyCellClassName length (${bodyCellClassName.length}) ` +
+          `must match columns length (${columns.length}) for table "${ariaLabel}".`,
+      );
+    }
+    for (const row of rows) {
+      if (row.cells.length !== columns.length) {
+        throw new Error(
+          `BetTable row "${row.label}" has ${row.cells.length} cells but ` +
+            `table "${ariaLabel}" declares ${columns.length} columns.`,
+        );
+      }
+    }
+  }
   return (
     <table className={tableClassName} aria-label={ariaLabel}>
       <thead>
