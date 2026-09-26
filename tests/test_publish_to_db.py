@@ -692,3 +692,92 @@ def test_publish_fails_closed_without_quotes_for_snapshot_run():
             update_current=True,
             market_quotes=None,
         )
+
+
+MINIMAL_QUOTES = pd.DataFrame(
+    {
+        "quote_id": ["q1"],
+        "game_id": [401762868],
+        "provider": ["draftkings"],
+        "captured_at": ["2026-08-28T17:50:00Z"],
+        "spread": [14.5],
+        "total": [44.5],
+    }
+)
+
+
+def test_publish_fails_closed_when_selected_quote_missing_from_frozen_quotes():
+    df = publish_to_db.prepare_predictions(pd.read_csv(StringIO(SAMPLE_CSV)))
+    df["market_snapshot_id"] = "snap-1"
+    df["source_quote_ids"] = '["q1"]'
+    df["market_captured_at"] = "2026-08-28T18:00:00Z"
+    df["spread_market_quote_id"] = "q-absent"
+    with pytest.raises(ValueError, match="absent from the frozen market_quotes"):
+        publish_to_db.publish_week(
+            df,
+            "unused",
+            season=2026,
+            week=1,
+            high_conf_threshold=8.0,
+            source_config="config.yaml",
+            system_name="system",
+            model_id="model",
+            update_current=True,
+            market_quotes=MINIMAL_QUOTES,
+        )
+
+
+def test_publish_fails_closed_when_selected_point_differs_from_quote():
+    df = publish_to_db.prepare_predictions(pd.read_csv(StringIO(SAMPLE_CSV)))
+    df["market_snapshot_id"] = "snap-1"
+    df["source_quote_ids"] = '["q1"]'
+    df["market_captured_at"] = "2026-08-28T18:00:00Z"
+    df["spread_market_quote_id"] = "q1"
+    # SAMPLE_CSV line is 14.1666… for game 401762868; the quote says 14.5.
+    with pytest.raises(ValueError, match="differs from quote q1 point"):
+        publish_to_db.publish_week(
+            df,
+            "unused",
+            season=2026,
+            week=1,
+            high_conf_threshold=8.0,
+            source_config="config.yaml",
+            system_name="system",
+            model_id="model",
+            update_current=True,
+            market_quotes=MINIMAL_QUOTES,
+        )
+
+
+def test_validate_selection_lineage_accepts_exact_match():
+    df = pd.DataFrame(
+        [
+            {
+                "game_id": 401762868,
+                "spread_market_quote_id": "q1",
+                "home_team_spread_line": 14.5,
+                "total_market_quote_id": "q1",
+                "total_line": 44.5,
+            }
+        ]
+    )
+    quote_by_id = {
+        rec["quote_id"]: rec
+        for rec in publish_to_db._quote_frame_to_records(MINIMAL_QUOTES)
+    }
+    publish_to_db._validate_selection_lineage(df, quote_by_id)
+
+
+def test_validate_selection_lineage_ignores_unquoted_legacy_rows():
+    df = pd.DataFrame(
+        [
+            {
+                "game_id": 401762868,
+                "spread_market_quote_id": None,
+                "home_team_spread_line": 14.5,
+                "total_market_quote_id": None,
+                "total_line": 44.5,
+            }
+        ]
+    )
+    publish_to_db._validate_selection_lineage(df, {})

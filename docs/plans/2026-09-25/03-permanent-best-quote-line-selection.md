@@ -429,7 +429,8 @@ eligible quote is valid only as an unlined forecast with no market result.
   session creates no artifact, no grade, and no Neon mutation.
 - [ ] Eligible historical replacement runs, including 2026 V5 Weeks 0–4, have
   passed their required Preview and explicit production release gates.
-  _(Task 6 pending separate operational authorizations)_
+  _(Preview rehearsal complete 2026-09-26 per Amendment 3; production release
+  gates remain, separately authorized per week.)_
 - [x] Future weekly operations select and verify the best quote before freeze.
   _(Task 3 integrated in weekly.py, generate_weekly_bets.py, generate_v5_weekly_bets.py, generate_v5_replay_weekly_bets.py)_
 - [x] Required validation (1,439 pytest, contracts-check, ruff format/check,
@@ -453,4 +454,48 @@ The plan stays `In Progress` until those gates are cleared.
 - Scoring (`score_to_db.py`, `backfill_replay_grades.py`) links grades to `market_quote_id` and sets `model_side_best_quote_v1`.
 - Web serving (`queries.ts`, `page.tsx`) reads from `prediction_market_selections` via COALESCE and updates footnote copy.
 - Full test suites pass: 1,439 Python tests, 11 web tests, web typecheck, build, contracts-check. Task 6 (generating/activating replacement replay runs on Preview/Production) is staged for subsequent operational execution.
+
+**Amendment 3 (2026-09-26, Task 6 Preview rehearsal):** The Preview half of
+Task 6 is complete; production replacement remains separately authorized.
+
+- **Ref correction (Weeks 0–1):** The draft rehearsal bound W0/W1 to earlier
+  snapshot/quote captures (`26bad0a1…`/`1d00176f…`, `d9997d98…`/`ab42031e…`)
+  that do not match the corpora the public replay grades settled against.
+  Verified against the frozen V4 production manifests and production grade
+  snapshot IDs, the replacement now binds W0 to `e3f984c4…` +
+  `a3d08d11…` and W1 to `b273e83d…` + `b2df0fd5…` (the paired quote
+  captures at identical catalog `as_of`). Weeks 2–4 already matched the V4
+  run refs exactly. The rehearsal script enforces this binding at runtime.
+- **Fail-closed publish:** `publish_to_db.py` now validates selected-quote
+  lineage before the transaction opens (`_validate_selection_lineage`): a
+  selected quote absent from the frozen quotes dataset or a selected point
+  differing from its quote refuses publication. Previously the selection
+  insert was silently skipped for absent quotes.
+- **Grading basis:** Replacement grades mirror the public record — all
+  above-threshold spreads and totals at edge ≥ 1.5 (config), sub-threshold
+  totals keep lean and selection lineage but receive no grade. Best-quote
+  line shopping legitimately raised three sub-1.5 consensus edges above the
+  threshold, so the replacement total record covers 124 targets vs the
+  released 121.
+- **Preview rehearsal (batch `2026w{0..4}-v5replay-bestquote-20260926-r2`):**
+  all five weeks generated from the pinned verified replay manifests,
+  published (`--no-update-current`), W0–3 scored, and verified: dataset refs
+  bound to the graded V4 corpora; forecasts byte-identical to the source
+  runs on every game; every selection row matches its frozen quote, game,
+  snapshot, side, and point; grades settle at the exact selected quote with
+  `-110` default pricing (`profit_units` at NUMERIC(10,4)); `system_stats`
+  counts unchanged; publish/score repeats idempotent within immutability
+  rules (scored runs refuse re-publish by design). Serving rehearsal
+  selected all five `-r2` runs, confirmed every displayed line is a real
+  market tick (0 quarter-point synthetics across 215 games), then restored
+  the original selections via the rollback drill. Aggregate W0–3 record
+  under best-quote settlement: spread 71-83-3, total 69-55-0.
+- **Rehearsal debris:** A first rehearsal batch (`…-20260926`, no suffix)
+  over-graded sub-threshold totals before the grading-basis fix; those
+  scored runs remain on Preview as immutable, unselected debris and must
+  never be selected.
+- **Remaining for Task 6:** production migration 0016, production
+  replacement artifacts under exact packets, per-week authorization and
+  activation, production readback, and the W4 scoring decision at its own
+  finals gate. Nothing in this amendment authorizes production changes.
 

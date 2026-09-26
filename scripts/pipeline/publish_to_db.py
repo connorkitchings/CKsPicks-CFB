@@ -529,6 +529,40 @@ def _quote_link_targets(quote: dict) -> list[str]:
     return targets
 
 
+def _validate_selection_lineage(df: pd.DataFrame, quote_by_id: dict[str, dict]) -> None:
+    """Fail closed before any write when a selected quote is unverifiable.
+
+    Every lined target that cites a selected quote must find that quote in
+    the frozen market_quotes dataset at the exact selected point. This runs
+    before the transaction opens so a bad artifact cannot partially publish.
+    """
+    for _, row in df.iterrows():
+        game_id = row.get("game_id")
+        for target, quote_col, line_col, quote_field in (
+            ("spread", "spread_market_quote_id", "home_team_spread_line", "spread"),
+            ("total", "total_market_quote_id", "total_line", "total"),
+        ):
+            quote_id = row.get(quote_col)
+            if quote_id is None or pd.isna(quote_id):
+                continue
+            line = row.get(line_col)
+            if line is None or pd.isna(line):
+                continue
+            quote_rec = quote_by_id.get(str(quote_id))
+            if quote_rec is None:
+                raise ValueError(
+                    f"Selected {target} quote {quote_id} for game {game_id} "
+                    "is absent from the frozen market_quotes dataset; "
+                    "refusing to publish an unselectioned lined prediction"
+                )
+            quote_point = _safe_float(quote_rec.get(quote_field))
+            if quote_point is not None and abs(float(line) - quote_point) > 1e-6:
+                raise ValueError(
+                    f"Selected {target} point {line} for game {game_id} "
+                    f"differs from quote {quote_id} point {quote_point}"
+                )
+
+
 def publish_week(
     df: pd.DataFrame,
     conn_url: str,
@@ -596,6 +630,7 @@ def publish_week(
             )
         quote_records = _quote_frame_to_records(market_quotes)
         quote_by_id = {record["quote_id"]: record for record in quote_records}
+        _validate_selection_lineage(df, quote_by_id)
     if manifest:
         if int(manifest.get("row_count", -1)) != len(df):
             raise ValueError(
@@ -823,6 +858,13 @@ def publish_week(
                                     or "model_side_best_quote_v1",
                                 },
                             )
+                        else:
+                            raise ValueError(
+                                f"Selected spread quote {sq_id} for game "
+                                f"{record['game_id']} is absent from the "
+                                "frozen market_quotes dataset; refusing to "
+                                "publish an unselectioned lined prediction"
+                            )
 
                     if (
                         record.get("total_market_quote_id")
@@ -869,6 +911,13 @@ def publish_week(
                                     )
                                     or "model_side_best_quote_v1",
                                 },
+                            )
+                        else:
+                            raise ValueError(
+                                f"Selected total quote {tq_id} for game "
+                                f"{record['game_id']} is absent from the "
+                                "frozen market_quotes dataset; refusing to "
+                                "publish an unselectioned lined prediction"
                             )
                 cur.execute(INSERT_PREDICTION_SQL, {**record, "run_id": run_id})
                 count += 1
