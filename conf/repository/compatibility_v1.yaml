@@ -55,6 +55,35 @@ required_paths:
   research_structure:
     - scripts/research
     - conf/research/data_first_football_v1
+  v5:
+    - scripts/pipeline/run_v5_weekly_cycle.py
+    - src/cks_picks_cfb/ops/v5_cycle.py
+    - scripts/research/run_data_first_repair_v2.py
+    - scripts/research/verify_data_first_repair_v3.py
+    - scripts/research/run_data_first_possession_measurements.py
+    - scripts/research/verify_data_first_possession_measurements.py
+    - scripts/research/run_data_first_possession_rating_replay.py
+    - scripts/research/verify_data_first_possession_rating_replay.py
+    - scripts/research/run_v5_live_forecast.py
+    - scripts/research/run_v5_shadow_readiness.py
+    - scripts/research/verify_v5_shadow.py
+    - scripts/pipeline/generate_weekly_bets.py
+    - scripts/pipeline/generate_v5_weekly_bets.py
+    - scripts/pipeline/generate_v5_replay_weekly_bets.py
+    - scripts/pipeline/build_v5_replay.py
+    - scripts/pipeline/build_v5_week4_replay.py
+    - scripts/pipeline/preflight.py
+    - scripts/pipeline/publish_to_db.py
+    - scripts/pipeline/publish_v5_ratings.py
+    - scripts/pipeline/score_weekly_bets.py
+    - scripts/pipeline/score_to_db.py
+    - scripts/pipeline/freeze_week.py
+    - scripts/pipeline/select_public_run.py
+    - scripts/research/capture_data_first_phase2.py
+    - src/cks_picks_cfb/inference/v5_serving.py
+    - src/cks_picks_cfb/forecast/live.py
+    - src/cks_picks_cfb/ratings/possession_live_replay.py
+    - conf/weekly_bets/v5_preview_2026.yaml
 
 supported_production_scripts:
   - scripts/pipeline/preflight.py

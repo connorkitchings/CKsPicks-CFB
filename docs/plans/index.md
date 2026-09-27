@@ -28,32 +28,36 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
+**Operational snapshot (2026-09-27):** V5 best-quote replay is selected on the public site for Weeks 0–4, Week 4 is scored, and the verified Week 5 live forecast and candidate picks are in Preview. V4 frozen runs remain rollback targets. Prospective Week 5 production activation needs its own exact release decision. Historical contract lifecycle metadata below is retained as recorded.
+
+The former 07/08 checkpoint said “Week 4 refresh awaits stabilized finals”; that gate was satisfied on 2026-09-27. Six slates are not a launch prerequisite for prospective V5 activation; they remain a monitoring window.
+
 The [V5 Product Transformation](2026-09-23/01-v5-product-transformation.md) is the approved implementation contract for the V5-only site and operating path. It supersedes the narrower [V4-to-V5 site transition draft](2026-09-22/05-v4-to-v5-site-transition.md) where their release or public-history policies differ. The older contract remains as an audit record.
 
 The [V5 replay and Preview rehearsal](2026-09-24/01-v5-replay-preview-rehearsal.md) is Implemented under the product transformation. It covered clean-code replay publication, Preview scoring and serving, and same-week V4 rollback with V5 restoration. It does not authorize the current-slate or production cutover.
 
-The [V5 weekly operator and exact release gates](2026-09-24/02-v5-weekly-operator-and-release-gates.md) contract is Implemented (2026-09-25) under its approved production-role amendment: the exact dual-identity guard, Keychain production wrapper, restricted `cks_prod_pipeline` role, and production migration 0014 are verified, and a fixture-class Preview operator rehearsal exercised the full controller. No production V5 authorization or activation is approved, and the stabilized Week 4 finals gate remains.
+The [V5 weekly operator and exact release gates](2026-09-24/02-v5-weekly-operator-and-release-gates.md) contract is Implemented (2026-09-25) under its approved production-role amendment: the exact dual-identity guard, Keychain production wrapper, restricted `cks_prod_pipeline` role, and production migration 0014 are verified, and a fixture-class Preview operator rehearsal exercised the full controller. Subsequent exact replay authorizations selected V5 history; prospective Week 5 activation remains separate.
 
-The [Week 4 finals to live Preview evidence](2026-09-25/01-v5-week4-finals-to-live-preview.md) plan is Approved (user handoff, 2026-09-25). It sequences the existing 07→08→09→05 authority, Preview serving and rollback proof, and exact packet review after the finals gate. Execution awaits complete certified Week 4 finals plus the 24-hour stabilization interval; it authorizes no production V5 activation.
+The [Week 4 finals to live Preview evidence](2026-09-25/01-v5-week4-finals-to-live-preview.md) plan is Approved (user handoff, 2026-09-25). The Week 4 finals gate, 07/08 refresh, and verified Week 5 forecast and Preview candidate were completed on 2026-09-27. The remaining prospective production packet and activation decision are separate.
 
-The [complete Week 4 replay site cutover](2026-09-25/02-v5-week4-replay-site-cutover.md) is Approved (2026-09-25) to show V5 for all 2026 Weeks 0–4, including scored retrospective Weeks 1–3 and a complete, truthfully labeled Week 4 replay. Its material release-policy amendment was approved with three decisions: V5-labeled history as the default view, parallel execution with the live plan (whose finals gates take precedence), and Week 4 replay grades against the frozen V4 pre-kickoff quotes (Amendment 1). It uses a separate exact production replay authorization path; each production release still requires its separate packet decision. It does not create a prospective V5 Week 4 run or supersede the approved live-forecast plan.
+The [complete Week 4 replay site cutover](2026-09-25/02-v5-week4-replay-site-cutover.md) was Approved (2026-09-25) and executed to show V5 for all 2026 Weeks 0–4, including truthfully labeled retrospective history. Week 4 was later scored after certified finals. It used separate exact replay authorizations and did not create a prospective V5 Week 4 run or authorize Week 5 live activation.
 
-The [V5 current status guide](../modeling/v5_status.md) is the entry point for the accepted model, exact lineage, historical results, and remaining operational work. V5 model development is complete. V4 still serves the public site.
+The [V5 current status guide](../modeling/v5_status.md) is the entry point for the accepted model, exact lineage, historical results, and remaining operational work. V5 replay serves the public site; V4 remains the tested rollback.
 
 | Current contract | Purpose | State |
 | --- | --- | --- |
 | [V5 ratings publication and navigation](2026-09-26/03-v5-ratings-publication-and-navigation.md) | Publish verified ratings to production Neon, enable /ratings nav, link game cards, and document weekly cadence | Implemented |
-| [V5 authority and cutover](2026-09-22/04-v5-authority-simplification-and-site-cutover.md) | Simplify authority and prepare a verified Preview serving rehearsal and rollback | In Progress; no production activation |
-| [07: 2026 measurements](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | Repair and certify current 2026 football data | Verified through Week 3; Week 4 refresh awaits stabilized finals |
-| [08: 2026 ratings](2026-09-18/08-v5-2026-rating-state-replay.md) | Replay the fixed V5 rating design on 2026 games | Verified through Week 3; Week 4 refresh awaits 07 |
-| [09: live forecast](2026-09-18/09-v5-2026-forecast-and-readiness.md) | Apply and independently verify the fixed forecast to the next slate | Code ready; live apply awaits fresh 07/08 parents |
-| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Preserve pre-kickoff attempts, outcome reports, and quote diagnostics | Code ready; no eligible V5 slate yet; six slates are not a launch prerequisite |
+| [V5 authority and cutover](2026-09-22/04-v5-authority-simplification-and-site-cutover.md) | Simplify authority and prepare a verified Preview serving rehearsal and rollback | In Progress; no prospective live activation |
+| [07: 2026 measurements](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | Repair and certify current 2026 football data | Week 4 refresh independently verified (215 games) |
+| [08: 2026 ratings](2026-09-18/08-v5-2026-rating-state-replay.md) | Replay the fixed V5 rating design on 2026 games | Week 4 refresh independently verified (860 rating states) |
+| [09: live forecast](2026-09-18/09-v5-2026-forecast-and-readiness.md) | Apply and independently verify the fixed forecast to the next slate | Week 5 forecast verified and candidate in Preview; no prospective production activation |
+| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Preserve pre-kickoff attempts, outcome reports, and quote diagnostics | Code ready; Week 5 Preview candidate is not yet frozen prospective evidence |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 
 ### Other active work
 
-The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) retains the broader research context. The [production runbook](../ops/production_runbook.md) governs the currently active V4 weekly operation until an explicit V5 activation decision.
+The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) retains the broader research context. The [production runbook](../ops/production_runbook.md) retains V4 rollback procedures; the [V5 weekly operator](../ops/v5_weekly_operator.md) governs current V5 stages and exact release gates.
 
 ## When to use a contract
 

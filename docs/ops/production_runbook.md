@@ -1,23 +1,21 @@
 # Production Runbook — 2026 Season
 
-> **V5 cutover status:** [V5 model development is complete](../modeling/v5_status.md), but V4 remains the public site model. The V5 weekly adapter is configured only for Preview rehearsal until a current forecast is independently verified, a Preview publication and V4 rollback are proven, and a separate production activation decision is recorded. Six prospective slates are not a prelaunch condition.
+> **Status (2026-09-27):** The public site serves V5 best-quote replay for Weeks 0–4; Week 4 is scored. A verified Week 5 live forecast and candidate picks are in Preview. Prospective Week 5 production activation still requires its separate exact release decision. V4 frozen runs remain selectable for rollback. See the [current V5 status](../modeling/v5_status.md) and [weekly operator](v5_weekly_operator.md).
 
-The [manual V5 weekly operator](v5_weekly_operator.md) is the prepared
-post-acceptance cadence. Its exact release guard is deployed on Preview and
-production (migration 0014; authorization table empty in both), and production
-V5 publication and selection require the restricted `cks_prod_pipeline` login
+The [manual V5 weekly operator](v5_weekly_operator.md) is the reviewed
+stage cadence. Its exact release guard is deployed on Preview and production,
+and production V5 publication and selection require the restricted `cks_prod_pipeline` login
 via `zsh scripts/ops/with_production_pipeline_env.sh`. An immutable candidate
-can be prepared without Neon activation, but production V5 publication and
+can be prepared without Neon activation. Prospective V5 publication and
 selection fail closed until a separately approved, admin-written authorization
-for that exact slate and artifact is present.
+for that exact slate and artifact is present. The existing replay selections
+used their own exact authorizations.
 
-> **As-built operations for the live system** (deployed 2026-08-18).
-> This runbook reflects production reality: Vercel + Neon + Cloudflare R2 with
-> the V4 launch bundle. Superseded V2 deployment and rollback material is in
-> the [documentation archive](../archive.md). The rating successor is
-> shadow-only until separately promoted.
-> Authoritative remaining-work tracker:
-> [Week 0 Launch Contract](../plans/2026-08-18/week0-launch-execution.md).
+> **V4 launch and rollback procedures below:** The topology and command
+> examples in this section record the 2026-08-18 V4 deployment. They remain
+> available for V4 rollback and historical reproduction; use the V5 weekly
+> operator for current V5 stages. Superseded V2 material is in the
+> [documentation archive](../archive.md).
 
 ## Production topology (as built)
 
@@ -25,19 +23,20 @@ for that exact slate and artifact is present.
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
 | Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026` (Vercel env). Week availability is owned by `web/src/lib/publication.ts` (`PUBLISHED_WEEKS`) plus explicit Neon public selections — there is no weeks variable to update; the retired `CFB_PUBLICATION_WEEKS` value is ignored |
-| Database | Neon **production branch** (separate from `preview-2026`); migrations 0002–0008 applied |
+| Database | Neon **production branch** (separate from `preview-2026`); migrations through 0015 applied |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
 | Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |
-| Active model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml` |
-| Fallback | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
+| Public model (2026-09-27) | V5 best-quote replay for Weeks 0–4; Week 5 live candidate remains in Preview |
+| Rollback model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml`; frozen runs preserved |
+| Historical V2 | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
 | Active run | Query `/api/health` or `current_week.active_run_id`; each progressive publish activates a new immutable run. |
 
-Invariant: a failed or partial pipeline step never activates anything. Every
-mutating command runs through `python -m cks_picks_cfb.ops` with an explicit
-`ENV`.
+Invariant for the V4 cycle below: a failed or partial pipeline step never
+activates anything. V4 ops commands run through `python -m cks_picks_cfb.ops`
+with an explicit `ENV`; V5 uses the reviewed operator and exact release path.
 
-## Weekly operating cycle (production)
+## V4 weekly operating cycle (rollback and historical reference)
 
 ### 1. Pregame publish (progressive, as lines arrive)
 
@@ -183,12 +182,11 @@ repopulates as production audits run — this is expected.
 
 ## Rollback / recovery
 
-For the planned V5 cutover, rehearse rollback on Preview first: identify the
-last good V4 immutable run, publish or reselect it using the normal Preview
-activation path, then verify `current_week.active_run_id`, `/api/health`, and
-the rendered system name. Preserve both V4 and V5 artifacts. Production V5
-activation is a separate decision after the [current V5 cutover checks](../modeling/v5_status.md)
-pass; this runbook's existing V4 procedure remains active until then.
+The V5 replay cutover rehearsed same-week V4 reselection on Preview. For a
+prospective V5 release, retain the reviewed V4 immutable run and verify the
+same-week rollback path through `current_week.active_run_id`, `/api/health`,
+and the rendered system name. Preserve both V4 and V5 artifacts; prospective
+activation remains a separate decision.
 
 There is no MLflow/joblib rollback in this system. Runs are immutable; rollback = reselection:
 
@@ -229,4 +227,4 @@ pipeline's original failure or activation boundary.
 
 ---
 
-_Last Updated: 2026-08-31_
+_Status summary updated: 2026-09-27. V4 procedures retained for rollback._

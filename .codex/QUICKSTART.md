@@ -8,7 +8,7 @@
 
 ## Environment Setup
 
-**V5 checkpoint (2026-09-22):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V4 remains public. Stabilized Week 4 finals and refreshed 07/08 parents gate a current live forecast; verified Preview serving and V4 rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement. The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+**V5 checkpoint (2026-09-27):** [Model development is complete and accepted](../docs/modeling/v5_status.md). The public site selects V5 best-quote replay for Weeks 0–4; Week 4 is scored. Week 5 has a verified live forecast and Preview candidate, with prospective production activation pending its exact release decision. V4 frozen runs remain the rollback path. Six prospective slates are monitoring, not a prelaunch requirement. The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.

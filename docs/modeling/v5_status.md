@@ -1,27 +1,24 @@
 # V5 Ratings Successor: Current Status
 
 > **Model development:** Complete and accepted on 2026-09-22.
-> **Live 2026 forecasts:** The full-corpus inference bundle is pinned and a read-only Week 4 preflight passed. First current-state certification awaits stabilized Week 4 finals and refreshed, independently verified 07/08 parents.
-> **Public site:** V5 replay is primary for 2026 Weeks 0–4 since 2026-09-25 (clearly labeled retrospective; W0–3 scored vs frozen quotes, W4 pending finals). V4 runs stay frozen/scored as the tested rollback. First *live* V5 activation still requires a verified live forecast, Preview serving rehearsal, rollback proof, and a separate activation decision.
+> **Live 2026 forecasts (2026-09-27):** After stabilized Week 4 finals, refreshed and independently verified 07/08 parents supported the verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (56 games). Candidate picks are published to Preview as `2026w5-d6366e59fd43`.
+> **Public site:** V5 best-quote replay is selected for 2026 Weeks 0–4; Week 4 is scored. V4 runs stay frozen/scored as the tested rollback. The Week 5 live candidate has no prospective production activation recorded; Preview serving rehearsal and rollback proof precede a separate activation decision on its exact release packet.
 
 The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
-release guard are implemented and rehearsed. Migration 0014 is applied on both
-Preview and production with an empty authorization table in each, and
-production V5 publication/selection now requires the restricted
+release guard are implemented and rehearsed. Migrations 0014 and 0015 and
+separate replay authorizations enabled the Weeks 0–4 production replay cutover;
+prospective live publication still requires its own exact authorization.
+Production V5 publication/selection requires the restricted
 `cks_prod_pipeline` login through `scripts/ops/with_production_pipeline_env.sh`
 (both `session_user` and `current_user` are checked; the owner credential is
 rejected). A fixture-class Preview operator rehearsal (cycle
 `v5-rehearsal-2026w4`, repair run `repair-2026-rehearsal-20260925` on the
 stabilized Weeks 0–3 inputs, 157/157/157 games) exercised preflight, apply with
 independent verification, status, and idempotent resume. That rehearsal is not
-live evidence. On 2026-09-25 the replay cutover released V5 to production under
-separate exact replay authorizations (migration 0015, five rows, pipeline
-SELECT-only): Weeks 0–4 select V5 replay runs, Weeks 0–3 are scored against
-frozen pre-kickoff quotes (spread 72-82-3, total 67-54-0, labeled replay), and
-Week 4 awaits its 58 certified finals for scoring. No live authorization or
-prospective V5 activation has been created. The existing Weeks 0–3 replay
-rehearsal does not replace the stabilized Week 4
-07/08 refresh or a prospective 09/05 certification.
+live evidence. The production replay selection is retrospective for Weeks 0–3;
+Week 4 closed after 58 certified finals on 2026-09-27. The refreshed 07/08
+parents and independently verified Week 5 forecast are live Preview evidence,
+not prospective production activation.
 
 ## What V5 is
 
@@ -37,12 +34,11 @@ For 2025, V5 margin MAE was 14.160 and total MAE was 13.356 across 934 games per
 
 ## What remains operational
 
-1. Contract 07 certified 157 2026 games through Week 3. Contract 08 independently verified the Weeks 0–3 rating replay `possession-v1-rating-replay-20260922-fcaa571`.
-   The inference bundle SHA-256 is `f80b63ef01211bc9679b4b65769a3f16c7302c06cfa2b7806f6b8d830f19da0b`; full-corpus equivalence covered 8,935 games. Preview holds 452 version-bound rating snapshots. Retrospective Weeks 0–3 forecast reconstruction is immutable replay `v5-replay-20260924-cb2252a` (157 games, zero gaps), pinned for serving, published and scored on Preview as run `2026w0-cb2252a0w0v5`, and explicitly selected after a same-week V4 rollback drill and V5 restoration (see the [rehearsal contract](../plans/2026-09-24/01-v5-replay-preview-rehearsal.md)).
-2. Once Week 4 finals stabilize, refresh 07 and 08 under new immutable IDs. Contract 09 then applies the fixed V5 bridge to the next eligible slate, independently verifies its forecast and readiness, and repeats idempotently. The current [shadow runbook](../ops/v5_shadow_runbook.md) carries the exact commands and gates.
-3. Rehearse V5's conversion to the existing public prediction format on Preview, checking schedule coverage, pregame timing, sign conventions, health, and V4 rollback. Present the evidence for a separate production activation decision. No Week 4 or later result is allowed to refit this V5 identity.
-4. Keep immutable prospective freezes and outcome-versioned reports after launch. Six slates are a useful review window, not a prerequisite for declaring V5 developed or proposing a site cutover. Historical and diagnostic runs never become prospective observations.
-5. **Best-quote line policy (`model_side_best_quote_v1`) — unified 1.0 no-bet rule live (2026-09-26).** Edges below 1.0 point publish no lean for either target (artifact "No Bet" labels authoritative; quote lineage kept); totals in [1.0, 1.5) display a side without a grade; the total grade threshold stays 1.5. All five 2026 weeks serve the rebuilt runs (`2026w{0..4}-v5replay-bestquote-20260926-r3`, authorized under `v5-bestquote-replacement-review-2026-09-26`): 270 W0–3 grades (146 spread + 124 total; 11 sub-1.0 spread grades removed vs the prior batch), every line a real market tick. W4 is published 58/58 and unscored pending its certified finals. V4, original, and `-r2` runs stay frozen/scored as audit records and rollback targets. See the [no-bet contract](../plans/2026-09-26/02-unified-no-bet-threshold.md) (Implemented).
+1. Contracts 07 and 08 were refreshed and independently verified through Week 4: 215 completed games and 860 rating states under `possession-v1-measurements-20260927-w4` and `possession-v1-rating-replay-20260927-w4`. V5 ratings were projected to Preview and production Neon.
+2. Contract 09 produced and independently verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (112 target predictions across 56 games). Preview candidate run `2026w5-d6366e59fd43` contains 56 games, 34 with market quotes at publication. Follow the [weekly operator](../ops/v5_weekly_operator.md) and [weekly pipeline](../ops/weekly_pipeline.md) for further line refreshes and readiness checks.
+3. Prepare the exact Week 5 production release packet and obtain a separate activation decision after the required Preview serving and V4 rollback evidence. No Week 4 or later result may refit the fixed V5 identity.
+4. Keep immutable prospective freezes and outcome-versioned reports after live activation. Six slates are a useful review window, not a prerequisite for declaring V5 developed or proposing prospective activation. Historical and diagnostic runs never become prospective observations.
+5. **Best-quote line policy (`model_side_best_quote_v1`) — unified 1.0 no-bet rule live (2026-09-26).** Edges below 1.0 point publish no lean for either target (artifact "No Bet" labels authoritative; quote lineage kept); totals in [1.0, 1.5) display a side without a grade; the total grade threshold stays 1.5. All five 2026 weeks serve the rebuilt runs (`2026w{0..4}-v5replay-bestquote-20260926-r3`, authorized under `v5-bestquote-replacement-review-2026-09-26`): 270 W0–3 grades (146 spread + 124 total; 11 sub-1.0 spread grades removed vs the prior batch), every line a real market tick. Week 4 closed with 97 graded rows after certified finals. V4, original, and `-r2` runs stay frozen/scored as audit records and rollback targets. See the [no-bet contract](../plans/2026-09-26/02-unified-no-bet-threshold.md) (Implemented).
 
 
 ## Contract map

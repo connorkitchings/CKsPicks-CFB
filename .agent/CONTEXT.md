@@ -105,7 +105,8 @@ inference emits null spread and total standard-deviation fields.
 
 ### Approved direction: data-first football forecasting
 
-V4 remains the unchanged 2026 production champion and benchmark. The approved
+V4 remains the unchanged 2026 rollback benchmark. V5 replay is the selected
+public family for Weeks 0–4. The approved
 target architecture is:
 
 ```text
@@ -114,14 +115,14 @@ verified data → validated football measurements → opponent adjustment
 → prospective evaluation → timestamped line comparison
 ```
 
-Ratings will become the canonical offense, defense, overall-quality, and
+Ratings are the canonical offense, defense, overall-quality, and
 uncertainty-bearing representation of team strength. Priors dominate when
 evidence is sparse and observed performance gains credibility continuously;
 the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**V5 checkpoint (2026-09-22):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V4 still serves the site. Stabilized Week 4 finals and refreshed 07/08 parents gate a current V5 forecast. Verified Preview serving, rollback proof, and a separate activation decision govern replacement. Prospective monitoring continues without a six-slate prelaunch wait. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
+**V5 checkpoint (2026-09-27):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V5 best-quote replay serves the public site for Weeks 0–4. Week 4 finals and refreshed 07/08 parents produced a verified Week 5 live forecast and Preview candidate. Prospective production activation needs its separate exact release decision; V4 remains selectable for rollback. Prospective monitoring continues without a six-slate prelaunch wait. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a

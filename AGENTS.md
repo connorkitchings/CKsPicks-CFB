@@ -66,7 +66,7 @@ print(f"✅ Data root verified: {data_root}")
 - Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
 **Data-First Forecasting Transition:**
-- V4 remains the unchanged 2026 production champion and benchmark
+- V4 remains the unchanged 2026 rollback benchmark; V5 best-quote replay is the selected public family for Weeks 0–4
 - Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
@@ -74,11 +74,11 @@ print(f"✅ Data root verified: {data_root}")
 - Under `data-first-football-v1`, use 2015–2019 and 2021–2025 for development; future outcomes count as prospective evidence only when predictions were frozen before kickoff
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
-  V5 model development is complete and accepted. A site cutover review requires
-  a verified current live forecast, Preview serving rehearsal, V4 rollback proof,
-  and a separate activation decision. Prospective paired-slate evidence continues
-  as monitoring; six slates are not a prelaunch gate.
-- New research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
+  V5 model development is complete and accepted. The Week 5 live forecast and
+  Preview candidate are verified as of 2026-09-27; prospective production
+  activation still needs its separate exact release decision. Prospective
+  paired-slate evidence continues as monitoring; six slates are not a prelaunch gate.
+- Further model research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
 **Column Conventions:**
 - Maintain: `season`, `week`, `game_id`, `team` keys
@@ -187,7 +187,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status:** 🏈 Season live — Weeks 0-2 scored; Week 3 `2026w3-68fe6a815bd6` frozen; Week 4 published (active run `2026w4-da5d98761831`, serving state verified 2026-09-22)
+**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. A verified Week 5 live forecast and candidate run `2026w5-d6366e59fd43` are in Preview. V4 frozen runs remain the rollback path; no prospective Week 5 production activation is recorded.
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -195,6 +195,9 @@ Production is live at `https://c-ks-picks-cfb.vercel.app` in approval-gated
 `predictions` publication mode (revealed 2026-08-21). Active work is the
 weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 `docs/ops/production_runbook.md`.
+
+The detailed checkpoints below are dated historical records. Use the status
+above and the latest session log for current-week operations.
 
 **Current focus:**
 - ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
@@ -253,12 +256,12 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
   and the user explicitly accepted it on 2026-09-22. Contracts 07–09 are
   re-reviewed against the corrected parents with deferrals lifted under the
   archived September 22 acceptance and re-review record.
-  Contract 08 is Implemented for Weeks 0–3 as independently verified replay
-  `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 refresh of
-  Contracts 07 and 08 is next. [V5 model development is complete and accepted](docs/modeling/v5_status.md).
-  The operational sequence is fresh 07/08 parents after stabilized Week 4 finals,
-  verified Contract 09 forecast and readiness, Preview serving rehearsal and V4
-  rollback proof, then a separate production activation decision. Contract 06
+  Contract 08 was Implemented for Weeks 0–3 as independently verified replay
+  `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 07/08 refresh
+  and Week 5 live forecast were verified on 2026-09-27.
+  [V5 model development is complete and accepted](docs/modeling/v5_status.md).
+  The Week 5 candidate is in Preview; a separate prospective production
+  activation decision remains. Contract 06
   continues prospective monitoring; six slates are not a prelaunch condition.
   Conditional results remain `conditional_historical_results_only`.
   V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not

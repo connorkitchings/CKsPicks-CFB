@@ -3,15 +3,18 @@
 College-football spread and total prediction system: Python pipeline, immutable
 Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## V5 checkpoint (2026-09-22)
+## V5 checkpoint (2026-09-27)
 
-[V5 model development is complete and accepted](docs/modeling/v5_status.md). Its historical measurement, rating, forecast, and verification lineage is certified. V4 remains the live site model. The first current-state V5 forecast awaits stabilized Week 4 finals and refreshed verified 07/08 parents. A verified forecast, Preview serving rehearsal, and rollback proof will support a separate site activation decision. Prospective outcome tracking continues after launch without a six-slate prelaunch wait. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic.
+[V5 model development is complete and accepted](docs/modeling/v5_status.md). The public site serves V5 best-quote replay for Weeks 0–4; Week 4 is scored. A verified Week 5 live forecast and candidate picks are in Preview. Prospective Week 5 production activation still requires its exact release decision. V4 frozen runs remain selectable for rollback. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic.
+
+Six slates are not a launch prerequisite; prospective paired-slate results continue as monitoring.
 
 ## 2026 posture
 
-The live production champion is the V4 ten-route model bundle
-`week0-2026-v4-strict-20260818-r2`. It remains the stable, fail-closed
-production and rollback system for the 2026 season.
+V5 replay is the selected public model family for 2026 Weeks 0–4. The V4
+ten-route bundle `week0-2026-v4-strict-20260818-r2` and its frozen runs remain
+the tested rollback path. Follow the [weekly pipeline](docs/ops/weekly_pipeline.md)
+and the [V5 operator](docs/ops/v5_weekly_operator.md) for current commands.
 
 New research follows the approved data-first football forecasting architecture:
 
