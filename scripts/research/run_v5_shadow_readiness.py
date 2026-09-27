@@ -1102,11 +1102,18 @@ def main(argv: list[str] | None = None) -> None:
         if not _clean_worktree():
             raise ShadowRunError("apply requires a completely clean committed worktree")
         validate_shadow_config(yaml.safe_load(Path(args.config).read_text()))
+        candidate_manifest, _ = _read_json(storage, args.candidate_manifest_uri)
+        candidate_run_id = str(
+            (candidate_manifest.get("identity") or {}).get("run_id") or ""
+        )
+        if not candidate_run_id:
+            raise ShadowRunError("candidate manifest identity is missing")
         identity = shadow_identity(
             run_id=args.run_id,
             as_of=args.as_of,
             code_sha=args.expected_code_sha,
             config_sha=hashlib.sha256(Path(args.config).read_bytes()).hexdigest(),
+            candidate=candidate_run_id,
             parents={
                 "forecast_manifest_uri": args.candidate_manifest_uri,
                 "forecast_raw_sha256": hashlib.sha256(
