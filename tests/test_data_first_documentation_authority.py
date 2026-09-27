@@ -47,11 +47,12 @@ def test_current_guide_records_model_completion_and_live_release():
     for required in (
         "model development: complete and accepted",
         # V5 replay serves historical weeks; the later exact release selected
-        # the live Week 5 run. V4 remains the tested rollback.
-        "tested rollback",
+        # the refreshed Week 5 run. The prior V5 run is the same-week
+        # rollback; V4 runs remain frozen/scored for prior slates.
+        "same-week rollback",
         "stabilized week 4 finals",
-        "week 5 live run `2026w5-d6366e59fd43` is published in production",
-        "week 5 production release packet was validated and authorized",
+        "`2026w5-5d436e58c072` is selected in production",
+        "separately authorized exact packet then published and selected",
         "future live publications require separate exact authorizations",
         "not a prerequisite",
         "like-for-like point-in-time v4 backtest",
