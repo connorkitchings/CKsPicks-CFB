@@ -164,7 +164,7 @@ V4_FROZEN_RUNS = {
 }
 
 EXPECTED_GAMES = {0: 8, 1: 43, 2: 49, 3: 57, 4: 58}
-SCORED_WEEKS = (0, 1, 2, 3)
+SCORED_WEEKS = (0, 1, 2, 3, 4)
 
 
 def _read_parquet(storage: Any, uri: str) -> pd.DataFrame:

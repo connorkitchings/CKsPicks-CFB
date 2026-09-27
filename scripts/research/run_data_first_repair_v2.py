@@ -99,31 +99,31 @@ PHASE3_CANONICAL_SHA = (
 SEASON_2026_SILVER_INPUTS = {
     "games": {
         "dataset": "games",
-        "version_id": "e3ead5813aaf3e7a983f49f3",
+        "version_id": "31a337df6cf49f1578457ec6",
         "schema_version": "games_v2",
-        "content_sha": "6f4fd4f77bd0cda27b0097e54078bd5a11e00bfceb4fe5a5fc82f9635b8e2081",
-        "uri": "lake/silver/dataset=games/version=e3ead5813aaf3e7a983f49f3/data.parquet",
+        "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+        "uri": "lake/silver/dataset=games/version=31a337df6cf49f1578457ec6/data.parquet",
     },
     "game_outcomes": {
         "dataset": "game_outcomes",
-        "version_id": "669856aa8ebddabfd5cd8ff4",
+        "version_id": "d9a37cf473c63d2acc9f29cc",
         "schema_version": "game_outcomes_v1",
-        "content_sha": "7954c259e7c2d8dc8cd9ab90c7aa739bef96fea8a1215cf16e78b211f56eb76b",
-        "uri": "lake/silver/dataset=game_outcomes/version=669856aa8ebddabfd5cd8ff4/data.parquet",
+        "content_sha": "17482907a735d07842908c21b284db28f377b1931cfe806a21ca8f9bec23a8d7",
+        "uri": "lake/silver/dataset=game_outcomes/version=d9a37cf473c63d2acc9f29cc/data.parquet",
     },
     "byplay": {
         "dataset": "byplay",
-        "version_id": "7a79eb05d0912a490cbeeaa2",
+        "version_id": "443019a9a7b6a2454a4af4ac",
         "schema_version": "byplay_v1",
-        "content_sha": "40af053e1106a9cabe542a652b2e521d01c57e783200d97c0eb42b4cd84905fa",
-        "uri": "lake/silver/dataset=byplay/version=7a79eb05d0912a490cbeeaa2/data.parquet",
+        "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
+        "uri": "lake/silver/dataset=byplay/version=443019a9a7b6a2454a4af4ac/data.parquet",
     },
     "team_games": {
         "dataset": "reconciled_team_game",
-        "version_id": "2f58910d908fc59a9347d043",
+        "version_id": "5286ae2e1beeb0e747cc9750",
         "schema_version": "team_game_v1",
-        "content_sha": "18b6a8860044a1212a86ef84307d6c98110a78637b5ae239ef8ad7f6f96fc8bf",
-        "uri": "lake/silver/dataset=reconciled_team_game/version=2f58910d908fc59a9347d043/data.parquet",
+        "content_sha": "5cb80de4ee000dead5b5fbaafbaff7ec69cdaaf06ed3d7c7b0e575dc0a08ec39",
+        "uri": "lake/silver/dataset=reconciled_team_game/version=5286ae2e1beeb0e747cc9750/data.parquet",
     },
 }
 SEASON_2026_INPUT_BUNDLE_SCHEMA = "data_first_2026_silver_inputs_v1"
