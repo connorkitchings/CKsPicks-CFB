@@ -58,88 +58,71 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
 });
 
-export type RatingPeriod = "preseason" | "post-0" | "post-1" | "post-2" | "post-3" | "post-4";
+/** A ratings period id: "preseason" or an exact generation cutoff ISO string. */
+export type RatingPeriod = string;
 
 export interface PeriodMeta {
   id: RatingPeriod;
   label: string;
   shortLabel: string;
   description: string;
+  /** Set for frozen generations; absent for the preseason entry. */
+  cutoffUtc?: Date;
 }
 
-export const RATING_PERIODS: PeriodMeta[] = [
-  { id: "post-4", label: "Post-Week 4", shortLabel: "Week 4", description: "Ratings after Week 4 games finalized (active model state)." },
-  { id: "post-3", label: "Post-Week 3", shortLabel: "Week 3", description: "Ratings after Week 3 games finalized." },
-  { id: "post-2", label: "Post-Week 2", shortLabel: "Week 2", description: "Ratings after Week 2 games finalized." },
-  { id: "post-1", label: "Post-Week 1", shortLabel: "Week 1", description: "Ratings after Week 1 games finalized." },
-  { id: "post-0", label: "Post-Week 0", shortLabel: "Week 0", description: "Ratings after Week 0 games finalized." },
-  { id: "preseason", label: "Preseason", shortLabel: "Preseason", description: "Preseason baseline priors before 2026 kickoff." },
-];
+const PRESEASON_META: PeriodMeta = {
+  id: "preseason",
+  label: "Preseason",
+  shortLabel: "Preseason",
+  description: "Preseason baseline priors before 2026 kickoff.",
+};
+
+function formatCutoffLabel(cutoff: Date): { label: string; shortLabel: string } {
+  const label = `As of ${cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
+  const shortLabel = cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return { label, shortLabel };
+}
+
+/**
+ * Ratings timeline derived from the data, not from hardcoded weeks. Every
+ * frozen `current`-class generation is one entry addressable by its exact
+ * evidence cutoff; the newest entry is the active model state. New weekly
+ * projections appear here with no code change, and past generations can
+ * never drift: each one is served from its own frozen rows.
+ */
+export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta[]> => {
+  const rows = await db.selectDistinct({ cutoffUtc: schema.v5RatingSnapshots.cutoffUtc })
+    .from(schema.v5RatingSnapshots)
+    .where(and(
+      eq(schema.v5RatingSnapshots.season, season),
+      eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+    ))
+    .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc));
+  const periods = rows.map(({ cutoffUtc }, index) => {
+    const { label, shortLabel } = formatCutoffLabel(cutoffUtc);
+    return {
+      id: cutoffUtc.toISOString(),
+      label,
+      shortLabel,
+      description: index === 0
+        ? "Frozen team ratings from all evidence available at cutoff (active model state)."
+        : "Frozen team ratings from all evidence available at cutoff.",
+      cutoffUtc,
+    } satisfies PeriodMeta;
+  });
+  return [...periods, PRESEASON_META];
+});
 
 export const getWeeklyRatings = cache(async (
   season: number,
   targetPeriod?: string | null
 ): Promise<{ ratings: Rating[]; period: RatingPeriod; periodMeta: PeriodMeta }> => {
-  const sourceSha = await getSelectedRatingSource(season);
-  const defaultMeta = RATING_PERIODS[0];
-  if (!sourceSha) return { ratings: [], period: "post-4", periodMeta: defaultMeta };
+  const periods = await getRatingPeriods(season);
+  const generations = periods.filter((p) => p.cutoffUtc !== undefined);
 
-  let period: RatingPeriod = "post-4";
   if (targetPeriod === "preseason" || targetPeriod === "pre") {
-    period = "preseason";
-  } else if (targetPeriod === "post-0" || targetPeriod === "0" || targetPeriod === "week-0") {
-    period = "post-0";
-  } else if (targetPeriod === "post-1" || targetPeriod === "1" || targetPeriod === "week-1") {
-    period = "post-1";
-  } else if (targetPeriod === "post-2" || targetPeriod === "2" || targetPeriod === "week-2") {
-    period = "post-2";
-  } else if (targetPeriod === "post-3" || targetPeriod === "3" || targetPeriod === "week-3") {
-    period = "post-3";
-  } else if (targetPeriod === "post-4" || targetPeriod === "4" || targetPeriod === "week-4" || targetPeriod === "current" || !targetPeriod) {
-    period = "post-4";
-  }
-
-  const periodMeta = RATING_PERIODS.find((p) => p.id === period) ?? defaultMeta;
-
-  if (period === "post-4") {
-    const ratings = await getCurrentRatings(season);
-    return { ratings, period, periodMeta };
-  }
-
-  if (period === "post-3") {
-    // Frozen weekly assessment: the current-class generation as of the
-    // post-Week 3 cutoff. Deliberately not source-pinned: each weekly rating
-    // is a singular point-in-time assessment and must not drift when a newer
-    // rating generation is projected for a later week.
-    const rows = await db.select({
-      team: schema.v5RatingSnapshots.team,
-      week: schema.v5RatingSnapshots.week,
-      cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
-      offenseRating: schema.v5RatingSnapshots.offenseRating,
-      offenseVariance: schema.v5RatingSnapshots.offenseVariance,
-      defenseRating: schema.v5RatingSnapshots.defenseRating,
-      defenseVariance: schema.v5RatingSnapshots.defenseVariance,
-      overallRating: schema.v5RatingSnapshots.overallRating,
-      overallVariance: schema.v5RatingSnapshots.overallVariance,
-      fallbackReason: schema.v5RatingSnapshots.fallbackReason,
-    }).from(schema.v5RatingSnapshots)
-      .where(and(
-        eq(schema.v5RatingSnapshots.season, season),
-        eq(schema.v5RatingSnapshots.snapshotClass, "current"),
-        sql`${schema.v5RatingSnapshots.cutoffUtc} <= ${new Date("2026-09-23T00:00:00Z")}`,
-      ))
-      .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc), desc(schema.v5RatingSnapshots.createdAt));
-    const byTeam = new Map<string, Rating>();
-    for (const row of rows) {
-      if (!byTeam.has(row.team)) {
-        byTeam.set(row.team, row);
-      }
-    }
-    const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
-    return { ratings, period, periodMeta };
-  }
-
-  if (period === "preseason") {
+    const sourceSha = await getSelectedRatingSource(season);
+    if (!sourceSha) return { ratings: [], period: "preseason", periodMeta: PRESEASON_META };
     const rows = await db.select({
       team: schema.v5RatingSnapshots.team,
       week: schema.v5RatingSnapshots.week,
@@ -158,42 +141,50 @@ export const getWeeklyRatings = cache(async (
         sql`${schema.v5RatingSnapshots.snapshotId} LIKE '%:preseason'`,
       ))
       .orderBy(desc(schema.v5RatingSnapshots.overallRating));
-    return { ratings: rows, period, periodMeta };
+    return { ratings: rows, period: "preseason", periodMeta: PRESEASON_META };
   }
 
-  const cutoffLimit =
-    period === "post-0" ? new Date("2026-09-01T00:00:00Z") :
-    period === "post-1" ? new Date("2026-09-08T00:00:00Z") :
-    period === "post-2" ? new Date("2026-09-15T00:00:00Z") :
-    new Date("2026-09-23T00:00:00Z");
-
-  const rows = await db.select({
-    team: schema.v5RatingSnapshots.team,
-    week: schema.v5RatingSnapshots.week,
-    cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
-    offenseRating: schema.v5RatingSnapshots.offenseRating,
-    offenseVariance: schema.v5RatingSnapshots.offenseVariance,
-    defenseRating: schema.v5RatingSnapshots.defenseRating,
-    defenseVariance: schema.v5RatingSnapshots.defenseVariance,
-    overallRating: schema.v5RatingSnapshots.overallRating,
-    overallVariance: schema.v5RatingSnapshots.overallVariance,
-    fallbackReason: schema.v5RatingSnapshots.fallbackReason,
-  }).from(schema.v5RatingSnapshots)
-    .where(and(
-      eq(schema.v5RatingSnapshots.season, season),
-      eq(schema.v5RatingSnapshots.sourceManifestSha256, sourceSha),
-      sql`${schema.v5RatingSnapshots.cutoffUtc} <= ${cutoffLimit}`,
-    ))
-    .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc), desc(schema.v5RatingSnapshots.createdAt));
-
-  const byTeam = new Map<string, Rating>();
-  for (const row of rows) {
-    if (!byTeam.has(row.team)) {
-      byTeam.set(row.team, row);
+  // Exact generation cutoff: serve that generation's frozen rows. No source
+  // pin: a frozen assessment is self-identifying by cutoff and must not move
+  // when later generations are projected.
+  const frozen = generations.find((p) => p.id === targetPeriod);
+  if (frozen?.cutoffUtc) {
+    const rows = await db.select({
+      team: schema.v5RatingSnapshots.team,
+      week: schema.v5RatingSnapshots.week,
+      cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
+      offenseRating: schema.v5RatingSnapshots.offenseRating,
+      offenseVariance: schema.v5RatingSnapshots.offenseVariance,
+      defenseRating: schema.v5RatingSnapshots.defenseRating,
+      defenseVariance: schema.v5RatingSnapshots.defenseVariance,
+      overallRating: schema.v5RatingSnapshots.overallRating,
+      overallVariance: schema.v5RatingSnapshots.overallVariance,
+      fallbackReason: schema.v5RatingSnapshots.fallbackReason,
+    }).from(schema.v5RatingSnapshots)
+      .where(and(
+        eq(schema.v5RatingSnapshots.season, season),
+        eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+        eq(schema.v5RatingSnapshots.cutoffUtc, frozen.cutoffUtc),
+      ))
+      .orderBy(desc(schema.v5RatingSnapshots.createdAt));
+    const byTeam = new Map<string, Rating>();
+    for (const row of rows) {
+      if (!byTeam.has(row.team)) {
+        byTeam.set(row.team, row);
+      }
     }
+    const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
+    return { ratings, period: frozen.id, periodMeta: frozen };
   }
-  const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
-  return { ratings, period, periodMeta };
+
+  // Default, "current", and retired week-style params ("post-N", "week-N",
+  // bare numbers): the newest generation, i.e. the active model state.
+  // Retired params resolve here rather than to a week table that would need
+  // a code change every week; the served label always matches the data.
+  const latest = generations[0];
+  if (!latest) return { ratings: [], period: "preseason", periodMeta: PRESEASON_META };
+  const ratings = await getCurrentRatings(season);
+  return { ratings, period: latest.id, periodMeta: latest };
 });
 
 export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {

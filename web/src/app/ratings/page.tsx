@@ -1,6 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
-import { getWeeklyRatings, RATING_PERIODS, type Rating, type RatingPeriod } from "@/lib/v5";
+import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
 import { v5RatingFixture } from "@/test/fixtures/publication";
 
 export const revalidate = 300;
@@ -28,11 +28,17 @@ export default async function RatingsPage({ searchParams }: {
   const query = (params.q ?? "").trim().slice(0, 80);
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
-  const requestedPeriod = params.period ?? params.week ?? "post-4";
+  const requestedPeriod = params.period ?? params.week ?? "current";
 
   let ratings: Rating[] = [];
-  let period: RatingPeriod = "post-4";
-  let periodMeta = RATING_PERIODS[0];
+  let period: RatingPeriod = "current";
+  let periodMeta: PeriodMeta = {
+    id: "current",
+    label: "Current",
+    shortLabel: "Current",
+    description: "Latest frozen team ratings (active model state).",
+  };
+  let timeline: PeriodMeta[] = [];
   let unavailable = false;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
@@ -43,6 +49,7 @@ export default async function RatingsPage({ searchParams }: {
       ratings = result.ratings;
       period = result.period;
       periodMeta = result.periodMeta;
+      timeline = await getRatingPeriods(season);
     } catch (error) {
       console.error("V5 ratings query failed", error);
       unavailable = true;
@@ -85,7 +92,7 @@ export default async function RatingsPage({ searchParams }: {
       {/* Rating Period Navigation */}
       <nav className="flex flex-wrap items-center gap-2" aria-label="Ratings timeline">
         <span className="mr-1 text-xs font-semibold text-ink-muted">Ratings timeline:</span>
-        {RATING_PERIODS.map((p) => {
+        {timeline.map((p) => {
           const isActive = period === p.id;
           return (
             <Link
