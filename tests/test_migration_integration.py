@@ -63,6 +63,54 @@ def test_fresh_database_applies_snapshot_and_hardening_migration():
     not os.getenv("TEST_DATABASE_URL"),
     reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
 )
+def test_v5_rating_manifest_required_but_v4_rollback_remains_valid():
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP SCHEMA IF EXISTS ops CASCADE")
+            cur.execute("DROP SCHEMA IF EXISTS catalog CASCADE")
+            cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    applied = apply_migrations(conn_url, Path("contracts/migrations"))
+    assert "0017" in applied
+    insert = (
+        "INSERT INTO prediction_runs "
+        "(run_id, season, week, state, expected_games, predicted_games, "
+        "lined_games, data_as_of, artifact_uri, artifact_sha256, model_id, "
+        "rating_manifest_sha256) "
+        "VALUES (%s, 2026, 5, 'preview', 0, 0, 0, NOW(), 'test', 'test', %s, %s)"
+    )
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(insert, ("v4-rollback", "v4-2026", None))
+            with pytest.raises(psycopg.errors.CheckViolation):
+                cur.execute(insert, ("v5-missing", "v5-live-2026", None))
+            cur.execute(insert, ("v5-valid", "v5-live-2026", "a" * 64))
+            cur.execute(
+                "SELECT count(*) FROM prediction_runs WHERE run_id IN (%s, %s)",
+                ("v4-rollback", "v5-valid"),
+            )
+            assert cur.fetchone()[0] == 2
+            cur.execute(
+                "ALTER TABLE prediction_runs "
+                "DROP CONSTRAINT chk_prediction_runs_rating_manifest_required"
+            )
+            cur.execute("DELETE FROM schema_migrations WHERE version = '0017'")
+            cur.execute(insert, ("v5-old-null", "v5-live-2026", None))
+    with pytest.raises(psycopg.errors.RaiseException, match="Migration 0017 blocked"):
+        apply_migrations(conn_url, Path("contracts/migrations"))
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        conn.execute("DELETE FROM prediction_runs WHERE run_id = 'v5-old-null'")
+    assert apply_migrations(conn_url, Path("contracts/migrations")) == ["0017"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with pytest.raises(psycopg.errors.CheckViolation):
+            conn.execute(insert, ("v5-still-missing", "v5-live-2026", None))
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
 def test_hardening_migration_upgrades_pre_hardening_schema():
     """Exercise 0006 against a schema shaped exactly like the pre-0006 contract."""
     conn_url = os.environ["TEST_DATABASE_URL"]

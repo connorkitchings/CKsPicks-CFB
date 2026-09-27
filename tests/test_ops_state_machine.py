@@ -398,6 +398,9 @@ def test_prepare_week_rebuilds_gold_from_completed_canonical_weeks():
         "build_gold",
         "target_week_readiness",
     ]
+    readiness = next(step for step in steps if step.name == "target_week_readiness")
+    assert readiness.definition["argv"][-2:] == ["--environment", "preview"]
+    assert "--conn-url" not in readiness.definition["argv"]
     gold = next(step for step in steps if step.name == "build_gold")
     assert any(
         value.endswith("baselines-selection.json") for value in gold.definition["argv"]

@@ -6,14 +6,18 @@ R2 is the durable content source of truth. Neon is the dataset/workflow control 
 
 ## Required setup
 
-Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations through 0015). On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles and `zsh scripts/ops/with_production_pipeline_env.sh <command>` for the restricted `cks_prod_pipeline` role on production.
+Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations through 0017 after the V5 provenance audit). On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles and `zsh scripts/ops/with_production_pipeline_env.sh <command>` for the restricted `cks_prod_pipeline` role on production.
 
 ### V5 weekly operations & ratings publication
 
 The [product transformation contract](../plans/2026-09-23/01-v5-product-transformation.md) and [ratings publication contract](../plans/2026-09-26/03-v5-ratings-publication-and-navigation.md) govern active V5 operations.
 
-1. **Ratings Projection (`project-v5-ratings`):**
-   Team ratings snapshots are projected into `v5_rating_snapshots` after the `rating` stage produces a certified, independently verified rating replay manifest and `publish` records the selected `prediction_runs` row:
+Weekly boundary: `close-week (N-1)` → verified ratings refresh and
+`project-v5-ratings` → `prepare-week (N)` → `readiness` → reviewed publication.
+Prospective V5 publication still requires its own exact release authorization.
+
+1. **Ratings refresh and projection before `prepare-week`:**
+   After `close-week (N-1)` and stabilized finals, run the operator-controlled repair → measurements → rating replay chain and its independent verifiers. Follow [the V5 weekly operator](v5_weekly_operator.md) for exact immutable inputs and receipts. Project the verified replay into `v5_rating_snapshots` before `prepare-week (N)`; projection does not depend on a selected prediction run:
    ```bash
    zsh scripts/ops/with_production_pipeline_env.sh \
      uv run python -m cks_picks_cfb.ops project-v5-ratings \
@@ -21,7 +25,17 @@ The [product transformation contract](../plans/2026-09-23/01-v5-product-transfor
        --environment production \
        --rating-manifest-uri artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/<run_id>/retained-rating-replay-manifest.json
    ```
-   - **Ordering & Preconditions:** Requires a verified rating manifest in R2 with matching independent verifier, verified parents, active pipeline lease (`assert_active_pipeline_lease`), and `v5_release_policy`.
+   - **Ordering & Preconditions:** Requires a verified rating manifest in R2 with matching independent verifier, verified parents, active pipeline lease (`assert_active_pipeline_lease`), and `v5_release_policy`. Run the analogous command through `with_preview_env.sh` for Preview first.
+   - **Timeline labels:** The baseline before Week 0 is `preseason`. A refresh after Week 0 finals is `post-week 0` and feeds Week 1; after Week 1 it is `post-week 1` and feeds Week 2, and so on. Labels describe the last included results, not a hardcoded database field. The exact manifest SHA and cutoff identify the generation.
+   - **Currency check:** Inspect projected current rows, then run `prepare-week`; its final readiness step checks one generation, its team coverage, and the latest completed kickoff plus the six-hour availability buffer. A missing database connection, missing rows, ambiguous generation, or stale cutoff blocks ready state.
+     `week` on a current row is that team's last played week, so rows from one generation can have different week values.
+     ```sql
+     SELECT week, source_manifest_sha256, cutoff_utc, count(DISTINCT team) AS teams
+     FROM v5_rating_snapshots
+     WHERE season = 2026 AND snapshot_class = 'current'
+     GROUP BY week, source_manifest_sha256, cutoff_utc
+     ORDER BY cutoff_utc DESC;
+     ```
    - **Idempotency & Fail-Closed:** Snapshots use `ON CONFLICT (snapshot_id) DO NOTHING`. If projection fails, transactions roll back; predictions remain served while `/ratings` displays a graceful empty/unavailable state.
    - **No `v5_cycle.py` edits required:** The command is already wired in `src/cks_picks_cfb/ops/__main__.py:2002-2018`.
    - **Exceptional Rollback:**
@@ -88,7 +102,12 @@ make readiness YEAR=2026 WEEK=1 AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
 
 It fails if Gold is stale for the requested cutoff, target-week rows do not
 cover the canonical schedule, outcomes disagree with completed schedule games,
-or a team with completed 2026 games lacks current-season features.
+a team with completed 2026 games lacks current-season features, or the projected
+ratings generation is absent, incomplete, ambiguous, or stale. `prepare-week`
+uses the database branch selected by `ENV`; there is no offline rating bypass.
+This gate protects `prepare-week`. The separate V5 weekly operator binds its
+forecast to independently verified rating evidence; its `prepare` component
+is a prediction-artifact step, not the `prepare-week` Gold operation.
 
 ### Preseason Features Requirement (V4 Model)
 

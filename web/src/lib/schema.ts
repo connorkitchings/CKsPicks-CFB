@@ -120,6 +120,10 @@ export const predictionRuns = pgTable(
       "prediction_runs_state_check",
       sql`${table.state} IN ('preview', 'published', 'frozen', 'scored')`,
     ),
+    check(
+      "chk_prediction_runs_rating_manifest_required",
+      sql`${table.modelId} IS NULL OR ${table.modelId} NOT LIKE 'v5-%' OR ${table.ratingManifestSha256} IS NOT NULL`,
+    ),
   ],
 );
 

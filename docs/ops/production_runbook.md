@@ -11,6 +11,39 @@ selection fail closed until a separately approved, admin-written authorization
 for that exact slate and artifact is present. The existing replay selections
 used their own exact authorizations.
 
+## Ratings checkpoint between weeks
+
+After `close-week (N-1)` and verified finals, run the operator-controlled
+repair → measurements → rating replay chain with independent verification.
+Project that verified rating manifest to the target Neon branch before
+`prepare-week (N)`, then run readiness and the separately reviewed publication
+path. The generation is labeled `preseason` before Week 0, `post-week 0` for
+Week 1, `post-week 1` for Week 2, and so on. The exact manifest SHA and UTC
+cutoff, rather than the label, bind the data.
+
+```bash
+# Preview example; replace the URI with the independently verified replay.
+zsh scripts/ops/with_preview_env.sh \
+  uv run python -m cks_picks_cfb.ops project-v5-ratings \
+    --year 2026 --environment preview \
+    --rating-manifest-uri artifacts/research/data-first-football-v1/possession-v1/rating-replay/runs/<run_id>/retained-rating-replay-manifest.json
+zsh scripts/ops/with_preview_env.sh make prepare-week \
+  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+zsh scripts/ops/with_preview_env.sh make readiness \
+  YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=preview
+```
+
+Before applying migration 0017 to a branch, audit existing V5 runs with
+`SELECT run_id FROM prediction_runs WHERE model_id LIKE 'v5-%' AND
+rating_manifest_sha256 IS NULL;`; any row is a blocker requiring a revised
+contract. `prepare-week` now fails closed if the projected target-week rating
+generation does not cover completed results and target teams. Its successful
+JSON summary records `rating_cutoff_utc` and `rating_manifest_sha256`; retain
+those values in the weekly ledger. The separate V5 operator's `prepare`
+component writes a candidate prediction artifact and does not invoke this
+Gold `prepare-week` gate. Prospective production activation still needs the
+exact release authorization described below.
+
 > **V4 launch and rollback procedures below:** The topology and command
 > examples in this section record the 2026-08-18 V4 deployment. They remain
 > available for V4 rollback and historical reproduction; use the V5 weekly

@@ -116,7 +116,9 @@ CREATE TABLE IF NOT EXISTS prediction_runs (
                            CHECK (evidence_class IN ('legacy', 'pending', 'replay', 'live', 'missed')),
     UNIQUE (season, week, run_id),
     CHECK (predicted_games <= expected_games),
-    CHECK (lined_games <= expected_games)
+    CHECK (lined_games <= expected_games),
+    CONSTRAINT chk_prediction_runs_rating_manifest_required
+        CHECK (model_id IS NULL OR model_id NOT LIKE 'v5-%' OR rating_manifest_sha256 IS NOT NULL)
 );
 
 CREATE INDEX IF NOT EXISTS idx_prediction_runs_week_state
