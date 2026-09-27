@@ -503,26 +503,56 @@ def test_live_row_passes_possession_population_schema() -> None:
 def test_measurement_runner_sealed_configs() -> None:
     from scripts.research.run_data_first_possession_measurements import (
         CONFIG_2026,
+        CONFIG_2026_W0,
+        CONFIG_2026_W1,
+        CONFIG_2026_W2,
         DEFAULT_CONFIG,
         SEALED_CONFIGS,
     )
 
-    assert set(SEALED_CONFIGS) == {DEFAULT_CONFIG.resolve(), CONFIG_2026.resolve()}
+    assert set(SEALED_CONFIGS) == {
+        DEFAULT_CONFIG.resolve(),
+        CONFIG_2026.resolve(),
+        CONFIG_2026_W0.resolve(),
+        CONFIG_2026_W1.resolve(),
+        CONFIG_2026_W2.resolve(),
+    }
     assert CONFIG_2026.name == "possession_measurement_2026_v1.yaml"
+    assert CONFIG_2026_W0.name == "possession_measurement_2026_w0_v1.yaml"
+    assert CONFIG_2026_W1.name == "possession_measurement_2026_w1_v1.yaml"
+    assert CONFIG_2026_W2.name == "possession_measurement_2026_w2_v1.yaml"
 
 
 def test_repair_runner_2026_silver_pins_match_verified_versions() -> None:
-    from scripts.research.run_data_first_repair_v2 import SEASON_2026_SILVER_INPUTS
+    from scripts.research.run_data_first_repair_v2 import (
+        SEASON_2026_SILVER_INPUT_SETS,
+    )
 
+    assert sorted(SEASON_2026_SILVER_INPUT_SETS) == ["w0", "w1", "w2", "w4"]
+    w4 = SEASON_2026_SILVER_INPUT_SETS["w4"]
+    assert w4["games"]["version_id"] == "31a337df6cf49f1578457ec6"
+    assert w4["game_outcomes"]["version_id"].startswith("d9a37cf4")
+    assert w4["byplay"]["version_id"].startswith("443019a9")
+    assert w4["byplay"]["dataset"] == "byplay"
+    assert w4["team_games"]["version_id"].startswith("5286ae2e")
+    # Amendment 2 history entries: exact Task-1-verified pins, no mixing
+    # across cutoffs.
     assert (
-        SEASON_2026_SILVER_INPUTS["games"]["version_id"] == "31a337df6cf49f1578457ec6"
+        SEASON_2026_SILVER_INPUT_SETS["w0"]["games"]["version_id"]
+        == "df5789918474f3b33edbba81"
     )
-    assert SEASON_2026_SILVER_INPUTS["game_outcomes"]["version_id"].startswith(
-        "d9a37cf4"
+    assert (
+        SEASON_2026_SILVER_INPUT_SETS["w1"]["game_outcomes"]["version_id"]
+        == "eac8749ab5e369166daf2fd3"
     )
-    assert SEASON_2026_SILVER_INPUTS["byplay"]["version_id"].startswith("443019a9")
-    assert SEASON_2026_SILVER_INPUTS["byplay"]["dataset"] == "byplay"
-    assert SEASON_2026_SILVER_INPUTS["team_games"]["version_id"].startswith("5286ae2e")
+    assert (
+        SEASON_2026_SILVER_INPUT_SETS["w2"]["byplay"]["version_id"]
+        == "447e11b7e8892104bb1c9b55"
+    )
+    for label, entry in SEASON_2026_SILVER_INPUT_SETS.items():
+        assert sorted(entry) == ["byplay", "game_outcomes", "games", "team_games"], (
+            label
+        )
     assert EXTENSION_2026_SEASONS == (2026,)
     assert 2020 in FORBIDDEN_SEASONS
 

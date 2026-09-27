@@ -62,10 +62,35 @@ CONFIG_2026 = (
     REPO_ROOT
     / "conf/research/data_first_football_v1/possession_measurement_2026_v1.yaml"
 )
-SEALED_CONFIGS = (DEFAULT_CONFIG.resolve(), CONFIG_2026.resolve())
+# Post-week history configs admitted under Amendment 2 of the weekly ratings
+# history replay contract. Design-identical to CONFIG_2026; only
+# expected_population declares the verified per-cutoff counts (w0: 8, w1: 51,
+# w2: 100 completed games).
+CONFIG_2026_W0 = (
+    REPO_ROOT
+    / "conf/research/data_first_football_v1/possession_measurement_2026_w0_v1.yaml"
+)
+CONFIG_2026_W1 = (
+    REPO_ROOT
+    / "conf/research/data_first_football_v1/possession_measurement_2026_w1_v1.yaml"
+)
+CONFIG_2026_W2 = (
+    REPO_ROOT
+    / "conf/research/data_first_football_v1/possession_measurement_2026_w2_v1.yaml"
+)
+SEALED_CONFIGS = (
+    DEFAULT_CONFIG.resolve(),
+    CONFIG_2026.resolve(),
+    CONFIG_2026_W0.resolve(),
+    CONFIG_2026_W1.resolve(),
+    CONFIG_2026_W2.resolve(),
+)
 RELEVANT_PATHS = (
     "conf/research/data_first_football_v1/possession_measurement_v1.yaml",
     "conf/research/data_first_football_v1/possession_measurement_2026_v1.yaml",
+    "conf/research/data_first_football_v1/possession_measurement_2026_w0_v1.yaml",
+    "conf/research/data_first_football_v1/possession_measurement_2026_w1_v1.yaml",
+    "conf/research/data_first_football_v1/possession_measurement_2026_w2_v1.yaml",
     "src/cks_picks_cfb/data/data_first_possession_v1.py",
     "src/cks_picks_cfb/ratings/possession_measurements.py",
     "src/cks_picks_cfb/ratings/possession_verification.py",

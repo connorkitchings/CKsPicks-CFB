@@ -1,0 +1,26 @@
+schema_version: data_first_possession_measurement_config_v1
+environment: preview
+lineage: repair_2026_extension
+development_seasons: [2026]
+forbidden_seasons: [2020]
+output_root: artifacts/research/data-first-football-v1/possession-v1/measurements/runs
+availability_policy:
+  classification: live
+  source_week_relation: strictly_prior_canonical_week
+  source_kickoff_buffer_hours: 6
+adjustment:
+  method: iterative_additive_league_centered
+  iterations: 4
+  retained_iterations: [0, 4]
+fixed_settings:
+  ppp_scale_floor: 0.30
+  epa_per_possession_scale_floor: 0.50
+  ppp_fallback_scale: 1.00
+  epa_per_possession_fallback_scale: 1.50
+  ppp_equivalent_exposure: 8
+  epa_per_possession_equivalent_exposure: 20
+expected_population:
+  rows: 8
+  forecast_eligible: 8
+  basis: verified 2026-09-27 from Preview Silver 2026 batch as_of 2026-09-03 04:00Z (games df578991, outcomes 8c7271c1, byplay cf817b49 - 8 completed week-0 games, full play coverage, all finals present, last kickoff 08-30 plus 6h buffer); admitted under Amendment 2 of the weekly ratings history replay contract for the post-Week 0 generation only; the preflight cross-checks these declarations against the Repair-2026 manifest population summary and fails closed on any mismatch
+production_activation_authorized: false

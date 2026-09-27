@@ -96,34 +96,132 @@ PHASE3_CANONICAL_SHA = (
 # 2026-09-22 from Preview R2 (prepare-week W4 run 1feb87fc...): 157 completed
 # games across Weeks 0-3 with full play-by-play coverage. A later extension
 # window (e.g. through Week 4) mints a new bundle and amends these pins.
-SEASON_2026_SILVER_INPUTS = {
-    "games": {
-        "dataset": "games",
-        "version_id": "31a337df6cf49f1578457ec6",
-        "schema_version": "games_v2",
-        "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
-        "uri": "lake/silver/dataset=games/version=31a337df6cf49f1578457ec6/data.parquet",
+SEASON_2026_SILVER_INPUT_SETS = {
+    # Approved 2026 Silver inputs per cutoff. A repair run's bundle must match
+    # exactly one entry in full (no mixing versions across cutoffs). w4 is the
+    # certified Week 4 lineage; w0/w1/w2 were admitted under Amendment 2 of the
+    # weekly ratings history replay contract after Task-1 coverage verification
+    # (2026-only partitions, exact week sets, scored finals matching schedule
+    # IDs, last-kickoff + 6h inside the batch as_of).
+    "w0": {
+        "games": {
+            "dataset": "games",
+            "version_id": "df5789918474f3b33edbba81",
+            "schema_version": "games_v2",
+            "content_sha": "8bab4bbfa9b777694cfdfe62c1ca8c3313ddcfa9523bd150c306e395613d2454",
+            "uri": "lake/silver/dataset=games/version=df5789918474f3b33edbba81/data.parquet",
+        },
+        "game_outcomes": {
+            "dataset": "game_outcomes",
+            "version_id": "8c7271c1d660490795c2595b",
+            "schema_version": "game_outcomes_v1",
+            "content_sha": "6c6b5ff2d22551aee852261d36c81dc159e1142a2c52495eeb6380fb914ecb79",
+            "uri": "lake/silver/dataset=game_outcomes/version=8c7271c1d660490795c2595b/data.parquet",
+        },
+        "byplay": {
+            "dataset": "byplay",
+            "version_id": "cf817b49b4e88630ff3a62b7",
+            "schema_version": "byplay_v1",
+            "content_sha": "acc246198c95422420975f51aaed1cf5c8c859d1550c961ed89af09537d9e041",
+            "uri": "lake/silver/dataset=byplay/version=cf817b49b4e88630ff3a62b7/data.parquet",
+        },
+        "team_games": {
+            "dataset": "reconciled_team_game",
+            "version_id": "afa0b2381e2d7b991941b12f",
+            "schema_version": "team_game_v1",
+            "content_sha": "b32db94b58866c835adc348d6ca8c88e728148c4a11d8f803e8e9e7206e6d841",
+            "uri": "lake/silver/dataset=reconciled_team_game/version=afa0b2381e2d7b991941b12f/data.parquet",
+        },
     },
-    "game_outcomes": {
-        "dataset": "game_outcomes",
-        "version_id": "d9a37cf473c63d2acc9f29cc",
-        "schema_version": "game_outcomes_v1",
-        "content_sha": "17482907a735d07842908c21b284db28f377b1931cfe806a21ca8f9bec23a8d7",
-        "uri": "lake/silver/dataset=game_outcomes/version=d9a37cf473c63d2acc9f29cc/data.parquet",
+    "w1": {
+        "games": {
+            "dataset": "games",
+            "version_id": "a64e5e6b1bed41d12caa4256",
+            "schema_version": "games_v2",
+            "content_sha": "0fd6b4f2d92494abf5f64b3ec4884f154c7232ad5ab777a4692cb6a6c44b50f8",
+            "uri": "lake/silver/dataset=games/version=a64e5e6b1bed41d12caa4256/data.parquet",
+        },
+        "game_outcomes": {
+            "dataset": "game_outcomes",
+            "version_id": "eac8749ab5e369166daf2fd3",
+            "schema_version": "game_outcomes_v1",
+            "content_sha": "50cae510f759b934a4eb5bfbd5f82a07bbcd3ce28669764322bf8e7c44eeb2e0",
+            "uri": "lake/silver/dataset=game_outcomes/version=eac8749ab5e369166daf2fd3/data.parquet",
+        },
+        "byplay": {
+            "dataset": "byplay",
+            "version_id": "886a189e17af627e0c09c2da",
+            "schema_version": "byplay_v1",
+            "content_sha": "fa8f6e1ea643d48dd72893bb289795c18f158da7d2a6b2fafc230e682cb03450",
+            "uri": "lake/silver/dataset=byplay/version=886a189e17af627e0c09c2da/data.parquet",
+        },
+        "team_games": {
+            "dataset": "reconciled_team_game",
+            "version_id": "6b0f9c71df7ad3a64bdc302f",
+            "schema_version": "team_game_v1",
+            "content_sha": "ef173a5de9a9db6eb5e983a8c2bf28db6a1334d660811003a8e87a93a94e5c93",
+            "uri": "lake/silver/dataset=reconciled_team_game/version=6b0f9c71df7ad3a64bdc302f/data.parquet",
+        },
     },
-    "byplay": {
-        "dataset": "byplay",
-        "version_id": "443019a9a7b6a2454a4af4ac",
-        "schema_version": "byplay_v1",
-        "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
-        "uri": "lake/silver/dataset=byplay/version=443019a9a7b6a2454a4af4ac/data.parquet",
+    "w2": {
+        "games": {
+            "dataset": "games",
+            "version_id": "931180a996b0f1aeabf5b734",
+            "schema_version": "games_v2",
+            "content_sha": "a461644e84ebe07062fa7c457e82461bfe1107da6943092abbc5e7d0f2e8008b",
+            "uri": "lake/silver/dataset=games/version=931180a996b0f1aeabf5b734/data.parquet",
+        },
+        "game_outcomes": {
+            "dataset": "game_outcomes",
+            "version_id": "d822f1faac694b62064aff71",
+            "schema_version": "game_outcomes_v1",
+            "content_sha": "abc4f0aebd546a932469f04a77c2c8a23209b58ab08477892dd580f445b34977",
+            "uri": "lake/silver/dataset=game_outcomes/version=d822f1faac694b62064aff71/data.parquet",
+        },
+        "byplay": {
+            "dataset": "byplay",
+            "version_id": "447e11b7e8892104bb1c9b55",
+            "schema_version": "byplay_v1",
+            "content_sha": "be2705892dbbadfe001c9a33fa961511d36338dfc6d75d00b9e72f0ce9863a41",
+            "uri": "lake/silver/dataset=byplay/version=447e11b7e8892104bb1c9b55/data.parquet",
+        },
+        "team_games": {
+            "dataset": "reconciled_team_game",
+            "version_id": "69fd8ca511c464e20a70b153",
+            "schema_version": "team_game_v1",
+            "content_sha": "f1f19b437440d1fd54fb5ea76ad7eaee306d8030fd218bb7f4714f01fe56dab8",
+            "uri": "lake/silver/dataset=reconciled_team_game/version=69fd8ca511c464e20a70b153/data.parquet",
+        },
     },
-    "team_games": {
-        "dataset": "reconciled_team_game",
-        "version_id": "5286ae2e1beeb0e747cc9750",
-        "schema_version": "team_game_v1",
-        "content_sha": "5cb80de4ee000dead5b5fbaafbaff7ec69cdaaf06ed3d7c7b0e575dc0a08ec39",
-        "uri": "lake/silver/dataset=reconciled_team_game/version=5286ae2e1beeb0e747cc9750/data.parquet",
+    "w4": {
+        "games": {
+            "dataset": "games",
+            "version_id": "31a337df6cf49f1578457ec6",
+            "schema_version": "games_v2",
+            "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+            "uri": "lake/silver/dataset=games/version=31a337df6cf49f1578457ec6/data.parquet",
+        },
+        "game_outcomes": {
+            "dataset": "game_outcomes",
+            "version_id": "d9a37cf473c63d2acc9f29cc",
+            "schema_version": "game_outcomes_v1",
+            "content_sha": "17482907a735d07842908c21b284db28f377b1931cfe806a21ca8f9bec23a8d7",
+            "uri": "lake/silver/dataset=game_outcomes/version=d9a37cf473c63d2acc9f29cc/data.parquet",
+        },
+        "byplay": {
+            "dataset": "byplay",
+            "version_id": "443019a9a7b6a2454a4af4ac",
+            "schema_version": "byplay_v1",
+            "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
+            "uri": "lake/silver/dataset=byplay/version=443019a9a7b6a2454a4af4ac/data.parquet",
+        },
+        "team_games": {
+            "dataset": "reconciled_team_game",
+            "version_id": "5286ae2e1beeb0e747cc9750",
+            "schema_version": "team_game_v1",
+            "content_sha": "5cb80de4ee000dead5b5fbaafbaff7ec69cdaaf06ed3d7c7b0e575dc0a08ec39",
+            "uri": "lake/silver/dataset=reconciled_team_game/version=5286ae2e1beeb0e747cc9750/data.parquet",
+        },
     },
 }
 SEASON_2026_INPUT_BUNDLE_SCHEMA = "data_first_2026_silver_inputs_v1"
@@ -476,11 +574,23 @@ def _load_2026_frames(
     }
     frames: dict[str, pd.DataFrame] = {}
     parent_refs = []
+    matched_cutoff: str | None = None
+    for label, approved in SEASON_2026_SILVER_INPUT_SETS.items():
+        if all(
+            all(
+                dict(role_refs[name] or {}).get(key) == approved[name][key]
+                for key in approved[name]
+            )
+            for name in ("games", "game_outcomes", "byplay", "team_games")
+        ):
+            matched_cutoff = label
+            break
+    if matched_cutoff is None:
+        raise RepairV2Error(
+            "2026 Silver refs do not match any approved cutoff set in full"
+        )
     for name in ("games", "game_outcomes", "byplay", "team_games"):
         value = dict(role_refs[name] or {})
-        expected = SEASON_2026_SILVER_INPUTS[name]
-        if any(value.get(key) != expected[key] for key in expected):
-            raise RepairV2Error(f"2026 {name} ref is not the approved Silver version")
         ref = _ref(value)
         parquet_bytes = storage.read_bytes(ref.uri)
         if hashlib.sha256(parquet_bytes).hexdigest() != ref.content_sha:
