@@ -58,7 +58,7 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
 });
 
-export type RatingPeriod = "preseason" | "post-0" | "post-1" | "post-2" | "post-3";
+export type RatingPeriod = "preseason" | "post-0" | "post-1" | "post-2" | "post-3" | "post-4";
 
 export interface PeriodMeta {
   id: RatingPeriod;
@@ -68,7 +68,8 @@ export interface PeriodMeta {
 }
 
 export const RATING_PERIODS: PeriodMeta[] = [
-  { id: "post-3", label: "Post-Week 3", shortLabel: "Week 3", description: "Ratings after Week 3 games finalized (active model state)." },
+  { id: "post-4", label: "Post-Week 4", shortLabel: "Week 4", description: "Ratings after Week 4 games finalized (active model state)." },
+  { id: "post-3", label: "Post-Week 3", shortLabel: "Week 3", description: "Ratings after Week 3 games finalized." },
   { id: "post-2", label: "Post-Week 2", shortLabel: "Week 2", description: "Ratings after Week 2 games finalized." },
   { id: "post-1", label: "Post-Week 1", shortLabel: "Week 1", description: "Ratings after Week 1 games finalized." },
   { id: "post-0", label: "Post-Week 0", shortLabel: "Week 0", description: "Ratings after Week 0 games finalized." },
@@ -81,9 +82,9 @@ export const getWeeklyRatings = cache(async (
 ): Promise<{ ratings: Rating[]; period: RatingPeriod; periodMeta: PeriodMeta }> => {
   const sourceSha = await getSelectedRatingSource(season);
   const defaultMeta = RATING_PERIODS[0];
-  if (!sourceSha) return { ratings: [], period: "post-3", periodMeta: defaultMeta };
+  if (!sourceSha) return { ratings: [], period: "post-4", periodMeta: defaultMeta };
 
-  let period: RatingPeriod = "post-3";
+  let period: RatingPeriod = "post-4";
   if (targetPeriod === "preseason" || targetPeriod === "pre") {
     period = "preseason";
   } else if (targetPeriod === "post-0" || targetPeriod === "0" || targetPeriod === "week-0") {
@@ -92,14 +93,49 @@ export const getWeeklyRatings = cache(async (
     period = "post-1";
   } else if (targetPeriod === "post-2" || targetPeriod === "2" || targetPeriod === "week-2") {
     period = "post-2";
-  } else if (targetPeriod === "post-3" || targetPeriod === "3" || targetPeriod === "week-3" || targetPeriod === "current" || !targetPeriod) {
+  } else if (targetPeriod === "post-3" || targetPeriod === "3" || targetPeriod === "week-3") {
     period = "post-3";
+  } else if (targetPeriod === "post-4" || targetPeriod === "4" || targetPeriod === "week-4" || targetPeriod === "current" || !targetPeriod) {
+    period = "post-4";
   }
 
   const periodMeta = RATING_PERIODS.find((p) => p.id === period) ?? defaultMeta;
 
-  if (period === "post-3") {
+  if (period === "post-4") {
     const ratings = await getCurrentRatings(season);
+    return { ratings, period, periodMeta };
+  }
+
+  if (period === "post-3") {
+    // Frozen weekly assessment: the current-class generation as of the
+    // post-Week 3 cutoff. Deliberately not source-pinned: each weekly rating
+    // is a singular point-in-time assessment and must not drift when a newer
+    // rating generation is projected for a later week.
+    const rows = await db.select({
+      team: schema.v5RatingSnapshots.team,
+      week: schema.v5RatingSnapshots.week,
+      cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
+      offenseRating: schema.v5RatingSnapshots.offenseRating,
+      offenseVariance: schema.v5RatingSnapshots.offenseVariance,
+      defenseRating: schema.v5RatingSnapshots.defenseRating,
+      defenseVariance: schema.v5RatingSnapshots.defenseVariance,
+      overallRating: schema.v5RatingSnapshots.overallRating,
+      overallVariance: schema.v5RatingSnapshots.overallVariance,
+      fallbackReason: schema.v5RatingSnapshots.fallbackReason,
+    }).from(schema.v5RatingSnapshots)
+      .where(and(
+        eq(schema.v5RatingSnapshots.season, season),
+        eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+        sql`${schema.v5RatingSnapshots.cutoffUtc} <= ${new Date("2026-09-23T00:00:00Z")}`,
+      ))
+      .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc), desc(schema.v5RatingSnapshots.createdAt));
+    const byTeam = new Map<string, Rating>();
+    for (const row of rows) {
+      if (!byTeam.has(row.team)) {
+        byTeam.set(row.team, row);
+      }
+    }
+    const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
     return { ratings, period, periodMeta };
   }
 
@@ -128,7 +164,8 @@ export const getWeeklyRatings = cache(async (
   const cutoffLimit =
     period === "post-0" ? new Date("2026-09-01T00:00:00Z") :
     period === "post-1" ? new Date("2026-09-08T00:00:00Z") :
-    new Date("2026-09-15T00:00:00Z");
+    period === "post-2" ? new Date("2026-09-15T00:00:00Z") :
+    new Date("2026-09-23T00:00:00Z");
 
   const rows = await db.select({
     team: schema.v5RatingSnapshots.team,

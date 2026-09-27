@@ -28,10 +28,10 @@ export default async function RatingsPage({ searchParams }: {
   const query = (params.q ?? "").trim().slice(0, 80);
   const requestedSeason = params.season ? Number(params.season) : 2026;
   const season = Number.isInteger(requestedSeason) && requestedSeason > 0 ? requestedSeason : 2026;
-  const requestedPeriod = params.period ?? params.week ?? "post-3";
+  const requestedPeriod = params.period ?? params.week ?? "post-4";
 
   let ratings: Rating[] = [];
-  let period: RatingPeriod = "post-3";
+  let period: RatingPeriod = "post-4";
   let periodMeta = RATING_PERIODS[0];
   let unavailable = false;
 
