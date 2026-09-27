@@ -51,7 +51,7 @@ from cks_picks_cfb.data.lake import (
     BuildRequest,
     PartitionedDatasetRef,
     canonical_frame_digest,
-    read_dataset,
+    iter_partitioned_dataset,
 )
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
 from cks_picks_cfb.data.storage import get_storage
@@ -237,6 +237,21 @@ def _stream_partitioned(
         for part in parts
     ]
     return _concat_frames(frames, columns=columns) if frames else pd.DataFrame()
+
+
+def read_partitioned_predictions(
+    storage: Any, ref: PartitionedDatasetRef
+) -> pd.DataFrame:
+    """Read live forecast predictions through their constituent partitions.
+
+    The output ref points at a JSON partition manifest, not parquet, so plain
+    ``read_dataset`` fails. Iteration verifies the manifest checksum, identity,
+    records digest, and row count before yielding validated part frames.
+    """
+    frames = list(iter_partitioned_dataset(storage, ref))
+    if not frames:
+        raise ShadowRunError("live forecast output has no partitions")
+    return pd.concat(frames, ignore_index=True)
 
 
 def _pregame_completed_counts(games: pd.DataFrame) -> pd.DataFrame:
@@ -583,6 +598,7 @@ def _load_sources(
         )
         return {
             "population": population,
+            "schedule": live["schedule"],
             "outcomes": outcomes,
             "scoring_events": live["scoring_events"],
             "team_states": live["states"],
@@ -623,6 +639,7 @@ def _load_sources(
     )
     return {
         "population": rating_inputs.population,
+        "schedule": rating_inputs.population,
         "outcomes": rating_inputs.outcomes,
         "scoring_events": scoring_events,
         "team_states": team_states,
@@ -656,7 +673,7 @@ def _live_candidate_status(
                 part_manifest.get("partition_keys") or ("season", "week")
             ),
         )
-        predictions = read_dataset(storage, stored_ref)
+        predictions = read_partitioned_predictions(storage, stored_ref)
         validate_prediction_frame(
             predictions, run_id=str(forecast["identity"]["run_id"])
         )
@@ -749,7 +766,7 @@ def preflight(
         cutoff=str(args.as_of),
         forecast=forecast,
         rating_states=sources["team_states"],
-        schedule=sources["population"],
+        schedule=sources["schedule"],
         outcomes=sources["outcomes"],
         scoring_events=sources["scoring_events"],
         priors=sources["priors"],
@@ -757,10 +774,13 @@ def preflight(
         rating_as_of=rating_as_of,
     )
     if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        # A prospective slate has no completed rows in the measurement
+        # population, so the candidate is checked against the fixture
+        # schedule that the serving path filters to FBS-vs-FBS.
         candidate_status = _live_candidate_status(
             storage=storage,
             forecast=forecast,
-            population=sources["population"],
+            population=sources["schedule"],
             season=int(args.season),
             week=int(args.week),
             cutoff=str(args.as_of),
@@ -929,7 +949,7 @@ def apply(
         cutoff=str(args.as_of),
         forecast=forecast,
         rating_states=sources["team_states"],
-        schedule=sources["population"],
+        schedule=sources["schedule"],
         outcomes=sources["outcomes"],
         scoring_events=sources["scoring_events"],
         priors=sources["priors"],
@@ -937,10 +957,13 @@ def apply(
         rating_as_of=rating_as_of,
     )
     if forecast.get("schema_version") == LIVE_FORECAST_MANIFEST_SCHEMA:
+        # A prospective slate has no completed rows in the measurement
+        # population, so the candidate is checked against the fixture
+        # schedule that the serving path filters to FBS-vs-FBS.
         candidate_status = _live_candidate_status(
             storage=storage,
             forecast=forecast,
-            population=sources["population"],
+            population=sources["schedule"],
             season=int(args.season),
             week=int(args.week),
             cutoff=str(args.as_of),

@@ -592,3 +592,157 @@ def test_replay_proves_perturbation_invariance():
         )
         is True
     )
+
+
+class _MemStorage:
+    def __init__(self, files: dict) -> None:
+        self._files = files
+
+    def read_bytes(self, uri: str) -> bytes:
+        return self._files[uri]
+
+
+def _prediction_part_rows(week: int, game_id: int) -> list:
+    rows = []
+    for target in ("margin", "total"):
+        rows.append(
+            {
+                "run_id": "forecast-test",
+                "season": 2026,
+                "week": week,
+                "game_id": game_id,
+                "target": target,
+                "mean": 1.5,
+                "variance": 4.0,
+                "interval_lower_95": -2.5,
+                "interval_upper_95": 5.5,
+                "offset": 0.0,
+                "completed_game_stage": 4,
+                "timing_class": "live",
+                "model_ref": "m",
+                "state_ref": "s",
+                "source_ref": "src",
+            }
+        )
+    return rows
+
+
+def _partitioned_prediction_fixture():
+    import hashlib
+    import io
+
+    from cks_picks_cfb.data.lake import (
+        PARTITIONED_DATASET_KIND,
+        PartitionedDatasetRef,
+        canonical_frame_digest,
+        partitioned_records_sha,
+    )
+
+    schema = schema_for(*LIVE_FORECAST_DATASET)
+    parts = []
+    files = {}
+    total_rows = 0
+    for week, game_id in ((5, 401800001), (6, 401800002)):
+        frame = pd.DataFrame(_prediction_part_rows(week, game_id))
+        payload = io.BytesIO()
+        frame.to_parquet(payload, index=False)
+        raw = payload.getvalue()
+        child_uri = f"test/part-week={week}/data.parquet"
+        files[child_uri] = raw
+        parts.append(
+            {
+                "partition": {"week": week},
+                "row_count": len(frame),
+                "records_sha": canonical_frame_digest(frame, columns=schema.required),
+                "ref": {
+                    "dataset": LIVE_FORECAST_DATASET[0],
+                    "version_id": f"v{week}",
+                    "schema_version": LIVE_FORECAST_DATASET[1],
+                    "content_sha": hashlib.sha256(raw).hexdigest(),
+                    "uri": child_uri,
+                },
+            }
+        )
+        total_rows += len(frame)
+    manifest = {
+        "artifact_kind": PARTITIONED_DATASET_KIND,
+        "dataset": LIVE_FORECAST_DATASET[0],
+        "schema_version": LIVE_FORECAST_DATASET[1],
+        "partition_keys": ["week"],
+        "parts": parts,
+    }
+    manifest_uri = "test/partitioned-manifest.json"
+    manifest_raw = json.dumps(manifest, sort_keys=True).encode()
+    files[manifest_uri] = manifest_raw
+    ref = PartitionedDatasetRef(
+        artifact_kind=PARTITIONED_DATASET_KIND,
+        dataset=LIVE_FORECAST_DATASET[0],
+        version_id="v-test",
+        schema_version=LIVE_FORECAST_DATASET[1],
+        content_sha=hashlib.sha256(manifest_raw).hexdigest(),
+        records_sha=partitioned_records_sha(parts, ("week",)),
+        uri=manifest_uri,
+        row_count=total_rows,
+        partition_keys=("week",),
+    )
+    return _MemStorage(files), ref
+
+
+def test_read_partitioned_predictions_concatenates_parts():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "run_v5_shadow_readiness",
+        "scripts/research/run_v5_shadow_readiness.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    storage, ref = _partitioned_prediction_fixture()
+    frame = module.read_partitioned_predictions(storage, ref)
+    assert len(frame) == 4
+    assert set(frame["game_id"].astype(int)) == {401800001, 401800002}
+    assert set(frame["target"]) == {"margin", "total"}
+
+
+def test_read_partitioned_predictions_rejects_empty_manifest():
+    import hashlib
+    import importlib.util
+
+    from cks_picks_cfb.data.lake import (
+        PARTITIONED_DATASET_KIND,
+        PartitionedDatasetRef,
+        partitioned_records_sha,
+    )
+
+    spec = importlib.util.spec_from_file_location(
+        "run_v5_shadow_readiness",
+        "scripts/research/run_v5_shadow_readiness.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    manifest = {
+        "artifact_kind": PARTITIONED_DATASET_KIND,
+        "dataset": LIVE_FORECAST_DATASET[0],
+        "schema_version": LIVE_FORECAST_DATASET[1],
+        "partition_keys": ["week"],
+        "parts": [],
+    }
+    manifest_uri = "test/empty-manifest.json"
+    manifest_raw = json.dumps(manifest, sort_keys=True).encode()
+    ref = PartitionedDatasetRef(
+        artifact_kind=PARTITIONED_DATASET_KIND,
+        dataset=LIVE_FORECAST_DATASET[0],
+        version_id="v-empty",
+        schema_version=LIVE_FORECAST_DATASET[1],
+        content_sha=hashlib.sha256(manifest_raw).hexdigest(),
+        records_sha=partitioned_records_sha([], ("week",)),
+        uri=manifest_uri,
+        row_count=0,
+        partition_keys=("week",),
+    )
+    with pytest.raises(Exception, match="no partitions"):
+        module.read_partitioned_predictions(
+            _MemStorage({manifest_uri: manifest_raw}), ref
+        )
