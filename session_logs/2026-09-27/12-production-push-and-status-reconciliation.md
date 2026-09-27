@@ -21,6 +21,7 @@
 - Reviewed the archive report, manifest, script, tests, and six untracked archive files for public-repository scope and secret-bearing content.
 - Reconciled current status documentation with the exact Week 5 release record and live production health.
 - Prepared the completed ratings changes, archive work, and status updates for one repository push.
+- Updated the documentation authority test after the first pushed CI run exposed an assertion tied to the old pre-release wording; the focused 17-test file passes with the live release assertion.
 
 ## Validation
 
@@ -31,11 +32,12 @@
 - [x] `npm run build` in `web/`.
 - [x] `git diff --check`.
 - [x] Read-only production health: `ok`, Week 5 `published`, 56/56/34.
+- [x] Documentation authority tests after the CI correction: 17 passed.
 - [ ] GitHub CI and Vercel deployment verification after push.
 
 ## Amendments and Blockers
 
-The archive lifecycle proof remains unavailable. The contract explicitly requires retention in this case; no local artifact was removed. No other scope amendment.
+The archive lifecycle proof remains unavailable. The contract explicitly requires retention in this case; no local artifact was removed. The first pushed CI run passed web and Python lint/contracts but failed one documentation assertion that still expected the pre-release status; that assertion was updated to verify the live release. No other scope amendment.
 
 ## Handoff Notes
 

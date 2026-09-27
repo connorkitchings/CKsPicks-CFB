@@ -42,23 +42,24 @@ def test_current_entry_points_link_single_v5_guide(name: str):
         assert "v4" in first
 
 
-def test_current_guide_separates_model_completion_and_site_activation():
+def test_current_guide_records_model_completion_and_live_release():
     text = _plain(CURRENT.read_text())
     for required in (
         "model development: complete and accepted",
-        # Since the 2026-09-25 replay cutover, V5 replay (not V4) is the
-        # primary public view; V4 remains only as the tested rollback.
+        # V5 replay serves historical weeks; the later exact release selected
+        # the live Week 5 run. V4 remains the tested rollback.
         "tested rollback",
         "stabilized week 4 finals",
-        "preview serving rehearsal",
-        "rollback proof",
-        "separate activation decision",
+        "week 5 live run `2026w5-d6366e59fd43` is published in production",
+        "week 5 production release packet was validated and authorized",
+        "future live publications require separate exact authorizations",
         "not a prerequisite",
         "like-for-like point-in-time v4 backtest",
         "2026 outcomes",
     ):
         assert required in text
     assert "they do not establish that v5 is superior to v4" in text
+    assert "no prospective production activation" not in text
 
 
 def test_current_plan_index_points_to_the_v5_authority():
