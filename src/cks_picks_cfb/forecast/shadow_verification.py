@@ -37,6 +37,7 @@ from cks_picks_cfb.data.data_first_shadow_v1 import (
     MINIMUM_PAIRED_GAMES,
     READINESS_COLUMNS,
     REQUIRED_FORECAST_MANIFEST_URI,
+    REQUIRED_FORECAST_RUN_ID,
     REQUIRED_MEASUREMENT_MANIFEST_URI,
     REQUIRED_RATING_MANIFEST_URI,
     REQUIRED_REPAIR_MANIFEST_URI,
@@ -224,6 +225,7 @@ def _verify_identity(identity: Mapping[str, Any], *, expected_code_sha: str) -> 
         code_sha=str(identity.get("code_sha", "")),
         config_sha=str(identity.get("config_sha", "")),
         parents=dict(identity.get("parents") or {}),
+        candidate=str(identity.get("candidate") or REQUIRED_FORECAST_RUN_ID),
     )
     _require(
         rebuilt["identity_sha256"] == recorded,
@@ -365,30 +367,34 @@ def _load_readiness_sources(
             {"season", "week", "game_id"} <= set(full_schedule),
             "live full schedule lacks game identity columns",
         )
-        _require(
-            set(
-                map(
-                    tuple,
-                    full_schedule.loc[
-                        full_schedule["season"].eq(2026),
-                        ["season", "week", "game_id"],
-                    ]
-                    .astype(int)
-                    .to_numpy(),
-                )
+        schedule_members = set(
+            map(
+                tuple,
+                full_schedule.loc[
+                    full_schedule["season"].eq(2026),
+                    ["season", "week", "game_id"],
+                ]
+                .astype(int)
+                .to_numpy(),
             )
-            == set(
-                map(
-                    tuple,
-                    population.loc[
-                        population["season"].eq(2026),
-                        ["season", "week", "game_id"],
-                    ]
-                    .astype(int)
-                    .to_numpy(),
-                )
-            ),
-            "live schedule and Contract 07 population membership differ",
+        )
+        population_members = set(
+            map(
+                tuple,
+                population.loc[
+                    population["season"].eq(2026),
+                    ["season", "week", "game_id"],
+                ]
+                .astype(int)
+                .to_numpy(),
+            )
+        )
+        # Prospective direction only: every Contract 07 population game must
+        # appear on the certified schedule. The reverse cannot hold live —
+        # future fixtures are scheduled but not yet completed.
+        _require(
+            population_members <= schedule_members,
+            "Contract 07 population has games missing from the live schedule",
         )
         team_states = _load_ref_frame(
             storage,
@@ -415,7 +421,11 @@ def _load_readiness_sources(
         else:
             outcomes = pd.DataFrame(columns=["season", "week", "game_id", "completed"])
         return {
-            "schedule": population,
+            # Prospective direction: the candidate and schedule checks run
+            # against the certified fixture schedule. The measurement
+            # population holds completed games only, so a pre-kickoff slate
+            # has no rows there by design.
+            "schedule": full_schedule,
             "outcomes": outcomes,
             "scoring_events": scoring_events,
             "team_states": team_states,
