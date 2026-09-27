@@ -8,7 +8,7 @@
 
 ## Environment Setup
 
-**V5 checkpoint (2026-09-27):** [Model development is complete and accepted](../docs/modeling/v5_status.md). The public site selects V5 best-quote replay for Weeks 0–4; Week 4 is scored. Week 5 has a verified live forecast and Preview candidate, with prospective production activation pending its exact release decision. V4 frozen runs remain the rollback path. Six prospective slates are monitoring, not a prelaunch requirement. The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+**V5 checkpoint (2026-09-27):** [Model development is complete and accepted](../docs/modeling/v5_status.md). The public site selects V5 best-quote replay for Weeks 0–4 and the [authorized Week 5 live run](../session_logs/2026-09-27/06.md) `2026w5-d6366e59fd43`; Week 4 is scored. Week 5 market lines require progressive refresh and a pre-kickoff freeze under the [weekly operator checklist](../docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist). V4 frozen runs remain the rollback path. Six prospective slates are monitoring, not a prelaunch requirement. The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.

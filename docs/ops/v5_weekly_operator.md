@@ -10,6 +10,45 @@
 
 ## One cycle, reviewed stages
 
+### Weekly close, open, and freeze checklist
+
+Use this entire sequence when an operator asks to close a week, open the next,
+publish, or freeze. Record each stage and its evidence in the session log; do
+not treat a successful forecast or first publication as the end of the cycle.
+
+1. **Close the prior slate:** Reconcile the selected frozen run, complete FBS
+   schedule, certified finals, grading, and `close` receipt. Calculate the
+   required final-stabilization interval from the latest certified final.
+2. **Open the next slate:** Refresh and independently verify repair,
+   measurements, ratings, and forecast. Match the forecast's paired spread and
+   total predictions to every eligible scheduled FBS game; check the rating
+   projection and readiness receipts before preparing a serving candidate.
+3. **Reconcile market capture:** Capture the target week's CFBD lines and the
+   optional second provider if enabled. Record each provider's status and
+   capture time. Compare source game IDs, Silver quotes/snapshots, and candidate
+   predictions against the same complete schedule, separately for spread and
+   total. Record every missing game ID and classify it as source absent,
+   processing loss, or unresolved. A null published line alone is not evidence
+   that the provider has no line.
+4. **Refresh before release:** Recheck current source availability before the
+   Preview and production publication decisions. If additional lines are now
+   available, take a new immutable capture and prepare a new candidate; never
+   reuse an older artifact or describe it as current. A new production run
+   requires its own exact packet, authorization, publication, selection, and
+   health/page verification. Record remaining gaps and the next refresh time.
+5. **Freeze before kickoff:** Make a final capture and reconcile both line
+   types against every eligible game. Freeze only the selected reviewed run
+   within the existing lead-time gate. Use a game-specific waiver only for a
+   genuine provider exception after a fresh source check; an available line or
+   an uninvestigated processing gap is not a waiver. Record the frozen run ID,
+   quote lineage, coverage, and timestamp. Close and score only after finals
+   stabilize.
+
+The first publication may intentionally be partial while books open markets.
+Its coverage is a dated observation, not a promise that lines remain absent.
+The next market refresh and final freeze remain explicit tasks even if the
+initial production release succeeded.
+
 The operator is `scripts/pipeline/run_v5_weekly_cycle.py`. It has no timer or
 automatic trigger. Run it from a clean committed checkout with `PYTHONPATH=.:src`
 and explicit `--season`, `--week`, `--environment`, `--cycle-id`, and

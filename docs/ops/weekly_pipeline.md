@@ -157,7 +157,7 @@ make publish-week YEAR=2026 WEEK=N AS_OF=YYYY-MM-DDTHH:MM:SSZ ENV=production \
 Set the requested `AS_OF` roughly five minutes ahead of the publish run so the
 market capture falls before the cutoff.
 
-Each invocation runs through `python -m cks_picks_cfb.ops`, creates a new run-specific R2 prefix, and records resumable steps in `ops.pipeline_steps`. Neon activation occurs in one transaction only after predictions validate. Missing lines are allowed; the site shows the model output with “Line unavailable—model prediction shown, no lean.”
+Each invocation runs through `python -m cks_picks_cfb.ops`, creates a new run-specific R2 prefix, and records resumable steps in `ops.pipeline_steps`. Neon activation occurs in one transaction only after predictions validate. Missing lines are allowed for an early progressive publish; the site shows the model output with “Line unavailable—model prediction shown, no lean.” Follow the [weekly close/open and freeze checklist](v5_weekly_operator.md#weekly-close-open-and-freeze-checklist): reconcile source, Silver, and published spread/total coverage against every scheduled FBS game, then recheck source availability before release and freeze. A published null line may reflect an older capture even when the provider now has a line.
 
 The market step maps the checked-in canonical-week policy to CFBD's provider
 week, records both week values, binds the Bronze capture to the pipeline run,

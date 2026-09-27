@@ -109,6 +109,12 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 3. Review recent session logs (`session_logs/` last 3 days)
 4. Route substantial work through the Sol planning → Terra implementation workflow
 5. Use the fast path only for established, localized changes
+6. For a request to close one week, open the next, publish, or freeze, use the full
+   [V5 weekly operator checklist](docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist).
+   Reconcile the complete FBS schedule against fresh spread and total source
+   coverage; record capture time, missing game IDs, the next refresh, and the
+   exact release/freeze gates. A prior capture's null lines do not prove that
+   the provider still lacks lines.
 
 **Ending a Session:**
 1. Create session log in `session_logs/YYYY-MM-DD/NN.md`

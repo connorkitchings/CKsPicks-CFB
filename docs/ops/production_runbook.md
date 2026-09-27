@@ -11,6 +11,13 @@ selection fail closed until a separately approved, admin-written authorization
 for that exact slate and artifact is present. The existing replay selections
 used their own exact authorizations.
 
+For every close/open or freeze request, follow the operator's [full weekly
+checklist](v5_weekly_operator.md#weekly-close-open-and-freeze-checklist).
+Reconcile fresh source coverage for spread and total against the complete
+schedule before each release or freeze decision. If lines arrive after a
+partial publish, prepare a new immutable run and obtain its own exact V5
+authorization; the earlier authorization cannot be reused.
+
 ## Ratings checkpoint between weeks
 
 After `close-week (N-1)` and verified finals, run the operator-controlled
