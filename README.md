@@ -5,7 +5,7 @@ Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 ## V5 checkpoint (2026-09-27)
 
-[V5 model development is complete and accepted](docs/modeling/v5_status.md). The public site serves V5 best-quote replay for Weeks 0–4 and the authorized Week 5 live run `2026w5-d6366e59fd43` (56 predicted games, 34 with lines at release). Week 4 is scored. V4 frozen runs remain selectable for rollback. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic.
+[V5 model development is complete and accepted](docs/modeling/v5_status.md). The public site serves V5 best-quote replay for Weeks 0–4 and the authorized Week 5 live run `2026w5-5d436e58c072` (56 predicted games, all 56 with spread and total lines). Week 4 is scored. The prior Week 5 V5 run remains selectable for same-week rollback; V4 frozen runs remain available for prior slates. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic.
 
 Six slates are not a launch prerequisite; prospective paired-slate results continue as monitoring.
 

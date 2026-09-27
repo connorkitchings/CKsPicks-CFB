@@ -193,7 +193,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. The authorized Week 5 live run `2026w5-d6366e59fd43` is published in production (56 predicted games, 34 with lines at release). V4 frozen runs remain the rollback path.
+**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. The authorized Week 5 live run `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The prior Week 5 V5 run is the immediate same-week rollback; V4 frozen runs remain available for prior slates. A final market refresh and freeze remain due before kickoff.
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.

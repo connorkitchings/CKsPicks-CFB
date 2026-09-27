@@ -2,10 +2,12 @@
 
 > **Status (2026-09-27):** V5 best-quote replay serves public Weeks 0–4. The
 > Week 4 07/08 refresh and Week 5 live forecast were independently verified;
-> the [exact Week 5 release](../../session_logs/2026-09-27/06.md) authorized
-> production run `2026w5-d6366e59fd43`. Future prospective publication requires
-> a separately approved, exact one-slate release record. V4 frozen runs remain
-> the rollback path. The earlier fixture-class rehearsal exercised controller
+> the [Week 5 line refresh](../../session_logs/2026-09-27/14-week5-line-refresh-candidate.md)
+> authorized and selected production run `2026w5-5d436e58c072` with both line
+> types for all 56 games. Future prospective publication requires a separately
+> approved, exact one-slate release record. The earlier Week 5 V5 run is the
+> immediate same-week rollback; V4 frozen runs remain available for prior slates.
+> The earlier fixture-class rehearsal exercised controller
 > mechanics but was not live evidence.
 
 ## One cycle, reviewed stages
@@ -137,7 +139,10 @@ After the live 07/08/09/05 receipts and populated Preview rehearsal pass,
 prepare the exact production prediction artifact without Neon activation.
 Record its run ID, artifact URI/SHA, config SHA, model ID, inference bundle SHA,
 verified 09 forecast URI/SHA, verified `ready` 05 verifier URI/SHA, season,
-week, environment, decision reference, and V4 fallback run. Validate the
+week, environment, decision reference, and exact same-week rollback run. For an
+initial V5 cutover, record the reviewed V4 run where one exists. For a V5 line
+refresh, the prior selected V5 run can serve as immediate rollback; explicitly
+record the absence of a same-week V4 run. Validate the
 packet read-only with `scripts/pipeline/validate_v5_release_packet.py` and
 the exact serving config. A separate user decision on that packet precedes
 an admin insert into `v5_serving_authorizations`. The pipeline role has
@@ -149,7 +154,8 @@ authorization is created by this runbook or the operator.
 If a stage fails, inspect `status` and its ops step receipt. Resume only with
 the identical descriptor, preflight evidence, and run ID. An incomplete R2
 prefix is ineligible; diagnose and use a new ID after a clean commit. A late
-freeze records no prospective timestamp. For an approved cutover, keep the
-reviewed same-week V4 run selectable; rollback is `select_public_run.py`
-with its exact run ID and `--allow-v4-fallback`, followed by selected-week
-health and page checks. Never alter immutable artifacts to roll back.
+freeze records no prospective timestamp. Keep the reviewed same-week rollback
+run selectable. Reselect it with `select_public_run.py` and its exact run ID;
+include `--allow-v4-fallback` when the rollback run is V4. Follow with
+selected-week health and page checks. Never alter immutable artifacts to roll
+back.
