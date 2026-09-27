@@ -53,7 +53,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [08: 2026 ratings](2026-09-18/08-v5-2026-rating-state-replay.md) | Replay the fixed V5 rating design on 2026 games | Week 4 refresh independently verified (860 rating states) |
 | [09: live forecast](2026-09-18/09-v5-2026-forecast-and-readiness.md) | Apply and independently verify the fixed forecast to the next slate | Week 5 forecast verified; candidate published in Preview and then production |
 | [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Preserve pre-kickoff attempts, outcome reports, and quote diagnostics | Week 5 published pre-kickoff; immutable freeze and outcome report remain upcoming |
-| [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Draft; awaiting user approval |
+| [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Amendment 2 approved (all-five rerun, W3/W4 verify-only); Task 1 Silver verification underway |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 

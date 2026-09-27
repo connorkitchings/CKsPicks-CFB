@@ -1,9 +1,9 @@
 # Weekly Ratings History Replay (Post-Week 0–2)
 
-- **Status:** Draft
+- **Status:** Approved
 - **Created:** 2026-09-27
 - **Planner:** Sol
-- **Approval source:** Pending (user selected "replay + project history" direction in session; needs explicit approval of this contract)
+- **Approval source:** User explicitly authorized implementation of this exact contract path in session on 2026-09-27; Amendment 2 (all-five scope, W3/W4 verify-only) approved same day
 - **Implementation log:** Pending
 - **Commit policy:** Separate plan commit recommended; user controls staging and commits
 
@@ -251,4 +251,147 @@ those two.
 
 ## Amendments
 
-None.
+### Amendment 1 — Reuse the w4 repair as the measurement parent (no new repairs)
+
+**Reason:** Task 1 investigation found the sealed repair path pins exact W4
+Silver versions in code (`SEASON_2026_SILVER_INPUTS`), and no live-state repair
+runs exist at post-W0/W1/W2 cutoffs (only reconstructed Sep-9 runs, which must
+not parent new generations). Changing the pin table would alter sealed
+Contract 07 lineage beyond this contract's scope.
+
+**Original approach:** Reuse Repair v2 lineage parents where `as_of`-compatible,
+rebuilding only what is missing.
+
+**Revised approach:** Use the immutable w4 repair
+(`repair-2026-20260927T151800Z`) as the single measurement parent for all three
+historical cutoffs. The measurements builder filters observations by `--as-of`,
+the replay enforces the 6h availability buffer and rejects target-week/future
+outcomes, and both stages carry independent verifiers. Historical rating and
+preseason parents are reused unchanged from the w4 replay manifest.
+
+**Impact:** No new ingestion, no sealed-code changes, no schema changes. Known
+limitation recorded for the session log: repair-stage cleaning observed the
+full W0–W4 corpus, so these generations are retrospective display history and
+must never become forecasting parents. No task acceptance criteria change.
+
+### Amendment 1a — INVALIDATED: `as_of` is metadata-only downstream of repair
+
+**Reason:** Implementation investigation proved the premise false. No stage
+filters by `as_of`: `_load_2026_frames` loads bundle Silver frames unfiltered
+(season + completed only); `build_population` passes the repair population
+through with pinned-count checks; `build_measurements` iterates the full
+population; `build_live_replay` replays every population game with per-game
+kickoff cutoffs and takes no `as_of` input. A w4-repair + earlier-`as_of`
+build would compute all 215 games mislabeled with the earlier cutoff
+(fail-closed only later, at projection via the 6h-buffer guard).
+
+**Consequence:** Task 1 hits the contract's stop condition. The only valid
+path is per-cutoff repairs from contemporary Silver inputs (validated batches
+exist: 08-31, 09-06, 09-13), which requires constructing new
+`season_2026_inputs` bundles AND changing the sealed
+`SEASON_2026_SILVER_INPUTS` pin table — a Contract 07 lineage change beyond
+Terra's amendment authority. Execution STOPS here pending a Sol amendment
+decision. No R2 or Neon writes were made; all work above was read-only plus
+one local dry-run preflight.
+
+### Amendment 2 — Per-cutoff sealed parents, all-five scope (STATUS: APPROVED 2026-09-27)
+
+**Reason:** Amendment 1a proved `as_of` cannot substitute for cutoff-correct
+inputs. Contemporary validated Silver batches exist for the three missing
+cutoffs. User explicitly approved rerunning all five weeks with the constraint
+that certified Weeks 3–4 must be unreachable by the new work.
+
+**Scope decision (user-approved): rerun all five; publish only the three new.
+W3/W4 reruns are verification-only.** They reuse their exact original parents
+and cutoff instants with current HEAD recorded:
+- W3 rerun: repair `repair-2026-20260922T145500Z` chain +
+  measurements `possession-v1-measurements-20260922-2026*`, `as_of`
+  `2026-09-22T14:58:00Z`; compare canonical digests against replay
+  `possession-v1-rating-replay-20260922-fcaa571`.
+- W4 rerun: repair `repair-2026-20260927T151800Z` +
+  measurements `possession-v1-measurements-20260927-w4`, `as_of`
+  `2026-09-27T14:15:00Z`; compare against replay
+  `possession-v1-rating-replay-20260927-w4`.
+Compare gate is fail-closed across the whole contract: any W3/W4 digest
+mismatch stops everything (non-determinism would poison trust in the new runs
+too). On match, the reruns are recorded as reproducibility evidence and never
+projected. The two rerun IDs are never passed to the projection script.
+No seal changes are needed for the W3/W4 reruns.
+
+**Sealed changes (all reviewed as one unit, committed before any `--apply`):**
+
+1. `scripts/research/run_data_first_repair_v2.py` — extend
+   `SEASON_2026_SILVER_INPUTS` from one pinned set to per-cutoff entries
+   (`w0`, `w1`, `w2`, plus existing `w4`), each entry exact-pinning
+   `version_id`/`content_sha`/`uri`/`schema_version` for `games`,
+   `game_outcomes`, `byplay`, `team_games`. The runner selects the entry
+   matching the run's declared cutoff; anything else fails closed as today.
+   Approved values (Task 1 verified: 2026-only partitions, exact week sets,
+   completed+scored finals matching schedule IDs, last-kickoff + 6h inside the
+   batch `as_of`; full SHAs/URIs below, all `validated` in Preview catalog):
+   - w0, generation `as_of` 2026-09-03T04:00:00Z (8 completed, week 0; last
+     kickoff 08-30 02:00Z): games `9382b185`→ **corrected to `df578991`**
+     (`8bab4bbf…613d2454`, `games_v2`,
+     `lake/silver/dataset=games/version=df5789918474f3b33edbba81/data.parquet`),
+     outcomes `68924633`→ **corrected to `8c7271c1`**
+     (`6c6b5ff2…914ecb79`, `game_outcomes_v1`, `.../game_outcomes/version=8c7271c1d660490795c2595b/data.parquet`),
+     byplay `42945ece`→ **corrected to `cf817b49`**
+     (`acc24619…37d9e041`, `byplay_v1`, `.../byplay/version=cf817b49b4e88630ff3a62b7/data.parquet`),
+     team_games `be569ae8`→ **corrected to `afa0b238`**
+     (`b32db94b…7206e6d841`, `team_game_v1`, `.../reconciled_team_game/version=afa0b2381e2d7b991941b12f/data.parquet`).
+     (The first-draft IDs were historical-season partitions sharing the same
+     batch `as_of` — rejected in Task 1.)
+   - w1, generation `as_of` 2026-09-08T15:35:00Z (51 completed, weeks 0–1;
+     last kickoff 09-07 23:30Z): games `a64e5e6b`
+     (`0fd6b4f2…6a6c44b50f8`, `games_v2`,
+     `.../games/version=a64e5e6b1bed41d12caa4256/data.parquet`; earliest of
+     three same-content 761-row builds), outcomes `eac8749a`
+     (`50cae510…e7c44eeb2e0`, `game_outcomes_v1`,
+     `.../game_outcomes/version=eac8749ab5e369166daf2fd3/data.parquet`;
+     the earlier `6b7d011c` build carries 48 phantom completed rows for
+     game_ids absent from the schedule — rejected), byplay `886a189e`
+     (`fa8f6e1e…682cb03450`, `byplay_v1`,
+     `.../byplay/version=886a189e17af627e0c09c2da/data.parquet`),
+     team_games `6b0f9c71` (`ef173a5d…93a94e5c93`, `team_game_v1`,
+     `.../reconciled_team_game/version=6b0f9c71df7ad3a64bdc302f/data.parquet`).
+     (First-draft IDs were historical partitions — rejected.)
+   - w2, generation `as_of` 2026-09-13T18:18:22Z (100 completed, weeks 0–2;
+     last kickoff 09-13 03:59Z): games `931180a9`
+     (`a461644e…f2e8008b`, `games_v2`,
+     `.../games/version=931180a996b0f1aeabf5b734/data.parquet`), outcomes
+     `d822f1fa` (`abc4f0ae…580f445b34977`, `game_outcomes_v1`,
+     `.../game_outcomes/version=d822f1faac694b62064aff71/data.parquet`;
+     the multi-season `4228e05e` is superseded for this purpose), byplay
+     `447e11b7` (`be270589…e72f0ce9863a41`, `byplay_v1`,
+     `.../byplay/version=447e11b7e8892104bb1c9b55/data.parquet`), team_games
+     `69fd8ca5` (`f1f19b43…4714f01fe56dab8`, `team_game_v1`,
+     `.../reconciled_team_game/version=69fd8ca511c464e20a70b153/data.parquet`).
+     W2 row-count anomaly resolved: the batch is cumulative (100 × ~165
+     plays/game); the larger rows first compared were other seasons'
+     partitions.
+   Drives versions ride with the same batches (W0 `60000707`, W1 `853949e9`,
+   W2 `7ed98492`; week sets {0}, {0,1}, {0,1,2}; 2026-only) but are not
+   repair-pin inputs.
+2. New sealed measurement configs
+   `conf/research/data_first_football_v1/possession_measurement_2026_w{0,1,2}_v1.yaml`
+   — byte-identical design to `possession_measurement_2026_v1.yaml` except
+   `expected_population` declares the Task-1-verified counts (w0: rows 8,
+   forecast_eligible 8; w1: 51/51; w2: 100/100). Register all three in the
+   measurements runner's `SEALED_CONFIGS`.
+3. New `season_2026_inputs` bundles (R2 JSON, schema
+   `data_first_2026_silver_inputs_v1`) per cutoff binding the refs above;
+   `prepare_week_run` set to an explicit historical marker (it is carried,
+   never validated). Bundle construction is data, not code.
+
+**No change:** historical rating parents, priors, bridge, replay/verifier logic
+(verified adaptable: manifest-relative checks only), projection path, web
+serving semantics, V4, schema/migrations. Repair/measurements/replay
+`--expected-code-sha` + clean-tree gates apply unchanged (user commits the
+sealed changes first).
+
+**Revised execution:** Task 1 (Silver verification) is COMPLETE — see session
+log `18-ratings-history-task1-silver.md` for the evidence table. Remaining:
+implement the sealed changes above, commit, then per cutoff (W0, W1, W2):
+repair → verify v3 → measurements → verify → replay → verify → Preview
+project → production project (Tasks 2–3 unchanged); W3/W4 reruns compare-only.
+Task 4 unchanged.
