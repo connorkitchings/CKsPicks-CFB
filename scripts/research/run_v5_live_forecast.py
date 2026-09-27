@@ -30,7 +30,6 @@ from cks_picks_cfb.data.lake import (
     BuildRequest,
     DatasetRef,
     PartitionedDatasetPart,
-    PartitionedDatasetRef,
     PartitionedDatasetWriter,
     canonical_frame_digest,
     partition_key,
@@ -244,18 +243,26 @@ def _load_stored_predictions(storage: Any, manifest: dict[str, Any]) -> pd.DataF
     if ref.get("artifact_kind") != "partitioned_dataset_v1":
         raise LiveForecastRunError("live forecast output is not a partitioned dataset")
     raw_manifest = json.loads(storage.read_bytes(str(ref["uri"])))
-    dataset_ref = PartitionedDatasetRef(
-        artifact_kind="partitioned_dataset_v1",
-        dataset=str(ref["dataset"]),
-        version_id=str(ref["version_id"]),
-        schema_version=str(ref["schema_version"]),
-        content_sha=str(ref["content_sha"]),
-        records_sha=str(raw_manifest.get("records_sha", "")),
-        uri=str(ref["uri"]),
-        row_count=int(ref["row_count"]),
-        partition_keys=tuple(raw_manifest.get("partition_keys") or ("season", "week")),
-    )
-    return read_dataset(storage, dataset_ref)
+    parts = raw_manifest.get("parts") or []
+    frames = [
+        read_dataset(
+            storage,
+            DatasetRef(
+                dataset=str(part["ref"]["dataset"]),
+                version_id=str(part["ref"]["version_id"]),
+                schema_version=str(part["ref"]["schema_version"]),
+                content_sha=str(part["ref"]["content_sha"]),
+                uri=str(part["ref"]["uri"]),
+            ),
+        )
+        for part in parts
+    ]
+    if not frames:
+        raise LiveForecastRunError("live forecast output has no partitions")
+    frame = pd.concat(frames, ignore_index=True)
+    if len(frame) != int(ref["row_count"]):
+        raise LiveForecastRunError("live forecast partition row count mismatch")
+    return frame
 
 
 def verify(
