@@ -47,7 +47,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | Current contract | Purpose | State |
 | --- | --- | --- |
 | [V5 ratings publication and navigation](2026-09-26/03-v5-ratings-publication-and-navigation.md) | Publish verified ratings to production Neon, enable /ratings nav, link game cards, and document weekly cadence | Implemented |
-| [Ratings lifecycle integration](2026-09-27/04-ratings-lifecycle-integration.md) | Enforce rating currency in prepare-week, require rating manifest on V5 prediction runs, and formalize pipeline ops | Implemented; migration authored, not applied to live branches |
+| [Ratings lifecycle integration](2026-09-27/04-ratings-lifecycle-integration.md) | Enforce rating currency in prepare-week, require rating manifest on V5 prediction runs, and formalize pipeline ops | Implemented; migration 0017 applied to Preview and production on 2026-09-27 |
 | [V5 authority and cutover](2026-09-22/04-v5-authority-simplification-and-site-cutover.md) | Simplify authority and prepare a verified Preview serving rehearsal and rollback | In Progress; no prospective live activation |
 | [07: 2026 measurements](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | Repair and certify current 2026 football data | Week 4 refresh independently verified (215 games) |
 | [08: 2026 ratings](2026-09-18/08-v5-2026-rating-state-replay.md) | Replay the fixed V5 rating design on 2026 games | Week 4 refresh independently verified (860 rating states) |
