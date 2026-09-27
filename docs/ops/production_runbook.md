@@ -1,6 +1,6 @@
 # Production Runbook — 2026 Season
 
-> **Status (2026-09-27):** The public site serves V5 best-quote replay for Weeks 0–4; Week 4 is scored. A verified Week 5 live forecast and candidate picks are in Preview. Prospective Week 5 production activation still requires its separate exact release decision. V4 frozen runs remain selectable for rollback. See the [current V5 status](../modeling/v5_status.md) and [weekly operator](v5_weekly_operator.md).
+> **Status (2026-09-27):** The public site serves V5 best-quote replay for Weeks 0–4 and the authorized Week 5 live run `2026w5-d6366e59fd43` (56 predicted games, 34 with lines at release). Week 4 is scored. V4 frozen runs remain selectable for rollback. See the [Week 5 release record](../../session_logs/2026-09-27/06.md), [current V5 status](../modeling/v5_status.md), and [weekly operator](v5_weekly_operator.md).
 
 The [manual V5 weekly operator](v5_weekly_operator.md) is the reviewed
 stage cadence. Its exact release guard is deployed on Preview and production,
@@ -60,7 +60,7 @@ exact release authorization described below.
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
 | Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |
-| Public model (2026-09-27) | V5 best-quote replay for Weeks 0–4; Week 5 live candidate remains in Preview |
+| Public model (2026-09-27) | V5 best-quote replay for Weeks 0–4; authorized Week 5 live run `2026w5-d6366e59fd43` |
 | Rollback model | V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (design SHA `ae34ddc7…`, bundle SHA `72429375…`), config `conf/weekly_bets/v4_2026.yaml`; frozen runs preserved |
 | Historical V2 | V2 preview bundle (`week0-2026-preview-20260814`, frozen run `2026w0-a0edb9e72cb1`) — never mutated |
 | Active run | Query `/api/health` or `current_week.active_run_id`; each progressive publish activates a new immutable run. |

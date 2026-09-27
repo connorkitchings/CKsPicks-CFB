@@ -1,11 +1,12 @@
 # Manual V5 Weekly Operator
 
 > **Status (2026-09-27):** V5 best-quote replay serves public Weeks 0–4. The
-> Week 4 07/08 refresh and Week 5 live forecast are independently verified;
-> Week 5 candidate picks are in Preview. Prospective production publication
-> requires a separately approved, exact one-slate release record. V4 frozen
-> runs remain the rollback path. The earlier fixture-class rehearsal exercised
-> controller mechanics but was not live evidence.
+> Week 4 07/08 refresh and Week 5 live forecast were independently verified;
+> the [exact Week 5 release](../../session_logs/2026-09-27/06.md) authorized
+> production run `2026w5-d6366e59fd43`. Future prospective publication requires
+> a separately approved, exact one-slate release record. V4 frozen runs remain
+> the rollback path. The earlier fixture-class rehearsal exercised controller
+> mechanics but was not live evidence.
 
 ## One cycle, reviewed stages
 

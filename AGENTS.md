@@ -187,7 +187,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. A verified Week 5 live forecast and candidate run `2026w5-d6366e59fd43` are in Preview. V4 frozen runs remain the rollback path; no prospective Week 5 production activation is recorded.
+**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. The authorized Week 5 live run `2026w5-d6366e59fd43` is published in production (56 predicted games, 34 with lines at release). V4 frozen runs remain the rollback path.
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -260,8 +260,8 @@ above and the latest session log for current-week operations.
   `possession-v1-rating-replay-20260922-fcaa571`; the Week 4 07/08 refresh
   and Week 5 live forecast were verified on 2026-09-27.
   [V5 model development is complete and accepted](docs/modeling/v5_status.md).
-  The Week 5 candidate is in Preview; a separate prospective production
-  activation decision remains. Contract 06
+  The Week 5 candidate was [authorized and published in production](session_logs/2026-09-27/06.md).
+  Contract 06
   continues prospective monitoring; six slates are not a prelaunch condition.
   Conditional results remain `conditional_historical_results_only`.
   V4 feature-schema-v5 diagnostic (contract 01) closed 2026-09-22: cause not
