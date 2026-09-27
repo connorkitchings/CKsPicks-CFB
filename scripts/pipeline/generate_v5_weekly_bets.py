@@ -119,6 +119,13 @@ def run_v5_weekly_bets(args: argparse.Namespace, cfg: Any) -> dict[str, Any]:
     if schedule_item is None:
         raise V5ServingError("weekly dataset refs lack the 2026 serving schedule")
     schedule = read_dataset(storage, _ref(schedule_item))
+    if {"home_classification", "away_classification"} <= set(schedule):
+        schedule = schedule[
+            schedule["home_classification"].eq("fbs")
+            & schedule["away_classification"].eq("fbs")
+        ].copy()
+    if "start_date" not in schedule.columns and "kickoff_utc" in schedule.columns:
+        schedule["start_date"] = schedule["kickoff_utc"]
     forecast_schedule_raw = storage.read_bytes(manifest["parents"]["schedule_ref_uri"])
     try:
         forecast_schedule = pd.read_parquet(io.BytesIO(forecast_schedule_raw))

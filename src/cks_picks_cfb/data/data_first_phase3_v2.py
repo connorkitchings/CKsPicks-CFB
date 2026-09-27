@@ -294,21 +294,26 @@ def verify_repair_manifest(payload: Mapping[str, Any]) -> dict[str, Any]:
         verify_signed_payload(payload, label="Repair v2 manifest")
     except ValueError as exc:
         raise Phase3V2Error(str(exc)) from exc
-    if payload.get("state") != "repaired_reconstructed_only":
-        raise Phase3V2Error("Repair parent is not reconstructed repaired evidence")
-    if payload.get("timing_class") != RECONSTRUCTED_TIMING:
+    state = payload.get("state")
+    timing = payload.get("timing_class")
+    if state not in ("repaired_reconstructed_only", "repaired_live_only"):
+        raise Phase3V2Error(
+            "Repair parent is not reconstructed or live repaired evidence"
+        )
+    if timing not in (RECONSTRUCTED_TIMING, "live"):
         raise Phase3V2Error("Repair parent has an invalid timing classification")
     if payload.get("production_activation_authorized") is not False:
         raise Phase3V2Error("Repair parent authorizes production")
-    expected = {
-        "scheduled_games": 8936,
-        "forecast_eligible_games": 8935,
-        "measurement_usable_games": 8903,
-        "measurement_missing_games": 33,
-    }
-    population = payload.get("population") or {}
-    if any(population.get(key) != value for key, value in expected.items()):
-        raise Phase3V2Error("Repair parent population does not match sealed counts")
+    if state == "repaired_reconstructed_only":
+        expected = {
+            "scheduled_games": 8936,
+            "forecast_eligible_games": 8935,
+            "measurement_usable_games": 8903,
+            "measurement_missing_games": 33,
+        }
+        population = payload.get("population") or {}
+        if any(population.get(key) != value for key, value in expected.items()):
+            raise Phase3V2Error("Repair parent population does not match sealed counts")
     ref = (payload.get("output_refs") or {}).get("population") or {}
     if (
         ref.get("dataset") != REPAIR_POPULATION_DATASET

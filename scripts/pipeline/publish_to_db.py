@@ -396,8 +396,10 @@ def _row_to_record(
     total_market_quote_id = row.get("total_market_quote_id")
     if pd.isna(total_market_quote_id):
         total_market_quote_id = None
-    source_quote_ids = row.get("source_quote_ids", "[]")
-    if isinstance(source_quote_ids, str):
+    source_quote_ids = row.get("source_quote_ids")
+    if pd.isna(source_quote_ids) or source_quote_ids is None or source_quote_ids == "":
+        source_quote_ids = []
+    elif isinstance(source_quote_ids, str):
         source_quote_ids = json.loads(source_quote_ids)
     if not isinstance(source_quote_ids, list) or not all(
         isinstance(quote_id, str) for quote_id in source_quote_ids
