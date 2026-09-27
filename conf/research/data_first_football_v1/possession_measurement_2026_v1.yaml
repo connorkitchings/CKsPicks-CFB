@@ -20,7 +20,7 @@ fixed_settings:
   ppp_equivalent_exposure: 8
   epa_per_possession_equivalent_exposure: 20
 expected_population:
-  rows: 157
-  forecast_eligible: 157
-  basis: verified 2026-09-22 from Preview Silver 2026 (games e3ead581, outcomes 669856aa, plays 4d463206 - 8/43/49/57 completed games, full play coverage, all finals present); the Task 3 preflight cross-checks these declarations against the certified Repair-2026 manifest population summary and fails closed on any mismatch
+  rows: 215
+  forecast_eligible: 215
+  basis: verified 2026-09-27 from Preview Silver 2026 (games 31a337df, outcomes d9a37cf4, byplay 443019a9 - 8/43/49/57/58 completed games, full play coverage, all finals present); the Task 3 preflight cross-checks these declarations against the certified Repair-2026 manifest population summary and fails closed on any mismatch
 production_activation_authorized: false
