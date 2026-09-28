@@ -1,0 +1,537 @@
+{
+  "scale": {
+    "offense": [
+      1.6233481902449778,
+      0.947455760873908,
+      1.0
+    ],
+    "defense": [
+      2.647380384344259,
+      1.1941422743714085,
+      -1.0
+    ]
+  },
+  "teams": {
+    "Alabama": {
+      "offense": {
+        "prior_mean": 0.8061212126387849,
+        "prior_variance": 0.66,
+        "exposure": 44.0,
+        "prior_weight": 0.21598272138228938,
+        "prior_contribution": 0.17410825326971593,
+        "items": [
+          {
+            "game_id": 401856634,
+            "kickoff_utc": "2026-09-05 16:00:00+00:00",
+            "boundary_cutoff_utc": "2026-09-12 19:30:00+00:00",
+            "adjusted_z": 1.9220910668375017,
+            "exposure": 9.0,
+            "mean_contribution": 0.30824030607491254
+          },
+          {
+            "game_id": 401856674,
+            "kickoff_utc": "2026-09-12 19:30:00+00:00",
+            "boundary_cutoff_utc": "2026-09-19 19:30:00+00:00",
+            "adjusted_z": 1.8923325090255456,
+            "exposure": 11.0,
+            "mean_contribution": 0.37090534599150815
+          },
+          {
+            "game_id": 401856685,
+            "kickoff_utc": "2026-09-19 19:30:00+00:00",
+            "boundary_cutoff_utc": "2026-09-26 23:00:00+00:00",
+            "adjusted_z": 2.193729831636054,
+            "exposure": 13.0,
+            "mean_contribution": 0.5081588000928009
+          },
+          {
+            "game_id": 401856696,
+            "adjusted_z": 2.330952969506274,
+            "exposure": 11.0,
+            "boundary_cutoff_utc": "terminal",
+            "mean_contribution": 0.45687685093454505
+          }
+        ],
+        "raw_games": [
+          {
+            "season": 2026,
+            "week": 1,
+            "game_id": 401856634,
+            "kickoff_utc": "2026-09-05 16:00:00+00:00",
+            "team": "Alabama",
+            "opponent": "East Carolina",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 31.0,
+            "denominator": 9.0,
+            "raw_value": 3.4444444444444446,
+            "usable_exposure": 9.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 2,
+            "game_id": 401856674,
+            "kickoff_utc": "2026-09-12 19:30:00+00:00",
+            "team": "Alabama",
+            "opponent": "Kentucky",
+            "side": "away",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 37.0,
+            "denominator": 11.0,
+            "raw_value": 3.3636363636363638,
+            "usable_exposure": 11.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 3,
+            "game_id": 401856685,
+            "kickoff_utc": "2026-09-19 19:30:00+00:00",
+            "team": "Alabama",
+            "opponent": "Florida State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 50.0,
+            "denominator": 13.0,
+            "raw_value": 3.8461538461538463,
+            "usable_exposure": 13.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 4,
+            "game_id": 401856696,
+            "kickoff_utc": "2026-09-26 23:00:00+00:00",
+            "team": "Alabama",
+            "opponent": "South Carolina",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 42.0,
+            "denominator": 11.0,
+            "raw_value": 3.8181818181818183,
+            "usable_exposure": 11.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          }
+        ],
+        "terminal": {
+          "season": 2026,
+          "team": "Alabama",
+          "measurement_id": "ppp",
+          "unit_role": "offense",
+          "adjustment_iteration": 4,
+          "raw_value": 3.6363636363636362,
+          "adjusted_value": 3.83182300952984,
+          "primary_exposure": 44.0,
+          "games_exposure": 4,
+          "source_game_count": 4,
+          "timing_class": "live"
+        }
+      },
+      "defense": {
+        "prior_mean": 0.6252807183361065,
+        "prior_variance": 0.6578881987577639,
+        "exposure": 45.0,
+        "prior_weight": 0.21273784355179706,
+        "prior_contribution": 0.13302087163334192,
+        "items": [
+          {
+            "game_id": 401856634,
+            "kickoff_utc": "2026-09-05 16:00:00+00:00",
+            "boundary_cutoff_utc": "2026-09-12 19:30:00+00:00",
+            "adjusted_z": 1.3795511805420617,
+            "exposure": 10.0,
+            "mean_contribution": 0.24134854162760172
+          },
+          {
+            "game_id": 401856674,
+            "kickoff_utc": "2026-09-12 19:30:00+00:00",
+            "boundary_cutoff_utc": "2026-09-19 19:30:00+00:00",
+            "adjusted_z": 1.4055177080392764,
+            "exposure": 11.0,
+            "mean_contribution": 0.2704804426517445
+          },
+          {
+            "game_id": 401856685,
+            "kickoff_utc": "2026-09-19 19:30:00+00:00",
+            "boundary_cutoff_utc": "2026-09-26 23:00:00+00:00",
+            "adjusted_z": 0.8383471787497482,
+            "exposure": 12.0,
+            "mean_contribution": 0.17599973541194502
+          },
+          {
+            "game_id": 401856696,
+            "adjusted_z": 1.0778620532498753,
+            "exposure": 12.0,
+            "boundary_cutoff_utc": "terminal",
+            "mean_contribution": 0.2262826678387159
+          }
+        ],
+        "raw_games": [
+          {
+            "season": 2026,
+            "week": 1,
+            "game_id": 401856634,
+            "kickoff_utc": "2026-09-05 16:00:00+00:00",
+            "team": "Alabama",
+            "opponent": "East Carolina",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 10.0,
+            "denominator": 10.0,
+            "raw_value": 1.0,
+            "usable_exposure": 10.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 2,
+            "game_id": 401856674,
+            "kickoff_utc": "2026-09-12 19:30:00+00:00",
+            "team": "Alabama",
+            "opponent": "Kentucky",
+            "side": "away",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 10.0,
+            "denominator": 11.0,
+            "raw_value": 0.9090909090909091,
+            "usable_exposure": 11.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 3,
+            "game_id": 401856685,
+            "kickoff_utc": "2026-09-19 19:30:00+00:00",
+            "team": "Alabama",
+            "opponent": "Florida State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 36.0,
+            "denominator": 12.0,
+            "raw_value": 3.0,
+            "usable_exposure": 12.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 4,
+            "game_id": 401856696,
+            "kickoff_utc": "2026-09-26 23:00:00+00:00",
+            "team": "Alabama",
+            "opponent": "South Carolina",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 18.0,
+            "denominator": 12.0,
+            "raw_value": 1.5,
+            "usable_exposure": 12.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          }
+        ],
+        "terminal": {
+          "season": 2026,
+          "team": "Alabama",
+          "measurement_id": "ppp",
+          "unit_role": "defense",
+          "adjustment_iteration": 4,
+          "raw_value": 1.6444444444444444,
+          "adjusted_value": 1.3602597406178167,
+          "primary_exposure": 45.0,
+          "games_exposure": 4,
+          "source_game_count": 4,
+          "timing_class": "live"
+        }
+      },
+      "current": {
+        "candidate_id": "ppp__rho_0_60__exposure",
+        "definition": "ppp",
+        "season": 2026,
+        "week": 4,
+        "game_id": 401856696,
+        "cutoff_utc": "2026-09-27T14:15:00+00:00",
+        "team": "Alabama",
+        "offense_rating": 1.8182895563634822,
+        "offense_variance": 0.142548596112311,
+        "defense_rating": 1.047132259163349,
+        "defense_variance": 0.13995771670190274,
+        "overall_rating": 1.4327109077634157,
+        "overall_variance": 0.07062657820355343,
+        "fallback_reason": null
+      }
+    },
+    "South Carolina": {
+      "offense": {
+        "prior_mean": 0.1709899072430287,
+        "prior_variance": 0.6652631578947369,
+        "exposure": 30.0,
+        "prior_weight": 0.286144578313253,
+        "prior_contribution": 0.0489278349038787,
+        "items": [
+          {
+            "game_id": 401856665,
+            "kickoff_utc": "2026-09-05 16:45:00+00:00",
+            "boundary_cutoff_utc": "2026-09-19 20:15:00+00:00",
+            "adjusted_z": 4.619373263104247,
+            "exposure": 6.0,
+            "mean_contribution": 0.6595129297323533
+          },
+          {
+            "game_id": 401856691,
+            "kickoff_utc": "2026-09-19 20:15:00+00:00",
+            "boundary_cutoff_utc": "2026-09-26 23:00:00+00:00",
+            "adjusted_z": 2.5017792364848432,
+            "exposure": 12.0,
+            "mean_contribution": 0.7143634687312143
+          },
+          {
+            "game_id": 401856696,
+            "adjusted_z": 1.64767189351477,
+            "exposure": 12.0,
+            "boundary_cutoff_utc": "terminal",
+            "mean_contribution": 0.4704798057385548
+          }
+        ],
+        "raw_games": [
+          {
+            "season": 2026,
+            "week": 1,
+            "game_id": 401856665,
+            "kickoff_utc": "2026-09-05 16:45:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Kent State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 36.0,
+            "denominator": 6.0,
+            "raw_value": 6.0,
+            "usable_exposure": 6.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 3,
+            "game_id": 401856691,
+            "kickoff_utc": "2026-09-19 20:15:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Mississippi State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 34.0,
+            "denominator": 12.0,
+            "raw_value": 2.8333333333333335,
+            "usable_exposure": 12.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 4,
+            "game_id": 401856696,
+            "kickoff_utc": "2026-09-26 23:00:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Alabama",
+            "side": "away",
+            "measurement_id": "ppp",
+            "unit_role": "offense",
+            "numerator": 18.0,
+            "denominator": 12.0,
+            "raw_value": 1.5,
+            "usable_exposure": 12.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          }
+        ],
+        "terminal": {
+          "season": 2026,
+          "team": "South Carolina",
+          "measurement_id": "ppp",
+          "unit_role": "offense",
+          "adjustment_iteration": 4,
+          "raw_value": 2.933333333333333,
+          "adjusted_value": 3.184444417785567,
+          "primary_exposure": 30.0,
+          "games_exposure": 3,
+          "source_game_count": 3,
+          "timing_class": "live"
+        }
+      },
+      "defense": {
+        "prior_mean": 0.7078219591896522,
+        "prior_variance": 0.66,
+        "exposure": 30.0,
+        "prior_weight": 0.28776978417266186,
+        "prior_contribution": 0.2036897724286769,
+        "items": [
+          {
+            "game_id": 401856665,
+            "kickoff_utc": "2026-09-05 16:45:00+00:00",
+            "boundary_cutoff_utc": "2026-09-19 20:15:00+00:00",
+            "adjusted_z": 2.2169723333325826,
+            "exposure": 6.0,
+            "mean_contribution": 0.31579893669054054
+          },
+          {
+            "game_id": 401856691,
+            "kickoff_utc": "2026-09-19 20:15:00+00:00",
+            "boundary_cutoff_utc": "2026-09-26 23:00:00+00:00",
+            "adjusted_z": 1.1131681533334252,
+            "exposure": 13.0,
+            "mean_contribution": 0.34356053077700677
+          },
+          {
+            "game_id": 401856696,
+            "adjusted_z": 0.46614594162528394,
+            "exposure": 11.0,
+            "boundary_cutoff_utc": "terminal",
+            "mean_contribution": 0.12173451569063172
+          }
+        ],
+        "raw_games": [
+          {
+            "season": 2026,
+            "week": 1,
+            "game_id": 401856665,
+            "kickoff_utc": "2026-09-05 16:45:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Kent State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 0.0,
+            "denominator": 6.0,
+            "raw_value": 0.0,
+            "usable_exposure": 6.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 3,
+            "game_id": 401856691,
+            "kickoff_utc": "2026-09-19 20:15:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Mississippi State",
+            "side": "home",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 41.0,
+            "denominator": 13.0,
+            "raw_value": 3.1538461538461537,
+            "usable_exposure": 13.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          },
+          {
+            "season": 2026,
+            "week": 4,
+            "game_id": 401856696,
+            "kickoff_utc": "2026-09-26 23:00:00+00:00",
+            "team": "South Carolina",
+            "opponent": "Alabama",
+            "side": "away",
+            "measurement_id": "ppp",
+            "unit_role": "defense",
+            "numerator": 42.0,
+            "denominator": 11.0,
+            "raw_value": 3.8181818181818183,
+            "usable_exposure": 11.0,
+            "exposure_unit": "possessions",
+            "coverage_status": "observed",
+            "missing_reason": null,
+            "quality_flags": "mixed_eligibility_drive",
+            "timing_class": "live"
+          }
+        ],
+        "terminal": {
+          "season": 2026,
+          "team": "South Carolina",
+          "measurement_id": "ppp",
+          "unit_role": "defense",
+          "adjustment_iteration": 4,
+          "raw_value": 2.7666666666666666,
+          "adjusted_value": 2.0907358094228408,
+          "primary_exposure": 30.0,
+          "games_exposure": 3,
+          "source_game_count": 3,
+          "timing_class": "live"
+        }
+      },
+      "current": {
+        "candidate_id": "ppp__rho_0_60__exposure",
+        "definition": "ppp",
+        "season": 2026,
+        "week": 4,
+        "game_id": 401856696,
+        "cutoff_utc": "2026-09-27T14:15:00+00:00",
+        "team": "South Carolina",
+        "offense_rating": 1.8932840391060013,
+        "offense_variance": 0.19036144578313255,
+        "defense_rating": 0.9847837555868557,
+        "defense_variance": 0.1899280575539568,
+        "overall_rating": 1.4390338973464285,
+        "overall_variance": 0.09507237583427233,
+        "fallback_reason": null
+      }
+    }
+  },
+  "max_serving_delta": 0.0
+}

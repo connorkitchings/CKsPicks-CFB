@@ -23,6 +23,12 @@ Week 5 production release.
 
 ## What V5 is
 
+The [2026-09-28 ratings audit](../research/2026-09-28-current-v5-ratings-audit.md)
+reconstructed all 138 current ratings exactly and documents weekly prior weights.
+It also records a default-view cutoff-label mismatch during projection before
+selection and an unresolved cumulative-snapshot observation concern. These are
+follow-up findings; no accepted artifact or production model was changed.
+
 V5 estimates each team's offensive and defensive scoring efficiency per possession, adjusts for opponents, and updates one continuous season-long rating as games finish. The selected candidate is `ppp__rho_0_60__exposure`: true points per possession, a 0.60 carryover prior, and exposure-weighted rating updates. A fixed Ridge bridge turns pregame team states and earlier-only non-offense offsets into predicted home margin and game total. The selected bridge uses an expanding fitting history, alpha 10 reference heads, and a verified through-2025 final fit. Neither bookmaker lines nor 2026 outcomes select or refit V5. See the [full methodology](possession_rating_methodology.md).
 
 V5 ratings successor is unrelated to the V4 *feature schema v5* diagnostic.

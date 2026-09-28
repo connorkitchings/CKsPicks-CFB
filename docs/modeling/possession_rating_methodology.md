@@ -1,6 +1,14 @@
 # Possession-Based Rating Methodology
 
-> **Current status:** [V5 model development is complete and accepted](v5_status.md). The selected PPP rating and through-2025 bridge are frozen. Week 4 finals and refreshed 07/08 parents gate the first current live forecast; Preview serving rehearsal and rollback proof precede a separate activation decision. V4 remains public. The detailed equations below remain the V5 semantic authority.
+> **Current status (2026-09-28):** [V5 model development is complete and accepted](v5_status.md). The selected PPP rating and through-2025 bridge are frozen. Week 4 is scored, and the authorized Week 5 live run is selected in production. V4 remains available for rollback. The detailed equations below remain the V5 semantic authority.
+
+The [current ratings audit](../research/2026-09-28-current-v5-ratings-audit.md)
+documents the executable estimator, actual weekly prior weights, and the
+South Carolina–Alabama comparison. It identifies an unresolved semantic
+concern: the selected implementation assigns cumulative adjusted snapshots to
+individual source-game exposures, so earlier performance influences multiple
+update values. The audit records this behavior without changing the accepted
+model or the intended one-observation-per-game equations below.
 
 ## Purpose
 
@@ -294,8 +302,9 @@ layer; the historical r9 configuration and its 8936/8935 counts are untouched.
 
 ## Data gaps and certification limits
 
-Possession counting, unit scoring attribution and OT filtering are specified
-but not yet certified. Existing drive `points`/`points_on_opps` are defective
+Possession counting, unit scoring attribution and OT filtering were certified
+on the accepted r9 lineage; the former pre-certification blocker is closed.
+Legacy drive `points`/`points_on_opps` must not replace those certified
 numerators. Score-stream final reconciliation alone does not prove unit attribution.
 Missing source period/PPA or unresolved scoring must remain visible. Clock fields
 survive in raw/Silver data but not the current byplay representation. Source model
