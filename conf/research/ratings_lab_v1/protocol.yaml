@@ -1,0 +1,12 @@
+protocol_id: ratings_lab_historical_v1
+source_family: accepted_v5_2026_09_21
+development_seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+headline_seasons: [2022, 2023, 2024, 2025]
+timing_class: historically_reconstructed
+availability_policy: v5_later_week_6h_v1
+measurement_recipe: v5_raw_ppp_game_v1
+bridge: alpha10_expanding_v1
+calibration: earlier_rolling_residual_v1
+bootstrap_seed: 20260928
+bootstrap_replicates: 2000
+research_prefix: ratings-lab/v1/

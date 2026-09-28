@@ -28,6 +28,11 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 
 ## Current active contracts
 
+The [V6 ratings research platform](2026-09-28/v6-ratings-research-platform.md)
+is In Progress under the user's 2026-09-28 implementation authorization. It
+builds isolated research data, rating replay, and historical comparison without
+changing V5 production.
+
 **Operational snapshot (2026-09-27):** V5 best-quote replay is selected on the public site for Weeks 0–4, Week 4 is scored, and the [refreshed Week 5 live run](../../session_logs/2026-09-27/14-week5-line-refresh-candidate.md) `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The prior Week 5 V5 run is the immediate same-week rollback; V4 frozen runs remain available for prior slates. Historical contract lifecycle metadata below is retained as recorded.
 
 The former 07/08 checkpoint said “Week 4 refresh awaits stabilized finals”; that gate was satisfied on 2026-09-27. Six slates are not a launch prerequisite for prospective V5 activation; they remain a monitoring window.
