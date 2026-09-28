@@ -189,7 +189,8 @@ def main(argv: list[str] | None = None) -> int:
     protocol = yaml.safe_load(config_raw)
     if (
         protocol.get("protocol_id") != "ratings_lab_historical_v1"
-        or protocol.get("development_seasons") != [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+        or protocol.get("development_seasons")
+        != [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
         or protocol.get("availability_policy") != "v5_later_week_6h_v1"
         or protocol.get("headline_seasons") != [2022, 2023, 2024, 2025]
         or protocol.get("timing_class") != "historically_reconstructed"

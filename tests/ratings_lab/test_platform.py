@@ -233,8 +233,14 @@ def test_delayed_and_postponed_evidence_stays_out_of_pregame_state():
         def estimate(self, prior, evidence):
             return Rating(float(len(evidence)), 1.0), {"count": len(evidence)}
 
-    states = replay([first, next_game, later], [delayed], design=Count(), measurement_id="ppp")
-    selected = {state.game_id: state for state in states if state.team == "A" and state.role == "offense"}
+    states = replay(
+        [first, next_game, later], [delayed], design=Count(), measurement_id="ppp"
+    )
+    selected = {
+        state.game_id: state
+        for state in states
+        if state.team == "A" and state.role == "offense"
+    }
     assert selected[12].rating.mean == 0.0
     assert selected[13].rating.mean == 1.0
     assert any(state.team == "FCS-X" for state in states)
