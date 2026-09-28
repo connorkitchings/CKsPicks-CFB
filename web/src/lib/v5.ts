@@ -1,18 +1,24 @@
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
+import {
+  defaultPeriodForRows,
+  formatCutoffLabel,
+  ownerSourceForCutoff,
+  PRESEASON_META,
+  WEEK_GENERATIONS,
+  type PeriodMeta,
+  type Rating,
+  type RatingPeriod,
+} from "./rating-periods.ts";
 
-export type Rating = {
-  team: string;
-  week: number;
-  cutoffUtc: Date;
-  offenseRating: number;
-  offenseVariance: number;
-  defenseRating: number;
-  defenseVariance: number;
-  overallRating: number;
-  overallVariance: number;
-  fallbackReason: string | null;
+export type { PeriodMeta, Rating, RatingPeriod };
+export {
+  defaultPeriodForRows,
+  formatCutoffLabel,
+  ownerSourceForCutoff,
+  PRESEASON_META,
+  WEEK_GENERATIONS,
 };
 
 const getSelectedRatingSource = cache(async (season: number): Promise<string | null> => {
@@ -57,47 +63,6 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   for (const row of rows) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
 });
-
-/** A ratings period id: "preseason" or an exact generation cutoff ISO string. */
-export type RatingPeriod = string;
-
-export interface PeriodMeta {
-  id: RatingPeriod;
-  label: string;
-  shortLabel: string;
-  description: string;
-  /** Set for frozen generations; absent for the preseason entry. */
-  cutoffUtc?: Date;
-  /** Set when the generation is the certified post-week assessment. */
-  postWeek?: number;
-}
-
-const PRESEASON_META: PeriodMeta = {
-  id: "preseason",
-  label: "Preseason",
-  shortLabel: "Preseason",
-  description: "Preseason baseline priors before 2026 kickoff.",
-};
-
-function formatCutoffLabel(cutoff: Date): { label: string; shortLabel: string } {
-  const label = `As of ${cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
-  const shortLabel = cutoff.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-  return { label, shortLabel };
-}
-
-/**
- * Certified post-week assessments, keyed by exact generation cutoff ISO.
- * A generation earns a week label only after its full replay→verify→project
- * chain completes; unknown future cutoffs keep their "As of" date label
- * until then. Week coverage below is the verified completed-game count.
- */
-export const WEEK_GENERATIONS: Record<string, { postWeek: number; games: number; weeks: string }> = {
-  "2026-09-03T04:00:00.000Z": { postWeek: 0, games: 8, weeks: "0" },
-  "2026-09-08T15:35:00.000Z": { postWeek: 1, games: 51, weeks: "0–1" },
-  "2026-09-13T18:18:22.000Z": { postWeek: 2, games: 100, weeks: "0–2" },
-  "2026-09-22T14:58:00.000Z": { postWeek: 3, games: 157, weeks: "0–3" },
-  "2026-09-27T14:15:00.000Z": { postWeek: 4, games: 215, weeks: "0–4" },
-};
 
 /**
  * Ratings timeline derived from the data, not from hardcoded weeks. Every
@@ -148,13 +113,17 @@ const RATING_SELECT = {
   fallbackReason: schema.v5RatingSnapshots.fallbackReason,
 };
 
-async function getPreseasonPriors(season: number): Promise<Rating[]> {
-  const sourceSha = await getSelectedRatingSource(season);
-  if (!sourceSha) return [];
+async function getPreseasonPriors(season: number, sourceSha?: string | null): Promise<Rating[]> {
+  // `undefined` preserves the preseason tab's "active model state" meaning via
+  // the selected source. An explicit `null` means no owning source was found:
+  // return no priors so frozen tabs degrade to frozen-rows-only (fail closed).
+  if (sourceSha === null) return [];
+  const sha = sourceSha ?? (await getSelectedRatingSource(season));
+  if (!sha) return [];
   return db.select(RATING_SELECT).from(schema.v5RatingSnapshots)
     .where(and(
       eq(schema.v5RatingSnapshots.season, season),
-      eq(schema.v5RatingSnapshots.sourceManifestSha256, sourceSha),
+      eq(schema.v5RatingSnapshots.sourceManifestSha256, sha),
       sql`${schema.v5RatingSnapshots.snapshotId} LIKE '%:preseason'`,
     ))
     .orderBy(desc(schema.v5RatingSnapshots.overallRating));
@@ -191,10 +160,22 @@ export const getWeeklyRatings = cache(async (
       }
     }
     // Early generations cover only teams that had played by the cutoff
-    // (post-Week 0: 16 teams). Backfill the rest from preseason priors so
-    // every tab lists all 138 FBS teams; prior rows carry their own
-    // fallback lineage.
-    for (const prior of await getPreseasonPriors(season)) {
+    // (post-Week 0: 16 teams). Backfill the rest from preseason priors pinned
+    // to the cutoff-owning source, never the currently selected source, so
+    // historical tabs stop moving when the site selection changes. An owner
+    // without preseason rows degrades to frozen-rows-only (fail closed).
+    const ownerRows = await db.select({
+      sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
+      createdAt: schema.v5RatingSnapshots.createdAt,
+    }).from(schema.v5RatingSnapshots)
+      .where(and(
+        eq(schema.v5RatingSnapshots.season, season),
+        eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+        eq(schema.v5RatingSnapshots.cutoffUtc, frozen.cutoffUtc),
+      ))
+      .orderBy(desc(schema.v5RatingSnapshots.createdAt));
+    const ownerSource = ownerSourceForCutoff(ownerRows);
+    for (const prior of await getPreseasonPriors(season, ownerSource)) {
       if (!byTeam.has(prior.team)) {
         byTeam.set(prior.team, prior);
       }
@@ -215,12 +196,13 @@ export const getWeeklyRatings = cache(async (
     }
   }
 
-  // Default, "current", and unmapped params: the newest generation, i.e. the
-  // active model state. The served label always matches the data.
-  const latest = generations[0];
-  if (!latest) return { ratings: [], period: "preseason", periodMeta: PRESEASON_META };
+  // Default, "current", and unmapped params: the active model state. The
+  // served label is derived from the served rows, so the two agree by
+  // construction in every projection-before-selection and rollback state.
+  // No newest-generation label may be paired with selected-source rows here.
   const ratings = await getCurrentRatings(season);
-  return { ratings, period: latest.id, periodMeta: latest };
+  const periodMeta = defaultPeriodForRows(ratings);
+  return { ratings, period: periodMeta.id, periodMeta };
 });
 
 export const getTeamHistory = cache(async (season: number, team: string): Promise<Rating[]> => {

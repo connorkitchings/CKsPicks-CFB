@@ -48,16 +48,21 @@ test("GameRow TeamLine links team names to /teams/[team] with accessibility and 
 });
 
 test("ratings timeline labels certified post-week generations and backfills early tabs from priors", () => {
-  const source = readFileSync(new URL("./v5.ts", import.meta.url), "utf8");
+  // Certified week map lives in the dependency-free rating-periods module so
+  // behavioral tests can import it without the drizzle/Neon client chain.
+  const periodsSource = readFileSync(new URL("./rating-periods.ts", import.meta.url), "utf8");
 
   // Certified week map keyed by exact generation cutoff
-  assert.match(source, /WEEK_GENERATIONS/);
-  assert.match(source, /2026-09-03T04:00:00\.000Z/);
-  assert.match(source, /2026-09-08T15:35:00\.000Z/);
-  assert.match(source, /2026-09-13T18:18:22\.000Z/);
-  assert.match(source, /2026-09-22T14:58:00\.000Z/);
-  assert.match(source, /2026-09-27T14:15:00\.000Z/);
-  assert.match(source, /Post-Week \$\{known\.postWeek\}/);
+  assert.match(periodsSource, /WEEK_GENERATIONS/);
+  assert.match(periodsSource, /2026-09-03T04:00:00\.000Z/);
+  assert.match(periodsSource, /2026-09-08T15:35:00\.000Z/);
+  assert.match(periodsSource, /2026-09-13T18:18:22\.000Z/);
+  assert.match(periodsSource, /2026-09-22T14:58:00\.000Z/);
+  assert.match(periodsSource, /2026-09-27T14:15:00\.000Z/);
+  assert.match(periodsSource, /Post-Week \$\{known\.postWeek\}/);
+
+  // Serving layer binds frozen tabs and backfill to explicit sources
+  const source = readFileSync(new URL("./v5.ts", import.meta.url), "utf8");
 
   // Frozen tabs backfill teams missing from early generations via priors
   assert.match(source, /getPreseasonPriors/);
