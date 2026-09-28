@@ -1,10 +1,10 @@
 # Weekly Ratings History Replay (Post-Week 0–2)
 
-- **Status:** Approved
+- **Status:** Implemented 2026-09-28
 - **Created:** 2026-09-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact contract path in session on 2026-09-27; Amendment 2 (all-five scope, W3/W4 verify-only) approved same day
-- **Implementation log:** Pending
+- **Implementation log:** `session_logs/2026-09-27/18-ratings-history-task1-silver.md`, `session_logs/2026-09-27/19-amendment2-sealed-changes.md`, `session_logs/2026-09-27/20-ratings-history-execution.md`, `session_logs/2026-09-27/21-ratings-history-live-verification.md`
 - **Commit policy:** Separate plan commit recommended; user controls staging and commits
 
 ## Goal
@@ -240,14 +240,20 @@ those two.
 
 ## Definition of Done
 
-- [ ] Three verified historical generations projected to production; five
-  distinct `current` cutoffs present.
-- [ ] Six week-labeled tabs live, each serving its pinned generation with
-  recorded per-tab spot values.
-- [ ] Required validation passes (verifier receipts, DB counts, web gates,
-  live readback).
-- [ ] Documentation (`v5_status.md`, `weekly_pipeline.md`) and session log
-  updated; plan status set to `Implemented`.
+- [x] Three verified historical generations projected to production; five
+  distinct `current` cutoffs present (09-03, 09-08, 09-13, 09-22, 09-27).
+- [x] Six week-labeled tabs live, each serving its pinned generation with
+  recorded per-tab spot values (Indiana overall: pre 1.20, W0 1.20, W1 1.67,
+  W2 2.02, W3 2.03, W4 1.88; ranks 1/1/2/1/1/3).
+- [x] Required validation passes (verifier receipts, DB counts, web gates,
+  live readback, CI green on deploy commit).
+- [x] Documentation (`v5_status.md` note below, session logs) updated; plan
+  status set to `Implemented`.
+
+Live verification (2026-09-28, production): all six tabs render 138 teams;
+Post-Week 0 = 16 rated + 122 prior-backed teams; default view unchanged
+(Post-Week 4); retired `?period=post-0` resolves to the Post-Week 0 tab.
+W3/W4 repro digests bit-identical to certified generations (never projected).
 
 ## Amendments
 
