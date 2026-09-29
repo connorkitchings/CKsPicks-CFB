@@ -4,7 +4,7 @@
 - **Created:** 2026-09-29
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact path in the 2026-09-29 handoff message; approved before code changes
-- **Implementation log:** `session_logs/2026-09-29/02-v5-intended-update-production-implementation.md`
+- **Implementation log:** `session_logs/2026-09-29/02-v5-intended-update-production-implementation.md` (Task 1 baseline); `session_logs/2026-09-29/03-v5-intended-update-task2-preflight.md` (Task 2 preflight, R2 publication deferred); `session_logs/2026-09-29/04-v5-intended-update-task3-preflight.md` (Task 3 preflight, R2/Neon deferred); `session_logs/2026-09-29/05-v5-intended-update-task4-preflight.md` (Task 4 preflight, MAE reconciled, R2/Neon/freeze deferred); `session_logs/2026-09-29/06-v5-intended-update-task5-preflight.md` (Task 5 preflight, migration proven on scratch DB, Preview/Prod deferred)
 - **Commit policy:** Separate user-executed plan commit before implementation; separate implementation and release commits
 
 ## Goal
