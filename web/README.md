@@ -23,7 +23,8 @@ npm install
 npm run dev
 ```
 
-Use the repository-root migration flow (`make migrate-db ENV=preview`) and
+Use the explicit Preview migration command in the
+[weekly pipeline](../docs/ops/weekly_pipeline.md) and
 `make contracts-check`; `contracts/schema.ts` is canonical and the web copy
 must remain synchronized.
 

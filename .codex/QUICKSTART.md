@@ -211,8 +211,9 @@ follow its approval and environment checks.
 make audit-data YEAR=2026 ENV=preview
 make readiness YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 
-# Apply append-only contracts/migrations to the configured Neon branch
-make migrate-db
+# Apply append-only contracts/migrations to a verified Preview branch
+zsh scripts/ops/with_preview_env.sh \
+  uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL
 
 # Pregame publish (refresh schedule/lines → predict → R2 artifact → Neon):
 # Use ENV=production and CONFIG=conf/weekly_bets/v4_2026.yaml for the launch model

@@ -13,7 +13,7 @@ help:
 	@echo "  make all       - Run all quality checks"
 	@echo "  make clean     - Clean cache files"
 	@echo "  make contracts-check - Validate contracts/ files are in sync"
-	@echo "  make migrate-db - Apply checksummed contracts/migrations"
+	@echo "  DB migrations: run scripts/pipeline/migrate_db.py with an explicit --database-url"
 	@echo ""
 	@echo "Web app (web/):"
 	@echo "  make web-dev       - Start Next.js dev server"
@@ -84,8 +84,9 @@ contracts-check:
 	@uv run python contracts/validation.py
 
 migrate-db:
-	@echo "📋 Applying checksummed database migrations..."
-	PYTHONPATH=src uv run python scripts/pipeline/migrate_db.py
+	@echo "migrate-db is disabled: ENV does not select a database for this target." >&2
+	@echo "Use scripts/pipeline/migrate_db.py --database-url with a verified branch URL." >&2
+	@exit 2
 
 # ---------------------------------------------------------------------------
 # Web app (web/)

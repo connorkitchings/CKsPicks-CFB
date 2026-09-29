@@ -15,12 +15,21 @@ from cks_picks_cfb.db.migrations import apply_migrations
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--database-url", default=os.getenv("DATABASE_URL"))
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--database-url", help="Explicit URL for the reviewed Neon branch"
+    )
+    target.add_argument(
+        "--database-env",
+        choices=("DATABASE_URL", "PREVIEW_DATABASE_URL"),
+        help="Explicit environment variable containing the reviewed Neon branch URL",
+    )
     parser.add_argument("--migrations", type=Path, default=Path("contracts/migrations"))
     args = parser.parse_args()
-    if not args.database_url:
-        raise SystemExit("DATABASE_URL is not set")
-    applied = apply_migrations(args.database_url, args.migrations)
+    database_url = args.database_url or os.getenv(args.database_env)
+    if not database_url:
+        raise SystemExit("Selected database URL is not set")
+    applied = apply_migrations(database_url, args.migrations)
     print("Applied migrations: " + (", ".join(applied) if applied else "none"))
 
 

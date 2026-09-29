@@ -179,7 +179,7 @@ This is a **monorepo with two toolchains**:
 | Research | `research/` | Python (analysis, tuning, experiments) | — |
 | Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
-| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `make migrate-db` (append-only migrations 0002–0008) |
+| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0018) |
 
 **Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
 

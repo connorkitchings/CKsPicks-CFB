@@ -93,7 +93,7 @@ def select_week_run(
             raise PublicSelectionError(
                 "prospective V5 slate predates approved activation"
             )
-        if environment == "production":
+        if environment == "production" or model_id == "v5-intended-update-2026-v1":
             if evidence_class not in {"pending", "live", "replay"}:
                 raise PublicSelectionError(
                     "production V5 selection requires a reviewed release"
@@ -104,7 +104,7 @@ def select_week_run(
             )
             from cks_picks_cfb.data.storage import get_storage
 
-            storage = get_storage(environment="production")
+            storage = get_storage(environment=environment)
             manifest = read_json_artifact(
                 prediction_run_manifest_path(season, week, run_id), storage
             )
@@ -121,6 +121,7 @@ def select_week_run(
                     storage=storage,
                     season=season,
                     week=week,
+                    environment=environment,
                 )
             elif evidence_class == "replay":
                 from cks_picks_cfb.ops.v5_release import (

@@ -30,8 +30,14 @@ make contracts-check
 ### Apply migrations
 
 ```bash
-make migrate-db
+PYTHONPATH=src uv run python scripts/pipeline/migrate_db.py \
+  --database-url "$REVIEWED_MIGRATOR_DATABASE_URL"
 ```
+
+Set `REVIEWED_MIGRATOR_DATABASE_URL` to the verified URL for the intended branch.
+For the repository's Preview branch, use the Keychain wrapper described in the
+[weekly pipeline](../docs/ops/weekly_pipeline.md). `make migrate-db` is disabled
+because `ENV=preview` never selected a database for that target.
 
 An empty database is bootstrapped from the reconstructed `schema.sql` snapshot.
 An existing database applies each checksummed migration exactly once and rejects

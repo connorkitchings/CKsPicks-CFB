@@ -772,10 +772,10 @@ def publish_week(
                     else manifest.get("replay_verification_sha256")
                 ):
                     raise RuntimeError("V5 replay lacks independent verification")
-                if (
-                    model_id == "v5-intended-update-2026-v1"
-                    and target_environment == "production"
-                ):
+                if model_id == "v5-intended-update-2026-v1" and target_environment in {
+                    "preview",
+                    "production",
+                }:
                     from cks_picks_cfb.data.storage import get_storage
                     from cks_picks_cfb.ops.v5_intended_update_release import (
                         require_intended_update_release_record,
@@ -784,9 +784,10 @@ def publish_week(
                     require_intended_update_release_record(
                         cur,
                         manifest=manifest,
-                        storage=get_storage(environment="production"),
+                        storage=get_storage(environment=target_environment),
                         season=season,
                         week=week,
+                        environment=target_environment,
                     )
                 elif evidence_class == "pending" and target_environment == "production":
                     from cks_picks_cfb.data.storage import get_storage

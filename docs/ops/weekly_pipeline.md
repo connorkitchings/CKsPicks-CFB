@@ -6,7 +6,7 @@ R2 is the durable content source of truth. Neon is the dataset/workflow control 
 
 ## Required setup
 
-Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to the target Neon branch with `make migrate-db` (append-only migrations through 0017 after the V5 provenance audit). On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles and `zsh scripts/ops/with_production_pipeline_env.sh <command>` for the restricted `cks_prod_pipeline` role on production.
+Configure `CFBD_API_KEY`, `CFB_STORAGE_BACKEND=r2`, the R2 credentials, and the pipeline-role `DATABASE_URL`. Preview and replay use `PREVIEW_DATABASE_URL`; it must differ from production. Production R2 credentials point at the same bucket as Preview (`cks-picks-cfb-preview`) — immutable artifacts are checksummed and environment-neutral, and environment separation is enforced by Neon branch, not bucket. Apply the checksummed history to a verified target Neon branch with `scripts/pipeline/migrate_db.py --database-url` or `--database-env` (append-only migrations through 0018). `make migrate-db` is disabled because `ENV=preview` did not select a database. On this host, use `zsh scripts/ops/with_preview_env.sh <command>` for Preview branch-scoped database roles and `zsh scripts/ops/with_production_pipeline_env.sh <command>` for the restricted `cks_prod_pipeline` role on production.
 
 ### V5 weekly operations & ratings publication
 
@@ -59,13 +59,15 @@ read-only web credential. Run Preview operations through the wrapper so the
 legacy `.env` values cannot target the wrong branch:
 
 ```bash
-zsh scripts/ops/with_preview_env.sh make migrate-db
+zsh scripts/ops/with_preview_env.sh \
+  uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL
 zsh scripts/ops/with_preview_env.sh make readiness \
   YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=preview
 ```
 
 The wrapper injects `PREVIEW_DATABASE_URL` for Preview pipeline operations and
-the migration-only `DATABASE_URL` for `make migrate-db`. Never use the
+the migration-only `DATABASE_URL` for the explicit migration command. Verify
+the branch before applying migrations. Never use the
 `cks_preview_migrator` or `cks_preview_pipeline` connection in Vercel.
 
 ## Data-ready trigger

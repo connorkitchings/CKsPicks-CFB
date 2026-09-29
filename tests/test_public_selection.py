@@ -8,6 +8,7 @@ from cks_picks_cfb.ops.public_selection import PublicSelectionError, select_week
 V4_MODEL = "week0-2026-v4-strict-20260818-r2"
 V5_MODEL = "v5-possession-ppp-rho060-exposure"
 V5_BUNDLE = "b" * 64
+SUCCESSOR_MODEL = "v5-intended-update-2026-v1"
 
 
 def test_batch_failure_never_recomputes_stats(monkeypatch):
@@ -201,6 +202,87 @@ def test_v5_selection_rejects_an_unapproved_bundle():
             week=0,
             run_id="2026w0-v5",
             reason="rehearsal",
+            environment="preview",
+        )
+
+
+def test_preview_successor_selection_requires_exact_preview_authorization(monkeypatch):
+    import cks_picks_cfb.artifacts as artifacts_module
+    import cks_picks_cfb.data.storage as storage_module
+    from cks_picks_cfb.ops.v5_intended_update_release import IntendedUpdateReleaseError
+
+    monkeypatch.setattr(storage_module, "get_storage", lambda **_: object())
+    monkeypatch.setattr(
+        artifacts_module,
+        "read_json_artifact",
+        lambda *_: {"artifact_sha256": "a" * 64, "run_id": "successor-w0"},
+    )
+    cur = FakeCursor(
+        [
+            _candidate(
+                model_id=SUCCESSOR_MODEL,
+                evidence_class="replay",
+                bundle_sha256=V5_BUNDLE,
+                state="scored",
+            ),
+            (SUCCESSOR_MODEL, V5_BUNDLE, 2026, 5),
+            None,
+        ]
+    )
+    with pytest.raises(IntendedUpdateReleaseError, match="authorization is absent"):
+        select_week_run(
+            cur,
+            season=2026,
+            week=0,
+            run_id="successor-w0",
+            reason="preview rehearsal",
+            environment="preview",
+        )
+    assert not any("INSERT" in sql for sql in cur.executed)
+
+
+def test_successor_authorization_is_scoped_to_the_requested_environment():
+    from cks_picks_cfb.ops.v5_intended_update_release import (
+        IntendedUpdateReleaseError,
+        require_intended_update_release_record,
+        validate_intended_update_release_record,
+    )
+
+    class AuthCursor:
+        def __init__(self):
+            self.params = None
+
+        def execute(self, _sql, params):
+            self.params = params
+
+        def fetchone(self):
+            return None
+
+    cur = AuthCursor()
+    with pytest.raises(IntendedUpdateReleaseError, match="authorization is absent"):
+        require_intended_update_release_record(
+            cur,
+            manifest={"run_id": "successor-w0"},
+            storage=object(),
+            season=2026,
+            week=0,
+            environment="preview",
+        )
+    assert cur.params == ("preview", 2026, 0, "successor-w0")
+
+    with pytest.raises(
+        IntendedUpdateReleaseError, match="release does not match environment"
+    ):
+        validate_intended_update_release_record(
+            {
+                "authorization_id": "wrong-environment",
+                "decision_ref": "test",
+                "environment": "production",
+            },
+            manifest={"run_id": "successor-w0"},
+            storage=object(),
+            season=2026,
+            week=0,
             environment="preview",
         )
 

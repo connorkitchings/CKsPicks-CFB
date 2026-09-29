@@ -55,10 +55,13 @@ def validate_intended_update_release_record(
     storage: Any,
     season: int,
     week: int,
+    environment: str,
 ) -> None:
     """Check every release field and its immutable source chain before a write."""
+    if environment not in {"preview", "production"}:
+        raise IntendedUpdateReleaseError("invalid release environment")
     expected = {
-        "environment": "production",
+        "environment": environment,
         "season": season,
         "week": week,
         "prediction_run_id": manifest.get("run_id"),
@@ -162,14 +165,17 @@ def require_intended_update_release_record(
     storage: Any,
     season: int,
     week: int,
+    environment: str,
 ) -> None:
+    if environment not in {"preview", "production"}:
+        raise IntendedUpdateReleaseError("invalid release environment")
     cur.execute(
         "SELECT "
         + ", ".join(AUTH_COLUMNS)
         + " FROM v5_intended_update_release_authorizations "
-        "WHERE environment = 'production' AND season = %s AND week = %s "
+        "WHERE environment = %s AND season = %s AND week = %s "
         "AND prediction_run_id = %s",
-        (season, week, manifest.get("run_id")),
+        (environment, season, week, manifest.get("run_id")),
     )
     row = cur.fetchone()
     if row is None:
@@ -178,5 +184,10 @@ def require_intended_update_release_record(
         )
     record = dict(zip(AUTH_COLUMNS, row, strict=True))
     validate_intended_update_release_record(
-        record, manifest=manifest, storage=storage, season=season, week=week
+        record,
+        manifest=manifest,
+        storage=storage,
+        season=season,
+        week=week,
+        environment=environment,
     )
