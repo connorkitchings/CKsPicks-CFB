@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 
 import psycopg
@@ -58,14 +59,17 @@ def main() -> None:
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-record-sha")
     parser.add_argument("--expected-code-sha")
+    parser.add_argument("--release-tag", default="20260929-p1")
     args = parser.parse_args()
+    if not re.fullmatch(r"[a-z0-9-]+", args.release_tag):
+        raise SystemExit("invalid successor release tag")
     if (
         os.getenv("CFB_STORAGE_BACKEND") != "r2"
         or os.getenv("CFB_ARTIFACT_ENV") != "preview"
     ):
         raise SystemExit("Preview authorization requires Preview R2 context")
     storage = get_storage(environment="preview")
-    run_id = f"2026w{args.week}-v5repair-20260929-p1"
+    run_id = f"2026w{args.week}-v5repair-{args.release_tag}"
     manifest = json.loads(
         storage.read_bytes(prediction_run_manifest_path(2026, args.week, run_id))
     )

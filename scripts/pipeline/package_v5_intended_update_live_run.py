@@ -23,10 +23,8 @@ from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from scripts.pipeline.build_v5_intended_update_live_serving import (
-    FORECAST_URI,
     OLD_RUN_URI,
-    RUN_ID,
-    SERVING_URI,
+    run_uris,
 )
 from scripts.pipeline.package_v5_intended_update_runs import (
     BRIDGE_URI,
@@ -35,20 +33,24 @@ from scripts.pipeline.package_v5_intended_update_runs import (
     _write_once,
 )
 from scripts.pipeline.publish_to_db import verify_intended_update_publication_boundary
-from scripts.pipeline.verify_v5_intended_update_live_serving import RECEIPT_URI
+from scripts.pipeline.verify_v5_intended_update_live_serving import receipt_uri
 
 
 def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def package(storage, lock_raw: bytes) -> tuple[dict, bytes]:
-    source = json.loads(storage.read_bytes(SERVING_URI))
-    receipt_raw = storage.read_bytes(RECEIPT_URI)
+def package(
+    storage, lock_raw: bytes, *, release_tag: str = "20260929-p1"
+) -> tuple[dict, bytes]:
+    run_id, forecast_uri, serving_uri = run_uris(release_tag)
+    verifier_uri = receipt_uri(release_tag)
+    source = json.loads(storage.read_bytes(serving_uri))
+    receipt_raw = storage.read_bytes(verifier_uri)
     receipt = json.loads(receipt_raw)
     verify_signed_payload(source, label="Week 5 serving")
     verify_signed_payload(receipt, label="Week 5 serving verifier")
-    forecast_raw = storage.read_bytes(FORECAST_URI)
+    forecast_raw = storage.read_bytes(forecast_uri)
     forecast = json.loads(forecast_raw)
     verify_signed_payload(forecast, label="Week 5 forecast")
     bridge_raw = storage.read_bytes(BRIDGE_URI)
@@ -77,7 +79,7 @@ def package(storage, lock_raw: bytes) -> tuple[dict, bytes]:
         != _sha(forecast_raw)
         or receipt.get("state") != "verified"
         or receipt.get("serving_manifest_raw_sha256")
-        != _sha(storage.read_bytes(SERVING_URI))
+        != _sha(storage.read_bytes(serving_uri))
         or forecast.get("state") != "candidate"
         or forecast.get("parents", {}).get("rating_manifest_raw_sha256") != rating_sha
         or forecast.get("parents", {}).get("inference_bundle_sha256")
@@ -100,11 +102,22 @@ def package(storage, lock_raw: bytes) -> tuple[dict, bytes]:
     old = json.loads(storage.read_bytes(OLD_RUN_URI))
     if old.get("run_id") != source["parents"]["original_selected_run_id"]:
         raise ValueError("Week 5 market parent differs")
+    refs = {ref["dataset"]: ref for ref in old["input_dataset_refs"]}
+    for kind in ("market_snapshots", "market_quotes"):
+        ref_uri = source["parents"].get(f"{kind}_ref_uri")
+        if ref_uri:
+            ref_raw = storage.read_bytes(ref_uri)
+            if _sha(ref_raw) != source["parents"][f"{kind}_ref_raw_sha256"]:
+                raise ValueError("Week 5 market ref differs from verified serving")
+            ref = json.loads(ref_raw)
+            if ref.get("dataset") != kind:
+                raise ValueError("Week 5 market ref has another dataset")
+            refs[kind] = ref
     cfg = OmegaConf.load(CONFIG)
     bundle_sha = bridge["output_refs"]["inference_bundle"]["raw_sha256"]
     manifest = {
         "schema_version": "prediction_run_v1",
-        "run_id": RUN_ID,
+        "run_id": run_id,
         "season": 2026,
         "week": 5,
         "state": "preview",
@@ -119,20 +132,20 @@ def package(storage, lock_raw: bytes) -> tuple[dict, bytes]:
         "predicted_games": 56,
         "lined_games": 56,
         "row_count": 56,
-        "artifact_uri": prediction_run_artifact_path(2026, 5, RUN_ID),
+        "artifact_uri": prediction_run_artifact_path(2026, 5, run_id),
         "artifact_sha256": _sha(raw),
         "model_bundle_sha256": bundle_sha,
         "inference_bundle_sha256": bundle_sha,
         "v5_rating_replay_manifest_sha256": rating_sha,
-        "v5_live_forecast_manifest_uri": FORECAST_URI,
+        "v5_live_forecast_manifest_uri": forecast_uri,
         "v5_live_forecast_manifest_sha256": _sha(forecast_raw),
-        "v5_intended_update_serving_manifest_uri": SERVING_URI,
+        "v5_intended_update_serving_manifest_uri": serving_uri,
         "v5_intended_update_serving_manifest_sha256": _sha(
-            storage.read_bytes(SERVING_URI)
+            storage.read_bytes(serving_uri)
         ),
-        "v5_intended_update_verifier_uri": RECEIPT_URI,
+        "v5_intended_update_verifier_uri": verifier_uri,
         "v5_intended_update_verifier_sha256": _sha(receipt_raw),
-        "input_dataset_refs": old["input_dataset_refs"],
+        "input_dataset_refs": list(refs.values()),
         "validation": {"all_predictions_present": True, "line_coverage_complete": True},
         "production_activation_authorized": False,
     }
@@ -149,6 +162,7 @@ def main() -> None:
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-packet-sha")
     parser.add_argument("--expected-code-sha")
+    parser.add_argument("--release-tag", default="20260929-p1")
     args = parser.parse_args()
     if (
         os.getenv("CFB_STORAGE_BACKEND") != "r2"
@@ -156,10 +170,12 @@ def main() -> None:
     ):
         raise SystemExit("Week 5 packaging requires Preview R2")
     storage = get_storage(environment="preview")
-    manifest, raw = package(storage, args.source_lock.read_bytes())
+    manifest, raw = package(
+        storage, args.source_lock.read_bytes(), release_tag=args.release_tag
+    )
     digest = _sha(canonical_json(manifest))
     if args.apply:
-        receipt = json.loads(storage.read_bytes(RECEIPT_URI))
+        receipt = json.loads(storage.read_bytes(receipt_uri(args.release_tag)))
         if pd.Timestamp.now(tz="UTC") >= pd.Timestamp(receipt["first_kickoff_utc"]):
             raise SystemExit("Week 5 prospective packaging window has closed")
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
@@ -175,13 +191,13 @@ def main() -> None:
         _write_once(storage, manifest["artifact_uri"], raw)
         _write_once(
             storage,
-            prediction_run_manifest_path(2026, 5, RUN_ID),
+            prediction_run_manifest_path(2026, 5, run_uris(args.release_tag)[0]),
             canonical_json(manifest),
         )
     print(
         json.dumps(
             {
-                "run_id": RUN_ID,
+                "run_id": run_uris(args.release_tag)[0],
                 "games": 56,
                 "packet_sha256": digest,
                 "applied": args.apply,

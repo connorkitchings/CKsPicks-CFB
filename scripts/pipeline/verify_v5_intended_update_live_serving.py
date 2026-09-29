@@ -18,33 +18,40 @@ from cks_picks_cfb.data.data_first_phase2d import signed_payload, verify_signed_
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ratings_lab.artifacts import canonical_json
 from scripts.pipeline.build_v5_intended_update_live_serving import (
-    FORECAST_URI,
     OLD_RUN_URI,
-    RUN_ID,
-    SERVING_URI,
+    run_uris,
 )
 from scripts.pipeline.publish_to_db import _assert_v5_artifact_matches_forecast
 from scripts.pipeline.verify_v5_intended_update_serving import _verify_target
 
-RECEIPT_URI = f"{SERVING_URI.rsplit('/', 1)[0]}/verification/verifier-manifest.json"
+
+def receipt_uri(release_tag: str) -> str:
+    return f"{run_uris(release_tag)[2].rsplit('/', 1)[0]}/verification/verifier-manifest.json"
 
 
 def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def verify(storage, lock_raw: bytes, local_output: Path | None = None) -> dict:
+def verify(
+    storage,
+    lock_raw: bytes,
+    local_output: Path | None = None,
+    *,
+    release_tag: str = "20260929-p1",
+) -> dict:
+    run_id, forecast_uri, serving_uri = run_uris(release_tag)
     manifest_raw = (
         (local_output / "serving-manifest.json").read_bytes()
         if local_output
-        else storage.read_bytes(SERVING_URI)
+        else storage.read_bytes(serving_uri)
     )
     manifest = json.loads(manifest_raw)
     verify_signed_payload(manifest, label="Week 5 serving")
     if (
         manifest.get("state") != "candidate"
         or manifest.get("evidence_class") != "pending"
-        or manifest.get("identity", {}).get("run_id") != RUN_ID
+        or manifest.get("identity", {}).get("run_id") != run_id
         or manifest.get("parents", {}).get("source_lock_sha256") != _sha(lock_raw)
         or manifest.get("production_activation_authorized") is not False
     ):
@@ -77,6 +84,20 @@ def verify(storage, lock_raw: bytes, local_output: Path | None = None) -> dict:
     if manifest["parents"]["original_selected_run_id"] != old["run_id"]:
         raise ValueError("Week 5 market parent differs")
     refs = {ref["dataset"]: ref for ref in old["input_dataset_refs"]}
+    for kind in ("market_snapshots", "market_quotes"):
+        ref_uri = manifest["parents"].get(f"{kind}_ref_uri")
+        if ref_uri:
+            ref_raw = storage.read_bytes(ref_uri)
+            if _sha(ref_raw) != manifest["parents"][f"{kind}_ref_raw_sha256"]:
+                raise ValueError("Week 5 fresh market ref changed")
+            ref = json.loads(ref_raw)
+            if ref.get("dataset") != kind:
+                raise ValueError("Week 5 fresh market ref has another dataset")
+            refs[kind] = ref
+    if bool(manifest["parents"].get("market_snapshots_ref_uri")) != bool(
+        manifest["parents"].get("market_quotes_ref_uri")
+    ):
+        raise ValueError("Week 5 market refs are incomplete")
     for kind, parent_key in (
         ("market_snapshots", "market_snapshot_content_sha256"),
         ("market_quotes", "market_quote_content_sha256"),
@@ -92,6 +113,12 @@ def verify(storage, lock_raw: bytes, local_output: Path | None = None) -> dict:
         raise ValueError("Week 5 market child checksum differs")
     snapshots = pd.read_parquet(io.BytesIO(market_raw)).set_index("game_id")
     quotes = pd.read_parquet(io.BytesIO(quote_raw))
+    for captures in (
+        pd.to_datetime(snapshots["market_captured_at"], utc=True, errors="coerce"),
+        pd.to_datetime(quotes["captured_at"], utc=True, errors="coerce"),
+    ):
+        if captures.isna().any() or captures.gt(cutoff).any():
+            raise ValueError("Week 5 market observation exceeds serving cutoff")
     for _, row in rows.iterrows():
         snapshot = snapshots.loc[int(row.game_id)]
         if (
@@ -103,13 +130,14 @@ def verify(storage, lock_raw: bytes, local_output: Path | None = None) -> dict:
             raise ValueError("Week 5 canonical market snapshot differs")
         for target in ("spread", "total"):
             _verify_target(row, quotes, target=target)
-    forecast_raw = storage.read_bytes(FORECAST_URI)
+    forecast_raw = storage.read_bytes(forecast_uri)
     forecast = json.loads(forecast_raw)
     verify_signed_payload(forecast, label="Week 5 forecast")
     if (
         forecast.get("state") != "candidate"
         or forecast.get("timing_class") != "live"
         or manifest["parents"]["forecast_manifest_raw_sha256"] != _sha(forecast_raw)
+        or forecast.get("identity", {}).get("run_id") != run_id
     ):
         raise ValueError("Week 5 forecast parent differs")
     model_raw = storage.read_bytes(forecast["prediction_ref"]["uri"])
@@ -126,7 +154,7 @@ def verify(storage, lock_raw: bytes, local_output: Path | None = None) -> dict:
             "state": "verified",
             "season": 2026,
             "week": 5,
-            "run_id": RUN_ID,
+            "run_id": run_id,
             "serving_manifest_raw_sha256": _sha(manifest_raw),
             "source_lock_sha256": _sha(lock_raw),
             "game_count": 56,
@@ -146,6 +174,7 @@ def main() -> None:
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-receipt-sha")
     parser.add_argument("--expected-code-sha")
+    parser.add_argument("--release-tag", default="20260929-p1")
     args = parser.parse_args()
     if (
         os.getenv("CFB_STORAGE_BACKEND") != "r2"
@@ -155,7 +184,12 @@ def main() -> None:
     if args.apply and args.local_output:
         raise SystemExit("immutable verifier must re-read Preview R2 serving")
     storage = get_storage(environment="preview")
-    receipt = verify(storage, args.source_lock.read_bytes(), args.local_output)
+    receipt = verify(
+        storage,
+        args.source_lock.read_bytes(),
+        args.local_output,
+        release_tag=args.release_tag,
+    )
     raw = canonical_json(receipt)
     digest = _sha(raw)
     if args.apply:
@@ -169,15 +203,16 @@ def main() -> None:
             or digest != args.expected_receipt_sha
         ):
             raise SystemExit("live verifier publication requires reviewed clean code")
-        if storage.exists(RECEIPT_URI):
-            if storage.read_bytes(RECEIPT_URI) != raw:
+        uri = receipt_uri(args.release_tag)
+        if storage.exists(uri):
+            if storage.read_bytes(uri) != raw:
                 raise FileExistsError("immutable Week 5 verifier collision")
         else:
-            storage.write_bytes(raw, RECEIPT_URI)
+            storage.write_bytes(raw, uri)
     print(
         json.dumps(
             {
-                "run_id": RUN_ID,
+                "run_id": run_uris(args.release_tag)[0],
                 "receipt_sha256": digest,
                 "verified": True,
                 "applied": args.apply,

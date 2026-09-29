@@ -23,7 +23,9 @@ Local web readback against Preview showed the selected Week 5 successor on the p
 
 ## Release gates still open
 
-- The Week 5 candidate uses a September 27 market capture. Refresh market coverage and regenerate/reverify the prospective artifact before any production release; if its freeze boundary is missed, move the live release to the next unstarted slate.
+- The selected Preview Week 5 `p1` candidate uses a September 27 market capture. A fresh read-only CFBD check at `2026-09-29T20:27:09Z` found 56/56 scheduled games with both targets, but 50/56 matching DraftKings game quotes differed from that old capture. `p1` is therefore **ineligible as the final production Week 5 packet**.
+- New Preview source capture `74ba9bc899f845d290f8cf6ec3824e3f` was recorded at `2026-09-29T20:28:55Z` under pipeline `v5repair-w5-market-20260929-p2`. Its Silver refs are `market_quotes` version `2608fc49f03dc6e46a5b4a87` (112 quotes, 56 games; content SHA `bd028650598ff08664f0d3e66216cc0666e8f5f137facc36d3c4a8636139e939`) and `market_snapshots` version `22c97e0aae0debc2904278c3` (56 games; content SHA `a8f16a87a811a6017bd004ebf66ce6af0c07d161dd4eeefad75ff9954fa38eec`). The `p2` forecast and serving preflight passed locally for 56 games and 112 quote selections; their immutable publication awaits a clean committed checkout.
+- Refresh/recheck markets again immediately before a production release and final freeze. If the freeze boundary is missed, move the live release to the next unstarted slate.
 - Re-read production selections, finals, schedule, and first kickoff. Preview's original run IDs differ from the production rollback IDs; construct the production packet from fresh production readback.
 - Build the exact production authorization and batch selection packets with refreshed artifact hashes and an immediate rollback packet. Present those packets for the contract's separate release decision. No production successor authorization or selection has been applied.
 

@@ -3,6 +3,7 @@
 import pytest
 
 from scripts.pipeline.authorize_v5_intended_update_preview import authorization_record
+from scripts.pipeline.build_v5_intended_update_live_serving import build, run_uris
 from scripts.pipeline.package_v5_intended_update_runs import _write_once, package_week
 
 
@@ -68,3 +69,14 @@ def test_immutable_package_write_refuses_different_bytes():
     with pytest.raises(FileExistsError, match="collision"):
         _write_once(storage, "run/artifact", b"changed")
     assert storage.data["run/artifact"] == b"first"
+
+
+def test_refreshed_live_run_requires_new_market_refs_and_cutoff():
+    run_id, forecast_uri, serving_uri = run_uris("20260929-p2")
+    assert run_id == "2026w5-v5repair-20260929-p2"
+    assert "20260929-p2/week=5" in forecast_uri
+    assert run_id in serving_uri
+    with pytest.raises(ValueError, match="fresh market refs and cutoff"):
+        build(object(), b"{}", release_tag="20260929-p2")
+    with pytest.raises(ValueError, match="invalid live release tag"):
+        run_uris("../production")
