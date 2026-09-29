@@ -53,7 +53,7 @@ def authorization_record(manifest: dict, *, decision_ref: str) -> dict:
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--week", type=int, choices=range(5), required=True)
+    parser.add_argument("--week", type=int, choices=range(6), required=True)
     parser.add_argument("--decision-ref", required=True)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-record-sha")

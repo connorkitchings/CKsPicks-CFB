@@ -37,6 +37,16 @@ def test_preview_authorization_binds_every_immutable_parent():
     with pytest.raises(ValueError, match="decision reference"):
         authorization_record(manifest, decision_ref=" ")
 
+    live = {
+        **manifest,
+        "run_id": "2026w5-v5repair-20260929-p1",
+        "week": 5,
+        "evidence_class": "pending",
+    }
+    live_record = authorization_record(live, decision_ref="approved Preview rehearsal")
+    assert (live_record["week"], live_record["evidence_class"]) == (5, "pending")
+    assert live_record["authorization_id"] != record["authorization_id"]
+
 
 def test_immutable_package_write_refuses_different_bytes():
     class Storage:
