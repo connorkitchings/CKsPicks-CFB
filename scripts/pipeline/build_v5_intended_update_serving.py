@@ -203,6 +203,13 @@ def build(
             & scored["edge_total"].lt(float(config.total_edge_threshold)),
             "Total Bet Result",
         ] = "No Bet"
+        # Deterministic row order: upstream schedule order differs between the
+        # local-cache and R2 source paths, so sort by game_id for byte-stable
+        # artifacts (the --apply evidence guard requires exact equality).
+        serving = serving.sort_values("game_id", kind="mergesort").reset_index(
+            drop=True
+        )
+        scored = scored.sort_values("game_id", kind="mergesort").reset_index(drop=True)
         if (
             len(scored) != len(expected)
             or scored[["home_points", "away_points"]].isna().any().any()
