@@ -352,7 +352,7 @@ function summarize(rows: PerformanceRow[], classification: Performance["classifi
   }
   return {
     classification,
-    games: rows.length,
+    games: rows.filter((row) => row.homePoints !== null && row.awayPoints !== null).length,
     evaluated: marginN,
     marginMae: marginN ? marginError / marginN : null,
     totalMae: totalN ? totalError / totalN : null,

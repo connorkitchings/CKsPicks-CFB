@@ -2,7 +2,8 @@ import { getV5Performance, type Performance } from "@/lib/v5";
 import { v5PerformanceFixture } from "@/test/fixtures/publication";
 import { StatCard, winRatePercent } from "@/components/StatCard";
 
-export const revalidate = 300;
+// Selection changes must not serve a record baked into an earlier build.
+export const dynamic = "force-dynamic";
 
 type Record = Performance["spread"];
 
