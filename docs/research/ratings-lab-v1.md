@@ -1,6 +1,12 @@
 # Ratings laboratory v1
 
-The ratings laboratory is a separate, private research path for designing V6 candidates. It reads the exact accepted V5 historical parents and writes only to a dedicated R2 research bucket. It does not change the V5 forecast, production selection, Neon, or the public site. The implementation contract is [`v6-ratings-research-platform.md`](../plans/2026-09-28/v6-ratings-research-platform.md).
+The ratings laboratory is a separate, private research path for designing V6 candidates. Its normal CLI reads the exact accepted V5 historical parents and writes only to a dedicated R2 research bucket. It does not change the V5 forecast, production selection, Neon, or the public site. The implementation contract is [`v6-ratings-research-platform.md`](../plans/2026-09-28/v6-ratings-research-platform.md).
+
+The [V5 intended-update repair experiment](2026-09-28-v5-intended-update-repair-experiment.md)
+is an explicitly scoped local-output exception while that dedicated bucket is
+unprovisioned. Its standalone research scripts use a read-only Preview source
+adapter and write reports/traces locally; they do not publish through the
+normal lab CLI or alter any accepted artifact.
 
 ## Storage and credentials
 

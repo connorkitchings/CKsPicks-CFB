@@ -1,10 +1,10 @@
 # V5 Estimator Review: Snapshot Stream vs Single Cumulative vs Game-Specific
 
-- **Status:** In Progress
+- **Status:** Implemented (research only; 2026-09-28)
 - **Created:** 2026-09-28
 - **Planner:** Sol
 - **Approval source:** User approved the Draft ("approved", 2026-09-28 session)
-- **Implementation log:** `session_logs/2026-09-28/08-followup2-implementation.md`
+- **Implementation log:** `session_logs/2026-09-28/09-intended-update-implementation.md`
 - **Commit policy:** Separate plan commit (research; independent review track)
 
 ## Goal
@@ -256,16 +256,67 @@ opponent information into early states).
 
 ## Definition of Done
 
-- [ ] Updater, three designs, and both recipes implemented with Phase 1 proofs green.
-- [ ] (a) reproduces frozen V5 pregame states (difference recorded ~0).
-- [ ] Phase 2 evaluation complete with full-population coverage and paired comparison.
-- [ ] Sensitivities and variance characterization reported; no promotion claim.
-- [ ] `v5_status.md` findings note recorded; implementation log created.
-- [ ] Full test suite, `ruff format --check`, `ruff check`, `mkdocs build`, `git diff --check` pass.
-- [ ] Plan status updated to `Implemented` only then; otherwise `In Progress` with blocker.
-- [ ] No accepted V5 artifact, production state, or selection changed.
+- [x] Updater, four labeled arms, and both recipes implemented with Phase 1 proofs green.
+- [x] (a) reproduces frozen V5 pregame states (max mean difference `8.88e-16`).
+- [x] Phase 2 evaluation complete with full-population coverage and paired comparison.
+- [x] Timing, sparse-graph, completed-game-stage, and forecast-uncertainty diagnostics reported; no promotion claim.
+- [x] `v5_status.md` findings note recorded; implementation log created.
+- [x] Full test suite, `ruff format --check`, `ruff check`, `mkdocs build`, `git diff --check` pass.
+- [x] Plan status updated to `Implemented` after research validation.
+- [x] No accepted V5 artifact, production state, or selection changed.
 
 ## Amendments
 
-None yet. A change to the adjustment recipe form, evaluation folds, or any
-production/p promotion implication requires a new approved amendment.
+### 2026-09-28 — User-approved cutoff-specific repair clarification
+
+The user explicitly authorized a revised execution plan in this session. Its
+primary repaired arm derives **one game-specific adjusted value per source game
+at each forecast cutoff** from the four-pass graph containing only admissible
+earlier-week evidence. The forecast game is excluded. Certified V5 instead
+freezes a **cumulative team snapshot** for each source game at its first
+admissible boundary. Consequently the primary repair changes both evidence
+shape and opponent-adjustment timing. A first-boundary game-specific sensitivity
+is required to separate these effects; do not describe the primary difference
+as purely an evidence-weighting effect. The current V5 replica, single-cumulative
+control, accepted priors/scales, source population, historical folds, bridge,
+and no-production-promotion boundary remain as originally approved. Local
+research output is permitted while the separate R2 lab bucket is unavailable.
+
+The final report must distinguish (1) current V5, (2) game-specific adjusted at
+each cutoff (the requested repair), (3) single cumulative shrunk once, and (4)
+the first-boundary game-specific timing sensitivity. This amendment was
+explicitly requested through the user's implementation instruction; no live
+artifact or production code may change.
+
+### 2026-09-28 — Fixed-input sensitivity clarification and historical coverage finding
+
+The user's latest instruction explicitly holds possession rules, priors,
+carryover, `k=8`, scaling, game population, offsets, and forecast protocol
+fixed. The original Task 4 examples of changing garbage-time exposure and a
+`k` grid therefore are **not** part of this implementation; they would change
+fixed inputs and answer a separate modeling question. The reported sensitivities
+are first-boundary versus current-cutoff adjustment, sparse opponent graphs,
+completed-game stage, and forecast uncertainty under the fixed protocol.
+
+Exact replica verification revealed that the historical first-boundary lookup
+finds just 330 usable source-game-role observations because its adjusted
+snapshots carry only the target game's teams. The 2026 live replay uses a
+different team-boundary/terminal path. The completed
+[research report](../../research/2026-09-28-v5-intended-update-repair-experiment.md)
+therefore separates the historical coverage effect from opponent-adjustment
+timing and does not translate the historical lift into a live promotion claim.
+
+### 2026-09-28 — User-authorized 2026 counterfactual follow-up
+
+The user requested concrete repaired **2026** ratings and forecasts before
+deciding what to try next. This follow-up replays the fixed intended-update
+method on the certified Week 4 live measurement and prior parents, retaining
+all accepted input rules. It evaluates two separate effects: (1) replace 2026
+ratings while holding the existing frozen bridge fixed and (2) use those
+ratings with the same alpha-10 bridge refit on repaired through-2025 states.
+The accepted bridge must first reproduce the frozen Week 5 forecast, and both
+arms must cover identical 2026 game keys. Completed Weeks 0–4 are labeled
+retrospective and Week 5 is unscored. Local research outputs and report are
+allowed; this amendment does not authorize production publication or promotion.
+The completed [2026 counterfactual report](../../research/2026-09-28-v5-2026-counterfactual.md)
+records the paired scores and the saved per-game rating/prediction tables.

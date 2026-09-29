@@ -26,12 +26,26 @@ Week 5 production release.
 The [2026-09-28 ratings audit](../research/2026-09-28-current-v5-ratings-audit.md)
 reconstructed all 138 current ratings exactly and documents weekly prior weights.
 It also records a default-view cutoff-label mismatch during projection before
-selection and an unresolved cumulative-snapshot observation concern. The
+selection and a cumulative-snapshot observation concern. The
 serving mismatch is fixed under
 [default-view selection binding](../plans/2026-09-28/v5-default-view-selection-binding.md):
 the default label now derives from the served rows and frozen-tab backfill is
-pinned to the cutoff-owning source. The estimator concern remains open
-follow-up research. No accepted artifact or production model was changed.
+pinned to the cutoff-owning source. The
+[intended-update repair experiment](../research/2026-09-28-v5-intended-update-repair-experiment.md)
+reproduced the certified historical states exactly, found sparse historical
+boundary evidence, and compared the repaired, single-cumulative, and
+first-boundary arms on identical forecast keys. The historical repair improves
+pooled 2022–2025 MAE, especially at the 4+ game stage, but the historical and
+live evidence paths differ; no successor has been selected or promoted. No
+accepted artifact or production model was changed.
+
+The [2026 counterfactual replay](../research/2026-09-28-v5-2026-counterfactual.md)
+now provides concrete repaired pregame ratings and paired predictions for
+Weeks 0–5. On 215 retrospectively reconstructed completed games, replacing
+only live 2026 ratings improves margin MAE by 0.53 points; refitting the
+through-2025 bridge on repaired historical states improves it by 1.40 points.
+Total gains are small. Week 5 has 56 unscored paired forecasts. This remains
+research evidence and does not change the accepted V5 production status.
 
 V5 estimates each team's offensive and defensive scoring efficiency per possession, adjusts for opponents, and updates one continuous season-long rating as games finish. The selected candidate is `ppp__rho_0_60__exposure`: true points per possession, a 0.60 carryover prior, and exposure-weighted rating updates. A fixed Ridge bridge turns pregame team states and earlier-only non-offense offsets into predicted home margin and game total. The selected bridge uses an expanding fitting history, alpha 10 reference heads, and a verified through-2025 final fit. Neither bookmaker lines nor 2026 outcomes select or refit V5. See the [full methodology](possession_rating_methodology.md).
 
