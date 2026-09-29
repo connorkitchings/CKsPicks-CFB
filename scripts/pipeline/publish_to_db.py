@@ -635,6 +635,12 @@ def publish_week(
         if manifest.get("system_name") != system_name:
             raise ValueError("V5 system name differs from the run manifest")
         if model_id == "v5-intended-update-2026-v1":
+            if (
+                manifest.get("source_config") != source_config
+                or manifest.get("config_sha")
+                != hashlib.sha256(Path(source_config).read_bytes()).hexdigest()
+            ):
+                raise ValueError("successor serving config differs from the run")
             verify_intended_update_publication_boundary(
                 manifest=manifest,
                 model_id=model_id,

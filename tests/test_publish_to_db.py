@@ -9,6 +9,7 @@ Covers the pure-Python pieces of scripts/pipeline/publish_to_db.py:
 
 from __future__ import annotations
 
+import hashlib
 import sys
 from io import StringIO
 from pathlib import Path
@@ -21,6 +22,32 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts" / "pipeline"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import publish_to_db  # noqa: E402
+
+
+def test_successor_publication_rejects_changed_serving_config(tmp_path):
+    config = tmp_path / "successor.yaml"
+    config.write_text("model_id: v5-intended-update-2026-v1\n")
+    manifest = {
+        "model_id": "v5-intended-update-2026-v1",
+        "system_name": "V5 Intended Update",
+        "evidence_class": "replay",
+        "source_config": str(config),
+        "config_sha": hashlib.sha256(config.read_bytes()).hexdigest(),
+    }
+    config.write_text("model_id: changed\n")
+    with pytest.raises(ValueError, match="serving config differs"):
+        publish_to_db.publish_week(
+            pd.DataFrame(),
+            "postgresql://unused/db",
+            season=2026,
+            week=0,
+            high_conf_threshold=8.0,
+            source_config=str(config),
+            system_name="V5 Intended Update",
+            model_id="v5-intended-update-2026-v1",
+            update_current=False,
+            run_manifest=manifest,
+        )
 
 
 def test_direct_v5_artifact_publish_requires_exact_authorization(monkeypatch):
