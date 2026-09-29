@@ -246,7 +246,7 @@ def build(
             },
             "output_refs": refs,
             "generation_hashes": generations,
-            "post_week_cutoffs": cutoffs,
+            "post_week_cutoffs": {str(week): cutoff for week, cutoff in cutoffs.items()},
             "pregame_games": game_count,
             "current_teams_per_generation": 138,
             "production_activation_authorized": False,
