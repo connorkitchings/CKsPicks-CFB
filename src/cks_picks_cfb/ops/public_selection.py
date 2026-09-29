@@ -79,7 +79,9 @@ def select_week_run(
             raise PublicSelectionError(str(exc)) from exc
         cur.execute(
             "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
-            "FROM v5_release_policy WHERE id = 1"
+            "FROM v5_model_bundle_approvals "
+            "WHERE model_id = %s AND inference_bundle_sha256 = %s",
+            (model_id, bundle_sha),
         )
         policy = cur.fetchone()
         if not policy or policy[0] != model_id or policy[1] != bundle_sha:
@@ -108,7 +110,19 @@ def select_week_run(
             )
             if manifest.get("artifact_sha256") != artifact_sha:
                 raise PublicSelectionError("stored run differs from immutable artifact")
-            if evidence_class == "replay":
+            if model_id == "v5-intended-update-2026-v1":
+                from cks_picks_cfb.ops.v5_intended_update_release import (
+                    require_intended_update_release_record,
+                )
+
+                require_intended_update_release_record(
+                    cur,
+                    manifest=manifest,
+                    storage=storage,
+                    season=season,
+                    week=week,
+                )
+            elif evidence_class == "replay":
                 from cks_picks_cfb.ops.v5_release import (
                     require_replay_release_record,
                 )
@@ -161,4 +175,35 @@ def select_week_run(
         "WHERE id = 1 AND season = %s AND week = %s",
         (run_id, season, week),
     )
+    return previous
+
+
+def select_week_runs_batch(
+    cur: Any,
+    *,
+    season: int,
+    runs_by_week: dict[int, str],
+    reason: str,
+    environment: str | None = None,
+) -> dict[int, str | None]:
+    """Select a complete multiweek replacement in the caller's transaction.
+
+    The caller commits once after this returns. Any failed run check raises and
+    rolls back all week pointers, history inserts, and the statistics refresh.
+    """
+    if not runs_by_week or any(week < 0 for week in runs_by_week):
+        raise PublicSelectionError("batch selection requires valid weeks")
+    previous = {}
+    for week in sorted(runs_by_week):
+        previous[week] = select_week_run(
+            cur,
+            season=season,
+            week=week,
+            run_id=runs_by_week[week],
+            reason=reason,
+            environment=environment,
+        )
+    from scripts.pipeline.score_to_db import RECOMPUTE_STATS_SQL
+
+    cur.execute(RECOMPUTE_STATS_SQL, {"season": season})
     return previous

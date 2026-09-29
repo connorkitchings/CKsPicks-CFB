@@ -165,6 +165,46 @@ export const v5ReleasePolicy = pgTable("v5_release_policy", {
   approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const v5ModelBundleApprovals = pgTable(
+  "v5_model_bundle_approvals",
+  {
+    approvalId: text("approval_id").primaryKey(),
+    modelId: text("model_id").notNull(),
+    inferenceBundleSha256: text("inference_bundle_sha256").notNull(),
+    firstLiveSeason: integer("first_live_season").notNull(),
+    firstLiveWeek: integer("first_live_week").notNull(),
+    decisionRef: text("decision_ref").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("uq_v5_model_bundle_approval").on(table.modelId, table.inferenceBundleSha256)],
+);
+
+export const v5IntendedUpdateReleaseAuthorizations = pgTable(
+  "v5_intended_update_release_authorizations",
+  {
+    authorizationId: text("authorization_id").primaryKey(),
+    environment: text("environment").notNull(),
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    predictionRunId: text("prediction_run_id").notNull(),
+    evidenceClass: text("evidence_class").notNull(),
+    modelId: text("model_id").notNull(),
+    inferenceBundleSha256: text("inference_bundle_sha256").notNull(),
+    ratingManifestSha256: text("rating_manifest_sha256").notNull(),
+    forecastManifestUri: text("forecast_manifest_uri").notNull(),
+    forecastManifestSha256: text("forecast_manifest_sha256").notNull(),
+    servingManifestUri: text("serving_manifest_uri").notNull(),
+    servingManifestSha256: text("serving_manifest_sha256").notNull(),
+    verifierUri: text("verifier_uri").notNull(),
+    verifierSha256: text("verifier_sha256").notNull(),
+    predictionArtifactUri: text("prediction_artifact_uri").notNull(),
+    predictionArtifactSha256: text("prediction_artifact_sha256").notNull(),
+    decisionRef: text("decision_ref").notNull(),
+    approvedAt: timestamp("approved_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("uq_v5_intended_update_authorization_run").on(table.environment, table.season, table.week, table.predictionRunId)],
+);
+
 export const v5ServingAuthorizations = pgTable(
   "v5_serving_authorizations",
   {

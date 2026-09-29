@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   defaultPeriodForRows,
   ownerSourceForCutoff,
+  parseSourceQualifiedPeriodId,
+  sourceQualifiedPeriodId,
   type Rating,
 } from "./rating-periods.ts";
 
@@ -65,13 +67,20 @@ test("default branch pairs the served label with served rows by construction", (
   assert.doesNotMatch(defaultBranch, /generations\[0\]/);
 });
 
-test("owner source resolution: newest row wins, null SHAs skipped", () => {
+test("legacy cutoff links retain their first published source", () => {
   const rows = [
     { sourceManifestSha256: null, createdAt: new Date("2026-09-28T00:00:00Z") },
     { sourceManifestSha256: "sha-B", createdAt: new Date("2026-09-27T15:00:00Z") },
     { sourceManifestSha256: "sha-A", createdAt: new Date("2026-09-27T14:00:00Z") },
   ];
-  assert.equal(ownerSourceForCutoff(rows), "sha-B");
+  assert.equal(ownerSourceForCutoff(rows), "sha-A");
+});
+
+test("new period links include exact source and cutoff", () => {
+  const sha = "a".repeat(64);
+  const id = sourceQualifiedPeriodId(sha, WEEK_4_CUTOFF);
+  assert.deepEqual(parseSourceQualifiedPeriodId(id), { sourceSha: sha, cutoff: WEEK_4_CUTOFF });
+  assert.equal(parseSourceQualifiedPeriodId(WEEK_4_CUTOFF.toISOString()), null);
 });
 
 test("owner source resolution: empty or all-null rows yield null (fail closed)", () => {

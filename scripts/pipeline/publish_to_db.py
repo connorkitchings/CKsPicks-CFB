@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import hmac
+import io
 import json
 import math
 import os
@@ -633,7 +634,15 @@ def publish_week(
             raise ValueError("V5 model identity differs from the run manifest")
         if manifest.get("system_name") != system_name:
             raise ValueError("V5 system name differs from the run manifest")
-        if evidence_class == "pending":
+        if model_id == "v5-intended-update-2026-v1":
+            verify_intended_update_publication_boundary(
+                manifest=manifest,
+                model_id=model_id,
+                season=season,
+                week=week,
+                predictions=df,
+            )
+        elif evidence_class == "pending":
             verify_v5_publication_boundary(
                 manifest=manifest,
                 config_path=Path(source_config),
@@ -734,7 +743,9 @@ def publish_week(
                     )
                 cur.execute(
                     "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
-                    "FROM v5_release_policy WHERE id = 1"
+                    "FROM v5_model_bundle_approvals "
+                    "WHERE model_id = %s AND inference_bundle_sha256 = %s",
+                    (model_id, manifest.get("inference_bundle_sha256")),
                 )
                 policy = cur.fetchone()
                 if (
@@ -755,11 +766,29 @@ def publish_week(
                     raise RuntimeError(
                         "V5 prediction artifact does not use the approved inference bundle"
                     )
-                if evidence_class == "replay" and not manifest.get(
-                    "replay_verification_sha256"
+                if evidence_class == "replay" and not (
+                    manifest.get("v5_intended_update_verifier_sha256")
+                    if model_id == "v5-intended-update-2026-v1"
+                    else manifest.get("replay_verification_sha256")
                 ):
                     raise RuntimeError("V5 replay lacks independent verification")
-                if evidence_class == "pending" and target_environment == "production":
+                if (
+                    model_id == "v5-intended-update-2026-v1"
+                    and target_environment == "production"
+                ):
+                    from cks_picks_cfb.data.storage import get_storage
+                    from cks_picks_cfb.ops.v5_intended_update_release import (
+                        require_intended_update_release_record,
+                    )
+
+                    require_intended_update_release_record(
+                        cur,
+                        manifest=manifest,
+                        storage=get_storage(environment="production"),
+                        season=season,
+                        week=week,
+                    )
+                elif evidence_class == "pending" and target_environment == "production":
                     from cks_picks_cfb.data.storage import get_storage
                     from cks_picks_cfb.ops.v5_release import require_release_record
 
@@ -770,7 +799,7 @@ def publish_week(
                         season=season,
                         week=week,
                     )
-                if evidence_class == "replay" and target_environment == "production":
+                elif evidence_class == "replay" and target_environment == "production":
                     from cks_picks_cfb.data.storage import get_storage
                     from cks_picks_cfb.ops.v5_release import (
                         require_replay_release_record,
@@ -1088,6 +1117,96 @@ def _assert_v5_artifact_matches_forecast(
                 raise ValueError(
                     f"V5 prediction artifact differs from verified {target} forecast for game {game_id}"
                 )
+
+
+def verify_intended_update_publication_boundary(
+    *,
+    manifest: dict,
+    model_id: str,
+    season: int,
+    week: int,
+    predictions: pd.DataFrame,
+) -> None:
+    """Require verified successor serving and exact model output before DB write."""
+    from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
+    from cks_picks_cfb.data.storage import get_storage
+
+    if model_id != "v5-intended-update-2026-v1":
+        raise ValueError("unexpected successor model")
+    store = get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "production"))
+
+    def source(uri_key: str, sha_key: str, label: str) -> dict:
+        uri = manifest.get(uri_key)
+        sha = manifest.get(sha_key)
+        if not uri or not sha:
+            raise ValueError(f"successor run lacks {label}")
+        raw = store.read_bytes(uri)
+        if hashlib.sha256(raw).hexdigest() != sha:
+            raise ValueError(f"successor {label} checksum differs")
+        value = json.loads(raw)
+        verify_signed_payload(value, label=label)
+        return value
+
+    serving = source(
+        "v5_intended_update_serving_manifest_uri",
+        "v5_intended_update_serving_manifest_sha256",
+        "serving manifest",
+    )
+    forecast = source(
+        "v5_live_forecast_manifest_uri",
+        "v5_live_forecast_manifest_sha256",
+        "forecast manifest",
+    )
+    receipt = source(
+        "v5_intended_update_verifier_uri",
+        "v5_intended_update_verifier_sha256",
+        "serving verifier",
+    )
+    if (
+        serving.get("schema_version") != "v5_intended_update_2026_serving_manifest_v1"
+        or serving.get("identity", {}).get("run_id") != manifest.get("run_id")
+        or serving.get("identity", {}).get("week") != week
+        or serving.get("evidence_class") != manifest.get("evidence_class")
+        or serving.get("parents", {}).get("forecast_manifest_raw_sha256")
+        != manifest.get("v5_live_forecast_manifest_sha256")
+        or forecast.get("model_id") != model_id
+        or forecast.get("parents", {}).get("rating_manifest_raw_sha256")
+        != manifest.get("v5_rating_replay_manifest_sha256")
+        or forecast.get("parents", {}).get("inference_bundle_sha256")
+        != manifest.get("inference_bundle_sha256")
+        or receipt.get("schema_version")
+        != "v5_intended_update_2026_serving_verification_v1"
+        or receipt.get("state") != "verified"
+        or receipt.get("serving_manifest_raw_sha256")
+        != manifest.get("v5_intended_update_serving_manifest_sha256")
+    ):
+        raise ValueError("successor publication source chain differs")
+    prediction_ref = serving.get("prediction_ref") or {}
+    raw = store.read_bytes(str(prediction_ref.get("uri")))
+    if hashlib.sha256(raw).hexdigest() != prediction_ref.get("raw_sha256"):
+        raise ValueError("successor serving prediction checksum differs")
+    served = pd.read_csv(io.BytesIO(raw))
+    if len(served) != len(predictions) or set(served.game_id) != set(
+        predictions.game_id
+    ):
+        raise ValueError("successor serving game coverage differs")
+    for field in (
+        "Spread Prediction",
+        "Total Prediction",
+        "home_team_spread_line",
+        "total_line",
+    ):
+        left = served.set_index("game_id")[field].sort_index()
+        right = predictions.set_index("game_id")[field].sort_index()
+        if not left.equals(right):
+            raise ValueError(f"successor serving field differs: {field}")
+    forecast_ref = forecast.get("prediction_ref") or {}
+    forecast_raw = store.read_bytes(str(forecast_ref.get("uri")))
+    if hashlib.sha256(forecast_raw).hexdigest() != forecast_ref.get("raw_sha256"):
+        raise ValueError("successor model forecast checksum differs")
+    _assert_v5_artifact_matches_forecast(
+        predictions, pd.read_csv(io.BytesIO(forecast_raw)), season=season, week=week
+    )
 
 
 def verify_v5_publication_boundary(

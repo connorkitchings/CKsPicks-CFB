@@ -47,7 +47,7 @@ def test_direct_v5_artifact_publish_requires_exact_authorization(monkeypatch):
             sql = self.queries[-1]
             if "session_user" in sql:
                 return ("cks_prod_pipeline", "cks_prod_pipeline")
-            if "v5_release_policy" in sql:
+            if "v5_model_bundle_approvals" in sql:
                 return ("v5-possession-test", "a" * 64, 2026, 5)
             return None
 
@@ -219,7 +219,7 @@ def test_direct_v5_replay_publish_requires_exact_authorization(monkeypatch):
             sql = self.queries[-1]
             if "session_user" in sql:
                 return ("cks_prod_pipeline", "cks_prod_pipeline")
-            if "v5_release_policy" in sql:
+            if "v5_model_bundle_approvals" in sql:
                 return ("v5-possession-test", "a" * 64, 2026, 5)
             return None
 

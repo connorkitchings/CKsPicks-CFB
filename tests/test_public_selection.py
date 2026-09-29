@@ -2,11 +2,35 @@
 
 import pytest
 
+from cks_picks_cfb.ops import public_selection
 from cks_picks_cfb.ops.public_selection import PublicSelectionError, select_week_run
 
 V4_MODEL = "week0-2026-v4-strict-20260818-r2"
 V5_MODEL = "v5-possession-ppp-rho060-exposure"
 V5_BUNDLE = "b" * 64
+
+
+def test_batch_failure_never_recomputes_stats(monkeypatch):
+    calls = []
+
+    def select(_cur, *, week, **_kwargs):
+        calls.append(week)
+        if week == 2:
+            raise PublicSelectionError("injected second-run failure")
+        return f"old-{week}"
+
+    monkeypatch.setattr(public_selection, "select_week_run", select)
+    cur = FakeCursor([])
+    with pytest.raises(PublicSelectionError, match="injected"):
+        public_selection.select_week_runs_batch(
+            cur,
+            season=2026,
+            runs_by_week={2: "new-2", 1: "new-1"},
+            reason="batch rehearsal",
+            environment="preview",
+        )
+    assert calls == [1, 2]
+    assert not any("system_stats" in sql for sql in cur.executed)
 
 
 class FakeCursor:
@@ -157,7 +181,7 @@ def test_v5_selection_enforces_the_release_policy():
         environment="preview",
     )
     assert previous is None
-    assert any("v5_release_policy" in sql for sql in cur.executed)
+    assert any("v5_model_bundle_approvals" in sql for sql in cur.executed)
     assert any("INSERT INTO site_week_selections" in sql for sql in cur.executed)
 
 

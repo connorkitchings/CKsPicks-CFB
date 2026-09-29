@@ -38,7 +38,12 @@ def _utc(value: str) -> datetime:
 
 
 def _rating_rows(
-    conn_url: str, *, year: int, week: int, as_of: datetime
+    conn_url: str,
+    *,
+    year: int,
+    week: int,
+    as_of: datetime,
+    required_source_sha256: str | None = None,
 ) -> list[tuple]:
     """Read projected generations without changing the serving database."""
     with psycopg.connect(
@@ -50,9 +55,10 @@ def _rating_rows(
                 "snapshot_class, cutoff_utc, created_at "
                 "FROM v5_rating_snapshots "
                 "WHERE season = %s AND cutoff_utc <= %s "
+                "AND (%s::text IS NULL OR source_manifest_sha256 = %s) "
                 "AND ((snapshot_class = 'current' AND week < %s) "
                 "OR (snapshot_class = 'pregame' AND week = 0 AND game_id IS NULL))",
-                (year, as_of, week),
+                (year, as_of, required_source_sha256, required_source_sha256, week),
             )
             return cur.fetchall()
 
@@ -63,11 +69,16 @@ def _rating_currency(
     target_teams: set[str],
     completed_games: pd.DataFrame,
     as_of: datetime,
+    required_source_sha256: str | None = None,
 ) -> dict[str, str]:
     """Require one complete projected generation for the target slate."""
     target_teams = {name for team in target_teams if (name := canonical_team(team))}
     if not target_teams:
         raise ValueError("Ratings gate has no target-week teams")
+    if required_source_sha256 is not None:
+        if len(required_source_sha256) != 64:
+            raise ValueError("Ratings gate requires a full source manifest SHA")
+        rows = [row for row in rows if str(row[1]) == required_source_sha256]
     current = [row for row in rows if row[3] == "current"]
     preseason = [row for row in rows if row[3] == "pregame"]
     completed = completed_games.copy()
@@ -142,6 +153,8 @@ def _rating_currency(
         raise ValueError("Ratings cutoff is later than the requested as_of")
     if len(sha) != 64:
         raise ValueError("Ratings generation has an invalid manifest SHA")
+    if required_source_sha256 is not None and sha != required_source_sha256:
+        raise ValueError("Ratings generation differs from forecast-required source")
     current_teams = [canonical_team(row[2]) for row in selected if row[3] == "current"]
     baseline_teams = [
         canonical_team(row[2])
@@ -175,6 +188,10 @@ def main() -> None:
     parser.add_argument("--games-ref-uri", required=True)
     parser.add_argument("--outcomes-ref-uri", required=True)
     parser.add_argument("--gold-ref-uri", required=True)
+    parser.add_argument(
+        "--rating-manifest-sha256",
+        help="Require one exact projected rating source for the forecast being prepared",
+    )
     parser.add_argument(
         "--environment", choices=("preview", "production"), required=True
     )
@@ -251,13 +268,18 @@ def main() -> None:
     try:
         conn_url = resolve_runtime_target(args.environment).database_url
         rating_rows = _rating_rows(
-            conn_url, year=args.year, week=args.week, as_of=_utc(args.as_of)
+            conn_url,
+            year=args.year,
+            week=args.week,
+            as_of=_utc(args.as_of),
+            required_source_sha256=args.rating_manifest_sha256,
         )
         rating_summary = _rating_currency(
             rating_rows,
             target_teams=target_teams,
             completed_games=completed_games,
             as_of=_utc(args.as_of),
+            required_source_sha256=args.rating_manifest_sha256,
         )
     except (psycopg.Error, RuntimeError, ValueError) as exc:
         raise SystemExit(f"Ratings readiness failed: {exc}") from exc

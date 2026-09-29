@@ -5,7 +5,9 @@ import {
   defaultPeriodForRows,
   formatCutoffLabel,
   ownerSourceForCutoff,
+  parseSourceQualifiedPeriodId,
   PRESEASON_META,
+  sourceQualifiedPeriodId,
   WEEK_GENERATIONS,
   type PeriodMeta,
   type Rating,
@@ -38,6 +40,7 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   if (!sourceSha) return [];
   const rows = await db.select({
     team: schema.v5RatingSnapshots.team,
+    sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
     week: schema.v5RatingSnapshots.week,
     cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
     offenseRating: schema.v5RatingSnapshots.offenseRating,
@@ -72,11 +75,14 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
  * never drift: each one is served from its own frozen rows.
  */
 export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta[]> => {
+  const sourceSha = await getSelectedRatingSource(season);
+  if (!sourceSha) return [PRESEASON_META];
   const rows = await db.selectDistinct({ cutoffUtc: schema.v5RatingSnapshots.cutoffUtc })
     .from(schema.v5RatingSnapshots)
     .where(and(
       eq(schema.v5RatingSnapshots.season, season),
       eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+      eq(schema.v5RatingSnapshots.sourceManifestSha256, sourceSha),
     ))
     .orderBy(desc(schema.v5RatingSnapshots.cutoffUtc));
   const periods = rows.map(({ cutoffUtc }, index) => {
@@ -85,7 +91,7 @@ export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta
     const { label: dateLabel, shortLabel: dateShort } = formatCutoffLabel(cutoffUtc);
     const active = index === 0;
     return {
-      id: iso,
+      id: sourceQualifiedPeriodId(sourceSha, cutoffUtc),
       label: known ? `Post-Week ${known.postWeek}` : dateLabel,
       shortLabel: known ? `Week ${known.postWeek}` : dateShort,
       description: known
@@ -94,6 +100,7 @@ export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta
           ? "Frozen team ratings from all evidence available at cutoff (active model state)."
           : "Frozen team ratings from all evidence available at cutoff.",
       cutoffUtc,
+      sourceManifestSha256: sourceSha,
       ...(known ? { postWeek: known.postWeek } : {}),
     } satisfies PeriodMeta;
   });
@@ -102,6 +109,7 @@ export const getRatingPeriods = cache(async (season: number): Promise<PeriodMeta
 
 const RATING_SELECT = {
   team: schema.v5RatingSnapshots.team,
+  sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
   week: schema.v5RatingSnapshots.week,
   cutoffUtc: schema.v5RatingSnapshots.cutoffUtc,
   offenseRating: schema.v5RatingSnapshots.offenseRating,
@@ -141,18 +149,35 @@ export const getWeeklyRatings = cache(async (
     return { ratings, period: "preseason", periodMeta: PRESEASON_META };
   }
 
-  // Exact generation cutoff: serve that generation's frozen rows. No source
-  // pin: a frozen assessment is self-identifying by cutoff and must not move
-  // when later generations are projected.
+  // Qualified links keep their source forever. Legacy bare-cutoff links bind
+  // to the first published source at that cutoff, even after a successor lands.
+  const qualified = targetPeriod ? parseSourceQualifiedPeriodId(targetPeriod) : null;
+  const legacyCutoff = !qualified && targetPeriod && /^\d{4}-\d{2}-\d{2}T/.test(targetPeriod)
+    ? new Date(targetPeriod) : null;
   const frozen = generations.find((p) => p.id === targetPeriod);
-  if (frozen?.cutoffUtc) {
+  const cutoff = qualified?.cutoff ?? (legacyCutoff && !Number.isNaN(legacyCutoff.getTime()) ? legacyCutoff : frozen?.cutoffUtc);
+  if (cutoff) {
+    let ownerSource = qualified?.sourceSha ?? frozen?.sourceManifestSha256 ?? null;
+    if (!ownerSource) {
+      const ownerRows = await db.select({
+        sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
+        createdAt: schema.v5RatingSnapshots.createdAt,
+      }).from(schema.v5RatingSnapshots)
+        .where(and(
+          eq(schema.v5RatingSnapshots.season, season),
+          eq(schema.v5RatingSnapshots.snapshotClass, "current"),
+          eq(schema.v5RatingSnapshots.cutoffUtc, cutoff),
+        ));
+      ownerSource = ownerSourceForCutoff(ownerRows);
+    }
+    if (!ownerSource) return { ratings: [], period: "preseason", periodMeta: PRESEASON_META };
     const rows = await db.select(RATING_SELECT).from(schema.v5RatingSnapshots)
       .where(and(
         eq(schema.v5RatingSnapshots.season, season),
         eq(schema.v5RatingSnapshots.snapshotClass, "current"),
-        eq(schema.v5RatingSnapshots.cutoffUtc, frozen.cutoffUtc),
-      ))
-      .orderBy(desc(schema.v5RatingSnapshots.createdAt));
+        eq(schema.v5RatingSnapshots.cutoffUtc, cutoff),
+        eq(schema.v5RatingSnapshots.sourceManifestSha256, ownerSource),
+      ));
     const byTeam = new Map<string, Rating>();
     for (const row of rows) {
       if (!byTeam.has(row.team)) {
@@ -164,24 +189,25 @@ export const getWeeklyRatings = cache(async (
     // to the cutoff-owning source, never the currently selected source, so
     // historical tabs stop moving when the site selection changes. An owner
     // without preseason rows degrades to frozen-rows-only (fail closed).
-    const ownerRows = await db.select({
-      sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
-      createdAt: schema.v5RatingSnapshots.createdAt,
-    }).from(schema.v5RatingSnapshots)
-      .where(and(
-        eq(schema.v5RatingSnapshots.season, season),
-        eq(schema.v5RatingSnapshots.snapshotClass, "current"),
-        eq(schema.v5RatingSnapshots.cutoffUtc, frozen.cutoffUtc),
-      ))
-      .orderBy(desc(schema.v5RatingSnapshots.createdAt));
-    const ownerSource = ownerSourceForCutoff(ownerRows);
     for (const prior of await getPreseasonPriors(season, ownerSource)) {
       if (!byTeam.has(prior.team)) {
         byTeam.set(prior.team, prior);
       }
     }
     const ratings = [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
-    return { ratings, period: frozen.id, periodMeta: frozen };
+    const periodMeta = frozen?.sourceManifestSha256 === ownerSource ? frozen : {
+      id: sourceQualifiedPeriodId(ownerSource, cutoff),
+      label: WEEK_GENERATIONS[cutoff.toISOString()]
+        ? `Post-Week ${WEEK_GENERATIONS[cutoff.toISOString()].postWeek}`
+        : formatCutoffLabel(cutoff).label,
+      shortLabel: WEEK_GENERATIONS[cutoff.toISOString()]
+        ? `Week ${WEEK_GENERATIONS[cutoff.toISOString()].postWeek}`
+        : formatCutoffLabel(cutoff).shortLabel,
+      description: "Frozen team ratings from this source and exact evidence cutoff.",
+      cutoffUtc: cutoff,
+      sourceManifestSha256: ownerSource,
+    } satisfies PeriodMeta;
+    return { ratings, period: periodMeta.id, periodMeta };
   }
 
   // Retired week-style params ("post-N", "week-N", bare numbers) resolve to
