@@ -51,6 +51,10 @@ export default async function PerformancePage() {
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
           Results for every selected V5 forecast in 2026.
         </p>
+        <p role="note" className="mt-3 max-w-2xl text-sm text-ink-muted">
+          Weeks 0–4 use retrospective predictions and grades recalculated after the games
+          with the repaired V5 ratings. They were not the picks originally published before kickoff.
+        </p>
       </div>
 
       {unavailable ? (

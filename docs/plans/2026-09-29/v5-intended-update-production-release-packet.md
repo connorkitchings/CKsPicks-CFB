@@ -1,6 +1,6 @@
 # V5 intended-update 2026 production release packet
 
-**Decision status:** Pending. This packet is the separate exact release decision required by [Task 6](v5-intended-update-2026-production-repair.md). Its machine-readable [payload](v5-intended-update-production-release-packet.json) has SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`. No successor production authorization, prediction publication, rating projection, score publication, or selection has occurred.
+**Decision status:** Approved by the user and activated on 2026-09-30 UTC. This packet is the separate exact release decision required by [Task 6](v5-intended-update-2026-production-repair.md). Its machine-readable [payload](v5-intended-update-production-release-packet.json) has SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`; the payload itself remains unchanged.
 
 ## Proposed production result
 
@@ -22,7 +22,7 @@ The exact packet includes each production-namespace prediction/scored artifact U
 - [Preview rehearsal](v5-intended-update-preview-rehearsal.md) selected the exact replacement set, froze Week 5 at `2026-09-29T20:43:53.376950Z` before `2026-10-02T00:00:00Z` first kickoff, rolled back all six weeks, and reactivated them. Preview readback matched ratings, game cards, grades, and season totals.
 - The p2 market capture occurred at `2026-09-29T20:28:55Z`; all 56 scheduled games had spread and total lines. A subsequent source check at `2026-09-30T02:10:51Z` still found all 112 matching provider quotes, with six quote values moving across five games. The packet represents the timestamped p2 snapshot. A new market capture and publication may be needed before final Week 5 freeze; Week 5 must remain ungraded until certified finals.
 - A read-only production check found migration 0018 present, zero successor authorizations, the six original runs selected, and original season scores. The exact six-week batch packet passed the production selector's read-only current-state preflight. The 1,370-row rating projection passed its verified-source dry run. Run authorization validators passed against an overlay containing the proposed production prediction bytes.
-- The local web build and Preview-backed ratings, predictions, and performance pages passed. Vercel production deployment `dpl_55FXEHdkUWy2CPoTfuTzxqEVK2Vt` is READY at commit `8a12e98efa24b6a3acbbfd11a43f74fcb4120eb6`. The web CI job passed. The Python formatting job found a single formatting-only issue in `scripts/pipeline/build_v5_intended_update_2026.py`; it was corrected locally and must pass CI after the correction is pushed before production activation.
+- The reviewed release code deployed at `2a878a43308580425dc07b5b0bb0dfa841e01aa6`; all three CI jobs passed before activation. Vercel production deployment `dpl_JD7w96FAdqdwtcctTeFkYTXB9nNt` was READY.
 
 ## Ordered execution after exact approval
 
@@ -34,4 +34,6 @@ The exact packet includes each production-namespace prediction/scored artifact U
 
 ## Decision — 2026-09-29
 
-Pending the user's explicit decision on packet SHA `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`. Approval authorizes only the exact run IDs, artifacts, score replacements, and rollback above, subject to the listed pre-activation checks. It does not authorize grading Week 5 or skipping its final market/freeze workflow.
+The user explicitly approved packet SHA `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`. The release staged and read back 22 immutable production-namespace R2 objects, registered the approved model pair and six run authorizations, projected 1,370 rating snapshots, and published all six replacement runs and five completed-week score artifacts. The first atomic selection attempt failed on the local Python import path and rolled back; readback confirmed all six original runs remained selected. With `PYTHONPATH=.:src`, the same sealed packet selected all six replacement runs atomically.
+
+Production readback then showed 215 completed-week predictions, 199 spread and 159 total grades, 93–103–3 spread and 82–77–0 total for 2026, and 56 ungraded Week 5 predictions. The live home page showed the selected Week 5 run, the ratings page exposed rating SHA `e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b`, and the performance page showed the new season records. The original six runs remain the exact batch rollback set. Week 5's final market refresh and pre-kickoff freeze remain in the weekly operator workflow; the p2 lines are a timestamped snapshot.

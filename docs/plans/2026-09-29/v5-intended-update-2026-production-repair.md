@@ -1,6 +1,7 @@
 # 2026 V5 intended-update production repair
 
 - **Status:** In Progress
+- **Production selection:** The user approved exact packet SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`; its six-week atomic selection and database/public-site data readback passed on 2026-09-30. The completed-week retrospective disclosure still awaits deployment, and Week 5's final market refresh/freeze remains a separate pre-kickoff gate.
 - **Created:** 2026-09-29
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact path in the 2026-09-29 handoff message; approved before code changes
@@ -122,8 +123,8 @@ Add an append-only approval registry for multiple exact model/bundle pairs and t
 
 - [ ] All implementation tasks and acceptance criteria are complete.
 - [ ] Required validation and independent verification pass.
-- [ ] Exact production release is separately approved and either completed with readback or recorded as prepared and awaiting that decision; the latter is **not** an implemented production fix.
-- [ ] Original runs and a tested batch rollback remain available.
+- [x] Exact production release is separately approved and completed with database and public data readback.
+- [x] Original runs and a tested batch rollback remain available.
 - [ ] Documentation, release evidence, and implementation session log are updated.
 - [ ] Contract status reflects the actual outcome: `Implemented` only after production readback, otherwise `In Progress`.
 

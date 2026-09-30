@@ -126,6 +126,7 @@ export default async function Home({
   let performance: Performance[] = [];
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
+  let retrospectiveRepair = false;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
     const fixture = uiFixture(publicationMode, week);
@@ -142,6 +143,8 @@ export default async function Home({
           // selection is V5; a legacy V4 fallback week renders its own
           // record without it.
           const selectedRun = await getRunForWeek(season, week);
+          retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
+            && selectedRun.evidenceClass === "replay";
           [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
             selectsV5(selectedRun?.modelId)
@@ -204,6 +207,13 @@ export default async function Home({
         {season > 0 && (
           <>
             {publicationMode === "predictions" && <V5PerformanceBanner performance={performance} />}
+
+            {retrospectiveRepair && (
+              <p role="note" className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted">
+                Retrospective replay: these predictions and grades were recalculated after the games
+                using the repaired V5 ratings. They were not the picks originally published before kickoff.
+              </p>
+            )}
 
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} />

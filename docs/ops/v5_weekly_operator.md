@@ -1,14 +1,20 @@
 # Manual V5 Weekly Operator
 
-> **Status (2026-09-27):** V5 best-quote replay serves public Weeks 0–4. The
-> Week 4 07/08 refresh and Week 5 live forecast were independently verified;
-> the [Week 5 line refresh](../../session_logs/2026-09-27/14-week5-line-refresh-candidate.md)
-> authorized and selected production run `2026w5-5d436e58c072` with both line
-> types for all 56 games. Future prospective publication requires a separately
-> approved, exact one-slate release record. The earlier Week 5 V5 run is the
-> immediate same-week rollback; V4 frozen runs remain available for prior slates.
-> The earlier fixture-class rehearsal exercised controller
-> mechanics but was not live evidence.
+> **Status (2026-09-30):** The [exact repaired-V5 release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md)
+> selected `2026w{0..4}-v5repair-20260929-p1` as retrospective scored replays
+> and `2026w5-v5repair-20260929-p2` as the ungraded live slate. The old
+> `2026w{0..4}-v5replay-bestquote-20260926-r3` runs and
+> `2026w5-5d436e58c072` remain the exact six-week rollback set. The p2 Week 5
+> quotes were captured at 2026-09-29 20:28:55Z; a later check found six moved
+> quote values across five games. Reconcile a fresh market capture and complete
+> the final pre-kickoff freeze before 2026-10-02 00:00Z. Do not grade Week 5
+> until certified finals.
+
+For the selected successor, continue from its independently verified rating
+manifest and refitted bundle. Keep the original V5 projector and original
+model-pair authorizations as rollback paths; a new prospective successor run
+requires its own exact source, bundle, quote, and release authorization. The
+full checklist below still governs market coverage, publication, and freeze.
 
 ## One cycle, reviewed stages
 
