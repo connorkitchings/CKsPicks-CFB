@@ -45,6 +45,21 @@ description: "V5-equivalent baseline: k=8.0, rho=0.60"
 
 To add a new candidate, add a `.yaml` file to `conf/research/candidates/`. Candidate IDs must be unique across code and YAML files.
 
+## Preseason Continuity Prior Engine (Phase 2)
+
+Phase 2 replaces scalar $\rho = 0.60$ carryover with a multi-signal preseason prior engine in `ratings_lab/priors.py`. The engine supports all six 4-factor measurement IDs (`rush_success_rate`, `rush_explosiveness`, `pass_success_rate`, `pass_explosiveness`, `rush_explosiveness_margin`, `pass_explosiveness_margin`).
+
+### Prior Formula
+For team $T$, role $R \in \{\text{offense}, \text{defense}\}$, measurement ID $m$, and season $s$ with prior terminal season $p$ and calendar gap $g = s - p$:
+
+$$\text{prior\_mean} = \rho_f^g \cdot \text{terminal\_signed} + 0.25 \cdot \text{ret\_std} + 0.20 \cdot \text{rec\_std} - 0.15 \cdot \text{new\_coach\_flag}$$
+$$\text{prior\_variance} = 1.0$$
+
+- **Single-point defensive polarity:** Defensive observations are negated ($\text{value\_signed} = -\text{value}$) prior to standardization. Higher ratings represent better units for both offense and defense, allowing plain differentials $(\text{Off} - \text{Def})$ at bridge time.
+- **Rho resolution:** `rho` accepts a float (broadcast to all IDs) or a dictionary mapping family keys (`{"SR", "Expl"}`) and/or exact measurement IDs (exact IDs take precedence).
+- **Temporal integrity:** Fail-closed validation enforces $\text{effective\_at} \le \text{earliest\_kickoff}$ for the season. The 2020 COVID season is rejected at every boundary; the 2019 $\to$ 2021 transition applies $g = 2$ ($\rho_f^2$).
+- **Neutral fallback:** Teams without terminal ratings (e.g. FCS opponents or new FBS programs) or missing continuity data fall back to neutral $\text{Rating}(0.0, 1.0)$ with an explicit missing reason, preventing NaN propagation.
+
 ## Deferred architectural decisions
 
 As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../plans/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:

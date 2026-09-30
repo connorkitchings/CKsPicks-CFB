@@ -6,6 +6,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -60,9 +61,12 @@ _FOUR_FACTORS: tuple[str, ...] = (
 _DEAD_MARKERS: tuple[str, ...] = (
     "spike",
     "kneel",
+    "end period",
     "end of half",
     "end of game",
     "timeout",
+    "placeholder",
+    "uncategorized",
 )
 
 
@@ -71,7 +75,27 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
 
     byplay = corpus.read_byplay()
     if byplay.empty:
-        return []
+        raise ValueError(
+            "byplay dataframe is empty; cannot compute 4-factor measurements"
+        )
+
+    required_cols = {
+        "season",
+        "game_id",
+        "quarter",
+        "down",
+        "offense",
+        "defense",
+        "play_type",
+        "rush_attempt",
+        "dropback",
+        "yards_gained",
+        "distance",
+        "yards_to_goal",
+    }
+    missing = sorted(required_cols - set(byplay.columns))
+    if missing:
+        raise ValueError(f"byplay frame missing required columns: {missing}")
 
     target_ids = set(_FOUR_FACTORS)
     if recipe.measurement_id not in {"4factor", "all"}:
@@ -124,6 +148,17 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
     yards = eligible["yards_gained"].values
 
     neededs = np.where((ytfs <= 0) | ((ytgs > 0) & (ytfs >= ytgs)), ytgs, ytfs)
+
+    # Fail-closed guard: down must be in 1..4 and needed yards must be strictly positive
+    valid_down_dist = (downs >= 1) & (downs <= 4) & (neededs > 0)
+    eligible = eligible[valid_down_dist].copy()
+    if eligible.empty:
+        return []
+
+    downs = eligible["down"].values
+    neededs = neededs[valid_down_dist]
+    yards = eligible["yards_gained"].values
+
     thresholds = np.zeros(len(eligible), dtype=float)
     thresholds[downs == 1] = 0.50 * neededs[downs == 1]
     thresholds[downs == 2] = 0.70 * neededs[downs == 2]
@@ -443,26 +478,23 @@ def build_cumulative(
 
 def terminal_standardized_seeds(
     individual: list[Observation],
-) -> dict[tuple[int, str, str], Rating]:
-    """A previous season's complete measured PPP supplies the carryover reference."""
-    grouped: dict[tuple[int, str, str], list[Observation]] = defaultdict(list)
-    for row in individual:
-        if row.value is not None and row.exposure > 0:
-            grouped[(row.season, row.team, row.role)].append(row)
-    by_role_season: dict[tuple[int, str], dict[str, float]] = defaultdict(dict)
-    for (season, team, role), rows in grouped.items():
-        exposure = sum(row.exposure for row in rows)
-        by_role_season[(season, role)][team] = (
-            sum(row.value * row.exposure for row in rows if row.value is not None)
-            / exposure
-        )
-    seeds: dict[tuple[int, str, str], Rating] = {}
-    for (season, role), team_values in by_role_season.items():
-        values = np.array(list(team_values.values()), dtype=float)
-        center, scale = float(values.mean()), max(float(values.std()), 1e-6)
-        for team, value in team_values.items():
-            seeds[(season, team, role)] = Rating((value - center) / scale, 1.0)
-    return seeds
+    measurement_id: str | None = None,
+    *,
+    signed_defense: bool = True,
+) -> dict[Any, Rating]:
+    """A previous season's complete measured performance supplies the carryover reference.
+
+    When signed_defense is True, defensive observation values are negated before
+    standardization so that higher standardized ratings consistently represent
+    better performance for both offense and defense.
+    """
+    from .priors import compute_terminal_seeds
+
+    return compute_terminal_seeds(
+        individual,
+        measurement_id=measurement_id,
+        signed_defense=signed_defense,
+    )
 
 
 def observation_frame(observations: list[Observation]) -> pd.DataFrame:
