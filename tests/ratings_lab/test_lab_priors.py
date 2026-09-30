@@ -617,8 +617,12 @@ def test_observation_units_cohort_stats_prior_mapping():
     )
 
     # 1. Neutral fallback (unknown team)
-    prior_unk_off, _ = prior_engine.build_prior(2024, "UnknownTeam", "offense", "rush_success_rate")
-    prior_unk_def, _ = prior_engine.build_prior(2024, "UnknownTeam", "defense", "rush_success_rate")
+    prior_unk_off, _ = prior_engine.build_prior(
+        2024, "UnknownTeam", "offense", "rush_success_rate"
+    )
+    prior_unk_def, _ = prior_engine.build_prior(
+        2024, "UnknownTeam", "defense", "rush_success_rate"
+    )
     assert math.isclose(prior_unk_off.mean, m_off)
     assert math.isclose(prior_unk_def.mean, m_def)
     assert math.isclose(prior_unk_off.variance, s_off**2)
@@ -626,8 +630,12 @@ def test_observation_units_cohort_stats_prior_mapping():
     # 2. Team A (good offense, good defense)
     # Offense prior should be > m_off
     # Defense prior should be < m_def (lower allowed rate)
-    prior_a_off, _ = prior_engine.build_prior(2024, "TeamA", "offense", "rush_success_rate")
-    prior_a_def, _ = prior_engine.build_prior(2024, "TeamA", "defense", "rush_success_rate")
+    prior_a_off, _ = prior_engine.build_prior(
+        2024, "TeamA", "offense", "rush_success_rate"
+    )
+    prior_a_def, _ = prior_engine.build_prior(
+        2024, "TeamA", "defense", "rush_success_rate"
+    )
 
     assert prior_a_off.mean > m_off
     assert prior_a_def.mean < m_def

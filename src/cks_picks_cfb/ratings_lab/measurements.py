@@ -409,7 +409,9 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
     return observations
 
 
-def _build_finishing_drives(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observation]:
+def _build_finishing_drives(
+    corpus: Corpus, recipe: MeasurementRecipe
+) -> list[Observation]:
     from cks_picks_cfb.preseason_features import canonical_team
 
     byplay = corpus.read_byplay()
@@ -430,7 +432,9 @@ def _build_finishing_drives(corpus: Corpus, recipe: MeasurementRecipe) -> list[O
         if col in df:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
     if "yards_to_goal" in df:
-        df["yards_to_goal"] = pd.to_numeric(df["yards_to_goal"], errors="coerce").fillna(999.0)
+        df["yards_to_goal"] = pd.to_numeric(
+            df["yards_to_goal"], errors="coerce"
+        ).fillna(999.0)
 
     is_regulation = df["quarter"].isin([1, 2, 3, 4])
     is_non_garbage = df["garbage"] == 0
@@ -457,7 +461,9 @@ def _build_finishing_drives(corpus: Corpus, recipe: MeasurementRecipe) -> list[O
             if (dplays["yards_to_goal"] <= 40).any():
                 off_t = dplays["offense_canon"].iloc[0]
                 def_t = dplays["defense_canon"].iloc[0]
-                has_off_td = ((dplays["td_play"] == 1) & (dplays["turnover"] == 0)).any()
+                has_off_td = (
+                    (dplays["td_play"] == 1) & (dplays["turnover"] == 0)
+                ).any()
                 has_fg = (dplays["is_fg_made"] == 1).any()
                 pts = 7.0 if has_off_td else (3.0 if has_fg else 0.0)
                 drive_stats.append((off_t, def_t, pts))
@@ -465,9 +471,13 @@ def _build_finishing_drives(corpus: Corpus, recipe: MeasurementRecipe) -> list[O
         for team in (game.home_team, game.away_team):
             for role in ("offense", "defense"):
                 if role == "offense":
-                    opp_pts = [pts for off_t, def_t, pts in drive_stats if off_t == team]
+                    opp_pts = [
+                        pts for off_t, def_t, pts in drive_stats if off_t == team
+                    ]
                 else:
-                    opp_pts = [pts for off_t, def_t, pts in drive_stats if def_t == team]
+                    opp_pts = [
+                        pts for off_t, def_t, pts in drive_stats if def_t == team
+                    ]
 
                 n_opps = len(opp_pts)
                 if n_opps > 0:

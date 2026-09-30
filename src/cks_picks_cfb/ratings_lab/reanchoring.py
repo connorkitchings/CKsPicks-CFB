@@ -100,7 +100,9 @@ def reanchor_schedule_graph(
         std_off = float(np.std(off_vals)) if off_vals else 1.0
 
         # Determine whether priors are in observation space (rates/yards > 0.1) or z-space (mean ~ 0)
-        is_observation_space = bool(current_ratings) and (mean_off > 0.1 or mean_def > 0.1)
+        is_observation_space = bool(current_ratings) and (
+            mean_off > 0.1 or mean_def > 0.1
+        )
 
         # Set pinned FCS rating
         if is_observation_space:
@@ -138,13 +140,17 @@ def reanchor_schedule_graph(
                 opp_canonical = FCS_COMPOSITE_NAME if opp in fcs_set else opp
 
                 if obs.role == "offense":
-                    opp_rating = current_ratings.get((opp_canonical, "defense"), mean_def)
+                    opp_rating = current_ratings.get(
+                        (opp_canonical, "defense"), mean_def
+                    )
                     if is_observation_space:
                         adj_val = float(obs.value) - (opp_rating - mean_def)
                     else:
                         adj_val = float(obs.value) + (opp_rating - mean_def)
                 else:
-                    opp_rating = current_ratings.get((opp_canonical, "offense"), mean_off)
+                    opp_rating = current_ratings.get(
+                        (opp_canonical, "offense"), mean_off
+                    )
                     adj_val = float(obs.value) - (opp_rating - mean_off)
 
                 adj_values[id(obs)] = adj_val

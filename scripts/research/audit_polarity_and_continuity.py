@@ -54,7 +54,10 @@ def main() -> None:
     features = read_frame_stage(storage, features_ref, stage="features")
 
     print(f"[*] Features columns ({len(features.columns)}):", list(features.columns))
-    print(f"[*] Outcomes columns ({len(corpus.outcomes.columns)}):", list(corpus.outcomes.columns))
+    print(
+        f"[*] Outcomes columns ({len(corpus.outcomes.columns)}):",
+        list(corpus.outcomes.columns),
+    )
     # Merge with outcomes for actual_margin and actual_total
     print(f"[*] Merging features ({len(features)} rows) with outcomes...")
     merged = features.merge(
@@ -79,28 +82,38 @@ def main() -> None:
     records = []
     for col in columns_16:
         if col not in merged.columns:
-            records.append({
-                "column": col,
-                "corr_margin": float("nan"),
-                "corr_total": float("nan"),
-                "status": "MISSING",
-            })
+            records.append(
+                {
+                    "column": col,
+                    "corr_margin": float("nan"),
+                    "corr_total": float("nan"),
+                    "status": "MISSING",
+                }
+            )
             continue
         corr_m = float(merged[col].corr(merged["actual_margin"]))
         corr_t = float(merged[col].corr(merged["actual_total"]))
-        records.append({
-            "column": col,
-            "corr_margin": corr_m,
-            "corr_total": corr_t,
-        })
+        records.append(
+            {
+                "column": col,
+                "corr_margin": corr_m,
+                "corr_total": corr_t,
+            }
+        )
 
     print("\n" + "=" * 80)
-    print("POLARITY AUDIT CORRELATION TABLE (Pearson r against actual_margin & actual_total)")
+    print(
+        "POLARITY AUDIT CORRELATION TABLE (Pearson r against actual_margin & actual_total)"
+    )
     print("=" * 80)
-    print(f"{'Feature Column':<42} | {'r (actual_margin)':<18} | {'r (actual_total)':<18}")
+    print(
+        f"{'Feature Column':<42} | {'r (actual_margin)':<18} | {'r (actual_total)':<18}"
+    )
     print("-" * 80)
     for r in records:
-        print(f"{r['column']:<42} | {r['corr_margin']:>17.4f}  | {r['corr_total']:>17.4f}")
+        print(
+            f"{r['column']:<42} | {r['corr_margin']:>17.4f}  | {r['corr_total']:>17.4f}"
+        )
     print("=" * 80)
 
     # Polarity Verdict
@@ -119,15 +132,21 @@ def main() -> None:
     print("\n--- Summary Averages ---")
     print(f"Average home_offense r(margin): {avg_ho:+.4f} (expected +)")
     print(f"Average away_offense r(margin): {avg_ao:+.4f} (expected -)")
-    print(f"Average home_defense r(margin): {avg_hd:+.4f} (if allowed space: - ; if quality space: +)")
-    print(f"Average away_defense r(margin): {avg_ad:+.4f} (if allowed space: + ; if quality space: -)")
+    print(
+        f"Average home_defense r(margin): {avg_hd:+.4f} (if allowed space: - ; if quality space: +)"
+    )
+    print(
+        f"Average away_defense r(margin): {avg_ad:+.4f} (if allowed space: + ; if quality space: -)"
+    )
 
     if avg_hd < 0 and avg_ad > 0:
         verdict = "CONFIRMED: Defensive columns live in raw ALLOWED-RATE space (lower=better). Bridge B's (home_off - away_def) inverted defensive effect."
     elif avg_hd > 0 and avg_ad < 0:
         verdict = "REJECTED: Defensive columns live in QUALITY space (higher=better)."
     else:
-        verdict = f"AMBIGUOUS: Mixed signs (home_def={avg_hd:+.4f}, away_def={avg_ad:+.4f})."
+        verdict = (
+            f"AMBIGUOUS: Mixed signs (home_def={avg_hd:+.4f}, away_def={avg_ad:+.4f})."
+        )
 
     print("\nVERDICT LINE:")
     print(verdict)

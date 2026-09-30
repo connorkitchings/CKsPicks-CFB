@@ -320,8 +320,7 @@ def common_bridge_predictions(
             )
         else:
             req_features = list(
-                set(DIFFERENTIAL_SPREAD_FEATURES)
-                | set(DIFFERENTIAL_TOTAL_FEATURES)
+                set(DIFFERENTIAL_SPREAD_FEATURES) | set(DIFFERENTIAL_TOTAL_FEATURES)
             )
     else:
         raise ValueError(f"unregistered bridge type: {bridge!r}")

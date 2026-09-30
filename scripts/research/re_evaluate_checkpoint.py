@@ -123,8 +123,12 @@ def main() -> None:
 
     # 7. Paired comparison
     print("[*] Running 2,000 paired block bootstraps...")
-    comp_a = paired_comparison(preds_a, v5_common_preds, corpus, seed=20260928, samples=2000)
-    comp_b = paired_comparison(preds_b, v5_common_preds, corpus, seed=20260928, samples=2000)
+    comp_a = paired_comparison(
+        preds_a, v5_common_preds, corpus, seed=20260928, samples=2000
+    )
+    comp_b = paired_comparison(
+        preds_b, v5_common_preds, corpus, seed=20260928, samples=2000
+    )
 
     print("\n" + "=" * 85)
     print("FIX 1 CHECKPOINT RESULTS: QUALITY-SIGNED FRAME VS V5-COMMON")

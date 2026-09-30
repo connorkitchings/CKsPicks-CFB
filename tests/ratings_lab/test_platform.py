@@ -121,7 +121,6 @@ def test_storage_local_fallback_and_guards(tmp_path, monkeypatch):
     assert split_storage.source.identity != split_storage.output.identity
 
 
-
 def _game(season, week, game_id, day, home="A", away="B"):
     time = datetime(season, 9, day, 19, tzinfo=timezone.utc)
     return Game(season, week, game_id, time.isoformat(), home, away)
