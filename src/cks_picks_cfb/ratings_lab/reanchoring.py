@@ -74,13 +74,41 @@ def reanchor_schedule_graph(
         # Build initial ratings from priors
         season = mid_obs[0].season
         current_ratings: dict[tuple[str, str], float] = {}
-        for (s, team, role), r in priors.items():
-            if s == season:
-                current_ratings[(team, role)] = r.mean
+        for k, r in priors.items():
+            if len(k) == 4:
+                s, team, role, p_mid = k
+                if s == season and p_mid == mid:
+                    current_ratings[(team, role)] = r.mean
+            elif len(k) == 3:
+                s, team, role = k
+                if s == season and (team, role) not in current_ratings:
+                    current_ratings[(team, role)] = r.mean
+
+        def_vals = [
+            v
+            for (t, r), v in current_ratings.items()
+            if t not in fcs_set and r == "defense"
+        ]
+        off_vals = [
+            v
+            for (t, r), v in current_ratings.items()
+            if t not in fcs_set and r == "offense"
+        ]
+        mean_def = float(np.mean(def_vals)) if def_vals else 0.0
+        mean_off = float(np.mean(off_vals)) if off_vals else 0.0
+        std_def = float(np.std(def_vals)) if def_vals else 1.0
+        std_off = float(np.std(off_vals)) if off_vals else 1.0
+
+        # Determine whether priors are in observation space (rates/yards > 0.1) or z-space (mean ~ 0)
+        is_observation_space = bool(current_ratings) and (mean_off > 0.1 or mean_def > 0.1)
 
         # Set pinned FCS rating
-        current_ratings[(FCS_COMPOSITE_NAME, "offense")] = FCS_PINNED_PRIOR.mean
-        current_ratings[(FCS_COMPOSITE_NAME, "defense")] = FCS_PINNED_PRIOR.mean
+        if is_observation_space:
+            current_ratings[(FCS_COMPOSITE_NAME, "offense")] = mean_off - 2.0 * std_off
+            current_ratings[(FCS_COMPOSITE_NAME, "defense")] = mean_def + 2.0 * std_def
+        else:
+            current_ratings[(FCS_COMPOSITE_NAME, "offense")] = FCS_PINNED_PRIOR.mean
+            current_ratings[(FCS_COMPOSITE_NAME, "defense")] = FCS_PINNED_PRIOR.mean
 
         # 4 iterative passes
         adj_values = {id(obs): float(obs.value) for obs in mid_obs}
@@ -110,10 +138,13 @@ def reanchor_schedule_graph(
                 opp_canonical = FCS_COMPOSITE_NAME if opp in fcs_set else opp
 
                 if obs.role == "offense":
-                    opp_rating = current_ratings.get((opp_canonical, "defense"), 0.0)
-                    adj_val = float(obs.value) + (opp_rating - mean_def)
+                    opp_rating = current_ratings.get((opp_canonical, "defense"), mean_def)
+                    if is_observation_space:
+                        adj_val = float(obs.value) - (opp_rating - mean_def)
+                    else:
+                        adj_val = float(obs.value) + (opp_rating - mean_def)
                 else:
-                    opp_rating = current_ratings.get((opp_canonical, "offense"), 0.0)
+                    opp_rating = current_ratings.get((opp_canonical, "offense"), mean_off)
                     adj_val = float(obs.value) - (opp_rating - mean_off)
 
                 adj_values[id(obs)] = adj_val
@@ -132,9 +163,14 @@ def reanchor_schedule_graph(
             for (team, role), exp in team_exposure.items():
                 if exp > 0:
                     avg_stat = team_weighted_sum[(team, role)] / exp
-                    perf_target = -avg_stat if role == "defense" else avg_stat
+                    if is_observation_space:
+                        perf_target = avg_stat
+                    else:
+                        perf_target = -avg_stat if role == "defense" else avg_stat
 
-                    prior_r = priors.get((season, team, role))
+                    prior_r = priors.get((season, team, role, mid))
+                    if prior_r is None:
+                        prior_r = priors.get((season, team, role))
                     prior_val = prior_r.mean if prior_r is not None else 0.0
                     target = (1.0 - w_t) * prior_val + w_t * perf_target
 
@@ -213,41 +249,50 @@ def batch_refilter_states(
         by_trm[trm].sort(key=lambda o: (utc(o.available_utc), o.game_id))
 
     states: list[RatingState] = []
-    season = games[0].season if games else 2024
-    all_teams = {team for g in games for team in (g.home_team, g.away_team)}
+    seen_keys: set[tuple[int, int, str, str, str]] = set()
 
     for mid in target_mids:
-        for team in sorted(all_teams):
-            for role in ("offense", "defense"):
-                prior = priors.get((season, team, role, mid))
-                if prior is None:
-                    prior = priors.get((season, team, role), Rating(0.0, 1.0))
+        for game in games:
+            for team in (game.home_team, game.away_team):
+                for role in ("offense", "defense"):
+                    key = (game.season, game.game_id, team, role, mid)
+                    if key in seen_keys:
+                        continue
+                    seen_keys.add(key)
 
-                evidence = by_trm.get((team, role, mid), [])
-                rating, explanation = design.estimate(prior, evidence)
+                    prior = priors.get((game.season, team, role, mid))
+                    if prior is None:
+                        prior = priors.get((game.season, team, role), Rating(0.0, 1.0))
 
-                ids = tuple(o.game_id for o in evidence)
-                exp_sum = float(sum(o.exposure for o in evidence))
+                    evidence = by_trm.get((team, role, mid), [])
+                    batch_cutoff = utc(cutoff_utc)
+                    valid_evidence = [
+                        o for o in evidence if utc(o.available_utc) <= batch_cutoff
+                    ]
+                    rating, explanation = design.estimate(prior, valid_evidence)
 
-                state = RatingState(
-                    candidate_id=design.candidate_id,
-                    season=season,
-                    week=week,
-                    game_id=ids[-1] if ids else 0,
-                    cutoff_utc=cutoff_utc,
-                    team=team,
-                    role=role,
-                    rating=rating,
-                    prior=prior,
-                    usable_exposure=exp_sum,
-                    evidence_game_ids=ids,
-                    explanation={
-                        **explanation,
-                        "measurement_id": mid,
-                        "reanchored_week": week,
-                        "cutoff_utc": cutoff_utc,
-                    },
-                )
-                states.append(state)
+                    ids = tuple(o.game_id for o in valid_evidence)
+                    exp_sum = float(sum(o.exposure for o in valid_evidence))
+
+                    state = RatingState(
+                        candidate_id=design.candidate_id,
+                        season=game.season,
+                        week=game.week,
+                        game_id=game.game_id,
+                        cutoff_utc=cutoff_utc,
+                        team=team,
+                        role=role,
+                        rating=rating,
+                        prior=prior,
+                        usable_exposure=exp_sum,
+                        evidence_game_ids=ids,
+                        explanation={
+                            **explanation,
+                            "measurement_id": mid,
+                            "reanchored_week": week,
+                            "cutoff_utc": cutoff_utc,
+                        },
+                    )
+                    states.append(state)
 
     return states

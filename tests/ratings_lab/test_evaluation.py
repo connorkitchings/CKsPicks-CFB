@@ -295,20 +295,20 @@ def test_frame_with_multifactor_states_math():
         assert f"sum__{mid}" in frame.columns
 
     # Test exact arithmetic for rush_success_rate:
-    # home_off = 0.50, away_def = 0.10
-    # away_off = 0.40, home_def = 0.20
-    # diff = (0.50 - 0.10) - (0.40 - 0.20) = 0.40 - 0.20 = 0.20
-    # sum = (0.50 + 0.10) + (0.40 + 0.20) = 0.60 + 0.60 = 1.20
+    # home_off = 0.50, away_def_quality = -0.10
+    # away_off = 0.40, home_def_quality = -0.20
+    # diff = (0.50 - (-0.10)) - (0.40 - (-0.20)) = 0.60 - 0.60 = 0.00
+    # sum = (0.50 - (-0.10)) + (0.40 - (-0.20)) = 0.60 + 0.60 = 1.20
     rush_sr_row = frame.iloc[0]
-    assert np.isclose(rush_sr_row["diff__rush_success_rate"], 0.20)
+    assert np.isclose(rush_sr_row["diff__rush_success_rate"], 0.00)
     assert np.isclose(rush_sr_row["sum__rush_success_rate"], 1.20)
 
     # Test exact arithmetic for rush_explosiveness:
-    # home_off = 1.20, away_def = 0.70 -> (1.20 - 0.70) = 0.50
-    # away_off = 1.00, home_def = 0.80 -> (1.00 - 0.80) = 0.20
-    # diff = 0.50 - 0.20 = 0.30
-    # sum = (1.20 + 0.70) + (1.00 + 0.80) = 1.90 + 1.80 = 3.70
-    assert np.isclose(rush_sr_row["diff__rush_explosiveness"], 0.30)
+    # home_off = 1.20, away_def_quality = -0.70 -> (1.20 - (-0.70)) = 1.90
+    # away_off = 1.00, home_def_quality = -0.80 -> (1.00 - (-0.80)) = 1.80
+    # diff = 1.90 - 1.80 = 0.10
+    # sum = (1.20 - (-0.70)) + (1.00 - (-0.80)) = 1.90 + 1.80 = 3.70
+    assert np.isclose(rush_sr_row["diff__rush_explosiveness"], 0.10)
     assert np.isclose(rush_sr_row["sum__rush_explosiveness"], 3.70)
 
 

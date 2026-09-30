@@ -3,11 +3,13 @@ type: kalman_exposure
 q:
   SR: 0.02
   Expl: 0.05
+  Finish: 0.03
 sigma2_noise:
   SR: 0.25
   Expl: 4.00
+  Finish: 1.00
 rho: 0.60
 mode: incremental
 fcs_exposure_weight: 0.25
 fcs_innovation_cap: 1.5
-description: "V6 Exposure-weighted Dynamic State-Space Kalman filter with family-keyed constants (SR: q=0.02, s2=0.25; Expl: q=0.05, s2=4.00; FCS 25% down-weight & 1.5 cap)"
+description: "V6 Exposure-weighted Dynamic State-Space Kalman filter with family-keyed constants (SR: q=0.02, s2=0.25; Expl: q=0.05, s2=4.00; Finish: q=0.03, s2=1.00; FCS 25% down-weight & 1.5 cap)"

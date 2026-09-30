@@ -35,6 +35,11 @@ FOUR_FACTOR_IDS: tuple[str, ...] = (
     "pass_explosiveness_margin",
 )
 
+FIVE_FACTOR_IDS: tuple[str, ...] = (
+    *FOUR_FACTOR_IDS,
+    "finish_points_per_opp",
+)
+
 FAMILY_MAP: dict[str, str] = {
     "rush_success_rate": "SR",
     "pass_success_rate": "SR",
@@ -42,10 +47,11 @@ FAMILY_MAP: dict[str, str] = {
     "pass_explosiveness": "Expl",
     "rush_explosiveness_margin": "Expl",
     "pass_explosiveness_margin": "Expl",
+    "finish_points_per_opp": "Finish",
 }
 
-VALID_RHO_FAMILIES: set[str] = {"SR", "Expl"}
-VALID_RHO_KEYS: set[str] = VALID_RHO_FAMILIES | set(FOUR_FACTOR_IDS)
+VALID_RHO_FAMILIES: set[str] = {"SR", "Expl", "Finish"}
+VALID_RHO_KEYS: set[str] = VALID_RHO_FAMILIES | set(FIVE_FACTOR_IDS)
 
 DEFAULT_RHO: float = 0.60
 DEFAULT_BETA_RET: float = 0.25
@@ -128,6 +134,39 @@ def compute_terminal_seeds(
                 seeds[(season, team, role, mid)] = std_rating
 
     return seeds
+
+
+def compute_cohort_stats(
+    observations: Sequence[Observation],
+) -> dict[tuple[str, str], tuple[float, float]]:
+    """Compute overall (mean, std) per (role, measurement_id) across team-season terminal observations.
+
+    Stats are in raw observation space (positive allowed values for defense).
+    """
+    valid_obs = [
+        o
+        for o in observations
+        if o.value is not None and isfinite(o.value) and o.exposure > 0
+    ]
+    grouped: dict[tuple[int, str, str, str], list[Observation]] = defaultdict(list)
+    for obs in valid_obs:
+        grouped[(obs.season, obs.team, obs.role, obs.measurement_id)].append(obs)
+
+    team_raw_means: dict[tuple[str, str], list[float]] = defaultdict(list)
+    for (_s, _team, role, mid), rows in grouped.items():
+        total_exp = sum(r.exposure for r in rows)
+        if total_exp > 0:
+            raw_m = (
+                sum(r.value * r.exposure for r in rows if r.value is not None)
+                / total_exp
+            )
+            team_raw_means[(role, mid)].append(raw_m)
+
+    stats: dict[tuple[str, str], tuple[float, float]] = {}
+    for (role, mid), vals in team_raw_means.items():
+        arr = np.array(vals, dtype=float)
+        stats[(role, mid)] = (float(arr.mean()), max(float(arr.std()), 1e-6))
+    return stats
 
 
 # ---------------------------------------------------------------------------
@@ -363,6 +402,7 @@ class PreseasonPrior:
         continuity: ContinuityTable | None = None,
         terminal_seeds: dict[Any, Rating] | None = None,
         fallback_to_neutral: bool = True,
+        cohort_stats: dict[tuple[str, str], tuple[float, float]] | None = None,
     ):
         self._validate_rho(rho)
         self.rho = rho if isinstance(rho, dict) else float(rho)
@@ -385,6 +425,7 @@ class PreseasonPrior:
         self.continuity = continuity
         self.terminal_seeds = terminal_seeds or {}
         self.fallback_to_neutral = fallback_to_neutral
+        self.cohort_stats = cohort_stats
 
     def _validate_rho(self, rho: float | dict[str, float]) -> None:
         if isinstance(rho, (int, float)):
@@ -425,6 +466,8 @@ class PreseasonPrior:
         fam = FAMILY_MAP.get(measurement_id)
         if fam and fam in self.rho:
             return float(self.rho[fam])
+        if fam == "Finish":
+            return 0.55
         raise ValueError(f"Cannot resolve rho for measurement_id: '{measurement_id}'")
 
     def build_prior(
@@ -440,7 +483,7 @@ class PreseasonPrior:
         """Compute the preseason prior Rating for (season, team, role, measurement_id).
 
         Returns (Rating, missing_reason). If missing_reason is not None, the prior
-        is a neutral fallback Rating(0.0, prior_variance).
+        is a neutral fallback Rating(m_c, s_c**2) in observation units, or (0.0, prior_variance).
         """
         if season == 2020:
             raise ValueError("2020 season excluded from research chronology")
@@ -448,6 +491,14 @@ class PreseasonPrior:
             raise ValueError(f"invalid role: '{role}'")
 
         canonical = canonical_team(team) or team
+
+        # Resolve cohort moments (observation units vs z-score default)
+        if self.cohort_stats is not None:
+            m_c, s_c = self.cohort_stats.get((role, measurement_id), (0.0, 1.0))
+            eff_variance = s_c**2
+        else:
+            m_c, s_c = 0.0, 1.0
+            eff_variance = self.prior_variance
 
         # 1. Resolve prior terminal state if not provided directly
         if previous_terminal is None and self.terminal_seeds:
@@ -474,7 +525,7 @@ class PreseasonPrior:
 
         # If terminal state is still missing, fallback to neutral
         if previous_terminal is None:
-            return Rating(0.0, self.prior_variance), "missing_terminal_seed"
+            return Rating(float(m_c), float(eff_variance)), "missing_terminal_seed"
 
         # 2. Compute calendar gap & decay
         gap = (season - previous_season) if previous_season is not None else 1
@@ -485,33 +536,47 @@ class PreseasonPrior:
 
         rho_val = self.resolve_rho(measurement_id)
         decay = rho_val**gap
-        terminal_decayed = decay * previous_terminal.mean
+        z_decayed = decay * previous_terminal.mean
 
-        # 3. Incorporate continuity features
+        # 3. Incorporate continuity features (in z-space)
         if self.continuity is not None:
             cont = self.continuity.get(season, canonical)
             if cont is not None:
-                prior_mean = (
-                    terminal_decayed
+                z_blend = (
+                    z_decayed
                     + self.beta_ret * cont.return_std
                     + self.beta_rec * cont.rec_std
                     + self.beta_coach * cont.new_coach
                 )
-                return Rating(float(prior_mean), self.prior_variance), None
+                reason = None
             elif self.fallback_to_neutral:
-                return Rating(0.0, self.prior_variance), "missing_team_continuity"
-            else:
                 return (
-                    Rating(float(terminal_decayed), self.prior_variance),
-                    "terminal_only",
+                    Rating(float(m_c), float(eff_variance)),
+                    "missing_team_continuity",
                 )
+            else:
+                z_blend = z_decayed
+                reason = "terminal_only"
         elif self.fallback_to_neutral:
-            return Rating(0.0, self.prior_variance), "missing_continuity_table"
-        else:
             return (
-                Rating(float(terminal_decayed), self.prior_variance),
-                "terminal_only",
+                Rating(float(m_c), float(eff_variance)),
+                "missing_continuity_table",
             )
+        else:
+            z_blend = z_decayed
+            reason = "terminal_only"
+
+        # 4. Map z-space blend to observation units
+        if self.cohort_stats is not None:
+            if role == "defense":
+                # For defense in observation space, higher quality z_blend means lower allowed production
+                prior_mean = m_c - s_c * z_blend
+            else:
+                prior_mean = m_c + s_c * z_blend
+        else:
+            prior_mean = z_blend
+
+        return Rating(float(prior_mean), float(eff_variance)), reason
 
     def build_fixed_priors(
         self,
@@ -530,7 +595,11 @@ class PreseasonPrior:
                 rating, reason = self.build_prior(
                     season, canonical, role, measurement_id
                 )
-                if reason is not None:
+                if reason in {
+                    "missing_terminal_seed",
+                    "missing_team_continuity",
+                    "missing_continuity_table",
+                }:
                     neutral_keys.add(key)
                 else:
                     fixed[key] = rating

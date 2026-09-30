@@ -13,11 +13,13 @@ from .priors import FAMILY_MAP
 DEFAULT_Q_BY_FAMILY: dict[str, float] = {
     "SR": 0.02,
     "Expl": 0.05,
+    "Finish": 0.03,
 }
 
 DEFAULT_SIGMA2_BY_FAMILY: dict[str, float] = {
     "SR": 0.25,
     "Expl": 4.00,
+    "Finish": 1.00,
 }
 
 FCS_COMPOSITE_NAME: str = "FCS_COMPOSITE"

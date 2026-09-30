@@ -43,6 +43,11 @@ FOUR_FACTOR_CORE_IDS: tuple[str, ...] = (
     "pass_explosiveness",
 )
 
+FIVE_FACTOR_CORE_IDS: tuple[str, ...] = (
+    *FOUR_FACTOR_CORE_IDS,
+    "finish_points_per_opp",
+)
+
 DIRECT18_FEATURES: tuple[str, ...] = (
     "home_offense__rush_success_rate",
     "home_offense__rush_explosiveness",
@@ -64,6 +69,31 @@ DIRECT18_FEATURES: tuple[str, ...] = (
     "venue_unknown",
 )
 
+DIRECT22_FEATURES: tuple[str, ...] = (
+    "home_offense__rush_success_rate",
+    "home_offense__rush_explosiveness",
+    "home_offense__pass_success_rate",
+    "home_offense__pass_explosiveness",
+    "home_offense__finish_points_per_opp",
+    "home_defense__rush_success_rate",
+    "home_defense__rush_explosiveness",
+    "home_defense__pass_success_rate",
+    "home_defense__pass_explosiveness",
+    "home_defense__finish_points_per_opp",
+    "away_offense__rush_success_rate",
+    "away_offense__rush_explosiveness",
+    "away_offense__pass_success_rate",
+    "away_offense__pass_explosiveness",
+    "away_offense__finish_points_per_opp",
+    "away_defense__rush_success_rate",
+    "away_defense__rush_explosiveness",
+    "away_defense__pass_success_rate",
+    "away_defense__pass_explosiveness",
+    "away_defense__finish_points_per_opp",
+    "home_host",
+    "venue_unknown",
+)
+
 DIFFERENTIAL_SPREAD_FEATURES: tuple[str, ...] = (
     "diff__rush_success_rate",
     "diff__rush_explosiveness",
@@ -73,11 +103,31 @@ DIFFERENTIAL_SPREAD_FEATURES: tuple[str, ...] = (
     "venue_unknown",
 )
 
+DIFFERENTIAL_SPREAD_FEATURES_5F: tuple[str, ...] = (
+    "diff__rush_success_rate",
+    "diff__rush_explosiveness",
+    "diff__pass_success_rate",
+    "diff__pass_explosiveness",
+    "diff__finish_points_per_opp",
+    "home_host",
+    "venue_unknown",
+)
+
 DIFFERENTIAL_TOTAL_FEATURES: tuple[str, ...] = (
     "sum__rush_success_rate",
     "sum__rush_explosiveness",
     "sum__pass_success_rate",
     "sum__pass_explosiveness",
+    "home_host",
+    "venue_unknown",
+)
+
+DIFFERENTIAL_TOTAL_FEATURES_5F: tuple[str, ...] = (
+    "sum__rush_success_rate",
+    "sum__rush_explosiveness",
+    "sum__pass_success_rate",
+    "sum__pass_explosiveness",
+    "sum__finish_points_per_opp",
     "home_host",
     "venue_unknown",
 )
@@ -124,9 +174,9 @@ def frame_with_multifactor_states(
     corpus: Corpus,
     states: list[RatingState],
     *,
-    core_mids: tuple[str, ...] = FOUR_FACTOR_CORE_IDS,
+    core_mids: tuple[str, ...] | None = None,
 ) -> pd.DataFrame:
-    """Assemble 4-factor matchup features including direct columns and differentials/sums."""
+    """Assemble multi-factor matchup features including direct columns and differentials/sums."""
     records = []
     for s in states:
         mid = s.explanation.get("measurement_id")
@@ -150,11 +200,15 @@ def frame_with_multifactor_states(
     if rows.duplicated(["season", "game_id", "team", "role", "measurement_id"]).any():
         raise ValueError("candidate rating states have duplicate entries")
 
+    if core_mids is None:
+        has_finish = "finish_points_per_opp" in set(rows["measurement_id"])
+        core_mids = FIVE_FACTOR_CORE_IDS if has_finish else FOUR_FACTOR_CORE_IDS
+
     frame = corpus.v5_features.copy()
     if frame.duplicated(["season", "game_id"]).any():
         raise ValueError("V5 common feature frame has duplicate games")
 
-    # Merge each of the 4 factors for home and away offense and defense
+    # Merge each of the factors for home and away offense and defense
     for mid in core_mids:
         mid_rows = rows[rows["measurement_id"].eq(mid)]
         if mid_rows.empty:
@@ -165,6 +219,10 @@ def frame_with_multifactor_states(
                 selected = mid_rows[mid_rows["role"].eq(role)].rename(
                     columns={"team": f"{side}_team", "mean": col_name}
                 )
+                if role == "defense":
+                    # Frame space is quality space for all columns; filter space remains observation space.
+                    # Negate allowed-rate values so higher is strictly better.
+                    selected[col_name] = -selected[col_name]
                 frame = frame.merge(
                     selected[["season", "game_id", f"{side}_team", col_name]],
                     on=["season", "game_id", f"{side}_team"],
@@ -180,13 +238,19 @@ def frame_with_multifactor_states(
         h_def = frame[f"home_defense__{mid}"]
 
         frame[f"diff__{mid}"] = (h_off - a_def) - (a_off - h_def)
-        frame[f"sum__{mid}"] = (h_off + a_def) + (a_off + h_def)
+        frame[f"sum__{mid}"] = (h_off - a_def) + (a_off - h_def)
 
     # Validate no missing values
     check_cols = (
-        list(DIRECT18_FEATURES)
-        + list(DIFFERENTIAL_SPREAD_FEATURES)
-        + list(DIFFERENTIAL_TOTAL_FEATURES)
+        [
+            f"{side}_{role}__{mid}"
+            for mid in core_mids
+            for side in ("home", "away")
+            for role in ("offense", "defense")
+        ]
+        + [f"diff__{mid}" for mid in core_mids]
+        + [f"sum__{mid}" for mid in core_mids]
+        + ["home_host", "venue_unknown"]
     )
     if frame.loc[:, check_cols].isna().any().any():
         raise ValueError("candidate lacks one or more full-population pregame states")
@@ -242,12 +306,23 @@ def common_bridge_predictions(
 
     if bridge == "v5_common":
         req_features = list(FEATURES)
-    elif bridge == "alpha10_direct18":
-        req_features = list(DIRECT18_FEATURES)
-    elif bridge == "alpha10_differentials":
-        req_features = list(
-            set(DIFFERENTIAL_SPREAD_FEATURES) | set(DIFFERENTIAL_TOTAL_FEATURES)
+    elif bridge in ("alpha10_direct18", "alpha10_direct22"):
+        req_features = (
+            list(DIRECT22_FEATURES)
+            if "home_offense__finish_points_per_opp" in frame.columns
+            else list(DIRECT18_FEATURES)
         )
+    elif bridge == "alpha10_differentials":
+        if "diff__finish_points_per_opp" in frame.columns:
+            req_features = list(
+                set(DIFFERENTIAL_SPREAD_FEATURES_5F)
+                | set(DIFFERENTIAL_TOTAL_FEATURES_5F)
+            )
+        else:
+            req_features = list(
+                set(DIFFERENTIAL_SPREAD_FEATURES)
+                | set(DIFFERENTIAL_TOTAL_FEATURES)
+            )
     else:
         raise ValueError(f"unregistered bridge type: {bridge!r}")
 
@@ -278,14 +353,25 @@ def common_bridge_predictions(
         for target in ("margin", "total"):
             if bridge == "v5_common":
                 active_features = FEATURES
-            elif bridge == "alpha10_direct18":
-                active_features = DIRECT18_FEATURES
-            elif bridge == "alpha10_differentials":
+            elif bridge in ("alpha10_direct18", "alpha10_direct22"):
                 active_features = (
-                    DIFFERENTIAL_SPREAD_FEATURES
-                    if target == "margin"
-                    else DIFFERENTIAL_TOTAL_FEATURES
+                    DIRECT22_FEATURES
+                    if "home_offense__finish_points_per_opp" in frame.columns
+                    else DIRECT18_FEATURES
                 )
+            elif bridge == "alpha10_differentials":
+                if "diff__finish_points_per_opp" in frame.columns:
+                    active_features = (
+                        DIFFERENTIAL_SPREAD_FEATURES_5F
+                        if target == "margin"
+                        else DIFFERENTIAL_TOTAL_FEATURES_5F
+                    )
+                else:
+                    active_features = (
+                        DIFFERENTIAL_SPREAD_FEATURES
+                        if target == "margin"
+                        else DIFFERENTIAL_TOTAL_FEATURES
+                    )
 
             variance, calibration_count = _calibration_variance(
                 frame, season=season, target=target, features=active_features

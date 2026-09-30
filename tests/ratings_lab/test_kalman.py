@@ -439,12 +439,14 @@ def test_yaml_candidate_loading_kalman():
     kalman_candidate = configs["kalman_exposure_v1"]
     assert isinstance(kalman_candidate, KalmanExposureDesign)
     assert kalman_candidate.candidate_id == "kalman_exposure_v1"
-    assert kalman_candidate.q == {"SR": 0.02, "Expl": 0.05}
-    assert kalman_candidate.sigma2_noise == {"SR": 0.25, "Expl": 4.00}
+    assert kalman_candidate.q == {"SR": 0.02, "Expl": 0.05, "Finish": 0.03}
+    assert kalman_candidate.sigma2_noise == {"SR": 0.25, "Expl": 4.00, "Finish": 1.00}
     assert kalman_candidate.resolve_q("rush_success_rate") == 0.02
     assert kalman_candidate.resolve_q("rush_explosiveness") == 0.05
+    assert kalman_candidate.resolve_q("finish_points_per_opp") == 0.03
     assert kalman_candidate.resolve_sigma2("rush_success_rate") == 0.25
     assert kalman_candidate.resolve_sigma2("rush_explosiveness") == 4.00
+    assert kalman_candidate.resolve_sigma2("finish_points_per_opp") == 1.00
     assert kalman_candidate.fcs_exposure_weight == 0.25
     assert kalman_candidate.fcs_innovation_cap == 1.5
 

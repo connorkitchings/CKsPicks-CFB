@@ -13,6 +13,7 @@ from cks_picks_cfb.ratings_lab.priors import (
     ContinuityTable,
     PreseasonPrior,
     TeamContinuity,
+    compute_cohort_stats,
     compute_terminal_seeds,
 )
 from cks_picks_cfb.ratings_lab.replay import replay
@@ -539,3 +540,94 @@ def test_replay_with_preseason_priors_dry_run():
     assert math.isclose(
         uga_states[0].prior.mean, fixed_priors[(2024, "Georgia", "offense")].mean
     )
+
+
+def test_observation_units_cohort_stats_prior_mapping():
+    """Verify that cohort_stats correctly parameterizes priors in observation units."""
+    obs = [
+        # Team A offense 0.50, defense 0.35 (good defense, low allowed)
+        Observation(
+            season=2023,
+            week=1,
+            game_id=101,
+            team="TeamA",
+            role="offense",
+            measurement_id="rush_success_rate",
+            value=0.50,
+            exposure=50.0,
+            available_utc="2023-09-01T00:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+        Observation(
+            season=2023,
+            week=1,
+            game_id=101,
+            team="TeamA",
+            role="defense",
+            measurement_id="rush_success_rate",
+            value=0.35,
+            exposure=50.0,
+            available_utc="2023-09-01T00:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+        # Team B offense 0.35, defense 0.50 (bad defense, high allowed)
+        Observation(
+            season=2023,
+            week=1,
+            game_id=102,
+            team="TeamB",
+            role="offense",
+            measurement_id="rush_success_rate",
+            value=0.35,
+            exposure=50.0,
+            available_utc="2023-09-01T00:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+        Observation(
+            season=2023,
+            week=1,
+            game_id=102,
+            team="TeamB",
+            role="defense",
+            measurement_id="rush_success_rate",
+            value=0.50,
+            exposure=50.0,
+            available_utc="2023-09-01T00:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+    ]
+
+    cohort_stats = compute_cohort_stats(obs)
+    assert ("offense", "rush_success_rate") in cohort_stats
+    assert ("defense", "rush_success_rate") in cohort_stats
+
+    m_off, s_off = cohort_stats[("offense", "rush_success_rate")]
+    m_def, s_def = cohort_stats[("defense", "rush_success_rate")]
+
+    assert math.isclose(m_off, 0.425)
+    assert math.isclose(m_def, 0.425)
+
+    terminal_seeds = compute_terminal_seeds(obs, signed_defense=True)
+
+    prior_engine = PreseasonPrior(
+        rho=0.60,
+        terminal_seeds=terminal_seeds,
+        cohort_stats=cohort_stats,
+        fallback_to_neutral=False,
+    )
+
+    # 1. Neutral fallback (unknown team)
+    prior_unk_off, _ = prior_engine.build_prior(2024, "UnknownTeam", "offense", "rush_success_rate")
+    prior_unk_def, _ = prior_engine.build_prior(2024, "UnknownTeam", "defense", "rush_success_rate")
+    assert math.isclose(prior_unk_off.mean, m_off)
+    assert math.isclose(prior_unk_def.mean, m_def)
+    assert math.isclose(prior_unk_off.variance, s_off**2)
+
+    # 2. Team A (good offense, good defense)
+    # Offense prior should be > m_off
+    # Defense prior should be < m_def (lower allowed rate)
+    prior_a_off, _ = prior_engine.build_prior(2024, "TeamA", "offense", "rush_success_rate")
+    prior_a_def, _ = prior_engine.build_prior(2024, "TeamA", "defense", "rush_success_rate")
+
+    assert prior_a_off.mean > m_off
+    assert prior_a_def.mean < m_def

@@ -205,28 +205,82 @@ def _required(prefix: str) -> dict[str, str]:
 
 
 def open_research_storage() -> ResearchStorage:
-    """Use explicit research credentials only, with no Preview/production fallback."""
-    source, output = _required("CFB_R2_LAB_SOURCE"), _required("CFB_R2_LAB")
-    if (source["ACCOUNT_ID"], source["BUCKET"]) == (
-        output["ACCOUNT_ID"],
-        output["BUCKET"],
-    ):
-        raise ValueError("research output bucket equals source bucket")
-    return ResearchStorage(
-        source=ReadOnlySource(
-            R2LabStore(
-                bucket=source["BUCKET"],
-                account=source["ACCOUNT_ID"],
-                access=source["ACCESS_KEY"],
-                secret=source["SECRET_KEY"],
+    """Use explicit research credentials or configured local lab storage.
+
+    No Preview/production fallback. Fails closed if neither backend is configured.
+    """
+    r2_names = ("BUCKET", "ACCOUNT_ID", "ACCESS_KEY", "SECRET_KEY")
+    r2_lab_configured = all(
+        os.getenv(f"CFB_R2_LAB_{name}") for name in r2_names
+    ) and all(os.getenv(f"CFB_R2_LAB_SOURCE_{name}") for name in r2_names)
+    if r2_lab_configured:
+        source, output = _required("CFB_R2_LAB_SOURCE"), _required("CFB_R2_LAB")
+        if (source["ACCOUNT_ID"], source["BUCKET"]) == (
+            output["ACCOUNT_ID"],
+            output["BUCKET"],
+        ):
+            raise ValueError("research output bucket equals source bucket")
+        return ResearchStorage(
+            source=ReadOnlySource(
+                R2LabStore(
+                    bucket=source["BUCKET"],
+                    account=source["ACCOUNT_ID"],
+                    access=source["ACCESS_KEY"],
+                    secret=source["SECRET_KEY"],
+                    endpoint=os.getenv("CFB_R2_LAB_SOURCE_ENDPOINT"),
+                )
+            ),
+            output=R2LabStore(
+                bucket=output["BUCKET"],
+                account=output["ACCOUNT_ID"],
+                access=output["ACCESS_KEY"],
+                secret=output["SECRET_KEY"],
+                endpoint=os.getenv("CFB_R2_LAB_ENDPOINT"),
+            ),
+        )
+
+    local_root_str = os.getenv("CFB_LAB_LOCAL_ROOT")
+    if not local_root_str:
+        data_root = os.getenv("CFB_MODEL_DATA_ROOT")
+        if data_root and Path(data_root).exists():
+            local_root_str = str(Path(data_root) / "ratings_lab")
+
+    if local_root_str:
+        root = Path(local_root_str).resolve()
+        # Guard against repository root or ./data/
+        repo_root = Path(__file__).resolve().parents[3]
+        if (
+            root == repo_root
+            or root == repo_root / "data"
+            or (repo_root / "data") in root.parents
+        ):
+            raise ValueError("local lab storage must not reside in repository ./data/")
+
+        r2_source_configured = all(
+            os.getenv(f"CFB_R2_LAB_SOURCE_{name}") for name in r2_names
+        )
+        if r2_source_configured:
+            source_dict = _required("CFB_R2_LAB_SOURCE")
+            source_store: LabStore = R2LabStore(
+                bucket=source_dict["BUCKET"],
+                account=source_dict["ACCOUNT_ID"],
+                access=source_dict["ACCESS_KEY"],
+                secret=source_dict["SECRET_KEY"],
                 endpoint=os.getenv("CFB_R2_LAB_SOURCE_ENDPOINT"),
             )
-        ),
-        output=R2LabStore(
-            bucket=output["BUCKET"],
-            account=output["ACCOUNT_ID"],
-            access=output["ACCESS_KEY"],
-            secret=output["SECRET_KEY"],
-            endpoint=os.getenv("CFB_R2_LAB_ENDPOINT"),
-        ),
-    )
+        else:
+            source_dir = root / "source"
+            source_dir.mkdir(parents=True, exist_ok=True)
+            source_store = LocalLabStore(source_dir)
+
+        output_dir = root / "output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return ResearchStorage(
+            source=ReadOnlySource(source_store),
+            output=LocalLabStore(output_dir),
+        )
+
+    # Fail-closed: neither backend configured
+    _required("CFB_R2_LAB_SOURCE")
+    _required("CFB_R2_LAB")
+    raise ValueError("missing research storage configuration")

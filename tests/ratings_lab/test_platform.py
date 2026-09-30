@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -84,8 +85,41 @@ def test_cloud_configuration_never_falls_back_to_preview(monkeypatch):
     for prefix in ("CFB_R2_LAB_SOURCE", "CFB_R2_LAB"):
         for suffix in ("BUCKET", "ACCOUNT_ID", "ACCESS_KEY", "SECRET_KEY"):
             monkeypatch.delenv(f"{prefix}_{suffix}", raising=False)
+    monkeypatch.delenv("CFB_LAB_LOCAL_ROOT", raising=False)
+    monkeypatch.delenv("CFB_MODEL_DATA_ROOT", raising=False)
     with pytest.raises(ValueError, match="missing research storage configuration"):
         open_research_storage()
+
+
+def test_storage_local_fallback_and_guards(tmp_path, monkeypatch):
+    for prefix in ("CFB_R2_LAB_SOURCE", "CFB_R2_LAB"):
+        for suffix in ("BUCKET", "ACCOUNT_ID", "ACCESS_KEY", "SECRET_KEY"):
+            monkeypatch.delenv(f"{prefix}_{suffix}", raising=False)
+
+    # 1. Valid local root
+    lab_root = tmp_path / "valid_lab"
+    monkeypatch.setenv("CFB_LAB_LOCAL_ROOT", str(lab_root))
+    storage = open_research_storage()
+    assert storage.source.identity != storage.output.identity
+    assert "source" in storage.source.identity
+    assert "output" in storage.output.identity
+
+    # 2. Reject ./data/ inside repo root
+    repo_root = Path(__file__).resolve().parents[2]
+    monkeypatch.setenv("CFB_LAB_LOCAL_ROOT", str(repo_root / "data" / "bad"))
+    with pytest.raises(ValueError, match="must not reside in repository ./data/"):
+        open_research_storage()
+
+    # 3. Split backend: R2 source + local output
+    monkeypatch.setenv("CFB_LAB_LOCAL_ROOT", str(lab_root))
+    for suffix in ("BUCKET", "ACCOUNT_ID", "ACCESS_KEY", "SECRET_KEY"):
+        clean_suffix = suffix.lower().replace("_", "")
+        monkeypatch.setenv(f"CFB_R2_LAB_SOURCE_{suffix}", f"test{clean_suffix}")
+    split_storage = open_research_storage()
+    assert "r2:" in split_storage.source.identity
+    assert "local:" in split_storage.output.identity
+    assert split_storage.source.identity != split_storage.output.identity
+
 
 
 def _game(season, week, game_id, day, home="A", away="B"):
@@ -795,3 +829,143 @@ def test_cli_recipe_and_measurement_id_args():
     with pytest.raises(SystemExit) as exc:
         main(["replay", "--help"])
     assert exc.value.code == 0
+
+
+def test_v6_5factor_game_recipe():
+    """Verify v6_5factor_game_v1 builds 4 factors plus finish_points_per_opp."""
+    game = Game(
+        season=2024,
+        week=1,
+        game_id=1001,
+        home_team="Georgia",
+        away_team="Clemson",
+        kickoff_utc="2024-08-31T16:00:00Z",
+    )
+    plays = [
+        # Drive 1: TD drive reaching opponent 20 (opp 40 met, TD=7)
+        {
+            "season": 2024,
+            "game_id": 1001,
+            "quarter": 1,
+            "down": 1,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "drive_id": 1,
+            "td_play": 1,
+            "is_fg_made": 0,
+            "turnover": 0,
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+            "play_type": "Passing Touchdown",
+            "rush_attempt": 0,
+            "dropback": 1,
+            "yards_gained": 20,
+            "distance": 10,
+            "yards_to_goal": 20,
+        },
+        # Drive 2: FG drive reaching opponent 15 (opp 40 met, FG=3)
+        {
+            "season": 2024,
+            "game_id": 1001,
+            "quarter": 2,
+            "down": 4,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "drive_id": 2,
+            "td_play": 0,
+            "is_fg_made": 1,
+            "turnover": 0,
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+            "play_type": "Field Goal Good",
+            "rush_attempt": 0,
+            "dropback": 0,
+            "yards_gained": 0,
+            "distance": 5,
+            "yards_to_goal": 15,
+        },
+        # Drive 3: Turnover on downs reaching opponent 35 (opp 40 met, pts=0)
+        {
+            "season": 2024,
+            "game_id": 1001,
+            "quarter": 3,
+            "down": 4,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "drive_id": 3,
+            "td_play": 0,
+            "is_fg_made": 0,
+            "turnover": 1,
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+            "play_type": "Pass Incompletion",
+            "rush_attempt": 0,
+            "dropback": 1,
+            "yards_gained": 0,
+            "distance": 2,
+            "yards_to_goal": 35,
+        },
+        # Drive 4: Punt from own 45 (yards_to_goal 55, NOT an opportunity)
+        {
+            "season": 2024,
+            "game_id": 1001,
+            "quarter": 4,
+            "down": 4,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "drive_id": 4,
+            "td_play": 0,
+            "is_fg_made": 0,
+            "turnover": 0,
+            "st": 1,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+            "play_type": "Punt",
+            "rush_attempt": 0,
+            "dropback": 0,
+            "yards_gained": 0,
+            "distance": 8,
+            "yards_to_goal": 55,
+        },
+    ]
+
+    class StubCorpus:
+        def games(self):
+            return [game]
+
+        def read_byplay(self, season=None):
+            return pd.DataFrame(plays)
+
+    corpus = StubCorpus()
+    recipe = MeasurementRecipe(recipe_id="v6_5factor_game_v1", measurement_id="5factor")
+    obs = build_individual(corpus, recipe)
+
+    uga_off = {
+        o.measurement_id: o for o in obs if o.team == "Georgia" and o.role == "offense"
+    }
+    assert "finish_points_per_opp" in uga_off
+    # 3 opportunities (drives 1, 2, 3), points = 7 + 3 + 0 = 10.0
+    assert uga_off["finish_points_per_opp"].exposure == 3.0
+    assert uga_off["finish_points_per_opp"].value == pytest.approx(10.0 / 3.0)
+
+    clem_def = {
+        o.measurement_id: o for o in obs if o.team == "Clemson" and o.role == "defense"
+    }
+    assert "finish_points_per_opp" in clem_def
+    assert clem_def["finish_points_per_opp"].exposure == 3.0
+    assert clem_def["finish_points_per_opp"].value == pytest.approx(10.0 / 3.0)
+
+    clem_off = {
+        o.measurement_id: o for o in obs if o.team == "Clemson" and o.role == "offense"
+    }
+    assert "finish_points_per_opp" in clem_off
+    assert clem_off["finish_points_per_opp"].exposure == 0.0
+    assert clem_off["finish_points_per_opp"].value is None
+    assert clem_off["finish_points_per_opp"].missing_reason == "zero_opportunities"

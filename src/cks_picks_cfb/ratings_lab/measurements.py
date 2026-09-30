@@ -78,6 +78,9 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
         raise ValueError(
             "byplay dataframe is empty; cannot compute 4-factor measurements"
         )
+    df = byplay.copy()
+    if "distance" not in df.columns and "yards_to_first" in df.columns:
+        df["distance"] = df["yards_to_first"]
 
     required_cols = {
         "season",
@@ -93,12 +96,12 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
         "distance",
         "yards_to_goal",
     }
-    missing = sorted(required_cols - set(byplay.columns))
+    missing = sorted(required_cols - set(df.columns))
     if missing:
         raise ValueError(f"byplay frame missing required columns: {missing}")
 
     target_ids = set(_FOUR_FACTORS)
-    if recipe.measurement_id not in {"4factor", "all"}:
+    if recipe.measurement_id not in {"4factor", "5factor", "all"}:
         norm = {
             "rush_sr": "rush_success_rate",
             "rush_expl": "rush_explosiveness",
@@ -111,7 +114,6 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
     games_by_id = {(g.season, g.game_id): g for g in corpus.games()}
     observations: list[Observation] = []
 
-    df = byplay.copy()
     for col in ("season", "game_id", "quarter", "down"):
         if col in df:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
@@ -407,11 +409,115 @@ def _build_4factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observatio
     return observations
 
 
+def _build_finishing_drives(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observation]:
+    from cks_picks_cfb.preseason_features import canonical_team
+
+    byplay = corpus.read_byplay()
+    if byplay.empty:
+        return []
+
+    df = byplay.copy()
+    for col in (
+        "season",
+        "game_id",
+        "quarter",
+        "drive_id",
+        "td_play",
+        "is_fg_made",
+        "garbage",
+        "turnover",
+    ):
+        if col in df:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+    if "yards_to_goal" in df:
+        df["yards_to_goal"] = pd.to_numeric(df["yards_to_goal"], errors="coerce").fillna(999.0)
+
+    is_regulation = df["quarter"].isin([1, 2, 3, 4])
+    is_non_garbage = df["garbage"] == 0
+    eligible = df[is_regulation & is_non_garbage].copy()
+    if eligible.empty:
+        return []
+
+    eligible["offense_canon"] = eligible["offense"].map(canonical_team)
+    eligible["defense_canon"] = eligible["defense"].map(canonical_team)
+
+    games_by_id = {(g.season, g.game_id): g for g in corpus.games()}
+    observations: list[Observation] = []
+
+    for (season, game_id), game_plays in eligible.groupby(
+        ["season", "game_id"], sort=False
+    ):
+        game = games_by_id.get((int(season), int(game_id)))
+        if game is None:
+            continue
+        avail = (pd.Timestamp(game.kickoff_utc) + timedelta(hours=6)).isoformat()
+
+        drive_stats: list[tuple[str, str, float]] = []
+        for did, dplays in game_plays.groupby("drive_id", sort=False):
+            if (dplays["yards_to_goal"] <= 40).any():
+                off_t = dplays["offense_canon"].iloc[0]
+                def_t = dplays["defense_canon"].iloc[0]
+                has_off_td = ((dplays["td_play"] == 1) & (dplays["turnover"] == 0)).any()
+                has_fg = (dplays["is_fg_made"] == 1).any()
+                pts = 7.0 if has_off_td else (3.0 if has_fg else 0.0)
+                drive_stats.append((off_t, def_t, pts))
+
+        for team in (game.home_team, game.away_team):
+            for role in ("offense", "defense"):
+                if role == "offense":
+                    opp_pts = [pts for off_t, def_t, pts in drive_stats if off_t == team]
+                else:
+                    opp_pts = [pts for off_t, def_t, pts in drive_stats if def_t == team]
+
+                n_opps = len(opp_pts)
+                if n_opps > 0:
+                    val = float(sum(opp_pts) / n_opps)
+                    observations.append(
+                        Observation(
+                            int(season),
+                            game.week,
+                            int(game_id),
+                            team,
+                            role,
+                            "finish_points_per_opp",
+                            val,
+                            float(n_opps),
+                            avail,
+                            "historically_reconstructed",
+                        )
+                    )
+                else:
+                    observations.append(
+                        Observation(
+                            int(season),
+                            game.week,
+                            int(game_id),
+                            team,
+                            role,
+                            "finish_points_per_opp",
+                            None,
+                            0.0,
+                            avail,
+                            "historically_reconstructed",
+                            missing_reason="zero_opportunities",
+                        )
+                    )
+
+    return observations
+
+
+def _build_5factor(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observation]:
+    obs_4f = _build_4factor(corpus, recipe)
+    obs_finish = _build_finishing_drives(corpus, recipe)
+    return obs_4f + obs_finish
+
+
 RecipeBuilder = Callable[[Corpus, MeasurementRecipe], list[Observation]]
 
 _RECIPE_BUILDERS: dict[str, RecipeBuilder] = {
     "v5_raw_ppp_game_v1": _build_ppp,
     "v6_4factor_game_v1": _build_4factor,
+    "v6_5factor_game_v1": _build_5factor,
 }
 
 
