@@ -60,6 +60,32 @@ $$\text{prior\_variance} = 1.0$$
 - **Temporal integrity:** Fail-closed validation enforces $\text{effective\_at} \le \text{earliest\_kickoff}$ for the season. The 2020 COVID season is rejected at every boundary; the 2019 $\to$ 2021 transition applies $g = 2$ ($\rho_f^2$).
 - **Neutral fallback:** Teams without terminal ratings (e.g. FCS opponents or new FBS programs) or missing continuity data fall back to neutral $\text{Rating}(0.0, 1.0)$ with an explicit missing reason, preventing NaN propagation.
 
+## Multi-Factor Exposure Kalman Engine & Retrospective Re-anchoring (Phase 3)
+
+Phase 3 introduces dynamic state-space estimation and schedule graph re-anchoring in `ratings_lab/kalman.py` and `ratings_lab/reanchoring.py`.
+
+### 1. Exposure-Weighted Dynamic State Space (`KalmanExposureDesign`)
+- **6 Independent 1D Filters:** Each factor tracks its own rating state $\text{Rating}(\mu_t, \sigma^2_t)$ independently per team-role.
+- **Factor-Specific Exposure ($n_t$):** Measurement noise variance $R_t$ scales inversely with the factor's actual play count (attempts for Success Rate, chunk successes for Explosiveness/Margin):
+  $$R_t = \frac{\sigma^2_{\text{noise}}}{\max(n_t, 1)}$$
+  For FCS opponents, a 4× noise penalty applies: $R_t = \frac{\sigma^2_{\text{noise}}}{0.25 \cdot \max(n_t, 1)}$.
+- **Innovation Capping:** Innovation $|\nu_t| \le 1.5$ is capped on FCS games to prevent blowout distortion, while FBS games remain uncapped.
+- **Process Drift ($q$):** Drift variance expands state uncertainty per game step ($\sigma^2_{t|t-1} = \sigma^2_{t-1} + q$). Bye weeks incur zero update (no drift or measurement steps).
+- **Missing Observations:** Missing values (`value is None` or $n_t \le 0$) skip measurement updates while preserving expanded prediction variance $\sigma^2_{t|t-1}$, avoiding zero-imputation.
+- **Numerical Guards:** Variance floor at $10^{-6}$, Kalman gain clipped to $K_t \in [0, 1]$.
+- **Defaults:** Success Rate ($q=0.02, \sigma^2=0.25$), Explosiveness ($q=0.05, \sigma^2=4.00$).
+
+### 2. FCS Composite Anchor
+- All non-FBS opponents map to `FCS_COMPOSITE`.
+- Pinned Prior: $\text{Rating}(\mu = -2.0, \sigma^2 = 0.5)$ across all 6 IDs.
+- Never updated from game outcomes and excluded from league center and scaling calculations.
+
+### 3. Retrospective Schedule Graph Re-anchoring
+- **Causality:** Only games with $\text{kickoff} + 6\text{h} \le \text{cutoff\_utc}$ are admitted. Zero future evidence enters pregame states.
+- **Iterative 4-Pass Adjustment:** Adjusts completed game observations against opponent unit strength and role cohort means with damped fixed-point iterations.
+- **Early-Season Shrinkage:** For sparse early graphs (weeks $T \in \{1, 2\}$), adjustments shrink toward preseason prior via $w_t = T / (T + k)$ (with default $k=2.0$).
+- **Batch Re-filter:** Standing at week $T$, re-runs the Kalman filter over re-anchored completed games $1 \dots T$ to emit frozen pregame states $\boldsymbol{\theta}_T$.
+
 ## Deferred architectural decisions
 
 As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../plans/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:

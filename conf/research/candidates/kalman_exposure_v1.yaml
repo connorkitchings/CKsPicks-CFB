@@ -1,0 +1,9 @@
+candidate_id: kalman_exposure_v1
+type: kalman_exposure
+q: 0.03
+sigma2_noise: 1.0
+rho: 0.60
+mode: incremental
+fcs_exposure_weight: 0.25
+fcs_innovation_cap: 1.5
+description: "V6 Exposure-weighted Dynamic State-Space Kalman filter (q=0.03, sigma2=1.0, FCS 25% down-weight & 1.5 cap)"

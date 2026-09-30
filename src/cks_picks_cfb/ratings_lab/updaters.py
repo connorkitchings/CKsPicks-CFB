@@ -170,11 +170,14 @@ class ParameterizedDesign:
         }
 
 
+_REGISTERED_TYPES: set[str] = {"parameterized_exposure", "kalman_exposure"}
+_REGISTERED_POLICIES: set[str] = {"v5_later_week_6h_v1"}
+
 # ---------------------------------------------------------------------------
 # YAML candidate loader
 # ---------------------------------------------------------------------------
 
-_ALLOWED_CANDIDATE_KEYS: set[str] = {
+_ALLOWED_EXPOSURE_KEYS: set[str] = {
     "candidate_id",
     "type",
     "k",
@@ -183,41 +186,102 @@ _ALLOWED_CANDIDATE_KEYS: set[str] = {
     "description",
 }
 
+_ALLOWED_KALMAN_KEYS: set[str] = {
+    "candidate_id",
+    "type",
+    "q",
+    "sigma2_noise",
+    "rho",
+    "mode",
+    "description",
+    "fcs_exposure_weight",
+    "fcs_innovation_cap",
+    "measurement_id",
+}
 
-def _parse_candidate(raw: dict[str, Any], source: str) -> ParameterizedDesign:
+
+def _parse_candidate(raw: dict[str, Any], source: str) -> Any:
     import math
 
-    missing = {"candidate_id", "type", "k", "rho", "mode"} - raw.keys()
-    if missing:
-        raise ValueError(
-            f"candidate config {source!r} missing fields: {sorted(missing)}"
-        )
-    extra = raw.keys() - _ALLOWED_CANDIDATE_KEYS
-    if extra:
-        raise ValueError(
-            f"candidate config {source!r} has unexpected fields: {sorted(extra)}"
-        )
+    if not isinstance(raw, dict) or "type" not in raw:
+        raise ValueError(f"candidate config {source!r} missing fields: ['type']")
+
     kind = raw["type"]
     if kind not in _REGISTERED_TYPES:
         raise ValueError(
             f"candidate config {source!r} has unregistered type {kind!r}; "
             f"known: {sorted(_REGISTERED_TYPES)}"
         )
-    try:
-        k_val = float(raw["k"])
-        rho_val = float(raw["rho"])
-    except (ValueError, TypeError) as exc:
-        raise ValueError(
-            f"candidate config {source!r} has non-numeric k or rho"
-        ) from exc
-    if not (math.isfinite(k_val) and math.isfinite(rho_val)):
-        raise ValueError(f"candidate config {source!r} has non-finite k or rho")
-    return ParameterizedDesign(
-        candidate_id=str(raw["candidate_id"]),
-        k=k_val,
-        rho=rho_val,
-        mode=str(raw["mode"]),
-    )
+
+    if kind == "parameterized_exposure":
+        missing = {"candidate_id", "type", "k", "rho", "mode"} - raw.keys()
+        if missing:
+            raise ValueError(
+                f"candidate config {source!r} missing fields: {sorted(missing)}"
+            )
+        extra = raw.keys() - _ALLOWED_EXPOSURE_KEYS
+        if extra:
+            raise ValueError(
+                f"candidate config {source!r} has unexpected fields: {sorted(extra)}"
+            )
+        try:
+            k_val = float(raw["k"])
+            rho_val = float(raw["rho"])
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"candidate config {source!r} has non-numeric k or rho"
+            ) from exc
+        if not (math.isfinite(k_val) and math.isfinite(rho_val)):
+            raise ValueError(f"candidate config {source!r} has non-finite k or rho")
+        return ParameterizedDesign(
+            candidate_id=str(raw["candidate_id"]),
+            k=k_val,
+            rho=rho_val,
+            mode=str(raw["mode"]),
+        )
+
+    elif kind == "kalman_exposure":
+        from .kalman import KalmanExposureDesign
+
+        missing = {
+            "candidate_id",
+            "type",
+            "q",
+            "sigma2_noise",
+            "rho",
+            "mode",
+        } - raw.keys()
+        if missing:
+            raise ValueError(
+                f"candidate config {source!r} missing fields: {sorted(missing)}"
+            )
+        extra = raw.keys() - _ALLOWED_KALMAN_KEYS
+        if extra:
+            raise ValueError(
+                f"candidate config {source!r} has unexpected fields: {sorted(extra)}"
+            )
+        try:
+            q_val = float(raw["q"]) if isinstance(raw["q"], (int, float)) else raw["q"]
+            s2_val = (
+                float(raw["sigma2_noise"])
+                if isinstance(raw["sigma2_noise"], (int, float))
+                else raw["sigma2_noise"]
+            )
+            rho_val = float(raw["rho"])
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"candidate config {source!r} has non-numeric Kalman parameters"
+            ) from exc
+        return KalmanExposureDesign(
+            candidate_id=str(raw["candidate_id"]),
+            q=q_val,
+            sigma2_noise=s2_val,
+            rho=rho_val,
+            mode=str(raw["mode"]),
+            fcs_exposure_weight=float(raw.get("fcs_exposure_weight", 0.25)),
+            fcs_innovation_cap=float(raw.get("fcs_innovation_cap", 1.5)),
+            measurement_id=raw.get("measurement_id"),
+        )
 
 
 def load_candidate_configs(

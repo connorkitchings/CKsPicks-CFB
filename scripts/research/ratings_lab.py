@@ -330,7 +330,9 @@ def main(argv: list[str] | None = None) -> int:
             measurement_id=args.measurement_id,
             external_terminals=terminal_standardized_seeds(
                 individual,
-                signed_defense=(args.measurement_id != "raw_points_per_possession"),
+                signed_defense=(
+                    args.measurement_id not in {"ppp", "raw_points_per_possession"}
+                ),
             )
             if args.candidate == "carryover_only_rho_0_60_v1"
             else None,
