@@ -177,8 +177,12 @@ def main(argv: list[str] | None = None) -> int:
             cmd.add_argument("--stage-key", required=True)
         if name == "compare":
             cmd.add_argument("--reference-key")
+        if name == "build-measurements":
+            cmd.add_argument("--recipe", default="v5_raw_ppp_game_v1")
+            cmd.add_argument("--measurement-id", default="ppp")
         if name == "replay":
             cmd.add_argument("--candidate", default="carryover_only_rho_0_60_v1")
+            cmd.add_argument("--measurement-id", default="ppp")
         if name == "evaluate":
             cmd.add_argument("--candidate", default="carryover_only_rho_0_60_v1")
         if name == "explain":
@@ -207,7 +211,8 @@ def main(argv: list[str] | None = None) -> int:
         or protocol.get("availability_policy") != "v5_later_week_6h_v1"
         or protocol.get("headline_seasons") != [2022, 2023, 2024, 2025]
         or protocol.get("timing_class") != "historically_reconstructed"
-        or protocol.get("measurement_recipe") != "v5_raw_ppp_game_v1"
+        or protocol.get("measurement_recipe")
+        not in {"v5_raw_ppp_game_v1", "v6_4factor_game_v1"}
         or protocol.get("bridge") != "alpha10_expanding_v1"
         or protocol.get("calibration") != "earlier_rolling_residual_v1"
         or protocol.get("bootstrap_seed") != 20260928
@@ -278,7 +283,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     corpus = load_persisted_corpus(storage, corpus_ref) if corpus_ref else None
     if args.command == "build-measurements":
-        individual = build_individual(corpus, MeasurementRecipe())
+        recipe = MeasurementRecipe(
+            recipe_id=args.recipe, measurement_id=args.measurement_id
+        )
+        individual = build_individual(corpus, recipe)
         cumulative = build_cumulative(corpus.games(), individual)
         frame = observation_frame(individual + cumulative)
         if args.apply:
@@ -287,7 +295,7 @@ def main(argv: list[str] | None = None) -> int:
                 stage="measurements",
                 frame=frame,
                 parents={"corpus": corpus_ref.sha256},
-                config={**asdict(MeasurementRecipe()), "protocol_sha": config_sha},
+                config={**asdict(recipe), "protocol_sha": config_sha},
                 code_sha=code_sha,
                 lock_sha=lock_sha,
             )
@@ -319,7 +327,7 @@ def main(argv: list[str] | None = None) -> int:
             corpus.games(),
             observations,
             design=candidate,
-            measurement_id="ppp",
+            measurement_id=args.measurement_id,
             external_terminals=terminal_standardized_seeds(individual)
             if args.candidate == "carryover_only_rho_0_60_v1"
             else None,
@@ -334,7 +342,7 @@ def main(argv: list[str] | None = None) -> int:
                 config={
                     "candidate": args.candidate,
                     "mode": candidate.mode,
-                    "measurement_id": "ppp",
+                    "measurement_id": args.measurement_id,
                     "protocol_sha": config_sha,
                 },
                 code_sha=code_sha,

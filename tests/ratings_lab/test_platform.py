@@ -27,11 +27,27 @@ from cks_picks_cfb.ratings_lab.measurements import (
     register_availability_policy,
     register_recipe,
 )
-from cks_picks_cfb.ratings_lab.replay import CarryoverOnly, replay
+from cks_picks_cfb.ratings_lab.replay import REGISTRY, CarryoverOnly, replay
 from cks_picks_cfb.ratings_lab.updaters import (
     ParameterizedDesign,
     load_candidate_configs,
 )
+
+
+@pytest.fixture(autouse=True)
+def _restore_measurement_registries():
+    from cks_picks_cfb.ratings_lab.measurements import (
+        _RECIPE_BUILDERS,
+        _REGISTERED_AVAILABILITY_POLICIES,
+    )
+
+    orig_builders = dict(_RECIPE_BUILDERS)
+    orig_policies = set(_REGISTERED_AVAILABILITY_POLICIES)
+    yield
+    _RECIPE_BUILDERS.clear()
+    _RECIPE_BUILDERS.update(orig_builders)
+    _REGISTERED_AVAILABILITY_POLICIES.clear()
+    _REGISTERED_AVAILABILITY_POLICIES.update(orig_policies)
 
 
 def _storage(tmp_path):
@@ -432,15 +448,36 @@ mode: incremental
     (candidates_dir / "dup.yaml").write_text(yaml_content)
 
     with pytest.raises(ValueError, match="redefines code-registered id"):
-        load_candidate_configs(
-            candidates_dir, existing_ids={"carryover_only_rho_0_60_v1"}
-        )
+        load_candidate_configs(candidates_dir, existing_ids=set(REGISTRY))
 
+    # Missing directory raises FileNotFoundError
+    with pytest.raises(FileNotFoundError, match="candidate directory not found"):
+        load_candidate_configs(tmp_path / "nonexistent_dir")
+
+    # Missing fields raises ValueError
     bad_dir = tmp_path / "bad_candidates"
     bad_dir.mkdir()
     (bad_dir / "bad.yaml").write_text("candidate_id: bad_v1\nk: 8.0\n")
     with pytest.raises(ValueError, match="missing fields"):
         load_candidate_configs(bad_dir)
+
+    # Extra unexpected fields raises ValueError
+    extra_dir = tmp_path / "extra_candidates"
+    extra_dir.mkdir()
+    (extra_dir / "extra.yaml").write_text(
+        "candidate_id: extra_v1\ntype: parameterized_exposure\nk: 8.0\nrho: 0.60\nmode: incremental\nunknown_field: 123\n"
+    )
+    with pytest.raises(ValueError, match="unexpected fields"):
+        load_candidate_configs(extra_dir)
+
+    # Non-finite values raises ValueError
+    nan_dir = tmp_path / "nan_candidates"
+    nan_dir.mkdir()
+    (nan_dir / "nan.yaml").write_text(
+        "candidate_id: nan_v1\ntype: parameterized_exposure\nk: .nan\nrho: 0.60\nmode: incremental\n"
+    )
+    with pytest.raises(ValueError, match="non-finite"):
+        load_candidate_configs(nan_dir)
 
 
 def test_measurement_recipe_extensible():
@@ -491,3 +528,232 @@ def test_measurement_recipe_extensible():
 
     with pytest.raises(ValueError, match="already registered"):
         register_recipe("custom_test_recipe_v1", custom_builder)
+
+
+def test_v6_4factor_measurement_calculation():
+    game = Game(
+        season=2024,
+        week=1,
+        game_id=999,
+        kickoff_utc="2024-09-01T19:00:00+00:00",
+        home_team="Georgia",
+        away_team="Clemson",
+        forecast_eligible=True,
+    )
+    plays = [
+        # Rush 1: success, 6 yds on 1st & 10 (thresh 5) -> margin 1
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 1,
+            "distance": 10,
+            "yards_to_goal": 75,
+            "yards_gained": 6,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 1,
+            "dropback": 0,
+            "play_type": "Rush",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Rush 2: fail, 2 yds on 2nd & 4 (thresh 2.8)
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 2,
+            "distance": 4,
+            "yards_to_goal": 69,
+            "yards_gained": 2,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 1,
+            "dropback": 0,
+            "play_type": "Rush",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Rush 3: success, 3 yds on 3rd & 2 (thresh 2) -> margin 1
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 3,
+            "distance": 2,
+            "yards_to_goal": 67,
+            "yards_gained": 3,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 1,
+            "dropback": 0,
+            "play_type": "Rush",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Pass 1: success, 2 yds on 1st & Goal from 4 (thresh 2) -> margin 0
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 1,
+            "distance": 4,
+            "yards_to_goal": 4,
+            "yards_gained": 2,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 0,
+            "dropback": 1,
+            "play_type": "Pass",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Pass 2: fail, 1 yd on 2nd & Goal from 2 (thresh 1.4)
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 2,
+            "distance": 2,
+            "yards_to_goal": 2,
+            "yards_gained": 1,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 0,
+            "dropback": 1,
+            "play_type": "Pass",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Dead play (kneel)
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 2,
+            "down": 1,
+            "distance": 10,
+            "yards_to_goal": 50,
+            "yards_gained": -1,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 1,
+            "dropback": 0,
+            "play_type": "Kneel",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+        # Garbage play (excluded)
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 4,
+            "down": 1,
+            "distance": 10,
+            "yards_to_goal": 80,
+            "yards_gained": 70,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 1,
+            "dropback": 0,
+            "play_type": "Rush",
+            "st": 0,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 1,
+        },
+        # Special teams play (excluded)
+        {
+            "season": 2024,
+            "game_id": 999,
+            "quarter": 1,
+            "down": 4,
+            "distance": 1,
+            "yards_to_goal": 64,
+            "yards_gained": 0,
+            "offense": "Georgia",
+            "defense": "Clemson",
+            "rush_attempt": 0,
+            "dropback": 0,
+            "play_type": "Punt",
+            "st": 1,
+            "penalty": 0,
+            "twopoint": 0,
+            "garbage": 0,
+        },
+    ]
+
+    class StubCorpus:
+        def games(self):
+            return [game]
+
+        def read_byplay(self, season=None):
+            return pd.DataFrame(plays)
+
+    corpus = StubCorpus()
+    recipe = MeasurementRecipe(recipe_id="v6_4factor_game_v1", measurement_id="4factor")
+    obs = build_individual(corpus, recipe)
+
+    uga_off = {
+        o.measurement_id: o for o in obs if o.team == "Georgia" and o.role == "offense"
+    }
+
+    assert uga_off["rush_success_rate"].value == pytest.approx(2.0 / 3.0)
+    assert uga_off["rush_success_rate"].exposure == 3.0
+
+    assert uga_off["rush_explosiveness"].value == pytest.approx(4.5)
+    assert uga_off["rush_explosiveness"].exposure == 2.0
+
+    assert uga_off["rush_explosiveness_margin"].value == pytest.approx(1.0)
+    assert uga_off["rush_explosiveness_margin"].exposure == 2.0
+
+    assert uga_off["pass_success_rate"].value == pytest.approx(0.5)
+    assert uga_off["pass_success_rate"].exposure == 2.0
+
+    assert uga_off["pass_explosiveness"].value == pytest.approx(2.0)
+    assert uga_off["pass_explosiveness"].exposure == 1.0
+
+    clem_def = {
+        o.measurement_id: o for o in obs if o.team == "Clemson" and o.role == "defense"
+    }
+    assert clem_def["rush_success_rate"].value == pytest.approx(2.0 / 3.0)
+    assert clem_def["pass_success_rate"].value == pytest.approx(0.5)
+
+    clem_off = {
+        o.measurement_id: o for o in obs if o.team == "Clemson" and o.role == "offense"
+    }
+    assert clem_off["rush_success_rate"].value is None
+    assert clem_off["rush_success_rate"].exposure == 0.0
+    assert clem_off["rush_success_rate"].missing_reason == "no_rush_attempts"
+
+    assert clem_off["rush_explosiveness"].value is None
+    assert clem_off["rush_explosiveness"].exposure == 0.0
+    assert clem_off["rush_explosiveness"].missing_reason == "no_successful_plays"
+
+    assert clem_off["pass_success_rate"].value is None
+    assert clem_off["pass_success_rate"].exposure == 0.0
+    assert clem_off["pass_success_rate"].missing_reason == "no_pass_attempts"
+
+
+def test_cli_recipe_and_measurement_id_args():
+    from scripts.research.ratings_lab import main
+
+    with pytest.raises(SystemExit) as exc:
+        main(["build-measurements", "--help"])
+    assert exc.value.code == 0
+
+    with pytest.raises(SystemExit) as exc:
+        main(["replay", "--help"])
+    assert exc.value.code == 0

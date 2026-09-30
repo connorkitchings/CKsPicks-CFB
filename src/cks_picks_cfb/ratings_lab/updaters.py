@@ -174,20 +174,28 @@ class ParameterizedDesign:
 # YAML candidate loader
 # ---------------------------------------------------------------------------
 
-_CANDIDATE_SCHEMA: dict[str, type] = {
-    "candidate_id": str,
-    "type": str,
-    "k": float,
-    "rho": float,
-    "mode": str,
+_ALLOWED_CANDIDATE_KEYS: set[str] = {
+    "candidate_id",
+    "type",
+    "k",
+    "rho",
+    "mode",
+    "description",
 }
 
 
 def _parse_candidate(raw: dict[str, Any], source: str) -> ParameterizedDesign:
+    import math
+
     missing = {"candidate_id", "type", "k", "rho", "mode"} - raw.keys()
     if missing:
         raise ValueError(
             f"candidate config {source!r} missing fields: {sorted(missing)}"
+        )
+    extra = raw.keys() - _ALLOWED_CANDIDATE_KEYS
+    if extra:
+        raise ValueError(
+            f"candidate config {source!r} has unexpected fields: {sorted(extra)}"
         )
     kind = raw["type"]
     if kind not in _REGISTERED_TYPES:
@@ -195,10 +203,19 @@ def _parse_candidate(raw: dict[str, Any], source: str) -> ParameterizedDesign:
             f"candidate config {source!r} has unregistered type {kind!r}; "
             f"known: {sorted(_REGISTERED_TYPES)}"
         )
+    try:
+        k_val = float(raw["k"])
+        rho_val = float(raw["rho"])
+    except (ValueError, TypeError) as exc:
+        raise ValueError(
+            f"candidate config {source!r} has non-numeric k or rho"
+        ) from exc
+    if not (math.isfinite(k_val) and math.isfinite(rho_val)):
+        raise ValueError(f"candidate config {source!r} has non-finite k or rho")
     return ParameterizedDesign(
         candidate_id=str(raw["candidate_id"]),
-        k=float(raw["k"]),
-        rho=float(raw["rho"]),
+        k=k_val,
+        rho=rho_val,
         mode=str(raw["mode"]),
     )
 
@@ -223,10 +240,10 @@ def load_candidate_configs(
     dict mapping ``candidate_id`` → ``ParameterizedDesign``, ready for
     ``replay.register()``.
     """
+    if not directory.is_dir():
+        raise FileNotFoundError(f"candidate directory not found: {directory}")
     existing_ids = existing_ids or set()
     configs: dict[str, ParameterizedDesign] = {}
-    if not directory.is_dir():
-        return configs
     for path in sorted(directory.glob("*.yaml")):
         raw = yaml.safe_load(path.read_text())
         if not isinstance(raw, dict):

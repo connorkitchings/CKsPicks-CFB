@@ -63,6 +63,36 @@ class Corpus:
     v5_features: pd.DataFrame
     parents: dict[str, dict[str, str]]
     lower_level_refs: dict[int, dict[str, Any]]
+    storage: Any = None
+    byplay: pd.DataFrame | None = None
+
+    def read_byplay(self, season: int | None = None) -> pd.DataFrame:
+        if self.byplay is not None:
+            if season is not None:
+                return self.byplay[self.byplay["season"].eq(season)].copy()
+            return self.byplay.copy()
+        if self.storage is None:
+            raise ValueError(
+                "Corpus has no storage attached to read lower-level byplay"
+            )
+        from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+
+        source = (
+            self.storage.source if hasattr(self.storage, "source") else self.storage
+        )
+        seasons = (
+            [season] if season is not None else sorted(self.lower_level_refs.keys())
+        )
+        frames = []
+        for s in seasons:
+            ref_dict = self.lower_level_refs.get(s, {}).get("byplay")
+            if not ref_dict:
+                continue
+            ref = DatasetRef(**ref_dict) if isinstance(ref_dict, dict) else ref_dict
+            frames.append(read_dataset(source, ref))
+        if not frames:
+            return pd.DataFrame()
+        return pd.concat(frames, ignore_index=True)
 
     def games(self) -> list[Game]:
         merged = self.population.merge(
@@ -204,6 +234,7 @@ def load_v5_corpus(storage: ResearchStorage) -> Corpus:
             season: {name: asdict(ref) for name, ref in sources.items()}
             for season, sources in refs.items()
         },
+        storage=storage,
     )
 
 
@@ -315,4 +346,5 @@ def load_persisted_corpus(
         **data,
         parents=payload["metadata"]["parents"],
         lower_level_refs=payload["metadata"]["lower_level_refs"],
+        storage=storage,
     )
