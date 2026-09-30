@@ -1,7 +1,7 @@
 # 2026 V5 intended-update production repair
 
-- **Status:** In Progress
-- **Production selection:** The user approved exact packet SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`; its six-week atomic selection and database/public-site data readback passed on 2026-09-30. The completed-week retrospective disclosure still awaits deployment, and Week 5's final market refresh/freeze remains a separate pre-kickoff gate.
+- **Status:** Implemented
+- **Production selection:** The user approved exact packet SHA-256 `deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc`; its six-week atomic selection and database/public-site data readback passed on 2026-09-30. Disclosure commit `acbd9c6` passed all CI jobs (run `36714354281`) and deployed as Vercel production `dpl_CqhVfy4jcQ2AAmF35uDzUtSLPeDt` (READY); `/?week=0` and `/performance` visibly label Weeks 0–4 as retrospective replays. Week 5 `2026w5-v5repair-20260929-p2` froze at `2026-09-30T12:34:06Z` (pipeline `816d7d02c2364547bb5ad569b3113f25`), 56/56/56 coverage, no grades, ~35.5h before `2026-10-02T00:00Z` kickoff.
 - **Created:** 2026-09-29
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact path in the 2026-09-29 handoff message; approved before code changes
@@ -121,12 +121,12 @@ Add an append-only approval registry for multiple exact model/bundle pairs and t
 
 ## Definition of Done
 
-- [ ] All implementation tasks and acceptance criteria are complete.
-- [ ] Required validation and independent verification pass.
+- [x] All implementation tasks and acceptance criteria are complete.
+- [x] Required validation and independent verification pass.
 - [x] Exact production release is separately approved and completed with database and public data readback.
 - [x] Original runs and a tested batch rollback remain available.
-- [ ] Documentation, release evidence, and implementation session log are updated.
-- [ ] Contract status reflects the actual outcome: `Implemented` only after production readback, otherwise `In Progress`.
+- [x] Documentation, release evidence, and implementation session log are updated.
+- [x] Contract status reflects the actual outcome: `Implemented` only after production readback, otherwise `In Progress`.
 
 ## Amendments
 
