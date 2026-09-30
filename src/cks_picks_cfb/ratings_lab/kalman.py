@@ -63,13 +63,64 @@ class KalmanExposureDesign:
         if self.variance_floor <= 0.0:
             raise ValueError("variance_floor must be strictly positive")
 
+        valid_keys = set(FAMILY_MAP.keys()) | set(DEFAULT_Q_BY_FAMILY.keys())
+
+        # Validate process drift q
+        if isinstance(self.q, (int, float)):
+            q_val = float(self.q)
+            if not isfinite(q_val) or q_val <= 0.0:
+                raise ValueError(f"q must be positive and finite, got {self.q}")
+        elif isinstance(self.q, Mapping):
+            if not self.q:
+                raise ValueError("q mapping cannot be empty")
+            for k, v in self.q.items():
+                if k not in valid_keys:
+                    raise ValueError(f"Unknown key in q mapping: {k!r}")
+                try:
+                    vf = float(v)
+                except (ValueError, TypeError) as exc:
+                    raise ValueError(
+                        f"q mapping value for {k!r} must be numeric, got {v!r}"
+                    ) from exc
+                if not isfinite(vf) or vf <= 0.0:
+                    raise ValueError(
+                        f"q mapping value for {k!r} must be positive and finite, got {v}"
+                    )
+        else:
+            raise TypeError(f"q must be float or Mapping, got {type(self.q).__name__}")
+
+        # Validate observation noise variance sigma2_noise
+        if isinstance(self.sigma2_noise, (int, float)):
+            s2_val = float(self.sigma2_noise)
+            if not isfinite(s2_val) or s2_val <= 0.0:
+                raise ValueError(
+                    f"sigma2_noise must be positive and finite, got {self.sigma2_noise}"
+                )
+        elif isinstance(self.sigma2_noise, Mapping):
+            if not self.sigma2_noise:
+                raise ValueError("sigma2_noise mapping cannot be empty")
+            for k, v in self.sigma2_noise.items():
+                if k not in valid_keys:
+                    raise ValueError(f"Unknown key in sigma2_noise mapping: {k!r}")
+                try:
+                    vf = float(v)
+                except (ValueError, TypeError) as exc:
+                    raise ValueError(
+                        f"sigma2_noise value for {k!r} must be numeric, got {v!r}"
+                    ) from exc
+                if not isfinite(vf) or vf <= 0.0:
+                    raise ValueError(
+                        f"sigma2_noise value for {k!r} must be positive and finite, got {v}"
+                    )
+        else:
+            raise TypeError(
+                f"sigma2_noise must be float or Mapping, got {type(self.sigma2_noise).__name__}"
+            )
+
     def resolve_q(self, measurement_id: str | None) -> float:
         """Resolve process drift q for the given measurement ID."""
         if isinstance(self.q, (int, float)):
-            q_val = float(self.q)
-            if not isfinite(q_val) or q_val <= 0:
-                raise ValueError(f"q must be positive and finite, got {self.q}")
-            return q_val
+            return float(self.q)
 
         mid = measurement_id or self.measurement_id or "rush_success_rate"
         if mid in self.q:
@@ -84,12 +135,7 @@ class KalmanExposureDesign:
     def resolve_sigma2(self, measurement_id: str | None) -> float:
         """Resolve observation noise variance sigma2_noise for the given measurement ID."""
         if isinstance(self.sigma2_noise, (int, float)):
-            s2_val = float(self.sigma2_noise)
-            if not isfinite(s2_val) or s2_val <= 0:
-                raise ValueError(
-                    f"sigma2_noise must be positive and finite, got {self.sigma2_noise}"
-                )
-            return s2_val
+            return float(self.sigma2_noise)
 
         mid = measurement_id or self.measurement_id or "rush_success_rate"
         if mid in self.sigma2_noise:
@@ -173,13 +219,14 @@ class KalmanExposureDesign:
             n_t = float(obs.exposure)
             usable_exposure += n_t
 
-            # 3. Check for FCS opponent
+            # 3. Check for FCS game (via fcs_game_ids, missing_reason flag, or unmapped FCS team)
             is_fcs = False
             if self.fcs_game_ids and obs.game_id in self.fcs_game_ids:
                 is_fcs = True
-            elif self.fcs_teams and obs.team in self.fcs_teams:
-                is_fcs = True
             elif obs.missing_reason == "fcs_opponent":
+                is_fcs = True
+            elif self.fcs_teams and obs.team in self.fcs_teams:
+                # Direct check if the team under estimation is an unmapped FCS program
                 is_fcs = True
 
             # 4. Measurement noise scaling

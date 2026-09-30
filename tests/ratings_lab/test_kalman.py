@@ -431,7 +431,7 @@ def test_replay_with_kalman_design():
 
 
 def test_yaml_candidate_loading_kalman():
-    """Verify load_candidate_configs parses kalman_exposure YAML configs."""
+    """Verify load_candidate_configs parses kalman_exposure YAML configs with family mappings."""
     configs_dir = Path("conf/research/candidates")
     configs = load_candidate_configs(configs_dir)
 
@@ -439,7 +439,121 @@ def test_yaml_candidate_loading_kalman():
     kalman_candidate = configs["kalman_exposure_v1"]
     assert isinstance(kalman_candidate, KalmanExposureDesign)
     assert kalman_candidate.candidate_id == "kalman_exposure_v1"
-    assert kalman_candidate.q == 0.03
-    assert kalman_candidate.sigma2_noise == 1.0
+    assert kalman_candidate.q == {"SR": 0.02, "Expl": 0.05}
+    assert kalman_candidate.sigma2_noise == {"SR": 0.25, "Expl": 4.00}
+    assert kalman_candidate.resolve_q("rush_success_rate") == 0.02
+    assert kalman_candidate.resolve_q("rush_explosiveness") == 0.05
+    assert kalman_candidate.resolve_sigma2("rush_success_rate") == 0.25
+    assert kalman_candidate.resolve_sigma2("rush_explosiveness") == 4.00
     assert kalman_candidate.fcs_exposure_weight == 0.25
     assert kalman_candidate.fcs_innovation_cap == 1.5
+
+
+def test_batch_refilter_states_multi_mid_separation():
+    """Verify batch_refilter_states keeps multi-ID streams separated without crosstalk."""
+    games = [
+        Game(
+            season=2024,
+            week=1,
+            game_id=1,
+            kickoff_utc="2024-08-31T16:00:00Z",
+            home_team="Georgia",
+            away_team="Clemson",
+        )
+    ]
+    # Feed mixed observations: Georgia has both SR and Expl
+    obs = [
+        Observation(
+            season=2024,
+            week=1,
+            game_id=1,
+            team="Georgia",
+            role="offense",
+            measurement_id="rush_success_rate",
+            value=0.55,
+            exposure=30.0,
+            available_utc="2024-08-31T23:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+        Observation(
+            season=2024,
+            week=1,
+            game_id=1,
+            team="Georgia",
+            role="offense",
+            measurement_id="rush_explosiveness",
+            value=1.50,
+            exposure=12.0,
+            available_utc="2024-08-31T23:00:00Z",
+            timing_class="historically_reconstructed",
+        ),
+    ]
+    priors = {
+        (2024, "Georgia", "offense", "rush_success_rate"): Rating(0.5, 1.0),
+        (2024, "Georgia", "offense", "rush_explosiveness"): Rating(1.2, 1.0),
+    }
+    design = KalmanExposureDesign(
+        candidate_id="test_multi_mid",
+        q={"SR": 0.02, "Expl": 0.05},
+        sigma2_noise={"SR": 0.25, "Expl": 4.00},
+    )
+
+    states = batch_refilter_states(
+        games=games,
+        reanchored_obs=obs,
+        priors=priors,
+        design=design,
+        week=1,
+        cutoff_utc="2024-09-01T00:00:00Z",
+    )
+
+    # 2 teams x 2 roles x 2 mids = 8 states
+    assert len(states) == 8
+
+    uga_sr = next(
+        s
+        for s in states
+        if s.team == "Georgia"
+        and s.role == "offense"
+        and s.explanation.get("measurement_id") == "rush_success_rate"
+    )
+    uga_expl = next(
+        s
+        for s in states
+        if s.team == "Georgia"
+        and s.role == "offense"
+        and s.explanation.get("measurement_id") == "rush_explosiveness"
+    )
+
+    assert uga_sr.usable_exposure == 30.0
+    assert uga_expl.usable_exposure == 12.0
+    # Prior and posterior separated per ID
+    assert uga_sr.prior.mean == 0.5
+    assert uga_expl.prior.mean == 1.2
+    assert uga_sr.explanation["measurement_id"] == "rush_success_rate"
+    assert uga_expl.explanation["measurement_id"] == "rush_explosiveness"
+
+
+def test_kalman_mapping_validation():
+    """Verify KalmanExposureDesign strictly validates Mapping parameters."""
+    import pytest
+
+    # Unknown family/ID key in q
+    with pytest.raises(ValueError, match="Unknown key in q mapping"):
+        KalmanExposureDesign("test_bad_q_key", q={"unknown_factor": 0.02})
+
+    # Negative value in q
+    with pytest.raises(ValueError, match="must be positive and finite"):
+        KalmanExposureDesign("test_neg_q", q={"SR": -0.02})
+
+    # Non-numeric value in q
+    with pytest.raises(ValueError, match="must be numeric"):
+        KalmanExposureDesign("test_nan_q", q={"SR": "abc"})
+
+    # Unknown key in sigma2_noise
+    with pytest.raises(ValueError, match="Unknown key in sigma2_noise mapping"):
+        KalmanExposureDesign("test_bad_s2_key", sigma2_noise={"bad_id": 1.0})
+
+    # Zero/negative value in sigma2_noise
+    with pytest.raises(ValueError, match="must be positive and finite"):
+        KalmanExposureDesign("test_zero_s2", sigma2_noise={"SR": 0.0})

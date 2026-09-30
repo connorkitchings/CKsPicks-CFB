@@ -19,23 +19,28 @@
 - Implemented `KalmanExposureFilter` and `KalmanExposureDesign` in `src/cks_picks_cfb/ratings_lab/kalman.py`.
 - Implemented `filter_cutoff_games`, `reanchor_schedule_graph`, and `batch_refilter_states` in `src/cks_picks_cfb/ratings_lab/reanchoring.py`.
 - Registered `kalman_exposure` updater factory in `src/cks_picks_cfb/ratings_lab/updaters.py` and exported symbols in `src/cks_picks_cfb/ratings_lab/__init__.py`.
-- Added candidate config `conf/research/candidates/kalman_exposure_v1.yaml`.
-- Created comprehensive test suite `tests/ratings_lab/test_kalman.py` (9 tests covering exposure scaling, noise weighting, FCS capping, pinned FCS node, causality filtering, 4-pass schedule adjustment & shrinkage, batch re-filtering, replay integration, and YAML candidate parsing).
+- Added candidate config `conf/research/candidates/kalman_exposure_v1.yaml` configured with family-keyed constants (`SR: q=0.02, s2=0.25; Expl: q=0.05, s2=4.00`).
+- Created comprehensive test suite `tests/ratings_lab/test_kalman.py` (11 tests covering exposure scaling, noise weighting, FCS capping, pinned FCS node, causality filtering, 4-pass schedule adjustment & shrinkage, batch re-filtering, multi-ID stream separation, parameter validation, replay integration, and YAML candidate parsing).
+- Addressed Phase 3 review findings:
+  1. Resolved multi-ID stream separation in `batch_refilter_states` to prevent cross-ID constant corruption, stamping `measurement_id` into explanation.
+  2. Clarified FCS opponent check semantics and inferred `fcs_game_ids` from schedule in `batch_refilter_states`.
+  3. Added strict validation in `KalmanExposureDesign.__post_init__` for Mapping keys, positivity, and finiteness.
+  4. Converted `kalman_exposure_v1.yaml` to canonical family-keyed constants.
 - Updated documentation in `docs/research/ratings-lab-v1.md` and contract status in `docs/plans/2026-09-30/05-v6-phase3-kalman-reanchoring.md`.
 
 ## Files Modified
-- `src/cks_picks_cfb/ratings_lab/kalman.py` - New: Exposure-weighted Kalman filter & FCS composite node
-- `src/cks_picks_cfb/ratings_lab/reanchoring.py` - New: Schedule graph re-anchoring, early-season shrinkage, batch re-filtering
+- `src/cks_picks_cfb/ratings_lab/kalman.py` - New: Exposure-weighted Kalman filter & FCS composite node with strict parameter validation
+- `src/cks_picks_cfb/ratings_lab/reanchoring.py` - New: Schedule graph re-anchoring, early-season shrinkage, per-ID batch re-filtering
 - `src/cks_picks_cfb/ratings_lab/updaters.py` - Added `kalman_exposure` parser to `load_candidate_configs`
 - `src/cks_picks_cfb/ratings_lab/__init__.py` - Exported Kalman and re-anchoring classes and helpers
-- `conf/research/candidates/kalman_exposure_v1.yaml` - New: YAML candidate config for Kalman exposure model
-- `tests/ratings_lab/test_kalman.py` - New: Test suite for Kalman filter, FCS anchor, and schedule re-anchoring
+- `conf/research/candidates/kalman_exposure_v1.yaml` - New: YAML candidate config for Kalman exposure model with family constants
+- `tests/ratings_lab/test_kalman.py` - New: Test suite for Kalman filter, FCS anchor, multi-ID separation, and schedule re-anchoring
 - `scripts/research/ratings_lab.py` - Drive-by fix: signed defense preserved for 4-factors, unsigned for PPP
 - `docs/plans/2026-09-30/05-v6-phase3-kalman-reanchoring.md` - Marked status as `Implemented`
 - `docs/research/ratings-lab-v1.md` - Added Phase 3 architecture and mathematical specifications
 
 ## Validation
-- [x] `uv run pytest tests/ratings_lab/ -v` (41/41 passed in 1.26s)
+- [x] `uv run pytest tests/ratings_lab/ -v` (43/43 passed in 1.34s)
 - [x] `uv run ruff check src/cks_picks_cfb/ratings_lab/ tests/ratings_lab/` (Clean, 0 errors)
 - [x] `uv run ruff format --check src/cks_picks_cfb/ratings_lab/ tests/ratings_lab/` (All 18 files formatted)
 - [x] `uv run mkdocs build --quiet` (Clean, exit code 0)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import replace
 from datetime import datetime, timedelta
-from typing import Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 
@@ -163,58 +163,91 @@ def reanchor_schedule_graph(
 def batch_refilter_states(
     games: Sequence[Game],
     reanchored_obs: Sequence[Observation],
-    priors: dict[tuple[int, str, str], Rating],
+    priors: Mapping[tuple[int, str, str] | tuple[int, str, str, str], Rating],
     design: KalmanExposureDesign,
     *,
     week: int,
     cutoff_utc: str,
+    measurement_ids: Sequence[str] | None = None,
+    fcs_teams: set[str] | None = None,
 ) -> list[RatingState]:
     """Batch re-filter from preseason priors standing at cutoff week T.
 
-    Emits frozen pregame states theta_T for week T+1 predictions.
+    Emits frozen pregame states theta_T for week T+1 predictions partitioned
+    strictly per measurement ID.
     """
-    by_team_role: dict[tuple[str, str], list[Observation]] = defaultdict(list)
-    for obs in reanchored_obs:
-        by_team_role[(obs.team, obs.role)].append(obs)
+    # Infer FCS games from schedule and fcs_teams so design recognizes them
+    fcs_set = set(fcs_teams or set()) | {FCS_COMPOSITE_NAME}
+    fcs_gids = frozenset(
+        g.game_id for g in games if g.home_team in fcs_set or g.away_team in fcs_set
+    )
+    if fcs_gids:
+        active_fcs_gids = (
+            frozenset(design.fcs_game_ids) | fcs_gids
+            if design.fcs_game_ids
+            else fcs_gids
+        )
+        design = replace(design, fcs_game_ids=active_fcs_gids)
 
-    # Sort each team's observations chronologically
-    for tr in by_team_role:
-        by_team_role[tr].sort(key=lambda o: (utc(o.available_utc), o.game_id))
+    # Determine target measurement IDs
+    if measurement_ids is not None:
+        target_mids = list(measurement_ids)
+    else:
+        obs_mids = sorted({obs.measurement_id for obs in reanchored_obs})
+        if obs_mids:
+            target_mids = obs_mids
+        else:
+            prior_mids = sorted({k[3] for k in priors.keys() if len(k) == 4})
+            if prior_mids:
+                target_mids = prior_mids
+            else:
+                target_mids = [design.measurement_id or "rush_success_rate"]
+
+    # Group evidence strictly by (team, role, measurement_id)
+    by_trm: dict[tuple[str, str, str], list[Observation]] = defaultdict(list)
+    for obs in reanchored_obs:
+        by_trm[(obs.team, obs.role, obs.measurement_id)].append(obs)
+
+    # Sort each stream chronologically
+    for trm in by_trm:
+        by_trm[trm].sort(key=lambda o: (utc(o.available_utc), o.game_id))
 
     states: list[RatingState] = []
     season = games[0].season if games else 2024
-
     all_teams = {team for g in games for team in (g.home_team, g.away_team)}
 
-    for team in sorted(all_teams):
-        for role in ("offense", "defense"):
-            prior_key = (season, team, role)
-            prior = priors.get(prior_key, Rating(0.0, 1.0))
-            evidence = by_team_role.get((team, role), [])
+    for mid in target_mids:
+        for team in sorted(all_teams):
+            for role in ("offense", "defense"):
+                prior = priors.get((season, team, role, mid))
+                if prior is None:
+                    prior = priors.get((season, team, role), Rating(0.0, 1.0))
 
-            rating, explanation = design.estimate(prior, evidence)
+                evidence = by_trm.get((team, role, mid), [])
+                rating, explanation = design.estimate(prior, evidence)
 
-            ids = tuple(o.game_id for o in evidence)
-            exp_sum = float(sum(o.exposure for o in evidence))
+                ids = tuple(o.game_id for o in evidence)
+                exp_sum = float(sum(o.exposure for o in evidence))
 
-            state = RatingState(
-                candidate_id=design.candidate_id,
-                season=season,
-                week=week,
-                game_id=ids[-1] if ids else 0,
-                cutoff_utc=cutoff_utc,
-                team=team,
-                role=role,
-                rating=rating,
-                prior=prior,
-                usable_exposure=exp_sum,
-                evidence_game_ids=ids,
-                explanation={
-                    **explanation,
-                    "reanchored_week": week,
-                    "cutoff_utc": cutoff_utc,
-                },
-            )
-            states.append(state)
+                state = RatingState(
+                    candidate_id=design.candidate_id,
+                    season=season,
+                    week=week,
+                    game_id=ids[-1] if ids else 0,
+                    cutoff_utc=cutoff_utc,
+                    team=team,
+                    role=role,
+                    rating=rating,
+                    prior=prior,
+                    usable_exposure=exp_sum,
+                    evidence_game_ids=ids,
+                    explanation={
+                        **explanation,
+                        "measurement_id": mid,
+                        "reanchored_week": week,
+                        "cutoff_utc": cutoff_utc,
+                    },
+                )
+                states.append(state)
 
     return states
