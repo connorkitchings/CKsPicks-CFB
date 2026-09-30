@@ -6,7 +6,7 @@ import argparse
 import hashlib
 import json
 import sys
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import pandas as pd
@@ -24,6 +24,7 @@ from cks_picks_cfb.ratings_lab.corpus import (
 from cks_picks_cfb.ratings_lab.evaluation import (
     common_bridge_predictions,
     frame_with_candidate_states,
+    frame_with_multifactor_states,
     frozen_v5_predictions,
     paired_comparison,
     scorecard,
@@ -173,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
         cmd = commands.add_parser(name)
         if name in {"build-measurements", "replay", "evaluate", "compare"}:
             cmd.add_argument("--corpus-key", required=True)
-        if name in {"replay", "evaluate", "compare", "explain", "status"}:
+        if name in {"replay", "compare", "explain", "status"}:
             cmd.add_argument("--stage-key", required=True)
         if name == "compare":
             cmd.add_argument("--reference-key")
@@ -184,7 +185,13 @@ def main(argv: list[str] | None = None) -> int:
             cmd.add_argument("--candidate", default="carryover_only_rho_0_60_v1")
             cmd.add_argument("--measurement-id", default="ppp")
         if name == "evaluate":
+            cmd.add_argument("--stage-key", required=True, nargs="+")
             cmd.add_argument("--candidate", default="carryover_only_rho_0_60_v1")
+            cmd.add_argument(
+                "--bridge",
+                default="v5_common",
+                choices=["v5_common", "alpha10_direct18", "alpha10_differentials"],
+            )
         if name == "explain":
             for field in ("season", "game_id", "team", "role"):
                 cmd.add_argument(
@@ -359,32 +366,77 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "evaluate":
         diagnostics = None
-        if args.stage_key == "frozen-v5":
+        stage_keys = (
+            args.stage_key if isinstance(args.stage_key, list) else [args.stage_key]
+        )
+        if len(stage_keys) == 1 and stage_keys[0] == "frozen-v5":
             predictions = frozen_v5_predictions(corpus)
             parent = "frozen-v5"
-        elif args.stage_key == "v5-common":
+            bridge_name = "frozen_v5"
+        elif len(stage_keys) == 1 and stage_keys[0] == "v5-common":
             predictions = common_bridge_predictions(
-                corpus, corpus.v5_features, candidate_id="v5_common_alpha10_v1"
+                corpus,
+                corpus.v5_features,
+                candidate_id="v5_common_alpha10_v1",
+                bridge="v5_common",
             )
             diagnostics = common_bridge_predictions(
                 corpus,
                 corpus.v5_features,
                 candidate_id="v5_common_alpha10_v1",
                 seasons=(2018, 2019, 2021),
+                bridge="v5_common",
             )
             parent = "v5-common"
-        else:
-            state_ref = _manifest(storage, args.stage_key, "ratings")
+            bridge_name = "alpha10_expanding_v1"
+        elif len(stage_keys) == 1:
+            state_ref = _manifest(storage, stage_keys[0], "ratings")
             _require_parent(storage, state_ref, "corpus", corpus_ref.sha256)
             states = _states(read_frame_stage(storage, state_ref, "ratings"))
             frame = frame_with_candidate_states(corpus, states)
             predictions = common_bridge_predictions(
-                corpus, frame, candidate_id=args.candidate
+                corpus, frame, candidate_id=args.candidate, bridge=args.bridge
             )
             diagnostics = common_bridge_predictions(
-                corpus, frame, candidate_id=args.candidate, seasons=(2018, 2019, 2021)
+                corpus,
+                frame,
+                candidate_id=args.candidate,
+                seasons=(2018, 2019, 2021),
+                bridge=args.bridge,
             )
             parent = state_ref.sha256
+            bridge_name = args.bridge
+        else:
+            # Multi-stage mode for 4 core factors
+            all_states = []
+            parent_shas = []
+            for sk in stage_keys:
+                state_ref = _manifest(storage, sk, "ratings")
+                _require_parent(storage, state_ref, "corpus", corpus_ref.sha256)
+                parent_shas.append(state_ref.sha256)
+                s_states = _states(read_frame_stage(storage, state_ref, "ratings"))
+                mid = state_ref.config.get("measurement_id")
+                for st in s_states:
+                    if not st.explanation.get("measurement_id") and mid:
+                        st = replace(
+                            st, explanation={**st.explanation, "measurement_id": mid}
+                        )
+                    all_states.append(st)
+            frame = frame_with_multifactor_states(corpus, all_states)
+            bridge_name = (
+                args.bridge if args.bridge != "v5_common" else "alpha10_differentials"
+            )
+            predictions = common_bridge_predictions(
+                corpus, frame, candidate_id=args.candidate, bridge=bridge_name
+            )
+            diagnostics = common_bridge_predictions(
+                corpus,
+                frame,
+                candidate_id=args.candidate,
+                seasons=(2018, 2019, 2021),
+                bridge=bridge_name,
+            )
+            parent = ",".join(parent_shas)
         report = scorecard(predictions)
         early_report = scorecard(diagnostics) if diagnostics is not None else None
         if args.apply:
@@ -397,7 +449,7 @@ def main(argv: list[str] | None = None) -> int:
                     "candidate": parent
                     if parent in {"frozen-v5", "v5-common"}
                     else args.candidate,
-                    "bridge": "alpha10_expanding_v1",
+                    "bridge": bridge_name,
                     "protocol_sha": config_sha,
                 },
                 code_sha=code_sha,
@@ -413,7 +465,7 @@ def main(argv: list[str] | None = None) -> int:
                         "candidate": parent
                         if parent == "v5-common"
                         else args.candidate,
-                        "bridge": "alpha10_expanding_v1",
+                        "bridge": bridge_name,
                         "protocol_sha": config_sha,
                     },
                     code_sha=code_sha,

@@ -51,14 +51,18 @@ def gaussian_crps(actual: np.ndarray, mean: np.ndarray, variance: float) -> np.n
 
 
 def _design(
-    train: pd.DataFrame, test: pd.DataFrame, *, floor: float
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    *,
+    floor: float,
+    features: tuple[str, ...] = FEATURES,
 ) -> tuple[np.ndarray, np.ndarray, tuple[str, ...]]:
-    center = train.loc[:, FEATURES].mean()
-    scale = train.loc[:, FEATURES].std(ddof=0).clip(lower=floor)
-    x_train = (train.loc[:, FEATURES] - center) / scale
-    x_test = (test.loc[:, FEATURES] - center) / scale
+    center = train.loc[:, features].mean()
+    scale = train.loc[:, features].std(ddof=0).clip(lower=floor)
+    x_train = (train.loc[:, features] - center) / scale
+    x_test = (test.loc[:, features] - center) / scale
     varying = tuple(
-        column for column in FEATURES if x_train[column].nunique(dropna=False) > 1
+        column for column in features if x_train[column].nunique(dropna=False) > 1
     )
     if not varying:
         raise HeadError("bridge fit has no varying feature")
@@ -116,9 +120,15 @@ def select_inner_alpha(
 
 
 def _fit_one(
-    train: pd.DataFrame, test: pd.DataFrame, *, target: str, alpha: float, floor: float
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    *,
+    target: str,
+    alpha: float,
+    floor: float,
+    features: tuple[str, ...] = FEATURES,
 ) -> tuple[np.ndarray, float]:
-    x_train, x_test, _ = _design(train, test, floor=floor)
+    x_train, x_test, _ = _design(train, test, floor=floor, features=features)
     y_train = _target(train, target)
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning)

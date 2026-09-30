@@ -36,6 +36,53 @@ def validate_prediction_population(predictions: pd.DataFrame, corpus: Corpus) ->
         raise ValueError("candidate outcomes differ from frozen V5 benchmark")
 
 
+FOUR_FACTOR_CORE_IDS: tuple[str, ...] = (
+    "rush_success_rate",
+    "rush_explosiveness",
+    "pass_success_rate",
+    "pass_explosiveness",
+)
+
+DIRECT18_FEATURES: tuple[str, ...] = (
+    "home_offense__rush_success_rate",
+    "home_offense__rush_explosiveness",
+    "home_offense__pass_success_rate",
+    "home_offense__pass_explosiveness",
+    "home_defense__rush_success_rate",
+    "home_defense__rush_explosiveness",
+    "home_defense__pass_success_rate",
+    "home_defense__pass_explosiveness",
+    "away_offense__rush_success_rate",
+    "away_offense__rush_explosiveness",
+    "away_offense__pass_success_rate",
+    "away_offense__pass_explosiveness",
+    "away_defense__rush_success_rate",
+    "away_defense__rush_explosiveness",
+    "away_defense__pass_success_rate",
+    "away_defense__pass_explosiveness",
+    "home_host",
+    "venue_unknown",
+)
+
+DIFFERENTIAL_SPREAD_FEATURES: tuple[str, ...] = (
+    "diff__rush_success_rate",
+    "diff__rush_explosiveness",
+    "diff__pass_success_rate",
+    "diff__pass_explosiveness",
+    "home_host",
+    "venue_unknown",
+)
+
+DIFFERENTIAL_TOTAL_FEATURES: tuple[str, ...] = (
+    "sum__rush_success_rate",
+    "sum__rush_explosiveness",
+    "sum__pass_success_rate",
+    "sum__pass_explosiveness",
+    "home_host",
+    "venue_unknown",
+)
+
+
 def frame_with_candidate_states(
     corpus: Corpus, states: list[RatingState]
 ) -> pd.DataFrame:
@@ -73,8 +120,86 @@ def frame_with_candidate_states(
     return frame
 
 
+def frame_with_multifactor_states(
+    corpus: Corpus,
+    states: list[RatingState],
+    *,
+    core_mids: tuple[str, ...] = FOUR_FACTOR_CORE_IDS,
+) -> pd.DataFrame:
+    """Assemble 4-factor matchup features including direct columns and differentials/sums."""
+    records = []
+    for s in states:
+        mid = s.explanation.get("measurement_id")
+        if not mid:
+            raise ValueError(
+                f"RatingState for team {s.team!r} role {s.role!r} has no measurement_id in explanation"
+            )
+        records.append(
+            {
+                "season": s.season,
+                "game_id": s.game_id,
+                "team": s.team,
+                "role": s.role,
+                "measurement_id": str(mid),
+                "mean": s.rating.mean,
+            }
+        )
+    rows = pd.DataFrame.from_records(records)
+    if rows.empty:
+        raise ValueError("candidate rating states are empty")
+    if rows.duplicated(["season", "game_id", "team", "role", "measurement_id"]).any():
+        raise ValueError("candidate rating states have duplicate entries")
+
+    frame = corpus.v5_features.copy()
+    if frame.duplicated(["season", "game_id"]).any():
+        raise ValueError("V5 common feature frame has duplicate games")
+
+    # Merge each of the 4 factors for home and away offense and defense
+    for mid in core_mids:
+        mid_rows = rows[rows["measurement_id"].eq(mid)]
+        if mid_rows.empty:
+            raise ValueError(f"no rating states found for core factor: {mid!r}")
+        for side in ("home", "away"):
+            for role in ("offense", "defense"):
+                col_name = f"{side}_{role}__{mid}"
+                selected = mid_rows[mid_rows["role"].eq(role)].rename(
+                    columns={"team": f"{side}_team", "mean": col_name}
+                )
+                frame = frame.merge(
+                    selected[["season", "game_id", f"{side}_team", col_name]],
+                    on=["season", "game_id", f"{side}_team"],
+                    how="left",
+                    validate="one_to_one",
+                )
+
+    # Compute differentials and sums for Bridge B
+    for mid in core_mids:
+        h_off = frame[f"home_offense__{mid}"]
+        a_def = frame[f"away_defense__{mid}"]
+        a_off = frame[f"away_offense__{mid}"]
+        h_def = frame[f"home_defense__{mid}"]
+
+        frame[f"diff__{mid}"] = (h_off - a_def) - (a_off - h_def)
+        frame[f"sum__{mid}"] = (h_off + a_def) + (a_off + h_def)
+
+    # Validate no missing values
+    check_cols = (
+        list(DIRECT18_FEATURES)
+        + list(DIFFERENTIAL_SPREAD_FEATURES)
+        + list(DIFFERENTIAL_TOTAL_FEATURES)
+    )
+    if frame.loc[:, check_cols].isna().any().any():
+        raise ValueError("candidate lacks one or more full-population pregame states")
+
+    return frame
+
+
 def _calibration_variance(
-    frame: pd.DataFrame, *, season: int, target: str
+    frame: pd.DataFrame,
+    *,
+    season: int,
+    target: str,
+    features: tuple[str, ...] = FEATURES,
 ) -> tuple[float, int]:
     errors: list[float] = []
     for validation in (s for s in DEVELOPMENT_SEASONS if 2017 <= s < season):
@@ -82,7 +207,9 @@ def _calibration_variance(
         test = frame[frame.season.eq(validation)]
         if train.empty or test.empty:
             continue
-        values, _ = _fit_one(train, test, target=target, alpha=10.0, floor=1e-6)
+        values, _ = _fit_one(
+            train, test, target=target, alpha=10.0, floor=1e-6, features=features
+        )
         actual = test[f"actual_{target}"].to_numpy(float)
         offset = test[f"offset_{target}"].to_numpy(float)
         errors.extend((actual - offset - values).tolist())
@@ -97,6 +224,7 @@ def common_bridge_predictions(
     *,
     candidate_id: str,
     seasons: tuple[int, ...] = HEADLINE_SEASONS,
+    bridge: str = "v5_common",
 ) -> pd.DataFrame:
     """Alpha-10 Ridge on seasons before each validation season; no model selection."""
     if not candidate_id or frame.duplicated(["season", "game_id"]).any():
@@ -111,11 +239,23 @@ def common_bridge_predictions(
         raise ValueError(
             "common bridge requires the complete historical feature population"
         )
+
+    if bridge == "v5_common":
+        req_features = list(FEATURES)
+    elif bridge == "alpha10_direct18":
+        req_features = list(DIRECT18_FEATURES)
+    elif bridge == "alpha10_differentials":
+        req_features = list(
+            set(DIFFERENTIAL_SPREAD_FEATURES) | set(DIFFERENTIAL_TOTAL_FEATURES)
+        )
+    else:
+        raise ValueError(f"unregistered bridge type: {bridge!r}")
+
     if (
         frame.loc[
             :,
             [
-                *FEATURES,
+                *req_features,
                 "actual_margin",
                 "actual_total",
                 "offset_margin",
@@ -136,10 +276,28 @@ def common_bridge_predictions(
         if train.empty or test.empty or train.season.ge(season).any():
             raise ValueError("invalid rolling-origin split")
         for target in ("margin", "total"):
+            if bridge == "v5_common":
+                active_features = FEATURES
+            elif bridge == "alpha10_direct18":
+                active_features = DIRECT18_FEATURES
+            elif bridge == "alpha10_differentials":
+                active_features = (
+                    DIFFERENTIAL_SPREAD_FEATURES
+                    if target == "margin"
+                    else DIFFERENTIAL_TOTAL_FEATURES
+                )
+
             variance, calibration_count = _calibration_variance(
-                frame, season=season, target=target
+                frame, season=season, target=target, features=active_features
             )
-            fitted, _ = _fit_one(train, test, target=target, alpha=10.0, floor=1e-6)
+            fitted, _ = _fit_one(
+                train,
+                test,
+                target=target,
+                alpha=10.0,
+                floor=1e-6,
+                features=active_features,
+            )
             prediction = fitted + test[f"offset_{target}"].to_numpy(float)
             actual = test[f"actual_{target}"].to_numpy(float)
             crps = gaussian_crps(actual, prediction, variance)

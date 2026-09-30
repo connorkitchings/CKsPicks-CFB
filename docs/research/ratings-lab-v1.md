@@ -86,6 +86,45 @@ Phase 3 introduces dynamic state-space estimation and schedule graph re-anchorin
 - **Early-Season Shrinkage:** For sparse early graphs (weeks $T \in \{1, 2\}$), adjustments shrink toward preseason prior via $w_t = T / (T + k)$ (with default $k=2.0$).
 - **Batch Re-filter:** Standing at week $T$, re-runs the Kalman filter over re-anchored completed games $1 \dots T$ to emit frozen pregame states $\boldsymbol{\theta}_T$.
 
+## Multi-Factor Forecast Bridges & Historical Benchmark Tournament (Phase 4)
+
+Phase 4 introduces multi-factor forecast bridges and historical paired benchmarking in `ratings_lab/evaluation.py` and `scripts/research/ratings_lab.py`.
+
+### 1. Dual Forecast Bridges
+- **Bridge A: Direct 18-Feature Ridge (`alpha10_direct18`):**
+  - Features (18 total):
+    - Home Offense (4 factors): `home_offense__rush_success_rate`, `home_offense__rush_explosiveness`, `home_offense__pass_success_rate`, `home_offense__pass_explosiveness`
+    - Home Defense (4 factors): `home_defense__rush_success_rate`, `home_defense__rush_explosiveness`, `home_defense__pass_success_rate`, `home_defense__pass_explosiveness`
+    - Away Offense (4 factors): `away_offense__rush_success_rate`, `away_offense__rush_explosiveness`, `away_offense__pass_success_rate`, `away_offense__pass_explosiveness`
+    - Away Defense (4 factors): `away_defense__rush_success_rate`, `away_defense__rush_explosiveness`, `away_defense__pass_success_rate`, `away_defense__pass_explosiveness`
+    - Venue: `home_host`, `venue_unknown`
+  - Fit: Expanding Ridge regression with fixed $\alpha=10.0$ trained strictly on seasons before each validation season ($s < \text{validation}$).
+
+- **Bridge B: Domain Differentials & Sums (`alpha10_differentials`):**
+  - **Spread Target (`margin`):**
+    For each factor $k \in \{\text{rush\_sr}, \text{rush\_expl}, \text{pass\_sr}, \text{pass\_expl}\}$:
+    $$\Delta_k = (\text{home\_off}_k - \text{away\_def}_k) - (\text{away\_off}_k - \text{home\_def}_k)$$
+    Features: $\Delta_{\text{rush\_sr}}, \Delta_{\text{rush\_expl}}, \Delta_{\text{pass\_sr}}, \Delta_{\text{pass\_expl}}, \text{home\_host}, \text{venue\_unknown}$ (6 features).
+  - **Total Target (`total`):**
+    For each factor $k \in \{\text{rush\_sr}, \text{rush\_expl}, \text{pass\_sr}, \text{pass\_expl}\}$:
+    $$\Sigma_k = (\text{home\_off}_k + \text{away\_def}_k) + (\text{away\_off}_k + \text{home\_def}_k)$$
+    Features: $\Sigma_{\text{rush\_sr}}, \Sigma_{\text{rush\_expl}}, \Sigma_{\text{pass\_sr}}, \Sigma_{\text{pass\_expl}}, \text{home\_host}, \text{venue\_unknown}$ (6 features).
+  - Fit: Expanding Ridge regression with fixed $\alpha=10.0$ on strictly earlier seasons.
+
+### 2. Multi-Factor Feature Frame Assembly (`frame_with_multifactor_states`)
+- Combines 4 core factor state ratings across all historical games into direct columns (`{side}_{role}__{mid}`) and differential/sum columns.
+- Fails closed on duplicate states across `(season, game_id, team, role, measurement_id)` or any missing factor values across the 8,935-game historical schedule.
+- Preserves `frame_with_candidate_states()` for single-factor backward compatibility.
+
+### 3. Same-Bridge Calibration Variance
+- `_calibration_variance` evaluates rolling residuals strictly using the candidate bridge's active feature set on strictly earlier seasons.
+- Guarantees Gaussian CRPS and 90% prediction intervals reflect candidate-specific residual distributions without cross-bridge variance contamination.
+
+### 4. Promotion Gate & Evaluation Criteria
+- **Primary Promotion Endpoint:** **Pooled-Spread MAE gain lower-90% bootstrap bound $> 0.0$** against `v5-common` (statistically significant spread forecasting improvement across 2022–2025).
+- **Secondary Endpoints (Diagnostic):** Pooled Total MAE gain, CRPS, and per-season/per-stage MAE.
+- **Totals Pace Expectation:** Without a dedicated tempo/pace module, total forecasts are expected to be neutral or slightly trail V5; this does not invalidate rating quality.
+
 ## Deferred architectural decisions
 
 As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../plans/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:
