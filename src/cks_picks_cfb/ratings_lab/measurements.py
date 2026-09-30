@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -12,23 +13,30 @@ import pandas as pd
 from .contracts import Game, Observation, Rating, utc
 from .corpus import Corpus
 
+_REGISTERED_AVAILABILITY_POLICIES: set[str] = {"v5_later_week_6h_v1"}
+
+
+def register_availability_policy(policy_id: str) -> None:
+    _REGISTERED_AVAILABILITY_POLICIES.add(policy_id)
+
 
 @dataclass(frozen=True)
 class MeasurementRecipe:
     recipe_id: str = "v5_raw_ppp_game_v1"
     measurement_id: str = "ppp"
     availability_policy: str = "v5_later_week_6h_v1"
+    description: str = ""
 
     def __post_init__(self) -> None:
-        if self.availability_policy != "v5_later_week_6h_v1":
+        if self.availability_policy not in _REGISTERED_AVAILABILITY_POLICIES:
             raise ValueError("unregistered measurement availability policy")
 
 
-def build_individual(
-    corpus: Corpus, recipe: MeasurementRecipe = MeasurementRecipe()
-) -> list[Observation]:
-    if recipe.measurement_id != "ppp" or recipe.recipe_id != "v5_raw_ppp_game_v1":
-        raise ValueError("unknown measurement recipe")
+def _build_ppp(corpus: Corpus, recipe: MeasurementRecipe) -> list[Observation]:
+    if recipe.measurement_id != "ppp":
+        raise ValueError(
+            f"recipe {recipe.recipe_id!r} expects measurement_id='ppp', got {recipe.measurement_id!r}"
+        )
     observations = corpus.individual_observations(recipe.measurement_id)
     games = {(g.season, g.game_id): g for g in corpus.games()}
     for obs in observations:
@@ -38,6 +46,28 @@ def build_individual(
         if utc(obs.available_utc) != utc(game.kickoff_utc) + timedelta(hours=6):
             raise ValueError("measurement availability policy changed")
     return observations
+
+
+RecipeBuilder = Callable[[Corpus, MeasurementRecipe], list[Observation]]
+
+_RECIPE_BUILDERS: dict[str, RecipeBuilder] = {
+    "v5_raw_ppp_game_v1": _build_ppp,
+}
+
+
+def register_recipe(recipe_id: str, builder: RecipeBuilder) -> None:
+    if recipe_id in _RECIPE_BUILDERS:
+        raise ValueError(f"recipe {recipe_id!r} is already registered")
+    _RECIPE_BUILDERS[recipe_id] = builder
+
+
+def build_individual(
+    corpus: Corpus, recipe: MeasurementRecipe = MeasurementRecipe()
+) -> list[Observation]:
+    builder = _RECIPE_BUILDERS.get(recipe.recipe_id)
+    if builder is None:
+        raise ValueError(f"unregistered measurement recipe: {recipe.recipe_id!r}")
+    return builder(corpus, recipe)
 
 
 def build_cumulative(

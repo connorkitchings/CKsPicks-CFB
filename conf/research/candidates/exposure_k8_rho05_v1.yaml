@@ -1,0 +1,5 @@
+candidate_id: exposure_k8_rho05_v1
+type: parameterized_exposure
+k: 8.0
+rho: 0.50
+mode: incremental

@@ -20,8 +20,18 @@ from cks_picks_cfb.ratings_lab.evaluation import (
     paired_comparison,
     validate_prediction_population,
 )
-from cks_picks_cfb.ratings_lab.measurements import build_cumulative
+from cks_picks_cfb.ratings_lab.measurements import (
+    MeasurementRecipe,
+    build_cumulative,
+    build_individual,
+    register_availability_policy,
+    register_recipe,
+)
 from cks_picks_cfb.ratings_lab.replay import CarryoverOnly, replay
+from cks_picks_cfb.ratings_lab.updaters import (
+    ParameterizedDesign,
+    load_candidate_configs,
+)
 
 
 def _storage(tmp_path):
@@ -332,3 +342,152 @@ def test_common_bridge_uses_earlier_seasons_and_reports_early_period():
     )
     assert not main.training_seasons.str.contains("2020").any()
     assert main.calibration_count.min() > 0
+
+
+def test_parameterized_design_initialize_and_estimate():
+    design = ParameterizedDesign(
+        candidate_id="test_param_v1", k=4.0, rho=0.50, mode="incremental"
+    )
+    init_blank = design.initialize(None, gap=1)
+    assert init_blank == Rating(0.0, 1.0)
+
+    prev = Rating(2.0, 1.0)
+    init_carry = design.initialize(prev, gap=1)
+    assert init_carry.mean == pytest.approx(1.0)
+    assert init_carry.variance == pytest.approx(1.0)
+
+    init_gap2 = design.initialize(prev, gap=2)
+    assert init_gap2.mean == pytest.approx(0.5)
+
+    obs = Observation(
+        season=2024,
+        week=1,
+        game_id=101,
+        team="A",
+        role="offense",
+        measurement_id="ppp",
+        value=1.5,
+        exposure=4.0,
+        available_utc="2024-09-01T00:00:00Z",
+        timing_class="historically_reconstructed",
+    )
+    prior = Rating(0.0, 1.0)
+    posterior, explanation = design.estimate(prior, [obs])
+    assert posterior.mean == pytest.approx(0.75)
+    assert posterior.variance == pytest.approx(0.5)
+    assert explanation["method"] == "parameterized_exposure"
+    assert explanation["k"] == 4.0
+    assert explanation["rho"] == 0.50
+    assert explanation["usable_exposure"] == 4.0
+    assert len(explanation["evidence_contributions"]) == 1
+
+
+def test_yaml_candidate_loading(tmp_path):
+    candidates_dir = tmp_path / "candidates"
+    candidates_dir.mkdir()
+    yaml_content = """candidate_id: yaml_test_k6_rho05_v1
+type: parameterized_exposure
+k: 6.0
+rho: 0.50
+mode: incremental
+description: Test candidate
+"""
+    (candidates_dir / "test.yaml").write_text(yaml_content)
+
+    loaded = load_candidate_configs(candidates_dir)
+    assert "yaml_test_k6_rho05_v1" in loaded
+    design = loaded["yaml_test_k6_rho05_v1"]
+    assert isinstance(design, ParameterizedDesign)
+    assert design.k == 6.0
+    assert design.rho == 0.50
+    assert design.mode == "incremental"
+
+    prior = Rating(0.0, 1.0)
+    obs = Observation(
+        season=2024,
+        week=1,
+        game_id=1,
+        team="A",
+        role="offense",
+        measurement_id="ppp",
+        value=2.0,
+        exposure=6.0,
+        available_utc="2024-09-01T00:00:00Z",
+        timing_class="historically_reconstructed",
+    )
+    post, exp = design.estimate(prior, [obs])
+    assert post.mean == pytest.approx(1.0)
+    assert exp["k"] == 6.0
+
+
+def test_yaml_duplicate_rejection(tmp_path):
+    candidates_dir = tmp_path / "candidates"
+    candidates_dir.mkdir()
+    yaml_content = """candidate_id: carryover_only_rho_0_60_v1
+type: parameterized_exposure
+k: 8.0
+rho: 0.60
+mode: incremental
+"""
+    (candidates_dir / "dup.yaml").write_text(yaml_content)
+
+    with pytest.raises(ValueError, match="redefines code-registered id"):
+        load_candidate_configs(
+            candidates_dir, existing_ids={"carryover_only_rho_0_60_v1"}
+        )
+
+    bad_dir = tmp_path / "bad_candidates"
+    bad_dir.mkdir()
+    (bad_dir / "bad.yaml").write_text("candidate_id: bad_v1\nk: 8.0\n")
+    with pytest.raises(ValueError, match="missing fields"):
+        load_candidate_configs(bad_dir)
+
+
+def test_measurement_recipe_extensible():
+    recipe = MeasurementRecipe(
+        recipe_id="custom_test_recipe_v1",
+        measurement_id="epa_per_play",
+        availability_policy="v5_later_week_6h_v1",
+        description="Custom EPA recipe",
+    )
+    assert recipe.recipe_id == "custom_test_recipe_v1"
+    assert recipe.description == "Custom EPA recipe"
+
+    with pytest.raises(
+        ValueError, match="unregistered measurement availability policy"
+    ):
+        MeasurementRecipe(
+            recipe_id="unreg_policy_v1",
+            availability_policy="unregistered_policy_v1",
+        )
+
+    register_availability_policy("v6_realtime_v1")
+    recipe_new_pol = MeasurementRecipe(
+        recipe_id="new_pol_v1",
+        availability_policy="v6_realtime_v1",
+    )
+    assert recipe_new_pol.availability_policy == "v6_realtime_v1"
+
+    class MockCorpus:
+        def individual_observations(self, m_id):
+            return []
+
+        def games(self):
+            return []
+
+    with pytest.raises(ValueError, match="unregistered measurement recipe"):
+        build_individual(MockCorpus(), recipe)
+
+    called = []
+
+    def custom_builder(corpus, rec):
+        called.append(rec.recipe_id)
+        return []
+
+    register_recipe("custom_test_recipe_v1", custom_builder)
+    result = build_individual(MockCorpus(), recipe)
+    assert result == []
+    assert called == ["custom_test_recipe_v1"]
+
+    with pytest.raises(ValueError, match="already registered"):
+        register_recipe("custom_test_recipe_v1", custom_builder)

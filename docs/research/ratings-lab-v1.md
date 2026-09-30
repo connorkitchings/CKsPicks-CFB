@@ -28,6 +28,31 @@ Add a versioned class implementing `candidate_id`, `mode` (`incremental` or `cum
 
 The common bridge swaps only the four pregame rating values in the accepted V5 feature frame. It holds schedule, outcomes, non-offense offsets, venue indicators, and completed-game stages fixed. Alpha-10 Ridge fits separately for each candidate and target on strictly earlier seasons; Gaussian variance comes from earlier rolling-origin errors. The frozen V5 predictions are imported and rescored independently. `v5-common` refits the common bridge on V5's own states; use that as the apples-to-apples reference for candidate attribution. Reports include MAE, RMSE, bias, CRPS, 90% interval coverage and width where available, seasons and stages, plus 2,000 paired season/week bootstrap replicates with seed 20260928. A candidate missing one forecast-eligible game fails the population check.
 
+## Candidate definitions via YAML
+
+In addition to code-registered classes, candidates can be defined declaratively in `conf/research/candidates/*.yaml`. The CLI automatically loads and registers these configs via `load_candidate_configs()` on startup.
+
+Each YAML file specifies a `ParameterizedDesign`:
+
+```yaml
+candidate_id: exposure_k8_rho06_v1   # Unique versioned identifier
+type: parameterized_exposure          # Registered factory type
+k: 8.0                               # Prior weight in possessions (k > 0)
+rho: 0.60                            # Inter-season carryover decay (0 < rho <= 1.0)
+mode: incremental                    # "incremental" (per-game) or "cumulative" (snapshot)
+description: "V5-equivalent baseline: k=8.0, rho=0.60"
+```
+
+To add a new candidate, add a `.yaml` file to `conf/research/candidates/`. Candidate IDs must be unique across code and YAML files.
+
+## Deferred architectural decisions
+
+As documented in [`01-v6-ratings-lab-architecture-hardening.md`](../plans/2026-09-30/01-v6-ratings-lab-architecture-hardening.md), three architectural items are intentionally deferred:
+- **Dedicated R2 bucket**: Local storage remains the active research engine until private research bucket credentials are provisioned.
+- **Opponent adjustment**: The opponent adjustment layer is kept fixed to V5 logic for initial candidate comparisons; alternative opponent adjustment methods are deferred to a dedicated study.
+- **Batch sweep orchestration**: The CLI operates single-candidate runs for now; multi-candidate parallel execution is deferred until large candidate sweeps begin.
+
+
 ## Operator sequence
 
 From the repository root, with the separate lab variables configured, run:

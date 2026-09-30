@@ -1,0 +1,6 @@
+# V5 baseline hyperparameters — useful as a sanity-check reference.
+candidate_id: exposure_k8_rho06_v1
+type: parameterized_exposure
+k: 8.0
+rho: 0.60
+mode: incremental

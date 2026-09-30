@@ -1,0 +1,5 @@
+candidate_id: exposure_k12_rho06_v1
+type: parameterized_exposure
+k: 12.0
+rho: 0.60
+mode: incremental

@@ -35,23 +35,35 @@ from cks_picks_cfb.ratings_lab.measurements import (
     observation_frame,
     terminal_standardized_seeds,
 )
-from cks_picks_cfb.ratings_lab.replay import REGISTRY, replay
+from cks_picks_cfb.ratings_lab.replay import REGISTRY, register, replay
 from cks_picks_cfb.ratings_lab.stages import (
     read_frame_stage,
     write_frame_stage,
     write_report,
 )
+from cks_picks_cfb.ratings_lab.updaters import load_candidate_configs
+
+ROOT = Path(__file__).resolve().parents[2]
+_CANDIDATES_DIR = ROOT / "conf/research/candidates"
 
 
 def _hashes() -> tuple[str, str]:
-    root = Path(__file__).resolve().parents[2]
-    package = root / "src/cks_picks_cfb/ratings_lab"
+    package = ROOT / "src/cks_picks_cfb/ratings_lab"
     digest = hashlib.sha256()
     for path in sorted(package.glob("*.py")):
         digest.update(path.name.encode())
         digest.update(path.read_bytes())
-    lock = root / "uv.lock"
+    lock = ROOT / "uv.lock"
     return digest.hexdigest(), hashlib.sha256(lock.read_bytes()).hexdigest()
+
+
+def _load_yaml_candidates() -> None:
+    """Load YAML candidate files and register them into REGISTRY."""
+    yaml_candidates = load_candidate_configs(
+        _CANDIDATES_DIR, existing_ids=set(REGISTRY)
+    )
+    for design in yaml_candidates.values():
+        register(design)
 
 
 def _manifest(storage: ResearchStorage, key: str, stage: str):
@@ -185,6 +197,7 @@ def main(argv: list[str] | None = None) -> int:
         }:
             cmd.add_argument("--apply", action="store_true")
     args = parser.parse_args(argv)
+    _load_yaml_candidates()
     config_raw = Path(args.config).read_bytes()
     protocol = yaml.safe_load(config_raw)
     if (
