@@ -7,6 +7,7 @@ simple helpers for leaderboards and downstream visualisations.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from functools import lru_cache
@@ -18,7 +19,7 @@ import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image, ImageOps
 
-from cks_picks_cfb.config import LOGOS_DIR, get_data_root
+from cks_picks_cfb.config import LOGOS_DIR, LOGOS_V2_DIR, get_data_root
 from cks_picks_cfb.features.core import aggregate_team_season
 from cks_picks_cfb.utils.local_storage import LocalStorage
 
@@ -39,16 +40,32 @@ def _normalize_name(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
 
 
+def _manifest_logo_index(v2_dir: Path) -> dict[str, Path]:
+    """Map normalized school name -> large light logo via the v2 manifest."""
+    manifest_path = v2_dir / "manifest.json"
+    if not manifest_path.is_file():
+        return {}
+    teams = json.loads(manifest_path.read_text(encoding="utf-8")).get("teams", {})
+    mapping: dict[str, Path] = {}
+    for team_id, entry in teams.items():
+        path = v2_dir / "lg" / "light" / f"{team_id}.webp"
+        if path.is_file():
+            mapping[_normalize_name(entry["school"])] = path
+    return mapping
+
+
+def _legacy_logo_index(logo_dir: Path) -> dict[str, Path]:
+    if not logo_dir.is_dir():
+        return {}
+    return {_normalize_name(path.stem): path for path in logo_dir.glob("*.png")}
+
+
 @lru_cache(maxsize=None)
 def _logo_index() -> dict[str, Path]:
-    logo_dir = Path(LOGOS_DIR)
-    mapping: dict[str, Path] = {}
-    if not logo_dir.is_dir():
-        return mapping
-    for path in logo_dir.glob("*.png"):
-        key = _normalize_name(path.stem)
-        mapping[key] = path
-    return mapping
+    """Prefer the self-hosted v2 logos; fall back to the legacy 32 px PNGs."""
+    return _manifest_logo_index(Path(LOGOS_V2_DIR)) or _legacy_logo_index(
+        Path(LOGOS_DIR)
+    )
 
 
 @lru_cache(maxsize=None)

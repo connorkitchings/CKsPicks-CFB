@@ -188,3 +188,34 @@ def test_scatter_plot_returns_figure():
     assert fig is not None
     assert ax is not None
     plt.close(fig)
+
+
+def test_manifest_logo_index_resolves_school_to_large_light_file(tmp_path):
+    import json
+
+    from cks_picks_cfb.analysis.unadjusted import _manifest_logo_index
+
+    v2 = tmp_path / "v2"
+    (v2 / "lg" / "light").mkdir(parents=True)
+    (v2 / "lg" / "light" / "130.webp").write_bytes(b"x")
+    (v2 / "manifest.json").write_text(
+        json.dumps(
+            {
+                "teams": {
+                    "130": {"school": "Michigan"},
+                    "131": {"school": "Missing File"},
+                }
+            }
+        )
+    )
+
+    index = _manifest_logo_index(v2)
+
+    assert index == {"michigan": v2 / "lg" / "light" / "130.webp"}
+    assert index.get("unknown school") is None
+
+
+def test_manifest_logo_index_is_empty_without_manifest(tmp_path):
+    from cks_picks_cfb.analysis.unadjusted import _manifest_logo_index
+
+    assert _manifest_logo_index(tmp_path) == {}

@@ -1,6 +1,5 @@
-import Image from "next/image";
 import clsx from "clsx";
-import { logoUrl } from "@/lib/teams";
+import TeamLogo from "@/components/TeamLogo";
 import { getRankBadgeClass } from "@/lib/matchup-math";
 import type { UnitMatchupRow } from "@/lib/matchup";
 
@@ -21,14 +20,7 @@ export function UnitMatchupTable({
       <div className="mb-4 flex items-center justify-between border-b border-line/60 pb-3">
         {/* Left: Offense */}
         <div className="flex flex-col items-start min-w-0">
-          <Image
-            src={logoUrl(offenseTeam)}
-            alt={offenseTeam}
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 object-contain mb-1.5"
-            unoptimized
-          />
+          <TeamLogo name={offenseTeam} px={36} decorative={false} className="mb-1.5" />
           <h3 className="truncate text-sm font-bold tracking-tight text-ink">
             {offenseTeam}
           </h3>
@@ -51,14 +43,7 @@ export function UnitMatchupTable({
 
         {/* Right: Defense */}
         <div className="flex flex-col items-end min-w-0 text-right">
-          <Image
-            src={logoUrl(defenseTeam)}
-            alt={defenseTeam}
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 object-contain mb-1.5"
-            unoptimized
-          />
+          <TeamLogo name={defenseTeam} px={36} decorative={false} className="mb-1.5" />
           <h3 className="truncate text-sm font-bold tracking-tight text-ink">
             {defenseTeam}
           </h3>

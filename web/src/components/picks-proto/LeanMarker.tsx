@@ -1,6 +1,5 @@
-import Image from "next/image";
 import type { Lean } from "@/lib/picks-proto";
-import { logoUrl } from "@/lib/teams";
+import TeamLogo from "@/components/TeamLogo";
 
 /**
  * Direction marker for a lean: the backed team's logo for a spread, and an
@@ -15,14 +14,6 @@ export function LeanMarker({ lean }: { lean: Lean }) {
     );
   }
   return (
-    <Image
-      src={logoUrl(lean.team ?? "")}
-      alt=""
-      width={16}
-      height={16}
-      className="shrink-0 object-contain"
-      style={{ width: 16, height: 16 }}
-      unoptimized
-    />
+    <TeamLogo name={lean.team ?? ""} px={16} />
   );
 }

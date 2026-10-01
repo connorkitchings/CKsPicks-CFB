@@ -1,7 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { clsx } from "clsx";
-import { logoUrl } from "@/lib/teams";
+import TeamLogo from "@/components/TeamLogo";
 import { BetTable } from "./BetTable";
 import { BetComparisonTable } from "./BetComparisonTable";
 import type { Game } from "@/lib/queries";
@@ -234,14 +233,7 @@ function TeamLine({
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <Image
-        src={logoUrl(name)}
-        alt={name}
-        width={28}
-        height={28}
-        className="h-7 w-7 shrink-0 object-contain"
-        unoptimized
-      />
+      <TeamLogo name={name} px={28} decorative={false} />
       <Link
         href={`/teams/${encodeURIComponent(name)}`}
         className={clsx(

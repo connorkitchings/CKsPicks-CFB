@@ -37,6 +37,22 @@ npm run test:publication
 npm run build
 ```
 
+## Team logos
+
+Logos are self-hosted, keyed by CFBD team id, and built once per season:
+
+```bash
+cd web
+npm run logos:build -- --dry-run   # inspect the CFBD response first (needs CFBD_API_KEY in ../.env)
+npm run logos:build                # download, resize (96/256 px WebP, light + dark), write manifest
+```
+
+Output: `public/logos/v2/{sm,lg}/{light,dark}/<id>.webp`, `public/logos/v2/manifest.json`
+(source URL, date and SHA-256 per file) and `src/lib/team-logos.generated.ts`
+(school name to id). Commit all three. `TeamLogo` renders the light/dark pair,
+an initials tile for unknown teams, and the legacy 32 px PNG only until the
+generated map is populated. Contract: `docs/plans/2026-10-01/07-high-quality-team-logos.md`.
+
 See the [weekly pipeline](../docs/ops/weekly_pipeline.md) and
 [production runbook](../docs/ops/production_runbook.md) for publish, freeze,
 close, health, and rollback operations.

@@ -4,7 +4,7 @@
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the approach in-session on 2026-10-01 ("I like your recommendation… I'll do it when I get home"). Confirm the open decisions below before executing.
-- **Implementation log:** Pending Terra implementation (run on the user's machine; see "Why this runs locally").
+- **Implementation log:** Code for Phases A and B is on `dev` (build script with `--dry-run`, `TeamLogo`, manifest-based Python index, immutable cache headers, e2e guards that skip until the set is built). Remaining: run the fetch on the user's machine, verify, then Phase C cleanup. The `sync-logos` hooks are already removed; old PNGs stay as the fallback.
 - **Commit policy:** Land on `dev` in separate commits per phase (script + manifest, generated assets, web change, cleanup). Merge `dev` into `main` only after the visual check passes.
 
 ## Goal

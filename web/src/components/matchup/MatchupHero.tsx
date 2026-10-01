@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { logoUrl } from "@/lib/teams";
+import TeamLogo from "@/components/TeamLogo";
 import type { MatchupData } from "@/lib/matchup";
 
 function formatKickoff(startDate: Date): string {
@@ -47,13 +46,11 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
           {/* Away Team Card (Left) */}
           <div className="flex items-center gap-4 sm:flex-col sm:text-center">
-            <Image
-              src={logoUrl(matchup.awayTeam)}
-              alt={matchup.awayTeam}
-              width={64}
-              height={64}
-              className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
-              unoptimized
+            <TeamLogo
+              name={matchup.awayTeam}
+              px={80}
+              decorative={false}
+              className="h-16 w-16 sm:h-20 sm:w-20"
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
@@ -150,13 +147,11 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
 
           {/* Home Team Card (Right) */}
           <div className="flex items-center gap-4 sm:flex-col sm:text-center">
-            <Image
-              src={logoUrl(matchup.homeTeam)}
-              alt={matchup.homeTeam}
-              width={64}
-              height={64}
-              className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
-              unoptimized
+            <TeamLogo
+              name={matchup.homeTeam}
+              px={80}
+              decorative={false}
+              className="h-16 w-16 sm:h-20 sm:w-20"
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
