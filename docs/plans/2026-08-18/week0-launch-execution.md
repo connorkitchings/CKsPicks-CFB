@@ -7,8 +7,8 @@
 - **Approval source:** User approved the full plan, including V4 timebox with V2
   fallback, full production setup, Pick'em prep, and no further talent rechecks,
   on 2026-08-18.
-- **Planning log:** `session_logs/2026-08-18/02-week0-launch-execution-planning.md`
-- **Implementation log:** `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`
+- **Planning log:** `session_logs/archive/daily/2026-08-18/02-week0-launch-execution-planning.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`
 - **Commit policy:** Plan committed separately; implementation commits remain
   user-controlled unless explicitly authorized in a session.
 
@@ -145,7 +145,7 @@ production write without explicit ENV and credential verification; no locked
 - [x] Stage 3 production deploy green in market mode.
 - [x] Stage 4 final frozen launch run; public predictions revealed 2026-08-21.
 - [x] Stage 5 Week 0 close completed (freeze retroactive 2026-08-31; close-week
-  scored after Week 0 finals Aug 29–30). Session log: `session_logs/2026-08-31/`.
+  scored after Week 0 finals Aug 29–30). Session log: `session_logs/archive/daily/2026-08-31/`.
 - [x] Session logs updated; plan status set to **Implemented**.
 
 ## Amendments

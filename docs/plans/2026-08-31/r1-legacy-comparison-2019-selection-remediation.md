@@ -3,7 +3,7 @@
 - **Status:** Implemented (Tasks 1–4 complete; Task 5 pending user commit + R1 run)
 - **Created:** 2026-08-31
 - **Planner:** Sol (plan-session) — fresh task
-- **Implementation session:** `session_logs/2026-08-31/03-r1-legacy-comparison-2019-implementation.md`
+- **Implementation session:** `session_logs/archive/daily/2026-08-31/03-r1-legacy-comparison-2019-implementation.md`
 - **Approval source:** User approved on 2026-08-31 in session `82f2fd38`.
 - **Commit policy:** Modified script is in SUCCESSOR_R1_COMMIT_PATHS; must be
   committed before R1 launch. Week-1 docs committed separately first to keep

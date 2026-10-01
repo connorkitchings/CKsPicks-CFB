@@ -6,7 +6,7 @@
 - **Approval source:** User explicitly authorized implementation of this exact
   plan in Codex on 2026-08-27.
 - **Implementation log:**
-  `session_logs/2026-08-27/11-r1-play-capture-reliability-hardening.md`
+  `session_logs/archive/daily/2026-08-27/11-r1-play-capture-reliability-hardening.md`
 - **Commit policy:** Commit with implementation; the governing historical
   roadmap already received its required separate plan commit.
 

@@ -5,7 +5,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this task on 2026-08-23.
-- **Implementation log:** `session_logs/2026-08-23/05-modernization-coverage-60.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/05-modernization-coverage-60.md`
 - **Commit policy:** User-controlled; coverage tests may be committed with the ongoing modernization implementation.
 
 ## Goal

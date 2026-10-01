@@ -4,8 +4,8 @@
 - **Created:** 2026-08-17
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this Codex task on 2026-08-17.
-- **Implementation log:** `session_logs/2026-08-17/01-early-season-v4-modeling.md`,
-  `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-17/01-early-season-v4-modeling.md`,
+  `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`
 - **Commit policy:** Separate plan commit; implementation commits remain user-controlled.
 
 ## Goal
@@ -193,7 +193,7 @@ explicitly incomplete. The active V2 Preview run is unchanged.
 
 The remaining tournament work was executed as Stages 1–3 of
 [`docs/plans/2026-08-18/week0-launch-execution.md`](../2026-08-18/week0-launch-execution.md)
-(recorded in `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`):
+(recorded in `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`):
 
 - Migration `0008` applied; strict V5 model-ready Gold assembled
   (version `e6ebb94b…`); guarded 2025 baselines built under frozen design SHA

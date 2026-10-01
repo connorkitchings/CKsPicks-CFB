@@ -6,7 +6,7 @@
 - **Approval source:** User explicitly authorized implementation of this exact
   plan in Codex on 2026-08-26.
 - **Implementation log:**
-  `session_logs/2026-08-26/10-historical-expansion-ratings-methodology-reset.md`
+  `session_logs/archive/daily/2026-08-26/10-historical-expansion-ratings-methodology-reset.md`
 - **Commit policy:** Separate plan commit required before implementation.
 
 ## Goal

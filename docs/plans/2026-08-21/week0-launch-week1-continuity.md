@@ -5,7 +5,7 @@
 - **Created:** 2026-08-21
 - **Planner:** Sol
 - **Approval source:** User explicitly approved and requested implementation of this plan in the current task on 2026-08-21.
-- **Implementation log:** `session_logs/2026-08-21/01-week0-launch-week1-continuity.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-21/01-week0-launch-week1-continuity.md`
 - **Commit policy:** Commit with implementation; git operations remain user-controlled.
 
 ## Goal

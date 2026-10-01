@@ -6,7 +6,7 @@
 - **Approval source:** User approved this exact contract on 2026-08-26 and
   selected: exact-match rehearsal oracle, all-2025-weeks rehearsal, R2
   production-run V4 pairing, opt-in preview catalog registration.
-- **Implementation log:** `session_logs/2026-08-26/04-phase4-shadow-operations.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-26/04-phase4-shadow-operations.md`
 - **Commit policy:** Separate plan commit recommended before implementation
   commits (governs protected prospective evidence and Phase 5–7 execution).
 

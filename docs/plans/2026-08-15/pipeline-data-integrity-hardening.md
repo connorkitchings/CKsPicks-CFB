@@ -4,7 +4,7 @@
 - **Created:** 2026-08-15
 - **Planner:** Sol
 - **Approval source:** User instruction in this Codex task: “Implement the plan.”
-- **Implementation log:** `session_logs/2026-08-15/03-pipeline-data-integrity-hardening.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-15/03-pipeline-data-integrity-hardening.md`
 - **Commit policy:** Separate, reviewable hardening commit; Git actions remain user-controlled.
 
 ## Goal

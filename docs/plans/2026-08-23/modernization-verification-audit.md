@@ -4,7 +4,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized execution in this task on 2026-08-23.
-- **Implementation log:** `session_logs/2026-08-23/03-modernization-verification-audit.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/03-modernization-verification-audit.md`
 - **Commit policy:** Separate documentation commit recommended; user-controlled.
 
 ## Goal

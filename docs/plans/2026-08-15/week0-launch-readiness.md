@@ -4,7 +4,7 @@
 - **Created:** 2026-08-15
 - **Planner:** Sol
 - **Approval source:** User instruction in the originating Codex task: “Implement the proposed plan.”
-- **Implementation log:** `session_logs/2026-08-15/02-week0-launch-implementation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-15/02-week0-launch-implementation.md`
 - **Commit policy:** Separate, reviewable launch commits after Preview rehearsal; commits and pushes remain user-controlled.
 
 ## Goal

@@ -5,7 +5,7 @@
 - **Planner:** Sol (user-approved remediation plan)
 - **Approval source:** User explicitly authorized implementation on 2026-08-26;
   expanded readiness remediation authorized on 2026-08-26.
-- **Implementation log:** `session_logs/2026-08-26/01-phase1-phase2-true-ppso-remediation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-26/01-phase1-phase2-true-ppso-remediation.md`
 - **Commit policy:** The user commits each code/configuration contract before its
   Preview materialization. Every external write is Preview-only and immutable.
 

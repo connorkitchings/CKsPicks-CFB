@@ -7,7 +7,7 @@
 - **Approval source:** User approved the exact remediation in Codex on
   2026-08-28 ("Proceed").
 - **Implementation log:**
-  `session_logs/2026-08-28/03-r1-derived-schema-registration-and-atomicity.md`
+  `session_logs/archive/daily/2026-08-28/03-r1-derived-schema-registration-and-atomicity.md`
 - **Commit policy:** Separate plan and implementation commits; user executes
   Git operations.
 

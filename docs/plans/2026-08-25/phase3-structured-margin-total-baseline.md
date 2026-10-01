@@ -4,10 +4,10 @@
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
-- **Implementation logs:** `session_logs/2026-08-25/04-phase3-foundation-certification.md`,
-  `session_logs/2026-08-25/05-phase3-structured-prediction.md`,
-  `session_logs/2026-08-25/06-phase3-materialization-merge-remediation.md`,
-  `session_logs/2026-08-25/07-phase3-historical-gate-failure.md`
+- **Implementation logs:** `session_logs/archive/daily/2026-08-25/04-phase3-foundation-certification.md`,
+  `session_logs/archive/daily/2026-08-25/05-phase3-structured-prediction.md`,
+  `session_logs/archive/daily/2026-08-25/06-phase3-materialization-merge-remediation.md`,
+  `session_logs/archive/daily/2026-08-25/07-phase3-historical-gate-failure.md`
 - **Commit policy:** Commit code/configuration before joining outcomes or writing Preview artifacts.
 
 ## Goal

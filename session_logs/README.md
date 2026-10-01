@@ -6,7 +6,7 @@ read logs only when their historical context is relevant.
 
 ## Active window
 
-Logs dated **2026-08-09 and later** remain directly under this directory.
+Logs dated **2026-09-01 and later** remain directly under this directory.
 Logs before that date are retained under `archive/daily/YYYY-MM-DD/`.
 
 The cutoff is a manual documentation-maintenance policy, not automation. Keep

@@ -7,7 +7,7 @@
 - **Planner:** Sol (inline, mid-execution of
   `docs/plans/2026-08-28/r1-derived-schema-registration-and-atomicity.md`)
 - **Implementation log:**
-  `session_logs/2026-08-28/04-r1-cross-lineage-audit-scope-remediation.md`
+  `session_logs/archive/daily/2026-08-28/04-r1-cross-lineage-audit-scope-remediation.md`
 - **Commit policy:** Separate plan and implementation commits; user executes
   Git operations.
 

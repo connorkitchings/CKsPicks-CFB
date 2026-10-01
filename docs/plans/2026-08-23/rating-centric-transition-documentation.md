@@ -4,7 +4,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact plan and its implementation on 2026-08-23.
-- **Implementation log:** `session_logs/2026-08-23/06-rating-centric-transition-documentation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/06-rating-centric-transition-documentation.md`
 - **Commit policy:** Separate plan commit recommended; git operations remain user-controlled.
 
 > **Superseded on 2026-08-23 by:**

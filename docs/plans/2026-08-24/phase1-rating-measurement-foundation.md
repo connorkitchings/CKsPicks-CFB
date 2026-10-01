@@ -4,7 +4,7 @@
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly approved the Phase 1 documentation finalization and its selected defaults on 2026-08-24.
-- **Implementation log:** `session_logs/2026-08-24/02-phase1-rating-measurement-implementation.md` (reserved)
+- **Implementation log:** `session_logs/archive/daily/2026-08-24/02-phase1-rating-measurement-implementation.md` (reserved)
 - **Commit policy:** Separate plan commit required before implementation because this establishes model lineage and protected-evidence interfaces.
 
 ## Goal
@@ -376,7 +376,7 @@ and source-timing defects. They are superseded for Phase 2 by
 `phase1-rating-measurement-remediation.md`; no v1 ref may be used as a
 successor-state input.
 
-Executed by Terra on 2026-08-24 (`session_logs/2026-08-24/02-phase1-rating-measurement-implementation.md`).
+Executed by Terra on 2026-08-24 (`session_logs/archive/daily/2026-08-24/02-phase1-rating-measurement-implementation.md`).
 
 - Code: `src/cks_picks_cfb/ratings/` (`contracts.py`, `observations.py`,
   `snapshots.py`, `audit.py`), `conf/ratings/measurement_baseline_v1.yaml`,

@@ -5,7 +5,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this task on 2026-08-23.
-- **Implementation log:** `session_logs/2026-08-23/04-modernization-verified-completion.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/04-modernization-verified-completion.md`
 - **Commit policy:** User-controlled; keep documentation, quality gates, modularization, and web verification as logical commit boundaries.
 
 ## Goal

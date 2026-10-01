@@ -6,7 +6,7 @@
 - **Approval source:** User approved in session on 2026-08-16 (including the
   scope answers: v2 active + private v3 rehearsal; attempt talent re-capture
   with fallback).
-- **Implementation log:** `session_logs/2026-08-16/01-preview-readiness-repair.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-16/01-preview-readiness-repair.md`
 - **Commit policy:** Separate plan commit; implementation commits remain
   user-controlled.
 
@@ -158,7 +158,7 @@ produce a private v2-v3 comparison CSV. Production, public fail-closed
 - Verify row-level invariants and artifact paths.
 - Update `docs/ops/weekly_pipeline.md` if the repair reveals an operational
   gap.
-- Create `session_logs/2026-08-16/01-preview-readiness-repair.md`.
+- Create `session_logs/archive/daily/2026-08-16/01-preview-readiness-repair.md`.
 - Mark the plan `Implemented`.
 
 **Acceptance criteria:**

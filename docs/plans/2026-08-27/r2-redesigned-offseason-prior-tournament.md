@@ -5,7 +5,7 @@
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact
   full-corpus successor-v2 plan in Codex on 2026-08-27.
-- **Implementation log:** `session_logs/2026-08-31/04-r2-prior-tournament-implementation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-31/04-r2-prior-tournament-implementation.md`
 - **Commit policy:** Separate plan commit required after R1 and before implementation.
 
 ## Goal

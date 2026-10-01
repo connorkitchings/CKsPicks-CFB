@@ -4,7 +4,7 @@
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-24.
-- **Implementation log:** `session_logs/2026-08-24/04-phase1-phase2-completion.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-24/04-phase1-phase2-completion.md`
 - **Commit policy:** A separate code commit is required before Preview artifact materialization; documentation closure follows successful audits.
 
 ## Goal

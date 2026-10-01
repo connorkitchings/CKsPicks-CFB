@@ -158,7 +158,7 @@
   model lean can reach the public site without an explicit user-approved
   publication-mode change.
 - **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stage 3,
-  Amendments 2–3); `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`.
+  Amendments 2–3); `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`.
 
 ## 2026-08-18: V4 Selected as 2026 Launch Model; prior_only_fallback Posture
 
@@ -181,7 +181,7 @@
   games route to `game_1` (spread: direct CatBoost; total: prior-quality
   baseline).
 - **Source**: `docs/plans/2026-08-18/week0-launch-execution.md` (Stages 1–2,
-  Amendment 3); `session_logs/2026-08-18/03-v4-tournament-and-production-deploy.md`.
+  Amendment 3); `session_logs/archive/daily/2026-08-18/03-v4-tournament-and-production-deploy.md`.
 
 ## 2026-08-17: V4 Strict vs. Reconstructed Point-in-Time Feature References
 
@@ -201,7 +201,7 @@
   family and ultimately shipped `prior_core` only; the reconstructed track
   remains available for research without activation risk.
 - **Source**: `docs/plans/2026-08-17/early-season-v4-modeling.md` (Amendment 1);
-  `session_logs/2026-08-17/02-v4-immutable-feature-reference.md`.
+  `session_logs/archive/daily/2026-08-17/02-v4-immutable-feature-reference.md`.
 
 ## 2026-08-16: Games 1–3 Prediction-Only Promotion Basis
 
@@ -219,7 +219,7 @@
   tournament; V3 (`week0-2026-games-ordinal-v3-20260816-r2`) became the
   baseline lineage for V4 selection.
 - **Source**: `docs/plans/2026-08-15/games-1-3-modeling.md` (Amendment
-  2026-08-16); `session_logs/2026-08-16/01-preview-readiness-repair.md`.
+  2026-08-16); `session_logs/archive/daily/2026-08-16/01-preview-readiness-repair.md`.
 
 ## 2026-08-09: Preserve Untimestamped Lines as Legacy References and Canonicalize Week 0
 

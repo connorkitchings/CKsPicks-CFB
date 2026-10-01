@@ -4,8 +4,8 @@
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized the approved recovery plan on 2026-08-25.
-- **Implementation logs:** `session_logs/2026-08-25/02-v4-benchmark-recovery.md`,
-  `session_logs/2026-08-25/03-v4-benchmark-recovery-materialization.md`
+- **Implementation logs:** `session_logs/archive/daily/2026-08-25/02-v4-benchmark-recovery.md`,
+  `session_logs/archive/daily/2026-08-25/03-v4-benchmark-recovery-materialization.md`
 - **Commit policy:** Commit code and configuration before any Preview artifact write.
 
 ## Goal

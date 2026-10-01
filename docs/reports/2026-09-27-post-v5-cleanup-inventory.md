@@ -68,7 +68,7 @@ Every path below was checked and is **retained** for this contract. Reference co
 | `scripts/pipeline/build_r2_prior_tournament.py` | commands/config 1, docs/other 3, lineage 6 | `conf/repository/compatibility_v1.yaml` |
 | `scripts/pipeline/build_rating_shadow_freeze.py` | commands/config 1, code 1, docs/other 2, lineage 3 | `conf/repository/compatibility_v1.yaml` |
 | `scripts/pipeline/build_rating_shadow_score.py` | commands/config 1, code 1, docs/other 2, lineage 3 | `conf/repository/compatibility_v1.yaml` |
-| `scripts/pipeline/build_rating_v4_benchmark.py` | lineage 1 | `session_logs/2026-08-25/02-v4-benchmark-recovery.md` |
+| `scripts/pipeline/build_rating_v4_benchmark.py` | lineage 1 | `session_logs/archive/daily/2026-08-25/02-v4-benchmark-recovery.md` |
 | `scripts/pipeline/build_successor_history_ref_set.py` | commands/config 1, code 1, docs/other 1, lineage 1 | `conf/repository/compatibility_v1.yaml` |
 | `scripts/pipeline/build_successor_legacy_comparison_ref_set.py` | code 1, tests 1, lineage 4 | `src/cks_picks_cfb/ops/__main__.py` |
 | `scripts/pipeline/build_successor_r1_foundation.py` | commands/config 1, code 1, docs/other 2, lineage 2 | `conf/repository/compatibility_v1.yaml` |

@@ -4,7 +4,7 @@
 - **Created:** 2026-08-22
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation in this task on 2026-08-22.
-- **Implementation log:** `session_logs/2026-08-22/02-modernization-phases-1-5-fidelity-and-refactor.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-22/02-modernization-phases-1-5-fidelity-and-refactor.md`
 - **Commit policy:** Separate plan commit recommended; implementation commits remain user-controlled.
 
 ## Goal

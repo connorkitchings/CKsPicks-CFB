@@ -5,7 +5,7 @@
 - **Created:** 2026-08-28
 - **Planner:** Sol
 - **Approval source:** User approved the proposed R1 remediation in Codex on 2026-08-28 ("go").
-- **Implementation log:** `session_logs/2026-08-28/02-r1-manifest-declared-play-coverage-remediation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-28/02-r1-manifest-declared-play-coverage-remediation.md`
 - **Commit policy:** Separate plan and implementation commits; user executes Git operations.
 
 ## Goal

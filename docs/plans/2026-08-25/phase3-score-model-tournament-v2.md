@@ -4,7 +4,7 @@
 - **Created:** 2026-08-25
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact contract on 2026-08-25.
-- **Implementation log:** `session_logs/2026-08-25/08-phase3-score-model-tournament-v2.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-25/08-phase3-score-model-tournament-v2.md`
 - **Commit policy:** Commit code and configuration before joining outcomes or writing Preview artifacts.
 
 ## Goal

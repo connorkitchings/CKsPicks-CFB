@@ -4,7 +4,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User approved `implementation_plan.md` on 2026-08-23
-- **Implementation log:** `session_logs/2026-08-23/02-modernization-phases-5-8-completion.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/02-modernization-phases-5-8-completion.md`
 - **Commit policy:** Separate plan commit recommended; implementation commits remain user-controlled.
 
 ## Goal

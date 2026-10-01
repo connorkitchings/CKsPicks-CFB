@@ -7,7 +7,7 @@
 - **Approval source:** User explicitly authorized implementation of the exact
   full-corpus successor-v2 plan in Codex on 2026-08-27.
 - **Implementation log:**
-  `session_logs/2026-08-27/13-r1-full-corpus-recapture-and-certification.md`
+  `session_logs/archive/daily/2026-08-27/13-r1-full-corpus-recapture-and-certification.md`
 - **Commit policy:** Separate plan commit required before implementation.
 
 ## Goal

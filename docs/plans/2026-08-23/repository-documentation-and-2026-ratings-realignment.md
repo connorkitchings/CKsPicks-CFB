@@ -4,7 +4,7 @@
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact plan on 2026-08-23.
-- **Implementation log:** `session_logs/2026-08-23/07-repository-documentation-and-2026-ratings-realignment.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-23/07-repository-documentation-and-2026-ratings-realignment.md`
 - **Commit policy:** Separate plan commit recommended; git operations remain user-controlled.
 
 ## Goal

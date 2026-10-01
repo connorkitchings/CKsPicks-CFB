@@ -4,7 +4,7 @@
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized this exact plan on 2026-08-24.
-- **Implementation log:** `session_logs/2026-08-24/03-phase1-remediation-and-phase2-implementation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-24/03-phase1-remediation-and-phase2-implementation.md`
 - **Commit policy:** Separate implementation commit required before Preview artifact materialization.
 
 ## Goal
@@ -75,7 +75,7 @@ is introduced.
 ## Implementation Record
 
 Executed on 2026-08-25 (session log
-`session_logs/2026-08-24/04-phase1-phase2-completion.md`).
+`session_logs/archive/daily/2026-08-24/04-phase1-phase2-completion.md`).
 
 - Code (committed at `cba1577`/`fed8c68`): `src/cks_picks_cfb/ratings/`
   (`state_contracts.py`, `states.py`, `state_audit.py`),

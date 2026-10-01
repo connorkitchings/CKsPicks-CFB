@@ -5,7 +5,7 @@
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the Phase 2 plan, including this separate prerequisite, on 2026-08-24.
-- **Implementation log:** `session_logs/2026-08-24/03-phase1-remediation-and-phase2-implementation.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-24/03-phase1-remediation-and-phase2-implementation.md`
 - **Commit policy:** Separate implementation commit required before Preview artifact materialization.
 
 ## Goal

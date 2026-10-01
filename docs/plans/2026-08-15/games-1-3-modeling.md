@@ -9,7 +9,7 @@
 - **Created:** 2026-08-15
 - **Planner:** Sol
 - **Approval source:** User authorized implementation in this task on 2026-08-15.
-- **Implementation log:** `session_logs/2026-08-15/05-games-1-3-modeling.md`
+- **Implementation log:** `session_logs/archive/daily/2026-08-15/05-games-1-3-modeling.md`
 - **Commit policy:** Separate plan commit; implementation commits remain user-controlled.
 
 ## Goal

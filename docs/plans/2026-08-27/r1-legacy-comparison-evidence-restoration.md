@@ -6,7 +6,7 @@
 - **Approval source:** User explicitly approved the narrow Preview-only
   restoration described in the active Codex task on 2026-08-27.
 - **Implementation log:**
-  `session_logs/2026-08-27/14-r1-legacy-comparison-evidence-restoration.md`
+  `session_logs/archive/daily/2026-08-27/14-r1-legacy-comparison-evidence-restoration.md`
 - **Commit policy:** Commit with implementation before any Preview write.
 
 ## Goal

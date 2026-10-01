@@ -6,7 +6,7 @@
 - **Approval source:** User explicitly approved and requested implementation in
   the current task on 2026-08-21.
 - **Implementation log:**
-  `session_logs/2026-08-21/02-week0-predictions-reveal.md`
+  `session_logs/archive/daily/2026-08-21/02-week0-predictions-reveal.md`
 - **Commit policy:** Commit with implementation; git operations remain
   user-controlled.
 
