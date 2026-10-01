@@ -60,7 +60,7 @@ export function GameRow({
   showBetResult?: boolean;
 }) {
   if (game.publicationMode === "market") {
-    return <MarketGameRow game={game} showBetResult={showBetResult} />;
+    return <MarketGameRow game={game} />;
   }
   const hasAnyLine =
     game.homeTeamSpreadLine !== null || game.totalLine !== null;
@@ -142,10 +142,8 @@ export function GameRow({
 /** Market-mode card: same shell; the table omits model columns (fail-closed). */
 function MarketGameRow({
   game,
-  showBetResult = true,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
-  showBetResult?: boolean;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -153,37 +151,6 @@ function MarketGameRow({
     game.awayTeam,
     game.homeTeamSpreadLine,
   );
-
-  const columns = showBetResult
-    ? [{ header: "Market" }, { header: "Bet Result" }]
-    : [{ header: "Market" }];
-
-  const rows = [
-    {
-      label: "Spread",
-      cells: showBetResult
-        ? [
-            spreadLabel(marketSpread),
-            <ResultCell key="result" result={game.spreadResult} />,
-          ]
-        : [spreadLabel(marketSpread)],
-    },
-    {
-      label: "Total",
-      cells: showBetResult
-        ? [
-            game.totalLine === null
-              ? "O/U —"
-              : `O/U ${game.totalLine.toFixed(1)}`,
-            <ResultCell key="result" result={game.totalResult} />,
-          ]
-        : [
-            game.totalLine === null
-              ? "O/U —"
-              : `O/U ${game.totalLine.toFixed(1)}`,
-          ],
-    },
-  ];
 
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
@@ -218,8 +185,25 @@ function MarketGameRow({
           "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
           "py-1.5 pl-2 text-right text-ink",
         ]}
-        columns={columns}
-        rows={rows}
+        columns={[{ header: "Market" }, { header: "Bet Result" }]}
+        rows={[
+          {
+            label: "Spread",
+            cells: [
+              spreadLabel(marketSpread),
+              <ResultCell key="result" result={game.spreadResult} />,
+            ],
+          },
+          {
+            label: "Total",
+            cells: [
+              game.totalLine === null
+                ? "O/U —"
+                : `O/U ${game.totalLine.toFixed(1)}`,
+              <ResultCell key="result" result={game.totalResult} />,
+            ],
+          },
+        ]}
       />
     </li>
   );
