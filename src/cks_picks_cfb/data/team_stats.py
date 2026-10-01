@@ -294,3 +294,39 @@ def build_team_season_stats(
     frame = frame[columns + ["games", "rank", "cohort_size"]].reset_index(drop=True)
     report["teams"] = int(frame["team"].nunique())
     return TeamStatsResult(frame=frame, report=report)
+
+
+UPSERT_TEAM_STAT_SQL = """
+INSERT INTO team_season_stats
+    (season, as_of_week, team, role, metric, value, n, games, rank, cohort_size)
+VALUES
+    (%(season)s, %(as_of_week)s, %(team)s, %(role)s, %(metric)s, %(value)s,
+     %(n)s, %(games)s, %(rank)s, %(cohort_size)s)
+ON CONFLICT (season, as_of_week, team, role, metric) DO UPDATE SET
+    value = EXCLUDED.value,
+    n = EXCLUDED.n,
+    games = EXCLUDED.games,
+    rank = EXCLUDED.rank,
+    cohort_size = EXCLUDED.cohort_size,
+    updated_at = NOW()
+"""
+
+
+def to_upsert_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    """Convert the stats frame to DB-ready dicts (NaN/NA become None)."""
+
+    def clean(value: Any) -> Any:
+        if value is None or value is pd.NA:
+            return None
+        if isinstance(value, float) and np.isnan(value):
+            return None
+        if isinstance(value, np.integer):
+            return int(value)
+        if isinstance(value, np.floating):
+            return float(value)
+        return value
+
+    return [
+        {key: clean(val) for key, val in row.items()}
+        for row in frame.to_dict(orient="records")
+    ]

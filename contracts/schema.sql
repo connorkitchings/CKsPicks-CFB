@@ -526,6 +526,29 @@ CREATE TABLE IF NOT EXISTS game_venues (
 CREATE INDEX IF NOT EXISTS idx_game_venues_venue_id
     ON game_venues (venue_id);
 
+-- ---------------------------------------------------------------------------
+-- team_season_stats: pre-game team stats and national ranks (migration 0020)
+-- ---------------------------------------------------------------------------
+-- Long format; as_of_week N = games completed before week N's slate.  Populated by
+-- scripts/pipeline/publish_team_stats.py.
+CREATE TABLE IF NOT EXISTS team_season_stats (
+    season       INTEGER NOT NULL,
+    as_of_week   INTEGER NOT NULL,
+    team         TEXT NOT NULL,
+    role         TEXT NOT NULL CHECK (role IN ('offense', 'defense')),
+    metric       TEXT NOT NULL,
+    value        DOUBLE PRECISION,
+    n            INTEGER NOT NULL DEFAULT 0,
+    games        INTEGER NOT NULL DEFAULT 0,
+    rank         INTEGER,
+    cohort_size  INTEGER,
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (season, as_of_week, team, role, metric)
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_season_stats_week
+    ON team_season_stats (season, as_of_week);
+
 -- Objective outcomes remain independent of any line or prediction run.  The
 -- legacy result columns are retained only until the post-Week-1 compatibility
 -- migration is complete.
@@ -777,7 +800,7 @@ GRANT USAGE ON SCHEMA public TO cks_web;
 GRANT SELECT ON games, game_results, prediction_runs, predictions,
     prediction_grades, market_snapshots, system_stats, historical_model_context,
     current_week, site_week_selections, v5_rating_snapshots,
-    prediction_market_selections, game_venues TO cks_web;
+    prediction_market_selections, game_venues, team_season_stats TO cks_web;
 GRANT USAGE ON SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, catalog, ops TO cks_pipeline;

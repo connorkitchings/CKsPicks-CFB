@@ -505,3 +505,27 @@ export const gameVenues = pgTable(
 );
 
 export type GameVenue = typeof gameVenues.$inferSelect;
+
+export const teamSeasonStats = pgTable(
+  "team_season_stats",
+  {
+    season: integer("season").notNull(),
+    asOfWeek: integer("as_of_week").notNull(),
+    team: text("team").notNull(),
+    role: text("role").notNull(),
+    metric: text("metric").notNull(),
+    value: doublePrecision("value"),
+    n: integer("n").notNull().default(0),
+    games: integer("games").notNull().default(0),
+    rank: integer("rank"),
+    cohortSize: integer("cohort_size"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.season, table.asOfWeek, table.team, table.role, table.metric] }),
+    index("idx_team_season_stats_week").on(table.season, table.asOfWeek),
+    check("team_season_stats_role_check", sql`${table.role} IN ('offense', 'defense')`),
+  ],
+);
+
+export type TeamSeasonStat = typeof teamSeasonStats.$inferSelect;

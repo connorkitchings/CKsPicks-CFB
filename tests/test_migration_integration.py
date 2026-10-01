@@ -5,6 +5,7 @@ import psycopg
 import pytest
 
 from cks_picks_cfb.data.game_venues import UPSERT_GAME_VENUE_SQL
+from cks_picks_cfb.data.team_stats import UPSERT_TEAM_STAT_SQL, to_upsert_records
 from cks_picks_cfb.db.migrations import apply_migrations
 
 
@@ -204,4 +205,60 @@ def test_game_venues_migration_creates_table_and_upsert_round_trips():
             cur.execute("SELECT city, state FROM game_venues WHERE game_id = 1")
             assert cur.fetchall() == [("Los Angeles", "CA")]
     # Re-applying migrations is a no-op.
+    assert apply_migrations(conn_url, Path("contracts/migrations")) == []
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_team_season_stats_migration_creates_table_and_upsert_round_trips():
+    import pandas as pd
+
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            for schema in ("ops", "catalog", "public"):
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    applied = apply_migrations(conn_url, Path("contracts/migrations"))
+    assert "0020" in applied
+    frame = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "as_of_week": 5,
+                "team": "A",
+                "role": "offense",
+                "metric": "epa_pass",
+                "value": 0.25,
+                "n": 40,
+                "games": 4,
+                "rank": 3,
+                "cohort_size": 130,
+            },
+            {
+                "season": 2026,
+                "as_of_week": 5,
+                "team": "A",
+                "role": "defense",
+                "metric": "epa_pass",
+                "value": None,
+                "n": 0,
+                "games": 0,
+                "rank": pd.NA,
+                "cohort_size": pd.NA,
+            },
+        ]
+    )
+    records = to_upsert_records(frame)
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            for record in records:
+                cur.execute(UPSERT_TEAM_STAT_SQL, record)
+            cur.execute(UPSERT_TEAM_STAT_SQL, {**records[0], "value": 0.5, "rank": 1})
+            cur.execute("SELECT role, value, rank FROM team_season_stats ORDER BY role")
+            assert cur.fetchall() == [("defense", None, None), ("offense", 0.5, 1)]
+            with pytest.raises(psycopg.errors.CheckViolation):
+                cur.execute(UPSERT_TEAM_STAT_SQL, {**records[0], "role": "special"})
     assert apply_migrations(conn_url, Path("contracts/migrations")) == []

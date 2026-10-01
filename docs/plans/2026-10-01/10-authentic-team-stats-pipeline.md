@@ -38,6 +38,7 @@ This file; mark the old draft superseded; update `docs/status.md` and `docs/plan
 `src/cks_picks_cfb/data/team_stats.py`: `build_team_season_stats(byplay, drives, games, *, season, as_of_week) -> DataFrame`, reusing the play/drive helpers from `ratings/observations.py` (extract shared helpers rather than copy). Tests in `tests/test_team_stats.py`: ratio-of-sums aggregation, defense rank direction, garbage-time exclusion, FCS-opponent exclusion, week cutoff leak test (week N excludes week N games), small-sample nulls, ties, bye weeks, no division by zero.
 
 ### Phase 2: Schema
+Long format (decided during Phase 1): one row per `(season, as_of_week, team, role, metric)` with `value`, `n`, `games`, `rank`, `cohort_size`; adding a metric needs no migration.
 `contracts/migrations/0020_team_season_stats.sql` (append-only, idempotent; `GRANT SELECT TO cks_web`, `GRANT SELECT, INSERT, UPDATE TO cks_pipeline`); sync `contracts/schema.sql`, `contracts/schema.ts` and the byte-identical `web/src/lib/schema.ts`; migration test in `tests/test_migration_integration.py` (one file, because DB-reset tests must not run in parallel); `uv run python contracts/validation.py`.
 
 ### Phase 3: Publisher
