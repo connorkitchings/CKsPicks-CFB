@@ -64,6 +64,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Authentic matchup stats](2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md) | Ingest real play/drive measurements for the matchup page | Draft (Pending User Review) |
 | [Dead-code prune](2026-10-01/05-dead-code-prune.md) | Remove modules, configs, web leftovers and `research/` with no references | Implemented |
 | [Docs cleanup and archive](2026-10-01/06-docs-cleanup-and-archive.md) | Close out stale contracts, archive August logs, delete legacy files, fix links | Implemented |
+| [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data steps run by the user) |
 | [High-quality team logos](2026-10-01/07-high-quality-team-logos.md) | Replace the 32 px logos with self-hosted, id-keyed, theme-aware WebP | Approved (runs on the user's machine) |
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 

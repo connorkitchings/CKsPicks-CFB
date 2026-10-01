@@ -504,6 +504,28 @@ CREATE INDEX IF NOT EXISTS idx_pms_game_id
     ON prediction_market_selections (game_id);
 
 
+-- ---------------------------------------------------------------------------
+-- game_venues: venue, city and state per game (migration 0019)
+-- ---------------------------------------------------------------------------
+-- Independent of prediction runs (games is overwritten by publish runs).  A
+-- missing row means the location is unknown.  Populated by
+-- scripts/pipeline/publish_game_venues.py.
+CREATE TABLE IF NOT EXISTS game_venues (
+    game_id        BIGINT PRIMARY KEY REFERENCES games(game_id) ON DELETE RESTRICT,
+    venue_id       BIGINT,
+    venue_name     TEXT,
+    city           TEXT,
+    state          TEXT,
+    country_code   TEXT,
+    timezone       TEXT,
+    neutral_site   BOOLEAN,
+    source         TEXT NOT NULL DEFAULT 'cfbd',
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_venues_venue_id
+    ON game_venues (venue_id);
+
 -- Objective outcomes remain independent of any line or prediction run.  The
 -- legacy result columns are retained only until the post-Week-1 compatibility
 -- migration is complete.
@@ -755,7 +777,7 @@ GRANT USAGE ON SCHEMA public TO cks_web;
 GRANT SELECT ON games, game_results, prediction_runs, predictions,
     prediction_grades, market_snapshots, system_stats, historical_model_context,
     current_week, site_week_selections, v5_rating_snapshots,
-    prediction_market_selections TO cks_web;
+    prediction_market_selections, game_venues TO cks_web;
 GRANT USAGE ON SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public, catalog, ops TO cks_pipeline;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, catalog, ops TO cks_pipeline;

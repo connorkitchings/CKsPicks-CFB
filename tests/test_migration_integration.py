@@ -4,6 +4,7 @@ from pathlib import Path
 import psycopg
 import pytest
 
+from cks_picks_cfb.data.game_venues import UPSERT_GAME_VENUE_SQL
 from cks_picks_cfb.db.migrations import apply_migrations
 
 
@@ -158,3 +159,49 @@ def test_hardening_migration_upgrades_pre_hardening_schema():
                 "AND indexname = 'idx_pipeline_runs_lease'"
             )
             assert cur.fetchone() is not None
+
+
+# Kept in this file (not a separate one): every test here resets the shared test
+# database, and CI runs files in parallel with --dist loadfile, so DB-resetting
+# tests must live in one file to run serially.
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_game_venues_migration_creates_table_and_upsert_round_trips():
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            for schema in ("ops", "catalog", "public"):
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    applied = apply_migrations(conn_url, Path("contracts/migrations"))
+    assert "0019" in applied
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = 'game_venues'"
+            )
+            columns = {row[0] for row in cur.fetchall()}
+            assert {"game_id", "city", "state", "neutral_site", "venue_name"} <= columns
+            cur.execute(
+                "INSERT INTO games (game_id, season, week, start_date, home_team, "
+                "away_team) VALUES (1, 2026, 5, NOW(), 'Home', 'Away')"
+            )
+            record = {
+                "game_id": 1,
+                "venue_id": 10,
+                "venue_name": "Rose Bowl",
+                "city": "Pasadena",
+                "state": "CA",
+                "country_code": "US",
+                "timezone": "America/Los_Angeles",
+                "neutral_site": False,
+            }
+            cur.execute(UPSERT_GAME_VENUE_SQL, record)
+            cur.execute(UPSERT_GAME_VENUE_SQL, {**record, "city": "Los Angeles"})
+            cur.execute("SELECT city, state FROM game_venues WHERE game_id = 1")
+            assert cur.fetchall() == [("Los Angeles", "CA")]
+    # Re-applying migrations is a no-op.
+    assert apply_migrations(conn_url, Path("contracts/migrations")) == []

@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""Publish venue, city and state per game to Neon ``game_venues``.
+
+Reads the validated Silver ``games`` (venue_id, neutral_site) and ``venues``
+(name, city, state, country_code, timezone) datasets for a season, joins them,
+and upserts one row per game that already exists in Neon ``games``. Venue facts
+do not depend on prediction runs, so this never touches runs or predictions.
+
+Run once per season and again after a schedule change. Always do a dry run first:
+
+    PYTHONPATH=src:. uv run python scripts/pipeline/publish_game_venues.py \\
+        --season 2026 --environment preview --dry-run
+
+The dry run prints the Silver column names, a coverage report and sample rows,
+and writes nothing. Production writes go through the restricted pipeline login:
+``scripts/ops/with_production_pipeline_env.sh`` sets DATABASE_URL.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+
+import psycopg
+from dotenv import load_dotenv
+
+from cks_picks_cfb.data.game_venues import (
+    UPSERT_GAME_VENUE_SQL,
+    MissingVenueColumnsError,
+    build_game_venue_rows,
+)
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+from cks_picks_cfb.data.storage import get_storage
+
+URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}
+
+
+def _latest_silver_ref(
+    cur: psycopg.Cursor, dataset: str, season: int | None
+) -> DatasetRef:
+    query = (
+        "SELECT dataset, version_id, schema_version, content_sha, uri "
+        "FROM catalog.dataset_versions "
+        "WHERE dataset = %s AND tier = 'silver' AND state = 'validated' "
+    )
+    params: list[object] = [dataset]
+    if season is not None:
+        query += "AND partitions @> %s::jsonb "
+        params.append(json.dumps({"seasons": [season]}))
+    query += "ORDER BY as_of DESC, created_at DESC LIMIT 1"
+    cur.execute(query, params)
+    row = cur.fetchone()
+    if not row:
+        raise LookupError(f"No validated Silver {dataset} dataset found")
+    return DatasetRef(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
+
+
+def main() -> int:
+    load_dotenv()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--season", type=int, default=2026)
+    parser.add_argument("--environment", choices=sorted(URL_ENV), required=True)
+    parser.add_argument("--database-url", help="Override the environment's URL")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Report coverage; write nothing"
+    )
+    args = parser.parse_args()
+
+    url = args.database_url or os.getenv(URL_ENV[args.environment])
+    if not url:
+        print(
+            f"Set {URL_ENV[args.environment]} or pass --database-url", file=sys.stderr
+        )
+        return 2
+    storage = get_storage(environment=args.environment)
+
+    with psycopg.connect(url) as conn:
+        with conn.cursor() as cur:
+            games_ref = _latest_silver_ref(cur, "games", args.season)
+            venues_ref = _latest_silver_ref(cur, "venues", None)
+            cur.execute("SELECT game_id FROM games WHERE season = %s", (args.season,))
+            neon_ids = [int(r[0]) for r in cur.fetchall()]
+        games = read_dataset(storage, games_ref)
+        venues = read_dataset(storage, venues_ref)
+        print(f"Silver games  {games_ref.version_id}: columns {sorted(games.columns)}")
+        print(
+            f"Silver venues {venues_ref.version_id}: columns {sorted(venues.columns)}"
+        )
+        try:
+            rows, report = build_game_venue_rows(games, venues, neon_ids)
+        except MissingVenueColumnsError as exc:
+            print(f"Cannot build venue rows: {exc}", file=sys.stderr)
+            return 3
+        print(json.dumps(report, indent=2))
+        for row in rows[:5]:
+            print(json.dumps(row, default=str))
+        if args.dry_run:
+            print("Dry run: nothing written.")
+            return 0
+        with conn.cursor() as cur:
+            cur.executemany(UPSERT_GAME_VENUE_SQL, rows)
+        conn.commit()
+        print(f"Upserted {len(rows)} game_venues rows ({args.environment}).")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -486,3 +486,22 @@ export const predictionMarketSelections = pgTable(
 );
 
 export type PredictionMarketSelection = typeof predictionMarketSelections.$inferSelect;
+
+export const gameVenues = pgTable(
+  "game_venues",
+  {
+    gameId: bigint("game_id", { mode: "number" }).primaryKey().references(() => games.gameId, { onDelete: "restrict" }),
+    venueId: bigint("venue_id", { mode: "number" }),
+    venueName: text("venue_name"),
+    city: text("city"),
+    state: text("state"),
+    countryCode: text("country_code"),
+    timezone: text("timezone"),
+    neutralSite: boolean("neutral_site"),
+    source: text("source").notNull().default("cfbd"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("idx_game_venues_venue_id").on(table.venueId)],
+);
+
+export type GameVenue = typeof gameVenues.$inferSelect;

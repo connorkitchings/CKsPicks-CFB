@@ -51,6 +51,14 @@ Upload route artifacts and configure the ten-cell manifest URI/checksum in the l
 
 For rehearsal, point `PREVIEW_DATABASE_URL` at an isolated Neon branch and connect that branch to a Vercel Preview deployment.
 
+## Game venues (city and state on the cards)
+
+Venue facts live in `game_venues`, independent of prediction runs. Run once per season and again after a schedule change (it is idempotent); the site shows no location for games without a row. Dry run first, Preview before production. See the [game venue contract](../plans/2026-10-01/08-game-venue-location.md).
+
+```bash
+PYTHONPATH=src:. uv run python scripts/pipeline/publish_game_venues.py --season 2026 --environment preview --dry-run
+```
+
 ## Local Preview credentials
 
 `preview-2026` is the durable 2026 Preview branch. Its pipeline and migration
