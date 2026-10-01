@@ -1120,9 +1120,11 @@ def coverage_and_admission(
         }
     report = pd.DataFrame(rows, columns=COVERAGE_COLUMNS)
     report["historical_eligible"] = report.apply(
-        lambda row: admission[row.family]["historical_eligible"]
-        if row.slice == "family"
-        else row.historical_eligible,
+        lambda row: (
+            admission[row.family]["historical_eligible"]
+            if row.slice == "family"
+            else row.historical_eligible
+        ),
         axis=1,
     )
     for family, detail in admission.items():

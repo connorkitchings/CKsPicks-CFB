@@ -114,9 +114,11 @@ def test_selection_prefers_ppp_without_admissible_epa_gain(monkeypatch):
     monkeypatch.setattr(
         tournament,
         "_bootstrap",
-        lambda candidate, reference, **_: (1.0, 1.0, 1.0)
-        if not candidate["candidate_id"].eq(reference["candidate_id"].iloc[0]).all()
-        else (0.0, 0.0, 0.0),
+        lambda candidate, reference, **_: (
+            (1.0, 1.0, 1.0)
+            if not candidate["candidate_id"].eq(reference["candidate_id"].iloc[0]).all()
+            else (0.0, 0.0, 0.0)
+        ),
     )
     rows = []
     for item in candidate_registry():

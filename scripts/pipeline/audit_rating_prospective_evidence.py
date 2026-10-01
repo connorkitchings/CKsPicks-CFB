@@ -143,9 +143,11 @@ def main(argv: list[str] | None = None) -> None:
             how="left",
         )
         target_actual["expected_actual"] = target_actual.apply(
-            lambda row: row["current_actual"]
-            if row["target"] == "margin"
-            else row["home_points"] + row["away_points"],
+            lambda row: (
+                row["current_actual"]
+                if row["target"] == "margin"
+                else row["home_points"] + row["away_points"]
+            ),
             axis=1,
         )
         if (

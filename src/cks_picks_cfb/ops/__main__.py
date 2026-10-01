@@ -906,8 +906,9 @@ def _week_policy_from_ingestion_step(
         "build_week_policy",
         action,
         definition={"output_ref_uri": output_ref_uri, "as_of": as_of},
-        resume_validator=lambda _, outputs: bool(outputs)
-        and get_storage().exists(output_ref_uri),
+        resume_validator=lambda _, outputs: (
+            bool(outputs) and get_storage().exists(output_ref_uri)
+        ),
     )
 
 

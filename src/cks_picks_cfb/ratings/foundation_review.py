@@ -566,8 +566,9 @@ def build_foundation_review(
     terminal = team_states[team_states["state_kind"].eq("season_terminal")]
     checks["terminal_identity"] = bool(
         terminal.apply(
-            lambda row: row["state_id"]
-            == f"terminal:{int(row['season'])}:{row['team']}",
+            lambda row: (
+                row["state_id"] == f"terminal:{int(row['season'])}:{row['team']}"
+            ),
             axis=1,
         ).all()
     )

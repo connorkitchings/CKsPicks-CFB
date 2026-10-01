@@ -157,8 +157,9 @@ def build_team_state_audit(
         "terminal_identity_ok": bool(
             (
                 terminal.apply(
-                    lambda r: r["state_id"]
-                    == f"terminal:{int(r['season'])}:{r['team']}",
+                    lambda r: (
+                        r["state_id"] == f"terminal:{int(r['season'])}:{r['team']}"
+                    ),
                     axis=1,
                 )
             ).all()

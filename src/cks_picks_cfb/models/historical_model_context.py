@@ -211,11 +211,13 @@ def build_comparisons(
     spread["side"] = spread["v4_prediction"] + spread["spread_line"] >= 0
     spread["settlement_margin"] = spread["actual"] + spread["spread_line"]
     spread["result"] = spread.apply(
-        lambda row: "push"
-        if row["settlement_margin"] == 0
-        else "win"
-        if bool(row["settlement_margin"] > 0) == bool(row["side"])
-        else "loss",
+        lambda row: (
+            "push"
+            if row["settlement_margin"] == 0
+            else "win"
+            if bool(row["settlement_margin"] > 0) == bool(row["side"])
+            else "loss"
+        ),
         axis=1,
     )
     spread["direction"] = spread["side"].map({True: "home", False: "away"})
@@ -224,11 +226,13 @@ def build_comparisons(
     total["side"] = total["v4_prediction"] >= total["total_line"]
     total["settlement_margin"] = total["actual"] - total["total_line"]
     total["result"] = total.apply(
-        lambda row: "push"
-        if row["settlement_margin"] == 0
-        else "win"
-        if bool(row["settlement_margin"] > 0) == bool(row["side"])
-        else "loss",
+        lambda row: (
+            "push"
+            if row["settlement_margin"] == 0
+            else "win"
+            if bool(row["settlement_margin"] > 0) == bool(row["side"])
+            else "loss"
+        ),
         axis=1,
     )
     total["direction"] = total["side"].map({True: "over", False: "under"})

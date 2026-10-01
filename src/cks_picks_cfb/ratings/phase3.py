@@ -894,10 +894,11 @@ def _candidate_features(states: pd.DataFrame, candidate: str) -> pd.DataFrame:
         state_value=("state_value", "mean"),
         state_uncertainty=(
             "state_uncertainty",
-            lambda values: float(np.sqrt(np.square(values.dropna()).sum()))
-            / len(components)
-            if len(values.dropna())
-            else np.nan,
+            lambda values: (
+                float(np.sqrt(np.square(values.dropna()).sum())) / len(components)
+                if len(values.dropna())
+                else np.nan
+            ),
         ),
     ).reset_index()
     complete = (composites["component_rows"] == len(components)) & (

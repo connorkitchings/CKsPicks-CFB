@@ -176,9 +176,11 @@ def _canonicalize_teams(frame: pd.DataFrame) -> pd.DataFrame:
     result = frame.copy()
     for column in ("offense", "defense"):
         result[column] = result[column].map(
-            lambda value: aliases.get(str(value).strip(), str(value).strip())
-            if pd.notna(value)
-            else None
+            lambda value: (
+                aliases.get(str(value).strip(), str(value).strip())
+                if pd.notna(value)
+                else None
+            )
         )
     return result
 

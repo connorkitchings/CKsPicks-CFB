@@ -437,8 +437,9 @@ def build_measurement_observations(
             byplay=byplay,
             games=games[
                 games.apply(
-                    lambda row: (int(row["season"]), int(row["game_id"]))
-                    in eligible_ids,
+                    lambda row: (
+                        (int(row["season"]), int(row["game_id"])) in eligible_ids
+                    ),
                     axis=1,
                 )
             ],
@@ -561,9 +562,11 @@ def build_measurement_observations(
             how="left",
         )
         opportunities_off["ppso_valid"] = opportunities_off.apply(
-            lambda row: (int(row["season"]), int(row["game_id"]), str(row["offense"]))
-            not in true_ppso.invalid_offenses
-            and pd.notna(row["true_points"]),
+            lambda row: (
+                (int(row["season"]), int(row["game_id"]), str(row["offense"]))
+                not in true_ppso.invalid_offenses
+                and pd.notna(row["true_points"])
+            ),
             axis=1,
         )
         opportunities_off = opportunities_off[opportunities_off["ppso_valid"]]

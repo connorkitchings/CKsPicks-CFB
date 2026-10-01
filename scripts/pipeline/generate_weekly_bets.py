@@ -510,11 +510,13 @@ def run_weekly_bets(args: argparse.Namespace) -> None:
                 model_context,
                 PreparedInferenceInputs(features=feature_df),
                 bundle_predictor=(
-                    lambda bundle, features: predict_with_model_bundle_v3(
-                        bundle, features, storage=storage
+                    lambda bundle, features: (
+                        predict_with_model_bundle_v3(bundle, features, storage=storage)
+                        if bundle_version == "v3"
+                        else predict_with_model_bundle_v2(
+                            bundle, features, storage=storage
+                        )
                     )
-                    if bundle_version == "v3"
-                    else predict_with_model_bundle_v2(bundle, features, storage=storage)
                 ),
             )
             spread_preds = routed["predicted_spread"].to_numpy()

@@ -280,11 +280,11 @@ class CutoffAdjustment:
         result = []
         ordered = sorted(
             raw_observations,
-            key=lambda source: utc(
-                boundary_by_source[(source.season, source.game_id)].kickoff_utc
-            )
-            if (source.season, source.game_id) in boundary_by_source
-            else utc(source.available_utc),
+            key=lambda source: (
+                utc(boundary_by_source[(source.season, source.game_id)].kickoff_utc)
+                if (source.season, source.game_id) in boundary_by_source
+                else utc(source.available_utc)
+            ),
         )
         for source in ordered:
             boundary = boundary_by_source.get((source.season, source.game_id))

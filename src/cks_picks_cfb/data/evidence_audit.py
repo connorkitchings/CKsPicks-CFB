@@ -751,8 +751,9 @@ def attach_prediction_labels(
     labels["home_points"] = pd.to_numeric(labels["home_points"], errors="coerce")
     labels["away_points"] = pd.to_numeric(labels["away_points"], errors="coerce")
     consistent = labels.groupby("game_id", dropna=False).filter(
-        lambda group: group[["home_points", "away_points"]].drop_duplicates().shape[0]
-        == 1
+        lambda group: (
+            group[["home_points", "away_points"]].drop_duplicates().shape[0] == 1
+        )
     )
     consistent = consistent.drop_duplicates("game_id")
     consistent["actual_margin"] = consistent["home_points"] - consistent["away_points"]

@@ -99,9 +99,11 @@ def _features(family: str, rows: list[dict[str, Any]], season: int) -> pd.DataFr
     elif family == "coaching":
         if "seasons" in raw:
             raw["seasons"] = raw["seasons"].map(
-                lambda value: ast.literal_eval(value)
-                if isinstance(value, str) and value.startswith("[")
-                else value
+                lambda value: (
+                    ast.literal_eval(value)
+                    if isinstance(value, str) and value.startswith("[")
+                    else value
+                )
             )
         result = _coach_features(raw, season)
     else:
