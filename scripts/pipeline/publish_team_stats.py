@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+"""Publish pre-game team season stats and national ranks to Neon.
+
+Reads the validated Silver ``byplay``, ``drives``, ``games`` and
+``game_outcomes`` datasets for a season, builds the FBS-vs-FBS stats for games
+completed *before* ``--as-of-week`` (see ``cks_picks_cfb.data.team_stats``),
+and upserts them into ``team_season_stats``. It never touches runs or
+predictions. Always do a dry run first:
+
+    PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py \\
+        --season 2026 --as-of-week 5 --environment preview --dry-run
+
+The dry run prints the Silver column names, coverage, null counts and sample
+rows, and writes nothing. Production writes go through the restricted pipeline
+login: ``scripts/ops/with_production_pipeline_env.sh`` sets DATABASE_URL.
+Re-run for the new week whenever a week's finals are certified.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+
+import psycopg
+from dotenv import load_dotenv
+
+from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.data.team_stats import (
+    UPSERT_TEAM_STAT_SQL,
+    TeamStatsContractError,
+    build_team_season_stats,
+    to_upsert_records,
+)
+
+URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}
+
+
+def _latest_silver_ref(cur: psycopg.Cursor, dataset: str, season: int) -> DatasetRef:
+    cur.execute(
+        "SELECT dataset, version_id, schema_version, content_sha, uri "
+        "FROM catalog.dataset_versions "
+        "WHERE dataset = %s AND tier = 'silver' AND state = 'validated' "
+        "AND partitions @> %s::jsonb "
+        "ORDER BY as_of DESC, created_at DESC LIMIT 1",
+        (dataset, json.dumps({"seasons": [season]})),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise LookupError(f"No validated Silver {dataset} dataset found for {season}")
+    return DatasetRef(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
+
+
+def _fbs_teams(cur: psycopg.Cursor, season: int, teams_frame) -> tuple[set[str], str]:
+    """FBS membership: Silver ``teams.classification`` if present, else Neon games."""
+    if teams_frame is not None and {"team", "classification"} <= set(
+        teams_frame.columns
+    ):
+        fbs = teams_frame[
+            teams_frame["classification"].astype(str).str.lower() == "fbs"
+        ]
+        if not fbs.empty:
+            return set(fbs["team"].astype(str)), "silver.teams.classification"
+    cur.execute(
+        "SELECT home_team FROM games WHERE season = %s "
+        "UNION SELECT away_team FROM games WHERE season = %s",
+        (season, season),
+    )
+    return {str(r[0]) for r in cur.fetchall()}, "neon.games (fallback)"
+
+
+def main() -> int:
+    load_dotenv()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--season", type=int, default=2026)
+    parser.add_argument(
+        "--as-of-week",
+        type=int,
+        required=True,
+        help="Snapshot for week N = games completed before week N's slate",
+    )
+    parser.add_argument("--environment", choices=sorted(URL_ENV), required=True)
+    parser.add_argument("--database-url", help="Override the environment's URL")
+    parser.add_argument("--dry-run", action="store_true", help="Report; write nothing")
+    args = parser.parse_args()
+
+    url = args.database_url or os.getenv(URL_ENV[args.environment])
+    if not url:
+        print(
+            f"Set {URL_ENV[args.environment]} or pass --database-url", file=sys.stderr
+        )
+        return 2
+    storage = get_storage(environment=args.environment)
+
+    with psycopg.connect(url) as conn:
+        with conn.cursor() as cur:
+            refs = {
+                name: _latest_silver_ref(cur, name, args.season)
+                for name in ("byplay", "drives", "games", "game_outcomes")
+            }
+            try:
+                teams_ref = _latest_silver_ref(cur, "teams", args.season)
+                teams = read_dataset(storage, teams_ref)
+            except LookupError:
+                teams = None
+        frames = {name: read_dataset(storage, ref) for name, ref in refs.items()}
+        for name, frame in frames.items():
+            print(
+                f"Silver {name} {refs[name].version_id}: columns {sorted(frame.columns)}"
+            )
+        with conn.cursor() as cur:
+            fbs, fbs_source = _fbs_teams(cur, args.season, teams)
+        print(f"FBS teams: {len(fbs)} (from {fbs_source})")
+        try:
+            result = build_team_season_stats(
+                byplay=frames["byplay"],
+                drives=frames["drives"],
+                games=frames["games"],
+                outcomes=frames["game_outcomes"],
+                fbs_teams=fbs,
+                season=args.season,
+                as_of_week=args.as_of_week,
+            )
+        except TeamStatsContractError as exc:
+            print(f"Cannot build team stats: {exc}", file=sys.stderr)
+            return 3
+        print(json.dumps(result.report, indent=2, default=str))
+        frame = result.frame
+        if frame.empty:
+            print("No rows: nothing qualifies before this week.")
+            return 0
+        print("Null values by metric:")
+        print(
+            frame.groupby(["role", "metric"])["value"]
+            .apply(lambda s: int(s.isna().sum()))
+            .to_string()
+        )
+        print(frame.head(5).to_string())
+        if args.dry_run:
+            print("Dry run: nothing written.")
+            return 0
+        records = to_upsert_records(frame)
+        with conn.cursor() as cur:
+            cur.executemany(UPSERT_TEAM_STAT_SQL, records)
+        conn.commit()
+        print(f"Upserted {len(records)} team_season_stats rows ({args.environment}).")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -59,6 +59,14 @@ Venue facts live in `game_venues`, independent of prediction runs. Run once per 
 PYTHONPATH=src:. uv run python scripts/pipeline/publish_game_venues.py --season 2026 --environment preview --dry-run
 ```
 
+## Team stats (matchup pages)
+
+`team_season_stats` holds pre-game team stats and national ranks from our own play-by-play. The snapshot for week N covers FBS-vs-FBS games completed *before* week N's slate, so run it for the **upcoming** week once the prior week's finals are certified (it is idempotent). Matchup pages stay hidden until approved. Dry run first, Preview before production. See the [team stats contract](../plans/2026-10-01/10-authentic-team-stats-pipeline.md).
+
+```bash
+PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season 2026 --as-of-week 6 --environment preview --dry-run
+```
+
 ## Local Preview credentials
 
 `preview-2026` is the durable 2026 Preview branch. Its pipeline and migration
