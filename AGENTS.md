@@ -179,14 +179,16 @@ This is a **monorepo with two toolchains**:
 | Research | `scripts/research/` | Python (data-first runners and verifiers; see contract 2026-10-01/04) | — |
 | Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
-| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0018) |
+| Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0020; optional tables `game_venues`, `team_season_stats`) |
 
 **Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
+
+**Web flags (default closed in production):** `CFB_MATCHUP_ENABLED=1` opens `/matchup/[gameId]`; `CFB_ENABLE_TEST_PAGE=1` opens the `/test-picks` and `/test-results` prototypes; `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
 
 **Conventions:**
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
 - Next.js app is fully isolated in `web/` with its own `package.json` and `.gitignore`.
-- **Single source of truth:** `contracts/` holds the canonical DB schema (`schema.sql`, `schema.ts`) and team-name mapping (`teams.py`, `teams.ts`). The web app has local copies in `web/src/lib/` that must stay in sync. Run `make contracts-check` to validate sync.
+- **Single source of truth:** `contracts/` holds the canonical DB schema (`schema.sql`, `schema.ts`) and team-name mapping (`teams.py`, `teams.ts`; web logos are keyed by CFBD team id via `web/src/lib/team-logos.generated.ts`, built by `npm run logos:build`). The web app has local copies in `web/src/lib/` that must stay in sync. Run `make contracts-check` to validate sync.
 - Production scripts live in `scripts/pipeline/` and `scripts/data/`. Active data-first research and V5 stage runners live in `scripts/research/`; the old top-level `research/` exploration folder was removed on 2026-10-01 (recoverable from git history).
 
 ---
@@ -397,6 +399,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 **Future Data Leakage:**
 - ❌ Problem: Using future data in historical analysis
 - ✅ Solution: Use `load_point_in_time_data()` for strict temporal splits
+
+**Production-mode screenshots of `/test-*` pages:**
+- ❌ Problem: `next start` returns the 404 page for prototypes, so screenshots look "fine" but show nothing
+- ✅ Solution: start with `CFB_ENABLE_TEST_PAGE=1 CFB_UI_TEST_MODE=1`, and look at the image before sending it
 
 **Hardcoded Paths:**
 - ❌ Problem: Using `/Users/...` or `./data/` paths

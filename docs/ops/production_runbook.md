@@ -63,7 +63,8 @@ exact release authorization described below.
 |---|---|
 | Site | https://c-ks-picks-cfb.vercel.app (Root Directory `web/`) |
 | Publication mode | `CFB_PUBLICATION_MODE=predictions`, `CFB_PUBLICATION_SEASON=2026` (Vercel env). Week availability is owned by `web/src/lib/publication.ts` (`PUBLISHED_WEEKS`) plus explicit Neon public selections — there is no weeks variable to update; the retired `CFB_PUBLICATION_WEEKS` value is ignored |
-| Database | Neon **production branch** (separate from `preview-2026`); migrations through 0017 applied and verified 2026-09-27 (0018 is the latest in `contracts/migrations/`; confirm applied state before relying on it) |
+| Matchup pages | Closed by default. `CFB_MATCHUP_ENABLED=1` (Vercel env) opens `/matchup/[gameId]`; leave unset until the user approves and `team_season_stats` is published for the week ([weekly pipeline](weekly_pipeline.md)). The `/test-*` prototypes stay closed unless `CFB_ENABLE_TEST_PAGE=1` |
+| Database | Neon **production branch** (separate from `preview-2026`); migrations through 0017 applied and verified 2026-09-27 (0020 is the latest in `contracts/migrations/`, adding `game_venues` and `team_season_stats`; confirm applied state before relying on it) |
 | Web DB role | `cks_prod_web` — read-only LOGIN role used by Vercel (`DATABASE_URL`) |
 | Catalog | Hydrated from Preview via COPY (7,163 source captures, 85 dataset versions); repopulates `quality_results` as production audits run |
 | Object storage | R2 bucket `cks-picks-cfb-preview` — **shared with Preview** (immutable artifacts are checksummed, environment-neutral); separation is by Neon branch |

@@ -57,6 +57,8 @@ export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 # Vercel publication scope (web app)
 export CFB_PUBLICATION_MODE='predictions' # current approved release mode; all other values fail closed to market-only
 export CFB_PUBLICATION_SEASON='2026'
+# Optional web flags (default closed): CFB_MATCHUP_ENABLED=1 opens /matchup/[id];
+# CFB_ENABLE_TEST_PAGE=1 opens the /test-picks and /test-results prototypes in a production build.
 # Week availability needs no variable: web/src/lib/publication.ts owns the
 # range and explicit Neon public selections reveal each week. The retired
 # CFB_PUBLICATION_WEEKS value is ignored — do not set it.

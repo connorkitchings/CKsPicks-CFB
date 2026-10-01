@@ -28,13 +28,29 @@ Use the explicit Preview migration command in the
 `make contracts-check`; `contracts/schema.ts` is canonical and the web copy
 must remain synchronized.
 
+## Routes and feature flags
+
+| Route | Status |
+|---|---|
+| `/`, `/results`, `/ratings`, `/performance`, `/teams/[team]` | Public |
+| `/matchup/[gameId]` | Closed (404) in production unless `CFB_MATCHUP_ENABLED=1`; always `noindex`; open in local dev. No page links to it yet. Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
+| `/test-picks`, `/test-results` | Design prototypes of the next Picks and Results pages. 404 in a production build unless `CFB_ENABLE_TEST_PAGE=1`; not linked from the site. |
+
+Fixture mode: `CFB_UI_TEST_MODE=1` serves sample data (no database) for the
+prototypes, the matchup page and the Playwright suite. Optional tables
+(`game_venues`, `team_season_stats`, `prediction_market_selections`) are
+checked with `to_regclass`, so the app works before their migrations are
+applied and simply shows no location, stats or best-line source.
+
 ## Verification
 
 ```bash
 npm run lint
 npm run typecheck
-npm run test:publication
+npm run test:publication   # unit tests (publication boundary, picks helpers, team stats, logos, gates)
+npm run test:logos         # logo build script helpers
 npm run build
+CI=1 CFB_UI_TEST_MODE=1 npx playwright test   # e2e in fixture mode (npm run test:ui)
 ```
 
 ## Team logos
@@ -50,8 +66,8 @@ npm run logos:build                # download, resize (96/256 px WebP, light + d
 Output: `public/logos/v2/{sm,lg}/{light,dark}/<id>.webp`, `public/logos/v2/manifest.json`
 (source URL, date and SHA-256 per file) and `src/lib/team-logos.generated.ts`
 (school name to id). Commit all three. `TeamLogo` renders the light/dark pair,
-an initials tile for unknown teams, and the legacy 32 px PNG only until the
-generated map is populated. Contract: `docs/plans/2026-10-01/07-high-quality-team-logos.md`.
+an initials tile for unknown teams. Alternate spellings are mapped to the CFBD
+name in `src/lib/team-logos.ts`. The Python leaderboards read the same manifest. Contract: `docs/plans/2026-10-01/07-high-quality-team-logos.md`.
 
 See the [weekly pipeline](../docs/ops/weekly_pipeline.md) and
 [production runbook](../docs/ops/production_runbook.md) for publish, freeze,

@@ -61,11 +61,11 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Implemented 2026-09-28; six week tabs live and verified |
 | [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | Implemented (2026-09-30); Week 5 `p2` frozen |
 | [Performance dashboard](2026-10-01/01-performance-dashboard-enhancements.md) | Interactive performance page (units, graded game log) | Implemented |
-| [Authentic team stats pipeline](2026-10-01/10-authentic-team-stats-pipeline.md) | Play-by-play team stats in Neon for the (hidden) matchup page; supersedes the former 02 draft | Approved |
+| [Authentic team stats pipeline](2026-10-01/10-authentic-team-stats-pipeline.md) | Play-by-play team stats in Neon for the (hidden) matchup page; supersedes the former 02 draft | Approved (code on `dev`; Phase 5 data steps are the user's) |
 | [Dead-code prune](2026-10-01/05-dead-code-prune.md) | Remove modules, configs, web leftovers and `research/` with no references | Implemented |
 | [Docs cleanup and archive](2026-10-01/06-docs-cleanup-and-archive.md) | Close out stale contracts, archive August logs, delete legacy files, fix links | Implemented |
 | [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data steps run by the user) |
-| [High-quality team logos](2026-10-01/07-high-quality-team-logos.md) | Replace the 32 px logos with self-hosted, id-keyed, theme-aware WebP | Approved (runs on the user's machine) |
+| [High-quality team logos](2026-10-01/07-high-quality-team-logos.md) | Replace the 32 px logos with self-hosted, id-keyed, theme-aware WebP | Implemented 2026-10-01 (fetched on the user's machine; legacy files removed) |
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
@@ -74,7 +74,7 @@ The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed 
 
 The [data-first roadmap](../planning/data-first-football-forecasting-roadmap.md) retains the broader research context. The [production runbook](../ops/production_runbook.md) retains V4 rollback procedures; the [V5 weekly operator](../ops/v5_weekly_operator.md) governs current V5 stages and exact release gates. The [local artifact archive](2026-09-27/03-archive-unique-local-artifacts.md) remains In Progress while Preview R2 lifecycle proof is unavailable; all 11 backups were byte-verified and no local candidate was pruned.
 
-**Numbering notes:** `2026-10-01/` has two `02-` files (the matchup-stats draft and the web-architecture plan) and `2026-09-30/` has no `04`; neither was renamed, to keep links stable. On 2026-10-01 twenty contracts from August–September that were still `In Progress`, `Approved` or `Draft` were closed out; each file's status line records its prior status.
+**Numbering notes:** `2026-10-01/` has no `09` (the former `02` matchup-stats draft became `10`) and `2026-09-30/` has no `04`; neither was renamed, to keep links stable. On 2026-10-01 twenty contracts from August–September that were still `In Progress`, `Approved` or `Draft` were closed out; each file's status line records its prior status.
 
 ## When to use a contract
 

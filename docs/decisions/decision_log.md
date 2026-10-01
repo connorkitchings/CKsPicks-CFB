@@ -1,5 +1,17 @@
 # Decision Log
 
+## 2026-10-01: Success Metric, Self-Hosted Logos, Pre-Game Team Stats
+
+- **Context:** First full repo review; design work on Picks/Results and matchup pages.
+- **Decisions:**
+  - **Success metric:** prospective ATS win % vs the 52.4% break-even at -110, reported separately for spreads and totals. MAE, calibration and promotion gates are diagnostics.
+  - **Branches:** `main` = production, `dev` = working; no other long-lived branches.
+  - **Logos:** self-hosted, id-keyed WebP (96/256 px, light/dark) built from the CFBD logo URLs, with a manifest of source URLs and SHA-256; initials tile for unknown teams; footer trademark line. The old 32 px set was removed.
+  - **Location:** show the actual game venue (city, state, neutral-site note) from CFBD via a separate `game_venues` table.
+  - **Matchup team stats:** computed from our own play-by-play (garbage time excluded, FBS-vs-FBS only, raw not opponent-adjusted), stored as a pre-game snapshot per week (`as_of_week N` = games before week N's slate), ranks stored by the publisher, nullable metrics with sample sizes. Matchup pages stay closed in production until explicitly enabled.
+  - **Best line:** the displayed line is the most generous sportsbook line for the model's side; its source is shown on Picks.
+- **Source:** [logos](../plans/2026-10-01/07-high-quality-team-logos.md), [venues](../plans/2026-10-01/08-game-venue-location.md), [team stats](../plans/2026-10-01/10-authentic-team-stats-pipeline.md), [status](../status.md).
+
 ## 2026-09-13: V5 Ratings Contracts and Bridge-First Methodology Amendment
 
 - **Context:** Repair v2 is verified, Phase 3 v2 certified, and the September 11

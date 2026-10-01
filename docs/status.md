@@ -51,6 +51,10 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 `main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. No other long-lived branches. Details: `AGENTS.md` (Branching).
 
+## Release state
+
+`dev` is ahead of `main`: the Picks/Results prototypes (`/test-picks`, `/test-results`), self-hosted logos, game venues UI, the team-stats pipeline and the gated matchup page are on `dev` only. `main` is unchanged production. Merge `dev` into `main` to release; the matchup page stays closed in production until `CFB_MATCHUP_ENABLED=1`.
+
 ## In flight
 
 - Week 5: wait for certified finals, then score

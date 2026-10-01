@@ -9,9 +9,17 @@ Single source of truth for shared contracts between the Python pipeline and the 
 | `schema.sql` | Canonical database schema (Postgres) |
 | `migrations/` | Sole append-only upgrade history for existing databases |
 | `schema.ts` | Drizzle ORM types (must match `schema.sql`) |
-| `teams.py` | Python `TEAM_LOGO_MAP` for team name normalization |
+| `teams.py` | Python `TEAM_LOGO_MAP` for team name normalization (no longer used for web logos, which are keyed by CFBD team id; see `web/README.md`) |
 | `teams.ts` | TypeScript `TEAM_LOGO_MAP` (must match `teams.py`) |
 | `validation.py` | Cross-validation script to ensure all copies stay in sync |
+
+## Recent additions
+
+| Migration | Table | Purpose |
+|---|---|---|
+| `0019_game_venues.sql` | `game_venues` | Venue, city and state per game |
+| `0020_team_season_stats.sql` | `team_season_stats` | Pre-game team stats and national ranks (long format) |
+| `0016`/`0017` | `prediction_market_selections` | Best-quote selection per lean (source book) |
 
 ## Usage
 
