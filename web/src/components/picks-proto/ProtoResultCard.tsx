@@ -3,7 +3,7 @@ import type { PredictionGame } from "@/lib/queries";
 import { leanFor, resultFor } from "@/lib/picks-proto";
 import { dayShort } from "./format";
 import { ResultLeanRow } from "./ResultLeanRow";
-import { TeamLine } from "./TeamLine";
+import { TeamPair } from "./TeamLine";
 
 /**
  * Results card: final score first, then each lean with its graded outcome.
@@ -47,10 +47,7 @@ export function ProtoResultCard({
             Final
           </span>
         </div>
-        <div className="space-y-1.5">
-          <TeamLine name={game.awayTeam} record={game.awayRecord} rank={ranks[game.awayTeam]} score={game.awayPoints} leaning={awayWon} />
-          <TeamLine name={game.homeTeam} record={game.homeRecord} rank={ranks[game.homeTeam]} home score={game.homePoints} leaning={homeWon} />
-        </div>
+        <TeamPair game={game} ranks={ranks} winner={awayWon ? "away" : homeWon ? "home" : null} />
       </div>
       <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">
         {anyLean ? (

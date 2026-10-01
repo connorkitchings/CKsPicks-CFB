@@ -4,7 +4,7 @@ import { marketSpreadView, modelSpreadView, spreadLabel } from "@/lib/betting-fo
 import { isFinal, leanFor } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
 import { LeanPill } from "./LeanPill";
-import { TeamLine } from "./TeamLine";
+import { TeamPair } from "./TeamLine";
 
 /**
  * Prototype game card: who is playing, then each lean with its direction and
@@ -48,10 +48,7 @@ export function ProtoGameCard({
             </span>
           )}
         </div>
-        <div className="space-y-1.5">
-          <TeamLine name={game.awayTeam} record={game.awayRecord} rank={ranks[game.awayTeam]} score={game.awayPoints} leaning={false} />
-          <TeamLine name={game.homeTeam} record={game.homeRecord} rank={ranks[game.homeTeam]} home score={game.homePoints} leaning={false} />
-        </div>
+        <TeamPair game={game} ranks={ranks} />
       </div>
 
       <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">

@@ -2,7 +2,7 @@ import type { PredictionGame } from "@/lib/queries";
 import { isFinal, leanFor } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
 import { LeanPill } from "./LeanPill";
-import { TeamLine } from "./TeamLine";
+import { TeamPair } from "./TeamLine";
 
 /** Dense one-line-per-game layout for scanning a full slate on desktop. */
 export function ProtoGameRow({
@@ -25,10 +25,7 @@ export function ProtoGameRow({
         {isFinal(game) && <span className="ml-1.5 text-[10px] uppercase text-ink-faint">Final</span>}
         {game.highConfidence && <span className="ml-1.5 text-accent" title="High confidence lean">★</span>}
       </div>
-      <div className="space-y-1">
-        <TeamLine name={game.awayTeam} record={game.awayRecord} rank={ranks[game.awayTeam]} score={game.awayPoints} leaning={false} size={20} />
-        <TeamLine name={game.homeTeam} record={game.homeRecord} rank={ranks[game.homeTeam]} home score={game.homePoints} leaning={false} size={20} />
-      </div>
+      <TeamPair game={game} ranks={ranks} size={20} />
       <div>{spread ? <LeanPill lean={spread} compact /> : <p className="text-xs text-ink-faint">No spread lean</p>}</div>
       <div>{total ? <LeanPill lean={total} compact /> : <p className="text-xs text-ink-faint">No total lean</p>}</div>
     </li>

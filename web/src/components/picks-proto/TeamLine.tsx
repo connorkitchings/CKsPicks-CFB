@@ -1,28 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
 import clsx from "clsx";
+import type { PredictionGame } from "@/lib/queries";
 import { logoUrl } from "@/lib/teams";
 
-export function TeamLine({
+function TeamLine({
   name,
   record,
   rank,
-  home = false,
   score,
-  leaning,
-  size = 28,
+  highlight,
+  size,
+  side,
 }: {
   name: string;
   record: string | null;
   rank?: number;
-  home?: boolean;
   score: number | null;
-  /** True when the spread lean is on this team. */
-  leaning: boolean;
-  size?: number;
+  /** Emphasize the name (e.g. the winner on Results). */
+  highlight: boolean;
+  size: number;
+  side: "away" | "home";
 }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <div className="flex items-center gap-2.5" data-side={side}>
       <Image
         src={logoUrl(name)}
         alt=""
@@ -36,7 +37,7 @@ export function TeamLine({
         href={`/teams/${encodeURIComponent(name)}`}
         className={clsx(
           "min-w-0 truncate text-sm hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent",
-          leaning ? "font-semibold text-accent-ink" : "text-ink",
+          highlight ? "font-semibold text-accent-ink" : "text-ink",
         )}
       >
         {name}
@@ -50,14 +51,52 @@ export function TeamLine({
           #{rank}
         </span>
       )}
-      {home && (
-        <span className="text-[10px] uppercase tracking-wide text-ink-faint">home</span>
-      )}
       {score !== null && (
         <span className="ml-auto font-mono text-base font-semibold tabular-nums text-ink">
           {score}
         </span>
       )}
+    </div>
+  );
+}
+
+/**
+ * The two teams of a game: away on top, home on the bottom. Every card and row
+ * layout uses this one component so the order cannot drift. There is no "home"
+ * tag; the bottom team is the home team.
+ */
+export function TeamPair({
+  game,
+  ranks,
+  size = 28,
+  winner = null,
+}: {
+  game: PredictionGame;
+  ranks: Record<string, number>;
+  size?: number;
+  /** Highlight the winning side's name (Results). */
+  winner?: "away" | "home" | null;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <TeamLine
+        name={game.awayTeam}
+        record={game.awayRecord}
+        rank={ranks[game.awayTeam]}
+        score={game.awayPoints}
+        highlight={winner === "away"}
+        size={size}
+        side="away"
+      />
+      <TeamLine
+        name={game.homeTeam}
+        record={game.homeRecord}
+        rank={ranks[game.homeTeam]}
+        score={game.homePoints}
+        highlight={winner === "home"}
+        size={size}
+        side="home"
+      />
     </div>
   );
 }

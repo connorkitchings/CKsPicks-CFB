@@ -73,6 +73,35 @@ test.describe("picks prototype (/test-picks)", () => {
   });
 });
 
+for (const path of ["/test-picks", "/test-results"]) {
+  test(`${path}: no home tag, and every game lists away on top and home on the bottom`, async ({ page }) => {
+    await page.goto(path);
+
+    // The "home" tag is gone; the bottom team is the home team.
+    await expect(page.getByText("home", { exact: true })).toHaveCount(0);
+
+    for (const view of ["grid", "list"]) {
+      await page.getByRole("button", { name: view, exact: true }).click();
+      const pairs = await page.locator("li[id^='game-']").evaluateAll((cards) =>
+        cards.map((card) => {
+          const sides = [...card.querySelectorAll("[data-side]")];
+          return {
+            order: sides.map((el) => el.getAttribute("data-side")),
+            awayAboveHome:
+              sides.length === 2 &&
+              sides[0].getBoundingClientRect().top < sides[1].getBoundingClientRect().top,
+          };
+        }),
+      );
+      expect(pairs.length).toBeGreaterThan(0);
+      for (const pair of pairs) {
+        expect(pair.order).toEqual(["away", "home"]);
+        expect(pair.awayAboveHome).toBe(true);
+      }
+    }
+  });
+}
+
 test("footer carries the team-logo trademark attribution", async ({ page }) => {
   for (const path of ["/test-picks", "/test-results", "/"]) {
     await page.goto(path);
