@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment } from "react";
 import { clsx } from "clsx";
 import { logoUrl } from "@/lib/teams";
 import { BetTable } from "./BetTable";
+import { BetComparisonTable } from "./BetComparisonTable";
 import type { Game } from "@/lib/queries";
 
 function formatKickoff(startDate: Date): string {
@@ -20,48 +20,12 @@ function formatKickoff(startDate: Date): string {
 import {
   modelSpreadView,
   marketSpreadView,
-  signedSpread,
   spreadBetLabel,
   spreadEdge,
   spreadLabel,
   totalBetLabel,
   totalEdge,
 } from "@/lib/betting-format";
-
-/** Editorial cutoffs for edge coloring (points): below LOW is faint,
- * LOW–HIGH is medium, above HIGH is strong. Not derived from a fitted
- * threshold — retune against observed spread/total MAE if they change. */
-const SPREAD_EDGE_LOW = 3;
-const SPREAD_EDGE_HIGH = 8;
-const TOTAL_EDGE_LOW = 2;
-const TOTAL_EDGE_HIGH = 7;
-
-/** Color reflects the size of the disagreement; the signed number preserves direction. */
-function edgeTone(edge: number, target: "spread" | "total"): string {
-  const magnitude = Math.abs(edge);
-  const [lowThreshold, highThreshold] =
-    target === "spread"
-      ? [SPREAD_EDGE_LOW, SPREAD_EDGE_HIGH]
-      : [TOTAL_EDGE_LOW, TOTAL_EDGE_HIGH];
-  if (magnitude < lowThreshold) return "edge-low";
-  if (magnitude <= highThreshold) return "edge-medium";
-  return "edge-high";
-}
-
-/** Quiet parenthetical in the Model cell: how far model sits from market. */
-function EdgeNote({ edge, target }: { edge: number | null; target: "spread" | "total" }) {
-  if (edge === null) return null;
-  const note = `(${signedSpread(edge)})`;
-  return (
-    <span
-      className={clsx("ml-1 font-medium", edgeTone(edge, target))}
-      title="Model minus market"
-      aria-label={`Model minus market ${note}`}
-    >
-      {note}
-    </span>
-  );
-}
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
   if (result === null) {
@@ -88,9 +52,15 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
  * Model Bet / Bet Result; market mode (fail-closed, no model output) shows
  * Market / Bet Result only.
  */
-export function GameRow({ game }: { game: Game }) {
+export function GameRow({
+  game,
+  ranks,
+}: {
+  game: Game;
+  ranks?: Map<string, number>;
+}) {
   if (game.publicationMode === "market") {
-    return <MarketGameRow game={game} />;
+    return <MarketGameRow game={game} ranks={ranks} />;
   }
   const hasAnyLine =
     game.homeTeamSpreadLine !== null || game.totalLine !== null;
@@ -112,6 +82,9 @@ export function GameRow({ game }: { game: Game }) {
   );
   const totalBet = totalBetLabel(game.totalLean, game.totalLine);
 
+  const awayRank = ranks?.get(game.awayTeam) ?? null;
+  const homeRank = ranks?.get(game.homeTeam) ?? null;
+
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
       {/* Meta row: kickoff + high-confidence marker */}
@@ -128,13 +101,14 @@ export function GameRow({ game }: { game: Game }) {
         )}
       </div>
 
-      {/* Box score: logos, teams, finals */}
+      {/* Box score: logos, teams, finals, and power ranks */}
       <div className="space-y-1.5">
         <TeamLine
           name={game.awayTeam}
           record={game.awayRecord}
           score={game.awayPoints}
           highlighted={game.spreadLean === "away"}
+          rank={awayRank}
         />
         <TeamLine
           name={game.homeTeam}
@@ -142,109 +116,43 @@ export function GameRow({ game }: { game: Game }) {
           home
           score={game.homePoints}
           highlighted={game.spreadLean === "home"}
+          rank={homeRank}
         />
       </div>
 
-      {/* Desktop keeps the full comparison table; phone cards use three value columns. */}
-      <div className="mt-3 hidden sm:block">
-        <BetTable
-          ariaLabel="Market and model comparison"
-          tableClassName="w-full tabular-nums text-xs"
-          headerCellClassName="pl-2 text-right"
-          bodyCellClassName={[
-            "py-1.5 pl-2 text-right font-mono tabular-nums",
-            "py-1.5 pl-2 text-right font-mono tabular-nums",
-            "py-1.5 pl-2 text-right font-mono tabular-nums",
-            "py-1.5 pl-2 text-right",
-          ]}
-          columns={[
-            { header: "Market" },
-            { header: "Model" },
-            { header: "Model Bet" },
-            { header: "Bet Result" },
-          ]}
-          rows={[
-            {
-              label: "Spread",
-              cells: [
-                spreadLabel(marketSpread),
-                <Fragment key="model">
-                  {spreadLabel(modelSpread)}
-                  <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
-                </Fragment>,
-                spreadBet ? <span key="bet" className="font-medium text-accent-ink">{spreadBet}</span> : <span key="bet" className="text-ink-faint">No lean</span>,
-                <ResultCell key="result" result={game.spreadResult} />,
-              ],
-            },
-            {
-              label: "Total",
-              cells: [
-                game.totalLine === null ? "—" : game.totalLine.toFixed(1),
-                <Fragment key="model">
-                  {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-                  <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
-                </Fragment>,
-                totalBet ? <span key="bet" className="font-medium text-accent-ink">{totalBet}</span> : <span key="bet" className="text-ink-faint">No lean</span>,
-                <ResultCell key="result" result={game.totalResult} />,
-              ],
-            },
-          ]}
-        />
-      </div>
-      <div className="mt-3 sm:hidden">
-        <BetTable
-          ariaLabel="Market and model comparison"
-          tableClassName="w-full table-fixed tabular-nums text-[11px]"
-          rowHeaderWidthClass="w-[16%] text-left"
-          headerCellClassName="pl-2 text-right"
-          bodyCellClassName={[
-            "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
-            "py-1.5 pl-2 text-right font-mono tabular-nums text-ink break-words",
-            "break-words py-1.5 pl-2 text-right",
-          ]}
-          columns={[
-            { header: "Market", widthClass: "w-[28%]" },
-            { header: "Model", widthClass: "w-[28%]" },
-            { header: "Bet", widthClass: "w-[28%]" },
-          ]}
-          rows={[
-            {
-              label: "Spread",
-              cells: [
-                spreadLabel(marketSpread),
-                <Fragment key="model">
-                  {spreadLabel(modelSpread)}
-                  <EdgeNote edge={spreadEdge(modelSpread, marketSpread)} target="spread" />
-                </Fragment>,
-                <Fragment key="bet">
-                  {spreadBet ? <span className="font-medium text-accent-ink">{spreadBet}</span> : <span className="text-ink-faint">No lean</span>}
-                  {game.spreadResult && <div className="mt-1"><ResultCell result={game.spreadResult} /></div>}
-                </Fragment>,
-              ],
-            },
-            {
-              label: "Total",
-              cells: [
-                game.totalLine === null ? "—" : game.totalLine.toFixed(1),
-                <Fragment key="model">
-                  {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-                  <EdgeNote edge={totalEdge(game.predictedTotal, game.totalLine)} target="total" />
-                </Fragment>,
-                <Fragment key="bet">
-                  {totalBet ? <span className="font-medium text-accent-ink">{totalBet}</span> : <span className="text-ink-faint">No lean</span>}
-                  {game.totalResult && <div className="mt-1"><ResultCell result={game.totalResult} /></div>}
-                </Fragment>,
-              ],
-            },
-          ]}
-        />
-      </div>
+      {/* Responsive Bet Comparison Table */}
+      <BetComparisonTable
+        marketSpread={spreadLabel(marketSpread)}
+        modelSpread={spreadLabel(modelSpread)}
+        spreadEdge={spreadEdge(modelSpread, marketSpread)}
+        spreadBet={spreadBet}
+        spreadResult={game.spreadResult}
+        totalLine={game.totalLine}
+        predictedTotal={game.predictedTotal}
+        totalEdge={totalEdge(game.predictedTotal, game.totalLine)}
+        totalBet={totalBet}
+        totalResult={game.totalResult}
+      />
 
       {!hasAnyLine && (
         <p className="mt-2 text-xs text-ink-faint">
           No market line — model prediction shown, no lean.
         </p>
       )}
+
+      {/* Matchup Deep Dive Slot (Phase 2 extension point) */}
+      <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between text-xs">
+        <span className="text-[11px] text-ink-faint font-mono">
+          {game.systemName ? game.systemName : "Blitzkrieg V5"}
+        </span>
+        <Link
+          href={`/teams/${encodeURIComponent(game.homeTeam)}`}
+          className="text-[11px] font-medium text-ink-muted hover:text-accent-ink hover:underline transition-colors flex items-center gap-1"
+          title={`View ${game.homeTeam} team ratings`}
+        >
+          Matchup Profile →
+        </Link>
+      </div>
     </li>
   );
 }
@@ -252,8 +160,10 @@ export function GameRow({ game }: { game: Game }) {
 /** Market-mode card: same shell; the table omits model columns (fail-closed). */
 function MarketGameRow({
   game,
+  ranks,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
+  ranks?: Map<string, number>;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -261,6 +171,9 @@ function MarketGameRow({
     game.awayTeam,
     game.homeTeamSpreadLine,
   );
+  const awayRank = ranks?.get(game.awayTeam) ?? null;
+  const homeRank = ranks?.get(game.homeTeam) ?? null;
+
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
@@ -277,6 +190,7 @@ function MarketGameRow({
           record={game.awayRecord}
           score={game.awayPoints}
           highlighted={false}
+          rank={awayRank}
         />
         <TeamLine
           name={game.homeTeam}
@@ -284,6 +198,7 @@ function MarketGameRow({
           home
           score={game.homePoints}
           highlighted={false}
+          rank={homeRank}
         />
       </div>
       <BetTable
@@ -324,6 +239,7 @@ function TeamLine({
   home = false,
   score,
   highlighted,
+  rank = null,
 }: {
   name: string;
   /** Season W-L as of kickoff (e.g. "1-0"); null hides the marker. */
@@ -331,7 +247,10 @@ function TeamLine({
   home?: boolean;
   score: number | null;
   highlighted: boolean;
+  rank?: number | null;
 }) {
+  const isTop25 = rank !== null && rank >= 1 && rank <= 25;
+
   return (
     <div className="flex items-center gap-2.5">
       <Image
@@ -342,6 +261,14 @@ function TeamLine({
         className="h-7 w-7 shrink-0 object-contain"
         unoptimized
       />
+      {isTop25 && (
+        <span
+          className="text-xs font-bold text-accent-ink shrink-0"
+          aria-label={`Rank ${rank}`}
+        >
+          #{rank}
+        </span>
+      )}
       <Link
         href={`/teams/${encodeURIComponent(name)}`}
         className={clsx(

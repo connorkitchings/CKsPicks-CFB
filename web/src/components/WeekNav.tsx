@@ -15,10 +15,12 @@ export function WeekNav({
   season,
   week,
   weeks,
+  basePath = "/",
 }: {
   season: number;
   week: number;
   weeks: number[];
+  basePath?: string;
 }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -34,7 +36,7 @@ export function WeekNav({
     const q = new URLSearchParams(params.toString());
     q.set("season", String(season));
     q.set("week", String(w));
-    return `/?${q.toString()}`;
+    return `${basePath}?${q.toString()}`;
   }
 
   function onSelect(e: React.ChangeEvent<HTMLSelectElement>) {

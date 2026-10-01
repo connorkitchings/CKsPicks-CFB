@@ -7,7 +7,7 @@ export function SeasonSelector({
   allowedSeasons,
 }: {
   season: number;
-  allowedSeasons: number[];
+  allowedSeasons: readonly number[];
 }) {
   const router = useRouter();
   const params = useSearchParams();

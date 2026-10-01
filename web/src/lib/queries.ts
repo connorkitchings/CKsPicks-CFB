@@ -177,6 +177,48 @@ export async function getAvailableWeeks(season: number): Promise<number[]> {
   return rows.filter(isSelectableRun).map((row) => row.week);
 }
 
+/** Distinct weeks with completed/scored games for a season, ascending. */
+export async function getScoredWeeks(season: number): Promise<number[]> {
+  if (process.env.CFB_UI_TEST_MODE === "1") {
+    return [0, 1, 2];
+  }
+  const rows = await db.select({
+    week: schema.siteWeekSelections.week,
+    modelId: schema.predictionRuns.modelId,
+    state: schema.predictionRuns.state,
+    evidenceClass: schema.predictionRuns.evidenceClass,
+  })
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
+    .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      eq(schema.predictionRuns.state, "scored"),
+    ))
+    .orderBy(asc(schema.siteWeekSelections.week));
+  return rows.filter(isSelectableRun).map((row) => row.week);
+}
+
+/** Distinct upcoming/unscored weeks with published forecasts for a season, ascending. */
+export async function getUpcomingWeeks(season: number): Promise<number[]> {
+  if (process.env.CFB_UI_TEST_MODE === "1") {
+    return [0];
+  }
+  const rows = await db.select({
+    week: schema.siteWeekSelections.week,
+    modelId: schema.predictionRuns.modelId,
+    state: schema.predictionRuns.state,
+    evidenceClass: schema.predictionRuns.evidenceClass,
+  })
+    .from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
+    .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      inArray(schema.predictionRuns.state, ["published", "frozen"]),
+    ))
+    .orderBy(asc(schema.siteWeekSelections.week));
+  return rows.filter(isSelectableRun).map((row) => row.week);
+}
+
 type CompletedGameRow = {
   startDate: Date;
   homeTeam: string;

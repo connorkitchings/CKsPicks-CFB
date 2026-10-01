@@ -68,6 +68,18 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
 });
 
 /**
+ * Cached map of team name -> rank (1..134) based on current certified ratings.
+ */
+export const getTeamRankMap = cache(async (season: number): Promise<Map<string, number>> => {
+  const ratings = await getCurrentRatings(season);
+  const map = new Map<string, number>();
+  ratings.forEach((r, idx) => {
+    map.set(r.team, idx + 1);
+  });
+  return map;
+});
+
+/**
  * Ratings timeline derived from the data, not from hardcoded weeks. Every
  * frozen `current`-class generation is one entry addressable by its exact
  * evidence cutoff; the newest entry is the active model state. New weekly
@@ -633,12 +645,6 @@ export const getV5PerformanceDetail = cache(async (
   const typed = rows as DetailRow[];
   const summary = summarizeDetail(typed, "all");
 
-  const weeks = Array.from(new Set(typed.map((r) => r.week))).sort((a, b) => a - b);
-  const byWeek: Record<number, PerformanceSummary> = {};
-  for (const w of weeks) {
-    byWeek[w] = summarizeDetail(typed.filter((r) => r.week === w), "all");
-  }
-
   const gradedGames: GradedGamePick[] = typed
     .filter((r) => r.spreadResult !== null || r.totalResult !== null)
     .map((r) => ({
@@ -664,6 +670,12 @@ export const getV5PerformanceDetail = cache(async (
       highConfidence: r.highConfidence,
       evidenceClass: r.evidenceClass,
     }));
+
+  const weeks = Array.from(new Set(gradedGames.map((r) => r.week))).sort((a, b) => a - b);
+  const byWeek: Record<number, PerformanceSummary> = {};
+  for (const w of weeks) {
+    byWeek[w] = summarizeDetail(typed.filter((r) => r.week === w), "all");
+  }
 
   return {
     summary,

@@ -1,17 +1,16 @@
+import { redirect } from "next/navigation";
 import {
   getCurrentWeek,
   getGamesForWeek,
   getMarketGamesForWeek,
   getAvailableWeeks,
+  getScoredWeeks,
   getRunForWeek,
   type Game,
 } from "@/lib/queries";
-import { getV5Performance, type Performance } from "@/lib/v5";
+import { getV5Performance, getTeamRankMap, type Performance } from "@/lib/v5";
 import { selectsV5 } from "@/lib/run-selection";
-import { Header, Footer } from "@/components/Header";
-import { V5PerformanceBanner } from "@/components/V5PerformanceBanner";
-import { WeekNav } from "@/components/WeekNav";
-import { GamesList } from "@/components/GamesList";
+import { WeeklySlateView } from "@/components/WeeklySlateView";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
@@ -22,7 +21,7 @@ type SearchParams = Promise<{ season?: string; week?: string; mode?: string; sor
 
 /**
  * Resolve the target season and week from URL params and publication scope.
- * A valid requested week remains the target even when it has no V5 selection.
+ * Scored historical weeks are automatically redirected to /results.
  */
 async function resolveTarget(
   searchParams: SearchParams,
@@ -60,11 +59,10 @@ async function resolveTarget(
   const requestedSeason = params.season ? Number(params.season) : publicationScope.season;
   const season = isAllowedSeason(requestedSeason) ? requestedSeason : publicationScope.season;
 
-  const allAvailableWeeks = await getAvailableWeeks(season);
-  const isHistoricalSeason = season !== publicationScope.season;
-  const availableWeeks = isHistoricalSeason
-    ? allAvailableWeeks
-    : allAvailableWeeks.filter((week) => publicationScope.weeks.includes(week));
+  const [allAvailableWeeks, scoredWeeks] = await Promise.all([
+    getAvailableWeeks(season),
+    getScoredWeeks(season),
+  ]);
 
   const parsedWeek = params.week === undefined ? null : Number(params.week);
   const requestedWeek = parsedWeek !== null
@@ -74,10 +72,19 @@ async function resolveTarget(
     ? parsedWeek
     : null;
 
+  // Scored historical weeks belong on the /results archive
+  if (requestedWeek !== null && scoredWeeks.includes(requestedWeek)) {
+    redirect(`/results?week=${requestedWeek}`);
+  }
+
+  // Picks targets the upcoming / unscored slate
+  const upcomingWeeks = allAvailableWeeks.filter((w) => !scoredWeeks.includes(w));
+  const availableWeeks = upcomingWeeks.length > 0 ? upcomingWeeks : allAvailableWeeks;
+
   const week = requestedWeek
     ?? (activeWeek !== null && availableWeeks.includes(activeWeek) ? activeWeek : null)
     ?? availableWeeks[availableWeeks.length - 1]
-    ?? (isHistoricalSeason ? allAvailableWeeks[0] : publicationScope.weeks[0]);
+    ?? (season !== publicationScope.season ? allAvailableWeeks[0] : publicationScope.weeks[0]);
 
   return {
     season: season ?? 0,
@@ -95,21 +102,21 @@ export default async function Home({
   searchParams: SearchParams;
 }) {
   const params = await searchParams;
-  // Test fixtures are opt-in at process start; production ignores this query
-  // parameter and remains governed exclusively by server environment values.
-  // In test mode an explicit param must win in both directions so market-mode
-  // checks stay deterministic even when a local env file opts into predictions.
   const testModeParam = params.mode === "predictions" || params.mode === "market"
     ? params.mode
     : null;
   const publicationMode = process.env.CFB_UI_TEST_MODE === "1" && testModeParam
     ? testModeParam
     : publicationScope.mode;
+
   let targetError = false;
   let target: Awaited<ReturnType<typeof resolveTarget>>;
   try {
     target = await resolveTarget(Promise.resolve(params));
   } catch (error) {
+    if ((error as { digest?: string })?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
     console.error("Weekly target query failed", error);
     targetError = true;
     const requested = Number(params.week);
@@ -124,6 +131,7 @@ export default async function Home({
 
   let games: Game[] = [];
   let performance: Performance[] = [];
+  let ranks: Map<string, number> | undefined;
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
   let retrospectiveRepair = false;
@@ -139,17 +147,15 @@ export default async function Home({
     try {
       if (season > 0 && week >= 0) {
         if (publicationMode === "predictions") {
-          // The V5 performance banner belongs to weeks whose explicit
-          // selection is V5; a legacy V4 fallback week renders its own
-          // record without it.
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
-          [games, performance] = await Promise.all([
+          [games, performance, ranks] = await Promise.all([
             getGamesForWeek(season, week),
             selectsV5(selectedRun?.modelId)
               ? getV5Performance(season, week)
               : Promise.resolve([]),
+            getTeamRankMap(season).catch(() => new Map<string, number>()),
           ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
@@ -164,87 +170,33 @@ export default async function Home({
     }
   }
 
-  // Most-recent updatedAt among the games in view, falling back to the
-  // current_week row's updatedAt when the view is empty (e.g., future week).
   const gamesUpdatedAt = games
     .map((g) => g.updatedAt.getTime())
     .reduce<number>((max, t) => (t > max ? t : max), 0);
-  const updatedAt =
-    gamesUpdatedAt > 0
-      ? new Date(gamesUpdatedAt)
-      : currentUpdatedAt;
+  const updatedAt = gamesUpdatedAt > 0 ? new Date(gamesUpdatedAt) : currentUpdatedAt;
+
+  const initialSort =
+    params.sort === "spreadEdge" || params.sort === "totalEdge"
+      ? params.sort
+      : "kickoff";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-surface-card focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-ink focus:shadow-lg"
-      >
-        Skip to main content
-      </a>
-      <Header
-        season={season > 0 ? season : null}
-        systemName={systemName}
-        updatedAt={updatedAt}
-        publicationMode={publicationMode}
-        allowedSeasons={publicationScope.allowedSeasons}
-      />
-
-      <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
-        {dbError && (
-          <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
-            Forecast data is temporarily unavailable. Please try again shortly.
-          </div>
-        )}
-
-        {!dbError && !season && (
-          <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
-            No active week has been published yet. Complete the Week 0
-            publication workflow to load the approved schedule and market data.
-          </div>
-        )}
-
-        {season > 0 && (
-          <>
-            {publicationMode === "predictions" && <V5PerformanceBanner performance={performance} />}
-
-            {retrospectiveRepair && (
-              <p role="note" className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted">
-                Retrospective replay: these predictions and grades were recalculated after the games
-                using the repaired V5 ratings. They were not the picks originally published before kickoff.
-              </p>
-            )}
-
-            {weeks.length > 1 && (
-              <WeekNav season={season} week={week} weeks={weeks} />
-            )}
-
-            {publicationMode === "predictions" && (
-              <p className="px-1 text-xs text-ink-faint">
-                Market lines reflect the selected pre-kickoff quote; edge shows the model&rsquo;s difference.
-              </p>
-            )}
-
-            {games.length === 0 ? (
-              <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
-                No games loaded for {season} week {week}.
-              </div>
-            ) : (
-              <GamesList
-                games={games}
-                initialSort={
-                  params.sort === "spreadEdge" || params.sort === "totalEdge"
-                    ? params.sort
-                    : "kickoff"
-                }
-              />
-            )}
-
-          </>
-        )}
-      </main>
-
-      <Footer publicationMode={publicationMode} />
-    </div>
+    <WeeklySlateView
+      mode="picks"
+      season={season}
+      week={week}
+      weeks={weeks}
+      basePath="/"
+      games={games}
+      ranks={ranks}
+      performance={performance}
+      systemName={systemName}
+      updatedAt={updatedAt}
+      publicationMode={publicationMode}
+      allowedSeasons={publicationScope.allowedSeasons}
+      dbError={dbError}
+      retrospectiveRepair={retrospectiveRepair}
+      initialSort={initialSort}
+    />
   );
 }

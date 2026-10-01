@@ -21,12 +21,15 @@ const SORT_LABEL: Record<SortKey, string> = {
 export function GamesList({
   games,
   initialSort = "kickoff",
+  ranks,
 }: {
   games: Game[];
   initialSort?: SortKey;
+  ranks?: Map<string, number>;
 }) {
   const [query, setQuery] = useState("");
   const [hcOnly, setHcOnly] = useState(false);
+  const [targetFilter, setTargetFilter] = useState<"all" | "spread" | "total">("all");
   const [sort, setSort] = useState<SortKey>(initialSort);
   const predictionsVisible = games[0]?.publicationMode === "predictions";
   const hasHighConfidence =
@@ -43,6 +46,15 @@ export function GamesList({
         (g) =>
           g.homeTeam.toLowerCase().includes(q) ||
           g.awayTeam.toLowerCase().includes(q),
+      );
+    }
+    if (targetFilter === "spread") {
+      rows = rows.filter(
+        (g) => g.publicationMode === "predictions" && g.spreadLean !== null,
+      );
+    } else if (targetFilter === "total") {
+      rows = rows.filter(
+        (g) => g.publicationMode === "predictions" && g.totalLean !== null,
       );
     }
     if (hcOnly && predictionsVisible) {
@@ -71,17 +83,45 @@ export function GamesList({
       return bEdge - aEdge;
     });
     return sorted;
-  }, [games, query, hcOnly, predictionsVisible, sort]);
+  }, [games, query, targetFilter, hcOnly, predictionsVisible, sort]);
 
+  // Group by day when sorted chronologically (kickoff)
+  const groupedByDay = useMemo(() => {
+    if (sort !== "kickoff") return null;
+    const groups: { day: string; games: Game[] }[] = [];
+    let currentDay = "";
+    let currentGames: Game[] = [];
+
+    for (const g of visible) {
+      const day = g.startDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "short",
+        day: "numeric",
+      });
+      if (day !== currentDay) {
+        if (currentGames.length > 0) {
+          groups.push({ day: currentDay, games: currentGames });
+        }
+        currentDay = day;
+        currentGames = [g];
+      } else {
+        currentGames.push(g);
+      }
+    }
+    if (currentGames.length > 0) {
+      groups.push({ day: currentDay, games: currentGames });
+    }
+    return groups;
+  }, [visible, sort]);
 
   const inputCls =
-    "w-full rounded-md border border-line bg-surface-card px-2 py-1.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent";
+    "w-full rounded-md border border-line bg-surface-card px-2.5 py-1.5 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-accent";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Controls */}
-      <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-card p-3 shadow-sm sm:flex-row sm:items-center">
-        <div className="flex-1">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface-card p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex-1 min-w-[200px]">
           <label htmlFor="team-search" className="sr-only">
             Filter by team
           </label>
@@ -94,39 +134,72 @@ export function GamesList({
             className={inputCls}
           />
         </div>
-        {predictionsVisible && <div className="flex items-center gap-2">
-          {hasHighConfidence && (
-            <button
-              type="button"
-              onClick={() => setHcOnly((v) => !v)}
-              aria-pressed={hcOnly}
-              className={clsx(
-                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
-                hcOnly
-                  ? "border-accent bg-accent-soft text-accent-ink"
-                  : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
-              )}
+
+        {predictionsVisible && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Target Filter Tabs */}
+            <div
+              className="inline-flex rounded-lg bg-surface-inset p-1"
+              role="tablist"
+              aria-label="Filter picks by target"
             >
-              <span aria-hidden>{hcOnly ? "\u2605" : "\u2606"}</span>
-              High confidence
-            </button>
-          )}
-          <label htmlFor="sort-select" className="sr-only">
-            Sort by
-          </label>
-          <select
-            id="sort-select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-md border border-line bg-surface-card px-2 py-1.5 text-xs font-medium text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
-          >
-            {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
-              <option key={k} value={k}>
-                {SORT_LABEL[k]}
-              </option>
-            ))}
-          </select>
-        </div>}
+              {(["all", "spread", "total"] as const).map((t) => {
+                const label =
+                  t === "all" ? "All Picks" : t === "spread" ? "Spreads" : "Totals";
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={targetFilter === t}
+                    onClick={() => setTargetFilter(t)}
+                    className={clsx(
+                      "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                      targetFilter === t
+                        ? "bg-surface-card text-ink shadow-sm"
+                        : "text-ink-muted hover:text-ink",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {hasHighConfidence && (
+              <button
+                type="button"
+                onClick={() => setHcOnly((v) => !v)}
+                aria-pressed={hcOnly}
+                className={clsx(
+                  "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  hcOnly
+                    ? "border-accent bg-accent-soft text-accent-ink"
+                    : "border-line bg-surface-card text-ink-muted hover:bg-surface-inset",
+                )}
+              >
+                <span aria-hidden>{hcOnly ? "★" : "☆"}</span>
+                High confidence
+              </button>
+            )}
+
+            <label htmlFor="sort-select" className="sr-only">
+              Sort by
+            </label>
+            <select
+              id="sort-select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="rounded-md border border-line bg-surface-card px-2 py-1.5 text-xs font-medium text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
+                <option key={k} value={k}>
+                  {SORT_LABEL[k]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="px-1 text-xs text-ink-faint">
@@ -137,10 +210,28 @@ export function GamesList({
         <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
           No games match these filters.
         </div>
+      ) : groupedByDay ? (
+        <div className="space-y-6">
+          {groupedByDay.map((group) => (
+            <section key={group.day} aria-label={group.day} className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-line pb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                <span>{group.day}</span>
+                <span className="font-normal lowercase text-ink-faint">
+                  · {group.games.length} {group.games.length === 1 ? "game" : "games"}
+                </span>
+              </div>
+              <ul className="space-y-3">
+                {group.games.map((g) => (
+                  <GameRow key={g.gameId} game={g} ranks={ranks} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       ) : (
         <ul className="space-y-3">
           {visible.map((g) => (
-            <GameRow key={g.gameId} game={g} />
+            <GameRow key={g.gameId} game={g} ranks={ranks} />
           ))}
         </ul>
       )}

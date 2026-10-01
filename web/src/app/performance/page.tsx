@@ -31,12 +31,11 @@ export default async function PerformancePage() {
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
           Season record & performance
         </h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+        <p className="mt-2 text-sm text-ink-muted">
           Results, profit/loss unit tracking, and calibration for every selected V5 forecast in 2026.
         </p>
-        <p role="note" className="mt-3 max-w-2xl text-sm text-ink-muted">
-          Weeks 0–4 use retrospective predictions and grades recalculated after the games
-          with the repaired V5 ratings. They were not the picks originally published before kickoff.
+        <p role="note" className="mt-2 text-xs text-ink-faint">
+          Weeks 0–4 use retrospective predictions and grades recalculated after the games with the repaired V5 ratings. They were not the picks originally published before kickoff.
         </p>
       </div>
 

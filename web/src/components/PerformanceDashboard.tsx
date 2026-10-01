@@ -1,139 +1,71 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { PerformanceDetail, GradedGamePick } from "@/lib/v5";
-import { logoUrl } from "@/lib/teams";
-import {
-  marketSpreadView,
-  modelSpreadView,
-  spreadLabel,
-  signedSpread,
-  spreadBetLabel,
-  totalBetLabel,
-} from "@/lib/betting-format";
 
 type TargetFilter = "all" | "spread" | "total";
-type ActiveTab = "log" | "weekly";
 
-interface FlatPick {
-  id: string;
-  gameId: number;
+interface PickItem {
   week: number;
-  startDate: Date;
-  homeTeam: string;
-  awayTeam: string;
-  homePoints: number | null;
-  awayPoints: number | null;
   target: "spread" | "total";
-  marketLine: string;
-  modelPrediction: string;
-  edge: number | null;
-  pickLabel: string;
   result: "win" | "loss" | "push";
   profitUnits: number;
   highConfidence: boolean;
-  evidenceClass: "replay" | "live";
 }
 
-function formatShortDate(date: Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+interface WeekAggregate {
+  week: number;
+  spread: { win: number; loss: number; push: number; units: number; winRate: number; roi: number };
+  total: { win: number; loss: number; push: number; units: number; winRate: number; roi: number };
+  combined: { win: number; loss: number; push: number; units: number; roi: number; winRate: number };
 }
 
-function flattenPicks(games: GradedGamePick[]): FlatPick[] {
-  const picks: FlatPick[] = [];
-
+function extractPicks(games: GradedGamePick[]): PickItem[] {
+  const list: PickItem[] = [];
   for (const g of games) {
     if (g.spreadResult !== null) {
-      const mSpread = marketSpreadView(g.homeTeam, g.awayTeam, g.marketSpread);
-      const modSpread = modelSpreadView(g.homeTeam, g.awayTeam, g.predictedSpread);
-      const bet = spreadBetLabel(g.homeTeam, g.awayTeam, g.spreadLean, g.marketSpread);
-
-      picks.push({
-        id: `${g.gameId}-spread`,
-        gameId: g.gameId,
+      list.push({
         week: g.week,
-        startDate: g.startDate,
-        homeTeam: g.homeTeam,
-        awayTeam: g.awayTeam,
-        homePoints: g.homePoints,
-        awayPoints: g.awayPoints,
         target: "spread",
-        marketLine: spreadLabel(mSpread),
-        modelPrediction: spreadLabel(modSpread),
-        edge: g.spreadEdge,
-        pickLabel: bet ?? "Spread Lean",
         result: g.spreadResult,
         profitUnits: g.spreadUnits ?? (g.spreadResult === "win" ? 0.9091 : g.spreadResult === "loss" ? -1.0 : 0.0),
         highConfidence: g.highConfidence,
-        evidenceClass: g.evidenceClass,
       });
     }
-
     if (g.totalResult !== null) {
-      const bet = totalBetLabel(g.totalLean, g.marketTotal);
-
-      picks.push({
-        id: `${g.gameId}-total`,
-        gameId: g.gameId,
+      list.push({
         week: g.week,
-        startDate: g.startDate,
-        homeTeam: g.homeTeam,
-        awayTeam: g.awayTeam,
-        homePoints: g.homePoints,
-        awayPoints: g.awayPoints,
         target: "total",
-        marketLine: g.marketTotal !== null ? g.marketTotal.toFixed(1) : "—",
-        modelPrediction: g.predictedTotal !== null ? g.predictedTotal.toFixed(1) : "—",
-        edge: g.totalEdge,
-        pickLabel: bet ?? "Total Lean",
         result: g.totalResult,
         profitUnits: g.totalUnits ?? (g.totalResult === "win" ? 0.9091 : g.totalResult === "loss" ? -1.0 : 0.0),
         highConfidence: g.highConfidence,
-        evidenceClass: g.evidenceClass,
       });
     }
   }
-
-  return picks;
+  return list;
 }
 
 export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
   const [targetFilter, setTargetFilter] = useState<TargetFilter>("all");
-  const [selectedWeek, setSelectedWeek] = useState<string>("all");
   const [confidenceOnly, setConfidenceOnly] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<ActiveTab>("log");
 
-  const allPicks = useMemo(() => flattenPicks(data.gradedGames), [data.gradedGames]);
+  const allPicks = useMemo(() => extractPicks(data.gradedGames), [data.gradedGames]);
 
-  const filteredPicks = useMemo(() => {
-    return allPicks.filter((pick) => {
-      if (targetFilter !== "all" && pick.target !== targetFilter) return false;
-      if (selectedWeek !== "all" && pick.week !== Number(selectedWeek)) return false;
-      if (confidenceOnly && !pick.highConfidence) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTeam =
-          pick.homeTeam.toLowerCase().includes(q) || pick.awayTeam.toLowerCase().includes(q);
-        if (!matchesTeam) return false;
-      }
+  const activePicks = useMemo(() => {
+    return allPicks.filter((p) => {
+      if (confidenceOnly && !p.highConfidence) return false;
       return true;
     });
-  }, [allPicks, targetFilter, selectedWeek, confidenceOnly, searchQuery]);
+  }, [allPicks, confidenceOnly]);
 
-  // Dynamic Metrics for active filtered slice
-  const stats = useMemo(() => {
+  // Overall KPIs
+  const overallKPIs = useMemo(() => {
     let spreadWins = 0, spreadLosses = 0, spreadPushes = 0, spreadUnits = 0;
     let totalWins = 0, totalLosses = 0, totalPushes = 0, totalUnits = 0;
 
-    for (const p of filteredPicks) {
+    for (const p of activePicks) {
       if (p.target === "spread") {
         if (p.result === "win") spreadWins++;
         else if (p.result === "loss") spreadLosses++;
@@ -147,163 +79,282 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
       }
     }
 
-    const spreadDecisions = spreadWins + spreadLosses;
-    const spreadRisked = spreadWins + spreadLosses + spreadPushes;
-    const spreadWinRate = spreadDecisions > 0 ? (spreadWins / spreadDecisions) * 100 : 0;
-    const spreadRoi = spreadRisked > 0 ? (spreadUnits / spreadRisked) * 100 : 0;
+    const sDecisions = spreadWins + spreadLosses;
+    const sRisked = spreadWins + spreadLosses + spreadPushes;
+    const sWinRate = sDecisions > 0 ? (spreadWins / sDecisions) * 100 : 0;
+    const sRoi = sRisked > 0 ? (spreadUnits / sRisked) * 100 : 0;
 
-    const totalDecisions = totalWins + totalLosses;
-    const totalRisked = totalWins + totalLosses + totalPushes;
-    const totalWinRate = totalDecisions > 0 ? (totalWins / totalDecisions) * 100 : 0;
-    const totalRoi = totalRisked > 0 ? (totalUnits / totalRisked) * 100 : 0;
+    const tDecisions = totalWins + totalLosses;
+    const tRisked = totalWins + totalLosses + totalPushes;
+    const tWinRate = tDecisions > 0 ? (totalWins / tDecisions) * 100 : 0;
+    const tRoi = tRisked > 0 ? (totalUnits / tRisked) * 100 : 0;
 
-    const combinedWins = spreadWins + totalWins;
-    const combinedLosses = spreadLosses + totalLosses;
-    const combinedPushes = spreadPushes + totalPushes;
-    const combinedUnits = spreadUnits + totalUnits;
-    const combinedDecisions = combinedWins + combinedLosses;
-    const combinedRisked = combinedWins + combinedLosses + combinedPushes;
-    const combinedWinRate = combinedDecisions > 0 ? (combinedWins / combinedDecisions) * 100 : 0;
-    const combinedRoi = combinedRisked > 0 ? (combinedUnits / combinedRisked) * 100 : 0;
+    const cWins = spreadWins + totalWins;
+    const cLosses = spreadLosses + totalLosses;
+    const cPushes = spreadPushes + totalPushes;
+    const cUnits = spreadUnits + totalUnits;
+    const cRisked = cWins + cLosses + cPushes;
+    const cRoi = cRisked > 0 ? (cUnits / cRisked) * 100 : 0;
+
+    // Focused Return depends on targetFilter
+    let focusedUnits = cUnits;
+    let focusedRisked = cRisked;
+    let focusedRoi = cRoi;
+    let focusedLabel = "Net Betting Return";
+
+    if (targetFilter === "spread") {
+      focusedUnits = spreadUnits;
+      focusedRisked = sRisked;
+      focusedRoi = sRoi;
+      focusedLabel = "Spread Net Return";
+    } else if (targetFilter === "total") {
+      focusedUnits = totalUnits;
+      focusedRisked = tRisked;
+      focusedRoi = tRoi;
+      focusedLabel = "Totals Net Return";
+    }
 
     return {
       spread: {
         record: `${spreadWins}–${spreadLosses}–${spreadPushes}`,
-        winRate: spreadDecisions > 0 ? `${spreadWinRate.toFixed(1)}%` : "—",
+        winRate: sDecisions > 0 ? `${sWinRate.toFixed(1)}%` : "—",
         units: `${spreadUnits >= 0 ? "+" : ""}${spreadUnits.toFixed(2)}u`,
-        roi: `${spreadRisked > 0 ? `${spreadRoi >= 0 ? "+" : ""}${spreadRoi.toFixed(1)}%` : "—"}`,
-        isUnitsPositive: spreadUnits >= 0,
+        roi: `${sRisked > 0 ? `${sRoi >= 0 ? "+" : ""}${sRoi.toFixed(1)}%` : "—"}`,
+        isPositive: spreadUnits >= 0,
       },
       total: {
         record: `${totalWins}–${totalLosses}–${totalPushes}`,
-        winRate: totalDecisions > 0 ? `${totalWinRate.toFixed(1)}%` : "—",
+        winRate: tDecisions > 0 ? `${tWinRate.toFixed(1)}%` : "—",
         units: `${totalUnits >= 0 ? "+" : ""}${totalUnits.toFixed(2)}u`,
-        roi: `${totalRisked > 0 ? `${totalRoi >= 0 ? "+" : ""}${totalRoi.toFixed(1)}%` : "—"}`,
-        isUnitsPositive: totalUnits >= 0,
+        roi: `${tRisked > 0 ? `${tRoi >= 0 ? "+" : ""}${tRoi.toFixed(1)}%` : "—"}`,
+        isPositive: totalUnits >= 0,
       },
-      combined: {
-        record: `${combinedWins}–${combinedLosses}–${combinedPushes}`,
-        totalBets: combinedRisked,
-        winRate: combinedDecisions > 0 ? `${combinedWinRate.toFixed(1)}%` : "—",
-        units: `${combinedUnits >= 0 ? "+" : ""}${combinedUnits.toFixed(2)}u`,
-        roi: `${combinedRisked > 0 ? `${combinedRoi >= 0 ? "+" : ""}${combinedRoi.toFixed(1)}%` : "—"}`,
-        isUnitsPositive: combinedUnits >= 0,
+      focused: {
+        label: focusedLabel,
+        totalBets: focusedRisked,
+        units: `${focusedUnits >= 0 ? "+" : ""}${focusedUnits.toFixed(2)}u`,
+        roi: `${focusedRisked > 0 ? `${focusedRoi >= 0 ? "+" : ""}${focusedRoi.toFixed(1)}%` : "—"}`,
+        isPositive: focusedUnits >= 0,
       },
     };
-  }, [filteredPicks]);
+  }, [activePicks, targetFilter]);
 
-  // Calibration metrics from active week slice or overall
-  const activeCalibration = useMemo(() => {
-    if (selectedWeek !== "all") {
-      const weekNum = Number(selectedWeek);
-      const wSummary = data.byWeek[weekNum];
-      if (wSummary) {
-        return {
-          marginMae: wSummary.marginMae !== null ? `${wSummary.marginMae.toFixed(1)} pts` : "—",
-          totalMae: wSummary.totalMae !== null ? `${wSummary.totalMae.toFixed(1)} pts` : "—",
-          coverage: wSummary.marginCoverage95 !== null ? `${wSummary.marginCoverage95.toFixed(1)}%` : "—",
-        };
+  // Aggregated Weekly Breakdown Table
+  const weeklyData = useMemo(() => {
+    const list: WeekAggregate[] = [];
+
+    for (const w of data.weeks) {
+      const wPicks = activePicks.filter((p) => p.week === w);
+      if (wPicks.length === 0) continue;
+
+      let sw = 0, sl = 0, sp = 0, su = 0;
+      let tw = 0, tl = 0, tp = 0, tu = 0;
+
+      for (const p of wPicks) {
+        if (p.target === "spread") {
+          if (p.result === "win") sw++;
+          else if (p.result === "loss") sl++;
+          else if (p.result === "push") sp++;
+          su += p.profitUnits;
+        } else {
+          if (p.result === "win") tw++;
+          else if (p.result === "loss") tl++;
+          else if (p.result === "push") tp++;
+          tu += p.profitUnits;
+        }
       }
+
+      const sDec = sw + sl;
+      const sRisk = sw + sl + sp;
+      const sWinRate = sDec > 0 ? (sw / sDec) * 100 : 0;
+      const sRoi = sRisk > 0 ? (su / sRisk) * 100 : 0;
+
+      const tDec = tw + tl;
+      const tRisk = tw + tl + tp;
+      const tWinRate = tDec > 0 ? (tw / tDec) * 100 : 0;
+      const tRoi = tRisk > 0 ? (tu / tRisk) * 100 : 0;
+
+      const cRisk = sRisk + tRisk;
+      const cDec = sDec + tDec;
+      const netUnits = su + tu;
+      const cRoi = cRisk > 0 ? (netUnits / cRisk) * 100 : 0;
+      const cWinRate = cDec > 0 ? ((sw + tw) / cDec) * 100 : 0;
+
+      list.push({
+        week: w,
+        spread: { win: sw, loss: sl, push: sp, units: su, winRate: sWinRate, roi: sRoi },
+        total: { win: tw, loss: tl, push: tp, units: tu, winRate: tWinRate, roi: tRoi },
+        combined: { win: sw + tw, loss: sl + tl, push: sp + tp, units: netUnits, roi: cRoi, winRate: cWinRate },
+      });
     }
-    return {
-      marginMae: data.summary.marginMae !== null ? `${data.summary.marginMae.toFixed(1)} pts` : "—",
-      totalMae: data.summary.totalMae !== null ? `${data.summary.totalMae.toFixed(1)} pts` : "—",
-      coverage: data.summary.marginCoverage95 !== null ? `${data.summary.marginCoverage95.toFixed(1)}%` : "—",
-    };
-  }, [selectedWeek, data]);
+
+    return list;
+  }, [data.weeks, activePicks]);
 
   return (
     <div className="space-y-6">
-      {/* 4-Card Hero KPI Grid */}
-      <section aria-labelledby="kpi-heading" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <h2 id="kpi-heading" className="sr-only">Performance metrics</h2>
+      {/* Option B: 3 Betting KPI Cards */}
+      <section aria-labelledby="kpi-heading" className="grid gap-4 md:grid-cols-3">
+        <h2 id="kpi-heading" className="sr-only">Betting performance summary</h2>
 
-        {/* Spread KPI Card */}
-        <div className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Spread Performance
-          </p>
-          <div className="mt-2 font-mono text-2xl font-bold tracking-tight text-ink">
-            {stats.spread.record}
-          </div>
-          <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-ink-muted">{stats.spread.winRate} win rate</span>
-            <span
-              className={clsx(
-                "font-mono font-semibold",
-                stats.spread.isUnitsPositive ? "text-win" : "text-loss"
-              )}
-            >
-              {stats.spread.units} ({stats.spread.roi} ROI)
+        {/* Spread Performance Card */}
+        <div
+          className={clsx(
+            "rounded-xl border p-5 shadow-sm transition-all",
+            targetFilter === "spread"
+              ? "border-accent ring-1 ring-accent bg-surface-card"
+              : "border-line bg-surface-card"
+          )}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Spread Performance
             </span>
+            {targetFilter === "spread" && (
+              <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent-ink">
+                active
+              </span>
+            )}
+          </div>
+          <div className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+            {overallKPIs.spread.record}
+          </div>
+          <div className="mt-3 space-y-1 text-xs">
+            <div className="flex items-center justify-between text-ink-muted">
+              <span>Win Rate</span>
+              <span className="font-mono font-medium text-ink">{overallKPIs.spread.winRate}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Net Return</span>
+              <span
+                className={clsx(
+                  "font-mono font-semibold",
+                  overallKPIs.spread.isPositive ? "text-win" : "text-loss"
+                )}
+              >
+                {overallKPIs.spread.units} ({overallKPIs.spread.roi})
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Total KPI Card */}
-        <div className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Totals Performance
-          </p>
-          <div className="mt-2 font-mono text-2xl font-bold tracking-tight text-ink">
-            {stats.total.record}
-          </div>
-          <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-ink-muted">{stats.total.winRate} win rate</span>
-            <span
-              className={clsx(
-                "font-mono font-semibold",
-                stats.total.isUnitsPositive ? "text-win" : "text-loss"
-              )}
-            >
-              {stats.total.units} ({stats.total.roi} ROI)
+        {/* Totals Performance Card */}
+        <div
+          className={clsx(
+            "rounded-xl border p-5 shadow-sm transition-all",
+            targetFilter === "total"
+              ? "border-accent ring-1 ring-accent bg-surface-card"
+              : "border-line bg-surface-card"
+          )}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              Totals Performance
             </span>
+            {targetFilter === "total" && (
+              <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent-ink">
+                active
+              </span>
+            )}
+          </div>
+          <div className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+            {overallKPIs.total.record}
+          </div>
+          <div className="mt-3 space-y-1 text-xs">
+            <div className="flex items-center justify-between text-ink-muted">
+              <span>Win Rate</span>
+              <span className="font-mono font-medium text-ink">{overallKPIs.total.winRate}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Net Return</span>
+              <span
+                className={clsx(
+                  "font-mono font-semibold",
+                  overallKPIs.total.isPositive ? "text-win" : "text-loss"
+                )}
+              >
+                {overallKPIs.total.units} ({overallKPIs.total.roi})
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Combined Profit KPI Card */}
-        <div className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Net Betting Return
-          </p>
+        {/* Net Betting Return Card */}
+        <div className="rounded-xl border border-line bg-surface-card p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+              {overallKPIs.focused.label}
+            </span>
+          </div>
           <div
             className={clsx(
-              "mt-2 font-mono text-2xl font-bold tracking-tight",
-              stats.combined.isUnitsPositive ? "text-win" : "text-loss"
+              "font-mono text-3xl sm:text-4xl font-bold tracking-tight",
+              overallKPIs.focused.isPositive ? "text-win" : "text-loss"
             )}
           >
-            {stats.combined.units}
+            {overallKPIs.focused.units}
           </div>
-          <div className="mt-1 flex items-center justify-between text-xs">
-            <span className="text-ink-muted">{stats.combined.totalBets} graded bets</span>
-            <span className="font-mono font-semibold text-ink">
-              {stats.combined.roi} ROI
-            </span>
-          </div>
-        </div>
-
-        {/* Model Accuracy Card */}
-        <div className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-            Model Calibration
-          </p>
-          <div className="mt-2 font-mono text-xl font-bold tracking-tight text-ink">
-            {activeCalibration.marginMae} <span className="text-xs font-normal text-ink-faint">margin MAE</span>
-          </div>
-          <div className="mt-1 flex items-center justify-between text-xs text-ink-muted">
-            <span>Total: {activeCalibration.totalMae}</span>
-            <span>95% CI: {activeCalibration.coverage}</span>
+          <div className="mt-3 space-y-1 text-xs">
+            <div className="flex items-center justify-between text-ink-muted">
+              <span>Overall ROI</span>
+              <span
+                className={clsx(
+                  "font-mono font-semibold",
+                  overallKPIs.focused.isPositive ? "text-win" : "text-loss"
+                )}
+              >
+                {overallKPIs.focused.roi}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-ink-muted">
+              <span>Graded Volume</span>
+              <span className="font-mono font-medium text-ink">{overallKPIs.focused.totalBets} picks</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Filter Toolbar & Tab Switcher */}
-      <section aria-labelledby="filter-heading" className="rounded-xl border border-line bg-surface-card p-4 shadow-sm space-y-4">
+      {/* Model Calibration Strip */}
+      <section
+        aria-labelledby="calibration-heading"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-line bg-surface-card px-4 py-2.5 shadow-sm text-xs text-ink-muted"
+      >
+        <h2 id="calibration-heading" className="sr-only">Model calibration</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+            Model Calibration
+          </span>
+          <span className="text-ink-faint">·</span>
+          <span>
+            Spread MAE <strong className="font-mono text-ink">{data.summary.marginMae !== null ? `${data.summary.marginMae.toFixed(1)} pts` : "—"}</strong>
+          </span>
+          <span className="text-ink-faint">·</span>
+          <span>
+            Total MAE <strong className="font-mono text-ink">{data.summary.totalMae !== null ? `${data.summary.totalMae.toFixed(1)} pts` : "—"}</strong>
+          </span>
+          {data.summary.marginCoverage95 !== null && (
+            <>
+              <span className="text-ink-faint">·</span>
+              <span>
+                95% CI <strong className="font-mono text-ink">{data.summary.marginCoverage95.toFixed(1)}%</strong>
+              </span>
+            </>
+          )}
+        </div>
+        <div className="text-[11px] text-ink-faint">
+          Linear calibration against closing lines
+        </div>
+      </section>
+
+      {/* Filter Toolbar: Target Selector & High Confidence Toggle */}
+      <section aria-labelledby="filter-heading" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-card p-4 shadow-sm">
         <h2 id="filter-heading" className="sr-only">Dashboard filters</h2>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Target Tabs */}
-          <div className="inline-flex rounded-lg bg-surface-inset p-1" role="tablist" aria-label="Bet target">
-            {(["all", "spread", "total"] as const).map((t) => (
+        {/* Target Tabs (All Picks, Spreads, Totals) */}
+        <div className="inline-flex rounded-lg bg-surface-inset p-1" role="tablist" aria-label="Bet target">
+          {(["all", "spread", "total"] as const).map((t) => {
+            const label = t === "all" ? "All Picks" : t === "spread" ? "Spreads" : "Totals";
+            return (
               <button
                 key={t}
                 type="button"
@@ -311,101 +362,167 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                 aria-selected={targetFilter === t}
                 onClick={() => setTargetFilter(t)}
                 className={clsx(
-                  "rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors",
+                  "rounded-md px-3.5 py-1 text-xs font-medium transition-colors",
                   targetFilter === t
                     ? "bg-surface-card text-ink shadow-sm"
                     : "text-ink-muted hover:text-ink"
                 )}
               >
-                {t === "all" ? "All Targets" : `${t}s`}
+                {label}
               </button>
-            ))}
-          </div>
-
-          {/* View Mode Tabs: Audit Log vs Weekly Table */}
-          <div className="inline-flex rounded-lg bg-surface-inset p-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab("log")}
-              className={clsx(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                activeTab === "log"
-                  ? "bg-surface-card text-ink shadow-sm"
-                  : "text-ink-muted hover:text-ink"
-              )}
-            >
-              Graded Picks ({filteredPicks.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("weekly")}
-              className={clsx(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                activeTab === "weekly"
-                  ? "bg-surface-card text-ink shadow-sm"
-                  : "text-ink-muted hover:text-ink"
-              )}
-            >
-              Weekly Breakdown
-            </button>
-          </div>
+            );
+          })}
         </div>
 
-        {/* Secondary Filters: Week, Confidence, Search */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-line">
-          {/* Week Dropdown */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="week-select" className="text-xs font-medium text-ink-muted">
-              Week:
-            </label>
-            <select
-              id="week-select"
-              value={selectedWeek}
-              onChange={(e) => setSelectedWeek(e.target.value)}
-              className="rounded-lg border border-line bg-surface-inset px-2.5 py-1 text-xs font-medium text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-            >
-              <option value="all">All Weeks</option>
-              {data.weeks.map((w) => (
-                <option key={w} value={String(w)}>
-                  Week {w}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* High Confidence Toggle */}
-          <button
-            type="button"
-            onClick={() => setConfidenceOnly(!confidenceOnly)}
-            className={clsx(
-              "flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
-              confidenceOnly
-                ? "border-accent bg-accent-soft text-accent-ink"
-                : "border-line bg-surface-inset text-ink-muted hover:text-ink"
-            )}
-          >
-            <span className={confidenceOnly ? "text-accent" : "text-ink-faint"}>★</span>
-            High Confidence Only
-          </button>
-
-          {/* Search Input */}
-          <div className="ml-auto w-full sm:w-auto">
-            <input
-              type="search"
-              placeholder="Filter by team..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:w-56 rounded-lg border border-line bg-surface-inset px-3 py-1 text-xs text-ink placeholder:text-ink-faint focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-        </div>
+        {/* High Confidence Toggle */}
+        <button
+          type="button"
+          onClick={() => setConfidenceOnly(!confidenceOnly)}
+          className={clsx(
+            "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+            confidenceOnly
+              ? "border-accent bg-accent-soft text-accent-ink"
+              : "border-line bg-surface-inset text-ink-muted hover:text-ink"
+          )}
+        >
+          <span className={confidenceOnly ? "text-accent" : "text-ink-faint"}>★</span>
+          High Confidence Only
+        </button>
       </section>
 
-      {/* Main Content: Audit Log Table vs Weekly Breakdown Table */}
-      {activeTab === "weekly" ? (
-        <section aria-labelledby="weekly-heading" className="rounded-xl border border-line bg-surface-card overflow-hidden shadow-sm">
-          <h2 id="weekly-heading" className="sr-only">Weekly breakdown</h2>
-          <div className="overflow-x-auto">
+      {/* Weekly Breakdown Table (Adapts cleanly to Target filter) */}
+      <section aria-labelledby="weekly-heading" className="rounded-xl border border-line bg-surface-card overflow-hidden shadow-sm">
+        <h2 id="weekly-heading" className="sr-only">Weekly performance breakdown</h2>
+
+        <div className="overflow-x-auto">
+          {targetFilter === "spread" ? (
+            /* Spreads-Only Table */
+            <table className="w-full min-w-[560px] text-xs tabular-nums text-left">
+              <thead className="border-b border-line bg-surface-inset text-[11px] uppercase tracking-wider text-ink-faint font-semibold">
+                <tr>
+                  <th scope="col" className="px-4 py-3">Week</th>
+                  <th scope="col" className="px-3 py-3 text-right">Spread Record (W-L-P)</th>
+                  <th scope="col" className="px-3 py-3 text-right">Win Rate</th>
+                  <th scope="col" className="px-3 py-3 text-right">Profit Units</th>
+                  <th scope="col" className="px-4 py-3 text-right">ROI %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {weeklyData.map((row) => (
+                  <tr key={row.week} className="hover:bg-surface-inset/50 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-ink">
+                      <Link
+                        href={`/results?week=${row.week}`}
+                        className="hover:text-accent-ink hover:underline"
+                        title={`View Week ${row.week} results slate`}
+                      >
+                        Week {row.week}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 text-right text-ink">
+                      {row.spread.win}–{row.spread.loss}–{row.spread.push}
+                    </td>
+                    <td className="px-3 py-3 text-right text-ink-muted">
+                      {row.spread.win + row.spread.loss > 0 ? `${row.spread.winRate.toFixed(1)}%` : "—"}
+                    </td>
+                    <td
+                      className={clsx(
+                        "px-3 py-3 text-right font-medium",
+                        row.spread.units >= 0 ? "text-win" : "text-loss"
+                      )}
+                    >
+                      {row.spread.units >= 0 ? "+" : ""}{row.spread.units.toFixed(2)}u
+                    </td>
+                    <td className="px-4 py-3 text-right text-ink">
+                      {row.spread.win + row.spread.loss + row.spread.push > 0
+                        ? `${row.spread.roi >= 0 ? "+" : ""}${row.spread.roi.toFixed(1)}%`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
+                <tr>
+                  <td className="px-4 py-3">Season Total</td>
+                  <td className="px-3 py-3 text-right">{overallKPIs.spread.record}</td>
+                  <td className="px-3 py-3 text-right">{overallKPIs.spread.winRate}</td>
+                  <td
+                    className={clsx(
+                      "px-3 py-3 text-right font-mono font-bold",
+                      overallKPIs.spread.isPositive ? "text-win" : "text-loss"
+                    )}
+                  >
+                    {overallKPIs.spread.units}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono">{overallKPIs.spread.roi}</td>
+                </tr>
+              </tfoot>
+            </table>
+          ) : targetFilter === "total" ? (
+            /* Totals-Only Table */
+            <table className="w-full min-w-[560px] text-xs tabular-nums text-left">
+              <thead className="border-b border-line bg-surface-inset text-[11px] uppercase tracking-wider text-ink-faint font-semibold">
+                <tr>
+                  <th scope="col" className="px-4 py-3">Week</th>
+                  <th scope="col" className="px-3 py-3 text-right">Totals Record (W-L-P)</th>
+                  <th scope="col" className="px-3 py-3 text-right">Win Rate</th>
+                  <th scope="col" className="px-3 py-3 text-right">Profit Units</th>
+                  <th scope="col" className="px-4 py-3 text-right">ROI %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {weeklyData.map((row) => (
+                  <tr key={row.week} className="hover:bg-surface-inset/50 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-ink">
+                      <Link
+                        href={`/results?week=${row.week}`}
+                        className="hover:text-accent-ink hover:underline"
+                        title={`View Week ${row.week} results slate`}
+                      >
+                        Week {row.week}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 text-right text-ink">
+                      {row.total.win}–{row.total.loss}–{row.total.push}
+                    </td>
+                    <td className="px-3 py-3 text-right text-ink-muted">
+                      {row.total.win + row.total.loss > 0 ? `${row.total.winRate.toFixed(1)}%` : "—"}
+                    </td>
+                    <td
+                      className={clsx(
+                        "px-3 py-3 text-right font-medium",
+                        row.total.units >= 0 ? "text-win" : "text-loss"
+                      )}
+                    >
+                      {row.total.units >= 0 ? "+" : ""}{row.total.units.toFixed(2)}u
+                    </td>
+                    <td className="px-4 py-3 text-right text-ink">
+                      {row.total.win + row.total.loss + row.total.push > 0
+                        ? `${row.total.roi >= 0 ? "+" : ""}${row.total.roi.toFixed(1)}%`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
+                <tr>
+                  <td className="px-4 py-3">Season Total</td>
+                  <td className="px-3 py-3 text-right">{overallKPIs.total.record}</td>
+                  <td className="px-3 py-3 text-right">{overallKPIs.total.winRate}</td>
+                  <td
+                    className={clsx(
+                      "px-3 py-3 text-right font-mono font-bold",
+                      overallKPIs.total.isPositive ? "text-win" : "text-loss"
+                    )}
+                  >
+                    {overallKPIs.total.units}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono">{overallKPIs.total.roi}</td>
+                </tr>
+              </tfoot>
+            </table>
+          ) : (
+            /* All Targets (Full Comparison Table) */
             <table className="w-full min-w-[620px] text-xs tabular-nums text-left">
               <thead className="border-b border-line bg-surface-inset text-[11px] uppercase tracking-wider text-ink-faint font-semibold">
                 <tr>
@@ -419,41 +536,40 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {data.weeks.map((w) => {
-                  const ws = data.byWeek[w];
-                  if (!ws) return null;
-                  const isNetPositive = ws.combined.units >= 0;
+                {weeklyData.map((row) => {
+                  const isNetPositive = row.combined.units >= 0;
                   return (
-                    <tr key={w} className="hover:bg-surface-inset/50 transition-colors">
+                    <tr key={row.week} className="hover:bg-surface-inset/50 transition-colors">
                       <td className="px-4 py-3 font-semibold text-ink">
-                        Week {w}
-                        {w <= 4 && (
-                          <span className="ml-1.5 rounded bg-surface-inset px-1 py-0.5 text-[10px] font-normal text-ink-faint">
-                            replay
-                          </span>
-                        )}
+                        <Link
+                          href={`/results?week=${row.week}`}
+                          className="hover:text-accent-ink hover:underline"
+                          title={`View Week ${row.week} results slate`}
+                        >
+                          Week {row.week}
+                        </Link>
                       </td>
                       <td className="px-3 py-3 text-right text-ink">
-                        {ws.spread.win}–{ws.spread.loss}–{ws.spread.push}
+                        {row.spread.win}–{row.spread.loss}–{row.spread.push}
                       </td>
                       <td
                         className={clsx(
                           "px-3 py-3 text-right font-medium",
-                          ws.spread.units >= 0 ? "text-win" : "text-loss"
+                          row.spread.units >= 0 ? "text-win" : "text-loss"
                         )}
                       >
-                        {ws.spread.units >= 0 ? "+" : ""}{ws.spread.units.toFixed(2)}u
+                        {row.spread.units >= 0 ? "+" : ""}{row.spread.units.toFixed(2)}u
                       </td>
                       <td className="px-3 py-3 text-right text-ink">
-                        {ws.total.win}–{ws.total.loss}–{ws.total.push}
+                        {row.total.win}–{row.total.loss}–{row.total.push}
                       </td>
                       <td
                         className={clsx(
                           "px-3 py-3 text-right font-medium",
-                          ws.total.units >= 0 ? "text-win" : "text-loss"
+                          row.total.units >= 0 ? "text-win" : "text-loss"
                         )}
                       >
-                        {ws.total.units >= 0 ? "+" : ""}{ws.total.units.toFixed(2)}u
+                        {row.total.units >= 0 ? "+" : ""}{row.total.units.toFixed(2)}u
                       </td>
                       <td
                         className={clsx(
@@ -461,176 +577,62 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                           isNetPositive ? "text-win" : "text-loss"
                         )}
                       >
-                        {isNetPositive ? "+" : ""}{ws.combined.units.toFixed(2)}u
+                        {isNetPositive ? "+" : ""}{row.combined.units.toFixed(2)}u
                       </td>
                       <td className="px-4 py-3 text-right text-ink">
-                        {ws.combined.roi >= 0 ? "+" : ""}{ws.combined.roi.toFixed(1)}%
+                        {row.combined.roi >= 0 ? "+" : ""}{row.combined.roi.toFixed(1)}%
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
+              <tfoot className="border-t-2 border-line bg-surface-inset font-semibold text-ink">
+                <tr>
+                  <td className="px-4 py-3">Season Total</td>
+                  <td className="px-3 py-3 text-right">
+                    {overallKPIs.spread.record}
+                  </td>
+                  <td
+                    className={clsx(
+                      "px-3 py-3 text-right font-mono font-bold",
+                      overallKPIs.spread.isPositive ? "text-win" : "text-loss"
+                    )}
+                  >
+                    {overallKPIs.spread.units}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    {overallKPIs.total.record}
+                  </td>
+                  <td
+                    className={clsx(
+                      "px-3 py-3 text-right font-mono font-bold",
+                      overallKPIs.total.isPositive ? "text-win" : "text-loss"
+                    )}
+                  >
+                    {overallKPIs.total.units}
+                  </td>
+                  <td
+                    className={clsx(
+                      "px-3 py-3 text-right font-mono font-bold",
+                      overallKPIs.focused.isPositive ? "text-win" : "text-loss"
+                    )}
+                  >
+                    {overallKPIs.focused.units}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono">
+                    {overallKPIs.focused.roi}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
-          </div>
-        </section>
-      ) : (
-        <section aria-labelledby="picks-heading" className="space-y-3">
-          <h2 id="picks-heading" className="sr-only">Graded picks log</h2>
-
-          {filteredPicks.length === 0 ? (
-            <div className="rounded-xl border border-line bg-surface-card p-8 text-center text-sm text-ink-muted">
-              No graded picks match the selected filters.
-            </div>
-          ) : (
-            <div className="rounded-xl border border-line bg-surface-card overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px] text-xs tabular-nums text-left">
-                  <thead className="border-b border-line bg-surface-inset text-[11px] uppercase tracking-wider text-ink-faint font-semibold">
-                    <tr>
-                      <th scope="col" className="px-4 py-3">Date / Week</th>
-                      <th scope="col" className="px-3 py-3">Matchup</th>
-                      <th scope="col" className="px-3 py-3">Final</th>
-                      <th scope="col" className="px-3 py-3">Target</th>
-                      <th scope="col" className="px-3 py-3">Market</th>
-                      <th scope="col" className="px-3 py-3">Model</th>
-                      <th scope="col" className="px-3 py-3">Pick</th>
-                      <th scope="col" className="px-3 py-3 text-center">Result</th>
-                      <th scope="col" className="px-4 py-3 text-right">Profit</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {filteredPicks.map((pick) => {
-                      const isWin = pick.result === "win";
-                      const isLoss = pick.result === "loss";
-                      return (
-                        <tr key={pick.id} className="hover:bg-surface-inset/50 transition-colors">
-                          {/* Date & Week */}
-                          <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
-                            <div>{formatShortDate(pick.startDate)}</div>
-                            <div className="text-[10px] text-ink-faint">Wk {pick.week}</div>
-                          </td>
-
-                          {/* Matchup */}
-                          <td className="px-3 py-3">
-                            <div className="flex items-center gap-1.5 font-medium text-ink">
-                              <span className="flex items-center gap-1">
-                                <Image
-                                  src={logoUrl(pick.awayTeam)}
-                                  alt=""
-                                  width={14}
-                                  height={14}
-                                  className="h-3.5 w-3.5 shrink-0 object-contain"
-                                />
-                                <Link
-                                  href={`/teams/${encodeURIComponent(pick.awayTeam)}`}
-                                  className="hover:underline"
-                                >
-                                  {pick.awayTeam}
-                                </Link>
-                              </span>
-                              <span className="text-ink-faint">@</span>
-                              <span className="flex items-center gap-1">
-                                <Image
-                                  src={logoUrl(pick.homeTeam)}
-                                  alt=""
-                                  width={14}
-                                  height={14}
-                                  className="h-3.5 w-3.5 shrink-0 object-contain"
-                                />
-                                <Link
-                                  href={`/teams/${encodeURIComponent(pick.homeTeam)}`}
-                                  className="hover:underline"
-                                >
-                                  {pick.homeTeam}
-                                </Link>
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Final Score */}
-                          <td className="px-3 py-3 whitespace-nowrap font-mono text-ink">
-                            {pick.homePoints !== null && pick.awayPoints !== null
-                              ? `${pick.awayPoints}–${pick.homePoints}`
-                              : "—"}
-                          </td>
-
-                          {/* Target Badge */}
-                          <td className="px-3 py-3 whitespace-nowrap">
-                            <span
-                              className={clsx(
-                                "inline-block rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide",
-                                pick.target === "spread"
-                                  ? "bg-surface-inset text-ink-muted"
-                                  : "bg-surface-inset text-accent-ink"
-                              )}
-                            >
-                              {pick.target}
-                            </span>
-                          </td>
-
-                          {/* Market Line */}
-                          <td className="px-3 py-3 whitespace-nowrap font-mono text-ink-muted">
-                            {pick.marketLine}
-                          </td>
-
-                          {/* Model Forecast & Edge */}
-                          <td className="px-3 py-3 whitespace-nowrap font-mono text-ink">
-                            <span>{pick.modelPrediction}</span>
-                            {pick.edge !== null && (
-                              <span className="ml-1 text-[11px] text-accent-ink">
-                                ({signedSpread(pick.edge)})
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Pick Label */}
-                          <td className="px-3 py-3 whitespace-nowrap font-medium text-ink">
-                            <div className="flex items-center gap-1">
-                              {pick.highConfidence && (
-                                <span className="text-accent text-xs" title="High confidence pick">
-                                  ★
-                                </span>
-                              )}
-                              <span>{pick.pickLabel}</span>
-                            </div>
-                          </td>
-
-                          {/* Result Pill */}
-                          <td className="px-3 py-3 text-center whitespace-nowrap">
-                            <span
-                              className={clsx(
-                                "inline-block rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider",
-                                isWin && "bg-win-soft text-win",
-                                isLoss && "bg-loss-soft text-loss",
-                                pick.result === "push" && "bg-surface-inset text-ink-muted"
-                              )}
-                            >
-                              {pick.result}
-                            </span>
-                          </td>
-
-                          {/* Profit Units */}
-                          <td
-                            className={clsx(
-                              "px-4 py-3 text-right font-mono font-semibold whitespace-nowrap",
-                              pick.profitUnits > 0 && "text-win",
-                              pick.profitUnits < 0 && "text-loss",
-                              pick.profitUnits === 0 && "text-ink-faint"
-                            )}
-                          >
-                            {pick.profitUnits > 0 ? "+" : ""}
-                            {pick.profitUnits.toFixed(2)}u
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           )}
-        </section>
-      )}
+        </div>
+      </section>
+
+      {/* Helpful Slate Deep Dive Note */}
+      <p className="text-xs text-ink-muted">
+        💡 Click any week above to view the full game-by-game results and graded picks on the Results tab.
+      </p>
     </div>
   );
 }

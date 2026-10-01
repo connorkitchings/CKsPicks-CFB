@@ -14,7 +14,7 @@ export function Header({
   systemName: string | null;
   updatedAt: Date | null;
   publicationMode: PublicationMode;
-  allowedSeasons?: number[];
+  allowedSeasons?: readonly number[];
 }) {
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
