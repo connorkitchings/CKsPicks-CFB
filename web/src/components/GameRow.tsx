@@ -146,11 +146,11 @@ export function GameRow({
           {game.systemName ? game.systemName : "Blitzkrieg V5"}
         </span>
         <Link
-          href={`/teams/${encodeURIComponent(game.homeTeam)}`}
+          href={`/matchup/${game.gameId}`}
           className="text-[11px] font-medium text-ink-muted hover:text-accent-ink hover:underline transition-colors flex items-center gap-1"
-          title={`View ${game.homeTeam} team ratings`}
+          title={`View ${game.awayTeam} vs ${game.homeTeam} matchup breakdown`}
         >
-          Matchup Profile →
+          Matchup Breakdown →
         </Link>
       </div>
     </li>
