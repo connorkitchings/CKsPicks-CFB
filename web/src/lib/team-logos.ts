@@ -1,11 +1,7 @@
 import { LOGO_IDS } from "./team-logos.generated.ts";
-import { logoUrl as legacyLogoUrl } from "./teams.ts";
 
 export type LogoSize = "sm" | "lg";
 export type LogoTheme = "light" | "dark";
-
-/** True once `scripts/build-team-logos.mjs` has produced the id map. */
-export const LOGOS_BUILT = Object.keys(LOGO_IDS).length > 0;
 
 /** Other spellings of a school name -> the CFBD name used as the key in LOGO_IDS. */
 const LOGO_ALIASES: Record<string, string> = {
@@ -37,11 +33,6 @@ export function hasLogo(teamName: string): boolean {
 export function logoSrc(teamName: string, size: LogoSize, theme: LogoTheme): string | null {
   const id = logoId(teamName);
   return id === null ? null : `/logos/v2/${size}/${theme}/${id}.webp`;
-}
-
-/** Legacy 32 px file; used only until the v2 set is built (contract 07, Phase C). */
-export function legacyLogoSrc(teamName: string): string {
-  return legacyLogoUrl(teamName);
 }
 
 export function teamInitials(teamName: string): string {

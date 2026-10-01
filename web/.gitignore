@@ -20,7 +20,6 @@
 /out/
 
 # logo build staging and report (web/scripts/build-team-logos.mjs)
-public/logos.staging/
 
 # production
 /build

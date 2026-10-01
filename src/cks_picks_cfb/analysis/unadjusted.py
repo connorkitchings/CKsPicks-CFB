@@ -19,7 +19,7 @@ import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image, ImageOps
 
-from cks_picks_cfb.config import LOGOS_DIR, LOGOS_V2_DIR, get_data_root
+from cks_picks_cfb.config import LOGOS_V2_DIR, get_data_root
 from cks_picks_cfb.features.core import aggregate_team_season
 from cks_picks_cfb.utils.local_storage import LocalStorage
 
@@ -54,18 +54,10 @@ def _manifest_logo_index(v2_dir: Path) -> dict[str, Path]:
     return mapping
 
 
-def _legacy_logo_index(logo_dir: Path) -> dict[str, Path]:
-    if not logo_dir.is_dir():
-        return {}
-    return {_normalize_name(path.stem): path for path in logo_dir.glob("*.png")}
-
-
 @lru_cache(maxsize=None)
 def _logo_index() -> dict[str, Path]:
-    """Prefer the self-hosted v2 logos; fall back to the legacy 32 px PNGs."""
-    return _manifest_logo_index(Path(LOGOS_V2_DIR)) or _legacy_logo_index(
-        Path(LOGOS_DIR)
-    )
+    """Self-hosted v2 logos (large, light) keyed by normalized school name."""
+    return _manifest_logo_index(Path(LOGOS_V2_DIR))
 
 
 @lru_cache(maxsize=None)

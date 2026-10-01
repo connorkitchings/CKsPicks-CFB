@@ -13,12 +13,3 @@ export const TEAM_LOGO_MAP: Record<string, string> = {
   FIU: "Florida International",
   "Texas A&M": "Texas A&M",
 };
-
-export function logoFilename(teamName: string): string {
-  const mapped = TEAM_LOGO_MAP[teamName] ?? teamName;
-  return `${mapped}.png`;
-}
-
-export function logoUrl(teamName: string): string {
-  return `/logos/${encodeURIComponent(logoFilename(teamName))}`;
-}

@@ -1,10 +1,9 @@
 import clsx from "clsx";
-import { LOGOS_BUILT, legacyLogoSrc, logoSrc, teamInitials, type LogoSize } from "@/lib/team-logos";
+import { logoSrc, teamInitials, type LogoSize } from "@/lib/team-logos";
 
 /**
  * Team logo at `px` CSS pixels. Serves the sharp v2 WebP pair (light/dark swap
- * via the `dark:` variant); an initials tile for unknown teams; and the legacy
- * 32 px PNG only until the v2 set has been built.
+ * via the `dark:` variant) and an initials tile for unknown teams.
  */
 export default function TeamLogo({
   name,
@@ -23,11 +22,6 @@ export default function TeamLogo({
   const box = { width: px, height: px };
   const alt = decorative ? "" : name;
   const cls = clsx("shrink-0 object-contain", className);
-
-  if (!LOGOS_BUILT) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={legacyLogoSrc(name)} alt={alt} {...box} style={box} className={cls} />;
-  }
 
   const asset = size ?? (px > 40 ? "lg" : "sm");
   const light = logoSrc(name, asset, "light");

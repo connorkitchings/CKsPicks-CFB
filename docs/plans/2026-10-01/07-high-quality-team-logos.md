@@ -1,10 +1,10 @@
 # High-Quality Team Logos: Self-Hosted, ID-Keyed, Theme-Aware
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the approach in-session on 2026-10-01 ("I like your recommendation… I'll do it when I get home"). Confirm the open decisions below before executing.
-- **Implementation log:** Code for Phases A and B is on `dev` (build script with `--dry-run`, `TeamLogo`, manifest-based Python index, immutable cache headers, e2e guards that skip until the set is built). Remaining: run the fetch on the user's machine, verify, then Phase C cleanup. The `sync-logos` hooks are already removed; old PNGs stay as the fallback.
+- **Implementation log:** Implemented 2026-10-01 on `dev`. The user ran the fetch (138 FBS teams from the CFBD CDN, no fallbacks, 4 MB); verification and the Phase C cleanup were done in the cloud session. See `session_logs/2026-10-01/`.
 - **Commit policy:** Land on `dev` in separate commits per phase (script + manifest, generated assets, web change, cleanup). Merge `dev` into `main` only after the visual check passes.
 
 ## Goal
@@ -62,15 +62,15 @@ None. Both earlier questions are resolved (see decisions 9 and 10).
 12. Update `web/README.md` (how logos are built and refreshed once per season) and `docs/status.md`; add a session log.
 
 ## Definition of Done
-- [ ] Dry run output recorded; build script completes with no failed teams (or each failure listed with its fallback).
-- [ ] `manifest.json` exists with source URL and SHA-256 for every asset; total `web/public/logos/v2` size < 6 MB.
-- [ ] Every team in the 2026 FBS schedule resolves to an id; unmatched names produce the initials tile, not a broken image.
-- [ ] e2e resolution test passes; lint, typecheck, `test:publication`, build and the full Playwright suite pass.
-- [ ] 3x light and dark screenshots show sharp logos at 16, 20, 28 and 64–80 px.
-- [ ] No runtime request to `espncdn.com` (check the network panel).
-- [ ] The Python analysis code uses the new assets; `assets/logos/` and the old `web/public/logos/*.png` are removed, with no remaining references.
+- [x] Dry run output recorded; build script completes with no failed teams (or each failure listed with its fallback).
+- [x] `manifest.json` exists with source URL and SHA-256 for every asset; total `web/public/logos/v2` size < 6 MB.
+- [x] Every team in the 2026 FBS schedule resolves to an id; unmatched names produce the initials tile, not a broken image.
+- [x] e2e resolution test passes; lint, typecheck, `test:publication`, build and the full Playwright suite pass.
+- [x] 3x light and dark screenshots show sharp logos at 16, 20, 28 and 64–80 px.
+- [x] No runtime request to `espncdn.com` (check the network panel).
+- [x] The Python analysis code uses the new assets; `assets/logos/` and the old `web/public/logos/*.png` are removed, with no remaining references.
 - [x] Footer trademark line added on `dev` (verified by e2e on `/`, `/test-picks`, `/test-results`).
-- [ ] `docs/status.md` updated; contract marked Implemented.
+- [x] `docs/status.md` updated; contract marked Implemented.
 
 ## Risks and rollback
 - **CFBD/ESPN response differs from what was assumed:** the dry run catches this before any download; adjust the parser, not the design.

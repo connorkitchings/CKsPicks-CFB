@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { hasLogo, legacyLogoSrc, logoId, logoSrc, teamInitials } from "./team-logos.ts";
+import { hasLogo, logoId, logoSrc, teamInitials } from "./team-logos.ts";
 
 test("unknown team has no v2 logo", () => {
   assert.equal(hasLogo("Nowhere State"), false);
@@ -23,10 +23,6 @@ test("alternate spellings resolve to the same logo as the CFBD name", () => {
     assert.notEqual(logoId(canonical), null, canonical);
     assert.equal(logoId(alias), logoId(canonical), alias);
   }
-});
-
-test("legacy path still resolves aliases", () => {
-  assert.equal(legacyLogoSrc("UConn"), "/logos/Connecticut.png");
 });
 
 test("teamInitials", () => {
