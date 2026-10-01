@@ -60,6 +60,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
+- Approved, to run locally: [high-quality team logos](plans/2026-10-01/07-high-quality-team-logos.md) (the current 32 px logos look pixelated).
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 
 ## Where to look next
