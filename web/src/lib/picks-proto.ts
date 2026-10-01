@@ -35,25 +35,25 @@ export type Lean = {
   dir: "home" | "away" | "over" | "under";
   /** Team the spread lean backs; null for totals. */
   team: string | null;
-  /** Plain-language meaning, e.g. "Utah to win by more than 2.5". */
+  /** Short meaning, read after the pick: "wins by more than 2.5" / "total above 57.5". */
   explain: string;
-  /** What the model says on the same scale, e.g. "Utah by 7.6" or "total 54.1". */
+  /** What the model says on the same scale: "wins by 7.6" / "54.1". */
   model: string | null;
   /** Edge in points on the pick side; always positive. */
   edge: number;
   tier: 1 | 2 | 3;
 };
 
-function spreadExplain(team: string, line: number): string {
+function spreadExplain(line: number): string {
   const n = Math.abs(line).toFixed(1);
-  if (line === 0) return `${team} to win`;
-  return line < 0 ? `${team} to win by more than ${n}` : `${team} to win, or lose by fewer than ${n}`;
+  if (line === 0) return "wins";
+  return line < 0 ? `wins by more than ${n}` : `loses by under ${n}, or wins`;
 }
 
-/** Model margin from the leaned team's side, as text ("Utah by 7.6" / "Utah loses by 1.2"). */
-function modelMarginText(team: string, margin: number | null): string | null {
+/** Model margin from the leaned team's side: "wins by 7.6" / "loses by 1.2". */
+function modelMarginText(margin: number | null): string | null {
   if (margin === null) return null;
-  return margin >= 0 ? `${team} by ${margin.toFixed(1)}` : `${team} loses by ${Math.abs(margin).toFixed(1)}`;
+  return margin >= 0 ? `wins by ${margin.toFixed(1)}` : `loses by ${Math.abs(margin).toFixed(1)}`;
 }
 
 export function leanFor(game: Game, kind: LeanKind): Lean | null {
@@ -82,8 +82,8 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
       pick: `${team} ${signedSpread(line)}`,
       dir: game.spreadLean,
       team,
-      explain: spreadExplain(team, line),
-      model: modelMarginText(team, margin),
+      explain: spreadExplain(line),
+      model: modelMarginText(margin),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
     };
@@ -98,8 +98,8 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
     pick: `${over ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
     dir: game.totalLean,
     team: null,
-    explain: `Combined score ${over ? "above" : "below"} ${game.totalLine.toFixed(1)}`,
-    model: game.predictedTotal === null ? null : `total ${game.predictedTotal.toFixed(1)}`,
+    explain: `total ${over ? "above" : "below"} ${game.totalLine.toFixed(1)}`,
+    model: game.predictedTotal === null ? null : game.predictedTotal.toFixed(1),
     edge,
     tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
   };
@@ -299,12 +299,12 @@ export function breakEvenDelta(
   return { rate, delta, fill, decided: win + loss };
 }
 
-/** Actual margin from the leaned team's side, e.g. "Utah won by 7" / "Utah lost by 3". */
+/** Actual margin from the named team's side: "won by 7" / "lost by 3" / "tied". */
 export function finalMarginText(game: Game, team: string): string | null {
   if (game.publicationMode !== "predictions" || !isFinal(game)) return null;
   const home = game.homePoints as number;
   const away = game.awayPoints as number;
   const margin = team === game.homeTeam ? home - away : away - home;
-  if (margin === 0) return `${team} tied`;
-  return `${team} ${margin > 0 ? "won" : "lost"} by ${Math.abs(margin)}`;
+  if (margin === 0) return "tied";
+  return `${margin > 0 ? "won" : "lost"} by ${Math.abs(margin)}`;
 }

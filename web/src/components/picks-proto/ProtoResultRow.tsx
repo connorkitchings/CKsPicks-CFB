@@ -15,6 +15,7 @@ function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
         <span className="min-w-0 truncate font-semibold text-ink">{lean.pick}</span>
+        <span className="shrink-0 tabular-nums text-ink-muted">({lean.edge.toFixed(1)})</span>
         {grade && <ResultBadge grade={grade} />}
       </div>
       {text && <p className="tabular-nums text-ink-muted">{text}</p>}

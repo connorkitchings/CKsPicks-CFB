@@ -36,11 +36,7 @@ export function RecordCell({
       <div className="text-[11px] text-ink-faint">{decided} decided</div>
       {benchmark && (
         <>
-          <div
-            role="img"
-            aria-label={`${label}: ${caption}`}
-            className="relative mt-2 h-2 rounded-full bg-line"
-          >
+          <div role="img" aria-label={`${label}: ${caption}`} className="relative mt-2 h-2 rounded-full bg-line">
             {fill !== 0 && (
               <div
                 className={clsx(
@@ -89,17 +85,55 @@ export function RecordBlock({
 
 export const BAR_SCALE_NOTE = `Bars span ±${BAR_RANGE_PTS} points of win rate around the ${BREAK_EVEN_PCT}% break-even line.`;
 
-/** Season records (live vs replay), compared to break-even. Same blocks on Picks and Results. */
-export function ProtoRecord({ performance }: { performance: Performance[] }) {
-  const live = performance.find((p) => p.classification === "live");
-  const replay = performance.find((p) => p.classification === "replay");
+/** Typical size of the model's misses, from the season summary. */
+function missLine(season: Performance | undefined): string | null {
+  if (!season || season.marginMae === null || season.totalMae === null) return null;
+  return `Average miss: ${season.marginMae.toFixed(1)} pts on the margin, ${season.totalMae.toFixed(1)} on totals.`;
+}
+
+/** Context for reading the picks: how the model has done so far this season. */
+export function ModelRecord({
+  performance,
+  week,
+}: {
+  performance: Performance[];
+  /** When set (Results), this slate's record is shown beside the season's. */
+  week?: { number: number; spread: Rec; total: Rec };
+}) {
+  const season = performance.find((p) => p.classification === "all");
+  const replayed = (performance.find((p) => p.classification === "replay")?.games ?? 0) > 0;
+  const miss = missLine(season);
   return (
     <section aria-label="Record" className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      <div className="grid gap-4 md:grid-cols-2">
-        <RecordBlock title="Season · Live" note="frozen before kickoff" spread={live?.spread ?? null} total={live?.total ?? null} benchmark />
-        <RecordBlock title="Season · Replay" note="recalculated after the games" spread={replay?.spread ?? null} total={replay?.total ?? null} benchmark />
+      <h2 className="mb-2 text-sm font-semibold text-ink">How the model is doing</h2>
+      <div className={clsx("grid gap-4", week && "md:grid-cols-2")}>
+        {week && (
+          <RecordBlock
+            title={`Week ${week.number}`}
+            note="this slate · small sample"
+            spread={week.spread}
+            total={week.total}
+            benchmark={false}
+          />
+        )}
+        <RecordBlock
+          title="Season"
+          note={season ? `${season.games} games` : "no games yet"}
+          spread={season?.spread ?? null}
+          total={season?.total ?? null}
+          benchmark
+        />
       </div>
-      <p className="mt-3 text-[11px] text-ink-faint">{BAR_SCALE_NOTE}</p>
+      <div className="mt-3 space-y-0.5 text-[11px] text-ink-faint">
+        {miss && <p>{miss}</p>}
+        <p>
+          {BAR_SCALE_NOTE}
+          {week ? " A single week is not compared to it." : ""}
+        </p>
+        {replayed && (
+          <p>Includes games recalculated after the fact (replays), so read it as a back-test, not the original picks.</p>
+        )}
+      </div>
     </section>
   );
 }

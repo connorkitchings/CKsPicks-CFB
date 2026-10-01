@@ -20,25 +20,30 @@ test.describe("picks prototype (/test-picks)", () => {
   test("explains each lean's direction once, without a second market/model table", async ({ page }) => {
     await page.goto("/test-picks");
 
-    // Plain-language direction plus the model's number, under the pick.
-    await expect(page.getByText(/Utah to win by more than 2\.5 · model: Utah by 7\.6/).first()).toBeVisible();
-    await expect(page.getByText(/Combined score below 57\.5 · model: total 54\.1/).first()).toBeVisible();
-    await expect(page.getByText(/Alabama to win, or lose by fewer than 1\.5/).first()).toBeVisible();
+    // Edge sits in parentheses next to the pick; no separate "Edge" label.
+    await expect(page.getByText("(5.1)").first()).toBeVisible();
+    await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
+    // One line under the pick: what it means plus the model's number.
+    await expect(page.getByText(/^wins by more than 2\.5 · model: wins by 7\.6$/).first()).toBeVisible();
+    await expect(page.getByText(/^total below 57\.5 · model: 54\.1$/).first()).toBeVisible();
+    await expect(page.getByText(/^loses by under 1\.5, or wins · model: wins by 0\.4$/).first()).toBeVisible();
     // The old Market / Model grid is gone from the cards.
     await expect(page.getByText("Market", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Model", { exact: true })).toHaveCount(0);
   });
 
-  test("season records are compared to break-even; empty blocks keep the same shape", async ({ page }) => {
+  test("top of the page shows how the model is doing against break-even", async ({ page }) => {
     await page.goto("/test-picks");
 
     const record = page.getByRole("region", { name: "Record" });
-    await expect(record.getByRole("heading", { name: "Season · Live" })).toBeVisible();
-    await expect(record.getByRole("heading", { name: "Season · Replay" })).toBeVisible();
-    // Replay spread and total each show their gap to 52.4%.
+    await expect(record.getByRole("heading", { name: "How the model is doing" })).toBeVisible();
+    await expect(record.getByRole("heading", { name: "Season" })).toBeVisible();
+    // Spread and total each show their gap to 52.4%; there is no Live/Replay split.
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(2);
-    // Live has no graded games but still renders both cells.
-    await expect(record.getByText("No graded games yet")).toHaveCount(2);
+    await expect(record.getByText(/Live/)).toHaveCount(0);
+    // How big the misses typically are, for taking picks with a grain of salt.
+    await expect(record.getByText(/Average miss: 14\.5 pts on the margin, 13\.4 on totals\./)).toBeVisible();
+    await expect(record.getByText(/read it as a back-test/)).toBeVisible();
   });
 
   test("leans only, sort and list view work", async ({ page }) => {
@@ -81,9 +86,10 @@ test.describe("results prototype (/test-results)", () => {
 
     const record = page.getByRole("region", { name: "Record" });
     await expect(record.getByText(/small sample/)).toBeVisible();
-    // Only the two season replay cells carry a break-even comparison.
+    // Only the two season cells carry a break-even comparison.
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(2);
-    await expect(page.getByText(/final: Ohio State won by 7/).first()).toBeVisible();
+    await expect(record.getByText(/Live/)).toHaveCount(0);
+    await expect(page.getByText(/model: wins by 8\.6 · final: won by 7/).first()).toBeVisible();
   });
 
   test("result filters narrow the slate and every card shows a graded badge", async ({ page }) => {

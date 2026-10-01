@@ -14,7 +14,7 @@ import { overallRanks, weekRecord } from "@/lib/picks-proto";
 import { assertPrototypeEnabled } from "@/lib/proto-gate";
 import { Footer } from "@/components/Header";
 import { ProtoHeader } from "@/components/picks-proto/ProtoHeader";
-import { ProtoResultsRecord } from "@/components/picks-proto/ProtoResultsRecord";
+import { ModelRecord } from "@/components/picks-proto/ProtoRecord";
 import { ProtoResultsSlate } from "@/components/picks-proto/ProtoResultsSlate";
 import { ResultHighlights } from "@/components/picks-proto/ResultHighlights";
 
@@ -119,7 +119,7 @@ export default async function ResultsPrototype({ searchParams }: { searchParams:
           </div>
         ) : (
           <>
-            <ProtoResultsRecord week={week} weekRec={weekRecord(games)} performance={performance} />
+            <ModelRecord performance={performance} week={{ number: week, ...weekRecord(games) }} />
             <ResultHighlights games={games} />
             <ProtoResultsSlate games={games} ranks={ranks} />
           </>

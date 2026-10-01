@@ -129,6 +129,9 @@ export function ProtoSlate({ games, ranks }: { games: Game[]; ranks: Record<stri
       <p className="px-1 text-xs text-ink-faint">
         Showing {visible.length} of {games.length} games · {leanCount} with a lean
       </p>
+      <p className="px-1 text-xs text-ink-faint">
+        The number in parentheses after a pick is its edge: how many points the model differs from the market.
+      </p>
 
       {visible.length === 0 ? (
         <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">

@@ -1,7 +1,6 @@
 import type { Game } from "@/lib/queries";
 import { topLeans, type LeanKind } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
-import { EdgeMeter } from "./EdgeMeter";
 import { LeanMarker } from "./LeanMarker";
 
 function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: string }) {
@@ -22,16 +21,15 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
                 <span className="flex items-center gap-2 text-sm">
                   <LeanMarker lean={l} />
                   <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-ink-muted">({l.edge.toFixed(1)})</span>
                   <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
                     {l.game.awayTeam} @ {l.game.homeTeam}
                   </span>
-                  <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-ink-muted">
-                    <span className="hidden text-ink-faint sm:inline">{kickoffTime(l.game.startDate)}</span>
-                    {l.edge.toFixed(1)}
-                    <EdgeMeter tier={l.tier} />
+                  <span className="ml-auto hidden shrink-0 text-xs tabular-nums text-ink-faint sm:inline">
+                    {kickoffTime(l.game.startDate)}
                   </span>
                 </span>
-                <span className="mt-0.5 block pl-6 text-xs text-ink-muted">
+                <span className="mt-0.5 block truncate max-[380px]:overflow-visible max-[380px]:whitespace-normal pl-6 text-[11px] text-ink-muted">
                   {l.explain}
                   {l.model && <> · model: {l.model}</>}
                 </span>

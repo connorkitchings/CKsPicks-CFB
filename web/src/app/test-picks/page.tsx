@@ -15,7 +15,7 @@ import { overallRanks } from "@/lib/picks-proto";
 import { assertPrototypeEnabled } from "@/lib/proto-gate";
 import { Footer } from "@/components/Header";
 import { ProtoHeader } from "@/components/picks-proto/ProtoHeader";
-import { ProtoRecord } from "@/components/picks-proto/ProtoRecord";
+import { ModelRecord } from "@/components/picks-proto/ProtoRecord";
 import { ProtoSlate } from "@/components/picks-proto/ProtoSlate";
 import { TopLeans } from "@/components/picks-proto/TopLeans";
 
@@ -118,7 +118,7 @@ export default async function PicksPrototype({ searchParams }: { searchParams: S
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">{error}</div>
         ) : (
           <>
-            {performance.length > 0 && <ProtoRecord performance={performance} />}
+            {performance.length > 0 && <ModelRecord performance={performance} />}
             <TopLeans games={games} />
             <ProtoSlate games={games} ranks={ranks} />
           </>

@@ -20,12 +20,12 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
                 <ResultBadge grade={r.grade} />
                 <LeanMarker lean={r} />
                 <span className="min-w-0 truncate font-semibold text-ink">{r.pick}</span>
+                <span className="shrink-0 text-xs tabular-nums text-ink-muted">({r.edge.toFixed(1)})</span>
                 <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
                   {r.game.awayTeam} @ {r.game.homeTeam}
                 </span>
                 <span className="ml-auto shrink-0 text-xs tabular-nums text-ink-muted">
-                  edge {r.edge.toFixed(1)}
-                  {coverText(r.cover) ? ` · ${coverText(r.cover)}` : ""}
+                  {coverText(r.cover)}
                 </span>
               </a>
             </li>
