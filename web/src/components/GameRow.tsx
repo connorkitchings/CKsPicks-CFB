@@ -50,7 +50,7 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
  * box-score block (logos, names, final scores) is always present, followed by
  * a compact market-vs-model table. Predictions mode shows Market / Model /
  * Model Bet / Bet Result; market mode (fail-closed, no model output) shows
- * Market / Bet Result only.
+ * Market only, plus Bet Result when `showBetResult` is set (the Results tab).
  */
 export function GameRow({
   game,
@@ -60,7 +60,7 @@ export function GameRow({
   showBetResult?: boolean;
 }) {
   if (game.publicationMode === "market") {
-    return <MarketGameRow game={game} />;
+    return <MarketGameRow game={game} showBetResult={showBetResult} />;
   }
   const hasAnyLine =
     game.homeTeamSpreadLine !== null || game.totalLine !== null;
@@ -142,8 +142,10 @@ export function GameRow({
 /** Market-mode card: same shell; the table omits model columns (fail-closed). */
 function MarketGameRow({
   game,
+  showBetResult = true,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
+  showBetResult?: boolean;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -183,15 +185,20 @@ function MarketGameRow({
         headerCellClassName="pl-2 text-right"
         bodyCellClassName={[
           "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
-          "py-1.5 pl-2 text-right text-ink",
+          ...(showBetResult ? ["py-1.5 pl-2 text-right text-ink"] : []),
         ]}
-        columns={[{ header: "Market" }, { header: "Bet Result" }]}
+        columns={[
+          { header: "Market" },
+          ...(showBetResult ? [{ header: "Bet Result" }] : []),
+        ]}
         rows={[
           {
             label: "Spread",
             cells: [
               spreadLabel(marketSpread),
-              <ResultCell key="result" result={game.spreadResult} />,
+              ...(showBetResult
+                ? [<ResultCell key="result" result={game.spreadResult} />]
+                : []),
             ],
           },
           {
@@ -200,7 +207,9 @@ function MarketGameRow({
               game.totalLine === null
                 ? "O/U —"
                 : `O/U ${game.totalLine.toFixed(1)}`,
-              <ResultCell key="result" result={game.totalResult} />,
+              ...(showBetResult
+                ? [<ResultCell key="result" result={game.totalResult} />]
+                : []),
             ],
           },
         ]}

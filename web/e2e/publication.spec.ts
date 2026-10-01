@@ -9,7 +9,8 @@ for (const width of [375, 420]) {
     const comparison = page.getByRole("table", { name: "Market and results" });
     await expect(comparison).toBeVisible();
     await expect(comparison.getByRole("columnheader", { name: "Market" })).toBeVisible();
-    await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toBeVisible();
+    // Picks is forward-looking: results belong to the Results tab.
+    await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "2026 Season Record" })).toHaveCount(0);
     await expect(page.getByRole("table", { name: "Market and model comparison" })).toHaveCount(0);
     await expect(page.getByText("Blitzkrieg")).toHaveCount(0);
@@ -21,6 +22,16 @@ for (const width of [375, 420]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 }
+
+test("market results tab keeps the Bet Result column", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/results?mode=market");
+
+  const comparison = page.getByRole("table", { name: "Market and results" }).first();
+  await expect(comparison).toBeVisible();
+  await expect(comparison.getByRole("columnheader", { name: "Market" })).toBeVisible();
+  await expect(comparison.getByRole("columnheader", { name: "Bet Result" })).toBeVisible();
+});
 
 test("prediction publication shows the selected-week comparison and season record", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
