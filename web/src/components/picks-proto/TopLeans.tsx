@@ -1,5 +1,5 @@
 import type { Game } from "@/lib/queries";
-import { topLeans, type LeanKind } from "@/lib/picks-proto";
+import { leanDetail, topLeans, type LeanKind } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
 import { LeanMarker } from "./LeanMarker";
 
@@ -29,9 +29,9 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
                     {kickoffTime(l.game.startDate)}
                   </span>
                 </span>
-                {l.model && (
-                  <span className="mt-0.5 block truncate pl-6 text-[11px] text-ink-muted">
-                    model: {l.model}
+                {leanDetail(l) && (
+                  <span className="mt-0.5 block truncate pl-6 text-[11px] text-ink-muted max-[380px]:overflow-visible max-[380px]:whitespace-normal">
+                    {leanDetail(l)}
                   </span>
                 )}
               </a>

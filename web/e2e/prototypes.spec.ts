@@ -24,9 +24,13 @@ test.describe("picks prototype (/test-picks)", () => {
     await expect(page.getByText("(5.1)").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
     // One line under the pick: just the model's prediction, no explanatory sentence.
-    await expect(page.getByText(/^model: wins by 7\.6$/).first()).toBeVisible();
-    await expect(page.getByText(/^model: 54\.1$/).first()).toBeVisible();
-    await expect(page.getByText(/^model: wins by 0\.4$/).first()).toBeVisible();
+    await expect(page.getByText(/^model: wins by 7\.6 · best line: DraftKings$/).first()).toBeVisible();
+    await expect(page.getByText(/^model: 54\.1 · best line: Bovada$/).first()).toBeVisible();
+    // Provider keys are shown as sportsbook names.
+    await expect(page.getByText(/best line: FanDuel/).first()).toBeVisible();
+    // A game with no recorded source shows the model's number but no invented book.
+    await expect(page.locator("#game-9").getByText("model: wins by 2.0", { exact: true })).toBeVisible();
+    await expect(page.locator("#game-9").getByText(/best line/)).toHaveCount(0);
     await expect(page.getByText(/wins by more than|loses by under|total above|total below/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
     await expect(page.getByText("Market", { exact: true })).toHaveCount(0);

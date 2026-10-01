@@ -23,19 +23,21 @@ type Spec = {
   predTotal: number | null;
   hc?: boolean;
   final?: [number, number];
+  /** Sportsbook provider for [spread, total] best quotes; null = consensus fallback. */
+  src?: [string | null, string | null];
 };
 
 const specs: Spec[] = [
-  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Utah", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1 },
-  { id: 2, start: "2026-10-01T23:30:00Z", away: "Wisconsin", home: "Washington", awayRecord: "2-1", homeRecord: "1-2", homeLine: 3, total: 46.5, predSpread: -2.6, predTotal: 46.9 },
-  { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true },
-  { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8 },
-  { id: 5, start: "2026-10-03T16:00:00Z", away: "Michigan", home: "Penn State", awayRecord: "2-1", homeRecord: "3-0", homeLine: -6.5, total: 44.5, predSpread: 10.2, predTotal: 41.0 },
-  { id: 6, start: "2026-10-03T19:30:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, hc: true },
-  { id: 7, start: "2026-10-03T23:30:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: null, predSpread: 5.0, predTotal: 58.3 },
-  { id: 8, start: "2026-10-03T23:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 54.9 },
-  { id: 9, start: "2026-10-04T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 50.0 },
-  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, final: [24, 17] },
+  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Utah", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"] },
+  { id: 2, start: "2026-10-01T23:30:00Z", away: "Wisconsin", home: "Washington", awayRecord: "2-1", homeRecord: "1-2", homeLine: 3, total: 46.5, predSpread: -2.6, predTotal: 46.9, src: [null, null] },
+  { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true, src: ["fanduel", "draftkings"] },
+  { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8, src: ["BetMGM", null] },
+  { id: 5, start: "2026-10-03T16:00:00Z", away: "Michigan", home: "Penn State", awayRecord: "2-1", homeRecord: "3-0", homeLine: -6.5, total: 44.5, predSpread: 10.2, predTotal: 41.0, src: ["Bovada", "ESPN Bet"] },
+  { id: 6, start: "2026-10-03T19:30:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, hc: true, src: ["caesars", "fanduel"] },
+  { id: 7, start: "2026-10-03T23:30:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: null, predSpread: 5.0, predTotal: 58.3, src: [null, null] },
+  { id: 8, start: "2026-10-03T23:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 54.9, src: ["betmgm", null] },
+  { id: 9, start: "2026-10-04T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 50.0, src: [null, null] },
+  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, final: [24, 17], src: ["draftkings", "draftkings"] },
 ];
 
 /** Minimum model-vs-market gap (points) that produces a lean. */
@@ -83,6 +85,8 @@ function build(
     edgeSpread: spreadLean && spreadGap !== null ? Math.abs(spreadGap) : null,
     edgeTotal: totalLean && totalGap !== null ? Math.abs(totalGap) : null,
     highConfidence: Boolean(s.hc),
+    spreadSource: s.src?.[0] ?? null,
+    totalSource: s.src?.[1] ?? null,
     systemName: "Trench Warfare V5",
     modelId: "v5-possession-ppp-rho060-exposure",
     evidenceClass,

@@ -53,6 +53,12 @@ export type PredictionGame = BaseGame & {
   totalModelVersion: string | null;
   spreadResult: "win" | "loss" | "push" | null;
   totalResult: "win" | "loss" | "push" | null;
+  /**
+   * Sportsbook behind the selected best quote for each target, when the run
+   * recorded one. Null/absent when the line is a consensus fallback.
+   */
+  spreadSource?: string | null;
+  totalSource?: string | null;
 };
 
 export type Game = MarketGame | PredictionGame;
@@ -399,6 +405,8 @@ type TargetSelection = {
   point: number;
   side: string;
   edge: number | null;
+  /** Provider (sportsbook) of the selected quote. */
+  source: string | null;
 };
 
 type GameSelections = {
@@ -440,8 +448,14 @@ export async function getMarketSelectionsForRun(
         side: schema.predictionMarketSelections.side,
         point: schema.predictionMarketSelections.point,
         edge: schema.predictionMarketSelections.edge,
+        // Left join: a missing quote must never change which lines are served.
+        source: schema.marketQuotes.provider,
       })
       .from(schema.predictionMarketSelections)
+      .leftJoin(
+        schema.marketQuotes,
+        eq(schema.predictionMarketSelections.quoteId, schema.marketQuotes.quoteId),
+      )
       .where(eq(schema.predictionMarketSelections.runId, runId));
 
     const map = new Map<number, GameSelections>();
@@ -456,12 +470,14 @@ export async function getMarketSelectionsForRun(
           point: sel.point,
           side: sel.side,
           edge: sel.edge,
+          source: sel.source ?? null,
         };
       } else if (sel.target === "total") {
         entry.total = {
           point: sel.point,
           side: sel.side,
           edge: sel.edge,
+          source: sel.source ?? null,
         };
       }
     }
@@ -540,6 +556,8 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
         totalLine: sel?.total?.point ?? row.totalLine,
         totalLean: (sel?.total?.side as "over" | "under" | undefined) ?? row.totalLean,
         edgeTotal: sel?.total?.edge ?? row.edgeTotal,
+        spreadSource: sel?.spread?.source ?? null,
+        totalSource: sel?.total?.source ?? null,
       };
     });
 

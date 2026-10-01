@@ -12,6 +12,36 @@ export const BREAK_EVEN_PCT = 52.4;
 
 export type LeanKind = "spread" | "total";
 
+const BOOK_NAMES: Record<string, string> = {
+  draftkings: "DraftKings",
+  fanduel: "FanDuel",
+  betmgm: "BetMGM",
+  caesars: "Caesars",
+  williamhill_us: "Caesars",
+  bovada: "Bovada",
+  espnbet: "ESPN Bet",
+  "espn bet": "ESPN Bet",
+  betrivers: "BetRivers",
+  pointsbet: "PointsBet",
+  mybookieag: "MyBookie",
+  betonlineag: "BetOnline",
+  fanatics: "Fanatics",
+  hardrockbet: "Hard Rock Bet",
+};
+
+/**
+ * Display name for a quote provider. Known sportsbook keys are mapped; anything
+ * else is shown as given, with underscores turned into spaces. Null/blank -> null.
+ */
+export function bookName(provider: string | null | undefined): string | null {
+  const raw = provider?.trim();
+  if (!raw) return null;
+  const known = BOOK_NAMES[raw.toLowerCase()];
+  if (known) return known;
+  const spaced = raw.replace(/_/g, " ");
+  return spaced === spaced.toLowerCase() ? spaced.replace(/\b\w/g, (c) => c.toUpperCase()) : spaced;
+}
+
 /** [low, high] edge thresholds (points); mirrors BetComparisonTable. */
 const EDGE_THRESHOLDS: Record<LeanKind, readonly [number, number]> = {
   spread: [3, 8],
@@ -37,6 +67,8 @@ export type Lean = {
   team: string | null;
   /** What the model says on the same scale: "wins by 7.6" / "54.1". */
   model: string | null;
+  /** Sportsbook behind the line (display name), when the run recorded one. */
+  source: string | null;
   /** Edge in points on the pick side; always positive. */
   edge: number;
   tier: 1 | 2 | 3;
@@ -75,6 +107,7 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
       dir: game.spreadLean,
       team,
       model: modelMarginText(margin),
+      source: bookName(game.spreadSource),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
     };
@@ -90,6 +123,7 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
     dir: game.totalLean,
     team: null,
     model: game.predictedTotal === null ? null : game.predictedTotal.toFixed(1),
+    source: bookName(game.totalSource),
     edge,
     tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
   };
@@ -101,6 +135,15 @@ export function hasLean(game: Game): boolean {
 
 export function isFinal(game: Game): boolean {
   return game.homePoints !== null && game.awayPoints !== null;
+}
+
+/** "model: wins by 7.6 · best line: DraftKings"; each part appears only when known. */
+export function leanDetail(lean: Lean): string | null {
+  const parts = [
+    lean.model ? `model: ${lean.model}` : null,
+    lean.source ? `best line: ${lean.source}` : null,
+  ].filter((p): p is string => p !== null);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 export type TopLean = Lean & { game: PredictionGame };

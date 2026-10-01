@@ -226,3 +226,29 @@ test("finalMarginText reads the result from the leaned team's side", () => {
   assert.equal(finalMarginText(g, "Away"), "lost by 7");
   assert.equal(finalMarginText(game({}), "Home"), null);
 });
+
+
+import { bookName, leanDetail } from "./picks-proto.ts";
+
+test("bookName maps sportsbook keys and tidies unknown providers", () => {
+  assert.equal(bookName("draftkings"), "DraftKings");
+  assert.equal(bookName("DraftKings"), "DraftKings");
+  assert.equal(bookName("espnbet"), "ESPN Bet");
+  assert.equal(bookName("williamhill_us"), "Caesars");
+  assert.equal(bookName("some_new_book"), "Some New Book");
+  assert.equal(bookName("Bovada"), "Bovada");
+  assert.equal(bookName("  "), null);
+  assert.equal(bookName(null), null);
+  assert.equal(bookName(undefined), null);
+});
+
+test("leans carry the line's source and detail text only when known", () => {
+  const withSource = leanFor(game({ spreadSource: "draftkings", totalSource: "bovada" }), "spread");
+  assert.equal(withSource?.source, "DraftKings");
+  assert.equal(leanDetail(withSource!), "model: wins by 6.5 · best line: DraftKings");
+  assert.equal(leanFor(game({ totalSource: "bovada" }), "total")?.source, "Bovada");
+  // Consensus fallback: no source recorded -> no invented source.
+  const noSource = leanFor(game({}), "spread");
+  assert.equal(noSource?.source, null);
+  assert.equal(leanDetail(noSource!), "model: wins by 6.5");
+});
