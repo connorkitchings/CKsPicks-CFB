@@ -745,3 +745,9 @@ def build_measurement_observations(
         ).reset_index(drop=True)
     audit["season_counts"] = season_counts
     return ObservationBuildResult(frame=frame, audit=audit)
+
+
+# Public aliases so other measurement code (e.g. team season stats) reuses the
+# exact drive-play filter and score-stream PPSO reconstruction.
+derive_is_drive_play = _derive_is_drive_play
+true_drive_points = _true_drive_points
