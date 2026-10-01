@@ -2,7 +2,14 @@ import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./db.ts";
 import { getCurrentRatings } from "./v5.ts";
-import { displaySystemName } from "./publication.ts";
+import {
+  displaySystemName,
+  isAllowedSeason,
+  isPublishedWeek,
+  publicationScope,
+} from "./publication.ts";
+import { getGamesForWeek, getMarketGamesForWeek } from "./queries.ts";
+import { selectMatchupView } from "./matchup-visibility.ts";
 import {
   marketSpreadView,
   modelSpreadView,
@@ -49,10 +56,10 @@ export interface TeamProfileStats {
 export interface TeamRatingSummary {
   team: string;
   rank: number | null;
-  overallRating: number;
-  offenseRating: number;
+  overallRating: number | null;
+  offenseRating: number | null;
   offenseRank: number | null;
-  defenseRating: number;
+  defenseRating: number | null;
   defenseRank: number | null;
 }
 
@@ -86,93 +93,63 @@ export interface MatchupData {
 
 /**
  * Fetch and construct authentic matchup breakdown for a specific gameId.
- * Never produces synthetic or mocked statistical metrics.
+ * Never produces synthetic or mocked statistical metrics. Model fields follow
+ * the same publication boundary as the Picks page: only the explicitly selected
+ * public run for a published week, and only in "predictions" mode.
  */
 export const getMatchupData = cache(async (gameId: number): Promise<MatchupData | null> => {
-  const gameRows = await db
-    .select({
-      gameId: schema.games.gameId,
-      season: schema.games.season,
-      week: schema.games.week,
-      startDate: schema.games.startDate,
-      homeTeam: schema.games.homeTeam,
-      awayTeam: schema.games.awayTeam,
-      homeTeamSpreadLine: schema.games.homeTeamSpreadLine,
-      totalLine: schema.games.totalLine,
-      predictedSpread: schema.games.predictedSpread,
-      predictedTotal: schema.games.predictedTotal,
-      predictedSpreadStdDev: schema.games.predictedSpreadStdDev,
-      spreadLean: schema.games.spreadLean,
-      totalLean: schema.games.totalLean,
-      edgeSpread: schema.games.edgeSpread,
-      edgeTotal: schema.games.edgeTotal,
-      highConfidence: schema.games.highConfidence,
-      systemName: schema.games.systemName,
-      modelId: schema.games.modelId,
-    })
+  const identity = await db
+    .select({ season: schema.games.season, week: schema.games.week })
     .from(schema.games)
     .where(eq(schema.games.gameId, gameId))
     .limit(1);
+  if (identity.length === 0) return null;
+  const { season, week } = identity[0];
 
-  if (gameRows.length === 0) return null;
-  const game = gameRows[0];
+  // Unpublished seasons/weeks do not exist as far as the public site is concerned.
+  if (!isAllowedSeason(season) || !isPublishedWeek(season, week)) return null;
 
-  // Optional results
-  const resultRows = await db
-    .select({
-      homePoints: schema.gameResults.homePoints,
-      awayPoints: schema.gameResults.awayPoints,
-    })
-    .from(schema.gameResults)
-    .where(eq(schema.gameResults.gameId, gameId))
-    .limit(1);
+  const mode = publicationScope.mode;
+  const games =
+    mode === "predictions"
+      ? await getGamesForWeek(season, week)
+      : await getMarketGamesForWeek(season, week);
+  const game = games.find((g) => g.gameId === gameId);
+  const view = selectMatchupView(game, mode);
+  if (!game || !view) return null;
 
-  const homeFinalPoints = resultRows[0]?.homePoints ?? null;
-  const awayFinalPoints = resultRows[0]?.awayPoints ?? null;
+  const homeFinalPoints = view.homePoints;
+  const awayFinalPoints = view.awayPoints;
 
   // Real ratings from Neon
-  const ratings = await getCurrentRatings(game.season);
+  const ratings = await getCurrentRatings(season);
 
-  const overallRanks = new Map<string, number>();
-  [...ratings]
-    .sort((a, b) => b.overallRating - a.overallRating)
-    .forEach((r, idx) => overallRanks.set(r.team, idx + 1));
+  const rankBy = (key: "overallRating" | "offenseRating" | "defenseRating") => {
+    const ranks = new Map<string, number>();
+    [...ratings]
+      .sort((a, b) => b[key] - a[key])
+      .forEach((r, idx) => ranks.set(r.team, idx + 1));
+    return ranks;
+  };
+  const overallRanks = rankBy("overallRating");
+  const offenseRanks = rankBy("offenseRating");
+  const defenseRanks = rankBy("defenseRating");
 
-  const offenseRanks = new Map<string, number>();
-  [...ratings]
-    .sort((a, b) => b.offenseRating - a.offenseRating)
-    .forEach((r, idx) => offenseRanks.set(r.team, idx + 1));
-
-  const defenseRanks = new Map<string, number>();
-  [...ratings]
-    .sort((a, b) => b.defenseRating - a.defenseRating)
-    .forEach((r, idx) => defenseRanks.set(r.team, idx + 1));
-
-  const awayRatingRow = ratings.find((r) => r.team === game.awayTeam);
-  const homeRatingRow = ratings.find((r) => r.team === game.homeTeam);
-
-  const awayRating: TeamRatingSummary = {
-    team: game.awayTeam,
-    rank: overallRanks.get(game.awayTeam) ?? null,
-    overallRating: awayRatingRow?.overallRating ?? 0,
-    offenseRating: awayRatingRow?.offenseRating ?? 0,
-    offenseRank: offenseRanks.get(game.awayTeam) ?? null,
-    defenseRating: awayRatingRow?.defenseRating ?? 0,
-    defenseRank: defenseRanks.get(game.awayTeam) ?? null,
+  const summarize = (team: string): TeamRatingSummary => {
+    const row = ratings.find((r) => r.team === team);
+    return {
+      team,
+      rank: overallRanks.get(team) ?? null,
+      overallRating: row?.overallRating ?? null,
+      offenseRating: row?.offenseRating ?? null,
+      offenseRank: offenseRanks.get(team) ?? null,
+      defenseRating: row?.defenseRating ?? null,
+      defenseRank: defenseRanks.get(team) ?? null,
+    };
   };
 
-  const homeRating: TeamRatingSummary = {
-    team: game.homeTeam,
-    rank: overallRanks.get(game.homeTeam) ?? null,
-    overallRating: homeRatingRow?.overallRating ?? 0,
-    offenseRating: homeRatingRow?.offenseRating ?? 0,
-    offenseRank: offenseRanks.get(game.homeTeam) ?? null,
-    defenseRating: homeRatingRow?.defenseRating ?? 0,
-    defenseRank: defenseRanks.get(game.homeTeam) ?? null,
-  };
-
-  const marketView = marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine);
-  const modelView = modelSpreadView(game.homeTeam, game.awayTeam, game.predictedSpread);
+  const marketView = marketSpreadView(game.homeTeam, game.awayTeam, view.marketSpreadLine);
+  const modelView = modelSpreadView(game.homeTeam, game.awayTeam, view.predictedSpread);
 
   return {
     gameId: game.gameId,
@@ -181,21 +158,21 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     startDate: game.startDate,
     homeTeam: game.homeTeam,
     awayTeam: game.awayTeam,
-    systemName: displaySystemName(game.systemName) ?? "Blitzkrieg V5",
-    modelId: game.modelId,
-    publicationMode: game.modelId ? "predictions" : "market",
+    systemName: displaySystemName(view.systemName) ?? "Blitzkrieg V5",
+    modelId: view.modelId,
+    publicationMode: view.publicationMode,
     marketSpread: spreadLabel(marketView),
     modelSpread: spreadLabel(modelView),
-    marketTotal: game.totalLine,
-    modelTotal: game.predictedTotal,
-    spreadLean: game.spreadLean as "home" | "away" | null,
-    totalLean: game.totalLean as "over" | "under" | null,
-    edgeSpread: game.edgeSpread,
-    edgeTotal: game.edgeTotal,
-    highConfidence: Boolean(game.highConfidence),
+    marketTotal: view.marketTotal,
+    modelTotal: view.predictedTotal,
+    spreadLean: view.spreadLean,
+    totalLean: view.totalLean,
+    edgeSpread: view.edgeSpread,
+    edgeTotal: view.edgeTotal,
+    highConfidence: view.highConfidence,
     homeFinalPoints,
     awayFinalPoints,
-    awayRating,
-    homeRating,
+    awayRating: summarize(game.awayTeam),
+    homeRating: summarize(game.homeTeam),
   };
 });

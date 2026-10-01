@@ -14,7 +14,8 @@ function formatKickoff(startDate: Date): string {
   });
 }
 
-function formatRating(value: number): string {
+function formatRating(value: number | null): string {
+  if (value === null) return "—";
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 }
 
@@ -107,33 +108,37 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                 )}
               </div>
 
-              <span className="text-ink-muted font-medium whitespace-nowrap">Model:</span>
-              <div className="font-mono text-ink whitespace-nowrap flex items-center">
-                <span className="font-medium">{matchup.modelSpread}</span>
-                {matchup.modelTotal && (
-                  <span className="ml-1.5 font-sans text-xs text-ink-muted">· O/U {matchup.modelTotal.toFixed(1)}</span>
-                )}
-              </div>
+              {matchup.publicationMode === "predictions" && (
+                <>
+                  <span className="text-ink-muted font-medium whitespace-nowrap">Model:</span>
+                  <div className="font-mono text-ink whitespace-nowrap flex items-center">
+                    <span className="font-medium">{matchup.modelSpread}</span>
+                    {matchup.modelTotal && (
+                      <span className="ml-1.5 font-sans text-xs text-ink-muted">· O/U {matchup.modelTotal.toFixed(1)}</span>
+                    )}
+                  </div>
 
-              <span className="text-ink-muted font-medium whitespace-nowrap">Model Bet:</span>
-              <div className="font-mono text-sm whitespace-nowrap flex items-center">
-                {matchup.spreadLean ? (
-                  <span className="font-medium text-accent-ink">
-                    {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam} Lean
-                  </span>
-                ) : (
-                  <span className="text-ink-faint">No Spread</span>
-                )}
+                  <span className="text-ink-muted font-medium whitespace-nowrap">Model Bet:</span>
+                  <div className="font-mono text-sm whitespace-nowrap flex items-center">
+                    {matchup.spreadLean ? (
+                      <span className="font-medium text-accent-ink">
+                        {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam} Lean
+                      </span>
+                    ) : (
+                      <span className="text-ink-faint">No Spread</span>
+                    )}
 
-                {matchup.totalLean && (
-                  <>
-                    <span className="mx-1.5 font-sans text-xs text-ink-muted">·</span>
-                    <span className="font-medium text-accent-ink">
-                      {matchup.totalLean === "over" ? "Over" : "Under"}
-                    </span>
-                  </>
-                )}
-              </div>
+                    {matchup.totalLean && (
+                      <>
+                        <span className="mx-1.5 font-sans text-xs text-ink-muted">·</span>
+                        <span className="font-medium text-accent-ink">
+                          {matchup.totalLean === "over" ? "Over" : "Under"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {isFinal && (
