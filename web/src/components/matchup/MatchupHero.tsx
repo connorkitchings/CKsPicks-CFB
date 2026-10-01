@@ -33,8 +33,12 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
         </Link>
         <div className="flex items-center gap-2 text-ink-faint">
           <span>{formatKickoff(matchup.startDate)}</span>
-          <span>·</span>
-          <span className="font-mono">{matchup.systemName}</span>
+          {matchup.systemName && (
+            <>
+              <span>·</span>
+              <span className="font-mono">{matchup.systemName}</span>
+            </>
+          )}
           <span className="rounded bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>

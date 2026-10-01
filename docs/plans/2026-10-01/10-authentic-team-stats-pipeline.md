@@ -4,7 +4,7 @@
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("it looks good"), with these scope choices: stats pipeline only (page redesign is a later contract), source = our own play-by-play, pre-game snapshot semantics, matchup pages hidden until ready.
-- **Implementation log:** Pending (cloud session builds and tests; the real data run is the user's, see Phase 5).
+- **Implementation log:** Phases 0-4 are on `dev` (stats layer, migration 0020, `publish_team_stats.py`, web read layer behind the gate, fixture e2e). Only Phase 5 (real data, user-run) remains. Note: unknown matchup ids render the not-found page with status 200 because the root `loading.tsx` streams; the page is `noindex`.
 - **Commit policy:** One commit per phase on `dev`. Merge `dev` into `main` only after the Phase 5 spot-check.
 - **Supersedes:** the former `02-authentic-matchup-stats-pipeline-and-presentation.md` (this file replaces it with corrected facts) and the intent of `03-advanced-stats-matchup-breakdown.md` (its synthetic stats were removed).
 

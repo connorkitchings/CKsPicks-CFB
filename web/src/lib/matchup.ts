@@ -8,50 +8,17 @@ import {
   isPublishedWeek,
   publicationScope,
 } from "./publication.ts";
-import { getGamesForWeek, getMarketGamesForWeek } from "./queries.ts";
+import { getGamesForWeek, getMarketGamesForWeek, getTeamSeasonStats } from "./queries.ts";
+import {
+  buildMatchupStats,
+  type MatchupStats,
+} from "./team-stats.ts";
 import { selectMatchupView } from "./matchup-visibility.ts";
 import {
   marketSpreadView,
   modelSpreadView,
   spreadLabel,
 } from "./betting-format.ts";
-
-export interface TeamMetricValue {
-  value: number;
-  rank: number;
-  formatted: string;
-}
-
-export interface UnitMatchupRow {
-  name: string;
-  offenseValue: string;
-  offenseRank: number;
-  defenseValue: string;
-  defenseRank: number;
-}
-
-export interface TeamProfileStats {
-  team: string;
-  rank: number | null;
-  overallRating: number;
-  offenseRating: number;
-  defenseRating: number;
-  record: string | null;
-  epaMargin: TeamMetricValue;
-  offEpa: TeamMetricValue;
-  defEpa: TeamMetricValue;
-  offSuccessRate: TeamMetricValue;
-  offDropbackSr: TeamMetricValue;
-  offRushSr: TeamMetricValue;
-  defSuccessRate: TeamMetricValue;
-  defDropbackSr: TeamMetricValue;
-  defRushSr: TeamMetricValue;
-  netPtsPerDrive: TeamMetricValue;
-  offPtsPerDrive: TeamMetricValue;
-  defPtsPerDrive: TeamMetricValue;
-  netFieldPosition: TeamMetricValue;
-  eckelRatio: TeamMetricValue;
-}
 
 export interface TeamRatingSummary {
   team: string;
@@ -70,7 +37,8 @@ export interface MatchupData {
   startDate: Date;
   homeTeam: string;
   awayTeam: string;
-  systemName: string;
+  /** Null in market mode: no model is published, so no system is named. */
+  systemName: string | null;
   modelId: string | null;
   publicationMode: "predictions" | "market";
   // Odds & Model
@@ -89,6 +57,8 @@ export interface MatchupData {
   // Ratings
   awayRating: TeamRatingSummary;
   homeRating: TeamRatingSummary;
+  /** Pre-game team stats; null when no snapshot is published for this week. */
+  stats: MatchupStats | null;
 }
 
 /**
@@ -98,6 +68,10 @@ export interface MatchupData {
  * public run for a published week, and only in "predictions" mode.
  */
 export const getMatchupData = cache(async (gameId: number): Promise<MatchupData | null> => {
+  if (process.env.CFB_UI_TEST_MODE === "1") {
+    const fx = await import("@/test/fixtures/matchup");
+    return fx.fixtureMatchup(gameId);
+  }
   const identity = await db
     .select({ season: schema.games.season, week: schema.games.week })
     .from(schema.games)
@@ -158,7 +132,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     startDate: game.startDate,
     homeTeam: game.homeTeam,
     awayTeam: game.awayTeam,
-    systemName: displaySystemName(view.systemName) ?? "Blitzkrieg V5",
+    systemName: displaySystemName(view.systemName),
     modelId: view.modelId,
     publicationMode: view.publicationMode,
     marketSpread: spreadLabel(marketView),
@@ -174,5 +148,11 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     awayFinalPoints,
     awayRating: summarize(game.awayTeam),
     homeRating: summarize(game.homeTeam),
+    stats: buildMatchupStats(
+      await getTeamSeasonStats(season, week, [game.homeTeam, game.awayTeam]),
+      week,
+      game.awayTeam,
+      game.homeTeam,
+    ),
   };
 });

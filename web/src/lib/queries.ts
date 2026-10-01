@@ -3,6 +3,7 @@ import { cache } from "react";
 import { db, schema } from "./db";
 import { isSelectableRun } from "./run-selection";
 import { deriveSpreadView, deriveTotalView } from "./publication";
+import type { TeamStatRow } from "./team-stats";
 
 type BaseGame = {
   gameId: number;
@@ -506,6 +507,55 @@ export const hasGameVenuesTable = cache(async (): Promise<boolean> => {
     return false;
   }
 });
+
+/** Whether team_season_stats exists. Cached; false before migration 0020 is applied. */
+export const hasTeamSeasonStatsTable = cache(async (): Promise<boolean> => {
+  try {
+    const res = await db.execute(
+      sql`SELECT to_regclass('public.team_season_stats') IS NOT NULL AS exists`,
+    );
+    const rows = res as unknown as Array<{ exists?: boolean }>;
+    return Boolean(rows?.[0]?.exists);
+  } catch {
+    return false;
+  }
+});
+
+/**
+ * Pre-game stats snapshot (games completed before `asOfWeek`) for the given teams.
+ * Never throws; returns [] when the table or rows are missing.
+ */
+export async function getTeamSeasonStats(
+  season: number,
+  asOfWeek: number,
+  teams: string[],
+): Promise<TeamStatRow[]> {
+  if (teams.length === 0 || !(await hasTeamSeasonStatsTable())) return [];
+  try {
+    const rows = await db
+      .select()
+      .from(schema.teamSeasonStats)
+      .where(
+        and(
+          eq(schema.teamSeasonStats.season, season),
+          eq(schema.teamSeasonStats.asOfWeek, asOfWeek),
+          inArray(schema.teamSeasonStats.team, teams),
+        ),
+      );
+    return rows.map((r) => ({
+      team: r.team,
+      role: r.role === "defense" ? "defense" : "offense",
+      metric: r.metric,
+      value: r.value,
+      n: r.n,
+      games: r.games,
+      rank: r.rank,
+      cohortSize: r.cohortSize,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 /** Attach venue city/state/neutral-site to games. Never throws; missing data stays null. */
 async function withVenues<T extends { gameId: number }>(

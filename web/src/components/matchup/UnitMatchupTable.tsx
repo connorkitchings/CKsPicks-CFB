@@ -1,7 +1,6 @@
 import clsx from "clsx";
 import TeamLogo from "@/components/TeamLogo";
-import { getRankBadgeClass } from "@/lib/matchup-math";
-import type { UnitMatchupRow } from "@/lib/matchup";
+import { getRankBadgeClass, type UnitMatchupRow } from "@/lib/team-stats";
 
 export function UnitMatchupTable({
   offenseTeam,
@@ -77,7 +76,7 @@ export function UnitMatchupTable({
           </thead>
           <tbody className="divide-y divide-line/60">
             {rows.map((row) => (
-              <tr key={row.name} className="hover:bg-surface-inset/50 transition-colors">
+              <tr key={row.key} className="hover:bg-surface-inset/50 transition-colors">
                 {/* Offense Value */}
                 <td className="py-2.5 pl-2 font-mono text-sm font-medium tabular-nums text-ink text-left">
                   {row.offenseValue}
@@ -90,9 +89,9 @@ export function UnitMatchupTable({
                       "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-[11px] tabular-nums",
                       getRankBadgeClass(row.offenseRank),
                     )}
-                    title={`National Rank: #${row.offenseRank}`}
+                    title={row.offenseRank === null ? "Not ranked yet" : `National Rank: #${row.offenseRank}`}
                   >
-                    #{row.offenseRank}
+                    {row.offenseRank === null ? "—" : `#${row.offenseRank}`}
                   </span>
                 </td>
 
@@ -108,9 +107,9 @@ export function UnitMatchupTable({
                       "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-[11px] tabular-nums",
                       getRankBadgeClass(row.defenseRank),
                     )}
-                    title={`National Rank: #${row.defenseRank}`}
+                    title={row.defenseRank === null ? "Not ranked yet" : `National Rank: #${row.defenseRank}`}
                   >
-                    #{row.defenseRank}
+                    {row.defenseRank === null ? "—" : `#${row.defenseRank}`}
                   </span>
                 </td>
 

@@ -55,7 +55,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 - Week 5: wait for certified finals, then score
   ([weekly operator](ops/v5_weekly_operator.md)).
-- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md) (matchup pages stay hidden until approved; data steps run locally).
+- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md) (code on `dev`; matchup pages are closed in production until `CFB_MATCHUP_ENABLED=1`; data steps run locally, see the contract's Phase 5).
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
