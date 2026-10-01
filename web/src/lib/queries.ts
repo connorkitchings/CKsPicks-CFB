@@ -19,6 +19,10 @@ type BaseGame = {
   /** Season W-L as of this game's kickoff (null before the first game). */
   homeRecord: string | null;
   awayRecord: string | null;
+  /** Game venue location, when known (absent until game_venues is populated). */
+  venueCity?: string | null;
+  venueState?: string | null;
+  neutralSite?: boolean | null;
 };
 
 /** Public-safe schedule and market projection with no model-only fields. */
@@ -487,6 +491,53 @@ export async function getMarketSelectionsForRun(
   }
 }
 
+/**
+ * Whether the game_venues table exists. Cached; false before migration 0019 is
+ * applied, so the site keeps working and simply shows no location.
+ */
+export const hasGameVenuesTable = cache(async (): Promise<boolean> => {
+  try {
+    const res = await db.execute(
+      sql`SELECT to_regclass('public.game_venues') IS NOT NULL AS exists`,
+    );
+    const rows = res as unknown as Array<{ exists?: boolean }>;
+    return Boolean(rows?.[0]?.exists);
+  } catch {
+    return false;
+  }
+});
+
+/** Attach venue city/state/neutral-site to games. Never throws; missing data stays null. */
+async function withVenues<T extends { gameId: number }>(
+  games: T[],
+): Promise<(T & { venueCity: string | null; venueState: string | null; neutralSite: boolean | null })[]> {
+  const empty = games.map((g) => ({ ...g, venueCity: null, venueState: null, neutralSite: null }));
+  if (games.length === 0 || !(await hasGameVenuesTable())) return empty;
+  try {
+    const rows = await db
+      .select({
+        gameId: schema.gameVenues.gameId,
+        city: schema.gameVenues.city,
+        state: schema.gameVenues.state,
+        neutralSite: schema.gameVenues.neutralSite,
+      })
+      .from(schema.gameVenues)
+      .where(inArray(schema.gameVenues.gameId, games.map((g) => g.gameId)));
+    const byGame = new Map(rows.map((r) => [r.gameId, r]));
+    return games.map((g) => {
+      const v = byGame.get(g.gameId);
+      return {
+        ...g,
+        venueCity: v?.city ?? null,
+        venueState: v?.state ?? null,
+        neutralSite: v?.neutralSite ?? null,
+      };
+    });
+  } catch {
+    return empty;
+  }
+}
+
 /** Return all games (with optional results) for a given season/week, sorted by start time. */
 export async function getGamesForWeek(season: number, week: number): Promise<Game[]> {
   const run = await getRunForWeek(season, week);
@@ -563,7 +614,7 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
 
     const completed = await getSeasonCompletedGames(season);
     const games = await withFrozenLines(
-      rowsWithSelections.map((row) => ({
+      (await withVenues(rowsWithSelections)).map((row) => ({
         ...row,
         publicationMode: "predictions" as const,
         runState: run.state,
@@ -684,7 +735,7 @@ export async function getMarketGamesForWeek(
 
   const completed = await getSeasonCompletedGames(season);
   return withRecords(
-    rows.map((row) => ({ ...row, publicationMode: "market" as const })),
+    (await withVenues(rows)).map((row) => ({ ...row, publicationMode: "market" as const })),
     completed,
   );
 }

@@ -2,6 +2,7 @@ import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { leanFor, resultFor } from "@/lib/picks-proto";
 import { dayShort } from "./format";
+import { GameWhen } from "./GameWhen";
 import { ResultLeanRow } from "./ResultLeanRow";
 import { TeamPair } from "./TeamLine";
 
@@ -42,7 +43,7 @@ export function ProtoResultCard({
     >
       <div className={clsx("p-4", !anyLean && "opacity-75")}>
         <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
-          <span className="font-medium text-ink-muted">{dayShort(game.startDate)}</span>
+          <GameWhen when={dayShort(game.startDate)} game={game} />
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
             Final
           </span>

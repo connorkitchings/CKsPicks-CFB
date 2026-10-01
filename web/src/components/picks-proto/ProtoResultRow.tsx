@@ -3,6 +3,7 @@ import { coverMargin, leanFor, resultFor } from "@/lib/picks-proto";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 import { dayShort } from "./format";
+import { WhereLine } from "./GameWhen";
 import { TeamPair } from "./TeamLine";
 
 function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }) {
@@ -38,7 +39,10 @@ export function ProtoResultRow({
       id={`game-${game.gameId}`}
       className="grid scroll-mt-24 gap-x-4 gap-y-2 border-b border-line px-3 py-2.5 last:border-b-0 md:grid-cols-[6.5rem_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] md:items-center"
     >
-      <div className="whitespace-nowrap text-xs tabular-nums text-ink-muted">{dayShort(game.startDate)}</div>
+      <div>
+        <div className="whitespace-nowrap text-xs tabular-nums text-ink-muted">{dayShort(game.startDate)}</div>
+        <WhereLine game={game} />
+      </div>
       <TeamPair game={game} ranks={ranks} size={20} winner={awayWon ? "away" : homeWon ? "home" : null} />
       <Cell game={game} kind="spread" />
       <Cell game={game} kind="total" />

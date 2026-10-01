@@ -252,3 +252,15 @@ test("leans carry the line's source and detail text only when known", () => {
   assert.equal(noSource?.source, null);
   assert.equal(leanDetail(noSource!), "model: wins by 6.5");
 });
+
+
+import { venueLabel } from "./picks-proto.ts";
+
+test("venueLabel formats City, ST and degrades gracefully", () => {
+  assert.equal(venueLabel("Los Angeles", "CA"), "Los Angeles, CA");
+  assert.equal(venueLabel("  Ann Arbor ", " MI "), "Ann Arbor, MI");
+  assert.equal(venueLabel("Dublin", null), "Dublin");
+  assert.equal(venueLabel(null, "TX"), "TX");
+  assert.equal(venueLabel("", "  "), "");
+  assert.equal(venueLabel(undefined, undefined), "");
+});

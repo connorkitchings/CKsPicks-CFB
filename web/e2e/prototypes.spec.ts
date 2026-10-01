@@ -102,6 +102,65 @@ for (const path of ["/test-picks", "/test-results"]) {
   });
 }
 
+test.describe("game location next to the time", () => {
+  test("picks cards show city and state, a neutral-site note, and nothing when unknown", async ({ page }) => {
+    await page.goto("/test-picks");
+
+    await expect(page.locator("#game-3").getByText("· Los Angeles, CA")).toBeVisible();
+    await expect(page.locator("#game-5").getByText("· State College, PA")).toBeVisible();
+    // Neutral-site game: location plus a note (the "home" team is arbitrary there).
+    await expect(page.locator("#game-8").getByText("· Orlando, FL")).toBeVisible();
+    await expect(page.locator("#game-8").getByText("Neutral site")).toBeVisible();
+    await expect(page.locator("#game-3").getByText("Neutral site")).toHaveCount(0);
+    // No recorded location: no placeholder text.
+    await expect(page.locator("#game-2")).not.toContainText(/, [A-Z]{2}\b/);
+    await expect(page.locator("#game-2").getByText("·")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "list", exact: true }).click();
+    await expect(page.locator("#game-3").getByText("Los Angeles, CA")).toBeVisible();
+    await expect(page.locator("#game-8").getByText("· Neutral")).toBeVisible();
+  });
+
+  test("results cards show the venue beside the date", async ({ page }) => {
+    await page.goto("/test-results");
+
+    await expect(page.locator("#game-101").getByText("· Ann Arbor, MI")).toBeVisible();
+    await expect(page.locator("#game-107").getByText("· Tallahassee, FL")).toBeVisible();
+    await page.getByRole("button", { name: "list", exact: true }).click();
+    await expect(page.locator("#game-101").getByText("Ann Arbor, MI")).toBeVisible();
+  });
+
+  test("a long location truncates instead of overflowing a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/test-picks");
+    expect(await fits(page)).toBe(true);
+  });
+});
+
+test.describe("long team names keep the full pick visible on a small phone", () => {
+  test("picks: Appalachian State -2.5 is not truncated at 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/test-picks");
+    await expect(page.locator("#game-1").getByText("Appalachian State -2.5", { exact: true })).toBeVisible();
+    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
+      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
+    );
+    expect(clipped).toEqual([]);
+    expect(await fits(page)).toBe(true);
+  });
+
+  test("results: Southern Mississippi +4.0 is not truncated at 360px", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/test-results");
+    await expect(page.locator("#game-108").getByText("Southern Mississippi +4.0", { exact: true })).toBeVisible();
+    const clipped = await page.locator("[data-pick]").evaluateAll((els) =>
+      els.filter((el) => el.scrollWidth > el.clientWidth).map((el) => el.textContent),
+    );
+    expect(clipped).toEqual([]);
+    expect(await fits(page)).toBe(true);
+  });
+});
+
 test("footer carries the team-logo trademark attribution", async ({ page }) => {
   for (const path of ["/test-picks", "/test-results", "/"]) {
     await page.goto(path);

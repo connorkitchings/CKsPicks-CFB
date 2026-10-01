@@ -18,12 +18,13 @@ export function LeanPill({ lean, compact = false }: { lean: Lean; compact?: bool
         <span className="w-12 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
           {LABEL[lean.kind]}
         </span>
-        <span className="flex min-w-0 items-center gap-2">
+        {/* The pick is never truncated: a long team name wraps the edge to the next line instead. */}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           <LeanMarker lean={lean} />
-          <span className={clsx("min-w-0 truncate font-semibold text-accent-ink", compact ? "text-xs" : "text-sm")}>
+          <span data-pick className={clsx("min-w-0 break-words font-semibold text-accent-ink", compact ? "text-xs" : "text-sm")}>
             {lean.pick}
           </span>
-          <span className="shrink-0 text-xs tabular-nums text-ink-muted" title="Edge: points the model differs from the market">
+          <span className="whitespace-nowrap text-xs tabular-nums text-ink-muted" title="Edge: points the model differs from the market">
             ({lean.edge.toFixed(1)})
           </span>
         </span>

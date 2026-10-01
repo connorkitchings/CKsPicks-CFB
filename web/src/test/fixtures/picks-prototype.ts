@@ -25,19 +25,21 @@ type Spec = {
   final?: [number, number];
   /** Sportsbook provider for [spread, total] best quotes; null = consensus fallback. */
   src?: [string | null, string | null];
+  /** [city, state, neutralSite]; omitted = location unknown. */
+  where?: [string, string, boolean];
 };
 
 const specs: Spec[] = [
-  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Utah", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"] },
+  { id: 1, start: "2026-10-01T22:00:00Z", away: "Western Kentucky", home: "Appalachian State", awayRecord: "0-3", homeRecord: "0-3", homeLine: -2.5, total: 57.5, predSpread: 7.6, predTotal: 54.1, src: ["draftkings", "Bovada"], where: ["Boone", "NC", false] },
   { id: 2, start: "2026-10-01T23:30:00Z", away: "Wisconsin", home: "Washington", awayRecord: "2-1", homeRecord: "1-2", homeLine: 3, total: 46.5, predSpread: -2.6, predTotal: 46.9, src: [null, null] },
-  { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true, src: ["fanduel", "draftkings"] },
-  { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8, src: ["BetMGM", null] },
-  { id: 5, start: "2026-10-03T16:00:00Z", away: "Michigan", home: "Penn State", awayRecord: "2-1", homeRecord: "3-0", homeLine: -6.5, total: 44.5, predSpread: 10.2, predTotal: 41.0, src: ["Bovada", "ESPN Bet"] },
-  { id: 6, start: "2026-10-03T19:30:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, hc: true, src: ["caesars", "fanduel"] },
-  { id: 7, start: "2026-10-03T23:30:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: null, predSpread: 5.0, predTotal: 58.3, src: [null, null] },
-  { id: 8, start: "2026-10-03T23:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 54.9, src: ["betmgm", null] },
-  { id: 9, start: "2026-10-04T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 50.0, src: [null, null] },
-  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, final: [24, 17], src: ["draftkings", "draftkings"] },
+  { id: 3, start: "2026-10-02T23:00:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 70.2, hc: true, src: ["fanduel", "draftkings"], where: ["Los Angeles", "CA", false] },
+  { id: 4, start: "2026-10-03T16:00:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: 1.5, total: 52.5, predSpread: 0.4, predTotal: 51.8, src: ["BetMGM", null], where: ["Tuscaloosa", "AL", false] },
+  { id: 5, start: "2026-10-03T16:00:00Z", away: "Michigan", home: "Penn State", awayRecord: "2-1", homeRecord: "3-0", homeLine: -6.5, total: 44.5, predSpread: 10.2, predTotal: 41.0, src: ["Bovada", "ESPN Bet"], where: ["State College", "PA", false] },
+  { id: 6, start: "2026-10-03T19:30:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, hc: true, src: ["caesars", "fanduel"], where: ["Clemson", "SC", false] },
+  { id: 7, start: "2026-10-03T23:30:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: null, predSpread: 5.0, predTotal: 58.3, src: [null, null], where: ["Knoxville", "TN", false] },
+  { id: 8, start: "2026-10-03T23:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 54.9, src: ["betmgm", null], where: ["Orlando", "FL", true] },
+  { id: 9, start: "2026-10-04T00:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: 2.0, predTotal: 50.0, src: [null, null], where: ["Norman", "OK", false] },
+  { id: 10, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-0", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.4, final: [24, 17], src: ["draftkings", "draftkings"], where: ["Ann Arbor", "MI", false] },
 ];
 
 /** Minimum model-vs-market gap (points) that produces a lean. */
@@ -85,6 +87,9 @@ function build(
     edgeSpread: spreadLean && spreadGap !== null ? Math.abs(spreadGap) : null,
     edgeTotal: totalLean && totalGap !== null ? Math.abs(totalGap) : null,
     highConfidence: Boolean(s.hc),
+    venueCity: s.where?.[0] ?? null,
+    venueState: s.where?.[1] ?? null,
+    neutralSite: s.where ? s.where[2] : null,
     spreadSource: s.src?.[0] ?? null,
     totalSource: s.src?.[1] ?? null,
     systemName: "Trench Warfare V5",
@@ -107,15 +112,15 @@ export function protoGames(): Game[] {
 
 /** Week 4 (scored): finished games with grades derived from the final scores. */
 const resultSpecs: Spec[] = [
-  { id: 101, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-1", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.9, final: [24, 17] },
-  { id: 102, start: "2026-09-26T19:30:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: -2.5, total: 52.5, predSpread: 6.9, predTotal: 47.2, final: [20, 27] },
-  { id: 103, start: "2026-09-26T23:30:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 66.3, final: [41, 31] },
-  { id: 104, start: "2026-09-26T23:30:00Z", away: "Penn State", home: "Wisconsin", awayRecord: "3-0", homeRecord: "2-1", homeLine: 9.5, total: 44.5, predSpread: -3.0, predTotal: 45.0, final: [27, 10] },
-  { id: 105, start: "2026-09-27T00:00:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, final: [17, 20] },
-  { id: 106, start: "2026-09-27T16:00:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: 58.5, predSpread: 5.0, predTotal: 58.3, final: [28, 31] },
-  { id: 107, start: "2026-09-27T19:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 51.0, final: [38, 17] },
-  { id: 108, start: "2026-09-27T23:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: -1.9, predTotal: 50.0, final: [34, 14] },
-  { id: 109, start: "2026-09-27T23:30:00Z", away: "Utah", home: "Washington", awayRecord: "1-2", homeRecord: "1-2", homeLine: -3, total: 46.0, predSpread: 4.5, predTotal: 43.0, final: [13, 16] },
+  { id: 101, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-1", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.9, final: [24, 17], where: ["Ann Arbor", "MI", false] },
+  { id: 102, start: "2026-09-26T19:30:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: -2.5, total: 52.5, predSpread: 6.9, predTotal: 47.2, final: [20, 27], where: ["Tuscaloosa", "AL", false] },
+  { id: 103, start: "2026-09-26T23:30:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 66.3, final: [41, 31], where: ["Los Angeles", "CA", false] },
+  { id: 104, start: "2026-09-26T23:30:00Z", away: "Penn State", home: "Wisconsin", awayRecord: "3-0", homeRecord: "2-1", homeLine: 9.5, total: 44.5, predSpread: -3.0, predTotal: 45.0, final: [27, 10], where: ["Madison", "WI", false] },
+  { id: 105, start: "2026-09-27T00:00:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, final: [17, 20], where: ["Clemson", "SC", false] },
+  { id: 106, start: "2026-09-27T16:00:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: 58.5, predSpread: 5.0, predTotal: 58.3, final: [28, 31], where: ["Knoxville", "TN", false] },
+  { id: 107, start: "2026-09-27T19:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 51.0, final: [38, 17], where: ["Tallahassee", "FL", false] },
+  { id: 108, start: "2026-09-27T23:00:00Z", away: "Texas", home: "Southern Mississippi", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: -1.9, predTotal: 50.0, final: [34, 14], where: ["Hattiesburg", "MS", false] },
+  { id: 109, start: "2026-09-27T23:30:00Z", away: "Utah", home: "Washington", awayRecord: "1-2", homeRecord: "1-2", homeLine: -3, total: 46.0, predSpread: 4.5, predTotal: 43.0, final: [13, 16], where: ["Seattle", "WA", false] },
 ];
 
 export function protoResultGames(): Game[] {

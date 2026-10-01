@@ -3,6 +3,7 @@ import type { PredictionGame } from "@/lib/queries";
 import { marketSpreadView, modelSpreadView, spreadLabel } from "@/lib/betting-format";
 import { isFinal, leanFor } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
+import { GameWhen } from "./GameWhen";
 import { LeanPill } from "./LeanPill";
 import { TeamPair } from "./TeamLine";
 
@@ -36,7 +37,7 @@ export function ProtoGameCard({
     >
       <div className={clsx("p-4", !anyLean && "opacity-75")}>
         <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
-          <span className="font-medium tabular-nums text-ink-muted">{kickoffTime(game.startDate)} ET</span>
+          <GameWhen when={`${kickoffTime(game.startDate)} ET`} game={game} />
           {game.highConfidence && (
             <span className="text-sm leading-none text-accent" title="High confidence lean" aria-label="High confidence lean">
               ★

@@ -12,6 +12,13 @@ export const BREAK_EVEN_PCT = 52.4;
 
 export type LeanKind = "spread" | "total";
 
+/** "Los Angeles, CA"; just the city or state when only one is known; "" when neither. */
+export function venueLabel(city?: string | null, state?: string | null): string {
+  const c = city?.trim() ?? "";
+  const s = state?.trim() ?? "";
+  return c && s ? `${c}, ${s}` : c || s;
+}
+
 const BOOK_NAMES: Record<string, string> = {
   draftkings: "DraftKings",
   fanduel: "FanDuel",
