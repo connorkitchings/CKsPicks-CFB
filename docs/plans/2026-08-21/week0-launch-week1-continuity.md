@@ -1,6 +1,7 @@
 # 2026 Week 0 Launch and Week 1 Continuity
 
-- **Status:** In Progress
+- **Status:** Superseded
+- **Closed out 2026-10-01:** replaced by the weekly operator and V5 runbooks. Prior status: In Progress.
 - **Created:** 2026-08-21
 - **Planner:** Sol
 - **Approval source:** User explicitly approved and requested implementation of this plan in the current task on 2026-08-21.

@@ -1,6 +1,7 @@
 # Rating-Centric Successor: High-Level Implementation Roadmap
 
-- **Status:** Approved
+- **Status:** Superseded
+- **Closed out 2026-10-01:** the data-first football forecasting roadmap. Prior status: Approved.
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User approved the proposed roadmap and explicitly requested its formalization on 2026-08-24.

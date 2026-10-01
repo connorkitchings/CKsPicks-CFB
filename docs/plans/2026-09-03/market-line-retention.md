@@ -1,6 +1,7 @@
 # Durable Market-Line Retention: Neon Quote Persistence, The Odds API Wiring, and 2021–2025 Backfill Exploration
 
-- **Status:** In Progress (code-complete 2026-09-03; credential-gated steps pending — see implementation log)
+- **Status:** Implemented (code-complete); credential-gated capture steps deferred
+- **Closed out 2026-10-01:** code shipped; remaining steps need provider credentials. Prior status: In Progress (code-complete 2026-09-03; credential-gated steps pending — see implementation log).
 - **Created:** 2026-09-03
 - **Planner:** Sol
 - **Approval source:** User approval via interactive planning session 2026-09-03 (decisions D1–D8 reviewed and revised decision-by-decision; persistence explicitly approved)

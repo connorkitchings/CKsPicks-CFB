@@ -1,6 +1,7 @@
 # R1 Cross-Lineage Audit Scope Remediation
 
-- **Status:** Approved (user directed continuous execution on 2026-08-28:
+- **Status:** Implemented
+- **Closed out 2026-10-01:** R1 certified as `r1-full-corpus-20260831-5f2a384`. Prior status: Approved (user directed continuous execution on 2026-08-28:.
   "keep rolling")
 - **Created:** 2026-08-28
 - **Planner:** Sol (inline, mid-execution of

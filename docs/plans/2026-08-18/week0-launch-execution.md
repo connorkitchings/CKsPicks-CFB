@@ -1,6 +1,7 @@
 # Week 0 Launch Execution
 
-- **Status:** In Progress (Stages 1–3 complete; Stages 4–5 pending game week)
+- **Status:** Implemented
+- **Closed out 2026-10-01:** all stages complete; Week 0 was frozen and scored. Prior status: In Progress (Stages 1–3 complete; Stages 4–5 pending game week).
 - **Created:** 2026-08-18
 - **Planner:** Sol (opencode session)
 - **Approval source:** User approved the full plan, including V4 timebox with V2

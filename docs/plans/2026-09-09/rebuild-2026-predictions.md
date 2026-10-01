@@ -1,6 +1,8 @@
 # Plan: Rebuild 2026 Predictions with Correct Features
 
-**Status:** Draft  
+**Status:** Superseded
+
+**Closed out 2026-10-01:** V5 replaced the V4 prediction rebuild. Prior status: Draft.
 **Created:** 2026-09-09  
 **Author:** AI Assistant  
 **Priority:** High - Production model performance issue

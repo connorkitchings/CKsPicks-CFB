@@ -1,6 +1,7 @@
 # Phase 5 — Protected Prospective Evidence Operations
 
-- **Status:** In Progress
+- **Status:** Superseded
+- **Closed out 2026-10-01:** the R-series sequence was superseded by the V5 package. Prior status: In Progress.
 - **Created:** 2026-08-26
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of this exact

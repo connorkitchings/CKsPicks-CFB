@@ -1,6 +1,7 @@
 # V5 Authority Simplification and Verified Site Cutover
 
-- **Status:** In Progress
+- **Status:** Implemented
+- **Closed out 2026-10-01:** the V5 status guide and contract archive exist and V5 serves the site. Prior status: In Progress.
 - **Created:** 2026-09-22
 - **Planner:** Codex
 - **Approval source:** User approved the proposed plan with “Implement the proposed plan.”

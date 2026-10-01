@@ -1,6 +1,7 @@
 # R1 Derived-Schema Registration and Atomicity
 
-- **Status:** In Progress
+- **Status:** Implemented
+- **Closed out 2026-10-01:** R1 certified as `r1-full-corpus-20260831-5f2a384`. Prior status: In Progress.
 - **Created:** 2026-08-28
 - **Planner:** Sol
 - **Approval source:** User approved the exact remediation in Codex on

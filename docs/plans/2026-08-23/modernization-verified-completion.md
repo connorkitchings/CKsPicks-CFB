@@ -1,6 +1,7 @@
 # Verified Modernization Completion
 
-- **Status:** In Progress
+- **Status:** Superseded
+- **Closed out 2026-10-01:** later modernization and V5 work. Prior status: In Progress.
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this task on 2026-08-23.

@@ -1,6 +1,7 @@
 # Phase 1 — Rating Measurement Remediation
 
-- **Status:** In Progress
+- **Status:** Superseded
+- **Closed out 2026-10-01:** Phase 1 audit v3 and the V5 package. Prior status: In Progress.
 - **Created:** 2026-08-24
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the Phase 2 plan, including this separate prerequisite, on 2026-08-24.

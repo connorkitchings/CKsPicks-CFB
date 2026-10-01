@@ -2,7 +2,8 @@
 
 > **Current completion boundary (2026-09-22):** [V5 model development is complete](../../modeling/v5_status.md). This contract certifies a current operational forecast after stabilized Week 4 finals and fresh independently verified 07/08 parents. The [site cutover contract](../2026-09-22/04-v5-authority-simplification-and-site-cutover.md) requires a Preview serving rehearsal and V4 rollback proof, then a separate activation decision; six prospective slates are not its entry gate.
 
-- **Status:** In Progress — preparation only pending the required Week 4 refresh
+- **Status:** Implemented
+- **Closed out 2026-10-01:** the Week 5 forecast was verified and released. Prior status: In Progress — preparation only pending the required Week 4 refresh.
 - **Created:** 2026-09-18
 - **Planner:** Sol
 - **Approval source:** User approved the three-contract 2026 extension plan on 2026-09-18 with decisions: Repair extension (not V4-Silver-direct), three layered contracts, full season from Week 0. Implementation explicitly deferred.

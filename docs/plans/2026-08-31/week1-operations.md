@@ -1,6 +1,7 @@
 # Week 1 Operations
 
-- **Status:** In Progress — Stage A complete; Stage B complete; Stage C initial publish done; freeze + Vercel update pending
+- **Status:** Implemented
+- **Closed out 2026-10-01:** Week 1 was frozen and scored. Prior status: In Progress — Stage A complete; Stage B complete; Stage C initial publish done; freeze + Vercel update pending.
 - **Created:** 2026-08-31
 - **Updated:** 2026-09-02
 - **Planner:** Fast-path (documentation + established operational commands)

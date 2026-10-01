@@ -1,6 +1,7 @@
 # Modernization Coverage Closure to 60%
 
-- **Status:** In Progress
+- **Status:** Implemented
+- **Closed out 2026-10-01:** the 60% branch-coverage gate is live in `pyproject.toml`. Prior status: In Progress.
 - **Created:** 2026-08-23
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation in this task on 2026-08-23.

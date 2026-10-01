@@ -1,6 +1,7 @@
 # R1 Full-Corpus Recapture and Certification
 
-- **Status:** In Progress
+- **Status:** Implemented
+- **Closed out 2026-10-01:** R1 certified as `r1-full-corpus-20260831-5f2a384`. Prior status: In Progress.
 - **Created:** 2026-08-27
 - **Planner:** Sol
 - **Approval source:** User explicitly authorized implementation of the exact

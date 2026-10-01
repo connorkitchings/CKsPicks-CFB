@@ -1,6 +1,7 @@
 # V4 to V5 Site Transition
 
-- **Status:** Draft
+- **Status:** Superseded
+- **Closed out 2026-10-01:** `2026-09-23/01-v5-product-transformation.md`. Prior status: Draft.
 - **Created:** 2026-09-22
 - **Planner:** Codex (plan-session)
 - **Approval source:** Pending user review; this planning request does not authorize implementation or activation.

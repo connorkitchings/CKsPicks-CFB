@@ -1,6 +1,7 @@
 # V5 Week 4 Finals to Live Preview Evidence
 
-- **Status:** Approved
+- **Status:** Implemented
+- **Closed out 2026-10-01:** executed 2026-09-27. Prior status: Approved.
 - **Created:** 2026-09-25
 - **Planner:** Sol (plan-session)
 - **Approval source:** The user explicitly authorized execution of this exact plan path on 2026-09-25 ("go"), after the Draft documented planning-only session earlier that day. This approval covers the gated execution sequence below; production V5 authorization and activation remain separate decisions.

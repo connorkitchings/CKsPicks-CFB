@@ -1,6 +1,7 @@
 # V5 Complete Week 4 Replay Site Cutover
 
-- **Status:** Approved
+- **Status:** Implemented
+- **Closed out 2026-10-01:** executed; Week 4 was scored. Prior status: Approved.
 - **Created:** 2026-09-25
 - **Planner:** Sol (plan-session)
 - **Approval source:** The user requested a plan covering all Week 4 games and requiring scored V5 Weeks 1–3 site history (planning only), then approved execution on 2026-09-25 after reviewing the material-conflict summary with three explicit decisions: (a) the default Weeks 0–4 site view becomes clearly labeled V5 retrospective picks, with frozen V4 runs preserved, queryable, and the tested rollback; (b) this replay lane executes in parallel with the approved [Week 5 live plan](01-v5-week4-finals-to-live-preview.md), whose stabilized-finals gates take precedence when they open; (c) V5 Week 4 replay leans are graded against the frozen V4 pre-kickoff market quotes and labeled as replay grades (Amendment 1). This approval resolves the material release-policy conflict flagged in Current State; each production release still requires the separate Task 4 packet decision.

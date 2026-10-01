@@ -1,6 +1,8 @@
 # V5 intended-update Preview rehearsal — 2026-09-29
 
-**Status:** Preview rehearsal passed with refreshed Week 5 `p2`; production release packet remains open. This is evidence for Task 6 of [the approved contract](v5-intended-update-2026-production-repair.md), not a production authorization.
+**Status:** Implemented
+
+**Closed out 2026-10-01:** evidence for Task 6 of the repair contract; the production release completed 2026-09-30. Prior status: Preview rehearsal passed with refreshed Week 5 `p2`; production release packet remains open. This is evidence for Task 6 of [the approved contract](v5-intended-update-2026-production-repair.md), not a production authorization..
 
 ## Initial p1 Preview set (superseded for Week 5 by p2 below)
 
