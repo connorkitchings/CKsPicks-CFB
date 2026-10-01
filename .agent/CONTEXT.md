@@ -265,5 +265,5 @@ make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 
 ---
 
-_Last Updated: 2026-08-23_
+_Last Updated: 2026-10-01_
 _Domain knowledge and architecture reference_

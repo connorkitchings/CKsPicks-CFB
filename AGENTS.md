@@ -205,7 +205,9 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 The detailed checkpoints below are dated historical records. Use the status
 above and the latest session log for current-week operations.
 
-**Current focus:**
+**Current focus (2026-10-01):** V5 is serving; Week 5 is frozen awaiting certified finals; the V6 ratings lab closed on 2026-09-30 as `RETAINED_AS_BENCHMARK`; housekeeping contracts 05 (dead-code prune) and 06 (docs cleanup/archive) are done and contract 04 (production-boundary refactor) is Draft. Details: [`docs/status.md`](docs/status.md).
+
+**Historical checkpoints (dated, not current):**
 - ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
 - ✅ Week 0 regime modeling (5 routes × 2 targets, temporal folds)
 - ✅ Phase 1–5: Full bootstrap, Silver/Gold, OOF baselines, V4 tournament complete
@@ -511,5 +513,5 @@ See `.agent/skills/CATALOG.md` for full list.
 
 ---
 
-_Last Updated: 2026-08-23_
+_Last Updated: 2026-10-01_
 _Universal entry point for all AI coding assistants_

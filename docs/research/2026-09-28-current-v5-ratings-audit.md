@@ -61,7 +61,7 @@ Verified now:
 ### Findings requiring follow-up
 
 **P2 — Default ratings metadata can get ahead of selected data.**
-[`getWeeklyRatings`](../../web/src/lib/v5.ts) returns the newest projected
+`getWeeklyRatings` (`web/src/lib/v5.ts`) returns the newest projected
 generation's metadata but obtains default rows from `getCurrentRatings`,
 which is pinned to the latest selected forecast's rating manifest. Project
 Week 5 ratings before selecting Week 6 forecasts, or roll selection back,
@@ -141,8 +141,8 @@ population has mean zero. The fixed PPP scale floor is 0.30.
    later-week boundaries. The selected updater has no explicit recency decay;
    byes with no newly usable evidence do not automatically reduce prior weight.
 
-See [`possession_measurements.py`](../../src/cks_picks_cfb/ratings/possession_measurements.py)
-and [`possession_live_replay.py`](../../src/cks_picks_cfb/ratings/possession_live_replay.py).
+See `possession_measurements.py` (`src/cks_picks_cfb/ratings/possession_measurements.py`)
+and `possession_live_replay.py` (`src/cks_picks_cfb/ratings/possession_live_replay.py`).
 
 ### Preseason prior and weekly weights
 

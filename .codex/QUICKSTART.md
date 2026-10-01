@@ -711,5 +711,5 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production
 
 ---
 
-_Last Updated: 2026-08-31_
+_Last Updated: 2026-10-01_
 _Quick command reference for CKsPicks-CFB_

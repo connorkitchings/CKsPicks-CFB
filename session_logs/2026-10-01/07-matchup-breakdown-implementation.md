@@ -3,7 +3,7 @@
 ## TL;DR
 - **Worked On:** Implemented the Phase 2 Parker Fleming (@statsowar) style unit-vs-unit Advanced Stats Matchup Breakdown in the Next.js web application.
 - **Outcome:** Created a dedicated `/matchup/[gameId]` route, matchup analytics engine (`web/src/lib/matchup.ts` and `matchup-math.ts`), unit tests (`matchup.test.ts`), and rich visual components (`MatchupHero`, `UnitMatchupTable`, `TeamProfilePillars`, `MatchupKeyTakeaways`). Updated all game cards on `/` and `/results` to link directly into the matchup breakdown.
-- **Plan Contract:** [`docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md`](file:///Users/connorkitchings/Desktop/Repositories/ckspicks-cfb/docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md) (Status: `Implemented`)
+- **Plan Contract:** [`docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md`](../../docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md) (Status: `Implemented`)
 - **Approval / Status:** Explicit user approval in session ("Yes").
 - **Blockers:** None.
 - **Next:** User review of the live matchup pages across Week 5 games.

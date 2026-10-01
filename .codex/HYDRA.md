@@ -501,5 +501,5 @@ experiment_name: my_experiment
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-10-01_
 _Hydra configuration system reference_

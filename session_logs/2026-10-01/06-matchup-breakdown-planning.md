@@ -2,7 +2,7 @@
 
 ## TL;DR
 - **Worked On:** Planned the Phase 2 Advanced Stats Matchup Breakdown inspired by Parker Fleming's (@statsowar) college football unit-vs-unit preview cards.
-- **Outcome:** Created decision-complete implementation plan [`docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md`](file:///Users/connorkitchings/Desktop/Repositories/ckspicks-cfb/docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md).
+- **Outcome:** Created decision-complete implementation plan [`docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md`](../../docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md).
 - **Plan Contract:** `docs/plans/2026-10-01/03-advanced-stats-matchup-breakdown.md` (Status: `Approved`)
 - **Approval / Status:** Explicit user approval in chat ("Yes").
 - **Blockers:** None.

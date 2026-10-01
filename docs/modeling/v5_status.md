@@ -5,8 +5,8 @@
 > **Current public release (2026-09-30):** Repaired intended-update V5 ratings, predictions, and completed-week grades are selected for Weeks 0–4; the [exact release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md) records the source hashes and rollback. Week 5 selects the repaired p2 run with 56 predictions and no grades. Its final market refresh and pre-kickoff freeze remain due.
 >
 > The dated checkpoints below describe the earlier V5 release and its preserved rollback lineage.
-> **Live 2026 forecasts (2026-09-27):** After stabilized Week 4 finals, refreshed and independently verified 07/08 parents supported the verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (56 games). Candidate picks were published to Preview as `2026w5-d6366e59fd43` and [authorized for production](../../session_logs/2026-09-27/06.md).
-> **Public site:** V5 best-quote replay is selected for 2026 Weeks 0–4; Week 4 is scored. The [refreshed Week 5 live run](../../session_logs/2026-09-27/14-week5-line-refresh-candidate.md) `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The earlier Week 5 V5 run is the immediate same-week rollback; V4 runs remain frozen/scored for prior slates.
+> **Live 2026 forecasts (2026-09-27):** After stabilized Week 4 finals, refreshed and independently verified 07/08 parents supported the verified Week 5 live forecast `forecast-v1-2026w5-live-r2` (56 games). Candidate picks were published to Preview as `2026w5-d6366e59fd43` and authorized for production (`session_logs/2026-09-27/06.md`).
+> **Public site:** V5 best-quote replay is selected for 2026 Weeks 0–4; Week 4 is scored. The refreshed Week 5 live run (`session_logs/2026-09-27/14-week5-line-refresh-candidate.md`) `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The earlier Week 5 V5 run is the immediate same-week rollback; V4 runs remain frozen/scored for prior slates.
 
 The [manual weekly operator](../ops/v5_weekly_operator.md) and exact one-slate
 release guard are implemented and rehearsed. Migrations 0014 and 0015 and

@@ -3,7 +3,7 @@
 ## TL;DR
 - **Worked On:** Sol planning for Contract 12 (V5 Historical Results and Readiness Review).
 - **Outcome:** Contract 12 fully planned and Approved. Investigated certified 11C forecast outputs and 11D verification record; confirmed all 4 audit blocker findings (001–004) are closed; validated empirical metrics via Preview storage; authored execution contract `docs/plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md`; amended umbrella Contract 12 (`docs/plans/2026-09-18/12-v5-historical-results-and-readiness-review.md`) with Amendment 2; updated roadmap and plans index.
-- **Plan Contract:** [`docs/plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md`](file:///Users/connorkitchings/Desktop/Repositories/ckspicks-cfb/docs/plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md) (Status: Approved)
+- **Plan Contract:** [`docs/plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md`](../../docs/archive/v5-contracts/2026-09-21/06-v5-12-historical-results-and-readiness-review.md) (Status: Approved)
 - **Approval / Status:** User authorized planning and explicitly approved `implementation_plan.md`.
 - **Blockers:** None. Full forecast eligibility restored by Contract 11.
 - **Next:** Terra execution of `docs/plans/2026-09-21/06-v5-12-historical-results-and-readiness-review.md`.

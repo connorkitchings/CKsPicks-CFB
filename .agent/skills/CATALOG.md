@@ -2,7 +2,7 @@
 # Skills Catalog
 # Index of all available skills for AI assistants working on CFB Model
 
-**Last Updated:** 2026-08-15
+**Last Updated:** 2026-10-01
 
 ---
 

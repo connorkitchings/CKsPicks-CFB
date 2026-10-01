@@ -1,6 +1,6 @@
 # Documentation Cleanup, Contract Close-out and Archive/Delete
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan and the per-contract status table in-session on 2026-10-01.
@@ -25,9 +25,9 @@ Make the documentation tree truthful and navigable without changing behavior.
 `.opencode/plans/` (7 plans dated 2026-09-09 and earlier; a second plans location superseded by `docs/plans/`) and tracked V2-era artifacts: `artifacts/cross_validation/`, `artifacts/reports/week_16_email.html`, `artifacts/spread_bucket_summary.json`, `artifacts/totals_threshold_summary.json`. `artifacts/README.md` stays.
 
 ## Definition of Done
-- [ ] pytest unchanged (1543 passed, 3 skipped with a dummy `CFBD_API_KEY`); `ruff format --check` and `ruff check` clean.
-- [ ] `mkdocs build --strict` passes; link checker finds no broken or changed link targets.
-- [ ] No `file:///Users` links; no non-archive `session_logs/2026-08` references.
+- [x] pytest unchanged (1543 passed, 3 skipped with a dummy `CFBD_API_KEY`); `ruff format --check` and `ruff check` clean.
+- [x] `mkdocs build --strict` passes; link checker finds no broken or changed link targets.
+- [x] No `file:///Users` links; no non-archive `session_logs/2026-08` references.
 
 ## Rollback
 `git revert` the step's commit.

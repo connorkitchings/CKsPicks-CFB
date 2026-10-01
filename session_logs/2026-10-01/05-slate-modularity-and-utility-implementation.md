@@ -3,7 +3,7 @@
 ## TL;DR
 - **Worked On:** Implemented the approved Sol contract for frontend modularity, shared slate architecture, and comparative utility enhancements across the Next.js web application.
 - **Outcome:** Unified Picks (`/`) and Results (`/results`) route pages under `<WeeklySlateView>`, eliminated duplicated table DOM trees via `<BetComparisonTable>`, added certified V5 Top 25 power rankings (`#N`) on game cards, grouped games by day (`Thursday`, `Friday`, `Saturday`) with game counts, and integrated `[All Picks] [Spreads] [Totals]` market target filtering in `GamesList`.
-- **Plan Contract:** [`docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md`](file:///Users/connorkitchings/Desktop/Repositories/ckspicks-cfb/docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md) (Status: `Implemented`)
+- **Plan Contract:** [`docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md`](../../docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md) (Status: `Implemented`)
 - **Approval / Status:** User explicit approval in session ("Document the plan and proceed").
 - **Blockers:** None.
 - **Next:** User review of the updated live experience, followed by Phase 2 Matchup Deep Dive (Parker Fleming unit-vs-unit profile) exploration when ready.

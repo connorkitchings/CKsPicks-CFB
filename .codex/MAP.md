@@ -262,4 +262,4 @@ docs/
 
 ---
 
-_Last Updated: 2026-09-05_
+_Last Updated: 2026-10-01_

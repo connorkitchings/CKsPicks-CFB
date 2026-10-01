@@ -7,10 +7,11 @@ For AI assistant guidance when working with this repository, please refer to **A
 ## Quick Start
 
 1. Read [`AGENTS.md`](./AGENTS.md) first - Critical rules and overview
-2. Check [`.codex/QUICKSTART.md`](./.codex/QUICKSTART.md) - Essential commands
-3. Review [`.agent/CONTEXT.md`](./.agent/CONTEXT.md) - Project architecture
-4. Review recent session logs in `session_logs/`
-5. Propose a plan before implementing
+2. Read [`docs/status.md`](./docs/status.md) - Live run IDs, week state, scoreboard
+3. Check [`.codex/QUICKSTART.md`](./.codex/QUICKSTART.md) - Essential commands
+4. Review [`.agent/CONTEXT.md`](./.agent/CONTEXT.md) - Project architecture
+5. Review recent session logs in `session_logs/`
+6. Propose a plan before implementing
 
 ## What's in AGENTS.md
 
@@ -32,5 +33,5 @@ For AI assistant guidance when working with this repository, please refer to **A
 
 ---
 
-_Last Updated: 2026-08-19_
+_Last Updated: 2026-10-01_
 _This file now redirects to AGENTS.md as the universal entry point_

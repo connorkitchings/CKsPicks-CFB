@@ -2,7 +2,7 @@
 
 ## TL;DR
 - **Worked On:** Investigated frontend architecture, layout duplication, and comparative sports analytics utility across the web application. Produced a durable Sol implementation contract.
-- **Outcome:** Created decision-complete implementation plan [`docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md`](file:///Users/connorkitchings/Desktop/Repositories/ckspicks-cfb/docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md).
+- **Outcome:** Created decision-complete implementation plan [`docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md`](../../docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md).
 - **Plan Contract:** `docs/plans/2026-10-01/02-web-architecture-modularity-and-slate-enhancements.md` (Status: Draft)
 - **Approval / Status:** Pending user approval.
 - **Blockers:** None.

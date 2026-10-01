@@ -40,6 +40,9 @@ nav:
       - Historical Candidate-v1 Shadow: ops/rating_shadow_operations.md
       - Validation: ops/validation.md
       - MLflow Development Tooling: ops/mlflow_mcp.md
+  - Research Notes:
+      - Ratings Laboratory v1: research/ratings-lab-v1.md
+      - V6 Ratings Architecture Design: research/v6-ratings-architecture-design.md
   - Model and Experiment Lineage:
       - Feature Registry: project_org/feature_registry.md
       - Experiment Index: experiments/index.md
