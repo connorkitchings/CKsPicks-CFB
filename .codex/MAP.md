@@ -201,7 +201,6 @@ contracts/
 web/
 ├── README.md                    # Local-dev + deployment guide
 ├── package.json                 # Own toolchain (npm); scripts: dev/build/lint/typecheck
-├── db/migrations/               # 0001_init.sql + deprecated-location README
 └── src/
     ├── app/                     # App Router: page.tsx, api/health/route.ts
     ├── components/              # Header, GameRow, LeanBadge, RecordBanner, WeekNav, ...
