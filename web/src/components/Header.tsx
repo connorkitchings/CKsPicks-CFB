@@ -75,6 +75,10 @@ export function Footer({
           : "college football schedules and market lines"}
         ; nothing here is a recommendation or guarantee.
       </p>
+      <p className="mb-1">
+        Team names and logos are trademarks of their respective schools and
+        owners, shown for identification only.
+      </p>
       <p>
         Source:{" "}
         <a

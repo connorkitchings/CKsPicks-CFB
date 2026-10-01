@@ -30,11 +30,11 @@ The fetch needs network access to CFBD and the ESPN CDN, which the cloud session
 6. **Theme-aware:** the dark variant is used in dark mode (some navy/black logos vanish on black).
 7. **Originals are not kept.** A manifest records, per team, the source URL, retrieval date and the SHA-256 of each generated file, so every asset is re-fetchable and its provenance is recorded.
 8. **Immutable caching:** `/logos/v2/*` is served with `Cache-Control: public, max-age=31536000, immutable` (bump `v2` to invalidate).
-9. **Licensing:** logos belong to the schools/ESPN. Self-hosting for this display-only research site is a user decision; keep the "display only" footer. (Open: whether to add a trademark attribution line.)
+9. **Licensing:** logos belong to the schools/ESPN. Self-hosting for this display-only research site is the user's call. **Decided 2026-10-01:** add a trademark attribution line to the shared footer ("Team names and logos are trademarks of their respective schools and owners, shown for identification only."). **Done on `dev`** in `web/src/components/Header.tsx` (does not depend on the logo download).
+10. **Switch all logos to the new files, including Python.** **Decided 2026-10-01:** `src/cks_picks_cfb/analysis/unadjusted.py` (matplotlib leaderboards) also moves to the new assets, and the old 32 px set is removed once everything passes.
 
-## Open decisions for the user (answer before step 3)
-- [ ] Add a trademark/attribution line to the footer? (default: no change)
-- [ ] Keep `assets/logos/` (32 px) for `analysis/unadjusted.py`, or switch that code to the new assets? (default: keep, untouched)
+## Open decisions for the user
+None. Both earlier questions are resolved (see decisions 9 and 10).
 
 ## Steps
 
@@ -52,13 +52,14 @@ The fetch needs network access to CFBD and the ESPN CDN, which the cloud session
 4. `web/src/lib/teams.ts`: `logoUrl(teamName, { size, theme })` and `hasLogo(teamName)` backed by the generated map; keep a small override table only for names that fail to match.
 5. New `web/src/components/TeamLogo.tsx`: renders light and dark `<img>` pair using the existing `dark:` variant (`dark:hidden` / `hidden dark:block`), explicit `width`/`height`, `sm`/`lg` size choice, and an initials tile when `hasLogo` is false. Replace direct `Image`+`logoUrl` use in `GameRow.tsx`, `MatchupHero.tsx`, `UnitMatchupTable.tsx`, `picks-proto/TeamLine.tsx` and `picks-proto/LeanMarker.tsx`.
 6. `web/next.config.ts`: add `headers()` for `/logos/v2/:path*` with the immutable cache header.
-7. Stop syncing the old set: remove `predev`/`prebuild` `sync-logos.mjs` hooks and the script; remove `assets/logos` from `web/project.json` inputs. Do **not** delete `assets/logos/` (still used by `analysis/unadjusted.py`) or the old `web/public/logos/*.png` until Phase C passes.
+7. Stop syncing the old set: remove the `predev`/`prebuild` `sync-logos.mjs` hooks and the script; remove `assets/logos` from `web/project.json` inputs. Keep the old PNGs until Phase C passes.
+8. **Python:** switch `src/cks_picks_cfb/analysis/unadjusted.py` to the new assets. Point `config.LOGOS_DIR` (`src/cks_picks_cfb/config/__init__.py:39`) at `web/public/logos/v2/lg/light`, and make `_logo_index()` resolve school name to id to file through `manifest.json` instead of globbing `*.png` by name. The loader already uses Pillow (`Image.open(...).convert("RGBA")`), which reads WebP; confirm the local Pillow build supports WebP (`PIL.features.check("webp")`) and fall back to PNG output for the `lg/light` set if it does not. Update `tests/test_unadjusted_analysis.py` and add a test that a known school resolves to an existing file and unknown schools return `None`.
 
 ### Phase C: Verify, then clean up
-8. Tests: unit tests for `logoUrl`/`hasLogo` (known id, alias, unknown → fallback, size/theme paths); an e2e test on `/test-picks` asserting every visible logo has `naturalWidth >= 2 × clientWidth` (regression guard against pixelation) and that dark mode swaps to the dark file.
-9. Visual check at 3x: Playwright `deviceScaleFactor: 3` screenshots of `/test-picks`, `/test-results` and `/matchup/<id>` in light and dark; compare against the old rendering.
-10. Remove the old 32 px files from `web/public/logos/` (the new files live under `v2/`) and record the change. Keep `assets/logos/` until `analysis/unadjusted.py` is migrated or deleted.
-11. Update `web/README.md` (how logos are built and refreshed once per season) and `docs/status.md`; add a session log.
+9. Tests: unit tests for `logoUrl`/`hasLogo` (known id, alias, unknown → fallback, size/theme paths); an e2e test on `/test-picks` asserting every visible logo has `naturalWidth >= 2 × clientWidth` (regression guard against pixelation) and that dark mode swaps to the dark file.
+10. Visual check at 3x: Playwright `deviceScaleFactor: 3` screenshots of `/test-picks`, `/test-results` and `/matchup/<id>` in light and dark; compare against the old rendering.
+11. Remove the old 32 px files: `web/public/logos/*.png` (the new files live under `v2/`) and the `assets/logos/` directory, after confirming nothing references either (`grep -rn "assets/logos\|LOGOS_DIR"`). Record the removal in the session log.
+12. Update `web/README.md` (how logos are built and refreshed once per season) and `docs/status.md`; add a session log.
 
 ## Definition of Done
 - [ ] Dry run output recorded; build script completes with no failed teams (or each failure listed with its fallback).
@@ -67,6 +68,8 @@ The fetch needs network access to CFBD and the ESPN CDN, which the cloud session
 - [ ] e2e resolution test passes; lint, typecheck, `test:publication`, build and the full Playwright suite pass.
 - [ ] 3x light and dark screenshots show sharp logos at 16, 20, 28 and 64–80 px.
 - [ ] No runtime request to `espncdn.com` (check the network panel).
+- [ ] The Python analysis code uses the new assets; `assets/logos/` and the old `web/public/logos/*.png` are removed, with no remaining references.
+- [x] Footer trademark line added on `dev` (verified by e2e on `/`, `/test-picks`, `/test-results`).
 - [ ] `docs/status.md` updated; contract marked Implemented.
 
 ## Risks and rollback
@@ -74,7 +77,7 @@ The fetch needs network access to CFBD and the ESPN CDN, which the cloud session
 - **A team has no logo or a 404:** initials-tile fallback; listed in the report.
 - **Dark variants missing for some teams:** fall back to the light file for dark mode.
 - **Repo growth:** bounded by the < 6 MB check; WebP keeps it small.
-- **Rollback:** `git revert` the web-change commit; the old PNGs remain until Phase C step 10.
+- **Rollback:** `git revert` the web-change commit; the old PNGs remain until Phase C step 11.
 
 ## Handoff to Terra
 Run this at home in a fresh task on `dev`: `git checkout dev && git pull`, then use `.agent/skills/implement-plan/` with this exact path. Needs `CFBD_API_KEY` in `.env` and network access. Start with Phase A step 2's `--dry-run` and stop to review its output before downloading.

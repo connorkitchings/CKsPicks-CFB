@@ -73,6 +73,15 @@ test.describe("picks prototype (/test-picks)", () => {
   });
 });
 
+test("footer carries the team-logo trademark attribution", async ({ page }) => {
+  for (const path of ["/test-picks", "/test-results", "/"]) {
+    await page.goto(path);
+    await expect(
+      page.getByText("Team names and logos are trademarks of their respective schools and owners, shown for identification only."),
+    ).toBeVisible();
+  }
+});
+
 test.describe("results prototype (/test-results)", () => {
   test("shows week and season records, highlights and the full slate", async ({ page }) => {
     await page.goto("/test-results");
