@@ -47,6 +47,10 @@ pre-registered promotion gates remain diagnostics.
 Neither retrospective target clears 52.4%. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
+## Branches
+
+`main` is production (Vercel deploys from it); `dev` is the working branch. Work on `dev`, then merge `dev` into `main` to release. No other long-lived branches. Details: `AGENTS.md` (Branching).
+
 ## In flight
 
 - Week 5: wait for certified finals, then score

@@ -293,14 +293,22 @@ above and the latest session log for current-week operations.
 
 ## 🔄 Key Workflows
 
+### Branching (two long-lived branches)
+
+- **`main`** — production. Vercel deploys from it; keep it releasable.
+- **`dev`** — working branch. Day-to-day changes land here first.
+- Optional short-lived branches (`feature/…`, `fix/…`) come off `dev`, merge back into `dev`, and are deleted after merging.
+- Release by merging `dev` into `main` (fast-forward when possible). Do not commit to `main` directly except for an urgent production fix, and then merge it back into `dev`.
+- No other long-lived branches. Delete merged branches, locally and on GitHub.
+
 ### Development Cycle
 
-1. **Create feature branch:** `git checkout -b feature/your-feature`
+1. **Start from `dev`:** `git checkout dev && git pull` (use a short-lived branch off `dev` for larger work)
 2. **Make changes:** Edit code, add tests
 3. **Run scoped quality gates:** follow the active implementation contract or affected components
 4. **Create session log:** Document work in `session_logs/`
 5. **Commit:** User executes proposed commit
-6. **Create PR:** When ready for review
+6. **Release:** merge `dev` into `main` when ready to deploy
 
 ### Testing & Validation
 
