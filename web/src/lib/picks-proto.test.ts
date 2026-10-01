@@ -190,24 +190,22 @@ test("result filters and sorts", () => {
 
 import { breakEvenDelta, finalMarginText } from "./picks-proto.ts";
 
-test("leans explain their direction in plain language", () => {
+test("leans carry the model's prediction from the pick's side", () => {
   const fav = leanFor(game({}), "spread");
-  assert.equal(fav?.explain, "wins by more than 3.5");
   assert.equal(fav?.model, "wins by 6.5");
   assert.equal(fav?.dir, "home");
   assert.equal(fav?.team, "Home");
 
   const dog = leanFor(game({ spreadLean: "away", homeTeamSpreadLine: -3.5 }), "spread");
-  assert.equal(dog?.explain, "loses by under 3.5, or wins");
   assert.equal(dog?.model, "loses by 6.5");
 
   const pk = leanFor(game({ homeTeamSpreadLine: 0 }), "spread");
-  assert.equal(pk?.explain, "wins");
+  assert.equal(pk?.pick, "Home PK");
 
   const over = leanFor(game({}), "total");
-  assert.equal(over?.explain, "total above 50.5");
   assert.equal(over?.model, "55.0");
-  assert.equal(leanFor(game({ totalLean: "under" }), "total")?.explain, "total below 50.5");
+  assert.equal(over?.dir, "over");
+  assert.equal(leanFor(game({ totalLean: "under" }), "total")?.dir, "under");
 });
 
 test("breakEvenDelta is signed, bounded and comparable", () => {

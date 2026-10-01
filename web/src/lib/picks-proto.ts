@@ -35,20 +35,12 @@ export type Lean = {
   dir: "home" | "away" | "over" | "under";
   /** Team the spread lean backs; null for totals. */
   team: string | null;
-  /** Short meaning, read after the pick: "wins by more than 2.5" / "total above 57.5". */
-  explain: string;
   /** What the model says on the same scale: "wins by 7.6" / "54.1". */
   model: string | null;
   /** Edge in points on the pick side; always positive. */
   edge: number;
   tier: 1 | 2 | 3;
 };
-
-function spreadExplain(line: number): string {
-  const n = Math.abs(line).toFixed(1);
-  if (line === 0) return "wins";
-  return line < 0 ? `wins by more than ${n}` : `loses by under ${n}, or wins`;
-}
 
 /** Model margin from the leaned team's side: "wins by 7.6" / "loses by 1.2". */
 function modelMarginText(margin: number | null): string | null {
@@ -79,10 +71,9 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
           : -game.predictedSpread;
     return {
       kind,
-      pick: `${team} ${signedSpread(line)}`,
+      pick: `${team} ${line === 0 ? "PK" : signedSpread(line)}`,
       dir: game.spreadLean,
       team,
-      explain: spreadExplain(line),
       model: modelMarginText(margin),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
@@ -98,7 +89,6 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
     pick: `${over ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
     dir: game.totalLean,
     team: null,
-    explain: `total ${over ? "above" : "below"} ${game.totalLine.toFixed(1)}`,
     model: game.predictedTotal === null ? null : game.predictedTotal.toFixed(1),
     edge,
     tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,

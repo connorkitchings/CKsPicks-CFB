@@ -17,16 +17,17 @@ test.describe("picks prototype (/test-picks)", () => {
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toHaveCount(1);
   });
 
-  test("explains each lean's direction once, without a second market/model table", async ({ page }) => {
+  test("shows each lean's direction and model prediction once, without a second market/model table", async ({ page }) => {
     await page.goto("/test-picks");
 
     // Edge sits in parentheses next to the pick; no separate "Edge" label.
     await expect(page.getByText("(5.1)").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
-    // One line under the pick: what it means plus the model's number.
-    await expect(page.getByText(/^wins by more than 2\.5 · model: wins by 7\.6$/).first()).toBeVisible();
-    await expect(page.getByText(/^total below 57\.5 · model: 54\.1$/).first()).toBeVisible();
-    await expect(page.getByText(/^loses by under 1\.5, or wins · model: wins by 0\.4$/).first()).toBeVisible();
+    // One line under the pick: just the model's prediction, no explanatory sentence.
+    await expect(page.getByText(/^model: wins by 7\.6$/).first()).toBeVisible();
+    await expect(page.getByText(/^model: 54\.1$/).first()).toBeVisible();
+    await expect(page.getByText(/^model: wins by 0\.4$/).first()).toBeVisible();
+    await expect(page.getByText(/wins by more than|loses by under|total above|total below/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
     await expect(page.getByText("Market", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Model", { exact: true })).toHaveCount(0);

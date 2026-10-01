@@ -6,11 +6,10 @@ const LABEL = { spread: "Spread", total: "Total" } as const;
 
 /**
  * One lean: bet type, direction marker, the pick with its edge in parentheses,
- * and a one-line sentence under it saying what the pick means and what the
- * model has.
+ * and the model's own prediction on one line under it.
  */
 export function LeanPill({ lean, compact = false }: { lean: Lean; compact?: boolean }) {
-  const sentence = `${lean.explain}${lean.model ? ` · model: ${lean.model}` : ""}`;
+  const sentence = lean.model ? `model: ${lean.model}` : null;
   return (
     <div className="space-y-0.5">
       <div className="flex items-baseline gap-2">
@@ -27,9 +26,11 @@ export function LeanPill({ lean, compact = false }: { lean: Lean; compact?: bool
           </span>
         </span>
       </div>
-      <p className="truncate max-[380px]:overflow-visible max-[380px]:whitespace-normal pl-[3.75rem] text-[11px] text-ink-muted" title={sentence}>
-        {sentence}
-      </p>
+      {sentence && (
+        <p className="truncate pl-[3.75rem] text-[11px] text-ink-muted" title={sentence}>
+          {sentence}
+        </p>
+      )}
     </div>
   );
 }

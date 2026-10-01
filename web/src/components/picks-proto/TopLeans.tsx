@@ -29,10 +29,11 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
                     {kickoffTime(l.game.startDate)}
                   </span>
                 </span>
-                <span className="mt-0.5 block truncate max-[380px]:overflow-visible max-[380px]:whitespace-normal pl-6 text-[11px] text-ink-muted">
-                  {l.explain}
-                  {l.model && <> · model: {l.model}</>}
-                </span>
+                {l.model && (
+                  <span className="mt-0.5 block truncate pl-6 text-[11px] text-ink-muted">
+                    model: {l.model}
+                  </span>
+                )}
               </a>
             </li>
           ))}
