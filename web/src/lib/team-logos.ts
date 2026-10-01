@@ -1,5 +1,5 @@
 import { LOGO_IDS } from "./team-logos.generated.ts";
-import { TEAM_LOGO_MAP, logoUrl as legacyLogoUrl } from "./teams.ts";
+import { logoUrl as legacyLogoUrl } from "./teams.ts";
 
 export type LogoSize = "sm" | "lg";
 export type LogoTheme = "light" | "dark";
@@ -7,8 +7,27 @@ export type LogoTheme = "light" | "dark";
 /** True once `scripts/build-team-logos.mjs` has produced the id map. */
 export const LOGOS_BUILT = Object.keys(LOGO_IDS).length > 0;
 
+/** Other spellings of a school name -> the CFBD name used as the key in LOGO_IDS. */
+const LOGO_ALIASES: Record<string, string> = {
+  "Appalachian State": "App State",
+  "Southern Mississippi": "Southern Miss",
+  "Louisiana Monroe": "UL Monroe",
+  "Sam Houston State": "Sam Houston",
+  "San Jose State": "San José State",
+  "UT San Antonio": "UTSA",
+  Hawaii: "Hawai'i",
+  "Hawai_i": "Hawai'i",
+  "Hawai i": "Hawai'i",
+  Connecticut: "UConn",
+  UMass: "Massachusetts",
+  FIU: "Florida International",
+  "Miami (FL)": "Miami",
+  "Miami FL": "Miami",
+  "Louisiana-Monroe": "UL Monroe",
+};
+
 export function logoId(teamName: string): number | null {
-  return LOGO_IDS[teamName] ?? LOGO_IDS[TEAM_LOGO_MAP[teamName] ?? ""] ?? null;
+  return LOGO_IDS[teamName] ?? LOGO_IDS[LOGO_ALIASES[teamName] ?? ""] ?? null;
 }
 
 export function hasLogo(teamName: string): boolean {
