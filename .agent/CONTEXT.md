@@ -122,7 +122,7 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
+**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a

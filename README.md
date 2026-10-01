@@ -5,7 +5,7 @@ Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
 ## Current status
 
-See [`docs/status.md`](docs/status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](docs/modeling/v5_status.md); V5 ratings successor is distinct from the V4 feature schema v5 diagnostic. The primary success metric is prospective ATS win % vs the 52.4% break-even.
+See [`docs/status.md`](docs/status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](docs/modeling/v5_status.md). Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. V5 ratings successor is distinct from the V4 feature schema v5 diagnostic. The primary success metric is prospective ATS win % vs the 52.4% break-even.
 
 ## 2026 posture
 

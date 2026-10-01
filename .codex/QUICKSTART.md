@@ -8,7 +8,7 @@
 
 ## Environment Setup
 
-**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); weekly close/open/freeze steps are in the [weekly operator checklist](../docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist). The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md). Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Weekly close/open/freeze steps are in the [weekly operator checklist](../docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist). The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.
