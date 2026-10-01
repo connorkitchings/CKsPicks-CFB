@@ -31,10 +31,30 @@ export type Lean = {
   kind: LeanKind;
   /** Display text, e.g. "New Mexico State -2.5" or "Under 57.5". */
   pick: string;
+  /** Which side the lean takes. */
+  dir: "home" | "away" | "over" | "under";
+  /** Team the spread lean backs; null for totals. */
+  team: string | null;
+  /** Plain-language meaning, e.g. "Utah to win by more than 2.5". */
+  explain: string;
+  /** What the model says on the same scale, e.g. "Utah by 7.6" or "total 54.1". */
+  model: string | null;
   /** Edge in points on the pick side; always positive. */
   edge: number;
   tier: 1 | 2 | 3;
 };
+
+function spreadExplain(team: string, line: number): string {
+  const n = Math.abs(line).toFixed(1);
+  if (line === 0) return `${team} to win`;
+  return line < 0 ? `${team} to win by more than ${n}` : `${team} to win, or lose by fewer than ${n}`;
+}
+
+/** Model margin from the leaned team's side, as text ("Utah by 7.6" / "Utah loses by 1.2"). */
+function modelMarginText(team: string, margin: number | null): string | null {
+  if (margin === null) return null;
+  return margin >= 0 ? `${team} by ${margin.toFixed(1)}` : `${team} loses by ${Math.abs(margin).toFixed(1)}`;
+}
 
 export function leanFor(game: Game, kind: LeanKind): Lean | null {
   if (game.publicationMode !== "predictions") return null;
@@ -51,9 +71,19 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
         ) ??
         0,
     );
+    const margin =
+      game.predictedSpread === null
+        ? null
+        : game.spreadLean === "home"
+          ? game.predictedSpread
+          : -game.predictedSpread;
     return {
       kind,
       pick: `${team} ${signedSpread(line)}`,
+      dir: game.spreadLean,
+      team,
+      explain: spreadExplain(team, line),
+      model: modelMarginText(team, margin),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
     };
@@ -62,9 +92,14 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
   const edge = Math.abs(
     game.edgeTotal ?? totalEdge(game.predictedTotal, game.totalLine) ?? 0,
   );
+  const over = game.totalLean === "over";
   return {
     kind,
-    pick: `${game.totalLean === "over" ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
+    pick: `${over ? "Over" : "Under"} ${game.totalLine.toFixed(1)}`,
+    dir: game.totalLean,
+    team: null,
+    explain: `Combined score ${over ? "above" : "below"} ${game.totalLine.toFixed(1)}`,
+    model: game.predictedTotal === null ? null : `total ${game.predictedTotal.toFixed(1)}`,
     edge,
     tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
   };
@@ -244,4 +279,32 @@ export function sortResults(games: Game[], sort: ResultSort): Game[] {
     if (sb === null) return -1;
     return (sort === "bestResult" ? sb - sa : sa - sb) || byKickoff(a, b);
   });
+}
+
+/** Season-level comparison window: the bar spans +/- this many points of win rate. */
+export const BAR_RANGE_PTS = 15;
+
+/**
+ * Win rate vs the break-even rate. `fill` is signed in [-1, 1] on a fixed scale
+ * (BAR_RANGE_PTS each side) so bars are comparable across records.
+ */
+export function breakEvenDelta(
+  win: number,
+  loss: number,
+): { rate: number | null; delta: number | null; fill: number; decided: number } {
+  const rate = winRatePct(win, loss);
+  if (rate === null) return { rate: null, delta: null, fill: 0, decided: 0 };
+  const delta = rate - BREAK_EVEN_PCT;
+  const fill = Math.max(-1, Math.min(1, delta / BAR_RANGE_PTS));
+  return { rate, delta, fill, decided: win + loss };
+}
+
+/** Actual margin from the leaned team's side, e.g. "Utah won by 7" / "Utah lost by 3". */
+export function finalMarginText(game: Game, team: string): string | null {
+  if (game.publicationMode !== "predictions" || !isFinal(game)) return null;
+  const home = game.homePoints as number;
+  const away = game.awayPoints as number;
+  const margin = team === game.homeTeam ? home - away : away - home;
+  if (margin === 0) return `${team} tied`;
+  return `${team} ${margin > 0 ? "won" : "lost"} by ${Math.abs(margin)}`;
 }

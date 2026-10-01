@@ -1,5 +1,6 @@
 import type { PredictionGame } from "@/lib/queries";
 import { coverMargin, leanFor, resultFor } from "@/lib/picks-proto";
+import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 import { dayShort } from "./format";
 import { TeamLine } from "./TeamLine";
@@ -12,6 +13,7 @@ function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }
   return (
     <div className="space-y-0.5 text-xs">
       <div className="flex items-center gap-2">
+        <LeanMarker lean={lean} />
         <span className="min-w-0 truncate font-semibold text-ink">{lean.pick}</span>
         {grade && <ResultBadge grade={grade} />}
       </div>

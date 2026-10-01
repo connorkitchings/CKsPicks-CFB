@@ -186,3 +186,45 @@ test("result filters and sorts", () => {
   assert.deepEqual(sortResults([loss, none, win], "bestResult").map((g) => g.gameId), [1, 2, 3]);
   assert.deepEqual(sortResults([win, none, loss], "worstResult").map((g) => g.gameId), [2, 1, 3]);
 });
+
+
+import { breakEvenDelta, finalMarginText } from "./picks-proto.ts";
+
+test("leans explain their direction in plain language", () => {
+  const fav = leanFor(game({}), "spread");
+  assert.equal(fav?.explain, "Home to win by more than 3.5");
+  assert.equal(fav?.model, "Home by 6.5");
+  assert.equal(fav?.dir, "home");
+  assert.equal(fav?.team, "Home");
+
+  const dog = leanFor(game({ spreadLean: "away", homeTeamSpreadLine: -3.5 }), "spread");
+  assert.equal(dog?.explain, "Away to win, or lose by fewer than 3.5");
+  assert.equal(dog?.model, "Away loses by 6.5");
+
+  const pk = leanFor(game({ homeTeamSpreadLine: 0 }), "spread");
+  assert.equal(pk?.explain, "Home to win");
+
+  const over = leanFor(game({}), "total");
+  assert.equal(over?.explain, "Combined score above 50.5");
+  assert.equal(over?.model, "total 55.0");
+  assert.equal(leanFor(game({ totalLean: "under" }), "total")?.explain, "Combined score below 50.5");
+});
+
+test("breakEvenDelta is signed, bounded and comparable", () => {
+  const below = breakEvenDelta(93, 103);
+  assert.equal(Math.round((below.delta ?? 0) * 10) / 10, -5);
+  assert.ok(below.fill < 0 && below.fill > -1);
+  assert.equal(below.decided, 196);
+  assert.ok(breakEvenDelta(82, 77).fill > -0.1);
+  assert.equal(breakEvenDelta(0, 0).rate, null);
+  assert.equal(breakEvenDelta(0, 0).fill, 0);
+  assert.equal(breakEvenDelta(20, 0).fill, 1);
+  assert.equal(breakEvenDelta(0, 20).fill, -1);
+});
+
+test("finalMarginText reads the result from the leaned team's side", () => {
+  const g = game({ homePoints: 24, awayPoints: 17 });
+  assert.equal(finalMarginText(g, "Home"), "Home won by 7");
+  assert.equal(finalMarginText(g, "Away"), "Away lost by 7");
+  assert.equal(finalMarginText(game({}), "Home"), null);
+});

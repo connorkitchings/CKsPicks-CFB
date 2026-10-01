@@ -2,6 +2,7 @@ import type { Game } from "@/lib/queries";
 import { topLeans, type LeanKind } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
 import { EdgeMeter } from "./EdgeMeter";
+import { LeanMarker } from "./LeanMarker";
 
 function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: string }) {
   const rows = topLeans(games, kind, 5);
@@ -16,16 +17,23 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
             <li key={l.game.gameId}>
               <a
                 href={`#game-${l.game.gameId}`}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
+                className="block rounded-md px-2 py-1.5 hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
-                <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
-                <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
-                  {l.game.awayTeam} @ {l.game.homeTeam}
+                <span className="flex items-center gap-2 text-sm">
+                  <LeanMarker lean={l} />
+                  <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
+                  <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
+                    {l.game.awayTeam} @ {l.game.homeTeam}
+                  </span>
+                  <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-ink-muted">
+                    <span className="hidden text-ink-faint sm:inline">{kickoffTime(l.game.startDate)}</span>
+                    {l.edge.toFixed(1)}
+                    <EdgeMeter tier={l.tier} />
+                  </span>
                 </span>
-                <span className="ml-auto flex shrink-0 items-center gap-1.5 text-xs tabular-nums text-ink-muted">
-                  <span className="hidden text-ink-faint sm:inline">{kickoffTime(l.game.startDate)}</span>
-                  {l.edge.toFixed(1)}
-                  <EdgeMeter tier={l.tier} />
+                <span className="mt-0.5 block pl-6 text-xs text-ink-muted">
+                  {l.explain}
+                  {l.model && <> · model: {l.model}</>}
                 </span>
               </a>
             </li>

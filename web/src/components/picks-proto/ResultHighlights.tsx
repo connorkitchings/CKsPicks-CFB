@@ -1,5 +1,6 @@
 import type { Game } from "@/lib/queries";
 import { topResults, type GradedLean } from "@/lib/picks-proto";
+import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 
 function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; empty: string }) {
@@ -17,6 +18,7 @@ function Column({ title, rows, empty }: { title: string; rows: GradedLean[]; emp
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <ResultBadge grade={r.grade} />
+                <LeanMarker lean={r} />
                 <span className="min-w-0 truncate font-semibold text-ink">{r.pick}</span>
                 <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
                   {r.game.awayTeam} @ {r.game.homeTeam}

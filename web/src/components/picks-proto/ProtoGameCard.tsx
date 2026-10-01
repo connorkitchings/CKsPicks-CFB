@@ -6,11 +6,10 @@ import { kickoffTime } from "./format";
 import { LeanPill } from "./LeanPill";
 import { TeamLine } from "./TeamLine";
 
-const th = "text-right text-[10px] font-medium uppercase tracking-wide text-ink-faint";
-
 /**
- * Prototype game card: a score/teams block, a small market-vs-model grid, and
- * a pick strip that makes the lean the focal point. Games with no lean recede.
+ * Prototype game card: who is playing, then each lean with its direction and
+ * edge. The market and model numbers live in the lean sentence, not a second
+ * table, so each number appears once. Games with no lean recede.
  */
 export function ProtoGameCard({
   game,
@@ -24,8 +23,6 @@ export function ProtoGameCard({
   const anyLean = spread !== null || total !== null;
   const final = isFinal(game);
   const strongest = Math.max(spread?.tier ?? 0, total?.tier ?? 0);
-  const market = marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine);
-  const model = modelSpreadView(game.homeTeam, game.awayTeam, game.predictedSpread);
 
   return (
     <li
@@ -51,50 +48,30 @@ export function ProtoGameCard({
             </span>
           )}
         </div>
-
         <div className="space-y-1.5">
-          <TeamLine
-            name={game.awayTeam}
-            record={game.awayRecord}
-            rank={ranks[game.awayTeam]}
-            score={game.awayPoints}
-            leaning={game.spreadLean === "away"}
-          />
-          <TeamLine
-            name={game.homeTeam}
-            record={game.homeRecord}
-            rank={ranks[game.homeTeam]}
-            home
-            score={game.homePoints}
-            leaning={game.spreadLean === "home"}
-          />
-        </div>
-
-        <div className="mt-3 grid grid-cols-[3.5rem_1fr_1fr] items-baseline gap-y-1 text-xs tabular-nums">
-          <span />
-          <span className={th}>Market</span>
-          <span className={th}>Model</span>
-          <span className="text-ink-muted">Spread</span>
-          <span className="text-right font-mono text-ink">{spreadLabel(market)}</span>
-          <span className="text-right font-mono text-ink">{spreadLabel(model)}</span>
-          <span className="text-ink-muted">Total</span>
-          <span className="text-right font-mono text-ink">
-            {game.totalLine === null ? "—" : game.totalLine.toFixed(1)}
-          </span>
-          <span className="text-right font-mono text-ink">
-            {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-          </span>
+          <TeamLine name={game.awayTeam} record={game.awayRecord} rank={ranks[game.awayTeam]} score={game.awayPoints} leaning={false} />
+          <TeamLine name={game.homeTeam} record={game.homeRecord} rank={ranks[game.homeTeam]} home score={game.homePoints} leaning={false} />
         </div>
       </div>
 
-      <div className="space-y-1.5 border-t border-line bg-surface-inset/60 px-4 py-2.5">
+      <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">
         {anyLean ? (
           <>
             {spread && <LeanPill lean={spread} />}
             {total && <LeanPill lean={total} />}
           </>
         ) : (
-          <p className="text-xs text-ink-faint">No lean — model is within the threshold of the market.</p>
+          <div className="space-y-0.5 text-xs text-ink-faint">
+            <p className="font-medium">No lean</p>
+            <p>
+              Spread: market {spreadLabel(marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine))}, model{" "}
+              {spreadLabel(modelSpreadView(game.homeTeam, game.awayTeam, game.predictedSpread))}
+            </p>
+            <p>
+              Total: market {game.totalLine === null ? "—" : game.totalLine.toFixed(1)}, model{" "}
+              {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
+            </p>
+          </div>
         )}
       </div>
     </li>
