@@ -1,6 +1,6 @@
 import type { Game, HistoricalModelContext, Stats } from "@/lib/queries";
 import type { PublicationMode } from "@/lib/publication";
-import type { Performance, Rating } from "@/lib/v5";
+import type { Performance, PerformanceDetail, Rating } from "@/lib/v5";
 
 const startDate = new Date("2026-08-29T19:30:00.000Z");
 
@@ -23,6 +23,61 @@ export const v5PerformanceFixture: Performance[] = [
     totalMae: 5, marginCoverage95: 1, totalCoverage95: 1,
     spread: { win: 1, loss: 0, push: 0 }, total: { win: 0, loss: 1, push: 0 } },
 ];
+
+export const v5PerformanceDetailFixture: PerformanceDetail = {
+  summary: {
+    classification: "all",
+    games: 2,
+    evaluated: 2,
+    marginMae: 4.5,
+    totalMae: 6.0,
+    marginCoverage95: 100,
+    totalCoverage95: 50,
+    spread: { win: 1, loss: 0, push: 0, units: 0.91, roi: 91.0, winRate: 100 },
+    total: { win: 0, loss: 1, push: 0, units: -1.0, roi: -100.0, winRate: 0 },
+    combined: { win: 1, loss: 1, push: 0, units: -0.09, roi: -4.5, winRate: 50 },
+  },
+  byWeek: {
+    0: {
+      classification: "all",
+      games: 2,
+      evaluated: 2,
+      marginMae: 4.5,
+      totalMae: 6.0,
+      marginCoverage95: 100,
+      totalCoverage95: 50,
+      spread: { win: 1, loss: 0, push: 0, units: 0.91, roi: 91.0, winRate: 100 },
+      total: { win: 0, loss: 1, push: 0, units: -1.0, roi: -100.0, winRate: 0 },
+      combined: { win: 1, loss: 1, push: 0, units: -0.09, roi: -4.5, winRate: 50 },
+    },
+  },
+  weeks: [0],
+  gradedGames: [
+    {
+      gameId: 401000001,
+      week: 0,
+      startDate: new Date("2026-08-29T19:30:00.000Z"),
+      homeTeam: "Texas",
+      awayTeam: "Ohio State",
+      homePoints: 24,
+      awayPoints: 21,
+      marketSpread: -2.5,
+      predictedSpread: 3.5,
+      spreadLean: "home",
+      spreadResult: "win",
+      spreadUnits: 0.9091,
+      spreadEdge: 6.0,
+      marketTotal: 51.5,
+      predictedTotal: 52.0,
+      totalLean: "over",
+      totalResult: "loss",
+      totalUnits: -1.0,
+      totalEdge: 0.5,
+      highConfidence: true,
+      evidenceClass: "replay",
+    },
+  ],
+};
 
 export const v5PerformanceBeforeWeekZeroFixture: Performance[] = [
   { classification: "all", games: 0, evaluated: 0, marginMae: null,

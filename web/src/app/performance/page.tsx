@@ -1,55 +1,38 @@
-import { getV5Performance, type Performance } from "@/lib/v5";
-import { v5PerformanceFixture } from "@/test/fixtures/publication";
-import { StatCard, winRatePercent } from "@/components/StatCard";
+import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
+import { v5PerformanceDetailFixture } from "@/test/fixtures/publication";
+import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 
 // Selection changes must not serve a record baked into an earlier build.
 export const dynamic = "force-dynamic";
 
-type Record = Performance["spread"];
-
-function Scoreboard({ label, record }: { label: string; record: Record }) {
-  return (
-    <section className="rounded-xl border border-line bg-surface-card p-5 shadow-sm">
-      <StatCard
-        label={label}
-        labelAs="h2"
-        stat={`${record.win}–${record.loss}–${record.push}`}
-        statLarge
-        subline={`${winRatePercent(record.win, record.loss)} win rate`}
-      />
-      <p className="mt-4 text-xs text-ink-faint">Wins · losses · pushes</p>
-    </section>
-  );
-}
-
 export default async function PerformancePage() {
-  let performance: Performance[] = [];
+  let detail: PerformanceDetail | null = null;
   let unavailable = false;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    performance = v5PerformanceFixture;
+    detail = v5PerformanceDetailFixture;
   } else {
     try {
-      performance = await getV5Performance(2026);
+      detail = await getV5PerformanceDetail(2026);
     } catch (error) {
       console.error("V5 performance query failed", error);
       unavailable = true;
     }
   }
 
-  const season = performance.find((row) => row.classification === "all");
+  const hasData = detail !== null && (detail.summary.games > 0 || detail.gradedGames.length > 0);
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+    <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-8">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
           2026 · V5
         </p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
-          Season record
+          Season record & performance
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-ink-muted">
-          Results for every selected V5 forecast in 2026.
+          Results, profit/loss unit tracking, and calibration for every selected V5 forecast in 2026.
         </p>
         <p role="note" className="mt-3 max-w-2xl text-sm text-ink-muted">
           Weeks 0–4 use retrospective predictions and grades recalculated after the games
@@ -64,14 +47,8 @@ export default async function PerformancePage() {
         >
           Performance data is temporarily unavailable.
         </p>
-      ) : season ? (
-        <>
-          <p className="text-sm text-ink-muted">{season.games} selected games</p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Scoreboard label="Spread" record={season.spread} />
-            <Scoreboard label="Total" record={season.total} />
-          </div>
-        </>
+      ) : hasData && detail ? (
+        <PerformanceDashboard data={detail} />
       ) : (
         <p
           role="status"
@@ -83,7 +60,7 @@ export default async function PerformancePage() {
 
       <p className="text-xs leading-relaxed text-ink-faint">
         Win rate excludes pushes. A game without an eligible market line does not
-        count as a win or loss.
+        count as a win or loss. Unit profits assume 1.0u flat risk per graded pick at closing/captured line.
       </p>
     </main>
   );

@@ -399,3 +399,276 @@ export const getV5Performance = cache(async (
     summarize(typed.filter((row) => row.evidenceClass === "live"), "live"),
   ];
 });
+
+export interface BetRecord {
+  win: number;
+  loss: number;
+  push: number;
+  units: number;
+  roi: number;
+  winRate: number;
+}
+
+export interface PerformanceSummary {
+  classification: "all" | "replay" | "live";
+  games: number;
+  evaluated: number;
+  spread: BetRecord;
+  total: BetRecord;
+  combined: BetRecord;
+  marginMae: number | null;
+  totalMae: number | null;
+  marginCoverage95: number | null;
+  totalCoverage95: number | null;
+}
+
+export interface GradedGamePick {
+  gameId: number;
+  week: number;
+  startDate: Date;
+  homeTeam: string;
+  awayTeam: string;
+  homePoints: number | null;
+  awayPoints: number | null;
+  marketSpread: number | null;
+  predictedSpread: number | null;
+  spreadLean: "home" | "away" | null;
+  spreadResult: "win" | "loss" | "push" | null;
+  spreadUnits: number | null;
+  spreadEdge: number | null;
+  marketTotal: number | null;
+  predictedTotal: number | null;
+  totalLean: "over" | "under" | null;
+  totalResult: "win" | "loss" | "push" | null;
+  totalUnits: number | null;
+  totalEdge: number | null;
+  highConfidence: boolean;
+  evidenceClass: "replay" | "live";
+}
+
+export interface PerformanceDetail {
+  summary: PerformanceSummary;
+  byWeek: Record<number, PerformanceSummary>;
+  gradedGames: GradedGamePick[];
+  weeks: number[];
+}
+
+function computeBetRecord(wins: number, losses: number, pushes: number, units: number): BetRecord {
+  const decisions = wins + losses;
+  const winRate = decisions > 0 ? (wins / decisions) * 100 : 0;
+  const risked = wins + losses + pushes;
+  const roi = risked > 0 ? (units / risked) * 100 : 0;
+  return {
+    win: wins,
+    loss: losses,
+    push: pushes,
+    units: Math.round(units * 100) / 100,
+    roi: Math.round(roi * 10) / 10,
+    winRate: Math.round(winRate * 10) / 10,
+  };
+}
+
+type DetailRow = {
+  evidenceClass: "replay" | "live";
+  week: number;
+  gameId: number;
+  startDate: Date;
+  homeTeam: string;
+  awayTeam: string;
+  homePoints: number | null;
+  awayPoints: number | null;
+  marketSpread: number | null;
+  marketTotal: number | null;
+  predictedSpread: number | null;
+  predictedTotal: number | null;
+  predictedSpreadStdDev: number | null;
+  predictedTotalStdDev: number | null;
+  spreadLean: "home" | "away" | null;
+  totalLean: "over" | "under" | null;
+  edgeSpread: number | null;
+  edgeTotal: number | null;
+  highConfidence: boolean;
+  spreadResult: "win" | "loss" | "push" | null;
+  spreadUnits: string | null;
+  totalResult: "win" | "loss" | "push" | null;
+  totalUnits: string | null;
+};
+
+function summarizeDetail(
+  rows: DetailRow[],
+  classification: PerformanceSummary["classification"],
+): PerformanceSummary {
+  let marginError = 0;
+  let totalError = 0;
+  let marginN = 0;
+  let totalN = 0;
+  let marginInside = 0;
+  let totalInside = 0;
+  let marginIntervals = 0;
+  let totalIntervals = 0;
+
+  let spreadWins = 0, spreadLosses = 0, spreadPushes = 0, spreadUnits = 0;
+  let totalWins = 0, totalLosses = 0, totalPushes = 0, totalUnits = 0;
+
+  for (const row of rows) {
+    if (row.homePoints !== null && row.awayPoints !== null) {
+      const actualMargin = row.homePoints - row.awayPoints;
+      const actualTotal = row.homePoints + row.awayPoints;
+      if (row.predictedSpread !== null) {
+        const error = Math.abs(row.predictedSpread - actualMargin);
+        marginError += error;
+        marginN += 1;
+        if (row.predictedSpreadStdDev !== null) {
+          marginIntervals += 1;
+          if (error <= 1.959963984540054 * row.predictedSpreadStdDev) marginInside += 1;
+        }
+      }
+      if (row.predictedTotal !== null) {
+        const error = Math.abs(row.predictedTotal - actualTotal);
+        totalError += error;
+        totalN += 1;
+        if (row.predictedTotalStdDev !== null) {
+          totalIntervals += 1;
+          if (error <= 1.959963984540054 * row.predictedTotalStdDev) totalInside += 1;
+        }
+      }
+    }
+
+    if (row.spreadResult) {
+      if (row.spreadResult === "win") spreadWins++;
+      else if (row.spreadResult === "loss") spreadLosses++;
+      else if (row.spreadResult === "push") spreadPushes++;
+
+      const u = row.spreadUnits !== null
+        ? parseFloat(row.spreadUnits)
+        : (row.spreadResult === "win" ? 0.9091 : row.spreadResult === "loss" ? -1.0 : 0.0);
+      spreadUnits += isNaN(u) ? 0 : u;
+    }
+
+    if (row.totalResult) {
+      if (row.totalResult === "win") totalWins++;
+      else if (row.totalResult === "loss") totalLosses++;
+      else if (row.totalResult === "push") totalPushes++;
+
+      const u = row.totalUnits !== null
+        ? parseFloat(row.totalUnits)
+        : (row.totalResult === "win" ? 0.9091 : row.totalResult === "loss" ? -1.0 : 0.0);
+      totalUnits += isNaN(u) ? 0 : u;
+    }
+  }
+
+  const spread = computeBetRecord(spreadWins, spreadLosses, spreadPushes, spreadUnits);
+  const total = computeBetRecord(totalWins, totalLosses, totalPushes, totalUnits);
+  const combined = computeBetRecord(
+    spreadWins + totalWins,
+    spreadLosses + totalLosses,
+    spreadPushes + totalPushes,
+    spreadUnits + totalUnits,
+  );
+
+  return {
+    classification,
+    games: rows.filter((r) => r.homePoints !== null && r.awayPoints !== null).length,
+    evaluated: marginN,
+    marginMae: marginN ? Math.round((marginError / marginN) * 100) / 100 : null,
+    totalMae: totalN ? Math.round((totalError / totalN) * 100) / 100 : null,
+    marginCoverage95: marginIntervals ? Math.round((marginInside / marginIntervals) * 1000) / 10 : null,
+    totalCoverage95: totalIntervals ? Math.round((totalInside / totalIntervals) * 1000) / 10 : null,
+    spread,
+    total,
+    combined,
+  };
+}
+
+export const getV5PerformanceDetail = cache(async (
+  season: number,
+): Promise<PerformanceDetail> => {
+  const rows = await db.select({
+    evidenceClass: schema.predictionRuns.evidenceClass,
+    week: schema.siteWeekSelections.week,
+    gameId: schema.games.gameId,
+    startDate: schema.games.startDate,
+    homeTeam: schema.games.homeTeam,
+    awayTeam: schema.games.awayTeam,
+    homePoints: schema.gameResults.homePoints,
+    awayPoints: schema.gameResults.awayPoints,
+    marketSpread: schema.predictions.homeTeamSpreadLine,
+    marketTotal: schema.predictions.totalLine,
+    predictedSpread: schema.predictions.predictedSpread,
+    predictedTotal: schema.predictions.predictedTotal,
+    predictedSpreadStdDev: schema.predictions.predictedSpreadStdDev,
+    predictedTotalStdDev: schema.predictions.predictedTotalStdDev,
+    spreadLean: schema.predictions.spreadLean,
+    totalLean: schema.predictions.totalLean,
+    edgeSpread: schema.predictions.edgeSpread,
+    edgeTotal: schema.predictions.edgeTotal,
+    highConfidence: schema.predictions.highConfidence,
+    spreadResult: sql<"win" | "loss" | "push" | null>`(
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
+        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'spread' LIMIT 1
+    )`,
+    spreadUnits: sql<string | null>`(
+      SELECT profit_units FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
+        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'spread' LIMIT 1
+    )`,
+    totalResult: sql<"win" | "loss" | "push" | null>`(
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
+        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'total' LIMIT 1
+    )`,
+    totalUnits: sql<string | null>`(
+      SELECT profit_units FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
+        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'total' LIMIT 1
+    )`,
+  }).from(schema.siteWeekSelections)
+    .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
+    .innerJoin(schema.predictions, eq(schema.predictionRuns.runId, schema.predictions.runId))
+    .innerJoin(schema.games, eq(schema.predictions.gameId, schema.games.gameId))
+    .leftJoin(schema.gameResults, eq(schema.games.gameId, schema.gameResults.gameId))
+    .where(and(
+      eq(schema.siteWeekSelections.season, season),
+      inArray(schema.predictionRuns.evidenceClass, ["replay", "live"]),
+    ))
+    .orderBy(desc(schema.siteWeekSelections.week), asc(schema.games.startDate));
+
+  const typed = rows as DetailRow[];
+  const summary = summarizeDetail(typed, "all");
+
+  const weeks = Array.from(new Set(typed.map((r) => r.week))).sort((a, b) => a - b);
+  const byWeek: Record<number, PerformanceSummary> = {};
+  for (const w of weeks) {
+    byWeek[w] = summarizeDetail(typed.filter((r) => r.week === w), "all");
+  }
+
+  const gradedGames: GradedGamePick[] = typed
+    .filter((r) => r.spreadResult !== null || r.totalResult !== null)
+    .map((r) => ({
+      gameId: r.gameId,
+      week: r.week,
+      startDate: r.startDate,
+      homeTeam: r.homeTeam,
+      awayTeam: r.awayTeam,
+      homePoints: r.homePoints,
+      awayPoints: r.awayPoints,
+      marketSpread: r.marketSpread,
+      predictedSpread: r.predictedSpread,
+      spreadLean: r.spreadLean,
+      spreadResult: r.spreadResult,
+      spreadUnits: r.spreadUnits !== null ? parseFloat(r.spreadUnits) : null,
+      spreadEdge: r.edgeSpread,
+      marketTotal: r.marketTotal,
+      predictedTotal: r.predictedTotal,
+      totalLean: r.totalLean,
+      totalResult: r.totalResult,
+      totalUnits: r.totalUnits !== null ? parseFloat(r.totalUnits) : null,
+      totalEdge: r.edgeTotal,
+      highConfidence: r.highConfidence,
+      evidenceClass: r.evidenceClass,
+    }));
+
+  return {
+    summary,
+    byWeek,
+    gradedGames,
+    weeks,
+  };
+});
