@@ -9,7 +9,7 @@ Prepare a work session before editing implementation files.
 
 ## 1. Load context
 
-1. Read `AGENTS.md` and `.codex/QUICKSTART.md`.
+1. Read `AGENTS.md`, then `docs/status.md` (live run IDs, week state, scoreboard), then `.codex/QUICKSTART.md`.
 2. Read `.agent/CONTEXT.md` when the work involves architecture, data, modeling, or features.
 3. Review session logs from the last three days and inspect branch, worktree, and recent commits.
 4. Preserve all pre-existing worktree changes unless the user explicitly places them in scope.

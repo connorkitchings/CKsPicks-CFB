@@ -105,8 +105,8 @@ inference emits null spread and total standard-deviation fields.
 
 ### Approved direction: data-first football forecasting
 
-V4 remains the unchanged 2026 rollback benchmark. V5 replay is the selected
-public family for Weeks 0–4. The approved
+V4 remains the unchanged 2026 rollback benchmark. V5 is the selected
+public family (see `docs/status.md`). The approved
 target architecture is:
 
 ```text
@@ -122,7 +122,7 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**V5 checkpoint (2026-09-27):** [Model development is complete and accepted](../docs/modeling/v5_status.md). V5 best-quote replay serves the public site for Weeks 0–4. Week 4 finals and refreshed 07/08 parents produced a verified Week 5 live forecast; the [exact release](../session_logs/2026-09-27/06.md) authorized production run `2026w5-d6366e59fd43`. V4 remains selectable for rollback. Prospective monitoring continues without a six-slate prelaunch wait. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
+**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a
@@ -189,7 +189,8 @@ Reads/writes the external drive at `CFB_MODEL_DATA_ROOT`
 
 `games`, `game_results`, `system_stats`, `current_week` (web schema) +
 `catalog`/`ops` schemas + `prediction_runs`/`predictions`. Append-only
-migrations `contracts/migrations/0002`–`0008` via `make migrate-db ENV=...`.
+migrations `contracts/migrations/0002`–`0018` applied via
+`scripts/pipeline/migrate_db.py --database-url` (the `make migrate-db` target is disabled).
 Branches: `preview-2026` and production. Web access uses the read-only
 `cks_prod_web` role.
 
@@ -220,7 +221,7 @@ experiment history under `conf/experiment/v2_*` and `conf/legacy/`.
 ## Testing
 
 - Full source-scope, branch-aware coverage gate is **60%**; the latest verified
-  closure run recorded **414 passed, 2 skipped** and 60.02% coverage (2026-08-23).
+  closure run recorded **1543 passed, 3 skipped** (2026-10-01; coverage gate 60%).
 - Coverage of: routing/edge cases (byes, cancellations, legacy labels), lake immutability + checksums, legacy-market quarantine (17 contract tests), migrations (empty + legacy schemas), publication fail-closed boundary (`web`), ops state machine, bundle loading.
 - Quality gates: `uv run ruff format . && uv run ruff check .`, `uv run python contracts/validation.py`, `uv run mkdocs build --quiet`, `make contracts-check`, web lint/typecheck/build.
 - Pattern: minimal fixtures, edge cases (empty DataFrames, single rows, missing columns); see existing tests in `tests/` for templates.

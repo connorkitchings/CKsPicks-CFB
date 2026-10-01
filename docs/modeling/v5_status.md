@@ -1,6 +1,7 @@
 # V5 Ratings Successor: Current Status
 
 > **Model development:** Complete and accepted on 2026-09-22.
+> **Live run IDs and week state:** see [Current Status](../status.md). Week 5 `p2` was frozen 2026-09-30T12:34:06Z; where the dated notes below say a freeze is "due", they predate that freeze.
 > **Current public release (2026-09-30):** Repaired intended-update V5 ratings, predictions, and completed-week grades are selected for Weeks 0–4; the [exact release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md) records the source hashes and rollback. Week 5 selects the repaired p2 run with 56 predictions and no grades. Its final market refresh and pre-kickoff freeze remain due.
 >
 > The dated checkpoints below describe the earlier V5 release and its preserved rollback lineage.

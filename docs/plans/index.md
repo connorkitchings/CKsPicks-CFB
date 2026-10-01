@@ -29,11 +29,11 @@ Terra must not execute a Draft contract without an explicit user instruction nam
 ## Current active contracts
 
 The [V6 ratings research platform](2026-09-28/v6-ratings-research-platform.md)
-is In Progress under the user's 2026-09-28 implementation authorization. It
-builds isolated research data, rating replay, and historical comparison without
-changing V5 production.
+is Closed (2026-09-30, `RETAINED_AS_BENCHMARK`); see
+[Phase 5](2026-09-30/07-v6-phase5-finishing-drives.md). It built isolated research
+data, rating replay, and historical comparison without changing V5 production.
 
-**Operational snapshot (2026-09-27):** V5 best-quote replay is selected on the public site for Weeks 0–4, Week 4 is scored, and the [refreshed Week 5 live run](../../session_logs/2026-09-27/14-week5-line-refresh-candidate.md) `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The prior Week 5 V5 run is the immediate same-week rollback; V4 frozen runs remain available for prior slates. Historical contract lifecycle metadata below is retained as recorded.
+**Operational snapshot:** see [Current Status](../status.md) for selected runs and week state. Historical contract lifecycle metadata below is retained as recorded.
 
 The former 07/08 checkpoint said “Week 4 refresh awaits stabilized finals”; that gate was satisfied on 2026-09-27. Six slates are not a launch prerequisite for prospective V5 activation; they remain a monitoring window.
 
@@ -57,9 +57,12 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [07: 2026 measurements](2026-09-18/07-v5-2026-repair-and-measurement-extension.md) | Repair and certify current 2026 football data | Week 4 refresh independently verified (215 games) |
 | [08: 2026 ratings](2026-09-18/08-v5-2026-rating-state-replay.md) | Replay the fixed V5 rating design on 2026 games | Week 4 refresh independently verified (860 rating states) |
 | [09: live forecast](2026-09-18/09-v5-2026-forecast-and-readiness.md) | Apply and independently verify the fixed forecast to the next slate | Week 5 forecast verified; candidate published in Preview and then production |
-| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Preserve pre-kickoff attempts, outcome reports, and quote diagnostics | Week 5 published pre-kickoff; immutable freeze and outcome report remain upcoming |
+| [06: prospective monitoring](2026-09-13/06-v5-prospective-evidence-and-recommendation.md) | Preserve pre-kickoff attempts, outcome reports, and quote diagnostics | Week 5 frozen 2026-09-30; outcome report follows certified finals |
 | [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Implemented 2026-09-28; six week tabs live and verified |
-| [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | In Progress; Tasks 1–5 preflight-verified locally, no production or Preview mutation |
+| [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | Implemented (2026-09-30); Week 5 `p2` frozen |
+| [Performance dashboard](2026-10-01/01-performance-dashboard-enhancements.md) | Interactive performance page (units, graded game log) | Implemented |
+| [Authentic matchup stats](2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md) | Ingest real play/drive measurements for the matchup page | Draft (Pending User Review) |
+| [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 

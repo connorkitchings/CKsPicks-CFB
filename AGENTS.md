@@ -66,7 +66,7 @@ print(f"✅ Data root verified: {data_root}")
 - Completed games: route 0/1/2/3/4+ separately; 4+ is the established route
 
 **Data-First Forecasting Transition:**
-- V4 remains the unchanged 2026 rollback benchmark; V5 best-quote replay is the selected public family for Weeks 0–4
+- V4 remains the unchanged 2026 rollback benchmark; V5 (repaired intended-update release) is the selected public family — live run IDs and week state are in `docs/status.md`
 - Approved target flow: repository alignment → data audit/repair → validated measurements → simple team ratings/state → spread/total forecasts → prospective evaluation → timestamped line comparison
 - Opponent adjustment stays primarily at the football-measurement layer in the initial design; do not double-count schedule strength in ratings
 - Use one continuous season-long rating meaning, with prior/evidence credibility changing smoothly as observations accumulate
@@ -104,7 +104,7 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
 ### 3. Session Protocol
 
 **Starting a Session:**
-1. Read this file (AGENTS.md) first
+1. Read this file (AGENTS.md) first, then `docs/status.md`
 2. Verify only the storage configuration required by the task; never expose secrets
 3. Review recent session logs (`session_logs/` last 3 days)
 4. Route substantial work through the Sol planning → Terra implementation workflow
@@ -117,11 +117,11 @@ plays_path = "/Volumes/CK SSD/..."  # NO! (hardcoded)
    the provider still lacks lines.
 
 **Ending a Session:**
-1. Create session log in `session_logs/YYYY-MM-DD/NN.md`
+1. Create session log in `session_logs/YYYY-MM-DD/NN-slug.md`
 2. Run validation scoped to the session and changed components
 3. Do not broad-format a dirty worktree without explicit authorization
 4. Propose a commit message; the user executes git operations manually
-5. Update docs and the implementation contract when behavior changed
+5. Update docs and the implementation contract when behavior changed; update `docs/status.md` when week state or the selected run changed (never copy run IDs elsewhere)
 
 ### Sol Planning → Terra Implementation
 
@@ -193,7 +193,7 @@ This is a **monorepo with two toolchains**:
 
 ## 🎯 2026 Season Execution Status
 
-**Status (2026-09-27):** 🏈 Season live — V5 best-quote replay serves Weeks 0–4; Week 4 is scored. The authorized Week 5 live run `2026w5-5d436e58c072` is selected in production (56 predicted games, all 56 with spread and total lines). The prior Week 5 V5 run is the immediate same-week rollback; V4 frozen runs remain available for prior slates. A final market refresh and freeze remain due before kickoff.
+**Current status:** see [`docs/status.md`](docs/status.md) — the single source for live run IDs, week state and the scoreboard. Primary success metric: prospective ATS win % vs the 52.4% break-even (spreads and totals reported separately); retrospective replays are not prospective evidence.
 
 The 2026 buildout is complete; its strategic execution record is archived at
 `docs/archive/2026-completed-plans/2026_historical_bootstrap_week0_execution.md`.
@@ -460,7 +460,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 
 ## 📝 Session Log Template
 
-Create logs in `session_logs/YYYY-MM-DD/NN.md`:
+Create logs in `session_logs/YYYY-MM-DD/NN-slug.md`:
 
 ```markdown
 # Session: [Brief Description]

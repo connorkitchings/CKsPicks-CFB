@@ -6,8 +6,8 @@
 > `2026w{0..4}-v5replay-bestquote-20260926-r3` runs and
 > `2026w5-5d436e58c072` remain the exact six-week rollback set. The p2 Week 5
 > quotes were captured at 2026-09-29 20:28:55Z; a later check found six moved
-> quote values across five games. Reconcile a fresh market capture and complete
-> the final pre-kickoff freeze before 2026-10-02 00:00Z. Do not grade Week 5
+> quote values across five games. The final pre-kickoff freeze was completed
+> 2026-09-30T12:34:06Z (see [Current Status](../status.md)). Do not grade Week 5
 > until certified finals.
 
 For the selected successor, continue from its independently verified rating

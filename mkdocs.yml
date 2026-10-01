@@ -13,6 +13,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Current Status: status.md
   - 2026 Direction:
       - V5 Current Status: modeling/v5_status.md
       - Data-First Forecasting Roadmap: planning/data-first-football-forecasting-roadmap.md
@@ -31,6 +32,7 @@ nav:
       - Provider Audit: cfbd/2026_provider_audit.md
   - Operations:
       - Weekly Pipeline: ops/weekly_pipeline.md
+      - V5 Weekly Operator: ops/v5_weekly_operator.md
       - Production Runbook: ops/production_runbook.md
       - Data-First Capture: ops/data_first_capture.md
       - V5 Shadow Runbook: ops/v5_shadow_runbook.md

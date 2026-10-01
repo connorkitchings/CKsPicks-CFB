@@ -15,6 +15,8 @@
 
 [V5 model development is complete and accepted](v5_status.md). The historical scorecard supports prospective use but offers no like-for-like point-in-time V4 backtest. Current live forecasts require refreshed Week 4 07/08 parents and independent verification. A Preview serving rehearsal and rollback proof govern site cutover; six slates remain a monitoring window, not a prelaunch gate. No 2026 outcome may refit this V5 identity.
 
+**Primary success metric (2026-10-01):** prospective ATS win % vs the 52.4% break-even at -110, spreads and totals reported separately, on slates frozen before kickoff. The error, calibration and gate metrics below are diagnostics that explain the result.
+
 ## Ordered evaluation layers
 
 Later evidence cannot rescue a failure at an earlier layer.

@@ -1,6 +1,6 @@
 # Implementation Contract: V6 Phase 5 Finishing Drives Factor Expansion
 
-- **Status:** Approved
+- **Status:** Implemented (V6 closed `RETAINED_AS_BENCHMARK`, 2026-09-30)
 - **Contract Path:** `docs/plans/2026-09-30/07-v6-phase5-finishing-drives.md`
 - **Context:** Empirical diagnostic confirmed that the residual spread deficit (-0.31 overall) is heavily concentrated in close games (<= 7 pts, -0.62 MAE deficit) where red-zone points-conversion efficiency decides outcomes. Blowouts (> 17 pts) and mature stages (Stage 4+) are already at parity with V5 (-0.08 and -0.07).
 - **Objective:** Extend the modular state-space Kalman architecture to 5 factors by ingesting Finishing Drives (`finish_points_per_opp`), then re-adjudicate the frozen promotion gate.

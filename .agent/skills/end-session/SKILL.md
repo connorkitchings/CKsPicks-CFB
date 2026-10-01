@@ -32,7 +32,7 @@ Close the active session without altering unrelated worktree changes.
 
 1. Inspect `git status`, `git diff`, and staged changes if any.
 2. Separate intentional session changes from pre-existing user changes.
-3. Update documentation when behavior or operational workflow changed.
+3. Update documentation when behavior or operational workflow changed. If the week state or selected run changed, update `docs/status.md` — never copy run IDs into other docs.
 4. Propose a conventional commit message and exact files to include. The user controls staging, commits, and pushes.
 
 ## Session-log minimum

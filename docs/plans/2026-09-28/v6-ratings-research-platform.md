@@ -1,6 +1,6 @@
 # Ratings Research Platform: V6 Development and Historical Evaluation
 
-- **Status:** In Progress
+- **Status:** Closed (2026-09-30, `RETAINED_AS_BENCHMARK`; spread gate not cleared)
 - **Created:** 2026-09-28
 - **Planner:** Sol
 - **Approval source:** User accepted the proposed architecture and instructed implementation in this conversation.

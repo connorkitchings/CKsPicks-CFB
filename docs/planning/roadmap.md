@@ -1,7 +1,7 @@
 # 2026 Operations and Ratings Research Roadmap
 
 > **Last updated:** 2026-09-22
-> **Production champion:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2`
+> **Rollback benchmark:** V4 ten-route bundle `week0-2026-v4-strict-20260818-r2` (V5 is the serving family; see [Current Status](../status.md))
 
 > **Authority note (2026-09-05):** This page remains the current V4 operations
 > authority and historical record of the R1/R2 successor work. The pending R3/R4
@@ -9,11 +9,11 @@
 > [data-first football forecasting roadmap](data-first-football-forecasting-roadmap.md).
 > Completed artifacts remain immutable evidence subject to its Phase 1 audit.
 
-> **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V4 remains public. Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement.
+> **Current V5 checkpoint (2026-09-22):** [V5 model development is complete and accepted](../modeling/v5_status.md). V5 serves the public site (V4 is the rollback). Week 4 finals and refreshed 07/08 parents gate a current forecast; verified Preview serving and rollback proof precede a separate activation decision. Six prospective slates are monitoring, not a prelaunch requirement.
 
 ## Direction
 
-V4 remains the live, rollback-safe 2026 production system. The approved
+V4 remains the rollback-safe 2026 benchmark system; V5 is the serving family. The approved
 successor makes a point-in-time team rating/state—not a matchup feature row—the
 canonical representation of team quality.
 
@@ -58,7 +58,7 @@ See the
 
 | Stage | Deliverable | Boundary |
 | --- | --- | --- |
-| O1 | Unchanged V4 production operations | V4 remains champion, rollback authority, and public system. |
+| O1 | Unchanged V4 production operations | V4 remains rollback authority and benchmark; V5 serves the public site. |
 | O2 | Candidate-v1 diagnostic evidence from `ac1fba1` | Isolated worktree; diagnostic-only; it cannot block R1–R4. |
 | O3 | Candidate-v2 protected evidence and later promotion review | New prospective lane; no evidence transfers or backdating. |
 

@@ -3,9 +3,9 @@
 CKsPicks-CFB is a college-football prediction system with a Python pipeline,
 an immutable Cloudflare R2 data lake, Neon serving state, and a Vercel web app.
 
-## Current posture (2026-09-28)
+## Current posture
 
-[V5 model development is complete and accepted](modeling/v5_status.md), with four historical audit findings closed and 7,318 verified historical prediction rows. V5 replay serves Weeks 0–4, Week 4 is scored, and the authorized Week 5 live run is selected in production. Current ratings are verified through Week 4, with six public history tabs including preseason. V4 remains available for rollback. The weekly operator is manual; the broader product-transformation contract remains In Progress. Six prospective slates are not a prelaunch requirement. The [September 28 ratings audit](research/2026-09-28-current-v5-ratings-audit.md) documents actual prior weights and the South Carolina–Alabama ordering; the [intended-update repair experiment](research/2026-09-28-v5-intended-update-repair-experiment.md) and [2026 repaired-rating counterfactual](research/2026-09-28-v5-2026-counterfactual.md) are research only and did not change production.
+See [Current Status](status.md) for live run IDs, week state and the scoreboard. [V5 model development is complete and accepted](modeling/v5_status.md), with four historical audit findings closed and 7,318 verified historical prediction rows. V5 is the serving family; V4 remains available for rollback. The weekly operator is manual. The primary success metric is prospective ATS win % vs the 52.4% break-even; six prospective slates are a monitoring window, not a prelaunch requirement.
 
 The target flow is:
 

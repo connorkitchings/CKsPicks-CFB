@@ -10,7 +10,7 @@ governs research sequence and evidence policy.
 ## Current production system
 
 V4 bundle `week0-2026-v4-strict-20260818-r2`, configured by
-`conf/weekly_bets/v4_2026.yaml`, remains the production champion. Supported
+`conf/weekly_bets/v4_2026.yaml`, remains the rollback benchmark; V5 is the serving family (see [Current Status](../status.md)). Supported
 weekly commands resolve immutable R2 inputs, generate predictions, publish a
 durable prediction artifact, copy that derived view to Neon, freeze the scored
 artifact identity, and close the week after finalized outcomes. The Next.js
