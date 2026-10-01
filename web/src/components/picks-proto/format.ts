@@ -27,3 +27,13 @@ export function stamp(d: Date): string {
     timeZone: ET,
   })} ET`;
 }
+
+/** "Sat, Oct 3" in Eastern time. */
+export function dayShort(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: ET,
+  });
+}

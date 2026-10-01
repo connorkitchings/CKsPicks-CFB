@@ -138,3 +138,110 @@ export function overallRanks(
     });
   return ranks;
 }
+
+export type Grade = "win" | "loss" | "push";
+
+/** The graded outcome the pipeline recorded for this lean, if any. */
+export function resultFor(game: Game, kind: LeanKind): Grade | null {
+  if (game.publicationMode !== "predictions") return null;
+  return kind === "spread" ? game.spreadResult : game.totalResult;
+}
+
+/**
+ * Points by which the lean side covered (positive) or missed (negative) the
+ * market number, from the final score. Null until the game is final or when
+ * there is no lean/line.
+ */
+export function coverMargin(game: Game, kind: LeanKind): number | null {
+  if (game.publicationMode !== "predictions" || !isFinal(game)) return null;
+  const home = game.homePoints as number;
+  const away = game.awayPoints as number;
+  if (kind === "spread") {
+    if (game.spreadLean === null || game.homeTeamSpreadLine === null) return null;
+    const homeCover = home - away + game.homeTeamSpreadLine;
+    return game.spreadLean === "home" ? homeCover : -homeCover;
+  }
+  if (game.totalLean === null || game.totalLine === null) return null;
+  const actual = home + away;
+  return game.totalLean === "over" ? actual - game.totalLine : game.totalLine - actual;
+}
+
+export function gradeFromMargin(margin: number | null): Grade | null {
+  if (margin === null) return null;
+  return margin > 0 ? "win" : margin < 0 ? "loss" : "push";
+}
+
+export type Tally = { win: number; loss: number; push: number };
+
+/** Spread and total records for one slate, from the recorded grades. */
+export function weekRecord(games: Game[]): { spread: Tally; total: Tally } {
+  const out = {
+    spread: { win: 0, loss: 0, push: 0 },
+    total: { win: 0, loss: 0, push: 0 },
+  };
+  for (const game of games) {
+    for (const kind of ["spread", "total"] as const) {
+      const r = resultFor(game, kind);
+      if (r) out[kind][r] += 1;
+    }
+  }
+  return out;
+}
+
+export type GradedLean = Lean & {
+  game: PredictionGame;
+  grade: Grade;
+  /** Positive when the lean covered; see coverMargin. */
+  cover: number | null;
+};
+
+/** Graded leans with the given outcome, largest edge first. */
+export function topResults(games: Game[], grade: "win" | "loss", n: number): GradedLean[] {
+  const out: GradedLean[] = [];
+  for (const game of games) {
+    if (game.publicationMode !== "predictions") continue;
+    for (const kind of ["spread", "total"] as const) {
+      const lean = leanFor(game, kind);
+      if (lean && resultFor(game, kind) === grade) {
+        out.push({ ...lean, game, grade, cover: coverMargin(game, kind) });
+      }
+    }
+  }
+  out.sort((a, b) => b.edge - a.edge || a.game.startDate.getTime() - b.game.startDate.getTime());
+  return out.slice(0, n);
+}
+
+export type ResultFilter = "all" | "win" | "loss" | "push" | "none";
+
+/** Whether a game belongs under a result filter (any graded lean matches). */
+export function matchesResult(game: Game, filter: ResultFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "none") return !hasLean(game);
+  return (["spread", "total"] as const).some((k) => resultFor(game, k) === filter);
+}
+
+export type ResultSort = "kickoff" | "bestEdge" | "bestResult" | "worstResult";
+
+function coverScore(game: Game, pick: "max" | "min"): number | null {
+  const values = (["spread", "total"] as const)
+    .map((k) => coverMargin(game, k))
+    .filter((v): v is number => v !== null);
+  if (values.length === 0) return null;
+  return pick === "max" ? Math.max(...values) : Math.min(...values);
+}
+
+/** Result-oriented sort; games with nothing to rank sink in kickoff order. */
+export function sortResults(games: Game[], sort: ResultSort): Game[] {
+  const byKickoff = (a: Game, b: Game) => a.startDate.getTime() - b.startDate.getTime();
+  if (sort === "kickoff") return [...games].sort(byKickoff);
+  if (sort === "bestEdge") return sortGames(games, "bestEdge");
+  const score = (g: Game) => coverScore(g, sort === "bestResult" ? "max" : "min");
+  return [...games].sort((a, b) => {
+    const sa = score(a);
+    const sb = score(b);
+    if (sa === null && sb === null) return byKickoff(a, b);
+    if (sa === null) return 1;
+    if (sb === null) return -1;
+    return (sort === "bestResult" ? sb - sa : sa - sb) || byKickoff(a, b);
+  });
+}

@@ -117,3 +117,72 @@ test("overallRanks is 1-based, best rating first", () => {
   ]);
   assert.deepEqual(ranks, { A: 1, B: 2 });
 });
+
+import {
+  coverMargin,
+  gradeFromMargin,
+  matchesResult,
+  sortResults,
+  topResults,
+  weekRecord,
+} from "./picks-proto.ts";
+
+function finalGame(over: Record<string, unknown>): Game {
+  return game({ homePoints: 24, awayPoints: 17, ...over });
+}
+
+test("coverMargin is positive when the lean side covered", () => {
+  // Home -3.5 lean, home wins by 7 -> covers by 3.5.
+  assert.equal(coverMargin(finalGame({}), "spread"), 3.5);
+  // Away lean at +3.5 (home line -3.5): home wins by 7 -> away misses by 3.5.
+  assert.equal(coverMargin(finalGame({ spreadLean: "away" }), "spread"), -3.5);
+  // Over 50.5, final total 41 -> misses by 9.5; under covers by 9.5.
+  assert.equal(coverMargin(finalGame({}), "total"), -9.5);
+  assert.equal(coverMargin(finalGame({ totalLean: "under" }), "total"), 9.5);
+  // Not final, or no lean -> null.
+  assert.equal(coverMargin(game({}), "spread"), null);
+  assert.equal(coverMargin(finalGame({ spreadLean: null }), "spread"), null);
+});
+
+test("gradeFromMargin maps sign to win, loss and push", () => {
+  assert.equal(gradeFromMargin(0.5), "win");
+  assert.equal(gradeFromMargin(-0.5), "loss");
+  assert.equal(gradeFromMargin(0), "push");
+  assert.equal(gradeFromMargin(null), null);
+});
+
+test("weekRecord tallies recorded grades per bet type", () => {
+  const games = [
+    finalGame({ gameId: 1, spreadResult: "win", totalResult: "loss" }),
+    finalGame({ gameId: 2, spreadResult: "loss", totalResult: null }),
+    finalGame({ gameId: 3, spreadResult: "push", totalResult: "win" }),
+  ];
+  assert.deepEqual(weekRecord(games), {
+    spread: { win: 1, loss: 1, push: 1 },
+    total: { win: 1, loss: 1, push: 0 },
+  });
+});
+
+test("topResults ranks graded leans of one outcome by edge", () => {
+  const games = [
+    finalGame({ gameId: 1, spreadResult: "win", edgeSpread: 3, totalResult: "loss", edgeTotal: 9 }),
+    finalGame({ gameId: 2, spreadResult: "win", edgeSpread: 7, totalResult: "win", edgeTotal: 2 }),
+  ];
+  const wins = topResults(games, "win", 5);
+  assert.deepEqual(wins.map((w) => [w.game.gameId, w.kind]), [[2, "spread"], [1, "spread"], [2, "total"]]);
+  const losses = topResults(games, "loss", 5);
+  assert.deepEqual(losses.map((w) => [w.game.gameId, w.kind]), [[1, "total"]]);
+});
+
+test("result filters and sorts", () => {
+  const win = finalGame({ gameId: 1, spreadResult: "win", totalLean: null });
+  const loss = finalGame({ gameId: 2, spreadResult: "loss", spreadLean: "away", totalLean: null });
+  const none = finalGame({ gameId: 3, spreadLean: null, totalLean: null });
+  assert.equal(matchesResult(win, "win"), true);
+  assert.equal(matchesResult(win, "loss"), false);
+  assert.equal(matchesResult(none, "none"), true);
+  assert.equal(matchesResult(win, "all"), true);
+  // win covers +3.5, loss misses -3.5, none has no cover.
+  assert.deepEqual(sortResults([loss, none, win], "bestResult").map((g) => g.gameId), [1, 2, 3]);
+  assert.deepEqual(sortResults([win, none, loss], "worstResult").map((g) => g.gameId), [2, 1, 3]);
+});

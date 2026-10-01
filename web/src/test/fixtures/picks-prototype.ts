@@ -1,5 +1,6 @@
 import type { Game, PredictionGame } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
+import { coverMargin, gradeFromMargin } from "@/lib/picks-proto";
 
 /**
  * Sample slate for the /test Picks prototype (only loaded when
@@ -40,8 +41,13 @@ const specs: Spec[] = [
 /** Minimum model-vs-market gap (points) that produces a lean. */
 const NO_BET = 1.0;
 
-export function protoGames(): Game[] {
-  return specs.map((s): PredictionGame => {
+function build(
+  list: Spec[],
+  week: number,
+  runState: PredictionGame["runState"],
+  evidenceClass: "live" | "replay",
+): PredictionGame[] {
+  return list.map((s): PredictionGame => {
     // Derive leans and edges from the numbers so the sample is self-consistent.
     const spreadGap =
       s.predSpread !== null && s.homeLine !== null ? s.predSpread + s.homeLine : null;
@@ -54,7 +60,7 @@ export function protoGames(): Game[] {
     return {
     gameId: s.id,
     season: 2026,
-    week: 5,
+    week,
     startDate: new Date(s.start),
     homeTeam: s.home,
     awayTeam: s.away,
@@ -67,7 +73,7 @@ export function protoGames(): Game[] {
     awayRecord: s.awayRecord,
     publicationMode: "predictions",
     runId: "proto-run",
-    runState: "frozen",
+    runState,
     predictedSpread: s.predSpread,
     predictedTotal: s.predTotal,
     predictedSpreadStdDev: null,
@@ -79,7 +85,7 @@ export function protoGames(): Game[] {
     highConfidence: Boolean(s.hc),
     systemName: "Trench Warfare V5",
     modelId: "v5-possession-ppp-rho060-exposure",
-    evidenceClass: "live",
+    evidenceClass,
     regime: null,
     homeCompletedGames: 3,
     awayCompletedGames: 3,
@@ -89,6 +95,31 @@ export function protoGames(): Game[] {
     totalResult: null,
     };
   });
+}
+
+export function protoGames(): Game[] {
+  return build(specs, 5, "frozen", "live");
+}
+
+/** Week 4 (scored): finished games with grades derived from the final scores. */
+const resultSpecs: Spec[] = [
+  { id: 101, start: "2026-09-26T16:00:00Z", away: "Ohio State", home: "Michigan", awayRecord: "3-0", homeRecord: "2-1", homeLine: 6, total: 47.5, predSpread: -8.6, predTotal: 49.9, final: [24, 17] },
+  { id: 102, start: "2026-09-26T19:30:00Z", away: "Georgia", home: "Alabama", awayRecord: "3-0", homeRecord: "3-0", homeLine: -2.5, total: 52.5, predSpread: 6.9, predTotal: 47.2, final: [20, 27] },
+  { id: 103, start: "2026-09-26T23:30:00Z", away: "Oregon", home: "USC", awayRecord: "3-0", homeRecord: "2-1", homeLine: 2.5, total: 61.5, predSpread: -9.1, predTotal: 66.3, final: [41, 31] },
+  { id: 104, start: "2026-09-26T23:30:00Z", away: "Penn State", home: "Wisconsin", awayRecord: "3-0", homeRecord: "2-1", homeLine: 9.5, total: 44.5, predSpread: -3.0, predTotal: 45.0, final: [27, 10] },
+  { id: 105, start: "2026-09-27T00:00:00Z", away: "Notre Dame", home: "Clemson", awayRecord: "2-1", homeRecord: "2-1", homeLine: -1, total: 49.5, predSpread: 3.4, predTotal: 56.9, final: [17, 20] },
+  { id: 106, start: "2026-09-27T16:00:00Z", away: "LSU", home: "Tennessee", awayRecord: "3-0", homeRecord: "3-0", homeLine: -4.5, total: 58.5, predSpread: 5.0, predTotal: 58.3, final: [28, 31] },
+  { id: 107, start: "2026-09-27T19:30:00Z", away: "Miami", home: "Florida State", awayRecord: "3-0", homeRecord: "1-2", homeLine: 7.5, total: 55.5, predSpread: -3.0, predTotal: 51.0, final: [38, 17] },
+  { id: 108, start: "2026-09-27T23:00:00Z", away: "Texas", home: "Oklahoma", awayRecord: "3-0", homeRecord: "2-1", homeLine: 4, total: 50.5, predSpread: -1.9, predTotal: 50.0, final: [34, 14] },
+  { id: 109, start: "2026-09-27T23:30:00Z", away: "Utah", home: "Washington", awayRecord: "1-2", homeRecord: "1-2", homeLine: -3, total: 46.0, predSpread: 4.5, predTotal: 43.0, final: [13, 16] },
+];
+
+export function protoResultGames(): Game[] {
+  return build(resultSpecs, 4, "scored", "replay").map((g) => ({
+    ...g,
+    spreadResult: gradeFromMargin(coverMargin(g, "spread")),
+    totalResult: gradeFromMargin(coverMargin(g, "total")),
+  }));
 }
 
 export const protoPerformance: Performance[] = [

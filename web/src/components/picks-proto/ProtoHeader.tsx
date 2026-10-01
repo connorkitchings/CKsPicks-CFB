@@ -4,12 +4,16 @@ import { displaySystemName } from "@/lib/publication";
 import { ThemeToggle } from "../ThemeToggle";
 import { stamp } from "./format";
 
+type Tab = "picks" | "results";
+
 const TABS = [
-  ["Picks", "/"],
-  ["Results", "/results"],
-  ["Ratings", "/ratings"],
-  ["Performance", "/performance"],
+  ["Picks", "/test-picks", "picks"],
+  ["Results", "/test-results", "results"],
+  ["Ratings", "/ratings", null],
+  ["Performance", "/performance", null],
 ] as const;
+
+const BASE: Record<Tab, string> = { picks: "/test-picks", results: "/test-results" };
 
 const STATE_LABEL: Record<string, string> = {
   preview: "Preview",
@@ -23,17 +27,24 @@ const STATE_LABEL: Record<string, string> = {
  * two stacked bands on the live page.
  */
 export function ProtoHeader({
+  tab,
   season,
   week,
   weeks,
+  otherWeeks,
   systemName,
   runState,
   retrospective,
   publishedAt,
 }: {
+  /** Which prototype page this header sits on. */
+  tab: Tab;
   season: number;
   week: number;
+  /** Weeks that belong on this page (upcoming for Picks, scored for Results). */
   weeks: number[];
+  /** Weeks that belong on the other page; linked across. */
+  otherWeeks: number[];
   systemName: string | null;
   runState: string | null;
   retrospective: boolean;
@@ -47,14 +58,14 @@ export function ProtoHeader({
           <span className="ml-1.5 text-xs font-normal text-ink-faint">CFB</span>
         </h1>
         <nav aria-label="Main navigation" className="order-3 flex w-full gap-5 overflow-x-auto text-sm font-medium sm:order-none sm:w-auto">
-          {TABS.map(([label, href]) => (
+          {TABS.map(([label, href, key]) => (
             <Link
               key={href}
               href={href}
-              aria-current={href === "/" ? "page" : undefined}
+              aria-current={key === tab ? "page" : undefined}
               className={clsx(
                 "whitespace-nowrap border-b-2 py-2 transition-colors",
-                href === "/"
+                key === tab
                   ? "border-accent font-semibold text-accent-ink"
                   : "border-transparent text-ink-muted hover:text-ink",
               )}
@@ -79,7 +90,7 @@ export function ProtoHeader({
             {weeks.map((w) => (
               <Link
                 key={w}
-                href={`/test?week=${w}`}
+                href={`${BASE[tab]}?week=${w}`}
                 aria-current={w === week ? "true" : undefined}
                 className={clsx(
                   "rounded px-1.5 py-0.5 tabular-nums",
@@ -92,6 +103,20 @@ export function ProtoHeader({
           </span>
         ) : (
           <span>Week {week}</span>
+        )}
+        {otherWeeks.length > 0 && (
+          <span className="flex items-center gap-1" aria-label={tab === "picks" ? "Scored weeks" : "Upcoming weeks"}>
+            <span>{tab === "picks" ? "Scored (Results):" : "Upcoming (Picks):"}</span>
+            {otherWeeks.map((w) => (
+              <Link
+                key={w}
+                href={`${BASE[tab === "picks" ? "results" : "picks"]}?week=${w}`}
+                className="rounded px-1.5 py-0.5 tabular-nums hover:text-ink-muted"
+              >
+                Wk {w}
+              </Link>
+            ))}
+          </span>
         )}
         {runState && <span className="font-medium text-ink-muted">{STATE_LABEL[runState] ?? runState}</span>}
         {retrospective && <span className="font-medium text-warn">Retrospective replay</span>}
