@@ -61,7 +61,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Implemented 2026-09-28; six week tabs live and verified |
 | [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | Implemented (2026-09-30); Week 5 `p2` frozen |
 | [Performance dashboard](2026-10-01/01-performance-dashboard-enhancements.md) | Interactive performance page (units, graded game log) | Implemented |
-| [Authentic matchup stats](2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md) | Ingest real play/drive measurements for the matchup page | Draft (Pending User Review) |
+| [Authentic team stats pipeline](2026-10-01/10-authentic-team-stats-pipeline.md) | Play-by-play team stats in Neon for the (hidden) matchup page; supersedes the former 02 draft | Approved |
 | [Dead-code prune](2026-10-01/05-dead-code-prune.md) | Remove modules, configs, web leftovers and `research/` with no references | Implemented |
 | [Docs cleanup and archive](2026-10-01/06-docs-cleanup-and-archive.md) | Close out stale contracts, archive August logs, delete legacy files, fix links | Implemented |
 | [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data steps run by the user) |

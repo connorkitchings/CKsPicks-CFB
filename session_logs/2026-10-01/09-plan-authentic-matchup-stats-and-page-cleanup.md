@@ -12,7 +12,7 @@
      - Official Blitzkrieg V5 Certified Team Ratings and Ranks: Overall Rank & Rating (`+1.07`), Offense Rank (`#14`), Defense Rank (`#51`)
      - Actual Final Game Score (if settled)
   4. **Transparent Status Banner:** Added a clean notice on `/matchup/[gameId]` explaining that advanced play-by-play metrics (EPA/pass, EPA/rush, scoring opportunities, field position) are in the process of pipeline ingestion, with direct links to full team rating profiles.
-  5. **Durable Sol Implementation Contract:** Authored `docs/plans/2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md` detailing:
+  5. **Durable Sol Implementation Contract:** Authored `docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md` detailing:
      - Selected authentic metrics: Passing EPA, Rushing EPA, Scoring Opportunity Rate, Points per Scoring Opp (PPSO), Average Starting Field Position, Explosive Play Rate, Early Downs EPA, and 3rd/4th Down Conversion Rate.
      - Database schema migration: `team_season_stats` table in Neon Postgres (`0019_team_season_stats.sql`).
      - Pipeline publisher: `scripts/pipeline/publish_team_stats.py` to aggregate play/drive records from R2/CFBD and upsert to Neon.
@@ -20,7 +20,7 @@
   6. **Picks vs Results "Bet Result" Column Optimization:**
      - Removed the `Bet Result` column (and mobile result badges) from the Picks tab (`/`) where games are upcoming or active and results are not applicable.
      - Preserved the `Bet Result` column (Win / Loss / Push badges) on the Results tab (`/results`) via `showBetResult={mode === "results"}` plumbed cleanly through `WeeklySlateView`, `GamesList`, `GameRow`, and `BetComparisonTable`.
-- **Plan Contract:** `docs/plans/2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md`
+- **Plan Contract:** `docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md`
 - **Approval / Status:** Draft (Ready for User Review)
 - **Blockers:** None
 - **Next:** User approval of the plan, followed by Terra implementation of Migration 0019 and `publish_team_stats.py`.
@@ -43,7 +43,7 @@
 - `web/src/lib/matchup.ts` - Refactored to query only authentic `games`, `gameResults`, and `v5_rating_snapshots`; removed all synthetic calculation routines.
 - `web/src/components/matchup/MatchupHero.tsx` - Render authentic team ratings (Overall, Off, Def) and final scores; removed simulated win prob and projected points.
 - `web/src/app/matchup/[gameId]/page.tsx` - Replaced synthetic tables with authentic status banner and links to team profiles.
-- `docs/plans/2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md` - Complete Sol implementation contract.
+- `docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md` - Complete Sol implementation contract.
 
 ## Validation
 - [x] `cd web && npm run typecheck` (Passed, 0 errors)
@@ -59,7 +59,7 @@
 - None.
 
 ## Handoff Notes
-- **Resume at:** Review the plan at `docs/plans/2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md`. Upon approval, execute with `implement-plan`.
+- **Resume at:** Review the plan at `docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md`. Upon approval, execute with `implement-plan`.
 - **Watch out for:** Defense rankings must be sorted such that lower is better (i.e. rank #1 is the team allowing the least EPA/play or fewest points per scoring opportunity).
 
 **tags:** ["matchup", "plan", "sol", "cleanup", "stats"]
