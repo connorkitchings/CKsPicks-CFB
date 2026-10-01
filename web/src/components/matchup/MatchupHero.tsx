@@ -14,6 +14,10 @@ function formatKickoff(startDate: Date): string {
   });
 }
 
+function formatRating(value: number): string {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+}
+
 export function MatchupHero({ matchup }: { matchup: MatchupData }) {
   const isFinal = matchup.homeFinalPoints !== null && matchup.awayFinalPoints !== null;
 
@@ -32,14 +36,14 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           <span>·</span>
           <span className="font-mono">{matchup.systemName}</span>
           <span className="rounded bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-            Advanced Stats Preview
+            Game Breakdown
           </span>
         </div>
       </div>
 
       {/* Main Scorecard / Matchup Hero Grid */}
       <div className="rounded-2xl border border-line bg-surface-card p-5 shadow-sm sm:p-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:items-center">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
           {/* Away Team Card (Left) */}
           <div className="flex items-center gap-4 sm:flex-col sm:text-center">
             <Image
@@ -52,87 +56,84 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
-                {matchup.awayProfile.rank && matchup.awayProfile.rank <= 25 && (
-                  <span className="text-sm font-bold text-accent-ink">
-                    #{matchup.awayProfile.rank}
-                  </span>
-                )}
-                <h2 className="truncate text-xl font-bold tracking-tight text-ink">
+                <Link
+                  href={`/teams/${encodeURIComponent(matchup.awayTeam)}`}
+                  className="truncate text-xl font-bold tracking-tight text-ink hover:underline hover:text-accent-ink"
+                >
                   {matchup.awayTeam}
-                </h2>
+                </Link>
               </div>
               <p className="text-xs text-ink-faint">Away</p>
-              {/* Score / Projection */}
-              <div className="mt-3 flex items-center gap-4 sm:justify-center">
-                <div>
+
+              {/* Score (if final) or V5 Certified Ratings */}
+              {isFinal ? (
+                <div className="mt-3 flex flex-col items-center">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
-                    Win Prob
+                    Final Score
                   </span>
-                  <div className="font-mono text-2xl font-bold text-ink">
-                    {matchup.awayWinProb.toFixed(1)}%
+                  <span className="font-mono text-3xl font-bold text-ink">
+                    {matchup.awayFinalPoints}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col items-center gap-1 text-xs">
+                  <div className="inline-flex items-center gap-1 rounded bg-surface-inset px-2 py-0.5 font-mono text-xs font-semibold text-ink">
+                    <span>Rank #{matchup.awayRating.rank ?? "—"}</span>
+                    <span className="text-ink-faint">·</span>
+                    <span>{formatRating(matchup.awayRating.overallRating)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-ink-muted">
+                    <span>Off: #{matchup.awayRating.offenseRank ?? "—"}</span>
+                    <span>·</span>
+                    <span>Def: #{matchup.awayRating.defenseRank ?? "—"}</span>
                   </div>
                 </div>
-                <div className="h-8 w-px bg-line" />
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
-                    Proj Pts
-                  </span>
-                  <div className="font-mono text-2xl font-bold text-ink">
-                    {isFinal ? matchup.awayFinalPoints : matchup.awayProjPoints.toFixed(1)}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
           {/* Center Matchup Odds & Model Summary */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset p-4 text-center">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-5 py-4 text-center sm:min-w-[360px]">
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
               Forecast & Lines
             </span>
 
-            <div className="mt-2.5 space-y-1 text-sm">
-              <div className="text-ink">
-                Market: <span className="font-mono font-medium">{matchup.marketSpread}</span>
+            <div className="mt-3 inline-grid grid-cols-[auto_1fr] items-center gap-x-3.5 gap-y-2 text-sm text-left">
+              <span className="text-ink-muted font-medium whitespace-nowrap">Market:</span>
+              <div className="font-mono text-ink whitespace-nowrap flex items-center">
+                <span className="font-medium">{matchup.marketSpread}</span>
                 {matchup.marketTotal && (
-                  <span className="ml-1 text-ink-muted">· O/U {matchup.marketTotal.toFixed(1)}</span>
+                  <span className="ml-1.5 font-sans text-xs text-ink-muted">· O/U {matchup.marketTotal.toFixed(1)}</span>
                 )}
               </div>
-              <div className="text-ink">
-                Model: <span className="font-mono font-medium">{matchup.modelSpread}</span>
+
+              <span className="text-ink-muted font-medium whitespace-nowrap">Model:</span>
+              <div className="font-mono text-ink whitespace-nowrap flex items-center">
+                <span className="font-medium">{matchup.modelSpread}</span>
                 {matchup.modelTotal && (
-                  <span className="ml-1 text-ink-muted">· O/U {matchup.modelTotal.toFixed(1)}</span>
+                  <span className="ml-1.5 font-sans text-xs text-ink-muted">· O/U {matchup.modelTotal.toFixed(1)}</span>
                 )}
               </div>
-            </div>
 
-            {/* Lean Badge */}
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-              {matchup.spreadLean ? (
-                <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent-ink">
-                  {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam} Lean
-                  {matchup.edgeSpread !== null && (
-                    <span className="text-[11px] font-normal opacity-80">
-                      (+{matchup.edgeSpread.toFixed(1)})
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="rounded-md bg-surface-card px-2.5 py-1 text-xs text-ink-faint">
-                  No Spread Lean
-                </span>
-              )}
+              <span className="text-ink-muted font-medium whitespace-nowrap">Model Bet:</span>
+              <div className="font-mono text-sm whitespace-nowrap flex items-center">
+                {matchup.spreadLean ? (
+                  <span className="font-medium text-accent-ink">
+                    {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam} Lean
+                  </span>
+                ) : (
+                  <span className="text-ink-faint">No Spread</span>
+                )}
 
-              {matchup.totalLean && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-accent-soft px-2.5 py-1 text-xs font-semibold text-accent-ink">
-                  {matchup.totalLean === "over" ? "Over" : "Under"}
-                  {matchup.edgeTotal !== null && (
-                    <span className="text-[11px] font-normal opacity-80">
-                      (+{matchup.edgeTotal.toFixed(1)})
+                {matchup.totalLean && (
+                  <>
+                    <span className="mx-1.5 font-sans text-xs text-ink-muted">·</span>
+                    <span className="font-medium text-accent-ink">
+                      {matchup.totalLean === "over" ? "Over" : "Under"}
                     </span>
-                  )}
-                </span>
-              )}
+                  </>
+                )}
+              </div>
             </div>
 
             {isFinal && (
@@ -154,36 +155,39 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
-                {matchup.homeProfile.rank && matchup.homeProfile.rank <= 25 && (
-                  <span className="text-sm font-bold text-accent-ink">
-                    #{matchup.homeProfile.rank}
-                  </span>
-                )}
-                <h2 className="truncate text-xl font-bold tracking-tight text-ink">
+                <Link
+                  href={`/teams/${encodeURIComponent(matchup.homeTeam)}`}
+                  className="truncate text-xl font-bold tracking-tight text-ink hover:underline hover:text-accent-ink"
+                >
                   {matchup.homeTeam}
-                </h2>
+                </Link>
               </div>
               <p className="text-xs text-ink-faint">Home</p>
-              {/* Score / Projection */}
-              <div className="mt-3 flex items-center gap-4 sm:justify-center">
-                <div>
+
+              {/* Score (if final) or V5 Certified Ratings */}
+              {isFinal ? (
+                <div className="mt-3 flex flex-col items-center">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
-                    Win Prob
+                    Final Score
                   </span>
-                  <div className="font-mono text-2xl font-bold text-ink">
-                    {matchup.homeWinProb.toFixed(1)}%
+                  <span className="font-mono text-3xl font-bold text-ink">
+                    {matchup.homeFinalPoints}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col items-center gap-1 text-xs">
+                  <div className="inline-flex items-center gap-1 rounded bg-surface-inset px-2 py-0.5 font-mono text-xs font-semibold text-ink">
+                    <span>Rank #{matchup.homeRating.rank ?? "—"}</span>
+                    <span className="text-ink-faint">·</span>
+                    <span>{formatRating(matchup.homeRating.overallRating)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-ink-muted">
+                    <span>Off: #{matchup.homeRating.offenseRank ?? "—"}</span>
+                    <span>·</span>
+                    <span>Def: #{matchup.homeRating.defenseRank ?? "—"}</span>
                   </div>
                 </div>
-                <div className="h-8 w-px bg-line" />
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
-                    Proj Pts
-                  </span>
-                  <div className="font-mono text-2xl font-bold text-ink">
-                    {isFinal ? matchup.homeFinalPoints : matchup.homeProjPoints.toFixed(1)}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

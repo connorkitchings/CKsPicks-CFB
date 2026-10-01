@@ -70,9 +70,6 @@ export function TeamProfilePillars({
       <div className="rounded-2xl border border-line bg-surface-card p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center justify-between border-b border-line pb-2">
           <h3 className="text-sm font-bold text-ink">
-            {awayProfile.rank && awayProfile.rank <= 25 && (
-              <span className="text-accent-ink mr-1">#{awayProfile.rank}</span>
-            )}
             {awayProfile.team} Statistical Profile
           </h3>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
@@ -171,9 +168,6 @@ export function TeamProfilePillars({
       <div className="rounded-2xl border border-line bg-surface-card p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center justify-between border-b border-line pb-2">
           <h3 className="text-sm font-bold text-ink">
-            {homeProfile.rank && homeProfile.rank <= 25 && (
-              <span className="text-accent-ink mr-1">#{homeProfile.rank}</span>
-            )}
             {homeProfile.team} Statistical Profile
           </h3>
           <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">

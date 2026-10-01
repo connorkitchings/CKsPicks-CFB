@@ -1,8 +1,4 @@
-import Link from "next/link";
-
 export function MatchupKeyTakeaways({
-  awayTeam,
-  homeTeam,
   takeaways,
 }: {
   awayTeam: string;
@@ -28,23 +24,6 @@ export function MatchupKeyTakeaways({
           </li>
         ))}
       </ul>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line/60 pt-3 text-xs text-ink-faint">
-        <span>Deep dive team ratings:</span>
-        <Link
-          href={`/teams/${encodeURIComponent(awayTeam)}`}
-          className="font-medium text-accent-ink hover:underline"
-        >
-          {awayTeam} Ratings History →
-        </Link>
-        <span>·</span>
-        <Link
-          href={`/teams/${encodeURIComponent(homeTeam)}`}
-          className="font-medium text-accent-ink hover:underline"
-        >
-          {homeTeam} Ratings History →
-        </Link>
-      </div>
     </div>
   );
 }

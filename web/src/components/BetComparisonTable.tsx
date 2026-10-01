@@ -65,6 +65,7 @@ export function BetComparisonTable({
   totalEdge,
   totalBet,
   totalResult,
+  showBetResult = true,
 }: {
   marketSpread: string;
   modelSpread: string;
@@ -76,6 +77,7 @@ export function BetComparisonTable({
   totalEdge: number | null;
   totalBet: string | null;
   totalResult: "win" | "loss" | "push" | null;
+  showBetResult?: boolean;
 }) {
   return (
     <div className="mt-3">
@@ -110,12 +112,14 @@ export function BetComparisonTable({
               <span className="sm:hidden">Bet</span>
               <span className="hidden sm:inline">Model Bet</span>
             </th>
-            <th
-              scope="col"
-              className="hidden py-1 pl-2 text-right text-[10px] font-medium uppercase tracking-wide text-ink-faint sm:table-cell"
-            >
-              Bet Result
-            </th>
+            {showBetResult && (
+              <th
+                scope="col"
+                className="hidden py-1 pl-2 text-right text-[10px] font-medium uppercase tracking-wide text-ink-faint sm:table-cell"
+              >
+                Bet Result
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -140,15 +144,17 @@ export function BetComparisonTable({
               ) : (
                 <span className="text-ink-faint">No lean</span>
               )}
-              {spreadResult && (
+              {showBetResult && spreadResult && (
                 <div className="mt-1 sm:hidden">
                   <ResultCell result={spreadResult} />
                 </div>
               )}
             </td>
-            <td className="hidden py-1.5 pl-2 text-right sm:table-cell">
-              <ResultCell result={spreadResult} />
-            </td>
+            {showBetResult && (
+              <td className="hidden py-1.5 pl-2 text-right sm:table-cell">
+                <ResultCell result={spreadResult} />
+              </td>
+            )}
           </tr>
 
           {/* Total Row */}
@@ -172,15 +178,17 @@ export function BetComparisonTable({
               ) : (
                 <span className="text-ink-faint">No lean</span>
               )}
-              {totalResult && (
+              {showBetResult && totalResult && (
                 <div className="mt-1 sm:hidden">
                   <ResultCell result={totalResult} />
                 </div>
               )}
             </td>
-            <td className="hidden py-1.5 pl-2 text-right sm:table-cell">
-              <ResultCell result={totalResult} />
-            </td>
+            {showBetResult && (
+              <td className="hidden py-1.5 pl-2 text-right sm:table-cell">
+                <ResultCell result={totalResult} />
+              </td>
+            )}
           </tr>
         </tbody>
       </table>

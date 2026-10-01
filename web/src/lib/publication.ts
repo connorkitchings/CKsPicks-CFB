@@ -19,6 +19,7 @@ const DISPLAY_SYSTEM_NAMES: Record<string, string> = {
 /** Map an internal model system name to its public display name. */
 export function displaySystemName(systemName: string | null): string | null {
   if (systemName === null) return null;
+  if (systemName.startsWith("Trench Warfare V5")) return "Blitzkrieg";
   return DISPLAY_SYSTEM_NAMES[systemName] ?? systemName;
 }
 

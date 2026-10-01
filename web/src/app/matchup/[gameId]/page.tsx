@@ -2,9 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header, Footer } from "@/components/Header";
 import { MatchupHero } from "@/components/matchup/MatchupHero";
-import { UnitMatchupTable } from "@/components/matchup/UnitMatchupTable";
-import { TeamProfilePillars } from "@/components/matchup/TeamProfilePillars";
-import { MatchupKeyTakeaways } from "@/components/matchup/MatchupKeyTakeaways";
 import { getMatchupData } from "@/lib/matchup";
 import { publicationScope } from "@/lib/publication";
 
@@ -75,46 +72,86 @@ export default async function MatchupPage({
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 
-        {/* Center Unit-vs-Unit Showdowns */}
-        <section aria-labelledby="unit-matchups-heading" className="space-y-4">
-          <h2 id="unit-matchups-heading" className="sr-only">
-            Unit-vs-Unit Advanced Stats Matchup
-          </h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <UnitMatchupTable
-              title={`${matchup.awayTeam} Offense vs ${matchup.homeTeam} Defense`}
-              subtitle="Passing, rushing, and scoring opportunities showdown"
-              awayTeam={matchup.awayTeam}
-              homeTeam={matchup.homeTeam}
-              rows={matchup.awayOffVsHomeDef}
-            />
-            <UnitMatchupTable
-              title={`${matchup.awayTeam} Defense vs ${matchup.homeTeam} Offense`}
-              subtitle="Defensive stops, finishing efficiency, and conversions"
-              awayTeam={matchup.awayTeam}
-              homeTeam={matchup.homeTeam}
-              rows={matchup.awayDefVsHomeOff}
-            />
+        {/* Authentic Status & Advanced Metrics Ingestion Notice */}
+        <section
+          aria-labelledby="advanced-stats-notice"
+          className="rounded-2xl border border-line bg-surface-card p-6 shadow-sm"
+        >
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-accent" />
+            <h2 id="advanced-stats-notice" className="text-sm font-semibold uppercase tracking-wider text-ink">
+              Advanced Matchup Stats · Ingestion In Progress
+            </h2>
+          </div>
+
+          <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+            We are currently building the data ingestion pipeline to publish verified, play-by-play football metrics directly to our web serving layer.
+            Only 100% genuine model forecasts and certified Blitzkrieg team ratings are shown above.
+          </p>
+
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-line/60 bg-surface-inset p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
+                Upcoming Efficiency Metrics
+              </h3>
+              <ul className="mt-2 space-y-1.5 text-xs text-ink-muted">
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>Passing EPA/play & Rushing EPA/play</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>Scoring Opportunity Rate (trips inside 40)</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>Points Per Scoring Opportunity (PPSO)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-xl border border-line/60 bg-surface-inset p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">
+                Upcoming Context Metrics
+              </h3>
+              <ul className="mt-2 space-y-1.5 text-xs text-ink-muted">
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>Average Starting Field Position</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>Explosive Play Rate (20+ yard gains)</span>
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="text-accent-ink">•</span>
+                  <span>3rd & 4th Down Conversion Efficiencies</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-line/60 pt-4">
+            <Link
+              href={`/teams/${encodeURIComponent(matchup.awayTeam)}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
+            >
+              Explore {matchup.awayTeam} Ratings & History →
+            </Link>
+            <Link
+              href={`/teams/${encodeURIComponent(matchup.homeTeam)}`}
+              className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
+            >
+              Explore {matchup.homeTeam} Ratings & History →
+            </Link>
+            <Link
+              href={`/?week=${matchup.week}`}
+              className="ml-auto text-xs text-ink-faint hover:text-ink hover:underline"
+            >
+              Return to Week {matchup.week} Picks
+            </Link>
           </div>
         </section>
-
-        {/* Team Profile Pillars */}
-        <section aria-labelledby="team-profiles-heading">
-          <h2 id="team-profiles-heading" className="sr-only">
-            Team Statistical Profiles
-          </h2>
-          <TeamProfilePillars
-            awayProfile={matchup.awayProfile}
-            homeProfile={matchup.homeProfile}
-          />
-        </section>
-
-        {/* Key Analytical Takeaways */}
-        <MatchupKeyTakeaways
-          awayTeam={matchup.awayTeam}
-          homeTeam={matchup.homeTeam}
-          takeaways={matchup.takeaways}
-        />
       </main>
 
       <Footer publicationMode={publicationScope.mode} />

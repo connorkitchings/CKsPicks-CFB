@@ -21,15 +21,14 @@ const SORT_LABEL: Record<SortKey, string> = {
 export function GamesList({
   games,
   initialSort = "kickoff",
-  ranks,
+  showBetResult = true,
 }: {
   games: Game[];
   initialSort?: SortKey;
-  ranks?: Map<string, number>;
+  showBetResult?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [hcOnly, setHcOnly] = useState(false);
-  const [targetFilter, setTargetFilter] = useState<"all" | "spread" | "total">("all");
   const [sort, setSort] = useState<SortKey>(initialSort);
   const predictionsVisible = games[0]?.publicationMode === "predictions";
   const hasHighConfidence =
@@ -46,15 +45,6 @@ export function GamesList({
         (g) =>
           g.homeTeam.toLowerCase().includes(q) ||
           g.awayTeam.toLowerCase().includes(q),
-      );
-    }
-    if (targetFilter === "spread") {
-      rows = rows.filter(
-        (g) => g.publicationMode === "predictions" && g.spreadLean !== null,
-      );
-    } else if (targetFilter === "total") {
-      rows = rows.filter(
-        (g) => g.publicationMode === "predictions" && g.totalLean !== null,
       );
     }
     if (hcOnly && predictionsVisible) {
@@ -83,7 +73,7 @@ export function GamesList({
       return bEdge - aEdge;
     });
     return sorted;
-  }, [games, query, targetFilter, hcOnly, predictionsVisible, sort]);
+  }, [games, query, hcOnly, predictionsVisible, sort]);
 
   // Group by day when sorted chronologically (kickoff)
   const groupedByDay = useMemo(() => {
@@ -137,34 +127,6 @@ export function GamesList({
 
         {predictionsVisible && (
           <div className="flex flex-wrap items-center gap-2">
-            {/* Target Filter Tabs */}
-            <div
-              className="inline-flex rounded-lg bg-surface-inset p-1"
-              role="tablist"
-              aria-label="Filter picks by target"
-            >
-              {(["all", "spread", "total"] as const).map((t) => {
-                const label =
-                  t === "all" ? "All Picks" : t === "spread" ? "Spreads" : "Totals";
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    role="tab"
-                    aria-selected={targetFilter === t}
-                    onClick={() => setTargetFilter(t)}
-                    className={clsx(
-                      "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                      targetFilter === t
-                        ? "bg-surface-card text-ink shadow-sm"
-                        : "text-ink-muted hover:text-ink",
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
 
             {hasHighConfidence && (
               <button
@@ -222,7 +184,7 @@ export function GamesList({
               </div>
               <ul className="space-y-3">
                 {group.games.map((g) => (
-                  <GameRow key={g.gameId} game={g} ranks={ranks} />
+                  <GameRow key={g.gameId} game={g} showBetResult={showBetResult} />
                 ))}
               </ul>
             </section>
@@ -231,7 +193,7 @@ export function GamesList({
       ) : (
         <ul className="space-y-3">
           {visible.map((g) => (
-            <GameRow key={g.gameId} game={g} ranks={ranks} />
+            <GameRow key={g.gameId} game={g} showBetResult={showBetResult} />
           ))}
         </ul>
       )}

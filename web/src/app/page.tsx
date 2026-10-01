@@ -8,7 +8,7 @@ import {
   getRunForWeek,
   type Game,
 } from "@/lib/queries";
-import { getV5Performance, getTeamRankMap, type Performance } from "@/lib/v5";
+import { getV5Performance, type Performance } from "@/lib/v5";
 import { selectsV5 } from "@/lib/run-selection";
 import { WeeklySlateView } from "@/components/WeeklySlateView";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
@@ -131,7 +131,6 @@ export default async function Home({
 
   let games: Game[] = [];
   let performance: Performance[] = [];
-  let ranks: Map<string, number> | undefined;
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
   let retrospectiveRepair = false;
@@ -150,12 +149,11 @@ export default async function Home({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
-          [games, performance, ranks] = await Promise.all([
+          [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
             selectsV5(selectedRun?.modelId)
               ? getV5Performance(season, week)
               : Promise.resolve([]),
-            getTeamRankMap(season).catch(() => new Map<string, number>()),
           ]);
         } else {
           games = await getMarketGamesForWeek(season, week);
@@ -188,7 +186,6 @@ export default async function Home({
       weeks={weeks}
       basePath="/"
       games={games}
-      ranks={ranks}
       performance={performance}
       systemName={systemName}
       updatedAt={updatedAt}

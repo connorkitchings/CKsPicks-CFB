@@ -54,13 +54,13 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
  */
 export function GameRow({
   game,
-  ranks,
+  showBetResult = true,
 }: {
   game: Game;
-  ranks?: Map<string, number>;
+  showBetResult?: boolean;
 }) {
   if (game.publicationMode === "market") {
-    return <MarketGameRow game={game} ranks={ranks} />;
+    return <MarketGameRow game={game} showBetResult={showBetResult} />;
   }
   const hasAnyLine =
     game.homeTeamSpreadLine !== null || game.totalLine !== null;
@@ -82,13 +82,10 @@ export function GameRow({
   );
   const totalBet = totalBetLabel(game.totalLean, game.totalLine);
 
-  const awayRank = ranks?.get(game.awayTeam) ?? null;
-  const homeRank = ranks?.get(game.homeTeam) ?? null;
-
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      {/* Meta row: kickoff + high-confidence marker */}
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
+      {/* Top row: kickoff & high-confidence */}
+      <div className="mb-3 flex items-center gap-1.5 text-xs text-ink-faint">
         <span>{formatKickoff(game.startDate)}</span>
         {game.highConfidence && (
           <span
@@ -101,14 +98,13 @@ export function GameRow({
         )}
       </div>
 
-      {/* Box score: logos, teams, finals, and power ranks */}
+      {/* Box score: logos, teams, finals */}
       <div className="space-y-1.5">
         <TeamLine
           name={game.awayTeam}
           record={game.awayRecord}
           score={game.awayPoints}
           highlighted={game.spreadLean === "away"}
-          rank={awayRank}
         />
         <TeamLine
           name={game.homeTeam}
@@ -116,7 +112,6 @@ export function GameRow({
           home
           score={game.homePoints}
           highlighted={game.spreadLean === "home"}
-          rank={homeRank}
         />
       </div>
 
@@ -132,6 +127,7 @@ export function GameRow({
         totalEdge={totalEdge(game.predictedTotal, game.totalLine)}
         totalBet={totalBet}
         totalResult={game.totalResult}
+        showBetResult={showBetResult}
       />
 
       {!hasAnyLine && (
@@ -139,20 +135,6 @@ export function GameRow({
           No market line — model prediction shown, no lean.
         </p>
       )}
-
-      {/* Matchup Deep Dive Slot (Phase 2 extension point) */}
-      <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between text-xs">
-        <span className="text-[11px] text-ink-faint font-mono">
-          {game.systemName ? game.systemName : "Blitzkrieg V5"}
-        </span>
-        <Link
-          href={`/matchup/${game.gameId}`}
-          className="text-[11px] font-medium text-ink-muted hover:text-accent-ink hover:underline transition-colors flex items-center gap-1"
-          title={`View ${game.awayTeam} vs ${game.homeTeam} matchup breakdown`}
-        >
-          Matchup Breakdown →
-        </Link>
-      </div>
     </li>
   );
 }
@@ -160,10 +142,10 @@ export function GameRow({
 /** Market-mode card: same shell; the table omits model columns (fail-closed). */
 function MarketGameRow({
   game,
-  ranks,
+  showBetResult = true,
 }: {
   game: Extract<Game, { publicationMode: "market" }>;
-  ranks?: Map<string, number>;
+  showBetResult?: boolean;
 }) {
   const hasResults = game.homePoints !== null && game.awayPoints !== null;
   const marketSpread = marketSpreadView(
@@ -171,12 +153,41 @@ function MarketGameRow({
     game.awayTeam,
     game.homeTeamSpreadLine,
   );
-  const awayRank = ranks?.get(game.awayTeam) ?? null;
-  const homeRank = ranks?.get(game.homeTeam) ?? null;
+
+  const columns = showBetResult
+    ? [{ header: "Market" }, { header: "Bet Result" }]
+    : [{ header: "Market" }];
+
+  const rows = [
+    {
+      label: "Spread",
+      cells: showBetResult
+        ? [
+            spreadLabel(marketSpread),
+            <ResultCell key="result" result={game.spreadResult} />,
+          ]
+        : [spreadLabel(marketSpread)],
+    },
+    {
+      label: "Total",
+      cells: showBetResult
+        ? [
+            game.totalLine === null
+              ? "O/U —"
+              : `O/U ${game.totalLine.toFixed(1)}`,
+            <ResultCell key="result" result={game.totalResult} />,
+          ]
+        : [
+            game.totalLine === null
+              ? "O/U —"
+              : `O/U ${game.totalLine.toFixed(1)}`,
+          ],
+    },
+  ];
 
   return (
     <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2 text-xs text-ink-faint">
+      <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
         <span>{formatKickoff(game.startDate)}</span>
         {hasResults && (
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
@@ -190,7 +201,6 @@ function MarketGameRow({
           record={game.awayRecord}
           score={game.awayPoints}
           highlighted={false}
-          rank={awayRank}
         />
         <TeamLine
           name={game.homeTeam}
@@ -198,7 +208,6 @@ function MarketGameRow({
           home
           score={game.homePoints}
           highlighted={false}
-          rank={homeRank}
         />
       </div>
       <BetTable
@@ -209,25 +218,8 @@ function MarketGameRow({
           "py-1.5 pl-2 text-right font-mono tabular-nums text-ink",
           "py-1.5 pl-2 text-right text-ink",
         ]}
-        columns={[{ header: "Market" }, { header: "Bet Result" }]}
-        rows={[
-          {
-            label: "Spread",
-            cells: [
-              spreadLabel(marketSpread),
-              <ResultCell key="result" result={game.spreadResult} />,
-            ],
-          },
-          {
-            label: "Total",
-            cells: [
-              game.totalLine === null
-                ? "O/U —"
-                : `O/U ${game.totalLine.toFixed(1)}`,
-              <ResultCell key="result" result={game.totalResult} />,
-            ],
-          },
-        ]}
+        columns={columns}
+        rows={rows}
       />
     </li>
   );
@@ -239,7 +231,6 @@ function TeamLine({
   home = false,
   score,
   highlighted,
-  rank = null,
 }: {
   name: string;
   /** Season W-L as of kickoff (e.g. "1-0"); null hides the marker. */
@@ -247,10 +238,7 @@ function TeamLine({
   home?: boolean;
   score: number | null;
   highlighted: boolean;
-  rank?: number | null;
 }) {
-  const isTop25 = rank !== null && rank >= 1 && rank <= 25;
-
   return (
     <div className="flex items-center gap-2.5">
       <Image
@@ -261,14 +249,6 @@ function TeamLine({
         className="h-7 w-7 shrink-0 object-contain"
         unoptimized
       />
-      {isTop25 && (
-        <span
-          className="text-xs font-bold text-accent-ink shrink-0"
-          aria-label={`Rank ${rank}`}
-        >
-          #{rank}
-        </span>
-      )}
       <Link
         href={`/teams/${encodeURIComponent(name)}`}
         className={clsx(

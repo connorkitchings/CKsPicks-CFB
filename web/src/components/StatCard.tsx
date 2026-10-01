@@ -5,6 +5,8 @@
  * stay visually identical without four copies of the same markup.
  */
 
+import clsx from "clsx";
+
 /** Win rate over decisive games (pushes excluded); "—" when undecided. */
 export function winRatePercent(wins: number, losses: number): string {
   const decisions = wins + losses;
@@ -19,6 +21,7 @@ export function StatCard({
   subline,
   statLarge = false,
   labelAs = "div",
+  align = "left",
 }: {
   label: string;
   stat: string;
@@ -27,10 +30,17 @@ export function StatCard({
   statLarge?: boolean;
   /** Render the label as an h2 to preserve heading hierarchy on pages. */
   labelAs?: "div" | "h2";
+  /** Text alignment inside the box. */
+  align?: "left" | "center";
 }) {
   const LabelTag = labelAs === "h2" ? "h2" : "div";
   return (
-    <div className="rounded-lg bg-surface-inset p-3">
+    <div
+      className={clsx(
+        "rounded-lg bg-surface-inset p-3",
+        align === "center" && "text-center",
+      )}
+    >
       <LabelTag className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
         {label}
       </LabelTag>

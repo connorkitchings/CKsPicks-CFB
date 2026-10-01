@@ -12,7 +12,6 @@ export interface WeeklySlateViewProps {
   weeks: number[];
   basePath?: string;
   games: Game[];
-  ranks?: Map<string, number>;
   performance?: Performance[];
   systemName?: string | null;
   updatedAt?: Date | null;
@@ -27,7 +26,7 @@ export interface WeeklySlateViewProps {
 /**
  * Reusable layout shell for weekly slate views (Picks `/` and Results `/results`).
  * Standardizes header, skip links, performance banners, week navigation,
- * games list with day grouping and rankings, and footer.
+ * games list with day grouping, and footer.
  */
 export function WeeklySlateView({
   mode,
@@ -36,7 +35,6 @@ export function WeeklySlateView({
   weeks,
   basePath = "/",
   games,
-  ranks,
   performance = [],
   systemName = null,
   updatedAt = null,
@@ -111,7 +109,7 @@ export function WeeklySlateView({
               <GamesList
                 games={games}
                 initialSort={initialSort}
-                ranks={ranks}
+                showBetResult={mode === "results"}
               />
             )}
           </>

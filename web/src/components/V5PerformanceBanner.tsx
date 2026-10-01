@@ -9,6 +9,7 @@ function Scoreboard({ label, record }: { label: string; record: Record }) {
       label={label}
       stat={`${record.win}–${record.loss}–${record.push}`}
       subline={`${winRatePercent(record.win, record.loss)} win rate`}
+      align="center"
     />
   );
 }
