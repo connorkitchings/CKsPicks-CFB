@@ -46,7 +46,7 @@ audited immutable data → football measurements → opponent adjustment
 New executable research commands live in `scripts/research/`. Reusable logic
 lives in `src/cks_picks_cfb/`, with rating and forecasting components under
 `src/cks_picks_cfb/ratings/` where appropriate. Exploratory notebooks and
-analyses stay in `research/` and cannot become production dependencies.
+analyses stay out of production code and cannot become production dependencies.
 
 New program configuration lives under
 `conf/research/data_first_football_v1/`. Its artifacts use only
@@ -97,7 +97,7 @@ scripts/research ─┼─> src/cks_picks_cfb
 tests ────────────┘
 
 src/cks_picks_cfb ─X─> scripts/*
-production code ──X─> research/*
+production code ──X─> scripts/research/*
 production code ──X─> artifacts/research/data-first-football-v1
 ```
 

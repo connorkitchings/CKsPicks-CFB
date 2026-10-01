@@ -176,7 +176,7 @@ This is a **monorepo with two toolchains**:
 | ML pipeline | root (`src/`, `scripts/`, `conf/`) | Python 3.12, uv, Hydra, MLflow | `npx nx run pipeline:test` or `make test` |
 | Web app | `web/` | Next.js 16, TypeScript, npm, Tailwind v4 | `npx nx run web:build` or `make web-build` |
 | Shared contracts | `contracts/` | SQL + TypeScript + Python | `make contracts-check` |
-| Research | `research/` | Python (analysis, tuning, experiments) | — |
+| Research | `scripts/research/` | Python (data-first runners and verifiers; see contract 2026-10-01/04) | — |
 | Task runner | root (`nx.json`, `project.json`) | Nx 20 — cached cross-stack tasks | `npx nx run-many -t lint typecheck test build` |
 | Shared storage | Cloudflare R2 | Parquet (pipeline reads) | — |
 | Web data | Neon Postgres | `games`, `game_results`, `system_stats`, `current_week` + catalog/ops schemas | `scripts/pipeline/migrate_db.py --database-url` (verified target; append-only migrations through 0018) |
@@ -187,7 +187,7 @@ This is a **monorepo with two toolchains**:
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
 - Next.js app is fully isolated in `web/` with its own `package.json` and `.gitignore`.
 - **Single source of truth:** `contracts/` holds the canonical DB schema (`schema.sql`, `schema.ts`) and team-name mapping (`teams.py`, `teams.ts`). The web app has local copies in `web/src/lib/` that must stay in sync. Run `make contracts-check` to validate sync.
-- Production scripts live in `scripts/pipeline/` and `scripts/data/`. Research/exploration scripts live in `research/`.
+- Production scripts live in `scripts/pipeline/` and `scripts/data/`. Active data-first research and V5 stage runners live in `scripts/research/`; the old top-level `research/` exploration folder was removed on 2026-10-01 (recoverable from git history).
 
 ---
 
@@ -410,7 +410,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 ### What NOT to Read Automatically
 
 - `artifacts/**`, `.venv/**`, `.git/**`, `**__pycache__/`
-- `research/**` (only when actively debugging or experimenting)
+- `scripts/research/**` (only when actively debugging or experimenting)
 - `session_logs/` older than 3 days
 - Files > 200 KB
 - Files unchanged in last 30 days
@@ -454,7 +454,7 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 - **Ops state machine:** `src/cks_picks_cfb/ops/` - Publish/freeze/close/replay orchestration
 - **Inference:** `scripts/pipeline/generate_weekly_bets.py` - Predictions
 - **Contracts:** `contracts/` - DB schema and team mappings (single source of truth)
-- **Research:** `research/` - Analysis, tuning, debugging, experiments
+- **Research:** `scripts/research/` - Data-first research runners and verifiers
 
 ---
 

@@ -51,8 +51,7 @@ audited data -> football measurements -> opponent adjustment
 
 Top-level responsibilities remain stable: reusable Python under
 `src/cks_picks_cfb/`, production entry points under `scripts/pipeline/`, active
-research entry points under `scripts/research/`, exploratory work under
-`research/`, configurations under `conf/`, and current authority under `docs/`.
+research entry points under `scripts/research/`, configurations under `conf/`, and current authority under `docs/`.
 
 ## Ordered phases
 

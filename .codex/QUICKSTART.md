@@ -553,7 +553,7 @@ mkdocs gh-deploy
 
 ## Analysis & Experiments
 
-Exploratory analysis lives in `research/` and MLflow (development only). For
+Exploratory analysis uses MLflow (development only); the old top-level `research/` folder was removed on 2026-10-01. For
 2026 model comparison, use the sealed tournament tooling:
 
 ```bash

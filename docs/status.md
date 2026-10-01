@@ -55,6 +55,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
   [authentic matchup stats pipeline](plans/2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md).
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
+- Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) (Implemented).
 
 ## Where to look next
 

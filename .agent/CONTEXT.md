@@ -159,7 +159,7 @@ conf/
 ├── weekly_bets/           # v4_2026 (launch), v3_preview_games_ordinal_2026,
 │                          #   v2_preview_2026, v2_champion
 ├── policy/                # canonical_week_2026_v1 (Week 0 game-ID assignments)
-├── preprocessing/ paths/ hydra/ sweeper/ research/ legacy/
+├── preprocessing/ paths/ hydra/ research/
 └── validation.yaml
 ```
 

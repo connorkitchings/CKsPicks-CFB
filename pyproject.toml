@@ -61,7 +61,6 @@ line-length = 88
 extend-exclude = [
     "*.ipynb",
     "**/*.ipynb",
-    "research/**",
     "archive/**",
     "scripts/archive/**",
 ]
@@ -97,7 +96,6 @@ pythonpath = [
   "."
 ]
 norecursedirs = [
-  "research",
   "archive",
   "scripts/archive",
   "web",

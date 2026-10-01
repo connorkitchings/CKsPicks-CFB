@@ -62,6 +62,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | Implemented (2026-09-30); Week 5 `p2` frozen |
 | [Performance dashboard](2026-10-01/01-performance-dashboard-enhancements.md) | Interactive performance page (units, graded game log) | Implemented |
 | [Authentic matchup stats](2026-10-01/02-authentic-matchup-stats-pipeline-and-presentation.md) | Ingest real play/drive measurements for the matchup page | Draft (Pending User Review) |
+| [Dead-code prune](2026-10-01/05-dead-code-prune.md) | Remove modules, configs, web leftovers and `research/` with no references | Implemented |
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.

@@ -1,6 +1,6 @@
 # Dead-Code Prune
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the prune list in-session on 2026-10-01 (including deleting `research/`).
@@ -33,9 +33,12 @@ orphaned matchup components and `matchup-math.ts` (reused by plan 2026-10-01/02)
 `conf/legacy/`, `conf/experiment/legacy/`, `conf/experiment/{02_opponent_adjustment,extended_features_crossval}.yaml`, tracked build artifacts (`*.egg-info`).
 
 ## Definition of Done
-- [ ] Pytest matches baseline (1527 passed, 3 skipped; 16 env-only failures without `CFBD_API_KEY`, 0 with a dummy key).
-- [ ] ruff, `contracts/validation.py`, `mkdocs build --quiet`, Hydra `--cfg job --resolve`, web lint/typecheck/test:publication/build pass.
-- [ ] No dangling references to deleted paths in docs, Makefile, pyproject or CI.
+- [x] Pytest matches baseline: 1543 passed, 3 skipped with a dummy `CFBD_API_KEY` (16 env-only failures without one, before and after).
+- [x] `ruff check`, `contracts/validation.py`, `mkdocs build --quiet`, Hydra compose (`experiment=week0_regimes`), web lint/typecheck/test:publication pass.
+- [x] No dangling references to deleted paths in docs, Makefile, pyproject or CI.
+
+## Outcome
+Deferred conf items (`conf/legacy`, `conf/experiment/legacy`, `02_opponent_adjustment`, `extended_features_crossval`) were proven unreferenced and deleted. No `*.egg-info` is tracked. The `research` optional-dependency extra in `pyproject.toml` was kept (removing it changes `uv.lock`).
 
 ## Rollback
 `git revert` the area commit. Any failure from a deleted path: restore it and move it to Deferred.
