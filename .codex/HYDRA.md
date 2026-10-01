@@ -44,8 +44,7 @@ conf/
 │   └── ablation_baseline.yaml
 ├── experiment/              # Pre-packaged experiments
 │   ├── week0_regimes.yaml   # 2026 regime tournament
-│   ├── preseason_regimes.yaml
-│   └── v2_*.yaml            # V2-era history (+ legacy/)
+│   └── preseason_regimes.yaml
 ├── training/                # Chronology contracts
 │   ├── default.yaml
 │   └── week0_2026.yaml      # Frozen 2026 temporal windows
@@ -55,7 +54,7 @@ conf/
 │   ├── v2_preview_2026.yaml
 │   └── v2_champion.yaml
 ├── policy/                  # canonical_week_2026_v1.yaml
-├── preprocessing/ paths/ hydra/ sweeper/ research/ legacy/ validation.yaml
+├── preprocessing/ paths/ hydra/ research/ validation.yaml
 ```
 
 ---
@@ -288,9 +287,9 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --help | grep -A 10 "Config 
 
 ## Optuna Integration
 
-Legacy Optuna search spaces live under `conf/legacy/tuning/`. Optimization is
-driven through `mode=optimize` (see `.codex/QUICKSTART.md`); sweep behavior is
-configured in `conf/sweeper/`.
+Optimization is driven through `mode=optimize` (see `.codex/QUICKSTART.md`). The
+legacy Optuna search-space and sweeper configs were removed in the 2026-10-01
+dead-code prune (recoverable from git history).
 
 ### Running Optimization
 

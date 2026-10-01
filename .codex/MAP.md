@@ -56,8 +56,8 @@ src/cks_picks_cfb/
 ├── model_bundle.py / model_bundle_v3.py   # Bundle manifests, loading, validation
 ├── preseason.py                 # Compatibility facade for focused preseason modules
 ├── preseason_features.py / preseason_matchups.py / preseason_blends.py
-├── scoring.py / loader.py / artifacts.py
-├── config/                      # champion.py, experiments.py
+├── scoring.py / artifacts.py
+├── config/                      # experiments.py
 ├── data/                        # Ingestion + lake
 │   ├── storage/                 # Storage abstraction (base, local, r2, factory)
 │   ├── silver/                  # Silver layer (contracts, builders)
@@ -94,13 +94,10 @@ src/cks_picks_cfb/
 │   ├── __main__.py              # python -m cks_picks_cfb.ops (publish/freeze/close/replay)
 │   ├── state_machine.py / lease.py / data_audit.py
 ├── inference/                   # Weekly input, routing, edge, and manifest helpers
-├── training/                    # train.py (regime training internals)
 ├── db/                          # migrations.py (applies contracts/migrations)
 ├── analysis/                    # unadjusted.py
 ├── utils/                       # validation.py (DataValidationService),
-│                                # mlflow_tracking.py, model_registry.py,
-│                                # lineage_tracking.py, local_storage.py, ...
-└── flows/                       # Prefect-era flows (legacy)
+│                                # mlflow_tracking.py, local_storage.py, ...
 ```
 
 ---
@@ -154,7 +151,7 @@ conf/
 ├── features/                    # matchup_v1/v2/v2_pruned, opponent_adjusted_v1,
 │                                #   recency_weighted_v1, extended_v1, interaction_v1,
 │                                #   internal_*, cover_classifier_v1, ablation_baseline
-├── experiment/                  # week0_regimes, preseason_regimes, v2_* (history), legacy/
+├── experiment/                  # week0_regimes, preseason_regimes
 ├── training/                    # default, week0_2026 (frozen chronology)
 ├── weekly_bets/                 # v4_2026 (LAUNCH), v3_preview_games_ordinal_2026,
 │                                #   v2_preview_2026, v2_champion
