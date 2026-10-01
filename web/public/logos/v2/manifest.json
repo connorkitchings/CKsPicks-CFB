@@ -1,0 +1,1942 @@
+{
+  "version": 2,
+  "retrieved": "2026-10-01",
+  "sizes": {
+    "sm": 96,
+    "lg": 256
+  },
+  "teams": {
+    "2": {
+      "school": "Auburn",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2.webp": "7e71b693a2789c99082a2def04c5a8da0ddffa820e22e6bbcf9a3d31f398f0a0",
+        "lg/light/2.webp": "1499e84568f06b47299d68ee3f060368f3378076ecdedc9e3eea0825893ba7ea",
+        "sm/dark/2.webp": "e8c045b943c60bbcff20503f44c0d7b7486d107de83945f635a96e5bb387c41f",
+        "lg/dark/2.webp": "f622b79392c8fa5cda4e47ee7075e6cc47dd578960463b3e4097133586a05d13"
+      }
+    },
+    "5": {
+      "school": "UAB",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/5.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/5.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/5.webp": "8cd1add1bdea26e9e7716c787c2dcd3b66fbc31bc24dbc6fb89cf8bcc38a20ab",
+        "lg/light/5.webp": "83e85e1aab97c021e3277412b97db093d5f135cf56a9eba5b4bd66b58e775d97",
+        "sm/dark/5.webp": "7b93b951d78f8dea5a1eef2970f4d709f1c07f7dda1e82f559014c18fc445024",
+        "lg/dark/5.webp": "643809456fa98bf400c121d911d99c83d692f9418dd866471c6b54871b9ed89e"
+      }
+    },
+    "6": {
+      "school": "South Alabama",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/6.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/6.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/6.webp": "911654f390bac1b77acde49eb2f9ec376a9c953d1f76382350db722c8cda6c6e",
+        "lg/light/6.webp": "dc8b2d3bf037d18e939bba07c4c4da3e335d40a51f57fc05fcdb29dc61ea57ce",
+        "sm/dark/6.webp": "4de8b7a2b6779219b3742b39d9428987062f47ec18aa369eb6373d0595eb3bfa",
+        "lg/dark/6.webp": "14fd35e66949a76aa15a99ace3cee1645f1f009b701012690166fecb174b8224"
+      }
+    },
+    "8": {
+      "school": "Arkansas",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/8.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/8.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/8.webp": "df408a8760b63fce65c976a0f25827f0ba239c0df1f03c7b17ce723e733f7ef9",
+        "lg/light/8.webp": "326756a33dc317c1b760276a8e0fabdec41c0d494a586b36316b487dc28cbb59",
+        "sm/dark/8.webp": "df408a8760b63fce65c976a0f25827f0ba239c0df1f03c7b17ce723e733f7ef9",
+        "lg/dark/8.webp": "326756a33dc317c1b760276a8e0fabdec41c0d494a586b36316b487dc28cbb59"
+      }
+    },
+    "9": {
+      "school": "Arizona State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/9.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/9.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/9.webp": "d1d04b439fddccb54a3ab0a0f6a5175a26c3a82c6846d843c0830eb465203b67",
+        "lg/light/9.webp": "3bbac82dfd22996f21e2f05a5cb1361d382704e56f0fbd51d1e4f5c038ab97df",
+        "sm/dark/9.webp": "d1d04b439fddccb54a3ab0a0f6a5175a26c3a82c6846d843c0830eb465203b67",
+        "lg/dark/9.webp": "3bbac82dfd22996f21e2f05a5cb1361d382704e56f0fbd51d1e4f5c038ab97df"
+      }
+    },
+    "12": {
+      "school": "Arizona",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/12.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/12.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/12.webp": "279aed2c485229e6631a6268d525632b75947c4b5f28b50d0de327a968d6091e",
+        "lg/light/12.webp": "7029712f7b75f9f95e42df4469eec67e6383b1b5f71d9e58b3721d410c01f0f3",
+        "sm/dark/12.webp": "279aed2c485229e6631a6268d525632b75947c4b5f28b50d0de327a968d6091e",
+        "lg/dark/12.webp": "7029712f7b75f9f95e42df4469eec67e6383b1b5f71d9e58b3721d410c01f0f3"
+      }
+    },
+    "16": {
+      "school": "Sacramento State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/16.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/16.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/16.webp": "8cfc2887a578bae51beac7759cd382b2f7976598ef68604c117a967b9836505e",
+        "lg/light/16.webp": "2b518fb929dd6bca1222efa9b6caff3330eb999673463ef0afcb4913c655cb3a",
+        "sm/dark/16.webp": "8cfc2887a578bae51beac7759cd382b2f7976598ef68604c117a967b9836505e",
+        "lg/dark/16.webp": "2b518fb929dd6bca1222efa9b6caff3330eb999673463ef0afcb4913c655cb3a"
+      }
+    },
+    "21": {
+      "school": "San Diego State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/21.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/21.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/21.webp": "514972a5e328de8ff9071f07f1639034266d2ed1c1dd63718c8c8ad635160da7",
+        "lg/light/21.webp": "e0c526bbe53690685b9b7ddaab84c5c3b32844f902432e0ed2051b60592f08ec",
+        "sm/dark/21.webp": "059af7104043eee014dabc977dd966fe0aed488a7d32f88d5ead7d8c5abd632c",
+        "lg/dark/21.webp": "23bdc0101a54099dfdf9dd4df480f82672d0f95642fc76427ddaf7804d1bf22c"
+      }
+    },
+    "23": {
+      "school": "San José State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/23.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/23.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/23.webp": "2bcdc118ceafe655e42e2e93b32312db0000dea8e055751bf13e6dd39100515d",
+        "lg/light/23.webp": "ff92c61f4b1f532946a11b06e4926665f284379a6b16be52ad6a11941893f18e",
+        "sm/dark/23.webp": "325b72aee4e0cd8f6de808b3028bee47c553586bc7045d2e4d56e54c94b34a37",
+        "lg/dark/23.webp": "e7ac779bface05849087c55e7a507de4ae1f30a6213602ad04cd1b7ed7044985"
+      }
+    },
+    "24": {
+      "school": "Stanford",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/24.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/24.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/24.webp": "f8a13cd4994c58b1311ea594bdfb8397b1750e479500afbfd479ba89a08120c0",
+        "lg/light/24.webp": "da5e83cc4ae946c5d1490749e8a9d4706d5f5f3e9b5281c60fb7ac7ad6ac8291",
+        "sm/dark/24.webp": "09e199a9b7e1305e2ade1152ade90c87c48bac9ce14f222b3c82cf80a594eb9e",
+        "lg/dark/24.webp": "be86ab83295ebc20777ca38c5ab8dc4015c3b194b80d16b74e71886b6767512d"
+      }
+    },
+    "25": {
+      "school": "California",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/25.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/25.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/25.webp": "032f425909b8aac992ef6279be6d811205fdfb8c02a6174b29a5cfe2546f9535",
+        "lg/light/25.webp": "08236b8c5c0939ae9d009e5f9c76c44c04a4a82bb9d8e93e672d2ca7ecd54034",
+        "sm/dark/25.webp": "266c0f9040d50a7b9d92bbccca1b4e82599ac941c5192c637d2600382c90d987",
+        "lg/dark/25.webp": "f37a1364fa502e428c56626d03c64287d65e7888f69d1f03f3e5b2d9e4d9dbe2"
+      }
+    },
+    "26": {
+      "school": "UCLA",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/26.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/26.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/26.webp": "04f4f1357679c21679e784ea28f85a892a86e57fe277284c21cf9e81780101e5",
+        "lg/light/26.webp": "b2624271dc57b6eaef7b2d942e602824ad2c2398984385dd1b7227b25949fe3b",
+        "sm/dark/26.webp": "242c367bb807a91a7571dc7c0b0b9ca3a9bd9a9ccdc8bc36230ab94491b3bbe2",
+        "lg/dark/26.webp": "ae2cb2ba3c5478cb4ce521d6f6cbe2682adc67687e154bf0bfc126a312e50d11"
+      }
+    },
+    "30": {
+      "school": "USC",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/30.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/30.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/30.webp": "fcffea2273f7c38315a7b980fd7a9582d05f1512430d3837652e7cdb9a072017",
+        "lg/light/30.webp": "dea2df1aae9cfb6dffaca27d6e2d2ef16f95edb3c8fc2d5472b575f613048aa1",
+        "sm/dark/30.webp": "fcffea2273f7c38315a7b980fd7a9582d05f1512430d3837652e7cdb9a072017",
+        "lg/dark/30.webp": "dea2df1aae9cfb6dffaca27d6e2d2ef16f95edb3c8fc2d5472b575f613048aa1"
+      }
+    },
+    "36": {
+      "school": "Colorado State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/36.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/36.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/36.webp": "02d1d95b6b290f0aca0c64bf2b4b91d87830939b668e48ef2d064ca6e65fd874",
+        "lg/light/36.webp": "1acc924976335b47dcdf26d924659abaa234fb8866e9d229a575f06e3f5b9645",
+        "sm/dark/36.webp": "02d1d95b6b290f0aca0c64bf2b4b91d87830939b668e48ef2d064ca6e65fd874",
+        "lg/dark/36.webp": "1acc924976335b47dcdf26d924659abaa234fb8866e9d229a575f06e3f5b9645"
+      }
+    },
+    "38": {
+      "school": "Colorado",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/38.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/38.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/38.webp": "4e4c9679a4e51a48d1744c8c1ebad02d9f16e0d906c2ccdf560fa5f5fc2e7b9f",
+        "lg/light/38.webp": "f5197f72d02cfeaa3e848cfbafd7ddf445bd4f4f279dba8f2671ee435b619c99",
+        "sm/dark/38.webp": "4e4c9679a4e51a48d1744c8c1ebad02d9f16e0d906c2ccdf560fa5f5fc2e7b9f",
+        "lg/dark/38.webp": "f5197f72d02cfeaa3e848cfbafd7ddf445bd4f4f279dba8f2671ee435b619c99"
+      }
+    },
+    "41": {
+      "school": "UConn",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/41.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/41.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/41.webp": "866b3eead1f0d399b15a0a29cb8dc61cdd596541bad2e4b17e4ffc6683a0a447",
+        "lg/light/41.webp": "bef0b15d16afc27b76571210022d2f92585be971f124aed789acc135e7712889",
+        "sm/dark/41.webp": "866b3eead1f0d399b15a0a29cb8dc61cdd596541bad2e4b17e4ffc6683a0a447",
+        "lg/dark/41.webp": "bef0b15d16afc27b76571210022d2f92585be971f124aed789acc135e7712889"
+      }
+    },
+    "48": {
+      "school": "Delaware",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/48.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/48.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/48.webp": "2bf8acc78edc0c37175624e3896f3b8c5d13e21e5df10972ae77045cebfa9c1e",
+        "lg/light/48.webp": "47d7b62dcadc6d80b7235d76a85968f34289895f18ef21601bc0984b69128555",
+        "sm/dark/48.webp": "2bf8acc78edc0c37175624e3896f3b8c5d13e21e5df10972ae77045cebfa9c1e",
+        "lg/dark/48.webp": "47d7b62dcadc6d80b7235d76a85968f34289895f18ef21601bc0984b69128555"
+      }
+    },
+    "52": {
+      "school": "Florida State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/52.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/52.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/52.webp": "f7b674311e81ef2d77eaefc42f6a9ac21aa228c156626f27ae197e3f493f1115",
+        "lg/light/52.webp": "de473fa764684c0f9ecbba89c4196e9b6fc9815e096df359feb7434cba4cc019",
+        "sm/dark/52.webp": "f7b674311e81ef2d77eaefc42f6a9ac21aa228c156626f27ae197e3f493f1115",
+        "lg/dark/52.webp": "de473fa764684c0f9ecbba89c4196e9b6fc9815e096df359feb7434cba4cc019"
+      }
+    },
+    "55": {
+      "school": "Jacksonville State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/55.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/55.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/55.webp": "cf7f41d1bd0d968e315ccd73f47b4b4c90b15be517ee1e73ed919414b374281e",
+        "lg/light/55.webp": "fe442da745b66a1a1441fafcb29a0440299dce741b226212f1c00f904afdc3c1",
+        "sm/dark/55.webp": "cf7f41d1bd0d968e315ccd73f47b4b4c90b15be517ee1e73ed919414b374281e",
+        "lg/dark/55.webp": "fe442da745b66a1a1441fafcb29a0440299dce741b226212f1c00f904afdc3c1"
+      }
+    },
+    "57": {
+      "school": "Florida",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/57.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/57.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/57.webp": "8b8b2673e44d85e2d53106ab02b6d762044613dc6c09722c17d29d7928e8f984",
+        "lg/light/57.webp": "a4723e6179862649b87587cdf2fdf2a72e9e74262cb2d93c28d36fb76d3f67f5",
+        "sm/dark/57.webp": "c18e1d8b83a21458b4cb864a790abef1d696916c774cee0b304cc4cec2c72534",
+        "lg/dark/57.webp": "e4894866f081f46667cbca71295318b3428908fce4b17db204b087faa87b03ec"
+      }
+    },
+    "58": {
+      "school": "South Florida",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/58.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/58.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/58.webp": "6942e03f86403c96eb14fa8afd698233c4748a59c713b9ad9c0ac75c6ab5bfb0",
+        "lg/light/58.webp": "cf20df8c1992ef3c06933cb3957ee08a5982920f872fd48639a630c331ed0935",
+        "sm/dark/58.webp": "6942e03f86403c96eb14fa8afd698233c4748a59c713b9ad9c0ac75c6ab5bfb0",
+        "lg/dark/58.webp": "cf20df8c1992ef3c06933cb3957ee08a5982920f872fd48639a630c331ed0935"
+      }
+    },
+    "59": {
+      "school": "Georgia Tech",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/59.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/59.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/59.webp": "4c9ce0c95a1dd8aedf3bd387c0dfcc0088ea4ef7b4e8aebde4aec30cfe5e853c",
+        "lg/light/59.webp": "c58f39864f74729bafd7f8647792f43629eca6cbeaf4875f27d794b1543452dc",
+        "sm/dark/59.webp": "546b84fd8c6a654dcee3d570c7e9c13f64c78c4d9389c68e24951738ea3732a5",
+        "lg/dark/59.webp": "4f1b95062f6575654a8c06d17d08515ca824fe628ed2d064e7a56f979bc67e94"
+      }
+    },
+    "61": {
+      "school": "Georgia",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/61.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/61.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/61.webp": "a778b852c8a33df5ed77a893615a3654f4befd523051811389986d0cf24fca49",
+        "lg/light/61.webp": "06752741e41a605e4bb37723fac18d708116ecf31a57688d8bcf0312d25ccae0",
+        "sm/dark/61.webp": "a778b852c8a33df5ed77a893615a3654f4befd523051811389986d0cf24fca49",
+        "lg/dark/61.webp": "06752741e41a605e4bb37723fac18d708116ecf31a57688d8bcf0312d25ccae0"
+      }
+    },
+    "62": {
+      "school": "Hawai'i",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/62.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/62.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/62.webp": "fd8a0b405847f43c423ff312d9335c5fc85ea045c5211d8de0f6dfbb14708cae",
+        "lg/light/62.webp": "aa8eba36b1f2a0360dec61ced99fe959f8dc2262fb0fa5243a4fb81e71648bab",
+        "sm/dark/62.webp": "f1f5e3cffe79d696b176db1d5f187388d6b335cc336345ec1055e4fbf5fa08f8",
+        "lg/dark/62.webp": "18f1201f348258a0270b558511a7e3eccef469c41a00dd94943f92a4ec015794"
+      }
+    },
+    "66": {
+      "school": "Iowa State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/66.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/66.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/66.webp": "d79b735507ad5d4dee2dce15fe4d0cc3daeb6f5a10198e7e4e5309366b492dda",
+        "lg/light/66.webp": "eb80d6b73e00da6f15688c79ce324e1486284f3cb5e90f5da2a0863cd2a6e47e",
+        "sm/dark/66.webp": "d79b735507ad5d4dee2dce15fe4d0cc3daeb6f5a10198e7e4e5309366b492dda",
+        "lg/dark/66.webp": "eb80d6b73e00da6f15688c79ce324e1486284f3cb5e90f5da2a0863cd2a6e47e"
+      }
+    },
+    "68": {
+      "school": "Boise State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/68.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/68.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/68.webp": "a78f863515be61fcfbc7488d946e0a8a320af26e5eba0156d5a5febdd8dde219",
+        "lg/light/68.webp": "4ab63b57e969b99960e96a0cf70a6ff2142f6a84fae62b93dbd749ae36ab4bf4",
+        "sm/dark/68.webp": "a78f863515be61fcfbc7488d946e0a8a320af26e5eba0156d5a5febdd8dde219",
+        "lg/dark/68.webp": "4ab63b57e969b99960e96a0cf70a6ff2142f6a84fae62b93dbd749ae36ab4bf4"
+      }
+    },
+    "77": {
+      "school": "Northwestern",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/77.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/77.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/77.webp": "764d2f063b958598558038702880be31e0591a04e1f6a55145c168e6ce2973a5",
+        "lg/light/77.webp": "1a1948dd0852b290b3686a4dca83f4217d9f0e21de22bd1d52da8774ef4a0676",
+        "sm/dark/77.webp": "d25a572b386f9b309af58f34a9a38ebd70e44aa864f50565f84f2fd31a1fc27e",
+        "lg/dark/77.webp": "88cc357abad5cff4b6cfd9b30b83f16a99096a9d6684cb7cee0771c1d75bf3a0"
+      }
+    },
+    "84": {
+      "school": "Indiana",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/84.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/84.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/84.webp": "5a7a9c137147ea395da904f38b9fa6add5c4911209aba6b19aff9820f2c691be",
+        "lg/light/84.webp": "536f6356da131696ca992d876f5186623667fc2bcfb19beab6cd58a6bef08da1",
+        "sm/dark/84.webp": "b4a785f5c251e6362d1139aed8d403e138cc739a5b439e87cf041da75a8ad1ef",
+        "lg/dark/84.webp": "43abaa6c958a040e3536a5ba9ad8cb64008d58738d2e1262f78b5e3bcd654eef"
+      }
+    },
+    "87": {
+      "school": "Notre Dame",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/87.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/87.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/87.webp": "0b1e77b4a0ffcb37c563b619087ec9ce6a6d4b5077dc5ab86cd1af5a22a5141c",
+        "lg/light/87.webp": "2b8af3c2b8cf5cf72282c10ea72dd8bb06a524ae190f532350a534dd77189a5b",
+        "sm/dark/87.webp": "fcdaab7891ec91af0b34c97d2c016474bbbed358fc67364e335d2511cd7f0b89",
+        "lg/dark/87.webp": "b3fed6f88aebbb183e504d52d4b64dda23114c013cd42f4f8106a3452a8c5358"
+      }
+    },
+    "96": {
+      "school": "Kentucky",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/96.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/96.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/96.webp": "8fb98966760d5171c8c10dc6fa115b35d0560be5bc6a882e458fe9c3f3869450",
+        "lg/light/96.webp": "e515bdbdce04eb581b86e41563dbac7ec1eff20eaebefe10b180634534d6d629",
+        "sm/dark/96.webp": "b1800fad3305972a0deb24778ffdb83ebec49927dbd313492e22cb09cfc0f13c",
+        "lg/dark/96.webp": "80210e15edb5b0030681af200330cc8043c73ef37229c76776e69f534e6d55ec"
+      }
+    },
+    "97": {
+      "school": "Louisville",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/97.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/97.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/97.webp": "d195835a2739875394a693b3190d8da5c913013f5caa1b2373866d9874eef455",
+        "lg/light/97.webp": "95807d662765efd7ea9f5221fab8e8181f1d5e011e2e02bdf022427b27e04c6a",
+        "sm/dark/97.webp": "d195835a2739875394a693b3190d8da5c913013f5caa1b2373866d9874eef455",
+        "lg/dark/97.webp": "95807d662765efd7ea9f5221fab8e8181f1d5e011e2e02bdf022427b27e04c6a"
+      }
+    },
+    "98": {
+      "school": "Western Kentucky",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/98.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/98.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/98.webp": "79db0b01719c4abed03c6416e9ee68dae75003d31b17721ae8c9a52e580f91f4",
+        "lg/light/98.webp": "b0aca684ea885ea6f3422febe2076f20c6cd3f99faab140925feb1d0e3a8c7a6",
+        "sm/dark/98.webp": "6b3758c41661ec3de27d3f37f9682293e6fb414d9949d4d2448126629609c72a",
+        "lg/dark/98.webp": "cfc9feecf3d49f5838b887cf0048415aa5cc96cf0025df76f39eb215e47d303a"
+      }
+    },
+    "99": {
+      "school": "LSU",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/99.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/99.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/99.webp": "1bd1b73808667aa9e2dff0043b6033bc528ff0e7bbc808e38aa407e1572b133d",
+        "lg/light/99.webp": "d0da75ce434f2cd8d31b69fba01a7f05bf4a3dc3e759ad7c5fb643ead7e3fa91",
+        "sm/dark/99.webp": "190e5c8343cf6a85bc495fbf08ace5045b863c9b0879913fe8deb99b85fdcfab",
+        "lg/dark/99.webp": "7ae86b20dbf434b71aa93bbc3130bb489d766264b2b9257ad8c6829caa5be6a5"
+      }
+    },
+    "103": {
+      "school": "Boston College",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/103.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/103.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/103.webp": "a6984d34d9f9a88a20ffc31586d5531fafd915a8a5cb7e456e25e48c97dfa28f",
+        "lg/light/103.webp": "466aa9d53750ea3b80962e65dd910a2848e2db1397d642195c89523016dffc71",
+        "sm/dark/103.webp": "95a8eaf776ea195cf9dd1d6ff768a9d27f4be4facf9c1b6adbc4e585edd69b4e",
+        "lg/dark/103.webp": "f3f778916c2c88dfcf4a552b176e73c83d4532ebc27e80a521daca566dadc371"
+      }
+    },
+    "113": {
+      "school": "Massachusetts",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/113.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/113.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/113.webp": "cf5d1264334c769c929dd548db09e0dfe6b0ab6f9632f4b5519cd0945e07972a",
+        "lg/light/113.webp": "750098a247dea00280869ee95db1631632122cf7f5af4496470034086f4f0b52",
+        "sm/dark/113.webp": "3579e6ef643c1da18f04130dd816aad8bad1f023c08b4533911b0066fca208a3",
+        "lg/dark/113.webp": "c5a6f0d92f95b22e40331ecb8e10beb3eee52a39627c6dcf05d1b669f999fd36"
+      }
+    },
+    "120": {
+      "school": "Maryland",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/120.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/120.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/120.webp": "e74c33ae45dec339c43a1af967b33b7bd8c0398e6429e9654bb6a32fb898df08",
+        "lg/light/120.webp": "a31e99d535b9a32791a62c137d28b3af8d824f804754e87de72931fd3c727897",
+        "sm/dark/120.webp": "4fef488fb286759f7d6b8cf8d4afd2766b53b014d35cf96bcb5f31eba4786b7f",
+        "lg/dark/120.webp": "b807de7869faed1a36f1bc87502334b957b33d82a44208b28211fbd0c70b611d"
+      }
+    },
+    "127": {
+      "school": "Michigan State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/127.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/127.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/127.webp": "28c30168dec61d8dc0c366abfa8d53ec83e60cdb3da4feab81a06061af674c0d",
+        "lg/light/127.webp": "b19c98dc1940fa04e878268e60dc3a6ce1daf5768fc630b84c586444b891895e",
+        "sm/dark/127.webp": "2af0e149c8974a50789c181c54f0a354b87d8ac19dac927044de0e8978008104",
+        "lg/dark/127.webp": "c2e4df4d1f64053418597b3419c36b1e248f7a237029d9c2a2756d3669133c04"
+      }
+    },
+    "130": {
+      "school": "Michigan",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/130.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/130.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/130.webp": "54760f1ae0f871a05cfe1a0422cb45d166e701f2898d930547f8a38309454da2",
+        "lg/light/130.webp": "e6c4a7bcdadbe4028a1b03a5e6d2be3f29c1cbdb49bc740d347c59370ff10264",
+        "sm/dark/130.webp": "cde5942f9849de4abea7c9672ee37cfad438c03cfc955edcdf51f07209306f02",
+        "lg/dark/130.webp": "dd4b36724c265c8bd0f8dc75ec427ef5f5c5f2203447ab9653b403daa454d974"
+      }
+    },
+    "135": {
+      "school": "Minnesota",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/135.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/135.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/135.webp": "7d8377407922b28144d0c9799fb045863142cea9c2f09e7ddecb1bcdc3b1e6f3",
+        "lg/light/135.webp": "d510c4c4a79be9fbbaea0eb53efa69d50eb7ff65834f5fc338d11d8934b6fc28",
+        "sm/dark/135.webp": "7d8377407922b28144d0c9799fb045863142cea9c2f09e7ddecb1bcdc3b1e6f3",
+        "lg/dark/135.webp": "d510c4c4a79be9fbbaea0eb53efa69d50eb7ff65834f5fc338d11d8934b6fc28"
+      }
+    },
+    "142": {
+      "school": "Missouri",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/142.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/142.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/142.webp": "64bec04a93fe72d0da1b52daeeb1ec5eb39c804f9a8657ef0b5fde5c3e1e369e",
+        "lg/light/142.webp": "57d6bf6e0708971d66a4b7aabc10af0dfbde3c08a6518753a951aafcb4ae7bfe",
+        "sm/dark/142.webp": "64bec04a93fe72d0da1b52daeeb1ec5eb39c804f9a8657ef0b5fde5c3e1e369e",
+        "lg/dark/142.webp": "57d6bf6e0708971d66a4b7aabc10af0dfbde3c08a6518753a951aafcb4ae7bfe"
+      }
+    },
+    "145": {
+      "school": "Ole Miss",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/145.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/145.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/145.webp": "4c5686a43ab149d322e3064448516ec5bce7893d1ba9abdfd823b92d6ecec5c2",
+        "lg/light/145.webp": "f0eefe6be4e4e321a0ef22297908e4b39a6ef3b4f199e3c42a73f3705e30feb6",
+        "sm/dark/145.webp": "ac2d27a75dee6786d68d15c84491c6e7dbb844a33bb07d26e6d117022606ca12",
+        "lg/dark/145.webp": "1f021eb969b1cbcba84f30426e9f15ed197157f4bf9938d88cbda4a28d162123"
+      }
+    },
+    "150": {
+      "school": "Duke",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/150.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/150.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/150.webp": "4ee1919c7f38c30085e329cbdac36faf4a1c22255fc67ce0da9d9846cfe8f605",
+        "lg/light/150.webp": "de134beff3e17943a0c7171c28496bc89afa0cefc57a06235387bee7f3daff02",
+        "sm/dark/150.webp": "afa4aedcd85053665f8dcebb519bf6891ea564aced2fa761e03d615dd9817849",
+        "lg/dark/150.webp": "3794d8a91338150c0e503ec55fb57c590da92138ba97b195d1ec84cc2521a9d3"
+      }
+    },
+    "151": {
+      "school": "East Carolina",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/151.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/151.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/151.webp": "753dba1aa623e72d8d3b1f7b6a3f3b6b933d9bd11e960515bcbe05f3f312c334",
+        "lg/light/151.webp": "d82f96cf1d5745d1c2fb308f21148f0c268ab95677cebf2fee3d6ac0e7e559b2",
+        "sm/dark/151.webp": "753dba1aa623e72d8d3b1f7b6a3f3b6b933d9bd11e960515bcbe05f3f312c334",
+        "lg/dark/151.webp": "d82f96cf1d5745d1c2fb308f21148f0c268ab95677cebf2fee3d6ac0e7e559b2"
+      }
+    },
+    "152": {
+      "school": "NC State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/152.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/152.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/152.webp": "d931e4ecb5597283f8a66d2235e99720b1391918cf3b26a4a5969e7346eca7ee",
+        "lg/light/152.webp": "a201462c9050ea696194c7cdb4df161a1bc82a53fd1e7f5e523ab35362ec5b9c",
+        "sm/dark/152.webp": "d931e4ecb5597283f8a66d2235e99720b1391918cf3b26a4a5969e7346eca7ee",
+        "lg/dark/152.webp": "a201462c9050ea696194c7cdb4df161a1bc82a53fd1e7f5e523ab35362ec5b9c"
+      }
+    },
+    "153": {
+      "school": "North Carolina",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/153.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/153.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/153.webp": "67c5bb03edc73dc877e8e1fd0002bde1dc6951a9f9eaae4afee49c2e34055938",
+        "lg/light/153.webp": "f31b2ee67d1567990f2b04b4d15e52f7e7a011e5b1f115a2886fe399a5910239",
+        "sm/dark/153.webp": "7f2cdcb4e8a03ae2688261d0eacbd89735ce47c5cdf0bc445172bd9d3ed317b1",
+        "lg/dark/153.webp": "af16a31c16662af4c726b2fc980af576b6836b49baf0d802203c0111bbdf3400"
+      }
+    },
+    "154": {
+      "school": "Wake Forest",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/154.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/154.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/154.webp": "e3cbed2158d976034256bab8d4c9a9c15f1427322513100aa0827ec64a619db6",
+        "lg/light/154.webp": "27029b91af308e26cc9b0d15bf8ae75cfac1c4d2ef99f87c687ee4c8f320a75a",
+        "sm/dark/154.webp": "6ef390bfef780a35df1e64c6ad0d2b430f2b97cde8646b8b41ff216ae62c5976",
+        "lg/dark/154.webp": "5f1f9ed5fa0d82277f43c8a9ac971f963d710007f949c466390bfe8151fb779b"
+      }
+    },
+    "158": {
+      "school": "Nebraska",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/158.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/158.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/158.webp": "d8819e10501d7b0e3fa5e6f82625f8911618335b63191f211a11d15b1e516367",
+        "lg/light/158.webp": "cd9069ce2f42ad81aae7c8c47e963ba6eb42e20e03bce13ab42eb50cd54c1e4d",
+        "sm/dark/158.webp": "d8819e10501d7b0e3fa5e6f82625f8911618335b63191f211a11d15b1e516367",
+        "lg/dark/158.webp": "cd9069ce2f42ad81aae7c8c47e963ba6eb42e20e03bce13ab42eb50cd54c1e4d"
+      }
+    },
+    "164": {
+      "school": "Rutgers",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/164.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/164.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/164.webp": "ac8f8f5d7277074d65c6892a525fe78e1e7cbea6823a4b860b48cf040963e912",
+        "lg/light/164.webp": "75e4401efb8fea31a2f7dfeacf440d2fc39b19111cc6709786b395a65970c3c1",
+        "sm/dark/164.webp": "37f5ca9b092cba035160ae3850d6d744eadeb7031530be851bbd22c949af7a84",
+        "lg/dark/164.webp": "94be1b21ff5100abaffbc5e8dd5af9881d396444ffa7782258e16c59042f8e6f"
+      }
+    },
+    "166": {
+      "school": "New Mexico State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/166.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/166.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/166.webp": "4ff14208e50454e8202a9b2ca764236005889cc4c73c325c50f513fff1e46271",
+        "lg/light/166.webp": "5308dab81e0397312102254d22ccd373cb40807ccacb7dd8a7d4de1e8d3b4e8f",
+        "sm/dark/166.webp": "01c2b68fcaa0b96149971c9909af5867f7d8ced5e82ecd2a6f1424a0a733da49",
+        "lg/dark/166.webp": "d63417918f2e0c77f70b59eb8dd3f099feb6903aee0433f364c568ea49d02326"
+      }
+    },
+    "167": {
+      "school": "New Mexico",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/167.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/167.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/167.webp": "6fb156b7370aa9cfa4fe0cd007711c94b5e9e2d27af76d4fbcc501d09b602bd0",
+        "lg/light/167.webp": "6019033a80a477987d2d1424c8dfc4e27e7334892377975ffc62e14f89e126e8",
+        "sm/dark/167.webp": "6fb156b7370aa9cfa4fe0cd007711c94b5e9e2d27af76d4fbcc501d09b602bd0",
+        "lg/dark/167.webp": "6019033a80a477987d2d1424c8dfc4e27e7334892377975ffc62e14f89e126e8"
+      }
+    },
+    "183": {
+      "school": "Syracuse",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/183.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/183.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/183.webp": "7f3da46675593ef9940cf9c09a878f40c27ccdb8571b1df86f097676709a73d7",
+        "lg/light/183.webp": "e295206d861468f4e2593e18771bf06064356d919711c73fe164fc28cef3dfc6",
+        "sm/dark/183.webp": "f784c72101a34895068bbde2c945e38468b39d8705ae2598dba4ed1f1d6ec63e",
+        "lg/dark/183.webp": "16b239fcbe94636edb648fa7a28a0bcad54bc2569046812dceb434e35f44ac9c"
+      }
+    },
+    "189": {
+      "school": "Bowling Green",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/189.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/189.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/189.webp": "94add03f4b23a7b39edb580e68e5b4de9eba2a6302a9cc01892c6c64e134e921",
+        "lg/light/189.webp": "d9e3e140f21f477330a0cce6f821efa9eb4ab27c278f7862ba150c942ff34d79",
+        "sm/dark/189.webp": "66b05f336e044b4d2c75e556c6a68f621f4f4d135365148156f37c817f99ccc2",
+        "lg/dark/189.webp": "ed64b8eb78ffa5465d90b31d942e7832b3ab12c169f4348af8cba911f4e73984"
+      }
+    },
+    "193": {
+      "school": "Miami (OH)",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/193.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/193.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/193.webp": "2ad8ddaa40b699be74716ae13e27368e75e3a214e64262a78dd381d588832715",
+        "lg/light/193.webp": "227bd857eb783a6afad74273f723f9d0a34dd2a6ea4165962ba666b61449a005",
+        "sm/dark/193.webp": "e1d86f3685050c3dbfce8e6827753c59bb8d83ddf931a851924bf07e2080b921",
+        "lg/dark/193.webp": "257c1aa37be63ccbb64de057333f1ce0ab083ba406339df16f35ce6b6be8a873"
+      }
+    },
+    "194": {
+      "school": "Ohio State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/194.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/194.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/194.webp": "a49a6f9df750a1360dee9ac752c49506f73a1fc1673673ee82355c66d43c9af3",
+        "lg/light/194.webp": "8a8d970b1e18f22e91a855082664345a87f51a3f1f8d9461c09e183b1aab78cd",
+        "sm/dark/194.webp": "e952bee7d2cf93668fce25c2412743cbad53a221a94589e3fe389834c828c3d5",
+        "lg/dark/194.webp": "3c7631c9ae65fe3f18cbd2f688c39d2da000a8d9e01220b84b90a39b8fdca705"
+      }
+    },
+    "195": {
+      "school": "Ohio",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/195.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/195.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/195.webp": "f7307ac3eb70cd2624be5fe74da022400fcaa3e7952011c79c0d9b33d66d5c26",
+        "lg/light/195.webp": "36c9dc81b8312fa22afa21dbde9a82e8815f166e99c2ffd7d80c66310c68bb31",
+        "sm/dark/195.webp": "f7307ac3eb70cd2624be5fe74da022400fcaa3e7952011c79c0d9b33d66d5c26",
+        "lg/dark/195.webp": "36c9dc81b8312fa22afa21dbde9a82e8815f166e99c2ffd7d80c66310c68bb31"
+      }
+    },
+    "197": {
+      "school": "Oklahoma State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/197.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/197.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/197.webp": "44ef563290cfff7a0a3dbc3570a6b07d7129edc7798f0868f355868c9aa4132d",
+        "lg/light/197.webp": "8155aa54405c51c15c4331b93bc138977efb8f4d1d955c67046cd70f1811c65c",
+        "sm/dark/197.webp": "22d47eee633a74883404d48c5865032301188e35f6f249fce9d1f47be9901719",
+        "lg/dark/197.webp": "1b27d6705ac9232a747342bf70aba51c21638f4eeb91d350d3ac74f2156e20f4"
+      }
+    },
+    "201": {
+      "school": "Oklahoma",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/201.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/201.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/201.webp": "71b36e1aea724b60e2b388b8f48dfb7f1356f9be38a3a7b575060212b3eb8efd",
+        "lg/light/201.webp": "e83b8bb964d7851de6f9b0c252b2675d73fefea91238a03931ee8b45ecb60dc3",
+        "sm/dark/201.webp": "490a82f2519a8de8df909758bbd0e0eda41f923cfec03b938c22ccffc5bcdc65",
+        "lg/dark/201.webp": "40af7f229423a56e3c162eb0a5a0936d1d8dbd90cff943e530767c967cef92f3"
+      }
+    },
+    "202": {
+      "school": "Tulsa",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/202.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/202.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/202.webp": "5f37b3bd71bb49d7cdb47c5a5da20b3c5180068e72199ac1aad026096355974a",
+        "lg/light/202.webp": "9ed2510b50d973a8375584d6669c1eddd5b6ae0992391d228964bc3ba7b902ad",
+        "sm/dark/202.webp": "1c18ec04335f0d9d9f707a2b02eb11ebd7d4fdcd595aa22f6417bdfa5ff36377",
+        "lg/dark/202.webp": "1d739a83d8c4e3c7434b649a10bbe8b901e792c64559c999236de994b15e63b5"
+      }
+    },
+    "204": {
+      "school": "Oregon State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/204.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/204.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/204.webp": "6f1ca658d21612c45343188091867fae415214a7015807ef9443238b40fd754f",
+        "lg/light/204.webp": "a582635737b640895b23f9c31a80f15cb0fac2a8a7f7fa370b32e9df121d1f39",
+        "sm/dark/204.webp": "b70518099d866f487613a70e8abf26feb0adcdebd5d60f9efe0a720cd5eb49e2",
+        "lg/dark/204.webp": "62c3c5442e37770e605150df56362cc6d10ed5efb91e118d79c201e7fe3714f9"
+      }
+    },
+    "213": {
+      "school": "Penn State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/213.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/213.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/213.webp": "2b76e3b1ea93bcd6b9e3ec0bff36509d518abb6e83f854ec61a80867c0bb18ab",
+        "lg/light/213.webp": "75b3a247bbcdc4c372a5a25331ebd1a0afe610d98cc8a3df5df56b61ada176b2",
+        "sm/dark/213.webp": "4ba49e653341aad094cc921b0f9d6cae2c7f1ce9603aa5531282a95d58ce80b4",
+        "lg/dark/213.webp": "56e8717044679d543969ee93e70cebb8ae25c94ff1f291dd5a1ac14a1fc99f02"
+      }
+    },
+    "218": {
+      "school": "Temple",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/218.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/218.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/218.webp": "f8d50347b28591ee873694ba648382e931f26602dc4a81b37779ea6358b0ae1f",
+        "lg/light/218.webp": "f97abd89e84cd017490b2200b453981a95cbef1be712f91ac399d82fb0d0493b",
+        "sm/dark/218.webp": "ee49a016dece6a2f00a0777be43c4acf88469119cff1f9355029cebed0bf724a",
+        "lg/dark/218.webp": "98855497c01a88b168bd2e516eaa026aa49992531d56d84d4e3207fdb8aad170"
+      }
+    },
+    "221": {
+      "school": "Pittsburgh",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/221.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/221.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/221.webp": "eef330e421b16e6552865642d41729c7c0033f819665cbfee0c716fbce626a69",
+        "lg/light/221.webp": "aca9cd571711205d120712e928fc9a8547a8752568eeee8bdaed1409b84f2c37",
+        "sm/dark/221.webp": "06aaa0a95c413e198eddc97fdf531a9fbeaa92ccc340b537d7fce826ae2f1c32",
+        "lg/dark/221.webp": "05d3289ff0eee8e8d2526c99c9f3d1f1012b3771a6565e005a076cf7c7b225e9"
+      }
+    },
+    "228": {
+      "school": "Clemson",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/228.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/228.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/228.webp": "3e544bdb2d8a4241d387fb0e0ae74589c091f35c3f8bd737c7241b9dde3b62cd",
+        "lg/light/228.webp": "fce1c21d100ace49fc1dd8ec57448d07fd8969d6a12506e6d230905047114043",
+        "sm/dark/228.webp": "20856d07a72b91f3952d7108d3e2d939ddd3ee2baf41605d50b3131d4ae4830a",
+        "lg/dark/228.webp": "f81ca90755f86c42ba7e522f87ee0a6336b19b5e0baf43928f295163488a758f"
+      }
+    },
+    "235": {
+      "school": "Memphis",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/235.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/235.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/235.webp": "26f9abf2fa7be24941190f8318e2f09cef9fa44e7b318097103f70f836e688ea",
+        "lg/light/235.webp": "d53ebd62b3d3b1a2ccde1cf7c5db704b6d82bbf70f7bf21e166f888e0b976b2d",
+        "sm/dark/235.webp": "26f9abf2fa7be24941190f8318e2f09cef9fa44e7b318097103f70f836e688ea",
+        "lg/dark/235.webp": "d53ebd62b3d3b1a2ccde1cf7c5db704b6d82bbf70f7bf21e166f888e0b976b2d"
+      }
+    },
+    "238": {
+      "school": "Vanderbilt",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/238.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/238.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/238.webp": "6d6b3259a24c297f0ae71e26736d1cbd55e5739be51bfa963dd4356cc4f23363",
+        "lg/light/238.webp": "aaf507ae8977824d99f8e57b6e1108647cd8b3a1526e4c839a7bc8c622ff7b16",
+        "sm/dark/238.webp": "ec04f15d9415648a31828ffb8a6120889e6e017cbf8771d63a04ca6c83e94e5c",
+        "lg/dark/238.webp": "17f795bc3d0ec1bca69f06acd2ccb94d6a8eccafa8f8d96c8be39f0e3b039627"
+      }
+    },
+    "239": {
+      "school": "Baylor",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/239.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/239.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/239.webp": "6df5ccc7d06165a337f6c91c80edcbbe9b44c24c71984efdb4d4c6efdf000e05",
+        "lg/light/239.webp": "5331018cca4ca09dbbc3e1e58df0e76a025f4ee886f4295aebf08a201e209e31",
+        "sm/dark/239.webp": "20129d0e878b332d8df118f81b0a494fcfcf52e97a8d0ef4529d2e21e476dae8",
+        "lg/dark/239.webp": "e27ab1361e2412c4cea756df6070f9d93d23e828c41bfdf5a0b24d41e924d182"
+      }
+    },
+    "242": {
+      "school": "Rice",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/242.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/242.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/242.webp": "5d03062113914afccc04c7283d90589c4a235b0ecf24ca55080fcf7ad8b505cb",
+        "lg/light/242.webp": "bdd8f170274f67be6d38eb7e8d7f3528c4f5cf980552bdff9cae32c4cef54465",
+        "sm/dark/242.webp": "0285170b9b4acc19d96a857254cb72964e3425a40bb0c7ed86833e33086c83c3",
+        "lg/dark/242.webp": "f64218baf53d541eeef10520c57ac660d6015771f352121c5bb344765a2adbf4"
+      }
+    },
+    "245": {
+      "school": "Texas A&M",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/245.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/245.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/245.webp": "e516c22e2a0023c31441d19267d3773f74fb786b5e35135a6a1a0fc8a59db943",
+        "lg/light/245.webp": "c3eabf6e48fbca07e6f8e776564129e9a75659b92b1be975dd4f168ba1601a68",
+        "sm/dark/245.webp": "152e3ce6a74601b4a7c6f4b328d8fff155ae8423bea999a5531b14297f030633",
+        "lg/dark/245.webp": "9a06d4143b7abddd0ed8f113df1bec332df465313694f94f62f491e85a7c3780"
+      }
+    },
+    "248": {
+      "school": "Houston",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/248.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/248.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/248.webp": "16e86fe516b3dd7715051a5db4f3eccb897cf172d309dcec4f39c6f63846f10a",
+        "lg/light/248.webp": "51f8386eaad5ec017381c6d8882b9bd67b28bd449f9ca414f4bc1e6c3f3d9a1e",
+        "sm/dark/248.webp": "16e86fe516b3dd7715051a5db4f3eccb897cf172d309dcec4f39c6f63846f10a",
+        "lg/dark/248.webp": "51f8386eaad5ec017381c6d8882b9bd67b28bd449f9ca414f4bc1e6c3f3d9a1e"
+      }
+    },
+    "249": {
+      "school": "North Texas",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/249.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/249.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/249.webp": "3242d74241502f2c7ba830952ea2874e0434ee15de89c158fd871b87e3b1e4ef",
+        "lg/light/249.webp": "ec769f10f8ad8a6a0f3696407cb6aa912ac3a62223b2567216c1ab47a864d9e8",
+        "sm/dark/249.webp": "6fcb1b719ccde569d11208b0c7e43e792aaa7ac8ccaaf7a146f17b3cb0facba8",
+        "lg/dark/249.webp": "2cd415d16c24efdd881cea1b3a0be89e47cf1705bd3c221026291c9ba21e4e73"
+      }
+    },
+    "251": {
+      "school": "Texas",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/251.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/251.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/251.webp": "c45b9bb9c438ce2573d1c06f3a955d4de478ff243b3162e66c87392bc2bd983e",
+        "lg/light/251.webp": "5f57a36ee4866a1ecc8f71615ae9e40bbdbbf1a72a0bd0e49c64b1a68ff983f9",
+        "sm/dark/251.webp": "04b8a2da9a1f97ee70ca5e7afd65ba6e8edf1e028f0f96fffd6152e8251e7077",
+        "lg/dark/251.webp": "00a6c71afb0e2e843b8dd383e376348cb66ab41c2ac8dca46210376d1e11fb1c"
+      }
+    },
+    "252": {
+      "school": "BYU",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/252.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/252.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/252.webp": "5c6fa25d2a1a21fe1a644d1cf417f384b417925a2adfa4ad1db52eade581390f",
+        "lg/light/252.webp": "02aa18f9c8bf71806058fd7bc7395d644e0d23a9a40b0e5fb6089bcef82201d1",
+        "sm/dark/252.webp": "4e908a73d3c030e64976ab32703b73b9da9c896697e2f1ff5bb8d3ab7734964f",
+        "lg/dark/252.webp": "927b8dfd7c96cbf03158a7a8d77d950adf70724399aae87c67d2500a086ecbfa"
+      }
+    },
+    "254": {
+      "school": "Utah",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/254.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/254.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/254.webp": "fd14a1c2db1d24e4862cd3a6185179ffc09e379aa6a14d1b039f1ea2023edbef",
+        "lg/light/254.webp": "143864ea22934e0122c6e54424d7f5a563e5c6bfd063454ccdf987120d444f65",
+        "sm/dark/254.webp": "f36ad52956c813680c33d4b0e1bb818c72bcc4e55f91e7754b4bb03b275034ea",
+        "lg/dark/254.webp": "761a3a469101169e00ba044e0026a2395f6a9a15307ca86eddf7a8106d047718"
+      }
+    },
+    "256": {
+      "school": "James Madison",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/256.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/256.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/256.webp": "ae45cb443777551b7b23cf97d1902a4f88f0e8c55cb3eafe91a48d04b8fefcb9",
+        "lg/light/256.webp": "7653535ede9d885ee11a37cc18735aa703fddb345b341939cb7f154c4ba10b90",
+        "sm/dark/256.webp": "ae45cb443777551b7b23cf97d1902a4f88f0e8c55cb3eafe91a48d04b8fefcb9",
+        "lg/dark/256.webp": "7653535ede9d885ee11a37cc18735aa703fddb345b341939cb7f154c4ba10b90"
+      }
+    },
+    "258": {
+      "school": "Virginia",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/258.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/258.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/258.webp": "996d7212494c242e3952aa47647896fc299cc9950783d74100c11b389ac50f13",
+        "lg/light/258.webp": "b6fb815410f17deccee982d84e06db2695892d389b273e5ecaaa2bd64c45720e",
+        "sm/dark/258.webp": "c307882b7f186bdff268c874a3d44d11c8b88156625d45d351e9189a76c6ed0d",
+        "lg/dark/258.webp": "f4c29978c65c88e8333ea5edbd51de08cb231159d3b5403a2e25cab80dc58a0a"
+      }
+    },
+    "259": {
+      "school": "Virginia Tech",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/259.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/259.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/259.webp": "f1100ec2733c5b4ade8781791c079da8fe60f297aa24e7135dc96a5e75775e1e",
+        "lg/light/259.webp": "8b4a7ccceaa18dfeceda00e5070e2d594a9bd3e39682813364b9a3fc73843216",
+        "sm/dark/259.webp": "31dabab5e81bb35d4a12cf7a8a8980f888679b95a51b739126a78dbfdde5b795",
+        "lg/dark/259.webp": "1de0031ef6204561bda45b512d50951d66159500320b7c4f45cd461a40d9bce5"
+      }
+    },
+    "264": {
+      "school": "Washington",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/264.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/264.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/264.webp": "ee4beed71810a8f6263e75c0870fa5b8a894f189d6e39edac09e8ae5117ae118",
+        "lg/light/264.webp": "53a808e2bc250dfe53b0ddd4e24e76d5665313d860e1e0f97e036b5599f68034",
+        "sm/dark/264.webp": "ee4beed71810a8f6263e75c0870fa5b8a894f189d6e39edac09e8ae5117ae118",
+        "lg/dark/264.webp": "eddde209c87ad1c5c9b51284acfbd40aebd1f6d6a9a2b0ce01ed1c69ddaa730a"
+      }
+    },
+    "265": {
+      "school": "Washington State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/265.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/265.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/265.webp": "c1fe208bbf56c818f2f3db1a3a0afab4799235a635d5f905a715a5c4f6bb4c79",
+        "lg/light/265.webp": "6ffe2ff922f3a85647147c893b38cedf983a364dd5664a48b141045f5c8ec566",
+        "sm/dark/265.webp": "74ac48e95aceb45239b7bf7f81e6e86c757909d9ef253c782c98579555228fe8",
+        "lg/dark/265.webp": "5698eb977f1b39ec259905b600452e843505dad625b5da4bddfd0386bfad9654"
+      }
+    },
+    "275": {
+      "school": "Wisconsin",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/275.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/275.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/275.webp": "263e23cd46891a9c501db337ed25aed4f733cfe5ef910a6adede670ee92fa208",
+        "lg/light/275.webp": "33b41fe44f77ab3317fb3f07c139630f0afc067a94ae11c5668e8a2d605fbdd7",
+        "sm/dark/275.webp": "263e23cd46891a9c501db337ed25aed4f733cfe5ef910a6adede670ee92fa208",
+        "lg/dark/275.webp": "33b41fe44f77ab3317fb3f07c139630f0afc067a94ae11c5668e8a2d605fbdd7"
+      }
+    },
+    "276": {
+      "school": "Marshall",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/276.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/276.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/276.webp": "5af0c4b2e0619af1c060e3e3b7db4f2d38966bce7b95eaa4518378bfb776eb40",
+        "lg/light/276.webp": "cffc1433e226ac52081ea22cc577c0686491dc7b2761a0aed7d2f9b5715d3a38",
+        "sm/dark/276.webp": "9941d44f738e9602db605c7ca381bd89477e0d703edbb729b550664d2f4c3089",
+        "lg/dark/276.webp": "c2f6b41ae7efd1a4ed785ed391d918bccf7c779825ddc578a6b08bff16083857"
+      }
+    },
+    "277": {
+      "school": "West Virginia",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/277.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/277.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/277.webp": "cf5b7e2c821061428346f8ab83b50973060ebb41ad5654ea9d3c208346fac263",
+        "lg/light/277.webp": "43205185b84e98d840a7820bc7d626a8b8473faa7687ec7ac3f47173b3d53ed4",
+        "sm/dark/277.webp": "dd27cc34f6b6a87011ef63d98c56b98995d211d4fd3f29820931b4b09863f9f8",
+        "lg/dark/277.webp": "3e5d99a25dd18327843ec3feab316ad8e823db2294a49882bd5d54a8bd0da46d"
+      }
+    },
+    "278": {
+      "school": "Fresno State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/278.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/278.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/278.webp": "c30ef0864570e32a24525c8b173d7405fe47457c43c46bdf64f4cdf5e607d80c",
+        "lg/light/278.webp": "1f0d96ae3c4a0eb303b68af622c6143b08579ec31aa99fe033f65bbae101693c",
+        "sm/dark/278.webp": "6e611c0dae5bc1821c31f1ec97ab699de309586d9d7e86f3041b6c3091362ba6",
+        "lg/dark/278.webp": "69aa9721160be18207b22e8807bad9ddf7b9109fd579c587ee37fda60ed4bb01"
+      }
+    },
+    "290": {
+      "school": "Georgia Southern",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/290.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/290.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/290.webp": "f9f87f770f23d73cad990880890c0dbc3f7e9c44cf5dd55c4afc8b353efe98b1",
+        "lg/light/290.webp": "d9ee242da089a13b337ebfe13a610137825627b92fd133fdc8aa6fb72d16f603",
+        "sm/dark/290.webp": "ad2215c3af3e260383ce557eb5f353a86621ede0204de5cd852a79288127bc69",
+        "lg/dark/290.webp": "b80b0c91a87b8ad5035c474fd0996011131e604eae6b1d5e9e56a5dbaf703efb"
+      }
+    },
+    "295": {
+      "school": "Old Dominion",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/295.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/295.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/295.webp": "9ef5b061356da7e1fd48b8817df9d57764f7653dc87dea6e7f15873a440239c9",
+        "lg/light/295.webp": "e2aee33289f4c28ab14d98e57e40cb6aab94a39de44188b286e0977b115d0f1c",
+        "sm/dark/295.webp": "139ac9c9774212f4ec4b9a48d4d7c75809d4484bb25afef9745e7e24543c3fcf",
+        "lg/dark/295.webp": "a13aec5f71d092339de868a092c0a3657554cea88c90d3c9743f24733eca363e"
+      }
+    },
+    "309": {
+      "school": "Louisiana",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/309.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/309.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/309.webp": "84118e424ec2086b8e513f3e80ad30c1ddd8a6418951115c659131c2478a6e5b",
+        "lg/light/309.webp": "60be65073df66255e4dcc357691ea42070aaf10b4cc6d2f9cb1f3445aa80b1e4",
+        "sm/dark/309.webp": "84118e424ec2086b8e513f3e80ad30c1ddd8a6418951115c659131c2478a6e5b",
+        "lg/dark/309.webp": "be509f9968c3cc3f445b6d7e471470a0d8e8a1d8b170cdbbc96293e677c3fb4b"
+      }
+    },
+    "324": {
+      "school": "Coastal Carolina",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/324.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/324.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/324.webp": "7f7c0c88a449f0d67805310256400a86f9122b56d8c5636d35c6386f73b34798",
+        "lg/light/324.webp": "09709fbcd9a39f41998acf44d9b65ced76a7436dadf0712b6f4384f872759deb",
+        "sm/dark/324.webp": "55ac84b6ebc13cac362a40eef8387f42846de1da05772d3c950f436766ead0b4",
+        "lg/dark/324.webp": "c8be99a762c7b1d2f02d00bf12ccab9cc0ad8ced47c9f33d3b38ce50e6636ffb"
+      }
+    },
+    "326": {
+      "school": "Texas State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/326.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/326.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/326.webp": "d8fb6533317911c8ab60f3c4c593ebe4a0d3eb69605bb45b68627b5327992ff3",
+        "lg/light/326.webp": "654f3e9fee386f588b74a27e24c916a65526b35b88c0b635972e3f4f65c59a8e",
+        "sm/dark/326.webp": "d8fb6533317911c8ab60f3c4c593ebe4a0d3eb69605bb45b68627b5327992ff3",
+        "lg/dark/326.webp": "654f3e9fee386f588b74a27e24c916a65526b35b88c0b635972e3f4f65c59a8e"
+      }
+    },
+    "328": {
+      "school": "Utah State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/328.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/328.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/328.webp": "29b43022a2c4a10fe0938a52b4bcddda9f44b8dbc1655b82eca1078856b9fa09",
+        "lg/light/328.webp": "4b539dd4df1a303b543c75b304e222db0075183a2b8804e8a4f14f84daa529aa",
+        "sm/dark/328.webp": "4718a67316d7ebae7766059e826707e303ac0dab1c43d1fffade6425d29bb266",
+        "lg/dark/328.webp": "de312039673219aeaea11c299eb3ef709aa0137b640e39990d83de0a7a5be0c0"
+      }
+    },
+    "333": {
+      "school": "Alabama",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/333.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/333.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/333.webp": "8a958ca939f447c38eb07646addf8d3fce7cd030307ea5be20b3d942d733c39f",
+        "lg/light/333.webp": "a3851986ff99ca27033e18b5a61454d679f6cb9e04315e3544e2f6aae65106f8",
+        "sm/dark/333.webp": "d30c13a1ab708d7ea797b9b08527df15ec0a9e7e961b10ae1224186b8466e03e",
+        "lg/dark/333.webp": "2c0704093a8b535b73e284da4230f1b300147116aca89ce6dd207d7b182723bb"
+      }
+    },
+    "338": {
+      "school": "Kennesaw State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/338.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/338.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/338.webp": "b32988e2c7e59c62f921ac62b7471124a2b3d07d8229058a0824832fd123130f",
+        "lg/light/338.webp": "208da651cef028a215879aff6d4fa4317a3e9a45e43a761d3485cb48d85b6feb",
+        "sm/dark/338.webp": "b32988e2c7e59c62f921ac62b7471124a2b3d07d8229058a0824832fd123130f",
+        "lg/dark/338.webp": "208da651cef028a215879aff6d4fa4317a3e9a45e43a761d3485cb48d85b6feb"
+      }
+    },
+    "344": {
+      "school": "Mississippi State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/344.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/344.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/344.webp": "7443bcb565ab84a35973d55f8f4fe2f36a96c7c571dee4472d91861c44284c25",
+        "lg/light/344.webp": "feb49334ff260b15a0bae9febf4c4ccbc60cdd3d6e2ea0447898308f7d389469",
+        "sm/dark/344.webp": "7443bcb565ab84a35973d55f8f4fe2f36a96c7c571dee4472d91861c44284c25",
+        "lg/dark/344.webp": "feb49334ff260b15a0bae9febf4c4ccbc60cdd3d6e2ea0447898308f7d389469"
+      }
+    },
+    "349": {
+      "school": "Army",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/349.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/349.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/349.webp": "b42b1189d68cafae438477cb8b9f688aca17941b70f8a446406fc2ac5d731fe1",
+        "lg/light/349.webp": "855c9c09b40ee33fa3cd52cd7e02ab07f4a913250cd435776a0a69f07a39b63f",
+        "sm/dark/349.webp": "b42b1189d68cafae438477cb8b9f688aca17941b70f8a446406fc2ac5d731fe1",
+        "lg/dark/349.webp": "855c9c09b40ee33fa3cd52cd7e02ab07f4a913250cd435776a0a69f07a39b63f"
+      }
+    },
+    "356": {
+      "school": "Illinois",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/356.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/356.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/356.webp": "a768fa6c5e3c3dffab038dc5b9fe7bf57caa69547205ba2feac6b1d834dcf888",
+        "lg/light/356.webp": "d68c92be0072360c4c45e8690a2af9bc0877314abfbdec02413a0a5ff08e6687",
+        "sm/dark/356.webp": "fb54cbdd77fa6177e27e64b689bea5af8c3f82d63237fcee78ea65a2b72a377e",
+        "lg/dark/356.webp": "03e1b7066cdbc34b4f087e3d75fad50a68f8ccfde7b9fdf2151407bc01ef2ec6"
+      }
+    },
+    "2005": {
+      "school": "Air Force",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2005.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2005.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2005.webp": "554e521e40ab2d8c080549d14f1102badf19228aed6dfd70b0b371edeed3e19f",
+        "lg/light/2005.webp": "4647a742ae4cf3a47c7e3a700e5b7768e9a6e6a6f1268c92ba1937994c848422",
+        "sm/dark/2005.webp": "9e25c03655aec3dfc00516fdc87b2ffa7d92fc9cae42e5a2acb8e8d07d815ad6",
+        "lg/dark/2005.webp": "7358c9f942eecab165daf703d8915f528f9acdfb726cd35487efce19f6deb196"
+      }
+    },
+    "2006": {
+      "school": "Akron",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2006.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2006.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2006.webp": "54118ff48a90802f12d6d9ea3e4ed0218a6c730593d8a3e98bde0b4efdae67a2",
+        "lg/light/2006.webp": "88c1d6c0efb69e6ae90c5a72d54a1e5d8bb0cb167b6268d034416e7095c8f51b",
+        "sm/dark/2006.webp": "544cbad97375b8c60e2664f523883d002761d6a4da1a6551c3546c6947dcb29b",
+        "lg/dark/2006.webp": "2913ff52033b023c1bb328f4965db0d2deca1549da23d2a639d6f5c8c3828eec"
+      }
+    },
+    "2026": {
+      "school": "App State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2026.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2026.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2026.webp": "e716e9d77e98b5c9f2397ab5c961b66dd98e52a67701261266e01fe9fd5b481f",
+        "lg/light/2026.webp": "80a21a729d874e44fd6a77bc08511eb4d4520fdfde7664745d9c979944a75e4d",
+        "sm/dark/2026.webp": "e716e9d77e98b5c9f2397ab5c961b66dd98e52a67701261266e01fe9fd5b481f",
+        "lg/dark/2026.webp": "80a21a729d874e44fd6a77bc08511eb4d4520fdfde7664745d9c979944a75e4d"
+      }
+    },
+    "2032": {
+      "school": "Arkansas State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2032.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2032.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2032.webp": "76457c7453d8ba91a0c4ee639c176f5c90dfa1c0c24ba561a52100606d9ad2bb",
+        "lg/light/2032.webp": "e234f7579c61a9a5742606a64617a407c266dbb3485c019f1884baa78a119c0f",
+        "sm/dark/2032.webp": "84bdcffd9d403720cf32a0277d3a6f35b1c53be3f2b13818684ecf97123104bd",
+        "lg/dark/2032.webp": "d565b658bb8b1c3c35dae37d90cda9d1a2bca02fc9b3363745c7687efe894497"
+      }
+    },
+    "2050": {
+      "school": "Ball State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2050.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2050.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2050.webp": "1280eb3f29bcd8ac4299bf900fa6b4c0f92809c1e3c111b6c76c75ae3f1d93a4",
+        "lg/light/2050.webp": "30a65d69a8711ee8eba3d3efabc8c8282a1ec216e2e9067a2dc53712a85c59d5",
+        "sm/dark/2050.webp": "03f3e5511fcc0fff8b268f01af688569d0d396f2559cfe3438eb7d956a3095ac",
+        "lg/dark/2050.webp": "ccba39e4c4001688ce396f39998b3c8e7c7b2adaa970d0e9d01cc3dd3bd4afae"
+      }
+    },
+    "2084": {
+      "school": "Buffalo",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2084.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2084.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2084.webp": "df9c3645027bd937a966604c01545a860111818cc451864ce193742335f8258e",
+        "lg/light/2084.webp": "9a48b2db5d82436390bcc8772c8de4b48b4bbce9f4b50515680c163d2c269f40",
+        "sm/dark/2084.webp": "22bf2dec9a80066fe59f78028a87ddcb3593955e760179ab7653a0e2a434469a",
+        "lg/dark/2084.webp": "8d469052695028d0b96c50d5ca1df6d3dfd4808dce1c74d1dff9b26e0b5775d4"
+      }
+    },
+    "2116": {
+      "school": "UCF",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2116.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2116.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2116.webp": "a3e739937abeb67393a1429d01e5d9a47643b3f881e0e59909911ea0862e85c9",
+        "lg/light/2116.webp": "87085f503b883941e0a1581916f74b447039d2a7f3afa52e63a009e9338135a4",
+        "sm/dark/2116.webp": "a3e739937abeb67393a1429d01e5d9a47643b3f881e0e59909911ea0862e85c9",
+        "lg/dark/2116.webp": "87085f503b883941e0a1581916f74b447039d2a7f3afa52e63a009e9338135a4"
+      }
+    },
+    "2117": {
+      "school": "Central Michigan",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2117.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2117.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2117.webp": "0257cf9d2df114eb117a387ba77b82f9781dfa25c9edf3e51e4f37a5255aff79",
+        "lg/light/2117.webp": "774b8e65003b187d62b08298f9dd9955cfb2686964709da2ab73f54b8725f45b",
+        "sm/dark/2117.webp": "793b77fcd4caea9c185cfee8e7d1c42f9e04de65e8d26256a4788e2e66c4da1c",
+        "lg/dark/2117.webp": "4e4de7ccafc4cdc87ddd196972fea146b2624e751cde3333d5fb9c9c7918bb79"
+      }
+    },
+    "2132": {
+      "school": "Cincinnati",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2132.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2132.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2132.webp": "0ac0dd86495597f506f38302d72289b4e603107b6b6d3064cf09186a04ce3a33",
+        "lg/light/2132.webp": "c36cbeb6c192d6df28574d12842a7c2a0cc197594bbcc01d44303a856b8e4883",
+        "sm/dark/2132.webp": "ece1698bac5313b6536274c585bf642fe839bd9df89aebbf203a7cbea062013e",
+        "lg/dark/2132.webp": "f2529b580494e825f8f1b3b349471a2029873a53cd24f5ed7ef29abf8830f7cb"
+      }
+    },
+    "2199": {
+      "school": "Eastern Michigan",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2199.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2199.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2199.webp": "0e333406880090adf50ef23d4003b6f70362a15e22149d2dd974a5ef434fe3f0",
+        "lg/light/2199.webp": "4d8f06f4b15e3f3616ee87545653530ff8ee330e1816b41b323e0519d654c702",
+        "sm/dark/2199.webp": "0e333406880090adf50ef23d4003b6f70362a15e22149d2dd974a5ef434fe3f0",
+        "lg/dark/2199.webp": "4d8f06f4b15e3f3616ee87545653530ff8ee330e1816b41b323e0519d654c702"
+      }
+    },
+    "2226": {
+      "school": "Florida Atlantic",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2226.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2226.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2226.webp": "fe5fbf052904a608d6eb4712d96f2ac79f5a14fad36b1328948b8ec3d637d6ba",
+        "lg/light/2226.webp": "0fc9cb5e93f86ad1076452f6ad28833c093320f5f2c4e03f0024f437d8f86f85",
+        "sm/dark/2226.webp": "fe5fbf052904a608d6eb4712d96f2ac79f5a14fad36b1328948b8ec3d637d6ba",
+        "lg/dark/2226.webp": "0fc9cb5e93f86ad1076452f6ad28833c093320f5f2c4e03f0024f437d8f86f85"
+      }
+    },
+    "2229": {
+      "school": "Florida International",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2229.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2229.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2229.webp": "7dd8688b5690747d90f1328bb91718762764e06c172dbd63a7eaa1497a48532f",
+        "lg/light/2229.webp": "664b7ca927435d1f72cfc1ee4447702770853e4ea8a1a7e509ab783338d8c1b7",
+        "sm/dark/2229.webp": "df0bb056fdcd93a42d5d69c7ef03cadc0a38867a4cc0f83b20b5e5697fc28d00",
+        "lg/dark/2229.webp": "52d7a27c685b35c8a73f867a64b2c77526263e6319c91ea53426693e52cedefa"
+      }
+    },
+    "2247": {
+      "school": "Georgia State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2247.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2247.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2247.webp": "14db2b925ae148d520ea383bb3915ab2e579b8f23386e361826be4b3e1987a4b",
+        "lg/light/2247.webp": "90cc6ce3b8c6f8135b033ec99d54ea3afdd9755cfe01ed5a5ad664cebc3d83b2",
+        "sm/dark/2247.webp": "f4b2d04e970cda58791e46fffec66b62f8cc0181ce47a24fa875fe57e4bee79e",
+        "lg/dark/2247.webp": "81dd2b84c728c63bac64a01cc8d8cf02168b90efe3a3b151ff2a63bdfee0bbd7"
+      }
+    },
+    "2294": {
+      "school": "Iowa",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2294.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2294.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2294.webp": "e7cd4c8d2b8583f9f5559a149e7661b2f31e3ba7e0ba8b1c6268b58db44c87f8",
+        "lg/light/2294.webp": "50e57ca03fd118d6dc55234ba4d1e4894b03607381694dc621b45d531a6cb376",
+        "sm/dark/2294.webp": "578b67b2c150ac047f0b7d0db3f97bb864f0a1a00686081b040541b152a8635b",
+        "lg/dark/2294.webp": "011f3c7f4c82ea73e6ff3d8d661ae7c1ac2a472306201a31c7370d20af0c16ab"
+      }
+    },
+    "2305": {
+      "school": "Kansas",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2305.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2305.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2305.webp": "eda89bb44e37f1bc8922f847718b4daf810dd097564593e023be159da7aeaa80",
+        "lg/light/2305.webp": "9cbe84a5106853bc773ad8c2ed06282650ae1990e16bab118f4700ce5056f79f",
+        "sm/dark/2305.webp": "56e47c17a9d68fd8e00e06e2dbb880d9b3016ce97df05f2b30066fc76671e215",
+        "lg/dark/2305.webp": "ff760c9a069b0181a5688b9889b6c11a21bcad22a4052f2b64642d70713b0cc9"
+      }
+    },
+    "2306": {
+      "school": "Kansas State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2306.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2306.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2306.webp": "be520b23865667a3c2c04a28d92b433f527056e0bb414e269bafdb810c7602bf",
+        "lg/light/2306.webp": "3fb4c373497f54d34e3ec5a3f0091afabce9e1d8abf133e2bbd0bd075d93a608",
+        "sm/dark/2306.webp": "6ab3674ed315da6b00cec99e41b6d01d9d54298279fd9c6924602d7fbc47b935",
+        "lg/dark/2306.webp": "cdc773c236b6bf77e5a5b094be2af8b7675a41f3971ed5c86fc0b88adc934456"
+      }
+    },
+    "2309": {
+      "school": "Kent State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2309.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2309.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2309.webp": "85070086841edd90b2bc8043d8cc85ac0886ae74ab56ab9a84d2059df54991bb",
+        "lg/light/2309.webp": "eb4d10df8243117bc418b31b6621ecf45c88c19600ff26bc899d05440726bbb6",
+        "sm/dark/2309.webp": "0766b2c93517229121709c7d72ed5bb84655bcb3288e22798f9fdd6f25678fd6",
+        "lg/dark/2309.webp": "f9c088879c49ca54b918897b198fa00277f2ea6069c21feda7a9bf76627b061a"
+      }
+    },
+    "2335": {
+      "school": "Liberty",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2335.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2335.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2335.webp": "be9788d21f28dafa0ae5469bc7afc6a41e51d4b6db2b70991962612d2f0d37fb",
+        "lg/light/2335.webp": "41dfbc497fd7579a5a485324a0d9ad9a2e870906710764d26241f394a7974265",
+        "sm/dark/2335.webp": "ec4b165fa9e2c8040ccabf5a3bb2211f6cf37da1d95683d3c69ce528e368dc91",
+        "lg/dark/2335.webp": "58bd93ce1fdf28fd9d3cd2d72775d8125d7b6eaf6de68332c6073bc7eb377689"
+      }
+    },
+    "2348": {
+      "school": "Louisiana Tech",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2348.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2348.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2348.webp": "f4c8e2ad15bd6802f49def5d028130c1c4d5b03153ab7a985b8e258ab94c9ee4",
+        "lg/light/2348.webp": "eb2969bf5a79462caf6a64f2da07a22aefe5f4912fc449db2ee6ba43e6e22220",
+        "sm/dark/2348.webp": "8a0a8fa5b6d2e1e5ee125568db966401d03ea4d0b65f33434df8bf1ae99f8bb4",
+        "lg/dark/2348.webp": "d8358f7fe1be260cf0c64e7c24aee41bd4d4bc028c77e5f255860b3c057f0e25"
+      }
+    },
+    "2390": {
+      "school": "Miami",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2390.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2390.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2390.webp": "6bf86f33077e8a0d0ca2e1544d961088311ace312ce571c49c53b5048628e620",
+        "lg/light/2390.webp": "28025bf95b14a159e0a7b380da04e115373bf78e3c71860d43ec8acf67e60043",
+        "sm/dark/2390.webp": "6bf86f33077e8a0d0ca2e1544d961088311ace312ce571c49c53b5048628e620",
+        "lg/dark/2390.webp": "28025bf95b14a159e0a7b380da04e115373bf78e3c71860d43ec8acf67e60043"
+      }
+    },
+    "2393": {
+      "school": "Middle Tennessee",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2393.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2393.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2393.webp": "022210aa8d2b346e2dba0f68ae76083a7bb821c5d6436e7d90b378587033eaf7",
+        "lg/light/2393.webp": "d25f1ca81f8439a4ca8b2d1c634bf0f7dffe761c22747c9fa14d68c073793f64",
+        "sm/dark/2393.webp": "022210aa8d2b346e2dba0f68ae76083a7bb821c5d6436e7d90b378587033eaf7",
+        "lg/dark/2393.webp": "e19ca0066527f19e4382715e73cb4a0d48d18b660c7e2c1565342a664b2e9f8f"
+      }
+    },
+    "2426": {
+      "school": "Navy",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2426.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2426.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2426.webp": "487eb6f4d356660860de890ce7b8046d54866b36b862de03f5ef6dcf2288ac3f",
+        "lg/light/2426.webp": "e07be56289e32a731061d9ef991aa730225f7382c545d1b8f940defec714346d",
+        "sm/dark/2426.webp": "7553054d137eb208e2bd1e63d7eda1872650f01ac04643e2c3cf02672ed021ae",
+        "lg/dark/2426.webp": "3267cf764615b72303aae367b21a075d627b6cbcc01dbd948f72f09da8fe47e1"
+      }
+    },
+    "2429": {
+      "school": "Charlotte",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2429.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2429.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2429.webp": "a8f670c23b84e0682b8a69fa654ca7a9a5b7f4b7e8ef8e54d1744a6280febd3f",
+        "lg/light/2429.webp": "4a289ce3e55f6159f270b4f93e557643cd9f741ab638a8420f6c4882413f4279",
+        "sm/dark/2429.webp": "326fb773465906bcbaae7e5115e18250bb3a33cf63d710b46a3422b9ed891d99",
+        "lg/dark/2429.webp": "800aa26cee4f71cd29109c8eb647c46c9623a9ab7474479c6c361e8115dd6e2d"
+      }
+    },
+    "2433": {
+      "school": "UL Monroe",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2433.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2433.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2433.webp": "bfe45abd08d30667e87968145d38f1151eaf8379b34df54b28311294908d3929",
+        "lg/light/2433.webp": "08e05002971006484100b861cdfe227aa875112e9f27c0cdef6e7e1482d6c31a",
+        "sm/dark/2433.webp": "bfe45abd08d30667e87968145d38f1151eaf8379b34df54b28311294908d3929",
+        "lg/dark/2433.webp": "08e05002971006484100b861cdfe227aa875112e9f27c0cdef6e7e1482d6c31a"
+      }
+    },
+    "2439": {
+      "school": "UNLV",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2439.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2439.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2439.webp": "9dffb16e47c60964621e59d3b098e4831ac6aa18957fab7aadeed9474e0ef81e",
+        "lg/light/2439.webp": "d6181c848502d7bd021a4d644e2643ab8760aa3d913afca963c2450025638467",
+        "sm/dark/2439.webp": "46141ef9510d014ac296cb433d1cbe0a6e8619ab8729eb8ac5f2df763496c277",
+        "lg/dark/2439.webp": "278c2783d0af5dbdfd3787fbb67e4f4e30975a9819bad9f60f3b16da2e764d2d"
+      }
+    },
+    "2440": {
+      "school": "Nevada",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2440.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2440.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2440.webp": "2a6e9fe2caf8040ed5b05247bbde8ff1339a942e82b4ed8b26201c9b20164b72",
+        "lg/light/2440.webp": "d4f314092006b8d892e444033af7c5902da98f77e1fa9a5ace2f0697ef1bdb1a",
+        "sm/dark/2440.webp": "ae9d1fed205a0dfc0da2342c2c7c286669b64c3ee5a28e690c213f8f5488dd4b",
+        "lg/dark/2440.webp": "29b7e94186342ac8f86326180f1e3fb6a2b22993ee8a7fa33dfea9a5d07eaa0a"
+      }
+    },
+    "2449": {
+      "school": "North Dakota State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2449.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2449.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2449.webp": "9b8778d369d78ac9963b831afb4a74e00c32f434a53f925d8f00203a11e53b78",
+        "lg/light/2449.webp": "d6ee03b423b90f710adb61629c0cf84489fb4def63f87973c53b97102c60707b",
+        "sm/dark/2449.webp": "9b8778d369d78ac9963b831afb4a74e00c32f434a53f925d8f00203a11e53b78",
+        "lg/dark/2449.webp": "d6ee03b423b90f710adb61629c0cf84489fb4def63f87973c53b97102c60707b"
+      }
+    },
+    "2459": {
+      "school": "Northern Illinois",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2459.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2459.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2459.webp": "062b2105a4d3ad34b634cf1f5297ee181492d7b1e9882fd4c81f6671c5a4916d",
+        "lg/light/2459.webp": "a4a748a60d27aa73067f2dd043e93fb795c56b062eee37dcfa3777ef012e24d2",
+        "sm/dark/2459.webp": "062b2105a4d3ad34b634cf1f5297ee181492d7b1e9882fd4c81f6671c5a4916d",
+        "lg/dark/2459.webp": "a4a748a60d27aa73067f2dd043e93fb795c56b062eee37dcfa3777ef012e24d2"
+      }
+    },
+    "2483": {
+      "school": "Oregon",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2483.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2483.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2483.webp": "42ad1610092f5b25007db8437ca50dcb430d2a06fec51cdc2770a3605d4e9d5c",
+        "lg/light/2483.webp": "c8662ee446c95733b902f28b4478e8bdad7c09c3442602a85a87299c72c3fbc4",
+        "sm/dark/2483.webp": "cf2fd2ddc6fdde81a52f9e2d3d2ff9ea1de9fa0b13245f3e6f212a19b955e231",
+        "lg/dark/2483.webp": "911598dbe386e3797eff0680c6dffd44aeaf87d3835765759b80e8a82b8174ec"
+      }
+    },
+    "2509": {
+      "school": "Purdue",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2509.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2509.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2509.webp": "4d7668f63820d8ab1a99a399266b03cfc229d6b3c4c4829d0a7338e3c3363792",
+        "lg/light/2509.webp": "7bd922695205ee9ec9ef11da5a2651589d4755113a57cd8bdc0600e38e9d0123",
+        "sm/dark/2509.webp": "4d7668f63820d8ab1a99a399266b03cfc229d6b3c4c4829d0a7338e3c3363792",
+        "lg/dark/2509.webp": "7bd922695205ee9ec9ef11da5a2651589d4755113a57cd8bdc0600e38e9d0123"
+      }
+    },
+    "2534": {
+      "school": "Sam Houston",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2534.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2534.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2534.webp": "0a61b0e5fd8e4be85042beb8541ec9518d0e674752bfccadc6a0837fcbe3d5e7",
+        "lg/light/2534.webp": "eaf11ab490ce2cdebf1eb4e65ae4c7101f4a87cdfdc52fc90e8cc8d7c59715c0",
+        "sm/dark/2534.webp": "45e6e3df113c5990ab02ec3a89809fc6915b2fa53ce27e2c2e8d686285342a60",
+        "lg/dark/2534.webp": "4d7fec6ca48042749843715831f1adac791bafce0086b5790de62056f3e4add7"
+      }
+    },
+    "2567": {
+      "school": "SMU",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2567.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2567.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2567.webp": "65ff8aaed40f5b08127e6092d58c75f6f925b21320141723d7f67a54e6d0bae0",
+        "lg/light/2567.webp": "5decbdbe58ca30e22d384f24544738507d0c8b8c0d71893841ab039364d1f292",
+        "sm/dark/2567.webp": "0875b3822f08c953942666585f685f7a442441ae6f7abd5d46e28b42a45b210a",
+        "lg/dark/2567.webp": "b5ab1d237200b8d26ad699ae11e389b9358cc9ef094a28da11a7ab35b6d7480e"
+      }
+    },
+    "2572": {
+      "school": "Southern Miss",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2572.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2572.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2572.webp": "ad1f1bd8f72dea78de43bceff6e23aab57ef7a75a12f8d61bc2b22abb9aaad6f",
+        "lg/light/2572.webp": "8f5efb74a6f3221d538a1653359de33d09578ea14dd203baaba132d1a2b76e6e",
+        "sm/dark/2572.webp": "165fcef0110c7c01b645b4f556ed5eb6254127729e921b65cc11ee5f0ff2a634",
+        "lg/dark/2572.webp": "04ab81bdae94dd28ab02b0871e4ffba24464bc1ae620d2c1ee9cfd72f58d7590"
+      }
+    },
+    "2579": {
+      "school": "South Carolina",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2579.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2579.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2579.webp": "6427174b396fa654c7e0f58ffb521e89d983449639642e048701055d047dfe96",
+        "lg/light/2579.webp": "753ac19249997f885ade8f8bacea58678812466660158303e6d70dbba2b5e26a",
+        "sm/dark/2579.webp": "944109b8c4846b1cd78d24d30b3c8b802fa1ae1d635b3f27141791edcb777ba2",
+        "lg/dark/2579.webp": "5cc9df6989fc2aa32daf489df2e21c9f8cfa20a1d45fc7662d39fe8f4f793716"
+      }
+    },
+    "2623": {
+      "school": "Missouri State",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2623.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2623.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2623.webp": "3bf5fedda44eb2bc4f85d911d135fb96a84430bac84cd24b7293927bc7acc885",
+        "lg/light/2623.webp": "ba225d47ee9f5e0c60e29751f6323c94a8926940af879c9923d5dcd92a7a3e5d",
+        "sm/dark/2623.webp": "d06b04baaa0f443dfe1a1bcc7d6087fc43462e1d5193033d7660b74fe9532d98",
+        "lg/dark/2623.webp": "750185d0d7db1b480c876a7dfb63efcc3c9d99dc5752f6840f5a0316802e03e0"
+      }
+    },
+    "2628": {
+      "school": "TCU",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2628.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2628.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2628.webp": "6d839139d860a5d687dd60811a275edb26c57f1fe209268618ab14151b66eaf7",
+        "lg/light/2628.webp": "f7c39f33b4acc42fed219ee5369449eb29f2c4c376fcb5a5e61ea49dbe66ab20",
+        "sm/dark/2628.webp": "4dbe9d6374f1cfc04762ecac2f63b3555a301f79d580cfdccf8a3a26316b22e1",
+        "lg/dark/2628.webp": "b3a1fd087a806f77cc81a593930ae7c52c317337f03e46d9d24db20135207f4b"
+      }
+    },
+    "2633": {
+      "school": "Tennessee",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2633.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2633.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2633.webp": "6274aef374a598c72264be9b8c34362494dfa00c7356e5082f62be707cf0e7ac",
+        "lg/light/2633.webp": "662de4a191d04b24eb4db2296403167d7cde0ee7dc33c3a069f0b293b9eec5cb",
+        "sm/dark/2633.webp": "edc1fbaa9e1e52ca44f7528097148a6b189ca1cbef3a1597f1b06b09b28f87b0",
+        "lg/dark/2633.webp": "b8c6749bd8951716dfc4d371d0f880799446d8b6cf4192eaf0a5f73a8d921fb0"
+      }
+    },
+    "2636": {
+      "school": "UTSA",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2636.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2636.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2636.webp": "713a49dd4f7dea74d4ab6890a16d26a0ebf49c30dca1b4541a2ce62c011d14ee",
+        "lg/light/2636.webp": "5e010d18732117f5b76029fd727c915f1f3005fef15746c7d942cf9f11ee385f",
+        "sm/dark/2636.webp": "fc9578ba9783f200f2c0c1dc5994ecc7a77b9a17366defac3f43cf78b40ce4fe",
+        "lg/dark/2636.webp": "d7ca7d8aaad2825ace5a123f0131378fef79939d22805a996c36ead6853b8729"
+      }
+    },
+    "2638": {
+      "school": "UTEP",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2638.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2638.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2638.webp": "820e58c043ec04b02f8ae46006546706ea445b193204c462b7aba1d877d45225",
+        "lg/light/2638.webp": "fc9d7d2cb5830f1a8bada69f2ee6d43d66a58fab6ba050d978cd38bdfd8d7868",
+        "sm/dark/2638.webp": "861f5d384132d7ad3a2d443d4fc427c6dd2f4cf2468eb59b1b96bbc678da322d",
+        "lg/dark/2638.webp": "c64e1fbdc94cf84d7b7a81cbe567abb3d1be95143c193f07c464d798e077e9c1"
+      }
+    },
+    "2641": {
+      "school": "Texas Tech",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2641.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2641.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2641.webp": "7d4e6ddfdff5aedb51a193f7047201048d5d5cfe8a4c464370570bdb9e81968c",
+        "lg/light/2641.webp": "b1e7cbde490eb991b37a32898863d174faa1862a470bbcef12f779c812507c6a",
+        "sm/dark/2641.webp": "698acb620043093bb7ea91ce376ddfb3bab6a1e6aee5264aa11c97d4445e365b",
+        "lg/dark/2641.webp": "28b096bcb311d28328f54185b5a64f65c7de43405ae7b592c9bd787048f77796"
+      }
+    },
+    "2649": {
+      "school": "Toledo",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2649.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2649.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2649.webp": "e9bed63811d84a780d0c9f4220a3d14f91f6fa60ffdede5fbbb68fa3c27b4fbd",
+        "lg/light/2649.webp": "3d3da3bd7125e9e0b7abc744d0693726fce133e0b58924056bf928da18195fc2",
+        "sm/dark/2649.webp": "07d9f44a535ab7d81861397edaa81339a16110a92f7f4e6e6757f77123bbbe07",
+        "lg/dark/2649.webp": "069fbad649d24197af6646408e430dad4e029b9004e2ddb158c317faadb344d7"
+      }
+    },
+    "2653": {
+      "school": "Troy",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2653.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2653.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2653.webp": "85467985f95c7a22dc07ec97569653125a8698a32b3cf720f24abc3b5075fe32",
+        "lg/light/2653.webp": "20bc5dd21b07ed8890ef4691dc9a64fb34ceba07cdbf1a4b9c8d9ccb372ad65a",
+        "sm/dark/2653.webp": "c1bcd16067dac39e46ccd1282d4c00fced47dfc541feeebf48d561d48f7cd071",
+        "lg/dark/2653.webp": "a2b5dfa714002300735810f9911064ffabcb2f631c19bb0499b90a2537f169b9"
+      }
+    },
+    "2655": {
+      "school": "Tulane",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2655.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2655.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2655.webp": "254cb22e9d49918e9ed33ae2d546cde78ff176c92d4127ff0152ed035a44dc3d",
+        "lg/light/2655.webp": "96e4831245e2b4609b9755fcb1e4436cfad3f4d2546ff0da259638ea5da67e71",
+        "sm/dark/2655.webp": "254cb22e9d49918e9ed33ae2d546cde78ff176c92d4127ff0152ed035a44dc3d",
+        "lg/dark/2655.webp": "96e4831245e2b4609b9755fcb1e4436cfad3f4d2546ff0da259638ea5da67e71"
+      }
+    },
+    "2711": {
+      "school": "Western Michigan",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2711.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2711.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2711.webp": "593b025a86b551bf5b20ccdaa251b25f737f9a93812e75be93d4d0546499ea5d",
+        "lg/light/2711.webp": "978353adb4f677680e88bcb8611c6bd57563eb2e4a74b7a3e88479ff3b092d50",
+        "sm/dark/2711.webp": "593b025a86b551bf5b20ccdaa251b25f737f9a93812e75be93d4d0546499ea5d",
+        "lg/dark/2711.webp": "978353adb4f677680e88bcb8611c6bd57563eb2e4a74b7a3e88479ff3b092d50"
+      }
+    },
+    "2751": {
+      "school": "Wyoming",
+      "sources": {
+        "light": "https://cdn.collegefootballdata.com/logos/500/2751.png",
+        "dark": "https://cdn.collegefootballdata.com/logos-dark/500/2751.png"
+      },
+      "darkFallbackToLight": false,
+      "files": {
+        "sm/light/2751.webp": "dee84ff125b84397a5d01488a2cda94a24c0cf5e99b231b5a385d7a7ea72f161",
+        "lg/light/2751.webp": "30d34abd58c8f4387e82ad529922e0f7ac9dea0e3eff2323bc5439d0c26fbe2b",
+        "sm/dark/2751.webp": "dee84ff125b84397a5d01488a2cda94a24c0cf5e99b231b5a385d7a7ea72f161",
+        "lg/dark/2751.webp": "badc1403fb615bba7d70c10fc922be5c8c8426a6ec993b0f48cc5bbcfa0facdc"
+      }
+    }
+  }
+}
