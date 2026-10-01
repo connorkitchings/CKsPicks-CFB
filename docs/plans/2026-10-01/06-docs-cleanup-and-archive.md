@@ -21,6 +21,9 @@ Make the documentation tree truthful and navigable without changing behavior.
 - `tests/test_data_first_documentation_authority.py` pins strings in `docs/modeling/v5_status.md` and reads `docs/plans/2026-09-08/*` and `docs/archive/v5-contracts/**`; those are not edited or moved.
 - Plan files are not moved; only Status lines change.
 
+## Deleted in step 4 (recoverable from git history)
+`.opencode/plans/` (7 plans dated 2026-09-09 and earlier; a second plans location superseded by `docs/plans/`) and tracked V2-era artifacts: `artifacts/cross_validation/`, `artifacts/reports/week_16_email.html`, `artifacts/spread_bucket_summary.json`, `artifacts/totals_threshold_summary.json`. `artifacts/README.md` stays.
+
 ## Definition of Done
 - [ ] pytest unchanged (1543 passed, 3 skipped with a dummy `CFBD_API_KEY`); `ruff format --check` and `ruff check` clean.
 - [ ] `mkdocs build --strict` passes; link checker finds no broken or changed link targets.
