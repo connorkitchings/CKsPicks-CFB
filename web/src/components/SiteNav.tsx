@@ -14,6 +14,9 @@ const items = [
 export function SiteNav() {
   const pathname = usePathname();
 
+  // The /test Picks prototype renders its own combined header.
+  if (pathname.startsWith("/test")) return null;
+
   return (
     <nav aria-label="Main navigation" className="border-b border-line bg-surface-card">
       <div className="mx-auto flex max-w-4xl gap-6 overflow-x-auto px-4 py-3 text-sm font-medium">
