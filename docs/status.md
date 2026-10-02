@@ -63,7 +63,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
-- Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): UI on `dev`; data live on Preview (271 games); production pending (migration `0019` and the venue publish).
+- Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): UI on `dev`; data live on Preview and production (271 games).
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 
 ## Where to look next
