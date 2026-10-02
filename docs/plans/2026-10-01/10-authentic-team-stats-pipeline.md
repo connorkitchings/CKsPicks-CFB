@@ -68,6 +68,8 @@ Findings from the first Preview dry run, and the fixes:
 8. **Web:** matchup ratings are as of kickoff (`getRatingsAsOf`); rank badge tiers are relative to the ranked pool; ratings stored under nine legacy team names resolve through `TEAM_LOGO_MAP`; the `to_regclass` guards read the Neon result shape (see the decision log; the old guards always reported a missing table).
 9. The Phase 5 migration command was wrong (`--database-env PREVIEW_DATABASE_URL`, the pipeline role). Correct: `zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL`.
 
+**Amendment 2 (2026-10-02):** the play filter now reuses V5's eligibility test (`eligible_possession_play_mask`): regulation only, no special teams, penalties, two-point tries, dead plays or garbage time. This removes overtime drives and placeholder plays that the old filter counted (21 drives, 218 plays in weeks 1-5) and mainly changes average starting field position for teams with an overtime game. `publish_team_stats.py --diff` prints the value and rank deltas against the published rows; the Preview republish was reviewed and applied; production's republish is pending the user's go.
+
 Known limits: 133 team-games (about 31%) fail the shared V5 score-stream reconciliation, so their points-per-scoring-opportunity is null (same rule as V5; `n` shows the sample). Weeks are matched by week number, not kickoff time.
 
 ## Out of scope

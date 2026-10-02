@@ -33,7 +33,7 @@ export type MetricSection = "possession" | "situational" | "drive";
 
 export const SECTION_LABELS: Record<MetricSection, string> = {
   possession: "Core possession efficiency",
-  situational: "Situational and down and distance",
+  situational: "Situational / down and distance",
   drive: "Drive context",
 };
 

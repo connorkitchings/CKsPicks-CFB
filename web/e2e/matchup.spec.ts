@@ -10,7 +10,7 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(first.getByText("Pass EPA/play")).toBeVisible();
     // V5 possession metrics are grouped under section headers (14 rows, 3 sections).
     await expect(first.getByText("Core possession efficiency")).toBeVisible();
-    await expect(first.getByText("Situational and down and distance")).toBeVisible();
+    await expect(first.getByText("Situational / down and distance")).toBeVisible();
     await expect(first.getByText("Drive context")).toBeVisible();
     await expect(first.getByText("Points/possession")).toBeVisible();
     await expect(first.getByText("Non-offense pts/game")).toBeVisible();

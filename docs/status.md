@@ -63,6 +63,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
+- Approved, in progress: [matchup data layer v2](plans/2026-10-02/01-matchup-data-layer-v2.md): everything the V5 ratings use per team per week (raw V5 metrics shown on matchups, separate adjusted values, per-game log, rating decomposition), bound to the served rating manifest. **Code on `dev`; Phase A (2026) published and verified on Preview** (migration 0021, 4 data tables, Silver stats republished with the V5 filter). Pending: production (migration 0021 with the owner credential, publish with Preview's `--expect-payload-sha`, Silver-stats republish), release to `main`, Phase B (2025).
 - Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): venue data live in production (271 games); the city/state UI exists only in the closed prototypes until they are ported to the real cards.
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 
