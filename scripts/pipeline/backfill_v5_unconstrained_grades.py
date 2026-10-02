@@ -167,9 +167,7 @@ def dump_snapshot(conn_url: str, season: int, output_path: Path) -> None:
                 (season,),
             )
             cols = [desc[0] for desc in cur.description]
-            snapshot["system_stats"] = [
-                dict(zip(cols, r)) for r in cur.fetchall()
-            ]
+            snapshot["system_stats"] = [dict(zip(cols, r)) for r in cur.fetchall()]
 
     output_path.write_text(json.dumps(snapshot, indent=2, default=str))
     print(f"Pre-mutation snapshot written to {output_path}")
@@ -179,8 +177,15 @@ def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, default=2026)
-    parser.add_argument("--max-week", type=int, default=4, help="Max week to scan (inclusive)")
-    parser.add_argument("--week", type=int, default=None, help="Specific week to backfill (overrides --max-week)")
+    parser.add_argument(
+        "--max-week", type=int, default=4, help="Max week to scan (inclusive)"
+    )
+    parser.add_argument(
+        "--week",
+        type=int,
+        default=None,
+        help="Specific week to backfill (overrides --max-week)",
+    )
     parser.add_argument(
         "--grades-only",
         action="store_true",
@@ -296,18 +301,35 @@ def main() -> None:
         if can_mutate_predictions:
             if eff_spread_lean and spread_lean != eff_spread_lean:
                 pending_prediction_updates.append(
-                    {"run_id": run_id, "game_id": int(game_id), "spread_lean": eff_spread_lean}
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "spread_lean": eff_spread_lean,
+                    }
                 )
-            if eff_spread_lean and pms_spread_side != eff_spread_lean and pms_spread_side is not None:
+            if (
+                eff_spread_lean
+                and pms_spread_side != eff_spread_lean
+                and pms_spread_side is not None
+            ):
                 pending_pms_updates.append(
-                    {"run_id": run_id, "game_id": int(game_id), "target": "spread", "side": eff_spread_lean}
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "target": "spread",
+                        "side": eff_spread_lean,
+                    }
                 )
 
         sp_res = spread_result(home, away, eff_spread_line, eff_spread_lean)
         if sp_res is not None:
             tallies["spread"][sp_res] += 1
             if spread_grade is None:
-                price = float(spread_quote_price) if spread_quote_price is not None else None
+                price = (
+                    float(spread_quote_price)
+                    if spread_quote_price is not None
+                    else None
+                )
                 pending_grades.append(
                     {
                         "run_id": run_id,
@@ -318,7 +340,9 @@ def main() -> None:
                         "side": eff_spread_lean,
                         "result": sp_res,
                         "profit_units": _profit(sp_res, price=price),
-                        "grading_version": "model_side_best_quote_v1" if spread_quote_id else "frozen_line_v2",
+                        "grading_version": "model_side_best_quote_v1"
+                        if spread_quote_id
+                        else "frozen_line_v2",
                     }
                 )
 
@@ -337,18 +361,33 @@ def main() -> None:
         if can_mutate_predictions:
             if eff_total_lean and total_lean != eff_total_lean:
                 pending_prediction_updates.append(
-                    {"run_id": run_id, "game_id": int(game_id), "total_lean": eff_total_lean}
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "total_lean": eff_total_lean,
+                    }
                 )
-            if eff_total_lean and pms_total_side != eff_total_lean and pms_total_side is not None:
+            if (
+                eff_total_lean
+                and pms_total_side != eff_total_lean
+                and pms_total_side is not None
+            ):
                 pending_pms_updates.append(
-                    {"run_id": run_id, "game_id": int(game_id), "target": "total", "side": eff_total_lean}
+                    {
+                        "run_id": run_id,
+                        "game_id": int(game_id),
+                        "target": "total",
+                        "side": eff_total_lean,
+                    }
                 )
 
         tot_res = total_result(home, away, eff_total_line, eff_total_lean)
         if tot_res is not None:
             tallies["total"][tot_res] += 1
             if total_grade is None:
-                price = float(total_quote_price) if total_quote_price is not None else None
+                price = (
+                    float(total_quote_price) if total_quote_price is not None else None
+                )
                 pending_grades.append(
                     {
                         "run_id": run_id,
@@ -359,30 +398,42 @@ def main() -> None:
                         "side": eff_total_lean,
                         "result": tot_res,
                         "profit_units": _profit(tot_res, price=price),
-                        "grading_version": "model_side_best_quote_v1" if total_quote_id else "frozen_line_v2",
+                        "grading_version": "model_side_best_quote_v1"
+                        if total_quote_id
+                        else "frozen_line_v2",
                     }
                 )
 
     new_spread = sum(1 for g in pending_grades if g["target"] == "spread")
     new_total = sum(1 for g in pending_grades if g["target"] == "total")
 
-    scope_str = f"Week {args.week}" if args.week is not None else f"Weeks 0–{args.max_week}"
+    scope_str = (
+        f"Week {args.week}" if args.week is not None else f"Weeks 0–{args.max_week}"
+    )
     print(f"=== {args.year} ({scope_str}) Unconstrained Grade Backfill Scan ===")
     print(f"Environment: {args.environment}")
     print(f"Grades-only mode: {args.grades_only}")
     print(f"Total games scanned: {len(rows)}")
-    print(f"New grades to insert: {len(pending_grades)} ({new_spread} spread + {new_total} total)")
+    print(
+        f"New grades to insert: {len(pending_grades)} ({new_spread} spread + {new_total} total)"
+    )
     print(f"Predictions lean updates: {len(pending_prediction_updates)}")
     print(f"Market selections side updates: {len(pending_pms_updates)}")
-    print(f"Final full-slate spread record: {tallies['spread']['win']}–{tallies['spread']['loss']}–{tallies['spread']['push']}")
-    print(f"Final full-slate total record:  {tallies['total']['win']}–{tallies['total']['loss']}–{tallies['total']['push']}")
+    print(
+        f"Final full-slate spread record: {tallies['spread']['win']}–{tallies['spread']['loss']}–{tallies['spread']['push']}"
+    )
+    print(
+        f"Final full-slate total record:  {tallies['total']['win']}–{tallies['total']['loss']}–{tallies['total']['push']}"
+    )
 
     if args.dry_run:
         print("\n[DRY RUN] No database changes made.")
         return
 
     # Take snapshot before mutating
-    snapshot_file = args.snapshot_dir / f"{args.environment}_pre_unconstrained_grades_snapshot.json"
+    snapshot_file = (
+        args.snapshot_dir / f"{args.environment}_pre_unconstrained_grades_snapshot.json"
+    )
     dump_snapshot(conn_url, args.year, snapshot_file)
 
     with psycopg.connect(conn_url) as conn:
