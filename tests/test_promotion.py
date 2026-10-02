@@ -1,113 +1,169 @@
-import numpy as np
-import pandas as pd
+"""Silver promotion between catalogs by registration (no object copies)."""
 
-from cks_picks_cfb.models.promotion import (
-    evaluate_promotion,
-    locked_test_anti_regression,
-    select_nested_temporal_thresholds,
-    select_regime_candidate,
-    select_simplest_passing_candidate,
+from __future__ import annotations
+
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+import psycopg
+import pytest
+
+from cks_picks_cfb.data.catalog import register_dataset_version, register_source_capture
+from cks_picks_cfb.data.lake import BuildRequest, SourceCapture, build_dataset_version
+from cks_picks_cfb.data.promotion import (
+    PromotionError,
+    assert_same_bucket,
+    promote,
+    resolve_version,
 )
+from cks_picks_cfb.data.storage.base import StorageSettings
+from cks_picks_cfb.data.storage.local import LocalStorage
+from cks_picks_cfb.db.migrations import apply_migrations
+
+SOURCE = os.getenv("TEST_DATABASE_URL")
+TARGET = os.getenv("TEST_DATABASE_URL_TARGET")
+needs_db = pytest.mark.skipif(
+    not (SOURCE and TARGET),
+    reason="requires two disposable PostgreSQL databases (TEST_DATABASE_URL[_TARGET])",
+)
+NOW = datetime(2026, 9, 27, 15, tzinfo=timezone.utc)
 
 
-def test_five_gate_report_and_simple_candidate_preference():
-    actual = np.tile(np.arange(50, dtype=float), 3)
-    frame = pd.DataFrame(
-        {
-            "season": np.repeat([2022, 2023, 2024], 50),
-            "actual": actual,
-            "candidate_prediction": actual,
-            "baseline_prediction": actual + 3.0,
-            "market_line": np.full(150, -50.0),
-        }
+def _reset(url: str) -> None:
+    with psycopg.connect(url, autocommit=True) as conn, conn.cursor() as cur:
+        for schema in ("ops", "catalog", "public"):
+            cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+        cur.execute("CREATE SCHEMA public")
+    apply_migrations(url, Path("contracts/migrations"))
+
+
+def _settings(bucket="b", account="a", endpoint="e"):
+    return StorageSettings(
+        backend="r2", bucket=bucket, account_id=account, endpoint=endpoint
     )
-    report = evaluate_promotion(
-        frame, target="spread", regime="two_games", n_bootstrap=200
+
+
+def test_different_bucket_is_refused():
+    assert_same_bucket(_settings(), _settings())
+    with pytest.raises(PromotionError, match="bucket"):
+        assert_same_bucket(_settings(), _settings(bucket="other"))
+    with pytest.raises(PromotionError, match="bucket"):
+        assert_same_bucket(_settings(bucket=None), _settings(bucket=None))
+
+
+def _seed_source(tmp_path):
+    storage = LocalStorage(str(tmp_path))
+    capture = SourceCapture(
+        capture_id="cap-1",
+        provider="cfbd",
+        entity="plays",
+        captured_at=NOW,
+        effective_at=None,
+        request={"year": 2026},
+        content_sha="c" * 64,
+        object_sha="d" * 64,
+        uri="lake/bronze/x.parquet",
+        row_count=1,
     )
-    assert report["gates"]["minimum_volume"] is True
-    assert report["gates"]["bootstrap_95"] is True
-    assert report["gates"]["temporal_stability"] is True
-    assert select_simplest_passing_candidate(
-        {"ridge": report, "catboost": {"promotion_pass": True}}
-    ) == ("ridge" if report["promotion_pass"] else "catboost")
-
-
-def test_underpowered_regime_stays_display_only():
-    frame = pd.DataFrame(
-        {
-            "season": [2024] * 20,
-            "actual": np.arange(20, dtype=float),
-            "candidate_prediction": np.arange(20, dtype=float),
-            "baseline_prediction": np.arange(20, dtype=float) + 1,
-            "market_line": [0.0] * 20,
-        }
+    register_source_capture(SOURCE, capture)
+    parent, parent_manifest = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="teams",
+            parent_refs=(),
+            code_sha="x",
+            config_sha="y",
+            as_of=NOW,
+            identity_version="v1",
+        ),
+        records=[{"team": "A"}],
+        partitions={"seasons": [2026]},
     )
-    report = evaluate_promotion(
-        frame, target="total", regime="one_game", n_bootstrap=100
+    child, child_manifest = build_dataset_version(
+        storage,
+        build=BuildRequest(
+            dataset="byplay",
+            parent_refs=(parent,),
+            code_sha="x",
+            config_sha="y",
+            as_of=NOW,
+            source_capture_ids=("cap-1",),
+            identity_version="v1",
+        ),
+        records=[{"game_id": 1}],
+        partitions={"seasons": [2026]},
     )
-    assert report["gates"]["minimum_volume"] is False
-    assert report["promotion_pass"] is False
-    assert select_simplest_passing_candidate({"ridge": report}) is None
+    register_dataset_version(SOURCE, parent, parent_manifest)
+    register_dataset_version(SOURCE, child, child_manifest)
+    return storage, parent, child
 
 
-def test_candidate_selection_uses_mae_then_simplicity_tie_break():
-    reports = {
-        "direct_ridge": {
-            "promotion_pass": True,
-            "metrics": {"candidate_mae": 10.05},
-        },
-        "blend": {"promotion_pass": True, "metrics": {"candidate_mae": 10.0}},
-        "direct_catboost": {
-            "promotion_pass": True,
-            "metrics": {"candidate_mae": 9.0},
-        },
-    }
-    assert select_regime_candidate(reports) == "direct_catboost"
-    reports["direct_catboost"]["metrics"]["candidate_mae"] = 10.02
-    assert select_regime_candidate(reports) == "direct_ridge"
-
-
-def test_locked_test_does_not_require_one_hundred_single_year_bets():
-    report = {
-        "metrics": {
-            "candidate_mae": 10.0,
-            "baseline_mae": 10.0,
-            "candidate_calibration": 0.5,
-            "baseline_calibration": 0.5,
-            "candidate_max_drawdown": 4.0,
-            "baseline_max_drawdown": 4.0,
-            "candidate_volume": 60,
-            "baseline_volume": 60,
-        }
-    }
-    assert locked_test_anti_regression(report)
-
-
-def test_nested_thresholds_do_not_use_a_seasons_own_returns():
-    frame = pd.DataFrame(
-        {
-            "season": [2022] * 30 + [2023] * 30 + [2024] * 30,
-            "edge": [1.0] * 30 + [4.0] * 30 + [4.0] * 30,
-            "return": [0.1] * 30 + [0.1] * 30 + [0.1] * 30,
-        }
+@needs_db
+def test_promotion_registers_lineage_and_is_idempotent(tmp_path):
+    _reset(SOURCE)
+    _reset(TARGET)
+    storage, parent, child = _seed_source(tmp_path)
+    assert resolve_version(SOURCE, "byplay", 2026) == child.version_id
+    assert resolve_version(SOURCE, "byplay", 2026, child.version_id[:8]) == (
+        child.version_id
     )
-    result = select_nested_temporal_thresholds(frame, min_tuning_bets=30)
-    assert result.loc[result["season"] == 2022, "selected_edge_threshold"].isna().all()
-    assert set(result.loc[result["season"] == 2023, "selected_edge_threshold"]) == {0.0}
-    assert result.loc[result["season"] == 2024, "threshold_eligible"].all()
 
-
-def test_promotion_uses_actual_prices_and_counts_pushes_in_volume():
-    frame = pd.DataFrame(
-        {
-            "season": [2022] * 100,
-            "actual": [3.0] * 99 + [0.0],
-            "candidate_prediction": [3.0] * 100,
-            "baseline_prediction": [0.0] * 100,
-            "market_line": [-2.5] * 99 + [0.0],
-            "candidate_price": [100] * 100,
-        }
+    dry = promote(
+        source_url=SOURCE,
+        target_url=TARGET,
+        storage=storage,
+        root_versions=[child.version_id],
+        dry_run=True,
     )
-    report = evaluate_promotion(frame, target="spread", regime="game_1", n_bootstrap=50)
-    assert report["metrics"]["candidate_volume"] == 100
-    assert report["metrics"]["candidate_roi"] > 0.9
+    assert [v["dataset"] for v in dry.versions] == ["teams", "byplay"]
+    assert len(dry.new_versions) == 2 and dry.captures_to_register == ["cap-1"]
+    with psycopg.connect(TARGET) as conn, conn.cursor() as cur:
+        cur.execute("SELECT count(*) FROM catalog.dataset_versions")
+        assert cur.fetchone() == (0,)
+
+    real = promote(
+        source_url=SOURCE,
+        target_url=TARGET,
+        storage=storage,
+        root_versions=[child.version_id],
+        dry_run=False,
+    )
+    assert len(real.new_versions) == 2
+    with psycopg.connect(TARGET) as conn, conn.cursor() as cur:
+        cur.execute("SELECT dataset FROM catalog.dataset_versions ORDER BY dataset")
+        assert cur.fetchall() == [("byplay",), ("teams",)]
+        cur.execute("SELECT parent_version_id FROM catalog.dataset_dependencies")
+        assert cur.fetchall() == [(parent.version_id,)]
+        cur.execute("SELECT capture_id FROM catalog.dataset_capture_dependencies")
+        assert cur.fetchall() == [("cap-1",)]
+
+    again = promote(
+        source_url=SOURCE,
+        target_url=TARGET,
+        storage=storage,
+        root_versions=[child.version_id],
+        dry_run=False,
+    )
+    assert again.new_versions == [] and again.captures_present == ["cap-1"]
+
+
+@needs_db
+def test_corrupt_object_is_not_promoted(tmp_path):
+    _reset(SOURCE)
+    _reset(TARGET)
+    storage, _, child = _seed_source(tmp_path)
+    (tmp_path / child.uri).write_bytes(b"tampered")
+    with pytest.raises(PromotionError, match="hash mismatch"):
+        promote(
+            source_url=SOURCE,
+            target_url=TARGET,
+            storage=storage,
+            root_versions=[child.version_id],
+            dry_run=False,
+        )
+    with psycopg.connect(TARGET) as conn, conn.cursor() as cur:
+        cur.execute(
+            "SELECT count(*) FROM catalog.dataset_versions WHERE dataset='byplay'"
+        )
+        assert cur.fetchone() == (0,)
