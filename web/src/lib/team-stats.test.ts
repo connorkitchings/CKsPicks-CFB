@@ -127,6 +127,9 @@ test("plays per possession and non-offense points are stored but not shown on th
   const keys = UNIT_METRICS.map((m) => m.key);
   assert.ok(!keys.includes("plays_per_possession"));
   assert.ok(!keys.includes("non_offense_points_per_game"));
+  // PPA/play is read from team stats (punt plays excluded), not the V5 epa_per_play companion.
+  assert.ok(keys.includes("ppa_per_play"));
+  assert.ok(!keys.includes("epa_per_play"));
 });
 
 test("rankLabel and rankTitle show ties as T-N and unranked as a dash", () => {

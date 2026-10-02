@@ -52,9 +52,13 @@ export const SECTION_LABELS: Record<MetricSection, string> = {
 
 /**
  * Display order, grouped into sections so the table stays readable on a phone.
- * Defense values describe what that defense allowed. The possession metrics are
- * the raw (not opponent-adjusted) measures behind the V5 ratings, from
- * `team_possession_stats`; the rest come from `team_season_stats`.
+ * Defense values describe what that defense allowed. Points/possession and
+ * PPA/possession are the raw (not opponent-adjusted) measures behind the V5
+ * ratings, from `team_possession_stats`; everything else, including PPA/play,
+ * comes from `team_season_stats`. PPA/play is deliberately not the V5
+ * `epa_per_play` companion: that one counts returned punts as plays (a Silver
+ * `st` flag gap, fixed for future builds) and so reads slightly low. Team stats
+ * excludes kicking plays, so it is the number shown here.
  */
 export const UNIT_METRICS: {
   key: string;
@@ -64,7 +68,7 @@ export const UNIT_METRICS: {
 }[] = [
   { key: "ppp", label: "Points/possession", format: "pts", section: "possession" },
   { key: "epa_per_possession", label: "PPA/possession", format: "epa", section: "possession" },
-  { key: "epa_per_play", label: "PPA/play", format: "epa", section: "possession" },
+  { key: "ppa_per_play", label: "PPA/play", format: "epa", section: "possession" },
   { key: "success_rate", label: "Success rate", format: "pct", section: "situational" },
   { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct", section: "situational" },
   { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct", section: "situational" },
