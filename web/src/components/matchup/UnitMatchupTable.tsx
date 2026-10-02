@@ -53,7 +53,7 @@ function RankBadge({
   );
 }
 
-/** "Model Offense Rank" over "#122": always two lines, so side-by-side headers stay level. */
+/** "Model Offense Rank #122" on one line, so side-by-side headers stay level. */
 function RankLine({
   label,
   rank,
@@ -65,9 +65,11 @@ function RankLine({
 }) {
   if (rank === undefined) return null;
   return (
-    <div data-testid={testId} className="mt-0.5 text-center text-[11px] leading-tight text-ink-muted">
-      <div>{label}</div>
-      <div className="font-mono">#{rank ?? "—"}</div>
+    <div
+      data-testid={testId}
+      className="mt-0.5 whitespace-nowrap text-center text-[10px] leading-tight text-ink-muted sm:text-[11px]"
+    >
+      {label} <span className="font-mono">#{rank ?? "—"}</span>
     </div>
   );
 }
