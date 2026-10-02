@@ -1,6 +1,7 @@
 import { eq, asc, and, inArray, lte, sql, notLike } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
+import { existsFrom } from "./db-result";
 import { isSelectableRun } from "./run-selection";
 import { deriveSpreadView, deriveTotalView } from "./publication";
 import type { TeamStatRow } from "./team-stats";
@@ -428,8 +429,7 @@ export const hasSelectionsTable = cache(async (): Promise<boolean> => {
     const res = await db.execute(
       sql`SELECT to_regclass('public.prediction_market_selections') IS NOT NULL AS exists`
     );
-    const rows = res as unknown as Array<{ exists?: boolean }>;
-    return Boolean(rows?.[0]?.exists);
+    return existsFrom(res);
   } catch {
     return false;
   }
@@ -501,8 +501,7 @@ export const hasGameVenuesTable = cache(async (): Promise<boolean> => {
     const res = await db.execute(
       sql`SELECT to_regclass('public.game_venues') IS NOT NULL AS exists`,
     );
-    const rows = res as unknown as Array<{ exists?: boolean }>;
-    return Boolean(rows?.[0]?.exists);
+    return existsFrom(res);
   } catch {
     return false;
   }
@@ -514,8 +513,7 @@ export const hasTeamSeasonStatsTable = cache(async (): Promise<boolean> => {
     const res = await db.execute(
       sql`SELECT to_regclass('public.team_season_stats') IS NOT NULL AS exists`,
     );
-    const rows = res as unknown as Array<{ exists?: boolean }>;
-    return Boolean(rows?.[0]?.exists);
+    return existsFrom(res);
   } catch {
     return false;
   }

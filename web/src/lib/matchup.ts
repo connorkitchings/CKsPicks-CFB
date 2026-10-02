@@ -2,6 +2,7 @@ import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./db.ts";
 import { getRatingsAsOf } from "./v5.ts";
+import { TEAM_LOGO_MAP } from "./teams.ts";
 import {
   displaySystemName,
   isAllowedSeason,
@@ -110,16 +111,19 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   const offenseRanks = rankBy("offenseRating");
   const defenseRanks = rankBy("defenseRating");
 
+  // Nine teams are stored in v5_rating_snapshots under legacy names ("San Jose
+  // State", "Hawai_i", ...); TEAM_LOGO_MAP maps the game's CFBD name to them.
   const summarize = (team: string): TeamRatingSummary => {
-    const row = ratings.find((r) => r.team === team);
+    const key = TEAM_LOGO_MAP[team] ?? team;
+    const row = ratings.find((r) => r.team === key);
     return {
       team,
-      rank: overallRanks.get(team) ?? null,
+      rank: overallRanks.get(key) ?? null,
       overallRating: row?.overallRating ?? null,
       offenseRating: row?.offenseRating ?? null,
-      offenseRank: offenseRanks.get(team) ?? null,
+      offenseRank: offenseRanks.get(key) ?? null,
       defenseRating: row?.defenseRating ?? null,
-      defenseRank: defenseRanks.get(team) ?? null,
+      defenseRank: defenseRanks.get(key) ?? null,
     };
   };
 
