@@ -163,7 +163,7 @@ amendment, and commit-policy rules.
 - **Tech Stack:** Python 3.12 (pipeline) + Next.js 16 / React 19 / Tailwind v4 (web app) + Neon Postgres + Cloudflare R2
 - **Data:** V4 artifacts retain 2021–2025; successor-v2 research expands to
   2015–2019 and 2021–2025 in R2 (`CFB_STORAGE_BACKEND='r2'`); 2020 excluded
-- **2026 Deliverable:** Vercel web app at `web/` showing every FBS game's spread + total lean (display only; auth/tracking is post-MVP)
+- **2026 Deliverable:** Vercel web app at `web/` featuring a full 4-tab operational interface (Picks, Results, Ratings, Performance) showing every FBS game's spread + total lean against market lines, certified Blitzkrieg V5 team ratings, and transparent performance tracking
 - **Commands:** See `.codex/QUICKSTART.md` (Python + Nx task runner) and `web/README.md` (Next.js)
 - **Architecture:** See `.agent/CONTEXT.md` (modeling) and `docs/ops/weekly_pipeline.md` (data flow to web app)
 
