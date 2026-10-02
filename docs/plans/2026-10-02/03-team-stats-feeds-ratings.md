@@ -36,7 +36,8 @@ The plan also moved `derive_is_drive_play` and `true_drive_points` out of `ratin
 2. **V5 measurement layer becomes rating-specific:** reads `team_game_stats` for counts and sums; keeps cutoff timing, coverage and usability flags, the final-score reconciliation gate, the opponent adjustment, and the `ppp` / `epa_per_possession` fit inputs.
 3. **Rebuild order:** Silver (with the enrichment fix) → `team_game_stats` → V5 measurements → ratings, with a delta report against the served lineage; matchup data re-pins to the new manifests.
 4. The older `ratings/observations.py` measurement layer (shadow scripts) is re-pointed at team stats or retired in the same contract.
-5. Open decision for the contract: whether the rebuild changes any rating (it should not for `ppp` and `epa_per_possession`; confirm with the delta report).
+5. Carry into the contract: the 155 eligible non-punt plays with `ppa == 0` are still inside every per-play mean, including `ppa_per_play`; decide whether to treat them as nulls.
+6. Open decision for the contract: whether the rebuild changes any rating (it should not for `ppp` and `epa_per_possession`; confirm with the delta report).
 
 ## Production steps (user-run)
 
@@ -47,6 +48,8 @@ PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season 2
 PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season 2026 --weeks 1-5 --environment production
 PYTHONPATH=src:. uv run python scripts/pipeline/verify_team_stats.py --season 2026 --as-of-week 5 --environment production
 ```
+
+**Order:** run these before (or in the same window as) releasing the web change, because the page reads `ppa_per_play` and shows "—" for that row until the rows exist. The matchup page is closed in production (`CFB_MATCHUP_ENABLED` unset), so a short gap is not user-visible.
 
 Expected dry-run: 11,506 rows, 1,046 only-new (`ppa_per_play`), 2,291 changed, only conversion, explosive and turnover rates changing.
 

@@ -70,6 +70,8 @@ Findings from the first Preview dry run, and the fixes:
 
 **Amendment 2 (2026-10-02):** the play filter now reuses V5's eligibility test (`eligible_possession_play_mask`): regulation only, no special teams, penalties, two-point tries, dead plays or garbage time. This removes overtime drives and placeholder plays that the old filter counted (21 drives, 218 plays in weeks 1-5) and mainly changes average starting field position for teams with an overtime game. `publish_team_stats.py --diff` prints the value and rank deltas against the published rows; the Preview republish was reviewed and applied; the production republish ran on 2026-10-02 (user-run, after the production `--diff --dry-run` matched Preview's).
 
+**Amendment 3 (2026-10-02):** Amendment 2's filter still passed returned punts (CFBD `Punt Return`, Silver `st == 0`). Team stats now uses `scrimmage_play_mask` (`data/play_filters.py`: the V5 filter minus kicking plays) and publishes `ppa_per_play`; conversion, explosive and turnover rates changed (ranks moved up to 52 places on explosive rate). See [team stats feeds ratings](../2026-10-02/03-team-stats-feeds-ratings.md).
+
 Known limits: 133 team-games (about 31%) fail the shared V5 score-stream reconciliation, so their points-per-scoring-opportunity is null (same rule as V5; `n` shows the sample). Weeks are matched by week number, not kickoff time.
 
 ## Out of scope
