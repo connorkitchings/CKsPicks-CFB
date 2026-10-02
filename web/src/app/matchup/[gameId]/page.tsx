@@ -77,11 +77,12 @@ export default async function MatchupPage({
             </div>
             <section aria-label="Notes" data-testid="matchup-notes" className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-ink-faint">
               <p>
-                Stats through Week {matchup.stats.asOfWeek - 1}, before this game. FBS opponents only, regulation
-                play, garbage time excluded; raw, not opponent-adjusted. Defense columns show what that defense
-                allowed.
-                {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams; T = tied.`}
+                Stats through Week {matchup.stats.asOfWeek - 1}. FBS opponents only, regulation play, garbage time
+                excluded; raw, not opponent-adjusted. Defense columns show what that defense allowed.
               </p>
+              {matchup.stats.cohortSize !== null && (
+                <p>Ranks are among {matchup.stats.cohortSize} teams; T = tied.</p>
+              )}
             </section>
           </section>
         ) : (
@@ -99,12 +100,6 @@ export default async function MatchupPage({
             className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
           >
             All Week {matchup.week} matchups
-          </Link>
-          <Link
-            href={`/?week=${matchup.week}`}
-            className="ml-auto text-xs text-ink-faint hover:text-ink hover:underline"
-          >
-            Return to Week {matchup.week} Picks
           </Link>
         </div>
       </main>

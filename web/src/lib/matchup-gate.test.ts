@@ -37,3 +37,10 @@ test("the root layout provides the matchup gate to client cards", () => {
   const links = readFileSync(new URL("../components/MatchupLinks.tsx", import.meta.url), "utf8");
   assert.match(links, /createContext\(false\)/); // closed unless the server says otherwise
 });
+
+test("no page or component links to the GitHub repository (the footer carries no source link)", () => {
+  const offenders = sourceFiles(new URL("../", import.meta.url))
+    .filter((url) => /github\.com/.test(readFileSync(url, "utf8")))
+    .map((url) => url.pathname.split("/src/")[1]);
+  assert.deepEqual(offenders, []);
+});

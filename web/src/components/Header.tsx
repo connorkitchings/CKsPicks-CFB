@@ -93,20 +93,9 @@ export function Footer({
           : "college football schedules and market lines"}
         ; nothing here is a recommendation or guarantee.
       </p>
-      <p className="mb-1">
+      <p>
         Team names and logos are trademarks of their respective schools and
         owners, shown for identification only.
-      </p>
-      <p>
-        Source:{" "}
-        <a
-          href="https://github.com/connorkitchings/CKsPicks-CFB"
-          className="underline hover:text-ink-muted"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          github.com/connorkitchings/CKsPicks-CFB
-        </a>
       </p>
     </footer>
   );

@@ -135,6 +135,15 @@ test.describe("matchup page (fixture mode)", () => {
     const lastTable = await page.getByRole("table").last().boundingBox();
     const notes = await page.getByTestId("matchup-notes").boundingBox();
     expect(notes!.y).toBeGreaterThan(lastTable!.y + lastTable!.height - 2);
+    // Notes: the coverage line, then the ranks line on its own line; no "before this game".
+    const noteLines = page.getByTestId("matchup-notes").locator("p");
+    await expect(noteLines).toHaveCount(2);
+    await expect(noteLines.nth(0)).toHaveText(/^Stats through Week \d+\. FBS opponents only, regulation play, garbage time excluded; raw, not opponent-adjusted\. Defense columns show what that defense allowed\.$/);
+    await expect(noteLines.nth(1)).toHaveText(/^Ranks are among \d+ teams; T = tied\.$/);
+    await expect(page.getByText("before this game")).toHaveCount(0);
+    // One way back at the bottom (the top already has "Back to Picks").
+    await expect(page.getByRole("link", { name: /^Return to Week/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /^All Week \d+ matchups$/ })).toBeVisible();
 
     await expect(page.locator("[title='Model minus market']").first()).toBeVisible();
     await expect(page).toHaveTitle(/ at .* · Matchup/);
@@ -204,5 +213,17 @@ test.describe("matchup page (fixture mode)", () => {
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
     await page.goto("/results");
     expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
+  });
+
+  test("no page footer shows a GitHub source link", async ({ page }) => {
+    for (const url of ["/", "/results", "/ratings", "/performance", "/matchup", "/matchup/1"]) {
+      await page.goto(url);
+      await expect(page.locator("a[href*='github.com']")).toHaveCount(0);
+      // Ratings and Performance render no footer; the rest must not list a source.
+      if (await page.locator("footer").count()) {
+        await expect(page.locator("footer a")).toHaveCount(0);
+        await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
+      }
+    }
   });
 });
