@@ -108,9 +108,17 @@ function Cell({
   );
 }
 
+/** "Market lines: Bovada", or "Spread: A · Total: B" when the books differ; null when none is recorded. */
+function marketBookLine(spread: string | null, total: string | null): string | null {
+  if (spread && total && spread !== total) return `Market lines: ${spread} (spread) · ${total} (total)`;
+  const book = spread ?? total;
+  return book ? `Market lines: ${book}` : null;
+}
+
 export function MatchupHero({ matchup }: { matchup: MatchupData }) {
   const isFinal = matchup.homeFinalPoints !== null && matchup.awayFinalPoints !== null;
   const venue = venueLine(matchup);
+  const bookLine = marketBookLine(matchup.spreadSource, matchup.totalSource);
 
   return (
     <section aria-labelledby="matchup-header" className="space-y-4">
@@ -164,8 +172,8 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Total</span>
 
               <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
-              <Cell value={matchup.marketSpread} book={matchup.spreadSource} />
-              <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={matchup.totalSource} />
+              <Cell value={matchup.marketSpread} />
+              <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
 
               {matchup.publicationMode === "predictions" && (
                 <>
@@ -173,6 +181,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                   <Cell value={matchup.modelSpread} />
                   <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
 
+                  <div className="col-span-3 border-t border-line/60" aria-hidden />
                   <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
                   <Cell
                     accent
@@ -195,6 +204,12 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                 </>
               )}
             </div>
+
+            {bookLine && (
+              <p className="mt-2.5 text-[11px] leading-tight text-ink-faint" data-testid="forecast-books">
+                {bookLine}
+              </p>
+            )}
 
             {isFinal && (
               <span className="mt-2.5 rounded-full border border-line bg-surface-card px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
