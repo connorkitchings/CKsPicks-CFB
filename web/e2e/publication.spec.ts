@@ -96,7 +96,7 @@ test.describe("picks slate (/)", () => {
 
     const record = page.getByRole("region", { name: "Record" });
     await expect(record.getByRole("heading", { name: "How the model is doing" })).toBeVisible();
-    await expect(record.getByRole("heading", { name: "Season" })).toBeVisible();
+    await expect(record.getByText(/Season \(\d+ games\)/)).toBeVisible();
     await expect(record.getByText("93–103–3")).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
     await expect(record.getByText("196 decided")).toBeVisible();
