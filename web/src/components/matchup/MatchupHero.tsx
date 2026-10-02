@@ -2,7 +2,6 @@ import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import { EdgeNote } from "@/components/slate/EdgeNote";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
-import { formatSignedRating } from "@/lib/team-stats";
 
 function formatKickoff(startDate: Date): string {
   return startDate.toLocaleString("en-US", {
@@ -68,11 +67,10 @@ function TeamBlock({
             <span
               data-testid="model-rating"
               className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold text-ink"
-              title="Model overall rating, with its rank among FBS teams"
+              title="Model overall rank among FBS teams"
             >
-              <span>Model Rating</span>
+              <span>Model Rank</span>
               <span className="font-mono">#{rating.rank ?? "—"}</span>
-              <span className="font-mono text-ink-muted">{formatSignedRating(rating.overallRating)}</span>
             </span>
           </div>
         )}

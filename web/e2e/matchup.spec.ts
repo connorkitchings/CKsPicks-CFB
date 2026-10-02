@@ -91,15 +91,16 @@ test.describe("matchup page (fixture mode)", () => {
     const away = page.locator("[data-side='away']");
     await expect(away).toContainText(/Away · \d+-\d+/);
     await expect(page.locator("[data-side='home']")).toContainText(/Home · \d+-\d+/);
-    await expect(away.getByTestId("model-rating")).toHaveText(/Model Rating\s*#\d+\s*[+−]\d\.\d{2}/);
-    // Offense and defense ratings live in the offense-vs-defense table headers, not the hero.
-    await expect(away).not.toContainText("Model Offense Rating");
+    await expect(away.getByTestId("model-rating")).toHaveText(/^Model Rank\s*#\d+$/);
+    // No rating numbers anywhere; offense and defense ranks live in the table headers, not the hero.
+    await expect(away).not.toContainText("Model Offense");
     await expect(away).not.toContainText("V5 rank");
+    await expect(page.getByText(/Rating [+−]\d/)).toHaveCount(0);
     const first = page.getByRole("table").first().locator("xpath=ancestor::div[1]");
-    await expect(first.getByTestId("unit-offense-rating")).toHaveText(/Model Offense Rating\s*#\d+\s*[+−]\d\.\d{2}/);
-    await expect(first.getByTestId("unit-defense-rating")).toHaveText(/Model Defense Rating\s*#\d+\s*[+−]\d\.\d{2}/);
-    await expect(page.getByTestId("unit-offense-rating")).toHaveCount(2);
-    await expect(page.getByTestId("unit-defense-rating")).toHaveCount(2);
+    await expect(first.getByTestId("unit-offense-rank")).toHaveText(/^Model Offense Rank\s*#\d+$/);
+    await expect(first.getByTestId("unit-defense-rank")).toHaveText(/^Model Defense Rank\s*#\d+$/);
+    await expect(page.getByTestId("unit-offense-rank")).toHaveCount(2);
+    await expect(page.getByTestId("unit-defense-rank")).toHaveCount(2);
     const facts = page.getByTestId("game-facts");
     await expect(facts).toContainText(/, [A-Z]{2}|Neutral site/); // venue
     await expect(facts).not.toContainText("Blitzkrieg");

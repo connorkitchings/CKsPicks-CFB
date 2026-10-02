@@ -2,7 +2,6 @@ import clsx from "clsx";
 import { Fragment } from "react";
 import TeamLogo from "@/components/TeamLogo";
 import {
-  formatSignedRating,
   getRankBadgeClass,
   groupUnitRows,
   rankLabel,
@@ -54,28 +53,21 @@ function RankBadge({
   );
 }
 
-export interface UnitRating {
-  rank: number | null;
-  value: number | null;
-}
-
-/** "Model Offense Rating" over "#122 −0.38": always two lines, so side-by-side headers stay level. */
-function RatingLine({
+/** "Model Offense Rank" over "#122": always two lines, so side-by-side headers stay level. */
+function RankLine({
   label,
-  rating,
+  rank,
   testId,
 }: {
   label: string;
-  rating: UnitRating | undefined;
+  rank: number | null | undefined;
   testId: string;
 }) {
-  if (!rating) return null;
+  if (rank === undefined) return null;
   return (
     <div data-testid={testId} className="mt-0.5 text-center text-[11px] leading-tight text-ink-muted">
       <div>{label}</div>
-      <div className="font-mono">
-        #{rating.rank ?? "—"} {formatSignedRating(rating.value)}
-      </div>
+      <div className="font-mono">#{rank ?? "—"}</div>
     </div>
   );
 }
@@ -89,16 +81,16 @@ export function UnitMatchupTable({
   offenseTeam,
   defenseTeam,
   rows,
-  offenseRating,
-  defenseRating,
+  offenseRank,
+  defenseRank,
 }: {
   offenseTeam: string;
   defenseTeam: string;
   rows: UnitMatchupRow[];
-  /** The offense team's model offense rating and rank. */
-  offenseRating?: UnitRating;
-  /** The defense team's model defense rating and rank. */
-  defenseRating?: UnitRating;
+  /** The offense team's model offense rank (null when unranked; omit to hide the line). */
+  offenseRank?: number | null;
+  /** The defense team's model defense rank. */
+  defenseRank?: number | null;
 }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface-card p-4 shadow-sm">
@@ -107,7 +99,7 @@ export function UnitMatchupTable({
           <TeamLogo name={offenseTeam} px={44} decorative={false} />
           <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{offenseTeam}</h3>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-accent-ink">Offense</span>
-          <RatingLine label="Model Offense Rating" rating={offenseRating} testId="unit-offense-rating" />
+          <RankLine label="Model Offense Rank" rank={offenseRank} testId="unit-offense-rank" />
         </div>
         <span className="mt-4 shrink-0 rounded-full border border-line/60 bg-surface-inset px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink-faint">
           vs
@@ -116,7 +108,7 @@ export function UnitMatchupTable({
           <TeamLogo name={defenseTeam} px={44} decorative={false} />
           <h3 className="break-words text-sm font-bold leading-tight tracking-tight text-ink">{defenseTeam}</h3>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Defense</span>
-          <RatingLine label="Model Defense Rating" rating={defenseRating} testId="unit-defense-rating" />
+          <RankLine label="Model Defense Rank" rank={defenseRank} testId="unit-defense-rank" />
         </div>
       </div>
 

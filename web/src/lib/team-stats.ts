@@ -90,12 +90,6 @@ export function formatMetric(format: Format, value: number | null): string {
   }
 }
 
-/** A model rating with its sign, e.g. "+0.41" or "−0.37" (a true minus sign); "—" when missing. */
-export function formatSignedRating(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}`;
-}
-
 /** Rank text: "#75", "T-75" for a tie, "—" when unranked. */
 export function rankLabel(rank: number | null, tied: boolean): string {
   if (rank === null) return "—";
