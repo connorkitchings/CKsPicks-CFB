@@ -65,7 +65,10 @@ def build(games):
                         "offense_score": score[off],
                         "defense_score": score[dfn],
                         "down": p["down"],
-                        "distance": p["distance"],
+                        # Real Silver names: CFBD ``distance`` is ``yards_to_first``.
+                        "yards_to_first": p["distance"],
+                        "dropback": int("Pass" in p["play_type"]),
+                        "rush_attempt": int("Rush" in p["play_type"]),
                     }
                 )
             drives.append(
@@ -86,6 +89,7 @@ def build(games):
                 "week": week,
                 "home_team": home,
                 "away_team": away,
+                "season_type": "regular",
             }
         )
         o_rows.append(
@@ -230,8 +234,6 @@ def test_rank_direction_offense_high_defense_low_better():
     worse = max(allowed, key=lambda t: allowed[t]["value"])
     assert better == "C" and worse == "A"
     assert allowed[better]["rank"] < allowed[worse]["rank"]
-    # Turnover rate is inverted: forcing more turnovers is better for defense.
-    assert val(r, "A", "offense", "turnover_rate")["cohort_size"] is not pd.NA
 
 
 def test_min_games_leaves_rank_null_but_keeps_value():
@@ -241,9 +243,25 @@ def test_min_games_leaves_rank_null_but_keeps_value():
     assert pd.isna(row["rank"])
 
 
-def test_missing_down_columns_yield_null_metrics_not_failure():
+def test_no_distance_and_no_flags_fails_loudly():
     byplay, drives, g, o = build([base_game()])
-    byplay = byplay.drop(columns=["down", "distance"])
+    with pytest.raises(TeamStatsContractError, match="yards_to_first"):
+        build_team_season_stats(
+            byplay=byplay.drop(columns=["yards_to_first"]),
+            drives=drives,
+            games=g,
+            outcomes=o,
+            fbs_teams=FBS,
+            season=2026,
+            as_of_week=2,
+        )
+
+
+def test_conversion_flags_take_precedence_over_distance():
+    byplay, drives, g, o = build([base_game()])
+    # Flag says the 3rd-and-2 incompletion converted (e.g. a defensive penalty).
+    byplay["thirddown_conversion"] = byplay["down"].map({3: 1.0})
+    byplay["fourthdown_conversion"] = float("nan")
     r = build_team_season_stats(
         byplay=byplay,
         drives=drives,
@@ -253,9 +271,116 @@ def test_missing_down_columns_yield_null_metrics_not_failure():
         season=2026,
         as_of_week=2,
     )
-    assert r.report["missing_optional_columns"] == ["down", "distance"]
-    assert val(r, "A", "offense", "early_down_epa")["value"] is None
-    assert val(r, "A", "offense", "epa_pass")["value"] is not None
+    assert val(r, "A", "offense", "conv_rate_3rd_4th")["value"] == 1.0
+    assert "thirddown_conversion" not in r.report["missing_optional_columns"]
+
+
+def test_goal_to_go_zero_distance_uses_yards_to_goal():
+    byplay, drives, g, o = build([base_game()])
+    third = byplay["down"] == 3
+    byplay.loc[third, "yards_to_first"] = 0
+    byplay.loc[third, "yards_to_goal"] = 2
+    byplay["yards_gained"] = byplay["yards_gained"].where(~third, 3)
+    r = build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS,
+        season=2026,
+        as_of_week=2,
+    )
+    assert val(r, "A", "offense", "conv_rate_3rd_4th")["value"] == 1.0
+
+
+def test_defensive_return_touchdown_is_not_a_conversion():
+    gid, week, home, away, drv = base_game()
+    drv[0]["plays"][2] = play(
+        "Interception Return Touchdown", 3, 2, 30, -4.0, 0, turnover=1
+    )
+    r = run([(gid, week, home, away, drv)])
+    assert val(r, "A", "offense", "conv_rate_3rd_4th")["value"] == 0.0
+
+
+def test_flags_define_pass_and_rush_when_present():
+    byplay, drives, g, o = build([base_game()])
+    # A sack is a dropback, so it counts as a pass even though play_type is odd.
+    byplay.loc[byplay["play_type"] == "Pass Incompletion", "play_type"] = "Sack"
+    r = build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS,
+        season=2026,
+        as_of_week=2,
+    )
+    assert val(r, "A", "offense", "epa_pass")["value"] == pytest.approx((1.0 - 0.8) / 2)
+    assert val(r, "A", "offense", "epa_pass")["n"] == 2
+
+
+def test_postseason_games_are_excluded():
+    byplay, drives, g, o = build([base_game()])
+    g["season_type"] = "postseason"
+    r = build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=g,
+        outcomes=o,
+        fbs_teams=FBS,
+        season=2026,
+        as_of_week=2,
+    )
+    assert r.frame.empty
+
+
+def test_completed_game_without_plays_fails_loudly():
+    byplay, drives, g, o = build([base_game(), base_game(gid=2, home="A", away="C")])
+    with pytest.raises(TeamStatsContractError, match=r"no byplay rows.*\[2\]"):
+        build_team_season_stats(
+            byplay=byplay[byplay["game_id"] != 2],
+            drives=drives,
+            games=g,
+            outcomes=o,
+            fbs_teams=FBS,
+            season=2026,
+            as_of_week=2,
+        )
+    with pytest.raises(TeamStatsContractError, match="no drives rows"):
+        build_team_season_stats(
+            byplay=byplay,
+            drives=drives[drives["game_id"] != 2],
+            games=g,
+            outcomes=o,
+            fbs_teams=FBS,
+            season=2026,
+            as_of_week=2,
+        )
+
+
+def test_malformed_score_stream_is_a_team_stats_error():
+    byplay, drives, g, o = build([base_game()])
+    byplay = byplay.drop(columns=["offense_score"])
+    with pytest.raises(TeamStatsContractError):
+        build_team_season_stats(
+            byplay=byplay,
+            drives=drives,
+            games=g,
+            outcomes=o,
+            fbs_teams=FBS,
+            season=2026,
+            as_of_week=2,
+        )
+
+
+def test_turnover_rate_direction_is_inverted_for_defense():
+    g1 = base_game(gid=1, home="A", away="B")
+    g1[4][1]["plays"][0] = play("Pass Incompletion", 1, 10, 0, -1.0, 0, turnover=1)
+    r = run([g1])
+    # B turned the ball over; A's defense forced it, so A's defense ranks first
+    # and B's offense ranks last among the two ranked teams.
+    assert val(r, "A", "defense", "turnover_rate")["rank"] == 1
+    assert val(r, "B", "offense", "turnover_rate")["rank"] == 2
 
 
 def test_missing_required_column_fails_loudly():
@@ -286,3 +411,45 @@ def test_bad_score_stream_nulls_ppso_only():
     )
     assert val(r, "B", "offense", "pts_per_scoring_opp")["value"] is None
     assert val(r, "B", "offense", "epa_rush")["value"] is not None
+
+
+#: byplay columns the build reads, as observed in Silver byplay
+#: 443019a9a7b6a2454a4af4ac (2026-09-27 Preview dry run). If the Silver schema
+#: changes, update this deliberately instead of letting a metric go silently null.
+SILVER_BYPLAY_COLUMNS_SEEN = frozenset(
+    {
+        "season",
+        "week",
+        "game_id",
+        "drive_number",
+        "play_number",
+        "offense",
+        "defense",
+        "st",
+        "penalty",
+        "twopoint",
+        "play_type",
+        "garbage",
+        "ppa",
+        "success",
+        "yards_gained",
+        "turnover",
+        "quarter",
+        "offense_score",
+        "defense_score",
+        "down",
+        "yards_to_first",
+        "yards_to_goal",
+        "dropback",
+        "rush_attempt",
+        "thirddown_conversion",
+        "fourthdown_conversion",
+    }
+)
+
+
+def test_columns_used_exist_in_real_silver_byplay():
+    from cks_picks_cfb.data import team_stats as ts
+
+    used = set(ts._REQUIRED_BYPLAY) | set(ts._OPTIONAL_BYPLAY) | {"yards_to_first"}
+    assert used <= SILVER_BYPLAY_COLUMNS_SEEN

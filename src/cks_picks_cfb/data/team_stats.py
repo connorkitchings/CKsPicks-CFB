@@ -16,6 +16,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.ratings.contracts import MeasurementContractError
 from cks_picks_cfb.ratings.observations import (
     derive_is_drive_play,
     true_drive_points,
@@ -45,6 +46,7 @@ METRICS: dict[str, tuple[bool, bool]] = {
 
 _REQUIRED_BYPLAY = (
     "season",
+    "down",
     "week",
     "game_id",
     "drive_number",
@@ -75,8 +77,11 @@ _REQUIRED_DRIVES = (
 )
 _REQUIRED_GAMES = ("season", "game_id", "week", "home_team", "away_team")
 _REQUIRED_OUTCOMES = ("season", "game_id", "completed", "home_points", "away_points")
-#: Without these the 3rd/4th-down metric is null instead of failing the build.
-_OPTIONAL_BYPLAY = ("down", "distance")
+#: Silver byplay renames CFBD's ``distance`` to ``yards_to_first``.
+_DISTANCE_COLUMNS = ("yards_to_first", "distance")
+_CONVERSION_FLAGS = ("thirddown_conversion", "fourthdown_conversion")
+#: Used when present; the build falls back to the play_type regex without them.
+_OPTIONAL_BYPLAY = ("dropback", "rush_attempt", "yards_to_goal", *_CONVERSION_FLAGS)
 
 
 class TeamStatsContractError(ValueError):
@@ -104,6 +109,40 @@ def _is_rush(play_type: pd.Series) -> pd.Series:
     return play_type.astype(str).str.contains("Rush", case=False, regex=False)
 
 
+def _distance(plays: pd.DataFrame) -> pd.Series | None:
+    """Yards to first down; goal-to-go plays with 0/null use yards to goal."""
+    column = next((c for c in _DISTANCE_COLUMNS if c in plays.columns), None)
+    if column is None:
+        return None
+    distance = pd.to_numeric(plays[column], errors="coerce").astype(float)
+    if "yards_to_goal" in plays.columns:
+        goal = pd.to_numeric(plays["yards_to_goal"], errors="coerce").astype(float)
+        distance = distance.where(distance > 0, goal)
+    return distance
+
+
+def _conversions(plays: pd.DataFrame, down: pd.Series, yards: pd.Series) -> pd.Series:
+    """1.0/0.0 on 3rd/4th-down plays, NaN elsewhere.
+
+    Silver's per-down conversion flags are authoritative. The fallback (yards
+    >= distance, or an offensive touchdown) never credits a turnover return.
+    """
+    if all(c in plays.columns for c in _CONVERSION_FLAGS):
+        third = pd.to_numeric(plays["thirddown_conversion"], errors="coerce")
+        fourth = pd.to_numeric(plays["fourthdown_conversion"], errors="coerce")
+        flag = third.where(down == 3, fourth.where(down == 4))
+        return flag
+    distance = _distance(plays)
+    play_type = plays["play_type"].astype(str)
+    returned = play_type.str.contains("Return|Interception|Fumble", case=False)
+    touchdown = play_type.str.contains("Touchdown") & ~returned
+    turnover = pd.to_numeric(plays["turnover"], errors="coerce") == 1
+    converted = ((yards >= distance) | touchdown) & ~turnover
+    return converted.astype(float).where(
+        down.isin([3, 4]) & yards.notna() & distance.notna()
+    )
+
+
 def _mean(values: pd.Series) -> tuple[float | None, int]:
     clean = pd.to_numeric(values, errors="coerce").dropna()
     if clean.empty:
@@ -116,7 +155,6 @@ def _role_rows(
     drives: pd.DataFrame,
     team_col: str,
     role: str,
-    has_down: bool,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for team, team_plays in plays.groupby(team_col):
@@ -124,28 +162,26 @@ def _role_rows(
         yards = pd.to_numeric(team_plays["yards_gained"], errors="coerce")
         success = pd.to_numeric(team_plays["success"], errors="coerce")
         turnover = pd.to_numeric(team_plays["turnover"], errors="coerce")
-        passing = _is_pass(team_plays["play_type"])
-        rushing = _is_rush(team_plays["play_type"])
+        if {"dropback", "rush_attempt"} <= set(team_plays.columns):
+            dropback = pd.to_numeric(team_plays["dropback"], errors="coerce") == 1
+            rush_flag = pd.to_numeric(team_plays["rush_attempt"], errors="coerce") == 1
+            passing = dropback
+            rushing = rush_flag & ~dropback
+        else:
+            passing = _is_pass(team_plays["play_type"])
+            rushing = _is_rush(team_plays["play_type"])
+        down = pd.to_numeric(team_plays["down"], errors="coerce")
         values: dict[str, tuple[float | None, int]] = {
             "epa_pass": _mean(ppa[passing]),
             "epa_rush": _mean(ppa[rushing]),
+            "early_down_epa": _mean(ppa[down.isin([1, 2])]),
+            "conv_rate_3rd_4th": _mean(_conversions(team_plays, down, yards)),
             "success_rate": _mean(success),
             "explosive_rate": _mean((yards >= 20).astype(float).where(yards.notna())),
             "turnover_rate": _mean(
                 (turnover == 1).astype(float).where(turnover.notna())
             ),
         }
-        if has_down:
-            down = pd.to_numeric(team_plays["down"], errors="coerce")
-            distance = pd.to_numeric(team_plays["distance"], errors="coerce")
-            values["early_down_epa"] = _mean(ppa[down.isin([1, 2])])
-            late = down.isin([3, 4]) & yards.notna() & distance.notna()
-            touchdown = team_plays["play_type"].astype(str).str.contains("Touchdown")
-            converted = ((yards >= distance) | touchdown).astype(float)
-            values["conv_rate_3rd_4th"] = _mean(converted[late])
-        else:
-            values["early_down_epa"] = (None, 0)
-            values["conv_rate_3rd_4th"] = (None, 0)
 
         team_drives = drives[drives[team_col] == team]
         start = pd.to_numeric(team_drives["start_yards_to_goal"], errors="coerce")
@@ -187,7 +223,12 @@ def build_team_season_stats(
     _require(drives, _REQUIRED_DRIVES, "drives")
     _require(games, _REQUIRED_GAMES, "games")
     _require(outcomes, _REQUIRED_OUTCOMES, "outcomes")
-    has_down = all(c in byplay.columns for c in _OPTIONAL_BYPLAY)
+    has_flags = all(c in byplay.columns for c in _CONVERSION_FLAGS)
+    if not has_flags and not any(c in byplay.columns for c in _DISTANCE_COLUMNS):
+        raise TeamStatsContractError(
+            "byplay needs yards_to_first/distance or the thirddown_conversion "
+            "and fourthdown_conversion flags for 3rd/4th-down conversion"
+        )
     report: dict[str, Any] = {
         "season": season,
         "as_of_week": as_of_week,
@@ -202,6 +243,8 @@ def build_team_season_stats(
         (pd.to_numeric(outcomes["season"], errors="coerce") == season)
         & (outcomes["completed"].fillna(False).astype(bool))
     ]
+    if "season_type" in g.columns:
+        g = g[g["season_type"].astype(str).str.lower() == "regular"]
     eligible = g[
         (g["week_num"] < as_of_week)
         & g["home_team"].isin(fbs_teams)
@@ -223,6 +266,13 @@ def build_team_season_stats(
         (pd.to_numeric(drives["season"], errors="coerce") == season)
         & drives["game_id"].astype(int).isin(ids)
     ].copy()
+    for label, frame_ in (("byplay", plays), ("drives", drv)):
+        gaps = sorted(ids - set(frame_["game_id"].astype(int)))
+        if gaps:
+            raise TeamStatsContractError(
+                f"{len(gaps)} completed games have no {label} rows "
+                f"(Silver refs out of step?): {gaps[:20]}"
+            )
 
     plays["is_drive_play"] = derive_is_drive_play(plays)
     garbage = pd.to_numeric(plays["garbage"], errors="coerce")
@@ -232,17 +282,20 @@ def build_team_season_stats(
     )
     plays = plays[plays["eligible"]].copy()
 
-    true = true_drive_points(
-        byplay=byplay[
-            (pd.to_numeric(byplay["season"], errors="coerce") == season)
-            & byplay["game_id"].astype(int).isin(ids)
-        ],
-        games=eligible,
-        outcomes=outcomes[
-            (pd.to_numeric(outcomes["season"], errors="coerce") == season)
-            & outcomes["game_id"].isin(ids)
-        ],
-    )
+    try:
+        true = true_drive_points(
+            byplay=byplay[
+                (pd.to_numeric(byplay["season"], errors="coerce") == season)
+                & byplay["game_id"].astype(int).isin(ids)
+            ],
+            games=eligible,
+            outcomes=outcomes[
+                (pd.to_numeric(outcomes["season"], errors="coerce") == season)
+                & outcomes["game_id"].isin(ids)
+            ],
+        )
+    except MeasurementContractError as exc:
+        raise TeamStatsContractError(f"score stream: {exc}") from exc
     report["ppso_invalid_offenses"] = len(true.invalid_offenses)
 
     keys = ["season", "game_id", "drive_number", "offense", "defense"]
@@ -257,13 +310,16 @@ def build_team_season_stats(
         how="left",
     )
     invalid = {(int(s), int(gid), str(t)) for s, gid, t in true.invalid_offenses}
-    drv["ppso_valid"] = drv["true_points"].notna() & ~drv.apply(
-        lambda r: (int(r["season"]), int(r["game_id"]), str(r["offense"])) in invalid,
-        axis=1,
+    bad_offense = [
+        (int(s_), int(g_), str(o_)) in invalid
+        for s_, g_, o_ in drv[["season", "game_id", "offense"]].itertuples(index=False)
+    ]
+    drv["ppso_valid"] = drv["true_points"].notna() & ~pd.Series(
+        bad_offense, index=drv.index, dtype=bool
     )
 
-    rows = _role_rows(plays, drv, "offense", OFFENSE, has_down) + _role_rows(
-        plays, drv, "defense", DEFENSE, has_down
+    rows = _role_rows(plays, drv, "offense", OFFENSE) + _role_rows(
+        plays, drv, "defense", DEFENSE
     )
     frame = pd.DataFrame(rows, columns=["team", "role", "metric", "value", "n"])
     frame = frame[frame["team"].isin(fbs_teams)].copy()
