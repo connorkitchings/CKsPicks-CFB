@@ -1,5 +1,12 @@
 # Decision Log
 
+## 2026-10-02: Team Stats Owns Basic Stats; Returned-Punt Leak Fixed
+
+- **Context:** A hand-check of one matchup found `conv_rate_3rd_4th`, `explosive_rate` and per-play PPA slightly off. CFBD labels a returned punt `Punt Return`; Silver enrichment did not list it as special teams, so it carried `st == 0` and the V5 filter counted it as a 4th-down scrimmage play (`ppa` 0, `turnover` 0).
+- **Decisions:** Team stats owns the play rules (`data/play_filters.py`) and the basic stats; the ratings should consume team stats rather than re-derive them (Phase 2, at the next rating rebuild). Team stats excludes kicking plays now and publishes `ppa_per_play`, which the matchup page shows instead of the V5 `epa_per_play` companion. The V5 legacy filter is unchanged and the V5 lineage stays on its current Silver until a planned, contracted rebuild (`ppp` and `epa_per_possession`, the only fitted measures, are unaffected). Enrichment now tags `Punt Return` as special teams for future builds. Moving the drive-point reconstruction out of `ratings/observations.py` is deferred to Phase 2.
+- **Impact:** Preview republished (weeks 1-5); ranks moved up to 52 places on explosive rate and 30 on conversion rate. Production needs the user-run republish.
+- **Source:** [team stats feeds ratings](../plans/2026-10-02/03-team-stats-feeds-ratings.md).
+
 ## 2026-10-02: What the matchup page shows
 
 - **Decisions:** 12 raw metrics in three sections; non-offense points and plays per possession are stored but not shown; ties show as `T-N` and an exact zero is unranked; a per-row accent edge bar marks which side (offense or the opposing defense) holds the advantage by national-rank percentile gap (even below 0.10, strong from 0.30); tables side by side on desktop; season records, venue, model edges and sportsbook sources at the top; team names are never links (team pages are not ready).
