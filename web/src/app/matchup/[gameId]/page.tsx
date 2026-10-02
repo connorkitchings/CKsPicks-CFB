@@ -64,11 +64,15 @@ export default async function MatchupPage({
                 offenseTeam={matchup.awayTeam}
                 defenseTeam={matchup.homeTeam}
                 rows={matchup.stats.awayOffVsHomeDef}
+                offenseRating={{ rank: matchup.awayRating.offenseRank, value: matchup.awayRating.offenseRating }}
+                defenseRating={{ rank: matchup.homeRating.defenseRank, value: matchup.homeRating.defenseRating }}
               />
               <UnitMatchupTable
                 offenseTeam={matchup.homeTeam}
                 defenseTeam={matchup.awayTeam}
                 rows={matchup.stats.homeOffVsAwayDef}
+                offenseRating={{ rank: matchup.homeRating.offenseRank, value: matchup.homeRating.offenseRating }}
+                defenseRating={{ rank: matchup.awayRating.defenseRank, value: matchup.awayRating.defenseRating }}
               />
             </div>
             <section aria-label="Notes" data-testid="matchup-notes" className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-ink-faint">

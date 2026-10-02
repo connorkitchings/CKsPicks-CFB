@@ -2,6 +2,7 @@ import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import { EdgeNote } from "@/components/slate/EdgeNote";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
+import { formatSignedRating } from "@/lib/team-stats";
 
 function formatKickoff(startDate: Date): string {
   return startDate.toLocaleString("en-US", {
@@ -12,11 +13,6 @@ function formatKickoff(startDate: Date): string {
     minute: "2-digit",
     timeZoneName: "short",
   });
-}
-
-function formatRating(value: number | null): string {
-  if (value === null) return "—";
-  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}`;
 }
 
 /** "Las Cruces, NM", "Neutral site · Dublin", or null when no location is known. */
@@ -76,23 +72,7 @@ function TeamBlock({
             >
               <span>Model Rating</span>
               <span className="font-mono">#{rating.rank ?? "—"}</span>
-              <span className="font-mono text-ink-muted">{formatRating(rating.overallRating)}</span>
-            </span>
-            <span
-              data-testid="model-offense-rating"
-              className="flex flex-wrap items-baseline justify-center gap-x-1.5 text-[11px] text-ink-muted"
-            >
-              <span>Model Offense Rating</span>
-              <span className="font-mono">#{rating.offenseRank ?? "—"}</span>
-              <span className="font-mono">{formatRating(rating.offenseRating)}</span>
-            </span>
-            <span
-              data-testid="model-defense-rating"
-              className="flex flex-wrap items-baseline justify-center gap-x-1.5 text-[11px] text-ink-muted"
-            >
-              <span>Model Defense Rating</span>
-              <span className="font-mono">#{rating.defenseRank ?? "—"}</span>
-              <span className="font-mono">{formatRating(rating.defenseRating)}</span>
+              <span className="font-mono text-ink-muted">{formatSignedRating(rating.overallRating)}</span>
             </span>
           </div>
         )}

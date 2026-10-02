@@ -1,5 +1,6 @@
+import clsx from "clsx";
 import type { Game } from "@/lib/queries";
-import { topLeans, type LeanKind, type Tally } from "@/lib/slate";
+import { edgeTone, topLeans, type LeanKind, type Tally } from "@/lib/slate";
 import { kickoffTime } from "./format";
 import { LeanMarker } from "./LeanMarker";
 
@@ -19,9 +20,11 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
                 <LeanMarker lean={l} />
-                <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
-                <span className="shrink-0 text-xs tabular-nums text-ink-muted">({l.edge.toFixed(1)})</span>
-                <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
+                <span className="min-w-0 truncate font-semibold text-ink">{l.pick}</span>
+                <span className={clsx("shrink-0 text-xs font-bold tabular-nums", edgeTone(l.edge, l.kind))}>
+                  ({l.edge.toFixed(1)})
+                </span>
+                <span className="hidden min-w-0 truncate text-xs text-ink-muted sm:inline">
                   {l.game.awayTeam} @ {l.game.homeTeam}
                 </span>
                 <span className="ml-auto hidden shrink-0 text-xs tabular-nums text-ink-faint sm:inline">
