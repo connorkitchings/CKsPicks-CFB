@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-02: Shareable Matchup Card
+
+- **Decisions:** One fixed 4:5 image (1080x1350, exported at 2x) per matchup, made in the viewer's browser from a dedicated always-dark card component, not from the responsive page. Everything on one card: lines, both offense-vs-defense panels, a "Biggest mismatches" callout. The Share button is hidden when a game has no published stats; the card has no retrospective label and carries the site name only. No link-preview image yet (a later `ImageResponse` route could reuse the same data).
+- **Why client-side:** cheapest route, and the fixed card removes its usual weakness (output varying with the viewer's screen). Logos are chosen as dark variants directly, because `TeamLogo` swaps by theme and a light-mode browser would capture light logos on a dark card.
+- **Source:** `session_logs/2026-10-02/07-matchup-share-card.md`.
+
 ## 2026-10-02: Team Stats Owns Basic Stats; Returned-Punt Leak Fixed
 
 - **Context:** A hand-check of one matchup found `conv_rate_3rd_4th`, `explosive_rate` and per-play PPA slightly off. CFBD labels a returned punt `Punt Return`; Silver enrichment did not list it as special teams, so it carried `st == 0` and the V5 filter counted it as a 4th-down scrimmage play (`ppa` 0, `turnover` 0).
