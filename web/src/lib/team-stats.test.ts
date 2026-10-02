@@ -11,11 +11,16 @@ import {
   groupUnitRows,
   rankLabel,
   rankTitle,
+  rankTier,
   rowEdge,
+  rowGap,
   edgeSummary,
+  mismatchSentence,
+  topMismatches,
   SECTION_LABELS,
   UNIT_METRICS,
   type TeamStatRow,
+  type UnitMatchupRow,
 } from "./team-stats.ts";
 
 const row = (
@@ -198,4 +203,87 @@ test("matchup reads only raw possession stats: the adjusted table is never queri
   const queries = readFileSync(new URL("./queries.ts", import.meta.url), "utf8");
   assert.match(queries, /schema\.teamPossessionStats/);
   assert.doesNotMatch(queries, /adjustedValue|opponentAdjustment/);
+});
+
+const unitRow = (
+  name: string,
+  offenseRank: number | null,
+  defenseRank: number | null,
+  offenseTied = false,
+): UnitMatchupRow => ({
+  key: name,
+  name,
+  offenseValue: "0",
+  offenseRank,
+  offenseCohort: offenseRank === null ? null : 100,
+  offenseTied,
+  defenseValue: "0",
+  defenseRank,
+  defenseCohort: defenseRank === null ? null : 100,
+  defenseTied: false,
+  edge: null,
+  section: "possession",
+});
+
+test("rowGap is positive when the offense outranks the defense and null when either side is unranked", () => {
+  assert.equal(rowGap(1, 100, 100, 100), 1);
+  assert.equal(rowGap(100, 100, 1, 100), -1);
+  assert.equal(rowGap(50, 100, 50, 100), 0);
+  assert.equal(rowGap(null, null, 5, 100), null);
+  assert.equal(rowGap(5, 100, null, null), null);
+});
+
+test("topMismatches ranks the biggest gaps first across both panels and skips even and unranked rows", () => {
+  const panels = [
+    {
+      offenseTeam: "A",
+      defenseTeam: "B",
+      rows: [unitRow("PPA/play", 10, 90), unitRow("Success rate", 50, 52), unitRow("Explosive", null, 5)],
+    },
+    { offenseTeam: "B", defenseTeam: "A", rows: [unitRow("PPA/play", 95, 4), unitRow("Pts/scoring opp", 20, 60)] },
+  ];
+  const top = topMismatches(panels);
+  // Percentile gaps (cohort 100): B offense #95 vs A defense #4 = 0.92 (A defense);
+  // A offense #10 vs B defense #90 = 0.81 (A offense); B offense #20 vs A defense #60 = 0.40 (B offense).
+  assert.deepEqual(
+    top.map((m) => [m.metric, m.favoredTeam, m.favoredUnit]),
+    [
+      ["PPA/play", "A", "defense"],
+      ["PPA/play", "A", "offense"],
+      ["Pts/scoring opp", "B", "offense"],
+    ],
+  );
+  assert.equal(topMismatches(panels, 1).length, 1);
+  assert.ok(top.every((m) => m.gap >= 0.1), "rows inside the even band are skipped");
+});
+
+test("topMismatches keeps display order for equal gaps and returns fewer than requested when rows are even", () => {
+  const even = [{ offenseTeam: "A", defenseTeam: "B", rows: [unitRow("x", 40, 42)] }];
+  assert.deepEqual(topMismatches(even), []);
+  const tie = [
+    { offenseTeam: "A", defenseTeam: "B", rows: [unitRow("first", 10, 90), unitRow("second", 10, 90)] },
+  ];
+  assert.deepEqual(topMismatches(tie).map((m) => m.metric), ["first", "second"]);
+});
+
+test("mismatchSentence names both units with their ranks, T- for ties", () => {
+  const [m] = topMismatches([
+    { offenseTeam: "Western Kentucky", defenseTeam: "New Mexico State", rows: [unitRow("PPA/play", 12, 131, true)] },
+  ]);
+  assert.equal(
+    mismatchSentence(m),
+    "Western Kentucky offense T-12 vs New Mexico State defense #131: PPA/play",
+  );
+});
+
+test("rankTier uses the same percentile bands as the badge classes", () => {
+  assert.equal(rankTier(null), "none");
+  assert.equal(rankTier(27, 138), "top"); // 19.6%
+  assert.equal(rankTier(28, 138), "high");
+  assert.equal(rankTier(62, 138), "high"); // 44.9%
+  assert.equal(rankTier(63, 138), "mid");
+  assert.equal(rankTier(103, 138), "mid"); // 74.6%
+  assert.equal(rankTier(104, 138), "low");
+  assert.match(getRankBadgeClass(1, 138), /accent/);
+  assert.match(getRankBadgeClass(138, 138), /loss/);
 });

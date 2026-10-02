@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 
 test.describe("matchup page (fixture mode)", () => {
   test("shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
@@ -229,5 +230,42 @@ test.describe("matchup page (fixture mode)", () => {
         await expect(page.locator("footer")).not.toContainText(/Source:|github\.com/);
       }
     }
+  });
+
+  test("share: download exports a fixed 1080x1350 card at 2x, and the card fits its canvas", async ({ page }) => {
+    await page.goto("/matchup/1");
+    await expect(page.getByTestId("share-download")).toBeVisible();
+    // The card exists only while an image is being made.
+    await expect(page.getByTestId("share-card")).toHaveCount(0);
+
+    const attached = page.waitForSelector("[data-testid=share-card]", { state: "attached" });
+    const [download] = await Promise.all([page.waitForEvent("download"), page.getByTestId("share-download").click()]);
+    const card = await attached;
+    const fit = await card.evaluate((el) => ({
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      text: el.textContent ?? "",
+    }));
+    // overflow is hidden on the card, so content taller than the canvas shows up as scrollHeight > clientHeight.
+    expect(fit.scrollHeight).toBeLessThanOrEqual(fit.clientHeight);
+    expect(fit.scrollWidth).toBeLessThanOrEqual(fit.clientWidth);
+    expect(fit.text).toContain("Biggest mismatches");
+    expect(fit.text).toContain("Forecast & Lines");
+    expect(fit.text).not.toMatch(/Lean|Model minus market/);
+
+    expect(download.suggestedFilename()).toMatch(/^ckspicks-.+-at-.+-2026-week-\d+\.png$/);
+    const meta = await sharp(await download.path()).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["png", 2160, 2700]);
+    await expect(page.getByRole("status")).toHaveText("Image saved");
+    await expect(page.getByTestId("share-card")).toHaveCount(0);
+  });
+
+  test("share: the card is not part of the page until used, and the page tables are unchanged", async ({ page }) => {
+    await page.goto("/matchup/1");
+    await expect(page.getByRole("table")).toHaveCount(2);
+    await expect(page.getByTestId("share-card")).toHaveCount(0);
+    await expect(page.getByText("Biggest mismatches")).toHaveCount(0);
   });
 });

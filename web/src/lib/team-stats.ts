@@ -116,9 +116,24 @@ function percentile(rank: number, cohort: number): number {
 }
 
 /**
+ * Signed rank-percentile gap for one row: positive when the offense is ranked
+ * better than the opposing defense, negative when the defense is ahead. Null
+ * when either side is unranked (no sample, a zero, or early weeks).
+ */
+export function rowGap(
+  offenseRank: number | null,
+  offenseCohort: number | null,
+  defenseRank: number | null,
+  defenseCohort: number | null,
+): number | null {
+  if (offenseRank === null || defenseRank === null) return null;
+  return percentile(offenseRank, offenseCohort ?? 138) - percentile(defenseRank, defenseCohort ?? 138);
+}
+
+/**
  * Which side of the row has the edge: the offense when its national rank beats
  * the opposing defense's by more than the even band, the defense when it is
- * ahead. Null when either side is unranked (no sample, a zero, or early weeks).
+ * ahead. Null when either side is unranked.
  */
 export function rowEdge(
   offenseRank: number | null,
@@ -126,15 +141,74 @@ export function rowEdge(
   defenseRank: number | null,
   defenseCohort: number | null,
 ): RowEdge | null {
-  if (offenseRank === null || defenseRank === null) return null;
-  const gap =
-    percentile(offenseRank, offenseCohort ?? 138) - percentile(defenseRank, defenseCohort ?? 138);
+  const gap = rowGap(offenseRank, offenseCohort, defenseRank, defenseCohort);
+  if (gap === null) return null;
   const size = Math.abs(gap);
   if (size < EDGE_EVEN_GAP) return { side: "even", strength: null };
   return {
     side: gap > 0 ? "offense" : "defense",
     strength: size >= EDGE_STRONG_GAP ? "strong" : "slight",
   };
+}
+
+/** One of the most lopsided rows across both offense-vs-defense panels. */
+export interface Mismatch {
+  metric: string;
+  /** Team holding the advantage, and which of its units. */
+  favoredTeam: string;
+  favoredUnit: StatRole;
+  favoredRank: string;
+  /** The other team's opposing unit. */
+  otherTeam: string;
+  otherUnit: StatRole;
+  otherRank: string;
+  /** Absolute percentile gap (0 to 1). */
+  gap: number;
+}
+
+/** "Western Kentucky offense (#12) vs New Mexico State defense (#131): PPA/play". */
+export function mismatchSentence(m: Mismatch): string {
+  return `${m.favoredTeam} ${m.favoredUnit} ${m.favoredRank} vs ${m.otherTeam} ${m.otherUnit} ${m.otherRank}: ${m.metric}`;
+}
+
+/**
+ * The `count` rows with the biggest rank-percentile gap, largest first. Rows
+ * inside the even band or with an unranked side are skipped; ties keep display
+ * order (panel order, then row order).
+ */
+export function topMismatches(
+  panels: { offenseTeam: string; defenseTeam: string; rows: UnitMatchupRow[] }[],
+  count = 3,
+): Mismatch[] {
+  const found: { mismatch: Mismatch; order: number }[] = [];
+  let order = 0;
+  for (const { offenseTeam, defenseTeam, rows } of panels) {
+    for (const row of rows) {
+      order += 1;
+      const gap = rowGap(row.offenseRank, row.offenseCohort, row.defenseRank, row.defenseCohort);
+      if (gap === null || Math.abs(gap) < EDGE_EVEN_GAP) continue;
+      const offenseRank = rankLabel(row.offenseRank, row.offenseTied);
+      const defenseRank = rankLabel(row.defenseRank, row.defenseTied);
+      const offenseFavored = gap > 0;
+      found.push({
+        order,
+        mismatch: {
+          metric: row.name,
+          favoredTeam: offenseFavored ? offenseTeam : defenseTeam,
+          favoredUnit: offenseFavored ? "offense" : "defense",
+          favoredRank: offenseFavored ? offenseRank : defenseRank,
+          otherTeam: offenseFavored ? defenseTeam : offenseTeam,
+          otherUnit: offenseFavored ? "defense" : "offense",
+          otherRank: offenseFavored ? defenseRank : offenseRank,
+          gap: Math.abs(gap),
+        },
+      });
+    }
+  }
+  return found
+    .sort((a, b) => b.mismatch.gap - a.mismatch.gap || a.order - b.order)
+    .slice(0, count)
+    .map((item) => item.mismatch);
 }
 
 /** Row counts per side, for the summary above each table. */
@@ -201,15 +275,27 @@ export function cohortSizeOf(rows: TeamStatRow[]): number | null {
 }
 
 /** Tiers are percentiles of the ranked pool: top 20%, next 25%, next 30%, rest. */
-export function getRankBadgeClass(rank: number | null, cohortSize: number | null = null): string {
-  if (rank === null) return "bg-surface-inset text-ink-faint border border-line font-medium";
+export type RankTier = "none" | "top" | "high" | "mid" | "low";
+
+export function rankTier(rank: number | null, cohortSize: number | null = null): RankTier {
+  if (rank === null) return "none";
   const pct = rank / Math.max(cohortSize ?? 138, rank);
-  if (pct <= 0.2) return "bg-accent/15 text-accent-ink border border-accent/30 font-bold";
-  if (pct <= 0.45) {
-    return "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 font-semibold";
-  }
-  if (pct <= 0.75) return "bg-surface-inset text-ink-muted border border-line font-medium";
-  return "bg-loss-soft text-loss border border-loss/20 font-medium";
+  if (pct <= 0.2) return "top";
+  if (pct <= 0.45) return "high";
+  if (pct <= 0.75) return "mid";
+  return "low";
+}
+
+const RANK_TIER_CLASS: Record<RankTier, string> = {
+  none: "bg-surface-inset text-ink-faint border border-line font-medium",
+  top: "bg-accent/15 text-accent-ink border border-accent/30 font-bold",
+  high: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 font-semibold",
+  mid: "bg-surface-inset text-ink-muted border border-line font-medium",
+  low: "bg-loss-soft text-loss border border-loss/20 font-medium",
+};
+
+export function getRankBadgeClass(rank: number | null, cohortSize: number | null = null): string {
+  return RANK_TIER_CLASS[rankTier(rank, cohortSize)];
 }
 
 export interface MatchupStats {

@@ -2,28 +2,8 @@ import clsx from "clsx";
 import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
-
-function formatKickoff(startDate: Date): string {
-  return startDate.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-/** "Las Cruces, NM", "Neutral site · Dublin", or null when no location is known. */
-function venueLine(matchup: MatchupData): string | null {
-  const place = matchup.venueCity
-    ? matchup.venueState
-      ? `${matchup.venueCity}, ${matchup.venueState}`
-      : matchup.venueCity
-    : null;
-  if (matchup.neutralSite) return place ? `Neutral site · ${place}` : "Neutral site";
-  return place;
-}
+import { formatKickoff, venueLine } from "@/lib/matchup-format";
+import { ShareButton } from "./ShareButton";
 
 function TeamBlock({
   name,
@@ -137,6 +117,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           <span className="rounded bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
+          {matchup.stats && <ShareButton matchup={matchup} />}
         </div>
       </div>
 
