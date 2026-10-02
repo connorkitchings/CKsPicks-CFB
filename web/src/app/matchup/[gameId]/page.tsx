@@ -90,6 +90,12 @@ export default async function MatchupPage({
             {`${matchup.homeTeam} ratings & history →`}
           </Link>
           <Link
+            href={`/matchup?week=${matchup.week}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
+          >
+            All Week {matchup.week} matchups
+          </Link>
+          <Link
             href={`/?week=${matchup.week}`}
             className="ml-auto text-xs text-ink-faint hover:text-ink hover:underline"
           >

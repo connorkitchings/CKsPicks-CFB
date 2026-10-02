@@ -38,4 +38,24 @@ test.describe("matchup page (fixture mode)", () => {
     await page.goto("/matchup/abc");
     await expect(page.getByText("This page could not be found")).toBeVisible();
   });
+
+  test("the /matchup index lists the week's games and links to each breakdown", async ({ page }) => {
+    await page.goto("/matchup");
+    await expect(page.getByRole("heading", { name: "Matchups" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Week 5" })).toHaveAttribute("aria-current", "page");
+    const links = page.locator("a[href^='/matchup/']");
+    expect(await links.count()).toBeGreaterThan(3);
+    await links.first().click();
+    await expect(page).toHaveURL(/\/matchup\/\d+$/);
+    await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
+    await page.getByRole("link", { name: /All Week \d+ matchups/ }).click();
+    await expect(page).toHaveURL(/\/matchup\?week=\d+$/);
+  });
+
+  test("the index is noindex and fits a phone", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await page.goto("/matchup");
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
 });

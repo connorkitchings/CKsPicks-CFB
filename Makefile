@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -16,6 +16,7 @@ help:
 	@echo "  DB migrations: run scripts/pipeline/migrate_db.py with an explicit --database-url"
 	@echo ""
 	@echo "Web app (web/):"
+	@echo "  make web-local [ENV=preview|production] - Run the web app locally on real data (matchup pages included)"
 	@echo "  make web-dev       - Start Next.js dev server"
 	@echo "  make web-build     - Production build"
 	@echo "  make web-lint      - ESLint"
@@ -94,6 +95,9 @@ migrate-db:
 # ---------------------------------------------------------------------------
 # Web app (web/)
 # ---------------------------------------------------------------------------
+
+web-local:
+	zsh scripts/ops/run_web_local.sh $(or $(ENV),preview)
 
 web-dev:
 	@echo "🌐 Starting Next.js dev server..."

@@ -14,6 +14,18 @@ separately promoted.
 Anything else is fail-closed market-only rendering. Prediction publication does
 not authorize a model change.
 
+## Local matchup pages
+
+The matchup pages are meant to be run locally for now; production stays closed and nothing in Vercel needs to change.
+
+```bash
+make web-local                    # preview data (default), http://127.0.0.1:3000/matchup
+make web-local ENV=production     # the same Week 5 data from the production database
+# or: zsh scripts/ops/run_web_local.sh [preview|production]
+```
+
+The script uses the restricted pipeline login from the macOS Keychain (not the owner `DATABASE_URL` in `web/.env`) and the app only reads. `/matchup` lists the week's games by day (`?week=N` for other weeks); each game opens its breakdown, and the breakdown links back to the week. Without a database, `CFB_UI_TEST_MODE=1 npm run dev` serves fixtures.
+
 ## Local development
 
 ```bash
@@ -33,7 +45,7 @@ must remain synchronized.
 | Route | Status |
 |---|---|
 | `/`, `/results`, `/ratings`, `/performance`, `/teams/[team]` | Public |
-| `/matchup/[gameId]` | Closed (404) in production unless `CFB_MATCHUP_ENABLED=1`; always `noindex`; open in local dev. No page links to it yet. Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
+| `/matchup` and `/matchup/[gameId]` | A game picker and the pre-game breakdown. Closed (404) in production unless `CFB_MATCHUP_ENABLED=1`; always `noindex`; **open in local dev**, so they can be used locally without touching Vercel (see Local matchup pages below). No public page links to them. Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
 | `/test-picks`, `/test-results` | Design prototypes of the next Picks and Results pages. 404 in a production build unless `CFB_ENABLE_TEST_PAGE=1`; not linked from the site. |
 
 Fixture mode: `CFB_UI_TEST_MODE=1` serves sample data (no database) for the

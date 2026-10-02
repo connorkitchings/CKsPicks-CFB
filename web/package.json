@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts src/lib/run-selection.test.ts src/lib/betting-format.test.ts src/lib/ratings.test.ts src/lib/default-view-selection.test.ts src/lib/performance.test.ts src/lib/matchup-visibility.test.ts src/lib/picks-proto.test.ts src/lib/team-logos.test.ts src/lib/team-stats.test.ts src/lib/matchup-gate.test.ts src/lib/db-result.test.ts scripts/team-logos-lib.test.mjs",
+    "test:publication": "node --experimental-strip-types --test src/lib/publication.test.ts src/lib/run-selection.test.ts src/lib/betting-format.test.ts src/lib/ratings.test.ts src/lib/default-view-selection.test.ts src/lib/performance.test.ts src/lib/matchup-visibility.test.ts src/lib/picks-proto.test.ts src/lib/team-logos.test.ts src/lib/team-stats.test.ts src/lib/matchup-gate.test.ts src/lib/db-result.test.ts src/lib/matchup-index.test.ts scripts/team-logos-lib.test.mjs",
     "test:logos": "node --test scripts/team-logos-lib.test.mjs",
     "logos:build": "node --env-file=../.env scripts/build-team-logos.mjs",
     "test:ui": "NO_COLOR= FORCE_COLOR= playwright test",
