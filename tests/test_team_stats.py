@@ -485,3 +485,41 @@ def test_upsert_records_carry_source_versions():
     r = run([base_game()])
     records = to_upsert_records(r.frame, {"byplay": "abc"})
     assert {rec["source_versions"] for rec in records} == {'{"byplay": "abc"}'}
+
+
+def _verifier():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts/pipeline/verify_team_stats.py"
+    spec = importlib.util.spec_from_file_location("verify_team_stats", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_verifier_correlates_overall_epa_against_cfbd():
+    mod = _verifier()
+    teams = [f"T{i}" for i in range(12)]
+    rows = []
+    for i, t in enumerate(teams):
+        rows += [
+            (t, "offense", "epa_pass", i * 0.1, 30),
+            (t, "offense", "epa_rush", i * 0.05, 30),
+            (t, "offense", "success_rate", 0.4 + i * 0.01, 60),
+        ]
+    ours = mod.our_frame(rows)
+    theirs = pd.DataFrame(
+        [
+            {
+                "team": t,
+                "role": "offense",
+                "ppa": i * 0.07,
+                "successRate": 0.4 + i * 0.01,
+            }
+            for i, t in enumerate(teams)
+        ]
+    )
+    results = {r["metric"]: r for r in mod.compare(ours, theirs)}
+    assert results["EPA/play"]["rho"] == pytest.approx(1.0)
+    assert results["success rate"]["rho"] == pytest.approx(1.0)
