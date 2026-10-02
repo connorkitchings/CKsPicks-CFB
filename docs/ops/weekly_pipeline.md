@@ -80,6 +80,33 @@ PYTHONPATH=src:. zsh scripts/ops/with_production_pipeline_env.sh \
 
 `--weeks 1-6` backfills several snapshots in one transaction. `verify_team_stats.py` needs `--as-of-week` >= 2 and gates on like-for-like teams (CFBD counts FCS games). Production migrations (0019, 0020) use the owner/migrator credential, never the pipeline wrapper.
 
+## Matchup data (V5 measurements, adjusted values, game log, rating decomposition)
+
+`team_possession_stats` (raw V5 metrics shown on matchup pages), `team_possession_adjusted` (opponent-adjusted values, never shown), `team_game_measurements` (per-game log) and `team_rating_components` (prior vs per-game evidence, variance) are built from the **same V5 rating artifacts the site serves**, bound to one rating manifest. Run it right after the ratings are projected (`project-v5-ratings`, or `publish_v5_intended_update_ratings.py` for the repaired lineage) for the new week. See the [matchup data contract](../plans/2026-10-02/01-matchup-data-layer-v2.md).
+
+```bash
+# Dry run: loads and verifies the artifacts, builds all tables, runs the reconciliation gates, prints the payload hash. Writes nothing.
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/publish_matchup_data.py \
+  --season 2026 --environment preview \
+  --rating-manifest-uri <rating-manifest.json> --measurement-manifest-uri <measurement-manifest.json>
+
+# Publish (resumable operator step; same flags plus --year) and verify read-only:
+zsh scripts/ops/with_preview_env.sh uv run python -m cks_picks_cfb.ops publish-matchup-data \
+  --year 2026 --environment preview --rating-manifest-uri <...> --measurement-manifest-uri <...>
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/verify_matchup_data.py \
+  --season 2026 --environment preview --rating-manifest-uri <...> --measurement-manifest-uri <...>
+
+# Production: pass Preview's payload hash so production publishes exactly what Preview verified.
+PYTHONPATH=src:. zsh scripts/ops/with_production_pipeline_env.sh uv run python scripts/pipeline/publish_matchup_data.py \
+  --season 2026 --environment production --rating-manifest-uri <...> --measurement-manifest-uri <...> \
+  --expect-payload-sha <preview payload sha256> --apply
+```
+
+- **Binding:** the rating manifest's raw SHA must equal the site's selected source (`site_week_selections` -> `prediction_runs.rating_manifest_sha256`), its independent verifier must have passed, and `--measurement-manifest-uri` must be its parent (SHA checked). The ratings must already be projected: every component references a `v5_rating_snapshots` row.
+- **Gates (any failure aborts):** rating = prior + per-game evidence; weights and precision identities; evidence + excluded games = observations in the window; raw PPP and recomputed adjusted PPP equal the rating evidence; non-offense points symmetric; component ratings equal `v5_rating_snapshots`; per-team games equal `team_season_stats.games`.
+- **No deletes:** the pipeline role cannot DELETE, so the publisher refuses a payload that would leave stale rows; remove them with the owner role first.
+- **Lineage:** `ops project-v5-ratings` projects replay-lineage manifests (`publish_v5_ratings.py`); the repaired intended-update manifest that is currently served is projected with `publish_v5_intended_update_ratings.py`, which the operator does not call. The matchup publisher accepts the intended-update lineage today; a replay-lineage (aggregate decomposition only) path is Phase B of the contract.
+
 ## Local Preview credentials
 
 `preview-2026` is the durable 2026 Preview branch. Its pipeline and migration

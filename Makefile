@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -31,6 +31,7 @@ help:
 	@echo "  make prepare-week YEAR=2026 WEEK=1 - Rebuild cumulative Silver/Gold before publish"
 	@echo "  make team-stats YEAR=2026 WEEK=6 ENV=preview [DRY=1] - Publish pre-game team stats for the week"
 	@echo "  make promote-silver YEAR=2026 [DRY=1] - Register Preview Silver in the production catalog"
+	@echo "  make matchup-data YEAR=2026 ENV=preview RATING_URI=... MEASUREMENT_URI=... [APPLY=1] - Publish V5 matchup data (dry run by default)"
 	@echo "  make freeze-week YEAR=2026 WEEK=1  - Freeze the active run before kickoff"
 	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
 	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
@@ -180,6 +181,12 @@ team-stats:
 		echo "Usage: make team-stats YEAR=2026 WEEK=6 ENV=preview|production [DRY=1]"; exit 1; \
 	fi
 	PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season $(YEAR) --as-of-week $(WEEK) --environment $(ENV) $(if $(DRY),--dry-run,)
+
+matchup-data:
+	@if [ -z "$(YEAR)" ] || [ -z "$(ENV)" ] || [ -z "$(RATING_URI)" ] || [ -z "$(MEASUREMENT_URI)" ]; then \
+		echo "Usage: make matchup-data YEAR=2026 ENV=preview|production RATING_URI=... MEASUREMENT_URI=... [APPLY=1]"; exit 1; \
+	fi
+	PYTHONPATH=src:. uv run python scripts/pipeline/publish_matchup_data.py --season $(YEAR) --environment $(ENV) --rating-manifest-uri $(RATING_URI) --measurement-manifest-uri $(MEASUREMENT_URI) $(if $(APPLY),--apply,)
 
 promote-silver:
 	@if [ -z "$(YEAR)" ]; then echo "Usage: make promote-silver YEAR=2026 [DRY=1]"; exit 1; fi

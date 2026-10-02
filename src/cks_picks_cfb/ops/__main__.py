@@ -2017,6 +2017,31 @@ def build_steps(
                 ),
             )
         ]
+    if context.command == "publish-matchup-data":
+        rating_uri = str(getattr(options, "rating_manifest_uri", "") or "")
+        measurement_uri = str(getattr(options, "measurement_manifest_uri", "") or "")
+        if not rating_uri or not measurement_uri:
+            raise ValueError(
+                "publish-matchup-data requires the projected rating manifest and its "
+                "measurement parent manifest"
+            )
+        argv = _python(
+            "scripts/pipeline/publish_matchup_data.py",
+            "--season",
+            year,
+            "--environment",
+            context.environment,
+            "--rating-manifest-uri",
+            rating_uri,
+            "--measurement-manifest-uri",
+            measurement_uri,
+            "--apply",
+        )
+        if getattr(options, "weeks", None):
+            argv.extend(["--weeks", str(options.weeks)])
+        if getattr(options, "expect_payload_sha", None):
+            argv.extend(["--expect-payload-sha", str(options.expect_payload_sha)])
+        return [subprocess_step("publish_matchup_data", argv)]
     if context.command == "publish-replay-week":
         assert week is not None and as_of is not None
         if not context.prediction_run_id:
@@ -2436,6 +2461,7 @@ def parse_args() -> argparse.Namespace:
         "publish-week",
         "publish-replay-week",
         "project-v5-ratings",
+        "publish-matchup-data",
         "score-replay-week",
         "freeze-week",
         "close-week",
@@ -2459,6 +2485,7 @@ def parse_args() -> argparse.Namespace:
             "assemble-model-ready",
             "fetch-source",
             "project-v5-ratings",
+            "publish-matchup-data",
             "prepare-rating-history",
             "verify-history-play-sample",
             "reconcile-history-play-captures",
@@ -2492,6 +2519,14 @@ def parse_args() -> argparse.Namespace:
             sub.add_argument("--prepared-gold-ref-uri")
         if command == "project-v5-ratings":
             sub.add_argument("--rating-manifest-uri", required=True)
+        if command == "publish-matchup-data":
+            sub.add_argument("--rating-manifest-uri", required=True)
+            sub.add_argument("--measurement-manifest-uri", required=True)
+            sub.add_argument("--weeks", help="As-of weeks, e.g. 0-5 (default: all)")
+            sub.add_argument(
+                "--expect-payload-sha",
+                help="Abort unless the built payload hash matches (production uses Preview's)",
+            )
         if command == "score-replay-week":
             sub.add_argument("--run-id", required=True)
             sub.add_argument("--outcomes-ref-uri", required=True)

@@ -47,7 +47,9 @@ not treat a successful forecast or first publication as the end of the cycle.
    Matchup stats (optional while matchup pages are closed): after the
    post-week Silver refresh, publish `team_season_stats` for the new week
    (Preview, then production after promoting Silver); see
-   [Team stats](weekly_pipeline.md#team-stats-matchup-pages).
+   [Team stats](weekly_pipeline.md#team-stats-matchup-pages). After the ratings
+   are projected, run `publish-matchup-data` bound to the same rating manifest;
+   see [Matchup data](weekly_pipeline.md#matchup-data-v5-measurements-adjusted-values-game-log-rating-decomposition).
 5. **Freeze before kickoff:** Make a final capture and reconcile both line
    types against every eligible game. Freeze only the selected reviewed run
    within the existing lead-time gate. Use a game-specific waiver only for a

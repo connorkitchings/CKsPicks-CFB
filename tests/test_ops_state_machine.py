@@ -752,3 +752,83 @@ def test_subprocess_step_scopes_pythonpath_and_propagates_command_failure(monkey
     )
     with pytest.raises(Exception, match="9"):
         step.action(context)
+
+
+def test_publish_matchup_data_step_binds_the_rating_and_measurement_manifests():
+    context = new_context(
+        command="publish-matchup-data",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of=None,
+        pipeline_run_id="matchup-data-1",
+    )
+    options = SimpleNamespace(
+        rating_manifest_uri="art/rating-manifest.json",
+        measurement_manifest_uri="art/measurement-manifest.json",
+        weeks="0-5",
+        expect_payload_sha="a" * 64,
+    )
+    steps = build_steps(context, conn_url="postgresql://unused", options=options)
+    assert [step.name for step in steps] == ["publish_matchup_data"]
+    argv = steps[0].definition["argv"]
+    assert argv[1] == "scripts/pipeline/publish_matchup_data.py"
+    for flag, value in (
+        ("--season", "2026"),
+        ("--environment", "preview"),
+        ("--rating-manifest-uri", "art/rating-manifest.json"),
+        ("--measurement-manifest-uri", "art/measurement-manifest.json"),
+        ("--weeks", "0-5"),
+        ("--expect-payload-sha", "a" * 64),
+    ):
+        assert argv[argv.index(flag) + 1] == value
+    assert "--apply" in argv
+
+
+def test_publish_matchup_data_requires_both_manifests():
+    context = new_context(
+        command="publish-matchup-data",
+        environment="preview",
+        season=2026,
+        week=None,
+        as_of=None,
+        pipeline_run_id="matchup-data-2",
+    )
+    for options in (
+        SimpleNamespace(rating_manifest_uri="", measurement_manifest_uri="m"),
+        SimpleNamespace(rating_manifest_uri="r", measurement_manifest_uri=""),
+    ):
+        with pytest.raises(ValueError, match="requires the projected rating manifest"):
+            build_steps(context, conn_url="postgresql://unused", options=options)
+
+
+def test_publish_matchup_data_cli_takes_no_week_and_requires_manifests(monkeypatch):
+    import sys
+
+    from cks_picks_cfb.ops.__main__ import parse_args
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ops",
+            "publish-matchup-data",
+            "--year",
+            "2026",
+            "--environment",
+            "preview",
+            "--rating-manifest-uri",
+            "r",
+            "--measurement-manifest-uri",
+            "m",
+        ],
+    )
+    args = parse_args()
+    assert args.command == "publish-matchup-data" and args.weeks is None
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["ops", "publish-matchup-data", "--year", "2026", "--environment", "preview"],
+    )
+    with pytest.raises(SystemExit):
+        parse_args()
