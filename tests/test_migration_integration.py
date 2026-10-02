@@ -265,3 +265,98 @@ def test_team_season_stats_migration_creates_table_and_upsert_round_trips():
             with pytest.raises(psycopg.errors.CheckViolation):
                 cur.execute(UPSERT_TEAM_STAT_SQL, {**records[0], "role": "special"})
     assert apply_migrations(conn_url, Path("contracts/migrations")) == []
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_matchup_data_v2_migration_tables_constraints_and_grants():
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            for schema in ("ops", "catalog", "public"):
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    applied = apply_migrations(conn_url, Path("contracts/migrations"))
+    assert "0021" in applied
+    sha = "a" * 64
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO v5_rating_snapshots (snapshot_id, source_run_id, "
+                "source_manifest_sha256, team, season, week, game_id, snapshot_class, "
+                "cutoff_utc, offense_rating, offense_variance, defense_rating, "
+                "defense_variance, overall_rating, overall_variance) VALUES "
+                "('run:current:post-week-4:A', 'run', %s, 'A', 2026, 4, NULL, 'current', "
+                "NOW(), 1, 1, 1, 1, 1, 1)",
+                (sha,),
+            )
+            component = (
+                "INSERT INTO team_rating_components (component_id, v5_snapshot_id, "
+                "lineage, candidate_id, source_manifest_sha256, snapshot_class, season, "
+                "as_of_week, cutoff_utc, rating_team, team, unit_role, rating_mean, "
+                "rating_variance, evidence) VALUES (%s, %s, 'intended_update', 'c', %s, "
+                "'current', 2026, 5, NOW(), 'A', 'A', %s, 1.5, 0.2, '[]'::jsonb)"
+            )
+            cur.execute(
+                component,
+                (
+                    "run:current:post-week-4:A:offense",
+                    "run:current:post-week-4:A",
+                    sha,
+                    "offense",
+                ),
+            )
+            # The FK forces ratings to be projected first.
+            with pytest.raises(psycopg.errors.ForeignKeyViolation):
+                cur.execute(
+                    component, ("x:offense", "missing-snapshot", sha, "offense")
+                )
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            bad = [
+                (
+                    "INSERT INTO team_possession_stats (season, as_of_week, team, role, "
+                    "metric, rating_manifest_sha256, measurement_manifest_sha256) VALUES "
+                    "(2026, 5, 'A', 'offense', 'not_a_metric', %s, %s)"
+                ),
+                (
+                    "INSERT INTO team_possession_adjusted (season, as_of_week, team, role, "
+                    "measurement_id, adjustment_method, rating_manifest_sha256, "
+                    "measurement_manifest_sha256) VALUES (2026, 5, 'A', 'offense', "
+                    "'success_rate', 'm', %s, %s)"
+                ),
+                (
+                    "INSERT INTO team_possession_stats (season, as_of_week, team, role, "
+                    "metric, rating_manifest_sha256, measurement_manifest_sha256) VALUES "
+                    "(2026, 5, 'A', 'offense', 'ppp', 'short', %s)"
+                ),
+            ]
+            for statement in bad:
+                params = (sha, sha) if statement.count("%s") == 2 else (sha,)
+                with pytest.raises(psycopg.errors.CheckViolation):
+                    cur.execute(statement, params)
+                conn.rollback()
+    with psycopg.connect(conn_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT table_name, grantee, string_agg(privilege_type, ',' "
+                "ORDER BY privilege_type) FROM information_schema.role_table_grants "
+                "WHERE table_name = ANY(%s) AND grantee IN ('cks_web', 'cks_pipeline') "
+                "GROUP BY 1, 2 ORDER BY 1, 2",
+                (
+                    [
+                        "matchup_data_publications",
+                        "team_game_measurements",
+                        "team_possession_stats",
+                        "team_possession_adjusted",
+                        "team_rating_components",
+                    ],
+                ),
+            )
+            grants = cur.fetchall()
+    assert len(grants) == 10
+    assert {g[2] for g in grants if g[1] == "cks_web"} == {"SELECT"}
+    assert {g[2] for g in grants if g[1] == "cks_pipeline"} == {"INSERT,SELECT,UPDATE"}
+    assert apply_migrations(conn_url, Path("contracts/migrations")) == []
