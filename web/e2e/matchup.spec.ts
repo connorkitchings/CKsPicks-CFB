@@ -25,6 +25,23 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(first.getByTitle("Not ranked").first()).toBeVisible();
   });
 
+  test("section headers are centered across the table", async ({ page }) => {
+    await page.goto("/matchup/1");
+    const table = page.getByRole("table").first();
+    const tableBox = await table.boundingBox();
+    for (const label of ["Core possession efficiency", "Situational / down and distance", "Drive context"]) {
+      const header = table.locator("th[scope='rowgroup']", { hasText: label });
+      await expect(header).toHaveCSS("text-align", "center");
+      const textBox = await header.evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const r = range.getBoundingClientRect();
+        return { x: r.x, width: r.width };
+      });
+      expect(Math.abs(textBox.x + textBox.width / 2 - (tableBox!.x + tableBox!.width / 2))).toBeLessThan(4);
+    }
+  });
+
   test("an exact zero shows its value but no rank", async ({ page }) => {
     await page.goto("/matchup/1");
     const row = page

@@ -150,7 +150,7 @@ export function UnitMatchupTable({
               <th
                 scope="rowgroup"
                 colSpan={5}
-                className="pl-2 pt-3 text-left align-bottom text-[10px] font-semibold uppercase tracking-wider text-ink-faint"
+                className="pt-3 text-center align-bottom text-[10px] font-semibold uppercase tracking-wider text-ink-faint"
               >
                 {group.label}
               </th>
