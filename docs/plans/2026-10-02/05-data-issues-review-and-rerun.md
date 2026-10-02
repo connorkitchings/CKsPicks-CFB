@@ -85,4 +85,3 @@ Run the Phase 0 script on two clean-score teams and two flagged teams for `scori
 ## Carry-forward (separate from this contract)
 
 - Week 5 close after certified finals: `scripts/pipeline/backfill_v5_unconstrained_grades.py --week 5 --grades-only` ([plan 04](04-remove-edge-constraints-grade-all-games.md)).
-- The unfinished Picks/Results card redesign on `dev` (9 failing browser tests) before the next release to `main`.

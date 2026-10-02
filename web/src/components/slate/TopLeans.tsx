@@ -6,7 +6,7 @@ import TeamLogo from "@/components/TeamLogo";
 function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: string }) {
   const rows = topLeans(games, kind, 5);
   return (
-    <div className="rounded-lg border border-line/60 bg-surface-inset/50 p-3">
+    <div className="min-w-0 rounded-lg border border-line/60 bg-surface-inset/50 p-3">
       <h3 className="mb-2 text-center text-xs font-semibold uppercase tracking-wider text-ink-muted">
         {title}
       </h3>
@@ -18,7 +18,7 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
             <li key={l.game.gameId}>
               <a
                 href={`#game-${l.game.gameId}`}
-                className="flex h-10 items-center justify-center gap-2 rounded-md px-2.5 transition-colors hover:bg-surface-card focus-visible:outline-2 focus-visible:outline-accent"
+                className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-md px-2.5 transition-colors hover:bg-surface-card focus-visible:outline-2 focus-visible:outline-accent"
               >
                 {kind === "total" ? (
                   <>

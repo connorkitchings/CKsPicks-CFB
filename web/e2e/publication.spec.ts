@@ -74,18 +74,25 @@ test.describe("picks slate (/)", () => {
   test("shows each lean's direction and model prediction once, without a second market/model table", async ({ page }) => {
     await page.goto("/");
 
-    // Edge sits in parentheses next to the pick; no separate "Edge" label.
-    await expect(page.getByText("(5.1)").first()).toBeVisible();
+    // Edge sits in parentheses after the model's number; no separate "Edge" label.
+    await expect(page.getByText("(+5.1)").first()).toBeVisible();
     await expect(page.getByText(/^Edge \d/)).toHaveCount(0);
-    // One line under the pick: just the model's prediction, no explanatory sentence.
-    await expect(page.getByText(/^model: Appalachian State by 7\.6 · best line: DraftKings$/).first()).toBeVisible();
-    await expect(page.getByText(/^model: 54\.1 · best line: Bovada$/).first()).toBeVisible();
+    // Each bet cell: the pick with its sportsbook, then one line with the model's number and the edge.
+    const appState = page.locator("#game-1");
+    await expect(appState).toContainText("Appalachian State -2.5");
+    await expect(appState).toContainText("(DraftKings)");
+    await expect(appState).toContainText("Model: Appalachian State by 7.6");
+    await expect(appState).toContainText("Under 57.5");
+    await expect(appState).toContainText("(Bovada)");
+    await expect(appState).toContainText("Model: 54.1");
     // Provider keys are shown as sportsbook names.
-    await expect(page.getByText(/best line: FanDuel/).first()).toBeVisible();
+    await expect(page.getByText("(FanDuel)").first()).toBeVisible();
     // A game with no recorded source shows the model's number but no invented book.
-    await expect(page.locator("#game-9").getByText("model: Oklahoma by 2.0", { exact: true })).toBeVisible();
-    await expect(page.locator("#game-9").getByText(/best line/)).toHaveCount(0);
-    await expect(page.getByText(/wins by more than|loses by under|total above|total below/)).toHaveCount(0);
+    const oklahoma = page.locator("#game-9");
+    await expect(oklahoma).toContainText("Oklahoma +4.0");
+    await expect(oklahoma).toContainText("Model: Oklahoma by 2.0");
+    await expect(oklahoma.getByText(/\((DraftKings|FanDuel|Bovada|BetMGM|ESPN Bet|Caesars)\)/)).toHaveCount(0);
+    await expect(page.getByText(/wins by more than|loses by under|total above|total below|best line:/)).toHaveCount(0);
     // The old Market / Model grid is gone from the cards.
     await expect(page.getByText("Market", { exact: true })).toHaveCount(0);
     await expect(page.getByText("Model", { exact: true })).toHaveCount(0);
@@ -105,18 +112,25 @@ test.describe("picks slate (/)", () => {
     await expect(record.getByText(/read it as a back-test/)).toHaveCount(0);
   });
 
-  test("leans only, sort and list view work", async ({ page }) => {
+  test("team filter, list view and an empty result work", async ({ page }) => {
     await page.goto("/");
+    const games = page.locator("li[id^='game-']");
+    await expect(games).toHaveCount(10);
 
-    await page.getByRole("button", { name: /Leans only/ }).click();
-    await expect(page.getByText("Showing 8 of 10 games")).toBeVisible();
+    await page.getByPlaceholder("Filter by team…").fill("Oregon");
+    await expect(games).toHaveCount(1);
+    await expect(games.first()).toHaveAttribute("id", "game-3");
 
-    await page.locator("#slate-sort").selectOption("bestEdge");
-    // Flat list, biggest edge first (Oregon @ USC total edge 8.7).
-    await expect(page.locator("li[id^='game-']").first()).toHaveAttribute("id", "game-3");
+    await page.getByPlaceholder("Filter by team…").fill("zzz");
+    await expect(games).toHaveCount(0);
+
+    await page.getByPlaceholder("Filter by team…").fill("");
+    await expect(games).toHaveCount(10);
 
     await page.getByRole("button", { name: "list", exact: true }).click();
     await expect(page.getByRole("button", { name: "list", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "grid", exact: true })).toHaveAttribute("aria-pressed", "false");
+    await expect(games).toHaveCount(10);
     expect(await fits(page)).toBe(true);
   });
 
@@ -242,7 +256,7 @@ test.describe("results slate (/results)", () => {
     await expect(page.getByText("Retrospective replay", { exact: true })).toBeVisible();
   });
 
-  test("weekly record sits beside the season record; finals read from the pick's side", async ({ page }) => {
+  test("weekly record sits beside the season record; result cards show the graded pick and the model's number", async ({ page }) => {
     await page.goto("/results");
 
     const record = page.getByRole("region", { name: "Record" });
@@ -250,7 +264,10 @@ test.describe("results slate (/results)", () => {
     await expect(record.getByText("4–3–1")).toBeVisible();
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
     await expect(record.getByText(/Live/)).toHaveCount(0);
-    await expect(page.getByText(/model: Ohio State by 8\.6 · final: won by 7/).first()).toBeVisible();
+    const ohioState = page.locator("li[id^='game-']").filter({ hasText: "Ohio State" }).first();
+    await expect(ohioState).toContainText("Ohio State -6.0");
+    await expect(ohioState).toContainText("Model: Ohio State by 8.6");
+    await expect(ohioState.getByText("Win", { exact: true }).first()).toBeVisible();
   });
 
   test("team search narrows the results slate and cards show a graded badge", async ({ page }) => {

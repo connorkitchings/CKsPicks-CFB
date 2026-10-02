@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
 import { edgeTone, leanFor, resultFor, type Lean } from "@/lib/slate";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { MarketGameCard } from "./MarketGameCard";
 import { dayShort } from "./format";
 import { GameWhen } from "./GameWhen";
@@ -121,9 +122,12 @@ export function ResultGameCard({
           <div className="flex items-center gap-2">
             <GameWhen when={dayShort(game.startDate)} game={game} />
           </div>
-          <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
-            Final
-          </span>
+          <div className="flex items-center gap-2">
+            <MatchupButton gameId={game.gameId} />
+            <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+              Final
+            </span>
+          </div>
         </div>
         <TeamPair game={game} winner={awayWon ? "away" : homeWon ? "home" : null} />
       </div>
