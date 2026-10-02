@@ -8,7 +8,7 @@
   - **Provenance:** every `team_season_stats` row stores the Silver version ids that built it.
   - **Validation:** CFBD advanced stats are the external check, gated on like-for-like teams because CFBD includes FCS games.
   - **Pre-game consistency:** matchup ratings come from the latest frozen generation at or before kickoff, backfilled with preseason priors, so they match the pre-game stats.
-  - **Defect found:** `db.execute()` on the Neon HTTP driver returns `{rows}`, not an array. The `to_regclass` guards for `prediction_market_selections`, `game_venues` and `team_season_stats` therefore always reported the table missing and would have hidden that data in production. Fixed with a shared, tested helper. Releasing this to production also turns on the market-selection (sportsbook) display, which its guard had been silently suppressing.
+  - **Defect found:** `db.execute()` on the Neon HTTP driver returns `{rows}`, not an array. The `to_regclass` guards for `prediction_market_selections`, `game_venues` and `team_season_stats` therefore always reported the table missing and would have hidden that data in production. Fixed with a shared, tested helper. The released production cards (`GameRow`) do not render the sportsbook source; that display lives in the prototype cards, so nothing new appears until they are ported.
 - **Source:** [team stats contract, Amendment 1](../plans/2026-10-01/10-authentic-team-stats-pipeline.md), [status](../status.md).
 
 ## 2026-10-01: Success Metric, Self-Hosted Logos, Pre-Game Team Stats

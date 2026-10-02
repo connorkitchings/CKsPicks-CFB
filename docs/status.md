@@ -53,17 +53,17 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Release state
 
-`dev` is ahead of `main`: the Picks/Results prototypes (`/test-picks`, `/test-results`), self-hosted logos, game venues UI, the team-stats pipeline and the gated matchup page are on `dev` only. `main` is unchanged production. Merge `dev` into `main` to release; the matchup page stays closed in production until `CFB_MATCHUP_ENABLED=1`.
+`main` and `dev` were synced at `53d346b` on 2026-10-02 and production is serving that release (CI green): self-hosted WebP logos on the real Picks/Results cards, venue data in the page payload, and the fixed optional-table checks. City/state, sportsbook-behind-the-line and rank badges are built only in the closed prototypes (`picks-proto/`), so they are **not yet visible** on the production Picks/Results cards; porting the prototypes is the next UI task. Built but closed in production: `/matchup/[gameId]` (until `CFB_MATCHUP_ENABLED=1`) and the `/test-picks` and `/test-results` prototypes (until `CFB_ENABLE_TEST_PAGE=1`). Later commits on `dev` land here first; release by fast-forwarding `main` (see `AGENTS.md`, Branching).
 
 ## In flight
 
 - Week 5: wait for certified finals, then score
   ([weekly operator](ops/v5_weekly_operator.md)).
-- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code on `dev`; data live on Preview and production** as of 2026-10-02 (Silver promoted, migrations 0019/0020 applied, team stats weeks 1-5 = 10,460 rows, venues = 271), run by the user and verified read-only; checked against CFBD (Amendment 1). Remaining: merge `dev` into `main` to ship the code, then `CFB_MATCHUP_ENABLED=1` when the matchup page is approved.
+- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code released to `main` (`53d346b`); data live on Preview and production** as of 2026-10-02 (Silver promoted, migrations 0019/0020 applied, team stats weeks 1-5 = 10,460 rows, venues = 271), run by the user and verified read-only; checked against CFBD (Amendment 1). Remaining: set `CFB_MATCHUP_ENABLED=1` when the matchup page is approved, then mark the contract Implemented; re-run team stats for week 6 after Week 5 finals.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
-- Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): UI on `dev`; data live on Preview and production (271 games).
+- Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): venue data live in production (271 games); the city/state UI exists only in the closed prototypes until they are ported to the real cards.
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 
 ## Where to look next

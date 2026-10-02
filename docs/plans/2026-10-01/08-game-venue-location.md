@@ -5,7 +5,7 @@
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("game venue", "UI now, data at home").
 - **Implementation log:** `session_logs/2026-10-01/13-prototype-cards-location.md` (code and tests). The data steps below are run by the user with Neon/R2 credentials.
-- **Preview run (2026-10-02):** migration 0019 applied and 271 venue rows published to Preview (260 with city and state, 10 venues not in Silver, shown without a location). Production (user-run 2026-10-02): 0019 applied and 271 rows published, 271 with a city and 269 with a state (production's venue Silver version is newer, so all 10 Preview misses resolved).
+- **Preview run (2026-10-02):** migration 0019 applied and 271 venue rows published to Preview (260 with city and state, 10 venues not in Silver, shown without a location). Production (user-run 2026-10-02; the data is in the page payload, but the city/state UI is only in the closed prototype cards until they are ported): 0019 applied and 271 rows published, 271 with a city and 269 with a state (production's venue Silver version is newer, so all 10 Preview misses resolved).
 - **Commit policy:** Code is on `dev`. Run the data steps on Preview first, then production. Merge `dev` into `main` when the Preview check passes.
 
 ## Goal
