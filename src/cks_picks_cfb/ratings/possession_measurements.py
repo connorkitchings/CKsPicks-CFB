@@ -27,9 +27,22 @@ from cks_picks_cfb.data.data_first_possession_v1 import (
     TERMINAL_COLUMNS,
 )
 from cks_picks_cfb.data.data_first_repair_v2 import LIVE_TIMING, RECONSTRUCTED_TIMING
+from cks_picks_cfb.data.play_filters import (
+    eligible_play,
+    eligible_possession_play_mask,  # noqa: F401  (re-exported for existing importers)
+    finite_number,
+    is_dead_play,
+    play_period,
+)
 from cks_picks_cfb.preseason_features import canonical_team
 
-_DEAD_MARKERS = ("timeout", "end of", "period end", "game end", "delay of game")
+# Private names kept so the rest of this module reads as before; the definitions
+# live in data/play_filters.py.
+_eligible_play = eligible_play
+_num = finite_number
+_dead_play = is_dead_play
+_period = play_period
+
 _NON_OFFENSE_MARKERS = (
     "interception",
     "fumble",
@@ -60,26 +73,6 @@ class PossessionMeasurementResult:
     final_reconciliation: dict[int, dict[str, float]]
 
 
-def _num(value: Any) -> float | None:
-    try:
-        result = float(value)
-    except (TypeError, ValueError):
-        return None
-    return result if np.isfinite(result) else None
-
-
-def _period(value: Any) -> str:
-    numeric = _num(value)
-    if numeric is None or numeric != int(numeric) or numeric < 1:
-        return "unknown"
-    return "overtime" if numeric >= 5 else "regulation"
-
-
-def _dead_play(value: Any) -> bool:
-    text = str(value or "").casefold()
-    return any(marker in text for marker in _DEAD_MARKERS)
-
-
 def _non_offense_play(value: Any) -> bool:
     text = str(value or "").casefold()
     return any(marker in text for marker in _NON_OFFENSE_MARKERS)
@@ -88,17 +81,6 @@ def _non_offense_play(value: Any) -> bool:
 def _conversion_play(value: Any, twopoint: Any) -> bool:
     text = str(value or "").casefold()
     return _num(twopoint) == 1 or any(marker in text for marker in _CONVERSION_MARKERS)
-
-
-def _eligible_play(row: Any) -> bool:
-    return (
-        _period(row.quarter) == "regulation"
-        and _num(row.st) == 0
-        and _num(row.penalty) == 0
-        and _num(row.twopoint) == 0
-        and _num(row.garbage) == 0
-        and not _dead_play(row.play_type)
-    )
 
 
 def _source_id(row: Any) -> str:
@@ -1154,13 +1136,3 @@ def build_replay(
 # Silver team stats). The private names remain the definitions.
 adjust_possession_history = _adjust
 eligible_possession_play = _eligible_play
-
-
-def eligible_possession_play_mask(byplay: pd.DataFrame) -> pd.Series:
-    """Vector form of the V5 play filter: regulation, no special teams, penalty,
-    two-point, garbage time or dead plays. Same definition as ``_eligible_play``."""
-    return pd.Series(
-        [eligible_possession_play(row) for row in byplay.itertuples(index=False)],
-        index=byplay.index,
-        dtype=bool,
-    )

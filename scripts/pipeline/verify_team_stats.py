@@ -44,13 +44,16 @@ def our_frame(rows: list[tuple]) -> pd.DataFrame:
     counts = df.pivot_table(
         index=["team", "role"], columns="metric", values="n", aggfunc="first"
     )
-    pass_n = counts["epa_pass"].fillna(0)
-    rush_n = counts["epa_rush"].fillna(0)
-    total = (pass_n + rush_n).where(lambda s: s > 0)
     wide["plays"] = counts["success_rate"]
-    wide["overall_epa"] = (
-        wide["epa_pass"].fillna(0) * pass_n + wide["epa_rush"].fillna(0) * rush_n
-    ) / total
+    if "ppa_per_play" in wide.columns:
+        wide["overall_epa"] = wide["ppa_per_play"]
+    else:  # snapshots published before ppa_per_play: blend pass and rush PPA
+        pass_n = counts["epa_pass"].fillna(0)
+        rush_n = counts["epa_rush"].fillna(0)
+        total = (pass_n + rush_n).where(lambda s: s > 0)
+        wide["overall_epa"] = (
+            wide["epa_pass"].fillna(0) * pass_n + wide["epa_rush"].fillna(0) * rush_n
+        ) / total
     return wide.reset_index()
 
 

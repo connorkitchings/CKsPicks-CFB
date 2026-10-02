@@ -232,6 +232,25 @@ class TestByplayVectorized:
         ]
         return pd.DataFrame(plays)
 
+    def test_returned_punt_is_a_special_teams_play(self):
+        raw = pd.DataFrame(
+            [
+                _make_play(play_number=1, play_type="Rush", down=3),
+                _make_play(
+                    play_number=2,
+                    play_type="Punt Return",
+                    down=4,
+                    yards_gained=18,
+                    yards_to_first=10,
+                ),
+            ]
+        )
+        df = allplays_to_byplay(raw).sort_values("play_number")
+        punt = df[df["play_type"] == "Punt Return"].iloc[0]
+        assert punt["st"] == 1
+        assert punt["st_punt"] == 1
+        assert df[df["play_type"] == "Rush"].iloc[0]["st"] == 0
+
     def test_fumble_turnover_column_exists(self):
         df = allplays_to_byplay(self._minimal_raw_plays())
         assert "fumble_turnover" in df.columns

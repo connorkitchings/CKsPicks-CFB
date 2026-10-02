@@ -525,6 +525,49 @@ def test_verifier_correlates_overall_epa_against_cfbd():
     assert results["EPA/play"]["rho"] == pytest.approx(1.0)
     assert results["success rate"]["rho"] == pytest.approx(1.0)
 
+    # With ppa_per_play published, the verifier compares it directly.
+    rows += [(t, "offense", "ppa_per_play", i * 0.07, 60) for i, t in enumerate(teams)]
+    direct = mod.our_frame(rows)
+    assert list(direct["overall_epa"]) == list(direct["ppa_per_play"])
+
+
+def test_ppa_per_play_is_the_mean_filtered_ppa():
+    r = run([base_game()])
+    a = val(r, "A", "offense", "ppa_per_play")
+    assert a["value"] == pytest.approx((1.0 - 0.2 - 0.8) / 3)
+    assert a["n"] == 3
+    assert val(r, "B", "offense", "ppa_per_play")["value"] == pytest.approx(1.2)
+    # Defense columns are what the unit allowed: A's defense faced B's 1.2.
+    assert val(r, "A", "defense", "ppa_per_play")["value"] == pytest.approx(1.2)
+
+
+def test_returned_punts_flagged_st0_do_not_count_as_plays():
+    """CFBD "Punt Return" rows arrive as 4th-down plays with st=0, ppa 0, turnover 0."""
+    keys = (
+        "ppa_per_play",
+        "success_rate",
+        "explosive_rate",
+        "conv_rate_3rd_4th",
+        "turnover_rate",
+        "early_down_epa",
+        "epa_pass",
+        "epa_rush",
+    )
+    clean = run([base_game()])
+    gid, week, home, away, drv = base_game()
+    drv[0]["plays"].append(play("Punt Return", 4, 10, 25, 0.0, None))
+    leaky = run([(gid, week, home, away, drv)])
+    for key in keys:
+        for team, role in (("A", "offense"), ("B", "defense")):
+            got, want = val(leaky, team, role, key), val(clean, team, role, key)
+            assert got["n"] == want["n"], key
+            if want["value"] is None:
+                assert got["value"] is None, key
+            else:
+                assert got["value"] == pytest.approx(want["value"]), key
+    assert leaky.report["punt_plays_excluded"] == 1
+    assert clean.report["punt_plays_excluded"] == 0
+
 
 def test_overtime_and_dead_plays_use_the_v5_filter():
     gid, week, home, away, drv = base_game()

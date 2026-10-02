@@ -275,6 +275,9 @@ def allplays_to_byplay(
     st_kickoffs = ["Kickoff", "Kickoff Return (Offense)", "Kickoff Return Touchdown"]
     st_punts = [
         "Punt",
+        # CFBD's label for an ordinary returned punt; before 2026-10-02 it was
+        # missing here, leaving st == 0 (see data/play_filters.py).
+        "Punt Return",
         "Blocked Punt",
         "Punt Return Touchdown",
         "Blocked Punt Touchdown",

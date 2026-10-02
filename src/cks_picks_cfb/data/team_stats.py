@@ -2,12 +2,13 @@
 
 ``build_team_season_stats`` aggregates FBS-vs-FBS games completed *before* week
 ``as_of_week`` into one long row per ``(team, role, metric)`` with the raw
-value, the sample behind it and a national rank (1 = best). Plays use the same
-eligibility filter as the V5 measurement layer (regulation only; no special
-teams, penalties, two-point tries, dead plays or garbage time), imported from
-``ratings.possession_measurements`` rather than copied, and points per scoring
-opportunity use the same score-stream reconstruction, so there is one
-definition of each measurement in the repo.
+value, the sample behind it and a national rank (1 = best). Plays use
+``play_filters.scrimmage_play_mask``: the V5 eligibility filter (regulation
+only; no special teams, penalties, two-point tries, dead plays or garbage time)
+minus kicking plays, which Silver can leave flagged ``st == 0`` (returned
+punts). Points per scoring opportunity use the V5 score-stream reconstruction.
+Team stats is the source of basic stats; the ratings import the play rules from
+``data.play_filters`` instead of keeping their own.
 """
 
 from __future__ import annotations
@@ -19,13 +20,14 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.play_filters import (
+    eligible_possession_play_mask,
+    scrimmage_play_mask,
+)
 from cks_picks_cfb.ratings.contracts import MeasurementContractError
 from cks_picks_cfb.ratings.observations import (
     derive_is_drive_play,
     true_drive_points,
-)
-from cks_picks_cfb.ratings.possession_measurements import (
-    eligible_possession_play_mask,
 )
 
 #: Minimum completed FBS games before a team is ranked on any metric.
@@ -38,6 +40,7 @@ DEFENSE = "defense"
 #: Defense columns describe what the defense *allowed* (turnover_rate is what
 #: it forced, so more is better there).
 METRICS: dict[str, tuple[bool, bool]] = {
+    "ppa_per_play": (True, False),
     "epa_pass": (True, False),
     "epa_rush": (True, False),
     "early_down_epa": (True, False),
@@ -178,6 +181,7 @@ def _role_rows(
             rushing = _is_rush(team_plays["play_type"])
         down = pd.to_numeric(team_plays["down"], errors="coerce")
         values: dict[str, tuple[float | None, int]] = {
+            "ppa_per_play": _mean(ppa),
             "epa_pass": _mean(ppa[passing]),
             "epa_rush": _mean(ppa[rushing]),
             "early_down_epa": _mean(ppa[down.isin([1, 2])]),
@@ -282,7 +286,11 @@ def build_team_season_stats(
 
     plays["is_drive_play"] = derive_is_drive_play(plays)
     garbage = pd.to_numeric(plays["garbage"], errors="coerce")
-    plays["eligible"] = eligible_possession_play_mask(plays)
+    # The legacy V5 filter still passes returned punts (Silver st == 0); team
+    # stats drops them. See data/play_filters.py.
+    legacy_eligible = eligible_possession_play_mask(plays)
+    plays["eligible"] = scrimmage_play_mask(plays)
+    report["punt_plays_excluded"] = int((legacy_eligible & ~plays["eligible"]).sum())
     report["plays_missing_garbage_flag"] = int(
         ((plays["is_drive_play"] == 1) & garbage.isna()).sum()
     )
