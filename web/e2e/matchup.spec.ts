@@ -10,7 +10,7 @@ test.describe("matchup page (fixture mode)", () => {
     for (const section of ["Core possession efficiency", "Situational / down and distance", "Drive context"]) {
       await expect(first.getByText(section)).toBeVisible();
     }
-    for (const label of ["Points/possession", "EPA/possession", "EPA/play", "Pass EPA/play"]) {
+    for (const label of ["Points/possession", "PPA/possession", "PPA/play", "Pass PPA/play"]) {
       const escaped = label.replace(/[/]/g, "\\/");
       await expect(first.locator("td").filter({ hasText: new RegExp(`^${escaped}`) }).first()).toBeVisible();
     }

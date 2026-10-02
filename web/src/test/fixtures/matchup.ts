@@ -11,7 +11,7 @@ function hash(text: string): number {
 
 /**
  * Deterministic fixture stats (test mode only). The away team has no national
- * rank on explosive plays and pass EPA (unranked rows), and the home defense
+ * rank on explosive plays and pass PPA (unranked rows), and the home defense
  * has an exact-zero explosive rate (a value with no rank); every other row is
  * ranked, with a few ties.
  */
