@@ -38,3 +38,7 @@
 - **Open at close-out:** user-run production republish of team stats (`ppa_per_play`); Week 5 close with `backfill_v5_unconstrained_grades.py --week 5 --grades-only`; the data issues in `known_issues.md`; the unfinished card redesign.
 - **CI rehearsal on a clean checkout of the release commit (no env files, CI's env vars):** `ruff format --check` (caught an unformatted `backfill_v5_unconstrained_grades.py`, fixed in `272b97e`), `ruff check`, contracts validation, `pytest -W error -n 4` with `CFBD_API_KEY=ci-placeholder` and a disposable local PostgreSQL 14 (scratchpad, TCP only, deleted afterwards) for the migration integration tests: 1626 passed, 2 skipped; web `lint`, `typecheck`, `test:publication` (110), `build`, `CI=1 test:ui` (43/43); `mkdocs build --strict`.
 
+## After the release
+- **Decision (user):** bundle the production team-stats republish with the data-issue review so everything affected is reviewed and rerun together; documented as "Review and rerun together" in `docs/data/known_issues.md`, linked from contract 03, `docs/status.md` and the decision log. The matchup page stays closed in production until the batch is done.
+- **Also committed on `dev`, not released:** the unfinished Picks/Results card redesign (13 web files) as a WIP commit; 9 e2e tests fail with it. Do not fast-forward `main` to a `dev` that contains it until the e2e suite is green.
+

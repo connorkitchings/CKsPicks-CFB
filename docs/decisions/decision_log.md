@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-02: Bundle the Production Team-Stats Republish With the Data-Issue Review
+
+- **Decision:** the production republish of team stats waits for the data-issue review (non-monotonic play-by-play score, V5 punt companions, zero-PPA plays, unverified drive metrics) so the affected aggregations are rerun once, with Preview and production identical in method. The matchup page stays closed in production until then.
+- **Why:** Preview already has the punt fix; a production write now would likely be redone if the review changes `pts_per_scoring_opp` or the Silver build. Nothing user-visible waits on it.
+- **Source:** [known data issues](../data/known_issues.md).
+
 ## 2026-10-02: Shareable Matchup Card
 
 - **Decisions:** One fixed 4:5 image (1080x1350, exported at 2x) per matchup, made in the viewer's browser from a dedicated always-dark card component, not from the responsive page. Everything on one card: lines, both offense-vs-defense panels, a "Biggest mismatches" callout. The Share button is hidden when a game has no published stats; the card has no retrospective label and carries the site name only. No link-preview image yet (a later `ImageResponse` route could reuse the same data).

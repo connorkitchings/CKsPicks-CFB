@@ -41,6 +41,8 @@ The plan also moved `derive_is_drive_play` and `true_drive_points` out of `ratin
 
 ## Production steps (user-run)
 
+> **On hold (2026-10-02):** the production republish below is bundled with the data-issue review and rerun described in [known data issues](../../data/known_issues.md#review-and-rerun-together-decision-2026-10-02), so the affected tables are written to production once. Do not run it on its own. The commands stay here for when the batch is ready.
+
 Production `team_season_stats` still holds the pre-fix values for conversion, explosive and turnover rate and has no `ppa_per_play`. Preview was republished 2026-10-02 (11,506 rows, weeks 1-5, hand-check matches exactly). To republish production:
 
 ```
