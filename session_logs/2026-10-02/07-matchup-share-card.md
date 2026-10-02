@@ -40,5 +40,5 @@
 
 ## After the release
 - **Decision (user):** bundle the production team-stats republish with the data-issue review so everything affected is reviewed and rerun together; documented as "Review and rerun together" in `docs/data/known_issues.md`, linked from contract 03, `docs/status.md` and the decision log. The matchup page stays closed in production until the batch is done.
-- **Also committed on `dev`, not released:** the unfinished Picks/Results card redesign (13 web files) as a WIP commit; 9 e2e tests fail with it. Do not fast-forward `main` to a `dev` that contains it until the e2e suite is green.
+- **Unfinished Picks/Results card redesign (13 web files):** committed as a WIP commit (`0c3aa62`); 9 e2e tests fail with it. Told the user a push to `main` would deploy it and turn CI red; the user chose to push `dev` to `main` as it is. CI on `main` is therefore expected red until those tests are fixed (or `git revert 0c3aa62`). Last CI-green commit: `d12f3a0`.
 
