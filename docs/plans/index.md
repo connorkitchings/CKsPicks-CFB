@@ -68,6 +68,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data live on Preview and production; released 2026-10-02) |
 | [High-quality team logos](2026-10-01/07-high-quality-team-logos.md) | Replace the 32 px logos with self-hosted, id-keyed, theme-aware WebP | Implemented 2026-10-01 (fetched on the user's machine; legacy files removed) |
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
+| [Port picks/results prototypes to production](2026-10-02/02-port-picks-results-prototypes.md) | Replace `/` and `/results` slate UI with the proven prototype lean-sentence design; delete `/test-*` routes and the old stack | Approved |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 
