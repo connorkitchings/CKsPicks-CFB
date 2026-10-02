@@ -9,6 +9,7 @@ import {
   gamesBehind,
   getRankBadgeClass,
   groupUnitRows,
+  hasMissingValue,
   rankLabel,
   rankTitle,
   rankTier,
@@ -300,4 +301,14 @@ test("formatMetric shows a PPA that rounds to zero without a sign", () => {
   assert.equal(formatMetric("epa", -0.005), "−0.01");
   assert.equal(formatMetric("epa", 0.12), "+0.12");
   assert.equal(formatMetric("epa", -0.3), "−0.30");
+});
+
+test("hasMissingValue is true only when a row shows a dash value", () => {
+  const full = unitRow("a", 10, 20);
+  const missingOffense = { ...unitRow("b", null, 20), offenseValue: "—" };
+  const missingDefense = { ...unitRow("c", 10, null), defenseValue: "—" };
+  assert.equal(hasMissingValue([full], [full]), false);
+  assert.equal(hasMissingValue([full], [missingOffense]), true);
+  assert.equal(hasMissingValue([missingDefense], [full]), true);
+  assert.equal(hasMissingValue(), false);
 });

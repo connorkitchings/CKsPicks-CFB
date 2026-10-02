@@ -4,6 +4,7 @@ import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
 import {
   groupUnitRows,
+  hasMissingValue,
   mismatchSummary,
   rankLabel,
   rankTier,
@@ -432,6 +433,7 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         <div>
           Defense columns show what that defense allowed.
           {stats.cohortSize !== null ? ` Ranks are among ${stats.cohortSize} teams; T = tied.` : ""}
+          {hasMissingValue(stats.awayOffVsHomeDef, stats.homeOffVsAwayDef) ? " — = not enough clean data." : ""}
         </div>
         <div>Team names and logos are trademarks of their respective schools and owners, shown for identification only.</div>
       </div>

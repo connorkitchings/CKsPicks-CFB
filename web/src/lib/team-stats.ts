@@ -276,6 +276,11 @@ export function gamesBehind(rows: TeamStatRow[], team: string): number {
   return rows.reduce((max, r) => (r.team === team ? Math.max(max, r.games) : max), 0);
 }
 
+/** True when any row shows "—" for a value (no clean data to compute it), on either side. */
+export function hasMissingValue(...panels: UnitMatchupRow[][]): boolean {
+  return panels.some((rows) => rows.some((row) => row.offenseValue === "—" || row.defenseValue === "—"));
+}
+
 /** Rows grouped by section, preserving the display order. */
 export function groupUnitRows(
   rows: UnitMatchupRow[],
