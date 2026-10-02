@@ -25,36 +25,42 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(first.getByTitle("Not ranked").first()).toBeVisible();
   });
 
-  test("an exact zero shows its value but no rank and no edge", async ({ page }) => {
+  test("an exact zero shows its value but no rank", async ({ page }) => {
     await page.goto("/matchup/1");
     const row = page
       .getByRole("table")
       .first()
       .locator("tr", { hasText: "Explosive plays" });
     await expect(row.locator("td").last()).toHaveText("0.0%");
-    await expect(row).toHaveAttribute("data-edge", "none"); // unranked side: no cue
     await expect(row.getByTitle("Not ranked")).toHaveCount(2);
   });
 
-  test("rows carry an accent edge bar on the favored side, with a summary and legend", async ({ page }) => {
+  test("no edge bars, edge summaries or legend are drawn (kept in code for later)", async ({ page }) => {
     await page.goto("/matchup/1");
-    await expect(page.getByTestId("edge-legend")).toBeVisible();
-    await expect(page.getByTestId("edge-summary").first()).toContainText(/Edge: .* offense \d+ · .* defense \d+ · even \d+/);
-    const strong = page.locator("tr[data-strength='strong']").first();
-    const slight = page.locator("tr[data-strength='slight']").first();
-    expect(await page.locator("tr[data-edge='offense'], tr[data-edge='defense']").count()).toBeGreaterThan(2);
-    for (const rowLoc of [strong, slight]) {
-      if (await rowLoc.count()) {
-        const side = await rowLoc.getAttribute("data-edge");
-        const cell = side === "offense" ? rowLoc.locator("td").first() : rowLoc.locator("td").last();
-        await expect(cell).toHaveClass(/border-(l|r)-\[3px\]/);
-        await expect(cell).toHaveClass(/border-accent/);
-        await expect(rowLoc.locator(".sr-only")).toContainText(/Edge: /);
-      }
+    await expect(page.getByTestId("edge-summary")).toHaveCount(0);
+    await expect(page.getByTestId("edge-legend")).toHaveCount(0);
+    await expect(page.locator("[data-edge], [data-strength]")).toHaveCount(0);
+    await expect(page.getByText(/Edge:/)).toHaveCount(0);
+    await expect(page.getByText(/darker means a bigger gap/)).toHaveCount(0);
+  });
+
+  test("table headers stack the logo above the name above Offense/Defense, centered", async ({ page }) => {
+    await page.goto("/matchup/1");
+    const heads = page.getByRole("table").first().locator("xpath=ancestor::div[1]").locator("h3");
+    await expect(heads).toHaveCount(2);
+    const first = page.getByRole("table").first().locator("xpath=ancestor::div[1]");
+    const block = first.locator("div.flex-col").first();
+    const img = await block.locator("img").first().boundingBox();
+    const name = await block.locator("h3").boundingBox();
+    const role = await block.locator("span").first().boundingBox();
+    expect(img!.y + img!.height).toBeLessThanOrEqual(name!.y + 2); // logo above name
+    expect(name!.y + name!.height).toBeLessThanOrEqual(role!.y + 2); // name above role
+    const box = await block.boundingBox();
+    const center = (b: { x: number; width: number }) => b.x + b.width / 2;
+    for (const part of [img!, name!, role!]) {
+      expect(Math.abs(center(part) - center(box!))).toBeLessThan(3); // centered
     }
-    // Even rows draw no bar.
-    const even = page.locator("tr[data-edge='even']").first();
-    if (await even.count()) await expect(even.locator("td").first()).toHaveClass(/border-transparent/);
+    await expect(block).toContainText("Offense");
   });
 
   test("tables sit side by side on desktop with aligned rows, and stack on a phone", async ({ page }) => {
@@ -68,8 +74,8 @@ test.describe("matchup page (fixture mode)", () => {
     expect(b!.x).toBeGreaterThan(a!.x + a!.width - 2);
     expect(a!.width).toBeGreaterThan(430); // roomy enough for five columns
     // Rows line up across the two tables (fixed row heights).
-    const ra = await tables.nth(0).locator("tr[data-edge]").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-    const rb = await tables.nth(1).locator("tr[data-edge]").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const ra = await tables.nth(0).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    const rb = await tables.nth(1).locator("tbody tr").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
     expect(ra).toEqual(rb);
 
     await page.setViewportSize({ width: 390, height: 900 });
@@ -105,9 +111,7 @@ test.describe("matchup page (fixture mode)", () => {
     const lastTable = await page.getByRole("table").last().boundingBox();
     const notes = await page.getByTestId("matchup-notes").boundingBox();
     expect(notes!.y).toBeGreaterThan(lastTable!.y + lastTable!.height - 2);
-    const firstTable = await page.getByRole("table").first().boundingBox();
-    const legend = await page.getByTestId("edge-legend").boundingBox();
-    expect(legend!.y).toBeGreaterThan(firstTable!.y);
+
     await expect(page.locator("[title='Model minus market']").first()).toBeVisible();
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });

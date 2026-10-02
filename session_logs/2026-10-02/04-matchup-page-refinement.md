@@ -11,6 +11,10 @@
 ## Work Completed
 `team-stats.ts` (12 metrics, `rankLabel`/`rankTitle`, zero rule, `rowEdge`, `edgeSummary`), `tie-sql.ts` and both stats queries, `UnitMatchupTable` (compact, aligned rows, edge bars, wrapping labels, "Offense/Defense" column heads), `MatchupHero` (records, venue, V5 rank label, edge notes, sportsbook), page layout and metadata, header/nav/footer width on the matchup route, visibility gate carries sportsbook sources, fixtures and tests.
 
+## Follow-ups after review (same session)
+- Removed "Lean" from Model Bet; moved the stats caption below the tables; removed the per-table edge summary lines, the row edge bars and their legend (the `rowEdge`/`edgeSummary` logic stays in `team-stats.ts` with its unit tests for later); table headers now stack the logo above the name above Offense/Defense, centered; tie badges no longer wrap on a phone.
+- The e2e suite was updated for these changes but could not run while the user's local server held Next's lock; run `npx playwright test` after stopping it.
+
 ## Validation
 - [x] lint, typecheck, `test:publication` (102), `CFB_UI_TEST_MODE=1 npm run build`, Playwright 38/38.
 - [x] Real Preview data viewed at 390, 1024 and 1440 px (dark) and 1440 (light): Western Kentucky at New Mexico State, Ohio State at Iowa, Florida at Missouri; real ties (T-1, T-34, T-87) confirmed on the page.

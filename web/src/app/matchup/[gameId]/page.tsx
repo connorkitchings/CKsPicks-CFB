@@ -78,13 +78,6 @@ export default async function MatchupPage({
                 allowed.
                 {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams; T = tied.`}
               </p>
-              <p className="flex items-start gap-2" data-testid="edge-legend">
-                <span aria-hidden className="mt-0.5 inline-block h-3 w-[3px] shrink-0 rounded-full bg-accent" />
-                <span>
-                  The bar on a row marks the side with the edge (offense rank against the opposing
-                  defense&rsquo;s rank); darker means a bigger gap.
-                </span>
-              </p>
             </section>
           </section>
         ) : (
