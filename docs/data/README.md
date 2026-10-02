@@ -12,3 +12,5 @@ for football meaning, exposure, provenance, adjustment eligibility, and rating
 eligibility. Historical provider and transformed-schema prose is retained in
 the [documentation archive](../archive.md), not as current schema
 authority.
+
+- [Known data issues](known_issues.md): open and resolved data-quality issues (play-by-play score stream, V5 punt companions, zero-PPA plays).
