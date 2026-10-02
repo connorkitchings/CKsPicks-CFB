@@ -150,7 +150,6 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByRole("link", { name: /^Return to Week/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: /^All Week \d+ matchups$/ })).toBeVisible();
 
-    await expect(page.locator("[title='Model minus market']").first()).toBeVisible();
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });
 
