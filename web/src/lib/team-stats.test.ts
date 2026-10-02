@@ -15,7 +15,7 @@ import {
   rowEdge,
   rowGap,
   edgeSummary,
-  mismatchSentence,
+  mismatchSummary,
   topMismatches,
   SECTION_LABELS,
   UNIT_METRICS,
@@ -246,7 +246,7 @@ test("topMismatches ranks the biggest gaps first across both panels and skips ev
   // Percentile gaps (cohort 100): B offense #95 vs A defense #4 = 0.92 (A defense);
   // A offense #10 vs B defense #90 = 0.81 (A offense); B offense #20 vs A defense #60 = 0.40 (B offense).
   assert.deepEqual(
-    top.map((m) => [m.metric, m.favoredTeam, m.favoredUnit]),
+    top.map((m) => [m.metric, m.favored.team, m.favored.unit]),
     [
       ["PPA/play", "A", "defense"],
       ["PPA/play", "A", "offense"],
@@ -266,14 +266,20 @@ test("topMismatches keeps display order for equal gaps and returns fewer than re
   assert.deepEqual(topMismatches(tie).map((m) => m.metric), ["first", "second"]);
 });
 
-test("mismatchSentence names both units with their ranks, T- for ties", () => {
-  const [m] = topMismatches([
-    { offenseTeam: "Western Kentucky", defenseTeam: "New Mexico State", rows: [unitRow("PPA/play", 12, 131, true)] },
-  ]);
-  assert.equal(
-    mismatchSentence(m),
-    "Western Kentucky offense T-12 vs New Mexico State defense #131: PPA/play",
-  );
+test("mismatchSummary says who has the edge and by how many places; a panel can be asked on its own", () => {
+  const panel = {
+    offenseTeam: "Western Kentucky",
+    defenseTeam: "New Mexico State",
+    rows: [unitRow("PPA/play", 12, 131, true), unitRow("Success rate", 60, 61)],
+  };
+  const [m] = topMismatches([panel]);
+  assert.equal(mismatchSummary(m), "Western Kentucky offense by 119 spots");
+  assert.deepEqual([m.favored.rank, m.favored.tied, m.other.rank, m.other.unit], [12, true, 131, "defense"]);
+  assert.equal(topMismatches([panel], 2).length, 1, "the even row is skipped");
+  const one = topMismatches([{ ...panel, rows: [unitRow("x", 10, 11), unitRow("y", 50, 49)] }]);
+  assert.deepEqual(one, []);
+  const spot = topMismatches([{ ...panel, rows: [unitRow("z", 1, 2)] }]);
+  assert.deepEqual(spot, [], "a one-place gap is even");
 });
 
 test("rankTier uses the same percentile bands as the badge classes", () => {

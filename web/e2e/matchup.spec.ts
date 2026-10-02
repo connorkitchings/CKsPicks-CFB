@@ -251,7 +251,8 @@ test.describe("matchup page (fixture mode)", () => {
     // overflow is hidden on the card, so content taller than the canvas shows up as scrollHeight > clientHeight.
     expect(fit.scrollHeight).toBeLessThanOrEqual(fit.clientHeight);
     expect(fit.scrollWidth).toBeLessThanOrEqual(fit.clientWidth);
-    expect(fit.text).toContain("Biggest mismatches");
+    expect(fit.text).toMatch(/Biggest mismatches/);
+    expect(fit.text).toMatch(/(offense|defense) by \d+ spots?/);
     expect(fit.text).toContain("Forecast & Lines");
     expect(fit.text).not.toMatch(/Lean|Model minus market/);
 

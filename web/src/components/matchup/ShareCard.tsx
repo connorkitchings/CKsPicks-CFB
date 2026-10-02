@@ -4,10 +4,11 @@ import { formatKickoff, venueLine } from "@/lib/matchup-format";
 import { logoSrc, teamInitials } from "@/lib/team-logos";
 import {
   groupUnitRows,
-  mismatchSentence,
+  mismatchSummary,
   rankLabel,
   rankTier,
   topMismatches,
+  type Mismatch,
   type RankTier,
   type UnitMatchupRow,
 } from "@/lib/team-stats";
@@ -223,6 +224,36 @@ function Forecast({ matchup }: { matchup: MatchupData }) {
   );
 }
 
+function MismatchBox({ items }: { items: Mismatch[] }) {
+  return (
+    <div
+      data-testid="share-mismatches"
+      style={{ width: 494, background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 16px 10px" }}
+    >
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: C.accent }}>
+        Biggest mismatches
+      </div>
+      {items.length === 0 && <div style={{ marginTop: 8, fontSize: 15, color: C.faint }}>No lopsided matchups here.</div>}
+      {items.map((m) => (
+        <div
+          key={m.metric}
+          style={{ marginTop: 9, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3 }}>{m.metric}</div>
+            <div style={{ marginTop: 2, fontSize: 15, color: C.accent }}>{mismatchSummary(m)}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <Badge rank={m.favored.rank} cohort={m.favored.cohort} tied={m.favored.tied} />
+            <span style={{ fontSize: 12, color: C.faint, textTransform: "uppercase", letterSpacing: 1 }}>vs</span>
+            <Badge rank={m.other.rank} cohort={m.other.cohort} tied={m.other.tied} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const COLS = ["96px", "56px", "minmax(0, 1fr)", "56px", "96px"].join(" ");
 
 function Panel({
@@ -326,10 +357,14 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
   const stats = matchup.stats;
   if (!stats) return null;
   const venue = venueLine(matchup);
-  const mismatches = topMismatches([
-    { offenseTeam: matchup.awayTeam, defenseTeam: matchup.homeTeam, rows: stats.awayOffVsHomeDef },
-    { offenseTeam: matchup.homeTeam, defenseTeam: matchup.awayTeam, rows: stats.homeOffVsAwayDef },
-  ]);
+  const awayPanelEdges = topMismatches(
+    [{ offenseTeam: matchup.awayTeam, defenseTeam: matchup.homeTeam, rows: stats.awayOffVsHomeDef }],
+    2,
+  );
+  const homePanelEdges = topMismatches(
+    [{ offenseTeam: matchup.homeTeam, defenseTeam: matchup.awayTeam, rows: stats.homeOffVsAwayDef }],
+    2,
+  );
   return (
     <div
       ref={ref}
@@ -384,18 +419,10 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
         />
       </div>
 
-      {mismatches.length > 0 && (
-        <div data-testid="share-mismatches" style={{ background: C.panel, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 18px" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1.4, textTransform: "uppercase", color: C.accent }}>
-            Biggest mismatches
-          </div>
-          {mismatches.map((m) => (
-            <div key={`${m.favoredTeam}-${m.favoredUnit}-${m.metric}`} style={{ marginTop: 6, fontSize: 17, lineHeight: 1.25 }}>
-              {mismatchSentence(m)}
-            </div>
-          ))}
-        </div>
-      )}
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <MismatchBox items={awayPanelEdges} />
+        <MismatchBox items={homePanelEdges} />
+      </div>
 
       <div style={{ marginTop: "auto", fontSize: 12, lineHeight: 1.45, color: C.faint }}>
         <div>

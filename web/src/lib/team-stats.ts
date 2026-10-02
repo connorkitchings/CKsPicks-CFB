@@ -151,30 +151,36 @@ export function rowEdge(
   };
 }
 
-/** One of the most lopsided rows across both offense-vs-defense panels. */
+/** One side of a mismatch: a team's unit and where it ranks on the metric. */
+export interface MismatchSide {
+  team: string;
+  unit: StatRole;
+  rank: number;
+  cohort: number | null;
+  tied: boolean;
+}
+
+/** One of the most lopsided rows across the offense-vs-defense panels. */
 export interface Mismatch {
   metric: string;
-  /** Team holding the advantage, and which of its units. */
-  favoredTeam: string;
-  favoredUnit: StatRole;
-  favoredRank: string;
-  /** The other team's opposing unit. */
-  otherTeam: string;
-  otherUnit: StatRole;
-  otherRank: string;
-  /** Absolute percentile gap (0 to 1). */
+  /** The side holding the advantage, and the other team's opposing unit. */
+  favored: MismatchSide;
+  other: MismatchSide;
+  /** Rank places between the two sides (for example 106 places). */
+  spots: number;
+  /** Absolute percentile gap (0 to 1); orders the list. */
   gap: number;
 }
 
-/** "Western Kentucky offense (#12) vs New Mexico State defense (#131): PPA/play". */
-export function mismatchSentence(m: Mismatch): string {
-  return `${m.favoredTeam} ${m.favoredUnit} ${m.favoredRank} vs ${m.otherTeam} ${m.otherUnit} ${m.otherRank}: ${m.metric}`;
+/** "New Mexico State offense by 106 spots". */
+export function mismatchSummary(m: Mismatch): string {
+  return `${m.favored.team} ${m.favored.unit} by ${m.spots} ${m.spots === 1 ? "spot" : "spots"}`;
 }
 
 /**
  * The `count` rows with the biggest rank-percentile gap, largest first. Rows
  * inside the even band or with an unranked side are skipped; ties keep display
- * order (panel order, then row order).
+ * order (panel order, then row order). Pass one panel to get that panel's edges.
  */
 export function topMismatches(
   panels: { offenseTeam: string; defenseTeam: string; rows: UnitMatchupRow[] }[],
@@ -187,19 +193,29 @@ export function topMismatches(
       order += 1;
       const gap = rowGap(row.offenseRank, row.offenseCohort, row.defenseRank, row.defenseCohort);
       if (gap === null || Math.abs(gap) < EDGE_EVEN_GAP) continue;
-      const offenseRank = rankLabel(row.offenseRank, row.offenseTied);
-      const defenseRank = rankLabel(row.defenseRank, row.defenseTied);
+      if (row.offenseRank === null || row.defenseRank === null) continue;
+      const offense: MismatchSide = {
+        team: offenseTeam,
+        unit: "offense",
+        rank: row.offenseRank,
+        cohort: row.offenseCohort,
+        tied: row.offenseTied,
+      };
+      const defense: MismatchSide = {
+        team: defenseTeam,
+        unit: "defense",
+        rank: row.defenseRank,
+        cohort: row.defenseCohort,
+        tied: row.defenseTied,
+      };
       const offenseFavored = gap > 0;
       found.push({
         order,
         mismatch: {
           metric: row.name,
-          favoredTeam: offenseFavored ? offenseTeam : defenseTeam,
-          favoredUnit: offenseFavored ? "offense" : "defense",
-          favoredRank: offenseFavored ? offenseRank : defenseRank,
-          otherTeam: offenseFavored ? defenseTeam : offenseTeam,
-          otherUnit: offenseFavored ? "defense" : "offense",
-          otherRank: offenseFavored ? defenseRank : offenseRank,
+          favored: offenseFavored ? offense : defense,
+          other: offenseFavored ? defense : offense,
+          spots: Math.abs(row.offenseRank - row.defenseRank),
           gap: Math.abs(gap),
         },
       });
