@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
@@ -78,10 +79,33 @@ function TeamBlock({
   );
 }
 
-/** A line plus the sportsbook behind it when the run recorded one. */
-function Source({ book }: { book: string | null }) {
-  if (!book) return null;
-  return <span className="ml-1.5 font-sans text-[11px] text-ink-faint">({book})</span>;
+/** One centered value in the forecast grid, with the sportsbook beneath when known. */
+function Cell({
+  value,
+  book,
+  accent = false,
+  muted = false,
+  testId,
+}: {
+  value: string;
+  book?: string | null;
+  accent?: boolean;
+  muted?: boolean;
+  testId?: string;
+}) {
+  return (
+    <div className="text-center" data-testid={testId}>
+      <span
+        className={clsx(
+          "font-mono",
+          muted ? "text-ink-faint" : accent ? "font-medium text-accent-ink" : "font-medium text-ink",
+        )}
+      >
+        {value}
+      </span>
+      {book && <span className="block font-sans text-[11px] leading-tight text-ink-faint">{book}</span>}
+    </div>
+  );
 }
 
 export function MatchupHero({ matchup }: { matchup: MatchupData }) {
@@ -131,49 +155,43 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           <div className="flex flex-col items-center justify-center rounded-xl border border-line/60 bg-surface-inset px-5 py-4 text-center sm:min-w-[360px]">
             <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Forecast & Lines</span>
 
-            <div className="mt-3 inline-grid grid-cols-[auto_1fr] items-baseline gap-x-3.5 gap-y-2 text-left text-sm">
-              <span className="whitespace-nowrap font-medium text-ink-muted">Market:</span>
-              <div className="flex flex-wrap items-baseline font-mono text-ink">
-                <span className="font-medium">{matchup.marketSpread}</span>
-                <Source book={matchup.spreadSource} />
-                {matchup.marketTotal && (
-                  <span className="ml-1.5 font-sans text-xs text-ink-muted">
-                    · O/U {matchup.marketTotal.toFixed(1)}
-                    <Source book={matchup.totalSource} />
-                  </span>
-                )}
-              </div>
+            <div
+              data-testid="forecast-grid"
+              className="mt-3 grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-5 gap-y-3 text-sm"
+            >
+              <span aria-hidden />
+              <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Spread</span>
+              <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Total</span>
+
+              <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Market</span>
+              <Cell value={matchup.marketSpread} book={matchup.spreadSource} />
+              <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} book={matchup.totalSource} />
 
               {matchup.publicationMode === "predictions" && (
                 <>
-                  <span className="whitespace-nowrap font-medium text-ink-muted">Model:</span>
-                  <div className="flex flex-wrap items-baseline font-mono text-ink">
-                    <span className="font-medium">{matchup.modelSpread}</span>
-                    {matchup.modelTotal && (
-                      <span className="ml-1.5 font-sans text-xs text-ink-muted">
-                        · O/U {matchup.modelTotal.toFixed(1)}
-                      </span>
-                    )}
-                  </div>
+                  <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
+                  <Cell value={matchup.modelSpread} />
+                  <Cell value={matchup.modelTotal ? matchup.modelTotal.toFixed(1) : "—"} />
 
-                  <span className="whitespace-nowrap font-medium text-ink-muted">Model Bet:</span>
-                  <div className="flex flex-wrap items-baseline font-mono text-sm">
-                    {matchup.spreadLean ? (
-                      <span className="font-medium text-accent-ink">
-                        {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam}
-                      </span>
-                    ) : (
-                      <span className="text-ink-faint">No Spread</span>
-                    )}
-                    {matchup.totalLean && (
-                      <>
-                        <span className="mx-1.5 font-sans text-xs text-ink-muted">·</span>
-                        <span className="font-medium text-accent-ink">
-                          {matchup.totalLean === "over" ? "Over" : "Under"}
-                        </span>
-                      </>
-                    )}
-                  </div>
+                  <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model Bet</span>
+                  <Cell
+                    accent
+                    testId="model-bet-spread"
+                    value={
+                      matchup.spreadLean
+                        ? matchup.spreadLean === "home"
+                          ? matchup.homeTeam
+                          : matchup.awayTeam
+                        : "No Spread"
+                    }
+                    muted={!matchup.spreadLean}
+                  />
+                  <Cell
+                    accent
+                    testId="model-bet-total"
+                    value={matchup.totalLean ? (matchup.totalLean === "over" ? "Over" : "Under") : "—"}
+                    muted={!matchup.totalLean}
+                  />
                 </>
               )}
             </div>

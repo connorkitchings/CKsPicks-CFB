@@ -130,8 +130,11 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByText("Forecast & Lines")).toBeVisible();
     await expect(page.getByTitle("Model minus market")).toHaveCount(0);
     // The model bet names the side without the word "Lean".
-    const bet = page.getByText("Model Bet:").locator("xpath=following-sibling::div[1]");
-    await expect(bet).not.toContainText("Lean");
+    await expect(page.getByTestId("forecast-grid")).not.toContainText("Lean");
+    // Spread and Total columns line up: every value in a column shares one center line.
+    const grid = page.getByTestId("forecast-grid");
+    await expect(grid.getByText("Spread", { exact: true })).toBeVisible();
+    await expect(grid.getByText("Total", { exact: true })).toBeVisible();
     // Explanations and legends live below the tables, not above them.
     const lastTable = await page.getByRole("table").last().boundingBox();
     const notes = await page.getByTestId("matchup-notes").boundingBox();
