@@ -59,7 +59,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 - Week 5: wait for certified finals, then score
   ([weekly operator](ops/v5_weekly_operator.md)).
-- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code on `dev`; data live on Preview** (migrations 0019/0020, team stats weeks 1-5, venues) as of 2026-10-02, checked against CFBD (Amendment 1). **Production pending:** promote Silver (`promote_silver_versions.py`, dry run verified), apply 0019/0020 with the owner credential, publish. Matchup pages stay closed in production until `CFB_MATCHUP_ENABLED=1`.
+- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code on `dev`; data live on Preview and production** as of 2026-10-02 (Silver promoted, migrations 0019/0020 applied, team stats weeks 1-5 = 10,460 rows, venues = 271), run by the user and verified read-only; checked against CFBD (Amendment 1). Remaining: merge `dev` into `main` to ship the code, then `CFB_MATCHUP_ENABLED=1` when the matchup page is approved.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
