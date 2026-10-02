@@ -4,10 +4,10 @@ system_name: "Trench Warfare V5"
 model_id: "v5-possession-ppp-rho060-exposure"
 year: 2026
 week: 5
-spread_edge_threshold: 1.0
+spread_edge_threshold: 0.0
 spread_edge_threshold_high_conf: 8.0
-total_lean_threshold: 1.0
-total_edge_threshold: 1.5
+total_lean_threshold: 0.0
+total_edge_threshold: 0.0
 v5_live_forecast:
   schema_version: v5_weekly_serving_v1
   forecast_manifest_uri: artifacts/research/data-first-football-v1/forecasts/live-runs/forecast-v1-2026w5-live-r2/live-forecast-manifest.json

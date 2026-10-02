@@ -2,7 +2,7 @@
 system_name: "Trench Warfare V5 Intended Update"
 model_id: "v5-intended-update-2026-v1"
 year: 2026
-spread_edge_threshold: 1.0
+spread_edge_threshold: 0.0
 spread_edge_threshold_high_conf: 8.0
-total_lean_threshold: 1.0
-total_edge_threshold: 1.5
+total_lean_threshold: 0.0
+total_edge_threshold: 0.0

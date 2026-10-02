@@ -197,12 +197,12 @@ def build(
             serving,
             week_games.rename(columns={"game_id": "id"}),
         )
-        # Total leans begin at 1.0 point, but the accepted grade gate is 1.5.
-        scored.loc[
-            scored["total_line"].notna()
-            & scored["edge_total"].lt(float(config.total_edge_threshold)),
-            "Total Bet Result",
-        ] = "No Bet"
+        if float(config.total_edge_threshold) > 0.0:
+            scored.loc[
+                scored["total_line"].notna()
+                & scored["edge_total"].lt(float(config.total_edge_threshold)),
+                "Total Bet Result",
+            ] = "No Bet"
         # Deterministic row order: upstream schedule order differs between the
         # local-cache and R2 source paths, so sort by game_id for byte-stable
         # artifacts (the --apply evidence guard requires exact equality).

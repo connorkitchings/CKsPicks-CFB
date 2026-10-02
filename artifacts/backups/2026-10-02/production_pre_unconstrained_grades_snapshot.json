@@ -1,0 +1,8302 @@
+{
+  "timestamp": "2026-10-02T19:15:48.425287+00:00",
+  "season": 2026,
+  "prediction_grades": [
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856634,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856634,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856636,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856637,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856637,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856660,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856660,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856661,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856662,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856664,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856664,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856665,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856667,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856667,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856668,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856668,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856670,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856671,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856671,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856673,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856674,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856676,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856676,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856677,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856678,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856678,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856679,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856679,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856681,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856681,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856682,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856682,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856683,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856683,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856684,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856684,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856685,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856685,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856686,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856686,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856687,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856688,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856688,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856689,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856689,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856690,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856690,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856691,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856691,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856692,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856692,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856693,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856694,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856694,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856695,
+      "target": "spread",
+      "side": "home",
+      "result": "push",
+      "profit_units": 0.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856695,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856696,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856696,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856697,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856698,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856699,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856700,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856700,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856702,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856703,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856704,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401856766,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401856766,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856772,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856772,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856776,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856776,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856777,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856777,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856778,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856778,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856780,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856780,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856781,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856781,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856782,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856782,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856783,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856788,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856788,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856790,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856792,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856792,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856793,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856793,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856795,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856795,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856796,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856796,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856797,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856797,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856798,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856798,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856799,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856799,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856800,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856800,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856801,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856801,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856802,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856804,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856804,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856805,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856806,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856806,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856810,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856810,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856811,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856812,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856812,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856813,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856814,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856814,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856815,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856815,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856816,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856816,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856881,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856881,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858201,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858201,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858202,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858204,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858204,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858206,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858206,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858207,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858207,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858209,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858210,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858212,
+      "target": "spread",
+      "side": "home",
+      "result": "push",
+      "profit_units": 0.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858212,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858214,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858216,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858216,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858217,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858217,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858219,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858221,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858221,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858224,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858224,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858225,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858225,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858226,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858229,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858229,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858230,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858230,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858231,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858231,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858232,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858234,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858234,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858238,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858239,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858240,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858240,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858241,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858241,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858242,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858243,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858243,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858423,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858423,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858424,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858425,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858426,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858426,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858428,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858428,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858429,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858429,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858430,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858430,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858432,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858432,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858433,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858433,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858434,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858434,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858436,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858437,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858437,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858438,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858440,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858440,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858441,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858441,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858442,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858443,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858444,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858444,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858445,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858446,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858446,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858449,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858450,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858451,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858451,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858453,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858453,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858454,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858454,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858456,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858456,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858457,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858457,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858458,
+      "target": "spread",
+      "side": "home",
+      "result": "push",
+      "profit_units": 0.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858460,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858460,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858461,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858461,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858462,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858462,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858463,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858463,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858464,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858464,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858465,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858465,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858466,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858466,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858467,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858469,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858469,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858470,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858470,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401859184,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401860878,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401860878,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860881,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860883,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860883,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860884,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860884,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860887,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860887,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860888,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860888,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860889,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860889,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860891,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860891,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860893,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860893,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860894,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860894,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860895,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860896,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860896,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860897,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860897,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401861963,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401861970,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401861970,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401862693,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401862693,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862695,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862695,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862699,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862699,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862702,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862702,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862703,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862703,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862707,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862708,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862708,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862710,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862710,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862771,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862771,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862773,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862773,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862774,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862776,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862778,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862779,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862779,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862780,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862782,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862782,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862784,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862785,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862785,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864432,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864443,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864443,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864494,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864494,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864495,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864497,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864497,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864498,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864502,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864502,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864507,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864508,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864508,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864509,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864509,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864510,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864510,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864511,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864511,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864512,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864570,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864570,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864571,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864572,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864572,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864574,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864574,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864575,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864576,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864577,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864577,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864578,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864578,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864579,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864579,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401866408,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401866408,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866414,
+      "target": "spread",
+      "side": "away",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866414,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866418,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866418,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866422,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866423,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866423,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866425,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866425,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866429,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866429,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401867796,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401867804,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401867804,
+      "target": "total",
+      "side": "under",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869931,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869931,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869940,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869941,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869948,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401869955,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401869960,
+      "target": "spread",
+      "side": "home",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401869960,
+      "target": "total",
+      "side": "over",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869961,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869961,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401870763,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401871045,
+      "target": "spread",
+      "side": "away",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401871045,
+      "target": "total",
+      "side": "under",
+      "result": "win",
+      "profit_units": 0.9091
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401871047,
+      "target": "spread",
+      "side": "home",
+      "result": "loss",
+      "profit_units": -1.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401871047,
+      "target": "total",
+      "side": "over",
+      "result": "win",
+      "profit_units": 0.9091
+    }
+  ],
+  "predictions": [
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856634,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856636,
+      "spread_lean": null,
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856637,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856660,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856661,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856662,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856664,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856665,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856667,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856668,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856670,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856671,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856673,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856674,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856676,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856677,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856678,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856679,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856681,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856682,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856683,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856684,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856685,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856686,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856687,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856688,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856689,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856690,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856691,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856692,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856693,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856694,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856695,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856696,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856697,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856698,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856699,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856700,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856702,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856703,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856704,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856705,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856707,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856708,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856709,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856710,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856711,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401856766,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856772,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856776,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856777,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856778,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856780,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856781,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856782,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856783,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856788,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856790,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856792,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856793,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856795,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856796,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856797,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856798,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856799,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856800,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856801,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856802,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856804,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856805,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856806,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856807,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856810,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856811,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856812,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856813,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856814,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856815,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856816,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856817,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856818,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856819,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856820,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856821,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856822,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856881,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858201,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858202,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858204,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858206,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858207,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858209,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858210,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858212,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858214,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858216,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858217,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858219,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858221,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858224,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858225,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858226,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858229,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858230,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858231,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858232,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858234,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858238,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858239,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858240,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858241,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858242,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858243,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858245,
+      "spread_lean": null,
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858246,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858247,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858248,
+      "spread_lean": null,
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858249,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858250,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858251,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858252,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858253,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858423,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858424,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858425,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858426,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858428,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858429,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858430,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858432,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858433,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858434,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858436,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858437,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858438,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858440,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858441,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858442,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858443,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858444,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858445,
+      "spread_lean": null,
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858446,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858449,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858450,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858451,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858453,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858454,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858456,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858457,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858458,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858460,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858461,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858462,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858463,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858464,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858465,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858466,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858467,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858469,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858470,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858472,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858473,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858474,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858475,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858476,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858477,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858478,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858479,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401859184,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401860878,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860881,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860883,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860884,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860887,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860888,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860889,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860891,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860893,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860894,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860895,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860896,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860897,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860898,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860899,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860900,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860921,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401861963,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401861970,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401862693,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862695,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862699,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862702,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862703,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862705,
+      "spread_lean": null,
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862707,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862708,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862710,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862771,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862773,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862774,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862776,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862778,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862779,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862780,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862782,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862784,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862785,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862786,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862787,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862788,
+      "spread_lean": null,
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862791,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862792,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864432,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864443,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864494,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864495,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864497,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864498,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864502,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864507,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864508,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864509,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864510,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864511,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864512,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864513,
+      "spread_lean": null,
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864514,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864515,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864570,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864571,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864572,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864574,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864575,
+      "spread_lean": null,
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864576,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864577,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864578,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864579,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401866408,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866414,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866418,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866422,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866423,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866425,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866429,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866430,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866431,
+      "spread_lean": "away",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866432,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866433,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866434,
+      "spread_lean": "away",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866477,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401867796,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401867804,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869842,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869931,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869932,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869940,
+      "spread_lean": null,
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869941,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869942,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869948,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401869955,
+      "spread_lean": "home",
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869956,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401869960,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869961,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869962,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401870763,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401871045,
+      "spread_lean": "away",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401871047,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401871048,
+      "spread_lean": null,
+      "total_lean": null
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871049,
+      "spread_lean": "home",
+      "total_lean": "under"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871050,
+      "spread_lean": "home",
+      "total_lean": "over"
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871089,
+      "spread_lean": "home",
+      "total_lean": "under"
+    }
+  ],
+  "prediction_market_selections": [
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856634,
+      "target": "spread",
+      "side": "away",
+      "point": -28.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856634,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856636,
+      "target": "spread",
+      "side": "home",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856636,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856637,
+      "target": "spread",
+      "side": "away",
+      "point": -26.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856637,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856660,
+      "target": "spread",
+      "side": "away",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856660,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856661,
+      "target": "spread",
+      "side": "home",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856661,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856662,
+      "target": "spread",
+      "side": "away",
+      "point": -28.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856662,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856664,
+      "target": "spread",
+      "side": "away",
+      "point": -41.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856664,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856665,
+      "target": "spread",
+      "side": "away",
+      "point": -35.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856665,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856667,
+      "target": "spread",
+      "side": "away",
+      "point": -29.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856667,
+      "target": "total",
+      "side": "under",
+      "point": 60.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856668,
+      "target": "spread",
+      "side": "away",
+      "point": -40.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856668,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856670,
+      "target": "spread",
+      "side": "home",
+      "point": -12.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856670,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856671,
+      "target": "spread",
+      "side": "away",
+      "point": -33.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856671,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856673,
+      "target": "spread",
+      "side": "away",
+      "point": -40.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856673,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856674,
+      "target": "spread",
+      "side": "home",
+      "point": 10.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856674,
+      "target": "total",
+      "side": "over",
+      "point": 49.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856676,
+      "target": "spread",
+      "side": "away",
+      "point": -47.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856676,
+      "target": "total",
+      "side": "under",
+      "point": 61.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856677,
+      "target": "spread",
+      "side": "away",
+      "point": 1.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856677,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856678,
+      "target": "spread",
+      "side": "home",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856678,
+      "target": "total",
+      "side": "over",
+      "point": 50.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856679,
+      "target": "spread",
+      "side": "away",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856679,
+      "target": "total",
+      "side": "over",
+      "point": 43.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856681,
+      "target": "spread",
+      "side": "home",
+      "point": 13.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856681,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856682,
+      "target": "spread",
+      "side": "away",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856682,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856683,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856683,
+      "target": "total",
+      "side": "over",
+      "point": 50.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856684,
+      "target": "spread",
+      "side": "home",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856684,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856685,
+      "target": "spread",
+      "side": "away",
+      "point": -19.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856685,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856686,
+      "target": "spread",
+      "side": "away",
+      "point": 24.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856686,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856687,
+      "target": "spread",
+      "side": "away",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856687,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856688,
+      "target": "spread",
+      "side": "home",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856688,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856689,
+      "target": "spread",
+      "side": "away",
+      "point": -27.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856689,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856690,
+      "target": "spread",
+      "side": "away",
+      "point": -23.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856690,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856691,
+      "target": "spread",
+      "side": "away",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856691,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856692,
+      "target": "spread",
+      "side": "away",
+      "point": -34.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856692,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856693,
+      "target": "spread",
+      "side": "away",
+      "point": -29.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856693,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856694,
+      "target": "spread",
+      "side": "home",
+      "point": -15.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856694,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856695,
+      "target": "spread",
+      "side": "home",
+      "point": -4.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856695,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856696,
+      "target": "spread",
+      "side": "away",
+      "point": -11.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856696,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856697,
+      "target": "spread",
+      "side": "away",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856697,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856698,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856698,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856699,
+      "target": "spread",
+      "side": "away",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856699,
+      "target": "total",
+      "side": "over",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856700,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856700,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856702,
+      "target": "spread",
+      "side": "home",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856702,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856703,
+      "target": "spread",
+      "side": "home",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856703,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856704,
+      "target": "spread",
+      "side": "home",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856704,
+      "target": "total",
+      "side": "over",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856705,
+      "target": "spread",
+      "side": "home",
+      "point": -23.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856705,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856707,
+      "target": "spread",
+      "side": "home",
+      "point": 6.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856707,
+      "target": "total",
+      "side": "under",
+      "point": 60.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856708,
+      "target": "spread",
+      "side": "away",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856708,
+      "target": "total",
+      "side": "under",
+      "point": 57.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856709,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856709,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856710,
+      "target": "spread",
+      "side": "home",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856710,
+      "target": "total",
+      "side": "over",
+      "point": 54.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856711,
+      "target": "spread",
+      "side": "away",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856711,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401856766,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401856766,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856772,
+      "target": "spread",
+      "side": "home",
+      "point": 13.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856772,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856776,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856776,
+      "target": "total",
+      "side": "over",
+      "point": 51.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856777,
+      "target": "spread",
+      "side": "home",
+      "point": -7.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856777,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856778,
+      "target": "spread",
+      "side": "away",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856778,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856780,
+      "target": "spread",
+      "side": "away",
+      "point": -21.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401856780,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856781,
+      "target": "spread",
+      "side": "away",
+      "point": -18.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856781,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856782,
+      "target": "spread",
+      "side": "home",
+      "point": 22.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856782,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856783,
+      "target": "spread",
+      "side": "home",
+      "point": 27.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856783,
+      "target": "total",
+      "side": "under",
+      "point": 54.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856788,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856788,
+      "target": "total",
+      "side": "over",
+      "point": 40.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856790,
+      "target": "spread",
+      "side": "home",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856790,
+      "target": "total",
+      "side": "over",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856792,
+      "target": "spread",
+      "side": "home",
+      "point": -19.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856792,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856793,
+      "target": "spread",
+      "side": "away",
+      "point": -35.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856793,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856795,
+      "target": "spread",
+      "side": "home",
+      "point": 20.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856795,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856796,
+      "target": "spread",
+      "side": "home",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856796,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856797,
+      "target": "spread",
+      "side": "home",
+      "point": -15.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856797,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856798,
+      "target": "spread",
+      "side": "home",
+      "point": -22.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856798,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856799,
+      "target": "spread",
+      "side": "away",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856799,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856800,
+      "target": "spread",
+      "side": "away",
+      "point": -21.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856800,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856801,
+      "target": "spread",
+      "side": "home",
+      "point": -27.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856801,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856802,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856802,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856804,
+      "target": "spread",
+      "side": "away",
+      "point": 13.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856804,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856805,
+      "target": "spread",
+      "side": "away",
+      "point": -37.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856805,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856806,
+      "target": "spread",
+      "side": "home",
+      "point": 19.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856806,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856807,
+      "target": "spread",
+      "side": "away",
+      "point": -18.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856807,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856810,
+      "target": "spread",
+      "side": "away",
+      "point": -7.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401856810,
+      "target": "total",
+      "side": "over",
+      "point": 48.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856811,
+      "target": "spread",
+      "side": "away",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856812,
+      "target": "spread",
+      "side": "home",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401856812,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856813,
+      "target": "spread",
+      "side": "home",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856813,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856814,
+      "target": "spread",
+      "side": "away",
+      "point": 6.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856814,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856815,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856815,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856816,
+      "target": "spread",
+      "side": "away",
+      "point": 10.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856816,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856817,
+      "target": "spread",
+      "side": "away",
+      "point": -4.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856817,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856818,
+      "target": "spread",
+      "side": "home",
+      "point": 6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856818,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856819,
+      "target": "spread",
+      "side": "away",
+      "point": -12.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856819,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856820,
+      "target": "spread",
+      "side": "away",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856820,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856821,
+      "target": "spread",
+      "side": "home",
+      "point": 13.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856821,
+      "target": "total",
+      "side": "over",
+      "point": 50.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856822,
+      "target": "spread",
+      "side": "home",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401856822,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856881,
+      "target": "spread",
+      "side": "home",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401856881,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858201,
+      "target": "spread",
+      "side": "away",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858201,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858202,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401858202,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858204,
+      "target": "spread",
+      "side": "away",
+      "point": -24.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858204,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858206,
+      "target": "spread",
+      "side": "home",
+      "point": 24.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858206,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858207,
+      "target": "spread",
+      "side": "away",
+      "point": -16.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858207,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858209,
+      "target": "spread",
+      "side": "home",
+      "point": -7.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858209,
+      "target": "total",
+      "side": "over",
+      "point": 51.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858210,
+      "target": "spread",
+      "side": "home",
+      "point": 2.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858210,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858212,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858212,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858214,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858214,
+      "target": "total",
+      "side": "over",
+      "point": 54.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858216,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858216,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858217,
+      "target": "spread",
+      "side": "home",
+      "point": -5.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858217,
+      "target": "total",
+      "side": "over",
+      "point": 51.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858219,
+      "target": "spread",
+      "side": "away",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858219,
+      "target": "total",
+      "side": "under",
+      "point": 56.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858221,
+      "target": "spread",
+      "side": "away",
+      "point": -18.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858221,
+      "target": "total",
+      "side": "over",
+      "point": 50.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858224,
+      "target": "spread",
+      "side": "away",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858224,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858225,
+      "target": "spread",
+      "side": "home",
+      "point": -10.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858225,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858226,
+      "target": "spread",
+      "side": "home",
+      "point": 22.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858226,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858229,
+      "target": "spread",
+      "side": "away",
+      "point": -4.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858229,
+      "target": "total",
+      "side": "over",
+      "point": 44.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858230,
+      "target": "spread",
+      "side": "away",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858230,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858231,
+      "target": "spread",
+      "side": "home",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858231,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858232,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858232,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858234,
+      "target": "spread",
+      "side": "home",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858234,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858238,
+      "target": "spread",
+      "side": "away",
+      "point": -42.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858238,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858239,
+      "target": "spread",
+      "side": "away",
+      "point": -21.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858239,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858240,
+      "target": "spread",
+      "side": "home",
+      "point": 4.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858240,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858241,
+      "target": "spread",
+      "side": "away",
+      "point": -34.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858241,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858242,
+      "target": "spread",
+      "side": "home",
+      "point": 14.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858242,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858243,
+      "target": "spread",
+      "side": "away",
+      "point": -13.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858243,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858245,
+      "target": "spread",
+      "side": "home",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858245,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858246,
+      "target": "spread",
+      "side": "away",
+      "point": -21.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858246,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858247,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858247,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858248,
+      "target": "spread",
+      "side": "home",
+      "point": 4.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858248,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858249,
+      "target": "spread",
+      "side": "home",
+      "point": 16.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858249,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858250,
+      "target": "spread",
+      "side": "away",
+      "point": 21.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858250,
+      "target": "total",
+      "side": "over",
+      "point": 47.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858251,
+      "target": "spread",
+      "side": "home",
+      "point": -12.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858251,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858252,
+      "target": "spread",
+      "side": "home",
+      "point": 6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858252,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858253,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858253,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858423,
+      "target": "spread",
+      "side": "away",
+      "point": -29.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858423,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858424,
+      "target": "spread",
+      "side": "away",
+      "point": -27.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858424,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858425,
+      "target": "spread",
+      "side": "away",
+      "point": -40.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858425,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858426,
+      "target": "spread",
+      "side": "away",
+      "point": -31.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858426,
+      "target": "total",
+      "side": "over",
+      "point": 44.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858428,
+      "target": "spread",
+      "side": "away",
+      "point": -27.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858428,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858429,
+      "target": "spread",
+      "side": "away",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858429,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858430,
+      "target": "spread",
+      "side": "away",
+      "point": -23.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858430,
+      "target": "total",
+      "side": "over",
+      "point": 46.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858432,
+      "target": "spread",
+      "side": "away",
+      "point": -50.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858432,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858433,
+      "target": "spread",
+      "side": "away",
+      "point": -24.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858433,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858434,
+      "target": "spread",
+      "side": "away",
+      "point": -24.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858434,
+      "target": "total",
+      "side": "over",
+      "point": 52.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858436,
+      "target": "spread",
+      "side": "home",
+      "point": -21.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858436,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858437,
+      "target": "spread",
+      "side": "away",
+      "point": -23.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858437,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858438,
+      "target": "spread",
+      "side": "home",
+      "point": -20.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401858438,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858440,
+      "target": "spread",
+      "side": "away",
+      "point": -17.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858440,
+      "target": "total",
+      "side": "over",
+      "point": 49.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858441,
+      "target": "spread",
+      "side": "away",
+      "point": -28.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858441,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858442,
+      "target": "spread",
+      "side": "home",
+      "point": 24.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858442,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858443,
+      "target": "spread",
+      "side": "away",
+      "point": -11.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858443,
+      "target": "total",
+      "side": "over",
+      "point": 55.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858444,
+      "target": "spread",
+      "side": "home",
+      "point": 12.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858444,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858445,
+      "target": "spread",
+      "side": "home",
+      "point": -30.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858445,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858446,
+      "target": "spread",
+      "side": "away",
+      "point": -26.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401858446,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858449,
+      "target": "spread",
+      "side": "home",
+      "point": -44.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858449,
+      "target": "total",
+      "side": "over",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858450,
+      "target": "spread",
+      "side": "home",
+      "point": -36.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858450,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858451,
+      "target": "spread",
+      "side": "away",
+      "point": -26.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858451,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858453,
+      "target": "spread",
+      "side": "away",
+      "point": -29.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858453,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858454,
+      "target": "spread",
+      "side": "away",
+      "point": -51.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858454,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858456,
+      "target": "spread",
+      "side": "away",
+      "point": -39.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858456,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858457,
+      "target": "spread",
+      "side": "home",
+      "point": 24.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858457,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858458,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858458,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858460,
+      "target": "spread",
+      "side": "away",
+      "point": -24.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401858460,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858461,
+      "target": "spread",
+      "side": "away",
+      "point": -22.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858461,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858462,
+      "target": "spread",
+      "side": "home",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858462,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858463,
+      "target": "spread",
+      "side": "away",
+      "point": -5.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858463,
+      "target": "total",
+      "side": "over",
+      "point": 38.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858464,
+      "target": "spread",
+      "side": "home",
+      "point": 4.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858464,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858465,
+      "target": "spread",
+      "side": "away",
+      "point": -27.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858465,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858466,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858466,
+      "target": "total",
+      "side": "over",
+      "point": 44.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858467,
+      "target": "spread",
+      "side": "home",
+      "point": 27.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858467,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858469,
+      "target": "spread",
+      "side": "home",
+      "point": 1.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858469,
+      "target": "total",
+      "side": "under",
+      "point": 62.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858470,
+      "target": "spread",
+      "side": "away",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401858470,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858472,
+      "target": "spread",
+      "side": "home",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858472,
+      "target": "total",
+      "side": "under",
+      "point": 61.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858473,
+      "target": "spread",
+      "side": "home",
+      "point": 14.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858473,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858474,
+      "target": "spread",
+      "side": "home",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858474,
+      "target": "total",
+      "side": "over",
+      "point": 43.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858475,
+      "target": "spread",
+      "side": "home",
+      "point": -14.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858475,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858476,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858476,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858477,
+      "target": "spread",
+      "side": "home",
+      "point": 24.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858477,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858478,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858478,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858479,
+      "target": "spread",
+      "side": "away",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401858479,
+      "target": "total",
+      "side": "over",
+      "point": 43.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401859184,
+      "target": "spread",
+      "side": "away",
+      "point": -44.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401859184,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401860878,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401860878,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860881,
+      "target": "spread",
+      "side": "away",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860881,
+      "target": "total",
+      "side": "under",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860883,
+      "target": "spread",
+      "side": "away",
+      "point": -18.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860883,
+      "target": "total",
+      "side": "over",
+      "point": 45.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860884,
+      "target": "spread",
+      "side": "away",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401860884,
+      "target": "total",
+      "side": "under",
+      "point": 67.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860887,
+      "target": "spread",
+      "side": "away",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860887,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860888,
+      "target": "spread",
+      "side": "home",
+      "point": 7.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860888,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860889,
+      "target": "spread",
+      "side": "away",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401860889,
+      "target": "total",
+      "side": "under",
+      "point": 62.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860891,
+      "target": "spread",
+      "side": "home",
+      "point": -13.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860891,
+      "target": "total",
+      "side": "over",
+      "point": 43.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860893,
+      "target": "spread",
+      "side": "home",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860893,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860894,
+      "target": "spread",
+      "side": "away",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860894,
+      "target": "total",
+      "side": "under",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860895,
+      "target": "spread",
+      "side": "home",
+      "point": 12.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860895,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860896,
+      "target": "spread",
+      "side": "away",
+      "point": -11.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860896,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860897,
+      "target": "spread",
+      "side": "home",
+      "point": 7.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401860897,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860898,
+      "target": "spread",
+      "side": "away",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860898,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860899,
+      "target": "spread",
+      "side": "home",
+      "point": 6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860899,
+      "target": "total",
+      "side": "under",
+      "point": 62.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860900,
+      "target": "spread",
+      "side": "home",
+      "point": 4.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860900,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860921,
+      "target": "spread",
+      "side": "away",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401860921,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401861963,
+      "target": "spread",
+      "side": "home",
+      "point": 3.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401861963,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401861970,
+      "target": "spread",
+      "side": "away",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401861970,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401862693,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401862693,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862695,
+      "target": "spread",
+      "side": "home",
+      "point": -11.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862695,
+      "target": "total",
+      "side": "over",
+      "point": 52.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862699,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401862699,
+      "target": "total",
+      "side": "over",
+      "point": 52.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862702,
+      "target": "spread",
+      "side": "away",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862702,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862703,
+      "target": "spread",
+      "side": "away",
+      "point": 5.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862703,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862705,
+      "target": "spread",
+      "side": "home",
+      "point": 3.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862705,
+      "target": "total",
+      "side": "under",
+      "point": 57.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862707,
+      "target": "spread",
+      "side": "home",
+      "point": 14.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862707,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862708,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401862708,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862710,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862710,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862771,
+      "target": "spread",
+      "side": "away",
+      "point": -7.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862771,
+      "target": "total",
+      "side": "under",
+      "point": 62.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862773,
+      "target": "spread",
+      "side": "away",
+      "point": 11.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862773,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862774,
+      "target": "spread",
+      "side": "home",
+      "point": -4.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862774,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862776,
+      "target": "spread",
+      "side": "home",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401862776,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862778,
+      "target": "spread",
+      "side": "home",
+      "point": 11.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862778,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862779,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862779,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862780,
+      "target": "spread",
+      "side": "home",
+      "point": 14.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862780,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862782,
+      "target": "spread",
+      "side": "home",
+      "point": 13.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862782,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862784,
+      "target": "spread",
+      "side": "home",
+      "point": -18.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862784,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862785,
+      "target": "spread",
+      "side": "away",
+      "point": 16.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401862785,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862786,
+      "target": "spread",
+      "side": "home",
+      "point": -1.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862786,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862787,
+      "target": "spread",
+      "side": "home",
+      "point": 20.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862787,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862788,
+      "target": "spread",
+      "side": "home",
+      "point": 11.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862788,
+      "target": "total",
+      "side": "over",
+      "point": 56.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862791,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862791,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862792,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401862792,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864432,
+      "target": "spread",
+      "side": "home",
+      "point": 1.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864432,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864443,
+      "target": "spread",
+      "side": "away",
+      "point": 6.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864443,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864494,
+      "target": "spread",
+      "side": "away",
+      "point": -35.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864494,
+      "target": "total",
+      "side": "under",
+      "point": 59.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864495,
+      "target": "spread",
+      "side": "home",
+      "point": -3.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864495,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864497,
+      "target": "spread",
+      "side": "home",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864497,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864498,
+      "target": "spread",
+      "side": "home",
+      "point": -10.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401864498,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864502,
+      "target": "spread",
+      "side": "away",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864502,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864507,
+      "target": "spread",
+      "side": "home",
+      "point": 27.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864507,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864508,
+      "target": "spread",
+      "side": "away",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864508,
+      "target": "total",
+      "side": "over",
+      "point": 39.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864509,
+      "target": "spread",
+      "side": "home",
+      "point": 4.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864509,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864510,
+      "target": "spread",
+      "side": "home",
+      "point": 5.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864510,
+      "target": "total",
+      "side": "over",
+      "point": 44.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864511,
+      "target": "spread",
+      "side": "home",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864511,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864512,
+      "target": "spread",
+      "side": "home",
+      "point": 14.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864512,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864513,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864513,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864514,
+      "target": "spread",
+      "side": "home",
+      "point": -22.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864514,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864515,
+      "target": "spread",
+      "side": "home",
+      "point": -18.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401864515,
+      "target": "total",
+      "side": "over",
+      "point": 45.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864570,
+      "target": "spread",
+      "side": "away",
+      "point": -29.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864570,
+      "target": "total",
+      "side": "over",
+      "point": 53.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864571,
+      "target": "spread",
+      "side": "away",
+      "point": -7.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864571,
+      "target": "total",
+      "side": "under",
+      "point": 56.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864572,
+      "target": "spread",
+      "side": "away",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864572,
+      "target": "total",
+      "side": "under",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864574,
+      "target": "spread",
+      "side": "home",
+      "point": -20.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401864574,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864575,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864575,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864576,
+      "target": "spread",
+      "side": "away",
+      "point": -19.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864576,
+      "target": "total",
+      "side": "over",
+      "point": 55.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864577,
+      "target": "spread",
+      "side": "away",
+      "point": -7.0
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401864577,
+      "target": "total",
+      "side": "over",
+      "point": 48.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864578,
+      "target": "spread",
+      "side": "home",
+      "point": -8.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401864578,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864579,
+      "target": "spread",
+      "side": "away",
+      "point": 13.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401864579,
+      "target": "total",
+      "side": "over",
+      "point": 49.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401866408,
+      "target": "spread",
+      "side": "home",
+      "point": -8.5
+    },
+    {
+      "run_id": "2026w0-v5repair-20260929-p1",
+      "game_id": 401866408,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866414,
+      "target": "spread",
+      "side": "away",
+      "point": -10.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866414,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866418,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401866418,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866422,
+      "target": "spread",
+      "side": "home",
+      "point": -14.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866422,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866423,
+      "target": "spread",
+      "side": "home",
+      "point": -4.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401866423,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866425,
+      "target": "spread",
+      "side": "home",
+      "point": -4.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866425,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866429,
+      "target": "spread",
+      "side": "away",
+      "point": 6.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401866429,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866430,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866430,
+      "target": "total",
+      "side": "over",
+      "point": 47.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866431,
+      "target": "spread",
+      "side": "away",
+      "point": 19.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866431,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866432,
+      "target": "spread",
+      "side": "home",
+      "point": 13.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866432,
+      "target": "total",
+      "side": "over",
+      "point": 46.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866433,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866433,
+      "target": "total",
+      "side": "over",
+      "point": 48.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866434,
+      "target": "spread",
+      "side": "away",
+      "point": 3.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866434,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866477,
+      "target": "spread",
+      "side": "home",
+      "point": -13.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401866477,
+      "target": "total",
+      "side": "over",
+      "point": 42.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401867796,
+      "target": "spread",
+      "side": "away",
+      "point": -35.0
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401867796,
+      "target": "total",
+      "side": "under",
+      "point": 56.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401867804,
+      "target": "spread",
+      "side": "away",
+      "point": -17.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401867804,
+      "target": "total",
+      "side": "under",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869842,
+      "target": "spread",
+      "side": "home",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869842,
+      "target": "total",
+      "side": "over",
+      "point": 46.0
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869931,
+      "target": "spread",
+      "side": "away",
+      "point": -5.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869931,
+      "target": "total",
+      "side": "under",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869932,
+      "target": "spread",
+      "side": "home",
+      "point": -6.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869932,
+      "target": "total",
+      "side": "over",
+      "point": 47.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869940,
+      "target": "spread",
+      "side": "home",
+      "point": -4.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869940,
+      "target": "total",
+      "side": "under",
+      "point": 58.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869941,
+      "target": "spread",
+      "side": "home",
+      "point": 1.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869941,
+      "target": "total",
+      "side": "over",
+      "point": 52.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869942,
+      "target": "spread",
+      "side": "home",
+      "point": 2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869942,
+      "target": "total",
+      "side": "under",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869948,
+      "target": "spread",
+      "side": "home",
+      "point": -3.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401869948,
+      "target": "total",
+      "side": "over",
+      "point": 53.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401869955,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401869955,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869956,
+      "target": "spread",
+      "side": "home",
+      "point": -1.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869956,
+      "target": "total",
+      "side": "over",
+      "point": 52.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401869960,
+      "target": "spread",
+      "side": "home",
+      "point": -6.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401869960,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869961,
+      "target": "spread",
+      "side": "home",
+      "point": 4.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401869961,
+      "target": "total",
+      "side": "over",
+      "point": 50.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869962,
+      "target": "spread",
+      "side": "home",
+      "point": -18.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401869962,
+      "target": "total",
+      "side": "under",
+      "point": 56.0
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401870763,
+      "target": "spread",
+      "side": "away",
+      "point": -16.5
+    },
+    {
+      "run_id": "2026w1-v5repair-20260929-p1",
+      "game_id": 401870763,
+      "target": "total",
+      "side": "under",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401871045,
+      "target": "spread",
+      "side": "away",
+      "point": -13.5
+    },
+    {
+      "run_id": "2026w2-v5repair-20260929-p1",
+      "game_id": 401871045,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401871047,
+      "target": "spread",
+      "side": "home",
+      "point": 4.0
+    },
+    {
+      "run_id": "2026w3-v5repair-20260929-p1",
+      "game_id": 401871047,
+      "target": "total",
+      "side": "over",
+      "point": 51.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401871048,
+      "target": "spread",
+      "side": "home",
+      "point": -9.5
+    },
+    {
+      "run_id": "2026w4-v5repair-20260929-p1",
+      "game_id": 401871048,
+      "target": "total",
+      "side": "over",
+      "point": 54.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871049,
+      "target": "spread",
+      "side": "home",
+      "point": -2.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871049,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871050,
+      "target": "spread",
+      "side": "home",
+      "point": 7.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871050,
+      "target": "total",
+      "side": "over",
+      "point": 50.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871089,
+      "target": "spread",
+      "side": "home",
+      "point": -14.0
+    },
+    {
+      "run_id": "2026w5-v5repair-20260929-p2",
+      "game_id": 401871089,
+      "target": "total",
+      "side": "under",
+      "point": 57.5
+    }
+  ],
+  "system_stats": [
+    {
+      "season": 2026,
+      "as_of_week": 4,
+      "spread_wins": 93,
+      "spread_losses": 103,
+      "spread_pushes": 3,
+      "total_wins": 82,
+      "total_losses": 77,
+      "total_pushes": 0,
+      "updated_at": "2026-09-30 03:28:26.132104+00:00",
+      "spread_profit_units": "-18.4537",
+      "total_profit_units": "-2.4538"
+    }
+  ]
+}

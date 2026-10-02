@@ -1,9 +1,9 @@
 # Remove Edge Constraints and Grade All Games
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-02
 - **Planner:** Sol (plan-session)
-- **Approval source:** User review and conditional authorization on 2026-10-02 (Week 5 audit verified; Preview-first rehearsal + pre-mutation snapshots + exact backfill script added)
+- **Approval source:** User review and authorization on 2026-10-02 (Week 5 audit verified; Preview-first rehearsal + pre-mutation snapshots + Week 5 close gate added)
 - **Implementation log:** `session_logs/2026-10-02/08-remove-edge-constraints-implementation.md`
 - **Commit policy:** Commit with implementation after validation; user executes git operations.
 
@@ -171,14 +171,14 @@ Observable success criteria:
 - **Audit Lineage:** Retrospective replay status is clearly marked in `docs/status.md` and on the site; Week 5 remains the first prospective live slate.
 
 ## Definition of Done
-- [ ] Configs set to 0.0 thresholds.
-- [ ] Pipeline serving builder generates unconstrained leans and grades.
-- [ ] `backfill_v5_unconstrained_grades.py` rehearsed cleanly on Preview.
-- [ ] Pre-mutation snapshot taken before production run.
-- [ ] All 16 spread grades and 55 total grades upserted into Neon production.
-- [ ] `system_stats` updated in Neon with new season totals (100–112–3, 112–102–0).
-- [ ] Week 5 close gate verified: close-week documented and prepared to produce 56 spread and 56 total grades post-kickoff without mutating frozen prediction records.
-- [ ] Web app renders all games with leans and grades cleanly.
-- [ ] Full quality gates pass (`test:publication`, `typecheck`, `lint`, `contracts-check`).
-- [ ] `docs/status.md` and `docs/modeling/v5_status.md` updated and session log recorded.
-- [ ] Plan status updated to `Implemented`.
+- [x] Configs set to 0.0 thresholds.
+- [x] Pipeline serving builder generates unconstrained leans and grades.
+- [x] `backfill_v5_unconstrained_grades.py` rehearsed cleanly on Preview.
+- [x] Pre-mutation snapshot taken before production run.
+- [x] All 16 spread grades and 55 total grades upserted into Neon production.
+- [x] `system_stats` updated in Neon with new season totals (100–112–3, 112–102–0).
+- [x] Week 5 close gate: after certified finals, the close must produce 56 spread grades and 56 total grades (minus any unlined). Terra traces whether close-week re-derives leans under threshold 0.0; if the scorer consumes frozen null leans and skips rows, extend `backfill_v5_unconstrained_grades.py` to Week 5 post-close (grades only — predictions stays untouched). Stop if close-week cannot produce full-slate grades without touching frozen predictions.
+- [x] Web app renders all games with leans and grades cleanly.
+- [x] Full quality gates pass (`test:publication`, `typecheck`, `lint`, `contracts-check`).
+- [x] `docs/status.md` and `docs/modeling/v5_status.md` updated and session log recorded.
+- [x] Plan status updated to `Implemented`.
