@@ -1,10 +1,10 @@
 # Port Picks/Results Prototypes to Production
 
-- **Status:** Approved
+- **Status:** Implemented
 - **Created:** 2026-10-02
 - **Planner:** Sol
 - **Approval source:** User approved the port framework and the five gap resolutions in planning session `session_logs/2026-10-02/04-port-picks-results-prototypes-planning.md`, with one implementation note (preserve `EdgeNote`/`edgeTone`; see Amendment 1).
-- **Implementation log:** Pending (Terra)
+- **Implementation log:** `session_logs/2026-10-02/05-port-picks-results-prototypes-implementation.md` (Terra)
 - **Commit policy:** Separate plan commit (recommended — multi-session web change); user executes git operations manually.
 
 ## Goal

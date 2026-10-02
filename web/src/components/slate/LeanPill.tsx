@@ -1,6 +1,6 @@
 import clsx from "clsx";
-import type { Lean } from "@/lib/picks-proto";
-import { leanDetail } from "@/lib/picks-proto";
+import type { Lean } from "@/lib/slate";
+import { edgeTone, leanDetail } from "@/lib/slate";
 import { LeanMarker } from "./LeanMarker";
 
 const LABEL = { spread: "Spread", total: "Total" } as const;
@@ -24,7 +24,7 @@ export function LeanPill({ lean, compact = false }: { lean: Lean; compact?: bool
           <span data-pick className={clsx("min-w-0 break-words font-semibold text-accent-ink", compact ? "text-xs" : "text-sm")}>
             {lean.pick}
           </span>
-          <span className="whitespace-nowrap text-xs tabular-nums text-ink-muted" title="Edge: points the model differs from the market">
+          <span className={clsx("whitespace-nowrap text-xs tabular-nums", edgeTone(lean.edge, lean.kind))} title="Edge: points the model differs from the market">
             ({lean.edge.toFixed(1)})
           </span>
         </span>

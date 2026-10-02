@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-02: What the matchup page shows
+
+- **Decisions:** 12 raw metrics in three sections; non-offense points and plays per possession are stored but not shown; ties show as `T-N` and an exact zero is unranked; a per-row accent edge bar marks which side (offense or the opposing defense) holds the advantage by national-rank percentile gap (even below 0.10, strong from 0.30); tables side by side on desktop; season records, venue, model edges and sportsbook sources at the top; team names are never links (team pages are not ready).
+- **Defect found with real data:** a correlated tie subquery written with drizzle column references compared the inner row with itself (single-table selects render columns unqualified), so ties never showed. Fixed with explicitly qualified references from a tested helper (`web/src/lib/tie-sql.ts`).
+- **Source:** [matchup data layer v2](../plans/2026-10-02/01-matchup-data-layer-v2.md).
+
 ## 2026-10-02: Team-Stats Inputs, Silver Promotion, Optional-Table Guards
 
 - **Context:** First real-data run of the matchup stats pipeline on Preview.

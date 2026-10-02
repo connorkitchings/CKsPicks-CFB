@@ -1,5 +1,5 @@
 import type { Game } from "@/lib/queries";
-import { topResults, type GradedLean } from "@/lib/picks-proto";
+import { topResults, type GradedLean } from "@/lib/slate";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 

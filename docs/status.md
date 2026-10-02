@@ -53,7 +53,7 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Release state
 
-`main` and `dev` were synced at `53d346b` on 2026-10-02 and production is serving that release (CI green): self-hosted WebP logos on the real Picks/Results cards, venue data in the page payload, and the fixed optional-table checks. City/state, sportsbook-behind-the-line and rank badges are built only in the closed prototypes (`picks-proto/`), so they are **not yet visible** on the production Picks/Results cards; porting the prototypes is the next UI task. Built but closed in production: `/matchup/[gameId]` (until `CFB_MATCHUP_ENABLED=1`) and the `/test-picks` and `/test-results` prototypes (until `CFB_ENABLE_TEST_PAGE=1`). Later commits on `dev` land here first; release by fast-forwarding `main` (see `AGENTS.md`, Branching).
+`main` and `dev` were synced at `53d346b` on 2026-10-02 and production is serving that release (CI green): self-hosted WebP logos on the real Picks/Results cards, venue data in the page payload, and the fixed optional-table checks. On `dev`, the Picks/Results prototype port is implemented and pending release: city/state and sportsbook-behind-the-line now render on the production slate cards (rank badges stay off the cards by design), and the `/test-picks` and `/test-results` prototype routes are removed. Production keeps serving the previous cards until `main` is fast-forwarded. Built but closed in production: `/matchup/[gameId]` (until `CFB_MATCHUP_ENABLED=1`). Later commits on `dev` land here first; release by fast-forwarding `main` (see `AGENTS.md`, Branching).
 
 ## In flight
 

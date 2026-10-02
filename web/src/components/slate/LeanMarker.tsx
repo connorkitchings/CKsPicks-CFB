@@ -1,4 +1,4 @@
-import type { Lean } from "@/lib/picks-proto";
+import type { Lean } from "@/lib/slate";
 import TeamLogo from "@/components/TeamLogo";
 
 /**

@@ -19,6 +19,9 @@ export type MatchupPublicView = {
   totalLean: "over" | "under" | null;
   edgeSpread: number | null;
   edgeTotal: number | null;
+  /** Sportsbook behind the displayed best line; null for a consensus fallback or market mode. */
+  spreadSource: string | null;
+  totalSource: string | null;
   highConfidence: boolean;
   homePoints: number | null;
   awayPoints: number | null;
@@ -47,6 +50,8 @@ export function selectMatchupView(
       totalLean: null,
       edgeSpread: null,
       edgeTotal: null,
+      spreadSource: null,
+      totalSource: null,
       highConfidence: false,
     };
   }
@@ -61,6 +66,8 @@ export function selectMatchupView(
     totalLean: game.totalLean,
     edgeSpread: game.edgeSpread,
     edgeTotal: game.edgeTotal,
+    spreadSource: game.spreadSource ?? null,
+    totalSource: game.totalSource ?? null,
     highConfidence: Boolean(game.highConfidence),
   };
 }

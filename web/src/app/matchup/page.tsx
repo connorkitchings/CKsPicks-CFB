@@ -13,7 +13,7 @@ import {
 import { isMatchupEnabled } from "@/lib/matchup-gate";
 import { groupGamesByDay, pickWeek } from "@/lib/matchup-index";
 import { isPublishedWeek, publicationScope } from "@/lib/publication";
-import { protoGames } from "@/test/fixtures/picks-prototype";
+import { protoGames } from "@/test/fixtures/slate";
 
 export const revalidate = 300;
 

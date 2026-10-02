@@ -1,5 +1,4 @@
 import type { Game, PredictionGame } from "./queries.ts";
-import { withGameNameAliases } from "./rating-names.ts";
 import {
   marketSpreadView,
   modelSpreadView,
@@ -50,7 +49,7 @@ export function bookName(provider: string | null | undefined): string | null {
   return spaced === spaced.toLowerCase() ? spaced.replace(/\b\w/g, (c) => c.toUpperCase()) : spaced;
 }
 
-/** [low, high] edge thresholds (points); mirrors BetComparisonTable. */
+/** [low, high] edge thresholds (points); the single source for tiers and tones. */
 const EDGE_THRESHOLDS: Record<LeanKind, readonly [number, number]> = {
   spread: [3, 8],
   total: [2, 7],
@@ -65,6 +64,20 @@ export function edgeTier(kind: LeanKind, edge: number | null): 0 | 1 | 2 | 3 {
   return 3;
 }
 
+/**
+ * Tone class for an edge magnitude on the shared thresholds: below the low
+ * threshold reads low, through the high threshold reads medium, above it
+ * reads high. Preserved from the retired comparison table so the lean
+ * sentences keep the same edge language.
+ */
+export function edgeTone(edge: number, kind: LeanKind): "edge-low" | "edge-medium" | "edge-high" {
+  const magnitude = Math.abs(edge);
+  const [lowThreshold, highThreshold] = EDGE_THRESHOLDS[kind];
+  if (magnitude < lowThreshold) return "edge-low";
+  if (magnitude <= highThreshold) return "edge-medium";
+  return "edge-high";
+}
+
 export type Lean = {
   kind: LeanKind;
   /** Display text, e.g. "New Mexico State -2.5" or "Under 57.5". */
@@ -73,7 +86,7 @@ export type Lean = {
   dir: "home" | "away" | "over" | "under";
   /** Team the spread lean backs; null for totals. */
   team: string | null;
-  /** What the model says on the same scale: "wins by 7.6" / "54.1". */
+  /** What the model says on the same scale: "Ohio State by 7.6" / "54.1". */
   model: string | null;
   /** Sportsbook behind the line (display name), when the run recorded one. */
   source: string | null;
@@ -82,10 +95,10 @@ export type Lean = {
   tier: 1 | 2 | 3;
 };
 
-/** Model margin from the leaned team's side: "wins by 7.6" / "loses by 1.2". */
-function modelMarginText(margin: number | null): string | null {
+/** Model margin from the leaned team's side, named: "Ohio State by 7.6". */
+function modelMarginText(margin: number | null, team: string): string | null {
   if (margin === null) return null;
-  return margin >= 0 ? `wins by ${margin.toFixed(1)}` : `loses by ${Math.abs(margin).toFixed(1)}`;
+  return `${team} by ${margin.toFixed(1)}`;
 }
 
 export function leanFor(game: Game, kind: LeanKind): Lean | null {
@@ -114,7 +127,7 @@ export function leanFor(game: Game, kind: LeanKind): Lean | null {
       pick: `${team} ${line === 0 ? "PK" : signedSpread(line)}`,
       dir: game.spreadLean,
       team,
-      model: modelMarginText(margin),
+      model: modelMarginText(margin, team),
       source: bookName(game.spreadSource),
       edge,
       tier: Math.max(1, edgeTier(kind, edge)) as 1 | 2 | 3,
@@ -156,11 +169,16 @@ export function leanDetail(lean: Lean): string | null {
 
 export type TopLean = Lean & { game: PredictionGame };
 
-/** Largest edges among games that have not finished, one list per bet type. */
-export function topLeans(games: Game[], kind: LeanKind, n: number): TopLean[] {
+/**
+ * Largest edges among games that have not finished, one list per bet type.
+ * Historical weeks are all final, so pass `includeFinal` to rank those too
+ * (used for the Top Leans track record, never for the current-week display).
+ */
+export function topLeans(games: Game[], kind: LeanKind, n: number, includeFinal = false): TopLean[] {
   const out: TopLean[] = [];
   for (const game of games) {
-    if (game.publicationMode !== "predictions" || isFinal(game)) continue;
+    if (game.publicationMode !== "predictions") continue;
+    if (!includeFinal && isFinal(game)) continue;
     const lean = leanFor(game, kind);
     if (lean) out.push({ ...lean, game });
   }
@@ -200,19 +218,6 @@ export function sortGames(games: Game[], sort: SortKey): Game[] {
 export function winRatePct(win: number, loss: number): number | null {
   const decided = win + loss;
   return decided === 0 ? null : (100 * win) / decided;
-}
-
-/** 1-based overall rank by rating, best first. */
-export function overallRanks(
-  ratings: ReadonlyArray<{ team: string; overallRating: number }>,
-): Record<string, number> {
-  const ranks: Record<string, number> = {};
-  [...ratings]
-    .sort((a, b) => b.overallRating - a.overallRating)
-    .forEach((r, i) => {
-      ranks[r.team] = i + 1;
-    });
-  return withGameNameAliases(ranks);
 }
 
 export type Grade = "win" | "loss" | "push";
@@ -259,6 +264,23 @@ export function weekRecord(games: Game[]): { spread: Tally; total: Tally } {
     for (const kind of ["spread", "total"] as const) {
       const r = resultFor(game, kind);
       if (r) out[kind][r] += 1;
+    }
+  }
+  return out;
+}
+
+/**
+ * Season track record over each week's top-N leans per bet type: what the
+ * model's loudest calls actually earned. Ungraded leans don't count.
+ */
+export function topLeansRecord(weeksGames: Game[][], n = 5): Tally {
+  const out: Tally = { win: 0, loss: 0, push: 0 };
+  for (const games of weeksGames) {
+    for (const kind of ["spread", "total"] as const) {
+      for (const lean of topLeans(games, kind, n, true)) {
+        const grade = resultFor(lean.game, kind);
+        if (grade) out[grade] += 1;
+      }
     }
   }
   return out;

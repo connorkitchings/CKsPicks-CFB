@@ -11,9 +11,18 @@ import { UnitMatchupTable } from "@/components/matchup/UnitMatchupTable";
 // Revalidate every 5 minutes (ISR)
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
+const noindex = { robots: { index: false, follow: false } } satisfies Metadata;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ gameId: string }>;
+}): Promise<Metadata> {
+  const id = Number((await params).gameId);
+  if (!isMatchupEnabled() || !Number.isInteger(id) || id <= 0) return noindex;
+  const matchup = await getMatchupData(id).catch(() => null);
+  return matchup ? { ...noindex, title: `${matchup.awayTeam} at ${matchup.homeTeam} · Matchup` } : noindex;
+}
 
 export default async function MatchupPage({
   params,
@@ -38,34 +47,43 @@ export default async function MatchupPage({
       <Header
         season={matchup.season}
         systemName={matchup.systemName}
-        updatedAt={matchup.startDate}
+        updatedAt={matchup.updatedAt}
         publicationMode={publicationScope.mode}
         allowedSeasons={publicationScope.allowedSeasons}
+        wide
       />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 
         {matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
             <p className="text-xs leading-relaxed text-ink-muted">
-              Stats through Week {matchup.stats.asOfWeek - 1} (before this game): {matchup.awayTeam}{" "}
-              {matchup.stats.awayGames} games, {matchup.homeTeam} {matchup.stats.homeGames} games.
-              FBS opponents only, garbage time excluded. Possession metrics are the raw measures behind the V5 ratings (regulation only).
-              {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams.`}{" "}
-              Defense columns show what that defense allowed.
+              Stats through Week {matchup.stats.asOfWeek - 1}, before this game. FBS opponents only, regulation
+              play, garbage time excluded; raw, not opponent-adjusted. Defense columns show what that defense
+              allowed.
+              {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams; T = tied.`}
             </p>
-            <UnitMatchupTable
-              offenseTeam={matchup.awayTeam}
-              defenseTeam={matchup.homeTeam}
-              rows={matchup.stats.awayOffVsHomeDef}
-            />
-            <UnitMatchupTable
-              offenseTeam={matchup.homeTeam}
-              defenseTeam={matchup.awayTeam}
-              rows={matchup.stats.homeOffVsAwayDef}
-            />
+            <p className="flex items-center gap-2 text-xs text-ink-muted" data-testid="edge-legend">
+              <span aria-hidden className="inline-block h-3 w-[3px] rounded-full bg-accent" />
+              <span>
+                The bar on a row marks the side with the edge (offense rank against the opposing defense&rsquo;s
+                rank); darker means a bigger gap.
+              </span>
+            </p>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <UnitMatchupTable
+                offenseTeam={matchup.awayTeam}
+                defenseTeam={matchup.homeTeam}
+                rows={matchup.stats.awayOffVsHomeDef}
+              />
+              <UnitMatchupTable
+                offenseTeam={matchup.homeTeam}
+                defenseTeam={matchup.awayTeam}
+                rows={matchup.stats.homeOffVsAwayDef}
+              />
+            </div>
           </section>
         ) : (
           <section
@@ -92,7 +110,7 @@ export default async function MatchupPage({
         </div>
       </main>
 
-      <Footer publicationMode={publicationScope.mode} />
+      <Footer publicationMode={publicationScope.mode} wide />
     </div>
   );
 }

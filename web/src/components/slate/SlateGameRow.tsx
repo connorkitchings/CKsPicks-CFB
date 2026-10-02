@@ -1,19 +1,23 @@
-import type { PredictionGame } from "@/lib/queries";
-import { isFinal, leanFor } from "@/lib/picks-proto";
+import type { Game } from "@/lib/queries";
+import { isFinal, leanFor } from "@/lib/slate";
 import { kickoffTime } from "./format";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { MarketGameCard } from "./MarketGameCard";
 import { WhereLine } from "./GameWhen";
 import { LeanPill } from "./LeanPill";
-import { TeamPair } from "./TeamLine";
+import { TeamPair } from "./TeamPair";
 
 /** Dense one-line-per-game layout for scanning a full slate on desktop. */
-export function ProtoGameRow({
+export function SlateGameRow({
   game,
-  ranks,
+  showBetResult = true,
 }: {
-  game: PredictionGame;
-  ranks: Record<string, number>;
+  game: Game;
+  showBetResult?: boolean;
 }) {
+  if (game.publicationMode === "market") {
+    return <MarketGameCard game={game} showBetResult={showBetResult} />;
+  }
   const spread = leanFor(game, "spread");
   const total = leanFor(game, "total");
 
@@ -33,7 +37,7 @@ export function ProtoGameRow({
           <MatchupButton gameId={game.gameId} />
         </div>
       </div>
-      <TeamPair game={game} ranks={ranks} size={20} />
+      <TeamPair game={game} size={20} />
       <div>{spread ? <LeanPill lean={spread} compact /> : <p className="text-xs text-ink-faint">No spread lean</p>}</div>
       <div>{total ? <LeanPill lean={total} compact /> : <p className="text-xs text-ink-faint">No total lean</p>}</div>
     </li>

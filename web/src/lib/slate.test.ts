@@ -3,13 +3,14 @@ import test from "node:test";
 
 import {
   edgeTier,
+  edgeTone,
   hasLean,
   leanFor,
-  overallRanks,
   sortGames,
   topLeans,
+  topLeansRecord,
   winRatePct,
-} from "./picks-proto.ts";
+} from "./slate.ts";
 import type { Game } from "./queries.ts";
 
 function game(over: Record<string, unknown>): Game {
@@ -63,6 +64,18 @@ test("edge tiers follow the spread and total thresholds", () => {
   assert.equal(edgeTier("total", 7.1), 3);
 });
 
+test("edgeTone colors edge magnitudes on the same thresholds", () => {
+  assert.equal(edgeTone(2.9, "spread"), "edge-low");
+  assert.equal(edgeTone(3, "spread"), "edge-medium");
+  assert.equal(edgeTone(8, "spread"), "edge-medium");
+  assert.equal(edgeTone(8.1, "spread"), "edge-high");
+  assert.equal(edgeTone(-8.1, "spread"), "edge-high");
+  assert.equal(edgeTone(1.9, "total"), "edge-low");
+  assert.equal(edgeTone(2, "total"), "edge-medium");
+  assert.equal(edgeTone(7, "total"), "edge-medium");
+  assert.equal(edgeTone(7.1, "total"), "edge-high");
+});
+
 test("leanFor labels the pick side with a positive edge", () => {
   const home = leanFor(game({}), "spread");
   assert.equal(home?.pick, "Home -3.5");
@@ -94,6 +107,31 @@ test("topLeans ranks by edge and skips finished games", () => {
   assert.deepEqual(topLeans(games, "spread", 1).map((l) => l.game.gameId), [2]);
 });
 
+test("topLeans ranks finished games too when asked", () => {
+  const games = [
+    game({ gameId: 1, edgeSpread: 2 }),
+    game({ gameId: 2, edgeSpread: 9 }),
+    game({ gameId: 3, edgeSpread: 12, homePoints: 21, awayPoints: 17 }),
+  ];
+  assert.deepEqual(topLeans(games, "spread", 5).map((l) => l.game.gameId), [2, 1]);
+  assert.deepEqual(topLeans(games, "spread", 5, true).map((l) => l.game.gameId), [3, 2, 1]);
+});
+
+test("topLeansRecord tallies each week's top leans from recorded grades", () => {
+  const graded = (over: Record<string, unknown>) =>
+    game({ homePoints: 24, awayPoints: 17, ...over });
+  const week = [
+    graded({ gameId: 1, edgeSpread: 9, spreadResult: "win", edgeTotal: 1, totalResult: "loss" }),
+    graded({ gameId: 2, edgeSpread: 8, spreadResult: "loss", edgeTotal: 9, totalResult: "win" }),
+    graded({ gameId: 3, edgeSpread: 1, spreadResult: "win", edgeTotal: 8, totalResult: "loss" }),
+    graded({ gameId: 4, edgeSpread: 9.5, spreadResult: null, edgeTotal: null, totalResult: null }),
+  ];
+  // Spread top 2: ungraded game 4 is skipped, game 1 won. Total top 2: game 2 won, game 3 lost.
+  assert.deepEqual(topLeansRecord([week], 2), { win: 2, loss: 1, push: 0 });
+  assert.deepEqual(topLeansRecord([week, week], 2), { win: 4, loss: 2, push: 0 });
+  assert.deepEqual(topLeansRecord([]), { win: 0, loss: 0, push: 0 });
+});
+
 test("sortGames puts the biggest edge first and no-lean games last", () => {
   const games = [
     game({ gameId: 1, edgeSpread: 2, edgeTotal: 1 }),
@@ -110,14 +148,6 @@ test("win rate excludes pushes and is null with no decisions", () => {
   assert.equal(Math.round((winRatePct(93, 103) ?? 0) * 10) / 10, 47.4);
 });
 
-test("overallRanks is 1-based, best rating first", () => {
-  const ranks = overallRanks([
-    { team: "B", overallRating: 1 },
-    { team: "A", overallRating: 4 },
-  ]);
-  assert.deepEqual(ranks, { A: 1, B: 2 });
-});
-
 import {
   coverMargin,
   gradeFromMargin,
@@ -125,7 +155,7 @@ import {
   sortResults,
   topResults,
   weekRecord,
-} from "./picks-proto.ts";
+} from "./slate.ts";
 
 function finalGame(over: Record<string, unknown>): Game {
   return game({ homePoints: 24, awayPoints: 17, ...over });
@@ -188,16 +218,16 @@ test("result filters and sorts", () => {
 });
 
 
-import { breakEvenDelta, finalMarginText } from "./picks-proto.ts";
+import { breakEvenDelta, finalMarginText } from "./slate.ts";
 
 test("leans carry the model's prediction from the pick's side", () => {
   const fav = leanFor(game({}), "spread");
-  assert.equal(fav?.model, "wins by 6.5");
+  assert.equal(fav?.model, "Home by 6.5");
   assert.equal(fav?.dir, "home");
   assert.equal(fav?.team, "Home");
 
   const dog = leanFor(game({ spreadLean: "away", homeTeamSpreadLine: -3.5 }), "spread");
-  assert.equal(dog?.model, "loses by 6.5");
+  assert.equal(dog?.model, "Away by -6.5");
 
   const pk = leanFor(game({ homeTeamSpreadLine: 0 }), "spread");
   assert.equal(pk?.pick, "Home PK");
@@ -228,7 +258,7 @@ test("finalMarginText reads the result from the leaned team's side", () => {
 });
 
 
-import { bookName, leanDetail } from "./picks-proto.ts";
+import { bookName, leanDetail } from "./slate.ts";
 
 test("bookName maps sportsbook keys and tidies unknown providers", () => {
   assert.equal(bookName("draftkings"), "DraftKings");
@@ -245,16 +275,16 @@ test("bookName maps sportsbook keys and tidies unknown providers", () => {
 test("leans carry the line's source and detail text only when known", () => {
   const withSource = leanFor(game({ spreadSource: "draftkings", totalSource: "bovada" }), "spread");
   assert.equal(withSource?.source, "DraftKings");
-  assert.equal(leanDetail(withSource!), "model: wins by 6.5 · best line: DraftKings");
+  assert.equal(leanDetail(withSource!), "model: Home by 6.5 · best line: DraftKings");
   assert.equal(leanFor(game({ totalSource: "bovada" }), "total")?.source, "Bovada");
   // Consensus fallback: no source recorded -> no invented source.
   const noSource = leanFor(game({}), "spread");
   assert.equal(noSource?.source, null);
-  assert.equal(leanDetail(noSource!), "model: wins by 6.5");
+  assert.equal(leanDetail(noSource!), "model: Home by 6.5");
 });
 
 
-import { venueLabel } from "./picks-proto.ts";
+import { venueLabel } from "./slate.ts";
 
 test("venueLabel formats City, ST and degrades gracefully", () => {
   assert.equal(venueLabel("Los Angeles", "CA"), "Los Angeles, CA");
@@ -265,16 +295,3 @@ test("venueLabel formats City, ST and degrades gracefully", () => {
   assert.equal(venueLabel(undefined, undefined), "");
 });
 
-test("overallRanks also resolves games' CFBD names for legacy-named teams", () => {
-  const ranks = overallRanks([
-    { team: "Ohio State", overallRating: 2 },
-    { team: "San Jose State", overallRating: 1 },
-    { team: "Hawai_i", overallRating: 0 },
-    { team: "Appalachian State", overallRating: -1 },
-  ]);
-  assert.equal(ranks["San José State"], 2);
-  assert.equal(ranks["Hawai'i"], 3);
-  assert.equal(ranks["App State"], 4);
-  assert.equal(ranks["San Jose State"], 2);
-  assert.equal(ranks["Ohio State"], 1);
-});

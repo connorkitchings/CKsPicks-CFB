@@ -37,13 +37,25 @@ test("ratings page includes rank column, methodology explainer, and disambiguate
   assert.match(source, /requestedSeason = params\.season \? Number\(params\.season\) : 2026/);
 });
 
-test("GameRow TeamLine shows team names as plain text, not links (team pages are not ready)", () => {
-  const source = readFileSync(new URL("../components/GameRow.tsx", import.meta.url), "utf8");
+test("TeamPair shows team names as plain text, not links (team pages are not ready)", () => {
+  const source = readFileSync(new URL("../components/slate/TeamPair.tsx", import.meta.url), "utf8");
   assert.doesNotMatch(source, /\/teams\//);
   assert.doesNotMatch(source, /import Link from "next\/link";/);
-  assert.match(source, /min-w-0 truncate text-sm text-ink/);
-  // The card links to the matchup breakdown through the gated button instead.
-  assert.match(source, /<MatchupButton gameId=\{game\.gameId\} \/>/);
+  assert.match(source, /min-w-0 truncate text-sm/);
+});
+
+test("slate cards link to the matchup breakdown through the gated button instead", () => {
+  for (const file of [
+    "SlateGameCard.tsx",
+    "SlateGameRow.tsx",
+    "ResultGameCard.tsx",
+    "ResultGameRow.tsx",
+    "MarketGameCard.tsx",
+  ]) {
+    const source = readFileSync(new URL(`../components/slate/${file}`, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /\/teams\//);
+    assert.match(source, /<MatchupButton gameId=\{game\.gameId\} \/>/);
+  }
 });
 
 test("ratings timeline labels certified post-week generations and backfills early tabs from priors", () => {

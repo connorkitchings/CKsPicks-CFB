@@ -1,11 +1,10 @@
 import clsx from "clsx";
-import type { PredictionGame } from "@/lib/queries";
+import type { Game } from "@/lib/queries";
 import TeamLogo from "@/components/TeamLogo";
 
 function TeamLine({
   name,
   record,
-  rank,
   score,
   highlight,
   size,
@@ -13,7 +12,6 @@ function TeamLine({
 }: {
   name: string;
   record: string | null;
-  rank?: number;
   score: number | null;
   /** Emphasize the name (e.g. the winner on Results). */
   highlight: boolean;
@@ -27,14 +25,6 @@ function TeamLine({
         {name}
       </span>
       {record && <span className="text-xs tabular-nums text-ink-faint">({record})</span>}
-      {rank !== undefined && (
-        <span
-          title="V5 overall rating rank"
-          className="rounded bg-surface-inset px-1 text-[10px] font-medium tabular-nums text-ink-muted"
-        >
-          #{rank}
-        </span>
-      )}
       {score !== null && (
         <span className="ml-auto font-mono text-base font-semibold tabular-nums text-ink">
           {score}
@@ -47,16 +37,15 @@ function TeamLine({
 /**
  * The two teams of a game: away on top, home on the bottom. Every card and row
  * layout uses this one component so the order cannot drift. There is no "home"
- * tag; the bottom team is the home team.
+ * tag; the bottom team is the home team. No model rank badges: ranks live on
+ * /ratings and /matchup, not on the high-density slate cards.
  */
 export function TeamPair({
   game,
-  ranks,
   size = 28,
   winner = null,
 }: {
-  game: PredictionGame;
-  ranks: Record<string, number>;
+  game: Game;
   size?: number;
   /** Highlight the winning side's name (Results). */
   winner?: "away" | "home" | null;
@@ -66,7 +55,6 @@ export function TeamPair({
       <TeamLine
         name={game.awayTeam}
         record={game.awayRecord}
-        rank={ranks[game.awayTeam]}
         score={game.awayPoints}
         highlight={winner === "away"}
         size={size}
@@ -75,7 +63,6 @@ export function TeamPair({
       <TeamLine
         name={game.homeTeam}
         record={game.homeRecord}
-        rank={ranks[game.homeTeam]}
         score={game.homePoints}
         highlight={winner === "home"}
         size={size}

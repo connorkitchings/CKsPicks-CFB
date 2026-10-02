@@ -23,7 +23,9 @@ import { selectMatchupView } from "./matchup-visibility.ts";
 import {
   marketSpreadView,
   modelSpreadView,
+  spreadEdge,
   spreadLabel,
+  totalEdge,
 } from "./betting-format.ts";
 
 export interface TeamRatingSummary {
@@ -41,8 +43,16 @@ export interface MatchupData {
   season: number;
   week: number;
   startDate: Date;
+  /** When this game's forecast row was last updated (not the kickoff time). */
+  updatedAt: Date;
   homeTeam: string;
   awayTeam: string;
+  /** Season W-L as of kickoff (null before a team's first game). */
+  homeRecord: string | null;
+  awayRecord: string | null;
+  venueCity: string | null;
+  venueState: string | null;
+  neutralSite: boolean | null;
   /** Null in market mode: no model is published, so no system is named. */
   systemName: string | null;
   modelId: string | null;
@@ -56,6 +66,12 @@ export interface MatchupData {
   totalLean: "over" | "under" | null;
   edgeSpread: number | null;
   edgeTotal: number | null;
+  /** Model minus market, as the Picks cards show it (null in market mode). */
+  modelSpreadEdge: number | null;
+  modelTotalEdge: number | null;
+  /** Sportsbook behind each best line when the run recorded one. */
+  spreadSource: string | null;
+  totalSource: string | null;
   highConfidence: boolean;
   // Final results if game completed
   homeFinalPoints: number | null;
@@ -149,8 +165,14 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     season: game.season,
     week: game.week,
     startDate: game.startDate,
+    updatedAt: game.updatedAt,
     homeTeam: game.homeTeam,
     awayTeam: game.awayTeam,
+    homeRecord: game.homeRecord ?? null,
+    awayRecord: game.awayRecord ?? null,
+    venueCity: game.venueCity ?? null,
+    venueState: game.venueState ?? null,
+    neutralSite: game.neutralSite ?? null,
     systemName: displaySystemName(view.systemName),
     modelId: view.modelId,
     publicationMode: view.publicationMode,
@@ -162,6 +184,10 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     totalLean: view.totalLean,
     edgeSpread: view.edgeSpread,
     edgeTotal: view.edgeTotal,
+    modelSpreadEdge: spreadEdge(modelView, marketView),
+    modelTotalEdge: totalEdge(view.predictedTotal, view.marketTotal),
+    spreadSource: view.spreadSource,
+    totalSource: view.totalSource,
     highConfidence: view.highConfidence,
     homeFinalPoints,
     awayFinalPoints,

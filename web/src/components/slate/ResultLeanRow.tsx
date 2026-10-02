@@ -1,5 +1,5 @@
 import type { PredictionGame } from "@/lib/queries";
-import { coverMargin, finalMarginText, resultFor, type Lean } from "@/lib/picks-proto";
+import { coverMargin, edgeTone, finalMarginText, resultFor, type Lean } from "@/lib/slate";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 
@@ -35,7 +35,7 @@ export function ResultLeanRow({ game, lean }: { game: PredictionGame; lean: Lean
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           <LeanMarker lean={lean} />
           <span data-pick className="min-w-0 break-words text-sm font-semibold text-ink">{lean.pick}</span>
-          <span className="whitespace-nowrap text-xs tabular-nums text-ink-muted">({lean.edge.toFixed(1)})</span>
+          <span className={`whitespace-nowrap text-xs tabular-nums ${edgeTone(lean.edge, lean.kind)}`}>({lean.edge.toFixed(1)})</span>
           {grade ? <ResultBadge grade={grade} /> : <span className="text-xs text-ink-faint">Ungraded</span>}
         </span>
       </div>

@@ -1,25 +1,30 @@
 import clsx from "clsx";
-import type { PredictionGame } from "@/lib/queries";
+import type { Game } from "@/lib/queries";
 import { marketSpreadView, modelSpreadView, spreadLabel } from "@/lib/betting-format";
-import { isFinal, leanFor } from "@/lib/picks-proto";
+import { isFinal, leanFor } from "@/lib/slate";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { MarketGameCard } from "./MarketGameCard";
 import { kickoffTime } from "./format";
 import { GameWhen } from "./GameWhen";
 import { LeanPill } from "./LeanPill";
-import { TeamPair } from "./TeamLine";
+import { TeamPair } from "./TeamPair";
 
 /**
- * Prototype game card: who is playing, then each lean with its direction and
+ * Picks game card: who is playing, then each lean with its direction and
  * edge. The market and model numbers live in the lean sentence, not a second
  * table, so each number appears once. Games with no lean recede.
+ * Market-mode games fail closed to the market-only card.
  */
-export function ProtoGameCard({
+export function SlateGameCard({
   game,
-  ranks,
+  showBetResult = true,
 }: {
-  game: PredictionGame;
-  ranks: Record<string, number>;
+  game: Game;
+  showBetResult?: boolean;
 }) {
+  if (game.publicationMode === "market") {
+    return <MarketGameCard game={game} showBetResult={showBetResult} />;
+  }
   const spread = leanFor(game, "spread");
   const total = leanFor(game, "total");
   const anyLean = spread !== null || total !== null;
@@ -53,7 +58,7 @@ export function ProtoGameCard({
             </span>
           )}
         </div>
-        <TeamPair game={game} ranks={ranks} />
+        <TeamPair game={game} />
       </div>
 
       <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">

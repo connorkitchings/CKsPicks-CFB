@@ -83,3 +83,30 @@ test("a week with no selected run (market game) stays market-only in predictions
   assert.equal(view?.highConfidence, false);
   assert.equal(view?.marketTotal, 51.5);
 });
+
+test("sportsbook sources are model-side fields: present only in predictions mode", () => {
+  const game = {
+    publicationMode: "predictions",
+    homeTeamSpreadLine: -2.5,
+    totalLine: 57.5,
+    homePoints: null,
+    awayPoints: null,
+    systemName: "Blitzkrieg",
+    modelId: "m",
+    predictedSpread: -7.6,
+    predictedTotal: 54.1,
+    spreadLean: "home",
+    totalLean: "under",
+    edgeSpread: 5.1,
+    edgeTotal: 3.4,
+    highConfidence: false,
+    spreadSource: "DraftKings",
+    totalSource: null,
+  } as unknown as Parameters<typeof selectMatchupView>[0];
+  const open = selectMatchupView(game, "predictions");
+  assert.equal(open?.spreadSource, "DraftKings");
+  assert.equal(open?.totalSource, null);
+  const closed = selectMatchupView(game, "market");
+  assert.equal(closed?.spreadSource, null);
+  assert.equal(closed?.edgeSpread, null);
+});

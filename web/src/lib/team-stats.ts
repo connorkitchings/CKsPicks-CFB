@@ -11,6 +11,15 @@ export interface TeamStatRow {
   games: number;
   rank: number | null;
   cohortSize: number | null;
+  /** Another team in the same cohort shares this rank (the publisher ranks ties by minimum rank). */
+  tied: boolean;
+}
+
+/** Which side of a row holds the statistical edge, and how big it is. */
+export interface RowEdge {
+  side: "offense" | "defense" | "even";
+  /** null when the sides are even. */
+  strength: "slight" | "strong" | null;
 }
 
 export interface UnitMatchupRow {
@@ -20,13 +29,17 @@ export interface UnitMatchupRow {
   offenseRank: number | null;
   /** Teams ranked on this metric/role (early weeks rank fewer than 138). */
   offenseCohort: number | null;
+  offenseTied: boolean;
   defenseValue: string;
   defenseRank: number | null;
   defenseCohort: number | null;
+  defenseTied: boolean;
+  /** Offense rank against the opposing defense's rank; null when either is unranked. */
+  edge: RowEdge | null;
   section: MetricSection;
 }
 
-type Format = "epa" | "pct" | "pts" | "field" | "num";
+type Format = "epa" | "pct" | "pts" | "field";
 
 /** Matchup table sections, in display order. */
 export type MetricSection = "possession" | "situational" | "drive";
@@ -52,8 +65,6 @@ export const UNIT_METRICS: {
   { key: "ppp", label: "Points/possession", format: "pts", section: "possession" },
   { key: "epa_per_possession", label: "EPA/possession", format: "epa", section: "possession" },
   { key: "epa_per_play", label: "EPA/play", format: "epa", section: "possession" },
-  { key: "plays_per_possession", label: "Plays/possession", format: "num", section: "possession" },
-  { key: "non_offense_points_per_game", label: "Non-offense pts/game", format: "num", section: "possession" },
   { key: "success_rate", label: "Success rate", format: "pct", section: "situational" },
   { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct", section: "situational" },
   { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct", section: "situational" },
@@ -76,9 +87,57 @@ export function formatMetric(format: Format, value: number | null): string {
       return value.toFixed(2);
     case "field":
       return `Own ${value.toFixed(1)}`;
-    case "num":
-      return value.toFixed(1);
   }
+}
+
+/** Rank text: "#75", "T-75" for a tie, "—" when unranked. */
+export function rankLabel(rank: number | null, tied: boolean): string {
+  if (rank === null) return "—";
+  return tied ? `T-${rank}` : `#${rank}`;
+}
+
+/** Tooltip for a rank badge. */
+export function rankTitle(rank: number | null, tied: boolean, cohort: number | null): string {
+  if (rank === null) return "Not ranked";
+  const of = cohort ? ` of ${cohort}` : "";
+  return tied ? `Tied for #${rank}${of}` : `National rank #${rank}${of}`;
+}
+
+/** Gap in rank percentile (0 to 1) below which a row counts as even / above which it is strong. */
+export const EDGE_EVEN_GAP = 0.1;
+export const EDGE_STRONG_GAP = 0.3;
+
+function percentile(rank: number, cohort: number): number {
+  return cohort > 1 ? 1 - (rank - 1) / (cohort - 1) : 1; // 1 = best in the nation
+}
+
+/**
+ * Which side of the row has the edge: the offense when its national rank beats
+ * the opposing defense's by more than the even band, the defense when it is
+ * ahead. Null when either side is unranked (no sample, a zero, or early weeks).
+ */
+export function rowEdge(
+  offenseRank: number | null,
+  offenseCohort: number | null,
+  defenseRank: number | null,
+  defenseCohort: number | null,
+): RowEdge | null {
+  if (offenseRank === null || defenseRank === null) return null;
+  const gap =
+    percentile(offenseRank, offenseCohort ?? 138) - percentile(defenseRank, defenseCohort ?? 138);
+  const size = Math.abs(gap);
+  if (size < EDGE_EVEN_GAP) return { side: "even", strength: null };
+  return {
+    side: gap > 0 ? "offense" : "defense",
+    strength: size >= EDGE_STRONG_GAP ? "strong" : "slight",
+  };
+}
+
+/** Row counts per side, for the summary above each table. */
+export function edgeSummary(rows: UnitMatchupRow[]): { offense: number; defense: number; even: number } {
+  const out = { offense: 0, defense: 0, even: 0 };
+  for (const row of rows) if (row.edge) out[row.edge.side] += 1;
+  return out;
 }
 
 function find(rows: TeamStatRow[], team: string, role: StatRole, metric: string) {
@@ -94,15 +153,21 @@ export function buildUnitRows(
   return UNIT_METRICS.map(({ key, label, format, section }) => {
     const off = find(rows, offenseTeam, "offense", key);
     const def = find(rows, defenseTeam, "defense", key);
+    // An exact zero is no ranking signal (many teams share it): show the value, not a rank.
+    const offRank = off?.value === 0 ? null : (off?.rank ?? null);
+    const defRank = def?.value === 0 ? null : (def?.rank ?? null);
     return {
       key,
       name: label,
       offenseValue: formatMetric(format, off?.value ?? null),
-      offenseRank: off?.rank ?? null,
-      offenseCohort: off?.cohortSize ?? null,
+      offenseRank: offRank,
+      offenseCohort: offRank === null ? null : (off?.cohortSize ?? null),
+      offenseTied: offRank !== null && Boolean(off?.tied),
       defenseValue: formatMetric(format, def?.value ?? null),
-      defenseRank: def?.rank ?? null,
-      defenseCohort: def?.cohortSize ?? null,
+      defenseRank: defRank,
+      defenseCohort: defRank === null ? null : (def?.cohortSize ?? null),
+      defenseTied: defRank !== null && Boolean(def?.tied),
+      edge: rowEdge(offRank, off?.cohortSize ?? null, defRank, def?.cohortSize ?? null),
       section,
     };
   });

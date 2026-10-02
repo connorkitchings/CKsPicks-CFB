@@ -1,11 +1,16 @@
 import { Header, Footer } from "@/components/Header";
-import { V5PerformanceBanner } from "@/components/V5PerformanceBanner";
+import { ModelRecord } from "@/components/slate/ModelRecord";
+import { SlateStatusRow } from "@/components/slate/SlateStatusRow";
+import { TopLeans } from "@/components/slate/TopLeans";
+import { ResultHighlights } from "@/components/slate/ResultHighlights";
+import { PicksSlate } from "@/components/slate/PicksSlate";
+import { ResultsSlate } from "@/components/slate/ResultsSlate";
 import { WeekNav } from "@/components/WeekNav";
-import { GamesList } from "@/components/GamesList";
+import { weekRecord, type Tally } from "@/lib/slate";
 import type { Game } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
 
-export interface WeeklySlateViewProps {
+export interface SlateViewProps {
   mode: "picks" | "results";
   season: number;
   week: number;
@@ -13,7 +18,11 @@ export interface WeeklySlateViewProps {
   basePath?: string;
   games: Game[];
   performance?: Performance[];
+  /** Season track record over each scored week's top leans (Picks only). */
+  topLeansRecord?: Tally | null;
   systemName?: string | null;
+  runState?: string | null;
+  retrospective?: boolean;
   updatedAt?: Date | null;
   publicationMode: "predictions" | "market";
   allowedSeasons: readonly number[];
@@ -24,11 +33,12 @@ export interface WeeklySlateViewProps {
 }
 
 /**
- * Reusable layout shell for weekly slate views (Picks `/` and Results `/results`).
- * Standardizes header, skip links, performance banners, week navigation,
- * games list with day grouping, and footer.
+ * Layout shell for the weekly slate views (Picks `/` and Results `/results`).
+ * Standardizes header, skip links, model record, status line, week
+ * navigation, and the lean-sentence slate, with the fail-closed market-mode
+ * card path for games without predictions.
  */
-export function WeeklySlateView({
+export function SlateView({
   mode,
   season,
   week,
@@ -36,7 +46,10 @@ export function WeeklySlateView({
   basePath = "/",
   games,
   performance = [],
+  topLeansRecord = null,
   systemName = null,
+  runState = null,
+  retrospective = false,
   updatedAt = null,
   publicationMode,
   allowedSeasons,
@@ -44,7 +57,10 @@ export function WeeklySlateView({
   retrospectiveRepair = false,
   initialSort = "kickoff",
   emptyMessage,
-}: WeeklySlateViewProps) {
+}: SlateViewProps) {
+  const predictionsVisible = games.some((g) => g.publicationMode === "predictions");
+  const showBetResult = mode === "results";
+
   return (
     <div className="flex min-h-screen flex-col">
       <a
@@ -61,7 +77,7 @@ export function WeeklySlateView({
         allowedSeasons={allowedSeasons}
       />
 
-      <main id="main-content" className="mx-auto w-full max-w-4xl flex-1 space-y-4 px-4 py-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-6">
         {dbError && (
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
             {dbError}
@@ -77,8 +93,17 @@ export function WeeklySlateView({
 
         {!dbError && season > 0 && (
           <>
+            <SlateStatusRow
+              runState={runState}
+              retrospective={retrospective}
+              publishedAt={updatedAt}
+            />
+
             {publicationMode === "predictions" && performance.length > 0 && (
-              <V5PerformanceBanner performance={performance} />
+              <ModelRecord
+                performance={performance}
+                week={mode === "results" ? { number: week, ...weekRecord(games) } : undefined}
+              />
             )}
 
             {retrospectiveRepair && (
@@ -90,6 +115,9 @@ export function WeeklySlateView({
                 using the repaired V5 ratings. They were not the picks originally published before kickoff.
               </p>
             )}
+
+            {mode === "picks" && predictionsVisible && <TopLeans games={games} record={topLeansRecord} />}
+            {mode === "results" && predictionsVisible && <ResultHighlights games={games} />}
 
             {weeks.length > 1 && (
               <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} />
@@ -105,11 +133,19 @@ export function WeeklySlateView({
               <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
                 {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
               </div>
-            ) : (
-              <GamesList
+            ) : mode === "picks" ? (
+              <PicksSlate
                 games={games}
+                showBetResult={showBetResult}
                 initialSort={initialSort}
-                showBetResult={mode === "results"}
+              />
+            ) : (
+              <ResultsSlate
+                games={games}
+                showBetResult={showBetResult}
+                initialSort={
+                  initialSort === "kickoff" ? "kickoff" : "bestEdge"
+                }
               />
             )}
           </>

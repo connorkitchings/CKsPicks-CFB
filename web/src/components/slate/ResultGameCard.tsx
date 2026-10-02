@@ -1,23 +1,28 @@
 import clsx from "clsx";
-import type { PredictionGame } from "@/lib/queries";
-import { leanFor, resultFor } from "@/lib/picks-proto";
+import type { Game } from "@/lib/queries";
+import { leanFor, resultFor } from "@/lib/slate";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { MarketGameCard } from "./MarketGameCard";
 import { dayShort } from "./format";
 import { GameWhen } from "./GameWhen";
 import { ResultLeanRow } from "./ResultLeanRow";
-import { TeamPair } from "./TeamLine";
+import { TeamPair } from "./TeamPair";
 
 /**
  * Results card: final score first, then each lean with its graded outcome.
  * The left edge shows the outcome (all won / all lost / mixed / no lean).
+ * Market-mode games fail closed to the market-only card.
  */
-export function ProtoResultCard({
+export function ResultGameCard({
   game,
-  ranks,
+  showBetResult = true,
 }: {
-  game: PredictionGame;
-  ranks: Record<string, number>;
+  game: Game;
+  showBetResult?: boolean;
 }) {
+  if (game.publicationMode === "market") {
+    return <MarketGameCard game={game} showBetResult={showBetResult} />;
+  }
   const spread = leanFor(game, "spread");
   const total = leanFor(game, "total");
   const grades = [
@@ -52,7 +57,7 @@ export function ProtoResultCard({
             <MatchupButton gameId={game.gameId} />
           </span>
         </div>
-        <TeamPair game={game} ranks={ranks} winner={awayWon ? "away" : homeWon ? "home" : null} />
+        <TeamPair game={game} winner={awayWon ? "away" : homeWon ? "home" : null} />
       </div>
       <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">
         {anyLean ? (

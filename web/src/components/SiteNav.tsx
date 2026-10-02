@@ -14,12 +14,16 @@ const items = [
 export function SiteNav() {
   const pathname = usePathname();
 
-  // The /test Picks prototype renders its own combined header.
-  if (pathname.startsWith("/test")) return null;
-
+  // Same navigation everywhere; matchup pages use the wider page container.
+  const wide = pathname.startsWith("/matchup");
   return (
     <nav aria-label="Main navigation" className="border-b border-line bg-surface-card">
-      <div className="mx-auto flex max-w-4xl gap-6 overflow-x-auto px-4 py-3 text-sm font-medium">
+      <div
+        className={clsx(
+          "mx-auto flex gap-6 overflow-x-auto px-4 py-3 text-sm font-medium",
+          wide ? "max-w-5xl" : "max-w-4xl",
+        )}
+      >
         {items.map(([label, href]) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (

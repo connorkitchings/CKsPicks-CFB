@@ -10,7 +10,8 @@ import {
 } from "@/lib/queries";
 import { getV5Performance, type Performance } from "@/lib/v5";
 import { selectsV5 } from "@/lib/run-selection";
-import { WeeklySlateView } from "@/components/WeeklySlateView";
+import { SlateView } from "@/components/slate/SlateView";
+import { topLeansRecord, type Tally } from "@/lib/slate";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
@@ -127,6 +128,12 @@ export default async function Home({
       weeks: [], activeSeason: null, activeWeek: null, currentUpdatedAt: null,
     };
   }
+  if (process.env.CFB_UI_TEST_MODE === "1" && publicationMode === "predictions") {
+    const fx = await import("@/test/fixtures/slate");
+    const bundle = fx.slatePicks();
+    target.week = bundle.week;
+    target.weeks = bundle.weeks;
+  }
   const { season, week, weeks, currentUpdatedAt } = target;
 
   let games: Game[] = [];
@@ -134,13 +141,21 @@ export default async function Home({
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
   let retrospectiveRepair = false;
+  let topLeansSeason: Tally | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    const fixture = uiFixture(publicationMode, week);
-    games = fixture.games;
-    if (games[0]?.publicationMode === "predictions") {
-      systemName = games[0].systemName;
-      performance = selectsV5(games[0].modelId) ? fixture.performance : [];
+    if (publicationMode === "predictions") {
+      const fx = await import("@/test/fixtures/slate");
+      const bundle = fx.slatePicks();
+      games = bundle.games;
+      if (games[0]?.publicationMode === "predictions") {
+        systemName = games[0].systemName;
+        performance = selectsV5(games[0].modelId) ? bundle.performance : [];
+      }
+      topLeansSeason = topLeansRecord([fx.slateResults().games]);
+    } else {
+      const fixture = uiFixture(publicationMode, week);
+      games = fixture.games;
     }
   } else if (!targetError) {
     try {
@@ -161,6 +176,18 @@ export default async function Home({
         if (games.length > 0 && games[0].publicationMode === "predictions") {
           systemName = games[0].systemName;
         }
+        if (publicationMode === "predictions" && season > 0) {
+          try {
+            const scored = await getScoredWeeks(season);
+            const history = await Promise.all(
+              scored.map((w) => getGamesForWeek(season, w)),
+            );
+            topLeansSeason = topLeansRecord(history);
+          } catch (err) {
+            console.error("Top leans track record query failed", err);
+            topLeansSeason = null;
+          }
+        }
       }
     } catch (err) {
       console.error("Weekly data query failed", err);
@@ -173,13 +200,17 @@ export default async function Home({
     .reduce<number>((max, t) => (t > max ? t : max), 0);
   const updatedAt = gamesUpdatedAt > 0 ? new Date(gamesUpdatedAt) : currentUpdatedAt;
 
+  const firstPrediction = games.find((g) => g.publicationMode === "predictions");
+  const runState = firstPrediction?.runState ?? null;
+  const retrospective = retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
+
   const initialSort =
     params.sort === "spreadEdge" || params.sort === "totalEdge"
       ? params.sort
       : "kickoff";
 
   return (
-    <WeeklySlateView
+    <SlateView
       mode="picks"
       season={season}
       week={week}
@@ -187,7 +218,10 @@ export default async function Home({
       basePath="/"
       games={games}
       performance={performance}
+      topLeansRecord={topLeansSeason}
       systemName={systemName}
+      runState={runState}
+      retrospective={retrospective}
       updatedAt={updatedAt}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}

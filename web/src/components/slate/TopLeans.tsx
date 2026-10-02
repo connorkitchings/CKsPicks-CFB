@@ -1,5 +1,5 @@
 import type { Game } from "@/lib/queries";
-import { leanDetail, topLeans, type LeanKind } from "@/lib/picks-proto";
+import { leanDetail, topLeans, type LeanKind, type Tally } from "@/lib/slate";
 import { kickoffTime } from "./format";
 import { LeanMarker } from "./LeanMarker";
 
@@ -44,10 +44,18 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
 }
 
 /** Highest-edge leans first; every game is still listed below. */
-export function TopLeans({ games }: { games: Game[] }) {
+export function TopLeans({ games, record }: { games: Game[]; record?: Tally | null }) {
+  const decided = (record?.win ?? 0) + (record?.loss ?? 0) + (record?.push ?? 0);
   return (
     <section aria-label="Top leans" className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      <h2 className="mb-2 text-sm font-semibold text-ink">Top leans</h2>
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h2 className="text-sm font-semibold text-ink">Top leans</h2>
+        {record && decided > 0 && (
+          <span className="text-xs tabular-nums text-ink-muted">
+            Top leans: {record.win}–{record.loss}–{record.push} this season
+          </span>
+        )}
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <Column games={games} kind="spread" title="Spread" />
         <Column games={games} kind="total" title="Total" />

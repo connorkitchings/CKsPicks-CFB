@@ -1,5 +1,5 @@
 import type { PredictionGame } from "@/lib/queries";
-import { venueLabel } from "@/lib/picks-proto";
+import { venueLabel } from "@/lib/slate";
 
 /**
  * The "when and where" line of a card: the time (or date), then the game's

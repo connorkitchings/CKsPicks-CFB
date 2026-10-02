@@ -2,6 +2,7 @@ import { eq, asc, and, inArray, lte, sql, notLike } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 import { existsFrom } from "./db-result";
+import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun } from "./run-selection";
 import { deriveSpreadView, deriveTotalView } from "./publication";
 import type { TeamStatRow } from "./team-stats";
@@ -530,16 +531,22 @@ export async function getTeamSeasonStats(
 ): Promise<TeamStatRow[]> {
   if (teams.length === 0 || !(await hasTeamSeasonStatsTable())) return [];
   try {
+    const t = schema.teamSeasonStats;
     const rows = await db
-      .select()
-      .from(schema.teamSeasonStats)
-      .where(
-        and(
-          eq(schema.teamSeasonStats.season, season),
-          eq(schema.teamSeasonStats.asOfWeek, asOfWeek),
-          inArray(schema.teamSeasonStats.team, teams),
-        ),
-      );
+      .select({
+        team: t.team,
+        role: t.role,
+        metric: t.metric,
+        value: t.value,
+        n: t.n,
+        games: t.games,
+        rank: t.rank,
+        cohortSize: t.cohortSize,
+        // Ties share the minimum rank, so a tie is another team with the same rank.
+        tied: sql<boolean>`${sql.raw(tiedExistsSql("team_season_stats"))}`,
+      })
+      .from(t)
+      .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
     return rows.map((r) => ({
       team: r.team,
       role: r.role === "defense" ? "defense" : "offense",
@@ -549,6 +556,7 @@ export async function getTeamSeasonStats(
       games: r.games,
       rank: r.rank,
       cohortSize: r.cohortSize,
+      tied: Boolean(r.tied),
     }));
   } catch {
     return [];
@@ -580,25 +588,21 @@ export async function getTeamPossessionStats(
 ): Promise<TeamStatRow[]> {
   if (teams.length === 0 || !(await hasTeamPossessionStatsTable())) return [];
   try {
+    const t = schema.teamPossessionStats;
     const rows = await db
       .select({
-        team: schema.teamPossessionStats.team,
-        role: schema.teamPossessionStats.role,
-        metric: schema.teamPossessionStats.metric,
-        value: schema.teamPossessionStats.value,
-        n: schema.teamPossessionStats.n,
-        games: schema.teamPossessionStats.games,
-        rank: schema.teamPossessionStats.rank,
-        cohortSize: schema.teamPossessionStats.cohortSize,
+        team: t.team,
+        role: t.role,
+        metric: t.metric,
+        value: t.value,
+        n: t.n,
+        games: t.games,
+        rank: t.rank,
+        cohortSize: t.cohortSize,
+        tied: sql<boolean>`${sql.raw(tiedExistsSql("team_possession_stats"))}`,
       })
-      .from(schema.teamPossessionStats)
-      .where(
-        and(
-          eq(schema.teamPossessionStats.season, season),
-          eq(schema.teamPossessionStats.asOfWeek, asOfWeek),
-          inArray(schema.teamPossessionStats.team, teams),
-        ),
-      );
+      .from(t)
+      .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
     return rows.map((r) => ({
       team: r.team,
       role: r.role === "defense" ? "defense" : "offense",
@@ -608,6 +612,7 @@ export async function getTeamPossessionStats(
       games: r.games,
       rank: r.rank,
       cohortSize: r.cohortSize,
+      tied: Boolean(r.tied),
     }));
   } catch {
     return [];

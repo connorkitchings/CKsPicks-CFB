@@ -9,16 +9,19 @@ export function Header({
   updatedAt,
   publicationMode,
   allowedSeasons,
+  wide = false,
 }: {
   season: number | null;
   systemName: string | null;
   updatedAt: Date | null;
   publicationMode: PublicationMode;
   allowedSeasons?: readonly number[];
+  /** Wider page container (matchup pages); the nav widens itself by route. */
+  wide?: boolean;
 }) {
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
-      <div className="mx-auto flex max-w-4xl items-start justify-between gap-3 px-4 py-4">
+      <div className={`mx-auto flex ${wide ? "max-w-5xl" : "max-w-4xl"} items-start justify-between gap-3 px-4 py-4`}>
         <div className="flex min-w-0 flex-col gap-1">
           <h1 className="text-xl font-bold tracking-tight text-ink">
             CK&rsquo;s Picks
@@ -62,11 +65,15 @@ export function Header({
 
 export function Footer({
   publicationMode,
+  wide = false,
 }: {
   publicationMode: PublicationMode;
+  wide?: boolean;
 }) {
   return (
-    <footer className="mx-auto mt-12 max-w-4xl px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint">
+    <footer
+      className={`mx-auto mt-12 ${wide ? "max-w-5xl" : "max-w-4xl"} px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint`}
+    >
       <p className="mb-1">
         Display only &mdash; not betting advice. CK&rsquo;s Picks is a research
         project that shows{" "}

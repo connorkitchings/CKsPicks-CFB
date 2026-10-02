@@ -1,13 +1,14 @@
-import type { PredictionGame } from "@/lib/queries";
-import { coverMargin, leanFor, resultFor } from "@/lib/picks-proto";
+import type { Game } from "@/lib/queries";
+import { coverMargin, edgeTone, leanFor, resultFor } from "@/lib/slate";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 import { dayShort } from "./format";
 import { MatchupButton } from "@/components/MatchupLinks";
+import { MarketGameCard } from "./MarketGameCard";
 import { WhereLine } from "./GameWhen";
-import { TeamPair } from "./TeamLine";
+import { TeamPair } from "./TeamPair";
 
-function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }) {
+function Cell({ game, kind }: { game: Game; kind: "spread" | "total" }) {
   const lean = leanFor(game, kind);
   if (!lean) return <p className="text-xs text-ink-faint">No {kind} lean</p>;
   const grade = resultFor(game, kind);
@@ -17,7 +18,7 @@ function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }
       <div className="flex items-center gap-2">
         <LeanMarker lean={lean} />
         <span className="min-w-0 truncate font-semibold text-ink">{lean.pick}</span>
-        <span className="shrink-0 tabular-nums text-ink-muted">({lean.edge.toFixed(1)})</span>
+        <span className={`shrink-0 tabular-nums ${edgeTone(lean.edge, lean.kind)}`}>({lean.edge.toFixed(1)})</span>
         {grade && <ResultBadge grade={grade} />}
       </div>
       {text && <p className="tabular-nums text-ink-muted">{text}</p>}
@@ -26,13 +27,16 @@ function Cell({ game, kind }: { game: PredictionGame; kind: "spread" | "total" }
 }
 
 /** Dense one-line-per-game results layout. */
-export function ProtoResultRow({
+export function ResultGameRow({
   game,
-  ranks,
+  showBetResult = true,
 }: {
-  game: PredictionGame;
-  ranks: Record<string, number>;
+  game: Game;
+  showBetResult?: boolean;
 }) {
+  if (game.publicationMode === "market") {
+    return <MarketGameCard game={game} showBetResult={showBetResult} />;
+  }
   const homeWon = (game.homePoints ?? 0) > (game.awayPoints ?? 0);
   const awayWon = (game.awayPoints ?? 0) > (game.homePoints ?? 0);
   return (
@@ -47,7 +51,7 @@ export function ProtoResultRow({
           <MatchupButton gameId={game.gameId} />
         </div>
       </div>
-      <TeamPair game={game} ranks={ranks} size={20} winner={awayWon ? "away" : homeWon ? "home" : null} />
+      <TeamPair game={game} size={20} winner={awayWon ? "away" : homeWon ? "home" : null} />
       <Cell game={game} kind="spread" />
       <Cell game={game} kind="total" />
     </li>

@@ -9,13 +9,24 @@ import {
   gamesBehind,
   getRankBadgeClass,
   groupUnitRows,
+  rankLabel,
+  rankTitle,
+  rowEdge,
+  edgeSummary,
   SECTION_LABELS,
   UNIT_METRICS,
   type TeamStatRow,
 } from "./team-stats.ts";
 
-const row = (team: string, role: "offense" | "defense", metric: string, value: number | null, rank: number | null): TeamStatRow => ({
-  team, role, metric, value, n: 10, games: 4, rank, cohortSize: rank === null ? null : 130,
+const row = (
+  team: string,
+  role: "offense" | "defense",
+  metric: string,
+  value: number | null,
+  rank: number | null,
+  tied = false,
+): TeamStatRow => ({
+  team, role, metric, value, n: 10, games: 4, rank, cohortSize: rank === null ? null : 130, tied,
 });
 
 test("formatMetric formats each kind and shows a dash for missing values", () => {
@@ -24,8 +35,6 @@ test("formatMetric formats each kind and shows a dash for missing values", () =>
   assert.equal(formatMetric("pct", 0.4567), "45.7%");
   assert.equal(formatMetric("pts", 4.1), "4.10");
   assert.equal(formatMetric("field", 31.25), "Own 31.3");
-  assert.equal(formatMetric("num", 5.857), "5.9");
-  assert.equal(formatMetric("num", null), "—");
   assert.equal(formatMetric("pct", null), "—");
   assert.equal(formatMetric("pct", Number.NaN), "—");
 });
@@ -47,7 +56,7 @@ test("buildUnitRows pairs the offense with the OPPOSING defense, never the same 
 test("buildUnitRows returns every metric and tolerates a team with no rows", () => {
   const out = buildUnitRows([], "A", "B");
   assert.equal(out.length, UNIT_METRICS.length);
-  assert.equal(out.length, 14);
+  assert.equal(out.length, 12);
   assert.ok(out.every((r) => r.offenseValue === "—" && r.offenseRank === null && r.defenseRank === null));
 });
 
@@ -98,7 +107,7 @@ test("metrics are grouped into three sections in display order", () => {
     SECTION_LABELS.situational,
     SECTION_LABELS.drive,
   ]);
-  assert.deepEqual(groups.map((g) => g.rows.length), [5, 6, 3]);
+  assert.deepEqual(groups.map((g) => g.rows.length), [3, 6, 3]);
   assert.equal(groups.flatMap((g) => g.rows).length, UNIT_METRICS.length);
   assert.equal(new Set(UNIT_METRICS.map((m) => m.key)).size, UNIT_METRICS.length);
 });
@@ -107,15 +116,75 @@ test("possession metrics format and pair like the others", () => {
   const rows = [
     row("A", "offense", "ppp", 2.456, 10),
     row("B", "defense", "ppp", 1.9, 25),
-    row("A", "offense", "plays_per_possession", 5.857, 3),
-    row("B", "defense", "non_offense_points_per_game", 3.5, 90),
     row("A", "offense", "epa_per_possession", -0.25, 70),
   ];
   const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
   assert.deepEqual([out.ppp.offenseValue, out.ppp.defenseValue], ["2.46", "1.90"]);
-  assert.equal(out.plays_per_possession.offenseValue, "5.9");
-  assert.equal(out.non_offense_points_per_game.defenseValue, "3.5");
   assert.equal(out.epa_per_possession.offenseValue, "−0.25");
+});
+
+test("plays per possession and non-offense points are stored but not shown on the matchup", () => {
+  const keys = UNIT_METRICS.map((m) => m.key);
+  assert.ok(!keys.includes("plays_per_possession"));
+  assert.ok(!keys.includes("non_offense_points_per_game"));
+});
+
+test("rankLabel and rankTitle show ties as T-N and unranked as a dash", () => {
+  assert.equal(rankLabel(75, false), "#75");
+  assert.equal(rankLabel(75, true), "T-75");
+  assert.equal(rankLabel(null, false), "—");
+  assert.equal(rankLabel(null, true), "—");
+  assert.equal(rankTitle(75, true, 138), "Tied for #75 of 138");
+  assert.equal(rankTitle(75, false, 138), "National rank #75 of 138");
+  assert.equal(rankTitle(null, false, null), "Not ranked");
+});
+
+test("ties carry through to the row and an exact zero is unranked", () => {
+  const rows = [
+    row("A", "offense", "ppp", 2.0, 40, true),
+    row("B", "defense", "ppp", 1.5, 40, false),
+    row("A", "offense", "explosive_rate", 0, 74, true), // zero: value shown, no rank, no tie
+    row("B", "defense", "explosive_rate", 0.06, 20),
+  ];
+  const out = Object.fromEntries(buildUnitRows(rows, "A", "B").map((r) => [r.key, r]));
+  assert.deepEqual([out.ppp.offenseRank, out.ppp.offenseTied, out.ppp.defenseTied], [40, true, false]);
+  assert.equal(out.explosive_rate.offenseValue, "0.0%");
+  assert.deepEqual(
+    [out.explosive_rate.offenseRank, out.explosive_rate.offenseCohort, out.explosive_rate.offenseTied],
+    [null, null, false],
+  );
+  assert.equal(out.explosive_rate.edge, null); // an unranked side gives no edge cue
+});
+
+test("rowEdge compares the offense rank with the opposing defense rank", () => {
+  // Cohort of 101: percentile = 1 - (rank - 1) / 100.
+  assert.deepEqual(rowEdge(11, 101, 61, 101), { side: "offense", strength: "strong" }); // gap 0.50
+  assert.deepEqual(rowEdge(61, 101, 11, 101), { side: "defense", strength: "strong" });
+  assert.deepEqual(rowEdge(41, 101, 61, 101), { side: "offense", strength: "slight" }); // gap 0.20
+  assert.deepEqual(rowEdge(61, 101, 41, 101), { side: "defense", strength: "slight" });
+  assert.deepEqual(rowEdge(50, 101, 55, 101), { side: "even", strength: null }); // gap 0.05
+  assert.deepEqual(rowEdge(21, 101, 51, 101), { side: "offense", strength: "strong" }); // exactly 0.30
+  assert.equal(rowEdge(null, 101, 50, 101), null);
+  assert.equal(rowEdge(50, 101, null, 101), null);
+  // Different cohort sizes compare by percentile, not raw rank.
+  assert.deepEqual(rowEdge(3, 16, 120, 138), { side: "offense", strength: "strong" });
+});
+
+test("edgeSummary counts each side and ignores rows that cannot be compared", () => {
+  const rows = buildUnitRows(
+    [
+      row("A", "offense", "ppp", 3, 5),
+      row("B", "defense", "ppp", 2, 100),
+      row("A", "offense", "epa_rush", 0.1, 100),
+      row("B", "defense", "epa_rush", 0.05, 5),
+      row("A", "offense", "success_rate", 0.4, 60),
+      row("B", "defense", "success_rate", 0.4, 62),
+      row("A", "offense", "epa_pass", 0.2, null),
+    ],
+    "A",
+    "B",
+  );
+  assert.deepEqual(edgeSummary(rows), { offense: 1, defense: 1, even: 1 });
 });
 
 test("matchup reads only raw possession stats: the adjusted table is never queried", () => {

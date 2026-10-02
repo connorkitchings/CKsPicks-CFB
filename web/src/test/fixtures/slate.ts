@@ -1,12 +1,12 @@
 import type { Game, PredictionGame } from "@/lib/queries";
 import type { Performance } from "@/lib/v5";
-import { coverMargin, gradeFromMargin } from "@/lib/picks-proto";
+import { coverMargin, gradeFromMargin } from "@/lib/slate";
 
 /**
- * Sample slate for the /test Picks prototype (only loaded when
- * CFB_UI_TEST_MODE=1). Covers: strong/weak leans, home and away spread leans,
- * over and under, a high-confidence star, a no-lean game, a missing total line,
- * and one finished game.
+ * Sample slate for the Picks page (only loaded when CFB_UI_TEST_MODE=1).
+ * Covers: strong/weak leans, home and away spread leans, over and under, a
+ * high-confidence star, a no-lean game, a missing total line, and one
+ * finished game.
  */
 const published = new Date("2026-09-29T23:24:00Z");
 
@@ -137,8 +137,22 @@ export const protoPerformance: Performance[] = [
   { classification: "live", games: 0, evaluated: 0, marginMae: null, totalMae: null, marginCoverage95: null, totalCoverage95: null, spread: { win: 0, loss: 0, push: 0 }, total: { win: 0, loss: 0, push: 0 } },
 ];
 
-export const protoRanks: Record<string, number> = {
-  Georgia: 2, Alabama: 5, Oregon: 3, USC: 18, Michigan: 11, "Penn State": 7, "Notre Dame": 9,
-  Clemson: 14, LSU: 8, Tennessee: 12, Miami: 16, "Florida State": 31, Texas: 4, Oklahoma: 22,
-  "Ohio State": 1, Wisconsin: 27, Washington: 35, Utah: 41, "Western Kentucky": 97,
-};
+/** Test-mode bundle for the production Picks page: Week 5, upcoming. */
+export function slatePicks(): {
+  week: number;
+  weeks: number[];
+  games: Game[];
+  performance: Performance[];
+} {
+  return { week: 5, weeks: [5], games: protoGames(), performance: protoPerformance };
+}
+
+/** Test-mode bundle for the production Results page: Week 4, scored. */
+export function slateResults(): {
+  week: number;
+  weeks: number[];
+  games: Game[];
+  performance: Performance[];
+} {
+  return { week: 4, weeks: [4], games: protoResultGames(), performance: protoPerformance };
+}

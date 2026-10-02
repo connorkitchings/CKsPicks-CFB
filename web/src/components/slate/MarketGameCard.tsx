@@ -1,29 +1,12 @@
 import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
 import { MatchupButton } from "@/components/MatchupLinks";
-import { BetTable } from "./BetTable";
-import { BetComparisonTable } from "./BetComparisonTable";
+import { BetTable } from "../BetTable";
 import type { Game } from "@/lib/queries";
 
-function formatKickoff(startDate: Date): string {
-  return startDate.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
 import {
-  modelSpreadView,
   marketSpreadView,
-  spreadBetLabel,
-  spreadEdge,
   spreadLabel,
-  totalBetLabel,
-  totalEdge,
 } from "@/lib/betting-format";
 
 function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
@@ -45,104 +28,12 @@ function ResultCell({ result }: { result: "win" | "loss" | "push" | null }) {
 }
 
 /**
- * Matchup-centric game card. One shell serves both publication modes: the
- * box-score block (logos, names, final scores) is always present, followed by
- * a compact market-vs-model table. Predictions mode shows Market / Model /
- * Model Bet / Bet Result; market mode (fail-closed, no model output) shows
- * Market only, plus Bet Result when `showBetResult` is set (the Results tab).
+ * Fail-closed market-mode card: same shell as the lean cards, but the table
+ * shows Market columns only — no model numbers, no leans, no invented output.
+ * DOM is unchanged from the former MarketGameRow so existing market-mode
+ * assertions keep passing.
  */
-export function GameRow({
-  game,
-  showBetResult = true,
-}: {
-  game: Game;
-  showBetResult?: boolean;
-}) {
-  if (game.publicationMode === "market") {
-    return <MarketGameRow game={game} showBetResult={showBetResult} />;
-  }
-  const hasAnyLine =
-    game.homeTeamSpreadLine !== null || game.totalLine !== null;
-  const marketSpread = marketSpreadView(
-    game.homeTeam,
-    game.awayTeam,
-    game.homeTeamSpreadLine,
-  );
-  const modelSpread = modelSpreadView(
-    game.homeTeam,
-    game.awayTeam,
-    game.predictedSpread,
-  );
-  const spreadBet = spreadBetLabel(
-    game.homeTeam,
-    game.awayTeam,
-    game.spreadLean,
-    game.homeTeamSpreadLine,
-  );
-  const totalBet = totalBetLabel(game.totalLean, game.totalLine);
-
-  return (
-    <li className="rounded-xl border border-line bg-surface-card p-4 shadow-sm">
-      {/* Top row: kickoff & high-confidence */}
-      <div className="mb-3 flex items-center gap-1.5 text-xs text-ink-faint">
-        <span>{formatKickoff(game.startDate)}</span>
-        {game.highConfidence && (
-          <span
-            className="text-sm leading-none text-accent"
-            title="High confidence lean"
-            aria-label="High confidence lean"
-          >
-            ★
-          </span>
-        )}
-        <span className="ml-auto">
-          <MatchupButton gameId={game.gameId} />
-        </span>
-      </div>
-
-      {/* Box score: logos, teams, finals */}
-      <div className="space-y-1.5">
-        <TeamLine
-          name={game.awayTeam}
-          record={game.awayRecord}
-          score={game.awayPoints}
-          highlighted={game.spreadLean === "away"}
-        />
-        <TeamLine
-          name={game.homeTeam}
-          record={game.homeRecord}
-          home
-          score={game.homePoints}
-          highlighted={game.spreadLean === "home"}
-        />
-      </div>
-
-      {/* Responsive Bet Comparison Table */}
-      <BetComparisonTable
-        marketSpread={spreadLabel(marketSpread)}
-        modelSpread={spreadLabel(modelSpread)}
-        spreadEdge={spreadEdge(modelSpread, marketSpread)}
-        spreadBet={spreadBet}
-        spreadResult={game.spreadResult}
-        totalLine={game.totalLine}
-        predictedTotal={game.predictedTotal}
-        totalEdge={totalEdge(game.predictedTotal, game.totalLine)}
-        totalBet={totalBet}
-        totalResult={game.totalResult}
-        showBetResult={showBetResult}
-      />
-
-      {!hasAnyLine && (
-        <p className="mt-2 text-xs text-ink-faint">
-          No market line — model prediction shown, no lean.
-        </p>
-      )}
-    </li>
-  );
-}
-
-/** Market-mode card: same shell; the table omits model columns (fail-closed). */
-function MarketGameRow({
+export function MarketGameCard({
   game,
   showBetResult = true,
 }: {
@@ -221,6 +112,17 @@ function MarketGameRow({
       />
     </li>
   );
+}
+
+function formatKickoff(startDate: Date): string {
+  return startDate.toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 function TeamLine({

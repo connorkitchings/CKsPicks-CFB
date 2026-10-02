@@ -4,8 +4,8 @@ import { expect, test } from "@playwright/test";
 
 const built = fs.existsSync(path.join(process.cwd(), "public", "logos", "v2", "manifest.json"));
 
-// Prototypes and the pages that ship: logos render at 16-80 px on all of them.
-const PAGES = ["/test-picks", "/test-results", "/", "/results", "/matchup/1"];
+// The pages that ship: logos render at 16-80 px on all of them.
+const PAGES = ["/", "/results", "/matchup/1"];
 
 test.describe("team logos", () => {
   test("every rendered logo loads and is never a broken image", async ({ page }) => {

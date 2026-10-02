@@ -8,7 +8,7 @@ import {
 } from "@/lib/queries";
 import { getV5Performance, type Performance } from "@/lib/v5";
 import { selectsV5 } from "@/lib/run-selection";
-import { WeeklySlateView } from "@/components/WeeklySlateView";
+import { SlateView } from "@/components/slate/SlateView";
 import { publicationScope, isAllowedSeason } from "@/lib/publication";
 import { uiFixture } from "@/test/fixtures/publication";
 
@@ -49,7 +49,8 @@ export default async function ResultsPage({
     redirect(`/?week=${requestedWeek}`);
   }
 
-  const week = requestedWeek ?? (scoredWeeks.length > 0 ? scoredWeeks[scoredWeeks.length - 1] : 0);
+  let week = requestedWeek ?? (scoredWeeks.length > 0 ? scoredWeeks[scoredWeeks.length - 1] : 0);
+  let weeks = scoredWeeks;
 
   let games: Game[] = [];
   let performance: Performance[] = [];
@@ -58,11 +59,19 @@ export default async function ResultsPage({
   let dbError: string | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    const fixture = uiFixture(publicationMode, week);
-    games = fixture.games;
-    if (games[0]?.publicationMode === "predictions") {
-      systemName = games[0].systemName;
-      performance = selectsV5(games[0].modelId) ? fixture.performance : [];
+    if (publicationMode === "predictions") {
+      const fx = await import("@/test/fixtures/slate");
+      const bundle = fx.slateResults();
+      week = bundle.week;
+      weeks = bundle.weeks;
+      games = bundle.games;
+      if (games[0]?.publicationMode === "predictions") {
+        systemName = games[0].systemName;
+        performance = selectsV5(games[0].modelId) ? bundle.performance : [];
+      }
+    } else {
+      const fixture = uiFixture(publicationMode, week);
+      games = fixture.games;
     }
   } else {
     try {
@@ -95,21 +104,27 @@ export default async function ResultsPage({
     .reduce<number>((max, t) => (t > max ? t : max), 0);
   const updatedAt = gamesUpdatedAt > 0 ? new Date(gamesUpdatedAt) : null;
 
+  const firstPrediction = games.find((g) => g.publicationMode === "predictions");
+  const runState = firstPrediction?.runState ?? null;
+  const retrospective = retrospectiveRepair || firstPrediction?.evidenceClass === "replay";
+
   const initialSort =
     params.sort === "spreadEdge" || params.sort === "totalEdge"
       ? params.sort
       : "kickoff";
 
   return (
-    <WeeklySlateView
+    <SlateView
       mode="results"
       season={season}
       week={week}
-      weeks={scoredWeeks}
+      weeks={weeks}
       basePath="/results"
       games={games}
       performance={performance}
       systemName={systemName}
+      runState={runState}
+      retrospective={retrospective}
       updatedAt={updatedAt}
       publicationMode={publicationMode}
       allowedSeasons={publicationScope.allowedSeasons}

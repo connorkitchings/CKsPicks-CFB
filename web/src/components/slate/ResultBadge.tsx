@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import type { Grade } from "@/lib/picks-proto";
+import type { Grade } from "@/lib/slate";
 
 const LABEL: Record<Grade, string> = { win: "Win", loss: "Loss", push: "Push" };
 

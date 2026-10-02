@@ -183,7 +183,7 @@ This is a **monorepo with two toolchains**:
 
 **Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
 
-**Web flags (default closed in production):** `CFB_MATCHUP_ENABLED=1` opens `/matchup/[gameId]`; `CFB_ENABLE_TEST_PAGE=1` opens the `/test-picks` and `/test-results` prototypes; `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
+**Web flags (default closed in production):** `CFB_MATCHUP_ENABLED=1` opens `/matchup/[gameId]`; `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
 
 **Conventions:**
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
@@ -400,13 +400,17 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 - ❌ Problem: Using future data in historical analysis
 - ✅ Solution: Use `load_point_in_time_data()` for strict temporal splits
 
-**Production-mode screenshots of `/test-*` pages:**
-- ❌ Problem: `next start` returns the 404 page for prototypes, so screenshots look "fine" but show nothing
-- ✅ Solution: start with `CFB_ENABLE_TEST_PAGE=1 CFB_UI_TEST_MODE=1`, and look at the image before sending it
+**Production-mode screenshots of gated pages:**
+- ❌ Problem: `next start` returns the 404 page for gated routes (e.g. `/matchup`), so screenshots look "fine" but show nothing
+- ✅ Solution: open gated routes with their flag (e.g. `CFB_MATCHUP_ENABLED=1`) plus `CFB_UI_TEST_MODE=1`, and look at the image before sending it
 
 **Raw `db.execute()` in the web app:**
 - ❌ Problem: the Neon HTTP driver returns `{ rows }`, not an array; code reading `res[0]` silently sees nothing (the `to_regclass` guards hid venues, selections and team stats this way)
 - ✅ Solution: use `existsFrom`/`rowsOf` from `web/src/lib/db-result.ts`; fixture mode (`CFB_UI_TEST_MODE=1`) bypasses the database, so check optional-table features once against a real Preview database
+
+**Correlated subqueries in drizzle selects:**
+- ❌ Problem: in a single-table select drizzle renders `${table.col}` unqualified, so inside a subquery it binds to the inner alias (a row compared with itself; `EXISTS` always false)
+- ✅ Solution: write the outer references with the table name (see `web/src/lib/tie-sql.ts`) and verify against real data; unit tests and fixtures cannot see this
 
 **Hardcoded Paths:**
 - ❌ Problem: Using `/Users/...` or `./data/` paths
