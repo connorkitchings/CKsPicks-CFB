@@ -98,6 +98,16 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.locator("#matchup-header")).toHaveClass(/sr-only/);
     // Forecast box carries the model edge notes like the Picks cards.
     await expect(page.getByText("Forecast & Lines")).toBeVisible();
+    // The model bet names the side without the word "Lean".
+    const bet = page.getByText("Model Bet:").locator("xpath=following-sibling::div[1]");
+    await expect(bet).not.toContainText("Lean");
+    // Explanations and legends live below the tables, not above them.
+    const lastTable = await page.getByRole("table").last().boundingBox();
+    const notes = await page.getByTestId("matchup-notes").boundingBox();
+    expect(notes!.y).toBeGreaterThan(lastTable!.y + lastTable!.height - 2);
+    const firstTable = await page.getByRole("table").first().boundingBox();
+    const legend = await page.getByTestId("edge-legend").boundingBox();
+    expect(legend!.y).toBeGreaterThan(firstTable!.y);
     await expect(page.locator("[title='Model minus market']").first()).toBeVisible();
     await expect(page).toHaveTitle(/ at .* · Matchup/);
   });

@@ -172,7 +172,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                   <div className="flex flex-wrap items-baseline font-mono text-sm">
                     {matchup.spreadLean ? (
                       <span className="font-medium text-accent-ink">
-                        {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam} Lean
+                        {matchup.spreadLean === "home" ? matchup.homeTeam : matchup.awayTeam}
                       </span>
                     ) : (
                       <span className="text-ink-faint">No Spread</span>

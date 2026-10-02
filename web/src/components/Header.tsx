@@ -31,7 +31,9 @@ export function Header({
           </h1>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
             {publicationMode === "predictions" && systemName && (
-              <span className="font-medium text-ink-muted">{displaySystemName(systemName)}</span>
+              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+                {displaySystemName(systemName)}
+              </span>
             )}
             {updatedAt && (
               <span>

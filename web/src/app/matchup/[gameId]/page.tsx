@@ -59,19 +59,6 @@ export default async function MatchupPage({
 
         {matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
-            <p className="text-xs leading-relaxed text-ink-muted">
-              Stats through Week {matchup.stats.asOfWeek - 1}, before this game. FBS opponents only, regulation
-              play, garbage time excluded; raw, not opponent-adjusted. Defense columns show what that defense
-              allowed.
-              {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams; T = tied.`}
-            </p>
-            <p className="flex items-center gap-2 text-xs text-ink-muted" data-testid="edge-legend">
-              <span aria-hidden className="inline-block h-3 w-[3px] rounded-full bg-accent" />
-              <span>
-                The bar on a row marks the side with the edge (offense rank against the opposing defense&rsquo;s
-                rank); darker means a bigger gap.
-              </span>
-            </p>
             <div className="grid gap-4 lg:grid-cols-2">
               <UnitMatchupTable
                 offenseTeam={matchup.awayTeam}
@@ -84,6 +71,21 @@ export default async function MatchupPage({
                 rows={matchup.stats.homeOffVsAwayDef}
               />
             </div>
+            <section aria-label="Notes" data-testid="matchup-notes" className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-ink-faint">
+              <p>
+                Stats through Week {matchup.stats.asOfWeek - 1}, before this game. FBS opponents only, regulation
+                play, garbage time excluded; raw, not opponent-adjusted. Defense columns show what that defense
+                allowed.
+                {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams; T = tied.`}
+              </p>
+              <p className="flex items-start gap-2" data-testid="edge-legend">
+                <span aria-hidden className="mt-0.5 inline-block h-3 w-[3px] shrink-0 rounded-full bg-accent" />
+                <span>
+                  The bar on a row marks the side with the edge (offense rank against the opposing
+                  defense&rsquo;s rank); darker means a bigger gap.
+                </span>
+              </p>
+            </section>
           </section>
         ) : (
           <section

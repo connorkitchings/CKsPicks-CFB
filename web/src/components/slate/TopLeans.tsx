@@ -1,5 +1,5 @@
 import type { Game } from "@/lib/queries";
-import { leanDetail, topLeans, type LeanKind, type Tally } from "@/lib/slate";
+import { topLeans, type LeanKind, type Tally } from "@/lib/slate";
 import { kickoffTime } from "./format";
 import { LeanMarker } from "./LeanMarker";
 
@@ -7,33 +7,26 @@ function Column({ games, kind, title }: { games: Game[]; kind: LeanKind; title: 
   const rows = topLeans(games, kind, 5);
   return (
     <div>
-      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">{title}</h3>
+      <h3 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">{title}</h3>
       {rows.length === 0 ? (
         <p className="text-xs text-ink-faint">No leans yet.</p>
       ) : (
-        <ol className="space-y-1">
+        <ol className="divide-y divide-line/40">
           {rows.map((l) => (
             <li key={l.game.gameId}>
               <a
                 href={`#game-${l.game.gameId}`}
-                className="block rounded-md px-2 py-1.5 hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-inset focus-visible:outline-2 focus-visible:outline-accent"
               >
-                <span className="flex items-center gap-2 text-sm">
-                  <LeanMarker lean={l} />
-                  <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
-                  <span className="shrink-0 text-xs tabular-nums text-ink-muted">({l.edge.toFixed(1)})</span>
-                  <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
-                    {l.game.awayTeam} @ {l.game.homeTeam}
-                  </span>
-                  <span className="ml-auto hidden shrink-0 text-xs tabular-nums text-ink-faint sm:inline">
-                    {kickoffTime(l.game.startDate)}
-                  </span>
+                <LeanMarker lean={l} />
+                <span className="min-w-0 truncate font-semibold text-accent-ink">{l.pick}</span>
+                <span className="shrink-0 text-xs tabular-nums text-ink-muted">({l.edge.toFixed(1)})</span>
+                <span className="hidden min-w-0 truncate text-xs text-ink-faint sm:inline">
+                  {l.game.awayTeam} @ {l.game.homeTeam}
                 </span>
-                {leanDetail(l) && (
-                  <span className="mt-0.5 block truncate pl-6 text-[11px] text-ink-muted max-[380px]:overflow-visible max-[380px]:whitespace-normal">
-                    {leanDetail(l)}
-                  </span>
-                )}
+                <span className="ml-auto hidden shrink-0 text-xs tabular-nums text-ink-faint sm:inline">
+                  {kickoffTime(l.game.startDate)}
+                </span>
               </a>
             </li>
           ))}

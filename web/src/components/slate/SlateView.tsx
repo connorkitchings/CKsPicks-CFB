@@ -72,7 +72,7 @@ export function SlateView({
       <Header
         season={season > 0 ? season : null}
         systemName={systemName}
-        updatedAt={updatedAt}
+        updatedAt={null}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
       />
