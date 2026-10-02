@@ -35,10 +35,10 @@ export function SiteNav() {
               href={href}
               aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "whitespace-nowrap transition-colors focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                "whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
                 isActive
-                  ? "text-accent-ink font-semibold"
-                  : "text-ink-muted hover:text-ink"
+                  ? "bg-surface-inset font-semibold text-ink shadow-2xs"
+                  : "text-ink-muted hover:bg-surface-inset/60 hover:text-ink",
               )}
             >
               {label}

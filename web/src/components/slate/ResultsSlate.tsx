@@ -3,18 +3,10 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
-import { matchesResult, sortResults, type ResultFilter, type ResultSort } from "@/lib/slate";
+import { sortResults, type ResultSort } from "@/lib/slate";
 import { dayLabel } from "./format";
 import { ResultGameCard } from "./ResultGameCard";
 import { ResultGameRow } from "./ResultGameRow";
-
-const FILTERS: [ResultFilter, string][] = [
-  ["all", "All"],
-  ["win", "Wins"],
-  ["loss", "Losses"],
-  ["push", "Pushes"],
-  ["none", "No lean"],
-];
 
 const SORT_LABEL: Record<ResultSort, string> = {
   kickoff: "Kickoff time",
@@ -25,7 +17,7 @@ const SORT_LABEL: Record<ResultSort, string> = {
 
 type View = "grid" | "list";
 
-/** Search, result filter, sort and grid/list view over a scored slate. */
+/** Search, sort and grid/list view over a scored slate. */
 export function ResultsSlate({
   games,
   showBetResult = true,
@@ -38,7 +30,6 @@ export function ResultsSlate({
   initialSort?: ResultSort;
 }) {
   const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState<ResultFilter>("all");
   const [sort, setSort] = useState<ResultSort>(initialSort);
   const [view, setView] = useState<View>("grid");
 
@@ -48,14 +39,6 @@ export function ResultsSlate({
   );
   const effectiveSort: ResultSort = predictionsVisible ? sort : "kickoff";
 
-  const counts = useMemo(() => {
-    const c: Record<ResultFilter, number> = { all: games.length, win: 0, loss: 0, push: 0, none: 0 };
-    for (const f of ["win", "loss", "push", "none"] as const) {
-      c[f] = games.filter((g) => matchesResult(g, f)).length;
-    }
-    return c;
-  }, [games]);
-
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     let rows = [...games];
@@ -64,9 +47,8 @@ export function ResultsSlate({
         (g) => g.homeTeam.toLowerCase().includes(q) || g.awayTeam.toLowerCase().includes(q),
       );
     }
-    if (predictionsVisible) rows = rows.filter((g) => matchesResult(g, filter));
     return sortResults(rows, effectiveSort);
-  }, [games, query, filter, effectiveSort, predictionsVisible]);
+  }, [games, query, effectiveSort]);
 
   const groups = useMemo(() => {
     if (effectiveSort !== "kickoff") return null;
@@ -112,24 +94,6 @@ export function ResultsSlate({
             className={clsx(control, "w-full text-sm font-normal text-ink placeholder:text-ink-faint")}
           />
         </div>
-        {predictionsVisible && (
-          <div role="group" aria-label="Result filter" className="flex overflow-hidden rounded-md border border-line">
-            {FILTERS.map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={filter === key}
-                onClick={() => setFilter(key)}
-                className={clsx(
-                  "px-2.5 py-1.5 text-xs font-medium",
-                  filter === key ? "bg-accent-soft text-accent-ink" : "bg-surface-card text-ink-muted hover:bg-surface-inset",
-                )}
-              >
-                {label} <span className="tabular-nums text-ink-faint">{counts[key]}</span>
-              </button>
-            ))}
-          </div>
-        )}
         {predictionsVisible && (
           <>
             <label htmlFor="slate-sort" className="sr-only">Sort by</label>

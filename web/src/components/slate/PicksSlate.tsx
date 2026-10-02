@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
-import { hasLean, sortGames, type SortKey } from "@/lib/slate";
+import { sortGames, type SortKey } from "@/lib/slate";
 import { dayLabel } from "./format";
 import { SlateGameCard } from "./SlateGameCard";
 import { SlateGameRow } from "./SlateGameRow";
@@ -31,14 +31,12 @@ export function PicksSlate({
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>(initialSort);
-  const [leansOnly, setLeansOnly] = useState(false);
   const [view, setView] = useState<View>("grid");
 
   const predictionsVisible = useMemo(
     () => games.some((g) => g.publicationMode === "predictions"),
     [games],
   );
-  const leanCount = useMemo(() => games.filter(hasLean).length, [games]);
   const effectiveSort: SortKey = predictionsVisible ? sort : "kickoff";
 
   const visible = useMemo(() => {
@@ -49,9 +47,8 @@ export function PicksSlate({
         (g) => g.homeTeam.toLowerCase().includes(q) || g.awayTeam.toLowerCase().includes(q),
       );
     }
-    if (leansOnly && predictionsVisible) rows = rows.filter(hasLean);
     return sortGames(rows, effectiveSort);
-  }, [games, query, effectiveSort, leansOnly, predictionsVisible]);
+  }, [games, query, effectiveSort]);
 
   const groups = useMemo(() => {
     if (effectiveSort !== "kickoff") return null;
@@ -98,19 +95,6 @@ export function PicksSlate({
           />
         </div>
         {predictionsVisible && (
-          <button
-            type="button"
-            aria-pressed={leansOnly}
-            onClick={() => setLeansOnly((v) => !v)}
-            className={clsx(
-              control,
-              leansOnly ? "border-accent bg-accent-soft text-accent-ink" : "text-ink-muted hover:bg-surface-inset",
-            )}
-          >
-            Leans only ({leanCount})
-          </button>
-        )}
-        {predictionsVisible && (
           <>
             <label htmlFor="slate-sort" className="sr-only">Sort by</label>
             <select
@@ -142,11 +126,6 @@ export function PicksSlate({
           ))}
         </div>
       </div>
-
-      <p className="px-1 text-xs text-ink-faint">
-        Showing {visible.length} of {games.length} games
-        {predictionsVisible && ` · ${leanCount} with a lean`}
-      </p>
       {predictionsVisible && (
         <p className="px-1 text-xs text-ink-faint">
           The number in parentheses after a pick is its edge: how many points the model differs from the market.

@@ -48,7 +48,6 @@ test("slate cards link to the matchup breakdown through the gated button instead
   for (const file of [
     "SlateGameCard.tsx",
     "SlateGameRow.tsx",
-    "ResultGameCard.tsx",
     "ResultGameRow.tsx",
     "MarketGameCard.tsx",
   ]) {

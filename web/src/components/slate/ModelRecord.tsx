@@ -1,4 +1,3 @@
-import Link from "next/link";
 import clsx from "clsx";
 import type { Performance } from "@/lib/v5";
 import { winRatePct } from "@/lib/slate";
@@ -17,22 +16,17 @@ export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
   const isAboveBreakEven = rate !== null && rate >= 52.4;
 
   return (
-    <div className="rounded-lg border border-line/60 bg-surface-inset/80 p-2.5 transition-colors hover:border-line">
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="font-semibold uppercase tracking-wider text-ink-muted">
-          {label}
-        </span>
-        <span className="tabular-nums text-ink-faint">
-          {decided} decided
-        </span>
+    <div className="flex flex-col items-center justify-center rounded-lg border border-line/60 bg-surface-inset/80 p-3 text-center transition-colors hover:border-line">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+        {label}
+      </span>
+      <div className="mt-0.5 font-mono text-xl font-bold tracking-tight tabular-nums text-ink sm:text-2xl">
+        {rec.win}–{rec.loss}–{rec.push}
       </div>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className="font-mono text-lg font-bold tracking-tight tabular-nums text-ink sm:text-xl">
-          {rec.win}–{rec.loss}–{rec.push}
-        </span>
+      <div className="mt-0.5 flex items-center justify-center gap-1.5 text-xs tabular-nums text-ink-muted">
         <span
           className={clsx(
-            "font-mono text-sm font-semibold tabular-nums",
+            "font-semibold",
             rate === null
               ? "text-ink-faint"
               : isAboveBreakEven
@@ -40,8 +34,10 @@ export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
               : "text-ink-muted",
           )}
         >
-          {rate === null ? "—" : `(${rate.toFixed(1)}%)`}
+          {rate === null ? "—" : `${rate.toFixed(1)}%`}
         </span>
+        <span className="text-ink-faint">·</span>
+        <span className="text-ink-faint">{decided} decided</span>
       </div>
     </div>
   );
@@ -96,12 +92,6 @@ export function ModelRecord({
             Season {season ? `(${season.games} games)` : ""} · 52.4% target
           </span>
         </div>
-        <Link
-          href="/performance"
-          className="text-[11px] font-medium text-accent hover:text-accent-ink hover:underline"
-        >
-          Full performance →
-        </Link>
       </div>
       <div className={clsx("grid gap-3", week && "md:grid-cols-2")}>
         {week && (

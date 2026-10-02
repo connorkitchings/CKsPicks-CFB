@@ -1,16 +1,95 @@
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
-import { leanFor, resultFor } from "@/lib/slate";
-import { MatchupButton } from "@/components/MatchupLinks";
+import { edgeTone, leanFor, resultFor, type Lean } from "@/lib/slate";
 import { MarketGameCard } from "./MarketGameCard";
 import { dayShort } from "./format";
 import { GameWhen } from "./GameWhen";
-import { ResultLeanRow } from "./ResultLeanRow";
+import { ResultBadge } from "./ResultBadge";
 import { TeamPair } from "./TeamPair";
 
+function formatModelForecast(game: Game, lean: Lean, kind: "spread" | "total"): string {
+  if (kind === "total" || !lean.team) {
+    return lean.model ?? "—";
+  }
+  const match = lean.model?.match(/^(.+?)\s+by\s+(-?\d+(?:\.\d+)?)$/);
+  if (match) {
+    const margin = parseFloat(match[2]);
+    if (margin < 0) {
+      const opposingTeam = lean.team === game.homeTeam ? game.awayTeam : game.homeTeam;
+      return `${opposingTeam} by ${Math.abs(margin).toFixed(1)}`;
+    }
+  }
+  return lean.model ?? "—";
+}
+
+function ResultBetCell({
+  game,
+  title,
+  lean,
+  kind,
+}: {
+  game: Game;
+  title: string;
+  lean: Lean | null;
+  kind: "spread" | "total";
+}) {
+  if (!lean) {
+    return (
+      <div className="px-3 pt-2 pb-2.5 text-center">
+        <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+          {title}
+        </div>
+        <p className="text-xs text-ink-faint">No lean</p>
+      </div>
+    );
+  }
+
+  const grade = resultFor(game, kind);
+  const modelText = formatModelForecast(game, lean, kind);
+
+  return (
+    <div className="px-3 pt-2 pb-2.5 text-center">
+      <div className="mb-0.5 flex items-center justify-center gap-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+          {title}
+        </span>
+        {grade ? (
+          <ResultBadge grade={grade} />
+        ) : (
+          <span className="text-[10px] text-ink-faint">Ungraded</span>
+        )}
+      </div>
+
+      <div className="mb-1 flex min-w-0 items-baseline justify-center gap-1.5">
+        {kind === "total" && (
+          <span aria-hidden className="shrink-0 text-xs leading-none text-accent">
+            {lean.dir === "over" ? "▲" : "▼"}
+          </span>
+        )}
+        <span data-pick className="min-w-0 break-words text-sm font-semibold text-ink">
+          {lean.pick}
+        </span>
+        {lean.source && (
+          <span className="shrink-0 text-xs font-normal text-ink-faint">
+            ({lean.source})
+          </span>
+        )}
+      </div>
+
+      <div className="truncate text-xs text-ink-muted">
+        <span className="text-ink-faint">Model:</span>{" "}
+        <span className="font-medium text-ink">{modelText}</span>
+        <span className={clsx("ml-1 font-semibold tabular-nums", edgeTone(lean.edge, kind))}>
+          (+{lean.edge.toFixed(1)})
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Results card: final score first, then each lean with its graded outcome.
- * The left edge shows the outcome (all won / all lost / mixed / no lean).
+ * Results card: final score first, then a 2-column horizontal split
+ * for Spread and Total leans with outcome badges.
  * Market-mode games fail closed to the market-only card.
  */
 export function ResultGameCard({
@@ -25,13 +104,7 @@ export function ResultGameCard({
   }
   const spread = leanFor(game, "spread");
   const total = leanFor(game, "total");
-  const grades = [
-    spread ? resultFor(game, "spread") : null,
-    total ? resultFor(game, "total") : null,
-  ].filter((g): g is NonNullable<typeof g> => g !== null);
   const anyLean = spread !== null || total !== null;
-  const allWin = grades.length > 0 && grades.every((g) => g === "win");
-  const allLoss = grades.length > 0 && grades.every((g) => g === "loss");
   const homeWon = (game.homePoints ?? 0) > (game.awayPoints ?? 0);
   const awayWon = (game.awayPoints ?? 0) > (game.homePoints ?? 0);
 
@@ -39,35 +112,27 @@ export function ResultGameCard({
     <li
       id={`game-${game.gameId}`}
       className={clsx(
-        "scroll-mt-24 overflow-hidden rounded-xl border bg-surface-card shadow-sm",
-        !anyLean && "border-dashed border-line",
-        anyLean && "border-line border-l-4",
-        allWin && "border-l-win",
-        allLoss && "border-l-loss",
-        anyLean && !allWin && !allLoss && "border-l-line-strong",
+        "scroll-mt-24 overflow-hidden rounded-xl border bg-surface-card shadow-sm transition-all duration-150 hover:border-line-strong hover:shadow-md",
+        anyLean ? "border-line" : "border-dashed border-line",
       )}
     >
       <div className={clsx("p-4", !anyLean && "opacity-75")}>
-        <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
-          <GameWhen when={dayShort(game.startDate)} game={game} />
+        <div className="mb-3 flex items-center justify-between text-xs text-ink-faint">
+          <div className="flex items-center gap-2">
+            <GameWhen when={dayShort(game.startDate)} game={game} />
+          </div>
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
             Final
-          </span>
-          <span className="ml-auto">
-            <MatchupButton gameId={game.gameId} />
           </span>
         </div>
         <TeamPair game={game} winner={awayWon ? "away" : homeWon ? "home" : null} />
       </div>
-      <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">
-        {anyLean ? (
-          <>
-            {spread && <ResultLeanRow game={game} lean={spread} />}
-            {total && <ResultLeanRow game={game} lean={total} />}
-          </>
-        ) : (
-          <p className="text-xs text-ink-faint">No lean on this game.</p>
-        )}
+
+      <div className="border-t border-line bg-surface-inset/50">
+        <div className="grid grid-cols-2 divide-x divide-line/60">
+          <ResultBetCell game={game} title="Spread" lean={spread} kind="spread" />
+          <ResultBetCell game={game} title="Total" lean={total} kind="total" />
+        </div>
       </div>
     </li>
   );

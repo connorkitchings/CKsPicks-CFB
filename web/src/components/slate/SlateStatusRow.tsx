@@ -68,8 +68,9 @@ export function SlateStatusRow({
         </span>
       )}
       {publishedAt && (
-        <span className="text-ink-faint">
-          Run published {stamp(publishedAt)}
+        <span className="flex items-center gap-1.5 text-ink-faint">
+          <span className="text-line-strong" aria-hidden="true">·</span>
+          <span>Run published {stamp(publishedAt)}</span>
         </span>
       )}
     </div>

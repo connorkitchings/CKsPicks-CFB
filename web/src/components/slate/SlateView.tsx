@@ -125,11 +125,11 @@ export function SlateView({
               <WeekNav season={season} week={week} weeks={weeks} basePath={basePath} />
             )}
 
-            <p className="px-1 text-xs text-ink-faint">
-              {mode === "picks"
-                ? "Market lines reflect the selected pre-kickoff quote; edge shows the model\u2019s difference."
-                : `Final scores, model picks, and graded results for completed Week ${week} games.`}
-            </p>
+            {mode === "results" && (
+              <p className="px-1 text-xs text-ink-faint">
+                {`Final scores, model picks, and graded results for completed Week ${week} games.`}
+              </p>
+            )}
 
             {games.length === 0 ? (
               <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">

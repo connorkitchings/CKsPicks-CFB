@@ -52,10 +52,10 @@ test.describe("picks slate (/)", () => {
     await page.goto("/");
 
     await expect(page.getByRole("region", { name: "Record" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Top leans" })).toBeVisible();
-    await expect(page.getByText("Showing 10 of 10 games · 8 with a lean")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Best bets" })).toBeVisible();
+    await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
-    await expect(page.getByText("Top leans: 7–3–0 this season")).toBeVisible();
+    await expect(page.getByText(/Best bets: 7–3–0 this season/)).toBeVisible();
     // Single-week fixture: no week selector on the slate.
     await expect(page.locator("#week-select")).toHaveCount(0);
     // Only one main navigation on the page.
@@ -253,22 +253,19 @@ test.describe("results slate (/results)", () => {
     await expect(page.getByText(/model: Ohio State by 8\.6 · final: won by 7/).first()).toBeVisible();
   });
 
-  test("result filters narrow the slate and every card shows a graded badge", async ({ page }) => {
+  test("team search narrows the results slate and cards show a graded badge", async ({ page }) => {
     await page.goto("/results");
 
     const count = async () => {
       const text = (await page.getByText(/Showing \d+ of 9 games/).innerText()) ?? "";
       return Number(/Showing (\d+) of/.exec(text)?.[1]);
     };
-    await page.getByRole("button", { name: /^Wins/ }).click();
-    const wins = await count();
-    expect(wins).toBeGreaterThan(0);
-    expect(wins).toBeLessThan(9);
+    await page.getByPlaceholder("Filter by team…").fill("Ohio State");
+    const filtered = await count();
+    expect(filtered).toBe(1);
     await expect(page.locator("li[id^='game-']").first().getByText("Win", { exact: true }).first()).toBeVisible();
 
-    await page.getByRole("button", { name: /^Losses/ }).click();
-    expect(await count()).toBeGreaterThan(0);
-    await page.getByRole("button", { name: /^All/ }).click();
+    await page.getByPlaceholder("Filter by team…").fill("");
     expect(await count()).toBe(9);
   });
 

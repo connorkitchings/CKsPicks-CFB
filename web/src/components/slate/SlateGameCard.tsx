@@ -1,18 +1,89 @@
 import clsx from "clsx";
 import type { Game } from "@/lib/queries";
-import { marketSpreadView, modelSpreadView, spreadLabel } from "@/lib/betting-format";
-import { isFinal, leanFor } from "@/lib/slate";
+import { isFinal, leanFor, edgeTone, type Lean } from "@/lib/slate";
 import { MatchupButton } from "@/components/MatchupLinks";
 import { MarketGameCard } from "./MarketGameCard";
 import { kickoffTime } from "./format";
 import { GameWhen } from "./GameWhen";
-import { LeanPill } from "./LeanPill";
 import { TeamPair } from "./TeamPair";
 
+function formatModelForecast(game: Game, lean: Lean, kind: "spread" | "total"): string {
+  if (kind === "total" || !lean.team) {
+    return lean.model ?? "—";
+  }
+  const match = lean.model?.match(/^(.+?)\s+by\s+(-?\d+(?:\.\d+)?)$/);
+  if (match) {
+    const margin = parseFloat(match[2]);
+    if (margin < 0) {
+      const opposingTeam = lean.team === game.homeTeam ? game.awayTeam : game.homeTeam;
+      return `${opposingTeam} by ${Math.abs(margin).toFixed(1)}`;
+    }
+  }
+  return lean.model ?? "—";
+}
+
+function BetCell({
+  game,
+  title,
+  lean,
+  kind,
+}: {
+  game: Game;
+  title: string;
+  lean: Lean | null;
+  kind: "spread" | "total";
+}) {
+  if (!lean) {
+    return (
+      <div className="px-3 pt-2 pb-2.5 text-center">
+        <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+          {title}
+        </div>
+        <p className="text-xs text-ink-faint">No lean</p>
+      </div>
+    );
+  }
+
+  const modelText = formatModelForecast(game, lean, kind);
+
+  return (
+    <div className="px-3 pt-2 pb-2.5 text-center">
+      <div className="mb-0.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+          {title}
+        </span>
+      </div>
+
+      <div className="mb-1 flex min-w-0 items-baseline justify-center gap-1.5">
+        {kind === "total" && (
+          <span aria-hidden className="shrink-0 text-xs leading-none text-accent">
+            {lean.dir === "over" ? "▲" : "▼"}
+          </span>
+        )}
+        <span data-pick className="min-w-0 break-words text-sm font-semibold text-accent-ink">
+          {lean.pick}
+        </span>
+        {lean.source && (
+          <span className="shrink-0 text-xs font-normal text-ink-faint">
+            ({lean.source})
+          </span>
+        )}
+      </div>
+
+      <div className="truncate text-xs text-ink-muted">
+        <span className="text-ink-faint">Model:</span>{" "}
+        <span className="font-medium text-ink">{modelText}</span>
+        <span className={clsx("ml-1 font-semibold tabular-nums", edgeTone(lean.edge, kind))}>
+          (+{lean.edge.toFixed(1)})
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /**
- * Picks game card: who is playing, then each lean with its direction and
- * edge. The market and model numbers live in the lean sentence, not a second
- * table, so each number appears once. Games with no lean recede.
+ * Picks game card: who is playing, then a side-by-side 2-column split for
+ * Spread and Total leans with market (and book) vs model (and edge).
  * Market-mode games fail closed to the market-only card.
  */
 export function SlateGameCard({
@@ -29,57 +100,42 @@ export function SlateGameCard({
   const total = leanFor(game, "total");
   const anyLean = spread !== null || total !== null;
   const final = isFinal(game);
-  const strongest = Math.max(spread?.tier ?? 0, total?.tier ?? 0);
 
   return (
     <li
       id={`game-${game.gameId}`}
       className={clsx(
-        "scroll-mt-24 overflow-hidden rounded-xl border bg-surface-card shadow-sm",
-        anyLean
-          ? clsx("border-line border-l-4", strongest === 3 ? "border-l-accent" : "border-l-accent-line")
-          : "border-dashed border-line",
+        "scroll-mt-24 overflow-hidden rounded-xl border bg-surface-card shadow-sm transition-all duration-150 hover:border-line-strong hover:shadow-md",
+        anyLean ? "border-line" : "border-dashed border-line",
       )}
     >
       <div className={clsx("p-4", !anyLean && "opacity-75")}>
-        <div className="mb-3 flex items-center gap-2 text-xs text-ink-faint">
-          <GameWhen when={`${kickoffTime(game.startDate)} ET`} game={game} />
-          {game.highConfidence && (
-            <span className="text-sm leading-none text-accent" title="High confidence lean" aria-label="High confidence lean">
-              ★
-            </span>
-          )}
-          <span className="ml-auto">
+        <div className="mb-3 flex items-center justify-between text-xs text-ink-faint">
+          <div className="flex items-center gap-2">
+            <GameWhen when={`${kickoffTime(game.startDate)} ET`} game={game} />
+            {game.highConfidence && (
+              <span className="text-sm leading-none text-accent" title="High confidence lean" aria-label="High confidence lean">
+                ★
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
             <MatchupButton gameId={game.gameId} />
-          </span>
-          {final && (
-            <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
-              Final
-            </span>
-          )}
+            {final && (
+              <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                Final
+              </span>
+            )}
+          </div>
         </div>
         <TeamPair game={game} />
       </div>
 
-      <div className="space-y-2.5 border-t border-line bg-surface-inset/60 px-4 py-3">
-        {anyLean ? (
-          <>
-            {spread && <LeanPill lean={spread} />}
-            {total && <LeanPill lean={total} />}
-          </>
-        ) : (
-          <div className="space-y-0.5 text-xs text-ink-faint">
-            <p className="font-medium">No lean</p>
-            <p>
-              Spread: market {spreadLabel(marketSpreadView(game.homeTeam, game.awayTeam, game.homeTeamSpreadLine))}, model{" "}
-              {spreadLabel(modelSpreadView(game.homeTeam, game.awayTeam, game.predictedSpread))}
-            </p>
-            <p>
-              Total: market {game.totalLine === null ? "—" : game.totalLine.toFixed(1)}, model{" "}
-              {game.predictedTotal === null ? "—" : game.predictedTotal.toFixed(1)}
-            </p>
-          </div>
-        )}
+      <div className="border-t border-line bg-surface-inset/50">
+        <div className="grid grid-cols-2 divide-x divide-line/60">
+          <BetCell game={game} title="Spread" lean={spread} kind="spread" />
+          <BetCell game={game} title="Total" lean={total} kind="total" />
+        </div>
       </div>
     </li>
   );

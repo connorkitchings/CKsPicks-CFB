@@ -60,9 +60,9 @@ export function Header({
           )}
           {season !== null &&
             !(allowedSeasons && allowedSeasons.length > 1) && (
-              <div className="text-sm font-medium tabular-nums text-ink-muted">
+              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-muted">
                 {season}
-              </div>
+              </span>
             )}
           <ThemeToggle />
         </div>
