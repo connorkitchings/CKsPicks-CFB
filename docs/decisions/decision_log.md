@@ -1,5 +1,16 @@
 # Decision Log
 
+## 2026-10-02: Team-Stats Inputs, Silver Promotion, Optional-Table Guards
+
+- **Context:** First real-data run of the matchup stats pipeline on Preview.
+- **Decisions:**
+  - **Silver promotion by catalog registration:** weekly 2026 play-by-play Silver is certified in the Preview lake; production's catalog does not hold it. Preview and production share one R2 bucket, so `promote_silver_versions.py` registers the existing immutable versions after re-verifying manifests and hashes. No objects are copied; a different bucket is refused.
+  - **Provenance:** every `team_season_stats` row stores the Silver version ids that built it.
+  - **Validation:** CFBD advanced stats are the external check, gated on like-for-like teams because CFBD includes FCS games.
+  - **Pre-game consistency:** matchup ratings come from the latest frozen generation at or before kickoff, backfilled with preseason priors, so they match the pre-game stats.
+  - **Defect found:** `db.execute()` on the Neon HTTP driver returns `{rows}`, not an array. The `to_regclass` guards for `prediction_market_selections`, `game_venues` and `team_season_stats` therefore always reported the table missing and would have hidden that data in production. Fixed with a shared, tested helper. Releasing this to production also turns on the market-selection (sportsbook) display, which its guard had been silently suppressing.
+- **Source:** [team stats contract, Amendment 1](../plans/2026-10-01/10-authentic-team-stats-pipeline.md), [status](../status.md).
+
 ## 2026-10-01: Success Metric, Self-Hosted Logos, Pre-Game Team Stats
 
 - **Context:** First full repo review; design work on Picks/Results and matchup pages.

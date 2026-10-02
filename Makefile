@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -29,6 +29,8 @@ help:
 	@echo "  make readiness YEAR=2026 WEEK=1 AS_OF=2026-08-20 ENV=preview"
 	@echo "  make publish-week YEAR=2026 WEEK=1  - Legacy V4 pregame publish / rollback path"
 	@echo "  make prepare-week YEAR=2026 WEEK=1 - Rebuild cumulative Silver/Gold before publish"
+	@echo "  make team-stats YEAR=2026 WEEK=6 ENV=preview [DRY=1] - Publish pre-game team stats for the week"
+	@echo "  make promote-silver YEAR=2026 [DRY=1] - Register Preview Silver in the production catalog"
 	@echo "  make freeze-week YEAR=2026 WEEK=1  - Freeze the active run before kickoff"
 	@echo "  make close-week YEAR=2026 WEEK=1  - Postgame close (refresh scores → score → stats)"
 	@echo "  make reconcile YEAR=2026 ENV=preview - Catalog orphaned immutable artifacts"
@@ -172,6 +174,16 @@ preflight:
 	fi
 	@echo "🩺 Running weekly preflight for $(YEAR) week $(WEEK)..."
 	PYTHONPATH=.:src uv run python scripts/pipeline/preflight.py --year $(YEAR) --week $(WEEK) --as-of $(AS_OF) $(if $(CONFIG),--config $(CONFIG),)
+
+team-stats:
+	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
+		echo "Usage: make team-stats YEAR=2026 WEEK=6 ENV=preview|production [DRY=1]"; exit 1; \
+	fi
+	PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season $(YEAR) --as-of-week $(WEEK) --environment $(ENV) $(if $(DRY),--dry-run,)
+
+promote-silver:
+	@if [ -z "$(YEAR)" ]; then echo "Usage: make promote-silver YEAR=2026 [DRY=1]"; exit 1; fi
+	PYTHONPATH=src:. uv run python scripts/pipeline/promote_silver_versions.py --season $(YEAR) $(if $(DRY),--dry-run,)
 
 readiness:
 	@if [ "$(ENV)" != "preview" ]; then \

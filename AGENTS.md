@@ -404,6 +404,10 @@ PYTHONPATH=src uv run python -m cks_picks_cfb.train --cfg job --resolve
 - ❌ Problem: `next start` returns the 404 page for prototypes, so screenshots look "fine" but show nothing
 - ✅ Solution: start with `CFB_ENABLE_TEST_PAGE=1 CFB_UI_TEST_MODE=1`, and look at the image before sending it
 
+**Raw `db.execute()` in the web app:**
+- ❌ Problem: the Neon HTTP driver returns `{ rows }`, not an array; code reading `res[0]` silently sees nothing (the `to_regclass` guards hid venues, selections and team stats this way)
+- ✅ Solution: use `existsFrom`/`rowsOf` from `web/src/lib/db-result.ts`; fixture mode (`CFB_UI_TEST_MODE=1`) bypasses the database, so check optional-table features once against a real Preview database
+
 **Hardcoded Paths:**
 - ❌ Problem: Using `/Users/...` or `./data/` paths
 - ✅ Solution: Always use `os.getenv("CFB_MODEL_DATA_ROOT")`

@@ -4,7 +4,8 @@
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("it looks good"), with these scope choices: stats pipeline only (page redesign is a later contract), source = our own play-by-play, pre-game snapshot semantics, matchup pages hidden until ready.
-- **Implementation log:** Phases 0-4 are on `dev` (stats layer, migration 0020, `publish_team_stats.py`, web read layer behind the gate, fixture e2e). Only Phase 5 (real data, user-run) remains. Note: unknown matchup ids render the not-found page with status 200 because the root `loading.tsx` streams; the page is `noindex`.
+- **Implementation log (2026-10-02):** Phase 5 ran on **Preview only** (see Amendment 1). Production is pending: promote Silver, apply 0019/0020, publish, on the user's go.
+- **Earlier log:** Phases 0-4 are on `dev` (stats layer, migration 0020, `publish_team_stats.py`, web read layer behind the gate, fixture e2e). Only Phase 5 (real data, user-run) remains. Note: unknown matchup ids render the not-found page with status 200 because the root `loading.tsx` streams; the page is `noindex`.
 - **Commit policy:** One commit per phase on `dev`. Merge `dev` into `main` only after the Phase 5 spot-check.
 - **Supersedes:** the former `02-authentic-matchup-stats-pipeline-and-presentation.md` (this file replaces it with corrected facts) and the intent of `03-advanced-stats-matchup-breakdown.md` (its synthetic stats were removed).
 
@@ -52,6 +53,23 @@ Long format (decided during Phase 1): one row per `(season, as_of_week, team, ro
 2. Apply 0020 to Preview (`migrate_db.py --database-env PREVIEW_DATABASE_URL`), publish weeks 0-5, spot-check a few teams against CFBD numbers.
 3. Repeat for production via `scripts/ops/with_production_pipeline_env.sh`.
 
+## Amendment 1 (2026-10-02): first real-data run
+
+Approved in-session ("amend 10, implement here"; production deferred; Silver reaches production by **catalog promotion**).
+
+Findings from the first Preview dry run, and the fixes:
+1. **`early_down_epa` and `conv_rate_3rd_4th` were null for all 138 teams.** Silver `byplay` has `yards_to_first` (not `distance`) and per-down `thirddown_conversion`/`fourthdown_conversion` flags. Fixed: conversion uses the flags when present, else `yards_to_first` (goal-to-go 0/null falls back to `yards_to_goal`); return touchdowns and turnovers never count as conversions. A build with neither distance nor flags now fails loudly instead of emitting nulls.
+2. **Pass/rush** uses Silver's `dropback`/`rush_attempt` flags (regex only as a fallback).
+3. **Guards:** regular season only (`season_type`); every eligible game must have byplay and drives rows; score-stream errors surface as `TeamStatsContractError`.
+4. **Provenance:** `team_season_stats.source_versions` (JSONB) records the Silver versions behind each row. Migration 0020 was edited in place: it had not been applied to any database (verified on Preview and production, both at 0018).
+5. **Publisher:** `--weeks 1-5`, version pins, one transaction, prints the chosen Silver refs.
+6. **Production inputs:** production's catalog has no 2026 `byplay`/`drives`. Preview and production share one R2 bucket, so `scripts/pipeline/promote_silver_versions.py` registers the existing immutable versions (plus parents and source captures) after re-verifying manifests and content hashes. Different buckets are refused. Production dry run: 6 new versions, 11 captures, all verified; nothing written.
+7. **Validation:** `scripts/pipeline/verify_team_stats.py` compares with CFBD advanced stats. CFBD includes FCS games, so the gate (Spearman >= 0.85 on EPA/play and success rate) applies to like-for-like teams (CFBD play count within 5% of ours); on that subset rho is 0.96-0.99 for weeks 3-5. The all-teams rho is lower in weeks 3-4 for the same reason (0.77-0.88) and is informational.
+8. **Web:** matchup ratings are as of kickoff (`getRatingsAsOf`); rank badge tiers are relative to the ranked pool; ratings stored under nine legacy team names resolve through `TEAM_LOGO_MAP`; the `to_regclass` guards read the Neon result shape (see the decision log; the old guards always reported a missing table).
+9. The Phase 5 migration command was wrong (`--database-env PREVIEW_DATABASE_URL`, the pipeline role). Correct: `zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL`.
+
+Known limits: 133 team-games (about 31%) fail the shared V5 score-stream reconciliation, so their points-per-scoring-opportunity is null (same rule as V5; `n` shows the sample). Weeks are matched by week number, not kickoff time.
+
 ## Out of scope
 Page redesign in the Picks/Results style; win probability and score projections (need a calibration contract); restoring card deep links; opponent adjustment; contract 04's refactor (keep logic in `src/` so import paths stay compatible).
 
@@ -60,7 +78,8 @@ Page redesign in the Picks/Results style; win probability and score projections 
 - [ ] Leak test proves week N stats exclude week N games.
 - [ ] `/matchup/*` returns 404 and `noindex` when the flag is off.
 - [ ] No synthetic or hash-derived stat anywhere (`grep` guard recorded in the session log).
-- [ ] Phase 5 spot-check recorded; `docs/status.md` updated; contract marked Implemented.
+- [x] Phase 5 on Preview: migration applied, weeks 1-5 published (10,460 rows), CFBD check recorded in Amendment 1.
+- [ ] Production: promote Silver, apply 0019/0020, publish weeks 1-5; then mark Implemented.
 
 ## Risks and rollback
 - **Silver column names differ:** the dry run catches it; adjust constants, not the design.

@@ -61,11 +61,24 @@ PYTHONPATH=src:. uv run python scripts/pipeline/publish_game_venues.py --season 
 
 ## Team stats (matchup pages)
 
-`team_season_stats` holds pre-game team stats and national ranks from our own play-by-play. The snapshot for week N covers FBS-vs-FBS games completed *before* week N's slate, so run it for the **upcoming** week once the prior week's finals are certified (it is idempotent). Matchup pages stay hidden until approved. Dry run first, Preview before production. See the [team stats contract](../plans/2026-10-01/10-authentic-team-stats-pipeline.md).
+`team_season_stats` holds pre-game team stats and national ranks from our own play-by-play. The snapshot for week N covers FBS-vs-FBS games completed *before* week N's slate, so run it for the **upcoming** week once the prior week's finals are certified and the post-week Silver refresh (`prepare-week`) has run. It is idempotent and records the Silver versions it used (`source_versions`). Matchup pages stay hidden until approved. Dry run first, Preview before production. See the [team stats contract](../plans/2026-10-01/10-authentic-team-stats-pipeline.md).
 
 ```bash
-PYTHONPATH=src:. uv run python scripts/pipeline/publish_team_stats.py --season 2026 --as-of-week 6 --environment preview --dry-run
+# 1. Preview: migrate once (migrator role), then dry run, publish, verify
+zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/migrate_db.py --database-env DATABASE_URL
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/publish_team_stats.py --season 2026 --as-of-week 6 --environment preview --dry-run
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/publish_team_stats.py --season 2026 --as-of-week 6 --environment preview
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/verify_team_stats.py --season 2026 --as-of-week 6 --environment preview
+
+# 2. Production: promote the Silver inputs into the production catalog first
+#    (registration only, same R2 bucket), then publish. Dry run each.
+PYTHONPATH=src:. zsh scripts/ops/with_preview_env.sh zsh scripts/ops/with_production_pipeline_env.sh \
+  uv run python scripts/pipeline/promote_silver_versions.py --season 2026 --dry-run
+PYTHONPATH=src:. zsh scripts/ops/with_production_pipeline_env.sh \
+  uv run python scripts/pipeline/publish_team_stats.py --season 2026 --as-of-week 6 --environment production --dry-run
 ```
+
+`--weeks 1-6` backfills several snapshots in one transaction. `verify_team_stats.py` needs `--as-of-week` >= 2 and gates on like-for-like teams (CFBD counts FCS games). Production migrations (0019, 0020) use the owner/migrator credential, never the pipeline wrapper.
 
 ## Local Preview credentials
 

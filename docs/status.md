@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-01 · **Verified from:**
+> **Last updated:** 2026-10-02 · **Verified from:**
 > `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`
 > and the [repaired-V5 release packet](plans/2026-09-29/v5-intended-update-production-release-packet.md).
 
@@ -59,11 +59,11 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 - Week 5: wait for certified finals, then score
   ([weekly operator](ops/v5_weekly_operator.md)).
-- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md) (code on `dev`; matchup pages are closed in production until `CFB_MATCHUP_ENABLED=1`; data steps run locally, see the contract's Phase 5).
+- Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code on `dev`; data live on Preview** (migrations 0019/0020, team stats weeks 1-5, venues) as of 2026-10-02, checked against CFBD (Amendment 1). **Production pending:** promote Silver (`promote_silver_versions.py`, dry run verified), apply 0019/0020 with the owner credential, publish. Matchup pages stay closed in production until `CFB_MATCHUP_ENABLED=1`.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
-- Approved, data steps to run locally: [game venue location](plans/2026-10-01/08-game-venue-location.md) (UI is on `dev`; run migration `0019` and the venue publish on Preview, then production).
+- Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): UI on `dev`; data live on Preview (271 games); production pending (migration `0019` and the venue publish).
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 
 ## Where to look next
