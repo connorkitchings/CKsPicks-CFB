@@ -4,7 +4,7 @@
 - **Created:** 2026-10-01
 - **Planner:** Sol
 - **Approval source:** User approved the plan in-session on 2026-10-01 ("it looks good"), with these scope choices: stats pipeline only (page redesign is a later contract), source = our own play-by-play, pre-game snapshot semantics, matchup pages hidden until ready.
-- **Implementation log (2026-10-02):** Phase 5 ran on **Preview only** (see Amendment 1). Production is pending: promote Silver, apply 0019/0020, publish, on the user's go.
+- **Implementation log (2026-10-02):** Phase 5 ran on Preview, then on production by the user the same day (see Amendment 1). Remaining: release `dev` to `main`, then enable the flag.
 - **Earlier log:** Phases 0-4 are on `dev` (stats layer, migration 0020, `publish_team_stats.py`, web read layer behind the gate, fixture e2e). Only Phase 5 (real data, user-run) remains. Note: unknown matchup ids render the not-found page with status 200 because the root `loading.tsx` streams; the page is `noindex`.
 - **Commit policy:** One commit per phase on `dev`. Merge `dev` into `main` only after the Phase 5 spot-check.
 - **Supersedes:** the former `02-authentic-matchup-stats-pipeline-and-presentation.md` (this file replaces it with corrected facts) and the intent of `03-advanced-stats-matchup-breakdown.md` (its synthetic stats were removed).
@@ -79,7 +79,8 @@ Page redesign in the Picks/Results style; win probability and score projections 
 - [ ] `/matchup/*` returns 404 and `noindex` when the flag is off.
 - [ ] No synthetic or hash-derived stat anywhere (`grep` guard recorded in the session log).
 - [x] Phase 5 on Preview: migration applied, weeks 1-5 published (10,460 rows), CFBD check recorded in Amendment 1.
-- [ ] Production: promote Silver, apply 0019/0020, publish weeks 1-5; then mark Implemented.
+- [x] Production (user-run 2026-10-02): Silver promoted (6 versions, 11 captures), 0019/0020 applied with the owner credential, weeks 1-5 published (10,460 rows, one `source_versions` set matching Preview), grants `cks_web` SELECT and `cks_pipeline` INSERT/SELECT/UPDATE; verified read-only.
+- [ ] Release `dev` to `main` and enable `CFB_MATCHUP_ENABLED=1`; then mark Implemented.
 
 ## Risks and rollback
 - **Silver column names differ:** the dry run catches it; adjust constants, not the design.

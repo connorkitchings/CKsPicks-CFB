@@ -61,10 +61,10 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Weekly ratings history replay](2026-09-27/05-weekly-ratings-history-replay.md) | Replay the frozen rating design at post-Week 0/1/2 cutoffs, project three generations, serve week-labeled tabs | Implemented 2026-09-28; six week tabs live and verified |
 | [2026 V5 intended-update production repair](2026-09-29/v5-intended-update-2026-production-repair.md) | Versioned V5 successor with the intended one-game-one-observation update: repaired history and refit bridge, 2026 rating generations, replacement W0–4 predictions/scores, prospective next-slate forecast, atomic selection with rollback | Implemented (2026-09-30); Week 5 `p2` frozen |
 | [Performance dashboard](2026-10-01/01-performance-dashboard-enhancements.md) | Interactive performance page (units, graded game log) | Implemented |
-| [Authentic team stats pipeline](2026-10-01/10-authentic-team-stats-pipeline.md) | Play-by-play team stats in Neon for the (hidden) matchup page; supersedes the former 02 draft | Approved (code on `dev`; data live on Preview; production pending) |
+| [Authentic team stats pipeline](2026-10-01/10-authentic-team-stats-pipeline.md) | Play-by-play team stats in Neon for the (hidden) matchup page; supersedes the former 02 draft | Approved (code on `dev`; data live on Preview and production; release to `main` pending) |
 | [Dead-code prune](2026-10-01/05-dead-code-prune.md) | Remove modules, configs, web leftovers and `research/` with no references | Implemented |
 | [Docs cleanup and archive](2026-10-01/06-docs-cleanup-and-archive.md) | Close out stale contracts, archive August logs, delete legacy files, fix links | Implemented |
-| [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data live on Preview; production pending) |
+| [Game venue location](2026-10-01/08-game-venue-location.md) | Show city/state next to kickoff; new `game_venues` table + publish script | Approved (UI done; data live on Preview and production; release to `main` pending) |
 | [High-quality team logos](2026-10-01/07-high-quality-team-logos.md) | Replace the 32 px logos with self-hosted, id-keyed, theme-aware WebP | Implemented 2026-10-01 (fetched on the user's machine; legacy files removed) |
 | [Production boundary refactor](2026-10-01/04-production-boundary-refactor.md) | Move production V5 logic from `scripts/research` into `src/` | Draft |
 
