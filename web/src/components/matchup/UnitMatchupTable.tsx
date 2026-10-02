@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import TeamLogo from "@/components/TeamLogo";
-import { getRankBadgeClass, type UnitMatchupRow } from "@/lib/team-stats";
+import { getRankBadgeClass, groupUnitRows, type UnitMatchupRow } from "@/lib/team-stats";
 
 export function UnitMatchupTable({
   offenseTeam,
@@ -74,8 +74,18 @@ export function UnitMatchupTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-line/60">
-            {rows.map((row) => (
+          {groupUnitRows(rows).map((group) => (
+            <tbody key={group.section} className="divide-y divide-line/60">
+              <tr>
+                <th
+                  scope="rowgroup"
+                  colSpan={5}
+                  className="pb-1 pt-3 text-left text-[10px] font-semibold uppercase tracking-wider text-ink-faint"
+                >
+                  {group.label}
+                </th>
+              </tr>
+              {group.rows.map((row) => (
               <tr key={row.key} className="hover:bg-surface-inset/50 transition-colors">
                 {/* Offense Value */}
                 <td className="py-2.5 pl-2 font-mono text-sm font-medium tabular-nums text-ink text-left">
@@ -119,7 +129,8 @@ export function UnitMatchupTable({
                 </td>
               </tr>
             ))}
-          </tbody>
+            </tbody>
+          ))}
         </table>
       </div>
     </div>

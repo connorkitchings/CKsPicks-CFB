@@ -52,7 +52,7 @@ export default async function MatchupPage({
             <p className="text-xs leading-relaxed text-ink-muted">
               Stats through Week {matchup.stats.asOfWeek - 1} (before this game): {matchup.awayTeam}{" "}
               {matchup.stats.awayGames} games, {matchup.homeTeam} {matchup.stats.homeGames} games.
-              FBS opponents only, garbage time excluded.
+              FBS opponents only, garbage time excluded. Possession metrics are the raw measures behind the V5 ratings (regulation only).
               {matchup.stats.cohortSize !== null && ` Ranks are among ${matchup.stats.cohortSize} teams.`}{" "}
               Defense columns show what that defense allowed.
             </p>

@@ -23,21 +23,46 @@ export interface UnitMatchupRow {
   defenseValue: string;
   defenseRank: number | null;
   defenseCohort: number | null;
+  section: MetricSection;
 }
 
-type Format = "epa" | "pct" | "pts" | "field";
+type Format = "epa" | "pct" | "pts" | "field" | "num";
 
-/** Display order. Defense values describe what that defense allowed. */
-export const UNIT_METRICS: { key: string; label: string; format: Format }[] = [
-  { key: "epa_pass", label: "Pass EPA/play", format: "epa" },
-  { key: "epa_rush", label: "Rush EPA/play", format: "epa" },
-  { key: "early_down_epa", label: "Early-down EPA", format: "epa" },
-  { key: "success_rate", label: "Success rate", format: "pct" },
-  { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct" },
-  { key: "scoring_opp_rate", label: "Scoring opps/drive", format: "pct" },
-  { key: "pts_per_scoring_opp", label: "Pts/scoring opp", format: "pts" },
-  { key: "avg_start_field_pos", label: "Avg start", format: "field" },
-  { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct" },
+/** Matchup table sections, in display order. */
+export type MetricSection = "possession" | "situational" | "drive";
+
+export const SECTION_LABELS: Record<MetricSection, string> = {
+  possession: "Core possession efficiency",
+  situational: "Situational and down and distance",
+  drive: "Drive context",
+};
+
+/**
+ * Display order, grouped into sections so the table stays readable on a phone.
+ * Defense values describe what that defense allowed. The possession metrics are
+ * the raw (not opponent-adjusted) measures behind the V5 ratings, from
+ * `team_possession_stats`; the rest come from `team_season_stats`.
+ */
+export const UNIT_METRICS: {
+  key: string;
+  label: string;
+  format: Format;
+  section: MetricSection;
+}[] = [
+  { key: "ppp", label: "Points/possession", format: "pts", section: "possession" },
+  { key: "epa_per_possession", label: "EPA/possession", format: "epa", section: "possession" },
+  { key: "epa_per_play", label: "EPA/play", format: "epa", section: "possession" },
+  { key: "plays_per_possession", label: "Plays/possession", format: "num", section: "possession" },
+  { key: "non_offense_points_per_game", label: "Non-offense pts/game", format: "num", section: "possession" },
+  { key: "success_rate", label: "Success rate", format: "pct", section: "situational" },
+  { key: "explosive_rate", label: "Explosive plays (20+)", format: "pct", section: "situational" },
+  { key: "conv_rate_3rd_4th", label: "3rd/4th down conv.", format: "pct", section: "situational" },
+  { key: "early_down_epa", label: "Early-down EPA", format: "epa", section: "situational" },
+  { key: "epa_pass", label: "Pass EPA/play", format: "epa", section: "situational" },
+  { key: "epa_rush", label: "Rush EPA/play", format: "epa", section: "situational" },
+  { key: "scoring_opp_rate", label: "Scoring opps/drive", format: "pct", section: "drive" },
+  { key: "pts_per_scoring_opp", label: "Pts/scoring opp", format: "pts", section: "drive" },
+  { key: "avg_start_field_pos", label: "Avg start", format: "field", section: "drive" },
 ];
 
 export function formatMetric(format: Format, value: number | null): string {
@@ -51,6 +76,8 @@ export function formatMetric(format: Format, value: number | null): string {
       return value.toFixed(2);
     case "field":
       return `Own ${value.toFixed(1)}`;
+    case "num":
+      return value.toFixed(1);
   }
 }
 
@@ -64,7 +91,7 @@ export function buildUnitRows(
   offenseTeam: string,
   defenseTeam: string,
 ): UnitMatchupRow[] {
-  return UNIT_METRICS.map(({ key, label, format }) => {
+  return UNIT_METRICS.map(({ key, label, format, section }) => {
     const off = find(rows, offenseTeam, "offense", key);
     const def = find(rows, defenseTeam, "defense", key);
     return {
@@ -76,6 +103,7 @@ export function buildUnitRows(
       defenseValue: formatMetric(format, def?.value ?? null),
       defenseRank: def?.rank ?? null,
       defenseCohort: def?.cohortSize ?? null,
+      section,
     };
   });
 }
@@ -83,6 +111,19 @@ export function buildUnitRows(
 /** Completed FBS games behind a team's snapshot (0 when it has no rows). */
 export function gamesBehind(rows: TeamStatRow[], team: string): number {
   return rows.reduce((max, r) => (r.team === team ? Math.max(max, r.games) : max), 0);
+}
+
+/** Rows grouped by section, preserving the display order. */
+export function groupUnitRows(
+  rows: UnitMatchupRow[],
+): { section: MetricSection; label: string; rows: UnitMatchupRow[] }[] {
+  const groups: { section: MetricSection; label: string; rows: UnitMatchupRow[] }[] = [];
+  for (const row of rows) {
+    const last = groups[groups.length - 1];
+    if (last && last.section === row.section) last.rows.push(row);
+    else groups.push({ section: row.section, label: SECTION_LABELS[row.section], rows: [row] });
+  }
+  return groups;
 }
 
 export function cohortSizeOf(rows: TeamStatRow[]): number | null {

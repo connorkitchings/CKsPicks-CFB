@@ -9,7 +9,12 @@ import {
   isPublishedWeek,
   publicationScope,
 } from "./publication.ts";
-import { getGamesForWeek, getMarketGamesForWeek, getTeamSeasonStats } from "./queries.ts";
+import {
+  getGamesForWeek,
+  getMarketGamesForWeek,
+  getTeamPossessionStats,
+  getTeamSeasonStats,
+} from "./queries.ts";
 import {
   buildMatchupStats,
   type MatchupStats,
@@ -60,6 +65,15 @@ export interface MatchupData {
   homeRating: TeamRatingSummary;
   /** Pre-game team stats; null when no snapshot is published for this week. */
   stats: MatchupStats | null;
+}
+
+/** Silver-based and V5 possession stats for the two teams (raw values only). */
+async function getMatchupStatRows(season: number, week: number, teams: string[]) {
+  const [silver, possession] = await Promise.all([
+    getTeamSeasonStats(season, week, teams),
+    getTeamPossessionStats(season, week, teams),
+  ]);
+  return [...silver, ...possession];
 }
 
 /**
@@ -154,7 +168,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     awayRating: summarize(game.awayTeam),
     homeRating: summarize(game.homeTeam),
     stats: buildMatchupStats(
-      await getTeamSeasonStats(season, week, [game.homeTeam, game.awayTeam]),
+      await getMatchupStatRows(season, week, [game.homeTeam, game.awayTeam]),
       week,
       game.awayTeam,
       game.homeTeam,

@@ -555,6 +555,65 @@ export async function getTeamSeasonStats(
   }
 }
 
+/** Whether team_possession_stats exists. Cached; false before migration 0021 is applied. */
+export const hasTeamPossessionStatsTable = cache(async (): Promise<boolean> => {
+  try {
+    const res = await db.execute(
+      sql`SELECT to_regclass('public.team_possession_stats') IS NOT NULL AS exists`,
+    );
+    return existsFrom(res);
+  } catch {
+    return false;
+  }
+});
+
+/**
+ * RAW V5 possession metrics (points, EPA and plays per possession, non-offense
+ * points) as of `asOfWeek`. Selects raw columns from the raw table only: the
+ * opponent-adjusted values live in their own table and are never read here.
+ * Never throws; returns [] when the table or rows are missing.
+ */
+export async function getTeamPossessionStats(
+  season: number,
+  asOfWeek: number,
+  teams: string[],
+): Promise<TeamStatRow[]> {
+  if (teams.length === 0 || !(await hasTeamPossessionStatsTable())) return [];
+  try {
+    const rows = await db
+      .select({
+        team: schema.teamPossessionStats.team,
+        role: schema.teamPossessionStats.role,
+        metric: schema.teamPossessionStats.metric,
+        value: schema.teamPossessionStats.value,
+        n: schema.teamPossessionStats.n,
+        games: schema.teamPossessionStats.games,
+        rank: schema.teamPossessionStats.rank,
+        cohortSize: schema.teamPossessionStats.cohortSize,
+      })
+      .from(schema.teamPossessionStats)
+      .where(
+        and(
+          eq(schema.teamPossessionStats.season, season),
+          eq(schema.teamPossessionStats.asOfWeek, asOfWeek),
+          inArray(schema.teamPossessionStats.team, teams),
+        ),
+      );
+    return rows.map((r) => ({
+      team: r.team,
+      role: r.role === "defense" ? "defense" : "offense",
+      metric: r.metric,
+      value: r.value,
+      n: r.n,
+      games: r.games,
+      rank: r.rank,
+      cohortSize: r.cohortSize,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 /** Attach venue city/state/neutral-site to games. Never throws; missing data stays null. */
 async function withVenues<T extends { gameId: number }>(
   games: T[],

@@ -21,6 +21,7 @@ function fixtureRows(teams: string[], unrankedTeam: string): TeamStatRow[] {
           m.format === "epa" ? frac * 0.6 - 0.3
           : m.format === "pct" ? 0.25 + frac * 0.3
           : m.format === "pts" ? 3 + frac * 2
+          : m.format === "num" ? 3 + frac * 4
           : 25 + frac * 12;
         rows.push({
           team,
