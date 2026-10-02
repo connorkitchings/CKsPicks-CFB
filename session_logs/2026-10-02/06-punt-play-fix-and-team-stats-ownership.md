@@ -5,7 +5,7 @@
 - **Outcome:** Returned punts (CFBD `Punt Return`, Silver `st == 0`) no longer count as plays in team stats; new `ppa_per_play`; Silver enrichment fixed for future builds; Preview republished and re-checked exactly; matchup labels say PPA; forecast box aligned; GitHub source link removed from the footer.
 - **Plan Contract:** `docs/plans/2026-10-02/03-team-stats-feeds-ratings.md` (Draft; Phase 1 implemented, Phase 2 design).
 - **Approval / Status:** User approved the Phase 1 plan after adding the direction that team stats owns basic stats and the ratings consume them.
-- **Blockers:** Production republish (user-run) and release to `main`; e2e suite still needs a run once the local server is stopped.
+- **Blockers:** Production republish (user-run); the matchup page that reads `ppa_per_play` is closed in production, so nothing user-visible depends on it yet.
 - **Next:** production republish and release; Phase 2 contract review; finish checking drive metrics (scoring opportunity rate, points per scoring opportunity, average start).
 
 ## Work Completed
@@ -16,8 +16,8 @@
 - [x] `pytest tests/` 1619 passed, 9 skipped; ruff clean; web lint, typecheck, `test:publication` (103).
 - [x] Preview dry-run diff: only conversion, explosive and turnover rates changed, plus 1,046 new `ppa_per_play` rows; week 5 excluded 465 plays (matches the hand count).
 - [x] Independent recompute of both teams (32 offense/defense values) equals Preview to 4 decimals after republish; CFBD verifier gates ok (PPA/play rho 0.990 offense, 0.961 defense, like-for-like).
-- [ ] Playwright e2e: not run (the user's local server holds Next's lock).
-- [ ] Production republish and release (user-run).
+- [x] Playwright e2e: 43/43 on a clean checkout of the release commit (see session 07 close-out).
+- [ ] Production republish (user-run; commands in the contract). Release to `main` done at close-out.
 
 ## Amendments and Blockers
 - **Deviation:** the drive-point helpers (`derive_is_drive_play`, `true_drive_points`) were not moved out of `ratings/observations.py`; deferred to Phase 2 and recorded in the contract. Team stats still imports them from the ratings package.
