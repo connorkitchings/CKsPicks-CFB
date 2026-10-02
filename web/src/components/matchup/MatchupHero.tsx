@@ -70,16 +70,29 @@ function TeamBlock({
         ) : (
           <div className="mt-3 flex flex-col items-center gap-1 text-xs">
             <span
-              className="inline-flex items-center gap-1 rounded bg-surface-inset px-2 py-0.5 font-mono text-xs font-semibold text-ink"
-              title="V5 overall rating rank among FBS teams"
+              data-testid="model-rating"
+              className="inline-flex flex-wrap items-baseline justify-center gap-x-1.5 rounded bg-surface-inset px-2 py-0.5 text-xs font-semibold text-ink"
+              title="Model overall rating, with its rank among FBS teams"
             >
-              V5 rank #{rating.rank ?? "—"}
+              <span>Model Rating</span>
+              <span className="font-mono">#{rating.rank ?? "—"}</span>
+              <span className="font-mono text-ink-muted">{formatRating(rating.overallRating)}</span>
             </span>
-            <span className="text-[11px] text-ink-muted">
-              Rating <span className="font-mono">{formatRating(rating.overallRating)}</span>
+            <span
+              data-testid="model-offense-rating"
+              className="flex flex-wrap items-baseline justify-center gap-x-1.5 text-[11px] text-ink-muted"
+            >
+              <span>Model Offense Rating</span>
+              <span className="font-mono">#{rating.offenseRank ?? "—"}</span>
+              <span className="font-mono">{formatRating(rating.offenseRating)}</span>
             </span>
-            <span className="text-[11px] text-ink-muted">
-              Off #{rating.offenseRank ?? "—"} · Def #{rating.defenseRank ?? "—"}
+            <span
+              data-testid="model-defense-rating"
+              className="flex flex-wrap items-baseline justify-center gap-x-1.5 text-[11px] text-ink-muted"
+            >
+              <span>Model Defense Rating</span>
+              <span className="font-mono">#{rating.defenseRank ?? "—"}</span>
+              <span className="font-mono">{formatRating(rating.defenseRating)}</span>
             </span>
           </div>
         )}

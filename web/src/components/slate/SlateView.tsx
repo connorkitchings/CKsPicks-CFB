@@ -75,6 +75,14 @@ export function SlateView({
         updatedAt={null}
         publicationMode={publicationMode}
         allowedSeasons={allowedSeasons}
+        containerWidth="max-w-6xl"
+        status={
+          <SlateStatusRow
+            runState={runState}
+            retrospective={retrospective}
+            publishedAt={updatedAt}
+          />
+        }
       />
 
       <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-6">
@@ -93,12 +101,6 @@ export function SlateView({
 
         {!dbError && season > 0 && (
           <>
-            <SlateStatusRow
-              runState={runState}
-              retrospective={retrospective}
-              publishedAt={updatedAt}
-            />
-
             {publicationMode === "predictions" && performance.length > 0 && (
               <ModelRecord
                 performance={performance}
@@ -152,7 +154,7 @@ export function SlateView({
         )}
       </main>
 
-      <Footer publicationMode={publicationMode} />
+      <Footer publicationMode={publicationMode} containerWidth="max-w-6xl" />
     </div>
   );
 }

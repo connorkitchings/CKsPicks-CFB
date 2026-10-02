@@ -91,9 +91,10 @@ test.describe("matchup page (fixture mode)", () => {
     const away = page.locator("[data-side='away']");
     await expect(away).toContainText(/Away · \d+-\d+/);
     await expect(page.locator("[data-side='home']")).toContainText(/Home · \d+-\d+/);
-    await expect(away).toContainText(/V5 rank #\d+/);
-    await expect(away).toContainText(/Rating [+−]\d\.\d{2}/);
-    await expect(away).toContainText(/Off #\d+ · Def #\d+/);
+    await expect(away.getByTestId("model-rating")).toHaveText(/Model Rating\s*#\d+\s*[+−]\d\.\d{2}/);
+    await expect(away.getByTestId("model-offense-rating")).toHaveText(/Model Offense Rating\s*#\d+\s*[+−]\d\.\d{2}/);
+    await expect(away.getByTestId("model-defense-rating")).toHaveText(/Model Defense Rating\s*#\d+\s*[+−]\d\.\d{2}/);
+    await expect(away).not.toContainText("V5 rank");
     const facts = page.getByTestId("game-facts");
     await expect(facts).toContainText(/, [A-Z]{2}|Neutral site/); // venue
     await expect(facts).not.toContainText("Blitzkrieg");

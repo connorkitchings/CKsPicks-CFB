@@ -10,6 +10,8 @@ export function Header({
   publicationMode,
   allowedSeasons,
   wide = false,
+  containerWidth,
+  status,
 }: {
   season: number | null;
   systemName: string | null;
@@ -18,23 +20,27 @@ export function Header({
   allowedSeasons?: readonly number[];
   /** Wider page container (matchup pages); the nav widens itself by route. */
   wide?: boolean;
+  containerWidth?: string;
+  status?: React.ReactNode;
 }) {
+  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
-      <div className={`mx-auto flex ${wide ? "max-w-5xl" : "max-w-4xl"} items-start justify-between gap-3 px-4 py-4`}>
-        <div className="flex min-w-0 flex-col gap-1">
+      <div className={`mx-auto flex ${maxW} items-start justify-between gap-3 px-4 py-4`}>
+        <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="text-xl font-bold tracking-tight text-ink">
             CK&rsquo;s Picks
             <span className="ml-2 text-sm font-normal text-ink-faint">
               CFB
             </span>
           </h1>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[11px] text-ink-faint">
             {publicationMode === "predictions" && systemName && (
               <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
                 {displaySystemName(systemName)}
               </span>
             )}
+            {status}
             {updatedAt && (
               <span>
                 Updated{" "}
@@ -68,13 +74,16 @@ export function Header({
 export function Footer({
   publicationMode,
   wide = false,
+  containerWidth,
 }: {
   publicationMode: PublicationMode;
   wide?: boolean;
+  containerWidth?: string;
 }) {
+  const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
   return (
     <footer
-      className={`mx-auto mt-12 ${wide ? "max-w-5xl" : "max-w-4xl"} px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint`}
+      className={`mx-auto mt-12 ${maxW} px-4 pb-8 text-center text-[11px] leading-relaxed text-ink-faint`}
     >
       <p className="mb-1">
         Display only &mdash; not betting advice. CK&rsquo;s Picks is a research

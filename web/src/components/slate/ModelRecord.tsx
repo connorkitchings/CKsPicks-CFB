@@ -26,8 +26,8 @@ export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
           {decided} decided
         </span>
       </div>
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <span className="font-mono text-lg font-semibold tabular-nums text-ink sm:text-xl">
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="font-mono text-lg font-bold tracking-tight tabular-nums text-ink sm:text-xl">
           {rec.win}–{rec.loss}–{rec.push}
         </span>
         <span
@@ -40,7 +40,7 @@ export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
               : "text-ink-muted",
           )}
         >
-          {rate === null ? "—" : `${rate.toFixed(1)}%`}
+          {rate === null ? "—" : `(${rate.toFixed(1)}%)`}
         </span>
       </div>
     </div>
@@ -53,18 +53,22 @@ export function RecordBlock({
   note,
   spread,
   total,
+  showHeader = true,
 }: {
   title: string;
   note: string;
   spread: Rec | null;
   total: Rec | null;
+  showHeader?: boolean;
 }) {
   return (
     <div className="min-w-0">
-      <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
-        <h3 className="text-xs font-semibold text-ink">{title}</h3>
-        <span className="text-[11px] text-ink-faint">{note}</span>
-      </div>
+      {showHeader && (
+        <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
+          <h3 className="text-xs font-semibold text-ink">{title}</h3>
+          <span className="text-[11px] text-ink-faint">{note}</span>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <RecordCell label="Spread" rec={spread ?? ZERO} />
         <RecordCell label="Total" rec={total ?? ZERO} />
@@ -89,7 +93,7 @@ export function ModelRecord({
         <div className="flex flex-wrap items-baseline gap-x-2.5">
           <h2 className="text-xs font-semibold text-ink sm:text-sm">How the model is doing</h2>
           <span className="text-[11px] text-ink-faint">
-            52.4% target
+            Season {season ? `(${season.games} games)` : ""} · 52.4% target
           </span>
         </div>
         <Link
@@ -106,6 +110,7 @@ export function ModelRecord({
             note="this slate · small sample"
             spread={week.spread}
             total={week.total}
+            showHeader={true}
           />
         )}
         <RecordBlock
@@ -113,6 +118,7 @@ export function ModelRecord({
           note={season ? `${season.games} games` : "no games yet"}
           spread={season?.spread ?? null}
           total={season?.total ?? null}
+          showHeader={Boolean(week)}
         />
       </div>
     </section>
