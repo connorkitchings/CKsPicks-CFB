@@ -18,8 +18,11 @@ export interface UnitMatchupRow {
   name: string;
   offenseValue: string;
   offenseRank: number | null;
+  /** Teams ranked on this metric/role (early weeks rank fewer than 138). */
+  offenseCohort: number | null;
   defenseValue: string;
   defenseRank: number | null;
+  defenseCohort: number | null;
 }
 
 type Format = "epa" | "pct" | "pts" | "field";
@@ -69,8 +72,10 @@ export function buildUnitRows(
       name: label,
       offenseValue: formatMetric(format, off?.value ?? null),
       offenseRank: off?.rank ?? null,
+      offenseCohort: off?.cohortSize ?? null,
       defenseValue: formatMetric(format, def?.value ?? null),
       defenseRank: def?.rank ?? null,
+      defenseCohort: def?.cohortSize ?? null,
     };
   });
 }
@@ -85,13 +90,15 @@ export function cohortSizeOf(rows: TeamStatRow[]): number | null {
   return sizes.length ? Math.max(...sizes) : null;
 }
 
-export function getRankBadgeClass(rank: number | null): string {
+/** Tiers are percentiles of the ranked pool: top 20%, next 25%, next 30%, rest. */
+export function getRankBadgeClass(rank: number | null, cohortSize: number | null = null): string {
   if (rank === null) return "bg-surface-inset text-ink-faint border border-line font-medium";
-  if (rank <= 25) return "bg-accent/15 text-accent-ink border border-accent/30 font-bold";
-  if (rank <= 60) {
+  const pct = rank / Math.max(cohortSize ?? 138, rank);
+  if (pct <= 0.2) return "bg-accent/15 text-accent-ink border border-accent/30 font-bold";
+  if (pct <= 0.45) {
     return "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 font-semibold";
   }
-  if (rank <= 90) return "bg-surface-inset text-ink-muted border border-line font-medium";
+  if (pct <= 0.75) return "bg-surface-inset text-ink-muted border border-line font-medium";
   return "bg-loss-soft text-loss border border-loss/20 font-medium";
 }
 

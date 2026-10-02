@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { periodBeforeKickoff, PRESEASON_META, type PeriodMeta } from "./rating-periods.ts";
 
 test("SiteNav includes Picks, Results, Ratings, and Performance in navigation items", () => {
   const source = readFileSync(new URL("../components/SiteNav.tsx", import.meta.url), "utf8");
@@ -72,4 +73,19 @@ test("ratings timeline labels certified post-week generations and backfills earl
 
   // Retired week-style params resolve to the certified generation
   assert.match(source, /p\.postWeek === week/);
+});
+
+test("periodBeforeKickoff picks the latest generation at or before kickoff", () => {
+  const gen = (id: string, iso: string): PeriodMeta => ({
+    id, label: id, shortLabel: id, description: "", cutoffUtc: new Date(iso),
+  });
+  const periods = [
+    gen("w4", "2026-09-27T14:15:00Z"),
+    PRESEASON_META,
+    gen("w3", "2026-09-22T14:58:00Z"),
+  ];
+  assert.equal(periodBeforeKickoff(periods, new Date("2026-10-03T16:00:00Z"))?.id, "w4");
+  assert.equal(periodBeforeKickoff(periods, new Date("2026-09-27T14:15:00Z"))?.id, "w4");
+  assert.equal(periodBeforeKickoff(periods, new Date("2026-09-24T00:00:00Z"))?.id, "w3");
+  assert.equal(periodBeforeKickoff(periods, new Date("2026-08-29T00:00:00Z")), null);
 });

@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./db.ts";
-import { getCurrentRatings } from "./v5.ts";
+import { getRatingsAsOf } from "./v5.ts";
 import {
   displaySystemName,
   isAllowedSeason,
@@ -95,8 +95,9 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   const homeFinalPoints = view.homePoints;
   const awayFinalPoints = view.awayPoints;
 
-  // Real ratings from Neon
-  const ratings = await getCurrentRatings(season);
+  // Ratings known before kickoff, matching the pre-game stats snapshot (never
+  // post-game ratings that already include this result).
+  const ratings = await getRatingsAsOf(season, game.startDate.getTime());
 
   const rankBy = (key: "overallRating" | "offenseRating" | "defenseRating") => {
     const ranks = new Map<string, number>();

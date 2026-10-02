@@ -6,6 +6,7 @@ import {
   formatCutoffLabel,
   ownerSourceForCutoff,
   parseSourceQualifiedPeriodId,
+  periodBeforeKickoff,
   PRESEASON_META,
   sourceQualifiedPeriodId,
   WEEK_GENERATIONS,
@@ -65,6 +66,17 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
   const byTeam = new Map<string, Rating>();
   for (const row of rows) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
+});
+
+/**
+ * Ratings known before a game kicked off: the latest frozen generation at or
+ * before kickoff, with teams that had not played yet backfilled from the
+ * preseason priors (via `getWeeklyRatings`). Week 0 uses the preseason priors.
+ */
+export const getRatingsAsOf = cache(async (season: number, kickoffMs: number): Promise<Rating[]> => {
+  const period = periodBeforeKickoff(await getRatingPeriods(season), new Date(kickoffMs));
+  const { ratings } = await getWeeklyRatings(season, period ? period.id : "preseason");
+  return ratings;
 });
 
 /**

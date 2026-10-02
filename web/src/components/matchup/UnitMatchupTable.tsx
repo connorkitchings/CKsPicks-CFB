@@ -87,9 +87,9 @@ export function UnitMatchupTable({
                   <span
                     className={clsx(
                       "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-[11px] tabular-nums",
-                      getRankBadgeClass(row.offenseRank),
+                      getRankBadgeClass(row.offenseRank, row.offenseCohort),
                     )}
-                    title={row.offenseRank === null ? "Not ranked yet" : `National Rank: #${row.offenseRank}`}
+                    title={row.offenseRank === null ? "Not ranked yet" : `National rank #${row.offenseRank}${row.offenseCohort ? ` of ${row.offenseCohort}` : ""}`}
                   >
                     {row.offenseRank === null ? "—" : `#${row.offenseRank}`}
                   </span>
@@ -105,9 +105,9 @@ export function UnitMatchupTable({
                   <span
                     className={clsx(
                       "inline-flex h-5 min-w-5 items-center justify-center rounded px-1 text-[11px] tabular-nums",
-                      getRankBadgeClass(row.defenseRank),
+                      getRankBadgeClass(row.defenseRank, row.defenseCohort),
                     )}
-                    title={row.defenseRank === null ? "Not ranked yet" : `National Rank: #${row.defenseRank}`}
+                    title={row.defenseRank === null ? "Not ranked yet" : `National rank #${row.defenseRank}${row.defenseCohort ? ` of ${row.defenseCohort}` : ""}`}
                   >
                     {row.defenseRank === null ? "—" : `#${row.defenseRank}`}
                   </span>

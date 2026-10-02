@@ -116,3 +116,17 @@ export function ownerSourceForCutoff(
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()
       || a.sourceManifestSha256!.localeCompare(b.sourceManifestSha256!))[0]?.sourceManifestSha256 ?? null;
 }
+
+/**
+ * The frozen generation a game's pre-game ratings come from: the latest one
+ * whose evidence cutoff is at or before kickoff (periods may be in any order).
+ * Null when none qualifies (Week 0), where callers use the preseason priors.
+ */
+export function periodBeforeKickoff(periods: PeriodMeta[], kickoff: Date): PeriodMeta | null {
+  let best: PeriodMeta | null = null;
+  for (const period of periods) {
+    if (!period.cutoffUtc || period.cutoffUtc.getTime() > kickoff.getTime()) continue;
+    if (!best || period.cutoffUtc.getTime() > (best.cutoffUtc as Date).getTime()) best = period;
+  }
+  return best;
+}

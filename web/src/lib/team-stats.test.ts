@@ -62,6 +62,10 @@ test("rank badge tiers", () => {
   assert.match(getRankBadgeClass(10), /accent/);
   assert.match(getRankBadgeClass(120), /loss/);
   assert.match(getRankBadgeClass(null), /ink-faint/);
+  // Relative to the ranked pool: #10 of 16 is bottom-half, not "top 25".
+  assert.match(getRankBadgeClass(10, 16), /ink-muted|loss/);
+  assert.match(getRankBadgeClass(1, 16), /accent/);
+  assert.match(getRankBadgeClass(16, 16), /loss/);
 });
 
 test("buildMatchupStats is null with no rows and pairs each offense with the opposing defense", () => {
