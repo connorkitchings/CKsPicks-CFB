@@ -285,8 +285,52 @@ def check_migration_history() -> list[str]:
     return errors
 
 
+def check_logo_assets() -> list[str]:
+    """Generated name->id map, manifest and files on disk must describe one set."""
+    logos = ROOT / "web" / "public" / "logos" / "v2"
+    manifest_path = logos / "manifest.json"
+    generated = ROOT / "web" / "src" / "lib" / "team-logos.generated.ts"
+    if not manifest_path.exists():
+        return []  # logos are optional until built (web/scripts/build-team-logos.mjs)
+    import hashlib
+    import json
+
+    errors: list[str] = []
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    teams = manifest.get("teams", {})
+    ids_in_map = {
+        name: int(team_id)
+        for name, team_id in re.findall(
+            r'"([^"]+)"\s*:\s*(\d+)', generated.read_text(encoding="utf-8")
+        )
+    }
+    manifest_names = {int(i): t["school"] for i, t in teams.items()}
+    if set(ids_in_map.values()) != set(manifest_names):
+        errors.append(
+            "logo ids differ between team-logos.generated.ts and manifest.json: "
+            f"{sorted(set(ids_in_map.values()) ^ set(manifest_names))[:10]}"
+        )
+    for name, team_id in ids_in_map.items():
+        if manifest_names.get(team_id) != name:
+            errors.append(f"logo map {name!r} -> {team_id} disagrees with manifest")
+    listed: set[str] = set()
+    for team_id, team in teams.items():
+        for rel, sha in team["files"].items():
+            listed.add(rel)
+            path = logos / rel
+            if not path.exists():
+                errors.append(f"logo file missing: {rel}")
+            elif hashlib.sha256(path.read_bytes()).hexdigest() != sha:
+                errors.append(f"logo file hash differs from manifest: {rel}")
+    on_disk = {p.relative_to(logos).as_posix() for p in logos.rglob("*.webp")}
+    if on_disk - listed:
+        errors.append(f"logo files not in manifest: {sorted(on_disk - listed)[:10]}")
+    return errors
+
+
 def main():
     all_errors = []
+    all_errors.extend(check_logo_assets())
     all_errors.extend(check_teams_sync())
     all_errors.extend(check_schema_sync())
     all_errors.extend(check_migration_history())

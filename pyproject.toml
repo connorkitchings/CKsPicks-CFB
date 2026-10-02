@@ -101,7 +101,6 @@ norecursedirs = [
   "web",
   "artifacts",
   "contracts",
-  "assets",
 ]
 
 [tool.coverage.run]

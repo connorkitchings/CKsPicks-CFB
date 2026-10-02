@@ -14,16 +14,20 @@ export default function TeamLogo({
 }: {
   name: string;
   px: number;
-  /** Asset size; defaults to `lg` above 40 px, otherwise `sm`. */
+  /** Asset size; defaults to `lg` above 32 px (36 px x 3 needs more than 96), else `sm`. */
   size?: LogoSize;
   className?: string;
   decorative?: boolean;
 }) {
+  // width/height attributes give the intrinsic size and aspect ratio; unlike
+  // inline styles, Tailwind size classes (e.g. `h-16 w-16 sm:h-20 sm:w-20`) can
+  // still override them for responsive sizing.
   const box = { width: px, height: px };
+  const sizedByClass = /(^|\s)(\w+:)?[wh]-/.test(className ?? "");
   const alt = decorative ? "" : name;
   const cls = clsx("shrink-0 object-contain", className);
 
-  const asset = size ?? (px > 40 ? "lg" : "sm");
+  const asset = size ?? (px > 32 ? "lg" : "sm");
   const light = logoSrc(name, asset, "light");
   const dark = logoSrc(name, asset, "dark");
   if (!light || !dark) {
@@ -32,7 +36,7 @@ export default function TeamLogo({
         aria-hidden={decorative || undefined}
         role={decorative ? undefined : "img"}
         aria-label={decorative ? undefined : name}
-        style={{ ...box, fontSize: Math.max(8, Math.round(px * 0.38)) }}
+        style={{ ...(sizedByClass ? {} : box), fontSize: Math.max(8, Math.round(px * 0.38)) }}
         className={clsx(
           "inline-flex shrink-0 items-center justify-center rounded-full bg-surface-inset font-semibold text-ink-muted",
           className,
@@ -45,9 +49,9 @@ export default function TeamLogo({
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={light} alt={alt} {...box} style={box} data-logo className={clsx(cls, "dark:hidden")} />
+      <img src={light} alt={alt} {...box} data-logo className={clsx(cls, "dark:hidden")} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={dark} alt="" aria-hidden {...box} style={box} data-logo className={clsx(cls, "hidden dark:block")} />
+      <img src={dark} alt="" aria-hidden {...box} data-logo className={clsx(cls, "hidden dark:block")} />
     </>
   );
 }
