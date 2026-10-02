@@ -47,6 +47,7 @@ def our_frame(rows: list[tuple]) -> pd.DataFrame:
     pass_n = counts["epa_pass"].fillna(0)
     rush_n = counts["epa_rush"].fillna(0)
     total = (pass_n + rush_n).where(lambda s: s > 0)
+    wide["plays"] = counts["success_rate"]
     wide["overall_epa"] = (
         wide["epa_pass"].fillna(0) * pass_n + wide["epa_rush"].fillna(0) * rush_n
     ) / total
@@ -63,8 +64,20 @@ def cfbd_frame(stats: list) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def compare(ours: pd.DataFrame, theirs: pd.DataFrame) -> list[dict]:
+def compare(
+    ours: pd.DataFrame, theirs: pd.DataFrame, *, like_for_like: bool = False
+) -> list[dict]:
+    """Spearman per role and metric.
+
+    CFBD counts FCS opponents and we do not, so ``like_for_like`` keeps only
+    teams whose CFBD play count is within 5% of ours (no hidden FCS game).
+    """
     merged = ours.merge(theirs, on=["team", "role"], suffixes=("", "_cfbd"))
+    if like_for_like and {"plays", "plays_cfbd"} <= set(merged.columns):
+        close = (merged["plays"] - merged["plays_cfbd"]).abs() <= 0.05 * merged[
+            "plays_cfbd"
+        ]
+        merged = merged[close]
     results = []
     for role in ("offense", "defense"):
         part = merged[merged["role"] == role]
@@ -131,7 +144,14 @@ def main() -> int:
     ).get_advanced_season_stats(
         year=args.season, exclude_garbage_time=True, end_week=args.as_of_week - 1
     )
-    results = compare(our_frame(rows), cfbd_frame(stats))
+    ours, theirs = our_frame(rows), cfbd_frame(stats)
+    print("All teams (informational: CFBD includes FCS games we exclude):")
+    for res in compare(ours, theirs):
+        print(
+            f"  {res['role']:<8} {res['metric']:<24} rho={res['rho']:.3f} n={res['teams']}"
+        )
+    print("Like-for-like teams (CFBD plays within 5% of ours), gated:")
+    results = compare(ours, theirs, like_for_like=True)
     failed = False
     for res in results:
         gate = ""
