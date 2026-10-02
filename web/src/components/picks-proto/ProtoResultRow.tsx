@@ -3,6 +3,7 @@ import { coverMargin, leanFor, resultFor } from "@/lib/picks-proto";
 import { LeanMarker } from "./LeanMarker";
 import { coverText, ResultBadge } from "./ResultBadge";
 import { dayShort } from "./format";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { WhereLine } from "./GameWhen";
 import { TeamPair } from "./TeamLine";
 
@@ -42,6 +43,9 @@ export function ProtoResultRow({
       <div>
         <div className="whitespace-nowrap text-xs tabular-nums text-ink-muted">{dayShort(game.startDate)}</div>
         <WhereLine game={game} />
+        <div className="mt-1">
+          <MatchupButton gameId={game.gameId} />
+        </div>
       </div>
       <TeamPair game={game} ranks={ranks} size={20} winner={awayWon ? "away" : homeWon ? "home" : null} />
       <Cell game={game} kind="spread" />

@@ -1,6 +1,7 @@
 import type { PredictionGame } from "@/lib/queries";
 import { isFinal, leanFor } from "@/lib/picks-proto";
 import { kickoffTime } from "./format";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { WhereLine } from "./GameWhen";
 import { LeanPill } from "./LeanPill";
 import { TeamPair } from "./TeamLine";
@@ -28,6 +29,9 @@ export function ProtoGameRow({
           {game.highConfidence && <span className="ml-1.5 text-accent" title="High confidence lean">★</span>}
         </div>
         <WhereLine game={game} />
+        <div className="mt-1">
+          <MatchupButton gameId={game.gameId} />
+        </div>
       </div>
       <TeamPair game={game} ranks={ranks} size={20} />
       <div>{spread ? <LeanPill lean={spread} compact /> : <p className="text-xs text-ink-faint">No spread lean</p>}</div>

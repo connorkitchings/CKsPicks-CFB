@@ -58,4 +58,32 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
+
+  test("game cards carry a Matchup button that opens the breakdown, and team names are not links", async ({ page }) => {
+    await page.goto("/");
+    const home = page.getByTestId("matchup-link");
+    expect(await home.count()).toBeGreaterThanOrEqual(1);
+    await expect(home.first()).toHaveAttribute("href", /^\/matchup\/\d+$/);
+    // The prototype slate's ids are the ones the matchup fixtures know, so click through there.
+    await page.goto("/test-picks");
+    await page.getByTestId("matchup-link").first().click();
+    await expect(page).toHaveURL(/\/matchup\/\d+$/);
+    await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();
+    // No team name anywhere links to a team page (cards, hero, matchup footer).
+    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    await page.goto("/");
+    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    await page.goto("/results");
+    expect(await page.getByTestId("matchup-link").count()).toBeGreaterThanOrEqual(1);
+    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+    await page.goto("/ratings");
+    expect(await page.locator("a[href^='/teams/']").count()).toBe(0);
+  });
+
+  test("prototype cards also carry the Matchup button", async ({ page }) => {
+    await page.goto("/test-picks");
+    expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
+    await page.goto("/test-results");
+    expect(await page.getByTestId("matchup-link").count()).toBeGreaterThan(3);
+  });
 });

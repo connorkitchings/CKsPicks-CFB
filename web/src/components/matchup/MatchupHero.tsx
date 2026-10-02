@@ -58,12 +58,9 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
-                <Link
-                  href={`/teams/${encodeURIComponent(matchup.awayTeam)}`}
-                  className="truncate text-xl font-bold tracking-tight text-ink hover:underline hover:text-accent-ink"
-                >
+                <span className="truncate text-xl font-bold tracking-tight text-ink">
                   {matchup.awayTeam}
-                </Link>
+                </span>
               </div>
               <p className="text-xs text-ink-faint">Away</p>
 
@@ -159,12 +156,9 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             />
             <div className="min-w-0 flex-1 sm:w-full">
               <div className="flex items-center gap-1.5 sm:justify-center">
-                <Link
-                  href={`/teams/${encodeURIComponent(matchup.homeTeam)}`}
-                  className="truncate text-xl font-bold tracking-tight text-ink hover:underline hover:text-accent-ink"
-                >
+                <span className="truncate text-xl font-bold tracking-tight text-ink">
                   {matchup.homeTeam}
-                </Link>
+                </span>
               </div>
               <p className="text-xs text-ink-faint">Home</p>
 

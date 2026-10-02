@@ -45,7 +45,7 @@ must remain synchronized.
 | Route | Status |
 |---|---|
 | `/`, `/results`, `/ratings`, `/performance`, `/teams/[team]` | Public |
-| `/matchup` and `/matchup/[gameId]` | A game picker and the pre-game breakdown. Closed (404) in production unless `CFB_MATCHUP_ENABLED=1`; always `noindex`; **open in local dev**, so they can be used locally without touching Vercel (see Local matchup pages below). No public page links to them. Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
+| `/matchup` and `/matchup/[gameId]` | A game picker and the pre-game breakdown. Closed (404) in production unless `CFB_MATCHUP_ENABLED=1`; always `noindex`; **open in local dev**, so they can be used locally without touching Vercel (see Local matchup pages below). Game cards (Picks, Results and the prototypes) show a **Matchup** button only while the pages are open; the root layout passes the gate to the client cards, so in production the button is absent unless the flag is set. Team names are plain text everywhere: team pages are not linked (the `/teams/[team]` route still exists but nothing links to it). Shows pre-game team stats from `team_season_stats` (see the [team stats contract](../docs/plans/2026-10-01/10-authentic-team-stats-pipeline.md)). |
 | `/test-picks`, `/test-results` | Design prototypes of the next Picks and Results pages. 404 in a production build unless `CFB_ENABLE_TEST_PAGE=1`; not linked from the site. |
 
 Fixture mode: `CFB_UI_TEST_MODE=1` serves sample data (no database) for the

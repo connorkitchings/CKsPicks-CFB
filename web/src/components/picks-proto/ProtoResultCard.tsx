@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { leanFor, resultFor } from "@/lib/picks-proto";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { dayShort } from "./format";
 import { GameWhen } from "./GameWhen";
 import { ResultLeanRow } from "./ResultLeanRow";
@@ -46,6 +47,9 @@ export function ProtoResultCard({
           <GameWhen when={dayShort(game.startDate)} game={game} />
           <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
             Final
+          </span>
+          <span className="ml-auto">
+            <MatchupButton gameId={game.gameId} />
           </span>
         </div>
         <TeamPair game={game} ranks={ranks} winner={awayWon ? "away" : homeWon ? "home" : null} />

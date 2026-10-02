@@ -1,4 +1,3 @@
-import Link from "next/link";
 import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import TeamLogo from "@/components/TeamLogo";
@@ -24,15 +23,9 @@ function TeamLine({
   return (
     <div className="flex items-center gap-2.5" data-side={side}>
       <TeamLogo name={name} px={size} />
-      <Link
-        href={`/teams/${encodeURIComponent(name)}`}
-        className={clsx(
-          "min-w-0 truncate text-sm hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent",
-          highlight ? "font-semibold text-accent-ink" : "text-ink",
-        )}
-      >
+      <span className={clsx("min-w-0 truncate text-sm", highlight ? "font-semibold text-accent-ink" : "text-ink")}>
         {name}
-      </Link>
+      </span>
       {record && <span className="text-xs tabular-nums text-ink-faint">({record})</span>}
       {rank !== undefined && (
         <span

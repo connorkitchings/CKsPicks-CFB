@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import test from "node:test";
 import { isMatchupEnabled } from "./matchup-gate.ts";
 
@@ -11,4 +12,28 @@ test("closed in production unless the flag is set", () => {
 test("open in development and fixture test mode", () => {
   assert.equal(isMatchupEnabled({ NODE_ENV: "development" }), true);
   assert.equal(isMatchupEnabled({ NODE_ENV: "production", CFB_UI_TEST_MODE: "1" }), true);
+});
+
+
+function sourceFiles(dir: URL): URL[] {
+  return readdirSync(dir).flatMap((name) => {
+    const url = new URL(name, dir);
+    if (statSync(url).isDirectory()) return sourceFiles(new URL(`${name}/`, dir));
+    return /\.(tsx?|mjs)$/.test(name) && !/\.test\./.test(name) ? [url] : [];
+  });
+}
+
+test("no page or component links to a team page (team pages are not ready)", () => {
+  const offenders = sourceFiles(new URL("../", import.meta.url))
+    .filter((url) => !url.pathname.includes("/app/teams/"))
+    .filter((url) => /["'`]\/teams\/|href=\{`\/teams/.test(readFileSync(url, "utf8")))
+    .map((url) => url.pathname.split("/src/")[1]);
+  assert.deepEqual(offenders, []);
+});
+
+test("the root layout provides the matchup gate to client cards", () => {
+  const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  assert.match(layout, /MatchupLinksProvider enabled=\{isMatchupEnabled\(\)\}/);
+  const links = readFileSync(new URL("../components/MatchupLinks.tsx", import.meta.url), "utf8");
+  assert.match(links, /createContext\(false\)/); // closed unless the server says otherwise
 });

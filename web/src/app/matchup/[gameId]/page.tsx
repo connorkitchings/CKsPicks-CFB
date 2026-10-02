@@ -78,18 +78,6 @@ export default async function MatchupPage({
 
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={`/teams/${encodeURIComponent(matchup.awayTeam)}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
-          >
-            {`${matchup.awayTeam} ratings & history →`}
-          </Link>
-          <Link
-            href={`/teams/${encodeURIComponent(matchup.homeTeam)}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
-          >
-            {`${matchup.homeTeam} ratings & history →`}
-          </Link>
-          <Link
             href={`/matchup?week=${matchup.week}`}
             className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink hover:border-accent hover:text-accent-ink"
           >

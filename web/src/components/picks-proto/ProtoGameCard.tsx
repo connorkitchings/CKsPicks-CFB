@@ -2,6 +2,7 @@ import clsx from "clsx";
 import type { PredictionGame } from "@/lib/queries";
 import { marketSpreadView, modelSpreadView, spreadLabel } from "@/lib/betting-format";
 import { isFinal, leanFor } from "@/lib/picks-proto";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { kickoffTime } from "./format";
 import { GameWhen } from "./GameWhen";
 import { LeanPill } from "./LeanPill";
@@ -43,6 +44,9 @@ export function ProtoGameCard({
               ★
             </span>
           )}
+          <span className="ml-auto">
+            <MatchupButton gameId={game.gameId} />
+          </span>
           {final && (
             <span className="rounded-full bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
               Final

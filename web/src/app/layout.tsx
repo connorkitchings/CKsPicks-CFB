@@ -3,6 +3,8 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { SiteNav } from "@/components/SiteNav";
+import { MatchupLinksProvider } from "@/components/MatchupLinks";
+import { isMatchupEnabled } from "@/lib/matchup-gate";
 
 const siteUrl = "https://ckspicks-cfb.vercel.app";
 
@@ -56,7 +58,12 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full flex flex-col"><SiteNav />{children}</body>
+      <body className="min-h-full flex flex-col">
+        <MatchupLinksProvider enabled={isMatchupEnabled()}>
+          <SiteNav />
+          {children}
+        </MatchupLinksProvider>
+      </body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { clsx } from "clsx";
 import TeamLogo from "@/components/TeamLogo";
+import { MatchupButton } from "@/components/MatchupLinks";
 import { BetTable } from "./BetTable";
 import { BetComparisonTable } from "./BetComparisonTable";
 import type { Game } from "@/lib/queries";
@@ -95,6 +95,9 @@ export function GameRow({
             ★
           </span>
         )}
+        <span className="ml-auto">
+          <MatchupButton gameId={game.gameId} />
+        </span>
       </div>
 
       {/* Box score: logos, teams, finals */}
@@ -162,6 +165,9 @@ function MarketGameRow({
             Final
           </span>
         )}
+        <span className="ml-auto">
+          <MatchupButton gameId={game.gameId} />
+        </span>
       </div>
       <div className="space-y-1.5">
         <TeamLine
@@ -234,15 +240,9 @@ function TeamLine({
   return (
     <div className="flex items-center gap-2.5">
       <TeamLogo name={name} px={28} decorative={false} />
-      <Link
-        href={`/teams/${encodeURIComponent(name)}`}
-        className={clsx(
-          "min-w-0 truncate text-sm text-ink hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent",
-          highlighted && "font-semibold",
-        )}
-      >
+      <span className={clsx("min-w-0 truncate text-sm text-ink", highlighted && "font-semibold")}>
         {name}
-      </Link>
+      </span>
       {record && (
         <span className="text-xs tabular-nums text-ink-faint">({record})</span>
       )}

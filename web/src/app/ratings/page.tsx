@@ -176,12 +176,7 @@ export default async function RatingsPage({ searchParams }: {
                 <tr key={rating.team} className="border-b border-line last:border-0 hover:bg-surface-inset/50">
                   <td className="px-3 py-3 text-center font-mono text-xs text-ink-faint">{rank}</td>
                   <th scope="row" className="px-4 py-3 text-left font-semibold text-ink">
-                    <Link
-                      className="hover:text-accent-ink hover:underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-accent"
-                      href={`/teams/${encodeURIComponent(rating.team)}`}
-                    >
-                      {rating.team}
-                    </Link>
+                    {rating.team}
                   </th>
                   <td className="px-3 py-3 text-right font-medium text-ink">{rating.overallRating.toFixed(2)}</td>
                   <td className="px-3 py-3 text-right text-ink-muted">{rating.offenseRating.toFixed(2)}</td>
