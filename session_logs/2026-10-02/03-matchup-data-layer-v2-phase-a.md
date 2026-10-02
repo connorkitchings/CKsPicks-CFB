@@ -31,6 +31,7 @@ Migration 0021 (5 tables, FK to `v5_rating_snapshots`, read indexes) and tests; 
 - Not verified: production behaviour of the new tables (not migrated there), Week 6+ lineage.
 
 ## Handoff Notes
+- **Update (same day):** the user ran all production steps (migration 0021, pinned publish, Silver-stats republish); the read-only verifier on production says VERIFIED. What remains is the release to `main`, the flag and Phase B. The list below is the original plan for those steps.
 - **Resume at:** user decides production: (1) migration 0021 with the owner credential, (2) publish with `--expect-payload-sha a4a1062db790164850f31707350a93d1f2650363b47502ad3b67b99407571215`, (3) republish Silver team stats weeks 1-5 (`--diff` first), (4) merge `dev` into `main`. Then Phase B (2025).
 - **Watch out for:** the publisher refuses to leave stale rows (pipeline role cannot DELETE); components are append-only per manifest; matchup pages stay closed until `CFB_MATCHUP_ENABLED=1`.
 
