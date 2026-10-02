@@ -4,6 +4,8 @@ Open and resolved data-quality issues that affect what the product shows. Add an
 
 ## Review and rerun together (decision 2026-10-02)
 
+**Full workflow (phases, commands, decisions, stop conditions, definition of done): [data issues review and rerun](../plans/2026-10-02/05-data-issues-review-and-rerun.md).** The summary below is the short form.
+
 The open issues below touch the same aggregations, so they are reviewed first and the affected data is rerun **once**, not piecemeal. The **production republish of team stats is part of that batch and is on hold** until the review is done.
 
 **Why batch:** production `team_season_stats` still holds the pre-fix conversion, explosive and turnover rates and has no `ppa_per_play`; Preview already has the punt fix. Republishing production now and again after the review would mean two production writes of the same tables, and the review may change the same metrics (for example `pts_per_scoring_opp` if the score-stream rule changes). The matchup page is closed in production (`CFB_MATCHUP_ENABLED` unset), so nothing user-visible waits on it. **Do not set `CFB_MATCHUP_ENABLED=1` in production until the batch below is done and production is republished.**

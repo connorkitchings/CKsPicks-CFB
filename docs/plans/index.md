@@ -71,6 +71,7 @@ The [V5 current status guide](../modeling/v5_status.md) is the entry point for t
 | [Team stats as the source of basic stats](2026-10-02/03-team-stats-feeds-ratings.md) | Fix the returned-punt leak in team stats (Phase 1, done); ratings read team stats at the next rebuild (Phase 2 design) | Draft (Phase 1 implemented) |
 | [Port picks/results prototypes to production](2026-10-02/02-port-picks-results-prototypes.md) | Replace `/` and `/results` slate UI with the proven prototype lean-sentence design; delete `/test-*` routes and the old stack | Implemented (released to `main` 2026-10-02) |
 | [Remove edge constraints and grade all games](2026-10-02/04-remove-edge-constraints-grade-all-games.md) | Set thresholds to 0.0, re-score Weeks 0–4 in Neon, update system_stats, and grade all games based on model vs market | Implemented |
+| [Data issues: review and rerun together](2026-10-02/05-data-issues-review-and-rerun.md) | One workflow for the open data issues (play-by-play score stream, V5 punt companions, zero-PPA plays): investigate read-only, decide once, rerun Preview then production together | Draft (next session) |
 
 The [V5 contract archive](../archive/v5-contracts/index.md) preserves completed and superseded methodology, audit, diagnostic, and code-readiness records. Historical contract statuses describe what happened at the time; the current guide and cutover contract govern what happens next. The unrelated V4 feature schema v5 diagnostic is archived with those records and is not the V5 ratings successor.
 
