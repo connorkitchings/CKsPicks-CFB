@@ -83,8 +83,12 @@ export const UNIT_METRICS: {
 export function formatMetric(format: Format, value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   switch (format) {
-    case "epa":
-      return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)}`;
+    case "epa": {
+      const magnitude = Math.abs(value).toFixed(2);
+      // A value that rounds to zero carries no sign ("−0.00" reads as a defect).
+      if (Number(magnitude) === 0) return magnitude;
+      return `${value >= 0 ? "+" : "−"}${magnitude}`;
+    }
     case "pct":
       return `${(value * 100).toFixed(1)}%`;
     case "pts":

@@ -293,3 +293,11 @@ test("rankTier uses the same percentile bands as the badge classes", () => {
   assert.match(getRankBadgeClass(1, 138), /accent/);
   assert.match(getRankBadgeClass(138, 138), /loss/);
 });
+
+test("formatMetric shows a PPA that rounds to zero without a sign", () => {
+  assert.equal(formatMetric("epa", -0.004), "0.00");
+  assert.equal(formatMetric("epa", 0.004), "0.00");
+  assert.equal(formatMetric("epa", -0.005), "−0.01");
+  assert.equal(formatMetric("epa", 0.12), "+0.12");
+  assert.equal(formatMetric("epa", -0.3), "−0.30");
+});

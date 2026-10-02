@@ -427,7 +427,10 @@ export const ShareCard = forwardRef<HTMLDivElement, { matchup: MatchupData }>(fu
       <div style={{ marginTop: "auto", fontSize: 12, lineHeight: 1.45, color: C.faint }}>
         <div>
           Stats through Week {stats.asOfWeek - 1}. FBS opponents only, regulation play, garbage time excluded; raw, not
-          opponent-adjusted. Defense columns show what that defense allowed.
+          opponent-adjusted.
+        </div>
+        <div>
+          Defense columns show what that defense allowed.
           {stats.cohortSize !== null ? ` Ranks are among ${stats.cohortSize} teams; T = tied.` : ""}
         </div>
         <div>Team names and logos are trademarks of their respective schools and owners, shown for identification only.</div>
