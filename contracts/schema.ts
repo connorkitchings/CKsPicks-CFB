@@ -519,6 +519,7 @@ export const teamSeasonStats = pgTable(
     games: integer("games").notNull().default(0),
     rank: integer("rank"),
     cohortSize: integer("cohort_size"),
+    sourceVersions: jsonb("source_versions").notNull().default({}),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [

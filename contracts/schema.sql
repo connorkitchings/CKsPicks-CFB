@@ -542,6 +542,10 @@ CREATE TABLE IF NOT EXISTS team_season_stats (
     games        INTEGER NOT NULL DEFAULT 0,
     rank         INTEGER,
     cohort_size  INTEGER,
+    -- Silver dataset version ids (byplay, drives, games, game_outcomes, teams)
+    -- that produced the row, so a snapshot is traceable to its exact inputs.
+    source_versions JSONB NOT NULL DEFAULT '{}'::jsonb
+        CHECK (jsonb_typeof(source_versions) = 'object'),
     updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (season, as_of_week, team, role, metric)
 );

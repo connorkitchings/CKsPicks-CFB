@@ -251,7 +251,8 @@ def test_team_season_stats_migration_creates_table_and_upsert_round_trips():
             },
         ]
     )
-    records = to_upsert_records(frame)
+    versions = {"byplay": "443019a9a7b6a2454a4af4ac"}
+    records = to_upsert_records(frame, versions)
     with psycopg.connect(conn_url) as conn:
         with conn.cursor() as cur:
             for record in records:
@@ -259,6 +260,8 @@ def test_team_season_stats_migration_creates_table_and_upsert_round_trips():
             cur.execute(UPSERT_TEAM_STAT_SQL, {**records[0], "value": 0.5, "rank": 1})
             cur.execute("SELECT role, value, rank FROM team_season_stats ORDER BY role")
             assert cur.fetchall() == [("defense", None, None), ("offense", 0.5, 1)]
+            cur.execute("SELECT DISTINCT source_versions FROM team_season_stats")
+            assert cur.fetchall() == [(versions,)]
             with pytest.raises(psycopg.errors.CheckViolation):
                 cur.execute(UPSERT_TEAM_STAT_SQL, {**records[0], "role": "special"})
     assert apply_migrations(conn_url, Path("contracts/migrations")) == []

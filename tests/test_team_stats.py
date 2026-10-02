@@ -453,3 +453,35 @@ def test_columns_used_exist_in_real_silver_byplay():
 
     used = set(ts._REQUIRED_BYPLAY) | set(ts._OPTIONAL_BYPLAY) | {"yards_to_first"}
     assert used <= SILVER_BYPLAY_COLUMNS_SEEN
+
+
+def _publisher():
+    import importlib.util
+    from pathlib import Path
+
+    path = (
+        Path(__file__).resolve().parents[1] / "scripts/pipeline/publish_team_stats.py"
+    )
+    spec = importlib.util.spec_from_file_location("publish_team_stats", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_parse_weeks_accepts_ranges_and_lists():
+    parse = _publisher().parse_weeks
+    assert parse("5") == [5]
+    assert parse("1-5") == [1, 2, 3, 4, 5]
+    assert parse("2,4,6-7") == [2, 4, 6, 7]
+    with pytest.raises(ValueError):
+        parse("5-1")
+    with pytest.raises(ValueError):
+        parse(" , ")
+
+
+def test_upsert_records_carry_source_versions():
+    from cks_picks_cfb.data.team_stats import to_upsert_records
+
+    r = run([base_game()])
+    records = to_upsert_records(r.frame, {"byplay": "abc"})
+    assert {rec["source_versions"] for rec in records} == {'{"byplay": "abc"}'}

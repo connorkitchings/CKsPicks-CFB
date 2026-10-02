@@ -10,6 +10,7 @@ there is one definition of each measurement in the repo.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -354,22 +355,31 @@ def build_team_season_stats(
 
 UPSERT_TEAM_STAT_SQL = """
 INSERT INTO team_season_stats
-    (season, as_of_week, team, role, metric, value, n, games, rank, cohort_size)
+    (season, as_of_week, team, role, metric, value, n, games, rank, cohort_size,
+     source_versions)
 VALUES
     (%(season)s, %(as_of_week)s, %(team)s, %(role)s, %(metric)s, %(value)s,
-     %(n)s, %(games)s, %(rank)s, %(cohort_size)s)
+     %(n)s, %(games)s, %(rank)s, %(cohort_size)s, %(source_versions)s::jsonb)
 ON CONFLICT (season, as_of_week, team, role, metric) DO UPDATE SET
     value = EXCLUDED.value,
     n = EXCLUDED.n,
     games = EXCLUDED.games,
     rank = EXCLUDED.rank,
     cohort_size = EXCLUDED.cohort_size,
+    source_versions = EXCLUDED.source_versions,
     updated_at = NOW()
 """
 
 
-def to_upsert_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
-    """Convert the stats frame to DB-ready dicts (NaN/NA become None)."""
+def to_upsert_records(
+    frame: pd.DataFrame, source_versions: dict[str, str] | None = None
+) -> list[dict[str, Any]]:
+    """Convert the stats frame to DB-ready dicts (NaN/NA become None).
+
+    ``source_versions`` (dataset name -> Silver version id) is stored on every
+    row so a snapshot can be traced to the exact inputs that produced it.
+    """
+    provenance = json.dumps(source_versions or {}, sort_keys=True)
 
     def clean(value: Any) -> Any:
         if value is None or value is pd.NA:
@@ -383,6 +393,6 @@ def to_upsert_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
         return value
 
     return [
-        {key: clean(val) for key, val in row.items()}
+        {**{key: clean(val) for key, val in row.items()}, "source_versions": provenance}
         for row in frame.to_dict(orient="records")
     ]
