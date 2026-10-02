@@ -103,7 +103,7 @@ test.describe("matchup page (fixture mode)", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test("top of the page: records, venue, rating labels, edges, a real Updated time, no duplicate system name", async ({ page }) => {
+  test("top of the page: records, venue, rating labels, a real Updated time, no duplicate system name", async ({ page }) => {
     await page.goto("/matchup/1");
     const away = page.locator("[data-side='away']");
     await expect(away).toContainText(/Away · \d+-\d+/);
@@ -126,8 +126,9 @@ test.describe("matchup page (fixture mode)", () => {
     expect(header).toMatch(/Updated Sep (29|30)/);
     await expect(page.locator("#matchup-header")).toHaveText(/ at /);
     await expect(page.locator("#matchup-header")).toHaveClass(/sr-only/);
-    // Forecast box carries the model edge notes like the Picks cards.
+    // The forecast box shows market and model lines only; no model-minus-market edge numbers.
     await expect(page.getByText("Forecast & Lines")).toBeVisible();
+    await expect(page.getByTitle("Model minus market")).toHaveCount(0);
     // The model bet names the side without the word "Lean".
     const bet = page.getByText("Model Bet:").locator("xpath=following-sibling::div[1]");
     await expect(bet).not.toContainText("Lean");

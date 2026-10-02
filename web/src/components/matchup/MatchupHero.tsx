@@ -1,6 +1,5 @@
 import Link from "next/link";
 import TeamLogo from "@/components/TeamLogo";
-import { EdgeNote } from "@/components/slate/EdgeNote";
 import type { MatchupData, TeamRatingSummary } from "@/lib/matchup";
 
 function formatKickoff(startDate: Date): string {
@@ -150,11 +149,9 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
                   <span className="whitespace-nowrap font-medium text-ink-muted">Model:</span>
                   <div className="flex flex-wrap items-baseline font-mono text-ink">
                     <span className="font-medium">{matchup.modelSpread}</span>
-                    <EdgeNote edge={matchup.modelSpreadEdge} target="spread" />
                     {matchup.modelTotal && (
                       <span className="ml-1.5 font-sans text-xs text-ink-muted">
                         · O/U {matchup.modelTotal.toFixed(1)}
-                        <EdgeNote edge={matchup.modelTotalEdge} target="total" />
                       </span>
                     )}
                   </div>
