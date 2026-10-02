@@ -45,6 +45,18 @@ def _time(value: Any) -> pd.Timestamp:
     return result.tz_convert("UTC")
 
 
+def usable_ppp_mask(source: pd.DataFrame) -> pd.Series:
+    """A PPP observation feeds the rating only when it is observed, has a
+    positive denominator and finite numerator and value. Everything else is an
+    excluded game (the rating's explanation never lists those)."""
+    return (
+        source.coverage_status.eq("observed")
+        & pd.to_numeric(source.denominator, errors="coerce").gt(0)
+        & np.isfinite(pd.to_numeric(source.raw_value, errors="coerce"))
+        & np.isfinite(pd.to_numeric(source.numerator, errors="coerce"))
+    )
+
+
 def _source_rows(observations: pd.DataFrame, schedule: pd.DataFrame) -> pd.DataFrame:
     required = {
         "season",
@@ -97,12 +109,7 @@ def _source_rows(observations: pd.DataFrame, schedule: pd.DataFrame) -> pd.DataF
     source["denominator"] = pd.to_numeric(source.denominator, errors="coerce")
     source["raw_value"] = pd.to_numeric(source.raw_value, errors="coerce")
     source["numerator"] = pd.to_numeric(source.numerator, errors="coerce")
-    source["usable"] = (
-        source.coverage_status.eq("observed")
-        & source.denominator.gt(0)
-        & np.isfinite(source.raw_value)
-        & np.isfinite(source.numerator)
-    )
+    source["usable"] = usable_ppp_mask(source)
     if not source.unit_role.isin(ROLES).all():
         raise IntendedUpdateError("PPP source has an unknown role")
     return source.sort_values(

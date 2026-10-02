@@ -1148,3 +1148,19 @@ def build_replay(
         frame_for("terminal", TERMINAL_COLUMNS),
         evidence,
     )
+
+
+# Public names for consumers outside the ratings package (matchup data layer,
+# Silver team stats). The private names remain the definitions.
+adjust_possession_history = _adjust
+eligible_possession_play = _eligible_play
+
+
+def eligible_possession_play_mask(byplay: pd.DataFrame) -> pd.Series:
+    """Vector form of the V5 play filter: regulation, no special teams, penalty,
+    two-point, garbage time or dead plays. Same definition as ``_eligible_play``."""
+    return pd.Series(
+        [eligible_possession_play(row) for row in byplay.itertuples(index=False)],
+        index=byplay.index,
+        dtype=bool,
+    )

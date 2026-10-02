@@ -632,3 +632,6 @@ def build_current_team_states(
         .sort_values("team")
         .reset_index(drop=True)
     )
+
+
+historical_scale = _historical_scale
