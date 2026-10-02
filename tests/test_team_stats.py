@@ -22,6 +22,7 @@ def play(play_type="Rush", down=1, distance=10, yards=5, ppa=0.5, success=1, **k
         "ppa": ppa,
         "success": success,
         "garbage": kw.get("garbage", 0),
+        "quarter": kw.get("quarter", 1),
         "turnover": kw.get("turnover", 0),
     }
 
@@ -61,7 +62,7 @@ def build(games):
                         "success": p["success"],
                         "yards_gained": p["yards"],
                         "turnover": p["turnover"],
-                        "quarter": 1,
+                        "quarter": p["quarter"],
                         "offense_score": score[off],
                         "defense_score": score[dfn],
                         "down": p["down"],
@@ -523,3 +524,53 @@ def test_verifier_correlates_overall_epa_against_cfbd():
     results = {r["metric"]: r for r in mod.compare(ours, theirs)}
     assert results["EPA/play"]["rho"] == pytest.approx(1.0)
     assert results["success rate"]["rho"] == pytest.approx(1.0)
+
+
+def test_overtime_and_dead_plays_use_the_v5_filter():
+    gid, week, home, away, drv = base_game()
+    # An overtime pass and a dead play are not eligible under the V5 filter.
+    drv[0]["plays"].append(play("Pass Reception", 1, 10, 40, 9.0, 1, quarter=5))
+    drv[0]["plays"].append(play("Timeout", 1, 10, 0, 7.0, 1))
+    r = run([(gid, week, home, away, drv)])
+    assert val(r, "A", "offense", "epa_pass")["value"] == pytest.approx(0.1)
+    assert val(r, "A", "offense", "epa_pass")["n"] == 2  # overtime pass excluded
+
+
+def test_diff_report_flags_value_and_rank_changes():
+    from cks_picks_cfb.data.team_stats import diff_report
+
+    old = pd.DataFrame(
+        {
+            "as_of_week": [5, 5, 5],
+            "team": ["A", "B", "C"],
+            "role": ["offense"] * 3,
+            "metric": ["epa_pass"] * 3,
+            "value": [0.1, 0.2, 0.3],
+            "rank": [3, 2, 1],
+        }
+    )
+    new = old.copy()
+    new.loc[0, ["value", "rank"]] = [0.35, 1]
+    new.loc[2, ["value", "rank"]] = [0.25, 3]
+    new = pd.concat(
+        [
+            new,
+            pd.DataFrame(
+                {
+                    "as_of_week": [5],
+                    "team": ["D"],
+                    "role": ["offense"],
+                    "metric": ["epa_pass"],
+                    "value": [0.0],
+                    "rank": [4],
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
+    report = diff_report(old, new)
+    assert report["rows_compared"] == 3 and report["rows_changed"] == 2
+    assert report["only_new"] == 1 and report["only_old"] == 0
+    metric = report["per_metric"][0]
+    assert metric["changed"] == 2 and metric["max_abs_rank_shift"] == 2
+    assert report["top_movers"][0]["rank_old"] in (3, 1)

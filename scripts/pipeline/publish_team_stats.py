@@ -35,6 +35,7 @@ from cks_picks_cfb.data.team_stats import (
     UPSERT_TEAM_STAT_SQL,
     TeamStatsContractError,
     build_team_season_stats,
+    diff_report,
     to_upsert_records,
 )
 
@@ -115,6 +116,47 @@ def _fbs_teams(cur: psycopg.Cursor, season: int, teams_frame) -> tuple[set[str],
     return {str(r[0]) for r in cur.fetchall()}, "neon.games (fallback)"
 
 
+def print_diff(conn, season: int, weeks: list[int], new_frames: list) -> None:
+    """Report value and rank deltas against the currently published rows."""
+    import pandas as pd
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT as_of_week, team, role, metric, value, rank FROM team_season_stats "
+            "WHERE season = %s AND as_of_week = ANY(%s)",
+            (season, weeks),
+        )
+        old = pd.DataFrame(
+            cur.fetchall(),
+            columns=["as_of_week", "team", "role", "metric", "value", "rank"],
+        )
+    new = (
+        pd.concat(new_frames, ignore_index=True)
+        if new_frames
+        else pd.DataFrame(columns=old.columns)
+    )
+    report = diff_report(old, new)
+    print("== diff vs published ==")
+    print(
+        f"rows old {report['rows_old']} new {report['rows_new']}; compared "
+        f"{report['rows_compared']}, changed {report['rows_changed']}, "
+        f"only old {report['only_old']}, only new {report['only_new']}"
+    )
+    for m in report["per_metric"]:
+        print(
+            f"  {m['role']:<8} {m['metric']:<20} changed {m['changed']:>4}/{m['rows']:<4} "
+            f"mean|dv| {m['mean_abs_value_delta']:.5f} max|dv| {m['max_abs_value_delta']:.5f} "
+            f"mean|drank| {m['mean_abs_rank_shift']:.2f} max {m['max_abs_rank_shift']:.0f} "
+            f">5: {m['rank_shift_over_5']}"
+        )
+    print("  top rank movers:")
+    for r in report["top_movers"]:
+        print(
+            f"    wk{r['as_of_week']} {r['team']} {r['role']} {r['metric']}: "
+            f"rank {r['rank_old']} -> {r['rank_new']} (value {r['value_old']} -> {r['value_new']})"
+        )
+
+
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -136,6 +178,12 @@ def main() -> int:
     parser.add_argument("--environment", choices=sorted(URL_ENV), required=True)
     parser.add_argument("--database-url", help="Override the environment's URL")
     parser.add_argument("--dry-run", action="store_true", help="Report; write nothing")
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="Compare with the rows already published for these weeks (value and "
+        "rank deltas, top movers) before any write",
+    )
     args = parser.parse_args()
     if (args.as_of_week is None) == (args.weeks is None):
         parser.error("give exactly one of --as-of-week or --weeks")
@@ -183,6 +231,7 @@ def main() -> int:
             fbs, fbs_source = _fbs_teams(cur, args.season, teams)
         print(f"FBS teams: {len(fbs)} (from {fbs_source})")
         all_records: list[dict] = []
+        diff_frames: list = []
         for week in weeks:
             try:
                 result = build_team_season_stats(
@@ -213,6 +262,10 @@ def main() -> int:
             )
             print(frame.head(5).to_string())
             all_records.extend(to_upsert_records(frame, source_versions))
+            if args.diff:
+                diff_frames.append(frame)
+        if args.diff:
+            print_diff(conn, args.season, weeks, diff_frames)
         if args.dry_run:
             print(
                 f"Dry run: {len(all_records)} rows would be written; nothing written."

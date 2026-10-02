@@ -3,9 +3,11 @@
 ``build_team_season_stats`` aggregates FBS-vs-FBS games completed *before* week
 ``as_of_week`` into one long row per ``(team, role, metric)`` with the raw
 value, the sample behind it and a national rank (1 = best). Plays use the same
-filter as the V5 measurement layer (drive plays, garbage time excluded) and
-points per scoring opportunity use the same score-stream reconstruction, so
-there is one definition of each measurement in the repo.
+eligibility filter as the V5 measurement layer (regulation only; no special
+teams, penalties, two-point tries, dead plays or garbage time), imported from
+``ratings.possession_measurements`` rather than copied, and points per scoring
+opportunity use the same score-stream reconstruction, so there is one
+definition of each measurement in the repo.
 """
 
 from __future__ import annotations
@@ -21,6 +23,9 @@ from cks_picks_cfb.ratings.contracts import MeasurementContractError
 from cks_picks_cfb.ratings.observations import (
     derive_is_drive_play,
     true_drive_points,
+)
+from cks_picks_cfb.ratings.possession_measurements import (
+    eligible_possession_play_mask,
 )
 
 #: Minimum completed FBS games before a team is ranked on any metric.
@@ -277,7 +282,7 @@ def build_team_season_stats(
 
     plays["is_drive_play"] = derive_is_drive_play(plays)
     garbage = pd.to_numeric(plays["garbage"], errors="coerce")
-    plays["eligible"] = (plays["is_drive_play"] == 1) & (garbage == 0)
+    plays["eligible"] = eligible_possession_play_mask(plays)
     report["plays_missing_garbage_flag"] = int(
         ((plays["is_drive_play"] == 1) & garbage.isna()).sum()
     )
@@ -396,3 +401,72 @@ def to_upsert_records(
         {**{key: clean(val) for key, val in row.items()}, "source_versions": provenance}
         for row in frame.to_dict(orient="records")
     ]
+
+
+def diff_report(
+    old: pd.DataFrame, new: pd.DataFrame, *, tolerance: float = 1e-9, top: int = 10
+) -> dict[str, Any]:
+    """Compare published rows with a rebuilt frame before republishing.
+
+    Both frames use the long format (season, as_of_week, team, role, metric,
+    value, rank). Returns counts, per-metric value and rank deltas, and the
+    largest rank movers so a methodology change can be reviewed before it is
+    written.
+    """
+    keys = ["as_of_week", "team", "role", "metric"]
+    merged = old[keys + ["value", "rank"]].merge(
+        new[keys + ["value", "rank"]],
+        on=keys,
+        how="outer",
+        suffixes=("_old", "_new"),
+        indicator=True,
+    )
+    both = merged[merged["_merge"] == "both"].copy()
+    both["value_delta"] = pd.to_numeric(
+        both["value_new"], errors="coerce"
+    ) - pd.to_numeric(both["value_old"], errors="coerce")
+    both["rank_shift"] = pd.to_numeric(
+        both["rank_new"], errors="coerce"
+    ) - pd.to_numeric(both["rank_old"], errors="coerce")
+    changed = both[both["value_delta"].abs() > tolerance]
+    per_metric = []
+    for (role, metric), group in both.groupby(["role", "metric"]):
+        moved = group["rank_shift"].abs()
+        per_metric.append(
+            {
+                "role": role,
+                "metric": metric,
+                "rows": int(len(group)),
+                "changed": int((group["value_delta"].abs() > tolerance).sum()),
+                "mean_abs_value_delta": float(group["value_delta"].abs().mean()),
+                "max_abs_value_delta": float(group["value_delta"].abs().max()),
+                "mean_abs_rank_shift": float(moved.mean()),
+                "max_abs_rank_shift": float(moved.max())
+                if moved.notna().any()
+                else 0.0,
+                "rank_shift_over_5": int((moved > 5).sum()),
+            }
+        )
+    movers = both.assign(abs_shift=both["rank_shift"].abs()).nlargest(top, "abs_shift")
+    return {
+        "rows_old": int(len(old)),
+        "rows_new": int(len(new)),
+        "only_old": int((merged["_merge"] == "left_only").sum()),
+        "only_new": int((merged["_merge"] == "right_only").sum()),
+        "rows_compared": int(len(both)),
+        "rows_changed": int(len(changed)),
+        "per_metric": per_metric,
+        "top_movers": [
+            {
+                "as_of_week": int(r.as_of_week),
+                "team": r.team,
+                "role": r.role,
+                "metric": r.metric,
+                "rank_old": None if pd.isna(r.rank_old) else int(r.rank_old),
+                "rank_new": None if pd.isna(r.rank_new) else int(r.rank_new),
+                "value_old": None if pd.isna(r.value_old) else float(r.value_old),
+                "value_new": None if pd.isna(r.value_new) else float(r.value_new),
+            }
+            for r in movers.itertuples(index=False)
+        ],
+    }
