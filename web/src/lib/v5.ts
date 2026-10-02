@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
+import { withGameNameAliases } from "./rating-names.ts";
 import {
   defaultPeriodForRows,
   formatCutoffLabel,
@@ -88,6 +89,9 @@ export const getTeamRankMap = cache(async (season: number): Promise<Map<string, 
   ratings.forEach((r, idx) => {
     map.set(r.team, idx + 1);
   });
+  for (const [name, rank] of Object.entries(withGameNameAliases(Object.fromEntries(map)))) {
+    map.set(name, rank);
+  }
   return map;
 });
 

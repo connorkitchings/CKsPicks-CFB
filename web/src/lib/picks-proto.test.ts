@@ -264,3 +264,17 @@ test("venueLabel formats City, ST and degrades gracefully", () => {
   assert.equal(venueLabel("", "  "), "");
   assert.equal(venueLabel(undefined, undefined), "");
 });
+
+test("overallRanks also resolves games' CFBD names for legacy-named teams", () => {
+  const ranks = overallRanks([
+    { team: "Ohio State", overallRating: 2 },
+    { team: "San Jose State", overallRating: 1 },
+    { team: "Hawai_i", overallRating: 0 },
+    { team: "Appalachian State", overallRating: -1 },
+  ]);
+  assert.equal(ranks["San José State"], 2);
+  assert.equal(ranks["Hawai'i"], 3);
+  assert.equal(ranks["App State"], 4);
+  assert.equal(ranks["San Jose State"], 2);
+  assert.equal(ranks["Ohio State"], 1);
+});

@@ -2,7 +2,7 @@ import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, schema } from "./db.ts";
 import { getRatingsAsOf } from "./v5.ts";
-import { TEAM_LOGO_MAP } from "./teams.ts";
+import { ratingName } from "./rating-names.ts";
 import {
   displaySystemName,
   isAllowedSeason,
@@ -114,7 +114,7 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   // Nine teams are stored in v5_rating_snapshots under legacy names ("San Jose
   // State", "Hawai_i", ...); TEAM_LOGO_MAP maps the game's CFBD name to them.
   const summarize = (team: string): TeamRatingSummary => {
-    const key = TEAM_LOGO_MAP[team] ?? team;
+    const key = ratingName(team);
     const row = ratings.find((r) => r.team === key);
     return {
       team,

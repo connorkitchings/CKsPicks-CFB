@@ -1,4 +1,5 @@
 import type { Game, PredictionGame } from "./queries.ts";
+import { withGameNameAliases } from "./rating-names.ts";
 import {
   marketSpreadView,
   modelSpreadView,
@@ -211,7 +212,7 @@ export function overallRanks(
     .forEach((r, i) => {
       ranks[r.team] = i + 1;
     });
-  return ranks;
+  return withGameNameAliases(ranks);
 }
 
 export type Grade = "win" | "loss" | "push";
