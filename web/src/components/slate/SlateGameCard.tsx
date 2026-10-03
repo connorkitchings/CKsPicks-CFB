@@ -64,7 +64,7 @@ function BetCell({
           {lean.pick}
         </span>
         {lean.source && (
-          <span className="shrink-0 text-xs font-normal text-ink-faint">
+          <span className="hidden shrink-0 text-xs font-normal text-ink-faint sm:inline">
             ({lean.source})
           </span>
         )}
