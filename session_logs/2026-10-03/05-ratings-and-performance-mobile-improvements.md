@@ -16,9 +16,9 @@
     - Made Spread and Totals KPI cards interactively toggle the active target filter.
     - Replaced the wide horizontally scrolling weekly table on mobile with responsive weekly breakdown cards (`sm:hidden`) displaying week link, record, win rate, profit units, and ROI.
     - Preserved exact desktop comparison tables (`hidden sm:block overflow-x-auto`).
-- **Approval / Status:** User approved.
+- **Approval / Status:** Completed, committed, and deployed.
 - **Blockers:** None.
-- **Next:** User stages and commits changes on `dev`, merges into `main`, and pushes to deploy.
+- **Next:** Proceed to Week 5 certified finals close when games finalize.
 
 ## Files Modified
 - `web/src/components/ratings/RatingsView.tsx` (new)
@@ -30,18 +30,14 @@
 ## Validation
 - [x] `npm --prefix web run typecheck` — passed (0 errors)
 - [x] `npm --prefix web run lint` — passed (0 warnings/errors)
-- [x] `npm --prefix web run test:publication` — passed (114/114 passing)
+- [x] `npm --prefix web run test:publication` — passed (114/114 passing, then 117/117 with overlay tests)
 - [x] `npm --prefix web run build` — passed (all routes statically/dynamically generated in 1.1s)
 - [x] `git diff --check` — passed (clean, no whitespace errors)
 
-## Handoff Notes
-- **Proposed commit message:**
-  ```
-  feat(web): mobile display and UX polish for ratings and performance pages
+## Deployed Commits
+1. `1459322` — `feat(web): mobile display and UX polish for ratings and performance pages`
+2. `0b01bf7` — `fix(web): derive lean for null-lean picks via selection overlay`
 
-  - Ratings: client-side search with clear button, team logos, mobile card list, and collapsible methodology
-  - Performance: 2+1 mobile KPI grid, interactive filter toggles, and mobile weekly breakdown cards
-  - Maintain 100% desktop fidelity and test suite compatibility
-  ```
+Both commits are pushed to `origin/dev` and `origin/main` and deployed live to production on Vercel.
 
-**tags:** ["web", "ratings", "performance", "mobile-ux", "responsive"]
+**tags:** ["web", "ratings", "performance", "mobile-ux", "responsive", "production"]

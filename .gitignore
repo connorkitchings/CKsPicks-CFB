@@ -320,3 +320,5 @@ node_modules/
 # Investigation working copies pulled from R2 (re-pull with the URIs in the session log)
 artifacts/backups/*/investigation/*.parquet
 artifacts/backups/*/investigation/*captures.json
+artifacts/backups/*/investigation/cfbd_plays_*.json
+artifacts/backups/*/investigation/*.py
