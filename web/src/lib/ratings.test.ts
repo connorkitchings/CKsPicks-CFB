@@ -12,7 +12,9 @@ test("SiteNav includes Picks, Results, Ratings, and Performance in navigation it
 });
 
 test("ratings page includes rank column, methodology explainer, and disambiguated empty states", () => {
-  const source = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
+  const pageSource = readFileSync(new URL("../app/ratings/page.tsx", import.meta.url), "utf8");
+  const viewSource = readFileSync(new URL("../components/ratings/RatingsView.tsx", import.meta.url), "utf8");
+  const source = `${pageSource}\n${viewSource}`;
 
   // Rank column in table header and body (computed pre-filter)
   assert.match(source, /<th scope="col"[^>]*>#<\/th>/);

@@ -192,23 +192,26 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
   }, [data.weeks, activePicks]);
 
   return (
-    <div className="space-y-6">
-      {/* Option B: 3 Betting KPI Cards */}
-      <section aria-labelledby="kpi-heading" className="grid gap-4 md:grid-cols-3">
+    <div className="space-y-4 sm:space-y-6">
+      {/* 3 Betting KPI Cards: Mobile 2+1 grid, Desktop 3-col */}
+      <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3">
         <h2 id="kpi-heading" className="sr-only">Betting performance summary</h2>
 
         {/* Spread Performance Card */}
-        <div
+        <button
+          type="button"
+          onClick={() => setTargetFilter(targetFilter === "spread" ? "all" : "spread")}
           className={clsx(
-            "rounded-xl border p-5 shadow-sm transition-all",
+            "col-span-1 rounded-xl border p-3 sm:p-5 shadow-sm transition-all text-left cursor-pointer",
             targetFilter === "spread"
               ? "border-accent ring-1 ring-accent bg-surface-card"
-              : "border-line bg-surface-card"
+              : "border-line bg-surface-card hover:border-ink-faint"
           )}
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              Spread Performance
+              <span className="sm:hidden">Spread</span>
+              <span className="hidden sm:inline">Spread Performance</span>
             </span>
             {targetFilter === "spread" && (
               <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent-ink">
@@ -216,10 +219,10 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
               </span>
             )}
           </div>
-          <div className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+          <div className="font-mono text-2xl sm:text-4xl font-bold tracking-tight text-ink">
             {overallKPIs.spread.record}
           </div>
-          <div className="mt-3 space-y-1 text-xs">
+          <div className="mt-2 sm:mt-3 space-y-1 text-xs">
             <div className="flex items-center justify-between text-ink-muted">
               <span>Win Rate</span>
               <span className="font-mono font-medium text-ink">{overallKPIs.spread.winRate}</span>
@@ -232,24 +235,38 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                   overallKPIs.spread.isPositive ? "text-win" : "text-loss"
                 )}
               >
-                {overallKPIs.spread.units} ({overallKPIs.spread.roi})
+                {overallKPIs.spread.units} <span className="hidden sm:inline">({overallKPIs.spread.roi})</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-ink-muted sm:hidden">
+              <span>ROI</span>
+              <span
+                className={clsx(
+                  "font-mono font-semibold",
+                  overallKPIs.spread.isPositive ? "text-win" : "text-loss"
+                )}
+              >
+                {overallKPIs.spread.roi}
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Totals Performance Card */}
-        <div
+        <button
+          type="button"
+          onClick={() => setTargetFilter(targetFilter === "total" ? "all" : "total")}
           className={clsx(
-            "rounded-xl border p-5 shadow-sm transition-all",
+            "col-span-1 rounded-xl border p-3 sm:p-5 shadow-sm transition-all text-left cursor-pointer",
             targetFilter === "total"
               ? "border-accent ring-1 ring-accent bg-surface-card"
-              : "border-line bg-surface-card"
+              : "border-line bg-surface-card hover:border-ink-faint"
           )}
         >
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
-              Totals Performance
+              <span className="sm:hidden">Totals</span>
+              <span className="hidden sm:inline">Totals Performance</span>
             </span>
             {targetFilter === "total" && (
               <span className="rounded bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold text-accent-ink">
@@ -257,10 +274,10 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
               </span>
             )}
           </div>
-          <div className="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-ink">
+          <div className="font-mono text-2xl sm:text-4xl font-bold tracking-tight text-ink">
             {overallKPIs.total.record}
           </div>
-          <div className="mt-3 space-y-1 text-xs">
+          <div className="mt-2 sm:mt-3 space-y-1 text-xs">
             <div className="flex items-center justify-between text-ink-muted">
               <span>Win Rate</span>
               <span className="font-mono font-medium text-ink">{overallKPIs.total.winRate}</span>
@@ -273,28 +290,42 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                   overallKPIs.total.isPositive ? "text-win" : "text-loss"
                 )}
               >
-                {overallKPIs.total.units} ({overallKPIs.total.roi})
+                {overallKPIs.total.units} <span className="hidden sm:inline">({overallKPIs.total.roi})</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-ink-muted sm:hidden">
+              <span>ROI</span>
+              <span
+                className={clsx(
+                  "font-mono font-semibold",
+                  overallKPIs.total.isPositive ? "text-win" : "text-loss"
+                )}
+              >
+                {overallKPIs.total.roi}
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Net Betting Return Card */}
-        <div className="rounded-xl border border-line bg-surface-card p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+        <div className="col-span-2 md:col-span-1 rounded-xl border border-line bg-surface-card p-3 sm:p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
               {overallKPIs.focused.label}
+            </span>
+            <span className="text-[10px] text-ink-faint font-medium">
+              {overallKPIs.focused.totalBets} graded
             </span>
           </div>
           <div
             className={clsx(
-              "font-mono text-3xl sm:text-4xl font-bold tracking-tight",
+              "font-mono text-2xl sm:text-4xl font-bold tracking-tight",
               overallKPIs.focused.isPositive ? "text-win" : "text-loss"
             )}
           >
             {overallKPIs.focused.units}
           </div>
-          <div className="mt-3 space-y-1 text-xs">
+          <div className="mt-2 sm:mt-3 space-y-1 text-xs">
             <div className="flex items-center justify-between text-ink-muted">
               <span>Overall ROI</span>
               <span
@@ -317,10 +348,10 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
       {/* Model Calibration Strip */}
       <section
         aria-labelledby="calibration-heading"
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-xl border border-line bg-surface-card px-4 py-2.5 shadow-sm text-xs text-ink-muted"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2.5 rounded-xl border border-line bg-surface-card px-3 sm:px-4 py-2 sm:py-2.5 shadow-sm text-xs text-ink-muted"
       >
         <h2 id="calibration-heading" className="sr-only">Model calibration</h2>
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
             Model Calibration
           </span>
@@ -347,7 +378,7 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
       </section>
 
       {/* Filter Toolbar: Target Selector & High Confidence Toggle */}
-      <section aria-labelledby="filter-heading" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface-card p-4 shadow-sm">
+      <section aria-labelledby="filter-heading" className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 rounded-xl border border-line bg-surface-card p-3 sm:p-4 shadow-sm">
         <h2 id="filter-heading" className="sr-only">Dashboard filters</h2>
 
         {/* Target Tabs (All Picks, Spreads, Totals) */}
@@ -362,7 +393,7 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
                 aria-selected={targetFilter === t}
                 onClick={() => setTargetFilter(t)}
                 className={clsx(
-                  "rounded-md px-3.5 py-1 text-xs font-medium transition-colors",
+                  "rounded-md px-3 sm:px-3.5 py-1 text-xs font-medium transition-colors",
                   targetFilter === t
                     ? "bg-surface-card text-ink shadow-sm"
                     : "text-ink-muted hover:text-ink"
@@ -390,11 +421,132 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
         </button>
       </section>
 
-      {/* Weekly Breakdown Table (Adapts cleanly to Target filter) */}
+      {/* Weekly Breakdown Section: Mobile Cards (sm:hidden) & Desktop Table (hidden sm:block) */}
       <section aria-labelledby="weekly-heading" className="rounded-xl border border-line bg-surface-card overflow-hidden shadow-sm">
         <h2 id="weekly-heading" className="sr-only">Weekly performance breakdown</h2>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Cards (sm:hidden) */}
+        <div className="sm:hidden divide-y divide-line">
+          {weeklyData.map((row) => {
+            const isSpread = targetFilter === "spread";
+            const isTotal = targetFilter === "total";
+
+            return (
+              <div key={row.week} className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Link
+                    href={`/results?week=${row.week}`}
+                    className="inline-flex items-center gap-1 text-sm font-bold text-ink hover:text-accent-ink"
+                    title={`View Week ${row.week} results slate`}
+                  >
+                    <span>Week {row.week}</span>
+                    <span className="text-ink-faint text-xs">→</span>
+                  </Link>
+                  {isSpread ? (
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <span className={clsx("font-bold", row.spread.units >= 0 ? "text-win" : "text-loss")}>
+                        {row.spread.units >= 0 ? "+" : ""}{row.spread.units.toFixed(2)}u
+                      </span>
+                      <span className="text-ink-muted">
+                        ({row.spread.win + row.spread.loss + row.spread.push > 0 ? `${row.spread.roi >= 0 ? "+" : ""}${row.spread.roi.toFixed(1)}%` : "—"})
+                      </span>
+                    </div>
+                  ) : isTotal ? (
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <span className={clsx("font-bold", row.total.units >= 0 ? "text-win" : "text-loss")}>
+                        {row.total.units >= 0 ? "+" : ""}{row.total.units.toFixed(2)}u
+                      </span>
+                      <span className="text-ink-muted">
+                        ({row.total.win + row.total.loss + row.total.push > 0 ? `${row.total.roi >= 0 ? "+" : ""}${row.total.roi.toFixed(1)}%` : "—"})
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs font-mono">
+                      <span className={clsx("font-bold", row.combined.units >= 0 ? "text-win" : "text-loss")}>
+                        {row.combined.units >= 0 ? "+" : ""}{row.combined.units.toFixed(2)}u
+                      </span>
+                      <span className="text-ink-muted">
+                        ({row.combined.roi >= 0 ? "+" : ""}{row.combined.roi.toFixed(1)}%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {isSpread ? (
+                  <div className="flex items-center justify-between text-xs text-ink-muted bg-surface-inset rounded-lg px-2.5 py-1.5">
+                    <span>Record: <strong className="text-ink font-mono">{row.spread.win}–{row.spread.loss}–{row.spread.push}</strong></span>
+                    <span>Win Rate: <strong className="text-ink font-mono">{row.spread.win + row.spread.loss > 0 ? `${row.spread.winRate.toFixed(1)}%` : "—"}</strong></span>
+                  </div>
+                ) : isTotal ? (
+                  <div className="flex items-center justify-between text-xs text-ink-muted bg-surface-inset rounded-lg px-2.5 py-1.5">
+                    <span>Record: <strong className="text-ink font-mono">{row.total.win}–{row.total.loss}–{row.total.push}</strong></span>
+                    <span>Win Rate: <strong className="text-ink font-mono">{row.total.win + row.total.loss > 0 ? `${row.total.winRate.toFixed(1)}%` : "—"}</strong></span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-surface-inset rounded-lg p-2 space-y-0.5">
+                      <div className="text-[10px] uppercase font-semibold text-ink-faint">Spread</div>
+                      <div className="flex items-center justify-between font-mono">
+                        <span className="text-ink font-medium">{row.spread.win}–{row.spread.loss}–{row.spread.push}</span>
+                        <span className={clsx("font-semibold", row.spread.units >= 0 ? "text-win" : "text-loss")}>
+                          {row.spread.units >= 0 ? "+" : ""}{row.spread.units.toFixed(2)}u
+                        </span>
+                      </div>
+                    </div>
+                    <div className="bg-surface-inset rounded-lg p-2 space-y-0.5">
+                      <div className="text-[10px] uppercase font-semibold text-ink-faint">Totals</div>
+                      <div className="flex items-center justify-between font-mono">
+                        <span className="text-ink font-medium">{row.total.win}–{row.total.loss}–{row.total.push}</span>
+                        <span className={clsx("font-semibold", row.total.units >= 0 ? "text-win" : "text-loss")}>
+                          {row.total.units >= 0 ? "+" : ""}{row.total.units.toFixed(2)}u
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Season Total Mobile Summary */}
+          <div className="p-3.5 bg-surface-inset/80 space-y-2 border-t-2 border-line">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-ink">Season Total</span>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span
+                  className={clsx(
+                    "font-bold text-sm",
+                    overallKPIs.focused.isPositive ? "text-win" : "text-loss"
+                  )}
+                >
+                  {overallKPIs.focused.units}
+                </span>
+                <span className="text-ink-muted">({overallKPIs.focused.roi})</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-xs text-ink-muted">
+              {targetFilter === "spread" ? (
+                <>
+                  <span>Record: <strong className="text-ink font-mono">{overallKPIs.spread.record}</strong></span>
+                  <span>Win Rate: <strong className="text-ink font-mono">{overallKPIs.spread.winRate}</strong></span>
+                </>
+              ) : targetFilter === "total" ? (
+                <>
+                  <span>Record: <strong className="text-ink font-mono">{overallKPIs.total.record}</strong></span>
+                  <span>Win Rate: <strong className="text-ink font-mono">{overallKPIs.total.winRate}</strong></span>
+                </>
+              ) : (
+                <>
+                  <span>Spread: <strong className="text-ink font-mono">{overallKPIs.spread.record}</strong></span>
+                  <span>Total: <strong className="text-ink font-mono">{overallKPIs.total.record}</strong></span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Table (hidden sm:block) */}
+        <div className="hidden sm:block overflow-x-auto">
           {targetFilter === "spread" ? (
             /* Spreads-Only Table */
             <table className="w-full min-w-[560px] text-xs tabular-nums text-left">

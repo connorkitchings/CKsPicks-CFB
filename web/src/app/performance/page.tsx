@@ -23,18 +23,18 @@ export default async function PerformancePage() {
   const hasData = detail !== null && (detail.summary.games > 0 || detail.gradedGames.length > 0);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-8">
+    <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
           2026 · V5
         </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           Season record & performance
         </h1>
-        <p className="mt-2 text-sm text-ink-muted">
+        <p className="mt-1 text-xs text-ink-muted sm:text-sm">
           Results, profit/loss unit tracking, and calibration for every selected V5 forecast in 2026.
         </p>
-        <p role="note" className="mt-2 text-xs text-ink-faint">
+        <p role="note" className="mt-1.5 text-xs text-ink-faint">
           Weeks 0–4 use retrospective predictions and grades recalculated after the games with the repaired V5 ratings. They were not the picks originally published before kickoff.
         </p>
       </div>

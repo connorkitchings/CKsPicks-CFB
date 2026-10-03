@@ -2,15 +2,11 @@ import Link from "next/link";
 import clsx from "clsx";
 import { getRatingPeriods, getWeeklyRatings, type PeriodMeta, type Rating, type RatingPeriod } from "@/lib/v5";
 import { v5RatingFixture } from "@/test/fixtures/publication";
+import { RatingsView } from "@/components/ratings/RatingsView";
 
 export const revalidate = 300;
 
 type Sort = "overall" | "offense" | "defense";
-const fields: Record<Sort, keyof Rating> = {
-  overall: "overallRating",
-  offense: "offenseRating",
-  defense: "defenseRating",
-};
 
 function buildQuery(params: Record<string, string | undefined>): string {
   const q = new URLSearchParams();
@@ -56,42 +52,61 @@ export default async function RatingsPage({ searchParams }: {
     }
   }
 
-  // rank computed pre-filter so search doesn't renumber
-  const ranked = [...ratings]
-    .sort((a, b) => Number(b[fields[sort]]) - Number(a[fields[sort]]))
-    .map((rating, i) => ({ rating, rank: i + 1 }));
-
-  const visible = ranked.filter(({ rating }) =>
-    rating.team.toLowerCase().includes(query.toLowerCase())
-  );
-
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8">
+    <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
+      {/* Title & Description */}
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent-ink">
-          {season} · {periodMeta.label} · V5
-        </p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-ink">Team ratings</h1>
-        <p className="mt-2 max-w-2xl text-sm text-ink-muted">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-accent-ink">
+          <span>{season}</span>
+          <span className="text-ink-faint">·</span>
+          <span>{periodMeta.label}</span>
+          <span className="text-ink-faint">·</span>
+          <span>V5</span>
+        </div>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">Team ratings</h1>
+        <p className="mt-1 text-xs text-ink-muted sm:text-sm">
           {periodMeta.description} Higher is better for overall, offense, and defense.
         </p>
       </div>
 
-      <section aria-labelledby="methodology-heading" className="rounded-xl border border-line bg-surface-card p-5 text-sm">
-        <h2 id="methodology-heading" className="font-semibold text-ink">About V5 possession ratings</h2>
-        <p className="mt-2 text-ink-muted leading-relaxed">
-          Ratings represent expected <strong>scoring efficiency per possession (PPP)</strong> against an average FBS opponent under standard conditions.
-          Both offense and defense are oriented so higher is better: positive offense scores more points per possession, while positive defense holds opponents to fewer.
-        </p>
-        <p className="mt-2 text-ink-muted leading-relaxed">
-          Game margin forecasts are derived from possession ratings through a through-2025 Ridge regression bridge with earlier-only non-offense offsets.
-          Uncertainty (±) is one rating standard deviation, narrowing smoothly as completed games provide evidence.
-        </p>
-      </section>
+      {/* Collapsible Methodology Explainer */}
+      <details className="group rounded-xl border border-line bg-surface-card transition-all">
+        <summary className="flex cursor-pointer items-center justify-between p-3.5 text-xs font-semibold text-ink select-none sm:text-sm">
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-soft text-[11px] font-bold text-accent-ink">
+              ℹ
+            </span>
+            <span>About V5 possession ratings</span>
+          </div>
+          <svg
+            className="h-4 w-4 text-ink-muted transition-transform group-open:rotate-180"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <div className="border-t border-line px-4 pt-3 pb-4 text-xs text-ink-muted sm:text-sm">
+          <p className="leading-relaxed">
+            Ratings represent expected <strong>scoring efficiency per possession (PPP)</strong> against an average FBS opponent under standard conditions.
+            Both offense and defense are oriented so higher is better: positive offense scores more points per possession, while positive defense holds opponents to fewer.
+          </p>
+          <p className="mt-2 leading-relaxed">
+            Game margin forecasts are derived from possession ratings through a through-2025 Ridge regression bridge with earlier-only non-offense offsets.
+            Uncertainty (±) is one rating standard deviation, narrowing smoothly as completed games provide evidence.
+          </p>
+        </div>
+      </details>
 
-      {/* Rating Period Navigation */}
-      <nav className="flex flex-wrap items-center gap-2" aria-label="Ratings timeline">
-        <span className="mr-1 text-xs font-semibold text-ink-muted">Ratings timeline:</span>
+      {/* Rating Period Timeline Navigation */}
+      <nav
+        className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none"
+        aria-label="Ratings timeline"
+      >
+        <span className="shrink-0 mr-1 text-xs font-semibold text-ink-muted">Timeline:</span>
         {timeline.map((p) => {
           const isActive = period === p.id;
           return (
@@ -100,9 +115,9 @@ export default async function RatingsPage({ searchParams }: {
               href={`/ratings?${buildQuery({ period: p.id, sort, q: query, season: String(season) })}`}
               aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent",
+                "shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent",
                 isActive
-                  ? "bg-accent text-white shadow-xs"
+                  ? "bg-accent text-white shadow-2xs"
                   : "border border-line bg-surface-card text-ink-muted hover:bg-surface-inset"
               )}
             >
@@ -112,81 +127,18 @@ export default async function RatingsPage({ searchParams }: {
         })}
       </nav>
 
-      {/* Search and Sort Form */}
-      <form action="/ratings" className="flex flex-wrap gap-3" role="search">
-        <input type="hidden" name="period" value={period} />
-        {params.season && <input type="hidden" name="season" value={String(season)} />}
-        <label className="sr-only" htmlFor="team-search">Search team</label>
-        <input
-          id="team-search"
-          name="q"
-          defaultValue={query}
-          placeholder="Search team"
-          className="min-w-48 flex-1 rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        />
-        <label className="sr-only" htmlFor="rating-sort">Sort ratings</label>
-        <select
-          id="rating-sort"
-          name="sort"
-          defaultValue={sort}
-          className="rounded-lg border border-line bg-surface-card px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent"
-        >
-          <option value="overall">Overall</option>
-          <option value="offense">Offense</option>
-          <option value="defense">Defense</option>
-        </select>
-        <button
-          type="submit"
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Apply
-        </button>
-      </form>
-
       {unavailable ? (
         <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">
           Ratings are temporarily unavailable.
         </p>
-      ) : ratings.length === 0 ? (
-        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">
-          No certified ratings published for the {season} season yet.
-        </p>
-      ) : visible.length === 0 ? (
-        <p role="status" className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted">
-          No teams match &ldquo;{query}&rdquo;.
-        </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface-card">
-          <table className="w-full min-w-[580px] text-sm tabular-nums">
-            <caption className="sr-only">
-              {season} {periodMeta.label} V5 team ratings
-            </caption>
-            <thead className="border-b border-line bg-surface-inset text-xs uppercase tracking-wide text-ink-faint">
-              <tr>
-                <th scope="col" className="w-12 px-3 py-3 text-center">#</th>
-                <th scope="col" className="px-4 py-3 text-left">Team</th>
-                <th scope="col" className="px-3 py-3 text-right">Overall</th>
-                <th scope="col" className="px-3 py-3 text-right">Offense</th>
-                <th scope="col" className="px-3 py-3 text-right">Defense</th>
-                <th scope="col" className="px-4 py-3 text-right">Uncertainty</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map(({ rating, rank }) => (
-                <tr key={rating.team} className="border-b border-line last:border-0 hover:bg-surface-inset/50">
-                  <td className="px-3 py-3 text-center font-mono text-xs text-ink-faint">{rank}</td>
-                  <th scope="row" className="px-4 py-3 text-left font-semibold text-ink">
-                    {rating.team}
-                  </th>
-                  <td className="px-3 py-3 text-right font-medium text-ink">{rating.overallRating.toFixed(2)}</td>
-                  <td className="px-3 py-3 text-right text-ink-muted">{rating.offenseRating.toFixed(2)}</td>
-                  <td className="px-3 py-3 text-right text-ink-muted">{rating.defenseRating.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-ink-faint">±{Math.sqrt(Math.max(0, rating.overallVariance)).toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <RatingsView
+          ratings={ratings}
+          periodMeta={periodMeta}
+          season={season}
+          initialSort={sort}
+          initialQuery={query}
+        />
       )}
 
       {ratings[0] && (
