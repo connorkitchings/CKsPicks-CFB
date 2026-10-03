@@ -1,5 +1,12 @@
 # Decision Log
 
+## 2026-10-03: Two-Window Data-Integrity Repair
+
+- **Decision:** execute the repair through independent Window 1 and Window 2 release gates. Window 1 covers versioned market selection, frozen grading, punt/missing-PPA display treatment, venues, and accuracy-only public Performance. Window 2 is held until full R1 scoring attribution is independently certified, then contains the corrected signed measurement/rating lineage, neutral-aware refit, and reconstructed all-certified-week replay.
+- **Data policy:** do not impute missing EPA. Withhold affected EPA with coverage/reason provenance and retain valid PPP and independent measurements. Exact market ties are away/under. Corrected public history is reconstructed retrospective; frozen original records remain audit evidence.
+- **Release policy:** no V1 fallback, subset release, or separate neutral adjustment if Window 2 fails. Public performance removes profit, units, and ROI; stored financial fields and actual/default price provenance remain auditable.
+- **Source:** [approved two-window contract](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) and [reviewed decision packet](../plans/2026-10-03/03-data-decision-packet.md).
+
 ## 2026-10-02: Bundle the Production Team-Stats Republish With the Data-Issue Review
 
 - **Decision:** the production republish of team stats waits for the data-issue review (non-monotonic play-by-play score, V5 punt companions, zero-PPA plays, unverified drive metrics) so the affected aggregations are rerun once, with Preview and production identical in method. The matchup page stays closed in production until then.

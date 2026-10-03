@@ -44,7 +44,7 @@ not treat a successful forecast or first publication as the end of the cycle.
    reuse an older artifact or describe it as current. A new production run
    requires its own exact packet, authorization, publication, selection, and
    health/page verification. Record remaining gaps and the next refresh time.
-   Matchup stats (optional while matchup pages are closed): after the
+   Matchup stats (required for the default-on matchup pages): after the
    post-week Silver refresh, publish `team_season_stats` for the new week
    (Preview, then production after promoting Silver); see
    [Team stats](weekly_pipeline.md#team-stats-matchup-pages). After the ratings

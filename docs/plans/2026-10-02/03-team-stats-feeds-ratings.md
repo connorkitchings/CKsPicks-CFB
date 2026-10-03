@@ -1,6 +1,6 @@
 # Team Stats as the Source of Basic Stats (ratings read team stats)
 
-- **Status:** Draft (Phase 1 implemented 2026-10-02; Phase 2 is a design, now absorbed as decision-gated scope D4 in the [unified data fix and matchup rollout](../2026-10-03/01-unified-data-fix-and-matchup-rollout.md); its production republish below stays bundled with that plan)
+- **Status:** Draft (Phase 1 implemented 2026-10-02; Phase 2 is superseded as execution scope by Window 2 of the [two-window data-integrity contract](../2026-10-03/04-data-integrity-two-window-implementation.md)).
 - **Created:** 2026-10-02
 - **Planner:** Sol
 - **Approval source:** User direction 2026-10-02: basic stats belong to team stats, and the ratings (any version) should consume them; ratings create only rating-specific stats. Phase 1 plan approved the same day.

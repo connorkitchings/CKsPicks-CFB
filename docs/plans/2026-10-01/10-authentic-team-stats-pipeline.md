@@ -28,7 +28,7 @@ Show authentic, football-accurate team stats and national ranks on `/matchup/[ga
 5. **Ranks are computed and stored by the publisher** (single source of truth) with direction handled there: higher is better for offense; lower is better for defense EPA, success, explosive, scoring-opportunity rate, PPSO and conversion %. Start field position direction is documented in the code and tested.
 6. **Honest sample sizes:** metric columns are nullable; the row stores `games`, `plays`, `drives` and `cohort_size`. Ranks are null below a minimum games threshold (default 1; tunable constant) so early weeks show a dash, never fake precision.
 7. **Serving gate:** the web reads stats only for weeks passing `isPublishedWeek`. The table holds no model fields.
-8. **Exposure:** `/matchup/*` gets `noindex` and an env flag `CFB_MATCHUP_ENABLED` (default off; on in `CFB_UI_TEST_MODE`), returning a real 404 when off (pattern: `web/src/lib/proto-gate.ts`). Card deep links stay absent until the user approves.
+8. **Exposure (historical design):** `/matchup/*` originally used an env flag. The current product is default-on; `CFB_MATCHUP_ENABLED=0` is the emergency opt-out. Data verification is governed by the two-window contract.
 
 ## Phases
 
@@ -84,7 +84,7 @@ Page redesign in the Picks/Results style; win probability and score projections 
 - [ ] No synthetic or hash-derived stat anywhere (`grep` guard recorded in the session log).
 - [x] Phase 5 on Preview: migration applied, weeks 1-5 published (10,460 rows), CFBD check recorded in Amendment 1.
 - [x] Production (user-run 2026-10-02): Silver promoted (6 versions, 11 captures), 0019/0020 applied with the owner credential, weeks 1-5 published (10,460 rows, one `source_versions` set matching Preview), grants `cks_web` SELECT and `cks_pipeline` INSERT/SELECT/UPDATE; verified read-only.
-- [ ] Release `dev` to `main` and enable `CFB_MATCHUP_ENABLED=1`; then mark Implemented.
+- [ ] Verify default-on production behavior and corrected published team-stat data under the two-window release receipt; then mark Implemented.
 
 ## Risks and rollback
 - **Silver column names differ:** the dry run catches it; adjust constants, not the design.
