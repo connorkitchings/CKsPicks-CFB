@@ -54,6 +54,7 @@
 - [x] `npm --prefix web run typecheck` — passed (0 errors)
 - [x] `npm --prefix web run lint` — passed (0 warnings/errors)
 - [x] `npm --prefix web run test:publication` — passed (110/110)
+- [x] `npm --prefix web run test:ui` — passed (43/43 Playwright e2e tests)
 - [x] `npm --prefix web run build` — passed (all routes compiled in 1.1s)
 - [x] `git diff --check` — passed (clean)
 

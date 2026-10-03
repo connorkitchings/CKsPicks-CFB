@@ -82,14 +82,22 @@ function BetCell({
       </div>
 
       <div className="flex items-baseline justify-center truncate text-xs text-ink-muted">
-        <span className="text-ink-faint">Model:</span>{" "}
         {kind === "spread" ? (
           <>
-            <span className="ml-1 font-medium text-ink sm:hidden">{modelSpreadLine}</span>
-            <span className="ml-1 hidden font-medium text-ink sm:inline">{modelText}</span>
+            <span className="sm:hidden">
+              <span className="text-ink-faint">Model:</span>{" "}
+              <span className="font-medium text-ink">{modelSpreadLine}</span>
+            </span>
+            <span className="hidden sm:inline">
+              <span className="text-ink-faint">Model:</span>{" "}
+              <span className="font-medium text-ink">{modelText}</span>
+            </span>
           </>
         ) : (
-          <span className="ml-1 font-medium text-ink">{modelText}</span>
+          <>
+            <span className="text-ink-faint">Model:</span>{" "}
+            <span className="ml-1 font-medium text-ink">{modelText}</span>
+          </>
         )}
         <span className={clsx("ml-1 shrink-0 font-semibold tabular-nums", edgeTone(lean.edge, kind))}>
           (+{lean.edge.toFixed(1)})
