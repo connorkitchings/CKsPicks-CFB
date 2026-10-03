@@ -26,45 +26,46 @@ export function Header({
   const maxW = containerWidth ?? (wide ? "max-w-5xl" : "max-w-4xl");
   return (
     <header className="border-b border-line bg-surface-card/80 backdrop-blur">
-      <div className={`mx-auto flex ${maxW} items-start justify-between gap-3 px-4 py-4`}>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <h1 className="text-xl font-bold tracking-tight text-ink">
+      <div className={`mx-auto flex ${maxW} flex-col gap-1.5 px-4 py-2.5 sm:py-3.5`}>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-lg font-bold tracking-tight text-ink sm:text-xl">
             CK&rsquo;s Picks
-            <span className="ml-2 text-sm font-normal text-ink-faint">
+            <span className="ml-1.5 text-xs font-normal text-ink-faint sm:text-sm">
               CFB
             </span>
           </h1>
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[11px] text-ink-faint">
-            {publicationMode === "predictions" && systemName && (
-              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
-                {displaySystemName(systemName)}
-              </span>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
+              <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
             )}
-            {status}
-            {updatedAt && (
-              <span>
-                Updated{" "}
-                {updatedAt.toLocaleString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}
-              </span>
-            )}
+            {season !== null &&
+              !(allowedSeasons && allowedSeasons.length > 1) && (
+                <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-muted">
+                  {season}
+                </span>
+              )}
+            <ThemeToggle />
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {season !== null && allowedSeasons && allowedSeasons.length > 1 && (
-            <SeasonSelector season={season} allowedSeasons={allowedSeasons} />
+
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
+          {publicationMode === "predictions" && systemName && (
+            <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+              {displaySystemName(systemName)}
+            </span>
           )}
-          {season !== null &&
-            !(allowedSeasons && allowedSeasons.length > 1) && (
-              <span className="inline-flex items-center rounded-md border border-line bg-surface-inset px-2 py-0.5 text-xs font-semibold tabular-nums text-ink-muted">
-                {season}
-              </span>
-            )}
-          <ThemeToggle />
+          {status}
+          {updatedAt && (
+            <span>
+              Updated{" "}
+              {updatedAt.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
         </div>
       </div>
     </header>

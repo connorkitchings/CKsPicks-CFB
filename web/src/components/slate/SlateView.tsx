@@ -85,7 +85,7 @@ export function SlateView({
         }
       />
 
-      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 space-y-4 px-4 py-6">
+      <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 space-y-3 px-4 py-3 sm:space-y-4 sm:py-6">
         {dbError && (
           <div className="rounded-xl border border-warn-line bg-warn-soft p-4 text-sm text-warn">
             {dbError}
@@ -118,7 +118,7 @@ export function SlateView({
               </p>
             )}
 
-            {mode === "picks" && predictionsVisible && <TopLeans games={games} record={topLeansRecord} />}
+            {mode === "picks" && predictionsVisible && <TopLeans games={games} record={topLeansRecord} season={season} />}
             {mode === "results" && predictionsVisible && <ResultHighlights games={games} />}
 
             {weeks.length > 1 && (

@@ -82,8 +82,8 @@ export function ResultsSlate({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-card p-3 shadow-sm">
-        <div className="min-w-[180px] flex-1">
+      <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface-card p-3 shadow-sm sm:flex-row sm:items-center">
+        <div className="relative w-full sm:flex-1">
           <label htmlFor="slate-search" className="sr-only">Filter by team</label>
           <input
             id="slate-search"
@@ -91,39 +91,57 @@ export function ResultsSlate({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter by team…"
-            className={clsx(control, "w-full text-sm font-normal text-ink placeholder:text-ink-faint")}
+            className={clsx(
+              control,
+              "w-full text-base font-normal text-ink placeholder:text-ink-faint sm:text-sm [&::-webkit-search-cancel-button]:hidden",
+              query && "pr-8",
+            )}
           />
-        </div>
-        {predictionsVisible && (
-          <>
-            <label htmlFor="slate-sort" className="sr-only">Sort by</label>
-            <select
-              id="slate-sort"
-              value={sort}
-              onChange={(e) => setSort(e.target.value as ResultSort)}
-              className={clsx(control, "text-ink-muted")}
-            >
-              {(Object.keys(SORT_LABEL) as ResultSort[]).map((k) => (
-                <option key={k} value={k}>{SORT_LABEL[k]}</option>
-              ))}
-            </select>
-          </>
-        )}
-        <div role="group" aria-label="Layout" className="flex overflow-hidden rounded-md border border-line">
-          {(["grid", "list"] as View[]).map((v) => (
+          {query && (
             <button
-              key={v}
               type="button"
-              aria-pressed={view === v}
-              onClick={() => setView(v)}
-              className={clsx(
-                "px-2.5 py-1.5 text-xs font-medium capitalize",
-                view === v ? "bg-accent-soft text-accent-ink" : "bg-surface-card text-ink-muted hover:bg-surface-inset",
-              )}
+              onClick={() => setQuery("")}
+              aria-label="Clear filter"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-faint transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
             >
-              {v}
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
+              </svg>
             </button>
-          ))}
+          )}
+        </div>
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+          {predictionsVisible && (
+            <div className="flex-1 sm:flex-none">
+              <label htmlFor="slate-sort" className="sr-only">Sort by</label>
+              <select
+                id="slate-sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as ResultSort)}
+                className={clsx(control, "w-full text-ink-muted sm:w-auto")}
+              >
+                {(Object.keys(SORT_LABEL) as ResultSort[]).map((k) => (
+                  <option key={k} value={k}>{SORT_LABEL[k]}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div role="group" aria-label="Layout" className="flex shrink-0 overflow-hidden rounded-md border border-line">
+            {(["grid", "list"] as View[]).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={clsx(
+                  "px-2.5 py-1.5 text-xs font-medium capitalize",
+                  view === v ? "bg-accent-soft text-accent-ink" : "bg-surface-card text-ink-muted hover:bg-surface-inset",
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -142,7 +160,7 @@ export function ResultsSlate({
         <div className="space-y-6">
           {groups.map((group) => (
             <section key={group.day} aria-label={group.day} className="space-y-3">
-              <div className="flex items-center gap-2 border-b border-line pb-1.5 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              <div className="sticky top-0 z-10 -mx-4 flex items-center gap-2 border-b border-line bg-surface-page/95 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-ink-muted backdrop-blur-xs">
                 <span>{group.day}</span>
                 <span className="font-normal lowercase text-ink-faint">
                   · {group.games.length} {group.games.length === 1 ? "game" : "games"}

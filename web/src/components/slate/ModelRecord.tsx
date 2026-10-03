@@ -12,33 +12,30 @@ const ZERO: Rec = { win: 0, loss: 0, push: 0 };
  */
 export function RecordCell({ label, rec }: { label: string; rec: Rec }) {
   const rate = winRatePct(rec.win, rec.loss);
-  const decided = rec.win + rec.loss;
   const isAboveBreakEven = rate !== null && rate >= 52.4;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-line/60 bg-surface-inset/80 p-3 text-center transition-colors hover:border-line">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-line/60 bg-surface-inset/80 p-2.5 text-center transition-colors hover:border-line sm:p-3">
+      <span className="inline-flex items-center rounded border border-line/60 bg-surface-card/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
         {label}
       </span>
-      <div className="mt-0.5 font-mono text-xl font-bold tracking-tight tabular-nums text-ink sm:text-2xl">
+      <div className="mt-1 font-mono text-lg font-bold tracking-tight tabular-nums text-ink sm:text-xl">
         {rec.win}–{rec.loss}–{rec.push}
       </div>
-      <div className="mt-0.5 flex items-center justify-center gap-1.5 text-xs tabular-nums text-ink-muted">
-        <span
-          className={clsx(
-            "font-semibold",
-            rate === null
-              ? "text-ink-faint"
-              : isAboveBreakEven
-              ? "text-win"
-              : "text-ink-muted",
-          )}
-        >
-          {rate === null ? "—" : `${rate.toFixed(1)}%`}
-        </span>
-        <span className="text-ink-faint">·</span>
-        <span className="text-ink-faint">{decided} decided</span>
-      </div>
+      {rate !== null && (
+        <div className="mt-0.5">
+          <span
+            className={clsx(
+              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none",
+              isAboveBreakEven
+                ? "border border-win-line/60 bg-win-soft text-win"
+                : "text-ink-muted",
+            )}
+          >
+            {rate.toFixed(1)}%
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -89,7 +86,7 @@ export function ModelRecord({
         <div className="flex flex-wrap items-baseline gap-x-2.5">
           <h2 className="text-xs font-semibold text-ink sm:text-sm">How the model is doing</h2>
           <span className="text-[11px] text-ink-faint">
-            Season {season ? `(${season.games} games)` : ""} · 52.4% target
+            Season {season ? `(${season.games} games)` : ""}
           </span>
         </div>
       </div>

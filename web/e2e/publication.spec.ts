@@ -55,7 +55,7 @@ test.describe("picks slate (/)", () => {
     await expect(page.getByRole("region", { name: "Best bets" })).toBeVisible();
     await expect(page.getByPlaceholder("Filter by team…")).toBeVisible();
     // Season track record over each scored week's top-5 spread/total leans.
-    await expect(page.getByText(/Best bets: 7–3–0 this season/)).toBeVisible();
+    await expect(page.getByText(/2026: 7–3–0 \(\d+\.\d%\)/)).toBeVisible();
     // Single-week fixture: no week selector on the slate.
     await expect(page.locator("#week-select")).toHaveCount(0);
     // Only one main navigation on the page.
@@ -106,7 +106,7 @@ test.describe("picks slate (/)", () => {
     await expect(record.getByText(/Season \(\d+ games\)/)).toBeVisible();
     await expect(record.getByText("93–103–3")).toBeVisible();
     await expect(record.getByText("47.4%")).toBeVisible();
-    await expect(record.getByText("196 decided")).toBeVisible();
+
     await expect(record.getByText(/pts vs 52\.4% break-even/)).toHaveCount(0);
     await expect(record.getByText(/Average miss/)).toHaveCount(0);
     await expect(record.getByText(/read it as a back-test/)).toHaveCount(0);
