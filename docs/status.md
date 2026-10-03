@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-02 · **Verified from:**
+> **Last updated:** 2026-10-03 · **Verified from:**
 > `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`
 > and the [repaired-V5 release packet](plans/2026-09-29/v5-intended-update-production-release-packet.md).
 
@@ -64,10 +64,10 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
 - Done 2026-10-01: [dead-code prune](plans/2026-10-01/05-dead-code-prune.md) and [docs cleanup/archive](plans/2026-10-01/06-docs-cleanup-and-archive.md) (Implemented).
 - Approved, in progress: [matchup data layer v2](plans/2026-10-02/01-matchup-data-layer-v2.md): everything the V5 ratings use per team per week (raw V5 metrics shown on matchups, separate adjusted values, per-game log, rating decomposition), bound to the served rating manifest. **Phase A (2026) is live on Preview and production** (user-run 2026-10-02): migration 0021, the four data tables published with Preview's payload hash `a4a1062d…71215` and verified read-only (0 rows differing, 11 gates ok), and the Silver stats republished with the V5 play filter. Web code reading the new tables is released to `main`; pending: `CFB_MATCHUP_ENABLED=1` when the matchup page is approved, Phase B (2025).
-- **Next session:** run [data issues: review and rerun together](plans/2026-10-02/05-data-issues-review-and-rerun.md) (read-only investigation, four decisions, then one Preview-then-production rerun).
+- **Next session:** run the [unified data fix and matchup rollout](plans/2026-10-03/01-unified-data-fix-and-matchup-rollout.md) (approved 2026-10-03; supersedes the 2026-10-02 review-and-rerun draft and bundles plan 03 Phase 2 and plan 01 Phase B as decision gates D1–D6). Read-only Phase 1 first, then decisions, then one Preview-then-production rerun.
 - Open data issue: the play-by-play running score is non-monotonic for about a third of team-games, which blanks some points-per-scoring-opportunity values; documented in [known data issues](data/known_issues.md) with a review-and-rerun checklist; investigation deferred.
 - Matchup Share button (released to `main` with the matchup page, closed in production): exports a fixed 1080x1350 card per matchup (`ShareCard`/`ShareButton`); e2e covers the export size and canvas fit.
-- Team stats punt-leak fix ([plan](plans/2026-10-02/03-team-stats-feeds-ratings.md)): code released to `main`, Preview republished 2026-10-02 (weeks 1-5, hand-check exact). **Production republish is on hold and bundled with the data-issue review and rerun** ([known data issues](data/known_issues.md)): production still shows the pre-fix conversion, explosive and turnover rates and has no `ppa_per_play` rows; the matchup page, which reads them, is closed in production and must stay closed until the batch is done. Known issue until the planned rating rebuild: V5 `epa_per_play` / `plays_per_possession` still count returned punts (stored, not shown); `ppp` and `epa_per_possession` are unaffected.
+- Team stats punt-leak fix ([plan](plans/2026-10-02/03-team-stats-feeds-ratings.md)): code released to `main`, Preview republished 2026-10-02 (weeks 1-5, hand-check exact). **Production republish is on hold and bundled with the [unified data fix and matchup rollout](plans/2026-10-03/01-unified-data-fix-and-matchup-rollout.md)** ([known data issues](data/known_issues.md)): production still shows the pre-fix conversion, explosive and turnover rates and has no `ppa_per_play` rows; the matchup page, which reads them, is closed in production and must stay closed until the batch is done. Known issue until the planned rating rebuild: V5 `epa_per_play` / `plays_per_possession` still count returned punts (stored, not shown); `ppp` and `epa_per_possession` are unaffected.
 - Approved: [game venue location](plans/2026-10-01/08-game-venue-location.md): venue data live in production (271 games); the city/state UI now renders on the real Picks/Results cards (prototype port released).
 - V6 ratings lab: closed 2026-09-30 (`RETAINED_AS_BENCHMARK`); research only.
 

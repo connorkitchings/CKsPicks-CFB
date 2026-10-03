@@ -1,10 +1,10 @@
 # Data Issues: Review and Rerun Together
 
-- **Status:** Draft (to run next session; needs Sol review and user approval of the decisions in Phase 4 before any write)
+- **Status:** Superseded (2026-10-03) by the [unified data fix and matchup rollout](../2026-10-03/01-unified-data-fix-and-matchup-rollout.md), which absorbs these phases and decisions unchanged and adds the plan 03 Phase 2 and plan 01 Phase B decision gates so production data is written once.
 - **Created:** 2026-10-02
 - **Planner:** Sol
 - **Approval source:** User direction 2026-10-02: review the open data issues, then redo the affected aggregations together, with the production team-stats republish bundled into that rerun.
-- **Implementation log:** none yet
+- **Implementation log:** none (superseded before any phase ran; the read-only investigation content carries into the unified plan)
 - **Commit policy:** read-only phases need no commit (record findings in `docs/data/known_issues.md`); code and data changes land on `dev`, CI green before any push to `main`; production writes are user-run.
 
 ## Goal

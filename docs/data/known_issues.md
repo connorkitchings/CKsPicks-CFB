@@ -2,9 +2,9 @@
 
 Open and resolved data-quality issues that affect what the product shows. Add an entry when an issue is found; move it to **Resolved** with the fixing commit.
 
-## Review and rerun together (decision 2026-10-02)
+## Review and rerun together (decision 2026-10-02; unified 2026-10-03)
 
-**Full workflow (phases, commands, decisions, stop conditions, definition of done): [data issues review and rerun](../plans/2026-10-02/05-data-issues-review-and-rerun.md).** The summary below is the short form.
+**Full workflow (phases, commands, decisions, stop conditions, definition of done): [unified data fix and matchup rollout](../plans/2026-10-03/01-unified-data-fix-and-matchup-rollout.md)** — it supersedes the earlier [review-and-rerun draft](../plans/2026-10-02/05-data-issues-review-and-rerun.md) and additionally gates the plan 03 Phase 2 rebuild (D4) and the 2025 matchup backfill (D5) so production data is written once. The summary below is the short form.
 
 The open issues below touch the same aggregations, so they are reviewed first and the affected data is rerun **once**, not piecemeal. The **production republish of team stats is part of that batch and is on hold** until the review is done.
 
@@ -16,7 +16,7 @@ The open issues below touch the same aggregations, so they are reviewed first an
 3. Hand-check the drive metrics not yet verified against the plays: `scoring_opp_rate`, `pts_per_scoring_opp`, `avg_start_field_pos` (two or three teams, including one with flagged games).
 4. Issues 2 and 3: decide the `fillna(0)` PPA rule and whether the Silver rebuild happens in this batch.
 
-**Decide:** whether the score-stream rule changes (needs a contract), and whether the Silver and V5 rebuild ([team stats feeds ratings, Phase 2](../plans/2026-10-02/03-team-stats-feeds-ratings.md)) runs now or later.
+**Decide (D1–D6 in the unified plan):** whether the score-stream rule changes (needs a contract), the zero-PPA rule, whether the Silver and V5 rebuild ([team stats feeds ratings, Phase 2](../plans/2026-10-02/03-team-stats-feeds-ratings.md)) runs now or later, whether the 2025 matchup backfill joins the batch, and when the matchup flag opens.
 
 **Rerun together (after the decisions):**
 1. Silver rebuild, only if decided (carries the enrichment fix and any `fillna` change).
@@ -37,6 +37,7 @@ The open issues below touch the same aggregations, so they are reviewed first an
 - **Not yet known:** whether the dips are in CFBD's feed or introduced by our Silver build (only the stored Silver copy was read); what causes them (a first guess: the touchdown row credits the extra point before the kick, and a reversed or mislogged touchdown is taken back on the next row; the Auburn dip is unexplained); whether V5 `ppp` / `non_offense_points` are affected (V5 uses its own score attribution and still shows a value for Vanderbilt).
 - **Suggested next steps:** (1) compare the raw CFBD plays with Silver for the three Vanderbilt games and classify the dips; (2) have the publish step list flagged games per week and warn when the rate jumps; (3) check V5 `ppp` for the same games; (4) only then consider treating corrected dips as valid, which changes the metric definition and needs a contract.
 - **Part of the batch above:** steps 1, 2, 3 and the score-rule decision.
+- **Week 5 audit update (2026-10-03):** the quarantine also empties V5 `ppp`, not just `pts_per_scoring_opp`: 129 `missing/unresolved_scoring_attribution` team-measurements for Week 5 teams, including Kent State W4 (7 offensive points quarantined → season offense `ppp` 0.00 despite 29 points scored), Air Force W2 (14) and Army W2 (24), leaving both one-game `ppp` samples. Kent State W3's 3 points appear in neither `offensive_possession_points` nor `non_offense_points` (garbage-time classification suspected; identity check pending). Investigation: [Week 5 data-issue investigation, Phases A–B](../plans/2026-10-03/02-week5-data-issue-investigation.md).
 - **Mitigation today:** the share card footnotes "—" as "not enough clean data". The matchup page shows the same "—" without a note.
 
 ### 2. V5 per-play companions still count returned punts
@@ -46,6 +47,14 @@ The open issues below touch the same aggregations, so they are reviewed first an
 ### 3. Zero-PPA plays that may be missing values
 
 155 eligible non-punt plays in 2026 Silver have `ppa == 0` exactly, probably CFBD nulls turned into zeros by Silver's `fillna(0)` (`features/byplay/enrichment.py`). They sit inside every per-play PPA mean, including `ppa_per_play`. Decide at the Silver rebuild whether to treat them as nulls (batch step 4).
+
+### 4. Two Week 5 games have NULL venue city/state (opened 2026-10-03)
+
+`game_venues` rows exist for 401858476 (Northwestern @ Penn State) and 401864515 (North Dakota State @ Wyoming) but `city` and `state` are NULL, so those cards render no location. Unknown whether CFBD returned nulls or the publisher dropped them; a full-2026 NULL scan is pending. Investigation and backfill path: [Week 5 data-issue investigation, Phase E](../plans/2026-10-03/02-week5-data-issue-investigation.md); the backfill rides the unified production batch.
+
+### 5. Drive metrics keep overtime drives the V5 filter drops (opened 2026-10-03)
+
+`avg_start_field_pos` (Silver, drive-based) counts overtime drives starting at the opponent's 25, so ranks are not comparable between teams with and without overtime games — e.g. Louisiana Tech defense 40.8, rank 138/138 at Week 5. The V5 play filter already excludes them. Harmonization rides the D3 Silver-rebuild decision: [Week 5 data-issue investigation, Phase C](../plans/2026-10-03/02-week5-data-issue-investigation.md).
 
 ## Resolved
 

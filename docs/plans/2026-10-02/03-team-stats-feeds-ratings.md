@@ -1,6 +1,6 @@
 # Team Stats as the Source of Basic Stats (ratings read team stats)
 
-- **Status:** Draft (Phase 1 implemented 2026-10-02; Phase 2 is a design, built at the next planned rating rebuild)
+- **Status:** Draft (Phase 1 implemented 2026-10-02; Phase 2 is a design, now absorbed as decision-gated scope D4 in the [unified data fix and matchup rollout](../2026-10-03/01-unified-data-fix-and-matchup-rollout.md); its production republish below stays bundled with that plan)
 - **Created:** 2026-10-02
 - **Planner:** Sol
 - **Approval source:** User direction 2026-10-02: basic stats belong to team stats, and the ratings (any version) should consume them; ratings create only rating-specific stats. Phase 1 plan approved the same day.
@@ -41,7 +41,7 @@ The plan also moved `derive_is_drive_play` and `true_drive_points` out of `ratin
 
 ## Production steps (user-run)
 
-> **On hold (2026-10-02):** the production republish below is bundled with the data-issue review and rerun described in [known data issues](../../data/known_issues.md#review-and-rerun-together-decision-2026-10-02), so the affected tables are written to production once. Do not run it on its own. The commands stay here for when the batch is ready.
+> **On hold (2026-10-02, re-pointed 2026-10-03):** the production republish below is bundled into the [unified data fix and matchup rollout](../2026-10-03/01-unified-data-fix-and-matchup-rollout.md) (see [known data issues](../../data/known_issues.md)), so the affected tables are written to production once. Do not run it on its own. The commands stay here for when the batch is ready.
 
 Production `team_season_stats` still holds the pre-fix values for conversion, explosive and turnover rate and has no `ppa_per_play`. Preview was republished 2026-10-02 (11,506 rows, weeks 1-5, hand-check matches exactly). To republish production:
 
