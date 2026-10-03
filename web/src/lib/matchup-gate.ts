@@ -1,12 +1,8 @@
 /**
- * Matchup pages are closed in production until explicitly enabled
- * (CFB_MATCHUP_ENABLED=1). They are open in local development and fixture test mode.
+ * Matchup pages are a full-time feature of the site (open in production,
+ * development, and test mode). Can be emergency-disabled with CFB_MATCHUP_ENABLED=0.
  * The page calls `notFound()` when this is false.
  */
 export function isMatchupEnabled(env: Record<string, string | undefined> = process.env): boolean {
-  return (
-    env.CFB_UI_TEST_MODE === "1" ||
-    env.CFB_MATCHUP_ENABLED === "1" ||
-    env.NODE_ENV !== "production"
-  );
+  return env.CFB_MATCHUP_ENABLED !== "0";
 }

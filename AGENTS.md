@@ -183,7 +183,7 @@ This is a **monorepo with two toolchains**:
 
 **Data flow:** Python pipeline writes a local working CSV (`data/production/...`) and durable R2 artifact (`artifacts/production/...`) → `scripts/pipeline/publish_to_db.py --from-artifact` upserts the durable artifact to Postgres → Vercel app reads via Drizzle ORM with ISR (5-min revalidate). R2 is the source of truth; Neon is the derived web-serving database.
 
-**Web flags (default closed in production):** `CFB_MATCHUP_ENABLED=1` opens `/matchup/[gameId]`; `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
+**Web flags:** Matchup pages (`/matchup/[gameId]`) are a full-time site feature (emergency killswitch `CFB_MATCHUP_ENABLED=0`); `CFB_UI_TEST_MODE=1` serves fixture data for local runs and Playwright. See `web/README.md`.
 
 **Conventions:**
 - Python stays at root; never move or rename `src/`, `scripts/`, `conf/`, `tests/`.
