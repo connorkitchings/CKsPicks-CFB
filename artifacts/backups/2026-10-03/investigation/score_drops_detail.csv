@@ -1,0 +1,224 @@
+game_id,team,week,size,to_zero,prev_scoring,prev_type,cur_type,restored,before,after
+401856634,Alabama,1,7.0,False,True,Rushing Touchdown,Penalty,True,10.0,3.0
+401856636,Baylor,1,6.0,False,False,End of Game,Kickoff,True,16.0,10.0
+401856660,Clemson,1,7.0,False,False,Rush,Punt,True,10.0,3.0
+401856660,LSU,1,7.0,False,False,Rush,Punt,True,51.0,44.0
+401856661,Louisville,1,11.0,False,False,Penalty,Punt,True,27.0,16.0
+401856661,Ole Miss,1,1.0,False,False,Rush,Penalty,True,10.0,9.0
+401856661,Ole Miss,1,1.0,False,False,Pass Incompletion,Pass Reception,True,18.0,17.0
+401856661,Ole Miss,1,7.0,False,False,Penalty,Punt,True,24.0,17.0
+401856667,Texas,1,1.0,False,True,Passing Touchdown,Kickoff,True,7.0,6.0
+401856667,Texas,1,6.0,False,False,Fumble,Pass Reception,True,20.0,14.0
+401856667,Texas,1,6.0,False,False,Pass Reception,Rush,True,20.0,14.0
+401856670,Utah,2,1.0,False,True,Rushing Touchdown,Penalty,True,7.0,6.0
+401856670,Utah,2,8.0,False,False,Pass Interception Return,Rush,True,15.0,7.0
+401856671,Auburn,2,1.0,False,True,Passing Touchdown,Kickoff,True,14.0,13.0
+401856671,Auburn,2,7.0,False,False,Pass Reception,Rush,True,43.0,36.0
+401856673,Georgia,2,7.0,False,False,Punt,Pass Reception,True,14.0,7.0
+401856673,Georgia,2,7.0,False,False,Rush,Pass Reception,True,21.0,14.0
+401856674,Alabama,2,3.0,False,False,Rush,Penalty,True,10.0,7.0
+401856674,Alabama,2,3.0,False,False,Penalty,Penalty,True,10.0,7.0
+401856674,Alabama,2,1.0,False,True,Rushing Touchdown,Penalty,True,23.0,22.0
+401856676,Charlotte,2,3.0,False,False,Sack,Pass Reception,True,9.0,6.0
+401856676,Ole Miss,2,1.0,False,True,Pass Reception,Penalty,True,34.0,33.0
+401856681,Tennessee,2,7.0,False,False,Punt,Pass Incompletion,True,24.0,17.0
+401856682,Ohio State,2,3.0,True,False,Rush,Rush,True,3.0,0.0
+401856683,Arizona State,2,3.0,False,False,Pass Reception,Pass Reception,True,13.0,10.0
+401856684,Vanderbilt,2,1.0,False,True,Blocked Punt Touchdown,Kickoff,True,28.0,27.0
+401856687,Florida,3,1.0,False,True,Rushing Touchdown,Penalty,True,14.0,13.0
+401856688,Ole Miss,3,2.0,False,True,Rushing Touchdown,Penalty,True,32.0,30.0
+401856691,South Carolina,3,10.0,False,False,Rush,Rush,True,13.0,3.0
+401856691,South Carolina,3,3.0,False,False,Penalty,Pass Reception,True,16.0,13.0
+401856691,Mississippi State,3,7.0,True,False,Penalty,Pass Reception,True,7.0,0.0
+401856692,Tennessee,3,3.0,False,False,Pass Reception,Rush,True,21.0,18.0
+401856692,Tennessee,3,7.0,False,False,Sack,Punt,True,35.0,28.0
+401856693,Texas,3,3.0,False,False,Pass Reception,Rush,True,10.0,7.0
+401856695,Vanderbilt,3,7.0,False,True,Fumble Return Touchdown,Kickoff,True,35.0,28.0
+401856696,Alabama,4,7.0,True,False,Rush,Pass Reception,True,7.0,0.0
+401856698,Vanderbilt,4,3.0,False,False,Penalty,Pass Incompletion,True,15.0,12.0
+401856700,Georgia,4,1.0,False,True,Passing Touchdown,Kickoff,True,14.0,13.0
+401856700,Georgia,4,7.0,False,False,Rush,Rush,True,20.0,13.0
+401856700,Georgia,4,6.0,False,False,Kickoff,Pass Reception,True,27.0,21.0
+401856702,LSU,4,7.0,False,False,Pass Reception,Pass Reception,True,35.0,28.0
+401856766,North Carolina,0,7.0,False,False,Pass Reception,Pass Incompletion,True,10.0,3.0
+401856766,North Carolina,0,7.0,False,False,Sack,Rush,True,10.0,3.0
+401856766,North Carolina,0,3.0,False,False,Rush,Fumble Recovery (Own),True,15.0,12.0
+401856776,Colorado,1,1.0,False,True,Rushing Touchdown,Penalty,True,7.0,6.0
+401856777,Cincinnati,1,10.0,False,True,Rushing Touchdown,Rush,True,34.0,24.0
+401856780,West Virginia,1,4.0,False,True,Rushing Touchdown,Penalty,True,31.0,27.0
+401856783,Texas Tech,2,1.0,False,True,Rush,Penalty,True,7.0,6.0
+401856783,Texas Tech,2,14.0,False,False,Pass Reception,Pass Incompletion,True,35.0,21.0
+401856783,Oregon State,2,8.0,False,False,Sack,Pass Reception,True,21.0,13.0
+401856783,Oregon State,2,3.0,False,False,Pass Reception,Pass Incompletion,True,24.0,21.0
+401856790,Pittsburgh,2,2.0,False,True,Safety,Kickoff,True,5.0,3.0
+401856790,UCF,2,1.0,False,True,Rushing Touchdown,Kickoff,True,0.0,-1.0
+401856792,Kansas State,3,3.0,True,False,Rush,Rush,True,3.0,0.0
+401856793,Northern Illinois,3,6.0,False,False,Rush,Passing Touchdown,True,16.0,10.0
+401856793,Northern Illinois,3,7.0,False,True,Rushing Touchdown,Kickoff,True,17.0,10.0
+401856797,Cincinnati,3,7.0,False,False,Rush,Sack,True,28.0,21.0
+401856801,Utah,3,3.0,False,False,Pass Reception,Pass Reception,True,16.0,13.0
+401856806,Houston,4,7.0,False,False,Rush,Rush,True,14.0,7.0
+401856806,Houston,4,8.0,False,False,Rush,Penalty,True,22.0,14.0
+401856806,Houston,4,1.0,False,True,Rushing Touchdown,Kickoff,True,21.0,20.0
+401856806,Houston,4,1.0,False,False,Rush,Rush,True,22.0,21.0
+401856806,Houston,4,1.0,False,False,Rush,Rush,True,21.0,20.0
+401856806,Houston,4,1.0,False,True,Passing Touchdown,Kickoff,True,35.0,34.0
+401856806,Georgia Southern,4,7.0,False,False,Rush,Penalty,True,14.0,7.0
+401856813,Baylor,4,7.0,False,False,Pass Incompletion,Penalty,True,10.0,3.0
+401856813,Baylor,4,7.0,False,False,Sack,Rush,True,10.0,3.0
+401856816,Utah,4,1.0,False,True,Rushing Touchdown,Kickoff,True,7.0,6.0
+401856816,Utah,4,11.0,False,True,Passing Touchdown,Kickoff,True,24.0,13.0
+401856816,Utah,4,3.0,False,False,Rush,Field Goal Good,True,20.0,17.0
+401856816,Utah,4,6.0,False,True,Field Goal Good,Kickoff,True,17.0,11.0
+401856816,Utah,4,6.0,False,False,Pass Incompletion,Fumble Recovery (Own),True,30.0,24.0
+401856816,Utah,4,6.0,False,False,Rush,Rushing Touchdown,True,30.0,24.0
+401856816,Utah,4,7.0,False,False,Pass Incompletion,Pass Reception,True,31.0,24.0
+401856816,Iowa State,4,3.0,True,True,Passing Touchdown,Kickoff,True,3.0,0.0
+401856816,Iowa State,4,3.0,True,False,Rush,Pass Reception,True,3.0,0.0
+401856816,Iowa State,4,1.0,False,True,Rushing Touchdown,Kickoff,True,10.0,9.0
+401856816,Iowa State,4,8.0,False,False,Pass Incompletion,Pass Reception,True,17.0,9.0
+401858201,Stanford,0,9.0,False,False,Kickoff,Rush,True,23.0,14.0
+401858201,Stanford,0,9.0,False,True,Safety,Kickoff,True,16.0,7.0
+401858201,Stanford,0,2.0,False,False,Pass Reception,Pass Reception,True,23.0,21.0
+401858201,Stanford,0,2.0,False,False,Pass Incompletion,Rushing Touchdown,True,25.0,23.0
+401858201,Stanford,0,2.0,False,False,Pass Incompletion,Pass Reception,True,23.0,21.0
+401858202,NC State,0,2.0,False,True,Rushing Touchdown,Kickoff,True,8.0,6.0
+401858204,Wake Forest,1,3.0,False,False,Pass Reception,Rush,True,20.0,17.0
+401858206,Stanford,1,3.0,False,False,Pass Reception,Rush,True,0.0,-3.0
+401858206,Stanford,1,3.0,True,True,Field Goal Good,Penalty,True,3.0,0.0
+401858206,Stanford,1,3.0,False,False,Pass Incompletion,Pass Reception,True,6.0,3.0
+401858206,Miami,1,7.0,True,True,Passing Touchdown,Penalty,True,7.0,0.0
+401858206,Miami,1,14.0,False,False,Pass Reception,Rush,True,7.0,-7.0
+401858206,Miami,1,8.0,False,False,Penalty,Kickoff,True,7.0,-1.0
+401858206,Miami,1,7.0,False,False,Pass Reception,Pass Reception,True,13.0,6.0
+401858206,Miami,1,3.0,False,False,Rush,Rush,True,45.0,42.0
+401858209,Duke,1,7.0,True,False,Fumble Recovery (Own),Rush,True,7.0,0.0
+401858210,UCLA,1,3.0,False,False,Pass Incompletion,Kickoff,True,24.0,21.0
+401858217,Duke,2,7.0,False,False,Rush,Rush,True,28.0,21.0
+401858219,Clemson,2,3.0,False,False,Pass Incompletion,Rush,True,16.0,13.0
+401858221,Virginia Tech,2,7.0,False,False,Sack,Pass Reception,True,24.0,17.0
+401858221,Old Dominion,2,3.0,False,False,Pass Incompletion,Pass Reception,True,6.0,3.0
+401858224,Wake Forest,2,16.0,False,False,Pass Incompletion,Field Goal Missed,True,23.0,7.0
+401858224,Wake Forest,2,13.0,False,False,Pass Incompletion,Field Goal Good,True,23.0,10.0
+401858224,Wake Forest,2,21.0,False,False,End of Game,Kickoff,True,38.0,17.0
+401858224,Purdue,2,16.0,False,False,Pass Incompletion,Field Goal Missed,True,23.0,7.0
+401858224,Purdue,2,16.0,False,False,Pass Incompletion,Field Goal Good,True,23.0,7.0
+401858224,Purdue,2,26.0,False,False,End of Game,Kickoff,True,36.0,10.0
+401858224,Purdue,2,3.0,False,True,Field Goal Good,Pass Reception,True,23.0,20.0
+401858230,SMU,3,7.0,True,False,Sack,Rush,True,7.0,0.0
+401858230,Louisville,3,7.0,True,False,Sack,Rush,True,7.0,0.0
+401858230,Louisville,3,7.0,False,False,Rush,Rush,True,14.0,7.0
+401858230,Louisville,3,1.0,False,True,Rushing Touchdown,Kickoff,True,41.0,40.0
+401858234,Clemson,4,7.0,False,True,Rushing Touchdown,Kickoff,True,24.0,17.0
+401858238,Miami,4,7.0,False,False,Penalty,Pass Incompletion,True,35.0,28.0
+401858238,Miami,4,3.0,False,False,Pass Reception,Rush,True,45.0,42.0
+401858238,Miami,4,7.0,False,False,Pass Incompletion,Kickoff,True,52.0,45.0
+401858240,Stanford,4,7.0,True,False,Rush,Pass Reception,True,7.0,0.0
+401858240,Georgia Tech,4,3.0,True,False,Pass Reception,Penalty,True,3.0,0.0
+401858240,Georgia Tech,4,3.0,True,False,Rush,Pass Reception,True,3.0,0.0
+401858240,Georgia Tech,4,7.0,False,False,Fumble Recovery (Own),Rush,True,10.0,3.0
+401858424,UAB,1,1.0,False,True,Interception Return Touchdown,Kickoff,True,16.0,15.0
+401858424,UAB,1,1.0,False,False,Rush,Rush,True,16.0,15.0
+401858429,Toledo,1,7.0,True,False,Pass Interception Return,Rush,True,7.0,0.0
+401858429,Toledo,1,7.0,True,False,Penalty,Kickoff,True,7.0,0.0
+401858429,Toledo,1,7.0,False,False,Sack,Kickoff,False,21.0,14.0
+401858429,Michigan State,1,3.0,False,False,Pass Interception Return,Rush,True,13.0,10.0
+401858433,Oregon,1,10.0,False,False,Penalty,Rush,True,24.0,14.0
+401858433,Boise State,1,1.0,False,True,Passing Touchdown,Kickoff,True,7.0,6.0
+401858433,Boise State,1,1.0,False,False,Kickoff,Pass Reception,True,7.0,6.0
+401858433,Boise State,1,1.0,False,False,Rush,Rush,True,7.0,6.0
+401858433,Boise State,1,1.0,False,False,Punt,Rush,True,7.0,6.0
+401858433,Boise State,1,7.0,False,False,Penalty,Rush,True,24.0,17.0
+401858436,USC,1,16.0,True,True,Safety,Kickoff,True,16.0,0.0
+401858438,Notre Dame,1,3.0,True,False,Kickoff,Pass Reception,True,3.0,0.0
+401858438,Notre Dame,1,7.0,False,False,Kickoff,Rush,True,20.0,13.0
+401858445,Louisiana,2,3.0,True,False,Pass Interception Return,Pass Reception,True,3.0,0.0
+401858445,Louisiana,2,7.0,False,False,Fumble Recovery (Own),Rush,True,10.0,3.0
+401858445,USC,2,7.0,True,False,Rush,Pass Reception,True,7.0,0.0
+401858445,USC,2,21.0,False,False,Fumble Recovery (Own),Rush,True,28.0,7.0
+401858445,USC,2,8.0,False,False,Kickoff,Rush,True,28.0,20.0
+401858445,USC,2,6.0,False,False,Rush,Pass Incompletion,True,20.0,14.0
+401858446,Washington,2,3.0,True,False,Rush,Fumble Recovery (Own),True,3.0,0.0
+401858453,Notre Dame,3,7.0,False,False,Punt,Rush,True,10.0,3.0
+401858454,Ohio State,3,21.0,True,False,Kickoff,Pass Reception,True,21.0,0.0
+401858454,Ohio State,3,7.0,False,False,Fumble Recovery (Opponent),Rush,True,42.0,35.0
+401858460,Eastern Michigan,3,3.0,False,False,Penalty,Rush,True,10.0,7.0
+401858460,Wisconsin,3,1.0,False,True,Passing Touchdown,Kickoff,True,32.0,31.0
+401858460,Wisconsin,3,7.0,False,False,Penalty,Rush,True,48.0,41.0
+401858462,UCLA,4,3.0,False,False,Rush,Rush,True,47.0,44.0
+401858462,UCLA,4,7.0,False,False,Punt,Rush,True,54.0,47.0
+401858462,UCLA,4,7.0,False,False,Rush,Rush,True,54.0,47.0
+401858464,Nebraska,4,6.0,False,False,Rush,Rush,True,24.0,18.0
+401858465,Ohio State,4,1.0,False,True,Rushing Touchdown,Penalty,True,28.0,27.0
+401859184,Notre Dame,2,14.0,False,False,Fumble Recovery (Own),Rush,True,21.0,7.0
+401860878,Wyoming,1,3.0,True,False,Pass Reception,Rush,True,3.0,0.0
+401860878,Colorado State,1,7.0,True,False,Pass Reception,Rush,True,7.0,0.0
+401860881,Memphis,2,3.0,False,False,Pass Incompletion,Field Goal Good,True,13.0,10.0
+401860881,Memphis,2,1.0,False,False,Punt Return,Rush,False,21.0,20.0
+401860884,UTSA,2,1.0,False,True,Rushing Touchdown,Penalty,True,31.0,30.0
+401860887,James Madison,3,3.0,False,False,Pass Reception,Rush,True,10.0,7.0
+401860887,James Madison,3,3.0,False,True,Field Goal Good,Pass Incompletion,True,10.0,7.0
+401860893,San Diego State,4,6.0,False,False,Penalty,Pass Reception,True,9.0,3.0
+401860895,Oregon State,4,7.0,False,False,Penalty,Rush,True,17.0,10.0
+401861963,Southern Miss,3,3.0,False,False,Pass Reception,Rush,True,6.0,3.0
+401861970,Miami (OH),4,2.0,True,True,Rushing Touchdown,Kickoff,True,2.0,0.0
+401861970,Miami (OH),4,6.0,False,False,Pass Incompletion,Pass Reception,True,7.0,1.0
+401861970,Miami (OH),4,13.0,False,True,Passing Touchdown,Kickoff,True,14.0,1.0
+401862693,Memphis,0,3.0,False,False,Rush,Pass Reception,True,24.0,21.0
+401862699,Florida International,1,3.0,True,True,Field Goal Good,Penalty,True,3.0,0.0
+401862702,Army,2,4.0,False,True,Rushing Touchdown,Kickoff,True,14.0,10.0
+401862702,Army,2,6.0,False,False,Pass Incompletion,Passing Touchdown,False,30.0,24.0
+401862703,Navy,2,1.0,False,True,Passing Touchdown,Penalty,True,14.0,13.0
+401862703,Florida Atlantic,2,17.0,False,False,Pass Reception,Pass Reception,True,31.0,14.0
+401862703,Florida Atlantic,2,3.0,False,False,Fumble Recovery (Own),Passing Touchdown,True,31.0,28.0
+401862705,North Texas,2,3.0,False,False,Fumble Recovery (Own),Pass Incompletion,True,6.0,3.0
+401862705,UNLV,2,3.0,True,False,Penalty,Pass Incompletion,True,3.0,0.0
+401862710,Old Dominion,3,17.0,True,False,Penalty,Pass Reception,True,17.0,0.0
+401862710,East Carolina,3,3.0,False,False,Penalty,Pass Reception,True,10.0,7.0
+401862771,Florida Atlantic,3,10.0,True,False,Punt Return,Pass Incompletion,True,10.0,0.0
+401862771,Florida Atlantic,3,7.0,True,False,Penalty,Pass Incompletion,True,7.0,0.0
+401862771,Florida Atlantic,3,3.0,False,True,Field Goal Good,Kickoff,True,10.0,7.0
+401862774,Temple,3,6.0,False,False,End of Game,Rush,True,48.0,42.0
+401862776,Louisiana,3,7.0,True,False,Rush,Pass Reception,True,7.0,0.0
+401862776,Louisiana,3,1.0,False,False,Punt,Pass Incompletion,True,8.0,7.0
+401862776,Louisiana,3,1.0,False,False,Punt,Fumble Recovery (Own),True,8.0,7.0
+401862776,Louisiana,3,1.0,False,False,Pass Incompletion,Punt,True,8.0,7.0
+401862776,Louisiana,3,1.0,False,False,Pass Incompletion,Rush,True,8.0,7.0
+401862782,UL Monroe,4,7.0,True,False,Penalty,Rush,True,7.0,0.0
+401862782,Florida Atlantic,4,7.0,True,False,Penalty,Rush,True,7.0,0.0
+401862784,Tulane,4,3.0,False,False,Pass Reception,Rush,True,17.0,14.0
+401864432,Nevada,1,7.0,False,False,Rush,Pass Reception,True,21.0,14.0
+401864443,Middle Tennessee,3,3.0,False,False,Pass Incompletion,Punt Return,True,17.0,14.0
+401864494,San José State,0,3.0,True,False,Rush,Pass Incompletion,True,3.0,0.0
+401864498,New Mexico,1,3.0,False,False,Field Goal Missed,Kickoff,True,23.0,20.0
+401864498,New Mexico,1,2.0,False,True,Rushing Touchdown,Penalty,True,28.0,26.0
+401864502,North Dakota State,2,14.0,False,False,Rush,Pass Reception,True,28.0,14.0
+401864502,Air Force,2,13.0,True,False,Rush,Pass Reception,True,13.0,0.0
+401864509,Air Force,4,6.0,False,False,End of Game,Rush,True,36.0,30.0
+401864509,Nevada,4,7.0,False,False,Penalty,Penalty,True,10.0,3.0
+401864510,Wyoming,4,7.0,False,False,Fumble Recovery (Own),Rush,True,13.0,6.0
+401864510,Hawai'i,4,1.0,False,True,Passing Touchdown,Penalty,True,10.0,9.0
+401864512,UNLV,4,1.0,False,True,Rushing Touchdown,Kickoff,True,21.0,20.0
+401864570,Florida State,0,7.0,False,False,Kickoff,Rush,True,34.0,27.0
+401864571,App State,2,3.0,False,False,Punt,Pass Reception,True,27.0,24.0
+401864572,NC State,4,1.0,False,True,Passing Touchdown,Penalty,True,28.0,27.0
+401864575,South Alabama,2,3.0,True,False,Rush,Pass Incompletion,True,3.0,0.0
+401864579,New Mexico,4,1.0,False,True,Rushing Touchdown,Penalty,True,7.0,6.0
+401864579,New Mexico,4,2.0,False,True,Rushing Touchdown,Penalty,True,15.0,13.0
+401864579,New Mexico State,4,3.0,True,True,Rushing Touchdown,Penalty,True,3.0,0.0
+401864579,New Mexico State,4,6.0,False,False,Pass Reception,Pass Reception,True,11.0,5.0
+401864579,New Mexico State,4,6.0,False,True,Passing Touchdown,Kickoff,False,12.0,6.0
+401866408,Sacramento State,0,7.0,False,False,Pass Reception,Pass Incompletion,True,17.0,10.0
+401866423,South Alabama,3,7.0,False,False,Pass Interception Return,Rush,True,21.0,14.0
+401866425,Ball State,4,6.0,False,False,Rush,Rush,True,13.0,7.0
+401866425,Kent State,4,10.0,False,False,Rush,Pass Incompletion,True,17.0,7.0
+401866425,Kent State,4,2.0,False,False,Rush,Rush,True,26.0,24.0
+401867796,Louisiana Tech,2,7.0,True,False,Sack,Field Goal Missed,True,7.0,0.0
+401869931,Kennesaw State,4,7.0,True,False,Pass Reception,Rush,True,7.0,0.0
+401869960,Liberty,1,3.0,False,False,Pass Incompletion,Field Goal Good,True,9.0,6.0
+401869960,Liberty,1,3.0,False,False,Rush,Punt Return,True,9.0,6.0
+401869960,James Madison,1,7.0,True,False,Penalty,Punt,True,7.0,0.0
+401869961,James Madison,4,14.0,True,False,Rush,Penalty,True,14.0,0.0
+401869961,James Madison,4,3.0,False,False,Pass Reception,Pass Incompletion,True,33.0,30.0
+401869961,James Madison,4,7.0,False,False,Rush,Pass Incompletion,True,46.0,39.0
+401871048,Jacksonville State,4,3.0,True,False,Rush,Pass Reception,True,3.0,0.0

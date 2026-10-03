@@ -1,0 +1,156 @@
+game_id,week,drive_number,play_number,offense,play_type,cls
+401864494,0,13,3,San José State,Pass Incompletion,a_cfbd_null_filled_0
+401864577,0,16,1,North Dakota State,Fumble Recovery (Own),a_cfbd_null_filled_0
+401856660,1,14,4,LSU,Rush,a_cfbd_null_filled_0
+401856661,1,11,13,Ole Miss,Pass Reception,a_cfbd_null_filled_0
+401856668,1,6,13,Texas A&M,Safety,a_cfbd_null_filled_0
+401856776,1,2,10,Georgia Tech,Pass Incompletion,a_cfbd_null_filled_0
+401856776,1,18,7,Colorado,Pass Incompletion,a_cfbd_null_filled_0
+401856777,1,9,16,Boston College,Pass Incompletion,a_cfbd_null_filled_0
+401856777,1,23,2,Cincinnati,Rush,a_cfbd_null_filled_0
+401858207,1,2,8,Pittsburgh,Pass Reception,a_cfbd_null_filled_0
+401858210,1,1,5,California,Rush,a_cfbd_null_filled_0
+401858425,1,12,3,Indiana,Pass Incompletion,a_cfbd_null_filled_0
+401858433,1,3,2,Boise State,Rush,a_cfbd_null_filled_0
+401858433,1,22,4,Oregon,Pass Reception,a_cfbd_null_filled_0
+401858436,1,16,1,Fresno State,Fumble Recovery (Own),a_cfbd_null_filled_0
+401858437,1,8,1,Washington,Pass Incompletion,a_cfbd_null_filled_0
+401858437,1,17,5,Washington,Rush,a_cfbd_null_filled_0
+401858438,1,12,4,Wisconsin,Pass Reception,a_cfbd_null_filled_0
+401864432,1,8,4,Western Kentucky,Fumble,a_cfbd_null_filled_0
+401856671,2,11,5,Auburn,Pass Reception,a_cfbd_null_filled_0
+401856673,2,1,1,Georgia,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856674,2,5,13,Kentucky,Fumble,a_cfbd_null_filled_0
+401856674,2,6,9,Alabama,Rush,a_cfbd_null_filled_0
+401856678,2,12,6,Kansas,Rush,a_cfbd_null_filled_0
+401856679,2,2,5,Michigan,Rush,a_cfbd_null_filled_0
+401856682,2,21,14,Texas,Fumble Recovery (Own),a_cfbd_null_filled_0
+401856782,2,22,15,Oklahoma State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856790,2,1,1,UCF,Fumble Recovery (Own),a_cfbd_null_filled_0
+401858216,2,7,4,Syracuse,Pass Reception,a_cfbd_null_filled_0
+401858216,2,15,4,Syracuse,Pass Reception,a_cfbd_null_filled_0
+401858216,2,19,1,Syracuse,Pass Reception,a_cfbd_null_filled_0
+401858221,2,4,2,Old Dominion,Rush,a_cfbd_null_filled_0
+401858441,2,1,3,Nebraska,Interception,a_cfbd_null_filled_0
+401858442,2,18,5,Penn State,Rush,a_cfbd_null_filled_0
+401858443,2,14,1,San Diego State,Rush,a_cfbd_null_filled_0
+401858443,2,15,5,UCLA,Pass Incompletion,a_cfbd_null_filled_0
+401860881,2,12,5,Memphis,Rush,a_cfbd_null_filled_0
+401862703,2,11,8,Florida Atlantic,Pass Reception,a_cfbd_null_filled_0
+401862703,2,19,2,Florida Atlantic,Fumble,a_cfbd_null_filled_0
+401862707,2,22,5,Tulsa,Rush,a_cfbd_null_filled_0
+401862708,2,4,2,UL Monroe,Rush,a_cfbd_null_filled_0
+401862708,2,11,6,UAB,Rush,a_cfbd_null_filled_0
+401864571,2,24,11,East Carolina,Interception,a_cfbd_null_filled_0
+401864571,2,27,2,App State,Rush,a_cfbd_null_filled_0
+401866414,2,2,4,Florida International,Rush,a_cfbd_null_filled_0
+401866414,2,10,2,Florida International,Rush,a_cfbd_null_filled_0
+401856685,3,9,4,Alabama,Pass Reception,a_cfbd_null_filled_0
+401856685,3,14,1,Alabama,Fumble Recovery (Own),a_cfbd_null_filled_0
+401856685,3,16,9,Alabama,Pass Incompletion,a_cfbd_null_filled_0
+401856688,3,8,9,LSU,Pass Reception,a_cfbd_null_filled_0
+401856688,3,19,18,LSU,Interception,a_cfbd_null_filled_0
+401856689,3,7,3,Troy,Pass Incompletion,a_cfbd_null_filled_0
+401856689,3,22,3,Missouri,Pass Reception,a_cfbd_null_filled_0
+401856690,3,15,8,New Mexico,Rush,a_cfbd_null_filled_0
+401856692,3,10,5,Kennesaw State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856694,3,21,1,Kentucky,Rush,a_cfbd_null_filled_0
+401856695,3,6,5,Vanderbilt,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856792,3,19,10,Kansas State,Rush,a_cfbd_null_filled_0
+401856796,3,4,2,Colorado,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856796,3,6,10,Colorado,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856798,3,11,8,Bowling Green,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856800,3,22,1,UCF,Rush,a_cfbd_null_filled_0
+401856800,3,25,12,Georgia State,Interception,a_cfbd_null_filled_0
+401856801,3,15,5,Utah,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856801,3,16,7,Utah State,Interception,a_cfbd_null_filled_0
+401856812,3,5,8,Kansas,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856812,3,22,8,Kansas,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858225,3,19,6,Syracuse,Pass Reception,a_cfbd_null_filled_0
+401858226,3,23,8,Miami,Rush,a_cfbd_null_filled_0
+401858229,3,5,3,Clemson,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858229,3,14,1,North Carolina,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858231,3,1,8,Duke,Interception,a_cfbd_null_filled_0
+401858232,3,8,3,Maryland,Pass Incompletion,a_cfbd_null_filled_0
+401858450,3,7,1,Michigan,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858451,3,2,5,Akron,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858451,3,15,5,Akron,Pass Incompletion,a_cfbd_null_filled_0
+401858456,3,5,3,Buffalo,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858457,3,15,8,USC,Rush,a_cfbd_null_filled_0
+401858458,3,4,3,Purdue,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858458,3,15,2,Purdue,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401860887,3,9,4,James Madison,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401860888,3,3,4,Fresno State,Rush,a_cfbd_null_filled_0
+401860888,3,14,5,San José State,Interception,a_cfbd_null_filled_0
+401860889,3,12,7,North Texas,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401860889,3,23,1,Texas State,Rush,a_cfbd_null_filled_0
+401861963,3,10,12,Southern Miss,Pass Reception,a_cfbd_null_filled_0
+401861963,3,15,8,UConn,Rush,a_cfbd_null_filled_0
+401862710,3,7,7,East Carolina,Rush,a_cfbd_null_filled_0
+401862710,3,11,2,East Carolina,Pass Reception,a_cfbd_null_filled_0
+401862710,3,19,4,Old Dominion,Rush,a_cfbd_null_filled_0
+401862710,3,21,11,Old Dominion,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401862771,3,4,11,Florida International,Pass Interception Return,a_cfbd_null_filled_0
+401862771,3,15,5,Florida Atlantic,Rush,a_cfbd_null_filled_0
+401862773,3,2,1,Rice,Rush,a_cfbd_null_filled_0
+401862773,3,13,1,Rice,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401862774,3,2,1,Toledo,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401862774,3,17,2,Toledo,Pass Reception,a_cfbd_null_filled_0
+401862776,3,9,1,Louisiana,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401862776,3,25,7,Louisiana,Rush,a_cfbd_null_filled_0
+401864443,3,18,5,Nevada,Fumble,a_cfbd_null_filled_0
+401864443,3,18,6,Nevada,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401864508,3,17,14,Wyoming,Interception,a_cfbd_null_filled_0
+401864574,3,13,5,App State,Pass Incompletion,a_cfbd_null_filled_0
+401866422,3,16,2,Liberty,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401866423,3,4,6,Ohio,Pass Interception Return,a_cfbd_null_filled_0
+401866423,3,6,10,Ohio,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401867804,3,8,6,Louisiana Tech,Pass Incompletion,a_cfbd_null_filled_0
+401867804,3,10,3,Louisiana Tech,Interception,a_cfbd_null_filled_0
+401867804,3,21,5,Baylor,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401869940,3,13,1,Delaware,Fumble Recovery (Own),a_cfbd_null_filled_0
+401869948,3,6,2,Jacksonville State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401871047,3,5,4,Missouri State,Rush,a_cfbd_null_filled_0
+401871047,3,17,6,Marshall,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856697,4,9,2,Arkansas,Rush,a_cfbd_null_filled_0
+401856697,4,18,6,Tulsa,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856703,4,21,4,Mississippi State,Pass Reception,a_cfbd_null_filled_0
+401856704,4,25,1,Tennessee,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856805,4,12,7,Texas Tech,Interception,a_cfbd_null_filled_0
+401856805,4,19,1,Sam Houston,Fumble Recovery (Own),a_cfbd_null_filled_0
+401856805,4,24,8,Sam Houston,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856813,4,8,1,Colorado,Pass Reception,a_cfbd_null_filled_0
+401856813,4,22,3,Baylor,Pass Reception,a_cfbd_null_filled_0
+401856814,4,10,6,Kansas State,Pass Reception,a_cfbd_null_filled_0
+401856814,4,17,6,Cincinnati,Fumble,a_cfbd_null_filled_0
+401856814,4,17,7,Cincinnati,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856815,4,21,1,TCU,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401856816,4,10,8,Iowa State,Pass Incompletion,a_cfbd_null_filled_0
+401856816,4,13,6,Iowa State,Pass Incompletion,a_cfbd_null_filled_0
+401856881,4,1,2,West Virginia,Rush,a_cfbd_null_filled_0
+401856881,4,16,3,West Virginia,Pass Reception,a_cfbd_null_filled_0
+401858234,4,5,2,Clemson,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858238,4,6,4,Central Michigan,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858238,4,11,9,Miami,Pass Reception,a_cfbd_null_filled_0
+401858238,4,13,10,Central Michigan,Fumble Recovery (Own),a_cfbd_null_filled_0
+401858240,4,21,1,Stanford,Rush,a_cfbd_null_filled_0
+401858241,4,1,2,SMU,Pass Reception,a_cfbd_null_filled_0
+401858243,4,18,5,Wake Forest,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401858462,4,14,10,UCLA,Pass Incompletion,a_cfbd_null_filled_0
+401858469,4,19,17,USC,Interception,a_cfbd_null_filled_0
+401860893,4,17,3,San Diego State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401860894,4,18,6,Troy,Rush,a_cfbd_null_filled_0
+401860895,4,17,14,UTEP,Interception,a_cfbd_null_filled_0
+401860896,4,28,1,UTSA,Rush,a_cfbd_null_filled_0
+401861970,4,4,3,Miami (OH),Pass Reception,a_cfbd_null_filled_0
+401861970,4,5,1,UConn,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401862779,4,17,1,Army,Rush,a_cfbd_null_filled_0
+401862784,4,23,13,Tulane,Interception,a_cfbd_null_filled_0
+401864511,4,1,1,Georgia State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401864511,4,2,3,Northern Illinois,Pass Reception,a_cfbd_null_filled_0
+401864511,4,22,6,Georgia State,Fumble Recovery (Opponent),a_cfbd_null_filled_0
+401864572,4,11,3,NC State,Rush,a_cfbd_null_filled_0
+401864572,4,14,14,NC State,Pass Incompletion,a_cfbd_null_filled_0
+401864576,4,5,2,South Alabama,Rush,a_cfbd_null_filled_0
+401864576,4,26,14,South Alabama,Fumble,a_cfbd_null_filled_0
+401864579,4,16,1,New Mexico,Pass Reception,a_cfbd_null_filled_0

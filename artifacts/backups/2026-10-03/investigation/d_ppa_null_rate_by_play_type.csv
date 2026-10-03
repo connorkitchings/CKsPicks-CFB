@@ -1,0 +1,15 @@
+play_type,n,nulls,rate
+Fumble,33,6,18.18
+Fumble Recovery (Opponent),127,41,32.28
+Fumble Recovery (Own),205,8,3.9
+Fumble Return Touchdown,10,0,0.0
+Interception,94,13,13.83
+Interception Return Touchdown,28,0,0.0
+Pass Incompletion,4305,17,0.39
+Pass Interception Return,160,2,1.25
+Pass Reception,7070,26,0.37
+Passing Touchdown,562,0,0.0
+Rush,12395,41,0.33
+Rushing Touchdown,573,0,0.0
+Sack,688,0,0.0
+Safety,11,1,9.09

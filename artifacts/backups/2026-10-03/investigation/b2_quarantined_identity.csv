@@ -1,0 +1,28 @@
+week,game_id,team,opponent,unit_role,measurement_id,numerator,denominator,raw_value,coverage_status,missing_reason,quality_flags,rating_usable,pts,nop,stored_num,ub_num
+0,401858201,Stanford,Hawai'i,offense,ppp,14.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,37,0.0,14.0,37.0
+1,401856661,Louisville,Ole Miss,offense,ppp,13.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,38,3.0,13.0,35.0
+1,401858206,Stanford,Miami,offense,ppp,0.0,7.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,6,0.0,0.0,6.0
+1,401858206,Miami,Stanford,offense,ppp,0.0,8.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,45,7.0,0.0,38.0
+1,401858433,Oregon,Boise State,offense,ppp,14.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,34,0.0,14.0,34.0
+1,401858436,USC,Fresno State,offense,ppp,0.0,8.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,39,0.0,0.0,39.0
+2,401856783,Texas Tech,Oregon State,offense,ppp,20.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,35,1.0,20.0,34.0
+2,401856790,UCF,Pittsburgh,offense,ppp,0.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,7,0.0,0.0,7.0
+2,401858224,Purdue,Wake Forest,offense,ppp,7.0,8.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,36,0.0,7.0,36.0
+2,401858224,Wake Forest,Purdue,offense,ppp,7.0,7.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,38,0.0,7.0,38.0
+2,401858445,USC,Louisiana,offense,ppp,7.0,10.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,49,0.0,7.0,49.0
+2,401859184,Notre Dame,Rice,offense,ppp,0.0,6.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,52,7.0,0.0,45.0
+2,401860881,Memphis,Boise State,offense,ppp,10.0,11.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,20,10.0,10.0,10.0
+2,401862702,Army,South Florida,offense,ppp,24.0,9.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,24,0.0,24.0,24.0
+2,401862703,Florida Atlantic,Navy,offense,ppp,14.0,12.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,38,0.0,14.0,38.0
+2,401864502,Air Force,North Dakota State,offense,ppp,0.0,10.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,32,0.0,0.0,32.0
+2,401864502,North Dakota State,Air Force,offense,ppp,14.0,11.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,38,0.0,14.0,38.0
+3,401858454,Ohio State,Kent State,offense,ppp,0.0,7.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,59,0.0,0.0,59.0
+3,401858460,Wisconsin,Eastern Michigan,offense,ppp,34.0,8.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,54,1.0,34.0,53.0
+3,401862710,Old Dominion,East Carolina,offense,ppp,0.0,13.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,17,0.0,0.0,17.0
+3,401862771,Florida Atlantic,Florida International,offense,ppp,0.0,11.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,16,0.0,0.0,16.0
+3,401864443,Middle Tennessee,Nevada,offense,ppp,24.0,11.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,27,3.0,24.0,24.0
+4,401856816,Utah,Iowa State,offense,ppp,6.0,11.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,31,0.0,6.0,31.0
+4,401858464,Nebraska,Michigan State,offense,ppp,18.0,10.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,31,0.0,18.0,31.0
+4,401861970,Miami (OH),UConn,offense,ppp,1.0,10.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,24,0.0,1.0,24.0
+4,401866425,Kent State,Ball State,offense,ppp,7.0,10.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,26,0.0,7.0,26.0
+4,401869961,James Madison,Old Dominion,offense,ppp,0.0,15.0,,missing,unresolved_scoring_attribution,mixed_eligibility_drive,False,46,0.0,0.0,46.0

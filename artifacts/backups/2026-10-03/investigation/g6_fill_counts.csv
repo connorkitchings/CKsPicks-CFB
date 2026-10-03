@@ -1,0 +1,10 @@
+field,raw_field,matched_rows,raw_null_in_silver_rows,filled_with_0,null_but_nonzero
+yards_to_goal,yardsToGoal,35407,0,0,0
+yard_line,yardline,35407,0,0,0
+down,down,35407,0,0,0
+yards_gained,yardsGained,35407,0,0,0
+yards_to_first,distance,35407,0,0,0
+quarter,period,35407,0,0,0
+offense_score,offenseScore,35407,0,0,0
+defense_score,defenseScore,35407,0,0,0
+ppa,ppa,35407,7213,7213,0

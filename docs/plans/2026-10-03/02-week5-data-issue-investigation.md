@@ -87,6 +87,15 @@ Count teams whose `avg_start_field_pos` includes overtime drives (drive starts a
 - [ ] F1–F3: env-diff baseline recorded; `known_issues.md` updated; recommendation packet presented.
 - [ ] Zero lake/DB writes performed; the only committed artifacts are the two analysis scripts + tests on `dev`.
 
+## Amendments
+
+### Amendment 3: sweep (Phase G) and delta added (2026-10-03)
+**Reason:** the user widened the review to the whole source-to-prediction path ("known issues + broad sweep; 2025 only where it feeds 2026"), and the D4 flip criterion needed a rating-level delta.
+**Added scope (still read-only):** Phase G (G1 score reconciliation across five sources, G2 grade recompute for weeks 0-4, G3 line sanity, G4 team identity, G5 neutral sites, G6 silent defaults, G7 2025 carryover), a rating-level Tier 1 delta in memory (rule frozen first in the working notes, `d1-candidate-rule.md`), and proposals D7a-f, D8 and D9.
+**Status:** findings delivered and recorded in [known data issues](../../data/known_issues.md) (issues 1-12) and the [decision packet](03-data-decision-packet.md). Analysis scripts and tests are present in the worktree; this investigation does not assert they are committed. Tier 2, the real bridge, and release work were intentionally outside this read-only investigation. The decision-complete successor is [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md).
+**Corrections made during the work (kept visible):** the Week 5 audit's "129 quarantined measurements" counted rows (the count is 27 team-games); the overtime hypothesis (issue 5) was refuted and closed; the first claim that the away best-quote sort "never changed a pick" was wrong and is superseded (issue 12).
+**Impact:** no writes; D7-D9 are not added to the unified write batch's gate.
+
 ## Stop conditions
 
 - Any query needs write access → stop; the answer belongs in the unified plan's write phases.

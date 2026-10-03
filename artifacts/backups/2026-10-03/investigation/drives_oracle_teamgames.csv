@@ -1,0 +1,431 @@
+game_id,team,drive_pts,final,monotone,max_end,gap
+401856634,Alabama,41.0,48.0,True,48.0,7.0
+401856634,East Carolina,10.0,10.0,True,10.0,0.0
+401856636,Auburn,17.0,17.0,True,17.0,0.0
+401856636,Baylor,16.0,16.0,True,16.0,0.0
+401856637,Florida,66.0,66.0,True,66.0,0.0
+401856637,Florida Atlantic,21.0,21.0,True,21.0,0.0
+401856660,Clemson,10.0,10.0,True,10.0,0.0
+401856660,LSU,51.0,51.0,False,51.0,0.0
+401856661,Louisville,35.0,38.0,True,38.0,3.0
+401856661,Ole Miss,49.0,41.0,False,41.0,-8.0
+401856662,Louisiana Monroe,13.0,13.0,True,13.0,0.0
+401856662,Mississippi State,62.0,62.0,True,62.0,0.0
+401856664,Oklahoma,44.0,51.0,True,51.0,7.0
+401856664,UTEP,0.0,0.0,True,0.0,0.0
+401856665,Kent State,0.0,0.0,True,0.0,0.0
+401856665,South Carolina,57.0,57.0,True,57.0,0.0
+401856667,Texas,53.0,59.0,False,59.0,6.0
+401856667,Texas State,7.0,7.0,True,7.0,0.0
+401856668,Missouri State,0.0,0.0,True,0.0,0.0
+401856668,Texas A&M,43.0,50.0,True,50.0,7.0
+401856670,Arkansas,10.0,10.0,True,10.0,0.0
+401856670,Utah,43.0,43.0,True,43.0,0.0
+401856671,Auburn,34.0,43.0,True,43.0,9.0
+401856671,Southern Mississippi,8.0,8.0,True,8.0,0.0
+401856673,Georgia,56.0,70.0,True,70.0,14.0
+401856673,Western Kentucky,14.0,20.0,True,20.0,6.0
+401856674,Alabama,38.0,45.0,True,45.0,7.0
+401856674,Kentucky,10.0,17.0,True,17.0,7.0
+401856676,Charlotte,9.0,9.0,True,9.0,0.0
+401856676,Ole Miss,41.0,41.0,True,41.0,0.0
+401856677,Minnesota,6.0,13.0,True,13.0,7.0
+401856677,Mississippi State,38.0,38.0,True,38.0,0.0
+401856678,Kansas,14.0,21.0,True,21.0,7.0
+401856678,Missouri,38.0,38.0,True,38.0,0.0
+401856679,Michigan,17.0,17.0,True,17.0,0.0
+401856679,Oklahoma,10.0,10.0,True,10.0,0.0
+401856681,Georgia Tech,17.0,24.0,True,24.0,7.0
+401856681,Tennessee,38.0,45.0,True,45.0,7.0
+401856682,Ohio State,23.0,23.0,True,23.0,0.0
+401856682,Texas,24.0,24.0,True,24.0,0.0
+401856683,Arizona State,20.0,20.0,True,20.0,0.0
+401856683,Texas A&M,34.0,48.0,True,48.0,14.0
+401856684,Delaware,19.0,26.0,True,26.0,7.0
+401856684,Vanderbilt,29.0,35.0,True,35.0,6.0
+401856685,Alabama,50.0,50.0,True,50.0,0.0
+401856685,Florida State,36.0,36.0,True,36.0,0.0
+401856686,Arkansas,17.0,17.0,True,17.0,0.0
+401856686,Georgia,38.0,45.0,True,45.0,7.0
+401856687,Auburn,39.0,39.0,True,39.0,0.0
+401856687,Florida,44.0,44.0,True,44.0,0.0
+401856688,LSU,24.0,24.0,True,24.0,0.0
+401856688,Ole Miss,32.0,32.0,True,32.0,0.0
+401856689,Missouri,13.0,27.0,True,27.0,14.0
+401856689,Troy,17.0,17.0,True,17.0,0.0
+401856690,New Mexico,6.0,6.0,True,6.0,0.0
+401856690,Oklahoma,14.0,14.0,True,14.0,0.0
+401856691,Mississippi State,48.0,41.0,False,41.0,-7.0
+401856691,South Carolina,37.0,34.0,False,34.0,-3.0
+401856692,Kennesaw State,9.0,9.0,True,9.0,0.0
+401856692,Tennessee,42.0,42.0,True,42.0,0.0
+401856693,Texas,30.0,30.0,True,30.0,0.0
+401856693,UT San Antonio,6.0,6.0,True,6.0,0.0
+401856694,Kentucky,31.0,31.0,True,31.0,0.0
+401856694,Texas A&M,21.0,21.0,True,21.0,0.0
+401856695,NC State,31.0,31.0,True,31.0,0.0
+401856695,Vanderbilt,28.0,35.0,True,28.0,7.0
+401856696,Alabama,35.0,49.0,True,49.0,14.0
+401856696,South Carolina,18.0,18.0,True,18.0,0.0
+401856697,Arkansas,34.0,34.0,True,34.0,0.0
+401856697,Tulsa,6.0,6.0,True,6.0,0.0
+401856698,Auburn,14.0,21.0,True,21.0,7.0
+401856698,Vanderbilt,15.0,15.0,True,15.0,0.0
+401856699,Florida,52.0,52.0,True,52.0,0.0
+401856699,Ole Miss,28.0,28.0,True,28.0,0.0
+401856700,Georgia,34.0,41.0,True,41.0,7.0
+401856700,Oklahoma,13.0,13.0,True,13.0,0.0
+401856702,LSU,35.0,35.0,True,35.0,0.0
+401856702,Texas A&M,6.0,6.0,True,6.0,0.0
+401856703,Mississippi State,31.0,31.0,True,31.0,0.0
+401856703,Missouri,24.0,24.0,True,24.0,0.0
+401856704,Tennessee,10.0,17.0,True,17.0,7.0
+401856704,Texas,20.0,20.0,True,20.0,0.0
+401856766,North Carolina,13.0,15.0,True,15.0,2.0
+401856766,TCU,10.0,10.0,True,10.0,0.0
+401856772,Oklahoma State,10.0,10.0,True,10.0,0.0
+401856772,Tulsa,24.0,24.0,True,24.0,0.0
+401856776,Colorado,14.0,14.0,True,14.0,0.0
+401856776,Georgia Tech,6.0,13.0,True,13.0,7.0
+401856777,Boston College,15.0,15.0,True,15.0,0.0
+401856777,Cincinnati,34.0,34.0,False,34.0,0.0
+401856778,Houston,33.0,33.0,True,33.0,0.0
+401856778,Oregon State,20.0,20.0,True,20.0,0.0
+401856780,Coastal Carolina,24.0,24.0,True,24.0,0.0
+401856780,West Virginia,31.0,31.0,True,31.0,0.0
+401856781,Kansas State,27.0,34.0,True,34.0,7.0
+401856781,Washington State,0.0,7.0,True,7.0,7.0
+401856782,Oklahoma State,39.0,39.0,True,39.0,0.0
+401856782,Oregon,17.0,31.0,True,31.0,14.0
+401856783,Oregon State,24.0,24.0,True,24.0,0.0
+401856783,Texas Tech,35.0,35.0,True,35.0,0.0
+401856788,Iowa,16.0,16.0,True,16.0,0.0
+401856788,Iowa State,13.0,13.0,True,13.0,0.0
+401856790,Pittsburgh,10.0,12.0,True,12.0,2.0
+401856790,UCF,8.0,7.0,False,13.0,-1.0
+401856792,Kansas State,31.0,31.0,True,31.0,0.0
+401856792,Tulane,20.0,20.0,True,20.0,0.0
+401856793,Arizona,35.0,42.0,True,42.0,7.0
+401856793,Northern Illinois,10.0,17.0,True,17.0,7.0
+401856795,BYU,41.0,41.0,True,41.0,0.0
+401856795,Colorado State,23.0,23.0,True,23.0,0.0
+401856796,Colorado,7.0,7.0,True,7.0,0.0
+401856796,Northwestern,41.0,41.0,True,41.0,0.0
+401856797,Cincinnati,35.0,35.0,True,35.0,0.0
+401856797,Miami (OH),24.0,31.0,True,31.0,7.0
+401856798,Bowling Green,7.0,7.0,True,7.0,0.0
+401856798,Iowa State,34.0,55.0,True,55.0,21.0
+401856799,Arkansas State,7.0,7.0,True,7.0,0.0
+401856799,TCU,31.0,31.0,True,31.0,0.0
+401856800,Georgia State,30.0,30.0,True,30.0,0.0
+401856800,UCF,44.0,44.0,True,44.0,0.0
+401856801,Utah,33.0,33.0,True,33.0,0.0
+401856801,Utah State,0.0,0.0,True,0.0,0.0
+401856802,Virginia,27.0,27.0,True,27.0,0.0
+401856802,West Virginia,38.0,38.0,True,38.0,0.0
+401856804,Arizona,34.0,34.0,True,34.0,0.0
+401856804,Washington State,17.0,24.0,True,24.0,7.0
+401856805,Sam Houston State,14.0,14.0,True,14.0,0.0
+401856805,Texas Tech,35.0,49.0,True,49.0,14.0
+401856806,Georgia Southern,28.0,28.0,True,28.0,0.0
+401856806,Houston,43.0,42.0,False,42.0,-1.0
+401856810,Arizona,17.0,17.0,True,17.0,0.0
+401856810,BYU,28.0,28.0,True,28.0,0.0
+401856811,Houston,26.0,26.0,True,26.0,0.0
+401856811,Texas Tech,28.0,28.0,True,28.0,0.0
+401856812,Arizona State,10.0,24.0,True,24.0,14.0
+401856812,Kansas,10.0,17.0,True,17.0,7.0
+401856813,Baylor,30.0,23.0,False,23.0,-7.0
+401856813,Colorado,13.0,13.0,True,13.0,0.0
+401856814,Cincinnati,31.0,31.0,True,31.0,0.0
+401856814,Kansas State,26.0,26.0,True,26.0,0.0
+401856815,TCU,13.0,13.0,True,13.0,0.0
+401856815,UCF,21.0,21.0,True,21.0,0.0
+401856816,Iowa State,18.0,17.0,False,17.0,-1.0
+401856816,Utah,46.0,31.0,False,31.0,-15.0
+401856881,Oklahoma State,41.0,41.0,True,41.0,0.0
+401856881,West Virginia,24.0,24.0,True,24.0,0.0
+401858201,Hawai_i,27.0,27.0,True,27.0,0.0
+401858201,Stanford,41.0,37.0,False,30.0,-4.0
+401858202,NC State,8.0,8.0,True,8.0,0.0
+401858202,Virginia,34.0,34.0,True,34.0,0.0
+401858204,Akron,16.0,16.0,True,16.0,0.0
+401858204,Wake Forest,30.0,38.0,True,38.0,8.0
+401858206,Miami,55.0,45.0,False,45.0,-10.0
+401858206,Stanford,9.0,6.0,False,6.0,-3.0
+401858207,Miami (OH),14.0,14.0,True,14.0,0.0
+401858207,Pittsburgh,52.0,59.0,True,59.0,7.0
+401858209,Duke,17.0,17.0,True,17.0,0.0
+401858209,Tulane,3.0,3.0,True,3.0,0.0
+401858210,California,24.0,24.0,True,24.0,0.0
+401858210,UCLA,31.0,45.0,True,45.0,14.0
+401858212,Florida State,24.0,24.0,True,24.0,0.0
+401858212,SMU,27.0,27.0,True,27.0,0.0
+401858214,Boston College,28.0,28.0,True,28.0,0.0
+401858214,Rutgers,21.0,21.0,True,21.0,0.0
+401858216,California,14.0,21.0,True,21.0,7.0
+401858216,Syracuse,18.0,18.0,True,18.0,0.0
+401858217,Duke,31.0,31.0,True,31.0,0.0
+401858217,Illinois,27.0,27.0,True,27.0,0.0
+401858219,Clemson,22.0,22.0,True,22.0,0.0
+401858219,Georgia Southern,7.0,7.0,True,7.0,0.0
+401858221,Old Dominion,21.0,21.0,True,21.0,0.0
+401858221,Virginia Tech,37.0,44.0,True,44.0,7.0
+401858224,Purdue,78.0,36.0,False,36.0,-42.0
+401858224,Wake Forest,48.0,38.0,False,38.0,-10.0
+401858225,Pittsburgh,27.0,27.0,True,27.0,0.0
+401858225,Syracuse,13.0,13.0,True,13.0,0.0
+401858226,Miami,31.0,33.0,True,33.0,2.0
+401858226,Wake Forest,20.0,20.0,True,20.0,0.0
+401858229,Clemson,28.0,28.0,True,28.0,0.0
+401858229,North Carolina,20.0,20.0,True,20.0,0.0
+401858230,Louisville,41.0,41.0,True,41.0,0.0
+401858230,SMU,31.0,31.0,True,31.0,0.0
+401858231,Duke,35.0,35.0,True,35.0,0.0
+401858231,Stanford,7.0,7.0,True,7.0,0.0
+401858232,Maryland,26.0,26.0,True,26.0,0.0
+401858232,Virginia Tech,35.0,35.0,True,35.0,0.0
+401858234,California,3.0,10.0,True,10.0,7.0
+401858234,Clemson,17.0,24.0,True,24.0,7.0
+401858238,Central Michigan,3.0,3.0,True,3.0,0.0
+401858238,Miami,59.0,52.0,False,52.0,-7.0
+401858239,Delaware,3.0,3.0,True,3.0,0.0
+401858239,Virginia,42.0,42.0,True,42.0,0.0
+401858240,Georgia Tech,27.0,27.0,True,27.0,0.0
+401858240,Stanford,34.0,34.0,True,34.0,0.0
+401858241,Missouri State,17.0,24.0,True,24.0,7.0
+401858241,SMU,28.0,34.0,True,34.0,6.0
+401858242,Boston College,14.0,14.0,True,14.0,0.0
+401858242,Virginia Tech,14.0,21.0,True,21.0,7.0
+401858243,Louisville,27.0,27.0,True,27.0,0.0
+401858243,Wake Forest,30.0,30.0,True,30.0,0.0
+401858423,Rutgers,21.0,21.0,True,21.0,0.0
+401858423,UMass,37.0,37.0,True,37.0,0.0
+401858424,Illinois,35.0,42.0,True,42.0,7.0
+401858424,UAB,24.0,23.0,False,23.0,-1.0
+401858425,Indiana,45.0,52.0,True,52.0,7.0
+401858425,North Texas,16.0,16.0,True,16.0,0.0
+401858426,Iowa,33.0,40.0,True,40.0,7.0
+401858426,Northern Illinois,0.0,0.0,True,0.0,0.0
+401858428,Michigan,13.0,13.0,True,13.0,0.0
+401858428,Western Michigan,12.0,12.0,True,12.0,0.0
+401858429,Michigan State,30.0,30.0,True,30.0,0.0
+401858429,Toledo,27.0,20.0,False,21.0,-7.0
+401858430,Nebraska,49.0,49.0,True,49.0,0.0
+401858430,Ohio,21.0,21.0,True,21.0,0.0
+401858432,Ball State,3.0,3.0,True,3.0,0.0
+401858432,Ohio State,56.0,56.0,True,56.0,0.0
+401858433,Boise State,21.0,27.0,False,27.0,6.0
+401858433,Oregon,37.0,34.0,False,34.0,-3.0
+401858434,Marshall,0.0,0.0,True,0.0,0.0
+401858434,Penn State,45.0,45.0,True,45.0,0.0
+401858436,Fresno State,0.0,0.0,True,0.0,0.0
+401858436,USC,51.0,39.0,False,39.0,-12.0
+401858437,Washington,24.0,24.0,True,24.0,0.0
+401858437,Washington State,10.0,10.0,True,10.0,0.0
+401858438,Notre Dame,34.0,41.0,True,41.0,7.0
+401858438,Wisconsin,13.0,13.0,True,13.0,0.0
+401858440,Eastern Michigan,7.0,7.0,True,7.0,0.0
+401858440,Michigan State,35.0,35.0,True,35.0,0.0
+401858441,Bowling Green,7.0,7.0,True,7.0,0.0
+401858441,Nebraska,49.0,56.0,True,56.0,7.0
+401858442,Penn State,27.0,27.0,True,27.0,0.0
+401858442,Temple,9.0,9.0,True,9.0,0.0
+401858443,San Diego State,10.0,10.0,True,10.0,0.0
+401858443,UCLA,28.0,28.0,True,28.0,0.0
+401858444,Connecticut,14.0,14.0,True,14.0,0.0
+401858444,Maryland,38.0,38.0,True,38.0,0.0
+401858445,Louisiana,30.0,30.0,True,30.0,0.0
+401858445,USC,63.0,49.0,False,49.0,-14.0
+401858446,Utah State,14.0,14.0,True,14.0,0.0
+401858446,Washington,16.0,16.0,True,16.0,0.0
+401858449,Indiana,31.0,38.0,True,38.0,7.0
+401858449,Western Kentucky,0.0,0.0,True,0.0,0.0
+401858450,Michigan,45.0,52.0,True,52.0,7.0
+401858450,UTEP,10.0,17.0,True,17.0,7.0
+401858451,Akron,7.0,7.0,True,7.0,0.0
+401858451,Minnesota,34.0,41.0,True,41.0,7.0
+401858453,Michigan State,10.0,10.0,True,10.0,0.0
+401858453,Notre Dame,27.0,27.0,True,27.0,0.0
+401858454,Kent State,3.0,3.0,True,3.0,0.0
+401858454,Ohio State,59.0,59.0,False,59.0,0.0
+401858456,Buffalo,13.0,13.0,True,13.0,0.0
+401858456,Penn State,41.0,55.0,True,55.0,14.0
+401858457,Rutgers,35.0,35.0,True,35.0,0.0
+401858457,USC,35.0,42.0,True,42.0,7.0
+401858458,Purdue,38.0,38.0,True,38.0,0.0
+401858458,UCLA,52.0,52.0,True,52.0,0.0
+401858460,Eastern Michigan,10.0,10.0,True,10.0,0.0
+401858460,Wisconsin,35.0,54.0,True,48.0,19.0
+401858461,Indiana,27.0,29.0,True,29.0,2.0
+401858461,Northwestern,23.0,23.0,True,23.0,0.0
+401858462,Maryland,3.0,3.0,True,3.0,0.0
+401858462,UCLA,40.0,54.0,True,54.0,14.0
+401858463,Iowa,13.0,20.0,True,20.0,7.0
+401858463,Michigan,19.0,19.0,True,19.0,0.0
+401858464,Michigan State,13.0,13.0,True,13.0,0.0
+401858464,Nebraska,37.0,31.0,False,31.0,-6.0
+401858465,Illinois,19.0,19.0,True,19.0,0.0
+401858465,Ohio State,42.0,42.0,True,42.0,0.0
+401858466,Penn State,13.0,20.0,True,20.0,7.0
+401858466,Wisconsin,24.0,24.0,True,24.0,0.0
+401858467,Notre Dame,42.0,49.0,True,49.0,7.0
+401858467,Purdue,10.0,10.0,True,10.0,0.0
+401858469,Oregon,41.0,41.0,True,41.0,0.0
+401858469,USC,27.0,27.0,True,27.0,0.0
+401858470,Minnesota,20.0,27.0,True,27.0,7.0
+401858470,Washington,24.0,24.0,True,24.0,0.0
+401859184,Notre Dame,45.0,52.0,True,52.0,7.0
+401859184,Rice,0.0,0.0,True,0.0,0.0
+401860878,Colorado State,35.0,35.0,True,35.0,0.0
+401860878,Wyoming,13.0,13.0,True,13.0,0.0
+401860881,Boise State,31.0,38.0,True,38.0,7.0
+401860881,Memphis,7.0,20.0,False,21.0,13.0
+401860883,Fresno State,41.0,49.0,True,49.0,8.0
+401860883,Sacramento State,3.0,3.0,True,3.0,0.0
+401860884,Texas State,26.0,26.0,True,26.0,0.0
+401860884,UT San Antonio,37.0,31.0,False,31.0,-6.0
+401860887,James Madison,26.0,26.0,True,26.0,0.0
+401860887,San Diego State,13.0,13.0,True,13.0,0.0
+401860888,Fresno State,26.0,26.0,True,26.0,0.0
+401860888,San Jose State,10.0,10.0,True,10.0,0.0
+401860889,North Texas,35.0,35.0,True,35.0,0.0
+401860889,Texas State,49.0,49.0,True,49.0,0.0
+401860891,Fresno State,38.0,38.0,True,38.0,0.0
+401860891,Rice,17.0,24.0,True,24.0,7.0
+401860893,San Diego State,16.0,16.0,True,16.0,0.0
+401860893,Toledo,34.0,41.0,True,41.0,7.0
+401860894,Troy,10.0,10.0,True,10.0,0.0
+401860894,Utah State,14.0,21.0,True,21.0,7.0
+401860895,Oregon State,33.0,33.0,True,33.0,0.0
+401860895,UTEP,7.0,7.0,True,7.0,0.0
+401860896,Colorado State,31.0,45.0,True,45.0,14.0
+401860896,UT San Antonio,52.0,59.0,True,59.0,7.0
+401860897,Boise State,32.0,32.0,True,32.0,0.0
+401860897,Western Michigan,7.0,7.0,True,7.0,0.0
+401861963,Connecticut,41.0,48.0,True,48.0,7.0
+401861963,Southern Mississippi,20.0,20.0,True,20.0,0.0
+401861970,Connecticut,20.0,21.0,True,21.0,1.0
+401861970,Miami (OH),23.0,24.0,True,24.0,1.0
+401862693,Memphis,27.0,27.0,True,27.0,0.0
+401862693,UNLV,21.0,21.0,True,21.0,0.0
+401862695,Arkansas State,24.0,24.0,True,24.0,0.0
+401862695,Memphis,42.0,42.0,True,42.0,0.0
+401862699,Florida International,9.0,9.0,False,9.0,0.0
+401862699,South Florida,19.0,19.0,True,19.0,0.0
+401862702,Army,40.0,24.0,False,30.0,-16.0
+401862702,South Florida,28.0,28.0,True,28.0,0.0
+401862703,Florida Atlantic,48.0,38.0,False,38.0,-10.0
+401862703,Navy,28.0,30.0,True,30.0,2.0
+401862705,North Texas,44.0,44.0,True,44.0,0.0
+401862705,UNLV,9.0,6.0,False,6.0,-3.0
+401862707,Sam Houston State,10.0,17.0,True,17.0,7.0
+401862707,Tulsa,23.0,23.0,True,23.0,0.0
+401862708,Louisiana Monroe,20.0,20.0,True,20.0,0.0
+401862708,UAB,26.0,26.0,True,26.0,0.0
+401862710,East Carolina,16.0,20.0,False,20.0,4.0
+401862710,Old Dominion,10.0,17.0,True,17.0,7.0
+401862771,Florida Atlantic,26.0,16.0,False,16.0,-10.0
+401862771,Florida International,10.0,10.0,True,10.0,0.0
+401862773,Rice,21.0,21.0,True,21.0,0.0
+401862773,Western Michigan,28.0,28.0,True,28.0,0.0
+401862774,Temple,48.0,48.0,True,48.0,0.0
+401862774,Toledo,91.0,49.0,False,49.0,-42.0
+401862776,Louisiana,22.0,21.0,False,21.0,-1.0
+401862776,UAB,7.0,14.0,True,14.0,7.0
+401862778,Navy,20.0,20.0,True,20.0,0.0
+401862778,UAB,17.0,24.0,True,24.0,7.0
+401862779,Army,21.0,21.0,True,21.0,0.0
+401862779,Temple,17.0,17.0,True,17.0,0.0
+401862780,Charlotte,0.0,7.0,True,7.0,7.0
+401862780,Louisiana,34.0,34.0,True,34.0,0.0
+401862782,Florida Atlantic,38.0,45.0,True,45.0,7.0
+401862782,Louisiana Monroe,17.0,17.0,True,17.0,0.0
+401862784,Southern Mississippi,21.0,21.0,True,21.0,0.0
+401862784,Tulane,24.0,24.0,True,24.0,0.0
+401862785,Bowling Green,6.0,6.0,True,6.0,0.0
+401862785,South Florida,14.0,14.0,True,14.0,0.0
+401864432,Nevada,49.0,49.0,True,49.0,0.0
+401864432,Western Kentucky,14.0,14.0,True,14.0,0.0
+401864443,Middle Tennessee,30.0,27.0,False,30.0,-3.0
+401864443,Nevada,20.0,20.0,True,20.0,0.0
+401864494,San Jose State,26.0,26.0,True,26.0,0.0
+401864494,USC,42.0,42.0,True,42.0,0.0
+401864495,Eastern Michigan,14.0,21.0,True,21.0,7.0
+401864495,San Jose State,27.0,27.0,True,27.0,0.0
+401864497,Hawai_i,6.0,6.0,True,6.0,0.0
+401864497,UNLV,14.0,21.0,True,21.0,7.0
+401864498,Central Michigan,7.0,7.0,True,7.0,0.0
+401864498,New Mexico,41.0,38.0,False,38.0,-3.0
+401864502,Air Force,32.0,32.0,False,32.0,0.0
+401864502,North Dakota State,52.0,38.0,False,38.0,-14.0
+401864507,North Dakota State,24.0,31.0,True,31.0,7.0
+401864507,Sacramento State,10.0,10.0,True,10.0,0.0
+401864508,Central Michigan,24.0,24.0,True,24.0,0.0
+401864508,Wyoming,10.0,10.0,True,10.0,0.0
+401864509,Air Force,56.0,36.0,False,36.0,-20.0
+401864509,Nevada,33.0,33.0,True,33.0,0.0
+401864510,Hawai_i,10.0,10.0,True,10.0,0.0
+401864510,Wyoming,27.0,27.0,True,27.0,0.0
+401864511,Georgia State,28.0,35.0,True,35.0,7.0
+401864511,Northern Illinois,14.0,14.0,True,14.0,0.0
+401864512,Akron,10.0,10.0,True,10.0,0.0
+401864512,UNLV,31.0,38.0,True,38.0,7.0
+401864570,Florida State,34.0,34.0,True,34.0,0.0
+401864570,New Mexico State,17.0,17.0,True,17.0,0.0
+401864571,Appalachian State,30.0,27.0,False,27.0,-3.0
+401864571,East Carolina,24.0,24.0,True,24.0,0.0
+401864572,Appalachian State,31.0,31.0,True,31.0,0.0
+401864572,NC State,41.0,41.0,True,41.0,0.0
+401864574,Appalachian State,26.0,26.0,True,26.0,0.0
+401864574,Charlotte,15.0,21.0,True,15.0,6.0
+401864575,South Alabama,24.0,24.0,True,24.0,0.0
+401864575,Tulane,28.0,28.0,True,28.0,0.0
+401864576,Kentucky,45.0,45.0,True,45.0,0.0
+401864576,South Alabama,21.0,21.0,True,21.0,0.0
+401864577,Jacksonville State,7.0,7.0,True,7.0,0.0
+401864577,North Dakota State,26.0,33.0,True,33.0,7.0
+401864578,Hawai_i,29.0,29.0,True,29.0,0.0
+401864578,New Mexico State,13.0,19.0,True,19.0,6.0
+401864579,New Mexico,30.0,42.0,False,42.0,12.0
+401864579,New Mexico State,12.0,18.0,True,12.0,6.0
+401866408,Eastern Michigan,28.0,28.0,True,28.0,0.0
+401866408,Sacramento State,10.0,17.0,True,17.0,7.0
+401866414,Buffalo,20.0,20.0,True,20.0,0.0
+401866414,Florida International,33.0,33.0,True,33.0,0.0
+401866418,Jacksonville State,20.0,27.0,True,27.0,7.0
+401866418,Ohio,20.0,29.0,True,29.0,9.0
+401866422,Ball State,15.0,15.0,True,15.0,0.0
+401866422,Liberty,51.0,51.0,True,51.0,0.0
+401866423,Ohio,36.0,36.0,True,36.0,0.0
+401866423,South Alabama,41.0,41.0,True,41.0,0.0
+401866425,Ball State,19.0,13.0,False,13.0,-6.0
+401866425,Kent State,27.0,26.0,False,26.0,-1.0
+401866429,Sacramento State,6.0,6.0,True,6.0,0.0
+401866429,UMass,28.0,35.0,True,35.0,7.0
+401867796,LSU,45.0,45.0,True,45.0,0.0
+401867796,Louisiana Tech,14.0,14.0,False,14.0,0.0
+401867804,Baylor,30.0,36.0,True,36.0,6.0
+401867804,Louisiana Tech,19.0,19.0,True,19.0,0.0
+401869931,Arkansas State,17.0,17.0,True,17.0,0.0
+401869931,Kennesaw State,14.0,14.0,True,14.0,0.0
+401869940,Coastal Carolina,14.0,14.0,True,14.0,0.0
+401869940,Delaware,15.0,22.0,True,22.0,7.0
+401869941,Coastal Carolina,17.0,17.0,True,17.0,0.0
+401869941,Liberty,34.0,34.0,True,34.0,0.0
+401869948,Georgia Southern,27.0,27.0,True,27.0,0.0
+401869948,Jacksonville State,24.0,31.0,True,31.0,7.0
+401869955,Georgia State,31.0,31.0,True,31.0,0.0
+401869955,Kennesaw State,17.0,17.0,True,17.0,0.0
+401869960,James Madison,20.0,20.0,True,20.0,0.0
+401869960,Liberty,10.0,13.0,True,13.0,3.0
+401869961,James Madison,53.0,46.0,False,46.0,-7.0
+401869961,Old Dominion,20.0,20.0,True,20.0,0.0
+401870763,Sam Houston State,21.0,21.0,True,21.0,0.0
+401870763,Troy,24.0,24.0,True,24.0,0.0
+401871045,Marshall,21.0,28.0,True,28.0,7.0
+401871045,Middle Tennessee,19.0,26.0,True,26.0,7.0
+401871047,Marshall,30.0,30.0,True,30.0,0.0
+401871047,Missouri State,24.0,24.0,True,24.0,0.0
+401871048,Jacksonville State,26.0,23.0,False,23.0,-3.0
+401871048,Middle Tennessee,13.0,13.0,True,13.0,0.0

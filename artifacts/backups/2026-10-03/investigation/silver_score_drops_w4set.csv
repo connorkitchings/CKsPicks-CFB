@@ -1,0 +1,224 @@
+game_id,team,week,before,after,play_type
+401856634,Alabama,1,10.0,3.0,Penalty
+401856636,Baylor,1,16.0,10.0,Kickoff
+401856660,Clemson,1,10.0,3.0,Punt
+401856660,LSU,1,51.0,44.0,Punt
+401856661,Louisville,1,27.0,16.0,Punt
+401856661,Ole Miss,1,10.0,9.0,Penalty
+401856661,Ole Miss,1,18.0,17.0,Pass Reception
+401856661,Ole Miss,1,24.0,17.0,Punt
+401856667,Texas,1,7.0,6.0,Kickoff
+401856667,Texas,1,20.0,14.0,Pass Reception
+401856667,Texas,1,20.0,14.0,Rush
+401856670,Utah,2,7.0,6.0,Penalty
+401856670,Utah,2,15.0,7.0,Rush
+401856671,Auburn,2,14.0,13.0,Kickoff
+401856671,Auburn,2,43.0,36.0,Rush
+401856673,Georgia,2,14.0,7.0,Pass Reception
+401856673,Georgia,2,21.0,14.0,Pass Reception
+401856674,Alabama,2,10.0,7.0,Penalty
+401856674,Alabama,2,10.0,7.0,Penalty
+401856674,Alabama,2,23.0,22.0,Penalty
+401856676,Charlotte,2,9.0,6.0,Pass Reception
+401856676,Ole Miss,2,34.0,33.0,Penalty
+401856681,Tennessee,2,24.0,17.0,Pass Incompletion
+401856682,Ohio State,2,3.0,0.0,Rush
+401856683,Arizona State,2,13.0,10.0,Pass Reception
+401856684,Vanderbilt,2,28.0,27.0,Kickoff
+401856687,Florida,3,14.0,13.0,Penalty
+401856688,Ole Miss,3,32.0,30.0,Penalty
+401856691,Mississippi State,3,7.0,0.0,Pass Reception
+401856691,South Carolina,3,13.0,3.0,Rush
+401856691,South Carolina,3,16.0,13.0,Pass Reception
+401856692,Tennessee,3,21.0,18.0,Rush
+401856692,Tennessee,3,35.0,28.0,Punt
+401856693,Texas,3,10.0,7.0,Rush
+401856695,Vanderbilt,3,35.0,28.0,Kickoff
+401856696,Alabama,4,7.0,0.0,Pass Reception
+401856698,Vanderbilt,4,15.0,12.0,Pass Incompletion
+401856700,Georgia,4,14.0,13.0,Kickoff
+401856700,Georgia,4,20.0,13.0,Rush
+401856700,Georgia,4,27.0,21.0,Pass Reception
+401856702,LSU,4,35.0,28.0,Pass Reception
+401856766,North Carolina,0,10.0,3.0,Pass Incompletion
+401856766,North Carolina,0,10.0,3.0,Rush
+401856766,North Carolina,0,15.0,12.0,Fumble Recovery (Own)
+401856776,Colorado,1,7.0,6.0,Penalty
+401856777,Cincinnati,1,34.0,24.0,Rush
+401856780,West Virginia,1,31.0,27.0,Penalty
+401856783,Oregon State,2,21.0,13.0,Pass Reception
+401856783,Oregon State,2,24.0,21.0,Pass Incompletion
+401856783,Texas Tech,2,7.0,6.0,Penalty
+401856783,Texas Tech,2,35.0,21.0,Pass Incompletion
+401856790,Pittsburgh,2,5.0,3.0,Kickoff
+401856790,UCF,2,0.0,-1.0,Kickoff
+401856792,Kansas State,3,3.0,0.0,Rush
+401856793,Northern Illinois,3,16.0,10.0,Passing Touchdown
+401856793,Northern Illinois,3,17.0,10.0,Kickoff
+401856797,Cincinnati,3,28.0,21.0,Sack
+401856801,Utah,3,16.0,13.0,Pass Reception
+401856806,Georgia Southern,4,14.0,7.0,Penalty
+401856806,Houston,4,14.0,7.0,Rush
+401856806,Houston,4,22.0,14.0,Penalty
+401856806,Houston,4,21.0,20.0,Kickoff
+401856806,Houston,4,22.0,21.0,Rush
+401856806,Houston,4,21.0,20.0,Rush
+401856806,Houston,4,35.0,34.0,Kickoff
+401856813,Baylor,4,10.0,3.0,Penalty
+401856813,Baylor,4,10.0,3.0,Rush
+401856816,Iowa State,4,3.0,0.0,Kickoff
+401856816,Iowa State,4,3.0,0.0,Pass Reception
+401856816,Iowa State,4,10.0,9.0,Kickoff
+401856816,Iowa State,4,17.0,9.0,Pass Reception
+401856816,Utah,4,7.0,6.0,Kickoff
+401856816,Utah,4,24.0,13.0,Kickoff
+401856816,Utah,4,20.0,17.0,Field Goal Good
+401856816,Utah,4,17.0,11.0,Kickoff
+401856816,Utah,4,30.0,24.0,Fumble Recovery (Own)
+401856816,Utah,4,30.0,24.0,Rushing Touchdown
+401856816,Utah,4,31.0,24.0,Pass Reception
+401858201,Stanford,0,23.0,14.0,Rush
+401858201,Stanford,0,16.0,7.0,Kickoff
+401858201,Stanford,0,23.0,21.0,Pass Reception
+401858201,Stanford,0,25.0,23.0,Rushing Touchdown
+401858201,Stanford,0,23.0,21.0,Pass Reception
+401858202,NC State,0,8.0,6.0,Kickoff
+401858204,Wake Forest,1,20.0,17.0,Rush
+401858206,Miami,1,7.0,0.0,Penalty
+401858206,Miami,1,7.0,-7.0,Rush
+401858206,Miami,1,7.0,-1.0,Kickoff
+401858206,Miami,1,13.0,6.0,Pass Reception
+401858206,Miami,1,45.0,42.0,Rush
+401858206,Stanford,1,0.0,-3.0,Rush
+401858206,Stanford,1,3.0,0.0,Penalty
+401858206,Stanford,1,6.0,3.0,Pass Reception
+401858209,Duke,1,7.0,0.0,Rush
+401858210,UCLA,1,24.0,21.0,Kickoff
+401858217,Duke,2,28.0,21.0,Rush
+401858219,Clemson,2,16.0,13.0,Rush
+401858221,Old Dominion,2,6.0,3.0,Pass Reception
+401858221,Virginia Tech,2,24.0,17.0,Pass Reception
+401858224,Purdue,2,23.0,7.0,Field Goal Missed
+401858224,Purdue,2,23.0,7.0,Field Goal Good
+401858224,Purdue,2,36.0,10.0,Kickoff
+401858224,Purdue,2,23.0,20.0,Pass Reception
+401858224,Wake Forest,2,23.0,7.0,Field Goal Missed
+401858224,Wake Forest,2,23.0,10.0,Field Goal Good
+401858224,Wake Forest,2,38.0,17.0,Kickoff
+401858230,Louisville,3,7.0,0.0,Rush
+401858230,Louisville,3,14.0,7.0,Rush
+401858230,Louisville,3,41.0,40.0,Kickoff
+401858230,SMU,3,7.0,0.0,Rush
+401858234,Clemson,4,24.0,17.0,Kickoff
+401858238,Miami,4,35.0,28.0,Pass Incompletion
+401858238,Miami,4,45.0,42.0,Rush
+401858238,Miami,4,52.0,45.0,Kickoff
+401858240,Georgia Tech,4,3.0,0.0,Penalty
+401858240,Georgia Tech,4,3.0,0.0,Pass Reception
+401858240,Georgia Tech,4,10.0,3.0,Rush
+401858240,Stanford,4,7.0,0.0,Pass Reception
+401858424,UAB,1,16.0,15.0,Kickoff
+401858424,UAB,1,16.0,15.0,Rush
+401858429,Michigan State,1,13.0,10.0,Rush
+401858429,Toledo,1,7.0,0.0,Rush
+401858429,Toledo,1,7.0,0.0,Kickoff
+401858429,Toledo,1,21.0,14.0,Kickoff
+401858433,Boise State,1,7.0,6.0,Kickoff
+401858433,Boise State,1,7.0,6.0,Pass Reception
+401858433,Boise State,1,7.0,6.0,Rush
+401858433,Boise State,1,7.0,6.0,Rush
+401858433,Boise State,1,24.0,17.0,Rush
+401858433,Oregon,1,24.0,14.0,Rush
+401858436,USC,1,16.0,0.0,Kickoff
+401858438,Notre Dame,1,3.0,0.0,Pass Reception
+401858438,Notre Dame,1,20.0,13.0,Rush
+401858445,Louisiana,2,3.0,0.0,Pass Reception
+401858445,Louisiana,2,10.0,3.0,Rush
+401858445,USC,2,7.0,0.0,Pass Reception
+401858445,USC,2,28.0,7.0,Rush
+401858445,USC,2,28.0,20.0,Rush
+401858445,USC,2,20.0,14.0,Pass Incompletion
+401858446,Washington,2,3.0,0.0,Fumble Recovery (Own)
+401858453,Notre Dame,3,10.0,3.0,Rush
+401858454,Ohio State,3,21.0,0.0,Pass Reception
+401858454,Ohio State,3,42.0,35.0,Rush
+401858460,Eastern Michigan,3,10.0,7.0,Rush
+401858460,Wisconsin,3,32.0,31.0,Kickoff
+401858460,Wisconsin,3,48.0,41.0,Rush
+401858462,UCLA,4,47.0,44.0,Rush
+401858462,UCLA,4,54.0,47.0,Rush
+401858462,UCLA,4,54.0,47.0,Rush
+401858464,Nebraska,4,24.0,18.0,Rush
+401858465,Ohio State,4,28.0,27.0,Penalty
+401859184,Notre Dame,2,21.0,7.0,Rush
+401860878,Colorado State,1,7.0,0.0,Rush
+401860878,Wyoming,1,3.0,0.0,Rush
+401860881,Memphis,2,13.0,10.0,Field Goal Good
+401860881,Memphis,2,21.0,20.0,Rush
+401860884,UTSA,2,31.0,30.0,Penalty
+401860887,James Madison,3,10.0,7.0,Rush
+401860887,James Madison,3,10.0,7.0,Pass Incompletion
+401860893,San Diego State,4,9.0,3.0,Pass Reception
+401860895,Oregon State,4,17.0,10.0,Rush
+401861963,Southern Miss,3,6.0,3.0,Rush
+401861970,Miami (OH),4,2.0,0.0,Kickoff
+401861970,Miami (OH),4,7.0,1.0,Pass Reception
+401861970,Miami (OH),4,14.0,1.0,Kickoff
+401862693,Memphis,0,24.0,21.0,Pass Reception
+401862699,Florida International,1,3.0,0.0,Penalty
+401862702,Army,2,14.0,10.0,Kickoff
+401862702,Army,2,30.0,24.0,Passing Touchdown
+401862703,Florida Atlantic,2,31.0,14.0,Pass Reception
+401862703,Florida Atlantic,2,31.0,28.0,Passing Touchdown
+401862703,Navy,2,14.0,13.0,Penalty
+401862705,North Texas,2,6.0,3.0,Pass Incompletion
+401862705,UNLV,2,3.0,0.0,Pass Incompletion
+401862710,East Carolina,3,10.0,7.0,Pass Reception
+401862710,Old Dominion,3,17.0,0.0,Pass Reception
+401862771,Florida Atlantic,3,10.0,0.0,Pass Incompletion
+401862771,Florida Atlantic,3,7.0,0.0,Pass Incompletion
+401862771,Florida Atlantic,3,10.0,7.0,Kickoff
+401862774,Temple,3,48.0,42.0,Rush
+401862776,Louisiana,3,7.0,0.0,Pass Reception
+401862776,Louisiana,3,8.0,7.0,Pass Incompletion
+401862776,Louisiana,3,8.0,7.0,Fumble Recovery (Own)
+401862776,Louisiana,3,8.0,7.0,Punt
+401862776,Louisiana,3,8.0,7.0,Rush
+401862782,Florida Atlantic,4,7.0,0.0,Rush
+401862782,UL Monroe,4,7.0,0.0,Rush
+401862784,Tulane,4,17.0,14.0,Rush
+401864432,Nevada,1,21.0,14.0,Pass Reception
+401864443,Middle Tennessee,3,17.0,14.0,Punt Return
+401864494,San José State,0,3.0,0.0,Pass Incompletion
+401864498,New Mexico,1,23.0,20.0,Kickoff
+401864498,New Mexico,1,28.0,26.0,Penalty
+401864502,Air Force,2,13.0,0.0,Pass Reception
+401864502,North Dakota State,2,28.0,14.0,Pass Reception
+401864509,Air Force,4,36.0,30.0,Rush
+401864509,Nevada,4,10.0,3.0,Penalty
+401864510,Hawai'i,4,10.0,9.0,Penalty
+401864510,Wyoming,4,13.0,6.0,Rush
+401864512,UNLV,4,21.0,20.0,Kickoff
+401864570,Florida State,0,34.0,27.0,Rush
+401864571,App State,2,27.0,24.0,Pass Reception
+401864572,NC State,4,28.0,27.0,Penalty
+401864575,South Alabama,2,3.0,0.0,Pass Incompletion
+401864579,New Mexico,4,7.0,6.0,Penalty
+401864579,New Mexico,4,15.0,13.0,Penalty
+401864579,New Mexico State,4,3.0,0.0,Penalty
+401864579,New Mexico State,4,11.0,5.0,Pass Reception
+401864579,New Mexico State,4,12.0,6.0,Kickoff
+401866408,Sacramento State,0,17.0,10.0,Pass Incompletion
+401866423,South Alabama,3,21.0,14.0,Rush
+401866425,Ball State,4,13.0,7.0,Rush
+401866425,Kent State,4,17.0,7.0,Pass Incompletion
+401866425,Kent State,4,26.0,24.0,Rush
+401867796,Louisiana Tech,2,7.0,0.0,Field Goal Missed
+401869931,Kennesaw State,4,7.0,0.0,Rush
+401869960,James Madison,1,7.0,0.0,Punt
+401869960,Liberty,1,9.0,6.0,Field Goal Good
+401869960,Liberty,1,9.0,6.0,Punt Return
+401869961,James Madison,4,14.0,0.0,Penalty
+401869961,James Madison,4,33.0,30.0,Pass Incompletion
+401869961,James Madison,4,46.0,39.0,Pass Incompletion
+401871048,Jacksonville State,4,3.0,0.0,Pass Reception

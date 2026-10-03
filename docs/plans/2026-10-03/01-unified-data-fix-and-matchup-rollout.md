@@ -1,12 +1,14 @@
-# Unified Data Fix and Matchup Rollout (One Production Batch)
+# Unified Data Fix and Matchup Rollout (Historical Investigation Record)
 
-- **Status:** Approved (Phases 1–2 read-only work authorized; every write is gated on the Phase 2 decisions and the user's go)
+- **Status:** Superseded by [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** User accepted the unified single-batch recommendation in-session on 2026-10-03 ("only do it once" for production data fixes).
 - **Implementation log:** Pending
 - **Commit policy:** Separate plan commit on `dev`; implementation commits land with the code phases; production writes are user-run.
-- **Supersedes:** [data issues review and rerun](../2026-10-02/05-data-issues-review-and-rerun.md) (its phases and decisions are absorbed here unchanged). **Absorbs as decision-gated scope:** [team stats feeds ratings](../2026-10-02/03-team-stats-feeds-ratings.md) Phase 2 and [matchup data layer v2](../2026-10-02/01-matchup-data-layer-v2.md) Phase B (2025).
+- **Supersedes:** [data issues review and rerun](../2026-10-02/05-data-issues-review-and-rerun.md). **Historical scope:** [team stats feeds ratings](../2026-10-02/03-team-stats-feeds-ratings.md) Phase 2 and [matchup data layer v2](../2026-10-02/01-matchup-data-layer-v2.md) Phase B (2025).
+
+> This document preserves the investigation and its original one-batch proposal. It is not execution authority. The user selected two independently gated windows, full R1 subject to attribution certification, no EPA imputation, and an all-certified-week reconstructed replay; see [04](04-data-integrity-two-window-implementation.md).
 
 ## Goal
 
@@ -183,6 +185,8 @@ Same order as Phase 4, each step dry-run with `--diff` compared against Preview'
 - Week 5 close after certified finals: `scripts/pipeline/backfill_v5_unconstrained_grades.py --week 5 --grades-only` ([plan 2026-10-02/04](../2026-10-02/04-remove-edge-constraints-grade-all-games.md)).
 
 ## Amendments
+
+> **Pointer (2026-10-03):** the read-only investigation finished; its evidence and the D1-D9 recommendations are in the [decision packet](03-data-decision-packet.md), and the investigation's own scope additions are in [Amendment 3 of plan 02](02-week5-data-issue-investigation.md). This contract's scope and its D1-D6 gate are unchanged; the matchup pages are live by default (user decision), so D6 now means confirming them after the batch.
 
 ### Amendment 1 — Unified single-batch scope
 
