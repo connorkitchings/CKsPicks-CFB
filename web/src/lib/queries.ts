@@ -5,6 +5,7 @@ import { existsFrom } from "./db-result";
 import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun } from "./run-selection";
 import { deriveSpreadView, deriveTotalView } from "./publication";
+import { overlaySelection } from "./selection-overlay";
 import type { TeamStatRow } from "./team-stats";
 
 type BaseGame = {
@@ -709,20 +710,9 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       getMarketSelectionsForRun(run.runId),
     ]);
 
-    const rowsWithSelections = rows.map((row) => {
-      const sel = selectionsMap.get(row.gameId);
-      return {
-        ...row,
-        homeTeamSpreadLine: sel?.spread?.point ?? row.homeTeamSpreadLine,
-        spreadLean: (sel?.spread?.side as "home" | "away" | undefined) ?? row.spreadLean,
-        edgeSpread: sel?.spread?.edge ?? row.edgeSpread,
-        totalLine: sel?.total?.point ?? row.totalLine,
-        totalLean: (sel?.total?.side as "over" | "under" | undefined) ?? row.totalLean,
-        edgeTotal: sel?.total?.edge ?? row.edgeTotal,
-        spreadSource: sel?.spread?.source ?? null,
-        totalSource: sel?.total?.source ?? null,
-      };
-    });
+    const rowsWithSelections = rows.map((row) =>
+      overlaySelection(row, selectionsMap.get(row.gameId)),
+    );
 
     const completed = await getSeasonCompletedGames(season);
     const games = await withFrozenLines(
