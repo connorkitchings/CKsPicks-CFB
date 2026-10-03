@@ -26,8 +26,8 @@
 - `web/src/components/slate/SlateStatusRow.tsx`: Sits on same line as model chip; timestamp wraps cleanly with `basis-full sm:basis-auto`.
 - `web/src/components/slate/SlateView.tsx`: Main container spacing reduced on mobile (`space-y-3 sm:space-y-4 py-3 sm:py-6`).
 - `web/src/components/slate/TopLeans.tsx`: Added mobile-only segmented control (`[ Spreads ] [ Totals ]`) cutting vertical card height in half; unified rows to show the game matchup on the left (`Away @ Home`) and the backed team logo + line on the right (`[Logo] +21.0`), eliminating duplicate team logos and matching Totals structure.
-- `web/src/components/slate/SlateGameCard.tsx`: Hid sportsbook line provider on mobile (`hidden sm:inline`) to prevent cramped 2-column cards.
-- `web/src/components/slate/ResultGameCard.tsx`: Hid sportsbook line provider on mobile (`hidden sm:inline`) in results cards for consistency.
+- `web/src/components/slate/SlateGameCard.tsx`: Hid sportsbook line provider on mobile (`hidden sm:inline`) and formatted model spread into a direct, compact line (`Model: -5.9 (+3.4)`) on mobile while retaining full text on desktop.
+- `web/src/components/slate/ResultGameCard.tsx`: Applied the same mobile line provider hiding and direct spread line formatting on results cards.
 - `web/src/app/layout.tsx`: `scroll-smooth` on `<html>`, bottom padding `pb-16 sm:pb-0` on `<body>`.
 - `web/src/components/slate/ModelRecord.tsx`: Refined record cells with category micro-pills, clean mono tracking, and win-rate status badges.
 - `web/src/app/globals.css`: `touch-action: manipulation` on interactive elements, `-webkit-tap-highlight-color: transparent`, and dark mode card elevation highlight (`box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06)`).

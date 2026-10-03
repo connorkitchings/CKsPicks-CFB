@@ -23,6 +23,16 @@ function formatModelForecast(game: Game, lean: Lean, kind: "spread" | "total"): 
   return lean.model ?? "—";
 }
 
+function formatModelSpreadLine(lean: Lean): string {
+  if (!lean.model) return "—";
+  const match = lean.model.match(/by\s+(-?\d+(?:\.\d+)?)$/);
+  if (!match) return lean.model;
+  const margin = parseFloat(match[1]);
+  if (Math.abs(margin) < 0.05) return "PK";
+  const modelLine = -margin;
+  return modelLine > 0 ? `+${modelLine.toFixed(1)}` : modelLine.toFixed(1);
+}
+
 function ResultBetCell({
   game,
   title,
@@ -47,6 +57,7 @@ function ResultBetCell({
 
   const grade = resultFor(game, kind);
   const modelText = formatModelForecast(game, lean, kind);
+  const modelSpreadLine = kind === "spread" ? formatModelSpreadLine(lean) : null;
 
   return (
     <div className="px-3 pt-2 pb-2.5 text-center">
@@ -77,10 +88,17 @@ function ResultBetCell({
         )}
       </div>
 
-      <div className="truncate text-xs text-ink-muted">
+      <div className="flex items-baseline justify-center truncate text-xs text-ink-muted">
         <span className="text-ink-faint">Model:</span>{" "}
-        <span className="font-medium text-ink">{modelText}</span>
-        <span className={clsx("ml-1 font-semibold tabular-nums", edgeTone(lean.edge, kind))}>
+        {kind === "spread" ? (
+          <>
+            <span className="ml-1 font-medium text-ink sm:hidden">{modelSpreadLine}</span>
+            <span className="ml-1 hidden font-medium text-ink sm:inline">{modelText}</span>
+          </>
+        ) : (
+          <span className="ml-1 font-medium text-ink">{modelText}</span>
+        )}
+        <span className={clsx("ml-1 shrink-0 font-semibold tabular-nums", edgeTone(lean.edge, kind))}>
           (+{lean.edge.toFixed(1)})
         </span>
       </div>
