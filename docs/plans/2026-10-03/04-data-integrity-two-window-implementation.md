@@ -224,6 +224,15 @@ Appendix B defines matchup repinning, bounded updating/unavailable states, rollb
 - [ ] Required tests and documentation checks pass; status, decision log, known-issues register, and session log are updated.
 - [ ] Status changes to `Implemented` only after both authorized windows and their required release decisions complete.
 
+### Window 1 progress (2026-10-04)
+
+The definition-of-done boxes above stay unchecked until the Window 1 release receipt is signed and, for the later items, Window 2 completes. Task status on `dev`:
+
+- [x] Task 1 market selection, snapshot identity and grading: code and tests committed (`850ca38`); the independent verifier's line ordering and tie rule corrected. Real Preview rehearsal still open.
+- [x] Task 2 Silver, display and venue repairs: `ppa_missing` before fill, punt filtering (earlier commit), venue city gate and pinned publisher (`562b2b2`); Preview venue write verified 271/271.
+- [x] Task 3 accuracy-only Performance: committed with the original design preserved; Playwright 28/28.
+- [ ] Task 4 release receipt: filled except input/output identities and the Preview serving and rollback rehearsal; production decision pending.
+
 ## Amendments
 
 Any change to R1 scope, EPA treatment, replay cutoff policy, data identities, neutral refit design, or atomic-release behavior is material. Terra must stop, append an amendment for user review, and not implement that change under this contract.

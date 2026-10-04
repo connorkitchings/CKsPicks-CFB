@@ -296,10 +296,9 @@ def verify_selections(
 ) -> dict[str, int]:
     """Every selection must bind to its frozen quote, snapshot, side, point.
 
-    Selections exist for every lined target (quote lineage for the displayed
-    market point). Leans are null exactly for sub-threshold (No Bet) targets:
-    a null lean must pair with an edge below the lean threshold, and a set
-    lean must equal the selection side.
+    Selections exist for every lined target that has a lean (quote lineage for
+    the displayed market point); a null lean has no selection. A set lean must
+    equal the selection side.
     """
     with psycopg.connect(db_url) as conn:
         with conn.cursor() as cur:
@@ -332,8 +331,12 @@ def verify_selections(
             cur.execute(
                 """
                 SELECT
-                  COUNT(*) FILTER (WHERE home_team_spread_line IS NOT NULL) AS lined_spread,
-                  COUNT(*) FILTER (WHERE total_line IS NOT NULL) AS lined_total
+                  COUNT(*) FILTER (
+                    WHERE home_team_spread_line IS NOT NULL AND spread_lean IS NOT NULL
+                  ) AS lined_spread,
+                  COUNT(*) FILTER (
+                    WHERE total_line IS NOT NULL AND total_lean IS NOT NULL
+                  ) AS lined_total
                 FROM predictions WHERE run_id = %s
                 """,
                 (run_id,),
@@ -410,12 +413,15 @@ def verify_selections(
         assert price is not None, "selection price must not be null"
         counts[target] += 1
 
+    # Window 1: a selection exists exactly for lined targets that carry a lean. A
+    # null lean never gets a fabricated side, so it has no selection row.
     assert counts["spread"] == lined_spread, (
         f"spread selections {counts['spread']} != lined spread predictions "
-        f"{lined_spread}"
+        f"with a lean {lined_spread}"
     )
     assert counts["total"] == lined_total, (
-        f"total selections {counts['total']} != lined total predictions {lined_total}"
+        f"total selections {counts['total']} != lined total predictions "
+        f"with a lean {lined_total}"
     )
     print(
         f"  selections: {counts['spread']} spread + {counts['total']} total "

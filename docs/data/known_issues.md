@@ -4,7 +4,7 @@ Open and resolved data-quality issues that affect what the product shows. Add an
 
 ## Repair authority (updated 2026-10-04)
 
-[Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) governs the two independent windows. Window 1 has partial local code, not a completed release receipt. Amendment 2 is **Approved (2026-10-04)**, with [data/certification](../plans/2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web](../plans/2026-10-03/window2/release-schema-and-web.md) specifications. No implementation or production completion is asserted by this documentation update.
+[Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) governs the two independent windows. Window 1 code is committed on `dev` (`850ca38`, `562b2b2`); its release receipt is open pending the Preview serving rehearsal and your production decision. Amendment 2 is **Approved (2026-10-04)**, with [data/certification](../plans/2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web](../plans/2026-10-03/window2/release-schema-and-web.md) specifications. No implementation or production completion is asserted by this documentation update.
 
 Window 1 owns market selection/ties, Silver display masking and punt filtering, venue validation and accuracy presentation. Window 2 evaluates full R1, admits corroborated allocation changes (otherwise retains baseline), rebuilds the complete historical measurement/rating lineage under the unchanged model design, and publishes reconstructed replay plus a separately frozen prospective cutover. No EPA imputation. Neutral-site model changes (#9) require a separate contract.
 
@@ -47,6 +47,8 @@ Issue #5 is reconciled under **Resolved** using the original investigation evide
 
 `game_venues` rows exist for 401858476 (Northwestern @ Penn State) and 401864515 (North Dakota State @ Wyoming) but `city` and `state` are NULL, so those cards render no location. Investigation and backfill path: [Week 5 data-issue investigation, Phase E](../plans/2026-10-03/02-week5-data-issue-investigation.md); the backfill belongs to independently releasable Window 1.
 
+**Update 2026-10-04 (verified):** the Preview city gap is closed. Root cause refined: Silver `venues` holds one version per capture year and the publisher took the last one created (`ac36e3e4`, year 2025), which lacked 8 venue IDs. `publish_game_venues.py --venues-version` now pins an exact version; with `b569d242e8c4c53b416bfe14` Preview `game_venues` has 271 rows, 271 with city and 269 with state (the city-only rows are international). Production still needs the same pinned publish (user-run).
+
 **Investigated 2026-10-03 (`artifacts/backups/2026-10-03/investigation/e-findings.md`):** the scope is 11 of 271 games (4.1%) across 8 venues, not 2: Fargodome (2 games), Hornet Stadium (2), Ryan Field, Elliott T. Bowers Stadium, TQL Stadium and the neutral sites Wembley, Lambeau Field and Nissan Stadium have no city/state; Aviva Stadium has a city but no state (legitimate). **Root cause:** `publish_game_venues.py` joins Silver `venues`, which is built from per-year CFBD venue captures that stop at 2025 (no 2026 capture exists), so venues new to FBS or not used in 2025 have nothing to join. It is not a provider gap: CFBD `/venues` returns city and state for all of them (Wembley and Aviva have no state, correctly; CFBD spells Lambeau's city "Greenbay"). **Backfill:** a fresh 2026 venue capture, then Silver `venues`, then `publish_game_venues.py` on Preview and production inside the batch; the UI must render city-only for the international rows. Prevention proposal (with D9): fail the venue dry run when a scheduled game's venue has no city.
 
 ### 6. Week 5 null-lean games show a defaulted side (opened 2026-10-03)
@@ -80,6 +82,15 @@ From the market-line sweep (`g3-g4-findings.md`; the numbers below marked "verif
 Team identity is clean (agent-reported, `g3-g4-findings.md`): after `canonical_team` the 138 FBS names are identical across Silver, Neon games, the priors and `v5_rating_snapshots`; no alias collisions (Miami vs Miami (OH), Texas vs Texas State, Louisiana vs Louisiana Tech stay separate); the 276-row prior frame has no duplicates and exactly one neutral-prior team (North Dakota State). Week 5 `v5_rating_snapshots` holds only the 112 teams playing that week (byes absent, by design).
 
 **Minor (2026-10-03):** the Silver play de-duplication keys on `(game_id, drive_number, play_number)` instead of a play id and dropped one real play in weeks 0-4 (Texas v UTSA 401856693, drive 8, play 1: two distinct plays at 10:02 and 09:32; Silver kept the 09:32 play). The other silent fills in `enrichment.py` (yards to goal, yard line, down, yards gained, distance, period, scores) change 0 Silver rows because the raw Bronze data has no nulls in those fields; `ppa` is the only active fill (issue 3).
+
+
+### 13. Away spreads were served the worst available line when books disagreed (opened 2026-10-04)
+
+For a model-Away spread, the generator and its independent verifier both picked the highest home-signed line, which gives the Away side the fewest points. The correct rule is the lowest home-signed line (contract 04, Task 1). The verifier shared the defect, so it could not catch it; the corrected verifier rejects the served artifacts.
+
+**Sizing (verified 2026-10-04, read-only on Preview R2; details in `session_logs/2026-10-04/02-window1-completion.md`):** Weeks 0-4 (`v5repair-20260929-p1`): 115 Away-direction games, 32 with diverging books, 26.5 points conceded in total (at most 3.0 in one game); Weeks 3 and 4 had no divergence. Re-scoring the 29 affected Away bets at the best line changes one result (Week 1 loss to push). Week 5 (frozen `p2`): 2 games (401856819, 401864513), 1.0 point conceded; Week 5 grading not assessed (ungraded). No Home pick was affected. Stored grades equal a recomputation from the frozen side and line for 199 of 199 Weeks 0-4 bets.
+
+**Status:** fixed in code on `dev` (selection and verifier, `850ca38`). Served artifacts and stored selections are unchanged: Weeks 0-4 are retrospective replays to be regenerated in Window 2, and the frozen Week 5 run stays as-is by user decision (2026-10-04).
 
 ## Resolved
 

@@ -2,9 +2,9 @@
 
 ## TL;DR
 - **Worked On:** Closed the remaining Window 1 gaps from the code review: verifier tie/sort rule, publisher null labels, accuracy-only dashboard, tests.
-- **Outcome:** Local code and tests pass. Window 1 is **not released**: nothing is committed, Preview was not touched, and the receipt fields marked PENDING need user-run steps.
+- **Outcome:** Code committed (`850ca38`, venue pin `562b2b2`); Playwright 28/28 and the full Python suite pass; Preview venue write verified (271/271 cities, 269 states). Window 1 is **not released**: the input/output identities row and the Preview serving and rollback rehearsal are open, and production needs your decision.
 - **Plan Contract:** `docs/plans/2026-10-03/04-data-integrity-two-window-implementation.md` (Tasks 1–4)
-- **Next:** User commits, runs the Preview rehearsal below, fills the PENDING fields, then decides on production.
+- **Next:** Run the Preview serving and rollback rehearsal (below), fill the last PENDING row, then decide on production. Production venues are published separately with the same `--venues-version` pin.
 
 ## Changes
 - `scripts/pipeline/verify_v5_intended_update_serving.py`: exact ties now go Away/Under (`>` not `>=`). The independent verifier also sorted spread quotes highest-first for **every** side; Away now selects the lowest home-signed line, matching `models/market_grading.py`.
@@ -81,3 +81,22 @@ Definitions: "Away" = model direction Away (`prediction + canonical <= 0`, ties 
 - Proposed message: `fix: window 1 selection tie rules, null-lean handling and accuracy-only performance`
 
 **tags:** ["data-integrity", "window1", "release-receipt"]
+
+## Preview serving rehearsal (procedure written 2026-10-04; PENDING user-run)
+**Harness fix (verified by reading the code):** `scripts/pipeline/rehearse_v5_bestquote_replay_preview.py` asserted a selection row for every lined target. The Window 1 publisher writes a selection only when the lean is home/away or over/under (`publish_to_db.py`, null leans get none), so the harness would have failed on any null-lean game even with nothing wrong. It now compares selections with lined targets that carry a lean. Other harness checks are consistent with Window 1: selection and grade versions equal `SELECTION_POLICY_VERSION` / `model_side_best_quote_v2`, grading goes through `score_to_db`, and the run is published with `--no-update-current --state preview`, so **public selection is never changed**. It supports Weeks 0-4 only (not Week 5).
+
+**What it exercises:** forecast equality with the source replay run, selection lineage (quote, snapshot, side, point), the lowest-line rule for Away, frozen-side v2 grading, snapshot immutability on re-publish (second run must be an idempotent repeat), and that `system_stats` is untouched.
+
+**Baseline captured by me (read-only on Preview, 2026-10-04):** public selections Weeks 0-4 `2026w{0..4}-v5repair-20260929-p1`, Week 5 `2026w5-v5repair-20260929-p2`; `current_week` = 2026 week 5, run `2026w5-v5repair-20260929-p2`; 15 existing `v5replay-bestquote` runs; 2,120 `prediction_market_selections` rows; fingerprint `c464574ef616c7d4`.
+
+Steps (all user-run, Preview only):
+1. Baseline snapshot (read-only), saved as `before`.
+2. `zsh scripts/ops/with_preview_env.sh uv run python scripts/pipeline/rehearse_v5_bestquote_replay_preview.py --week 1 --dry-run` (generate only, nothing uploaded or published).
+3. Same command without `--dry-run`. It creates run `2026w1-v5replay-bestquote-<UTC date>`, publishes it as `preview`, scores it, verifies it, and repeats the publish to prove idempotency. Week 1 is the best test week: 14 of its Away games have diverging books and one result flips (loss to push).
+4. `... --week 1 --verify-only --run-id <printed run id>`.
+5. Baseline snapshot again, saved as `after`. The fingerprint must equal `c464574ef616c7d4` and the selection-row count rises only by the new run's rows. This is the rollback evidence for Window 1: public selections, `current_week` and `system_stats` were never touched, so there is nothing to undo; the new run stays as immutable audit evidence.
+6. Optional, wider: repeat for the remaining weeks 0, 2, 3, 4 (omit `--week` to run all five).
+
+Not included, and not verified by me: a public select-and-restore of a Preview run. `select_public_run.py` needs an active pipeline lease and may need release authorizations for the run's model. The atomic select/rollback rehearsal belongs to the Window 2 controller (Amendment 1).
+
+Receipt rows to fill from the output: run id, verifier output (selection and grade counts), idempotent-repeat counts, `after` fingerprint.

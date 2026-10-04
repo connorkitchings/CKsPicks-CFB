@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-04: Total bets use `edge >= threshold`
+
+- **Decision:** a total whose edge exactly equals the threshold is a bet, the same as spreads and as the independent serving verifier expects. Previously totals used a strict `>`, so a total exactly at the threshold was "No Bet" while the verifier expected a bet.
+- **Where:** `src/cks_picks_cfb/inference/weekly.py`; the matching test in `tests/test_weekly_inference.py` was updated. The side at an exact tie is Away/Under everywhere (contract 04, Task 1).
+- **Authority:** user decision in the planning chat on 2026-10-04 ("Keep >="). Window 1 commit `850ca38`. Frozen and stored selections are unchanged.
+
 ## 2026-10-04: Approve Window 2 Amendment 2
 
 - **Scope:** documentation only. [Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) now links exact data/certification and release/schema/web appendices. The user approved Amendment 2 and its appendices on 2026-10-04 (“Approve it now”). Window 1 finishes first; Window 2 sessions then run in order under the 5A 25% gate. Approval does not authorize any Preview/production write or release.
