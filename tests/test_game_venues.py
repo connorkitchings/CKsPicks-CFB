@@ -175,3 +175,27 @@ def test_required_city_gate_allows_international_city_without_state():
         require_venue_cities([{"game_id": 1, "city": "Dublin"}], [1, 2])
     with pytest.raises(ValueError, match="1"):
         require_venue_cities([{"game_id": 1, "city": "  "}], [1])
+
+
+def test_latest_silver_ref_pins_an_exact_version():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(
+        0, str(Path(__file__).resolve().parents[1] / "scripts" / "pipeline")
+    )
+    import publish_game_venues as pgv
+
+    class Cur:
+        def execute(self, query, params):
+            self.query, self.params = query, params
+
+        def fetchone(self):
+            return ("venues", "v-pinned", "venues_v1", "sha", "uri")
+
+    cur = Cur()
+    ref = pgv._latest_silver_ref(cur, "venues", None, "v-pinned")
+    assert ref.version_id == "v-pinned"
+    assert "AND version_id = %s" in cur.query and "v-pinned" in cur.params
+    pgv._latest_silver_ref(cur, "venues", None)
+    assert "version_id = %s" not in cur.query

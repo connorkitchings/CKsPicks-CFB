@@ -30,7 +30,8 @@
 - `uv run python -m pytest tests -q`: 1642 passed, 9 skipped, 2 failed before the two test updates above; the affected file then passed (9/9). Full suite not re-run after the update.
 - `ruff check` on touched Python files and `src`: clean.
 - Web: `npm run typecheck`, `npm run lint`, `npm run test:publication` (118 pass), `npm run build`: all pass.
-- Not run: Playwright (user-run; do not use the user's dev server), real Preview checks, publish-time venue gate test (only `require_venue_cities` itself is unit-tested; the wiring in `publish_to_db.py` needs a DB and is covered by the Preview rehearsal).
+- Playwright (run 2026-10-04 with the user's dev server stopped): `performance.spec.ts` and `publication.spec.ts`, 28 passed.
+- Not run: real Preview checks beyond the read-only venue dry run and verifier, publish-time venue gate test (only `require_venue_cities` itself is unit-tested; the wiring in `publish_to_db.py` needs a DB and is covered by the Preview rehearsal).
 
 ## Verifier run on served Preview artifacts (verified 2026-10-04, read-only)
 - Command: `verify_v5_intended_update_serving` with `docs/plans/2026-09-29/v5-repair-2026-source-lock.json`, `--release-tag 20260929-p1`, reading Preview R2; no `--apply`, nothing written.
@@ -63,10 +64,10 @@ Definitions: "Away" = model direction Away (`prediction + canonical <= 0`, ties 
 ## Release receipt (Task 4) — PENDING fields need user-run steps
 | Item | Value |
 |---|---|
-| Code SHA | PENDING (after the user commits) |
-| Preview venue coverage (all published games have city) | PENDING: `publish_game_venues.py --require-city` dry run, then publish |
-| Preview verifier output | PENDING: run `verify_v5_intended_update_serving.py` on served and rollback runs |
-| Original stored grades reproduced | PENDING |
+| Code SHA | `850ca38` (pushed to `origin/dev`; docs commit `ac47375`) |
+| Preview venue coverage (all published games have city) | **First dry run FAILED** (default newest venues version `ac36e3e4`, year-2025 list): 10 games without a city (401856661, 401856797, 401856812, 401858438, 401858476, 401862707, 401864507, 401864515, 401864577, 401866429; venue IDs 3810, 7173, 2455, 3798, 11823, 3647, 3757, 3714). **Root cause (verified):** Silver `venues` holds one version per capture year and the publisher picked whichever was created last. Only `b569d242e8c4c53b416bfe14` (year 2026, in both catalogs, production's latest) covers all 8 IDs. **Fix:** `publish_game_venues.py --venues-version` pins an exact version (unpinned default unchanged, documented as unreliable). **Pinned dry run (read-only, 2026-10-04): 271/271 with city, 269 with state (2 international city-only), `venue_not_found` 0**, venues content sha `bee1f3c7…`. The Preview write is still user-run. |
+| Preview verifier output | Run on the served `p1` artifacts: corrected rule rejects 32 Away spreads (see above). Rollback runs not run. |
+| Original stored grades reproduced | Done for Weeks 0–4 artifacts: 199/199 stored grades equal a recomputation from the frozen side and line (artifact column, not Neon `prediction_grades`). Week 5 ungraded. |
 | Input/output identities | PENDING: snapshot identities from the Preview publish |
 | Known limitation | Window 1 changes presentation, selection and team stats only; the V5 rating lineage is unchanged until Window 2. Window 1 masks missing PPA in display; stored zeros remain. |
 | Rollback | Re-select the prior run via the existing selection tools; no ratings, forecasts or frozen records change. |

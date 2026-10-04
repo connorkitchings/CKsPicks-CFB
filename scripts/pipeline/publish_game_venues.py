@@ -39,14 +39,26 @@ URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}
 
 
 def _latest_silver_ref(
-    cur: psycopg.Cursor, dataset: str, season: int | None
+    cur: psycopg.Cursor,
+    dataset: str,
+    season: int | None,
+    version_id: str | None = None,
 ) -> DatasetRef:
+    """Return the pinned ``version_id`` or, without a pin, the newest validated one.
+
+    The newest validated ``venues`` version is not a reliable choice: Silver holds one
+    version per capture year, so the last one created can lack current stadiums.
+    Pass ``version_id`` to pin an exact, reviewed version.
+    """
     query = (
         "SELECT dataset, version_id, schema_version, content_sha, uri "
         "FROM catalog.dataset_versions "
         "WHERE dataset = %s AND tier = 'silver' AND state = 'validated' "
     )
     params: list[object] = [dataset]
+    if version_id is not None:
+        query += "AND version_id = %s "
+        params.append(version_id)
     if season is not None:
         query += "AND partitions @> %s::jsonb "
         params.append(json.dumps({"seasons": [season]}))
@@ -68,6 +80,10 @@ def main() -> int:
         "--dry-run", action="store_true", help="Report coverage; write nothing"
     )
     parser.add_argument(
+        "--venues-version",
+        help="Pin the exact validated Silver venues version_id (recommended)",
+    )
+    parser.add_argument(
         "--require-city",
         action="store_true",
         help="Fail dry run/publication on incomplete city coverage",
@@ -85,7 +101,7 @@ def main() -> int:
     with psycopg.connect(url) as conn:
         with conn.cursor() as cur:
             games_ref = _latest_silver_ref(cur, "games", args.season)
-            venues_ref = _latest_silver_ref(cur, "venues", None)
+            venues_ref = _latest_silver_ref(cur, "venues", None, args.venues_version)
             cur.execute("SELECT game_id FROM games WHERE season = %s", (args.season,))
             neon_ids = [int(r[0]) for r in cur.fetchall()]
         games = read_dataset(storage, games_ref)
