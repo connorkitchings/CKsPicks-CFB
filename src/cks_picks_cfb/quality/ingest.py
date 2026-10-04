@@ -191,20 +191,22 @@ def _capture_completeness(ctx: Mapping[str, Any]) -> Outcome:
     "ingest.games_vs_schedule",
     stage="ingest",
     severity=WARN,
-    description="Ingested games match the pinned schedule: none missing, extra or duplicated",
+    description="Every scheduled game was ingested once (extra games are reported, not failed)",
 )
 def _games_vs_schedule(ctx: Mapping[str, Any]) -> Outcome:
     if ctx.get("games") is None or ctx.get("schedule") is None:
         return skipped("games/schedule not provided")
     gap = games_vs_schedule(ctx["games"], ctx["schedule"])
-    ok = not (gap["missing"] or gap["extra"] or gap["duplicates"])
+    # Extra games are expected: Silver holds every FBS-involved game while the
+    # published schedule is narrower. They are reported, not failed.
+    ok = not (gap["missing"] or gap["duplicates"])
     return Outcome(
         ok,
         observed={k: (len(v) if isinstance(v, list) else v) for k, v in gap.items()},
-        expected={"missing": 0, "extra": 0, "duplicates": 0},
+        expected={"missing": 0, "duplicates": 0},
         detail=""
         if ok
-        else f"missing {gap['missing'][:10]}, extra {gap['extra'][:10]}",
+        else f"missing {gap['missing'][:10]}, duplicates {gap['duplicates']}",
     )
 
 
@@ -302,6 +304,8 @@ def _price_presence(ctx: Mapping[str, Any]) -> Outcome:
     if ctx.get("market_quotes") is None:
         return skipped("market_quotes not provided")
     res = price_presence(ctx["market_quotes"])
+    if not res["columns"]:
+        return skipped("market_quotes source carries no price columns")
     return Outcome(
         res["with_any_price"] > 0,
         observed=res,

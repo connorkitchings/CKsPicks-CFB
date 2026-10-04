@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from cks_picks_cfb.quality.checks import REGISTRY, STAGES, registry_problems, run_stage
+from cks_picks_cfb.quality.loaders import load_ingest_context, parse_pins
 from cks_picks_cfb.quality.receipt import build_receipt, write_receipt_local
 
 
@@ -31,6 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int)
     parser.add_argument("--environment", choices=("preview", "production"))
     parser.add_argument("--output", type=Path, default=Path("artifacts"))
+    parser.add_argument(
+        "--pin",
+        action="append",
+        metavar="DATASET=VERSION_ID",
+        help="Pin a Silver dataset version for the run (repeatable)",
+    )
     parser.add_argument("--list", action="store_true", help="List registered checks")
     parser.add_argument(
         "--verify-registry", action="store_true", help="Check registry integrity only"
@@ -50,11 +57,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.stage is None:
         parser.error("--stage is required unless --list or --verify-registry is used")
 
-    run = run_stage(args.stage, {"year": args.year, "environment": args.environment})
+    context: dict = {"year": args.year, "environment": args.environment}
+    pins = parse_pins(args.pin)
+    if args.stage == "ingest" and args.environment and args.year:
+        context.update(load_ingest_context(args.environment, args.year, pins=pins))
+    run = run_stage(args.stage, context)
     receipt = build_receipt(
         run,
-        identity={"year": args.year, "environment": args.environment},
+        identity={"year": args.year, "environment": args.environment, "pins": pins},
         code_sha=_code_sha(),
+        inputs=context.get("inputs"),
     )
     path = write_receipt_local(receipt, args.output)
     print(

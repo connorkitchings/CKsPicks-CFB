@@ -156,3 +156,16 @@ def test_schema_contract_records_pass_and_fail_per_dataset():
     }
     assert by_scope["good"].passed and not by_scope["dup"].passed
     assert "duplicate keys" in by_scope["dup"].detail
+
+
+def test_extra_silver_games_are_reported_but_do_not_fail():
+    schedule = pd.DataFrame({"season": 2026, "week": [1, 1], "game_id": [1, 2]})
+    out = _ingest({"games": _games([1, 2, 77, 78]), "schedule": schedule})
+    r = out["ingest.games_vs_schedule"]
+    assert r.passed and r.observed["extra"] == 2 and r.observed["missing"] == 0
+
+
+def test_price_check_skips_when_the_source_has_no_price_columns():
+    silver_like = pd.DataFrame({"quote_id": ["a"], "spread": [-3.5]})
+    r = _ingest({"market_quotes": silver_like})["ingest.quote_price_presence"]
+    assert r.skipped and not r.passed
