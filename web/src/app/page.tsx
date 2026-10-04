@@ -172,9 +172,10 @@ export default async function Home({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
+          const isV5 = selectsV5(selectedRun?.modelId) || (season === 2026 && selectedRun === null);
           [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
-            selectsV5(selectedRun?.modelId)
+            isV5
               ? getV5Performance(season, week)
               : Promise.resolve([]),
           ]);
@@ -183,6 +184,8 @@ export default async function Home({
         }
         if (games.length > 0 && games[0].publicationMode === "predictions") {
           systemName = games[0].systemName;
+        } else if (season === 2026) {
+          systemName = "Trench Warfare V5";
         }
         if (publicationMode === "predictions" && season > 0) {
           try {
