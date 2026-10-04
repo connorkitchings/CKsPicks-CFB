@@ -1,0 +1,35 @@
+# Stage 6A pinned rebuild plan (contract 02, Amendment 1). Every input is an explicit
+# uri + sha256. Hashes for R2 pins (Bronze capture sets, repair manifest) are added
+# only after a verified read-only readback; nothing here is "latest".
+run_id: 6a-rebuild-20261004-r1
+storage_identity: null   # set at preflight from the verified Preview bucket (r2:<account>:<bucket>)
+seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
+# Exact UTC cutoff for eligible 2026 states. Not recorded in repo evidence: preflight
+# for states_2026 stops until the user supplies it.
+cutoff_2026: null
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  home_host: 1.0
+  venue_unknown: true
+  nullable_ppa: true
+  website_population: regular_season_fbs_vs_fbs
+inputs:
+  - {name: admission_decisions, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_decisions.csv, sha256: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db}
+  - {name: admission_report, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_report.json, sha256: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609}
+  - {name: cfbd_drives_manifest, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/cfbd_drives_manifest.jsonl, sha256: 09a1cbaea9c740e7c550ce85012665ba3644878cf45e717e3c6665e309d8e819}
+  - {name: corroboration_group_status, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/corroboration_group_status.csv, sha256: bf255a84940f1ce6c417e02e22c8cdd2d64e11a8eca4553a65d81f069ef180f5}
+  - {name: step5_historical_groups, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/historical_groups.csv, sha256: 3bd292e600adb447d9be9b6acadf1c8ed94758fcc1c8a2433138d25633eafe5a}
+stages:
+  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
+  - {name: silver, parents: [baseline_reproduction], outputs: [lake/silver/]}
+  - {name: eligibility, parents: [silver], outputs: [rebuild/6a/6a-rebuild-20261004-r1/eligibility/]}
+  - {name: step5_comparison, inputs: [admission_decisions, step5_historical_groups], parents: [eligibility], outputs: [rebuild/6a/6a-rebuild-20261004-r1/comparison/]}
+  - {name: gold, inputs: [admission_decisions, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/]}
+  - {name: measurements_ratings, parents: [gold], outputs: [rebuild/6a/6a-rebuild-20261004-r1/ratings/]}
+  - {name: offsets_refit, parents: [measurements_ratings], outputs: [rebuild/6a/6a-rebuild-20261004-r1/forecast/]}
+  - {name: states_2026, parents: [offsets_refit], outputs: [rebuild/6a/6a-rebuild-20261004-r1/states_2026/]}

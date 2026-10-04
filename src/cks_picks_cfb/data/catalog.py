@@ -622,6 +622,136 @@ def register_dataset_version(
         conn.commit()
 
 
+def register_partitioned_dataset_versions(
+    conn_url: str,
+    entries: Sequence[tuple[Mapping[str, Any], str]],
+    *,
+    validation: Mapping[str, Mapping[str, Any]] | None = None,
+    before_write=None,
+) -> None:
+    """Register partitioned roots, their schemas and edges in ONE transaction.
+
+    ``entries`` are ``(partitioned_manifest, root_content_sha)`` pairs, parents
+    before children. Call only after every part and the root manifest were
+    read back from R2. Any failure rolls back every row. ``before_write`` receives
+    the cursor first so callers can assert the database identity.
+    """
+    validation = validation or {}
+    with psycopg.connect(conn_url) as conn:
+        with conn.transaction():
+            with conn.cursor() as cur:
+                if before_write is not None:
+                    before_write(cur)
+                for manifest, content_sha in entries:
+                    dataset = str(manifest["dataset"])
+                    schema_version = str(manifest["schema_version"])
+                    schema = schema_for(dataset, schema_version)
+                    schema_json = schema.json()
+                    cur.execute(
+                        "SELECT schema_json, schema_sha FROM catalog.schema_versions "
+                        "WHERE dataset = %s AND schema_version = %s",
+                        (dataset, schema_version),
+                    )
+                    existing_schema = cur.fetchone()
+                    if existing_schema:
+                        if _canonical(dict(existing_schema[0])) != _canonical(
+                            schema_json
+                        ) or (
+                            existing_schema[1] is not None
+                            and str(existing_schema[1]) != schema.sha256
+                        ):
+                            raise ValueError(
+                                f"Immutable schema conflict: {dataset}/{schema_version}"
+                            )
+                    else:
+                        cur.execute(
+                            "INSERT INTO catalog.schema_versions "
+                            "(dataset, schema_version, schema_json, schema_sha) "
+                            "VALUES (%s, %s, %s::jsonb, %s)",
+                            (
+                                dataset,
+                                schema_version,
+                                _canonical(schema_json),
+                                schema.sha256,
+                            ),
+                        )
+                    version_id = str(manifest["version_id"])
+                    uri = str(manifest["uri"])
+                    partitions = {
+                        "artifact_kind": manifest["artifact_kind"],
+                        "partition_keys": list(manifest["partition_keys"]),
+                    }
+                    row = (
+                        dataset,
+                        manifest["tier"],
+                        schema_version,
+                        content_sha,
+                        uri,
+                        uri,
+                        int(manifest["row_count"]),
+                        partitions,
+                        _catalog_timestamp(manifest["as_of"]),
+                        manifest.get("code_sha"),
+                        manifest.get("config_sha"),
+                        "validated",
+                        "dataset_identity_v2",
+                        schema.sha256,
+                    )
+                    cur.execute(
+                        "SELECT dataset, tier, schema_version, content_sha, uri, "
+                        "manifest_uri, row_count, partitions, as_of, code_sha, "
+                        "config_sha, state, identity_version, schema_sha "
+                        "FROM catalog.dataset_versions WHERE version_id = %s",
+                        (version_id,),
+                    )
+                    existing = cur.fetchone()
+                    if existing and _canonical(tuple(existing)) != _canonical(row):
+                        raise ValueError(
+                            f"Immutable dataset version conflict: {version_id}"
+                        )
+                    cur.execute(
+                        "INSERT INTO catalog.dataset_versions "
+                        "(version_id, dataset, tier, schema_version, content_sha, uri, "
+                        "manifest_uri, row_count, partitions, as_of, code_sha, "
+                        "config_sha, state, identity_version, schema_sha) VALUES "
+                        "(%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s, "
+                        "%s, %s) ON CONFLICT (version_id) DO NOTHING",
+                        (version_id, *row[:7], json.dumps(partitions), *row[8:]),
+                    )
+                    for ordinal, parent in enumerate(manifest.get("parents", ())):
+                        cur.execute(
+                            "INSERT INTO catalog.dataset_dependencies "
+                            "(child_version_id, parent_version_id, ordinal) "
+                            "VALUES (%s, %s, %s) ON CONFLICT "
+                            "(child_version_id, parent_version_id) DO NOTHING",
+                            (version_id, str(parent["version_id"]), ordinal),
+                        )
+                    for ordinal, capture_id in enumerate(
+                        manifest.get("source_captures", ())
+                    ):
+                        cur.execute(
+                            "INSERT INTO catalog.dataset_capture_dependencies "
+                            "(child_version_id, capture_id, ordinal) "
+                            "VALUES (%s, %s, %s) ON CONFLICT "
+                            "(child_version_id, capture_id) DO NOTHING",
+                            (version_id, capture_id, ordinal),
+                        )
+                    for check_name, value in validation.get(version_id, {}).items():
+                        passed = bool(value) if isinstance(value, bool) else True
+                        cur.execute(
+                            "INSERT INTO catalog.quality_results "
+                            "(version_id, check_name, passed, details) "
+                            "VALUES (%s, %s, %s, %s::jsonb) "
+                            "ON CONFLICT (version_id, check_name) DO NOTHING",
+                            (
+                                version_id,
+                                str(check_name),
+                                passed,
+                                json.dumps({"value": value}, default=str),
+                            ),
+                        )
+
+
 def register_reconciliation_results(
     conn_url: str,
     results,

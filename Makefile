@@ -320,3 +320,8 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
 	@echo "✅ Cache files cleaned"
+
+.PHONY: rebuild-6a
+rebuild-6a:
+	@test -n "$(OP)" || (echo 'usage: make rebuild-6a OP=preflight|build|verify|publish' && exit 2)
+	uv run python scripts/pipeline/rebuild_6a.py $(OP) --expected-code-sha $$(git rev-parse HEAD)
