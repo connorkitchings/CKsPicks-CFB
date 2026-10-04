@@ -27,6 +27,12 @@ class Outcome:
     expected: Any = None
     detail: str = ""
     scope: Mapping[str, Any] = field(default_factory=dict)
+    skipped: bool = False
+
+
+def skipped(reason: str) -> Outcome:
+    """A check whose input was not supplied: neither passed nor failed, never blocks."""
+    return Outcome(passed=False, detail=f"skipped: {reason}", skipped=True)
 
 
 @dataclass(frozen=True)
@@ -39,6 +45,7 @@ class CheckResult:
     expected: Any
     detail: str
     scope: Mapping[str, Any]
+    skipped: bool = False
 
     def to_record(self) -> dict[str, Any]:
         return {
@@ -50,6 +57,7 @@ class CheckResult:
             "expected": self.expected,
             "detail": self.detail,
             "scope": dict(self.scope),
+            "skipped": self.skipped,
         }
 
 
@@ -107,7 +115,7 @@ class QualityRun:
 
     @property
     def failures(self) -> tuple[CheckResult, ...]:
-        return tuple(r for r in self.results if not r.passed)
+        return tuple(r for r in self.results if not r.passed and not r.skipped)
 
     @property
     def blocked(self) -> bool:
@@ -124,6 +132,7 @@ def _result(spec: CheckSpec, outcome: Outcome) -> CheckResult:
         outcome.expected,
         outcome.detail,
         dict(outcome.scope),
+        bool(outcome.skipped),
     )
 
 

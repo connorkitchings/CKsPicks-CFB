@@ -39,8 +39,16 @@ def build_receipt(
     )
     by_severity: dict[str, dict[str, int]] = {}
     for record in records:
-        bucket = by_severity.setdefault(record["severity"], {"passed": 0, "failed": 0})
-        bucket["passed" if record["passed"] else "failed"] += 1
+        bucket = by_severity.setdefault(
+            record["severity"], {"passed": 0, "failed": 0, "skipped": 0}
+        )
+        bucket[
+            "skipped"
+            if record["skipped"]
+            else "passed"
+            if record["passed"]
+            else "failed"
+        ] += 1
     content = {
         "schema_version": SCHEMA_VERSION,
         "stage": run.stage,
@@ -51,7 +59,8 @@ def build_receipt(
         "blocked": run.blocked,
         "summary": {
             "checks": len(records),
-            "failed": sum(1 for r in records if not r["passed"]),
+            "failed": sum(1 for r in records if not r["passed"] and not r["skipped"]),
+            "skipped": sum(1 for r in records if r["skipped"]),
             "by_severity": by_severity,
         },
         "checks": records,

@@ -12,6 +12,7 @@ from cks_picks_cfb.quality.checks import (
     register_check,
     registry_problems,
     run_stage,
+    skipped,
 )
 from cks_picks_cfb.quality.receipt import (
     build_receipt,
@@ -32,6 +33,10 @@ __all__ = [
     "register_check",
     "registry_problems",
     "run_stage",
+    "skipped",
     "write_receipt_local",
     "write_receipt_storage",
 ]
+
+# Importing the stage modules registers their checks.
+from cks_picks_cfb.quality import ingest as _ingest  # noqa: E402,F401

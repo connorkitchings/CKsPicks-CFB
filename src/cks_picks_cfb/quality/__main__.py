@@ -63,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
                 "stage": args.stage,
                 "checks": receipt["summary"]["checks"],
                 "failed": receipt["summary"]["failed"],
+                "skipped": receipt["summary"]["skipped"],
                 "blocked": receipt["blocked"],
                 "receipt": str(path),
             },

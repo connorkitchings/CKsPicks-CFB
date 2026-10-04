@@ -97,7 +97,9 @@ def test_receipt_is_deterministic_and_content_addressed(registry):
         build_receipt(_run(), **{**kwargs, "code_sha": "def"})["receipt_id"]
         != r1["receipt_id"]
     )
-    assert r1["summary"]["by_severity"] == {"warn": {"passed": 1, "failed": 0}}
+    assert r1["summary"]["by_severity"] == {
+        "warn": {"passed": 1, "failed": 0, "skipped": 0}
+    }
 
 
 def test_local_writer_is_idempotent_and_refuses_collisions(registry, tmp_path):
@@ -159,3 +161,15 @@ def test_cli_exit_codes_and_receipt(registry, tmp_path, capsys, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         cli_main([])
     assert exc.value.code == 2
+
+
+def test_a_skipped_check_neither_fails_nor_blocks_and_is_counted(registry):
+    @q.register_check("s.skip", stage="silver", severity=q.BLOCK, description="s")
+    def skip(ctx):
+        return q.skipped("no frame supplied")
+
+    run = _run()
+    assert not run.blocked and run.failures == ()
+    receipt = build_receipt(run, identity={}, code_sha="abc")
+    assert receipt["summary"]["skipped"] == 1 and receipt["summary"]["failed"] == 0
+    assert receipt["checks"][0]["skipped"] is True
