@@ -34,6 +34,9 @@ from cks_picks_cfb.data.game_venues import (
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
+from cks_picks_cfb.quality import run_stage
+from cks_picks_cfb.quality.publish import finalize as finalize_quality
+from cks_picks_cfb.quality.publish import raise_if_blocked
 
 URL_ENV = {"preview": "PREVIEW_DATABASE_URL", "production": "DATABASE_URL"}
 
@@ -115,8 +118,24 @@ def main() -> int:
         except MissingVenueColumnsError as exc:
             print(f"Cannot build venue rows: {exc}", file=sys.stderr)
             return 3
-        if args.require_city:
+        quality_ctx = {"venue_payload": rows, "venue_game_ids": neon_ids}
+        pre_run = run_stage("publish", quality_ctx, prefix="publish.pre.venue_payload")
+        identity = {
+            "kind": "game_venues",
+            "season": args.season,
+            "environment": args.environment,
+            "venues_version": venues_ref.version_id,
+            "games_version": games_ref.version_id,
+        }
+        pre_receipt = finalize_quality(
+            pre_run, identity={**identity, "phase": "pre-write"}
+        )
+        print(f"quality pre-write receipt: {pre_receipt['_path']}")
+        if args.require_city or not args.dry_run:
+            # A real write always requires a city for every game; a dry run only
+            # does when asked, so coverage can still be reported.
             require_venue_cities(rows, neon_ids)
+            raise_if_blocked(pre_run, "pre-write")
         report["source_versions"] = {
             "games": games_ref.version_id,
             "venues": venues_ref.version_id,
@@ -133,6 +152,20 @@ def main() -> int:
             return 0
         with conn.cursor() as cur:
             cur.executemany(UPSERT_GAME_VENUE_SQL, rows)
+            cur.execute(
+                "SELECT game_id, city FROM game_venues WHERE game_id = ANY(%s)",
+                (neon_ids,),
+            )
+            post_run = run_stage(
+                "publish",
+                {**quality_ctx, "venue_readback": cur.fetchall()},
+                prefix="publish.post.venues",
+            )
+            post_receipt = finalize_quality(
+                post_run, identity={**identity, "phase": "post-write"}
+            )
+            print(f"quality post-write receipt: {post_receipt['_path']}")
+            raise_if_blocked(post_run, "post-write")
         conn.commit()
         print(f"Upserted {len(rows)} game_venues rows ({args.environment}).")
     return 0

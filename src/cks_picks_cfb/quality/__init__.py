@@ -40,4 +40,5 @@ __all__ = [
 
 # Importing the stage modules registers their checks.
 from cks_picks_cfb.quality import ingest as _ingest  # noqa: E402,F401
+from cks_picks_cfb.quality import publish as _publish  # noqa: E402,F401
 from cks_picks_cfb.quality import silver as _silver  # noqa: E402,F401

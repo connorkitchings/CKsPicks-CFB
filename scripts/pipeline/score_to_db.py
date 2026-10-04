@@ -39,6 +39,9 @@ from cks_picks_cfb.artifacts import (
 )
 from cks_picks_cfb.data.storage import get_storage
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
+from cks_picks_cfb.quality import run_stage
+from cks_picks_cfb.quality.publish import fetch_grade_readback, raise_if_blocked
+from cks_picks_cfb.quality.publish import finalize as finalize_quality
 
 try:
     import psycopg
@@ -462,6 +465,24 @@ def publish_scored_run(
                     )
                     _upsert_run_grades(cur, scored, run_id=run_id)
                     count += 1
+                # Read the grades back inside the transaction and recompute them from
+                # the frozen side, point and certified score; a mismatch rolls back.
+                grade_run = run_stage(
+                    "publish",
+                    {"grade_readback": fetch_grade_readback(cur, run_id)},
+                    prefix="publish.post.grades",
+                )
+                grade_receipt = finalize_quality(
+                    grade_run,
+                    identity={
+                        "kind": "grades",
+                        "run_id": run_id,
+                        "season": season,
+                        "phase": "post-write",
+                    },
+                )
+                print(f"quality grade receipt: {grade_receipt['_path']}")
+                raise_if_blocked(grade_run, "post-write")
                 cur.execute(
                     "UPDATE prediction_runs SET state = 'scored', scored_at = NOW() "
                     "WHERE run_id = %s AND (state = 'frozen' OR "

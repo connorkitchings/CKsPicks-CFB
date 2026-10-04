@@ -45,6 +45,12 @@ from cks_picks_cfb.artifacts import (
 from cks_picks_cfb.data.game_venues import require_venue_cities
 from cks_picks_cfb.data.market_integrity import verify_snapshot
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
+from cks_picks_cfb.quality import run_stage
+from cks_picks_cfb.quality.publish import (
+    fetch_readback,
+    raise_if_blocked,
+)
+from cks_picks_cfb.quality.publish import finalize as finalize_quality
 
 try:
     import psycopg
@@ -650,6 +656,7 @@ def publish_week(
     run_manifest: dict | None = None,
     state: str = "published",
     market_quotes: pd.DataFrame | None = None,
+    allow_partial_slate: bool = False,
 ) -> int:
     """Transactionally insert an immutable run and optionally activate it."""
     if state not in {"preview", "published"}:
@@ -869,6 +876,55 @@ def publish_week(
                     [{"game_id": gid, "city": city} for gid, city in cur.fetchall()],
                     published_ids,
                 )
+            # Publish-boundary quality gate: nothing is written if a structural check fails.
+            payload_records = [
+                _row_to_record(
+                    row,
+                    season=season,
+                    week=week,
+                    high_conf_threshold=high_conf_threshold,
+                    source_config=source_config,
+                    system_name=system_name,
+                    model_id=model_id,
+                )
+                for _, row in df.iterrows()
+                if not pd.isna(row.get("game_id"))
+            ]
+            cur.execute(
+                "SELECT game_id FROM games WHERE season = %s AND week = %s",
+                (season, week),
+            )
+            quality_ctx = {
+                "records": payload_records,
+                "quote_by_id": quote_by_id,
+                "schedule_game_ids": {int(r[0]) for r in cur.fetchall()},
+                "allow_partial_slate": allow_partial_slate,
+                "state": state,
+            }
+            if state == "published":
+                cur.execute(
+                    "SELECT game_id, city FROM game_venues WHERE game_id = ANY(%s)",
+                    ([r["game_id"] for r in payload_records],),
+                )
+                quality_ctx["venue_rows"] = [
+                    {"game_id": gid, "city": city} for gid, city in cur.fetchall()
+                ]
+            quality_identity = {
+                "run_id": run_id,
+                "season": season,
+                "week": week,
+                "state": state,
+                "environment": os.getenv("CFB_ARTIFACT_ENV", "production"),
+            }
+            quality_sha = str(manifest.get("code_sha") or "unknown")
+            pre_run = run_stage("publish", quality_ctx, prefix="publish.pre.")
+            pre_receipt = finalize_quality(
+                pre_run,
+                identity={**quality_identity, "phase": "pre-write"},
+                code_sha=quality_sha,
+            )
+            print(f"  quality pre-write receipt: {pre_receipt['_path']}")
+            raise_if_blocked(pre_run, "pre-write")
             cur.execute(INSERT_RUN_SQL, run_record)
             if existing and existing[0] == "preview" and state == "published":
                 cur.execute(
@@ -881,18 +937,7 @@ def publish_week(
                 )
             count = 0
             records_by_game: list[dict] = []
-            for _, row in df.iterrows():
-                if pd.isna(row.get("game_id")):
-                    continue
-                record = _row_to_record(
-                    row,
-                    season=season,
-                    week=week,
-                    high_conf_threshold=high_conf_threshold,
-                    source_config=source_config,
-                    system_name=system_name,
-                    model_id=model_id,
-                )
+            for record in payload_records:
                 cur.execute(UPSERT_SQL, record)
                 records_by_game.append(record)
 
@@ -1042,6 +1087,20 @@ def publish_week(
                             )
                 cur.execute(INSERT_PREDICTION_SQL, {**record, "run_id": run_id})
                 count += 1
+
+            # Read back inside the transaction: a mismatch raises and rolls everything back.
+            post_run = run_stage(
+                "publish",
+                {**quality_ctx, "readback": fetch_readback(cur, run_id)},
+                prefix="publish.post.",
+            )
+            post_receipt = finalize_quality(
+                post_run,
+                identity={**quality_identity, "phase": "post-write"},
+                code_sha=quality_sha,
+            )
+            print(f"  quality post-write receipt: {post_receipt['_path']}")
+            raise_if_blocked(post_run, "post-write")
 
             if update_current:
                 if model_id.startswith("v5-"):
@@ -1393,6 +1452,11 @@ def main() -> None:
         default="published",
         help="Initial database run state.",
     )
+    parser.add_argument(
+        "--allow-partial-slate",
+        action="store_true",
+        help="Publish a run that omits scheduled games (recorded in the quality receipt).",
+    )
     args = parser.parse_args()
 
     conn_url = os.environ.get("DATABASE_URL")
@@ -1458,6 +1522,7 @@ def main() -> None:
         run_manifest=run_manifest,
         state=args.state,
         market_quotes=market_quotes,
+        allow_partial_slate=args.allow_partial_slate,
     )
     if not args.no_update_current:
         try:

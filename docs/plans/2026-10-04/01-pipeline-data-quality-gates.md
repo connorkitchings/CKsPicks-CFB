@@ -198,3 +198,21 @@ One small shared library, thin per-stage check modules, one receipt format. Reus
 - `utils/validation.py` (1,701 lines, legacy CSV-partition era, referenced only by its own two test files) is **left in place and not ported**. Nothing in the new library needs it. Deleting it is a separate prune once Tasks 2–3 confirm no check should be ported; recorded here so it is not forgotten.
 
 **Impact:** Task 1 delivers the library, receipt format, CLI and registry integrity check with zero registered data checks. Tasks 2–4 register the real checks. Task 4 stays held until the Preview venue dry run passes and the Window 1 receipt is signed off.
+
+### Amendment 2: Task 4 implementation choices (2026-10-04)
+
+**Reason:** Task 4 was started on the user's authorization after Window 1 was signed off.
+
+**Deviation from "start new checks at `warn`":** the eleven `publish.*` checks register at `block`. They are the contract's own acceptance criteria (a duplicate key, a null required field or a missing scheduled game must not write) and each establishes a structural defect rather than a statistical drift. Calibration on real Preview data (read-only) showed no false blocks: every selected run's prediction count equals the Neon schedule count, null leans are common and allowed, and observed ranges sit well inside the bounds (spread within +/-100, totals 10 to 200, deviations in (0, 60], edges at least 0).
+
+**What is checked:** before any write, `publish_week` builds the exact payload and runs keys, required fields, value ranges, schedule coverage (every game Neon schedules for the week), best-quote consistency (recomputed independently from the frozen quotes: lowest line for Away and Over, highest for Home and Under) and, for `published` runs, venue city. After the writes and inside the same transaction it reads back the prediction keys and the selections (quote, side, point); a mismatch raises before commit, so the transaction rolls back. `publish_game_venues.py` always requires a city for every game when it writes (a dry run only when `--require-city` is given) and reads the venue rows back. `score_to_db.publish_scored_run` reads v2 grades back and recomputes each from the frozen side, point and certified score.
+
+**Operator override:** `publish_to_db.py --allow-partial-slate` lets a run omit scheduled games. It never admits a game outside the schedule and is written into the receipt.
+
+**Consequences to know:**
+- The best-quote check recomputes the rule that the October served runs violated: on real stored runs it flags exactly the previously sized wrong-line Away spreads (Week 0: 4 games, Week 1: 14, Week 2: 14, Weeks 3 and 4: none) and passes the Week 1 rehearsal run. Re-publishing any of those legacy runs would now be refused. They are immutable (`frozen`/`scored`) anyway, and their replacement is Window 2 work.
+- Week 5 (`p2`): the stored-database reconstruction flags 1 game (0.5 point) and the earlier R2-artifact sizing found 2 (1.0 point). Resolved: the second game, 401864513, is a legacy null-lean record whose selection side was defaulted to Home, so it has no real Away selection to check; the sizing counted it by the model's direction. Neither game changes a grade.
+- Non-V5 legacy publishes of partial slates would now need `--allow-partial-slate`.
+- Receipts are written locally (`artifacts/quality/receipts/publish/`, git-ignored). Storing them next to release evidence in R2 is not done.
+
+**Not done:** an R2 copy of publish receipts; a fake-connection test of the full `main()` of `publish_game_venues.py` (its checks and the venue payload and readback logic are unit-tested; the dry run was validated against Preview).

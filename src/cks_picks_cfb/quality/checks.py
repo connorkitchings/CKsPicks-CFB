@@ -141,15 +141,20 @@ def run_stage(
     context: Mapping[str, Any],
     *,
     registry: Mapping[str, CheckSpec] | None = None,
+    prefix: str | None = None,
 ) -> QualityRun:
-    """Run every registered check for ``stage`` in check-id order."""
+    """Run every registered check for ``stage`` in check-id order.
+
+    ``prefix`` limits the run to check ids that start with it (for example the
+    publish boundary runs ``publish.pre.`` before writing and ``publish.post.`` after).
+    """
     if stage not in STAGES:
         raise ValueError(f"unknown stage {stage!r}; expected one of {STAGES}")
     specs = sorted(
         (
             s
             for s in (registry if registry is not None else REGISTRY).values()
-            if s.stage == stage
+            if s.stage == stage and (prefix is None or s.check_id.startswith(prefix))
         ),
         key=lambda s: s.check_id,
     )
