@@ -1,6 +1,6 @@
 # Pipeline Data-Quality Gates
 
-- **Status:** Approved (2026-10-04). Tasks 1-6 delivered on `dev`; **not yet marked Implemented** because the deferred items in Amendment 3 are open and need a user decision
+- **Status:** Implemented (2026-10-04). Tasks 1-6 delivered; the six follow-up items in Amendment 3 are accepted by the user as tracked follow-ups, not part of this contract's completion
 - **Created:** 2026-10-04
 - **Planner:** Claude (planning chat, with the user)
 - **Approval source:** The user chose a separate contract parallel to Window 1 covering ingestion, Silver/Gold, the publish boundary and the web read side, then reviewed the draft and approved it on 2026-10-04 with three stipulations below.
@@ -179,10 +179,10 @@ One small shared library, thin per-stage check modules, one receipt format. Reus
 
 ## Definition of Done
 
-- [ ] All tasks and acceptance criteria complete.
-- [ ] Required validation passes; Preview dry runs reviewed.
-- [ ] Checks catalog, issue register, status and session log updated.
-- [ ] Plan status updated to `Implemented`.
+- [x] All tasks and acceptance criteria complete (open follow-ups are tracked in Amendment 3).
+- [x] Required validation passes; Preview dry runs reviewed (ingest, silver and venue receipts, 2026-10-04).
+- [x] Checks catalog, issue register, status and session log updated.
+- [x] Plan status updated to `Implemented`.
 
 ## Amendments
 
@@ -230,4 +230,4 @@ One small shared library, thin per-stage check modules, one receipt format. Reus
 4. No check other than the structural `publish.*` set has been reviewed for promotion to `block`.
 5. Receipts are stored locally only; an R2 copy next to the release evidence is not done.
 6. The decision on `utils/validation.py` (left in place, unreferenced) is still open.
-**Options:** accept 1-6 as follow-ups and mark this contract Implemented, or keep it In Progress until they are done.
+**Decision (user, 2026-10-04):** accept items 1-6 as tracked follow-up items and mark this contract Implemented. They are tracked here and in `docs/status.md`; none blocks Window 2. Items 1 and 2 are the natural first follow-ups because they turn the three skipped ingest checks into real evidence.
