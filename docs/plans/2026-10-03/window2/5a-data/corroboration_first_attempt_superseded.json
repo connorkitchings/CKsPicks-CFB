@@ -1,0 +1,163 @@
+{
+  "by_channel": {
+    "attribution_only": {
+      "corroborated": 0,
+      "groups": 2727,
+      "share": 0.0
+    },
+    "points_recovery": {
+      "corroborated": 0,
+      "groups": 414,
+      "share": 0.0
+    },
+    "points_reduction": {
+      "corroborated": 0,
+      "groups": 52,
+      "share": 0.0
+    }
+  },
+  "by_primary_cause": {
+    "category_possession_reassignment": {
+      "corroborated": 0,
+      "groups": 130,
+      "share": 0.0
+    },
+    "dip_restore": {
+      "corroborated": 0,
+      "groups": 2599,
+      "share": 0.0
+    },
+    "final_cap": {
+      "corroborated": 0,
+      "groups": 90,
+      "share": 0.0
+    },
+    "incomplete_stream": {
+      "corroborated": 0,
+      "groups": 297,
+      "share": 0.0
+    },
+    "other": {
+      "corroborated": 0,
+      "groups": 77,
+      "share": 0.0
+    }
+  },
+  "by_season": {
+    "2015": {
+      "corroborated": 0,
+      "groups": 124,
+      "share": 0.0
+    },
+    "2016": {
+      "corroborated": 0,
+      "groups": 150,
+      "share": 0.0
+    },
+    "2017": {
+      "corroborated": 0,
+      "groups": 185,
+      "share": 0.0
+    },
+    "2018": {
+      "corroborated": 0,
+      "groups": 110,
+      "share": 0.0
+    },
+    "2019": {
+      "corroborated": 0,
+      "groups": 93,
+      "share": 0.0
+    },
+    "2021": {
+      "corroborated": 0,
+      "groups": 555,
+      "share": 0.0
+    },
+    "2022": {
+      "corroborated": 0,
+      "groups": 486,
+      "share": 0.0
+    },
+    "2023": {
+      "corroborated": 0,
+      "groups": 455,
+      "share": 0.0
+    },
+    "2024": {
+      "corroborated": 0,
+      "groups": 414,
+      "share": 0.0
+    },
+    "2025": {
+      "corroborated": 0,
+      "groups": 621,
+      "share": 0.0
+    }
+  },
+  "cfbd_drive_rows": 221920,
+  "cfbd_manifest_files": 162,
+  "corroborated": 0,
+  "games": {
+    "changed_games": 2324,
+    "changed_games_usable": 0,
+    "check_pass_counts": {
+      "c1": 2305,
+      "c2": 104,
+      "c3": 8224,
+      "c4": 7853
+    },
+    "in_scope": 8936,
+    "usable": 23,
+    "usable_share_by_season": {
+      "2015": 0.0,
+      "2016": 0.0,
+      "2017": 0.0,
+      "2018": 0.0,
+      "2019": 0.0,
+      "2021": 0.0113,
+      "2022": 0.0078,
+      "2023": 0.0011,
+      "2024": 0.0054,
+      "2025": 0.0
+    },
+    "with_cfbd_drives": 8903
+  },
+  "gate_passed": false,
+  "gate_threshold": 0.25,
+  "groups": 3193,
+  "needed_for_gate": 799,
+  "points_recovered_corroborated": 0.0,
+  "points_recovered_total": 7198.0,
+  "share": 0.0,
+  "status_counts": {
+    "game_unusable": 3193
+  },
+  "unusable_reason_counts": {
+    "c1:first_drive_not_0_0": 168,
+    "c1:last_drive_end_differs_from_certified_final": 229,
+    "c1:quarter_1_boundary_differs_from_line_scores": 4382,
+    "c1:quarter_2_boundary_differs_from_line_scores": 222,
+    "c1:quarter_3_boundary_differs_from_line_scores": 4297,
+    "c2:regulation_drive_set_differs_from_ledger": 8799,
+    "c3:drive_13_delta_0_1": 5,
+    "c3:drive_17_delta_7_1": 4,
+    "c3:drive_1_delta_0_3": 5,
+    "c3:drive_1_delta_7_1": 4,
+    "c3:drive_20_delta_0_3": 5,
+    "c3:drive_21_delta_7_1": 4,
+    "c3:drive_2_delta_0_3": 7,
+    "c3:drive_3_delta_0_1": 5,
+    "c3:drive_3_delta_0_3": 7,
+    "c3:drive_4_delta_0_1": 4,
+    "c3:drive_5_delta_0_1": 5,
+    "c3:drive_6_delta_0_3": 6,
+    "c3:drive_7_delta_3_1": 4,
+    "c3:drive_7_delta_4_0": 5,
+    "c3:drive_8_delta_0_3": 8,
+    "c4:excess_points_over_certified_final": 192,
+    "c4:period_order_conflict": 54,
+    "c4:score_regression_between_drives": 989,
+    "no_drives": 32
+  }
+}

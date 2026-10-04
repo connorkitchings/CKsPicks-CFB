@@ -1,0 +1,196 @@
+{
+  "by_channel": {
+    "attribution_only": {
+      "corroborated": 1408,
+      "groups": 2727,
+      "share": 0.5163
+    },
+    "points_recovery": {
+      "corroborated": 8,
+      "groups": 414,
+      "share": 0.0193
+    },
+    "points_reduction": {
+      "corroborated": 0,
+      "groups": 52,
+      "share": 0.0
+    }
+  },
+  "by_primary_cause": {
+    "category_possession_reassignment": {
+      "corroborated": 22,
+      "groups": 125,
+      "share": 0.176
+    },
+    "dip_restore": {
+      "corroborated": 1389,
+      "groups": 2540,
+      "share": 0.5469
+    },
+    "final_cap": {
+      "corroborated": 0,
+      "groups": 90,
+      "share": 0.0
+    },
+    "incomplete_stream": {
+      "corroborated": 4,
+      "groups": 297,
+      "share": 0.0135
+    },
+    "other": {
+      "corroborated": 0,
+      "groups": 71,
+      "share": 0.0
+    },
+    "restoration_gt8": {
+      "corroborated": 1,
+      "groups": 70,
+      "share": 0.0143
+    }
+  },
+  "by_season": {
+    "2015": {
+      "corroborated": 62,
+      "groups": 124,
+      "share": 0.5
+    },
+    "2016": {
+      "corroborated": 73,
+      "groups": 150,
+      "share": 0.4867
+    },
+    "2017": {
+      "corroborated": 90,
+      "groups": 185,
+      "share": 0.4865
+    },
+    "2018": {
+      "corroborated": 51,
+      "groups": 110,
+      "share": 0.4636
+    },
+    "2019": {
+      "corroborated": 41,
+      "groups": 93,
+      "share": 0.4409
+    },
+    "2021": {
+      "corroborated": 241,
+      "groups": 555,
+      "share": 0.4342
+    },
+    "2022": {
+      "corroborated": 216,
+      "groups": 486,
+      "share": 0.4444
+    },
+    "2023": {
+      "corroborated": 212,
+      "groups": 455,
+      "share": 0.4659
+    },
+    "2024": {
+      "corroborated": 237,
+      "groups": 414,
+      "share": 0.5725
+    },
+    "2025": {
+      "corroborated": 193,
+      "groups": 621,
+      "share": 0.3108
+    }
+  },
+  "cfbd_drive_rows": 221920,
+  "cfbd_manifest_files": 162,
+  "corroborated": 1416,
+  "games": {
+    "c2_strict_equality_pass": 104,
+    "changed_games": 2324,
+    "changed_games_usable": 1222,
+    "check_pass_counts": {
+      "c1": 8310,
+      "c2": 7881,
+      "c3": 8224,
+      "c4": 7853
+    },
+    "games_with_non_drive_points": 3061,
+    "in_scope": 8936,
+    "usable": 6830,
+    "usable_share_by_season": {
+      "2015": 0.7724,
+      "2016": 0.7663,
+      "2017": 0.7906,
+      "2018": 0.7839,
+      "2019": 0.7984,
+      "2021": 0.7249,
+      "2022": 0.7377,
+      "2023": 0.778,
+      "2024": 0.8196,
+      "2025": 0.6745
+    },
+    "with_cfbd_drives": 8903
+  },
+  "gate_passed": true,
+  "gate_threshold": 0.25,
+  "groups": 3193,
+  "needed_for_gate": 799,
+  "points_recovered_corroborated": 104.0,
+  "points_recovered_total": 7198.0,
+  "sensitivity": {
+    "c2_strict_equality (c1, strict c2, c3, c4)": {
+      "corroborated": 0,
+      "share": 0.0
+    },
+    "frozen_as_clarified (c1 and c2 and c3 and c4)": {
+      "corroborated": 1416,
+      "share": 0.4435
+    },
+    "no_usability_filter (upper bound, not valid under the frozen rule)": {
+      "corroborated": 1924,
+      "share": 0.6026
+    },
+    "only_c3_and_c4": {
+      "corroborated": 1559,
+      "share": 0.4883
+    },
+    "without_c2": {
+      "corroborated": 1520,
+      "share": 0.476
+    }
+  },
+  "share": 0.4435,
+  "status_counts": {
+    "cfbd_matches_neither": 20,
+    "cfbd_supports_baseline": 8,
+    "corroborated": 1416,
+    "game_unusable": 1718,
+    "indistinguishable_at_drive_level": 31
+  },
+  "unusable_reason_counts": {
+    "c1:cumulative_through_period_1_differs_from_line_scores": 60,
+    "c1:cumulative_through_period_2_differs_from_line_scores": 244,
+    "c1:cumulative_through_period_3_differs_from_line_scores": 57,
+    "c1:cumulative_through_period_4_differs_from_line_scores": 215,
+    "c1:first_drive_not_0_0": 168,
+    "c1:last_drive_end_differs_from_certified_final": 229,
+    "c2:cfbd_drive_missing_from_ledger": 877,
+    "c2:eligible_ledger_possession_missing_from_cfbd": 230,
+    "c3:drive_13_delta_0_1": 5,
+    "c3:drive_17_delta_7_1": 4,
+    "c3:drive_1_delta_0_3": 5,
+    "c3:drive_1_delta_7_1": 4,
+    "c3:drive_20_delta_0_3": 5,
+    "c3:drive_2_delta_0_3": 7,
+    "c3:drive_3_delta_0_1": 5,
+    "c3:drive_3_delta_0_3": 7,
+    "c3:drive_5_delta_0_1": 5,
+    "c3:drive_5_delta_0_3": 4,
+    "c3:drive_6_delta_0_3": 6,
+    "c3:drive_7_delta_4_0": 5,
+    "c3:drive_8_delta_0_3": 8,
+    "c4:excess_points_over_certified_final": 192,
+    "c4:period_order_conflict": 54,
+    "c4:score_regression_between_drives": 989,
+    "no_drives": 32
+  }
+}

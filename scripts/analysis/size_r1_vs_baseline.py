@@ -75,10 +75,11 @@ def main(argv: list[str] | None = None) -> int:
         base_events = pd.read_parquet(baseline_cache)
         _log(f"baseline ledger reused from {baseline_cache.name}", start)
     else:
-        _, base_events = pm.build_possession_ledger(
+        base_possessions, base_events = pm.build_possession_ledger(
             byplay=byplay, population=population, outcomes=outcomes, scope="historical"
         )
         base_events.to_parquet(baseline_cache)
+        base_possessions.to_parquet(args.output_dir / "baseline_possessions.parquet")
     _log(f"baseline ledger: {len(base_events)} scoring events", start)
     if (
         args.expected_scoring_events is not None

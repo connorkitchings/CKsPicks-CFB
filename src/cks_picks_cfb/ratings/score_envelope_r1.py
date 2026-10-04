@@ -9,6 +9,7 @@ any publisher. The rule and the group definitions are frozen in
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any, Mapping
 
 import numpy as np
@@ -205,6 +206,9 @@ def changed_groups(
                     "game_id": int(game_id),
                     "team": team,
                     "events": len(group),
+                    "drive_numbers": json.dumps(
+                        sorted({int(d) for d in group["drive_number"].dropna()})
+                    ),
                     "baseline_points": float(base_inc),
                     "candidate_points": float(cand_inc),
                     "net_points": net,
@@ -223,6 +227,7 @@ def changed_groups(
         "game_id",
         "team",
         "events",
+        "drive_numbers",
         "baseline_points",
         "candidate_points",
         "net_points",
