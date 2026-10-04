@@ -1,6 +1,6 @@
 # Data Integrity Repair in Two Windows
 
-- **Status:** In Progress (Window 1); Amendment 2 Approved 2026-10-04 (Window 2 sessions 5A–8 may start under it, each by explicit instruction naming this contract; no Preview/production write is authorized)
+- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04, 6A authorized but not started); Amendment 2 Approved 2026-10-04 (Window 2 sessions 5A–8 may start under it, each by explicit instruction naming this contract; no Preview/production write is authorized)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** The user resolved the decision packet in this session and explicitly requested that the final plan be documented before implementation.

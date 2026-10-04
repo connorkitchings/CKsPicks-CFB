@@ -1,6 +1,6 @@
-# Window 2 Step 5C: exit receipt (draft for user review)
+# Window 2 Step 5C: exit receipt
 
-- **Status:** Built, verified locally, not reviewed or signed. **Nothing was written to R2, Neon or any database; no Silver or Gold dataset was published.** The ledgers below exist only in a local scratch directory; the decisions and report are committed under `5c-data/`.
+- **Status:** **Closed.** Decisions 1 and 2 below were confirmed by the user on 2026-10-04 (committed `ea53c07`). Built and verified locally. **Nothing was written to R2, Neon or any database; no Silver or Gold dataset was published.** The ledgers below exist only in a local scratch directory; the decisions and report are committed under `5c-data/`.
 - **Authority:** [Appendix A, 5C](data-contracts-and-certification.md) and its Amendment 2; user directives of 2026-10-04.
 
 ## Result (historical 2015-2019, 2021-2025; 8,936 games)
@@ -37,12 +37,18 @@ By the Appendix A threshold (above 0.05 raw PPP or more than five rank positions
 
 - **Corroboration is weak for point recoveries** (5A caveat stands): the admitted set is almost entirely attribution-only. The 28 contradicted groups and the 1,749 unverified groups keep baseline errors where they exist; the baseline's known over- and under-credits remain there.
 - **2026** weeks 0-4 (132 groups) remain baseline; no evidence exists.
-- **Evidence table not built**: terms URI and rights basis for CFBD data need your decision.
+- **Evidence table not built** in 5C by design; rights basis now decided (above), table built in 6A.
 - The verifier checks the admission against the decisions and an independent reconstruction; it does not re-run the CFBD corroboration. The 5A corroboration code is shared with the producer.
 - The scratch ledgers (`admitted_events.parquet`, `admitted_ledger_v1.parquet`) are reproducible by `scripts/analysis/build_admitted_ledger_5c.py` but not retained; durable publication is 6A.
 - The 5A baseline events were reused from the sizing run for speed; the verifier independently reproduced them.
 
-## For your review
+## User decisions (2026-10-04)
+
+1. **Accepted:** the admission result, the materiality finding and the Appendix A Amendment 2 decision mapping.
+2. **CFBD evidence rights recorded:** `terms_uri = https://collegefootballdata.com/key`, `rights_basis = cfbd_api_user_agreement`. The `scoring_attribution_evidence_v1` table will be built with deterministic `cfbd_drives:<sha256>` ids in the 6A Gold build. The user's wording is the source of this basis; I have not checked it against CFBD's current terms.
+3. **6A write authorization recorded, 6A not started.** The user authorized Preview-lake R2 writes for 6A (never production R2 or Neon) and then asked that Step 5 be finalized without starting Step 6. See the 6A guardrails in `data-contracts-and-certification.md`, Amendment 3.
+
+## Original review questions (answered above)
 
 1. Accept the admission result and the material finding, and approve the Amendment 2 decision mapping.
 2. Decide the rights basis/terms URI for CFBD evidence (needed before any evidence table or Gold publish).

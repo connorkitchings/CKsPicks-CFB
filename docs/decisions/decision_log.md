@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-04: Close Window 2 Step 5 (5A, 5B, 5C); record 6A guardrails; do not start 6A
+
+- **Decision:** the user accepted the 5A gate result, the 5C admission result (1,416 corroborated groups admitted; 28 contradicted and 1,749 unverified groups reverted to baseline; 2026 fails closed) and the materiality finding, and closed Steps 5A-5C (`f7c3a47`, `e33d63d`, `ea53c07`).
+- **Recorded, not yet acted on:** CFBD evidence rights (`terms_uri` `https://collegefootballdata.com/key`, `rights_basis` `cfbd_api_user_agreement`) and Preview-lake-only R2 write authorization for 6A, with the 6A guardrails in [Appendix A, Amendment 3](../plans/2026-10-03/window2/data-contracts-and-certification.md). The user then asked to finalize Step 5 without starting Step 6, so 6A has not started and nothing was written.
+- **Not changed:** production R2, production Neon, served ratings and selections.
+
 ## 2026-10-04: Total bets use `edge >= threshold`
 
 - **Decision:** a total whose edge exactly equals the threshold is a bet, the same as spreads and as the independent serving verifier expects. Previously totals used a strict `>`, so a total exactly at the threshold was "No Bet" while the verifier expected a bet.

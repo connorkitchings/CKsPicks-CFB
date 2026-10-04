@@ -1,6 +1,6 @@
-# Window 2 Step 5A: sizing report (draft for user review)
+# Window 2 Step 5A: sizing report
 
-- **Status:** Draft. Not a signed receipt. The signing and any R2 publication of the receipt are user-run steps.
+- **Status:** **Closed.** The user accepted the gate result (44.4% against the 25% threshold), declined a secondary gamebook source and approved evidence retention on 2026-10-04 (committed `f7c3a47`). This is still not a signed release receipt: signing and any R2 publication of it are user-run steps.
 - **Authority:** [contract 04, Amendment 2](../04-data-integrity-two-window-implementation.md), [Appendix A, 5A](data-contracts-and-certification.md), [frozen definitions](5a-frozen-definitions.md) (frozen before any of these numbers existed).
 - **Produced:** 2026-10-04. CFBD: 162 requests after approval; no R2 write, no database write. The numbers in sections 1-3, 5 and 6 were computed by me from the pinned Silver inputs (section 6 from the latest validated 2026 Silver). Section 4 quotes the October 2026 investigation's CFBD result, labelled there as not re-derived by me. Raw outputs are in [`5a-data/`](5a-data/). Scripts: `scripts/analysis/size_r1_vs_baseline.py`, `size_null_ppa_exposure.py`, `size_r1_2026.py`.
 - **Gate:** evaluated in section 4 after the user approved fetching all 162 CFBD bundles (made 2026-10-04, retained with request URL, capture time and SHA-256). **Result: pass at 44.4%, with the caveats in section 4.**
