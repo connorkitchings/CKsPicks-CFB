@@ -26,7 +26,7 @@
 | Week | State | Selected run |
 |---|---|---|
 | 0–4 | Scored; **retrospective replay** (not prospective evidence) | `2026w{0..4}-v5repair-20260929-p1` |
-| 5 | **Frozen** 2026-09-30T12:34:06Z, 56/56/56, ungraded. First kickoff 2026-10-02 00:00Z. Score only after certified finals + 24 h stabilization. | `2026w5-v5repair-20260929-p2` |
+| 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total). First live V5 slate. | `2026w5-v5repair-20260929-p2` |
 | 6 | Not opened | — |
 
 **Rollback set (exact):** `2026w{0..4}-v5replay-bestquote-20260926-r3` and
@@ -41,10 +41,10 @@ pre-registered promotion gates remain diagnostics.
 
 | Evidence class | Spread | Total | Notes |
 |---|---|---|---|
-| **Prospective (frozen before kickoff)** | 0 graded | 0 graded | Week 5 is the first live V5 slate |
+| **Prospective (frozen before kickoff)** | 28-27-1 (50.9%) | 25-30-1 (45.5%) | Week 5 is the first live V5 slate (55 decided spreads, 55 decided totals; 1 push each) |
 | Retrospective replay, Weeks 0–4 | 100-112-3 (47.2%) | 112-102-0 (52.3%) | Not prospective evidence (unconstrained; 212 decided spreads, 214 decided totals; 1 unlined W3 total) |
 
-Neither retrospective target clears 52.4%. In the 2025 holdout the market had
+Neither target clears 52.4% YTD. In the 2025 holdout the market had
 lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## Branches
@@ -57,8 +57,8 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 
 ## In flight
 
-- Week 5: wait for certified finals, then score
-  ([weekly operator](ops/v5_weekly_operator.md)). **Close gate:** after certified finals the close must produce 56 spread and 56 total grades (minus any unlined); because the frozen Week 5 predictions hold null leans on 7 spreads and 8 totals, grade with `scripts/pipeline/backfill_v5_unconstrained_grades.py --week 5 --grades-only` (it never writes `predictions` or `prediction_market_selections` for a non-replay run). Plan: [remove edge constraints, grade all games](plans/2026-10-02/04-remove-edge-constraints-grade-all-games.md): implemented; Weeks 0-4 backfilled on Preview and production (user-run 2026-10-02).
+- Week 5: **Closed and scored 2026-10-04** (certified finals verified in CFBD, scored via `score_to_db.py`, and graded via `backfill_v5_unconstrained_grades.py --week 5 --grades-only` on Preview and Production; 56 spread and 56 total grades, 112 total).
+- Week 6: Not opened. Holds the active slate clean for Window 2 rebuild and activation.
 - Approved, in progress: [authentic team stats pipeline](plans/2026-10-01/10-authentic-team-stats-pipeline.md). **Code released to `main` (`53d346b`); data live on Preview and production** as of 2026-10-02 (Silver promoted, migrations 0019/0020 applied, team stats weeks 1-5 = 10,460 rows, venues = 271), run by the user and verified read-only; checked against CFBD (Amendment 1). Remaining: set `CFB_MATCHUP_ENABLED=1` when the matchup page is approved, then mark the contract Implemented; re-run team stats for week 6 after Week 5 finals.
 - Draft contract: production-boundary refactor
   (`plans/2026-10-01/04-production-boundary-refactor.md`).
