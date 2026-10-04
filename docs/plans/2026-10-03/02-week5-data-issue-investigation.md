@@ -1,6 +1,9 @@
 # Week 5 Data-Issue Investigation (Read-Only Deep Dive)
 
-- **Status:** Approved (read-only; this plan authorizes investigation only — every write stays gated behind [the unified rollout](01-unified-data-fix-and-matchup-rollout.md) decisions D1–D6)
+> **Authority update (2026-10-04):** this document preserves dated investigation/decision evidence. [Contract 04, Amendment 2](04-data-integrity-two-window-implementation.md#amendment-2-window-2-measurement-repair-and-prospective-cutover-2026-10-04) and its two appendices document the approved (2026-10-04) Window 2 scope. Earlier neutral-refit, single-batch and all-or-nothing allocation recommendations below are historical, not current instructions. Window 1 remains independent.
+
+
+- **Status:** Approved (read-only; this plan authorizes investigation only — writes are governed by [contract 04](04-data-integrity-two-window-implementation.md), with Amendment 2 approved 2026-10-04)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** User approval in-session 2026-10-03 ("write out a plan for continued digging into these many data issues"), following the Week 5 full-slate audit.

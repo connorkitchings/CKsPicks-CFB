@@ -1,5 +1,11 @@
 # Decision Log
 
+## 2026-10-04: Approve Window 2 Amendment 2
+
+- **Scope:** documentation only. [Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) now links exact data/certification and release/schema/web appendices. The user approved Amendment 2 and its appendices on 2026-10-04 (“Approve it now”). Window 1 finishes first; Window 2 sessions then run in order under the 5A 25% gate. Approval does not authorize any Preview/production write or release.
+- **Changes from the October 3 design:** full-corpus R1 with corroborated allocation admission and baseline retention, CFBD-drive-first evidence and a 25% sizing gate; unchanged-design historical refit with neutral model work excluded; separate prior user authorization, append-only revocation, planned migrations, web guards, retrospective/prospective separation and packet-time cutover N.
+- **Authority:** user requested documentation persistence before implementation. Earlier dated decisions below remain historical; Amendment 2 specifies the proposed superseding Window 2 scope. Window 1 continues independently.
+
 ## 2026-10-03: Two-Window Data-Integrity Repair
 
 - **Decision:** execute the repair through independent Window 1 and Window 2 release gates. Window 1 covers versioned market selection, frozen grading, punt/missing-PPA display treatment, venues, and accuracy-only public Performance. Window 2 is held until full R1 scoring attribution is independently certified, then contains the corrected signed measurement/rating lineage, neutral-aware refit, and reconstructed all-certified-week replay.

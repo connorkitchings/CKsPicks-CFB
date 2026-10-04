@@ -1,22 +1,23 @@
 # Data Integrity Repair in Two Windows
 
-- **Status:** Approved
+- **Status:** In Progress (Window 1); Amendment 2 Approved 2026-10-04 (Window 2 sessions 5A–8 may start under it, each by explicit instruction naming this contract; no Preview/production write is authorized)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** The user resolved the decision packet in this session and explicitly requested that the final plan be documented before implementation.
-- **Implementation log:** `session_logs/2026-10-03/08-data-integrity-two-window-implementation.md` (Terra creates it when work begins).
+- **Amendment 1 approval:** User approved the recommended release-controller amendment with “Do it” in this chat on 2026-10-03, after explicitly authorizing implementation of the contract.
+- **Implementation log:** `session_logs/2026-10-03/08-data-integrity-two-window-implementation.md` (existing partial Window 1 work; no release completion asserted).
 - **Commit policy:** Make a separate documentation/plan commit on `dev`. Implementation commits are separate. Preview and production data writes remain user-run and require the exact release packet specified below.
 - **Supersedes:** [01-unified-data-fix-and-matchup-rollout.md](01-unified-data-fix-and-matchup-rollout.md) as implementation authority. Its investigation is retained as evidence. This plan also absorbs the remaining Phase 2 scope in [team-stats-feeds-ratings](../2026-10-02/03-team-stats-feeds-ratings.md) and Phase B in [matchup-data-layer-v2](../2026-10-02/01-matchup-data-layer-v2.md).
 
 ## Goal
 
-Repair the verified data-integrity defects without rewriting frozen prospective history or silently changing the meaning of an existing V5 result. Ship independent presentation and measurement fixes in **Window 1**, then ship a corrected scoring lineage, full R1 rating rebuild, neutral-venue refit, and corrected historical replay together in **Window 2** only after the scoring attribution evidence is sufficient.
+Repair the verified data-integrity defects without rewriting frozen prospective history or silently changing the meaning of an existing V5 result. Ship independent presentation and measurement fixes in **Window 1**, then ship a corrected scoring lineage, full historical rating rebuild with the unchanged forecast design, and corrected historical replay together in **Window 2** only after the scoring attribution evidence is sufficient.
 
 Observable success is:
 
 - every corrected source artifact and market selection has a new, immutable, versioned identity;
 - Window 1 can serve independently while the present V5 rating lineage remains unchanged;
-- Window 2 uses full R1 only when attribution is independently validated, does not impute EPA, and preserves valid PPP when EPA is withheld;
+- Window 2 evaluates full R1 across the complete corpus and admits allocation changes only when independently corroborated, does not impute EPA, and preserves valid PPP when EPA is withheld;
 - historical public performance shows the corrected reconstructed replay, while original frozen predictions, quotes, grades, and artifacts remain audit records;
 - the public Performance page reports accuracy rather than financial return; and
 - a failed Window 2 gate leaves the serving Window 1/V5 state intact.
@@ -27,11 +28,11 @@ The investigation reproduced the served V5 observations and ratings, so the curr
 
 - The serving possession rating fits `ppp`; raw EPA is not a fitted V5 input. The 155 formerly zero-filled eligible null-`ppa` plays still corrupt EPA-derived measurements and display averages.
 - R1 is the full monotone score-envelope rule capped by the certified final. It has a points-recovery channel and a separate attribution channel. Quarter totals corroborate recovery totals but cannot prove within-quarter attribution.
-- The user selected full R1 as the Window 2 candidate, not the narrower V1 subset. Window 2 therefore requires additional scoring-attribution evidence; no narrower fallback and no partial certified subset are authorized.
+- Full R1 remains the complete-corpus candidate. Amendment 2 retains baseline allocations when evidence is insufficient, retains baseline quarantines, and certifies the complete admitted output. It does not authorize a V1 replacement or dropping difficult games to certify a subset.
 - Frozen runs, selected quote records, original grades, and original artifacts are immutable audit evidence. A replacement replay must be a newly identified, explicitly reconstructed retrospective product.
 - Tie behavior is **away** for spreads and **under** for totals everywhere: publisher, verifier, replay, display, and grading.
 - No EPA imputation is authorized. Affected EPA measurements must be withheld with a reason; valid PPP and other independent measurements remain usable.
-- User-run Preview and production actions remain outside this contract's code authorization. Production selection and team-stat publication are atomic only through the existing operational controls.
+- User-run Preview and production actions remain outside this contract's code authorization. Extend the existing release controller under Amendment 1 to make corrected run selection and team-stat publication atomic; separate publisher commits do not satisfy this requirement.
 
 ## Scope
 
@@ -41,17 +42,18 @@ The investigation reproduced the served V5 observations and ratings, so the curr
 - Punt classification and missing-PPA masking for Silver/team-stat display measurements.
 - Required venue capture and publication checks.
 - Removing public profit, units, and ROI presentation while retaining accuracy, audit, and stored historical fields.
-- Signed `team_game_stats` as the basic-stat source for season aggregation and V5 inputs.
-- Full R1 evidence, certification, corrected 2025/2026 measurements, ratings, bridge refit, neutral-venue treatment, and replacement historical replay.
+- Signed Gold `team_game_metrics` and scoring/possession ledgers as the shared source for season aggregation and V5 inputs; `team_game_stats` is the earlier logical name, not another dataset.
+- Full R1 evidence and certification; corrected 2015–2019, 2021–2025 and eligible 2026 measurements; ratings, unchanged-design bridge refit, and replacement historical replay.
 - Six pipeline admission gates and Preview/production rehearsal/rollback evidence.
 - Matchup-data repinning and the 2025 historical backfill after the corrected Window 2 lineage is selected.
 
 ### Excluded
 
 - EPA imputation, including same-play-type or turnover imputation.
-- A V1 or other narrower fallback release if full R1 cannot be certified.
-- A separate neutral-site offset release before Window 2.
-- Any use of 2020, any 2026 outcome in model fitting or tuning, and any change to an ongoing or future frozen slate.
+- A V1 substitute or uncertified partial-corpus release; evidence-limited per-allocation baseline retention follows Appendix A.
+- Neutral-site model changes (issue #9); these require a separate model contract. The measurement repair retains the accepted venue treatment.
+- Any use of 2020 or 2026 outcomes in model fitting/tuning. Frozen audit objects are immutable; a new pre-kickoff freeze may supersede a public slate under Appendix B. Normal causal 2026 rating-state updates remain permitted.
+- Structural production-boundary refactoring: exclusively the separate draft `2026-10-01/04-production-boundary-refactor.md`.
 - Betting or staking decisions, public profit claims, and replacement of original audit records.
 
 ## Release Model
@@ -61,11 +63,13 @@ Window 1: selection/display/data presentation fixes
     └─ independently verified → Preview → user production decision
 
 Window 2: full R1 certification → corrected measurement/rating lineage
-    → neutral-aware refit → all-certified-week reconstructed replay
+    → unchanged-design refit → all-certified-week reconstructed replay
     → atomic serving selection + team stats → user production decision
 ```
 
 Window 1 is useful and releasable by itself. Window 2 is all-or-nothing: if any R1, data-lineage, refit, replay, or release gate fails, do not ship a subset. Preserve the serving Window 1 state and record the failed evidence.
+
+Amendment 1 approved the original release-controller extension; Amendment 2 (approved 2026-10-04) revises its scope. It is not a prerequisite for Window 1. Window 1 implementation, validation, and its separately gated release may proceed while that extension is pending. Window 2 activation remains blocked until full R1 certification and the atomic release/rollback checks pass.
 
 ## Affected Components and Contracts
 
@@ -153,76 +157,36 @@ Window 1 is useful and releasable by itself. Window 2 is all-or-nothing: if any 
 
 - Window 1 can be selected and rolled back without changing ratings, forecasts, or frozen prospective data.
 
-## Window 2 Admission Gate — Full R1 Scoring Certification
+## Window 2 — Ordered Work and Admission Gates
 
-Do not begin the Window 2 serving/replay sequence until all conditions below are met.
+Read [Amendment 2](#amendment-2-window-2-measurement-repair-and-prospective-cutover-2026-10-04) and both appendices before starting any Window 2 task. The existing investigation is the baseline; there is no new inventory phase. Window 1 completes independently first. Each row is a bounded implementation session with a retained receipt and explicit exit gate.
 
-1. Define a full R1 envelope: monotone running-score reconstruction capped by certified final score, with a complete record of unresolved jumps and attribution changes.
-2. Separate and report the points-recovery channel from the attribution-only channel.
-3. Validate attribution using quarter totals **and** corroborating event/drive evidence capable of addressing attribution. A capped final-score identity alone is insufficient evidence.
-4. Produce an independent measurement/rating delta report. The materiality criterion remains movement greater than 0.05 raw PPP or more than five ranks, but it counts only independently corroborated movement.
-5. Reconcile every unresolved observation explicitly. No missing score or PPA is converted to zero to make a gate pass.
+| Task | Deliverable | Exit gate / dependency |
+|---|---|---|
+| **5A** Baseline and sizing | Reproduce baseline; size full R1 changes and CFBD-drive corroboration | At least 25% of historical changed allocation groups corroborated; otherwise stop and retain baseline |
+| **5B** Shared data contracts | Registry, signed metrics/ledgers, rebuilt Silver PPA missingness, shared consumers | Schema, population, null propagation and served PPP-only tests pass; no structural refactor |
+| **5C** Independent certification | Complete-corpus admitted output and delta report | Evidence-backed changes; insufficient evidence retains baseline; full-output identity/attribution verification passes |
+| **6A** Historical rebuild | Full historical measurements, ratings, priors, offsets and unchanged-design Ridge refit | Pinned lineage and independent verification; no 2020 or 2026 fitting/tuning; no neutral-site design change |
+| **6B** Completed-week replay | Newly identified reconstructed replay of every certified completed week | Original cutoffs/quotes, certified finals, immutable originals, truthful retrospective labels |
+| **7A** Release foundations | Migrations, authorization/revocation controls, web selectors and state guards | Contracts/grants, unit/publication/browser tests and real Preview verification pass |
+| **7B** Exact release and cutover | Fix N, build packet, prior user authorization, atomic selection/statistics, freeze and rollback | Complete receipts, fresh quotes for new freeze, race checks, Preview rehearsal, separate exact production decision |
+| **8** Matchup completion | Corrected matchup repin and 2025 historical backfill last | Matchup/ratings/stat lineage agrees in Preview and production; issue register reconciled |
 
-If this gate fails, mark Window 2 held. Do not replace R1 with V1, ship a certified subset, or release neutral treatment independently.
+### Task 5 — Signed metrics and scoring certification
 
-### Task 5 — Window 2 signed team-game-stat contract and corrected measurements
+[Appendix A](window2/data-contracts-and-certification.md) defines exact schemas, keys, fields, storage locations, formulas, populations, evidence precedence and the 5A go/no-go. CFBD drives are primary evidence after consistency checks; retained official gamebooks resolve conflicts or failed drive checks. Full R1 is evaluated across the whole corpus. Missing evidence alone retains the baseline allocation; a failed integrity gate holds the complete release. No EPA imputation is permitted.
 
-**Changes**
+### Task 6 — Rebuild and reconstructed replay
 
-- Define signed `team_game_stats` records keyed by game, team, role, metric, numerator, denominator, coverage, and provenance.
-- Make season aggregation and V5 consume these records for basic statistics rather than duplicate aggregation logic. Timing and opponent adjustment retain their existing rating-layer ownership.
-- Build corrected 2025 terminal measurements and 2026 measurements from pinned source versions. Rebuild 2026 priors from corrected historical parents when required by the lineage.
-- Withhold EPA only for measurements affected by missing PPA, recording the reason and coverage. Do not impute. Keep PPP and other independent measures usable.
-- Obtain verified neutral/non-neutral venue context for both historical and live workflows.
+Appendix A defines the full historical rebuild and consumers. Preserve the selected PPP rating design and accepted alpha-10 bridge recipe, including existing venue constants. Replace every certified completed week's public retrospective selection through new identities; preserve original prospective freezes and grades. No new neutral-site model term is included.
 
-**Acceptance criteria**
+### Task 7 — Schema, web, authorization and release
 
-- Every downstream basic statistic has a traceable signed parent.
-- Missing PPA produces explicit withheld EPA, never artificial zero or imputed EPA.
-- Non-offense offsets derive from their regulated event ledger, never from missing data treated as zero.
+[Appendix B](window2/release-schema-and-web.md) defines planned migrations 0022+, explicit role grants, prior user-run authorization, append-only revocations, atomic batch verification/selection, prospective records, Performance separation, matchup guard and tests. The pipeline never inserts approval or authorization rows. N is fixed only when the release packet is built after certification, not targeted at Week 6. Until then, weekly operation continues on the current lineage.
 
-**Validation**
+### Task 8 — Matchup and issue completion
 
-- Schema/contract checks, coverage reconciliation, and lineage signature verification.
-- Tests proving independent PPP remains usable when EPA is withheld.
-- Baseline reproduction before applying deltas; separate reports for raw PPP, adjusted ratings, priors, offsets, and forecast bridge.
-
-### Task 6 — Window 2 ratings, neutral-aware refit, and corrected replay
-
-**Changes**
-
-- Run the certified full R1 measurement/rating rebuild and retain the old lineage unchanged.
-- Refit the existing Ridge recipe and calibration using 2015–2019 and 2021–2025, excluding 2020 and all 2026 outcomes from fitting/tuning. The accepted alpha 10 design remains unchanged except for verified venue context.
-- Ship neutral-venue treatment only as part of this certified Window 2 refit. Report historical neutral/non-neutral baselines; use the existing 2025 diagnostic as context rather than a new untouched holdout claim.
-- Generate a new historical replay for **all certified completed weeks at release**, with the manifest enumerating game IDs, original forecast cutoffs, original quote sets, corrected input references, and rollback targets.
-- Use only quotes at or before the original forecast cutoff and before kickoff. A missing historical line remains unlined; later quotes may not fill it.
-- Treat later provider corrections to earlier completed games as corrected reconstruction and label the output retrospective. Do not present it as prospective evidence.
-
-**Acceptance criteria**
-
-- Original frozen runs and grades remain readable as stored audit records.
-- Replacement predictions, grades, market snapshots, measurements, and ratings have new immutable identities.
-- Corrected public history is labeled reconstructed retrospective and covers all certified completed weeks available at release.
-
-**Validation**
-
-- Reject late quotes and target/future outcomes in replay fixtures.
-- Verify replacement grades against certified actuals and the newly frozen selected quote.
-- Verify old-as-stored grades reproduce exactly before replacement results are published.
-
-### Task 7 — Window 2 release, serving, and matchup completion
-
-**Changes**
-
-- Stage the full corrected lineage on Preview, verify all components, and rehearse rollback to the existing selected lineage.
-- Atomically select the corrected serving run and corrected team statistics using existing release controls. Preserve current ongoing/future pointers.
-- Repin matchup data to the corrected rating manifest and complete the 2025 matchup historical backfill last, labeled `historical_replay`.
-- Permit future prospective activation only for a slate that has not begun and meets fresh line/coverage/freeze gates.
-
-**Acceptance criteria**
-
-- A full Window 2 failure leaves the current Window 1/V5 serving state intact.
-- The release packet identifies every selected object, user-run authorization, verification result, rollback action, and public labeling change.
+Appendix B defines matchup repinning, bounded updating/unavailable states, rollback and the 2025 backfill as the final step. Issue #5 is closed by investigation evidence, not a Window 2 fix. Issue #9 remains open under separate model scope. Partial local Window 1 code is not proof of production repair.
 
 ## Prevention Gates
 
@@ -253,8 +217,8 @@ If this gate fails, mark Window 2 held. Do not replace R1 with V1, ship a certif
 
 - [ ] Window 1 has a complete release receipt, verification, and rollback rehearsal.
 - [ ] Window 1 production selection occurs only after the user approves its exact release packet.
-- [ ] Full R1 admission evidence either certifies Window 2 or records a hold; no fallback release occurs.
-- [ ] If certified, Window 2 has corrected signed measurement/rating/forecast lineage, neutral-aware refit, and all-certified-week replay.
+- [ ] Full R1 sizing and independent complete-output certification either permit Window 2 or record a hold; per-allocation baseline retention follows Appendix A.
+- [ ] If certified, Window 2 has corrected signed measurement/rating/forecast lineage, unchanged-design refit, and all-certified-week replay.
 - [ ] Public history and Performance pages are truthful about reconstruction, line timing, accuracy, and price provenance.
 - [ ] Preview and production release receipts verify atomic serving selection, matchup repin, and rollback.
 - [ ] Required tests and documentation checks pass; status, decision log, known-issues register, and session log are updated.
@@ -263,3 +227,49 @@ If this gate fails, mark Window 2 held. Do not replace R1 with V1, ship a certif
 ## Amendments
 
 Any change to R1 scope, EPA treatment, replay cutoff policy, data identities, neutral refit design, or atomic-release behavior is material. Terra must stop, append an amendment for user review, and not implement that change under this contract.
+
+### Amendment 1 — Atomic team-stat release control (approved 2026-10-03)
+
+- **Expected:** Task 7 can atomically select corrected runs and publish corrected team statistics through existing release controls while preserving ongoing/future pointers.
+- **Actual:** `scripts/pipeline/select_v5_intended_update_batch.py::run` commits `select_week_runs_batch`; that helper updates public run pointers and recomputes performance `system_stats`, but does not publish `team_season_stats`. `scripts/pipeline/publish_team_stats.py` upserts team statistics in a separate connection/transaction and commits independently. The selector's packet has no team-stat payload binding or rollback payload. `select_week_run` also updates `current_week.active_run_id` when its week is included, without an explicit completed-week-only guard in the batch packet.
+- **Material conflict:** Separate commits cannot provide the required all-or-nothing corrected run/team-stat release or rollback. Operator ordering alone cannot satisfy the acceptance criterion. Extending the release packet and transaction boundary changes the release interface and atomic-release behavior, which this contract explicitly treats as material.
+- **Approval:** User approved the recommended fix with “Do it” after reviewing the conflict and proposed requirements. This amendment authorizes the controller/packet extension below; it does not authorize executing Preview/production writes or waive full R1 certification.
+- **Dependency:** Resume Window 1 Task 1 independently. Build and verify this extension before Window 2 activation; do not pause Window 1 merely because this Window 2 capability is incomplete.
+
+#### Release packet and retained payloads
+
+- Add `v5_intended_update_batch_selection_v2` to the existing controller. Keep the v1 path for existing operational callers; only v2 can satisfy this contract's Window 2 atomic-release gate.
+- Retain `environment`, `season`, `expected_current_runs`, `replacement_runs`, and `decision_ref`. Add `certified_completed_weeks`, `protected_runs` (all existing ongoing/future public selections plus the current-week pointer), `team_stats_scope` (explicit season/as-of-week snapshots), and `team_stats_before`, `team_stats_after`, and `team_stats_verifier` references, each containing immutable `uri` and raw-byte `sha256`.
+- Each signed `v5_team_stats_release_payload_v1` contains environment, season, snapshot scope, source/rating manifest identities, and deterministically ordered rows using the existing team-season-stat upsert columns. The signed independent verifier binds both payload checksums, corrected lineage, complete scope/key coverage, and verification result. Actual database state must match the prior payload; a declared checksum alone is not sufficient.
+- Retain the prior payload, candidate payload, verifier, and release/rollback packets as new immutable R2 artifacts using existing artifact storage and signature conventions. Preparation emits reviewable files for user-run staging and does not write serving tables. Never overwrite these retained artifacts on retry.
+- Candidate and prior payloads must cover the same complete row-key set for every scoped snapshot, with no duplicate keys. Compare stored business fields and provenance; exclude database-maintained timestamps from payload identity. Reject extra/missing keys rather than silently delete rows or widen grants. A required key-set/schema change needs a separate amendment.
+- The release packet and decision reference bind the exact candidate objects; the rollback packet reverses expected/replacement runs and before/after payload references, uses a verifier for the reversed operation, and retains the same protected-run guards. Review both before release.
+
+#### Transaction and protection rules
+
+- Before mutation, verify immutable bytes, signatures, independent certification, source/rating bindings, and payload scope. Require replacements to cover every certified completed week at release and no other week; check certification against authoritative stored run/finals state, not only a packet declaration. Quote/replay cutoff checks remain unchanged.
+- Preserve environment identity checks, active pipeline lease, and exact per-run authorization. Acquire write-conflicting table locks for public/current selections and team-season statistics in a fixed order, then compare expected selections, protected pointers, and the complete prior team-stat payload inside the transaction. Reject stale state before any write.
+- Within that same connection/transaction, use the existing selection helpers for eligible completed-week pointers, upsert the candidate team-stat rows through a cursor-level helper, and recompute `system_stats` from the new selected runs. No helper may independently commit or open a second publication connection.
+- Read back selected runs, complete scoped team-stat business rows, and protected pointers before the single final commit. Any validation, write, or readback failure rolls back all writes. Payload scope must exclude future snapshots; current-week team-stat snapshots may reflect corrected completed games only, with their cutoff/source evidence verified and the current forecast pointer unchanged.
+- Rollback uses the same guarded transaction with the retained prior payload and selections, including performance recomputation and readback. It is separately user-run under the reviewed release packet; the code must never substitute best-effort sequential commits for atomic rollback.
+- Validate failure injection, successful apply/rollback, stale state, wrong environment, invalid signatures/checksums, duplicate or incomplete keys, and protected-week rejection. Real Preview rehearsal and read-only evidence are required before any exact production decision.
+
+
+### Amendment 2 — Window 2 measurement repair and prospective cutover (2026-10-04)
+
+**Status: Approved 2026-10-04.** Approval source: the user selected “Approve it now (Recommended)” when asked in the planning chat whether to approve Amendment 2 and both appendices. This authorizes Window 2 implementation sessions 5A, 5B, 5C, 6A, 6B, 7A, 7B and 8, each started by an explicit instruction naming this contract, in the stated order and gates (5A's 25% go/no-go stops the rest). It is not an exact Preview/production release decision; every data, authorization and selection write stays user-run. Window 1 finishes first. Window 1's existing authorization and independent delivery remain intact.
+
+**Reading order and precedence:** this contract → [Appendix A: data contracts and certification](window2/data-contracts-and-certification.md) → [Appendix B: release, schema and web](window2/release-schema-and-web.md). Both appendices are normative parts of Amendment 2, not competing contracts. Amendment 2 supersedes conflicting Window 2 text and the specified Amendment 1 restrictions. Amendment 1 above is preserved as the historical approved design: its completed-only/current-pointer protection expands to the exact pending N cutover, with the new prospective/revocation schema. Its same-key team-stat payload, retained rollback evidence and single-transaction guarantees continue to apply. Approval writes stay separate from selection.
+
+| Decision | Documented resolution |
+|---|---|
+| D1 — scoring | Full R1 candidate; corroborated allocation changes only, otherwise baseline retained; full-output certification |
+| D2 — EPA | Restore source missingness, never impute; explicitly withhold affected EPA while retaining independent PPP |
+| D3 — storage | New immutable Silver and signed Gold datasets; R2 is canonical, Neon holds derived serving/operations records |
+| D4 — rebuild | Complete historical corpus and eligible 2026 state/replay; unchanged rating/bridge design; neutral model change excluded |
+| D5 — history | 2025 matchup backfill last; replacements are retrospective, original prospective records retained |
+| D6 — site | Matchup pages remain live; mismatched lineage renders updating/unavailable and disables sharing |
+
+**Review changelog:** replaces the monolithic phase proposal with Tasks 5A–8 under the approved two-window architecture; removes redundant discovery and production-boundary refactoring; supplies exact data/registry contracts and null-consumer tests; restores CFBD drives and adds the 25% sizing gate; separates user authorization and append-only revocation from pipeline selection; specifies migrations/grants/schema synchronization, selectors, freeze checks and web tests including real Preview; fixes N at packet creation; scopes prospective records to V5 Week 5 onward (V4 Weeks 0–4 remain audit/rollback); specifies new-freeze quote timing and possible pre-kickoff lean changes; reconciles issue #5 and requires proof that served ratings never select EPA candidates.
+
+The original October 3 investigation and decision packet remain evidence, not current conflicting instructions. See the [planning persistence log](../../../session_logs/2026-10-04/01-window2-amendment-planning.md). No code, migration, data rebuild, database write or release is performed by saving these documents.

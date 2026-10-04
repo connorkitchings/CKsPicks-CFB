@@ -1,5 +1,8 @@
 # Unified Data Fix and Matchup Rollout (Historical Investigation Record)
 
+> **Authority update (2026-10-04):** this document preserves dated investigation/decision evidence. [Contract 04, Amendment 2](04-data-integrity-two-window-implementation.md#amendment-2-window-2-measurement-repair-and-prospective-cutover-2026-10-04) and its two appendices document the approved (2026-10-04) Window 2 scope. Earlier neutral-refit, single-batch and all-or-nothing allocation recommendations below are historical, not current instructions. Window 1 remains independent.
+
+
 - **Status:** Superseded by [04-data-integrity-two-window-implementation.md](04-data-integrity-two-window-implementation.md)
 - **Created:** 2026-10-03
 - **Planner:** Sol
