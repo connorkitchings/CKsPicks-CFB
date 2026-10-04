@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
 import { withGameNameAliases } from "./rating-names.ts";
+import { PERFORMANCE_DETAIL_SPEC, RATING_SPEC, guardRows } from "./row-guard.ts";
 import {
   defaultPeriodForRows,
   formatCutoffLabel,
@@ -64,6 +65,7 @@ export const getCurrentRatings = cache(async (season: number): Promise<Rating[]>
       )`,
     ))
     .orderBy(desc(schema.v5RatingSnapshots.createdAt));
+  guardRows("v5_rating_snapshots", rows, RATING_SPEC);
   const byTeam = new Map<string, Rating>();
   for (const row of rows) if (!byTeam.has(row.team)) byTeam.set(row.team, row);
   return [...byTeam.values()].sort((a, b) => b.overallRating - a.overallRating);
@@ -645,6 +647,7 @@ export const getV5PerformanceDetail = cache(async (
     ))
     .orderBy(desc(schema.siteWeekSelections.week), asc(schema.games.startDate));
 
+  guardRows("performance_detail", rows, PERFORMANCE_DETAIL_SPEC);
   const typed = rows as DetailRow[];
   const summary = summarizeDetail(typed, "all");
 

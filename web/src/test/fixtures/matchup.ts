@@ -106,5 +106,20 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     awayRating: rating(game.awayTeam, 12),
     homeRating: rating(game.homeTeam, 30),
     stats: buildMatchupStats(rows, game.week, game.awayTeam, game.homeTeam),
+    statsUnavailable: false,
   };
+}
+
+/**
+ * Test-only game id whose stored stat rows "broke their contract": the page must show
+ * the unavailable state, not the "not published" copy and not partial numbers.
+ */
+export const STATS_CONTRACT_VIOLATION_GAME_ID = 987655;
+
+export function fixtureMatchupForId(gameId: number): MatchupData | null {
+  if (gameId === STATS_CONTRACT_VIOLATION_GAME_ID) {
+    const base = fixtureMatchup(1);
+    return base ? { ...base, gameId, stats: null, statsUnavailable: true } : null;
+  }
+  return fixtureMatchup(gameId);
 }

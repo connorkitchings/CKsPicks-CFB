@@ -269,3 +269,19 @@ test.describe("matchup page (fixture mode)", () => {
     await expect(page.getByText("Biggest mismatches")).toHaveCount(0);
   });
 });
+
+test.describe("stored stat rows that break their contract", () => {
+  test("show an explicit unavailable state, not 'not published' and not partial stats", async ({ page }) => {
+    await page.goto("/matchup/987655");
+    const stats = page.getByRole("region", { name: "Team stats" });
+    await expect(stats).toContainText("Team stats are temporarily unavailable.");
+    await expect(page.getByText("Team stats are not published for this game yet.")).toHaveCount(0);
+    await expect(page.getByTestId("matchup-notes")).toHaveCount(0);
+  });
+
+  test("a healthy matchup never shows the unavailable copy", async ({ page }) => {
+    await page.goto("/matchup/1");
+    await expect(page.getByText("Team stats are temporarily unavailable.")).toHaveCount(0);
+    await expect(page.getByTestId("matchup-notes")).toHaveCount(1);
+  });
+});

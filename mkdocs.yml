@@ -29,6 +29,7 @@ nav:
       - Point-in-Time Pipeline: architecture/cfbd_point_in_time_pipeline.md
       - Ingestion Guide: data/ingestion_guide.md
       - Historical Data Inventory: data/historical_data_inventory.md
+      - Data Quality Checks: data/data_quality_checks.md
       - Provider Audit: cfbd/2026_provider_audit.md
   - Operations:
       - Weekly Pipeline: ops/weekly_pipeline.md

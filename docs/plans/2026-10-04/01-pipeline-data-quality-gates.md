@@ -1,6 +1,6 @@
 # Pipeline Data-Quality Gates
 
-- **Status:** Approved (2026-10-04)
+- **Status:** Approved (2026-10-04). Tasks 1-6 delivered on `dev`; **not yet marked Implemented** because the deferred items in Amendment 3 are open and need a user decision
 - **Created:** 2026-10-04
 - **Planner:** Claude (planning chat, with the user)
 - **Approval source:** The user chose a separate contract parallel to Window 1 covering ingestion, Silver/Gold, the publish boundary and the web read side, then reviewed the draft and approved it on 2026-10-04 with three stipulations below.
@@ -216,3 +216,18 @@ One small shared library, thin per-stage check modules, one receipt format. Reus
 - Receipts are written locally (`artifacts/quality/receipts/publish/`, git-ignored). Storing them next to release evidence in R2 is not done.
 
 **Not done:** an R2 copy of publish receipts; a fake-connection test of the full `main()` of `publish_game_venues.py` (its checks and the venue payload and readback logic are unit-tested; the dry run was validated against Preview).
+
+### Amendment 3: Tasks 5 and 6 delivered; items still open (2026-10-04)
+
+**Task 5 (web read side).** `web/src/lib/row-guard.ts` is a dependency-free guard that checks rows at the loader boundary and throws `RowContractError` on a null in a required field, a NaN or infinite number, a non-integer, an unknown enum value, an invalid date, or a rank outside its cohort. It never coerces: valid rows are returned unchanged. It is applied to `getTeamSeasonStats`, `getTeamPossessionStats`, `getGamesForWeek`, `getCurrentRatings` and `getV5PerformanceDetail`. Pages already turn a thrown loader error into their "temporarily unavailable" state; the matchup page now distinguishes `statsUnavailable` ("Team stats are temporarily unavailable.") from "not published". The two stats loaders previously swallowed every error and returned an empty list; they now rethrow contract violations so a violation is no longer indistinguishable from "no stats". The contracts were checked read-only against real Preview rows (11,506 season stats, 6,276 possession stats, 1,213 current ratings, 271 predictions, 541 grades) with zero violations, so no page should newly show an unavailable state. The user's stipulation that parsers consume `rowsOf()`/`existsFrom()` from `web/src/lib/db-result.ts` is met in a narrower way than written: those helpers cover only the five raw `execute()` existence probes, which already use them, while all other reads use typed drizzle selects (not raw `{ rows }` results), so the guard sits on the selected rows. Fixtures stay valid under `CFB_UI_TEST_MODE=1` (a test asserts it) and test game `987655` renders the unavailable state.
+
+**Task 6 (CI and catalog).** `docs/data/data_quality_checks.md` documents all 27 checks with the reason and the defect each prevents; `tests/test_quality_catalog.py` fails CI if the catalog and the registry disagree on ids, severity or stage (drift was verified to be detected). CI's lint job now runs `python -m cks_picks_cfb.quality --verify-registry`; the check-registry integrity step is also in `make all` via `make quality-check`. Data-bound stages stay operator-run. The full Python suite passes with CI's own flags (warnings as errors, parallel workers), and the web lint, typecheck, publication tests, build and Playwright (50 tests) pass.
+
+**Still open, so the contract is not yet Implemented:**
+1. Task 2 inputs for `ingest.capture_completeness`, `ingest.odds_unmatched_events` and `ingest.schema_contract` are not wired (they report `skipped`), and the ingesters do not yet call their checks before writing.
+2. The five unpinned multi-version datasets (`game_outcomes`, `legacy_market_references`, `offseason_context_family`, `schedule_revisions`, `team_aliases`) are not reviewed.
+3. Task 3 Gold-stage checks are not written, and no quality receipt is emitted from the Silver build scripts.
+4. No check other than the structural `publish.*` set has been reviewed for promotion to `block`.
+5. Receipts are stored locally only; an R2 copy next to the release evidence is not done.
+6. The decision on `utils/validation.py` (left in place, unreferenced) is still open.
+**Options:** accept 1-6 as follow-ups and mark this contract Implemented, or keep it In Progress until they are done.

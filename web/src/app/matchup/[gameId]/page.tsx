@@ -90,7 +90,9 @@ export default async function MatchupPage({
             aria-label="Team stats"
             className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm"
           >
-            Team stats are not published for this game yet.
+            {matchup.statsUnavailable
+              ? "Team stats are temporarily unavailable."
+              : "Team stats are not published for this game yet."}
           </section>
         )}
 

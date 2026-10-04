@@ -6,6 +6,13 @@ import { tiedExistsSql } from "./tie-sql";
 import { isSelectableRun } from "./run-selection";
 import { deriveSpreadView, deriveTotalView } from "./publication";
 import { overlaySelection } from "./selection-overlay";
+import {
+  PREDICTION_GAME_SPEC,
+  RowContractError,
+  TEAM_STAT_RULES,
+  TEAM_STAT_SPEC,
+  guardRows,
+} from "./row-guard.ts";
 import type { TeamStatRow } from "./team-stats";
 
 type BaseGame = {
@@ -548,6 +555,7 @@ export async function getTeamSeasonStats(
       })
       .from(t)
       .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
+    guardRows("team_season_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
     return rows.map((r) => ({
       team: r.team,
       role: r.role === "defense" ? "defense" : "offense",
@@ -559,7 +567,9 @@ export async function getTeamSeasonStats(
       cohortSize: r.cohortSize,
       tied: Boolean(r.tied),
     }));
-  } catch {
+  } catch (error) {
+    // A contract violation is not "no stats": let the caller show an unavailable state.
+    if (error instanceof RowContractError) throw error;
     return [];
   }
 }
@@ -604,6 +614,7 @@ export async function getTeamPossessionStats(
       })
       .from(t)
       .where(and(eq(t.season, season), eq(t.asOfWeek, asOfWeek), inArray(t.team, teams)));
+    guardRows("team_possession_stats", rows, TEAM_STAT_SPEC, TEAM_STAT_RULES);
     return rows.map((r) => ({
       team: r.team,
       role: r.role === "defense" ? "defense" : "offense",
@@ -615,7 +626,9 @@ export async function getTeamPossessionStats(
       cohortSize: r.cohortSize,
       tied: Boolean(r.tied),
     }));
-  } catch {
+  } catch (error) {
+    // A contract violation is not "no stats": let the caller show an unavailable state.
+    if (error instanceof RowContractError) throw error;
     return [];
   }
 }
@@ -710,6 +723,7 @@ export async function getGamesForWeek(season: number, week: number): Promise<Gam
       getMarketSelectionsForRun(run.runId),
     ]);
 
+    guardRows("games_for_week", rows, PREDICTION_GAME_SPEC);
     const rowsWithSelections = rows.map((row) =>
       overlaySelection(row, selectionsMap.get(row.gameId)),
     );

@@ -20,6 +20,7 @@ import {
   type MatchupStats,
 } from "./team-stats.ts";
 import { selectMatchupView } from "./matchup-visibility.ts";
+import { RowContractError } from "./row-guard.ts";
 import {
   marketSpreadView,
   modelSpreadView,
@@ -81,15 +82,23 @@ export interface MatchupData {
   homeRating: TeamRatingSummary;
   /** Pre-game team stats; null when no snapshot is published for this week. */
   stats: MatchupStats | null;
+  /** True when stored stat rows broke their contract; distinct from "not published". */
+  statsUnavailable: boolean;
 }
 
 /** Silver-based and V5 possession stats for the two teams (raw values only). */
 async function getMatchupStatRows(season: number, week: number, teams: string[]) {
-  const [silver, possession] = await Promise.all([
-    getTeamSeasonStats(season, week, teams),
-    getTeamPossessionStats(season, week, teams),
-  ]);
-  return [...silver, ...possession];
+  try {
+    const [silver, possession] = await Promise.all([
+      getTeamSeasonStats(season, week, teams),
+      getTeamPossessionStats(season, week, teams),
+    ]);
+    return { rows: [...silver, ...possession], unavailable: false };
+  } catch (error) {
+    // Never show partial or coerced stats when the stored rows broke their contract.
+    if (error instanceof RowContractError) return { rows: [], unavailable: true };
+    throw error;
+  }
 }
 
 /**
@@ -101,7 +110,7 @@ async function getMatchupStatRows(season: number, week: number, teams: string[])
 export const getMatchupData = cache(async (gameId: number): Promise<MatchupData | null> => {
   if (process.env.CFB_UI_TEST_MODE === "1") {
     const fx = await import("@/test/fixtures/matchup");
-    return fx.fixtureMatchup(gameId);
+    return fx.fixtureMatchupForId(gameId);
   }
   const identity = await db
     .select({ season: schema.games.season, week: schema.games.week })
@@ -193,11 +202,14 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
     awayFinalPoints,
     awayRating: summarize(game.awayTeam),
     homeRating: summarize(game.homeTeam),
-    stats: buildMatchupStats(
-      await getMatchupStatRows(season, week, [game.homeTeam, game.awayTeam]),
-      week,
-      game.awayTeam,
-      game.homeTeam,
-    ),
+    ...(await (async () => {
+      const statRows = await getMatchupStatRows(season, week, [game.homeTeam, game.awayTeam]);
+      return {
+        stats: statRows.unavailable
+          ? null
+          : buildMatchupStats(statRows.rows, week, game.awayTeam, game.homeTeam),
+        statsUnavailable: statRows.unavailable,
+      };
+    })()),
   };
 });

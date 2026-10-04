@@ -84,3 +84,11 @@ Window 1 was closed for implementation by the user; Task 4 (publish-boundary ass
 - **Done afterwards:** Week 5 grading impact assessed: both games are `win` at the served and the best line, no grade changes.
 - **Not done:** R2 copy of publish receipts.
 - **Disclosure:** I ran `rm -rf artifacts/quality` several times to clear my own test output. Before the last clear, a local receipt listing included one `grades_recomputed` receipt with 0 graded rows that was probably written by the user's Week 5 scoring run (it used the uncommitted `score_to_db.py` from this worktree), so I may have deleted that git-ignored local receipt. It is reproducible only by re-running the scoring, which is not needed; the grades themselves are in the database.
+
+## Tasks 5 and 6 (web read side, CI and catalog) — 2026-10-04
+- **Confirmed by the user:** Week 5 was scored from this worktree with `score_to_db.py`; the new grade readback ran and passed. Week 6 hold screen deployed with `current_week` 6 and a null active run on Preview and Production; Task 4 and the web hold screen are committed and pushed (`97f277e`, `838c5c3`).
+- **Task 5:** `web/src/lib/row-guard.ts` and its tests; guards on five loaders; matchup `statsUnavailable` state and page copy; fixture game `987655` and Playwright coverage (unavailable state shown, never "not published", never partial stats; healthy page unaffected); row contracts checked against real Preview rows with zero violations. The two team-stat loaders used to swallow all errors into an empty list; they now rethrow contract violations.
+- **Task 6:** `docs/data/data_quality_checks.md` (27 checks) plus `tests/test_quality_catalog.py` (drift proven detected), a CI step for `--verify-registry`, and a docs nav entry.
+- **Validation:** Python with CI flags (`-W error -n 4 --dist loadfile`): 1708 passed, 9 skipped; `ruff format --check`, `ruff check`, `contracts/validation.py` pass; web lint, typecheck, `test:publication` (128), build, and Playwright (50) pass; `mkdocs build` clean.
+- **Contract status:** left at Approved with Tasks 1-6 delivered; not marked Implemented because six items are open (Amendment 3 in the contract). That decision is the user's.
+- **Not done by me:** nothing was written to Preview or production; the new CI step has not run on GitHub (only its command was run locally).

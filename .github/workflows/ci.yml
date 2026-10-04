@@ -48,6 +48,9 @@ jobs:
       - name: Validate shared contracts
         run: uv run python contracts/validation.py
 
+      - name: Verify data-quality check registry
+        run: PYTHONPATH=src uv run python -m cks_picks_cfb.quality --verify-registry
+
   pytest:
     name: Python tests
     runs-on: ubuntu-latest
