@@ -13,7 +13,11 @@ import sys
 from pathlib import Path
 
 from cks_picks_cfb.quality.checks import REGISTRY, STAGES, registry_problems, run_stage
-from cks_picks_cfb.quality.loaders import load_ingest_context, parse_pins
+from cks_picks_cfb.quality.loaders import (
+    load_ingest_context,
+    load_silver_context,
+    parse_pins,
+)
 from cks_picks_cfb.quality.receipt import build_receipt, write_receipt_local
 
 
@@ -59,8 +63,12 @@ def main(argv: list[str] | None = None) -> int:
 
     context: dict = {"year": args.year, "environment": args.environment}
     pins = parse_pins(args.pin)
-    if args.stage == "ingest" and args.environment and args.year:
-        context.update(load_ingest_context(args.environment, args.year, pins=pins))
+    if args.environment and args.year:
+        loader = {"ingest": load_ingest_context, "silver": load_silver_context}.get(
+            args.stage
+        )
+        if loader is not None:
+            context.update(loader(args.environment, args.year, pins=pins))
     run = run_stage(args.stage, context)
     receipt = build_receipt(
         run,

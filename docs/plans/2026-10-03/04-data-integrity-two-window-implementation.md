@@ -231,7 +231,7 @@ The definition-of-done boxes above stay unchecked until the Window 1 release rec
 - [x] Task 1 market selection, snapshot identity and grading: code and tests committed (`850ca38`); the independent verifier's line ordering and tie rule corrected. Real Preview rehearsal still open.
 - [x] Task 2 Silver, display and venue repairs: `ppa_missing` before fill, punt filtering (earlier commit), venue city gate and pinned publisher (`562b2b2`); Preview venue write verified 271/271.
 - [x] Task 3 accuracy-only Performance: committed with the original design preserved; Playwright 28/28.
-- [ ] Task 4 release receipt: filled except input/output identities and the Preview serving and rollback rehearsal; production decision pending.
+- [x] Task 4 release receipt: filled; Preview venue write and the Week 1 Preview serving rehearsal verified (public state unchanged); Window 1 closed for implementation by user sign-off 2026-10-04. The production release and production venue publish are a separate user decision. Public select-and-restore is a Window 2 controller item, not rehearsed.
 
 ## Amendments
 

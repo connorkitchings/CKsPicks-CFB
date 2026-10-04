@@ -50,3 +50,26 @@ Silver `venues` is one version per capture year; the publisher took the last cre
 
 - **Promotion rule:** no check is promoted to `block` yet. Candidates after review: `completed_games_have_scores`, `games_vs_schedule` (missing/duplicates), `plays_and_drives_per_completed_game`.
 - **Still open in Task 2:** inputs for `capture_completeness` (from `catalog.source_request_attempts`), `odds_unmatched_events` (from the capture JSON) and `schema_contract`; calling each ingester's checks before it writes; a review of the five `versions_pinned` candidates.
+
+## Sequencing update (2026-10-04)
+Window 1 was closed for implementation by the user; Task 4 (publish-boundary assertions) is unblocked. Task 3 is next by the user's instruction.
+
+## Task 3 progress (Silver invariants and gate 6) — started 2026-10-04 on the user's authorization
+- **Gold/audit references re-read (verified):** `evidence_audit.py` 203/241/449/626/794/901/948, `audit/checks.py` 57/459, `check_prepared_week.py` 120/207, `audit_market_quote_coverage.py` 49, `ops/data_audit.py` 31/181/301 all land on the constructs the survey named. No claim from the survey was wrong in the references checked.
+- **Gate 1 premise corrected (verified):** the standard Silver build `scripts/pipeline/build_team_game_dataset.py` already calls `reconcile_completed_games` and `require_reconciled`, and persists every comparison as the `source_reconciliation` Silver dataset. It was not research-only. What was missing was surfacing it in a receipt, which `silver.reconciliation_recorded` now does.
+- **New:** `src/cks_picks_cfb/quality/silver.py`, seven checks, all `warn`: `reconciliation_recorded`, `score_stream_monotone`, `drive_numbering`, `plays_and_drives_same_games`, `points_identity`, `ppa_missing_flag`, `completed_game_refresh_pinned` (gate 6). `loaders.build_silver_context`/`load_silver_context` build the context read-only (byplay, drives, games, source_reconciliation, previous games version, `catalog.source_captures`); the CLI loads it for `--stage silver --year Y --environment E`. Tests: `tests/test_quality_silver.py` plus a loader test.
+- **Three of my first-run results were wrong and were fixed before reporting (verified against real data):** `play_number` restarts in each drive, so plays must be ordered by drive then play (first run showed 97.9% regressions); drive numbers are one sequence per game that can appear under both teams when possession changes inside a drive, so the right invariant is a contiguous union per game and uniqueness per offense (first run showed 2,261 duplicates, then 215 gap games).
+- **First real Preview receipt** (silver, 2026, read-only; inputs byplay `443019a9`, drives `862815e2`, games `31a337df`, previous games `e3ead581`, reconciliation `fdb566b1`): 7 checks, 3 failed (all `warn`), 0 skipped, not blocked.
+
+| Check | Result | Observed |
+|---|---|---|
+| reconciliation_recorded | pass | 215 games, all `exact_match`, 0 blocking |
+| drive_numbering | pass | 215 games, 0 duplicate keys, 0 gap games |
+| plays_and_drives_same_games | pass | 0 on either side |
+| completed_game_refresh_pinned (gate 6) | pass | 58 changed completed games between the 2026-09-20 and 2026-09-27 versions: 0 corrections, 58 new completions; all cite catalogued captures with sha, object sha, uri and time |
+| score_stream_monotone | **FAIL** | 133 of 430 team-games (30.9%) in 105 of 215 games have a decreasing running score. Matches the "about a third" in known issue 1; I did not use a different method, so this is a re-derivation under my ordering, not independent confirmation |
+| ppa_missing_flag | **FAIL** | the Silver byplay version has no `ppa_missing` column (built before Window 1); expected until the Window 2 Silver rebuild |
+| points_identity | **FAIL** | 4 team-games where drive points exceed the final score: UTEP (401856664) 1 vs 0, Fresno State (401858436) 2 vs 0, Northern Illinois (401858426) 1 vs 0, Rice (401859184) 1 vs 0. New, not yet investigated; candidates for the 5A sizing |
+
+- **Gate 6 limits:** it compares only the latest two weekly `games` versions, and the week-to-week set has no corrections. Corrections made earlier than the previous version, or by a refresh that does not change score or completion fields, are not seen.
+- **Not done in Task 3:** Gold stage checks (wrapping `audit_feature_frame` needs a `TrainingPolicy`; deferred, not skipped silently); a quality-receipt hook inside the build scripts (run the CLI after a build instead); the full-corpus 2025 priors check from known issue 10; per-game "unusable" marking for points-identity violations (reported only). No check is at `block`.

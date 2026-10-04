@@ -116,10 +116,70 @@ def build_ingest_context(
     return context
 
 
-def load_ingest_context(
+SILVER_DATASETS = ("byplay", "drives", "games", "source_reconciliation")
+
+
+def _previous_ref_row(
+    cur: Any, dataset: str, season: int, current_version: str
+) -> tuple | None:
+    """The newest validated version of ``dataset`` for ``season`` other than the current."""
+    cur.execute(
+        "SELECT dataset, version_id, schema_version, content_sha, uri "
+        "FROM catalog.dataset_versions "
+        "WHERE dataset = %s AND tier = 'silver' AND state = 'validated' "
+        "AND partitions @> %s::jsonb AND version_id <> %s "
+        "ORDER BY as_of DESC, created_at DESC LIMIT 1",
+        [dataset, json.dumps({"seasons": [season]}), current_version],
+    )
+    return cur.fetchone()
+
+
+def build_silver_context(
+    cur: Any,
+    read: Callable[[tuple], pd.DataFrame],
+    *,
+    year: int,
+    pins: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    """Return the silver-stage context for ``year`` (read-only)."""
+    pins = dict(pins or {})
+    context: dict[str, Any] = {"pins": pins, "inputs": {}}
+    for dataset in SILVER_DATASETS:
+        row = _ref_row(cur, dataset, year, pins.get(dataset))
+        if row is None:
+            continue
+        context[dataset] = read(row)
+        context["inputs"][dataset] = {"version_id": row[1], "content_sha": row[3]}
+        if dataset == "games":
+            previous = _previous_ref_row(cur, "games", year, row[1])
+            if previous is not None:
+                context["games_previous"] = read(previous)
+                context["inputs"]["games_previous"] = {
+                    "version_id": previous[1],
+                    "content_sha": previous[3],
+                }
+    cur.execute(
+        "SELECT capture_id, content_sha, object_sha, uri, captured_at "
+        "FROM catalog.source_captures WHERE entity = 'games'"
+    )
+    context["capture_index"] = pd.DataFrame(
+        cur.fetchall(),
+        columns=["capture_id", "content_sha", "object_sha", "uri", "captured_at"],
+    )
+    return context
+
+
+def load_silver_context(
     environment: str, year: int, *, pins: Mapping[str, str] | None = None
 ) -> dict[str, Any]:
-    """Open the environment's catalog read-only and build the ingest context."""
+    """Open the environment's catalog read-only and build the silver context."""
+    return _with_connection(
+        environment,
+        lambda cur, read: build_silver_context(cur, read, year=year, pins=pins),
+    )
+
+
+def _with_connection(environment: str, fn: Callable[[Any, Callable], Any]) -> Any:
     import psycopg
     from dotenv import load_dotenv
 
@@ -140,4 +200,14 @@ def load_ingest_context(
     with psycopg.connect(url) as conn:
         conn.read_only = True
         with conn.cursor() as cur:
-            return build_ingest_context(cur, read, year=year, pins=pins)
+            return fn(cur, read)
+
+
+def load_ingest_context(
+    environment: str, year: int, *, pins: Mapping[str, str] | None = None
+) -> dict[str, Any]:
+    """Open the environment's catalog read-only and build the ingest context."""
+    return _with_connection(
+        environment,
+        lambda cur, read: build_ingest_context(cur, read, year=year, pins=pins),
+    )

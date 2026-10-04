@@ -92,3 +92,35 @@ def test_a_pin_is_passed_to_the_catalog_query_and_clears_the_check():
     )
     results = {r.check_id: r for r in q.run_stage("ingest", ctx).results}
     assert results["ingest.versions_pinned"].passed
+
+
+def test_silver_context_reads_games_previous_and_capture_index():
+    class Cur(FakeCursor):
+        def execute(self, query, params=()):
+            self.queries.append((query, tuple(params)))
+            if "FROM catalog.source_captures" in query:
+                self._rows = [("c1", "sha", "osha", "uri", "t")]
+            elif "version_id <> %s" in query:
+                self._rows = [("games", "g25", "s1", "sha-g25", "uri/g25")]
+            elif "AND version_id = %s" in query or "partitions @>" in query:
+                dataset = params[0]
+                self._rows = [(dataset, f"{dataset}-v", "s1", f"sha-{dataset}", "uri")]
+            else:
+                self._rows = []
+
+    cur = Cur([], [])
+    seen = []
+    ctx = loaders.build_silver_context(
+        cur,
+        lambda row: seen.append(row[1]) or pd.DataFrame({"game_id": [1]}),
+        year=2026,
+    )
+    assert {
+        "byplay",
+        "drives",
+        "games",
+        "source_reconciliation",
+        "games_previous",
+    } <= set(ctx)
+    assert "g25" in seen and ctx["inputs"]["games_previous"]["version_id"] == "g25"
+    assert list(ctx["capture_index"]["capture_id"]) == ["c1"]
