@@ -230,3 +230,14 @@ Made under the user's 5C directives (admit the 1,416 corroborated groups, fail c
   - Writes are new immutable runs on Preview R2 only; no production R2 credentials and no production Neon.
   - Report deltas for raw and adjusted measurements, priors, states and ranks, non-offense points, offsets, Ridge coefficients and calibration, and predictions.
 - **Open items carried into 6A:** Silver must be rebuilt with `--nullable-ppa` for `ppa_missing` and the stream-score reconciliation to take effect (the persisted Preview reconciliation is unchanged); the Gold datasets (team game metrics, possessions, admitted ledger, evidence) and their signed manifests do not exist yet; `envelope_before/after` are null in the converted admitted ledger; 2026 weeks 0-4 have no admitted R1 groups; adjusted and rating-level materiality is not yet measured; the rights basis above is the user's statement, not independently checked.
+
+## Amendment 4 — Pre-6A integrity and integration prerequisites (2026-10-04)
+
+**Approved** by the user's explicit implementation request for the [pre-Stage-6 plan](../../2026-10-04/02-pre-stage6-integrity-and-rebuild.md). That execution contract supplies the ordered tasks, acceptance tests and 6A receipt requirements under contract 04 Amendment 3.
+
+- Reverted rows in the admitted ledger are retained baseline allocations, not rejected candidate events. Preserve their exact dispositions and include valid retained points in metrics, offsets and independent verification. This supersedes Amendment 1's two-label consumer filter.
+- Require explicit coverage/reconciliation before asserting zero from absent events; preserve missing opportunities/field position and separate seasons in aggregation. Keep website and V5 populations explicit.
+- Reconcile rebuilt Silver event identities, scores, eligibility and allocation groups against pinned Step 5 decisions before reuse. Material differences require renewed certification; never silently transfer admission.
+- Version nullable observation interfaces, validate evidence references/bytes, and integrate corrected measurements, terminal states, priors and offsets through the refit. Legacy reproduction remains available.
+- Writes now include verified Preview Neon catalog/schema/lineage and associated reconciliation metadata alongside immutable Preview R2 artifacts. No serving, selection, authorization or production writes. This resolves the catalog requirement versus the narrower earlier R2 authorization.
+- Step 5 is closed; integration and the full rebuild are not complete. 6A must retain independent full-corpus verification, attributed deltas, readback/retry and a signed exit receipt before 6B.

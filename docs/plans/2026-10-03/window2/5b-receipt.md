@@ -43,3 +43,7 @@ Full suite with CI's flags (warnings as errors, parallel workers): 1814 passed, 
 1. The `points_scored` metric and the JSON-text storage convention (Appendix A, Amendment 1).
 2. That the stream-score mismatch is recorded but never blocks the Silver build.
 3. Whether to proceed to 5C (admission and independent certification) next.
+
+## Subsequent pre-6A review (2026-10-04)
+
+This receipt retains what Step 5 established at the time. Closed review questions and dated “not done” entries above are historical. The [approved pre-6A contract](../../2026-10-04/02-pre-stage6-integrity-and-rebuild.md) now governs remaining integration, corrected missingness/aggregation/admission semantics, evidence-table construction and the rebuild. Step 5 closure is not an end-to-end certification of those consumers. Preview R2 plus verified Preview catalog registration is authorized for 6A; serving and production writes remain excluded.

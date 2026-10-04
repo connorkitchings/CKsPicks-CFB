@@ -1,6 +1,6 @@
 # Data Integrity Repair in Two Windows
 
-- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04, 6A authorized but not started); Amendment 2 Approved 2026-10-04 (Window 2 sessions 5A–8 may start under it, each by explicit instruction naming this contract; no Preview/production write is authorized)
+- **Status:** In Progress (Window 1 closed for implementation; Window 2 Step 5 closed 2026-10-04, 6A authorized but not started); Amendment 3 Approved 2026-10-04 (pre-6A execution contract approved; Preview R2 and Preview catalog writes permitted for 6A only; no serving or production writes)
 - **Created:** 2026-10-03
 - **Planner:** Sol
 - **Approval source:** The user resolved the decision packet in this session and explicitly requested that the final plan be documented before implementation.
@@ -282,3 +282,11 @@ Any change to R1 scope, EPA treatment, replay cutoff policy, data identities, ne
 **Review changelog:** replaces the monolithic phase proposal with Tasks 5A–8 under the approved two-window architecture; removes redundant discovery and production-boundary refactoring; supplies exact data/registry contracts and null-consumer tests; restores CFBD drives and adds the 25% sizing gate; separates user authorization and append-only revocation from pipeline selection; specifies migrations/grants/schema synchronization, selectors, freeze checks and web tests including real Preview; fixes N at packet creation; scopes prospective records to V5 Week 5 onward (V4 Weeks 0–4 remain audit/rollback); specifies new-freeze quote timing and possible pre-kickoff lean changes; reconciles issue #5 and requires proof that served ratings never select EPA candidates.
 
 The original October 3 investigation and decision packet remain evidence, not current conflicting instructions. See the [planning persistence log](../../../session_logs/2026-10-04/01-window2-amendment-planning.md). No code, migration, data rebuild, database write or release is performed by saving these documents.
+
+### Amendment 3 — Pre-6A integrity review and rebuild contract (2026-10-04)
+
+**Approved:** the user explicitly requested implementation of the reviewed pre-Stage-6 plan and selected Preview R2 plus Preview catalog registration. Execute [the bounded contract](../2026-10-04/02-pre-stage6-integrity-and-rebuild.md) in a fresh Terra session after this documentation-only Sol persistence.
+
+Step 5 remains closed as local evidence. The review found missing-source/null-opportunity handling, season isolation and reverted-allocation semantics that must be repaired before the full rebuild. Existing runners also require explicit corrected measurement/prior/offset integration. These prerequisites refine 6A; they do not invalidate the retained historical Step 5 receipts or certify new datasets.
+
+**Precedence:** this amendment and Appendix A Amendment 4 supersede earlier blanket prohibitions on Preview writes solely for 6A immutable Preview R2 artifacts and verified Preview catalog/schema/lineage/reconciliation metadata. They authorize no serving, selection, approval, production or release writes. Pipeline authorization insertion remains prohibited. Stage 6B reconstruction and Stages 7–8 activation/freeze/rollback/matchup completion remain separately gated. Earlier dated authorization text is retained as history.

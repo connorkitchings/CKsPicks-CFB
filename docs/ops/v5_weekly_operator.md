@@ -1,6 +1,8 @@
 # Manual V5 Weekly Operator
 
-> **Status (2026-09-30):** The [exact repaired-V5 release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md)
+> **Repair checkpoint (2026-10-04):** Step 5 is closed; the approved [pre-6A contract](../plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) requires shared-contract repairs before the corrected rebuild/refit. 6A permits immutable Preview R2 and verified Preview catalog/schema/lineage/reconciliation metadata only. It does not activate a serving lineage. Continue weekly operations under existing exact decisions; do not assume Week 6 is the cutover. Stage 6B reconstructs completed weeks; Stages 7–8 govern release, freeze, rollback and matchup completion. Live week state is in [status](../status.md).
+
+> **Historical release checkpoint (2026-09-30; current state is in status):** The [exact repaired-V5 release packet](../plans/2026-09-29/v5-intended-update-production-release-packet.md)
 > selected `2026w{0..4}-v5repair-20260929-p1` as retrospective scored replays
 > and `2026w5-v5repair-20260929-p2` as the ungraded live slate. The old
 > `2026w{0..4}-v5replay-bestquote-20260926-r3` runs and
@@ -8,7 +10,7 @@
 > quotes were captured at 2026-09-29 20:28:55Z; a later check found six moved
 > quote values across five games. The final pre-kickoff freeze was completed
 > 2026-09-30T12:34:06Z (see [Current Status](../status.md)). Do not grade Week 5
-> until certified finals.
+> until certified finals. This dated instruction was satisfied by the subsequent close recorded in Current Status.
 
 For the selected successor, continue from its independently verified rating
 manifest and refitted bundle. Keep the original V5 projector and original

@@ -8,7 +8,7 @@
 
 ## Environment Setup
 
-**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md). Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Weekly close/open/freeze steps are in the [weekly operator checklist](../docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist). The original Phase 4B retained manifest remains prohibited as a forecasting parent.
+**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md). Week 4 is scored (Weeks 0–4 are retrospective V5 replays); current week state and original prospective records are maintained only in `docs/status.md`. V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Weekly close/open/freeze steps are in the [weekly operator checklist](../docs/ops/v5_weekly_operator.md#weekly-close-open-and-freeze-checklist). The original Phase 4B retained manifest remains prohibited as a forecasting parent.
 
 Commands and season/week/publication values below are illustrative examples,
 not instructions to execute a research phase or the current live configuration.
@@ -57,7 +57,7 @@ export CFB_MODEL_DATA_ROOT='/Volumes/CK SSD/Coding Projects/cfb_model/'
 # Vercel publication scope (web app)
 export CFB_PUBLICATION_MODE='predictions' # current approved release mode; all other values fail closed to market-only
 export CFB_PUBLICATION_SEASON='2026'
-# Optional web flag (default closed): CFB_MATCHUP_ENABLED=1 opens /matchup/[id] in a production build.
+# Matchup pages are default-on; CFB_MATCHUP_ENABLED=0 is the emergency opt-out.
 # Week availability needs no variable: web/src/lib/publication.ts owns the
 # range and explicit Neon public selections reveal each week. The retired
 # CFB_PUBLICATION_WEEKS value is ignored — do not set it.
@@ -714,3 +714,7 @@ make publish-week YEAR=2026 WEEK=0 AS_OF=YYYY-MM-DD ENV=production
 
 _Last Updated: 2026-10-01_
 _Quick command reference for CKsPicks-CFB_
+
+## Pre-Stage-6 repair authority (2026-10-04)
+
+Step 5 is closed as local evidence. The approved [pre-6A execution contract](../docs/plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) governs the remaining shared-contract repairs and manifest-driven rebuild/refit. It permits immutable Preview R2 plus verified Preview catalog metadata, not serving or production writes. Stage 6B reconstructs completed weeks; Stages 7–8 retain exact release, freeze, rollback and matchup gates. Current state remains in [status](../docs/status.md).

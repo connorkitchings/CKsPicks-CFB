@@ -122,7 +122,7 @@ the long-term design does not change modeling philosophy at hard completed-game
 boundaries. Initial opponent adjustment remains upstream of rating estimation,
 and later rating-assisted adjustment is a separately attributable challenger.
 
-**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Week 4 is scored (Weeks 0–4 are retrospective V5 replays); V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
+**Current status:** see [`docs/status.md`](../docs/status.md) for live run IDs and week state. [V5 model development is complete and accepted](../docs/modeling/v5_status.md); V5 is the serving family and V4 remains selectable for rollback. Week 4 is scored (Weeks 0–4 are retrospective V5 replays); current week state and original prospective records are maintained only in `docs/status.md`. V4 frozen runs remain the rollback. Six slates are not a prelaunch requirement; prospective results are a monitoring window. Repair v2 and Phase 3 v2 remain historical evidence; R6 is superseded.
 
 V5 ratings successor is distinct from the V4 feature schema v5 diagnostic;
 contract 01 closes that independent diagnostic. The first V5 release uses a
@@ -267,3 +267,7 @@ make prepare-week YEAR=2026 WEEK=1 AS_OF=<ts> ENV=preview
 
 _Last Updated: 2026-10-01_
 _Domain knowledge and architecture reference_
+
+## Pre-Stage-6 repair authority (2026-10-04)
+
+Step 5 is closed as local evidence. The approved [pre-6A execution contract](../docs/plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) governs the remaining shared-contract repairs and manifest-driven rebuild/refit. It permits immutable Preview R2 plus verified Preview catalog metadata, not serving or production writes. Stage 6B reconstructs completed weeks; Stages 7–8 retain exact release, freeze, rollback and matchup gates. Current state remains in [status](../docs/status.md).

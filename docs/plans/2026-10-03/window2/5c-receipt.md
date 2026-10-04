@@ -53,3 +53,7 @@ By the Appendix A threshold (above 0.05 raw PPP or more than five rank positions
 1. Accept the admission result and the material finding, and approve the Amendment 2 decision mapping.
 2. Decide the rights basis/terms URI for CFBD evidence (needed before any evidence table or Gold publish).
 3. Authorize 6A (historical rebuild and refit), which needs R2 write approval.
+
+## Subsequent pre-6A review (2026-10-04)
+
+This receipt retains what Step 5 established at the time. Closed review questions and dated “not done” entries above are historical. The [approved pre-6A contract](../../2026-10-04/02-pre-stage6-integrity-and-rebuild.md) now governs remaining integration, corrected missingness/aggregation/admission semantics, evidence-table construction and the rebuild. Step 5 closure is not an end-to-end certification of those consumers. Preview R2 plus verified Preview catalog registration is authorized for 6A; serving and production writes remain excluded.

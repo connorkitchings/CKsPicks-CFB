@@ -1,5 +1,7 @@
 # Production Runbook — 2026 Season
 
+> **Repair checkpoint (2026-10-04):** Step 5 is closed; the approved [pre-6A contract](../plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) requires shared-contract repairs before the corrected rebuild/refit. 6A permits immutable Preview R2 and verified Preview catalog/schema/lineage/reconciliation metadata only. It does not activate a serving lineage. Continue weekly operations under existing exact decisions; do not assume Week 6 is the cutover. Stage 6B reconstructs completed weeks; Stages 7–8 govern release, freeze, rollback and matchup completion. Live week state is in [status](../status.md).
+
 > **Status:** see [Current Status](../status.md) for the selected runs and week state. See also the [current V5 status](../modeling/v5_status.md) and [weekly operator](v5_weekly_operator.md).
 
 The [manual V5 weekly operator](v5_weekly_operator.md) is the reviewed

@@ -4,7 +4,7 @@ Open and resolved data-quality issues that affect what the product shows. Add an
 
 ## Repair authority (updated 2026-10-04)
 
-[Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) governs the two independent windows. Window 1 code is committed on `dev` (`850ca38`, `562b2b2`); its release receipt is open pending the Preview serving rehearsal and your production decision. Amendment 2 is **Approved (2026-10-04)**, with [data/certification](../plans/2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web](../plans/2026-10-03/window2/release-schema-and-web.md) specifications. No implementation or production completion is asserted by this documentation update.
+[Contract 04](../plans/2026-10-03/04-data-integrity-two-window-implementation.md) governs the two independent windows. Window 1 code is committed on `dev` (`850ca38`, `562b2b2`); its Preview serving rehearsal passed and implementation was closed by the user; the production release decision remains open. Amendment 2 is **Approved (2026-10-04)**, with [data/certification](../plans/2026-10-03/window2/data-contracts-and-certification.md) and [release/schema/web](../plans/2026-10-03/window2/release-schema-and-web.md) specifications. No implementation or production completion is asserted by this documentation update.
 
 Window 1 owns market selection/ties, Silver display masking and punt filtering, venue validation and accuracy presentation. Window 2 evaluates full R1, admits corroborated allocation changes (otherwise retains baseline), rebuilds the complete historical measurement/rating lineage under the unchanged model design, and publishes reconstructed replay plus a separately frozen prospective cutover. No EPA imputation. Neutral-site model changes (#9) require a separate contract.
 
@@ -13,6 +13,13 @@ Matchup pages remain live by the October 3 user decision; `CFB_MATCHUP_ENABLED=0
 Issue #5 is reconciled under **Resolved** using the original investigation evidence. It was not repaired by unpushed Window 1 code. The remaining issue bodies retain dated observations; the contract governs current sequencing.
 
 ## Open
+
+### 14. Pre-6A shared-contract integration gaps (verified 2026-10-04)
+
+Read-only review and in-memory probes found that missing source rows can become observed zeros, unknown scoring opportunities become false, aggregation mixes seasons, Gold conversion loses reverted dispositions, and consumers exclude explicitly reverted baseline points. The existing 86 focused tests pass; they do not cover these failures, and one offset test asserts exclusion. Existing rebuild runners also retain older measurement/prior parents and rating-only feature replacement retains old offsets.
+
+**Disposition:** prerequisites in the [approved pre-6A execution contract](../plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md). No fix or production effect is asserted. Step 5 remains closed as local evidence; 6A requires corrected contracts, integration, full-corpus verification and immutable Preview publication. Issue 7 remains open for persisted Silver reconciliation. Residual uncorroborated scoring errors remain explicit after rebuilding.
+
 
 ### 1. Play-by-play running score is not monotonic (opened 2026-10-02)
 

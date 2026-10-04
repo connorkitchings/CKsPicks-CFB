@@ -75,8 +75,9 @@ print(f"✅ Data root verified: {data_root}")
 - The original target was to complete initial requirements before Week 0; that
   date has passed, so any unfinished requirement remains an explicit blocker.
   V5 model development is complete and accepted. The Week 5 live forecast and
-  Preview candidate are verified as of 2026-09-27; prospective production
-  activation still needs its separate exact release decision. Prospective
+  Preview candidate were verified as of 2026-09-27; that release was subsequently
+  activated (see `docs/status.md`). Any new corrected-lineage activation still
+  needs its separate exact release decision. Prospective
   paired-slate evidence continues as monitoring; six slates are not a prelaunch gate.
 - Further model research stays isolated from production bundles, Neon activation, and public publication until a separate promotion contract is approved; betting decisions are deferred
 
@@ -207,7 +208,7 @@ weekly operating cadence documented in `docs/ops/weekly_pipeline.md` and
 The detailed checkpoints below are dated historical records. Use the status
 above and the latest session log for current-week operations.
 
-**Current focus (2026-10-01):** V5 is serving; Week 5 is frozen awaiting certified finals; the V6 ratings lab closed on 2026-09-30 as `RETAINED_AS_BENCHMARK`; housekeeping contracts 05 (dead-code prune) and 06 (docs cleanup/archive) are done and contract 04 (production-boundary refactor) is Draft. Details: [`docs/status.md`](docs/status.md).
+**Current focus (2026-10-04):** Step 5 is closed; the [pre-6A integrity and rebuild contract](docs/plans/2026-10-04/02-pre-stage6-integrity-and-rebuild.md) is Approved. Shared-contract repairs and explicit corrected-lineage integration precede the Preview rebuild/refit. Stage 6B replay and Stages 7–8 release remain separately gated. Current serving/week state: [`docs/status.md`](docs/status.md).
 
 **Historical checkpoints (dated, not current):**
 - ✅ Data platform modernization (immutable lake, CFBD hardening, resumable ops)
