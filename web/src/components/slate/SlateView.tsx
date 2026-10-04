@@ -132,9 +132,39 @@ export function SlateView({
             )}
 
             {games.length === 0 ? (
-              <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
-                {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
-              </div>
+              mode === "picks" ? (
+                <div className="rounded-2xl border border-line bg-surface-card p-8 sm:p-12 text-center shadow-xs">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-accent-line/40 bg-accent-soft text-accent-ink shadow-2xs">
+                    <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75} aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="mt-5 text-xl font-bold tracking-tight text-ink sm:text-2xl">
+                    Week {week} Picks Dropping Soon
+                  </h2>
+                  <p className="mx-auto mt-2.5 max-w-lg text-sm text-ink-muted leading-relaxed sm:text-base">
+                    Blitzkrieg V5 model predictions and top leans will be posted as betting lines open across sportsbooks ahead of kickoff.
+                  </p>
+                  <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                    <a
+                      href={`/results?week=${week > 0 ? week - 1 : 0}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink shadow-xs transition hover:opacity-90 active:scale-[0.98]"
+                    >
+                      View Week {week > 0 ? week - 1 : 0} Results & Graded Picks →
+                    </a>
+                    <a
+                      href="/performance"
+                      className="inline-flex items-center gap-2 rounded-xl border border-line bg-surface-inset px-4 py-2.5 text-xs font-semibold text-ink transition hover:bg-surface-card active:scale-[0.98]"
+                    >
+                      Performance Dashboard
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-line bg-surface-card p-6 text-center text-sm text-ink-faint">
+                  {emptyMessage ?? `No games loaded for ${season} week ${week}.`}
+                </div>
+              )
             ) : mode === "picks" ? (
               <PicksSlate
                 games={games}

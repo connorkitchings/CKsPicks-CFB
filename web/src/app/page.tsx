@@ -80,6 +80,14 @@ async function resolveTarget(
 
   // Picks targets the upcoming / unscored slate
   const upcomingWeeks = allAvailableWeeks.filter((w) => !scoredWeeks.includes(w));
+  if (
+    activeWeek !== null &&
+    !scoredWeeks.includes(activeWeek) &&
+    !upcomingWeeks.includes(activeWeek)
+  ) {
+    upcomingWeeks.push(activeWeek);
+    upcomingWeeks.sort((a, b) => a - b);
+  }
   const availableWeeks = upcomingWeeks.length > 0 ? upcomingWeeks : allAvailableWeeks;
 
   const week = requestedWeek
