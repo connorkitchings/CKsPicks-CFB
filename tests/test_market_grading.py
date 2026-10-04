@@ -122,14 +122,14 @@ def test_pick_direction_total_under():
     assert pick_direction(47.0, 48.0, target="total") == "under"
 
 
-def test_pick_direction_zero_edge_spread_is_home():
+def test_pick_direction_zero_edge_spread_is_away():
     # prediction + consensus == 0 → "home" (≥ 0)
-    assert pick_direction(3.0, -3.0, target="spread") == "home"
+    assert pick_direction(3.0, -3.0, target="spread") == "away"
 
 
-def test_pick_direction_zero_edge_total_is_over():
+def test_pick_direction_zero_edge_total_is_under():
     # prediction == consensus → "over" (≥)
-    assert pick_direction(48.0, 48.0, target="total") == "over"
+    assert pick_direction(48.0, 48.0, target="total") == "under"
 
 
 def test_pick_direction_invalid_target():
@@ -755,4 +755,39 @@ def test_quote_selection_rejects_missing_executable_side():
 
 
 def test_policy_version_constant():
-    assert SELECTION_POLICY_VERSION == "model_side_best_quote_v1"
+    assert SELECTION_POLICY_VERSION == "model_side_best_quote_v2"
+
+
+def test_away_spread_uses_lowest_home_signed_point_before_price():
+    result = select_best_quote(
+        target="spread",
+        prediction=0,
+        canonical_snapshot_id=SNAP_ID,
+        canonical_line=-3,
+        game_id=GAME_ID,
+        kickoff_utc=KICKOFF,
+        quote_candidates=[
+            _spread_quote("higher", -2, away_price=120),
+            _spread_quote("lower", -4, away_price=-120),
+        ],
+    )
+    assert result.side == "away"
+    assert result.quote_id == "lower"
+    assert result.point == -4
+
+
+def test_quote_after_forecast_cutoff_is_rejected_even_before_kickoff():
+    result = select_best_quote(
+        target="spread",
+        prediction=0,
+        canonical_snapshot_id=SNAP_ID,
+        canonical_line=-3,
+        game_id=GAME_ID,
+        kickoff_utc=KICKOFF,
+        forecast_cutoff=BEFORE,
+        quote_candidates=[
+            _spread_quote("original", -3),
+            _spread_quote("late", -5, captured_at=BEFORE.replace(hour=17)),
+        ],
+    )
+    assert result.quote_id == "original"

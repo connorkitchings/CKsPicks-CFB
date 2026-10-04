@@ -617,3 +617,25 @@ def test_diff_report_flags_value_and_rank_changes():
     metric = report["per_metric"][0]
     assert metric["changed"] == 2 and metric["max_abs_rank_shift"] == 2
     assert report["top_movers"][0]["rank_old"] in (3, 1)
+
+
+def test_display_ppa_masks_missing_values_but_keeps_real_zero():
+    byplay, drives, games, outcomes = build([base_game()])
+    byplay["ppa_missing"] = False
+    # A has [1, -0.2, -0.8]; the first value represents a missing legacy fill.
+    byplay.loc[0, "ppa"] = 0.0
+    byplay.loc[0, "ppa_missing"] = True
+    byplay.loc[1, "ppa"] = 0.0  # a real zero must remain in the denominator
+    result = build_team_season_stats(
+        byplay=byplay,
+        drives=drives,
+        games=games,
+        outcomes=outcomes,
+        fbs_teams=FBS,
+        season=2026,
+        as_of_week=2,
+    )
+    observed = val(result, "A", "offense", "ppa_per_play")
+    assert observed["n"] == 2
+    assert observed["value"] == pytest.approx(-0.4)
+    assert val(result, "A", "offense", "success_rate")["n"] == 3

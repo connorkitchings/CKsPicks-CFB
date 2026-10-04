@@ -42,6 +42,8 @@ from cks_picks_cfb.artifacts import (
     read_json_artifact,
     read_verified_csv_artifact,
 )
+from cks_picks_cfb.data.game_venues import require_venue_cities
+from cks_picks_cfb.data.market_integrity import verify_snapshot
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
 
 try:
@@ -118,6 +120,12 @@ def _derive_lean(row: pd.Series) -> tuple[str | None, float | None]:
     Edge: |predicted_spread + home_team_spread_line|
     """
     label = str(row.get("Spread Bet", "")).strip().lower()
+    if _label_present_but_null(row, "Spread Bet"):
+        # A frozen null-lean record: never synthesize a lean from the numbers.
+        pred = _safe_float(row.get("Spread Prediction"))
+        line = _safe_float(row.get("home_team_spread_line"))
+        edge = abs(pred + line) if pred is not None and line is not None else None
+        return None, edge
     if label == "no bet":
         pred = _safe_float(row.get("Spread Prediction"))
         line = _safe_float(row.get("home_team_spread_line"))
@@ -137,9 +145,26 @@ def _derive_lean(row: pd.Series) -> tuple[str | None, float | None]:
     return lean, edge
 
 
+def _label_present_but_null(row: pd.Series, column: str) -> bool:
+    """True when the bet-label column exists but holds no value.
+
+    A missing column is a legacy artifact (lean is computed from the numbers);
+    an empty or NaN label is a null-lean record and must stay null.
+    """
+    if column not in row.index:
+        return False
+    value = row[column]
+    return bool(pd.isna(value)) or str(value).strip() == ""
+
+
 def _derive_total_lean(row: pd.Series) -> tuple[str | None, float | None]:
     """Return (total_lean, edge_total), honoring the "Total Bet" label."""
     label = str(row.get("Total Bet", "")).strip().lower()
+    if _label_present_but_null(row, "Total Bet"):
+        pred = _safe_float(row.get("Total Prediction"))
+        line = _safe_float(row.get("total_line"))
+        edge = abs(pred - line) if pred is not None and line is not None else None
+        return None, edge
     if label == "no bet":
         pred = _safe_float(row.get("Total Prediction"))
         line = _safe_float(row.get("total_line"))
@@ -319,7 +344,7 @@ INSERT INTO market_snapshots (
     source_quote_ids, policy_version
 ) VALUES (
     %(market_snapshot_id)s, %(game_id)s, %(market_captured_at)s,
-    %(home_team_spread_line)s, %(total_line)s, %(spread_selection_rule)s,
+    %(canonical_spread_line)s, %(canonical_total_line)s, %(spread_selection_rule)s,
     %(total_selection_rule)s, %(spread_provider_count)s,
     %(total_provider_count)s, %(source_quote_ids)s::jsonb,
     %(market_policy_version)s
@@ -435,6 +460,12 @@ def _row_to_record(
         "home_team": str(row["home_team"]),
         "away_team": str(row["away_team"]),
         "home_team_spread_line": _safe_float(row.get("home_team_spread_line")),
+        "canonical_spread_line": _safe_float(
+            row.get("canonical_spread_line", row.get("home_team_spread_line"))
+        ),
+        "canonical_total_line": _safe_float(
+            row.get("canonical_total_line", row.get("total_line"))
+        ),
         "total_line": _safe_float(row.get("total_line")),
         "predicted_spread": _safe_float(row.get("Spread Prediction")),
         "predicted_total": _safe_float(row.get("Total Prediction")),
@@ -828,6 +859,16 @@ def publish_week(
                 raise RuntimeError(
                     f"Prediction run {run_id} is immutable ({existing[0]})"
                 )
+            if state == "published":
+                published_ids = [int(value) for value in df["game_id"].dropna()]
+                cur.execute(
+                    "SELECT game_id, city FROM game_venues WHERE game_id = ANY(%s)",
+                    (published_ids,),
+                )
+                require_venue_cities(
+                    [{"game_id": gid, "city": city} for gid, city in cur.fetchall()],
+                    published_ids,
+                )
             cur.execute(INSERT_RUN_SQL, run_record)
             if existing and existing[0] == "preview" and state == "published":
                 cur.execute(
@@ -868,6 +909,7 @@ def publish_week(
             for record in records_by_game:
                 if record["market_snapshot_id"]:
                     cur.execute(INSERT_MARKET_SNAPSHOT_SQL, record)
+                    verify_snapshot(cur, record)
                     source_quote_ids = json.loads(record["source_quote_ids"])
                     for quote_id in source_quote_ids:
                         if quote_id not in quote_by_id:
@@ -889,6 +931,7 @@ def publish_week(
                     if (
                         record.get("spread_market_quote_id")
                         and record.get("home_team_spread_line") is not None
+                        and record.get("spread_lean") in {"home", "away"}
                     ):
                         sq_id = str(record["spread_market_quote_id"])
                         if sq_id in quote_by_id:
@@ -925,7 +968,7 @@ def publish_week(
                                     "target": "spread",
                                     "snapshot_id": record["market_snapshot_id"],
                                     "quote_id": sq_id,
-                                    "side": record.get("spread_lean") or "home",
+                                    "side": record["spread_lean"],
                                     "point": record["home_team_spread_line"],
                                     "price": float(sq_price),
                                     "edge": float(record.get("edge_spread") or 0.0),
@@ -946,6 +989,7 @@ def publish_week(
                     if (
                         record.get("total_market_quote_id")
                         and record.get("total_line") is not None
+                        and record.get("total_lean") in {"over", "under"}
                     ):
                         tq_id = str(record["total_market_quote_id"])
                         if tq_id in quote_by_id:
@@ -979,7 +1023,7 @@ def publish_week(
                                     "target": "total",
                                     "snapshot_id": record["market_snapshot_id"],
                                     "quote_id": tq_id,
-                                    "side": record.get("total_lean") or "over",
+                                    "side": record["total_lean"],
                                     "point": record["total_line"],
                                     "price": float(tq_price),
                                     "edge": float(record.get("edge_total") or 0.0),

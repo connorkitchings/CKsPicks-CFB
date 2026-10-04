@@ -30,6 +30,7 @@ from cks_picks_cfb.data.game_venues import (
     UPSERT_GAME_VENUE_SQL,
     MissingVenueColumnsError,
     build_game_venue_rows,
+    require_venue_cities,
 )
 from cks_picks_cfb.data.lake import DatasetRef, read_dataset
 from cks_picks_cfb.data.storage import get_storage
@@ -66,6 +67,11 @@ def main() -> int:
     parser.add_argument(
         "--dry-run", action="store_true", help="Report coverage; write nothing"
     )
+    parser.add_argument(
+        "--require-city",
+        action="store_true",
+        help="Fail dry run/publication on incomplete city coverage",
+    )
     args = parser.parse_args()
 
     url = args.database_url or os.getenv(URL_ENV[args.environment])
@@ -93,6 +99,16 @@ def main() -> int:
         except MissingVenueColumnsError as exc:
             print(f"Cannot build venue rows: {exc}", file=sys.stderr)
             return 3
+        if args.require_city:
+            require_venue_cities(rows, neon_ids)
+        report["source_versions"] = {
+            "games": games_ref.version_id,
+            "venues": venues_ref.version_id,
+        }
+        report["source_hashes"] = {
+            "games": games_ref.content_sha,
+            "venues": venues_ref.content_sha,
+        }
         print(json.dumps(report, indent=2))
         for row in rows[:5]:
             print(json.dumps(row, default=str))

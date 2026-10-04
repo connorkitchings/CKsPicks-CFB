@@ -11,6 +11,7 @@ from typing import Any, Callable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
+from cks_picks_cfb.data.market_integrity import SNAPSHOT_POLICY, snapshot_identity
 from cks_picks_cfb.features.regimes import canonical_prediction_regime
 from cks_picks_cfb.models.market_grading import (
     SELECTION_POLICY_VERSION,
@@ -239,6 +240,7 @@ def calculate_edges_and_leans(
     run_id: str,
     market_quotes: pd.DataFrame | None = None,
     allow_default_price: bool = True,
+    forecast_cutoff: datetime | None = None,
 ) -> pd.DataFrame:
     """Apply the existing spread-sign, threshold, and lean display contract.
 
@@ -365,6 +367,7 @@ def calculate_edges_and_leans(
                 kickoff_utc=start_date_dt,
                 quote_candidates=spread_cands,
                 require_price=not allow_default_price,
+                forecast_cutoff=forecast_cutoff,
             )
 
             total_cands = [
@@ -392,6 +395,7 @@ def calculate_edges_and_leans(
                 kickoff_utc=start_date_dt,
                 quote_candidates=total_cands,
                 require_price=not allow_default_price,
+                forecast_cutoff=forecast_cutoff,
             )
 
             if selected_spread is not None:
@@ -448,10 +452,8 @@ def calculate_edges_and_leans(
                 total_delta = total - float(book_total)
                 total_edge = abs(total_delta)
                 total_bet = (
-                    "Over"
-                    if total_delta > total_threshold
-                    else "Under"
-                    if total_delta < -total_threshold
+                    ("Over" if total_delta > 0 else "Under")
+                    if total_edge >= total_threshold
                     else "No Bet"
                 )
 
@@ -461,6 +463,23 @@ def calculate_edges_and_leans(
         away_count = pd.to_numeric(
             feature.get("away_current_season_games", 0), errors="coerce"
         )
+        snapshot_record = {
+            "game_id": game_id,
+            "market_captured_at": pd.to_datetime(
+                feature.get("market_captured_at"), utc=True
+            ),
+            "home_team_spread_line": None
+            if pd.isna(canonical_spread)
+            else float(canonical_spread),
+            "total_line": None if pd.isna(canonical_total) else float(canonical_total),
+            "source_quote_ids": source_q_ids,
+            "spread_selection_rule": feature.get("spread_selection_rule"),
+            "total_selection_rule": feature.get("total_selection_rule"),
+            "spread_provider_count": int(feature.get("spread_provider_count", 0)),
+            "total_provider_count": int(feature.get("total_provider_count", 0)),
+            "market_policy_version": SNAPSHOT_POLICY,
+        }
+        corrected_snapshot_id = snapshot_identity(snapshot_record) if snap_id else None
         rows.append(
             {
                 "game_id": feature["id"],
@@ -482,8 +501,8 @@ def calculate_edges_and_leans(
                 "prediction_regime": feature.get("prediction_regime", "established"),
                 "spread_model_version": prediction["spread_model_version"],
                 "total_model_version": prediction["total_model_version"],
-                "market_snapshot_id": feature.get("market_snapshot_id"),
-                "market_policy_version": feature.get("market_policy_version"),
+                "market_snapshot_id": corrected_snapshot_id,
+                "market_policy_version": SNAPSHOT_POLICY,
                 "spread_selection_rule": feature.get("spread_selection_rule"),
                 "total_selection_rule": feature.get("total_selection_rule"),
                 "spread_provider_count": feature.get("spread_provider_count", 0),

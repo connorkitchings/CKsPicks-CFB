@@ -265,6 +265,49 @@ def _upsert_run_grades(cur, scored: pd.Series, *, run_id: str) -> None:
         ("spread", "spread_result_norm", "spread_lean"),
         ("total", "total_result_norm", "total_lean"),
     ):
+        cur.execute(
+            "SELECT snapshot_id, quote_id, side, point, price, policy_version "
+            "FROM prediction_market_selections "
+            "WHERE run_id = %s AND game_id = %s AND target = %s",
+            (run_id, game_id, target),
+        )
+        frozen = cur.fetchone()
+        if frozen and frozen[5] == "model_side_best_quote_v2":
+            home, away = scored.get("home_points"), scored.get("away_points")
+            if home is None or away is None or pd.isna(home) or pd.isna(away):
+                raise ValueError(
+                    "certified actual scores are required for frozen grading"
+                )
+            side = frozen[2]
+            if side not in (
+                {"home", "away"} if target == "spread" else {"over", "under"}
+            ):
+                raise ValueError("invalid frozen selected side")
+            delta = (
+                (float(home) - float(away) + float(frozen[3]))
+                if target == "spread"
+                else (float(home) + float(away) - float(frozen[3]))
+            )
+            result = (
+                "push"
+                if delta == 0
+                else ("win" if (delta > 0) == (side in {"home", "over"}) else "loss")
+            )
+            cur.execute(
+                UPSERT_GRADE_SQL,
+                {
+                    "run_id": run_id,
+                    "game_id": game_id,
+                    "target": target,
+                    "market_snapshot_id": frozen[0],
+                    "market_quote_id": frozen[1],
+                    "side": side,
+                    "result": result,
+                    "profit_units": _profit(result, price=frozen[4]),
+                    "grading_version": "model_side_best_quote_v2",
+                },
+            )
+            continue
         result = scored.get(result_column)
         side = scored.get(side_column)
         if result is None or pd.isna(side):

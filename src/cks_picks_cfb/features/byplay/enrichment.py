@@ -255,6 +255,12 @@ def allplays_to_byplay(
     df["play_type"] = (
         df.get("play_type", "Uncategorized").fillna("Uncategorized").astype(str)
     )
+    original_ppa = pd.to_numeric(
+        df.get("ppa", pd.Series(index=df.index, dtype=float)), errors="coerce"
+    )
+    df["ppa_missing"] = original_ppa.isna()
+    df["ppa_missing_reason"] = np.where(df["ppa_missing"], "provider_missing_ppa", "")
+
     for col in [
         "yards_gained",
         "yards_to_first",
@@ -648,6 +654,8 @@ def allplays_to_byplay(
         "pass_attempt",
         "yards_gained",
         "ppa",
+        "ppa_missing",
+        "ppa_missing_reason",
         "TFL",
         "sack",
         "completion",

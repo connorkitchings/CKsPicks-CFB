@@ -16,21 +16,18 @@ test("performance detail fixture contains expected summary structure and valid r
   assert.equal(summary.spread.loss, 0);
   assert.equal(summary.spread.push, 0);
   assert.equal(summary.spread.winRate, 100);
-  assert.equal(summary.spread.units, 0.91);
 
   // Total record assertions
   assert.equal(summary.total.win, 0);
   assert.equal(summary.total.loss, 1);
   assert.equal(summary.total.push, 0);
   assert.equal(summary.total.winRate, 0);
-  assert.equal(summary.total.units, -1.0);
 
   // Combined assertions
   assert.equal(summary.combined.win, 1);
   assert.equal(summary.combined.loss, 1);
   assert.equal(summary.combined.push, 0);
   assert.equal(summary.combined.winRate, 50);
-  assert.equal(summary.combined.units, -0.09);
 
   // Weeks mapping
   assert.deepEqual(weeks, [0]);
@@ -62,15 +59,14 @@ test("win rate calculation excludes pushes from denominator", () => {
   assert.equal(Math.round(winRate * 10) / 10, 66.7);
 });
 
-test("ROI calculation considers total units risked across wins, losses, and pushes", () => {
-  const wins = 10;
-  const losses = 5;
-  const pushes = 2;
-  const units = wins * 0.9091 - losses * 1.0 + pushes * 0.0;
-  const risked = wins + losses + pushes;
-  const roi = (units / risked) * 100;
+test("accuracyRecord counts pushes but excludes them from the win rate", async () => {
+  const { accuracyRecord } = await import("./performance-accuracy.ts");
+  const record = accuracyRecord(["win", "win", "loss", "push", null]);
+  assert.deepEqual(record, { win: 2, loss: 1, push: 1, winRate: (100 * 2) / 3 });
+  assert.equal(accuracyRecord([null, "push"]).winRate, null);
+});
 
-  assert.equal(risked, 17);
-  assert.ok(units > 4.0 && units < 4.1);
-  assert.ok(roi > 24.0 && roi < 24.2);
+test("performance fixtures carry no financial fields", () => {
+  const text = JSON.stringify(v5PerformanceDetailFixture);
+  assert.doesNotMatch(text, /units|roi|profit/i);
 });

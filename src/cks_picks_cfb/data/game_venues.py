@@ -168,3 +168,14 @@ def build_game_venue_rows(
         "games_absent_sample": absent[:10],
     }
     return rows, report
+
+
+def require_venue_cities(rows: list[dict[str, Any]], game_ids: list[int]) -> dict:
+    """Require city coverage for the exact published slate; state is optional."""
+    cities = {int(row["game_id"]): _text(row.get("city")) for row in rows}
+    missing = sorted(
+        {int(game_id) for game_id in game_ids if not cities.get(int(game_id))}
+    )
+    if missing:
+        raise ValueError(f"required venue city missing for game IDs: {missing}")
+    return {"required_games": len(set(game_ids)), "missing_game_ids": missing}

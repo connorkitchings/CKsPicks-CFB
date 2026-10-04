@@ -7,7 +7,7 @@ import {
   totalEdge,
 } from "./betting-format.ts";
 
-/** Break-even win rate at -110 odds, the project's primary success metric. */
+/** Reference win-rate threshold (52.4%) for judging record accuracy; not a payout or price claim. */
 export const BREAK_EVEN_PCT = 52.4;
 
 export type LeanKind = "spread" | "total";

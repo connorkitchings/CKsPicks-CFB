@@ -168,6 +168,8 @@ def _role_rows(
     rows: list[dict[str, Any]] = []
     for team, team_plays in plays.groupby(team_col):
         ppa = pd.to_numeric(team_plays["ppa"], errors="coerce")
+        if "ppa_missing" in team_plays:
+            ppa = ppa.mask(team_plays["ppa_missing"].eq(True))
         yards = pd.to_numeric(team_plays["yards_gained"], errors="coerce")
         success = pd.to_numeric(team_plays["success"], errors="coerce")
         turnover = pd.to_numeric(team_plays["turnover"], errors="coerce")

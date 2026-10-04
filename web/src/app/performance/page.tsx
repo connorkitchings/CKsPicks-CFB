@@ -32,7 +32,7 @@ export default async function PerformancePage() {
           Season record & performance
         </h1>
         <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-          Results, profit/loss unit tracking, and calibration for every selected V5 forecast in 2026.
+          Records, forecast accuracy, and calibration for every selected V5 forecast in 2026.
         </p>
         <p role="note" className="mt-1.5 text-xs text-ink-faint">
           Weeks 0–4 use retrospective predictions and grades recalculated after the games with the repaired V5 ratings. They were not the picks originally published before kickoff.
@@ -59,7 +59,7 @@ export default async function PerformancePage() {
 
       <p className="text-xs leading-relaxed text-ink-faint">
         Win rate excludes pushes. A game without an eligible market line does not
-        count as a win or loss. Unit profits assume 1.0u flat risk per graded pick at closing/captured line.
+        count as a win or loss. Grades use captured selected lines; replays are retrospective evidence.
       </p>
     </main>
   );

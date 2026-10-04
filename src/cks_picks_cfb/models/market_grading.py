@@ -1,6 +1,6 @@
 """Executable, pre-kick quote selection and settlement helpers.
 
-Policy version: model_side_best_quote_v1
+Policy version: model_side_best_quote_v2
 -----------------------------------------
 1. Derive the model's side from the consensus/canonical snapshot line.  Line
    shopping never changes the already-fixed direction.
@@ -8,13 +8,12 @@ Policy version: model_side_best_quote_v1
    same game_id and target, carry a non-null point and side price, and whose
    capture timestamp is strictly before the game's kickoff.
 3. Among eligible candidates for the fixed side:
-   - Spread  → highest signed point (least-negative or most-positive favours
-               the model team; e.g. -3.0 is better than -3.5 for "home").
+   - Spread  → highest home-signed point for home, lowest for away.
    - Total   → lowest point for over, highest point for under.
    - Break equal points by better American price (higher profit_per_unit),
      then quote_id ascending for determinism.
-4. Return a NormalizedQuote dict.  A zero canonical edge, no eligible quotes,
-   or a missing price yields None (no lean, no grade).
+4. Exact prediction ties select away/under. Missing canonical lines or no
+   eligible quotes yield None. Unobserved prices retain default provenance.
 """
 
 from __future__ import annotations
@@ -29,7 +28,7 @@ import pandas as pd
 # Policy version identifier
 # ---------------------------------------------------------------------------
 
-SELECTION_POLICY_VERSION = "model_side_best_quote_v1"
+SELECTION_POLICY_VERSION = "model_side_best_quote_v2"
 
 
 # ---------------------------------------------------------------------------
@@ -55,9 +54,9 @@ def american_profit_per_unit(price: float | int | None) -> float:
 def pick_direction(prediction: float, consensus_line: float, *, target: str) -> str:
     """Choose a market side using the consensus line, before line shopping."""
     if target == "spread":
-        return "home" if prediction + consensus_line >= 0 else "away"
+        return "home" if prediction + consensus_line > 0 else "away"
     if target == "total":
-        return "over" if prediction >= consensus_line else "under"
+        return "over" if prediction > consensus_line else "under"
     raise ValueError("target must be spread or total")
 
 
@@ -101,6 +100,7 @@ def select_best_quote(
     kickoff_utc: datetime,
     quote_candidates: list[dict[str, Any]],
     require_price: bool = False,
+    forecast_cutoff: datetime | None = None,
 ) -> NormalizedQuote | None:
     """Select the best executable pre-kickoff quote for a single target.
 
@@ -140,7 +140,7 @@ def select_best_quote(
     Returns
     -------
     NormalizedQuote or None
-        None when the canonical line is missing, the edge is zero, or no
+        None when the canonical line is missing or no
         eligible quote exists.
     """
     if canonical_line is None or pd.isna(canonical_line):
@@ -182,6 +182,12 @@ def select_best_quote(
             cap = cap.replace(tzinfo=timezone.utc)
         if cap >= kickoff_utc:
             continue
+        if forecast_cutoff is not None:
+            cutoff = forecast_cutoff
+            if cutoff.tzinfo is None:
+                cutoff = cutoff.replace(tzinfo=timezone.utc)
+            if cap > cutoff:
+                continue
         eligible.append(
             {
                 "quote_id": qt_id,
@@ -259,8 +265,8 @@ def _sort_key(
     qt_id = row["quote_id"]
 
     if target == "spread":
-        # Highest (least negative) point is best for the model's team side
-        point_key = -point  # negate so ascending sort picks highest
+        # Points are home-signed: highest for home, lowest for away.
+        point_key = -point if direction == "home" else point
     elif direction == "over":
         point_key = point  # lowest point is best for over
     else:

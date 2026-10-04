@@ -232,6 +232,15 @@ class TestByplayVectorized:
         ]
         return pd.DataFrame(plays)
 
+    def test_missing_ppa_survives_legacy_zero_fill(self):
+        raw = pd.DataFrame(
+            [_make_play(play_number=1, ppa=None), _make_play(play_number=2, ppa=0.0)]
+        )
+        result = allplays_to_byplay(raw).sort_values("play_number")
+        assert result.ppa.tolist() == [0.0, 0.0]
+        assert result.ppa_missing.tolist() == [True, False]
+        assert result.ppa_missing_reason.tolist() == ["provider_missing_ppa", ""]
+
     def test_returned_punt_is_a_special_teams_play(self):
         raw = pd.DataFrame(
             [

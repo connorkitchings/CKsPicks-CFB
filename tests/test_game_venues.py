@@ -160,3 +160,18 @@ def test_upsert_sql_covers_every_column_and_is_idempotent():
     ):
         assert f"{column} = EXCLUDED.{column}" in UPSERT_GAME_VENUE_SQL
     assert "ON CONFLICT (game_id) DO UPDATE" in UPSERT_GAME_VENUE_SQL
+
+
+def test_required_city_gate_allows_international_city_without_state():
+    from cks_picks_cfb.data.game_venues import require_venue_cities
+
+    assert (
+        require_venue_cities([{"game_id": 1, "city": "Dublin", "state": None}], [1])[
+            "missing_game_ids"
+        ]
+        == []
+    )
+    with pytest.raises(ValueError, match="2"):
+        require_venue_cities([{"game_id": 1, "city": "Dublin"}], [1, 2])
+    with pytest.raises(ValueError, match="1"):
+        require_venue_cities([{"game_id": 1, "city": "  "}], [1])

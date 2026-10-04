@@ -163,6 +163,7 @@ def build_v5_serving_rows(
         run_id=run_id,
         market_quotes=market_quotes,
         allow_default_price=allow_default_price,
+        forecast_cutoff=cutoff.to_pydatetime(),
     )
     rows["predicted_spread_std_dev"] = np.sqrt(
         pairs[("variance", "margin")].to_numpy(float)

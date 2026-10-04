@@ -57,9 +57,9 @@ def _verify_target(row: pd.Series, quotes: pd.DataFrame, *, target: str) -> None
             raise ValueError("unlined target has selected quote or bet")
         return
     direction = (
-        ("Home" if prediction + canonical >= 0 else "Away")
+        ("Home" if prediction + canonical > 0 else "Away")
         if spread
-        else ("Over" if prediction >= canonical else "Under")
+        else ("Over" if prediction > canonical else "Under")
     )
     linked = set(json.loads(row["source_quote_ids"]))
     candidates = (
@@ -78,7 +78,9 @@ def _verify_target(row: pd.Series, quotes: pd.DataFrame, *, target: str) -> None
             raise ValueError("missing candidate target has a quote or bet")
         return
     point_col = "spread" if spread else "total"
-    ascending = not spread and direction == "Over"
+    # Home-signed spreads: highest line is best for Home, lowest for Away.
+    # Totals: lowest is best for Over, highest for Under.
+    ascending = direction == "Away" if spread else direction == "Over"
     candidates = candidates.sort_values(
         [point_col, "quote_id"], ascending=[ascending, True]
     )

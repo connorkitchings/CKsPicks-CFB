@@ -119,7 +119,9 @@ def test_edge_calculation_preserves_spread_sign_thresholds_and_missing_lines():
     )
     assert result.loc[0, "Spread Bet"] == "Home"
     assert result.loc[0, "Spread Confidence"] == "High"
-    assert result.loc[0, "Total Bet"] == "No Bet"
+    # Total edge 2.0 equals the threshold: bets use edge >= threshold, as for spreads
+    # and as the independent serving verifier expects.
+    assert result.loc[0, "Total Bet"] == "Over"
     features["home_team_spread_line"] = [None]
     result = calculate_edges_and_leans(
         predictions,
@@ -382,6 +384,6 @@ def test_calculate_edges_and_leans_with_best_quote_selection():
     )
     assert (
         manifest["validation"]["best_quote_selection_policy"]
-        == "model_side_best_quote_v1"
+        == "model_side_best_quote_v2"
     )
     assert manifest["validation"]["selected_quotes_count"] == 2

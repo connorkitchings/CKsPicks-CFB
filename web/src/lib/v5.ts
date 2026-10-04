@@ -403,12 +403,12 @@ export const getV5Performance = cache(async (
     homePoints: schema.gameResults.homePoints,
     awayPoints: schema.gameResults.awayPoints,
     spreadResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'spread' LIMIT 1
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
+        AND pg.game_id = predictions.game_id AND pg.target = 'spread' LIMIT 1
     )`,
     totalResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'total' LIMIT 1
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
+        AND pg.game_id = predictions.game_id AND pg.target = 'total' LIMIT 1
     )`,
   }).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -432,8 +432,6 @@ export interface BetRecord {
   win: number;
   loss: number;
   push: number;
-  units: number;
-  roi: number;
   winRate: number;
 }
 
@@ -462,13 +460,13 @@ export interface GradedGamePick {
   predictedSpread: number | null;
   spreadLean: "home" | "away" | null;
   spreadResult: "win" | "loss" | "push" | null;
-  spreadUnits: number | null;
+  spreadPriceProvenance?: "actual" | "defaulted" | "unavailable";
   spreadEdge: number | null;
   marketTotal: number | null;
   predictedTotal: number | null;
   totalLean: "over" | "under" | null;
   totalResult: "win" | "loss" | "push" | null;
-  totalUnits: number | null;
+  totalPriceProvenance?: "actual" | "defaulted" | "unavailable";
   totalEdge: number | null;
   highConfidence: boolean;
   evidenceClass: "replay" | "live";
@@ -481,22 +479,20 @@ export interface PerformanceDetail {
   weeks: number[];
 }
 
-function computeBetRecord(wins: number, losses: number, pushes: number, units: number): BetRecord {
+function computeBetRecord(wins: number, losses: number, pushes: number): BetRecord {
   const decisions = wins + losses;
   const winRate = decisions > 0 ? (wins / decisions) * 100 : 0;
-  const risked = wins + losses + pushes;
-  const roi = risked > 0 ? (units / risked) * 100 : 0;
   return {
     win: wins,
     loss: losses,
     push: pushes,
-    units: Math.round(units * 100) / 100,
-    roi: Math.round(roi * 10) / 10,
     winRate: Math.round(winRate * 10) / 10,
   };
 }
 
 type DetailRow = {
+  spreadPriceProvenance: "actual" | "defaulted" | "unavailable";
+  totalPriceProvenance: "actual" | "defaulted" | "unavailable";
   evidenceClass: "replay" | "live";
   week: number;
   gameId: number;
@@ -517,9 +513,7 @@ type DetailRow = {
   edgeTotal: number | null;
   highConfidence: boolean;
   spreadResult: "win" | "loss" | "push" | null;
-  spreadUnits: string | null;
   totalResult: "win" | "loss" | "push" | null;
-  totalUnits: string | null;
 };
 
 function summarizeDetail(
@@ -535,8 +529,8 @@ function summarizeDetail(
   let marginIntervals = 0;
   let totalIntervals = 0;
 
-  let spreadWins = 0, spreadLosses = 0, spreadPushes = 0, spreadUnits = 0;
-  let totalWins = 0, totalLosses = 0, totalPushes = 0, totalUnits = 0;
+  let spreadWins = 0, spreadLosses = 0, spreadPushes = 0;
+  let totalWins = 0, totalLosses = 0, totalPushes = 0;
 
   for (const row of rows) {
     if (row.homePoints !== null && row.awayPoints !== null) {
@@ -566,32 +560,21 @@ function summarizeDetail(
       if (row.spreadResult === "win") spreadWins++;
       else if (row.spreadResult === "loss") spreadLosses++;
       else if (row.spreadResult === "push") spreadPushes++;
-
-      const u = row.spreadUnits !== null
-        ? parseFloat(row.spreadUnits)
-        : (row.spreadResult === "win" ? 0.9091 : row.spreadResult === "loss" ? -1.0 : 0.0);
-      spreadUnits += isNaN(u) ? 0 : u;
     }
 
     if (row.totalResult) {
       if (row.totalResult === "win") totalWins++;
       else if (row.totalResult === "loss") totalLosses++;
       else if (row.totalResult === "push") totalPushes++;
-
-      const u = row.totalUnits !== null
-        ? parseFloat(row.totalUnits)
-        : (row.totalResult === "win" ? 0.9091 : row.totalResult === "loss" ? -1.0 : 0.0);
-      totalUnits += isNaN(u) ? 0 : u;
     }
   }
 
-  const spread = computeBetRecord(spreadWins, spreadLosses, spreadPushes, spreadUnits);
-  const total = computeBetRecord(totalWins, totalLosses, totalPushes, totalUnits);
+  const spread = computeBetRecord(spreadWins, spreadLosses, spreadPushes);
+  const total = computeBetRecord(totalWins, totalLosses, totalPushes);
   const combined = computeBetRecord(
     spreadWins + totalWins,
     spreadLosses + totalLosses,
     spreadPushes + totalPushes,
-    spreadUnits + totalUnits,
   );
 
   return {
@@ -632,20 +615,24 @@ export const getV5PerformanceDetail = cache(async (
     edgeTotal: schema.predictions.edgeTotal,
     highConfidence: schema.predictions.highConfidence,
     spreadResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'spread' LIMIT 1
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
+        AND pg.game_id = predictions.game_id AND pg.target = 'spread' LIMIT 1
     )`,
-    spreadUnits: sql<string | null>`(
-      SELECT profit_units FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'spread' LIMIT 1
-    )`,
+    spreadPriceProvenance: sql<"actual" | "defaulted" | "unavailable">`COALESCE((
+      SELECT CASE WHEN CASE WHEN pms.side = 'home' THEN mq.home_spread_price ELSE mq.away_spread_price END IS NULL THEN 'defaulted' ELSE 'actual' END
+      FROM prediction_market_selections pms JOIN market_quotes mq ON mq.quote_id = pms.quote_id
+      WHERE pms.run_id = predictions.run_id AND pms.game_id = predictions.game_id
+        AND pms.target = 'spread' LIMIT 1
+    ), 'unavailable')`,
+    totalPriceProvenance: sql<"actual" | "defaulted" | "unavailable">`COALESCE((
+      SELECT CASE WHEN CASE WHEN pms.side = 'over' THEN mq.over_price ELSE mq.under_price END IS NULL THEN 'defaulted' ELSE 'actual' END
+      FROM prediction_market_selections pms JOIN market_quotes mq ON mq.quote_id = pms.quote_id
+      WHERE pms.run_id = predictions.run_id AND pms.game_id = predictions.game_id
+        AND pms.target = 'total' LIMIT 1
+    ), 'unavailable')`,
     totalResult: sql<"win" | "loss" | "push" | null>`(
-      SELECT result FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'total' LIMIT 1
-    )`,
-    totalUnits: sql<string | null>`(
-      SELECT profit_units FROM prediction_grades pg WHERE pg.run_id = ${schema.predictions.runId}
-        AND pg.game_id = ${schema.predictions.gameId} AND pg.target = 'total' LIMIT 1
+      SELECT result FROM prediction_grades pg WHERE pg.run_id = predictions.run_id
+        AND pg.game_id = predictions.game_id AND pg.target = 'total' LIMIT 1
     )`,
   }).from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -675,13 +662,13 @@ export const getV5PerformanceDetail = cache(async (
       predictedSpread: r.predictedSpread,
       spreadLean: r.spreadLean,
       spreadResult: r.spreadResult,
-      spreadUnits: r.spreadUnits !== null ? parseFloat(r.spreadUnits) : null,
+      spreadPriceProvenance: r.spreadPriceProvenance,
       spreadEdge: r.edgeSpread,
       marketTotal: r.marketTotal,
       predictedTotal: r.predictedTotal,
       totalLean: r.totalLean,
       totalResult: r.totalResult,
-      totalUnits: r.totalUnits !== null ? parseFloat(r.totalUnits) : null,
+      totalPriceProvenance: r.totalPriceProvenance,
       totalEdge: r.edgeTotal,
       highConfidence: r.highConfidence,
       evidenceClass: r.evidenceClass,
