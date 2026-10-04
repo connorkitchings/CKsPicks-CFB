@@ -283,9 +283,11 @@ def classify_key(
         )
 
     # Rule 3: Overtime misattribution
-    ot_events = evs[evs["period_class"] == "overtime"]
-    ot_pts = float(ot_events["score_increment"].sum())
-    reg_pts = float(evs[evs["period_class"] != "overtime"]["score_increment"].sum())
+    # Null increments (unresolved markers in a v1 ledger) are unknown, not zero: they are
+    # left out of every sum and comparison below.
+    known = evs[evs["score_increment"].notna()]
+    ot_pts = float(known[known["period_class"] == "overtime"]["score_increment"].sum())
+    reg_pts = float(known[known["period_class"] != "overtime"]["score_increment"].sum())
     if ot_pts > 0 and reg_pts <= final_score:
         return ClassifiedKey(
             season=season,
@@ -299,8 +301,8 @@ def classify_key(
         )
 
     # Rule 4: PAT / conversion double-counting (+1 or +2 diff on TD drive)
-    incs = evs["score_increment"].tolist()
-    drives = evs["drive_number"].tolist()
+    incs = known["score_increment"].tolist()
+    drives = known["drive_number"].tolist()
     has_pat_tail = any(
         drives[i] == drives[i - 1] and incs[i] in (1, 2) and incs[i - 1] == 7
         for i in range(1, len(drives))

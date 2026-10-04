@@ -605,15 +605,22 @@ def check_ledger_identities(
 
 
 def scoring_category_totals(events: pd.DataFrame) -> pd.DataFrame:
-    """Per game/team scoring-category sums with period split."""
-    grouped = (
-        events.groupby(
-            ["season", "game_id", "team", "scoring_category", "period_class"]
-        )["score_increment"]
+    """Per game/team scoring-category sums with period split.
+
+    Known totals and unresolved counts are separate columns. A group whose increments are
+    all null (unresolved markers in a v1 ledger) has a null total, never zero.
+    """
+    keys = ["season", "game_id", "team", "scoring_category", "period_class"]
+    grouped = events.groupby(keys)["score_increment"]
+    totals = grouped.sum(min_count=1).rename("score_increment")
+    unresolved = (
+        events.assign(_null=events["score_increment"].isna())
+        .groupby(keys)["_null"]
         .sum()
-        .reset_index()
+        .astype(int)
+        .rename("unresolved_events")
     )
-    return grouped
+    return pd.concat([totals, unresolved], axis=1).reset_index()
 
 
 def check_scoring_increments(
@@ -621,7 +628,13 @@ def check_scoring_increments(
 ) -> list[dict[str, Any]]:
     bad_sign = events[events["score_increment"] < 0]
     as_float = pd.to_numeric(events["score_increment"], errors="coerce")
-    non_integer = events[as_float.isna() | (as_float.mod(1) != 0)]
+    # A null increment is expected only on an unresolved marker (v1 ledger); on any other
+    # event it is a defect. Unresolved nulls are counted, not failed.
+    marker = events["scoring_category"].astype(str).eq("unresolved")
+    unresolved_null = int((as_float.isna() & marker).sum())
+    non_integer = events[
+        (as_float.isna() & ~marker) | (as_float.notna() & (as_float.mod(1) != 0))
+    ]
     problems = []
     if len(bad_sign):
         problems.append(f"negative_increments={len(bad_sign)}")
@@ -636,7 +649,8 @@ def check_scoring_increments(
             "football_meaning",
             "pass" if not problems else "fail",
             "nonnegative integer increments with declared categories/periods",
-            f"events={len(events)} categories={categories} periods={periods} "
+            f"events={len(events)} unresolved_null_markers={unresolved_null} "
+            f"categories={categories} periods={periods} "
             + ("ok" if not problems else "; ".join(problems)),
             "scoring events",
             [events_uri],
@@ -892,6 +906,17 @@ def check_score_reconciliation(
 ) -> list[dict[str, Any]]:
     """Ledger category sums reconcile to repaired final scores."""
     totals = events.groupby(["season", "game_id", "team"])["score_increment"].sum()
+    # In a v1 ledger (null increments present) a team-game with an unresolved marker has an
+    # incomplete known total: report it as unresolved, not as a shortfall of the full score.
+    v1 = bool(events["score_increment"].isna().any())
+    unresolved_keys: set[tuple[int, int, str]] = set()
+    if v1:
+        marked = events[events["scoring_category"].astype(str).eq("unresolved")]
+        unresolved_keys = {
+            (int(s), int(g), str(t))
+            for s, g, t in zip(marked["season"], marked["game_id"], marked["team"])
+        }
+    unresolved_unknown: list[dict[str, Any]] = []
     finals = repair_pop[repair_pop["outcome_valid"].astype(str) == "True"]
     excess: list[dict[str, Any]] = []
     shortfall: list[dict[str, Any]] = []
@@ -914,6 +939,8 @@ def check_score_reconciliation(
             }
             if ledger > float(points):
                 excess.append(record)
+            elif v1 and (record["season"], record["game_id"], team) in unresolved_keys:
+                unresolved_unknown.append(record)
             elif ledger < float(points):
                 shortfall.append(record)
     excess_frame = pd.DataFrame(excess)
@@ -935,6 +962,7 @@ def check_score_reconciliation(
                     "excess": compact_keys(excess_frame, ["season", "game_id", "team"])
                     if not excess_frame.empty
                     else {"affected_count": 0},
+                    "unresolved_team_games": len(unresolved_unknown),
                     "shortfall_count": len(short_frame),
                     "shortfall_by_season": short_by_season,
                     "shortfall": compact_keys(

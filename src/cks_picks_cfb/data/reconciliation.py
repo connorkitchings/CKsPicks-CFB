@@ -29,6 +29,25 @@ class ReconciliationPolicy:
         }
 
 
+def stream_points_by_team_game(byplay: pd.DataFrame) -> pd.DataFrame:
+    """Each team's final score as the play stream reports it (its highest running score).
+
+    This is the stream-derived team score the reconciliation compares with the certified
+    final. A stream that dips and recovers still ends at the right score; one that stops
+    short, or never reaches the final, shows up as a mismatch.
+    """
+    offense = byplay[["game_id", "offense", "offense_score"]].set_axis(
+        ["game_id", "team", "score"], axis=1
+    )
+    defense = byplay[["game_id", "defense", "defense_score"]].set_axis(
+        ["game_id", "team", "score"], axis=1
+    )
+    long = pd.concat([offense, defense], ignore_index=True)
+    long["score"] = pd.to_numeric(long["score"], errors="coerce")
+    out = long.groupby(["game_id", "team"], as_index=False)["score"].max()
+    return out.rename(columns={"score": "stream_points"})
+
+
 def _game_id_column(frame: pd.DataFrame) -> str:
     if "game_id" in frame:
         return "game_id"
@@ -131,6 +150,37 @@ def reconcile_completed_games(
                         details.setdefault("score_conflicts", []).append(
                             {"team": team, "schedule": expected, "aggregate": actual}
                         )
+
+        # Stream-derived team scores (``stream_points``) are compared with the certified
+        # final and recorded in ``details``. A mismatch is recorded, never blocking: score
+        # streams with gaps are known (issue 1) and are handled per allocation, not here.
+        if (
+            not blocking
+            and "stream_points" in aggregate.columns
+            and {"home_points", "away_points"}.issubset(game)
+        ):
+            compared, mismatches = 0, []
+            for team, expected in (
+                (game["home_team"], game.get("home_points")),
+                (game["away_team"], game.get("away_points")),
+            ):
+                row = aggregate[aggregate["team"] == team]
+                if (
+                    expected is None
+                    or pd.isna(expected)
+                    or row.empty
+                    or pd.isna(row.iloc[0]["stream_points"])
+                ):
+                    continue
+                compared += 1
+                actual = float(row.iloc[0]["stream_points"])
+                if actual != float(expected):
+                    mismatches.append(
+                        {"team": team, "schedule": float(expected), "stream": actual}
+                    )
+            details["stream_scores_compared"] = compared
+            if mismatches:
+                details["score_stream_mismatches"] = mismatches
 
         if not blocking and stats is not None:
             box = stats[stats["game_id"] == game_id]

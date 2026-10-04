@@ -389,6 +389,17 @@ def _select_inner_alpha(
     return max(alpha for score, alpha in scores if score <= best * 1.005), False
 
 
+def _verified_unresolved(events: pd.DataFrame) -> set[tuple[int, int, str]]:
+    """Independent reading of v1 unresolved markers (incomplete team-game totals)."""
+    if "admission" not in events.columns:
+        return set()
+    marked = events.loc[events["scoring_category"].eq("unresolved")]
+    return {
+        (int(a), int(b), str(c))
+        for a, b, c in marked[["season", "game_id", "team"]].itertuples(index=False)
+    }
+
+
 def _regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     required = {
         "season",
@@ -400,6 +411,10 @@ def _regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     }
     if missing := sorted(required - set(events)):
         raise VerificationError(f"scoring ledger lacks columns: {missing}")
+    if "admission" in events.columns:
+        events = events.loc[
+            events["admission"].isin(("baseline_unchanged", "corroborated"))
+        ]
     selected = events[
         events["period_class"].eq("regulation")
         & events["scoring_category"].eq("regulation_non_offense")
@@ -407,6 +422,8 @@ def _regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     selected["score_increment"] = pd.to_numeric(
         selected["score_increment"], errors="raise"
     )
+    if selected["score_increment"].isna().any():
+        raise VerificationError("a non-offense event has a null increment")
     if (selected["score_increment"] < 0).any():
         raise VerificationError("scoring ledger has a negative non-offense increment")
     return selected
@@ -442,6 +459,7 @@ def _team_game_non_offense(
         & games["measurement_usable"].astype(bool)
     )
     selected = _regulation_non_offense_events(events)
+    incomplete = _verified_unresolved(events)
     totals = selected.groupby(["season", "game_id", "team"], sort=True)[
         "score_increment"
     ].sum()
@@ -474,7 +492,9 @@ def _team_game_non_offense(
                     "side": side,
                     "non_offense_for": own,
                     "non_offense_against": against,
-                    "usable": bool(game.usable),
+                    "usable": bool(game.usable)
+                    and (*key, team) not in incomplete
+                    and (*key, opponent) not in incomplete,
                 }
             )
     return pd.DataFrame.from_records(records)

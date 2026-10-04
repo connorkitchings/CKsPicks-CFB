@@ -17,8 +17,29 @@ class OffsetComputation:
     team_games: pd.DataFrame
 
 
+ADMITTED_ALLOCATIONS = ("baseline_unchanged", "corroborated")
+
+
+def _is_v1_ledger(events: pd.DataFrame) -> bool:
+    """A v1 ledger carries an admission label; legacy ledgers do not."""
+    return "admission" in events.columns
+
+
+def unresolved_team_games(events: pd.DataFrame) -> set[tuple[int, int, str]]:
+    """Team-games with an unresolved scoring marker (their totals are incomplete)."""
+    marked = events[events["scoring_category"].eq("unresolved")]
+    return {
+        (int(s), int(g), str(t))
+        for s, g, t in zip(marked["season"], marked["game_id"], marked["team"])
+    }
+
+
 def regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
-    """Return only the ledger category permitted to translate forecast targets."""
+    """Return only the ledger category permitted to translate forecast targets.
+
+    A v1 ledger contributes only admitted allocations, and a non-offense event with a null
+    increment is an error: an unknown amount must never be counted as zero.
+    """
     required = {
         "season",
         "game_id",
@@ -29,6 +50,8 @@ def regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     }
     if missing := sorted(required - set(events)):
         raise OffsetError(f"scoring ledger lacks columns: {missing}")
+    if _is_v1_ledger(events):
+        events = events[events["admission"].isin(ADMITTED_ALLOCATIONS)]
     selected = events[
         events["period_class"].eq("regulation")
         & events["scoring_category"].eq("regulation_non_offense")
@@ -36,6 +59,8 @@ def regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     selected["score_increment"] = pd.to_numeric(
         selected["score_increment"], errors="raise"
     )
+    if selected["score_increment"].isna().any():
+        raise OffsetError("a non-offense event has a null increment")
     if (selected["score_increment"] < 0).any():
         raise OffsetError("scoring ledger has a negative non-offense increment")
     return selected
@@ -77,6 +102,9 @@ def team_game_non_offense(
         & games["measurement_usable"].astype(bool)
     )
     selected = regulation_non_offense_events(events)
+    # In a v1 ledger an unresolved marker means that team-game's total is incomplete, so
+    # a game is usable only if neither side has one; a missing row is not a zero.
+    held = unresolved_team_games(events) if _is_v1_ledger(events) else set()
     totals = selected.groupby(["season", "game_id", "team"], sort=True)[
         "score_increment"
     ].sum()
@@ -110,7 +138,9 @@ def team_game_non_offense(
                     "side": side,
                     "non_offense_for": own,
                     "non_offense_against": against,
-                    "usable": bool(game.usable),
+                    "usable": bool(game.usable)
+                    and (*key, team) not in held
+                    and (*key, opponent) not in held,
                 }
             )
     return pd.DataFrame.from_records(records)

@@ -20,6 +20,7 @@ reconciles scores and refuses blocking conflicts); they never repair data.
 
 from __future__ import annotations
 
+import json
 from typing import Any, Mapping
 
 import pandas as pd
@@ -229,23 +230,76 @@ def _reconciliation(ctx: Mapping[str, Any]) -> Outcome:
 SCORE_COLUMNS = ("points", "team_points", "score")
 
 
+def score_comparison_evidence(
+    team_game: pd.DataFrame | None, reconciliation: pd.DataFrame | None
+) -> dict[str, Any]:
+    """Whether the reconciliation compared team scores with certified finals, and what it found.
+
+    The legacy comparison reads a ``points`` / ``team_points`` / ``score`` column; the stream
+    comparison records ``stream_scores_compared`` and ``score_stream_mismatches`` in each
+    game's ``details``.
+    """
+    legacy = [
+        c for c in SCORE_COLUMNS if team_game is not None and c in team_game.columns
+    ]
+    compared = mismatches = games_compared = 0
+    if reconciliation is not None and "details" in reconciliation.columns:
+        for raw in reconciliation["details"]:
+            details = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            n = int(details.get("stream_scores_compared", 0) or 0)
+            compared += n
+            games_compared += 1 if n else 0
+            mismatches += len(details.get("score_stream_mismatches", []))
+    return {
+        "legacy_score_columns": legacy,
+        "stream_team_scores_compared": compared,
+        "games_compared": games_compared,
+        "stream_mismatches": mismatches,
+    }
+
+
 @register_check(
     "silver.reconciliation_compares_scores",
     stage="silver",
     severity=WARN,
-    description="The reconciliation's score comparison can run: the team-game data carries a points column",
+    description="The reconciliation actually compared team scores with certified finals (a points column or recorded stream scores)",
 )
 def _reconciliation_compares_scores(ctx: Mapping[str, Any]) -> Outcome:
-    if ctx.get("team_game") is None:
-        return skipped("team_game not provided")
-    present = [c for c in SCORE_COLUMNS if c in ctx["team_game"].columns]
+    if ctx.get("team_game") is None and ctx.get("source_reconciliation") is None:
+        return skipped("team_game/source_reconciliation not provided")
+    evidence = score_comparison_evidence(
+        ctx.get("team_game"), ctx.get("source_reconciliation")
+    )
+    ran = (
+        bool(evidence["legacy_score_columns"])
+        or evidence["stream_team_scores_compared"] > 0
+    )
     return Outcome(
-        bool(present),
-        observed={"score_columns_present": present, "looked_for": list(SCORE_COLUMNS)},
-        expected="at least one of points, team_points, score",
+        ran,
+        observed=evidence,
+        expected="team scores compared with certified finals",
         detail=""
-        if present
+        if ran
         else "reconciliation skips the score comparison, so exact_match does not prove scores agree (known issue 7)",
+    )
+
+
+@register_check(
+    "silver.stream_scores_match_finals",
+    stage="silver",
+    severity=WARN,
+    description="Each team's score from the play stream equals the certified final (mismatches are recorded by the reconciliation)",
+)
+def _stream_scores_match(ctx: Mapping[str, Any]) -> Outcome:
+    if ctx.get("source_reconciliation") is None:
+        return skipped("source_reconciliation not provided")
+    evidence = score_comparison_evidence(None, ctx["source_reconciliation"])
+    if evidence["stream_team_scores_compared"] == 0:
+        return skipped("the reconciliation recorded no stream score comparison")
+    return Outcome(
+        evidence["stream_mismatches"] == 0,
+        observed=evidence,
+        expected={"stream_mismatches": 0},
     )
 
 

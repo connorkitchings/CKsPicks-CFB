@@ -241,6 +241,41 @@ class TestByplayVectorized:
         assert result.ppa_missing.tolist() == [True, False]
         assert result.ppa_missing_reason.tolist() == ["provider_missing_ppa", ""]
 
+    def test_nullable_ppa_keeps_missing_null_and_genuine_zero_zero(self):
+        raw = pd.DataFrame(
+            [
+                _make_play(play_number=1, ppa=None),
+                _make_play(play_number=2, ppa=0.0),
+                _make_play(play_number=3, ppa=0.7),
+            ]
+        )
+        result = allplays_to_byplay(raw, nullable_ppa=True).sort_values("play_number")
+        assert result.ppa.isna().tolist() == [True, False, False]
+        assert result.ppa.tolist()[1:] == [0.0, 0.7]
+        assert result.ppa_missing.tolist() == [True, False, False]
+        assert result.ppa_missing_reason.tolist() == ["provider_missing_ppa", "", ""]
+
+    def test_nullable_ppa_changes_nothing_but_ppa(self):
+        raw = pd.DataFrame(
+            [_make_play(play_number=1, ppa=None), _make_play(play_number=2, ppa=0.0)]
+        )
+        legacy = (
+            allplays_to_byplay(raw).sort_values("play_number").reset_index(drop=True)
+        )
+        nullable = (
+            allplays_to_byplay(raw, nullable_ppa=True)
+            .sort_values("play_number")
+            .reset_index(drop=True)
+        )
+        pd.testing.assert_frame_equal(
+            legacy.drop(columns=["ppa"]), nullable.drop(columns=["ppa"])
+        )
+
+    def test_legacy_default_is_unchanged_by_the_option_existing(self):
+        raw = pd.DataFrame([_make_play(play_number=1, ppa=None)])
+        assert allplays_to_byplay(raw).ppa.tolist() == [0.0]
+        assert allplays_to_byplay(raw, nullable_ppa=False).ppa.tolist() == [0.0]
+
     def test_returned_punt_is_a_special_teams_play(self):
         raw = pd.DataFrame(
             [
@@ -711,3 +746,21 @@ class TestLuckFactor:
         # Should be replaced by computed values
         team_a = result[result["team"] == "A"].iloc[0]
         assert team_a["luck_factor"] != 99.0
+
+
+def test_the_pipeline_threads_nullable_ppa_to_the_byplay_builder(monkeypatch):
+    from cks_picks_cfb.features import pipeline
+
+    seen = {}
+
+    def fake(data, corrections=None, *, nullable_ppa=False):
+        seen["nullable_ppa"] = nullable_ppa
+        raise RuntimeError("stop after the byplay step")
+
+    monkeypatch.setattr(pipeline, "allplays_to_byplay", fake)
+    for flag in (True, False):
+        with pytest.raises(RuntimeError, match="stop after"):
+            pipeline.build_preaggregation_pipeline(
+                pd.DataFrame({"season": [2026], "week": [1]}), nullable_ppa=flag
+            )
+        assert seen["nullable_ppa"] is flag

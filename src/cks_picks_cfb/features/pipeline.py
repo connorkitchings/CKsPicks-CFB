@@ -62,8 +62,16 @@ def build_preaggregation_pipeline(
     venues_df: pd.DataFrame | None = None,
     weather_df: pd.DataFrame | None = None,
     corrections_df: pd.DataFrame | None = None,
+    *,
+    nullable_ppa: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run plays → byplay → drives → team-game → team-season pipeline.
+
+    ``nullable_ppa=True`` builds the Window 2 Silver version: provider-missing PPA stays null
+    (``ppa_missing`` records it) instead of being zero-filled. Legacy feature columns derived
+    from ``ppa`` then average the non-null plays; the withhold semantics for EPA metrics live
+    in ``team_game_metrics``, not in those legacy columns. The default reproduces every
+    existing Silver version.
 
     Args:
         plays_raw_df: Raw plays DataFrame containing at minimum season and week.
@@ -95,7 +103,9 @@ def build_preaggregation_pipeline(
             "Input DataFrame to pipeline is missing required 'week' column."
         )
 
-    byplay = allplays_to_byplay(plays_raw_df, corrections=corrections_df)
+    byplay = allplays_to_byplay(
+        plays_raw_df, corrections=corrections_df, nullable_ppa=nullable_ppa
+    )
     drives = aggregate_drives(byplay)
     if "season" not in drives.columns or "week" not in drives.columns:
         drives = drives.merge(

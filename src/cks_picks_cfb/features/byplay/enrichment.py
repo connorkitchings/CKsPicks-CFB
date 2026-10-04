@@ -228,9 +228,19 @@ def calculate_st_analytics(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def allplays_to_byplay(
-    data: pd.DataFrame, corrections: pd.DataFrame | None = None
+    data: pd.DataFrame,
+    corrections: pd.DataFrame | None = None,
+    *,
+    nullable_ppa: bool = False,
 ) -> pd.DataFrame:
-    """Transform raw plays into enriched by-play dataset."""
+    """Transform raw plays into enriched by-play dataset.
+
+    ``ppa_missing`` is always derived from the provider value before any conversion.
+    With the default ``nullable_ppa=False`` a missing PPA is then zero-filled, which is what
+    every existing Silver version and the served V5 lineage were built with. With
+    ``nullable_ppa=True`` (the Window 2 Silver version) a missing PPA stays null, a genuine
+    numerical zero stays zero, and nothing is inferred from existing zeros.
+    """
     df = data.copy()
     df = df.drop_duplicates(
         subset=["game_id", "drive_number", "play_number"], keep="first"
@@ -272,7 +282,10 @@ def allplays_to_byplay(
         "down",
     ]:
         if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+            converted = pd.to_numeric(df[col], errors="coerce")
+            df[col] = (
+                converted if (col == "ppa" and nullable_ppa) else converted.fillna(0)
+            )
 
     for col in ["season", "week", "game_id", "quarter", "play_number"]:
         if col in df.columns:

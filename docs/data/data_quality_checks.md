@@ -40,7 +40,8 @@ Definitions and evidence: [session log](../../session_logs/2026-10-04/04-data-qu
 | `silver.plays_and_drives_same_games` | warn | Plays and drives cover the same games | One table silently missing a game |
 | `silver.points_identity` | warn | Drive points never exceed the final score for a team-game | Excess points (known issue 1 family) |
 | `silver.ppa_missing_flag` | warn | Missing provider PPA is flagged and never stored as zero | The 155 zero-filled eligible plays (known issue 3) |
-| `silver.reconciliation_compares_scores` | warn | The reconciliation's score comparison can run: the team-game data must carry a `points`, `team_points` or `score` column | A vacuous `exact_match` (known issue 7: the score comparison is skipped today) |
+| `silver.reconciliation_compares_scores` | warn | The reconciliation actually compared team scores with certified finals (a `points` column, or stream scores recorded in `source_reconciliation.details`) | A vacuous `exact_match` (known issue 7) |
+| `silver.stream_scores_match_finals` | warn | Each team's score from the play stream equals the certified final; the reconciliation records mismatches without blocking | Streams that stop short or overshoot the final (known issue 1) going unreported |
 | `silver.reconciliation_recorded` | warn | The persisted reconciliation has no blocking conflict (team identity and rows; scores only if the comparison can run) | A team or row conflict going unnoticed |
 | `silver.score_stream_monotone` | warn | Each team's running score never decreases in drive then play order | The non-monotonic score stream (known issue 1) |
 

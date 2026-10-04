@@ -28,6 +28,7 @@ from cks_picks_cfb.data.lake import (
 from cks_picks_cfb.data.reconciliation import (
     reconcile_completed_games,
     require_reconciled,
+    stream_points_by_team_game,
 )
 from cks_picks_cfb.data.runtime import resolve_runtime_target
 from cks_picks_cfb.data.schema_contracts import schema_for, validate_frame
@@ -65,6 +66,11 @@ def main() -> None:
     parser.add_argument("--game-stats-ref-uri")
     parser.add_argument("--play-capture-manifest-uri")
     parser.add_argument("--corrections-ref-uri", required=True)
+    parser.add_argument(
+        "--nullable-ppa",
+        action="store_true",
+        help="Keep provider-missing PPA null (Window 2 Silver version) instead of zero-filling it",
+    )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
     parser.add_argument("--output-ref-set-uri")
@@ -97,6 +103,7 @@ def main() -> None:
         venues_df=frames.get("venues"),
         weather_df=frames.get("weather_observations"),
         corrections_df=frames.get("data_corrections"),
+        nullable_ppa=args.nullable_ppa,
     )
     cutoff = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
     if cutoff.tzinfo is None:
@@ -121,9 +128,14 @@ def main() -> None:
         if args.play_capture_manifest_uri
         else None
     )
+    # The stream-derived team scores are compared with the certified finals in the
+    # reconciliation details; they are not added to the persisted team-game dataset.
+    reconciliation_input = team_game.merge(
+        stream_points_by_team_game(byplay), on=["game_id", "team"], how="left"
+    )
     reconciliation = reconcile_completed_games(
         games,
-        team_game,
+        reconciliation_input,
         frames.get("team_game_stats"),
         declared_incomplete_game_ids=declared_incomplete_game_ids,
     )
