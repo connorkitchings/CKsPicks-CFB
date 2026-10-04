@@ -12,7 +12,7 @@ from cks_picks_cfb.metrics import builders as b
 from cks_picks_cfb.metrics import contracts as gc
 
 T0 = pd.Timestamp("2026-09-05T19:00:00Z")
-VERSIONS = {"byplay": "v1", "ledger": "v1"}
+VERSIONS = {"byplay": "v1", "ledger": "v1", "coverage": "coverage-v1"}
 
 
 def _play(
@@ -49,8 +49,8 @@ def _play(
         "success": success,
         "yards_gained": yards,
         "turnover": turnover,
-        "thirddown_conversion": None,
-        "fourthdown_conversion": None,
+        "thirddown_conversion": 0,
+        "fourthdown_conversion": 0,
         "distance": 10,
         "yards_to_goal": 60,
     }
@@ -177,6 +177,19 @@ def _build(plays=None, ledger=None, games=None):
         games=_games() if games is None else games,
         source_versions=VERSIONS,
         timing_class="live",
+        coverage=pd.DataFrame(
+            [
+                dict(
+                    season=2026,
+                    game_id=1,
+                    team=team,
+                    plays_complete=True,
+                    possessions_complete=True,
+                    scoring_complete=True,
+                )
+                for team in ("A", "B")
+            ]
+        ),
     )
 
 
@@ -320,12 +333,12 @@ def test_an_unresolved_scoring_marker_withholds_that_teams_point_metrics_only():
     assert _get(f, "A", "offense", "eligible_epa").coverage_status == "observed"
 
 
-def test_unadmitted_ledger_events_do_not_count_as_points():
+def test_reverted_rows_retain_baseline_points():
     reverted = _event("e3", "A", 7.0, drive=3, admission="reverted_unverified")
     f = _build(ledger=_ledger(reverted))
     assert (
-        _get(f, "A", "offense", "offensive_possession_points").value == 7
-    )  # the reverted event is excluded
+        _get(f, "A", "offense", "offensive_possession_points").value == 14
+    )  # reverted output carries baseline points, not rejected candidate points
 
 
 def test_no_certified_final_withholds_points_scored_with_a_reason():
@@ -401,3 +414,88 @@ def test_a_missing_game_withholds_the_aggregate_but_not_independent_metrics():
         0
     ]
     assert ppp.coverage_status == "observed" and ppp.value == pytest.approx(3.5)
+
+
+def test_absent_source_requires_coverage_instead_of_inventing_zero():
+    f = b.build_team_game_metrics(
+        plays=_plays().iloc[:0],
+        possessions=_possessions().iloc[:0],
+        ledger=_ledger().iloc[:0],
+        games=_games(),
+        source_versions=VERSIONS,
+        timing_class="reconstructed",
+    )
+    for metric in (
+        "ppp",
+        "eligible_scrimmage_plays",
+        "offensive_possession_points",
+        "eligible_epa",
+    ):
+        row = _get(f, "A", "offense", metric)
+        assert row.coverage_status == "missing"
+        assert pd.isna(row.value) and pd.isna(row.numerator)
+    assert _get(f, "A", "offense", "points_scored").value == 17
+
+
+def test_verified_scoreless_game_remains_zero():
+    f = _build(ledger=_ledger().iloc[:0], games=_games(home_points=0, away_points=0))
+    assert _get(f, "A", "offense", "ppp").value == 0
+    assert _get(f, "A", "offense", "ppp").coverage_status == "observed"
+
+
+def test_unknown_opportunity_and_field_position_withhold_dependent_metrics():
+    possessions = _possessions()
+    possessions["scoring_opportunity"] = possessions.scoring_opportunity.astype(object)
+    possessions.loc[0, ["scoring_opportunity", "start_yards_to_goal"]] = [None, None]
+    coverage = pd.DataFrame(
+        [
+            dict(
+                season=2026,
+                game_id=1,
+                team=t,
+                plays_complete=True,
+                possessions_complete=True,
+                scoring_complete=True,
+            )
+            for t in ("A", "B")
+        ]
+    )
+    f = b.build_team_game_metrics(
+        plays=_plays(),
+        possessions=possessions,
+        ledger=_ledger(),
+        games=_games(),
+        source_versions=VERSIONS,
+        timing_class="reconstructed",
+        coverage=coverage,
+    )
+    for metric in ("scoring_opp_rate", "pts_per_scoring_opp", "avg_start_field_pos"):
+        row = _get(f, "A", "offense", metric)
+        assert row.coverage_status == "missing" and pd.isna(row.value)
+    assert _get(f, "A", "offense", "avg_start_field_pos").denominator == 2
+    assert _get(f, "A", "offense", "ppp").value == 3.5
+
+
+def test_same_team_and_game_ids_in_different_seasons_do_not_mix():
+    current = _build()
+    previous = current.assign(season=2025)
+    result = b.aggregate_through_week(pd.concat([current, previous]), as_of_week=2)
+    rows = result.query("team == 'A' and role == 'offense' and metric == 'ppp'")
+    assert set(rows.season) == {2025, 2026}
+    assert list(rows.games) == [1, 1]
+    assert list(rows.value) == [3.5, 3.5]
+
+
+def test_missing_success_does_not_shrink_eligible_population():
+    plays = _plays()
+    plays.loc[0, "success"] = None
+    row = _get(_build(plays), "A", "offense", "success_rate")
+    assert row.denominator == 4 and row.observed_count == 3
+    assert row.coverage_status == "missing" and pd.isna(row.numerator)
+
+
+def test_candidate_disposition_cannot_enter_final_metric_consumer():
+    ledger = _ledger()
+    ledger.loc[0, "admission"] = "candidate"
+    with pytest.raises(b.BuilderInputError, match="candidate"):
+        _build(ledger=ledger)

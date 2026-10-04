@@ -89,7 +89,7 @@ def test_a_complete_v1_ledger_is_usable(fn, error):
 
 
 @pytest.mark.parametrize("fn,error", MODULES)
-def test_only_admitted_allocations_count_in_a_v1_ledger(fn, error):
+def test_retained_baseline_allocations_count_in_a_v1_ledger(fn, error):
     events = pd.DataFrame(
         [
             _ev("A", 6, admission="baseline_unchanged", event="a"),
@@ -100,7 +100,7 @@ def test_only_admitted_allocations_count_in_a_v1_ledger(fn, error):
     )
     frame = fn(_population(), events)
     a = frame[frame.team == "A"].iloc[0]
-    assert (a.non_offense_for, a.non_offense_against) == (6.0, 2.0)
+    assert (a.non_offense_for, a.non_offense_against) == (13.0, 10.0)
 
 
 @pytest.mark.parametrize("fn,error", MODULES)
@@ -233,3 +233,10 @@ def test_blocker_diagnosis_ignores_null_increments_in_its_arithmetic():
     }
     result = fbd.classify_key(key, events)
     assert result.ledger_points == 7.0 and result.cause
+
+
+@pytest.mark.parametrize("fn,error", MODULES)
+def test_candidate_disposition_is_rejected(fn, error):
+    events = pd.DataFrame([_ev("A", 6, admission="candidate")])
+    with pytest.raises(error, match="candidate"):
+        fn(_population(), events)

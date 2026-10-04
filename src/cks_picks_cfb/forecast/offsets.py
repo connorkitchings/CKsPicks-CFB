@@ -17,7 +17,12 @@ class OffsetComputation:
     team_games: pd.DataFrame
 
 
-ADMITTED_ALLOCATIONS = ("baseline_unchanged", "corroborated")
+ADMITTED_ALLOCATIONS = (
+    "baseline_unchanged",
+    "corroborated",
+    "reverted_unverified",
+    "reverted_contradicted",
+)
 
 
 def _is_v1_ledger(events: pd.DataFrame) -> bool:
@@ -51,7 +56,8 @@ def regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     if missing := sorted(required - set(events)):
         raise OffsetError(f"scoring ledger lacks columns: {missing}")
     if _is_v1_ledger(events):
-        events = events[events["admission"].isin(ADMITTED_ALLOCATIONS)]
+        if not events["admission"].isin(ADMITTED_ALLOCATIONS).all():
+            raise OffsetError("unknown or candidate admission in final scoring ledger")
     selected = events[
         events["period_class"].eq("regulation")
         & events["scoring_category"].eq("regulation_non_offense")

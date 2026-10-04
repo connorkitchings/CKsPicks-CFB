@@ -226,7 +226,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     v1_plays = canonical.copy()
     v1 = scoring_events_to_v1(
-        admitted[base_events.columns],
+        admitted,
         v1_plays,
         finals=_finals(population, outcomes),
         source_versions={"repair_manifest": args.repair_manifest_uri},

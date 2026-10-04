@@ -79,6 +79,8 @@ def _string_map(value: Any) -> bool:
 
 def team_game_metrics_problems(frame: pd.DataFrame) -> list[str]:
     problems: list[str] = []
+    if frame.duplicated(["season", "game_id", "team", "role", "metric"]).any():
+        problems.append("duplicate metric identity")
     for row in frame.to_dict("records"):
         name = row["metric"]
         where = f"{row['game_id']}/{row['team']}/{row['role']}/{name}"
@@ -168,11 +170,18 @@ def defense_mirror_problems(frame: pd.DataFrame) -> list[str]:
         "observed_count",
         "coverage_status",
         "missing_reason",
+        "quality_flags",
+        "timing_class",
+        "source_versions",
     ]
-    offense = frame[frame["role"] == "offense"].set_index(["game_id", "team", "metric"])
+    if frame.duplicated(["season", "game_id", "team", "role", "metric"]).any():
+        return ["duplicate metric identity"]
+    offense = frame[frame["role"] == "offense"].set_index(
+        ["season", "game_id", "team", "metric"]
+    )
     problems = []
     for row in frame[frame["role"] == "defense"].to_dict("records"):
-        key = (row["game_id"], row["opponent"], row["metric"])
+        key = (row["season"], row["game_id"], row["opponent"], row["metric"])
         if key not in offense.index:
             problems.append(f"{key}: defense row has no opponent offense row")
             continue
@@ -191,6 +200,8 @@ def defense_mirror_problems(frame: pd.DataFrame) -> list[str]:
 
 def possessions_problems(frame: pd.DataFrame) -> list[str]:
     problems = []
+    if frame.duplicated(["season", "game_id", "drive_number", "offense"]).any():
+        problems.append("duplicate possession identity")
     for row in frame.to_dict("records"):
         expected = possession_id_for(
             row["season"], row["game_id"], row["drive_number"], row["offense"]
@@ -227,13 +238,35 @@ def scoring_ledger_problems(
     frame: pd.DataFrame, possessions: pd.DataFrame | None = None
 ) -> list[str]:
     problems = []
+    if frame.duplicated(["season", "game_id", "team", "source_event_id"]).any():
+        problems.append("duplicate scoring event identity")
+    if (
+        not frame["admission"]
+        .isin(
+            (
+                "baseline_unchanged",
+                "corroborated",
+                "reverted_unverified",
+                "reverted_contradicted",
+            )
+        )
+        .all()
+    ):
+        problems.append("unknown or candidate admission in final scoring ledger")
     event_keys = {
-        (r["game_id"], r["team"], r["source_event_id"])
+        (r["season"], r["game_id"], r["team"], r["source_event_id"])
         for r in frame.to_dict("records")
     }
     possession_ids = (
         set(possessions["possession_id"]) if possessions is not None else None
     )
+    possession_rows = {}
+    if possessions is not None:
+        if possessions.possession_id.duplicated().any():
+            problems.append("duplicate possession reference identity")
+        possession_rows = {
+            r.possession_id: r for r in possessions.itertuples(index=False)
+        }
     for row in frame.to_dict("records"):
         where = f"{row['game_id']}/{row['team']}/{row['source_event_id']}"
         increment = row["score_increment"]
@@ -256,7 +289,10 @@ def scoring_ledger_problems(
                     f"{where}: increment {increment} exceeds the eight-point limit"
                 )
         ref = row["conversion_for_event_id"]
-        if not _null(ref) and (row["game_id"], row["team"], ref) not in event_keys:
+        if (
+            not _null(ref)
+            and (row["season"], row["game_id"], row["team"], ref) not in event_keys
+        ):
             problems.append(
                 f"{where}: conversion_for_event_id does not resolve within the same game and team"
             )
@@ -269,6 +305,25 @@ def scoring_ledger_problems(
             problems.append(
                 f"{where}: associated_possession_id does not resolve to a possession"
             )
+        if (
+            possessions is not None
+            and not _null(possession)
+            and possession in possession_ids
+        ):
+            linked = possession_rows[possession]
+            if not (
+                linked.season == row["season"]
+                and linked.game_id == row["game_id"]
+                and (
+                    row["scoring_category"]
+                    not in {
+                        "eligible_regulation_offense",
+                        "excluded_regulation_offense",
+                    }
+                    or linked.offense == row["team"]
+                )
+            ):
+                problems.append(f"{where}: possession reference crosses game or team")
         if row["scoring_category"] == "eligible_regulation_offense" and _null(
             possession
         ):

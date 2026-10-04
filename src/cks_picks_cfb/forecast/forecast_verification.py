@@ -412,9 +412,21 @@ def _regulation_non_offense_events(events: pd.DataFrame) -> pd.DataFrame:
     if missing := sorted(required - set(events)):
         raise VerificationError(f"scoring ledger lacks columns: {missing}")
     if "admission" in events.columns:
-        events = events.loc[
-            events["admission"].isin(("baseline_unchanged", "corroborated"))
-        ]
+        if (
+            not events["admission"]
+            .isin(
+                (
+                    "baseline_unchanged",
+                    "corroborated",
+                    "reverted_unverified",
+                    "reverted_contradicted",
+                )
+            )
+            .all()
+        ):
+            raise VerificationError(
+                "unknown or candidate admission in final scoring ledger"
+            )
     selected = events[
         events["period_class"].eq("regulation")
         & events["scoring_category"].eq("regulation_non_offense")

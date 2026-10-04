@@ -23,7 +23,12 @@ from cks_picks_cfb.data.team_stats import _conversions
 from cks_picks_cfb.metrics import registry as reg
 from cks_picks_cfb.metrics.contracts import canonical_json_text
 
-ADMITTED = ("baseline_unchanged", "corroborated")
+ADMITTED = (
+    "baseline_unchanged",
+    "corroborated",
+    "reverted_unverified",
+    "reverted_contradicted",
+)
 POINT_METRICS = (
     "offensive_possession_points",
     "ppp",
@@ -183,9 +188,37 @@ def build_team_game_metrics(
     games: pd.DataFrame,
     source_versions: Mapping[str, str],
     timing_class: str,
+    coverage: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """One row per (game, team, role, metric) for every game in ``games``."""
     _require(games, GAME_COLUMNS, "games")
+    if games.duplicated(["season", "game_id"]).any():
+        raise BuilderInputError("duplicate games")
+    # Coverage is supplied by verified source/reconciliation parents, never inferred
+    # from the existence or absence of scoring rows.
+    coverage_by = {}
+    if coverage is not None:
+        _require(
+            coverage,
+            (
+                "season",
+                "game_id",
+                "team",
+                "plays_complete",
+                "possessions_complete",
+                "scoring_complete",
+            ),
+            "coverage",
+        )
+        if coverage.duplicated(["season", "game_id", "team"]).any():
+            raise BuilderInputError("duplicate coverage keys")
+        if not source_versions.get("coverage"):
+            raise BuilderInputError("coverage must have a pinned source version")
+        for row in coverage.itertuples(index=False):
+            flags = (row.plays_complete, row.possessions_complete, row.scoring_complete)
+            if any(not isinstance(v, (bool, np.bool_)) for v in flags):
+                raise BuilderInputError("coverage flags must be explicit booleans")
+            coverage_by[(int(row.season), int(row.game_id), row.team)] = flags
     _require(
         plays,
         (
@@ -197,6 +230,8 @@ def build_team_game_metrics(
             "yards_gained",
             "down",
             "turnover",
+            "dropback",
+            "rush_attempt",
         ),
         "plays",
     )
@@ -238,15 +273,26 @@ def build_team_game_metrics(
         & possessions["quality_reason"].isna()
         & (possessions["period_class"] == "regulation")
     ]
-    admitted = ledger[ledger["admission"].isin(ADMITTED)]
+    if not ledger["admission"].isin(ADMITTED).all():
+        raise BuilderInputError(
+            "unknown or candidate admission in final scoring ledger"
+        )
+    admitted = ledger
+    for label, frame, keys in (
+        ("possessions", possessions, ["season", "game_id", "drive_number", "offense"]),
+        ("ledger", ledger, ["season", "game_id", "source_event_id", "team"]),
+    ):
+        _require(frame, tuple(keys), label)
+        if frame.duplicated(keys).any():
+            raise BuilderInputError(f"duplicate {label} keys")
     unresolved = {
-        (int(r.game_id), r.team)
+        (int(r.season), int(r.game_id), r.team)
         for r in ledger.itertuples()
         if r.scoring_category == "unresolved"
     }
-    plays_by = {k: g for k, g in plays.groupby(["game_id", "offense"])}
-    drives_by = {k: g for k, g in drives.groupby(["game_id", "offense"])}
-    points_by = {k: g for k, g in admitted.groupby(["game_id", "team"])}
+    plays_by = {k: g for k, g in plays.groupby(["season", "game_id", "offense"])}
+    drives_by = {k: g for k, g in drives.groupby(["season", "game_id", "offense"])}
+    points_by = {k: g for k, g in admitted.groupby(["season", "game_id", "team"])}
 
     offense_rows: list[dict[str, Any]] = []
     for game in games.itertuples(index=False):
@@ -266,7 +312,11 @@ def build_team_game_metrics(
                 bool(game.home_fbs),
             ),
         ):
-            key = (int(game.game_id), team)
+            key = (int(game.season), int(game.game_id), team)
+            first_row = len(offense_rows)
+            play_complete, possession_complete, scoring_complete = coverage_by.get(
+                key, (False, False, False)
+            )
             meta = {
                 "season": int(game.season),
                 "week": int(game.week),
@@ -291,11 +341,7 @@ def build_team_game_metrics(
             non = ledger_rows[
                 ledger_rows["scoring_category"] == "regulation_non_offense"
             ]["score_increment"].sum()
-            opp_ids = set(
-                d.loc[
-                    d["scoring_opportunity"].fillna(False).astype(bool), "possession_id"
-                ]
-            )
+            opp_ids = set(d.loc[d["scoring_opportunity"].eq(True), "possession_id"])
             q_on_o = ledger_rows[
                 (ledger_rows["scoring_category"] == "eligible_regulation_offense")
                 & ledger_rows["associated_possession_id"].isin(opp_ids)
@@ -476,16 +522,23 @@ def build_team_game_metrics(
                     _ppa_metric(meta, metric, subset, denominator, flags=flags, **kw)
                 )
 
-            def ratio(metric, flag, available):
-                clean = flag[available]
+            def ratio(metric, flag, available, population=None):
+                population = (
+                    pd.Series(True, index=p.index) if population is None else population
+                )
+                complete = bool(available[population].all())
+                clean = flag[available & population]
                 offense_rows.append(
                     _ratio_row(
                         meta,
                         metric,
-                        float(clean.sum()),
-                        float(len(clean)),
-                        eligible=n_plays,
+                        float(clean.sum()) if complete else None,
+                        float(population.sum()),
+                        eligible=int(population.sum()),
                         observed=int(len(clean)),
+                        status="observed" if complete else "missing",
+                        reason=None if complete else "required_play_value_missing",
+                        flags=[] if complete else ["required_play_value_missing"],
                         **kw,
                     )
                 )
@@ -502,6 +555,7 @@ def build_team_game_metrics(
                 "conv_rate_3rd_4th",
                 conversion.astype(float).fillna(0.0),
                 conversion.notna(),
+                down.isin([3, 4]),
             )
             ratio("turnover_rate", turnover.eq(1).astype(float), turnover.notna())
             start = pd.to_numeric(d["start_yards_to_goal"], errors="coerce")
@@ -544,6 +598,64 @@ def build_team_game_metrics(
                 )
             else:
                 offense_rows.append(_count_row(meta, "points_scored", points, **kw))
+
+            for row in offense_rows[first_row:]:
+                metric = row["metric"]
+                reason = None
+                unknown_denominator = False
+                if metric != "points_scored" and not play_complete:
+                    reason, unknown_denominator = "source_plays_incomplete", True
+                elif (
+                    metric
+                    in {
+                        "eligible_possessions",
+                        "ppp",
+                        "plays_per_possession",
+                        "epa_per_possession",
+                        "scoring_opp_rate",
+                        "pts_per_scoring_opp",
+                        "avg_start_field_pos",
+                    }
+                    and not possession_complete
+                ):
+                    reason, unknown_denominator = "source_possessions_incomplete", True
+                elif metric in POINT_METRICS and not scoring_complete:
+                    reason = "scoring_coverage_unverified"
+                elif (
+                    metric in {"scoring_opp_rate", "pts_per_scoring_opp"}
+                    and d.scoring_opportunity.isna().any()
+                ):
+                    reason = "scoring_opportunity_unknown"
+                    unknown_denominator = metric == "pts_per_scoring_opp"
+                elif metric == "avg_start_field_pos" and start.isna().any():
+                    reason = "start_field_position_unknown"
+                    row["denominator"] = float(n_drives)
+                elif metric in {"epa_pass", "epa_rush"} and (
+                    p.dropback.isna().any()
+                    or (metric == "epa_rush" and p.rush_attempt.isna().any())
+                ):
+                    reason, unknown_denominator = "play_classification_unknown", True
+                elif (
+                    metric in {"early_down_epa", "conv_rate_3rd_4th"}
+                    and down.isna().any()
+                ):
+                    reason, unknown_denominator = "down_unknown", True
+                if reason:
+                    row.update(
+                        numerator=None,
+                        value=None,
+                        coverage_status="missing",
+                        missing_reason=reason,
+                        quality_flags=canonical_json_text([reason]),
+                    )
+                    if unknown_denominator:
+                        row["denominator"] = (
+                            1.0
+                            if reg.BY_NAME[metric].kind in {"sum", "count"}
+                            else None
+                        )
+                        row["eligible_count"] = None
+                        row["observed_count"] = None
     offense = pd.DataFrame(offense_rows)
     # Defense rows mirror the opponent's offensive measurement and provenance.
     defense = offense.copy()
@@ -553,10 +665,17 @@ def build_team_game_metrics(
         offense["team"].values,
     )
     defense["side"] = np.where(offense["side"] == "home", "away", "home")
-    fbs = {(int(r.game_id), r.home_team): bool(r.home_fbs) for r in games.itertuples()}
-    fbs |= {(int(r.game_id), r.away_team): bool(r.away_fbs) for r in games.itertuples()}
+    fbs = {
+        (int(r.season), int(r.game_id), r.home_team): bool(r.home_fbs)
+        for r in games.itertuples()
+    }
+    fbs |= {
+        (int(r.season), int(r.game_id), r.away_team): bool(r.away_fbs)
+        for r in games.itertuples()
+    }
     defense["opponent_fbs"] = [
-        fbs[(int(g), t)] for g, t in zip(defense["game_id"], defense["opponent"])
+        fbs[(int(s), int(g), t)]
+        for s, g, t in zip(defense["season"], defense["game_id"], defense["opponent"])
     ]
     return pd.concat([offense, defense], ignore_index=True)
 
@@ -569,7 +688,9 @@ def aggregate_through_week(metrics: pd.DataFrame, *, as_of_week: int) -> pd.Data
     """
     rows = []
     included = metrics[metrics["week"] < as_of_week]
-    for (team, role, metric), group in included.groupby(["team", "role", "metric"]):
+    for (season, team, role, metric), group in included.groupby(
+        ["season", "team", "role", "metric"]
+    ):
         definition = reg.BY_NAME[metric]
         missing = group[group["coverage_status"] == "missing"]
         status, reason = (
@@ -592,6 +713,7 @@ def aggregate_through_week(metrics: pd.DataFrame, *, as_of_week: int) -> pd.Data
             )
         rows.append(
             {
+                "season": int(season),
                 "team": team,
                 "role": role,
                 "metric": metric,

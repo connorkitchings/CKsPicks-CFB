@@ -45,8 +45,21 @@ def possessions_to_v1(
     ``start_yards_to_goal``) keyed by game, drive number and offense. A possession with no
     drive row keeps null for both fields rather than a default.
     """
+    keys = ["season", "game_id", "drive_number", "offense"]
+    if "season" not in drives:
+        # Legacy single-season inputs predate the Gold converter. Never infer
+        # a season for a multi-season frame.
+        seasons = possessions.season.unique()
+        if len(seasons) != 1:
+            raise LedgerConversionError(
+                "drive season is required for multi-season input"
+            )
+        drives = drives.assign(season=int(seasons[0]))
+    if drives.duplicated(keys).any() or possessions.duplicated(keys).any():
+        raise LedgerConversionError("duplicate possession or drive identity")
     keep = drives[
         [
+            "season",
             "game_id",
             "drive_number",
             "offense",
@@ -55,9 +68,10 @@ def possessions_to_v1(
         ]
     ]
     merged = possessions.merge(
-        keep.drop_duplicates(["game_id", "drive_number", "offense"]),
-        on=["game_id", "drive_number", "offense"],
+        keep,
+        on=keys,
         how="left",
+        validate="one_to_one",
     )
     opportunity = pd.to_numeric(merged["had_scoring_opportunity"], errors="coerce")
     merged["scoring_opportunity"] = opportunity.map({1.0: True, 0.0: False}).astype(
@@ -109,6 +123,7 @@ def scoring_events_to_v1(
     groups: Mapping[tuple[int, str, str], str] | None = None,
     admitted_evidence: Mapping[str, tuple[str, ...]] | None = None,
     admitted_rule_version: str | None = None,
+    populate_envelopes: bool = False,
 ) -> pd.DataFrame:
     """Baseline events to ``football_scoring_ledger_v1`` with ``admission = baseline_unchanged``.
 
@@ -129,7 +144,11 @@ def scoring_events_to_v1(
             frame["play_number"],
         )
     ]
-    by_id = frame.drop_duplicates("_id").set_index("_id")
+    if frame["_id"].duplicated().any():
+        raise LedgerConversionError("duplicate source play identity")
+    if events.duplicated(["season", "game_id", "source_event_id", "team"]).any():
+        raise LedgerConversionError("duplicate scoring event identity")
+    by_id = frame.set_index("_id")
     missing = sorted(set(events["source_event_id"]) - set(by_id.index))
     if missing:
         raise LedgerConversionError(
@@ -137,7 +156,8 @@ def scoring_events_to_v1(
         )
     # Each team's running raw score on every play, in stream order, to give before and after values.
     ordered = frame.sort_values(
-        ["game_id", "drive_number", "play_number"], kind="mergesort"
+        ["season", "game_id", "quarter", "drive_number", "play_number"],
+        kind="mergesort",
     )
     long = pd.concat(
         [
@@ -153,8 +173,29 @@ def scoring_events_to_v1(
     # keep stream order inside each team-game: ``ordered`` fixed it, so re-sort by position
     position = {pid: i for i, pid in enumerate(ordered["_id"])}
     long["pos"] = long["_id"].map(position)
-    long = long.sort_values(["game_id", "team", "pos"], kind="mergesort")
-    long["before"] = long.groupby(["game_id", "team"])["score"].shift(1).fillna(0.0)
+    long = long.sort_values(["game_id", "team", "pos"], kind="mergesort").reset_index(
+        drop=True
+    )
+    long["before"] = long.groupby(["game_id", "team"])["score"].shift(1)
+    long.loc[long.groupby(["game_id", "team"]).cumcount().eq(0), "before"] = 0.0
+    long["envelope_after"] = None
+    long["envelope_before"] = None
+    if populate_envelopes:
+        for (game_id, team), rows in long.groupby(["game_id", "team"], sort=False):
+            final = finals.get((int(game_id), team))
+            if final is None:
+                continue
+            running = 0
+            for idx in rows.index:
+                raw = long.loc[idx, "score"]
+                if pd.isna(raw) or not np.isfinite(raw) or raw < 0 or raw != int(raw):
+                    # Invalid streams cannot produce asserted envelope context.
+                    running = None
+                    continue
+                if running is not None:
+                    long.loc[idx, "envelope_before"] = running
+                    running = min(int(final), max(running, int(raw)))
+                    long.loc[idx, "envelope_after"] = running
     lookup = long.drop_duplicates(["game_id", "team", "_id"]).set_index(
         ["game_id", "team", "_id"]
     )
@@ -171,12 +212,40 @@ def scoring_events_to_v1(
             e["associated_possession_id"]
         ):
             # The baseline stores the play id; the possession is the play's offense's drive.
+            linked = e["associated_possession_id"]
+            if linked not in by_id.index:
+                raise LedgerConversionError("associated possession play is missing")
+            linked_play = by_id.loc[linked]
+            if (linked_play["season"], linked_play["game_id"]) != (
+                e["season"],
+                e["game_id"],
+            ):
+                raise LedgerConversionError(
+                    "associated possession crosses game identity"
+                )
             possession = possession_id_for(
-                e["season"], e["game_id"], int(play["drive_number"]), play["offense"]
+                e["season"],
+                e["game_id"],
+                int(linked_play["drive_number"]),
+                linked_play["offense"],
             )
         group = (groups or {}).get(key) or f"unchanged:{int(e['game_id'])}:{e['team']}"
         final = finals.get((int(e["game_id"]), e["team"]))
         evidence = (admitted_evidence or {}).get(group)
+        disposition = e.get(
+            "admission", "corroborated" if evidence else "baseline_unchanged"
+        )
+        if disposition not in {
+            "baseline_unchanged",
+            "corroborated",
+            "reverted_unverified",
+            "reverted_contradicted",
+        }:
+            raise LedgerConversionError("unknown or candidate admission")
+        if (disposition == "corroborated") != bool(evidence):
+            raise LedgerConversionError(
+                "admission disagrees with corroborating evidence"
+            )
         rows.append(
             {
                 "season": int(e["season"]),
@@ -196,8 +265,12 @@ def scoring_events_to_v1(
                 else e["conversion_for_event_id"],
                 "raw_score_before": None if score is None else float(score["before"]),
                 "raw_score_after": None if score is None else float(score["score"]),
-                "envelope_before": None,
-                "envelope_after": None,
+                "envelope_before": score["envelope_before"]
+                if populate_envelopes and evidence and score is not None
+                else None,
+                "envelope_after": score["envelope_after"]
+                if populate_envelopes and evidence and score is not None
+                else None,
                 "certified_final": None if final is None else int(final),
                 "quality_reason": None
                 if pd.isna(e["quality_reason"])
@@ -206,7 +279,7 @@ def scoring_events_to_v1(
                 if evidence and admitted_rule_version
                 else rule_version,
                 "allocation_group_id": group,
-                "admission": "corroborated" if evidence else "baseline_unchanged",
+                "admission": disposition,
                 "evidence_ids": canonical_json_text(sorted(evidence or ())),
                 "timing_class": e["timing_class"],
                 "source_versions": versions,

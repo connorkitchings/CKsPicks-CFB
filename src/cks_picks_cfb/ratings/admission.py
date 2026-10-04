@@ -98,8 +98,12 @@ def build_admitted_events(
         row["allocation_group_id"] = group_id
         row["admission"] = (
             "baseline_unchanged"
-            if group_id is None or decision_by_group[group_id] != ADMITTED
-            else "corroborated"
+            if group_id is None
+            else (
+                "corroborated"
+                if decision_by_group[group_id] == ADMITTED
+                else decision_by_group[group_id]
+            )
         )
         row["evidence_status"] = (
             None if group_id is None else decision_by_group[group_id]

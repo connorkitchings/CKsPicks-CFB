@@ -293,3 +293,42 @@ def test_possessions_gain_ids_field_position_and_opportunity_flags():
 def test_a_possession_without_a_drive_row_keeps_nulls_not_defaults():
     third = _possessions()[lambda f: f.drive_number == 3].iloc[0]
     assert pd.isna(third.start_yards_to_goal) and third.scoring_opportunity is None
+
+
+def test_reverted_disposition_survives_conversion_with_baseline_points():
+    events = _events().assign(admission="reverted_unverified")
+    converted = ml.scoring_events_to_v1(
+        events, _plays(), finals=FINALS, source_versions=VERSIONS
+    )
+    assert set(converted.admission) == {"reverted_unverified"}
+    assert converted.envelope_before.isna().all()
+    assert converted.envelope_after.isna().all()
+    resolved = converted[converted.scoring_category != "unresolved"]
+    assert (
+        resolved.score_increment.sum()
+        == events[events.scoring_category != "unresolved"].score_increment.sum()
+    )
+
+
+def test_duplicate_source_play_is_rejected_instead_of_first_row_wins():
+    plays = pd.concat([_plays(), _plays().iloc[:1]])
+    with pytest.raises(ml.LedgerConversionError, match="duplicate source"):
+        ml.scoring_events_to_v1(
+            _events(), plays, finals=FINALS, source_versions=VERSIONS
+        )
+
+
+def test_envelopes_are_only_added_to_corroborated_allocations():
+    result = ml.scoring_events_to_v1(
+        _events(),
+        _plays(),
+        finals=FINALS,
+        source_versions=VERSIONS,
+        groups={(1, "A", "2026:1:1:2"): "g"},
+        admitted_evidence={"g": ("evidence",)},
+        admitted_rule_version="r1_envelope_v1",
+        populate_envelopes=True,
+    )
+    row = result[result.admission == "corroborated"].iloc[0]
+    assert row.envelope_before == 0 and row.envelope_after == 6
+    assert result[result.admission != "corroborated"].envelope_after.isna().all()

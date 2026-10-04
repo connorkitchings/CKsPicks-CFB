@@ -118,9 +118,7 @@ def test_verifier_accepts_correct_admission(game, decision):
     if decision == adm.ADMITTED:
         assert len(admitted) == 1 and set(admitted["admission"]) == {"corroborated"}
     else:
-        assert len(admitted) == 2 and set(admitted["admission"]) == {
-            "baseline_unchanged"
-        }
+        assert len(admitted) == 2 and set(admitted["admission"]) == {decision}
         assert (
             admitted[baseline.columns]
             .reset_index(drop=True)

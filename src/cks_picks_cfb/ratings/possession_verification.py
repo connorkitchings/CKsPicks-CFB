@@ -1295,6 +1295,7 @@ def verify_admitted_ledger(
     decisions: pd.DataFrame,
     expected_admitted_groups: int | None = None,
     scope: str = "historical",
+    legacy_labels: bool = False,
 ) -> dict[str, Any]:
     """Re-derive the admitted ledger and report every disagreement. Never mutates inputs."""
     problems: list[str] = []
@@ -1397,7 +1398,7 @@ def verify_admitted_ledger(
         want = (
             "corroborated"
             if group_decision.get(group) == "admitted"
-            else "baseline_unchanged"
+            else ("baseline_unchanged" if legacy_labels else group_decision[group])
         )
         if row["admission"] != want or row["allocation_group_id"] != group:
             problem(

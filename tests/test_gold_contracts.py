@@ -444,3 +444,25 @@ def test_require_raises_with_a_summary():
     with pytest.raises(gc.GoldContractError, match="2 problem"):
         gc.require(["a", "b"], "label")
     gc.require([], "label")
+
+
+def test_duplicate_metric_identity_is_rejected_by_semantic_validator():
+    row = _metric_row()
+    assert "duplicate metric identity" in gc.team_game_metrics_problems(
+        _frame(row, row)
+    )
+
+
+def test_defense_mirror_is_scoped_to_season():
+    offense = _metric_row()
+    defense = _metric_row(team="B", opponent="A", role="defense")
+    previous = {**offense, "season": 2025, "numerator": 21.0, "value": 3.0}
+    previous_defense = {**defense, "season": 2025, "numerator": 21.0, "value": 3.0}
+    assert (
+        gc.defense_mirror_problems(_frame(offense, defense, previous, previous_defense))
+        == []
+    )
+    previous_defense["value"] = 2.0
+    assert gc.defense_mirror_problems(
+        _frame(offense, defense, previous, previous_defense)
+    )
