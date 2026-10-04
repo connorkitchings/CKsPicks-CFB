@@ -36,6 +36,9 @@ class StageContext:
     inputs: Mapping[str, str]
     parents: Mapping[str, str]
     read_artifact: Callable[[str, str], bytes]
+    read_input: Callable[[str], bytes] = lambda name: (_ for _ in ()).throw(
+        GateError(f"no input reader for {name}")
+    )
 
 
 @dataclass
@@ -77,8 +80,12 @@ class Orchestrator:
         *,
         staging: ObjectStore,
         code_sha: str,
+        repo_root: Path | None = None,
+        read_remote: Callable[[str], bytes] | None = None,
     ):
         plan.validate()
+        self.repo_root = repo_root
+        self.read_remote = read_remote
         self.plan = plan
         self.stages = {stage.plan.name: stage for stage in stages}
         planned = [stage.name for stage in plan.stages]
@@ -113,6 +120,25 @@ class Orchestrator:
         verify_signed_payload(manifest, label=f"stage manifest {stage}")
         return manifest
 
+    def _read_input(self, stage: Stage, inputs: Mapping[str, str]):
+        pins = {pin.name: pin for pin in self.plan.inputs}
+
+        def read(name: str) -> bytes:
+            if name not in stage.plan.inputs:
+                raise GateError(f"stage {stage.plan.name} did not declare input {name}")
+            pin = pins[name]
+            if pin.kind == "git_file" and self.repo_root is not None:
+                data = (self.repo_root / pin.uri).read_bytes()
+            elif pin.kind == "r2_object" and self.read_remote is not None:
+                data = self.read_remote(pin.uri)
+            else:
+                raise GateError(f"input {name} cannot be read here")
+            if sha256_bytes(data) != inputs[name]:
+                raise GateError(f"input {name} changed after preflight")
+            return data
+
+        return read
+
     def _context(self, stage: Stage, inputs: Mapping[str, str]) -> StageContext:
         parents: dict[str, str] = {}
         for parent in stage.plan.parents:
@@ -126,6 +152,7 @@ class Orchestrator:
             inputs=inputs,
             parents=parents,
             read_artifact=lambda s, k: self.staging.read(self._artifact_key(s, k)),
+            read_input=self._read_input(stage, inputs),
         )
 
     def _check_declared(self, stage: StagePlan, key: str) -> None:

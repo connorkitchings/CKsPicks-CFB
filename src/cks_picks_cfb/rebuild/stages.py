@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from cks_picks_cfb.rebuild import baseline
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import Stage, StageContext, StageOutput
 from cks_picks_cfb.rebuild.plan import RebuildPlan
@@ -12,7 +13,7 @@ from cks_picks_cfb.rebuild.plan import RebuildPlan
 STAGE_BUILDERS: dict[
     str,
     tuple[Callable[[StageContext], StageOutput], Callable[[StageContext], list[str]]],
-] = {}
+] = {"baseline_reproduction": (baseline.reproduce, baseline.verify)}
 
 
 def _unimplemented(name: str) -> Callable[[StageContext], StageOutput]:

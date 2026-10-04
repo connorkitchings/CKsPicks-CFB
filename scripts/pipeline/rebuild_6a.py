@@ -13,6 +13,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT))  # legacy baseline stage imports scripts.*
 
 from cks_picks_cfb.data.storage.base import StorageSettings  # noqa: E402
 from cks_picks_cfb.rebuild.errors import RebuildError  # noqa: E402
@@ -102,7 +103,14 @@ def main(argv: list[str] | None = None) -> int:
         remote, run_id=plan.run_id, expected_identity=plan.storage_identity
     )
     staging = LocalStagingStore(REPO_ROOT / "artifacts" / "rebuild" / plan.run_id)
-    orchestrator = Orchestrator(plan, get_stages(plan), staging=staging, code_sha=head)
+    orchestrator = Orchestrator(
+        plan,
+        get_stages(plan),
+        staging=staging,
+        code_sha=head,
+        repo_root=REPO_ROOT,
+        read_remote=remote.read,
+    )
     config_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
     if args.operation == "preflight":
         record = orchestrator.preflight(

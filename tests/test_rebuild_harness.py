@@ -401,3 +401,77 @@ def test_catalog_registration_is_one_transaction(monkeypatch, fail_on):
     else:
         call()
         assert len(conns) == 1 and conns[0].state == "committed"
+
+
+def test_baseline_gate_requires_every_check():
+    from cks_picks_cfb.rebuild import baseline
+
+    decisions, report = b"d", b"r"
+    pinned = {
+        "admission_decisions_csv": hashlib.sha256(decisions).hexdigest(),
+        "admission_report_json": hashlib.sha256(report).hexdigest(),
+    }
+    counts = {
+        "baseline_events": 86937,
+        "candidate_events": 82416,
+        "admitted_events": 85457,
+        "decisions": dict(baseline.EXPECTED["decisions"]),
+    }
+
+    def gate(**override):
+        args = dict(
+            counts=counts,
+            decisions_bytes=decisions,
+            report_bytes=report,
+            pinned=pinned,
+            verifier_ok=True,
+            v1_problem_count=0,
+        )
+        args.update(override)
+        return baseline.evaluate_gate(**args)
+
+    assert gate()["passed"]
+    assert not gate(decisions_bytes=b"x")["passed"]
+    assert not gate(report_bytes=b"x")["passed"]
+    assert not gate(verifier_ok=False)["passed"]
+    assert not gate(v1_problem_count=1)["passed"]
+    assert not gate(counts={**counts, "admitted_events": 85456})["passed"]
+    assert not gate(
+        counts={
+            **counts,
+            "decisions": {
+                "admitted": 1417,
+                "reverted_contradicted": 27,
+                "reverted_unverified": 1749,
+            },
+        }
+    )["passed"]
+
+
+def test_stage_read_input_is_declared_and_hash_checked(tmp_path):
+    plan, root = _plan(tmp_path)
+    seen = {}
+
+    def build(ctx):
+        seen["data"] = ctx.read_input("decisions")
+        return StageOutput([("lake/gold/a/x", b"1")])
+
+    stages = [
+        Stage(plan.stages[0], build, lambda c: []),
+        Stage(plan.stages[1], lambda c: StageOutput([]), lambda c: []),
+    ]
+    orch = Orchestrator(
+        plan, stages, staging=InMemoryStore(), code_sha=CODE_SHA, repo_root=root
+    )
+    guard = GuardedStore(
+        InMemoryStore(IDENTITY), run_id="run1", expected_identity=IDENTITY
+    )
+    orch.preflight(
+        repo_root=root,
+        config_sha="c" * 64,
+        worktree_clean=True,
+        guard=guard,
+        is_tracked=lambda *_: True,
+    )
+    orch.build()
+    assert seen["data"] == b"decision-bytes"

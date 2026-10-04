@@ -328,3 +328,6 @@ artifacts/quality/
 
 # Window 2 step 5A retained CFBD drive responses (149 MB); the manifest is committed under docs
 artifacts/research/window2_5a_cfbd_drives/
+
+# 6A rebuild local staging (immutable evidence lives in Preview R2)
+artifacts/rebuild/

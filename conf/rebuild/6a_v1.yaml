@@ -27,8 +27,9 @@ inputs:
   - {name: r1_derived_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/derived-ref-set.json, sha256: da3a8f45b5976272c1bff9cfaa9dbebe2e6849bac0036da5ebb171a00db44f9a}
   - {name: r1_foundation_manifest, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/foundation/manifest.json, sha256: 5f242780d2bcd20e28f1ad1d7b086c30e26640fa4a1e4f824ae20ddce27e0da9}
   - {name: r1_comparison_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/comparison-ref-set.json, sha256: 19a9cf2f5ec6b6cc4758128e361afb41597039b89528ea2be750dfdd666638e4}
+  - {name: repair_v2_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json, sha256: b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4}  # legacy baseline parent; baseline_reproduction only
 stages:
-  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
+  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, cfbd_drives_manifest, repair_v2_manifest, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
   - {name: silver, inputs: [r1_source_set, r1_foundation_manifest], parents: [baseline_reproduction], outputs: [lake/silver/]}
   - {name: eligibility, parents: [silver], outputs: [rebuild/6a/6a-rebuild-20261004-r1/eligibility/]}
   - {name: step5_comparison, inputs: [admission_decisions, step5_historical_groups], parents: [eligibility], outputs: [rebuild/6a/6a-rebuild-20261004-r1/comparison/]}
