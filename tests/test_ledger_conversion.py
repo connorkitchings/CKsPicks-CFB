@@ -210,6 +210,26 @@ def test_group_ids_default_to_unchanged_and_accept_a_mapping():
     )
 
 
+def test_admitted_groups_become_corroborated_with_evidence_and_rule_version():
+    v1 = ml.scoring_events_to_v1(
+        _events(),
+        _plays(),
+        finals=FINALS,
+        source_versions=VERSIONS,
+        groups={(1, "A", "2026:1:1:2"): "grp1"},
+        admitted_evidence={"grp1": ("cfbd_drives:abc",)},
+        admitted_rule_version="r1_envelope_v1",
+    )
+    hit = v1[v1.allocation_group_id == "grp1"]
+    assert list(hit.admission) == ["corroborated"]
+    assert list(hit.rule_version) == ["r1_envelope_v1"]
+    assert list(hit.evidence_ids) == ['["cfbd_drives:abc"]']
+    rest = v1[v1.allocation_group_id != "grp1"]
+    assert set(rest.admission) == {"baseline_unchanged"}
+    assert set(rest.rule_version) == {"baseline_v1"}
+    assert gc.scoring_ledger_problems(v1) == []
+
+
 def _existing_possessions():
     base = dict(
         season=2026,

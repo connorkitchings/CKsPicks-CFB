@@ -129,8 +129,13 @@ def changed_groups(
     candidate: pd.DataFrame,
     *,
     restoration_team_games: set[tuple[int, str]] | frozenset = frozenset(),
+    members_out: dict[str, list[str]] | None = None,
 ) -> pd.DataFrame:
-    """One row per allocation group (frozen definition), with channel, flags and cause."""
+    """One row per allocation group (frozen definition), with channel, flags and cause.
+
+    ``members_out``, when given, is filled with ``group_id -> [source_event_id, ...]`` for
+    every event (baseline-only, candidate-only or both) the group contains.
+    """
     merged = align_events(baseline, candidate).sort_values(
         ["game_id", "team", "drive_number", "pos"], kind="mergesort"
     )
@@ -199,9 +204,12 @@ def changed_groups(
             primary = next((c for c in CAUSE_PRECEDENCE if flags[c]), "other")
             first = str(group["source_event_id"].iloc[0])
             season = group["season"].iloc[0]
+            group_id = _group_id(season, game_id, team, first)
+            if members_out is not None:
+                members_out[group_id] = [str(s) for s in group["source_event_id"]]
             rows.append(
                 {
-                    "group_id": _group_id(season, game_id, team, first),
+                    "group_id": group_id,
                     "season": int(season),
                     "game_id": int(game_id),
                     "team": team,

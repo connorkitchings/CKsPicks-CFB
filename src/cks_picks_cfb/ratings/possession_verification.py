@@ -1192,3 +1192,256 @@ def reconstruct_replay_partitions(
         "iterations": [0, 4],
         "adjustment_method": "iterative_additive_league_centered",
     }
+
+
+# ---------------------------------------------------------------------------------------
+# v1 mode (Window 2 Step 5C): independent verification of an admitted scoring ledger.
+#
+# It expresses the R1 envelope and the admission rule a second time and never imports the
+# candidate builder or the admission module. Agreement of totals is not accepted as proof:
+# every event of the admitted ledger is re-derived from the byplay and the gate decisions.
+# ---------------------------------------------------------------------------------------
+
+_V1_FIELDS = (
+    "score_increment",
+    "scoring_category",
+    "unit_category",
+    "associated_possession_id",
+    "conversion_for_event_id",
+    "quality_reason",
+    "period_class",
+    "drive_number",
+)
+_V1_DECISIONS = {"admitted", "reverted_unverified", "reverted_contradicted"}
+_V1_KEY = ["game_id", "team", "source_event_id"]
+
+
+def _certified_finals(
+    population: pd.DataFrame, outcomes: pd.DataFrame | None
+) -> dict[tuple[int, str], float]:
+    scores = population
+    if outcomes is not None and "home_points" not in population.columns:
+        scores = population.merge(
+            outcomes[
+                ["season", "game_id", "home_points", "away_points"]
+            ].drop_duplicates(["season", "game_id"]),
+            on=["season", "game_id"],
+            how="left",
+        )
+    finals: dict[tuple[int, str], float] = {}
+    for row in scores.itertuples(index=False):
+        if not getattr(row, "outcome_valid", False):
+            continue
+        if pd.notna(row.home_points):
+            finals[(int(row.game_id), str(row.home_team))] = float(row.home_points)
+        if pd.notna(row.away_points):
+            finals[(int(row.game_id), str(row.away_team))] = float(row.away_points)
+    return finals
+
+
+def _independent_envelope(
+    plays: pd.DataFrame, finals: dict[tuple[int, str], float]
+) -> pd.DataFrame:
+    """``min(F, running maximum)`` of each team's reported score, in stream order."""
+    frame = plays.sort_values(
+        ["season", "game_id", "quarter", "drive_number", "play_number"],
+        kind="mergesort",
+    ).copy()
+    off_score = frame["offense_score"].to_numpy(dtype=float).copy()
+    def_score = frame["defense_score"].to_numpy(dtype=float).copy()
+    offense = frame["offense"].to_numpy()
+    defense = frame["defense"].to_numpy()
+    game = frame["game_id"].to_numpy()
+    positions: dict[tuple[int, str], list[tuple[int, str]]] = defaultdict(list)
+    for i in range(len(frame)):
+        positions[(int(game[i]), str(offense[i]))].append((i, "o"))
+        positions[(int(game[i]), str(defense[i]))].append((i, "d"))
+    for key, slots in positions.items():
+        final = finals.get(key)
+        if final is None:
+            continue
+        running = None
+        for i, side in slots:
+            raw = off_score[i] if side == "o" else def_score[i]
+            if not np.isfinite(raw):
+                continue
+            running = raw if running is None else max(running, raw)
+            value = min(final, running)
+            if side == "o":
+                off_score[i] = value
+            else:
+                def_score[i] = value
+    frame["offense_score"] = off_score
+    frame["defense_score"] = def_score
+    return frame
+
+
+def _event_table(events: pd.DataFrame) -> dict[tuple[int, str, str], dict[str, Any]]:
+    out: dict[tuple[int, str, str], dict[str, Any]] = {}
+    for rec in events.to_dict("records"):
+        out[(int(rec["game_id"]), str(rec["team"]), str(rec["source_event_id"]))] = {
+            f: (None if pd.isna(rec.get(f)) else rec.get(f)) for f in _V1_FIELDS
+        }
+    return out
+
+
+def verify_admitted_ledger(
+    *,
+    byplay: pd.DataFrame,
+    population: pd.DataFrame,
+    outcomes: pd.DataFrame | None,
+    baseline_events: pd.DataFrame,
+    admitted_events: pd.DataFrame,
+    decisions: pd.DataFrame,
+    expected_admitted_groups: int | None = None,
+    scope: str = "historical",
+) -> dict[str, Any]:
+    """Re-derive the admitted ledger and report every disagreement. Never mutates inputs."""
+    problems: list[str] = []
+
+    def problem(message: str) -> None:
+        if len(problems) < 200:
+            problems.append(message)
+
+    if not set(decisions["decision"]) <= _V1_DECISIONS:
+        problem(
+            f"unknown decisions: {sorted(set(decisions['decision']) - _V1_DECISIONS)}"
+        )
+    if decisions["group_id"].duplicated().any():
+        problem("duplicate group ids in decisions")
+
+    plays, _, own_baseline = _reconstruct_ledgers(
+        byplay=byplay, population=population, outcomes=outcomes, scope=scope
+    )
+    finals = _certified_finals(population, outcomes)
+    _, _, own_candidate = _reconstruct_ledgers(
+        byplay=_independent_envelope(plays, finals),
+        population=population,
+        outcomes=outcomes,
+        scope=scope,
+    )
+    base = _event_table(own_baseline)
+    cand = _event_table(own_candidate)
+
+    # 1. The supplied baseline must be exactly what this verifier reproduces.
+    supplied = _event_table(baseline_events)
+    if supplied != base:
+        only_supplied = len(set(supplied) - set(base))
+        only_own = len(set(base) - set(supplied))
+        differing = sum(1 for k in set(base) & set(supplied) if base[k] != supplied[k])
+        problem(
+            f"baseline reproduction failed: {only_supplied} only supplied, "
+            f"{only_own} only reproduced, {differing} differ"
+        )
+
+    # 2. Changed events and the group each decision claims for them.
+    changed = {k for k in set(base) | set(cand) if base.get(k) != cand.get(k)}
+    claimed: dict[tuple[int, str, str], str] = {}
+    group_decision: dict[str, str] = dict(
+        zip(decisions["group_id"], decisions["decision"])
+    )
+    for row in decisions.itertuples(index=False):
+        for event_id in json.loads(row.event_ids):
+            key = (int(row.game_id), str(row.team), str(event_id))
+            if key in claimed:
+                problem(f"event {key} claimed by two groups")
+            claimed[key] = row.group_id
+    uncovered = changed - set(claimed)
+    phantom = set(claimed) - changed
+    if uncovered:
+        problem(f"{len(uncovered)} changed events belong to no decision group")
+    if phantom:
+        problem(f"{len(phantom)} decided events are not changed by the independent R1")
+
+    # 3. Closure: a conversion and the score it extends are never split across groups.
+    for key in changed & set(claimed):
+        for side in (base, cand):
+            ref = (side.get(key) or {}).get("conversion_for_event_id")
+            if ref is None:
+                continue
+            target = (key[0], key[1], str(ref))
+            if target in changed and claimed.get(target) != claimed[key]:
+                problem(f"linked event {key} -> {target} crosses allocation groups")
+
+    # 4. Expected admitted ledger from the decisions alone.
+    expected: dict[tuple[int, str, str], dict[str, Any]] = {}
+    for key in set(base) | set(cand):
+        group = claimed.get(key)
+        take = (
+            cand
+            if group is not None and group_decision.get(group) == "admitted"
+            else base
+        )
+        if key in take:
+            expected[key] = take[key]
+    got = _event_table(admitted_events)
+    if admitted_events.duplicated(_V1_KEY).any():
+        problem("admitted ledger has duplicate event keys")
+    if set(got) != set(expected):
+        problem(
+            f"admitted ledger event set differs: {len(set(got) - set(expected))} extra, "
+            f"{len(set(expected) - set(got))} missing"
+        )
+    differing = [k for k in set(got) & set(expected) if got[k] != expected[k]]
+    if differing:
+        problem(
+            f"{len(differing)} admitted events differ from the independent derivation"
+        )
+
+    # 5. Labels: only admitted groups are corroborated; groups and decisions agree.
+    labels = admitted_events.set_index(_V1_KEY)
+    for key, group in claimed.items():
+        if key not in labels.index:
+            continue
+        row = labels.loc[key]
+        want = (
+            "corroborated"
+            if group_decision.get(group) == "admitted"
+            else "baseline_unchanged"
+        )
+        if row["admission"] != want or row["allocation_group_id"] != group:
+            problem(
+                f"event {key} has admission/group labels that disagree with decisions"
+            )
+            break
+    unchanged_rows = admitted_events[
+        ~admitted_events.set_index(_V1_KEY).index.isin(list(claimed))
+    ]
+    if (unchanged_rows["admission"] != "baseline_unchanged").any():
+        problem("an event outside every changed group is not baseline_unchanged")
+
+    # 6. Fail closed: a reverted group contributes exactly its baseline events.
+    reverted = {g for g, d in group_decision.items() if d != "admitted"}
+    for key, group in claimed.items():
+        if group in reverted and got.get(key) != base.get(key):
+            problem(f"reverted group {group} differs from baseline at {key}")
+            break
+
+    admitted_groups = [g for g, d in group_decision.items() if d == "admitted"]
+    if (
+        expected_admitted_groups is not None
+        and len(admitted_groups) != expected_admitted_groups
+    ):
+        problem(
+            f"{len(admitted_groups)} admitted groups, expected {expected_admitted_groups}"
+        )
+
+    def total(table: dict, keys: Any) -> float:
+        return float(
+            sum((table[k]["score_increment"] or 0) for k in keys if k in table)
+        )
+
+    admitted_keys = [k for k, g in claimed.items() if g in set(admitted_groups)]
+    return {
+        "ok": not problems,
+        "problems": problems,
+        "baseline_events": len(base),
+        "independent_candidate_events": len(cand),
+        "admitted_events": len(got),
+        "changed_events": len(changed),
+        "groups": len(group_decision),
+        "admitted_groups": len(admitted_groups),
+        "reverted_groups": len(reverted),
+        "points_recovered_in_admitted_groups": total(cand, admitted_keys)
+        - total(base, admitted_keys),
+    }

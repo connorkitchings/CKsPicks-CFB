@@ -1,0 +1,132 @@
+{
+  "delta": {
+    "admitted_events": 85457,
+    "baseline_events": 86937,
+    "by_decision": {
+      "admitted": 1416,
+      "reverted_contradicted": 28,
+      "reverted_unverified": 1749
+    },
+    "by_primary_cause": {
+      "category_possession_reassignment": {
+        "admitted": 22,
+        "reverted_unverified": 103
+      },
+      "dip_restore": {
+        "admitted": 1389,
+        "reverted_contradicted": 26,
+        "reverted_unverified": 1125
+      },
+      "final_cap": {
+        "reverted_unverified": 90
+      },
+      "incomplete_stream": {
+        "admitted": 4,
+        "reverted_contradicted": 1,
+        "reverted_unverified": 292
+      },
+      "other": {
+        "reverted_contradicted": 1,
+        "reverted_unverified": 70
+      },
+      "restoration_gt8": {
+        "admitted": 1,
+        "reverted_unverified": 69
+      }
+    },
+    "by_season": {
+      "2015": {
+        "admitted": 62,
+        "reverted_contradicted": 3,
+        "reverted_unverified": 59
+      },
+      "2016": {
+        "admitted": 73,
+        "reverted_unverified": 77
+      },
+      "2017": {
+        "admitted": 90,
+        "reverted_contradicted": 5,
+        "reverted_unverified": 90
+      },
+      "2018": {
+        "admitted": 51,
+        "reverted_contradicted": 4,
+        "reverted_unverified": 55
+      },
+      "2019": {
+        "admitted": 41,
+        "reverted_contradicted": 1,
+        "reverted_unverified": 51
+      },
+      "2021": {
+        "admitted": 241,
+        "reverted_contradicted": 3,
+        "reverted_unverified": 311
+      },
+      "2022": {
+        "admitted": 216,
+        "reverted_contradicted": 1,
+        "reverted_unverified": 269
+      },
+      "2023": {
+        "admitted": 212,
+        "reverted_contradicted": 2,
+        "reverted_unverified": 241
+      },
+      "2024": {
+        "admitted": 237,
+        "reverted_contradicted": 1,
+        "reverted_unverified": 176
+      },
+      "2025": {
+        "admitted": 193,
+        "reverted_contradicted": 8,
+        "reverted_unverified": 420
+      }
+    },
+    "materiality": {
+      "adjusted_and_state_deltas": "not computed in 5C; they need the 6A rating rebuild",
+      "all_team_seasons": {
+        "max_abs_raw_ppp_delta": 1.27273,
+        "max_raw_rank_move": 113,
+        "raw_ppp_changed": 765,
+        "raw_ppp_delta_gt_0_05": 454,
+        "raw_rank_move_gt_5": 356,
+        "team_seasons": 2040
+      },
+      "at_least_60_possessions": {
+        "max_abs_raw_ppp_delta": 0.36364,
+        "max_raw_rank_move": 19,
+        "raw_ppp_changed": 710,
+        "raw_ppp_delta_gt_0_05": 399,
+        "raw_rank_move_gt_5": 178,
+        "team_seasons": 1310
+      }
+    },
+    "net_points_by_decision": {
+      "admitted": 104.0,
+      "reverted_contradicted": 56.0,
+      "reverted_unverified": 6789.0
+    },
+    "points_recovered": {
+      "admitted": 104.0,
+      "reverted_contradicted": 56.0,
+      "reverted_unverified": 7038.0
+    }
+  },
+  "v1_contract_problem_count": 0,
+  "v1_contract_problems": [],
+  "verifier": {
+    "admitted_events": 85457,
+    "admitted_groups": 1416,
+    "baseline_events": 86937,
+    "changed_events": 9803,
+    "groups": 3193,
+    "independent_candidate_events": 82416,
+    "ok": true,
+    "points_recovered_in_admitted_groups": 104.0,
+    "problems": [],
+    "reverted_groups": 1777
+  }
+}

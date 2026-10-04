@@ -107,13 +107,17 @@ def scoring_events_to_v1(
     source_versions: Mapping[str, str],
     rule_version: str = BASELINE_RULE,
     groups: Mapping[tuple[int, str, str], str] | None = None,
+    admitted_evidence: Mapping[str, tuple[str, ...]] | None = None,
+    admitted_rule_version: str | None = None,
 ) -> pd.DataFrame:
     """Baseline events to ``football_scoring_ledger_v1`` with ``admission = baseline_unchanged``.
 
     ``plays`` is the ledger's input byplay frame (canonical team names) and supplies each
     event's quarter, the play's offense and the raw running scores. ``groups`` optionally maps
     ``(game_id, team, source_event_id)`` to an allocation group id; other events get
-    ``unchanged:<game_id>:<team>``.
+    ``unchanged:<game_id>:<team>``. ``admitted_evidence`` maps an *admitted* group id to its
+    sorted evidence ids: those groups' events become ``admission = corroborated`` under
+    ``admitted_rule_version`` (the events passed in must already be the admitted allocation).
     """
     frame = plays.copy()
     frame["_id"] = [
@@ -172,6 +176,7 @@ def scoring_events_to_v1(
             )
         group = (groups or {}).get(key) or f"unchanged:{int(e['game_id'])}:{e['team']}"
         final = finals.get((int(e["game_id"]), e["team"]))
+        evidence = (admitted_evidence or {}).get(group)
         rows.append(
             {
                 "season": int(e["season"]),
@@ -197,10 +202,12 @@ def scoring_events_to_v1(
                 "quality_reason": None
                 if pd.isna(e["quality_reason"])
                 else e["quality_reason"],
-                "rule_version": rule_version,
+                "rule_version": admitted_rule_version
+                if evidence and admitted_rule_version
+                else rule_version,
                 "allocation_group_id": group,
-                "admission": "baseline_unchanged",
-                "evidence_ids": canonical_json_text([]),
+                "admission": "corroborated" if evidence else "baseline_unchanged",
+                "evidence_ids": canonical_json_text(sorted(evidence or ())),
                 "timing_class": e["timing_class"],
                 "source_versions": versions,
             }
