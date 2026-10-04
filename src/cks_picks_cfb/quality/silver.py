@@ -2,6 +2,7 @@
 
 Inputs (all optional; a check whose input is absent reports ``skipped``):
 
+- ``team_game``: the reconciled team-game Silver dataset (only its columns are inspected)
 - ``source_reconciliation``: the persisted reconciliation Silver dataset
   (``game_id, classification, blocking``)
 - ``byplay``: ``game_id, offense, defense, offense_score, defense_score, drive_number,
@@ -216,13 +217,36 @@ def _counts(d: Mapping[str, Any]) -> dict[str, Any]:
     "silver.reconciliation_recorded",
     stage="silver",
     severity=WARN,
-    description="Score-versus-box reconciliation is recorded and has no blocking conflicts",
+    description="The persisted reconciliation has no blocking conflicts (team identity and rows; scores only if the comparison can run)",
 )
 def _reconciliation(ctx: Mapping[str, Any]) -> Outcome:
     if ctx.get("source_reconciliation") is None:
         return skipped("source_reconciliation not provided")
     res = reconciliation_summary(ctx["source_reconciliation"])
     return Outcome(res["blocking"] == 0, observed=res, expected={"blocking": 0})
+
+
+SCORE_COLUMNS = ("points", "team_points", "score")
+
+
+@register_check(
+    "silver.reconciliation_compares_scores",
+    stage="silver",
+    severity=WARN,
+    description="The reconciliation's score comparison can run: the team-game data carries a points column",
+)
+def _reconciliation_compares_scores(ctx: Mapping[str, Any]) -> Outcome:
+    if ctx.get("team_game") is None:
+        return skipped("team_game not provided")
+    present = [c for c in SCORE_COLUMNS if c in ctx["team_game"].columns]
+    return Outcome(
+        bool(present),
+        observed={"score_columns_present": present, "looked_for": list(SCORE_COLUMNS)},
+        expected="at least one of points, team_points, score",
+        detail=""
+        if present
+        else "reconciliation skips the score comparison, so exact_match does not prove scores agree (known issue 7)",
+    )
 
 
 @register_check(

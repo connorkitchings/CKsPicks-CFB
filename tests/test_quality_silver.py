@@ -14,7 +14,7 @@ def _run(ctx):
 
 def test_all_silver_checks_register_at_warn_and_skip_without_inputs():
     specs = [s for s in q.REGISTRY.values() if s.stage == "silver"]
-    assert len(specs) >= 7 and {s.severity for s in specs} == {q.WARN}
+    assert len(specs) >= 8 and {s.severity for s in specs} == {q.WARN}
     run = q.run_stage("silver", {})
     assert all(r.skipped for r in run.results) and not run.blocked
 
@@ -210,3 +210,12 @@ def test_unpinned_refreshes_require_a_catalogued_capture_with_a_full_pin():
     assert sv.unpinned_refreshes(nocap, full) == {"no_capture_id": [2, 3]}
     ctx = {"games": cur, "games_previous": prev, "capture_index": missing}
     assert not _run(ctx)["silver.completed_game_refresh_pinned"].passed
+
+
+def test_reconciliation_score_comparison_needs_a_points_column():
+    no_points = pd.DataFrame({"game_id": [1], "team": ["A"], "off_points_scored": [21]})
+    r = _run({"team_game": no_points})["silver.reconciliation_compares_scores"]
+    assert not r.passed and "known issue 7" in r.detail
+    assert _run({"team_game": no_points.assign(points=21)})[
+        "silver.reconciliation_compares_scores"
+    ].passed

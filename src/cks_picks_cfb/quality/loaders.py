@@ -116,7 +116,13 @@ def build_ingest_context(
     return context
 
 
-SILVER_DATASETS = ("byplay", "drives", "games", "source_reconciliation")
+SILVER_DATASETS = (
+    "byplay",
+    "drives",
+    "games",
+    "source_reconciliation",
+    "reconciled_team_game",
+)
 
 
 def _previous_ref_row(
@@ -148,7 +154,9 @@ def build_silver_context(
         row = _ref_row(cur, dataset, year, pins.get(dataset))
         if row is None:
             continue
-        context[dataset] = read(row)
+        context["team_game" if dataset == "reconciled_team_game" else dataset] = read(
+            row
+        )
         context["inputs"][dataset] = {"version_id": row[1], "content_sha": row[3]}
         if dataset == "games":
             previous = _previous_ref_row(cur, "games", year, row[1])
