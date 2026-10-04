@@ -186,4 +186,15 @@ One small shared library, thin per-stage check modules, one receipt format. Reus
 
 ## Amendments
 
-None.
+### Amendment 1: Task 1 implementation choices (2026-10-04)
+
+**Reason:** Task 1 was started under the user's authorization after Window 1 code landed in `850ca38`.
+
+**Original approach:** add an `ops data-quality` subcommand; decide whether to delete or port `utils/validation.py`.
+
+**Revised approach:**
+- The CLI is the standalone `python -m cks_picks_cfb.quality` (`--stage`, `--year`, `--environment`, `--output`, `--list`, `--verify-registry`), with `make data-quality STAGE=… [YEAR=…] [ENV=…]` and `make quality-check` (registry integrity, added to `make all`). Reason: `ops/__main__.py` is about 2,600 lines and routes every command through its resumable state machine, which a stateless check run does not need. Exit codes: 0 pass, 1 a blocking check failed or the registry is invalid, 2 usage.
+- Receipts are canonical JSON, content-addressed, deterministic (no clock), refuse to overwrite different bytes, and are written to `artifacts/quality/quality/receipts/<stage>/<id>.json` locally (git-ignored) or through a storage backend.
+- `utils/validation.py` (1,701 lines, legacy CSV-partition era, referenced only by its own two test files) is **left in place and not ported**. Nothing in the new library needs it. Deleting it is a separate prune once Tasks 2–3 confirm no check should be ported; recorded here so it is not forgotten.
+
+**Impact:** Task 1 delivers the library, receipt format, CLI and registry integrity check with zero registered data checks. Tasks 2–4 register the real checks. Task 4 stays held until the Preview venue dry run passes and the Window 1 receipt is signed off.

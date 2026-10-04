@@ -322,3 +322,6 @@ artifacts/backups/*/investigation/*.parquet
 artifacts/backups/*/investigation/*captures.json
 artifacts/backups/*/investigation/cfbd_plays_*.json
 artifacts/backups/*/investigation/*.py
+
+# Local data-quality receipts (durable receipts are stored with release evidence)
+artifacts/quality/

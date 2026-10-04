@@ -1,4 +1,4 @@
-.PHONY: help format lint test health check all clean contracts-check migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
+.PHONY: help format lint test health check all clean contracts-check quality-check data-quality migrate-db web-dev web-local web-build web-lint web-typecheck db-publish db-score ingest-season ingest-week inventory-source import-history hydrate-history fetch-source build-silver build-team-game build-features build-baselines assemble-model-ready prepare-week team-stats promote-silver matchup-data preflight readiness publish-week freeze-week close-week replay-season reconcile audit-data train-week0 generate-game-ordinal evaluate-week0 refit-week0-bundle evaluate-game-ordinal refit-game-ordinal weekly export-pickem
 
 # Default target
 help:
@@ -72,7 +72,7 @@ health:
 	sh .agent/workflows/health-check.sh
 
 # Run all checks (format, lint, test, contracts)
-all: format lint test contracts-check
+all: format lint test contracts-check quality-check
 	@echo ""
 	@echo "✅ All checks complete!"
 
@@ -86,6 +86,16 @@ check: all
 contracts-check:
 	@echo "📋 Validating contracts..."
 	@uv run python contracts/validation.py
+
+quality-check:
+	@echo "Verifying data-quality check registry..."
+	@PYTHONPATH=src uv run python -m cks_picks_cfb.quality --verify-registry
+
+data-quality:
+	@if [ -z "$(STAGE)" ]; then \
+		echo "Usage: make data-quality STAGE={ingest|silver|gold|publish} [YEAR=2026] [ENV=preview]"; exit 1; \
+	fi
+	PYTHONPATH=src uv run python -m cks_picks_cfb.quality --stage $(STAGE) $(if $(YEAR),--year $(YEAR),) $(if $(ENV),--environment $(ENV),)
 
 migrate-db:
 	@echo "migrate-db is disabled: ENV does not select a database for this target." >&2
