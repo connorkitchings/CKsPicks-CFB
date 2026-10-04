@@ -2,12 +2,11 @@
 # uri + sha256. Hashes for R2 pins (Bronze capture sets, repair manifest) are added
 # only after a verified read-only readback; nothing here is "latest".
 run_id: 6a-rebuild-20261004-r1
-storage_identity: null   # set at preflight from the verified Preview bucket (r2:<account>:<bucket>)
+storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"  # verified against CFB_R2_PREVIEW_*; same physical bucket as production, so the namespace allow-list is the isolation
 seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
-# Exact UTC cutoff for eligible 2026 states. Not recorded in repo evidence: preflight
-# for states_2026 stops until the user supplies it.
-cutoff_2026: null
+# Exact UTC cutoff for eligible 2026 states (user-selected).
+cutoff_2026: "2026-09-30T12:34:06Z"  # Week 5 p2 pregame freeze (docs/plans/2026-09-29/v5-intended-update-2026-production-repair.md); user-selected 2026-10-04
 decisions:
   admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
   admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
@@ -24,9 +23,13 @@ inputs:
   - {name: cfbd_drives_manifest, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/cfbd_drives_manifest.jsonl, sha256: 09a1cbaea9c740e7c550ce85012665ba3644878cf45e717e3c6665e309d8e819}
   - {name: corroboration_group_status, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/corroboration_group_status.csv, sha256: bf255a84940f1ce6c417e02e22c8cdd2d64e11a8eca4553a65d81f069ef180f5}
   - {name: step5_historical_groups, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/historical_groups.csv, sha256: 3bd292e600adb447d9be9b6acadf1c8ed94758fcc1c8a2433138d25633eafe5a}
+  - {name: r1_source_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/source-set.json, sha256: 6389ad188164d45c012363d8699cd949619a29a3de91c7c9286684586f325fa9}  # embedded signed manifest_sha256 b26a74ab… verified
+  - {name: r1_derived_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/derived-ref-set.json, sha256: da3a8f45b5976272c1bff9cfaa9dbebe2e6849bac0036da5ebb171a00db44f9a}
+  - {name: r1_foundation_manifest, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/foundation/manifest.json, sha256: 5f242780d2bcd20e28f1ad1d7b086c30e26640fa4a1e4f824ae20ddce27e0da9}
+  - {name: r1_comparison_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/comparison-ref-set.json, sha256: 19a9cf2f5ec6b6cc4758128e361afb41597039b89528ea2be750dfdd666638e4}
 stages:
-  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
-  - {name: silver, parents: [baseline_reproduction], outputs: [lake/silver/]}
+  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
+  - {name: silver, inputs: [r1_source_set, r1_foundation_manifest], parents: [baseline_reproduction], outputs: [lake/silver/]}
   - {name: eligibility, parents: [silver], outputs: [rebuild/6a/6a-rebuild-20261004-r1/eligibility/]}
   - {name: step5_comparison, inputs: [admission_decisions, step5_historical_groups], parents: [eligibility], outputs: [rebuild/6a/6a-rebuild-20261004-r1/comparison/]}
   - {name: gold, inputs: [admission_decisions, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/]}
