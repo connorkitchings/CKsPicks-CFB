@@ -957,7 +957,7 @@ END $$;
 
 GRANT USAGE ON SCHEMA public TO cks_web;
 GRANT SELECT ON games, game_results, prediction_runs, predictions,
-    prediction_grades, market_snapshots, system_stats, historical_model_context,
+    prediction_grades, market_snapshots, market_quotes, system_stats, historical_model_context,
     current_week, site_week_selections, v5_rating_snapshots,
     prediction_market_selections, game_venues, team_season_stats,
     matchup_data_publications, team_game_measurements, team_possession_stats,
