@@ -1,0 +1,56 @@
+{
+  "baseline_reasons": {
+    "exceeds_repaired_final": 29,
+    "impossible_score_increment": 21,
+    "none": 1843,
+    "score_regression_or_nonintegral": 3,
+    "score_regression_rollback": 138
+  },
+  "baseline_scoring_events": 2034,
+  "candidate_scoring_events": 1870,
+  "changed_games": 98,
+  "completed_games": 215,
+  "groups": {
+    "by_cause": {
+      "category_possession_reassignment": 19,
+      "dip_restore": 97,
+      "final_cap": 3,
+      "incomplete_stream": 6,
+      "other": 3,
+      "restoration_gt8": 4
+    },
+    "by_channel": {
+      "attribution_only": 122,
+      "points_recovery": 10
+    },
+    "by_season": {
+      "2026": 132
+    },
+    "groups": 132,
+    "points_recovered": 147.0,
+    "team_games": 119
+  },
+  "inputs": {
+    "byplay": {
+      "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
+      "version_id": "443019a9a7b6a2454a4af4ac"
+    },
+    "game_outcomes": {
+      "content_sha": "9042bfa59063efa2420992c0e49ac50652057d2c2c1d90a5089a2b4ee8641b26",
+      "version_id": "0ad054089d8fd6883e935417"
+    },
+    "games": {
+      "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+      "version_id": "31a337df6cf49f1578457ec6"
+    }
+  },
+  "r1_unresolved_team_games": 1,
+  "week_bundles_of_changed_games": 5,
+  "weeks": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ]
+}

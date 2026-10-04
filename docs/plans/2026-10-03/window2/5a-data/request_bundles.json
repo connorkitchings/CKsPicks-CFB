@@ -1,0 +1,15 @@
+{
+  "basis": "distinct (season, season_type, week) from the repair-pinned fbs_involved_games; all 8,936 population games matched",
+  "bundles_all_corpus": 162,
+  "bundles_changed": 153,
+  "changed_games": 2324,
+  "changed_games_by_season_type": {
+    "postseason": 88,
+    "regular": 2236
+  },
+  "games_by_season_type": {
+    "postseason": 415,
+    "regular": 8521
+  },
+  "games_in_scope": 8936
+}

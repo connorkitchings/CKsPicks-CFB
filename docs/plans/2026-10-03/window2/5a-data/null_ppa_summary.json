@@ -1,0 +1,331 @@
+{
+  "early_down_epa": {
+    "2015": {
+      "null_play_rate": 0.0008,
+      "null_plays": 73,
+      "plays": 86808,
+      "team_games": 1726,
+      "withheld_rate": 0.0365,
+      "withheld_team_games": 63
+    },
+    "2016": {
+      "null_play_rate": 0.0007,
+      "null_plays": 65,
+      "plays": 86813,
+      "team_games": 1714,
+      "withheld_rate": 0.0368,
+      "withheld_team_games": 63
+    },
+    "2017": {
+      "null_play_rate": 0.0013,
+      "null_plays": 112,
+      "plays": 86417,
+      "team_games": 1738,
+      "withheld_rate": 0.0575,
+      "withheld_team_games": 100
+    },
+    "2018": {
+      "null_play_rate": 0.0011,
+      "null_plays": 95,
+      "plays": 87200,
+      "team_games": 1762,
+      "withheld_rate": 0.0488,
+      "withheld_team_games": 86
+    },
+    "2019": {
+      "null_play_rate": 0.0011,
+      "null_plays": 93,
+      "plays": 86179,
+      "team_games": 1774,
+      "withheld_rate": 0.0496,
+      "withheld_team_games": 88
+    },
+    "2021": {
+      "null_play_rate": 0.0024,
+      "null_plays": 202,
+      "plays": 85500,
+      "team_games": 1774,
+      "withheld_rate": 0.0772,
+      "withheld_team_games": 137
+    },
+    "2022": {
+      "null_play_rate": 0.0018,
+      "null_plays": 153,
+      "plays": 86316,
+      "team_games": 1792,
+      "withheld_rate": 0.0592,
+      "withheld_team_games": 106
+    },
+    "2023": {
+      "null_play_rate": 0.0014,
+      "null_plays": 120,
+      "plays": 85635,
+      "team_games": 1820,
+      "withheld_rate": 0.0484,
+      "withheld_team_games": 88
+    },
+    "2024": {
+      "null_play_rate": 0.0044,
+      "null_plays": 380,
+      "plays": 86206,
+      "team_games": 1837,
+      "withheld_rate": 0.0446,
+      "withheld_team_games": 82
+    },
+    "2025": {
+      "null_play_rate": 0.0011,
+      "null_plays": 100,
+      "plays": 87478,
+      "team_games": 1868,
+      "withheld_rate": 0.0407,
+      "withheld_team_games": 76
+    }
+  },
+  "eligible_epa": {
+    "2015": {
+      "null_play_rate": 0.001,
+      "null_plays": 116,
+      "plays": 112586,
+      "team_games": 1726,
+      "withheld_rate": 0.0504,
+      "withheld_team_games": 87
+    },
+    "2016": {
+      "null_play_rate": 0.0008,
+      "null_plays": 89,
+      "plays": 112328,
+      "team_games": 1714,
+      "withheld_rate": 0.049,
+      "withheld_team_games": 84
+    },
+    "2017": {
+      "null_play_rate": 0.0015,
+      "null_plays": 170,
+      "plays": 111943,
+      "team_games": 1738,
+      "withheld_rate": 0.0806,
+      "withheld_team_games": 140
+    },
+    "2018": {
+      "null_play_rate": 0.0011,
+      "null_plays": 128,
+      "plays": 113004,
+      "team_games": 1762,
+      "withheld_rate": 0.0664,
+      "withheld_team_games": 117
+    },
+    "2019": {
+      "null_play_rate": 0.0012,
+      "null_plays": 135,
+      "plays": 111618,
+      "team_games": 1774,
+      "withheld_rate": 0.0699,
+      "withheld_team_games": 124
+    },
+    "2021": {
+      "null_play_rate": 0.0024,
+      "null_plays": 270,
+      "plays": 110978,
+      "team_games": 1774,
+      "withheld_rate": 0.1009,
+      "withheld_team_games": 179
+    },
+    "2022": {
+      "null_play_rate": 0.0019,
+      "null_plays": 214,
+      "plays": 112389,
+      "team_games": 1792,
+      "withheld_rate": 0.0765,
+      "withheld_team_games": 137
+    },
+    "2023": {
+      "null_play_rate": 0.0015,
+      "null_plays": 172,
+      "plays": 111566,
+      "team_games": 1820,
+      "withheld_rate": 0.0648,
+      "withheld_team_games": 118
+    },
+    "2024": {
+      "null_play_rate": 0.0045,
+      "null_plays": 508,
+      "plays": 112225,
+      "team_games": 1837,
+      "withheld_rate": 0.0572,
+      "withheld_team_games": 105
+    },
+    "2025": {
+      "null_play_rate": 0.0013,
+      "null_plays": 151,
+      "plays": 114428,
+      "team_games": 1868,
+      "withheld_rate": 0.06,
+      "withheld_team_games": 112
+    }
+  },
+  "epa_pass": {
+    "2015": {
+      "null_play_rate": 0.0009,
+      "null_plays": 51,
+      "plays": 53756,
+      "team_games": 1726,
+      "withheld_rate": 0.0238,
+      "withheld_team_games": 41
+    },
+    "2016": {
+      "null_play_rate": 0.0007,
+      "null_plays": 35,
+      "plays": 53509,
+      "team_games": 1714,
+      "withheld_rate": 0.0198,
+      "withheld_team_games": 34
+    },
+    "2017": {
+      "null_play_rate": 0.0015,
+      "null_plays": 80,
+      "plays": 53381,
+      "team_games": 1738,
+      "withheld_rate": 0.0409,
+      "withheld_team_games": 71
+    },
+    "2018": {
+      "null_play_rate": 0.0011,
+      "null_plays": 62,
+      "plays": 54137,
+      "team_games": 1762,
+      "withheld_rate": 0.0335,
+      "withheld_team_games": 59
+    },
+    "2019": {
+      "null_play_rate": 0.0014,
+      "null_plays": 74,
+      "plays": 54282,
+      "team_games": 1774,
+      "withheld_rate": 0.0395,
+      "withheld_team_games": 70
+    },
+    "2021": {
+      "null_play_rate": 0.002,
+      "null_plays": 110,
+      "plays": 54766,
+      "team_games": 1774,
+      "withheld_rate": 0.0434,
+      "withheld_team_games": 77
+    },
+    "2022": {
+      "null_play_rate": 0.0018,
+      "null_plays": 100,
+      "plays": 56153,
+      "team_games": 1792,
+      "withheld_rate": 0.0324,
+      "withheld_team_games": 58
+    },
+    "2023": {
+      "null_play_rate": 0.0013,
+      "null_plays": 71,
+      "plays": 55357,
+      "team_games": 1820,
+      "withheld_rate": 0.0258,
+      "withheld_team_games": 47
+    },
+    "2024": {
+      "null_play_rate": 0.0038,
+      "null_plays": 212,
+      "plays": 55352,
+      "team_games": 1837,
+      "withheld_rate": 0.0234,
+      "withheld_team_games": 43
+    },
+    "2025": {
+      "null_play_rate": 0.0008,
+      "null_plays": 42,
+      "plays": 55459,
+      "team_games": 1868,
+      "withheld_rate": 0.0198,
+      "withheld_team_games": 37
+    }
+  },
+  "epa_rush": {
+    "2015": {
+      "null_play_rate": 0.001,
+      "null_plays": 57,
+      "plays": 58754,
+      "team_games": 1726,
+      "withheld_rate": 0.0267,
+      "withheld_team_games": 46
+    },
+    "2016": {
+      "null_play_rate": 0.0008,
+      "null_plays": 49,
+      "plays": 58741,
+      "team_games": 1714,
+      "withheld_rate": 0.0268,
+      "withheld_team_games": 46
+    },
+    "2017": {
+      "null_play_rate": 0.0015,
+      "null_plays": 86,
+      "plays": 58497,
+      "team_games": 1738,
+      "withheld_rate": 0.046,
+      "withheld_team_games": 80
+    },
+    "2018": {
+      "null_play_rate": 0.0011,
+      "null_plays": 64,
+      "plays": 58802,
+      "team_games": 1762,
+      "withheld_rate": 0.0346,
+      "withheld_team_games": 61
+    },
+    "2019": {
+      "null_play_rate": 0.001,
+      "null_plays": 59,
+      "plays": 57289,
+      "team_games": 1774,
+      "withheld_rate": 0.0316,
+      "withheld_team_games": 56
+    },
+    "2021": {
+      "null_play_rate": 0.0028,
+      "null_plays": 158,
+      "plays": 56135,
+      "team_games": 1774,
+      "withheld_rate": 0.0676,
+      "withheld_team_games": 120
+    },
+    "2022": {
+      "null_play_rate": 0.002,
+      "null_plays": 114,
+      "plays": 56138,
+      "team_games": 1792,
+      "withheld_rate": 0.0536,
+      "withheld_team_games": 96
+    },
+    "2023": {
+      "null_play_rate": 0.0018,
+      "null_plays": 100,
+      "plays": 56118,
+      "team_games": 1820,
+      "withheld_rate": 0.044,
+      "withheld_team_games": 80
+    },
+    "2024": {
+      "null_play_rate": 0.0052,
+      "null_plays": 293,
+      "plays": 56769,
+      "team_games": 1837,
+      "withheld_rate": 0.043,
+      "withheld_team_games": 79
+    },
+    "2025": {
+      "null_play_rate": 0.0014,
+      "null_plays": 80,
+      "plays": 58067,
+      "team_games": 1868,
+      "withheld_rate": 0.0337,
+      "withheld_team_games": 63
+    }
+  },
+  "unmatched_eligible_plays": 0
+}

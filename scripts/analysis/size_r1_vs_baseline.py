@@ -45,6 +45,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repair-manifest-uri", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--expected-scoring-events", type=int, default=None)
+    parser.add_argument(
+        "--reuse-baseline",
+        action="store_true",
+        help="Reuse baseline_events.parquet from --output-dir if present",
+    )
     args = parser.parse_args(argv)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     start = time.time()
@@ -65,9 +70,15 @@ def main(argv: list[str] | None = None) -> int:
         start,
     )
 
-    _, base_events = pm.build_possession_ledger(
-        byplay=byplay, population=population, outcomes=outcomes, scope="historical"
-    )
+    baseline_cache = args.output_dir / "baseline_events.parquet"
+    if args.reuse_baseline and baseline_cache.exists():
+        base_events = pd.read_parquet(baseline_cache)
+        _log(f"baseline ledger reused from {baseline_cache.name}", start)
+    else:
+        _, base_events = pm.build_possession_ledger(
+            byplay=byplay, population=population, outcomes=outcomes, scope="historical"
+        )
+        base_events.to_parquet(baseline_cache)
     _log(f"baseline ledger: {len(base_events)} scoring events", start)
     if (
         args.expected_scoring_events is not None
@@ -80,8 +91,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     canonical = pm._canonicalize_byplay_teams(byplay)
+    # Same certified finals the ledger uses: population joined to the game outcomes.
+    pop_scores = population
+    if "home_points" not in population.columns:
+        pop_scores = population.merge(
+            outcomes[
+                ["season", "game_id", "home_points", "away_points"]
+            ].drop_duplicates(["season", "game_id"]),
+            on=["season", "game_id"],
+            how="left",
+        )
     finals: dict[tuple[int, str], float] = {}
-    for row in population.itertuples(index=False):
+    for row in pop_scores.itertuples(index=False):
         if getattr(row, "outcome_valid", False):
             if pd.notna(row.home_points):
                 finals[(int(row.game_id), str(row.home_team))] = float(row.home_points)
@@ -98,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
         outcomes=outcomes,
         scope="historical",
     )
+    cand_events.to_parquet(args.output_dir / "candidate_events.parquet")
     _log(f"candidate ledger: {len(cand_events)} scoring events", start)
 
     restoration = r1.restoration_jumps(canonical)

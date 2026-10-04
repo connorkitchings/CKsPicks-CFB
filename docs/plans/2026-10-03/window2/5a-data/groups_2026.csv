@@ -1,0 +1,133 @@
+group_id,season,game_id,team,events,baseline_points,candidate_points,net_points,channel,primary_cause,flag_incomplete_stream,flag_restoration_gt8,flag_dip_restore,flag_final_cap,flag_conversion_reassignment,flag_category_possession_reassignment
+d2669463eed95da1,2026,401856634,Alabama,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+6a796b815ed04f61,2026,401856636,Baylor,2,6.0,6.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+096d3c0910f8912e,2026,401856660,Clemson,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+919c61077efa4c76,2026,401856660,LSU,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+832615d03fe64d5d,2026,401856661,Ole Miss,5,21.0,21.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+5192ac4aae1c997d,2026,401856667,Texas,5,21.0,21.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+f34e02539d8d1d7a,2026,401856670,Utah,4,15.0,15.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+975da905a7d00c17,2026,401856671,Auburn,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+43c0e568ff3db461,2026,401856671,Auburn,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+bd0d2a9a9e9499cd,2026,401856673,Georgia,4,14.0,14.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+98bc451fa852f81f,2026,401856674,Alabama,3,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e3639b94df745b43,2026,401856674,Alabama,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+b10765052da191df,2026,401856676,Charlotte,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+cd48cc6e5f444ac5,2026,401856676,Ole Miss,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+b4d41eb6647b1e27,2026,401856681,Tennessee,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+900546ebb0fc8d09,2026,401856682,Ohio State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+212fe0571122ec44,2026,401856683,Arizona State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+46d50720d01f3eb2,2026,401856684,Vanderbilt,2,14.0,14.0,0.0,attribution_only,other,False,False,False,False,False,False
+6d880e199883ad26,2026,401856687,Florida,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+bd935ceaaf8bce0d,2026,401856688,Ole Miss,2,8.0,8.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+fb774274a1bd3f14,2026,401856691,Mississippi State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+d39b74e355140cd0,2026,401856691,South Carolina,6,13.0,13.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3970727c047b3036,2026,401856692,Tennessee,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+63418aa8ca49386c,2026,401856692,Tennessee,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+d51e216f401b49b0,2026,401856693,Texas,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+bb9630eeb0314b37,2026,401856695,Vanderbilt,1,0.0,7.0,7.0,points_recovery,dip_restore,False,False,True,False,False,False
+c3e595f29b519468,2026,401856696,Alabama,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+f7b5af406fc57986,2026,401856698,Vanderbilt,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+46d2069d55385706,2026,401856700,Georgia,5,21.0,21.0,0.0,attribution_only,dip_restore,False,False,True,False,False,False
+999a799649dda337,2026,401856702,LSU,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+13d6541d21c189fe,2026,401856766,North Carolina,3,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3c1c3007490b0b3c,2026,401856766,North Carolina,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9b9a4eaa2cd06f13,2026,401856776,Colorado,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+aedc4c858d142bd3,2026,401856777,Cincinnati,4,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+fb0fafdb3696398c,2026,401856780,West Virginia,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+28eaef5bff2b6d0a,2026,401856783,Oregon State,4,11.0,11.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+b6ca3d293a24b3ff,2026,401856783,Texas Tech,2,7.0,7.0,0.0,attribution_only,restoration_gt8,False,True,False,False,False,True
+612a9442bb847835,2026,401856790,Pittsburgh,2,2.0,2.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+83b01c675a1fed0e,2026,401856790,UCF,2,0.0,7.0,7.0,points_recovery,incomplete_stream,True,False,False,False,False,True
+007af3e77b26fe47,2026,401856792,Kansas State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+d8686510ef49d099,2026,401856793,Northern Illinois,2,0.0,7.0,7.0,points_recovery,dip_restore,False,False,True,False,False,False
+04744bceb0481b4b,2026,401856797,Cincinnati,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+5ea44866fb33f76e,2026,401856801,Utah,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+914b911a1c498227,2026,401856806,Georgia Southern,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+37b6474b1eb1801a,2026,401856806,Houston,8,28.0,28.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9951e588085ab064,2026,401856813,Baylor,3,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3eb9540301b235d6,2026,401856816,Iowa State,7,17.0,17.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+00d83c2cf9b797f2,2026,401856816,Utah,1,6.0,7.0,1.0,points_recovery,restoration_gt8,False,True,False,False,False,False
+9f1f502b1d7b7b88,2026,401858202,NC State,2,8.0,8.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+797d5cba088c03e1,2026,401858204,Wake Forest,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+1f552616f7e24890,2026,401858206,Miami,12,7.0,45.0,38.0,points_recovery,incomplete_stream,True,True,True,False,False,True
+b214bf07c4d194d7,2026,401858206,Stanford,3,0.0,6.0,6.0,points_recovery,incomplete_stream,True,False,False,False,False,True
+db017d9a812ccd96,2026,401858209,Duke,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+03958ee0ba0ff948,2026,401858210,UCLA,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+c1db407b767cd0c7,2026,401858217,Duke,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+eb09b815198e320d,2026,401858219,Clemson,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+0fc70515c736e7e0,2026,401858221,Old Dominion,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+99e7f574d76b0256,2026,401858221,Virginia Tech,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+1882a1d6f3bb39dd,2026,401858230,Louisville,4,14.0,14.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3d77e05b7363d7a1,2026,401858230,Louisville,2,6.0,6.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+52d63ce265eaae52,2026,401858230,SMU,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+a458d553b4cdb604,2026,401858234,Clemson,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+7775f818709092b3,2026,401858238,Miami,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+55ae223669c45a4c,2026,401858238,Miami,4,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9bf56572accea33c,2026,401858240,Georgia Tech,5,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e57c313b1ea60cb0,2026,401858240,Stanford,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+50326d3f9be04621,2026,401858424,UAB,3,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+66de512265d0cab7,2026,401858429,Michigan State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+53cb4226a7c40590,2026,401858429,Toledo,3,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+eb935e2c0f58d3c4,2026,401858429,Toledo,2,6.0,6.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+36b0854b99781c4f,2026,401858433,Boise State,4,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e72ad3663bf2c5d5,2026,401858433,Boise State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+dfa2dc5a7ebcb9e4,2026,401858436,USC,7,0.0,39.0,39.0,points_recovery,incomplete_stream,True,True,True,False,False,True
+76021867fa25d045,2026,401858438,Notre Dame,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+ed77e13ad9e42eb1,2026,401858438,Notre Dame,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3d4521d37f70cdec,2026,401858445,Louisiana,4,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+47253192ffcbe2bd,2026,401858445,USC,3,7.0,7.0,0.0,attribution_only,restoration_gt8,False,True,True,False,False,True
+7ec3b14577d6b630,2026,401858446,Washington,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+93c5fb91e9f602b1,2026,401858453,Notre Dame,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+83db4a68e2f77586,2026,401858460,Eastern Michigan,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+c6190cb64c8a8a8b,2026,401858460,Wisconsin,2,8.0,8.0,0.0,attribution_only,restoration_gt8,False,True,False,False,False,True
+c7ea4bfd57cbd83d,2026,401858462,UCLA,5,10.0,10.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3718ec7fd6f0855c,2026,401858464,Nebraska,2,1.0,14.0,13.0,points_recovery,incomplete_stream,True,True,False,False,False,True
+01b7adab36ccf401,2026,401858465,Ohio State,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+d35ba85eb74f4a87,2026,401860878,Colorado State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+f4282f39256180de,2026,401860878,Wyoming,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+df991bbdbec706b3,2026,401860881,Memphis,2,10.0,10.0,0.0,attribution_only,other,False,False,False,False,False,False
+8064f2c6fc4ed679,2026,401860881,Memphis,2,0.0,0.0,0.0,attribution_only,final_cap,False,False,False,True,False,True
+4140e9754e81d5f2,2026,401860884,UT San Antonio,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+b266538c2d068bb5,2026,401860887,James Madison,3,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e61c8c894f83672b,2026,401860893,San Diego State,2,6.0,6.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+bc2a5dc62e358b59,2026,401860895,Oregon State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e1b7885a264b3fb5,2026,401861963,Southern Mississippi,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+8122f33de0a06c5f,2026,401861970,Miami (OH),9,1.0,24.0,23.0,points_recovery,incomplete_stream,True,True,True,False,False,True
+132b5ad29b05be91,2026,401862693,Memphis,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+6285bc2a73b4a04e,2026,401862699,Florida International,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+c06f4e38bfa9d2a5,2026,401862702,Army,2,10.0,10.0,0.0,attribution_only,other,False,False,False,False,False,False
+512476c539ca4b11,2026,401862702,Army,11,0.0,0.0,0.0,attribution_only,final_cap,False,False,False,True,False,True
+28f354916f3e7cba,2026,401862703,Navy,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+8a1962d2ec336d6a,2026,401862705,North Texas,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9bb098fe9dcabc83,2026,401862705,UNLV,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9748d96f71461ded,2026,401862710,East Carolina,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+167357d5e180a726,2026,401862774,Temple,2,6.0,6.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+c99afbbe716e26f2,2026,401862776,Louisiana,7,8.0,8.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3f5928b407130ff2,2026,401862782,Florida Atlantic,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+b81b71165e0c8bd5,2026,401862782,Louisiana Monroe,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+9817fe768351f9b0,2026,401862784,Tulane,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+521d9e018bd7e54a,2026,401864432,Nevada,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+ee785950d55aa02c,2026,401864443,Middle Tennessee,2,4.0,4.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+fc880bef073567a2,2026,401864443,Middle Tennessee,16,0.0,0.0,0.0,attribution_only,final_cap,False,False,False,True,False,True
+570d724803b0aa66,2026,401864494,San Jose State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+fc4900f05e4ec80c,2026,401864498,New Mexico,3,8.0,8.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+191ee49b95911733,2026,401864509,Air Force,2,6.0,6.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+e5b85fcdc6ece13a,2026,401864509,Nevada,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+a923e32c52af6c15,2026,401864510,Hawai_i,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+f4347b88f6c7f424,2026,401864510,Wyoming,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+6ae28714a8064aa8,2026,401864512,UNLV,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+10b0b648d3a65500,2026,401864570,Florida State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+e4e9850e45044861,2026,401864571,Appalachian State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+aa043571dfef5146,2026,401864572,NC State,2,7.0,7.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+adef5b22f77b5b09,2026,401864575,South Alabama,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+ead1811f754760ea,2026,401864579,New Mexico,5,15.0,15.0,0.0,attribution_only,category_possession_reassignment,False,False,False,False,False,True
+20dd36b5b5d04086,2026,401864579,New Mexico State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+7393fcface2cf31c,2026,401864579,New Mexico State,1,0.0,6.0,6.0,points_recovery,dip_restore,False,False,True,False,False,False
+534b0491483fcd60,2026,401866408,Sacramento State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+cfd92c1a21c7c3c8,2026,401866423,South Alabama,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+8175c8d65790cec8,2026,401866425,Ball State,2,6.0,6.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+7de3d141971ef843,2026,401867796,Louisiana Tech,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+16bedd79cf6c3527,2026,401869931,Kennesaw State,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+b33c6232cd75abef,2026,401869960,James Madison,2,7.0,7.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+fdc892692baf8b6e,2026,401869960,Liberty,3,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
+3dbe385d1e9cb33e,2026,401871048,Jacksonville State,2,3.0,3.0,0.0,attribution_only,dip_restore,False,False,True,False,False,True
