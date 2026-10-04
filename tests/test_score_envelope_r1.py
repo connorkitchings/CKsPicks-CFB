@@ -227,3 +227,11 @@ def test_an_event_present_on_one_side_only_is_a_change_and_summary_counts_by_dim
         2026: 1
     }
     assert r1.summarize_groups(r1.changed_groups(base, base.copy()))["groups"] == 0
+
+
+def test_a_team_game_without_a_certified_final_is_left_unchanged():
+    plays = _plays(
+        [(2026, 1, 1, 1, 1, "A", "B", 7, 0), (2026, 1, 1, 2, 1, "A", "B", 3, 0)]
+    )
+    out, unresolved = r1.apply_r1(plays, {(1, "B"): 0.0})
+    assert list(out["offense_score"]) == [7, 3] and unresolved == set()

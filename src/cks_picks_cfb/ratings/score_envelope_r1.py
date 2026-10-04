@@ -58,7 +58,11 @@ def apply_r1(
             if not valid.any():
                 continue
             values = raw[valid]
-            final = finals[(int(game_id), team)]
+            final = finals.get((int(game_id), team))
+            if final is None:
+                # No certified final: R1 cannot cap or test resolution, so the rows are
+                # left exactly as the baseline sees them.
+                continue
             envelope = np.minimum(np.maximum.accumulate(values), final)
             if values.max() < final:
                 unresolved.add((int(game_id), team))
