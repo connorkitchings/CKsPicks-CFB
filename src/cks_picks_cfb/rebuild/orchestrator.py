@@ -203,16 +203,16 @@ class Orchestrator:
         built: dict[str, str] = {}
         for name in self.order:
             stage = self.stages[name]
-            context = self._context(stage, record["resolved_inputs"])
             existing = self._load_manifest(name)
+            if existing is None and name not in wanted:
+                continue
+            context = self._context(stage, record["resolved_inputs"])
             if existing is not None:
                 if existing["preflight_sha"] != record["manifest_sha256"] or existing[
                     "parents"
                 ] != dict(context.parents):
                     raise GateError(f"stage {name}: conflicting inputs for built stage")
                 built[name] = existing["manifest_sha256"]
-                continue
-            if name not in wanted:
                 continue
             guard = (
                 contextlib.nullcontext()
@@ -240,12 +240,19 @@ class Orchestrator:
             built[name] = manifest["manifest_sha256"]
         return built
 
-    def verify(self) -> dict[str, Any]:
-        """Re-hash staged bytes and run each stage's independent verifier."""
+    def verify(self, only: Iterable[str] | None = None) -> dict[str, Any]:
+        """Re-hash staged bytes and run each stage's independent verifier.
+
+        A partial verify (``only``) reports those stages but is never persisted, so
+        it can never satisfy publication; only a full verify writes the record.
+        """
         record = self._preflight()
+        wanted = set(only) if only is not None else set(self.order)
         results: dict[str, Any] = {}
         passed = True
         for name in self.order:
+            if name not in wanted:
+                continue
             manifest = self._load_manifest(name)
             if manifest is None:
                 results[name] = {"manifest_sha": None, "problems": ["stage not built"]}
@@ -271,9 +278,11 @@ class Orchestrator:
                 "code_sha": self.code_sha,
                 "stages": results,
                 "passed": passed,
+                "partial": only is not None,
             }
         )
-        self._put(self.VERIFY, _canonical_bytes(verdict))
+        if only is None:
+            self._put(self.VERIFY, _canonical_bytes(verdict))
         return verdict
 
     def publish(
@@ -290,6 +299,7 @@ class Orchestrator:
         verify_signed_payload(verdict, label="verify record")
         if (
             not verdict["passed"]
+            or verdict.get("partial")
             or verdict["preflight_sha"] != record["manifest_sha256"]
         ):
             raise GateError("publish refused: verification did not pass")

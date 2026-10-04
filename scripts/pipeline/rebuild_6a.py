@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.operation == "build":
         print(json.dumps(orchestrator.build(args.stage)))
     elif args.operation == "verify":
-        verdict = orchestrator.verify()
+        verdict = orchestrator.verify(args.stage)
         print(
             json.dumps({"passed": verdict["passed"], "sha": verdict["manifest_sha256"]})
         )

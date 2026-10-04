@@ -475,3 +475,23 @@ def test_stage_read_input_is_declared_and_hash_checked(tmp_path):
     )
     orch.build()
     assert seen["data"] == b"decision-bytes"
+
+
+def test_partial_build_leaves_later_stages_unbuilt_without_error(tmp_path):
+    orch, _ = _harness(tmp_path)
+    assert list(orch.build(only=["a"])) == ["a"]
+    assert not orch.staging.exists("stages/b/manifest.json")
+    assert list(orch.build(only=["a"])) == ["a"]  # identical resume
+    assert set(orch.build()) == {"a", "b"}
+
+
+def test_partial_verify_is_not_persisted_and_cannot_publish(tmp_path):
+    orch, guard = _harness(tmp_path)
+    orch.build(only=["a"])
+    partial = orch.verify(["a"])
+    assert partial["partial"] and partial["passed"]
+    assert not orch.staging.exists("verify.json")
+    with pytest.raises(GateError, match="verify record"):
+        orch.publish(guard)
+    orch.build()
+    assert orch.verify()["passed"]  # full verify still persists after a partial one
