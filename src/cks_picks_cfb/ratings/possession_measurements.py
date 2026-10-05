@@ -93,6 +93,68 @@ def _required(frame: pd.DataFrame, columns: set[str], label: str) -> None:
         raise PossessionMeasurementError(f"{label} is missing columns: {missing}")
 
 
+_INJECTED_ADMISSIONS = frozenset(
+    {
+        "baseline_unchanged",
+        "corroborated",
+        "reverted_unverified",
+        "reverted_contradicted",
+    }
+)
+
+
+def _validated_injected_ledger(
+    possessions: pd.DataFrame, scoring: pd.DataFrame, population: pd.DataFrame
+) -> pd.DataFrame:
+    """Check an externally supplied ledger before it replaces the rebuilt baseline."""
+    _required(
+        possessions,
+        {
+            "season",
+            "game_id",
+            "drive_number",
+            "offense",
+            "possession_eligible",
+            "mixed_eligibility",
+            "period_class",
+            "quality_reason",
+        },
+        "injected possessions",
+    )
+    _required(
+        scoring,
+        {
+            "season",
+            "game_id",
+            "team",
+            "source_event_id",
+            "scoring_category",
+            "score_increment",
+            "quality_reason",
+        },
+        "injected scoring events",
+    )
+    if possessions.duplicated(["season", "game_id", "drive_number", "offense"]).any():
+        raise PossessionMeasurementError("injected possessions repeat an identity")
+    if scoring.duplicated(["season", "game_id", "source_event_id", "team"]).any():
+        raise PossessionMeasurementError("injected scoring events repeat an identity")
+    increments = pd.to_numeric(scoring["score_increment"], errors="coerce").dropna()
+    if ((increments < 0) | (increments > 8)).any():
+        raise PossessionMeasurementError("injected increments are outside 0-8")
+    if (
+        "admission" in scoring.columns
+        and not scoring["admission"].isin(_INJECTED_ADMISSIONS).all()
+    ):
+        raise PossessionMeasurementError("injected ledger has an unknown admission")
+    seasons = set(population["season"].astype(int))
+    for label, frame in (("possessions", possessions), ("scoring events", scoring)):
+        if set(frame["season"].astype(int)) - seasons:
+            raise PossessionMeasurementError(
+                f"injected {label} contain seasons outside the population"
+            )
+    return scoring
+
+
 def _canonicalize_byplay_teams(byplay: pd.DataFrame) -> pd.DataFrame:
     """Align provider play labels with the Repair population's team identities."""
     result = byplay.copy()
@@ -580,21 +642,35 @@ def build_measurements(
     outcomes: pd.DataFrame | None = None,
     progress: Callable[..., None] | None = None,
     scope: str = "historical",
+    possessions: pd.DataFrame | None = None,
+    scoring_events: pd.DataFrame | None = None,
 ) -> PossessionMeasurementResult:
-    """Build both role measurements while preserving every scoreable game row."""
+    """Build both role measurements while preserving every scoreable game row.
+
+    ``possessions`` and ``scoring_events`` may be supplied together to use an externally
+    verified ledger (for example the admitted scoring ledger) instead of rebuilding the
+    baseline from ``byplay``; omit both for the unchanged default.
+    """
     if scope not in ("historical", "season_2026"):
         raise PossessionMeasurementError(
             f"measurement build has unknown scope: {scope}"
         )
     row_timing = LIVE_TIMING if scope == "season_2026" else RECONSTRUCTED_TIMING
     byplay = _canonicalize_byplay_teams(byplay)
-    possessions, scoring = build_possession_ledger(
-        byplay=byplay,
-        population=population,
-        outcomes=outcomes,
-        progress=progress,
-        scope=scope,
-    )
+    if (possessions is None) != (scoring_events is None):
+        raise PossessionMeasurementError(
+            "possessions and scoring_events must be supplied together"
+        )
+    if possessions is None:
+        possessions, scoring = build_possession_ledger(
+            byplay=byplay,
+            population=population,
+            outcomes=outcomes,
+            progress=progress,
+            scope=scope,
+        )
+    else:
+        scoring = _validated_injected_ledger(possessions, scoring_events, population)
     if progress is not None:
         progress(
             "team_game_measurements",

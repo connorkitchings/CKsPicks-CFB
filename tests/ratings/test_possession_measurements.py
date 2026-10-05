@@ -5,8 +5,10 @@ from __future__ import annotations
 import pandas as pd
 
 from cks_picks_cfb.ratings.possession_measurements import (
+    PossessionMeasurementError,
     _adjust,
     build_measurements,
+    build_possession_ledger,
     build_replay,
     replay_partitions,
 )
@@ -397,3 +399,70 @@ def test_four_pass_adjustment_matches_the_league_centered_definition():
     # This symmetric fixture alternates between league center and raw values;
     # the required fourth pass therefore returns to the original values.
     assert adjusted == raw
+
+
+def test_injected_ledger_matches_the_default_and_rejects_bad_inputs():
+    default = build_measurements(byplay=_plays(), population=_population())
+    possessions, scoring = build_possession_ledger(
+        byplay=_plays(), population=_population()
+    )
+    injected = build_measurements(
+        byplay=_plays(),
+        population=_population(),
+        possessions=possessions,
+        scoring_events=scoring,
+    )
+    pd.testing.assert_frame_equal(default.observations, injected.observations)
+    pd.testing.assert_frame_equal(default.coverage, injected.coverage)
+
+    for kwargs in ({"possessions": possessions}, {"scoring_events": scoring}):
+        try:
+            build_measurements(byplay=_plays(), population=_population(), **kwargs)
+        except PossessionMeasurementError as error:
+            assert "together" in str(error)
+        else:
+            raise AssertionError("one-sided injection was accepted")
+
+    duplicated = pd.concat([scoring, scoring.iloc[:1]], ignore_index=True)
+    candidate = scoring.assign(admission="candidate")
+    wrong_season = scoring.assign(season=1999)
+    for bad in (duplicated, candidate, wrong_season):
+        try:
+            build_measurements(
+                byplay=_plays(),
+                population=_population(),
+                possessions=possessions,
+                scoring_events=bad,
+            )
+        except PossessionMeasurementError:
+            continue
+        raise AssertionError("an invalid injected ledger was accepted")
+
+
+def test_injected_admitted_points_change_only_the_numerators():
+    possessions, scoring = build_possession_ledger(
+        byplay=_plays(), population=_population()
+    )
+    bumped = scoring.copy()
+    target = bumped[
+        (bumped["team"] == "Alpha")
+        & (bumped["scoring_category"] == "eligible_regulation_offense")
+    ].index[0]
+    bumped.loc[target, "score_increment"] = bumped.loc[target, "score_increment"] + 1
+    base = build_measurements(
+        byplay=_plays(),
+        population=_population(),
+        possessions=possessions,
+        scoring_events=scoring,
+    ).observations
+    changed = build_measurements(
+        byplay=_plays(),
+        population=_population(),
+        possessions=possessions,
+        scoring_events=bumped,
+    ).observations
+    key = ["game_id", "team", "unit_role"]
+    ppp_b = base[base["measurement_id"].eq("ppp")].set_index(key)
+    ppp_c = changed[changed["measurement_id"].eq("ppp")].set_index(key)
+    assert (ppp_c["denominator"] == ppp_b["denominator"]).all()
+    assert (ppp_c["numerator"] != ppp_b["numerator"]).any()

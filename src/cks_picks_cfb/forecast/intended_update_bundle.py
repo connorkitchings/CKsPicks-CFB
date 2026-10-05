@@ -91,11 +91,24 @@ def earlier_only_calibration(frame: pd.DataFrame, *, target: str) -> tuple[float
     return max(float(np.mean(np.square(errors))), 1e-6), len(errors)
 
 
-def fit_intended_update_bundle(
-    accepted_features: pd.DataFrame, repaired_states: pd.DataFrame
-) -> tuple[dict[str, object], pd.DataFrame, Mapping[str, int]]:
-    """Export a fixed inference bundle and its precise historical fit frame."""
-    frame = replace_historical_ratings(accepted_features, repaired_states)
+def assert_pre2026_frame(
+    frame: pd.DataFrame, *, seasons: tuple[int, ...] = DEVELOPMENT_SEASONS
+) -> None:
+    """Reject any frame that is not exactly the development seasons (no 2020, no 2026)."""
+    present = {int(season) for season in frame["season"]}
+    if present & {2020, 2026}:
+        raise IntendedBundleError("fit frame includes a forbidden season")
+    if present != set(seasons):
+        raise IntendedBundleError(
+            f"fit frame seasons {sorted(present)} differ from {sorted(seasons)}"
+        )
+
+
+def fit_bundle_from_frame(
+    frame: pd.DataFrame,
+) -> tuple[dict[str, object], Mapping[str, int]]:
+    """Calibrate and export the fixed alpha-10 bridge from a complete historical frame."""
+    assert_pre2026_frame(frame)
     variances = {}
     counts = {}
     for target in ("margin", "total"):
@@ -113,6 +126,15 @@ def fit_intended_update_bundle(
     )
     if bundle.get("feature_order") != list(FEATURES):
         raise IntendedBundleError("bridge feature order changed")
+    return bundle, counts
+
+
+def fit_intended_update_bundle(
+    accepted_features: pd.DataFrame, repaired_states: pd.DataFrame
+) -> tuple[dict[str, object], pd.DataFrame, Mapping[str, int]]:
+    """Export a fixed inference bundle and its precise historical fit frame."""
+    frame = replace_historical_ratings(accepted_features, repaired_states)
+    bundle, counts = fit_bundle_from_frame(frame)
     return bundle, frame, counts
 
 

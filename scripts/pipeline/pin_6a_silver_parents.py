@@ -57,12 +57,58 @@ def _entry(storage, dataset: str, version_id: str) -> dict:
     }
 
 
+PARENTS_2026 = ("plays", "games", "teams", "team_game_stats")
+
+
+def pin_2026(storage) -> dict:
+    """Parents of the certified Week 4 2026 byplay, plus its legacy derived refs."""
+    from scripts.research.run_data_first_repair_v2 import SEASON_2026_SILVER_INPUT_SETS
+
+    w4 = SEASON_2026_SILVER_INPUT_SETS["w4"]
+    byplay = w4["byplay"]
+    manifest = json.loads(
+        storage.read_bytes(byplay["uri"].rsplit("/", 1)[0] + "/manifest.json")
+    )
+    found: dict[str, dict] = {}
+    for version_id in manifest["parent_versions"]:
+        for dataset in PARENTS_2026:
+            key = f"lake/silver/dataset={dataset}/version={version_id}/manifest.json"
+            if storage.exists(key):
+                found[dataset] = _entry(storage, dataset, version_id)
+    if set(found) != set(PARENTS_2026) or len(manifest["parent_versions"]) != len(
+        PARENTS_2026
+    ):
+        raise SystemExit(
+            f"2026 w4 byplay has an unexpected parent set: {sorted(found)}"
+        )
+    if found["games"]["version_id"] != w4["games"]["version_id"]:
+        raise SystemExit("2026 w4 games parent differs from the pinned input set")
+    return {
+        "schema_version": "rebuild_6a_silver_2026_parents_v1",
+        "source": "certified Week 4 2026 byplay manifest parents (SEASON_2026_SILVER_INPUT_SETS w4)",
+        "parents": [found[name] for name in PARENTS_2026],
+        "game_outcomes": dict(w4["game_outcomes"]),
+        "legacy_comparison": {
+            "byplay": dict(w4["byplay"]),
+            "reconciled_team_game": dict(w4["team_games"]),
+        },
+        "legacy_byplay_as_of": manifest["as_of"],
+        "legacy_byplay_code_sha": manifest["code_sha"],
+    }
+
+
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--season-2026", action="store_true")
     args = parser.parse_args()
     storage = get_storage(environment="preview")
+    if args.season_2026:
+        payload = pin_2026(storage)
+        args.out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        print(f"wrote {args.out}: 2026 w4 parents")
+        return 0
     repair, _ = _repair(storage, REPAIR_URI, scope="historical")
     refs = _sources(storage, repair, scope="historical")
     core = json.loads(storage.read_bytes(repair["parents"]["core_eligibility"]["uri"]))

@@ -1454,6 +1454,66 @@ def _run_candidate(
                 )
         _append_chunks(chunks["noise_fits"], noise_partitions, ("season",))
 
+    state_partitions, team_partitions = _replay_candidate_states(
+        candidate=candidate,
+        definition=definition,
+        family=family,
+        updater=updater,
+        prior_rows=prior_rows,
+        streams=streams,
+        population=inputs.population,
+        terminal_tables=terminal_tables,
+        noise=noise,
+        fbs=fbs,
+    )
+
+    _append_chunks(chunks["rating_states"], state_partitions, ("season", "week"))
+    _append_chunks(chunks["team_states"], team_partitions, ("season", "week"))
+    team_frame = _merged_chunks(
+        {
+            key: [pd.DataFrame.from_records(rows, columns=list(TEAM_STATE_COLUMNS))]
+            for key, rows in team_partitions.items()
+        },
+        list(TEAM_STATE_COLUMNS),
+    )
+    predictions = bridge_predictions(
+        team_frame,
+        games.drop(columns=["home_points", "away_points"]),
+        inputs.outcomes,
+        candidate=candidate,
+    )
+    prediction_partitions: dict[tuple[int, int], list[dict[str, Any]]] = {}
+    for record in predictions.to_dict("records"):
+        prediction_partitions.setdefault(
+            (int(record["season"]), int(record["week"])), []
+        ).append(record)
+    _append_chunks(
+        chunks["bridge_predictions"], prediction_partitions, ("season", "week")
+    )
+    return "ok"
+
+
+def _replay_candidate_states(
+    *,
+    candidate: str,
+    definition: str,
+    family: str,
+    updater: str,
+    prior_rows: pd.DataFrame,
+    streams: Mapping[tuple[str, str], pd.DataFrame],
+    population: pd.DataFrame,
+    terminal_tables: Mapping[tuple[str, str, int], Mapping[str, Any]],
+    noise: Mapping[tuple[str, str, str, int], Mapping[str, Any]],
+    fbs: set[tuple[int, str]],
+) -> tuple[
+    dict[tuple[int, int], list[dict[str, Any]]],
+    dict[tuple[int, int], list[dict[str, Any]]],
+]:
+    """Pregame rating and team states for one candidate, as (season, week) partitions.
+
+    The pure replay shared by the tournament and the pinned rebuild. ``noise`` is read
+    only for the Kalman updater.
+    """
     prior_lookup = {
         (int(row.season), str(row.unit_role), str(row.team)): RatingPrior(
             float(row.prior_mean),
@@ -1484,7 +1544,6 @@ def _run_candidate(
                 )
             streams_by_season[(definition_name, role)] = grouped
 
-    population = inputs.population
     eligible = population[population["forecast_eligible"]].copy()
     eligible["kickoff_utc"] = pd.to_datetime(eligible["kickoff_utc"], utc=True)
 
@@ -1504,9 +1563,12 @@ def _run_candidate(
         scale_table = {
             role: terminal_tables[(definition, role, season)] for role in ROLES
         }
-        noise_by_role = {
-            role: noise[(definition, family, role, season)] for role in ROLES
-        }
+        # Only the Kalman updater reads fitted noise; every other updater ignores it.
+        noise_by_role = (
+            {role: noise[(definition, family, role, season)] for role in ROLES}
+            if updater == "kalman"
+            else {role: {"cold_start": True} for role in ROLES}
+        )
         teams = sorted(
             {
                 team
@@ -1655,31 +1717,7 @@ def _run_candidate(
                     }
                 )
 
-    _append_chunks(chunks["rating_states"], state_partitions, ("season", "week"))
-    _append_chunks(chunks["team_states"], team_partitions, ("season", "week"))
-    team_frame = _merged_chunks(
-        {
-            key: [pd.DataFrame.from_records(rows, columns=list(TEAM_STATE_COLUMNS))]
-            for key, rows in team_partitions.items()
-        },
-        list(TEAM_STATE_COLUMNS),
-    )
-    del game_states
-    predictions = bridge_predictions(
-        team_frame,
-        games.drop(columns=["home_points", "away_points"]),
-        inputs.outcomes,
-        candidate=candidate,
-    )
-    prediction_partitions: dict[tuple[int, int], list[dict[str, Any]]] = {}
-    for record in predictions.to_dict("records"):
-        prediction_partitions.setdefault(
-            (int(record["season"]), int(record["week"])), []
-        ).append(record)
-    _append_chunks(
-        chunks["bridge_predictions"], prediction_partitions, ("season", "week")
-    )
-    return "ok"
+    return state_partitions, team_partitions
 
 
 def _join_fallbacks(*values: str | None) -> str | None:

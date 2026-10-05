@@ -1,0 +1,63 @@
+{
+  "game_outcomes": {
+    "content_sha": "17482907a735d07842908c21b284db28f377b1931cfe806a21ca8f9bec23a8d7",
+    "dataset": "game_outcomes",
+    "schema_version": "game_outcomes_v1",
+    "uri": "lake/silver/dataset=game_outcomes/version=d9a37cf473c63d2acc9f29cc/data.parquet",
+    "version_id": "d9a37cf473c63d2acc9f29cc"
+  },
+  "legacy_byplay_as_of": "2026-09-27T14:15:00+00:00",
+  "legacy_byplay_code_sha": "5f52291102e5646681fbcb9d90b13a857cc81bcb",
+  "legacy_comparison": {
+    "byplay": {
+      "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
+      "dataset": "byplay",
+      "schema_version": "byplay_v1",
+      "uri": "lake/silver/dataset=byplay/version=443019a9a7b6a2454a4af4ac/data.parquet",
+      "version_id": "443019a9a7b6a2454a4af4ac"
+    },
+    "reconciled_team_game": {
+      "content_sha": "5cb80de4ee000dead5b5fbaafbaff7ec69cdaaf06ed3d7c7b0e575dc0a08ec39",
+      "dataset": "reconciled_team_game",
+      "schema_version": "team_game_v1",
+      "uri": "lake/silver/dataset=reconciled_team_game/version=5286ae2e1beeb0e747cc9750/data.parquet",
+      "version_id": "5286ae2e1beeb0e747cc9750"
+    }
+  },
+  "parents": [
+    {
+      "content_sha": "1ceef01e500c20553acc88dceefd127eae8bbfaf00f4dae3b634703ad5e49a70",
+      "dataset": "plays",
+      "row_count": 38401,
+      "schema_version": "plays_v1",
+      "uri": "lake/silver/dataset=plays/version=eda5263ca8784698589fec77/data.parquet",
+      "version_id": "eda5263ca8784698589fec77"
+    },
+    {
+      "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+      "dataset": "games",
+      "row_count": 761,
+      "schema_version": "games_v2",
+      "uri": "lake/silver/dataset=games/version=31a337df6cf49f1578457ec6/data.parquet",
+      "version_id": "31a337df6cf49f1578457ec6"
+    },
+    {
+      "content_sha": "b02787de8cb46ddc42c9e008fd75a43b1174a95f79fd6a8b309d98d5381e12e1",
+      "dataset": "teams",
+      "row_count": 138,
+      "schema_version": "teams_v1",
+      "uri": "lake/silver/dataset=teams/version=590e986596436aa001ff77b7/data.parquet",
+      "version_id": "590e986596436aa001ff77b7"
+    },
+    {
+      "content_sha": "1245c2e5e7d93fbbc7e185cc6e5676a2bde11429f7294d44644120cf5f2beeae",
+      "dataset": "team_game_stats",
+      "row_count": 430,
+      "schema_version": "team_game_stats_v1",
+      "uri": "lake/silver/dataset=team_game_stats/version=ccf56d5837da8bc7eb31b2ce/data.parquet",
+      "version_id": "ccf56d5837da8bc7eb31b2ce"
+    }
+  ],
+  "schema_version": "rebuild_6a_silver_2026_parents_v1",
+  "source": "certified Week 4 2026 byplay manifest parents (SEASON_2026_SILVER_INPUT_SETS w4)"
+}
