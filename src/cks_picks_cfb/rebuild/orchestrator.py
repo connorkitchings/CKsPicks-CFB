@@ -296,8 +296,14 @@ class Orchestrator:
         guard: GuardedStore,
         *,
         registrar: Callable[[dict[str, Any]], None] | None = None,
+        publisher_sha: str | None = None,
     ) -> PublishResult:
-        """Publish verified output create-once, read back, then root, then catalog."""
+        """Publish verified output create-once, read back, then root, then catalog.
+
+        Publication copies already-verified bytes, so the stage identity stays the build
+        commit (``code_sha``); ``publisher_sha`` records the later commit of the tooling
+        that performed the copy.
+        """
         record = self._preflight()
         if not self.staging.exists(self.VERIFY):
             raise GateError("publish requires a verify record")
@@ -337,6 +343,7 @@ class Orchestrator:
                 "preflight_sha": record["manifest_sha256"],
                 "verify_sha": verdict["manifest_sha256"],
                 "code_sha": self.code_sha,
+                "publisher_code_sha": publisher_sha,
                 "stages": stage_manifests,
                 "objects": published,
             }
