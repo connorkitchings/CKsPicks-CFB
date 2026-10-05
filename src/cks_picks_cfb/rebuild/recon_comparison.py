@@ -8,22 +8,18 @@ and attribution across priors, states, offsets and selection policy.
 
 from __future__ import annotations
 
-import io
 import json
-import os
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from cks_picks_cfb.rebuild import common
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.recon_common import (
     TOTAL_2026_GAMES,
     WEEKS,
     json_data,
-    original_run_id,
     read_parquet_data,
 )
 from cks_picks_cfb.rebuild.recon_forecast import PREDICTIONS_PARQUET
@@ -41,7 +37,9 @@ BREAK_EVEN_PCT = 0.5238  # -110 standard break-even is 52.38% (52.4%)
 EXPECTED_TOTAL_SELECTIONS = 541
 
 
-def _record_dict(wins: int, losses: int, pushes: int, profit_units: float) -> dict[str, Any]:
+def _record_dict(
+    wins: int, losses: int, pushes: int, profit_units: float
+) -> dict[str, Any]:
     decisions = wins + losses
     win_pct = round(wins / decisions, 4) if decisions > 0 else 0.0
     return {
@@ -59,112 +57,15 @@ def _load_served_data(
     context: StageContext,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load served predictions, market selections and grades for the 6 original runs."""
-    preview_url = os.getenv("PREVIEW_DATABASE_URL")
-    runs = [original_run_id(w) for w in WEEKS]
-
-    if preview_url:
-        import psycopg
-
-        from cks_picks_cfb.rebuild.targets import assert_preview_database
-
-        with psycopg.connect(preview_url) as conn:
-            conn.read_only = True
-            with conn.cursor() as cur:
-                assert_preview_database(cur)
-                # Predictions
-                cur.execute(
-                    "SELECT run_id, game_id, predicted_spread, predicted_total, spread_lean::text, total_lean::text "
-                    "FROM predictions WHERE run_id = ANY(%s)",
-                    (runs,),
-                )
-                pred_rows = cur.fetchall()
-                preds_df = pd.DataFrame(
-                    pred_rows,
-                    columns=[
-                        "run_id",
-                        "game_id",
-                        "predicted_spread",
-                        "predicted_total",
-                        "spread_lean",
-                        "total_lean",
-                    ],
-                )
-
-                # Selections
-                cur.execute(
-                    "SELECT run_id, game_id, target, side, point, price "
-                    "FROM prediction_market_selections WHERE run_id = ANY(%s)",
-                    (runs,),
-                )
-                sel_rows = cur.fetchall()
-                sels_df = pd.DataFrame(
-                    sel_rows,
-                    columns=["run_id", "game_id", "target", "side", "point", "price"],
-                )
-
-                # Grades
-                cur.execute(
-                    "SELECT run_id, game_id, target, side, result, profit_units "
-                    "FROM prediction_grades WHERE run_id = ANY(%s)",
-                    (runs,),
-                )
-                grade_rows = cur.fetchall()
-                grades_df = pd.DataFrame(
-                    grade_rows,
-                    columns=["run_id", "game_id", "target", "side", "result", "profit_units"],
-                )
-                return preds_df, sels_df, grades_df
-
-    # Fallback to reading served release packet if storage / DB is mocked
-    packet_raw = context.read_input("served_release_packet")
-    packet = json.loads(packet_raw)
-    storage = common.preview_storage(context)
-    pred_frames: list[pd.DataFrame] = []
-    sel_frames: list[pd.DataFrame] = []
-    grade_frames: list[pd.DataFrame] = []
-
-    for run_entry in packet.get("runs", []):
-        run_id = run_entry["run_id"]
-        pred_uri = run_entry["prediction"]["uri"]
-        pred_csv = pd.read_csv(io.BytesIO(storage.read_bytes(pred_uri)))
-        pred_frames.append(
-            pred_csv[["game_id", "Spread Prediction", "Total Prediction", "Spread Bet", "Total Bet"]].rename(
-                columns={
-                    "Spread Prediction": "predicted_spread",
-                    "Total Prediction": "predicted_total",
-                    "Spread Bet": "spread_lean",
-                    "Total Bet": "total_lean",
-                }
-            ).assign(run_id=run_id)
+    return tuple(
+        read_parquet_data(
+            context.read_artifact(
+                "old_grade_reproduction",
+                f"{context.plan.run_prefix()}old_grade_reproduction/{name}.parquet",
+            )
         )
-
-        scored_uri = run_entry["scored"]["artifact_uri"]
-        scored_csv = pd.read_csv(io.BytesIO(storage.read_bytes(scored_uri)))
-        # Reconstruct selections and grades from scored CSV
-        for _, row in scored_csv.iterrows():
-            gid = int(row["game_id"])
-            for target, side_col, line_col, price_col, res_col in (
-                ("spread", "Spread Bet", "home_team_spread_line", "spread_market_quote_price", "Spread Bet Result"),
-                ("total", "Total Bet", "total_line", "total_market_quote_price", "Total Bet Result"),
-            ):
-                side = str(row.get(side_col, "")).lower()
-                point = row.get(line_col)
-                if pd.notna(point):
-                    price = float(row.get(price_col, -110.0))
-                    res = str(row.get(res_col, "")).lower()
-                    sels_df = pd.DataFrame(
-                        [{"run_id": run_id, "game_id": gid, "target": target, "side": side, "point": float(point), "price": price}]
-                    )
-                    sel_frames.append(sels_df)
-                    grades_df = pd.DataFrame(
-                        [{"run_id": run_id, "game_id": gid, "target": target, "side": side, "result": res, "profit_units": 0.0}]
-                    )
-                    grade_frames.append(grades_df)
-
-    p_df = pd.concat(pred_frames, ignore_index=True) if pred_frames else pd.DataFrame()
-    s_df = pd.concat(sel_frames, ignore_index=True) if sel_frames else pd.DataFrame()
-    g_df = pd.concat(grade_frames, ignore_index=True) if grade_frames else pd.DataFrame()
-    return p_df, s_df, g_df
+        for name in ("predictions", "selections", "grades")
+    )
 
 
 def build_comparison(context: StageContext) -> StageOutput:
@@ -179,30 +80,46 @@ def build_comparison(context: StageContext) -> StageOutput:
     recon_sels = read_parquet_data(context.read_artifact("markets", sels_key))
 
     grades_key = RETRO_GRADES_PARQUET.format(run_id=context.plan.run_id)
-    recon_grades = read_parquet_data(context.read_artifact("retrospective_grades", grades_key))
+    recon_grades = read_parquet_data(
+        context.read_artifact("retrospective_grades", grades_key)
+    )
 
     states_key = STATES_PARQUET.format(run_id=context.plan.run_id)
-    recon_states = read_parquet_data(context.read_artifact("states_at_cutoff", states_key))
+    recon_states = read_parquet_data(
+        context.read_artifact("states_at_cutoff", states_key)
+    )
 
     offsets_key = OFFSETS_PARQUET.format(run_id=context.plan.run_id)
-    recon_offsets = read_parquet_data(context.read_artifact("offsets_2026", offsets_key))
+    recon_offsets = read_parquet_data(
+        context.read_artifact("offsets_2026", offsets_key)
+    )
 
     # 2. Load served baseline data
     served_preds, served_sels, served_grades = _load_served_data(context)
 
     if len(served_preds) != TOTAL_2026_GAMES:
-        raise GateError(f"served predictions count {len(served_preds)} != {TOTAL_2026_GAMES}")
+        raise GateError(
+            f"served predictions count {len(served_preds)} != {TOTAL_2026_GAMES}"
+        )
     if len(served_sels) != EXPECTED_TOTAL_SELECTIONS:
-        raise GateError(f"served selections count {len(served_sels)} != {EXPECTED_TOTAL_SELECTIONS}")
+        raise GateError(
+            f"served selections count {len(served_sels)} != {EXPECTED_TOTAL_SELECTIONS}"
+        )
     if len(served_grades) != EXPECTED_TOTAL_SELECTIONS:
-        raise GateError(f"served grades count {len(served_grades)} != {EXPECTED_TOTAL_SELECTIONS}")
+        raise GateError(
+            f"served grades count {len(served_grades)} != {EXPECTED_TOTAL_SELECTIONS}"
+        )
 
     # Prepare index maps
     # Recon predictions: margin & total per game
-    recon_margin = recon_preds[recon_preds["target"] == "margin"].set_index("game_id")["mean"]
-    recon_total = recon_preds[recon_preds["target"] == "total"].set_index("game_id")["mean"]
+    recon_margin = recon_preds[recon_preds["target"] == "margin"].set_index("game_id")[
+        "mean"
+    ]
+    recon_total = recon_preds[recon_preds["target"] == "total"].set_index("game_id")[
+        "mean"
+    ]
 
-    served_preds_by_game = served_preds.drop_duplicates("game_id").set_index("game_id")
+    served_preds_by_game = served_preds.set_index("game_id")
     recon_sels_map = recon_sels.set_index(["game_id", "target"])
     served_sels_map = served_sels.set_index(["game_id", "target"])
     recon_grades_map = recon_grades.set_index(["game_id", "target"])
@@ -258,7 +175,10 @@ def build_comparison(context: StageContext) -> StageOutput:
             total_deltas_all.append(abs(d_total))
 
             for target in ("spread", "total"):
-                if (gid, target) not in recon_sels_map.index or (gid, target) not in served_sels_map.index:
+                if (gid, target) not in recon_sels_map.index or (
+                    gid,
+                    target,
+                ) not in served_sels_map.index:
                     continue
                 r_sel = recon_sels_map.loc[(gid, target)]
                 s_sel = served_sels_map.loc[(gid, target)]
@@ -307,28 +227,44 @@ def build_comparison(context: StageContext) -> StageOutput:
                     w_served_spread["profit"] += s_prof
                     w_recon_spread[r_res] = w_recon_spread.get(r_res, 0) + 1
                     w_recon_spread["profit"] += r_prof
-                    season_served_spread_results.append({"result": s_res, "profit": s_prof})
-                    season_recon_spread_results.append({"result": r_res, "profit": r_prof})
+                    season_served_spread_results.append(
+                        {"result": s_res, "profit": s_prof}
+                    )
+                    season_recon_spread_results.append(
+                        {"result": r_res, "profit": r_prof}
+                    )
                 else:
                     w_served_total[s_res] = w_served_total.get(s_res, 0) + 1
                     w_served_total["profit"] += s_prof
                     w_recon_total[r_res] = w_recon_total.get(r_res, 0) + 1
                     w_recon_total["profit"] += r_prof
-                    season_served_total_results.append({"result": s_res, "profit": s_prof})
-                    season_recon_total_results.append({"result": r_res, "profit": r_prof})
+                    season_served_total_results.append(
+                        {"result": s_res, "profit": s_prof}
+                    )
+                    season_recon_total_results.append(
+                        {"result": r_res, "profit": r_prof}
+                    )
 
         by_week[str(w)] = {
             "week": w,
             "games_compared": len(w_games),
             "margin_delta": {
-                "mean_abs": round(float(np.mean(w_margin_deltas)), 4) if w_margin_deltas else 0.0,
-                "max_abs": round(float(np.max(w_margin_deltas)), 4) if w_margin_deltas else 0.0,
+                "mean_abs": round(float(np.mean(w_margin_deltas)), 4)
+                if w_margin_deltas
+                else 0.0,
+                "max_abs": round(float(np.max(w_margin_deltas)), 4)
+                if w_margin_deltas
+                else 0.0,
                 "changed_count": int(sum(d > 1e-6 for d in w_margin_deltas)),
                 "over_0_05_count": int(sum(d > 0.05 for d in w_margin_deltas)),
             },
             "total_delta": {
-                "mean_abs": round(float(np.mean(w_total_deltas)), 4) if w_total_deltas else 0.0,
-                "max_abs": round(float(np.max(w_total_deltas)), 4) if w_total_deltas else 0.0,
+                "mean_abs": round(float(np.mean(w_total_deltas)), 4)
+                if w_total_deltas
+                else 0.0,
+                "max_abs": round(float(np.max(w_total_deltas)), 4)
+                if w_total_deltas
+                else 0.0,
                 "changed_count": int(sum(d > 1e-6 for d in w_total_deltas)),
                 "over_0_05_count": int(sum(d > 0.05 for d in w_total_deltas)),
             },
@@ -426,8 +362,8 @@ def build_comparison(context: StageContext) -> StageOutput:
             "source": "6A historical admitted events + 2026 scoring events",
             "offset_freeze_gate": "passed (frozen offsets == kickoff-order offsets)",
             "total_offset_rows": len(recon_offsets),
-            "unusable_team_games": off_summary.get("unusable_team_games", 0),
-            "unique_unusable_teams": off_summary.get("unique_unusable_teams", 0),
+            "unusable_team_games": off_summary["unusable_team_games"],
+            "unique_unusable_teams": off_summary["unique_unusable_teams"],
         },
         "selection": {
             "policy": "model_side_best_quote_v2",
@@ -464,7 +400,9 @@ def build_comparison(context: StageContext) -> StageOutput:
             "grade_result_changes": total_grade_changes,
             "served_all_profit": served_all_rec["profit_units"],
             "recon_all_profit": recon_all_rec["profit_units"],
-            "profit_delta": round(recon_all_rec["profit_units"] - served_all_rec["profit_units"], 4),
+            "profit_delta": round(
+                recon_all_rec["profit_units"] - served_all_rec["profit_units"], 4
+            ),
         },
         "retrospective_records": {
             "spread": recon_spread_rec,
@@ -532,9 +470,15 @@ def build_comparison(context: StageContext) -> StageOutput:
 
     md_lines.extend(["", "## Multi-Factor Attribution", ""])
     md_lines.append(f"- **Priors:** {attribution['priors']['source']}")
-    md_lines.append(f"- **States at Cutoff:** {attribution['states_at_cutoff']['pregame_teams_identity_gate']}")
-    md_lines.append(f"- **Offsets:** {attribution['offsets']['offset_freeze_gate']} ({attribution['offsets']['unusable_team_games']} unusable team-games)")
-    md_lines.append(f"- **Selection Policy:** {attribution['selection']['policy']} (corrected {issue13_away_spread_fixes} worst-line away spreads)")
+    md_lines.append(
+        f"- **States at Cutoff:** {attribution['states_at_cutoff']['pregame_teams_identity_gate']}"
+    )
+    md_lines.append(
+        f"- **Offsets:** {attribution['offsets']['offset_freeze_gate']} ({attribution['offsets']['unusable_team_games']} unusable team-games)"
+    )
+    md_lines.append(
+        f"- **Selection Policy:** {attribution['selection']['policy']} (corrected {issue13_away_spread_fixes} worst-line away spreads)"
+    )
     md_content = "\n".join(md_lines) + "\n"
 
     prefix_rep = REPORT_JSON.format(run_id=context.plan.run_id)
@@ -582,15 +526,23 @@ def verify_comparison(context: StageContext) -> list[str]:
         return [f"failed to read comparison report: {exc}"]
 
     if summary.get("games_compared") != TOTAL_2026_GAMES:
-        problems.append(f"games compared {summary.get('games_compared')} != {TOTAL_2026_GAMES}")
+        problems.append(
+            f"games compared {summary.get('games_compared')} != {TOTAL_2026_GAMES}"
+        )
     if summary.get("selections_compared") != EXPECTED_TOTAL_SELECTIONS:
-        problems.append(f"selections compared {summary.get('selections_compared')} != {EXPECTED_TOTAL_SELECTIONS}")
+        problems.append(
+            f"selections compared {summary.get('selections_compared')} != {EXPECTED_TOTAL_SELECTIONS}"
+        )
     if summary.get("grades_compared") != EXPECTED_TOTAL_SELECTIONS:
-        problems.append(f"grades compared {summary.get('grades_compared')} != {EXPECTED_TOTAL_SELECTIONS}")
+        problems.append(
+            f"grades compared {summary.get('grades_compared')} != {EXPECTED_TOTAL_SELECTIONS}"
+        )
 
     by_week = report.get("by_week", {})
     if set(by_week.keys()) != {str(w) for w in WEEKS}:
-        problems.append(f"missing weeks in comparison report: {set(by_week.keys()) ^ {str(w) for w in WEEKS}}")
+        problems.append(
+            f"missing weeks in comparison report: {set(by_week.keys()) ^ {str(w) for w in WEEKS}}"
+        )
 
     records = summary.get("retrospective_records", {})
     for cat in ("spread", "total", "overall"):

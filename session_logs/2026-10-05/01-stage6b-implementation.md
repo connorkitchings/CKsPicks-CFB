@@ -82,3 +82,11 @@
 Task 3: Execute staged build and verification using `scripts/pipeline/rebuild_6a.py` with `conf/rebuild/6b_v1.yaml` (preflight, build stages 1-12, stage-level verify, and full persisted verify). All git operations and live publishes remain user-run.
 
 **tags:** ["stage6b", "reconstruction", "stages", "receipt", "comparison", "contract"]
+
+## Task 2 quality review follow-up (2026-10-05)
+
+Task 2 was audited under [quality review contract](../../docs/plans/2026-10-05/02-stage6b-task2-quality-review.md) after commit `7b93608`. Four confirmed defects were repaired: signed receipt verification now consumes the original payload after checksum validation; scoring events declare the source lock; required summaries and gates reject missing evidence; and receipt verification compares canonical serialized content. Additional fixes cover source pins, cutoff checks, complete Preview finals, full-key Preview/served grade reproduction, market input normalization, typed Gold lineage, direct-parent reads, and deterministic persisted re-derivation. The detailed contract-to-evidence table is in the quality review session log.
+
+The full six-week, 271-game fixture pipeline passed through the real orchestrator. A fresh orchestrator verified all persisted stages, and an identical retry preserved all bytes. No Preview, serving, authorization, or production writes occurred. This fixture result does not establish live Preview parity; Task 3 must capture the new committed HEAD and run fresh preflight, then build and verify stages sequentially, stopping at the first failure.
+
+**Updated review status:** Stage 6B contract remains **In Progress**. Task 2 is ready for Task 3 preflight and staged verification. This review remains In Progress because `mkdocs build --strict` is blocked by five existing relative-link warnings; no link or docs navigation policy was changed. Git staging and commits remain user-run.

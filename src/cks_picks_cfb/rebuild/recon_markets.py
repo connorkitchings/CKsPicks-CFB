@@ -17,14 +17,16 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.recon_common import (
     TOTAL_2026_GAMES,
-    WEEK_AS_OF,
     WEEKS,
+    checked_read,
     frame_digest,
     json_data,
     load_partitioned_gold,
     parquet_data,
     read_parquet_data,
     recon_run_id,
+    source_refs,
+    weekly_as_of,
     write_partitioned_gold,
 )
 from cks_picks_cfb.rebuild.recon_forecast import PREDICTIONS_PARQUET
@@ -38,7 +40,9 @@ MARKETS_SCHEMA_VERSION = "reconstruction_market_selections_v1"
 FINALS_SUMMARY = "rebuild/6b/{run_id}/finals/summary.json"
 FINALS_PARQUET = "rebuild/6b/{run_id}/finals/finals.parquet"
 
-EXPECTED_SELECTIONS_COUNT = 541  # 271 games * 2 targets - 1 missing total (Houston @ Texas Tech)
+EXPECTED_SELECTIONS_COUNT = (
+    541  # 271 games * 2 targets - 1 missing total (Houston @ Texas Tech)
+)
 MISSING_TOTAL_GAME_ID = 401856811
 
 
@@ -51,18 +55,9 @@ def _load_market_data(
     context: StageContext, week: int, storage: Any
 ) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     """Load market snapshots and quotes for week w."""
-    if week == 5:
-        snaps_data = storage.read_bytes(
-            "lake/silver/dataset=market_snapshots/version=22c97e0aae0debc2904278c3/data.parquet"
-        )
-        quotes_data = storage.read_bytes(
-            "lake/silver/dataset=market_quotes/version=2608fc49f03dc6e46a5b4a87/data.parquet"
-        )
-    else:
-        lock = json.loads(context.read_input("source_lock_2026"))
-        ms = lock["market_sources"][str(week)]
-        snaps_data = storage.read_bytes(ms["market_snapshots"]["uri"])
-        quotes_data = storage.read_bytes(ms["market_quotes"]["uri"])
+    sources = source_refs(context)["weeks"][str(week)]["market_sources"]
+    snaps_data = checked_read(storage, sources["market_snapshots"])
+    quotes_data = checked_read(storage, sources["market_quotes"])
 
     snaps = pd.read_parquet(io.BytesIO(snaps_data))
     quotes_df = pd.read_parquet(io.BytesIO(quotes_data))
@@ -71,6 +66,19 @@ def _load_market_data(
 
 
 def build_markets(context: StageContext) -> StageOutput:
+    import yaml
+
+    if context.stage.name == "markets":
+        config = yaml.safe_load(context.read_input("bets_config"))
+        if any(
+            float(config[name]) != 0.0
+            for name in (
+                "spread_edge_threshold",
+                "total_lean_threshold",
+                "total_edge_threshold",
+            )
+        ):
+            raise GateError("reconstruction threshold config is not all zero")
     storage = common.preview_storage(context)
     sched_key = FOUNDATION_SCHEDULE.format(run_id=context.plan.run_id)
     schedule = read_parquet_data(context.read_artifact("foundation", sched_key))
@@ -84,10 +92,20 @@ def build_markets(context: StageContext) -> StageOutput:
 
     for w in WEEKS:
         snaps, quotes = _load_market_data(context, w, storage)
-        snaps_by_game = snaps.drop_duplicates("game_id").set_index("game_id")
+        if snaps.duplicated("game_id").any():
+            raise GateError("original quote set has duplicate canonical snapshots")
+        captured = pd.to_datetime(snaps["market_captured_at"], utc=True, errors="raise")
+        if (
+            captured.isna().any()
+            or captured.gt(pd.Timestamp(weekly_as_of(context)[w])).any()
+        ):
+            raise GateError("market snapshot was captured after as_of")
+        snaps_by_game = snaps.set_index("game_id")
         w_schedule = schedule[schedule["week"].eq(w)].set_index("game_id")
-        w_preds = predictions[predictions["week"].eq(w)].set_index(["game_id", "target"])
-        as_of_dt = pd.Timestamp(WEEK_AS_OF[w]).to_pydatetime()
+        w_preds = predictions[predictions["week"].eq(w)].set_index(
+            ["game_id", "target"]
+        )
+        as_of_dt = pd.Timestamp(weekly_as_of(context)[w]).to_pydatetime()
         run_id_w = recon_run_id(w)
 
         week_rows: list[dict[str, Any]] = []
@@ -96,7 +114,7 @@ def build_markets(context: StageContext) -> StageOutput:
             if game_id not in snaps_by_game.index:
                 raise GateError(f"game {game_id} missing from market snapshots")
             snap = snaps_by_game.loc[game_id]
-            snap_id = str(snap["snapshot_id"])
+            snap_id = str(snap["market_snapshot_id"])
             kickoff_utc = pd.to_datetime(game["kickoff_utc"], utc=True).to_pydatetime()
 
             for target in ("spread", "total"):
@@ -111,6 +129,21 @@ def build_markets(context: StageContext) -> StageOutput:
                 else:
                     canon_line = float(canon_line)
 
+                linked = snap.get("source_quote_ids", "[]")
+                if isinstance(linked, str):
+                    linked = json.loads(linked)
+                linked = set(linked or [])
+                candidates = [
+                    {
+                        **quote,
+                        "snapshot_id": snap_id,
+                        "target": target,
+                        "point": quote.get(target),
+                    }
+                    for quote in quotes
+                    if int(quote["game_id"]) == game_id
+                    and (not linked or quote["quote_id"] in linked)
+                ]
                 selected = select_best_quote(
                     target=target,
                     prediction=pred_val,
@@ -118,12 +151,14 @@ def build_markets(context: StageContext) -> StageOutput:
                     canonical_line=canon_line,
                     game_id=game_id,
                     kickoff_utc=kickoff_utc,
-                    quote_candidates=quotes,
+                    quote_candidates=candidates,
                     forecast_cutoff=as_of_dt,
                 )
 
                 if selected is None:
-                    observed_quote_gaps.append({"week": w, "game_id": game_id, "target": target})
+                    observed_quote_gaps.append(
+                        {"week": w, "game_id": game_id, "target": target}
+                    )
                 else:
                     rec = {
                         "run_id": run_id_w,
@@ -151,7 +186,9 @@ def build_markets(context: StageContext) -> StageOutput:
         )
 
     # Check observed quote gaps matches exactly the locked missing total
-    if len(observed_quote_gaps) != 1 or observed_quote_gaps[0]["game_id"] != MISSING_TOTAL_GAME_ID:
+    if observed_quote_gaps != [
+        {"week": 3, "game_id": MISSING_TOTAL_GAME_ID, "target": "total"}
+    ]:
         raise GateError(
             f"unexpected quote gaps: expected only game {MISSING_TOTAL_GAME_ID}, got {observed_quote_gaps}"
         )
@@ -204,7 +241,9 @@ def verify_markets(context: StageContext) -> list[str]:
     try:
         lake_sels = load_partitioned_gold(context, "markets", summary["lake_gold"])
         if len(lake_sels) != EXPECTED_SELECTIONS_COUNT:
-            problems.append(f"lake selections count {len(lake_sels)} != {EXPECTED_SELECTIONS_COUNT}")
+            problems.append(
+                f"lake selections count {len(lake_sels)} != {EXPECTED_SELECTIONS_COUNT}"
+            )
     except Exception as exc:
         problems.append(f"failed to load partitioned lake selections: {exc}")
 
@@ -222,11 +261,12 @@ def build_finals(context: StageContext) -> StageOutput:
     schedule = read_parquet_data(context.read_artifact("foundation", sched_key))
 
     # Read Week 5 outcomes
-    w5_outcomes_data = storage.read_bytes(
-        "lake/silver/dataset=game_outcomes/version=0ad054089d8fd6883e935417/data.parquet"
-    )
+    outcomes_ref = source_refs(context)["week5_outcomes"]
+    w5_outcomes_data = checked_read(storage, outcomes_ref)
     w5_outcomes = pd.read_parquet(io.BytesIO(w5_outcomes_data))
-    w5_by_id = w5_outcomes.drop_duplicates("game_id").set_index("game_id")
+    if w5_outcomes.duplicated(["season", "game_id"]).any():
+        raise GateError("Week 5 outcomes duplicate a key")
+    w5_by_id = w5_outcomes[w5_outcomes["season"].eq(2026)].set_index("game_id")
 
     finals_rows = []
     for game in schedule.itertuples(index=False):
@@ -238,9 +278,11 @@ def build_finals(context: StageContext) -> StageOutput:
             finals_ref = "source_lock_2026"
         else:
             w5_row = w5_by_id.loc[game_id]
+            if not bool(w5_row["completed"]):
+                raise GateError(f"game {game_id} has no certified final")
             home_pts = int(w5_row["home_points"])
             away_pts = int(w5_row["away_points"])
-            finals_ref = "lake/silver/dataset=game_outcomes/version=0ad054089d8fd6883e935417/data.parquet"
+            finals_ref = outcomes_ref["uri"]
 
         finals_rows.append(
             {
@@ -265,6 +307,8 @@ def build_finals(context: StageContext) -> StageOutput:
     # Read-only cross-check against Preview DB if PREVIEW_DATABASE_URL is set
     db_matches = 0
     preview_url = os.getenv("PREVIEW_DATABASE_URL")
+    if not preview_url:
+        raise GateError("finals cross-check requires PREVIEW_DATABASE_URL")
     if preview_url:
         import psycopg
 
@@ -279,7 +323,18 @@ def build_finals(context: StageContext) -> StageOutput:
                     "SELECT game_id, home_points, away_points FROM game_results WHERE game_id = ANY(%s)",
                     (game_ids,),
                 )
-                db_rows = {int(r[0]): (int(r[1]), int(r[2])) for r in cur.fetchall() if r[1] is not None}
+                raw_rows = cur.fetchall()
+                if (
+                    len(raw_rows) != len(game_ids)
+                    or len({r[0] for r in raw_rows}) != len(game_ids)
+                    or any(r[1] is None or r[2] is None for r in raw_rows)
+                ):
+                    raise GateError(
+                        "Preview finals coverage is incomplete or duplicated"
+                    )
+                db_rows = {int(r[0]): (int(r[1]), int(r[2])) for r in raw_rows}
+                if set(db_rows) != set(game_ids):
+                    raise GateError("Preview finals keys differ from locked schedule")
                 for row in finals_df.itertuples(index=False):
                     gid = int(row.game_id)
                     if gid in db_rows:
@@ -290,6 +345,8 @@ def build_finals(context: StageContext) -> StageOutput:
                             )
                         db_matches += 1
 
+    if db_matches != TOTAL_2026_GAMES:
+        raise GateError("Preview finals cross-check did not cover every game")
     summary = {
         "status": "passed",
         "total_finals": len(finals_df),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from datetime import datetime
 
@@ -16,12 +17,14 @@ from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
     EXPECTED_COUNTS,
     TOTAL_2026_GAMES,
-    WEEK_AS_OF,
     WEEKS,
+    checked_read,
     frame_digest,
     json_data,
+    original_run_id,
     parquet_data,
     read_parquet_data,
+    source_refs,
 )
 
 FOUNDATION_SUMMARY = "rebuild/6b/{run_id}/foundation/summary.json"
@@ -31,7 +34,9 @@ EVENTS_SUMMARY = "rebuild/6b/{run_id}/scoring_events_2026/summary.json"
 EVENTS_PARQUET = "rebuild/6b/{run_id}/scoring_events_2026/events.parquet"
 OBSERVATIONS_PARQUET = "rebuild/6b/{run_id}/scoring_events_2026/observations.parquet"
 
-EXPECTED_6A_RECEIPT_SHA = "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
+EXPECTED_6A_RECEIPT_SHA = (
+    "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -41,27 +46,36 @@ EXPECTED_6A_RECEIPT_SHA = "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c49
 
 def build_foundation(context: StageContext) -> StageOutput:
     run_6a = PublishedRun(context, root_input="root_manifest_6a")
-    PublishedRun(context, root_input="root_manifest_task4")
+    run_task4 = PublishedRun(context, root_input="root_manifest_task4")
 
     # 1. Verify Task 4 signed receipt and checksum
     raw_receipt = context.read_input("task4_receipt")
+    if (
+        hashlib.sha256(raw_receipt).hexdigest()
+        != run_task4.objects[run_task4.run_key("receipt/receipt.json")]
+    ):
+        raise GateError("Task 4 receipt differs from published root")
     receipt = json.loads(raw_receipt)
-    verified_receipt = verify_signed_payload(receipt, label="Task 4 signed receipt")
+    verify_signed_payload(receipt, label="Task 4 signed receipt")
     if receipt.get("manifest_sha256") != EXPECTED_6A_RECEIPT_SHA:
         raise GateError(
             f"task4 receipt checksum {receipt.get('manifest_sha256')} != expected {EXPECTED_6A_RECEIPT_SHA}"
         )
 
     # 2. Verify inputs_for_6b
-    inputs_for_6b = verified_receipt["inputs_for_6b"]
+    inputs_for_6b = receipt["inputs_for_6b"]
+    if inputs_for_6b["selected_design"] != context.plan.policies["design"]:
+        raise GateError("6A selected design differs from plan")
     if inputs_for_6b["cutoff_2026"] != context.plan.cutoff_2026:
         raise GateError(
             f"receipt cutoff {inputs_for_6b['cutoff_2026']} != plan cutoff {context.plan.cutoff_2026}"
         )
     for uri, expected_sha in inputs_for_6b["artifacts"].items():
-        actual_sha = run_6a.objects.get(uri)
+        actual_sha = hashlib.sha256(run_6a.read(uri)).hexdigest()
         if actual_sha != expected_sha:
-            raise GateError(f"6A artifact hash mismatch for {uri}: {actual_sha} != {expected_sha}")
+            raise GateError(
+                f"6A artifact hash mismatch for {uri}: {actual_sha} != {expected_sha}"
+            )
 
     # 3. Reconstruct locked schedule
     raw_lock = context.read_input("source_lock_2026")
@@ -70,7 +84,9 @@ def build_foundation(context: StageContext) -> StageOutput:
     records = [dict(zip(cols, row, strict=True)) for row in lock["games"]["rows"]]
     schedule = pd.DataFrame.from_records(records)
     if len(schedule) != TOTAL_2026_GAMES:
-        raise GateError(f"locked schedule has {len(schedule)} games, expected {TOTAL_2026_GAMES}")
+        raise GateError(
+            f"locked schedule has {len(schedule)} games, expected {TOTAL_2026_GAMES}"
+        )
 
     schedule["game_id"] = schedule["game_id"].astype(int)
     schedule["week"] = schedule["week"].astype(int)
@@ -78,17 +94,52 @@ def build_foundation(context: StageContext) -> StageOutput:
     schedule["kickoff_utc"] = pd.to_datetime(schedule["start_date"], utc=True)
     schedule["home_team"] = schedule["home_team"].map(canonical_team)
     schedule["away_team"] = schedule["away_team"].map(canonical_team)
-    schedule = schedule.sort_values(["week", "kickoff_utc", "game_id"]).reset_index(drop=True)
+    schedule = schedule.sort_values(["week", "kickoff_utc", "game_id"]).reset_index(
+        drop=True
+    )
+
+    if (
+        schedule.duplicated(["season", "game_id"]).any()
+        or schedule[["kickoff_utc", "home_team", "away_team"]].isna().any().any()
+    ):
+        raise GateError("locked schedule has duplicate or incomplete games")
+    from cks_picks_cfb.rebuild import common
+
+    storage = common.preview_storage(context)
+    refs = source_refs(context)
+    cutoffs = {}
+    for w in WEEKS:
+        metadata = refs["weeks"][str(w)]
+        manifest = json.loads(checked_read(storage, metadata["source_manifest"]))
+        if manifest["run_id"] != original_run_id(w):
+            raise GateError("source manifest run identity changed")
+        cutoffs[w] = manifest["data_as_of"]
+        if cutoffs[w] != metadata["as_of"] or (
+            w < 5 and cutoffs[w] != lock["market_sources"][str(w)]["as_of"]
+        ):
+            raise GateError(f"week {w} original forecast cutoff changed")
+        if (
+            manifest["input_dataset_refs"] != list(metadata["market_sources"].values())
+            and {r["dataset"]: r for r in manifest["input_dataset_refs"]}
+            != metadata["market_sources"]
+        ):
+            raise GateError(f"week {w} quote-set identity changed")
 
     # 4. Check week counts and as_of chronology
     week_counts = schedule["week"].value_counts().to_dict()
     for w in WEEKS:
         if week_counts.get(w, 0) != EXPECTED_COUNTS[w]:
-            raise GateError(f"week {w} count {week_counts.get(w, 0)} != {EXPECTED_COUNTS[w]}")
-        as_of_dt = datetime.fromisoformat(WEEK_AS_OF[w].replace("Z", "+00:00"))
-        first_kickoff = schedule[schedule["week"] == w]["kickoff_utc"].min().to_pydatetime()
+            raise GateError(
+                f"week {w} count {week_counts.get(w, 0)} != {EXPECTED_COUNTS[w]}"
+            )
+        as_of_dt = datetime.fromisoformat(cutoffs[w].replace("Z", "+00:00"))
+        first_kickoff = (
+            schedule[schedule["week"] == w]["kickoff_utc"].min().to_pydatetime()
+        )
         if as_of_dt >= first_kickoff:
-            raise GateError(f"week {w} as_of {as_of_dt} is not before first kickoff {first_kickoff}")
+            raise GateError(
+                f"week {w} as_of {as_of_dt} is not before first kickoff {first_kickoff}"
+            )
         if w > 0:
             last_prior_kickoff = (
                 schedule[schedule["week"] == w - 1]["kickoff_utc"].max().to_pydatetime()
@@ -102,7 +153,7 @@ def build_foundation(context: StageContext) -> StageOutput:
         "status": "passed",
         "total_games": len(schedule),
         "weekly_counts": {str(w): EXPECTED_COUNTS[w] for w in WEEKS},
-        "weekly_as_of": WEEK_AS_OF,
+        "weekly_as_of": cutoffs,
         "receipt_sha": EXPECTED_6A_RECEIPT_SHA,
         "schedule_digest": frame_digest(schedule),
     }
@@ -168,7 +219,9 @@ def build_scoring_events_2026(context: StageContext) -> StageOutput:
     rec_frames = run_6a.dataset_frames("source_reconciliation", season_scope="2026")
     reconciliation = rec_frames[2026]
 
-    completed = schedule[schedule["home_points"].notna() & schedule["away_points"].notna()].copy()
+    completed = schedule[
+        schedule["home_points"].notna() & schedule["away_points"].notna()
+    ].copy()
     completed["completed"] = True
     expected_completed = int(lock["research_2026_prediction_keys"]["completed_games"])
 
@@ -220,7 +273,7 @@ def build_scoring_events_2026(context: StageContext) -> StageOutput:
         )
 
     # Persist scoring events as baseline_unchanged
-    events = result.events.copy()
+    events = result.scoring_events.copy()
     if "admission" not in events.columns:
         events["admission"] = "baseline_unchanged"
     else:
@@ -252,17 +305,25 @@ def verify_scoring_events_2026(context: StageContext) -> list[str]:
     prefix_obs = OBSERVATIONS_PARQUET.format(run_id=context.plan.run_id)
     try:
         summary = json.loads(context.read_artifact("scoring_events_2026", prefix_sum))
-        obs = read_parquet_data(context.read_artifact("scoring_events_2026", prefix_obs))
+        obs = read_parquet_data(
+            context.read_artifact("scoring_events_2026", prefix_obs)
+        )
     except Exception as exc:
         return [f"failed to read scoring events artifacts: {exc}"]
 
     run_6a = PublishedRun(context, root_input="root_manifest_6a")
-    expected_obs = run_6a.frame("states_2026/observations.parquet").sort_values(
-        ["season", "week", "game_id", "team", "measurement_id", "unit_role"]
-    ).reset_index(drop=True)
+    expected_obs = (
+        run_6a.frame("states_2026/observations.parquet")
+        .sort_values(
+            ["season", "week", "game_id", "team", "measurement_id", "unit_role"]
+        )
+        .reset_index(drop=True)
+    )
 
     if summary.get("status") != "passed":
         problems.append("scoring events summary status is not passed")
     if frame_digest(obs) != frame_digest(expected_obs):
-        problems.append("2026 observations digest does not match 6A published observations")
+        problems.append(
+            "2026 observations digest does not match 6A published observations"
+        )
     return problems

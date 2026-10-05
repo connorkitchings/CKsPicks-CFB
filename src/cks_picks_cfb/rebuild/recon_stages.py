@@ -15,6 +15,7 @@ from cks_picks_cfb.rebuild import (
     recon_states,
 )
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
+from cks_picks_cfb.rebuild.recon_common import verify_rederived
 
 SIX_B_STAGE_BUILDERS: dict[
     str,
@@ -68,6 +69,19 @@ SIX_B_STAGE_BUILDERS: dict[
         recon_receipt.build_receipt,
         recon_receipt.verify_receipt,
     ),
+}
+
+
+def _persisted_verifier(build, verify):
+    def persisted(context):
+        return verify_rederived(context, build, verify)
+
+    return persisted
+
+
+SIX_B_STAGE_BUILDERS = {
+    name: (build, _persisted_verifier(build, verify))
+    for name, (build, verify) in SIX_B_STAGE_BUILDERS.items()
 }
 
 __all__ = ["SIX_B_STAGE_BUILDERS"]

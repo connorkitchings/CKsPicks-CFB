@@ -163,7 +163,6 @@ class GuardedStore:
             self.namespaces = (
                 f"{run_namespace}{run_id}/",
                 "lake/gold/dataset=reconstruction_",
-                *extra_namespaces,
             )
         else:
             self.namespaces = (

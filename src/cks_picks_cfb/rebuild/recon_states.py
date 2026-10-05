@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from cks_picks_cfb.ratings.possession_intended_update import IntendedUpdate, _time
@@ -12,12 +13,12 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
-    WEEK_AS_OF,
     WEEKS,
     frame_digest,
     json_data,
     parquet_data,
     read_parquet_data,
+    weekly_as_of,
 )
 from cks_picks_cfb.rebuild.recon_foundation import FOUNDATION_SCHEDULE
 
@@ -37,8 +38,12 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
     sched_key = FOUNDATION_SCHEDULE.format(run_id=context.plan.run_id)
     schedule = read_parquet_data(context.read_artifact("foundation", sched_key))
 
-    obs_key = f"rebuild/6b/{context.plan.run_id}/scoring_events_2026/observations.parquet"
-    observations = read_parquet_data(context.read_artifact("scoring_events_2026", obs_key))
+    obs_key = (
+        f"rebuild/6b/{context.plan.run_id}/scoring_events_2026/observations.parquet"
+    )
+    observations = read_parquet_data(
+        context.read_artifact("scoring_events_2026", obs_key)
+    )
 
     engine = IntendedUpdate(
         schedule=schedule,
@@ -50,7 +55,7 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
     # Evaluate rating engine at each original week's as_of
     weekly_states: list[pd.DataFrame] = []
     for w in WEEKS:
-        as_of_str = WEEK_AS_OF[w]
+        as_of_str = weekly_as_of(context)[w]
         as_of_dt = _time(as_of_str)
         if w == 0:
             gen = engine._states(
@@ -68,6 +73,13 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
 
     combined_states = pd.concat(weekly_states, ignore_index=True)
 
+    if (
+        combined_states.duplicated(["target_week", "team"]).any()
+        or not np.isfinite(
+            combined_states[["offense_rating", "defense_rating"]].to_numpy()
+        ).all()
+    ):
+        raise GateError("states contain duplicate keys or nonfinite ratings")
     # Hard gate: compare ratings against 6A pregame_teams for every game
     rating_mismatches: list[dict[str, Any]] = []
     pregame_by_game = pregame_6a.set_index(["game_id", "team"])
@@ -75,16 +87,31 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
     for game in schedule.itertuples(index=False):
         game_id = int(game.game_id)
         w = int(game.week)
-        w_states = combined_states[combined_states["target_week"].eq(w)].set_index("team")
+        w_states = combined_states[combined_states["target_week"].eq(w)].set_index(
+            "team"
+        )
 
-        for side, team in (("home", str(game.home_team)), ("away", str(game.away_team))):
+        for side, team in (
+            ("home", str(game.home_team)),
+            ("away", str(game.away_team)),
+        ):
             actual_state = w_states.loc[team]
             expected_state = pregame_by_game.loc[(game_id, team)]
 
-            off_delta = abs(float(actual_state["offense_rating"]) - float(expected_state["offense_rating"]))
-            def_delta = abs(float(actual_state["defense_rating"]) - float(expected_state["defense_rating"]))
+            off_delta = abs(
+                float(actual_state["offense_rating"])
+                - float(expected_state["offense_rating"])
+            )
+            def_delta = abs(
+                float(actual_state["defense_rating"])
+                - float(expected_state["defense_rating"])
+            )
 
-            if off_delta > 1e-9 or def_delta > 1e-9:
+            if (
+                not np.isfinite([off_delta, def_delta]).all()
+                or off_delta > 1e-9
+                or def_delta > 1e-9
+            ):
                 rating_mismatches.append(
                     {
                         "game_id": game_id,
@@ -111,6 +138,7 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
         "evaluated_weeks": list(WEEKS),
         "teams_count": len(engine.teams),
         "rating_mismatches_count": len(rating_mismatches),
+        "pregame_teams_identity_gate": "passed",
         "states_digest": frame_digest(combined_states),
     }
 
@@ -121,7 +149,9 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
         (prefix_st, parquet_data(combined_states)),
         (prefix_sum, json_data(summary)),
     ]
-    return StageOutput(artifacts=artifacts, metrics={"team_states": len(combined_states)})
+    return StageOutput(
+        artifacts=artifacts, metrics={"team_states": len(combined_states)}
+    )
 
 
 def verify_states_at_cutoff(context: StageContext) -> list[str]:
@@ -134,7 +164,10 @@ def verify_states_at_cutoff(context: StageContext) -> list[str]:
     except Exception as exc:
         return [f"failed to read states artifacts: {exc}"]
 
-    if summary.get("rating_mismatches_count", 0) > 0:
+    if (
+        summary.get("rating_mismatches_count") != 0
+        or summary.get("pregame_teams_identity_gate") != "passed"
+    ):
         problems.append("states-at-cutoff gate reported rating mismatches")
     if frame_digest(states) != summary["states_digest"]:
         problems.append("states frame digest mismatch")

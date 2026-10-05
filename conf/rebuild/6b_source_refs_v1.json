@@ -1,0 +1,163 @@
+{
+  "schema_version": "reconstruction_source_refs_v1",
+  "week5_outcomes": {
+    "content_sha": "9042bfa59063efa2420992c0e49ac50652057d2c2c1d90a5089a2b4ee8641b26",
+    "dataset": "game_outcomes",
+    "schema_version": "game_outcomes_v1",
+    "uri": "lake/silver/dataset=game_outcomes/version=0ad054089d8fd6883e935417/data.parquet",
+    "version_id": "0ad054089d8fd6883e935417"
+  },
+  "weeks": {
+    "0": {
+      "as_of": "2026-08-23T18:00:00Z",
+      "market_sources": {
+        "market_quotes": {
+          "content_sha": "bb8010a00be757dea7a6fd4958139d3b17977f05d9993f8472fe03803e67dab7",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=a3d08d112fdcb37e71973f0b/data.parquet",
+          "version_id": "a3d08d112fdcb37e71973f0b"
+        },
+        "market_snapshots": {
+          "content_sha": "89af1e2fa2a1097a1d3e3b16d43cce5aae2993302631136fa225d3287b4866c8",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=e3f984c4ab545d6e6ea7fc7f/data.parquet",
+          "version_id": "e3f984c4ab545d6e6ea7fc7f"
+        }
+      },
+      "source_manifest": {
+        "sha256": "6976a432847bb3d2a848603c90ed88216934106e89d10e97e98716365e4ca86d",
+        "uri": "artifacts/preview/predictions/year=2026/week=0/run_id=2026w0-v5repair-20260929-p1/manifest.json"
+      }
+    },
+    "1": {
+      "as_of": "2026-09-03T05:00:00Z",
+      "market_sources": {
+        "market_quotes": {
+          "content_sha": "d9c0f11bfa100679a369e2bc1bec0759620cd5b17b749038ce3ae9b9c16f9ae4",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=b2df0fd55a5a705d01f59295/data.parquet",
+          "version_id": "b2df0fd55a5a705d01f59295"
+        },
+        "market_snapshots": {
+          "content_sha": "b98570f6d6ae753556d197a093e56d5b478fc6f7c39b96d0092180c5bf4dc241",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=b273e83d02759628f31ad29e/data.parquet",
+          "version_id": "b273e83d02759628f31ad29e"
+        }
+      },
+      "source_manifest": {
+        "sha256": "24455da59b01d8bb87768972bd618be5389cda28d18f6909144664a4662d7dc9",
+        "uri": "artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5repair-20260929-p1/manifest.json"
+      }
+    },
+    "2": {
+      "as_of": "2026-09-08T19:00:00Z",
+      "market_sources": {
+        "market_quotes": {
+          "content_sha": "1fdf36f65840dd7010d5f300298ec23fbe54f23c0062619d79f9e6f3c869d666",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=ede4a9a77bceb43c2f767074/data.parquet",
+          "version_id": "ede4a9a77bceb43c2f767074"
+        },
+        "market_snapshots": {
+          "content_sha": "5ab767716c19eb3dd2c5e20623cc04633fec814b8175f2d704731b219eec0071",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=459c80d0f17a8ca852d0dc86/data.parquet",
+          "version_id": "459c80d0f17a8ca852d0dc86"
+        }
+      },
+      "source_manifest": {
+        "sha256": "26a0d8bc5204f03eac9d7cf06a9a10e89031e49890d3a58f17bf52c8fd5a0f85",
+        "uri": "artifacts/preview/predictions/year=2026/week=2/run_id=2026w2-v5repair-20260929-p1/manifest.json"
+      }
+    },
+    "3": {
+      "as_of": "2026-09-13T21:00:00Z",
+      "market_sources": {
+        "market_quotes": {
+          "content_sha": "c729cedb59b0bf299ad65f60ccffa8aed6a3ea595d1a73016bbc6753f6f4e46f",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=b018d14211fce9bf2533f1e0/data.parquet",
+          "version_id": "b018d14211fce9bf2533f1e0"
+        },
+        "market_snapshots": {
+          "content_sha": "8a11a28f7452db9b5637fe28c6a75edab22132029e811ceba92ba978e243fab5",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=692f4fcdb4771afbf3c6fafd/data.parquet",
+          "version_id": "692f4fcdb4771afbf3c6fafd"
+        }
+      },
+      "source_manifest": {
+        "sha256": "3a7c9f0df1b7c35031ce6f0590982e1810226351a9ca321e913919db0083245a",
+        "uri": "artifacts/preview/predictions/year=2026/week=3/run_id=2026w3-v5repair-20260929-p1/manifest.json"
+      }
+    },
+    "4": {
+      "as_of": "2026-09-20T19:00:00Z",
+      "market_sources": {
+        "market_quotes": {
+          "content_sha": "7c3bed6f2c207bca64630eff75cbafe28544f742dcc7a6134dd1f5195bcf25b3",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=48466f45fafe196e515cff93/data.parquet",
+          "version_id": "48466f45fafe196e515cff93"
+        },
+        "market_snapshots": {
+          "content_sha": "c38089bab27d5af1032cb2e08dea84b2eb11eceb88190760a3287bbb06d9ca43",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=d84b80460092f79812883104/data.parquet",
+          "version_id": "d84b80460092f79812883104"
+        }
+      },
+      "source_manifest": {
+        "sha256": "912781a903b7eeeba9967ba33062de759f0c34cc9067323a1efd90e148f3cbd1",
+        "uri": "artifacts/preview/predictions/year=2026/week=4/run_id=2026w4-v5repair-20260929-p1/manifest.json"
+      }
+    },
+    "5": {
+      "as_of": "2026-09-29T20:29:00Z",
+      "cutoff_source": {
+        "sha256": "719bb93e75e088a47262f39742769da10231b7b689d1d1a1a2d4c100990ab251",
+        "uri": "artifacts/research/data-first-football-v1/forecasts/intended-update/2026-serving/2026w5-v5repair-20260929-p2/serving-manifest.json"
+      },
+      "market_sources": {
+        "games": {
+          "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+          "dataset": "games",
+          "entity": "games",
+          "schema_version": "games_v2",
+          "uri": "lake/silver/dataset=games/version=31a337df6cf49f1578457ec6/data.parquet",
+          "version_id": "31a337df6cf49f1578457ec6",
+          "year": 2026
+        },
+        "market_quotes": {
+          "content_sha": "bd028650598ff08664f0d3e66216cc0666e8f5f137facc36d3c4a8636139e939",
+          "dataset": "market_quotes",
+          "schema_version": "market_quotes_v1",
+          "uri": "lake/silver/dataset=market_quotes/version=2608fc49f03dc6e46a5b4a87/data.parquet",
+          "version_id": "2608fc49f03dc6e46a5b4a87"
+        },
+        "market_snapshots": {
+          "content_sha": "a8f16a87a811a6017bd004ebf66ce6af0c07d161dd4eeefad75ff9954fa38eec",
+          "dataset": "market_snapshots",
+          "schema_version": "market_snapshots_v1",
+          "uri": "lake/silver/dataset=market_snapshots/version=22c97e0aae0debc2904278c3/data.parquet",
+          "version_id": "22c97e0aae0debc2904278c3"
+        }
+      },
+      "source_manifest": {
+        "sha256": "d74262fe5a51d7510bcce80ab82f7f116730ac00d3765242c005d56aaf551c0f",
+        "uri": "artifacts/preview/predictions/year=2026/week=5/run_id=2026w5-v5repair-20260929-p2/manifest.json"
+      }
+    }
+  }
+}

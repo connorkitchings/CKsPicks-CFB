@@ -24,12 +24,13 @@ from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
     EXPECTED_COUNTS,
     TOTAL_2026_GAMES,
-    WEEK_AS_OF,
     WEEKS,
     json_data,
     original_run_id,
     read_parquet_data,
     recon_run_id,
+    source_refs,
+    weekly_as_of,
 )
 from cks_picks_cfb.rebuild.recon_forecast import PREDICTIONS_PARQUET
 from cks_picks_cfb.rebuild.recon_foundation import FOUNDATION_SCHEDULE
@@ -52,7 +53,25 @@ NON_CLAIMS = (
     "No serving, selection, authorization or production tables/prefixes were written.",
 )
 
-EXPECTED_6A_RECEIPT_SHA = "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
+REQUIRED_GATES = frozenset(
+    (
+        "foundation_passed",
+        "scoring_events_passed",
+        "offset_freeze_passed",
+        "states_identity_passed",
+        "frames_coverage_passed",
+        "bundle_compatibility_passed",
+        "markets_coverage_passed",
+        "finals_coverage_passed",
+        "old_grade_reproduction_passed",
+        "retrospective_grades_passed",
+        "comparison_passed",
+    )
+)
+
+EXPECTED_6A_RECEIPT_SHA = (
+    "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
+)
 
 
 def _sha(raw: bytes) -> str:
@@ -73,6 +92,17 @@ def _build_weekly_served_artifacts(
     fin_key = FINALS_PARQUET.format(run_id=context.plan.run_id)
     finals = read_parquet_data(context.read_artifact("finals", fin_key))
 
+    selections = read_parquet_data(
+        context.read_artifact(
+            "markets", f"{context.plan.run_prefix()}markets/selections.parquet"
+        )
+    )
+    grades = read_parquet_data(
+        context.read_artifact(
+            "retrospective_grades",
+            f"{context.plan.run_prefix()}retrospective_grades/grades.parquet",
+        )
+    )
     artifacts: list[tuple[str, bytes]] = []
     weeks_info: dict[int, dict[str, Any]] = {}
 
@@ -83,9 +113,10 @@ def _build_weekly_served_artifacts(
         w_schedule["start_date"] = w_schedule["kickoff_utc"].astype(str)
 
         w_preds = predictions[predictions["week"].eq(w)].copy()
+        w_preds["timing_class"] = "replay"
         run_id_w = recon_run_id(w)
         orig_run_id_w = original_run_id(w)
-        as_of_w = WEEK_AS_OF[w]
+        as_of_w = weekly_as_of(context)[w]
 
         # Build serving rows
         serving = build_v5_serving_rows(
@@ -106,12 +137,55 @@ def _build_weekly_served_artifacts(
             market_quotes=quotes_df,
         )
 
-        serving = serving.sort_values("game_id", kind="mergesort").reset_index(drop=True)
+        serving = serving.sort_values("game_id", kind="mergesort").reset_index(
+            drop=True
+        )
 
         # Build scored rows
         w_finals = finals[finals["week"].eq(w)].rename(columns={"game_id": "id"})
         scored = score_bets(serving, w_finals)
         scored = scored.sort_values("game_id", kind="mergesort").reset_index(drop=True)
+
+        canonical = selections[selections["week"].eq(w)].set_index(
+            ["game_id", "target"]
+        )
+        canonical_grades = grades[grades["week"].eq(w)].set_index(["game_id", "target"])
+        for row in serving.to_dict("records"):
+            gid = int(row["game_id"])
+            for target, side_col, line_col, quote_col, result_col in (
+                (
+                    "spread",
+                    "Spread Bet",
+                    "home_team_spread_line",
+                    "spread_market_quote_id",
+                    "Spread Bet Result",
+                ),
+                (
+                    "total",
+                    "Total Bet",
+                    "total_line",
+                    "total_market_quote_id",
+                    "Total Bet Result",
+                ),
+            ):
+                if (gid, target) not in canonical.index:
+                    if pd.notna(row[quote_col]):
+                        raise GateError("served CSV filled a locked quote gap")
+                    continue
+                selected = canonical.loc[(gid, target)]
+                grade = canonical_grades.loc[(gid, target)]
+                actual_result = str(
+                    scored.set_index("game_id").loc[gid, result_col]
+                ).lower()
+                if (
+                    str(row[side_col]).lower() != selected["side"]
+                    or float(row[line_col]) != selected["point"]
+                    or row[quote_col] != selected["quote_id"]
+                    or actual_result != grade["result"]
+                ):
+                    raise GateError(
+                        f"served CSV differs from canonical selection/grade: {gid} {target}"
+                    )
 
         pred_raw = dataframe_csv_bytes(serving)
         score_raw = dataframe_csv_bytes(scored)
@@ -162,15 +236,28 @@ def _build_weekly_served_artifacts(
             "recon_run_id": run_id_w,
             "original_run_id": orig_run_id_w,
             "as_of": as_of_w,
+            "quote_set_refs": source_refs(context)["weeks"][str(w)]["market_sources"],
+            "finals_refs": sorted(finals[finals["week"].eq(w)]["finals_ref"].unique()),
             "game_count": len(serving),
             "quote_count": int(
                 serving.spread_market_quote_id.notna().sum()
                 + serving.total_market_quote_id.notna().sum()
             ),
             "artifacts": {
-                "predictions_csv": {"uri": pred_key, "raw_sha256": _sha(pred_raw), "rows": len(serving)},
-                "scored_csv": {"uri": score_key, "raw_sha256": _sha(score_raw), "rows": len(scored)},
-                "manifest_json": {"uri": manifest_key, "raw_sha256": _sha(manifest_raw)},
+                "predictions_csv": {
+                    "uri": pred_key,
+                    "raw_sha256": _sha(pred_raw),
+                    "rows": len(serving),
+                },
+                "scored_csv": {
+                    "uri": score_key,
+                    "raw_sha256": _sha(score_raw),
+                    "rows": len(scored),
+                },
+                "manifest_json": {
+                    "uri": manifest_key,
+                    "raw_sha256": _sha(manifest_raw),
+                },
             },
         }
 
@@ -190,41 +277,68 @@ def derive_receipt(
     task4_receipt = json.loads(raw_task4_receipt)
     verify_signed_payload(task4_receipt, label="Task 4 signed receipt")
     if task4_receipt.get("manifest_sha256") != EXPECTED_6A_RECEIPT_SHA:
-        raise GateError(f"6A receipt checksum mismatch: {task4_receipt.get('manifest_sha256')}")
+        raise GateError(
+            f"6A receipt checksum mismatch: {task4_receipt.get('manifest_sha256')}"
+        )
 
     # Stage summaries
     fnd_sum = json.loads(
-        context.read_artifact("foundation", f"rebuild/6b/{plan.run_id}/foundation/summary.json")
+        context.read_artifact(
+            "foundation", f"rebuild/6b/{plan.run_id}/foundation/summary.json"
+        )
     )
     events_sum = json.loads(
-        context.read_artifact("scoring_events_2026", f"rebuild/6b/{plan.run_id}/scoring_events_2026/summary.json")
+        context.read_artifact(
+            "scoring_events_2026",
+            f"rebuild/6b/{plan.run_id}/scoring_events_2026/summary.json",
+        )
     )
     off_sum = json.loads(
-        context.read_artifact("offsets_2026", f"rebuild/6b/{plan.run_id}/offsets_2026/summary.json")
+        context.read_artifact(
+            "offsets_2026", f"rebuild/6b/{plan.run_id}/offsets_2026/summary.json"
+        )
     )
     states_sum = json.loads(
-        context.read_artifact("states_at_cutoff", f"rebuild/6b/{plan.run_id}/states_at_cutoff/summary.json")
+        context.read_artifact(
+            "states_at_cutoff",
+            f"rebuild/6b/{plan.run_id}/states_at_cutoff/summary.json",
+        )
     )
     frames_sum = json.loads(
-        context.read_artifact("application_frames", f"rebuild/6b/{plan.run_id}/application_frames/summary.json")
+        context.read_artifact(
+            "application_frames",
+            f"rebuild/6b/{plan.run_id}/application_frames/summary.json",
+        )
     )
     preds_sum = json.loads(
-        context.read_artifact("predictions", f"rebuild/6b/{plan.run_id}/predictions/summary.json")
+        context.read_artifact(
+            "predictions", f"rebuild/6b/{plan.run_id}/predictions/summary.json"
+        )
     )
     markets_sum = json.loads(
-        context.read_artifact("markets", f"rebuild/6b/{plan.run_id}/markets/summary.json")
+        context.read_artifact(
+            "markets", f"rebuild/6b/{plan.run_id}/markets/summary.json"
+        )
     )
     finals_sum = json.loads(
         context.read_artifact("finals", f"rebuild/6b/{plan.run_id}/finals/summary.json")
     )
     old_repro_sum = json.loads(
-        context.read_artifact("old_grade_reproduction", f"rebuild/6b/{plan.run_id}/old_grade_reproduction/summary.json")
+        context.read_artifact(
+            "old_grade_reproduction",
+            f"rebuild/6b/{plan.run_id}/old_grade_reproduction/summary.json",
+        )
     )
     retro_grades_sum = json.loads(
-        context.read_artifact("retrospective_grades", f"rebuild/6b/{plan.run_id}/retrospective_grades/summary.json")
+        context.read_artifact(
+            "retrospective_grades",
+            f"rebuild/6b/{plan.run_id}/retrospective_grades/summary.json",
+        )
     )
     comp_sum = json.loads(
-        context.read_artifact("comparison", f"rebuild/6b/{plan.run_id}/comparison/summary.json")
+        context.read_artifact(
+            "comparison", f"rebuild/6b/{plan.run_id}/comparison/summary.json"
+        )
     )
 
     # Weekly served info (if not provided, rederive)
@@ -252,7 +366,9 @@ def derive_receipt(
             "predecessor_6a": {
                 "main_run_id": run_6a.root["run_id"],
                 "main_root_raw_sha256": _sha(context.read_input("root_manifest_6a")),
-                "task4_root_raw_sha256": _sha(context.read_input("root_manifest_task4")),
+                "task4_root_raw_sha256": _sha(
+                    context.read_input("root_manifest_task4")
+                ),
                 "receipt_sha256": EXPECTED_6A_RECEIPT_SHA,
             },
         },
@@ -268,8 +384,8 @@ def derive_receipt(
             "games_total": TOTAL_2026_GAMES,
             "weeks": list(WEEKS),
             "weekly_counts": EXPECTED_COUNTS,
-            "selections_total": markets_sum["selections_count"],
-            "grades_total": retro_grades_sum["grades_count"],
+            "selections_total": markets_sum["total_selections"],
+            "grades_total": retro_grades_sum["total_grades"],
             "unusable_team_games": off_sum["unusable_team_games"],
         },
         "weeks": {str(w): weekly_served_info[w] for w in WEEKS},
@@ -280,19 +396,28 @@ def derive_receipt(
         "validation": {
             "foundation_passed": fnd_sum.get("status") == "passed",
             "scoring_events_passed": events_sum.get("status") == "passed",
-            "offset_freeze_passed": off_sum.get("offset_freeze_gate") == "passed",
-            "states_identity_passed": states_sum.get("pregame_teams_identity_gate") == "passed",
+            "offset_freeze_passed": off_sum.get("offset_freeze_gate") == "passed"
+            and off_sum.get("freeze_mismatches_count") == 0,
+            "states_identity_passed": states_sum.get("pregame_teams_identity_gate")
+            == "passed"
+            and states_sum.get("rating_mismatches_count") == 0,
             "frames_coverage_passed": frames_sum.get("status") == "passed",
-            "bundle_compatibility_passed": preds_sum.get("bundle_compatibility") == "passed",
+            "bundle_compatibility_passed": preds_sum.get("bundle_compatibility")
+            == "passed",
             "markets_coverage_passed": markets_sum.get("status") == "passed",
             "finals_coverage_passed": finals_sum.get("status") == "passed",
-            "old_grade_reproduction_passed": old_repro_sum.get("status") == "passed" and old_repro_sum.get("mismatches_count") == 0,
+            "old_grade_reproduction_passed": old_repro_sum.get("status") == "passed"
+            and old_repro_sum.get("mismatches_count") == 0,
             "retrospective_grades_passed": retro_grades_sum.get("status") == "passed",
             "comparison_passed": comp_sum.get("status") == "passed",
         },
         "non_claims": list(NON_CLAIMS),
     }
 
+    if set(body["validation"]) != REQUIRED_GATES or not all(
+        body["validation"].values()
+    ):
+        raise GateError("receipt cannot certify missing or failed validation evidence")
     return signed_payload(body)
 
 
@@ -389,16 +514,20 @@ def verify_receipt(context: StageContext) -> list[str]:
 
     # 2. Check production authorization flag
     if receipt.get("production_activation_authorized") is not False:
-        problems.append("receipt must state that production activation is not authorized")
+        problems.append(
+            "receipt must state that production activation is not authorized"
+        )
 
     # 3. Check non-claims
-    if len(receipt.get("non_claims", [])) != len(NON_CLAIMS):
+    if receipt.get("non_claims") != list(NON_CLAIMS):
         problems.append("the non-claims were altered")
 
     # 4. Check validation booleans
     val = receipt.get("validation", {})
+    if set(val) != REQUIRED_GATES:
+        problems.append("receipt required validation gate set changed")
     for check_name, passed in val.items():
-        if not passed:
+        if passed is not True:
             problems.append(f"validation check '{check_name}' did not pass")
 
     # 5. Check served weekly artifacts
@@ -428,7 +557,10 @@ def verify_receipt(context: StageContext) -> list[str]:
 
         try:
             manifest_bytes = context.read_artifact("receipt", manifest_key)
-            if _sha(manifest_bytes) != winfo["artifacts"]["manifest_json"]["raw_sha256"]:
+            if (
+                _sha(manifest_bytes)
+                != winfo["artifacts"]["manifest_json"]["raw_sha256"]
+            ):
                 problems.append(f"week {w} manifest.json sha256 mismatch")
         except Exception as exc:
             problems.append(f"missing week {w} manifest.json artifact: {exc}")
@@ -436,8 +568,16 @@ def verify_receipt(context: StageContext) -> list[str]:
     # 6. Re-derivation equality
     try:
         rederived = derive_receipt(context)
-        if rederived != receipt:
-            problems.append("re-derived receipt differs from staged receipt")
+        if json_data(rederived) != json_data(receipt):
+            differing = sorted(
+                key
+                for key in set(rederived) | set(receipt)
+                if rederived.get(key) != receipt.get(key)
+            )
+            problems.append(
+                "re-derived receipt differs from staged receipt in: "
+                + ", ".join(differing)
+            )
     except Exception as exc:
         problems.append(f"failed to re-derive receipt: {exc}")
 

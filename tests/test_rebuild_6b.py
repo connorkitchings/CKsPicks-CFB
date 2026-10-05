@@ -71,7 +71,7 @@ def test_6b_plan_loads_and_validates():
         "source_lock_2026",
         "bets_config",
         "silver_2026_parents",
-        "served_release_packet",
+        "reconstruction_source_refs",
     } <= pin_names
 
 
@@ -90,7 +90,7 @@ def test_6b_stage_dispatch_by_namespace():
     # Verify that receipt in 6B uses recon_receipt, not 6A receipt
     receipt_stage = next(s for s in stages_6b if s.plan.name == "receipt")
     assert receipt_stage.build == recon_receipt.build_receipt
-    assert receipt_stage.verify == recon_receipt.verify_receipt
+    assert receipt_stage.verify == SIX_B_STAGE_BUILDERS["receipt"][1]
 
     # Verify 6A dispatch
     plan_6a_dict = yaml.safe_load((REPO / "conf/rebuild/6a_task4_v1.yaml").read_text())

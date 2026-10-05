@@ -14,13 +14,13 @@ from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
     TOTAL_2026_GAMES,
-    WEEK_AS_OF,
     WEEKS,
     frame_digest,
     json_data,
     load_partitioned_gold,
     parquet_data,
     read_parquet_data,
+    weekly_as_of,
     write_partitioned_gold,
 )
 from cks_picks_cfb.rebuild.recon_foundation import FOUNDATION_SCHEDULE
@@ -38,9 +38,10 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
     # Load historical foundation from 6A
     historical_offsets = run_6a.frame("forecast/offsets.parquet")
     admitted_events = run_6a.frame("comparison/admitted_events.parquet")
-    pop_raw = run_6a.frame("eligibility/population.parquet")
+    pop_raw = run_6a.frame("eligibility/population_raw.parquet")
 
     from cks_picks_cfb.data.data_first_possession_v1 import build_population
+
     historical_population = build_population(pop_raw, scope="historical")
 
     # Load 2026 schedule and events
@@ -59,9 +60,11 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
     # Global kickoff-order computation for all 2026 games
     full_2026_pop = schedule.assign(
         forecast_eligible=True,
-        schedule_completed=schedule["home_points"].notna() & schedule["away_points"].notna(),
+        schedule_completed=schedule["home_points"].notna()
+        & schedule["away_points"].notna(),
         outcome_valid=schedule["home_points"].notna() & schedule["away_points"].notna(),
-        measurement_usable=schedule["home_points"].notna() & schedule["away_points"].notna(),
+        measurement_usable=schedule["home_points"].notna()
+        & schedule["away_points"].notna(),
     )
     all_seasons_population = pd.concat(
         [historical_population, full_2026_pop], ignore_index=True, sort=False
@@ -78,11 +81,12 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
 
     # Weekly frozen-at-cutoff offset computation
     weekly_offsets: dict[int, pd.DataFrame] = {}
+    weekly_evidence: list[pd.DataFrame] = []
     freeze_mismatches: list[dict[str, Any]] = []
     duplicate_appearances: list[dict[str, Any]] = []
 
     for w in WEEKS:
-        as_of_dt = pd.Timestamp(WEEK_AS_OF[w])
+        as_of_dt = pd.Timestamp(weekly_as_of(context)[w])
         # Games in earlier weeks are completed evidence if kicked off before as_of
         earlier_games = schedule[
             schedule["week"].lt(w) & schedule["kickoff_utc"].lt(as_of_dt)
@@ -104,10 +108,14 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
         )
 
         # Check for teams playing multiple games in target week
-        team_counts = pd.concat([target_games["home_team"], target_games["away_team"]]).value_counts()
+        team_counts = pd.concat(
+            [target_games["home_team"], target_games["away_team"]]
+        ).value_counts()
         for team, count in team_counts.items():
             if count > 1:
-                duplicate_appearances.append({"week": w, "team": str(team), "games": int(count)})
+                duplicate_appearances.append(
+                    {"week": w, "team": str(team), "games": int(count)}
+                )
 
         week_pop = pd.concat(
             [historical_population, earlier_games, target_games],
@@ -120,6 +128,13 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
             development_seasons=DEVELOPMENT_SEASONS + (2026,),
             equivalent_games=4,
         )
+        usable_evidence = week_comp.team_games[
+            week_comp.team_games.season.eq(2026) & week_comp.team_games.usable
+        ].copy()
+        if usable_evidence.kickoff_utc.ge(as_of_dt).any():
+            raise GateError("usable offset evidence kicked off at or after as_of")
+        usable_evidence["target_week"] = w
+        weekly_evidence.append(usable_evidence)
         week_offsets = week_comp.offsets[
             week_comp.offsets["season"].eq(2026) & week_comp.offsets["week"].eq(w)
         ].copy()
@@ -128,8 +143,12 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
         for row in week_offsets.itertuples(index=False):
             key = (int(row.week), int(row.game_id))
             global_row = global_2026_offsets.loc[key]
-            delta_margin = abs(float(row.offset_margin) - float(global_row["offset_margin"]))
-            delta_total = abs(float(row.offset_total) - float(global_row["offset_total"]))
+            delta_margin = abs(
+                float(row.offset_margin) - float(global_row["offset_margin"])
+            )
+            delta_total = abs(
+                float(row.offset_total) - float(global_row["offset_total"])
+            )
             if delta_margin > 1e-9 or delta_total > 1e-9:
                 freeze_mismatches.append(
                     {
@@ -152,10 +171,18 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
         )
 
     # Verify historical offsets equal 6A forecast/offsets.parquet
-    hist_subset = week_comp.offsets[week_comp.offsets["season"].lt(2026)].reset_index(drop=True)
+    hist_subset = week_comp.offsets[week_comp.offsets["season"].lt(2026)].reset_index(
+        drop=True
+    )
+    hist_subset = hist_subset.sort_values(["season", "game_id"]).reset_index(drop=True)
+    historical_offsets = historical_offsets.sort_values(
+        ["season", "game_id"]
+    ).reset_index(drop=True)
     if len(hist_subset) != len(historical_offsets):
         raise GateError("historical offset row count differs from 6A")
-    if frame_digest(hist_subset[["season", "game_id", "offset_margin", "offset_total"]]) != frame_digest(
+    if frame_digest(
+        hist_subset[["season", "game_id", "offset_margin", "offset_total"]]
+    ) != frame_digest(
         historical_offsets[["season", "game_id", "offset_margin", "offset_total"]]
     ):
         raise GateError("historical offsets differ from 6A forecast/offsets.parquet")
@@ -180,13 +207,22 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
     )
 
     unresolved = unresolved_team_games(events_2026)
+    affected = {(season, game) for season, game, team in unresolved}
+    unusable_rows = global_computation.team_games[
+        global_computation.team_games.apply(
+            lambda row: (int(row.season), int(row.game_id)) in affected, axis=1
+        )
+    ]
     summary = {
         "status": "passed",
         "total_offsets": len(all_2026_offsets),
         "weekly_counts": {str(w): len(weekly_offsets[w]) for w in WEEKS},
         "freeze_mismatches_count": len(freeze_mismatches),
+        "offset_freeze_gate": "passed",
         "duplicate_weekly_appearances": duplicate_appearances,
         "unresolved_team_games_count": len(unresolved),
+        "unusable_team_games": len(unusable_rows),
+        "unique_unusable_teams": int(unusable_rows.team.nunique()),
         "lake_gold": lake_summary,
         "offsets_digest": frame_digest(all_2026_offsets),
     }
@@ -196,6 +232,10 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
 
     artifacts = [
         (prefix_off, parquet_data(all_2026_offsets)),
+        (
+            f"{context.plan.run_prefix()}offsets_2026/evidence.parquet",
+            parquet_data(pd.concat(weekly_evidence, ignore_index=True)),
+        ),
         (prefix_sum, json_data(summary)),
         *lake_files,
     ]
@@ -212,7 +252,10 @@ def verify_offsets_2026(context: StageContext) -> list[str]:
     except Exception as exc:
         return [f"failed to read offsets artifacts: {exc}"]
 
-    if summary.get("freeze_mismatches_count", 0) > 0:
+    if (
+        summary.get("freeze_mismatches_count") != 0
+        or summary.get("offset_freeze_gate") != "passed"
+    ):
         problems.append("offset freeze gate reported mismatches")
     if len(offsets) != TOTAL_2026_GAMES:
         problems.append(f"total offsets {len(offsets)} != {TOTAL_2026_GAMES}")
@@ -221,9 +264,13 @@ def verify_offsets_2026(context: StageContext) -> list[str]:
 
     # Verify lake dataset
     try:
-        lake_offsets = load_partitioned_gold(context, "offsets_2026", summary["lake_gold"])
+        lake_offsets = load_partitioned_gold(
+            context, "offsets_2026", summary["lake_gold"]
+        )
         if len(lake_offsets) != TOTAL_2026_GAMES:
-            problems.append(f"lake offsets count {len(lake_offsets)} != {TOTAL_2026_GAMES}")
+            problems.append(
+                f"lake offsets count {len(lake_offsets)} != {TOTAL_2026_GAMES}"
+            )
     except Exception as exc:
         problems.append(f"failed to load partitioned lake offsets: {exc}")
 

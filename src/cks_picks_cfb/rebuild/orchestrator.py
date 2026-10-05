@@ -148,12 +148,23 @@ class Orchestrator:
             if manifest is None:
                 raise GateError(f"stage {stage.plan.name}: parent {parent} not built")
             parents[parent] = manifest["manifest_sha256"]
+
+        def read_artifact(source: str, key: str) -> bytes:
+            if self.plan.namespace == "rebuild/6b/" and source not in (
+                *stage.plan.parents,
+                stage.plan.name,
+            ):
+                raise GateError(
+                    f"stage {stage.plan.name} did not declare parent {source}"
+                )
+            return self.staging.read(self._artifact_key(source, key))
+
         return StageContext(
             plan=self.plan,
             stage=stage.plan,
             inputs=inputs,
             parents=parents,
-            read_artifact=lambda s, k: self.staging.read(self._artifact_key(s, k)),
+            read_artifact=read_artifact,
             read_input=self._read_input(stage, inputs),
             code_sha=self.code_sha,
         )
