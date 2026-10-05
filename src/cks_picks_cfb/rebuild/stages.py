@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from cks_picks_cfb.rebuild import (
+    attribution,
     baseline,
     comparison,
     eligibility,
@@ -12,6 +13,8 @@ from cks_picks_cfb.rebuild import (
     gold,
     measurements,
     parity,
+    published_comparison,
+    receipt,
     silver,
     silver_2026,
     states_2026,
@@ -36,6 +39,9 @@ STAGE_BUILDERS: dict[
     "offsets_refit": (forecast_refit.build, forecast_refit.verify),
     "silver_2026": (silver_2026.build, silver_2026.verify),
     "states_2026": (states_2026.build, states_2026.verify),
+    "attribution": (attribution.build, attribution.verify),
+    "published_comparison": (published_comparison.build, published_comparison.verify),
+    "receipt": (receipt.build, receipt.verify),
 }
 
 
