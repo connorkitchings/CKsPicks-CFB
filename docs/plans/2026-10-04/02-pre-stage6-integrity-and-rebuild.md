@@ -1,6 +1,6 @@
 # Pre-Stage-6 Integrity and Corrected-Lineage Rebuild
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Created:** 2026-10-04
 - **Planner:** Sol
 - **Approval source:** User explicitly requested “PLEASE IMPLEMENT THIS PLAN” with the complete reviewed plan in the planning chat on 2026-10-04. The user separately selected “R2 + Preview catalog (Recommended)” for the 6A write boundary.
@@ -88,7 +88,7 @@ Stop the affected step for any material conflict with approved population, scori
 - [x] Required delta reports and signed 6A receipt are retained (run `6a-task4-r1`, published to Preview R2 2026-10-05; see Amendment 9).
 - [x] Preview publication, catalog linkage, readback and retry pass without serving changes (2026-10-05; see Amendment 7). Evidence for "no serving change" is the write ledger and allow-list, not a production listing.
 - [x] Current docs and implementation log reflect measured results (Amendment 9, `docs/status.md`, session log 11). The issue register (`docs/data/known_issues.md`) was not edited in this session.
-- [ ] Contract marked Implemented only after all above gates; Stage 6B remains a separate handoff.
+- [x] Contract marked Implemented only after all above gates; Stage 6B remains a separate handoff.
 
 ## Amendment 1 (2026-10-04): Gold scope, write namespaces, evidence ids, orchestration design
 
