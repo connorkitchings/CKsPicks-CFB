@@ -18,5 +18,9 @@
 - Harness bug found and fixed in the first run: building one stage tried to set up later unbuilt stages; partial verify now never persists a record.
 - Silver stage findings: R1 derived ref set pins normalized Silver per season; the legacy byplay also used an unpinned `data_corrections` parent (`856e1bac8626b395e922464f`, 65 rows) that needs its own pin.
 
+- **Stage 1 reproduced a third time** under `4148ef0`: all four staged artifacts again byte-identical to runs 1 and 2; partial verify passed. (Baseline rebuild takes about 22 minutes and must repeat after every commit because the preflight binds the code SHA.)
+- **Stage 2 `silver` built for all 10 seasons** (1,260,062 byplay rows, 54 MB staged). Nulled `ppa` totals 245,671, exactly the legacy zero-`ppa` count; `ppa` is the only value change in nine seasons. Reconciliation: no blocking rows; non-exact classification only `incomplete_source` in 2015-2019 (27 games, all provider-declared omissions).
+- **`verify silver` failed once, correctly:** in 2025, 626 `Punt Return` plays changed `st`/`st_punt` from 0 to 1 versus the pre-fix R1 byplay (documented punt fix `5acd051`, known issue 2). Added a bounded explanation (`punt_return_fix`: only `Punt Return` rows, only 0 to 1, exact counts); any other change still fails. Old verify logic on the staged output reported no other problem. Per known issue 2, `ppp` and `epa_per_possession` are unaffected; the measurement stage must confirm this.
+
 ## Validation
 - `tests/test_rebuild_harness.py`: 27 passed; ruff clean. Full suite, contracts-check and mkdocs not yet re-run for the harness commits.

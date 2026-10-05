@@ -84,6 +84,33 @@ def value_differences(new: pd.DataFrame, legacy: pd.DataFrame) -> dict[str, int]
     return diffs
 
 
+#: Documented, bounded change: CFBD ``Punt Return`` rows used to count as plays
+#: (``st == 0``) and are now tagged special teams (known issue 2, fix ``5acd051``).
+PUNT_FIX_COLUMNS = ("st", "st_punt")
+
+
+def punt_return_fix(new: pd.DataFrame, legacy: pd.DataFrame) -> dict[str, Any]:
+    """Describe rows whose special-teams flags changed and whether they fit the fix."""
+    if len(new) != len(legacy):
+        raise GateError("cannot compare byplay frames of different length")
+    a, b = new.reset_index(drop=True), legacy.reset_index(drop=True)
+    changed = pd.Series(False, index=a.index)
+    for column in PUNT_FIX_COLUMNS:
+        changed |= a[column].astype(object) != b[column].astype(object)
+    rows = int(changed.sum())
+    fits = bool(
+        rows == 0
+        or (
+            (a.loc[changed, "play_type"] == "Punt Return").all()
+            and all(
+                ((b.loc[changed, c] == 0) & (a.loc[changed, c] == 1)).all()
+                for c in PUNT_FIX_COLUMNS
+            )
+        )
+    )
+    return {"rows": rows, "fits_punt_return_fix": fits}
+
+
 def _ref(entry: Mapping[str, Any]):
     from cks_picks_cfb.data.lake import DatasetRef
 
@@ -236,6 +263,7 @@ def derive_season(
         "legacy_zero_ppa": int((legacy["ppa"] == 0).sum()),
     }
     summary["value_differences"] = value_differences(byplay, legacy)
+    summary["punt_return_fix"] = punt_return_fix(byplay, legacy)
     summary["reconciliation"] = {
         "classifications": {
             str(k): int(v)
@@ -312,10 +340,17 @@ def verify(context: StageContext) -> list[str]:
         if not item["ppa"]["rows_equal"]:
             problems.append(f"{season}: byplay rows differ from legacy")
         any_null_ppa = any_null_ppa or item["ppa"]["null_ppa"] > 0
-        if unexplained := set(item["value_differences"]) - {"ppa"}:
+        differences = item["value_differences"]
+        fix = item["punt_return_fix"]
+        if unexplained := set(differences) - {"ppa", *PUNT_FIX_COLUMNS}:
             problems.append(
                 f"{season}: unexplained byplay value changes {sorted(unexplained)}"
             )
+        for column in PUNT_FIX_COLUMNS:
+            if differences.get(column, 0) != fix["rows"]:
+                problems.append(f"{season}: {column} changes differ from the punt fix")
+        if not fix["fits_punt_return_fix"]:
+            problems.append(f"{season}: special-teams changes are not the punt fix")
         if item["value_differences"].get("ppa") != item["ppa"]["null_ppa"]:
             problems.append(f"{season}: ppa changes are not exactly the nulled values")
         for dataset, info in item["datasets"].items():
