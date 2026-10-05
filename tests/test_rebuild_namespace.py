@@ -45,12 +45,17 @@ def _plan(tmp_path: Path, **overrides) -> RebuildPlan:
     pin = InputPin(
         "decisions", "decisions.csv", hashlib.sha256(data).hexdigest(), "git_file"
     )
+    stage_output = (
+        "lake/gold/dataset=reconstruction_test/"
+        if overrides.get("namespace") == "rebuild/6b/"
+        else "lake/gold/a/"
+    )
     values = dict(
         run_id="run1",
         storage_identity=IDENTITY,
         seasons=HISTORICAL_SEASONS,
         inputs=(pin,),
-        stages=(StagePlan("a", inputs=("decisions",), outputs=("lake/gold/a/",)),),
+        stages=(StagePlan("a", inputs=("decisions",), outputs=(stage_output,)),),
         registry_checksum="b" * 64,
     )
     values.update(overrides)
@@ -86,10 +91,17 @@ def test_guard_permits_only_its_own_run_namespace():
         run_namespace="rebuild/6b/",
     )
     six_b.create_once("rebuild/6b/run1/report.json", b"{}")
+    six_b.create_once("lake/gold/dataset=reconstruction_offsets_2026/data.parquet", b"1")
     with pytest.raises(TargetError, match="outside permitted"):
         six_b.create_once("rebuild/6a/run1/report.json", b"{}")
     with pytest.raises(TargetError, match="outside permitted"):
         six_b.create_once("rebuild/6b/other/report.json", b"{}")
+    with pytest.raises(TargetError, match="outside permitted"):
+        six_b.create_once("lake/silver/dataset=games/data.parquet", b"1")
+    with pytest.raises(TargetError, match="outside permitted"):
+        six_b.create_once("lake/gold/dataset=football_possessions/data.parquet", b"1")
+    with pytest.raises(TargetError, match="outside permitted"):
+        six_b.create_once("quality/receipts/x.json", b"1")
     with pytest.raises(TargetError, match="forbidden"):
         six_b.create_once("predictions/run1/x.csv", b"x")
     default = GuardedStore(
@@ -100,10 +112,15 @@ def test_guard_permits_only_its_own_run_namespace():
 
 
 def _orchestrator(tmp_path, plan, guard):
+    gold_key = (
+        "lake/gold/dataset=reconstruction_test/x"
+        if plan.namespace == "rebuild/6b/"
+        else "lake/gold/a/x"
+    )
     stages = [
         Stage(
             plan.stages[0],
-            lambda ctx: StageOutput([("lake/gold/a/x", b"1")]),
+            lambda ctx: StageOutput([(gold_key, b"1")]),
             lambda c: [],
         )
     ]

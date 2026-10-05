@@ -1,9 +1,29 @@
 # Session: Stage 6B implementation
 
 ## TL;DR
-- **Worked On:** Stage 6B execution contract (`docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md`), Task 0 (issue register) and Task 1 (harness generalization).
-- **Outcome:** Contract and Amendment 1 (write boundary: Preview R2 `rebuild/6b/<run_id>/` plus `lake/gold/reconstruction_*` with catalog registration; no serving, selection, grade or production writes) approved by the user. Task 1 implemented; Tasks 2-5 open.
-- **Next:** Task 2, the twelve 6B stages and `conf/rebuild/6b_v1.yaml`.
+- **Worked On:** Stage 6B execution contract (`docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md`), Task 0 (issue register), Task 1 (harness generalization), and Task 2 (reconstruction stages).
+- **Outcome:** Contract, Amendment 1, Task 1, and Task 2 implemented. Added all 12 stages, 5 reconstruction schemas, pinned execution plan `conf/rebuild/6b_v1.yaml`, and comprehensive test suite. Full repo validation clean (1,968 passed, 9 skipped). Tasks 3-5 open.
+- **Next:** Task 3, staged execution and persisted verification (`rebuild_6a.py preflight`, `build`, and `verify`).
+
+## Task 2 (reconstruction stages)
+- **Schemas:** Registered 5 week-partitioned Gold schemas in `src/cks_picks_cfb/data/schema_contracts.py` (`reconstruction_offsets_2026_v1`, `reconstruction_application_frames_v1`, `reconstruction_predictions_v1`, `reconstruction_market_selections_v1`, `reconstruction_grades_v1`).
+- **Write boundary:** `GuardedStore` in `src/cks_picks_cfb/rebuild/targets.py` restricts writes under `rebuild/6b/` strictly to `rebuild/6b/<run_id>/` and `lake/gold/dataset=reconstruction_*`, rejecting Silver, unrelated Gold, quality-receipt, serving, and production writes.
+- **Plan:** Pinned `conf/rebuild/6b_v1.yaml` for run `6b-replay-20261005-r1` with hash-checked pins for 6A main root (`741d262f...`), Task 4 root (`3431a5fc...`), signed receipt (`bcd5783d...`, checksum `efcedf3e...` asserted), source lock, bets config, Silver 2026 parents, and served release packet (`deb1fd34...`).
+- **Namespace dispatch:** `src/cks_picks_cfb/rebuild/recon_stages.py` defines `SIX_B_STAGE_BUILDERS`; `src/cks_picks_cfb/rebuild/stages.py` dispatches by `plan.namespace` so 6B `receipt` uses its own builder while 6A remains unchanged.
+- **Legacy helpers:** Copied `spread_result`, `total_result`, `_profit`, `_normalize_result`, and `score_bets` verbatim into `src/cks_picks_cfb/rebuild/legacy.py` with provenance so library code remains independent of `scripts.*`.
+- **Stages:**
+  1. `foundation`: Verifies 6A roots, receipt checksum, and `inputs_for_6b`; reconstructs 271 games (8/43/49/57/58/56) and validates `as_of` chronologies (`recon_foundation.py`).
+  2. `scoring_events_2026`: Re-runs possession measurements on published 2026 Silver as `baseline_unchanged`; requires observations digest to match 6A (`recon_foundation.py`).
+  3. `offsets_2026`: Rebuilds frozen offsets and gates on parity with kickoff-order offsets; reports unusable team-games (`recon_offsets.py`).
+  4. `states_at_cutoff`: Evaluates `IntendedUpdate` engine at each original `as_of`; gates on exact match with 6A `pregame_teams` (`recon_states.py`).
+  5. `application_frames`: Constructs weekly frames (`home_host=1.0`, `venue_unknown=True`) with exact schedule coverage (`recon_forecast.py`).
+  6. `predictions`: Verifies bridge bundle compatibility (`apply_exported_bridge`) before generating predictions; enforces pre-2026 training and state cutoff limits (`recon_forecast.py`).
+  7. `markets`: Evaluates `model_side_best_quote_v2` quote selection; lowest home-signed spread for away, exact ties break away/under, preserves Week 3 missing total (`recon_markets.py`).
+  8. `finals`: Locked Weeks 0-4 outcomes and pinned Week 5 outcomes; read-only cross-check against Preview `game_results` (`recon_markets.py`).
+  9. `old_grade_reproduction`: Recomputes stored grades for the 6 original runs against Preview DB; enforces 0 mismatches before permitting new grades (`recon_grades.py`).
+  10. `retrospective_grades`: Grades corrected selections with finals provenance and `retrospective_reconstruction` evidence labels (`recon_grades.py`).
+  11. `comparison`: Compares new against served per week and season-to-date; reports prediction deltas, lean flips, line changes, grade movements, retrospective records vs 52.4%, and multi-factor attribution (`recon_comparison.py`).
+  12. `receipt`: Emits signed `rebuild_6b_receipt_v1`, per-week lineage, rollback targets, and served-format `predictions.csv`, `scored.csv`, and `manifest.json`; verified by re-derivation (`recon_receipt.py`).
 
 ## Task 1 (harness generalization)
 - `RebuildPlan.namespace` (`rebuild/6a/` default, `rebuild/6b/` allowed). It enters the signed plan and the root manifest only when it is not the default, so published 6A plans and roots keep their exact hashes (6A plan shas `fc263834...` and `dff398aa...` are pinned in a test).
@@ -18,24 +38,47 @@
 - The run stops, before predictions, if the 6A bundle needs an adapter (user-approved gate).
 - Contract is a new execution contract; production claims about the Week 5 quote set are excluded.
 - The 6A stage modules keep fixed `rebuild/6a/` prefixes rather than being rewritten; the guard rejects them under a 6B plan.
+- Stage builders dispatched by `plan.namespace` so 6B `receipt` uses `recon_receipt` while 6A `receipt` stays unchanged.
 
 ## Files changed
-- Docs: `docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md` (new; In Progress), `docs/plans/index.md`, `docs/data/known_issues.md` (6A updates to issues 2, 3, 7, 10, 13, 14; committed in `26edbd5`), `docs/status.md`, this log.
-- Code: `src/cks_picks_cfb/rebuild/{plan,targets,orchestrator,parity,published,inputs}.py`, `scripts/pipeline/{rebuild_6a,publish_6a}.py`.
-- Tests: `tests/test_rebuild_namespace.py` (new).
+- Docs: `docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md` (In Progress), this log.
+- Config: `conf/rebuild/6b_v1.yaml` (new).
+- Code:
+  - `src/cks_picks_cfb/data/schema_contracts.py` (5 reconstruction Gold schemas)
+  - `src/cks_picks_cfb/rebuild/targets.py` (6B GuardedStore namespaces)
+  - `src/cks_picks_cfb/rebuild/stages.py` (namespace dispatch)
+  - `src/cks_picks_cfb/rebuild/legacy.py` (copied grading & scoring helpers)
+  - `src/cks_picks_cfb/rebuild/recon_common.py` (shared lake/data helpers)
+  - `src/cks_picks_cfb/rebuild/recon_foundation.py` (stages 1 & 2)
+  - `src/cks_picks_cfb/rebuild/recon_offsets.py` (stage 3)
+  - `src/cks_picks_cfb/rebuild/recon_states.py` (stage 4)
+  - `src/cks_picks_cfb/rebuild/recon_forecast.py` (stages 5 & 6)
+  - `src/cks_picks_cfb/rebuild/recon_markets.py` (stages 7 & 8)
+  - `src/cks_picks_cfb/rebuild/recon_grades.py` (stages 9 & 10)
+  - `src/cks_picks_cfb/rebuild/recon_comparison.py` (stage 11)
+  - `src/cks_picks_cfb/rebuild/recon_receipt.py` (stage 12)
+  - `src/cks_picks_cfb/rebuild/recon_stages.py` (stage builders registry)
+- Tests: `tests/test_rebuild_namespace.py` (10 tests), `tests/test_rebuild_6b.py` (12 tests).
 
 ## Validation
-- `tests/test_rebuild_namespace.py` (10 tests; 9 fail without the change). Full suite: 1,956 passed, 9 skipped. `ruff check .`, `make contracts-check`, `mkdocs build --quiet`, `git diff --check` clean.
-- No R2 or database access in this task.
+- `tests/test_rebuild_6b.py` (12 passed).
+- `tests/test_rebuild_namespace.py` (10 passed).
+- `tests/test_schema_contracts.py` (8 passed).
+- Full Python suite: 1,968 passed, 9 skipped.
+- `ruff check .` clean (0 errors).
+- `make contracts-check` clean.
+- `mkdocs build --quiet` clean.
+- `git diff --check` clean (0 whitespace/newline issues).
+- Preflight pin and remote storage validation simulation: passed (SHA `744f2975...`).
+- Zero writes to Preview R2, database, serving, or production during this task.
 
 ## Blockers
-- None. Open risks recorded in the contract: 6A bundle compatibility with `apply_exported_bridge` (unverified), the offset-freeze gate, drift of the pinned replay thresholds file, and whether production's frozen Week 5 used the same quote set (no production claim is made).
-- One live publish attempt in the earlier 6A Task 4 work was denied by the permission classifier; the user ran the identical command. No 6B publish is pending.
+- None.
 
 ## Contract status
-`docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md` stays **In Progress**: Definition-of-done items 2-8 are open.
+`docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md` stays **In Progress**: Definition-of-done items 2-8 remain open for Tasks 3-5.
 
 ## Next
-Task 2: write `conf/rebuild/6b_v1.yaml` (pins taken from hash-checked reads: 6A main and Task 4 roots, source lock, bets config, Week 5 market refs and outcomes ref, served manifests) and the twelve stages, starting with `foundation`, `scoring_events_2026`, `offsets_2026` and `states_at_cutoff`; check bundle compatibility before the `predictions` stage. All git operations and live publishes stay user-run.
+Task 3: Execute staged build and verification using `scripts/pipeline/rebuild_6a.py` with `conf/rebuild/6b_v1.yaml` (preflight, build stages 1-12, stage-level verify, and full persisted verify). All git operations and live publishes remain user-run.
 
-**tags:** ["stage6b", "harness", "namespace", "contract"]
+**tags:** ["stage6b", "reconstruction", "stages", "receipt", "comparison", "contract"]

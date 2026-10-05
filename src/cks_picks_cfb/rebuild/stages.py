@@ -22,6 +22,7 @@ from cks_picks_cfb.rebuild import (
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import Stage, StageContext, StageOutput
 from cks_picks_cfb.rebuild.plan import RebuildPlan
+from cks_picks_cfb.rebuild.recon_stages import SIX_B_STAGE_BUILDERS
 
 #: name -> (build, verify). Task 3 registers each stage as it is implemented.
 STAGE_BUILDERS: dict[
@@ -53,9 +54,10 @@ def _unimplemented(name: str) -> Callable[[StageContext], StageOutput]:
 
 
 def get_stages(plan: RebuildPlan) -> list[Stage]:
+    registry = SIX_B_STAGE_BUILDERS if plan.namespace == "rebuild/6b/" else STAGE_BUILDERS
     stages = []
     for stage_plan in plan.stages:
-        build, verify = STAGE_BUILDERS.get(
+        build, verify = registry.get(
             stage_plan.name,
             (_unimplemented(stage_plan.name), lambda _c: ["stage not implemented"]),
         )

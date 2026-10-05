@@ -159,11 +159,18 @@ class GuardedStore:
             raise TargetError("run_id must be a single path segment")
         self.store = store
         self.identity = store.identity
-        self.namespaces = (
-            *STATIC_NAMESPACES,
-            f"{run_namespace}{run_id}/",
-            *extra_namespaces,
-        )
+        if run_namespace == "rebuild/6b/":
+            self.namespaces = (
+                f"{run_namespace}{run_id}/",
+                "lake/gold/dataset=reconstruction_",
+                *extra_namespaces,
+            )
+        else:
+            self.namespaces = (
+                *STATIC_NAMESPACES,
+                f"{run_namespace}{run_id}/",
+                *extra_namespaces,
+            )
         self.ledger = WriteLedger()
 
     def check_key(self, key: str) -> None:

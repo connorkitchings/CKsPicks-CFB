@@ -1,0 +1,90 @@
+# Stage 6B: Completed-week reconstruction (2026 Weeks 0-5), contract 01.
+# Rebuilds forecast, market selection and retrospective grading on the corrected 6A foundation.
+# Preview-only evidence; no serving, selection, grade or production writes.
+run_id: 6b-replay-20261005-r1
+namespace: "rebuild/6b/"
+storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"
+seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
+cutoff_2026: "2026-09-30T12:34:06Z"
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  selection_policy: model_side_best_quote_v2
+  offset_rule: unusable_team_games_unresolved
+  zero_threshold: true
+inputs:
+  - {name: root_manifest_6a, kind: r2_object, uri: rebuild/6a/6a-rebuild-20261004-r1/root-manifest.json, sha256: 741d262f116a51db0d33ffc84efb22aa5ff4093e7da38535073343aee1fa85d0}
+  - {name: root_manifest_task4, kind: r2_object, uri: rebuild/6a/6a-task4-r1/root-manifest.json, sha256: 3431a5fccd7465e872b526109f3262b3563f0d950f337b413c11aa8571f86b65}
+  - {name: task4_receipt, kind: r2_object, uri: rebuild/6a/6a-task4-r1/receipt/receipt.json, sha256: bcd5783d6d3272e1cb05d0531ee75938ad50f5f2084e67b98c4c0ff6db48136b}
+  - {name: source_lock_2026, kind: git_file, uri: docs/plans/2026-09-29/v5-repair-2026-source-lock.json, sha256: eaecabecfd85f463f76858feda46fb8a927b4a7d534be856155b21ccec919227}
+  - {name: bets_config, kind: git_file, uri: conf/weekly_bets/v5_intended_update_2026.yaml, sha256: 2ee4aec5d6a55cf9cdcb3733008cf11f5bfb66f184905d1f38182bc8b744f4ab}
+  - {name: silver_2026_parents, kind: git_file, uri: conf/rebuild/silver_2026_parents_v1.json, sha256: d51de1c117bd3d65164a1ee4f11f29a67ed591f68a27196bcebe8dabbfba846b}
+  - {name: served_release_packet, kind: git_file, uri: docs/plans/2026-09-29/v5-intended-update-production-release-packet.json, sha256: deb1fd34ebd98410eedce6e7ae7088e54da95dd6d36ca6a1d7ac90a595781fcc}
+stages:
+  - name: foundation
+    inputs: [root_manifest_6a, root_manifest_task4, task4_receipt, source_lock_2026]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/foundation/
+  - name: scoring_events_2026
+    inputs: [root_manifest_6a, silver_2026_parents]
+    parents: [foundation]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/scoring_events_2026/
+  - name: offsets_2026
+    inputs: [root_manifest_6a]
+    parents: [foundation, scoring_events_2026]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/offsets_2026/
+      - lake/gold/dataset=reconstruction_offsets_2026/
+  - name: states_at_cutoff
+    inputs: [root_manifest_6a]
+    parents: [foundation, scoring_events_2026]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/states_at_cutoff/
+  - name: application_frames
+    parents: [foundation, offsets_2026, states_at_cutoff]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/application_frames/
+      - lake/gold/dataset=reconstruction_application_frames/
+  - name: predictions
+    inputs: [root_manifest_6a]
+    parents: [application_frames]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/predictions/
+      - lake/gold/dataset=reconstruction_predictions/
+  - name: markets
+    inputs: [source_lock_2026, bets_config]
+    parents: [foundation, predictions]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/markets/
+      - lake/gold/dataset=reconstruction_market_selections/
+  - name: finals
+    parents: [foundation]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/finals/
+  - name: old_grade_reproduction
+    parents: [finals]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/old_grade_reproduction/
+    legacy_allowed: true
+  - name: retrospective_grades
+    parents: [markets, finals, old_grade_reproduction]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/retrospective_grades/
+      - lake/gold/dataset=reconstruction_grades/
+  - name: comparison
+    inputs: [served_release_packet]
+    parents: [predictions, markets, retrospective_grades, offsets_2026, states_at_cutoff]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/comparison/
+    legacy_allowed: true
+  - name: receipt
+    inputs: [root_manifest_6a, root_manifest_task4, task4_receipt, source_lock_2026]
+    parents: [comparison]
+    outputs:
+      - rebuild/6b/6b-replay-20261005-r1/receipt/
+      - rebuild/6b/6b-replay-20261005-r1/served/

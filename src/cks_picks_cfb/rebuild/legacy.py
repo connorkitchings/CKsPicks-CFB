@@ -194,3 +194,146 @@ sources = _sources
 finals = _finals
 evidence_ids = _evidence_ids
 materiality = _materiality
+
+
+# ---------------------------------------------------------------------------
+# Legacy grading helpers for Stage 6B reproduction and retrospective grading.
+# Copied verbatim from scripts/pipeline/backfill_v5_unconstrained_grades.py
+# (spread_result, total_result) and scripts/pipeline/score_to_db.py
+# (_profit, _normalize_result).
+# ---------------------------------------------------------------------------
+
+
+def spread_result(
+    home_points: float | None,
+    away_points: float | None,
+    line: float | None,
+    lean: str | None,
+) -> str | None:
+    """Frozen-line spread grade for a lean; None when ungradable."""
+    if home_points is None or away_points is None or line is None:
+        return None
+    if lean not in ("home", "away"):
+        return None
+    cover_margin = (home_points - away_points) + line
+    if cover_margin > 0:
+        return "win" if lean == "home" else "loss"
+    if cover_margin < 0:
+        return "loss" if lean == "home" else "win"
+    return "push"
+
+
+def total_result(
+    home_points: float | None,
+    away_points: float | None,
+    line: float | None,
+    lean: str | None,
+) -> str | None:
+    """Frozen-line total grade for a lean; None when ungradable."""
+    if home_points is None or away_points is None or line is None:
+        return None
+    if lean not in ("over", "under"):
+        return None
+    score = home_points + away_points
+    if score > line:
+        return "win" if lean == "over" else "loss"
+    if score < line:
+        return "loss" if lean == "over" else "win"
+    return "push"
+
+
+def _profit(result: str, price: float | None = None) -> float:
+    if result == "push":
+        return 0.0
+    if result == "loss":
+        return -1.1 if price is None else -1.0
+    if price is not None:
+        from cks_picks_cfb.models.market_grading import american_profit_per_unit
+
+        return american_profit_per_unit(price)
+    return 1.0
+
+
+def _normalize_result(val: Any) -> str | None:
+    """Map CSV 'Win'/'Loss'/'Push'/NaN to lower-case enum value or None."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return None
+    s = str(val).strip().lower()
+    if s in {"win", "loss", "push"}:
+        return s
+    return None
+
+
+def score_bets(bets_df: pd.DataFrame, scores_df: pd.DataFrame) -> pd.DataFrame:
+    """Score bets against game outcomes. Copied verbatim from scripts/pipeline/score_weekly_bets.py."""
+    scored = bets_df.merge(scores_df, left_on="game_id", right_on="id", how="left")
+
+    scored["home_margin"] = scored["home_points"] - scored["away_points"]
+    scored["total_score"] = scored["home_points"] + scored["away_points"]
+
+    def get_spread_result(row):
+        if pd.isna(row["home_points"]) or pd.isna(row["home_team_spread_line"]):
+            return None
+
+        margin = row["home_points"] - row["away_points"]
+        line = row["home_team_spread_line"]
+        cover_margin = margin + line
+
+        bet_side = str(row.get("Spread Bet", "")).lower()
+        if bet_side not in ("home", "away"):
+            bet_side = str(row.get("spread_lean", "")).lower()
+
+        if cover_margin > 0:
+            return (
+                "Win"
+                if bet_side == "home"
+                else "Loss"
+                if bet_side == "away"
+                else "No Bet"
+            )
+        elif cover_margin < 0:
+            return (
+                "Loss"
+                if bet_side == "home"
+                else "Win"
+                if bet_side == "away"
+                else "No Bet"
+            )
+        else:
+            return "Push"
+
+    def get_total_result(row):
+        if pd.isna(row["total_score"]) or pd.isna(row["total_line"]):
+            return None
+
+        score = row["total_score"]
+        line = row["total_line"]
+        bet_side = str(row.get("Total Bet", "")).lower()
+        if bet_side not in ("over", "under"):
+            bet_side = str(row.get("total_lean", "")).lower()
+
+        if score > line:
+            return (
+                "Win"
+                if bet_side == "over"
+                else "Loss"
+                if bet_side == "under"
+                else "No Bet"
+            )
+        elif score < line:
+            return (
+                "Loss"
+                if bet_side == "over"
+                else "Win"
+                if bet_side == "under"
+                else "No Bet"
+            )
+        else:
+            return "Push"
+
+    scored["Spread Bet Result"] = scored.apply(get_spread_result, axis=1)
+    scored["Total Bet Result"] = scored.apply(get_total_result, axis=1)
+    scored["Spread Result"] = scored["home_margin"]
+    scored["Total Result"] = scored["total_score"]
+
+    return scored
