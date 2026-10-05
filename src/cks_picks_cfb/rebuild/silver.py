@@ -1,9 +1,10 @@
 """Stage 2: re-derive Silver byplay/drives/team-game/reconciliation, season by season.
 
-Normalized Silver parents are the hash-pinned R1 refs; the corrected derivation uses
-nullable PPA, stream-score reconciliation and the pinned corrections version. Each
-season is built in a throwaway local lake and streamed out, so no more than one season
-is in memory.
+Normalized Silver parents are the exact Phase 2c versions the Step 5 byplay was built
+from (``conf/rebuild/phase2c_silver_parents_v1.json``, 8,936 FBS-involved games). The
+corrected derivation uses nullable PPA, stream-score reconciliation and the pinned
+corrections version. Each season is built in a throwaway local lake and streamed out, so
+no more than one season is in memory.
 """
 
 from __future__ import annotations
@@ -30,7 +31,8 @@ DERIVED = {
     "reconciled_team_game": "team_game_v1",
     "source_reconciliation": "reconciliation_v1",
 }
-PARENT_ORDER = ("plays", "games", "teams", "venues", "team_game_stats")
+PARENT_ORDER = ("plays", "fbs_involved_games", "teams", "team_game_stats")
+PIN_SCHEMA = "rebuild_6a_silver_parents_v1"
 CORRECTIONS_DATASET = "data_corrections"
 SUMMARY = "rebuild/6a/{run_id}/silver/summary.json"
 PIPELINE_CONFIG = {
@@ -123,33 +125,62 @@ def _ref(entry: Mapping[str, Any]):
     )
 
 
-def _corrections_ref(context: StageContext):
-    """The pinned corrections parent (explicit pin; not part of the R1 ref set)."""
-    from cks_picks_cfb.data.lake import DatasetRef
+def _season_pin(
+    context: StageContext, pin_file: Mapping[str, Any], season: int
+) -> tuple[Mapping[str, Any], list]:
+    """Pinned parent refs for one season, in the legacy build's parent order."""
+    if pin_file.get("schema_version") != PIN_SCHEMA:
+        raise GateError("silver parent pin file has the wrong schema")
+    entry = (pin_file.get("seasons") or {}).get(str(season))
+    if entry is None:
+        raise GateError(f"silver parent pin file lacks season {season}")
+    order = (*PARENT_ORDER, CORRECTIONS_DATASET)
+    by_name = {item["dataset"]: item for item in entry["parents"]}
+    if set(by_name) != set(order) or len(entry["parents"]) != len(order):
+        raise GateError(f"{season}: parent pin must be exactly {list(order)}")
+    corrections = context.plan.policies["corrections_ref"]
+    if (
+        by_name[CORRECTIONS_DATASET]["version_id"] != corrections["version_id"]
+        or by_name[CORRECTIONS_DATASET]["content_sha"] != corrections["content_sha"]
+    ):
+        raise GateError(f"{season}: corrections parent differs from the plan policy")
+    return entry, [_ref(by_name[name]) for name in order]
 
-    pin = context.plan.policies["corrections_ref"]
-    pinned = {p.name: p for p in context.plan.inputs}["data_corrections"]
-    if pin["content_sha"] != pinned.sha256 or pin["uri"] != pinned.uri:
-        raise GateError("corrections ref differs from its input pin")
-    return DatasetRef(
-        dataset=CORRECTIONS_DATASET,
-        version_id=pin["version_id"],
-        schema_version=pin["schema_version"],
-        content_sha=pin["content_sha"],
-        uri=pin["uri"],
+
+def legacy_parity(
+    storage, entry: Mapping[str, Any], outputs: Mapping[str, pd.DataFrame]
+) -> dict[str, Any]:
+    """Like-for-like counts and per-game reconciliation classes against the legacy build."""
+    from cks_picks_cfb.data.lake import read_dataset
+
+    legacy = {
+        name: read_dataset(storage, _ref(entry["legacy_comparison"][name]))
+        for name in ("drives", "reconciled_team_game", "source_reconciliation")
+    }
+    new_rec = outputs["source_reconciliation"][["game_id", "classification"]]
+    merged = new_rec.merge(
+        legacy["source_reconciliation"][["game_id", "classification"]],
+        on="game_id",
+        how="outer",
+        suffixes=("_new", "_legacy"),
+        indicator=True,
     )
-
-
-def _season_refs(derived: Mapping[str, Any], season: int) -> dict[str, Any]:
-    by = {e["dataset"]: e for e in derived["entries"] if int(e["season"]) == season}
-    missing = [n for n in (*PARENT_ORDER, *DERIVED) if n not in by]
-    if missing:
-        raise GateError(f"R1 derived ref set lacks {season}: {missing}")
-    return by
+    mismatched = merged[
+        (merged["_merge"] != "both")
+        | (merged["classification_new"] != merged["classification_legacy"])
+    ]
+    return {
+        "drives_rows_equal": len(outputs["drives"]) == len(legacy["drives"]),
+        "team_game_rows_equal": len(outputs["reconciled_team_game"])
+        == len(legacy["reconciled_team_game"]),
+        "reconciliation_rows_equal": len(new_rec)
+        == len(legacy["source_reconciliation"]),
+        "reconciliation_class_mismatches": int(len(mismatched)),
+    }
 
 
 def derive_season(
-    storage, context: StageContext, derived, source_set, season: int, work: Path
+    storage, context: StageContext, pin_file, source_set, season: int, work: Path
 ) -> tuple[dict[str, Any], list[tuple[str, bytes]]]:
     from cks_picks_cfb.data.history_play_capture import (
         manifest_declared_missing_game_ids,
@@ -167,16 +198,14 @@ def derive_season(
     from cks_picks_cfb.data.storage.local import LocalStorage
     from cks_picks_cfb.features.pipeline import build_preaggregation_pipeline
 
-    entries = _season_refs(derived, season)
-    parents = [_ref(entries[name]) for name in PARENT_ORDER]
-    parents.append(_corrections_ref(context))
+    entry, parents = _season_pin(context, pin_file, season)
     frames = {ref.dataset: read_dataset(storage, ref) for ref in parents}
-    games = frames["games"].rename(columns={"kickoff_utc": "start_date"})
+    games = frames["fbs_involved_games"].rename(columns={"kickoff_utc": "start_date"})
     byplay, drives, team_game, _ = build_preaggregation_pipeline(
         frames["plays"],
         games_df=games,
         teams_df=frames.get("teams"),
-        venues_df=frames.get("venues"),
+        venues_df=None,
         weather_df=None,
         corrections_df=frames.get(CORRECTIONS_DATASET),
         nullable_ppa=PIPELINE_CONFIG["nullable_ppa"],
@@ -216,6 +245,7 @@ def derive_season(
         "season": season,
         "datasets": {},
         "declared_missing_games": len(declared),
+        "games": int(len(games)),
     }
     for dataset, frame in outputs.items():
         validate_frame(frame, schema_for(dataset, DERIVED[dataset]))
@@ -252,7 +282,7 @@ def derive_season(
                 (work / keys[1]).read_bytes()
             ).hexdigest(),
         }
-    legacy = read_dataset(storage, _ref(entries["byplay"]))
+    legacy = read_dataset(storage, _ref(entry["legacy_comparison"]["byplay"]))
     summary["ppa"] = {
         "rows": int(len(byplay)),
         "legacy_rows": int(len(legacy)),
@@ -271,6 +301,7 @@ def derive_season(
         },
         "blocking": int(reconciliation["blocking"].fillna(True).sum()),
     }
+    summary["legacy_parity"] = legacy_parity(storage, entry, outputs)
     summary["parents"] = [r.version_id for r in parents]
     return summary, files
 
@@ -287,9 +318,9 @@ def build(context: StageContext) -> StageOutput:
         raise GateError("storage identity differs from the plan")
     storage = get_storage(environment="preview")
     source_set = json.loads(context.read_input("r1_source_set"))
-    derived = json.loads(context.read_input("r1_derived_ref_set"))
-    if derived.get("state") != "complete" or source_set.get("state") != "complete":
-        raise GateError("R1 source/derived ref sets must be complete")
+    pin_file = json.loads(context.read_input("phase2c_silver_parents"))
+    if source_set.get("state") != "complete":
+        raise GateError("R1 source set must be complete")
     seasons = season_list(context.plan.seasons)
     prefix = SUMMARY.format(run_id=context.plan.run_id)
     summaries: list[dict[str, Any]] = []
@@ -298,7 +329,7 @@ def build(context: StageContext) -> StageOutput:
         for season in seasons:
             with tempfile.TemporaryDirectory(prefix=f"6a-silver-{season}-") as tmp:
                 summary, files = derive_season(
-                    storage, context, derived, source_set, season, Path(tmp)
+                    storage, context, pin_file, source_set, season, Path(tmp)
                 )
                 summaries.append(summary)
                 yield from files
@@ -339,6 +370,16 @@ def verify(context: StageContext) -> list[str]:
             problems.append(f"{season}: blocking reconciliation rows")
         if not item["ppa"]["rows_equal"]:
             problems.append(f"{season}: byplay rows differ from legacy")
+        parity = item["legacy_parity"]
+        for name in (
+            "drives_rows_equal",
+            "team_game_rows_equal",
+            "reconciliation_rows_equal",
+        ):
+            if not parity[name]:
+                problems.append(f"{season}: {name} is false against the legacy build")
+        if parity["reconciliation_class_mismatches"]:
+            problems.append(f"{season}: reconciliation classes differ from legacy")
         any_null_ppa = any_null_ppa or item["ppa"]["null_ppa"] > 0
         differences = item["value_differences"]
         fix = item["punt_return_fix"]

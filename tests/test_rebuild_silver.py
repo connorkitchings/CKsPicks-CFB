@@ -35,14 +35,54 @@ def test_season_list_rejects_2020_and_partial_sets():
         silver.season_list((2015, 2016))
 
 
-def test_season_refs_require_every_parent_and_derived_dataset():
-    entries = [
-        {"season": 2024, "dataset": name}
-        for name in (*silver.PARENT_ORDER, *silver.DERIVED)
+def _context(version="v", sha="c" * 64):
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        plan=SimpleNamespace(
+            policies={"corrections_ref": {"version_id": version, "content_sha": sha}}
+        )
+    )
+
+
+def _pin(season=2024, version="v", sha="c" * 64):
+    parents = [
+        {
+            "dataset": name,
+            "version_id": f"{name}-v",
+            "schema_version": "s",
+            "content_sha": "a" * 64,
+            "uri": f"lake/silver/{name}",
+        }
+        for name in silver.PARENT_ORDER
+    ] + [
+        {
+            "dataset": silver.CORRECTIONS_DATASET,
+            "version_id": version,
+            "schema_version": "s",
+            "content_sha": sha,
+            "uri": "lake/silver/c",
+        }
     ]
-    assert len(silver._season_refs({"entries": entries}, 2024)) == 9
-    with pytest.raises(GateError, match="lacks"):
-        silver._season_refs({"entries": entries[:-1]}, 2024)
+    return {
+        "schema_version": silver.PIN_SCHEMA,
+        "seasons": {str(season): {"parents": parents}},
+    }
+
+
+def test_season_pin_returns_legacy_parent_order_and_checks_corrections():
+    entry, refs = silver._season_pin(_context(), _pin(), 2024)
+    assert [r.dataset for r in refs] == [*silver.PARENT_ORDER, "data_corrections"]
+    with pytest.raises(GateError, match="corrections"):
+        silver._season_pin(_context(version="other"), _pin(), 2024)
+    with pytest.raises(GateError, match="lacks season"):
+        silver._season_pin(_context(), _pin(), 2023)
+    with pytest.raises(GateError, match="schema"):
+        silver._season_pin(_context(), {**_pin(), "schema_version": "x"}, 2024)
+    broken = _pin()
+    broken["seasons"]["2024"]["parents"].pop(0)
+    with pytest.raises(GateError, match="exactly"):
+        silver._season_pin(_context(), broken, 2024)
 
 
 def test_value_differences_normalize_legacy_nan_strings():

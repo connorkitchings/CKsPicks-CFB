@@ -1,0 +1,907 @@
+{
+  "repair_manifest_uri": "artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json",
+  "schema_version": "rebuild_6a_silver_parents_v1",
+  "seasons": {
+    "2015": {
+      "game_outcomes": {
+        "content_sha": "b0479d0e735f828c04655fe5ef0e10473b2ad92b0ccb4e16a4ccf6660cf7d16c",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=8d1ddbaae45af0be6f20793e/data.parquet",
+        "version_id": "8d1ddbaae45af0be6f20793e"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "3588c37bbd245035c48e19987f57bcad7317ff20ff288f627fcea09728faa965",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=4b1addefa2c895641741560e/data.parquet",
+          "version_id": "4b1addefa2c895641741560e"
+        },
+        "drives": {
+          "content_sha": "3a5600dde70096eccdc2706b95c12a41e39fd62bb06c8bbf5cf6c41dfb4eecae",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=39fca36b05d36aeadc40cf13/data.parquet",
+          "version_id": "39fca36b05d36aeadc40cf13"
+        },
+        "game_outcomes": {
+          "content_sha": "b0479d0e735f828c04655fe5ef0e10473b2ad92b0ccb4e16a4ccf6660cf7d16c",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=8d1ddbaae45af0be6f20793e/data.parquet",
+          "version_id": "8d1ddbaae45af0be6f20793e"
+        },
+        "reconciled_team_game": {
+          "content_sha": "0e91deb738002df76d84debcce41519b67128168531b8d0c5e2e326d5cbef64e",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=55a66cbedf0e6137ea5263f2/data.parquet",
+          "version_id": "55a66cbedf0e6137ea5263f2"
+        },
+        "source_reconciliation": {
+          "content_sha": "456d45fac3fe16b31b990fe61e4cc24d4c1c8c25f2954f489effcbd5a2537156",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=9ed31518567720d60d405de8/data.parquet",
+          "version_id": "9ed31518567720d60d405de8"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "051bb4147922894a140e6b412355c5ae32efae8803ec48ac8bd52cc2631c0275",
+          "dataset": "plays",
+          "row_count": 160180,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=3f9a66519bdf8432dec92ba2/data.parquet",
+          "version_id": "3f9a66519bdf8432dec92ba2"
+        },
+        {
+          "content_sha": "45d068800e344591fd36cf7473490dce69520b241e50509be747685e7d956ebc",
+          "dataset": "fbs_involved_games",
+          "row_count": 870,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=096c70fbc1e66d471440dd22/data.parquet",
+          "version_id": "096c70fbc1e66d471440dd22"
+        },
+        {
+          "content_sha": "b0728b9736c57c4fa36470f8b2817cac718a83679aabac118fae2f828d339b78",
+          "dataset": "teams",
+          "row_count": 128,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=04bea66cd8bc175ae3c244fb/data.parquet",
+          "version_id": "04bea66cd8bc175ae3c244fb"
+        },
+        {
+          "content_sha": "e47ca82efb06f26eb7cc802aa6081798991379c3494ed99a1e4c36363f420023",
+          "dataset": "team_game_stats",
+          "row_count": 1740,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=efad1a837a9f4f3dad02d0e0/data.parquet",
+          "version_id": "efad1a837a9f4f3dad02d0e0"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2016": {
+      "game_outcomes": {
+        "content_sha": "50fe313039b6f53b5ec73a4068efae18f78807c772f720c049b7e927eb8b615f",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=d652672c76db6a013bcf6b06/data.parquet",
+        "version_id": "d652672c76db6a013bcf6b06"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "732d645cf6f02ce006fe95bafbb6e61432419d07ed6b8a3007071a682ef54720",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=2088757a83b92cf86d7d5882/data.parquet",
+          "version_id": "2088757a83b92cf86d7d5882"
+        },
+        "drives": {
+          "content_sha": "e28f5325fd634c04591fcbe88fdf6e1b79f277d6f4d6e1a2e04b2f27e8973bdb",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=32ebb8019f834f7122e3e659/data.parquet",
+          "version_id": "32ebb8019f834f7122e3e659"
+        },
+        "game_outcomes": {
+          "content_sha": "50fe313039b6f53b5ec73a4068efae18f78807c772f720c049b7e927eb8b615f",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=d652672c76db6a013bcf6b06/data.parquet",
+          "version_id": "d652672c76db6a013bcf6b06"
+        },
+        "reconciled_team_game": {
+          "content_sha": "f104f9b7ebd05d1a4c612da1df95c330e908ab0aad0cc89217ed73d04f3e16e8",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=f84643cc9039a40ef8782cf3/data.parquet",
+          "version_id": "f84643cc9039a40ef8782cf3"
+        },
+        "source_reconciliation": {
+          "content_sha": "2b500e477c5bbba7f2f3e198950a4e24e5cb9f2fbaf14c203be290eaabaaab58",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=9bdc376048b66d515a9a98a2/data.parquet",
+          "version_id": "9bdc376048b66d515a9a98a2"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "3868214ad644c8cfa425acb955db097c01647a241ec0205999c070ab28abd084",
+          "dataset": "plays",
+          "row_count": 158518,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=4f44169a36791a47ca2ee3f4/data.parquet",
+          "version_id": "4f44169a36791a47ca2ee3f4"
+        },
+        {
+          "content_sha": "cdee7bfc10d6b719f238aab2dc75f80752a7dc82d6068e1f272043e043015d1c",
+          "dataset": "fbs_involved_games",
+          "row_count": 873,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=1924f1c99cc70f4f2555f572/data.parquet",
+          "version_id": "1924f1c99cc70f4f2555f572"
+        },
+        {
+          "content_sha": "0321b869c520533d630859bf5b1f0d60982dcdebdc6b4c10647d5366bfb7a640",
+          "dataset": "teams",
+          "row_count": 128,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=7a5dd69d566450e35b498165/data.parquet",
+          "version_id": "7a5dd69d566450e35b498165"
+        },
+        {
+          "content_sha": "c1968a8e7b1a89efbeb033e702ef67028aa1b097d4360b735ce6a13a08b4d0bd",
+          "dataset": "team_game_stats",
+          "row_count": 1744,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=a23c71b18acbbd58855740da/data.parquet",
+          "version_id": "a23c71b18acbbd58855740da"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2017": {
+      "game_outcomes": {
+        "content_sha": "577af4cf67a8453fbd05784622455a078e963e8786cea89c5bb23b896f506632",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=d8761595be88b86a34279dfc/data.parquet",
+        "version_id": "d8761595be88b86a34279dfc"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "7af9206b7da762486ae8e440b7ff44b9876f19bb2a71479a3e353ef84b838e6a",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=f92576adb5ac67346ef634b5/data.parquet",
+          "version_id": "f92576adb5ac67346ef634b5"
+        },
+        "drives": {
+          "content_sha": "807662c6c060c349c566e9bfd239c06b45b10490840e89087c9feb7f2b53f9e3",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=ff7b9eef3f2fd95552fa00c2/data.parquet",
+          "version_id": "ff7b9eef3f2fd95552fa00c2"
+        },
+        "game_outcomes": {
+          "content_sha": "577af4cf67a8453fbd05784622455a078e963e8786cea89c5bb23b896f506632",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=d8761595be88b86a34279dfc/data.parquet",
+          "version_id": "d8761595be88b86a34279dfc"
+        },
+        "reconciled_team_game": {
+          "content_sha": "dcdef6bbc49be8242a1de541577c1b596328ef5a0f6fdc634dca0c2ae3936994",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=51b877cce484d1cee54e60d9/data.parquet",
+          "version_id": "51b877cce484d1cee54e60d9"
+        },
+        "source_reconciliation": {
+          "content_sha": "2f4396afced1ac53f347db3b92467ae1f935dfe797dc3d3ab37b07cec3b1307d",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=71c840dcbd1153a5f530a538/data.parquet",
+          "version_id": "71c840dcbd1153a5f530a538"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "a27d3bf18993cc43cc80f3260bd8b2eac80739d103c6eb86e49b8bad66c3254d",
+          "dataset": "plays",
+          "row_count": 158574,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=cbbb83533432f8637ffc979a/data.parquet",
+          "version_id": "cbbb83533432f8637ffc979a"
+        },
+        {
+          "content_sha": "f9cc96a98e5bce6834099b2dec3533087237303b6de677a09e685ee11cf4d78f",
+          "dataset": "fbs_involved_games",
+          "row_count": 874,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=bfb02dd22da7f2c5e6b007de/data.parquet",
+          "version_id": "bfb02dd22da7f2c5e6b007de"
+        },
+        {
+          "content_sha": "c793012f049674fdc88fb67c95af355430c59fd02312e0ffd516270b422d7fa0",
+          "dataset": "teams",
+          "row_count": 130,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=122c3612edf4551cafa1b993/data.parquet",
+          "version_id": "122c3612edf4551cafa1b993"
+        },
+        {
+          "content_sha": "e7d92ca2f279091553801e46703d7216b22cc7d3b50c3bf847d38672a842c602",
+          "dataset": "team_game_stats",
+          "row_count": 1748,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=a87ba7ed2b8246fe7beea440/data.parquet",
+          "version_id": "a87ba7ed2b8246fe7beea440"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2018": {
+      "game_outcomes": {
+        "content_sha": "47c51d374afcc5d416690889ca82a4ca80e5c3cc2b9e687ba54af1dd26bea791",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=70d459a1cdab4c1fea5afd5e/data.parquet",
+        "version_id": "70d459a1cdab4c1fea5afd5e"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "ca2d423db5ab95bac473c8fc3124f4e7a5a1b5f6f37e4750434ae6e5e8486181",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=9b0ecf174ed76a5c07a750aa/data.parquet",
+          "version_id": "9b0ecf174ed76a5c07a750aa"
+        },
+        "drives": {
+          "content_sha": "cb699997bb4db492c29eeadf1bf30b76ca075946d73b4a108469c3ad8c3ff83a",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=4cbb05ca33378f7808726c82/data.parquet",
+          "version_id": "4cbb05ca33378f7808726c82"
+        },
+        "game_outcomes": {
+          "content_sha": "47c51d374afcc5d416690889ca82a4ca80e5c3cc2b9e687ba54af1dd26bea791",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=70d459a1cdab4c1fea5afd5e/data.parquet",
+          "version_id": "70d459a1cdab4c1fea5afd5e"
+        },
+        "reconciled_team_game": {
+          "content_sha": "1ddb13a2a92f26c09f61d2d85af279c7c44d609cddd4721e82bd3e68330c3b6e",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=ee60e0c12172481a2281410f/data.parquet",
+          "version_id": "ee60e0c12172481a2281410f"
+        },
+        "source_reconciliation": {
+          "content_sha": "8aad115676d922f9fc1a0a306b35e94b66d81c9b2725b37022d6bcaae142e017",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=0ef9505daa46417a72c0fe16/data.parquet",
+          "version_id": "0ef9505daa46417a72c0fe16"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "5d3b41d470ae0c7ff850127627575e3fca001969e5b915237e2f01a4313921ce",
+          "dataset": "plays",
+          "row_count": 160512,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=4709987c41cc3ad53174ba76/data.parquet",
+          "version_id": "4709987c41cc3ad53174ba76"
+        },
+        {
+          "content_sha": "50201ad31afcb65e56bd4af5c33a3393eba6e699aea94155e1b8a0c7922193c2",
+          "dataset": "fbs_involved_games",
+          "row_count": 884,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=f62932697e83f7c41005bbb3/data.parquet",
+          "version_id": "f62932697e83f7c41005bbb3"
+        },
+        {
+          "content_sha": "b563e1c5764b408ce059c326b9fadaa8b9294cda911fd6cf36bf8b98337ec01f",
+          "dataset": "teams",
+          "row_count": 130,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=103dd5a415a358a65e8701fe/data.parquet",
+          "version_id": "103dd5a415a358a65e8701fe"
+        },
+        {
+          "content_sha": "662c313d9dcb07d361fc48121b0a0408b0a8bd876ed35f3614054b58c6ccbb46",
+          "dataset": "team_game_stats",
+          "row_count": 1768,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=9d0eeb08d541ed23880f323f/data.parquet",
+          "version_id": "9d0eeb08d541ed23880f323f"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2019": {
+      "game_outcomes": {
+        "content_sha": "60ecdabbf42c236e49ce68ed35f44c70938d7438803b958ff890b3b8ae672ace",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=d78acef8dfcb5794d61ebc4f/data.parquet",
+        "version_id": "d78acef8dfcb5794d61ebc4f"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "ddb1d5dbe355bcb3da6a55eaff432b142f42ad16dba5272d3451c12bb3af84e9",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=c54af13a514a9da243eedc50/data.parquet",
+          "version_id": "c54af13a514a9da243eedc50"
+        },
+        "drives": {
+          "content_sha": "11051ceaa10a0c30c1a83a0c53eb946b1cdfac50d0e7a7a98f7d7e55015d81ca",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=a89dafaf933bbbc6d716e9ed/data.parquet",
+          "version_id": "a89dafaf933bbbc6d716e9ed"
+        },
+        "game_outcomes": {
+          "content_sha": "60ecdabbf42c236e49ce68ed35f44c70938d7438803b958ff890b3b8ae672ace",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=d78acef8dfcb5794d61ebc4f/data.parquet",
+          "version_id": "d78acef8dfcb5794d61ebc4f"
+        },
+        "reconciled_team_game": {
+          "content_sha": "bcaeebaff868a2b105c4476ebe8fba6fe9e04c43d0413a1683881aff94451878",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=3e3212d76a71a17e41cec34f/data.parquet",
+          "version_id": "3e3212d76a71a17e41cec34f"
+        },
+        "source_reconciliation": {
+          "content_sha": "fa9ffc8a589603b2fa2b788f1cba80b28513710ca3f0fd670c32d0463fb4a7b7",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=efef90ab37b8b8c9a174444b/data.parquet",
+          "version_id": "efef90ab37b8b8c9a174444b"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "e976f402689ae72c9cc0284b0e1e0b77dda587e357ee1f981539a74b08609132",
+          "dataset": "plays",
+          "row_count": 159915,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=c012fe1be4f53f03f0beef28/data.parquet",
+          "version_id": "c012fe1be4f53f03f0beef28"
+        },
+        {
+          "content_sha": "3b67c60594c85b9235ffdbc0aa3712404fe40b75087185764b640953b05e8561",
+          "dataset": "fbs_involved_games",
+          "row_count": 888,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=c1fb31960e24ee943b11ab21/data.parquet",
+          "version_id": "c1fb31960e24ee943b11ab21"
+        },
+        {
+          "content_sha": "0a0abbf5ee777432c49a7a5a875be7210fd5807b29ffc1c51d644dcb21042f87",
+          "dataset": "teams",
+          "row_count": 130,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=038a29dbba1a353d00490e64/data.parquet",
+          "version_id": "038a29dbba1a353d00490e64"
+        },
+        {
+          "content_sha": "2ce18af2c2e96bb4757c66d84b377bb95a4ac3ba1e0dcc521b8a4d39eb227aac",
+          "dataset": "team_game_stats",
+          "row_count": 1776,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=9d71354fdcc5a048d43a8209/data.parquet",
+          "version_id": "9d71354fdcc5a048d43a8209"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2021": {
+      "game_outcomes": {
+        "content_sha": "2bbccb64460894b982d7e2a7ecc56b6b78880e23a3a0e07fe5a95b6f6aa97264",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=711d0c106ca908756660e41f/data.parquet",
+        "version_id": "711d0c106ca908756660e41f"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "655c1bf219ff68f94f8b91e0024353ebf2b41b7d6c85e74413e4c9275d0dccf3",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=2e4d93e6addee8cf497b86aa/data.parquet",
+          "version_id": "2e4d93e6addee8cf497b86aa"
+        },
+        "drives": {
+          "content_sha": "02c674f62f6e44c9f1196198e5c4a5699d809f018c5b219c698c4bf271fa46d9",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=b48d997779d24b12066e67a5/data.parquet",
+          "version_id": "b48d997779d24b12066e67a5"
+        },
+        "game_outcomes": {
+          "content_sha": "2bbccb64460894b982d7e2a7ecc56b6b78880e23a3a0e07fe5a95b6f6aa97264",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=711d0c106ca908756660e41f/data.parquet",
+          "version_id": "711d0c106ca908756660e41f"
+        },
+        "reconciled_team_game": {
+          "content_sha": "f797bffb67c21fc2f1179553436550760b010d1f2b83aac199fd816935d1258c",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=ad83653594c9ca7210775174/data.parquet",
+          "version_id": "ad83653594c9ca7210775174"
+        },
+        "source_reconciliation": {
+          "content_sha": "7c196ac1c8662aec2e01f83e41b68f2c27844f912caf2cd551e987fa68d4dba6",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=a7083cbeefab8368cc02f9f2/data.parquet",
+          "version_id": "a7083cbeefab8368cc02f9f2"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "3a3d34bd58138306ab5cdc64b3debe8c4108567017a1a588466467a5242f4d1d",
+          "dataset": "plays",
+          "row_count": 158498,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=0a3314a3d48c77c0141077c5/data.parquet",
+          "version_id": "0a3314a3d48c77c0141077c5"
+        },
+        {
+          "content_sha": "ca9860ef10e56c8d1747d2de9e8526a7358675cbcfa791d7bfc06b40de526276",
+          "dataset": "fbs_involved_games",
+          "row_count": 887,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=424004f3b4506543006a17e1/data.parquet",
+          "version_id": "424004f3b4506543006a17e1"
+        },
+        {
+          "content_sha": "3fe3e84a08d74146c1ceb9e085bce1a1015663655794d7ae68aa5f2985f671e9",
+          "dataset": "teams",
+          "row_count": 130,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=0795bb3e78aed93b44daf007/data.parquet",
+          "version_id": "0795bb3e78aed93b44daf007"
+        },
+        {
+          "content_sha": "2c4dfdcd8fb9993752ff2826397101adbefa3790902228c25ccf5a4a9ce88194",
+          "dataset": "team_game_stats",
+          "row_count": 1774,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=c1bd7a4d6a0d7eccbd3a2e52/data.parquet",
+          "version_id": "c1bd7a4d6a0d7eccbd3a2e52"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2022": {
+      "game_outcomes": {
+        "content_sha": "24b8f8dcc327f0d39e1722e7eae174db2191cd9ab9da23e9d19b13a2978b70b9",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=34f471506b36dba3ee4dc14e/data.parquet",
+        "version_id": "34f471506b36dba3ee4dc14e"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "8db62995c7c813651e697711797b1b838225693457c702bb472c414b821bc0b1",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=856e88761f704614cfc7e113/data.parquet",
+          "version_id": "856e88761f704614cfc7e113"
+        },
+        "drives": {
+          "content_sha": "32a0b48c3815bd50af9b88c6e32fee40ab57be2d65d6cf261b513bbe603857ed",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=4c06d51452385cfa9644dd6a/data.parquet",
+          "version_id": "4c06d51452385cfa9644dd6a"
+        },
+        "game_outcomes": {
+          "content_sha": "24b8f8dcc327f0d39e1722e7eae174db2191cd9ab9da23e9d19b13a2978b70b9",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=34f471506b36dba3ee4dc14e/data.parquet",
+          "version_id": "34f471506b36dba3ee4dc14e"
+        },
+        "reconciled_team_game": {
+          "content_sha": "20193fe56453ea7b8a79738b24015ededef6b6054dac0f97ff5d6d38945a925f",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=08936814d2a0df110e1adbf9/data.parquet",
+          "version_id": "08936814d2a0df110e1adbf9"
+        },
+        "source_reconciliation": {
+          "content_sha": "0dd1e4f8db4f1c15bb260a331497eedb732c35aa87a81fac45a397321027d761",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=b8d6c0b641eade9e102c7e21/data.parquet",
+          "version_id": "b8d6c0b641eade9e102c7e21"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "7dc43500248dc2d2851209b1017a65652304c4903bb0a786cb2ca64e68518893",
+          "dataset": "plays",
+          "row_count": 160282,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=500e08edceec24b9b7fcc21a/data.parquet",
+          "version_id": "500e08edceec24b9b7fcc21a"
+        },
+        {
+          "content_sha": "394cd2828b7ed3f79d1391905127c64ae770bf4392f2f3a7ddcbd5beb1704b9b",
+          "dataset": "fbs_involved_games",
+          "row_count": 896,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=42b8a586780ef5e2b52a9f9d/data.parquet",
+          "version_id": "42b8a586780ef5e2b52a9f9d"
+        },
+        {
+          "content_sha": "51071f27489b65d7426c8f39abcfc0a99449a72abf9a6826461958cea75caf2a",
+          "dataset": "teams",
+          "row_count": 131,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=a31addc14e1599130bcdf49b/data.parquet",
+          "version_id": "a31addc14e1599130bcdf49b"
+        },
+        {
+          "content_sha": "a6fbdc5d9d4d7207386db961a33a7c8526a8c6fe18f782912020c76493f1ec9d",
+          "dataset": "team_game_stats",
+          "row_count": 1792,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=b94c4c1429c71e5b7c33fcea/data.parquet",
+          "version_id": "b94c4c1429c71e5b7c33fcea"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2023": {
+      "game_outcomes": {
+        "content_sha": "f8c185e052dc82328bc9ae8080789a0846def615ab58c6b55c3cec6d5906fc58",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=b6a0531d2822a8f7be8f36c6/data.parquet",
+        "version_id": "b6a0531d2822a8f7be8f36c6"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "b5e45cfd734a5a2510b4982683ed3f345e5664e4855ac20e04a10a6caf17349a",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=1d20504685976052ddf53f8a/data.parquet",
+          "version_id": "1d20504685976052ddf53f8a"
+        },
+        "drives": {
+          "content_sha": "18a0f8a6458099ef7d82d6efb30a6b171984917b8f5ea2619c569777e1995925",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=6273c952e109ca06a18423b8/data.parquet",
+          "version_id": "6273c952e109ca06a18423b8"
+        },
+        "game_outcomes": {
+          "content_sha": "f8c185e052dc82328bc9ae8080789a0846def615ab58c6b55c3cec6d5906fc58",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=b6a0531d2822a8f7be8f36c6/data.parquet",
+          "version_id": "b6a0531d2822a8f7be8f36c6"
+        },
+        "reconciled_team_game": {
+          "content_sha": "aa5daec0b9a146699cc0cdb8c83e74481a496ae88a3203e17985f08e631b1f5a",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=d559af1c463514c5d8392d39/data.parquet",
+          "version_id": "d559af1c463514c5d8392d39"
+        },
+        "source_reconciliation": {
+          "content_sha": "044bb4d83a7b11e0fcd7c8903aabffa05487b4d0351954b42cbf6f93bbd376e6",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=d38c2a0d7a558b178a12d630/data.parquet",
+          "version_id": "d38c2a0d7a558b178a12d630"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "034b74851673f6ac4380df71298dcde146b62cde925ab98d81bd4a1926aa61a8",
+          "dataset": "plays",
+          "row_count": 158995,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=453693233200f8f1de4a833e/data.parquet",
+          "version_id": "453693233200f8f1de4a833e"
+        },
+        {
+          "content_sha": "13dd56b9c2757fb4353fc779f7c354ca9ebcb53c0e6794a88ae750a54cb1462d",
+          "dataset": "fbs_involved_games",
+          "row_count": 910,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=09220f618492b663b55f677f/data.parquet",
+          "version_id": "09220f618492b663b55f677f"
+        },
+        {
+          "content_sha": "8327a5b72e3a42cc680f75dd38753cb5c2d2436f01f235e53f1ceba025afa2db",
+          "dataset": "teams",
+          "row_count": 133,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=9e25b596e41acace5a148ebc/data.parquet",
+          "version_id": "9e25b596e41acace5a148ebc"
+        },
+        {
+          "content_sha": "35232e90dc7fd1a2c42face342359335970cb5c5a358ae597e6e2e59d60d65aa",
+          "dataset": "team_game_stats",
+          "row_count": 1820,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=fac19ec31197228fc78ef7f8/data.parquet",
+          "version_id": "fac19ec31197228fc78ef7f8"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2024": {
+      "game_outcomes": {
+        "content_sha": "4f2b24072ef2a9ad8fe52dc879c5f86ff7a4cf460b270c0799162c3cdf175702",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=a66043e1600550a5a0d59943/data.parquet",
+        "version_id": "a66043e1600550a5a0d59943"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "142a0ab3fd8c586031a4e2fd4d37319d493d7e958f0359af0eb7b102c3a85e1a",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=3536c704916a26dada4b48d9/data.parquet",
+          "version_id": "3536c704916a26dada4b48d9"
+        },
+        "drives": {
+          "content_sha": "3450fdb584c80dcd5f5d0f5e5b7786a64d00fbafb5a777f46a7cf0d57330c760",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=4a2c2e7da58850fbbd68e675/data.parquet",
+          "version_id": "4a2c2e7da58850fbbd68e675"
+        },
+        "game_outcomes": {
+          "content_sha": "4f2b24072ef2a9ad8fe52dc879c5f86ff7a4cf460b270c0799162c3cdf175702",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=a66043e1600550a5a0d59943/data.parquet",
+          "version_id": "a66043e1600550a5a0d59943"
+        },
+        "reconciled_team_game": {
+          "content_sha": "e303933645533aaf1454ee64a4cc9eee6a19749c860d7c2a8def1d99c96aeeee",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=6175bae0b7d3cf9e38b35c33/data.parquet",
+          "version_id": "6175bae0b7d3cf9e38b35c33"
+        },
+        "source_reconciliation": {
+          "content_sha": "12c320d6ffcd4f6ba411bbfe1646cc5aefc92215aa8de10618abaf1c64abdba1",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=c4199991890abedb23950c05/data.parquet",
+          "version_id": "c4199991890abedb23950c05"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "dd6c5e1794e2815006b51b8c2857ab5c03d943e2e2370f279c0397c17c82bac2",
+          "dataset": "plays",
+          "row_count": 162751,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=ce61a0dcfc0d969377f9b2fd/data.parquet",
+          "version_id": "ce61a0dcfc0d969377f9b2fd"
+        },
+        {
+          "content_sha": "7272ad59331759f62f9596d6015b7ab61002239867565d118c904edb81038461",
+          "dataset": "fbs_involved_games",
+          "row_count": 920,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=de12adfaf664d213efd2cd84/data.parquet",
+          "version_id": "de12adfaf664d213efd2cd84"
+        },
+        {
+          "content_sha": "cb0e9cb3a9ea87f6b4f349b20fb0cce379344cbef4436369823584c9ffef8700",
+          "dataset": "teams",
+          "row_count": 134,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=64d239e5e8afe96644ca5d74/data.parquet",
+          "version_id": "64d239e5e8afe96644ca5d74"
+        },
+        {
+          "content_sha": "3509c7b50d3f4795f6a79004b955f4f430e6abaa08e7b9642909625c8c6d634f",
+          "dataset": "team_game_stats",
+          "row_count": 1838,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=32ef0da933f5e1101345fcb0/data.parquet",
+          "version_id": "32ef0da933f5e1101345fcb0"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    },
+    "2025": {
+      "game_outcomes": {
+        "content_sha": "0dd4565e4f064ac2a0b2eb43aaa0ffd098eb46fdecc5c7c52e5f9ad948f1af93",
+        "dataset": "game_outcomes",
+        "schema_version": "game_outcomes_v1",
+        "uri": "lake/silver/dataset=game_outcomes/version=ff6c0426a6dd9244559f9773/data.parquet",
+        "version_id": "ff6c0426a6dd9244559f9773"
+      },
+      "legacy_byplay_as_of": "2026-09-06T14:37:06+00:00",
+      "legacy_byplay_code_sha": "6be713a33ee32c1d661bd536e2db9c9d0fa73ca1",
+      "legacy_comparison": {
+        "byplay": {
+          "content_sha": "ce80f3f72a8ea97480184b773758056f665616b18f145de7a8af862b04b62830",
+          "dataset": "byplay",
+          "schema_version": "byplay_v1",
+          "uri": "lake/silver/dataset=byplay/version=de48157666f254cf51190729/data.parquet",
+          "version_id": "de48157666f254cf51190729"
+        },
+        "drives": {
+          "content_sha": "46d5b612463f6cdf00dc27e8328a518731835bc59c4dca45d5872aaa1c4bdb03",
+          "dataset": "drives",
+          "schema_version": "drives_v1",
+          "uri": "lake/silver/dataset=drives/version=a175df0e318f962e1bc876b1/data.parquet",
+          "version_id": "a175df0e318f962e1bc876b1"
+        },
+        "game_outcomes": {
+          "content_sha": "0dd4565e4f064ac2a0b2eb43aaa0ffd098eb46fdecc5c7c52e5f9ad948f1af93",
+          "dataset": "game_outcomes",
+          "schema_version": "game_outcomes_v1",
+          "uri": "lake/silver/dataset=game_outcomes/version=ff6c0426a6dd9244559f9773/data.parquet",
+          "version_id": "ff6c0426a6dd9244559f9773"
+        },
+        "reconciled_team_game": {
+          "content_sha": "eebef7c6c625c20693762abceeaed336b41c537e51dd354df82a61dd257735e6",
+          "dataset": "reconciled_team_game",
+          "schema_version": "team_game_v1",
+          "uri": "lake/silver/dataset=reconciled_team_game/version=99616f383d6b65d789da2c6f/data.parquet",
+          "version_id": "99616f383d6b65d789da2c6f"
+        },
+        "source_reconciliation": {
+          "content_sha": "36c4e7216874f68e8dc916f5f073715cd12180501eeda2791020ea32ca8731d8",
+          "dataset": "source_reconciliation",
+          "schema_version": "reconciliation_v1",
+          "uri": "lake/silver/dataset=source_reconciliation/version=cf75f44d88af252f21234c42/data.parquet",
+          "version_id": "cf75f44d88af252f21234c42"
+        }
+      },
+      "parents": [
+        {
+          "content_sha": "ab8efe4852e1ee45a1855f47350da16af21b068db8383caf49a5b7fbc10caa3c",
+          "dataset": "plays",
+          "row_count": 166236,
+          "schema_version": "plays_v1",
+          "uri": "lake/silver/dataset=plays/version=dc723a9699bbc4df4249d63c/data.parquet",
+          "version_id": "dc723a9699bbc4df4249d63c"
+        },
+        {
+          "content_sha": "aade0e4aa2a68f2792cd26f73f3d418d88da10c2599a803385d8b93299129bb5",
+          "dataset": "fbs_involved_games",
+          "row_count": 934,
+          "schema_version": "fbs_involved_games_v1",
+          "uri": "lake/silver/dataset=fbs_involved_games/version=af88b8bcc17f193c5dbbe872/data.parquet",
+          "version_id": "af88b8bcc17f193c5dbbe872"
+        },
+        {
+          "content_sha": "b30eb17e201f18d88eda86db03ecb5c554d482ca75b8234f190e47d43ae8dbdc",
+          "dataset": "teams",
+          "row_count": 136,
+          "schema_version": "teams_v1",
+          "uri": "lake/silver/dataset=teams/version=19dbde96c1ad8c884e8310c4/data.parquet",
+          "version_id": "19dbde96c1ad8c884e8310c4"
+        },
+        {
+          "content_sha": "d7250f9f78270ac817092a090e228a6878b6eb08e711b4435ae03b711718981c",
+          "dataset": "team_game_stats",
+          "row_count": 1868,
+          "schema_version": "team_game_stats_v1",
+          "uri": "lake/silver/dataset=team_game_stats/version=fdca038839211c8e86271cd6/data.parquet",
+          "version_id": "fdca038839211c8e86271cd6"
+        },
+        {
+          "content_sha": "1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f",
+          "dataset": "data_corrections",
+          "row_count": 65,
+          "schema_version": "data_corrections_v1",
+          "uri": "lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet",
+          "version_id": "856e1bac8626b395e922464f"
+        }
+      ]
+    }
+  },
+  "source": "legacy byplay manifest parents via repair-v2 core eligibility"
+}

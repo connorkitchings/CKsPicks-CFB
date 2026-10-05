@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from cks_picks_cfb.rebuild import baseline, silver
+from cks_picks_cfb.rebuild import baseline, comparison, eligibility, silver
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import Stage, StageContext, StageOutput
 from cks_picks_cfb.rebuild.plan import RebuildPlan
@@ -16,6 +16,8 @@ STAGE_BUILDERS: dict[
 ] = {
     "baseline_reproduction": (baseline.reproduce, baseline.verify),
     "silver": (silver.build, silver.verify),
+    "eligibility": (eligibility.build, eligibility.verify),
+    "step5_comparison": (comparison.build, comparison.verify),
 }
 
 
