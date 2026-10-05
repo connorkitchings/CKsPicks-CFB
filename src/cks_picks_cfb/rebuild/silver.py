@@ -24,6 +24,7 @@ import pandas as pd
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.plan import FORBIDDEN_SEASONS, HISTORICAL_SEASONS
+from cks_picks_cfb.rebuild.retry import RetryingStorage
 
 DERIVED = {
     "byplay": "byplay_v1",
@@ -316,7 +317,7 @@ def build(context: StageContext) -> StageOutput:
     settings = StorageSettings.from_env(environment="preview")
     if f"r2:{settings.account_id}:{settings.bucket}" != context.plan.storage_identity:
         raise GateError("storage identity differs from the plan")
-    storage = get_storage(environment="preview")
+    storage = RetryingStorage(get_storage(environment="preview"))
     source_set = json.loads(context.read_input("r1_source_set"))
     pin_file = json.loads(context.read_input("phase2c_silver_parents"))
     if source_set.get("state") != "complete":

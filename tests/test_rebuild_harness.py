@@ -495,3 +495,42 @@ def test_partial_verify_is_not_persisted_and_cannot_publish(tmp_path):
         orch.publish(guard)
     orch.build()
     assert orch.verify()["passed"]  # full verify still persists after a partial one
+
+
+def test_failed_stage_leaves_no_manifest_and_a_retry_with_new_bytes_succeeds(tmp_path):
+    plan, root = _plan(tmp_path)
+    attempts = {"n": 0}
+
+    def flaky_build(ctx):
+        attempts["n"] += 1
+
+        def artifacts():
+            yield "lake/gold/a/part.bin", f"attempt-{attempts['n']}".encode()
+            if attempts["n"] == 1:
+                raise RuntimeError("transient failure mid-stage")
+
+        return StageOutput(artifacts())
+
+    stages = [
+        Stage(plan.stages[0], flaky_build, lambda c: []),
+        Stage(plan.stages[1], lambda c: StageOutput([]), lambda c: []),
+    ]
+    staging = InMemoryStore("stage")
+    orch = Orchestrator(
+        plan, stages, staging=staging, code_sha=CODE_SHA, repo_root=root
+    )
+    guard = GuardedStore(
+        InMemoryStore(IDENTITY), run_id="run1", expected_identity=IDENTITY
+    )
+    orch.preflight(
+        repo_root=root,
+        config_sha="c" * 64,
+        worktree_clean=True,
+        guard=guard,
+        is_tracked=lambda *_: True,
+    )
+    with pytest.raises(RuntimeError):
+        orch.build(only=["a"])
+    assert not staging.exists("stages/a/manifest.json")
+    assert list(orch.build(only=["a"])) == ["a"]  # partial leftovers were discarded
+    assert staging.read("stages/a/artifacts/lake/gold/a/part.bin") == b"attempt-2"

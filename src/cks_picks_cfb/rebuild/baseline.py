@@ -18,6 +18,7 @@ import pandas as pd
 
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
+from cks_picks_cfb.rebuild.retry import RetryingStorage
 
 OUT = "rebuild/6a/{run_id}/baseline/"
 EXPECTED = {
@@ -127,8 +128,8 @@ def reproduce(context: StageContext) -> StageOutput:
     from cks_picks_cfb.ratings import possession_measurements as pm
     from cks_picks_cfb.ratings import possession_verification as verifier
     from cks_picks_cfb.ratings import score_envelope_r1 as r1
-    from scripts.analysis import build_admitted_ledger_5c as legacy
-    from scripts.research.run_data_first_possession_measurements import (
+    from cks_picks_cfb.rebuild import legacy
+    from cks_picks_cfb.rebuild.legacy import (
         _concat_source_frames,
         _ref,
         _repair,
@@ -141,7 +142,7 @@ def reproduce(context: StageContext) -> StageOutput:
         raise GateError(f"storage identity {identity} differs from the plan")
     pins = {pin.name: pin for pin in context.plan.inputs}
     repair_uri = pins["repair_v2_manifest"].uri
-    storage = get_storage(environment="preview")
+    storage = RetryingStorage(get_storage(environment="preview"))
 
     repair, _ = _repair(storage, repair_uri, scope="historical")
     population = build_population(

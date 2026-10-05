@@ -332,3 +332,40 @@ def test_envelopes_are_only_added_to_corroborated_allocations():
     row = result[result.admission == "corroborated"].iloc[0]
     assert row.envelope_before == 0 and row.envelope_after == 6
     assert result[result.admission != "corroborated"].envelope_after.isna().all()
+
+
+def test_possession_eligibility_is_measurement_eligibility_and_bad_yardage_is_unknown():
+    import pandas as pd
+
+    possessions = pd.DataFrame(
+        {
+            "season": [2024] * 4,
+            "week": [1] * 4,
+            "game_id": [1] * 4,
+            "drive_number": [1, 2, 3, 4],
+            "offense": ["A"] * 4,
+            "defense": ["B"] * 4,
+            "period_class": ["regulation", "unknown", "regulation", "regulation"],
+            "eligible_play_count": [5, 5, 5, 5],
+            "ineligible_play_count": [0, 0, 0, 0],
+            "mixed_eligibility": [False] * 4,
+            "possession_eligible": [True, True, True, True],
+            "source_play_ids": ["[]"] * 4,
+            "quality_reason": [None, "ambiguous_drive_identity_or_period", "x", None],
+            "timing_class": ["historically_reconstructed"] * 4,
+        }
+    )
+    drives = pd.DataFrame(
+        {
+            "season": [2024] * 4,
+            "game_id": [1] * 4,
+            "drive_number": [1, 2, 3, 4],
+            "offense": ["A"] * 4,
+            "start_yards_to_goal": [75.0, 60.0, 50.0, 127.0],
+            "had_scoring_opportunity": [1, 0, 1, 0],
+        }
+    )
+    out = ml.possessions_to_v1(possessions, drives, source_versions={"a": "b"})
+    assert out["possession_eligible"].tolist() == [True, False, False, True]
+    assert out["start_yards_to_goal"].isna().tolist() == [False, False, False, True]
+    assert gc.possessions_problems(out) == []

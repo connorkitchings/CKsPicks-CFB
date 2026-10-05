@@ -43,7 +43,9 @@ def possessions_to_v1(
 
     ``drives`` is the Silver drives dataset (``had_scoring_opportunity``,
     ``start_yards_to_goal``) keyed by game, drive number and offense. A possession with no
-    drive row keeps null for both fields rather than a default.
+    drive row keeps null for both fields rather than a default. ``possession_eligible`` is
+    narrowed to regulation possessions without a quality reason; a start field position
+    outside 0-100 becomes null.
     """
     keys = ["season", "game_id", "drive_number", "offense"]
     if "season" not in drives:
@@ -78,6 +80,19 @@ def possessions_to_v1(
         object
     )
     merged.loc[opportunity.isna(), "scoring_opportunity"] = None
+    # Gold ``possession_eligible`` means measurement-eligible: the legacy flag only says the
+    # possession had eligible plays. A possession in an unknown period or carrying a quality
+    # reason is never eligible (the metric builder already requires all three), and the
+    # legacy detail stays in the play counts and ``quality_reason``.
+    merged["possession_eligible"] = (
+        merged["possession_eligible"].fillna(False).astype(bool)
+        & merged["period_class"].eq("regulation")
+        & merged["quality_reason"].isna()
+    )
+    # An impossible field position is unknown, never clipped or guessed; the Silver drive
+    # keeps the provider value.
+    yards = pd.to_numeric(merged["start_yards_to_goal"], errors="coerce")
+    merged["start_yards_to_goal"] = yards.where(yards.between(0, 100))
     merged["possession_id"] = [
         possession_id_for(s, g, d, o)
         for s, g, d, o in zip(

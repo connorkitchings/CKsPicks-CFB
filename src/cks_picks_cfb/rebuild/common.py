@@ -12,6 +12,7 @@ import pandas as pd
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext
 from cks_picks_cfb.rebuild.plan import HISTORICAL_SEASONS
+from cks_picks_cfb.rebuild.retry import RetryingStorage
 from cks_picks_cfb.rebuild.silver import SUMMARY as SILVER_SUMMARY
 from cks_picks_cfb.rebuild.silver import check_capture_manifest
 
@@ -29,7 +30,7 @@ def preview_storage(context: StageContext):
     settings = StorageSettings.from_env(environment="preview")
     if f"r2:{settings.account_id}:{settings.bucket}" != context.plan.storage_identity:
         raise GateError("storage identity differs from the plan")
-    return get_storage(environment="preview")
+    return RetryingStorage(get_storage(environment="preview"))
 
 
 def dataset_ref(entry: Mapping[str, Any]):

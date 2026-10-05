@@ -45,6 +45,13 @@ class LocalStagingStore:
     def read(self, key: str) -> bytes:
         return self._path(key).read_bytes()
 
+    def discard_prefix(self, prefix: str) -> None:
+        import shutil
+
+        target = self._path(prefix.rstrip("/"))
+        if target.is_dir():
+            shutil.rmtree(target)
+
     def put_if_absent(self, key: str, data: bytes) -> bool:
         path = self._path(key)
         path.parent.mkdir(parents=True, exist_ok=True)

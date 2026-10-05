@@ -209,6 +209,10 @@ class Orchestrator:
             if existing is None and name not in wanted:
                 continue
             context = self._context(stage, record["resolved_inputs"])
+            if existing is None and hasattr(self.staging, "discard_prefix"):
+                # A stage without a manifest was never consumable; drop partial leftovers
+                # of a failed attempt so a retry cannot collide with them.
+                self.staging.discard_prefix(f"stages/{name}/")
             if existing is not None:
                 if existing["preflight_sha"] != record["manifest_sha256"] or existing[
                     "parents"

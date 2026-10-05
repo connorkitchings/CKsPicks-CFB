@@ -64,6 +64,10 @@ class InMemoryStore:
         self.objects[key] = data
         return True
 
+    def discard_prefix(self, prefix: str) -> None:
+        for key in [k for k in self.objects if k.startswith(prefix)]:
+            del self.objects[key]
+
 
 class R2ObjectStore:
     """R2 create-once store using ``If-None-Match: *`` conditional puts."""

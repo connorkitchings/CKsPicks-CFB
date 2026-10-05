@@ -162,8 +162,8 @@ def build(context: StageContext) -> StageOutput:
     from cks_picks_cfb.ratings import possession_measurements as pm
     from cks_picks_cfb.ratings import possession_verification as verifier
     from cks_picks_cfb.ratings import score_envelope_r1 as r1
-    from scripts.analysis import build_admitted_ledger_5c as legacy5c
-    from scripts.research.run_data_first_possession_measurements import _repair
+    from cks_picks_cfb.rebuild import legacy as legacy5c
+    from cks_picks_cfb.rebuild.legacy import _repair
 
     storage = common.preview_storage(context)
     pins = {pin.name: pin for pin in context.plan.inputs}

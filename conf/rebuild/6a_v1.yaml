@@ -41,7 +41,7 @@ stages:
   - {name: silver, inputs: [r1_source_set, phase2c_silver_parents, data_corrections], parents: [baseline_reproduction], outputs: [lake/silver/, rebuild/6a/6a-rebuild-20261004-r1/silver/]}
   - {name: eligibility, inputs: [phase2c_silver_parents, r1_source_set], parents: [silver], outputs: [rebuild/6a/6a-rebuild-20261004-r1/eligibility/]}
   - {name: step5_comparison, inputs: [admission_decisions, corroboration_group_status, repair_v2_manifest, phase2c_silver_parents], parents: [baseline_reproduction, eligibility], outputs: [rebuild/6a/6a-rebuild-20261004-r1/comparison/], legacy_allowed: true}
-  - {name: gold, inputs: [admission_decisions, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/]}
+  - {name: gold, inputs: [phase2c_silver_parents, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/, rebuild/6a/6a-rebuild-20261004-r1/gold/]}
   - {name: measurements_ratings, parents: [gold], outputs: [rebuild/6a/6a-rebuild-20261004-r1/ratings/]}
   - {name: offsets_refit, parents: [measurements_ratings], outputs: [rebuild/6a/6a-rebuild-20261004-r1/forecast/]}
   - {name: states_2026, parents: [offsets_refit], outputs: [rebuild/6a/6a-rebuild-20261004-r1/states_2026/]}
