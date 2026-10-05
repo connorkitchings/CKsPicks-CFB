@@ -72,7 +72,7 @@ def _receipt(context: StageContext, checks: dict[str, Any]) -> StageOutput:
         v["equal"] if isinstance(v, dict) else bool(v) for v in checks.values()
     )
     body = {"checks": checks, "passed": passed}
-    key = f"rebuild/6a/{context.plan.run_id}/{context.stage.name}/{RECEIPT}"
+    key = f"{context.plan.run_prefix()}{context.stage.name}/{RECEIPT}"
 
     def artifacts() -> Iterator[tuple[str, bytes]]:
         yield key, json.dumps(body, indent=2, sort_keys=True, default=str).encode()
@@ -140,7 +140,7 @@ def build_ratings_parity(context: StageContext) -> StageOutput:
 
 
 def verify(context: StageContext) -> list[str]:
-    key = f"rebuild/6a/{context.plan.run_id}/{context.stage.name}/{RECEIPT}"
+    key = f"{context.plan.run_prefix()}{context.stage.name}/{RECEIPT}"
     receipt = json.loads(context.read_artifact(context.stage.name, key))
     problems = []
     for name, check in receipt["checks"].items():

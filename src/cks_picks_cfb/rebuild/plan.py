@@ -18,6 +18,8 @@ from cks_picks_cfb.rebuild.errors import PlanError
 HISTORICAL_SEASONS = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025)
 FORBIDDEN_SEASONS = (2020,)
 LIVE_SEASON = 2026
+DEFAULT_NAMESPACE = "rebuild/6a/"
+RUN_NAMESPACES = ("rebuild/6a/", "rebuild/6b/")
 INPUT_KINDS = ("git_file", "r2_object", "stage_output")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _SCRATCH_MARKERS = ("scratch", "cache", "/tmp/", "latest", "tmp/")
@@ -75,12 +77,15 @@ class RebuildPlan:
     policies: Mapping[str, Any] = field(default_factory=dict)
     cutoff_2026: str | None = None
     database_name: str | None = None
+    namespace: str = DEFAULT_NAMESPACE
 
     def validate(self) -> None:
         if not re.match(r"^[A-Za-z0-9][A-Za-z0-9._-]*$", self.run_id or ""):
             raise PlanError("run_id must be a single safe path segment")
         if not self.storage_identity:
             raise PlanError("plan must name the expected storage identity")
+        if self.namespace not in RUN_NAMESPACES:
+            raise PlanError(f"namespace must be one of {RUN_NAMESPACES}")
         if not self.seasons or any(s in FORBIDDEN_SEASONS for s in self.seasons):
             raise PlanError("2020 is excluded at every boundary")
         if set(self.seasons) != set(HISTORICAL_SEASONS):
@@ -112,7 +117,17 @@ class RebuildPlan:
             if cutoff.tzinfo is None or cutoff.utcoffset().total_seconds() != 0:
                 raise PlanError("cutoff_2026 must be an exact UTC timestamp")
 
+    def run_prefix(self) -> str:
+        return f"{self.namespace}{self.run_id}/"
+
     def as_dict(self) -> dict[str, Any]:
+        value = self._base_dict()
+        if self.namespace != DEFAULT_NAMESPACE:
+            # Omitted for the default so signed 6A plans keep their exact hash.
+            value["namespace"] = self.namespace
+        return value
+
+    def _base_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
             "storage_identity": self.storage_identity,
@@ -159,6 +174,7 @@ class RebuildPlan:
                 decisions=dict(value.get("decisions", {})),
                 policies=dict(value.get("policies", {})),
                 cutoff_2026=value.get("cutoff_2026"),
+                namespace=value.get("namespace", DEFAULT_NAMESPACE),
             )
         except (KeyError, TypeError) as error:
             raise PlanError(f"malformed plan: {error!r}") from error

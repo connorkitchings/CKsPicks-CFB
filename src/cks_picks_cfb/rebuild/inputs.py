@@ -19,6 +19,11 @@ LEGACY_PARENT_TOKENS = (
     "possession-v1-ratings-20260921-11d59ee-r9cert",
     "forecast-v1-20260921-5afd577-11c",
     "fc26a3d03416e688dc437ad863653dfac7df6faad51b478a7b94f466c0d870c3",
+    # The served 2026 chain (pre-6A lineage): reproduction and comparison stages only.
+    "intended-update/2026-runs/20260929",
+    "intended-update/2026-serving/2026w",
+    "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+    "30c4f1eb0ef5b3c1e30b2a877b4553923c3b5ff68832eea0282e37e625b13531",
 )
 
 

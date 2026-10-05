@@ -9,8 +9,9 @@ from typing import Any, Protocol
 
 from cks_picks_cfb.rebuild.errors import ImmutableCollisionError, TargetError
 
-#: Immutable namespaces 6A may write. ``rebuild/6a/<run_id>/`` is added per run.
+#: Immutable namespaces a rebuild may write. ``<run namespace><run_id>/`` is added per run.
 STATIC_NAMESPACES = ("lake/silver/", "lake/gold/", "quality/receipts/")
+#: Default run namespace (6A); a plan may select ``rebuild/6b/``.
 RUN_NAMESPACE = "rebuild/6a/"
 
 #: Prefixes that must never be written, even if a namespace were widened.
@@ -138,7 +139,7 @@ class WriteLedger:
 
 
 class GuardedStore:
-    """Wrap an ObjectStore with the 6A namespace allow-list and create-once checks."""
+    """Wrap an ObjectStore with the rebuild namespace allow-list and create-once checks."""
 
     def __init__(
         self,
@@ -147,6 +148,7 @@ class GuardedStore:
         run_id: str,
         expected_identity: str,
         extra_namespaces: Iterable[str] = (),
+        run_namespace: str = RUN_NAMESPACE,
     ):
         if store.identity != expected_identity:
             raise TargetError(
@@ -159,7 +161,7 @@ class GuardedStore:
         self.identity = store.identity
         self.namespaces = (
             *STATIC_NAMESPACES,
-            f"{RUN_NAMESPACE}{run_id}/",
+            f"{run_namespace}{run_id}/",
             *extra_namespaces,
         )
         self.ledger = WriteLedger()
@@ -170,7 +172,7 @@ class GuardedStore:
         if key.startswith(FORBIDDEN_PREFIXES):
             raise TargetError(f"forbidden serving/production prefix: {key}")
         if not key.startswith(self.namespaces):
-            raise TargetError(f"key outside permitted 6A namespaces: {key}")
+            raise TargetError(f"key outside permitted rebuild namespaces: {key}")
 
     def exists(self, key: str) -> bool:
         return self.store.exists(key)
@@ -201,7 +203,7 @@ def assert_preview_database(cur: Any, *, expected_database: str | None = None) -
     session_role, effective_role, database = (str(value) for value in row[:3])
     if session_role != PREVIEW_PIPELINE_ROLE or effective_role != PREVIEW_PIPELINE_ROLE:
         raise TargetError(
-            f"6A catalog writes require {PREVIEW_PIPELINE_ROLE}; got "
+            f"rebuild catalog writes require {PREVIEW_PIPELINE_ROLE}; got "
             f"session_user={session_role!r}, current_user={effective_role!r}"
         )
     if expected_database is not None and database != expected_database:
@@ -214,7 +216,7 @@ def assert_catalog_only(statements: Iterable[str]) -> None:
         lowered = " ".join(statement.lower().split())
         if lowered.startswith(("insert into", "update", "delete from")):
             if f" {CATALOG_WRITE_SCHEMA}." not in f" {lowered}":
-                raise TargetError("6A may write only catalog tables")
+                raise TargetError("rebuild may write only catalog tables")
 
 
 Verifier = Callable[..., Any]

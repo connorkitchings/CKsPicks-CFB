@@ -66,7 +66,10 @@ def _orchestrator(args) -> tuple[Orchestrator, GuardedStore, RebuildPlan, object
         raise GateError("the publisher commit does not descend from the build commit")
     remote = _preview_store()
     guard = GuardedStore(
-        remote, run_id=plan.run_id, expected_identity=plan.storage_identity
+        remote,
+        run_id=plan.run_id,
+        expected_identity=plan.storage_identity,
+        run_namespace=plan.namespace,
     )
     staging = LocalStagingStore(REPO_ROOT / "artifacts" / "rebuild" / plan.run_id)
     orchestrator = Orchestrator(

@@ -17,6 +17,7 @@ from cks_picks_cfb.data.data_first_phase2d import verify_signed_payload
 from cks_picks_cfb.rebuild import common
 from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext
+from cks_picks_cfb.rebuild.plan import DEFAULT_NAMESPACE
 
 
 class PublishedRun:
@@ -26,8 +27,10 @@ class PublishedRun:
         self.root = json.loads(context.read_input(root_input))
         verify_signed_payload(self.root, label="published root manifest")
         if self.root.get("kind") != "rebuild_root_v1":
-            raise GateError("pinned input is not a published 6A root manifest")
-        self.prefix = f"rebuild/6a/{self.root['run_id']}/"
+            raise GateError("pinned input is not a published rebuild root manifest")
+        self.prefix = (
+            f"{self.root.get('namespace', DEFAULT_NAMESPACE)}{self.root['run_id']}/"
+        )
         self.objects: dict[str, str] = dict(self.root["objects"])
 
     def read(self, key: str) -> bytes:

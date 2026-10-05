@@ -1,12 +1,12 @@
 # Stage 6B: Completed-Week Reconstruction (2026 Weeks 0–5)
 
-- **Status:** Draft (awaiting user review; no implementation authorized yet)
+- **Status:** In Progress (approved by the user 2026-10-05, including Amendment 1; Task 1 implemented, Tasks 2-5 open)
 - **Created:** 2026-10-05
 - **Planner:** Claude Code (planning session on `dev`)
-- **Approval source:** The user approved the 6B plan in the planning chat on 2026-10-05 and chose four scope decisions (write boundary, weeks, 2026 offset rule, new execution contract). Approval covered Task 0 and drafting this contract only. This contract is submitted for the user's review; implementation starts only when the user approves it.
+- **Approval source:** The user approved the 6B plan in the planning chat on 2026-10-05 and chose four scope decisions (write boundary, weeks, 2026 offset rule, new execution contract). After reviewing the draft, the user approved this contract and Amendment 1 (write boundary) in the same chat and directed Task 1.
 - **Governing authority:** [contract 04](../2026-10-03/04-data-integrity-two-window-implementation.md), Amendment 2 (Window 2 task table, row 6B); [Appendix A §6B](../2026-10-03/window2/data-contracts-and-certification.md); [Appendix B](../2026-10-03/window2/release-schema-and-web.md) quote policy. This is a bounded execution contract for 6B, not a competing release authority.
 - **Predecessor:** [contract 02](../2026-10-04/02-pre-stage6-integrity-and-rebuild.md) (6A), Implemented 2026-10-05. Its signed receipt is `rebuild/6a/6a-task4-r1/receipt/receipt.json`, checksum `efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e`.
-- **Implementation log:** to be created at `session_logs/2026-10-05/` when implementation starts.
+- **Implementation log:** `session_logs/2026-10-05/01-stage6b-implementation.md`
 - **Commit policy:** a documentation commit on `dev` for this contract, then scoped implementation checkpoints. All git operations remain user-run.
 
 ## Goal and current state
@@ -122,7 +122,7 @@ Stop the affected step on any material conflict with the approved population, sc
 
 ## Definition of done
 
-- [ ] Harness generalization merged with the 6A plan hash and outputs unchanged.
+- [x] Harness generalization merged with the 6A plan hash and outputs unchanged (Task 1, 2026-10-05; the two signed 6A plan hashes are pinned in `tests/test_rebuild_namespace.py`).
 - [ ] All twelve stages built and independently verified in a persisted full verify.
 - [ ] Original grades reproduced with 0 mismatches before any new grade is produced.
 - [ ] Weeks 0–5 predictions, selections and retrospective grades built under the corrected rule, with leakage gates passing.

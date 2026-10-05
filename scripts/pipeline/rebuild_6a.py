@@ -107,7 +107,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     plan = RebuildPlan.from_dict(raw)
     guard = GuardedStore(
-        remote, run_id=plan.run_id, expected_identity=plan.storage_identity
+        remote,
+        run_id=plan.run_id,
+        expected_identity=plan.storage_identity,
+        run_namespace=plan.namespace,
     )
     staging = LocalStagingStore(REPO_ROOT / "artifacts" / "rebuild" / plan.run_id)
     orchestrator = Orchestrator(

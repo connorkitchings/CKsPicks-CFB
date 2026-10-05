@@ -17,6 +17,7 @@ from cks_picks_cfb.data.data_first_phase2d import (
 from cks_picks_cfb.rebuild.errors import GateError, ImmutableCollisionError
 from cks_picks_cfb.rebuild.inputs import no_implicit_latest, resolve_all
 from cks_picks_cfb.rebuild.plan import (
+    DEFAULT_NAMESPACE,
     RebuildPlan,
     StagePlan,
     build_preflight_record,
@@ -179,6 +180,8 @@ class Orchestrator:
         if is_tracked is not None:
             kwargs["is_tracked"] = is_tracked
         resolved = resolve_all(self.plan, **kwargs)
+        if self.plan.run_prefix() not in guard.namespaces:
+            raise GateError("the write guard does not permit the plan's run namespace")
         scope = [prefix for prefix in guard.namespaces]
         record = build_preflight_record(
             self.plan,
@@ -336,19 +339,21 @@ class Orchestrator:
         for key, digest in published.items():
             if sha256_bytes(guard.read(key)) != digest:
                 raise GateError(f"readback hash mismatch: {key}")
-        root = signed_payload(
-            {
-                "kind": "rebuild_root_v1",
-                "run_id": self.plan.run_id,
-                "preflight_sha": record["manifest_sha256"],
-                "verify_sha": verdict["manifest_sha256"],
-                "code_sha": self.code_sha,
-                "publisher_code_sha": publisher_sha,
-                "stages": stage_manifests,
-                "objects": published,
-            }
-        )
-        root_key = f"rebuild/6a/{self.plan.run_id}/root-manifest.json"
+        root_body: dict[str, Any] = {
+            "kind": "rebuild_root_v1",
+            "run_id": self.plan.run_id,
+            "preflight_sha": record["manifest_sha256"],
+            "verify_sha": verdict["manifest_sha256"],
+            "code_sha": self.code_sha,
+            "publisher_code_sha": publisher_sha,
+            "stages": stage_manifests,
+            "objects": published,
+        }
+        if self.plan.namespace != DEFAULT_NAMESPACE:
+            # Omitted for the default so published 6A roots keep their exact bytes.
+            root_body["namespace"] = self.plan.namespace
+        root = signed_payload(root_body)
+        root_key = f"{self.plan.run_prefix()}root-manifest.json"
         guard.create_once(root_key, _canonical_bytes(root))
         if registrar is not None:
             registrar(root)
