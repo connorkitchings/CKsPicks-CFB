@@ -36,6 +36,7 @@ class StageContext:
     inputs: Mapping[str, str]
     parents: Mapping[str, str]
     read_artifact: Callable[[str, str], bytes]
+    code_sha: str = ""
     read_input: Callable[[str], bytes] = lambda name: (_ for _ in ()).throw(
         GateError(f"no input reader for {name}")
     )
@@ -153,6 +154,7 @@ class Orchestrator:
             parents=parents,
             read_artifact=lambda s, k: self.staging.read(self._artifact_key(s, k)),
             read_input=self._read_input(stage, inputs),
+            code_sha=self.code_sha,
         )
 
     def _check_declared(self, stage: StagePlan, key: str) -> None:

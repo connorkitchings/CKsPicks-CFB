@@ -16,6 +16,12 @@ policies:
   home_host: 1.0
   venue_unknown: true
   nullable_ppa: true
+  silver_as_of: "2026-08-31T23:46:49Z"   # as_of shared by all ten R1 byplay versions
+  corrections_ref:
+    version_id: 856e1bac8626b395e922464f
+    schema_version: data_corrections_v1
+    uri: lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet
+    content_sha: 1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f
   website_population: regular_season_fbs_vs_fbs
 inputs:
   - {name: admission_decisions, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_decisions.csv, sha256: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db}
@@ -28,9 +34,10 @@ inputs:
   - {name: r1_foundation_manifest, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/foundation/manifest.json, sha256: 5f242780d2bcd20e28f1ad1d7b086c30e26640fa4a1e4f824ae20ddce27e0da9}
   - {name: r1_comparison_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/comparison-ref-set.json, sha256: 19a9cf2f5ec6b6cc4758128e361afb41597039b89528ea2be750dfdd666638e4}
   - {name: repair_v2_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json, sha256: b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4}  # legacy baseline parent; baseline_reproduction only
+  - {name: data_corrections, kind: r2_object, uri: lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet, sha256: 1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f}  # 65 rows; parent of all ten R1 byplay versions
 stages:
   - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, cfbd_drives_manifest, repair_v2_manifest, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-20261004-r1/baseline/], legacy_allowed: true}
-  - {name: silver, inputs: [r1_source_set, r1_foundation_manifest], parents: [baseline_reproduction], outputs: [lake/silver/]}
+  - {name: silver, inputs: [r1_source_set, r1_derived_ref_set, data_corrections], parents: [baseline_reproduction], outputs: [lake/silver/, rebuild/6a/6a-rebuild-20261004-r1/silver/]}
   - {name: eligibility, parents: [silver], outputs: [rebuild/6a/6a-rebuild-20261004-r1/eligibility/]}
   - {name: step5_comparison, inputs: [admission_decisions, step5_historical_groups], parents: [eligibility], outputs: [rebuild/6a/6a-rebuild-20261004-r1/comparison/]}
   - {name: gold, inputs: [admission_decisions, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/]}
