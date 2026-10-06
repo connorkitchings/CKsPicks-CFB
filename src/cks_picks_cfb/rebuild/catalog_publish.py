@@ -145,7 +145,33 @@ def collect_entries(
                 validation={},
             )
         )
-    return entries
+    # A catalog dependency may point to another version in this same batch. Register
+    # those parent entries first so the immediate foreign key succeeds within the
+    # single transaction. Preserve the collection order whenever it is already valid.
+    by_version = {entry.version_id: entry for entry in entries}
+    if len(by_version) != len(entries):
+        raise GateError("catalog publication contains duplicate dataset version ids")
+    ordered: list[Entry] = []
+    resolved: set[str] = set()
+    pending = list(entries)
+    while pending:
+        ready_index = next(
+            (
+                index
+                for index, entry in enumerate(pending)
+                if all(
+                    parent not in by_version or parent in resolved
+                    for parent in entry.parents
+                )
+            ),
+            None,
+        )
+        if ready_index is None:
+            raise GateError("catalog publication contains a dependency cycle")
+        entry = pending.pop(ready_index)
+        ordered.append(entry)
+        resolved.add(entry.version_id)
+    return ordered
 
 
 def _canonical(value: Any) -> str:

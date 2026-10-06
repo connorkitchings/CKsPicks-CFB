@@ -48,6 +48,16 @@ def _build_sha(plan_path: Path, run_id: str) -> str:
     return str(record["code_sha"])
 
 
+def _is_ancestor(ancestor: str, descendant: str) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def _orchestrator(args) -> tuple[Orchestrator, GuardedStore, RebuildPlan, object, str]:
     head = _git("rev-parse", "HEAD")
     if head != args.expected_code_sha:
@@ -172,7 +182,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     catalog_results: list[dict] = []
     registrar = _registrar(guard, catalog_results) if args.register_catalog else None
-    first = orchestrator.publish(guard, registrar=registrar, publisher_sha=publisher)
+
+    def prior_publisher_is_in_lineage(previous: str) -> bool:
+        return _is_ancestor(orchestrator.code_sha, previous) and _is_ancestor(
+            previous, publisher
+        )
+
+    first = orchestrator.publish(
+        guard,
+        registrar=registrar,
+        publisher_sha=publisher,
+        is_existing_publisher_ancestor=prior_publisher_is_in_lineage,
+    )
     report = {
         "mode": "apply",
         "plan": summary,
@@ -181,7 +202,10 @@ def main(argv: list[str] | None = None) -> int:
     }
     if args.prove_idempotence:
         second = orchestrator.publish(
-            guard, registrar=registrar, publisher_sha=publisher
+            guard,
+            registrar=registrar,
+            publisher_sha=publisher,
+            is_existing_publisher_ancestor=prior_publisher_is_in_lineage,
         )
         report["retry"] = vars(second)
         report["retry_catalog"] = catalog_results[1:]

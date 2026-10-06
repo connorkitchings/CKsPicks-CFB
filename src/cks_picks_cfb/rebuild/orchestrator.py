@@ -311,6 +311,7 @@ class Orchestrator:
         *,
         registrar: Callable[[dict[str, Any]], None] | None = None,
         publisher_sha: str | None = None,
+        is_existing_publisher_ancestor: Callable[[str], bool] | None = None,
     ) -> PublishResult:
         """Publish verified output create-once, read back, then root, then catalog.
 
@@ -363,9 +364,42 @@ class Orchestrator:
         if self.plan.namespace != DEFAULT_NAMESPACE:
             # Omitted for the default so published 6A roots keep their exact bytes.
             root_body["namespace"] = self.plan.namespace
-        root = signed_payload(root_body)
         root_key = f"{self.plan.run_prefix()}root-manifest.json"
-        guard.create_once(root_key, _canonical_bytes(root))
+        if guard.exists(root_key):
+            existing_bytes = guard.read(root_key)
+            try:
+                existing = json.loads(existing_bytes)
+                verify_signed_payload(existing, label="existing root manifest")
+            except Exception as exc:
+                raise GateError(f"existing root manifest is invalid: {exc}") from exc
+            previous_publisher = existing.get("publisher_code_sha")
+            expected_existing = {
+                **root_body,
+                "publisher_code_sha": previous_publisher,
+            }
+            existing_body = dict(existing)
+            existing_body.pop("manifest_sha256", None)
+            if existing_body != expected_existing:
+                raise GateError(
+                    "existing root manifest conflicts with verified staged output"
+                )
+            if previous_publisher != publisher_sha and (
+                not isinstance(previous_publisher, str)
+                or is_existing_publisher_ancestor is None
+                or not is_existing_publisher_ancestor(previous_publisher)
+            ):
+                raise GateError(
+                    "existing root was written by an unrelated publisher commit"
+                )
+            # A prior attempt may have created the immutable root and objects before
+            # an atomic catalog transaction failed. Reuse that exact signed root when
+            # its staged evidence matches and its publisher is in the current lineage.
+            root = existing
+            root_bytes = existing_bytes
+        else:
+            root = signed_payload(root_body)
+            root_bytes = _canonical_bytes(root)
+        guard.create_once(root_key, root_bytes)
         if registrar is not None:
             registrar(root)
         return PublishResult(

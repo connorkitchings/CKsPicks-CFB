@@ -1,6 +1,6 @@
 # Stage 6B: Completed-Week Reconstruction (2026 Weeks 0–5)
 
-- **Status:** In Progress (approved by the user 2026-10-05, including Amendments 1–2; Known Issue 6 exception implemented, focused validation and fresh Task 3 run pending commit)
+- **Status:** In Progress (Stages 1–12 independently verified on `eca6871`; Preview R2 objects/root exist, catalog registration rolled back on a dependency-order failure; recovery fix implemented, commit and publication retry pending)
 - **Created:** 2026-10-05
 - **Planner:** Claude Code (planning session on `dev`)
 - **Approval source:** The user approved the 6B plan in the planning chat on 2026-10-05 and chose four scope decisions (write boundary, weeks, 2026 offset rule, new execution contract). After reviewing the draft, the user approved this contract and Amendment 1 (write boundary) in the same chat and directed Task 1.
@@ -113,6 +113,8 @@ Preflight, then build and verify each stage in order, stopping at the first fail
 ### 4. Publish to Preview
 
 Publish dry run, then live `--apply --register-catalog --prove-idempotence` only after the user's explicit confirmation, then an independent read-only readback. The retry must write 0 objects.
+
+**Execution record (2026-10-06):** The user explicitly authorized the live Preview publish on `eca6871`. The dry run passed with 112 in-scope objects and five catalog entries. The apply copied all 112 immutable stage objects and wrote the signed root manifest, then the single catalog transaction failed with a foreign-key violation because `collect_entries` ordered `application_frames` before its in-batch `offsets_2026` parent. Read-only Preview inspection confirmed all 112 objects are byte-identical, the signed root matches the verified build, and the atomic catalog transaction left zero reconstruction root versions or dependency rows. The cause is deterministic topological ordering, not missing external parents (all 49 external parent versions are present). A repair now orders catalog entries parent-first and permits a retry to reuse the existing signed root only when all staged evidence matches and its original publisher commit is an ancestor of the current publisher. No serving or production writes occurred. After this publisher-only repair is committed, repeat the dry run, apply with catalog registration and idempotence proof, then perform independent readback. See `session_logs/2026-10-06/04-stage6b-publication-registration-recovery.md`.
 
 ### 5. Close out
 

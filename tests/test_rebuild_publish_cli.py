@@ -140,3 +140,34 @@ def test_root_manifest_records_the_publisher_commit_and_retry_is_stable(tmp_path
         Exception
     ):  # another publisher commit would change the root bytes
         orchestrator.publish(guard, publisher_sha="e" * 40)
+
+
+def test_catalog_retry_reuses_existing_root_from_ancestor_publisher(tmp_path):
+    import json
+
+    orchestrator, guard = _harness(tmp_path)
+    orchestrator.verify()
+    first = orchestrator.publish(guard, publisher_sha="d" * 40)
+
+    second = orchestrator.publish(
+        guard,
+        publisher_sha="e" * 40,
+        is_existing_publisher_ancestor=lambda previous: previous == "d" * 40,
+    )
+    root = json.loads(guard.read(first.root_key))
+    assert second.writes == 0
+    assert second.root_sha == first.root_sha
+    assert root["publisher_code_sha"] == "d" * 40
+
+
+def test_catalog_retry_rejects_existing_root_from_unrelated_publisher(tmp_path):
+    orchestrator, guard = _harness(tmp_path)
+    orchestrator.verify()
+    orchestrator.publish(guard, publisher_sha="d" * 40)
+
+    with pytest.raises(GateError, match="unrelated publisher commit"):
+        orchestrator.publish(
+            guard,
+            publisher_sha="e" * 40,
+            is_existing_publisher_ancestor=lambda _previous: False,
+        )

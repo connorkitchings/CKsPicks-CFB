@@ -194,6 +194,31 @@ def test_collect_entries_orders_silver_by_season_then_roots_and_skips_children()
     assert entries[-1].partitions["partition_keys"] == ["season"]
 
 
+def test_collect_entries_orders_in_batch_parents_before_child_roots():
+    files, objects = _published()
+    child_key = "lake/gold/dataset=a_child/version=child2/partitioned-manifest.json"
+    child = {
+        "dataset": "a_child",
+        "version_id": "child2",
+        "tier": "gold",
+        "schema_version": "a_child_v1",
+        "artifact_kind": "partitioned_dataset_v1",
+        "partition_keys": ["week"],
+        "row_count": 1,
+        "as_of": "2026-10-06T00:00:00+00:00",
+        "parents": [{"version_id": "root1"}],
+        "source_captures": [],
+        "parts": [],
+    }
+    raw = json.dumps(child).encode()
+    files[child_key] = raw
+    objects[child_key] = hashlib.sha256(raw).hexdigest()
+
+    entries = cp.collect_entries(objects, files.__getitem__)
+    roots = [entry.version_id for entry in entries if entry.kind == "partitioned"]
+    assert roots == ["root1", "child2"]
+
+
 def _register(db, entries):
     return cp.register_entries(
         "url",
