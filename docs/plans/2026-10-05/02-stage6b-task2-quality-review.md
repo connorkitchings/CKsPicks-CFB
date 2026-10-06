@@ -1,6 +1,6 @@
 # Stage 6B Task 2 Quality Review and Repair
 
-- **Status:** In Progress (Amendment 2 includes the exact Known Issue 6 Stage 9 exception; focused/full validation passed, fresh Task 3 rerun awaits user commit)
+- **Status:** Implemented (reconstruction stages audited, repaired, verified and published to Preview under Stage 6B contract)
 - **Approval:** User explicitly requested implementation of the complete review plan in this chat on 2026-10-05.
 - **Authority:** [6B contract](01-stage6b-completed-week-reconstruction.md), Amendments 1–2.
 - **Baseline:** `7b93608`; clean `dev`.

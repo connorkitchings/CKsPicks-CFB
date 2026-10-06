@@ -2,11 +2,11 @@
 
 ## TL;DR
 - **Worked On:** Recovered the Stage 6B Task 4 publication flow after the authorized apply copied immutable R2 artifacts but failed during catalog registration.
-- **Outcome:** Root cause is catalog entries sorted by dataset name instead of in-batch dependency order. The catalog transaction rolled back atomically. The code now registers in-batch parents first and safely reuses the already-created root on a same-build, ancestor-publisher retry.
+- **Outcome:** Recovered the atomic catalog registration failure, published the five Stage 6B datasets to Preview, independently read back the catalog versions and dependency edges, and proved a zero-write retry.
 - **Plan Contract:** [Stage 6B contract](../../docs/plans/2026-10-05/01-stage6b-completed-week-reconstruction.md), Amendment 1 and Task 4.
-- **Approval / Status:** User explicitly authorized Stage 6B Preview publication and idempotence proof. The first apply failed after writing only the approved Preview R2 scope. The repaired publisher awaits user commit and retry.
-- **Blockers:** Repository policy leaves Git operations to the user. Fresh clean-HEAD dry run and live registration retry must follow the repair commit.
-- **Next:** User commits; rerun dry run on new HEAD, then use the previously authorized `--apply --register-catalog --prove-idempotence` operation and read back the registered datasets.
+- **Approval / Status:** User explicitly authorized Stage 6B Preview publication and idempotence proof. Publisher repair committed at `918294323afa53dd625d0cc9d8e75955477b6dc9`; publication and independent readback passed.
+- **Blockers:** None for Task 4. Stage 7B remains a separate contract and authorization gate.
+- **Next:** Handoff the published Stage 6B receipt and datasets to the separately gated Stage 7B work.
 
 ## Context and Decisions
 - Command used the required wrapper: `zsh scripts/ops/with_preview_env.sh .venv/bin/python scripts/pipeline/publish_6a.py --plan conf/rebuild/6b_v1.yaml --expected-code-sha eca6871d727060adf8612bd7d8769c29d5243579 --apply --register-catalog --prove-idempotence`.
@@ -16,6 +16,9 @@
 - The failure is caused by root entries sorted lexicographically: application frames reference offsets, while offsets appeared later in the transaction. A stable topological ordering fixes this without changing dataset identities or write scope.
 - Retry must preserve the immutable existing root. The orchestrator now reuses it only when the signed root exactly matches the current preflight, verify record, stage manifests, and object map, and when the old publisher commit is verified in the build-to-current-publisher Git lineage. The new commit records the recovery tooling; the signed root continues to describe the original verified build/copy.
 - No production or serving paths/tables were touched.
+- After commit `9182943`, the required-wrapper dry run found all 112 of 112 expected R2 objects byte-identical to staged content, totaling 1,446,029 bytes across 65 `lake/gold` and 47 `rebuild/6b` objects. It reported exactly the five planned reconstruction catalog entries and verification SHA `e462ae05408999c4e7d7fa61519b134f97a074dc8acb4d714680d6048b525aaa`.
+- The authorized apply registered root manifest `rebuild/6b/6b-replay-20261005-r1/root-manifest.json` with SHA-256 `32105bbe8dbc97328557406347cbf5c55c727ad38d186a352089fe0d5aaf8d45`. The root reused the byte-identical objects (0 R2 writes). The immediate idempotence retry kept the same root SHA and wrote 0 R2 objects and 0 catalog rows.
+- Independent read-only Preview catalog query, through `with_preview_env.sh` as `cks_preview_pipeline`, found exactly five `validated` versions: offsets (271 rows), application frames (271), predictions (542), market selections (541), and grades (541); it found 54 dependency edges.
 
 ## Work Completed
 - Added stable parent-before-child topological ordering for catalog entries, with duplicate-version and dependency-cycle rejection.
@@ -41,14 +44,14 @@
 - [x] `.venv/bin/python contracts/validation.py` — passed.
 - [x] `.venv/bin/python -m mkdocs build --quiet` — passed.
 - [x] `git diff --check` — passed.
-- [ ] After user commit: fresh dry run, catalog registration, zero-write idempotence proof, independent Preview readback.
+- [x] After user commit: fresh dry run, catalog registration, zero-write idempotence proof, independent Preview readback.
 
 ## Amendments and Blockers
 - No data identity, model, or write-scope change. The retry preserves the existing signed build root and registers only the five authorized reconstruction datasets in the existing single catalog transaction.
 - The authorized apply partially completed its Preview R2 copy before catalog registration failed. All objects remain create-once and byte-identical. Do not delete or rewrite them; resume with the safe retry after commit.
 
 ## Handoff Notes
-- **Resume at:** Once committed, run the dry-run command using the new HEAD SHA, then the same authorized apply/idempotence command with that SHA. Confirm the retry has zero R2 object writes and zero catalog writes; independently query catalog entries and read back the five datasets.
+- **Resume at:** Task 4 is complete. Stage 7B is a separate handoff and requires its own contract and authorization.
 - **Watch out for:** A changed root or non-ancestor publisher must fail closed. No serving, authorization, production, or unrelated catalog writes.
 
 **tags:** ["rebuild", "stage6b", "publication", "catalog", "preview"]
