@@ -108,7 +108,7 @@ Update this contract’s execution record and the Stage 7A implementation log. D
 
 ## Definition of Done
 
-- [ ] Migrations and canonical schema copies pass fresh and upgrade tests from 0022.
+- [ ] Migrations and canonical schema copies pass fresh and upgrade tests from 0022, including effective grants for the real Preview login identities.
 - [ ] Role grants, revocation checks, and every V5 freeze/selection path pass negative and concurrency tests.
 - [ ] v2 select, dry-run, idempotent retry, rollback and failure rollback pass in isolated databases; v1 remains compatible.
 - [ ] Performance and matchup behavior pass unit, publication and Playwright tests.
@@ -120,11 +120,12 @@ Update this contract’s execution record and the Stage 7A implementation log. D
 ## Execution record (2026-10-06)
 
 - Implemented locally: migrations 0023/0024 and synchronized canonical schemas; packet-bound Preview/Production authorization tools; append-only revocation helper and operator entrypoint; revocation locks in public selection, intended-update authorization, direct freeze, and descriptor-driven weekly-cycle freeze; decision references are bound into weekly-cycle preflight/apply evidence; prospective freeze receipt registration; v2 packet validation, atomic cursor controller, dry-run/idempotent paths, rollback guards, and prospective-record preservation; separate replay/prospective Performance queries; fail-closed matchup lineage UI and fixtures.
-- Local evidence: focused Stage 7A tests passed 40 tests with 7 PostgreSQL-dependent skips; the full Python suite passed 2,017 tests with 10 skips. Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed. Web lint, typecheck, 131 publication tests, production build, and all 24 Performance/matchup Playwright tests passed.
-- Database-only coverage remains unverified. `TEST_DATABASE_URL` is unset and local PostgreSQL is not accepting connections, so migration trigger/privilege integration tests and transactional v2 apply/rollback tests are skipped. No Preview or Production database command was run.
+- Local evidence: focused Stage 7A tests passed 40 tests with 7 PostgreSQL-dependent skips; the full Python suite passed 2,017 tests with 10 skips. After that run, a disposable UTF-8 PostgreSQL cluster passed all 7 migration integration tests, and the combined Stage 7A focused suite passed 47 tests. Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed. Web lint, typecheck, 131 publication tests, production build, and all 24 Performance/matchup Playwright tests passed.
+- PostgreSQL migration, fresh-schema, trigger, and basic role-grant checks now have local database evidence. The v2 selection controller still lacks database-backed apply/rollback, injected transaction-failure, and concurrent-revocation integration tests; its present tests validate signed packets and use isolated fake cursors. Preview migration-ledger inspection, real-login effective grants, and read-only web query execution have not been run.
 - `make contracts-check` could not run through `uv`: the configured cache first returned a filesystem permission error and a writable cache retry hit a local uv runtime panic. Its underlying `contracts/validation.py` command passed directly.
 - The full Python run was `.venv/bin/python -m pytest -q`: 2,017 passed, 10 skipped in 288.80 seconds. Database-dependent tests account for the unavailable PostgreSQL-backed coverage.
-- Stage 7A remains **In Progress**. Required next gates are an isolated PostgreSQL run for migration and controller transaction tests, followed by the separately authorized Preview migration, actual login/effective-privilege readback, migration-ledger inspection, and read-only web query check. No serving, selection, authorization, or revocation records were changed.
+- The disposable PostgreSQL run used a temporary UTF-8 cluster under `/private/tmp`, passed `tests/test_migration_integration.py` (7 passed), then passed the combined focused suite (47 passed). The cluster was stopped after testing. The migration test now checks the Stage 7A scope rejection before run-identity validation and distinguishes authorizer UPDATE privilege denial from the owner-level append-only trigger.
+- Stage 7A remains **In Progress**. Remaining gates are database-backed v2 apply/rollback/failure/concurrency coverage and the separately authorized Preview migration, actual login/effective-privilege readback, migration-ledger inspection, and read-only web query check. No Preview or Production serving, selection, authorization, or revocation records were changed.
 
 ## Amendments
 

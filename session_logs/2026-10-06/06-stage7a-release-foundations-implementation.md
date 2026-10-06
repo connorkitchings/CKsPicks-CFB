@@ -2,11 +2,11 @@
 
 ## TL;DR
 - **Worked On:** Implemented the approved Stage 7A schema, revocation guards, freeze/auth tooling, v2 selection controller, and web read-path changes.
-- **Outcome:** Local implementation and fixture/browser validation are in place. Contract remains In Progress because isolated PostgreSQL transaction tests and the separately authorized Preview migration/readback are outstanding.
+- **Outcome:** Local implementation, fixture/browser validation, and PostgreSQL migration integration checks are in place. Contract remains In Progress because database-backed v2 transaction tests and separately authorized Preview migration/readback are outstanding.
 - **Plan Contract:** `docs/plans/2026-10-06/01-stage7a-release-foundations.md`
 - **Approval / Status:** User explicitly authorized implementation of this contract in this task; Stage 7A remains In Progress.
-- **Blockers:** `TEST_DATABASE_URL` is unset and local PostgreSQL is unavailable. Preview schema/grant/query verification is reserved for a separately authorized operator session. No Preview or Production database changes were made.
-- **Next:** Run migration and v2 transaction tests against an isolated PostgreSQL database; after separate operator authorization, inspect Preview migration state and run read-only identity/effective-grant/web-query checks.
+- **Blockers:** The migration suite passed on a disposable local PostgreSQL cluster, but v2 apply/rollback/failure/concurrency paths lack database-backed tests. Preview schema/grant/query verification is reserved for a separately authorized operator session. No Preview or Production database changes were made.
+- **Next:** Add and run v2 transaction tests against an isolated PostgreSQL database; after separate operator authorization, inspect Preview migration state and run read-only identity/effective-grant/web-query checks.
 
 ## Context and Decisions
 - Work is on `dev`, starting from clean HEAD `63a62b6063e57d6d12614ad6a9321ad8779fff83`; the approved Stage 7A code baseline is Stage 6B close-out `320436f1d13b38068b9e21a2ea64d41a755c1551`.
@@ -20,6 +20,7 @@
 - Added v2 signed packet verification, exact before/after bindings, contiguous replay/pending coverage, authorization and certification revalidation, fixed-order transaction locks, prospective-record preservation, stats/current-week readback, dry-run, retry, and rollback paths. Existing v1 batch path remains intact.
 - Split selected replay and designated prospective Performance queries. Added class labels, separate status states, original run/receipt provenance, and push-excluding W-L-P rates. Added a fail-closed matchup lineage state that hides model-derived details and disables share controls when provenance is missing or mismatched.
 - Added focused Python regressions, migration integration coverage, lineage unit tests, fixture cases, and Performance/matchup Playwright assertions.
+- The real PostgreSQL run caught and repaired two migration-test assumptions: prospective Week 5+ scope now fails before run identity checks, and role-level UPDATE denial is tested separately from the table-owner append-only trigger.
 
 ## Files Modified
 - `contracts/migrations/0023_prospective_week_records.sql`, `contracts/migrations/0024_v5_release_revocations.sql`, `contracts/schema.sql`, `contracts/schema.ts`, `web/src/lib/schema.ts`, `contracts/validation.py` - schema and synchronization.
@@ -31,6 +32,7 @@
 
 ## Validation
 - [x] Focused Stage 7A Python tests: 40 passed, 7 PostgreSQL-dependent tests skipped.
+- [x] Disposable PostgreSQL migration integration: 7 passed; combined focused Stage 7A suite with database configured: 47 passed.
 - [x] Full Python suite after final controller and weekly-cycle hardening: 2,017 passed, 10 skipped in 288.80 seconds.
 - [x] Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed.
 - [x] Web lint, typecheck, 131 publication tests, production build, and 24 Performance/matchup Playwright tests passed.
@@ -38,10 +40,10 @@
 
 ## Amendments and Blockers
 - No plan amendment. `make contracts-check` could not run through `uv`: the configured cache first returned a filesystem permission error; a writable-cache retry hit a local uv runtime panic. Its underlying `contracts/validation.py` command passed directly.
-- PostgreSQL migration and controller transaction/concurrency behavior has not been executed: no disposable `TEST_DATABASE_URL` is configured, and `pg_isready` reported no local server. The Preview migration and live role readback remain explicit authorization gates.
+- PostgreSQL migration, fresh schema, trigger, and basic role-grant checks passed against a temporary UTF-8 cluster, which was stopped afterward. Database-backed controller transaction/concurrency tests are not present yet; the controller tests currently validate packet logic and fake-cursor lock behavior. Preview migration and live role readback remain separate authorization gates.
 
 ## Handoff Notes
-- **Resume at:** Run the added migration and v2 apply/rollback tests against a disposable PostgreSQL database. Keep the contract In Progress until those tests and the separately authorized Preview readback pass.
+- **Resume at:** Add/run database-backed v2 apply/rollback/failure/concurrency tests. Keep the contract In Progress until those tests and the separately authorized Preview readback pass.
 - **Watch out for:** Never run the Preview migration, authorization/revocation operation, freeze, serving selection, current-week movement, or rollback as part of this local implementation turn.
 
 **tags:** ["release", "schema", "authorization", "web"]

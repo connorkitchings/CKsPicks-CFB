@@ -21,6 +21,10 @@ DECLARE
     schedule_kickoff TIMESTAMPTZ;
     freeze_recorded BOOLEAN;
 BEGIN
+    IF NEW.season <> 2026 OR NEW.week < 5 THEN
+        RAISE EXCEPTION 'prospective records are restricted to 2026 Week 5 and later';
+    END IF;
+
     SELECT * INTO run_row
       FROM public.prediction_runs
      WHERE run_id = NEW.run_id;

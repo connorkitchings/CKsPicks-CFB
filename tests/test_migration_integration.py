@@ -443,7 +443,7 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
                     "WHERE season = 2026 AND week = 6",
                     ("v5-prospective-6b", "2026-09-09 13:00:00+00"),
                 )
-            with pytest.raises(psycopg.errors.CheckViolation):
+            with pytest.raises(psycopg.errors.RaiseException, match="restricted to 2026 Week 5"):
                 cur.execute(insert_record, (4, "v5-prospective-6b", sha, "2026-09-09 13:00:00+00", historical_kickoff))
 
             cur.execute(
@@ -456,6 +456,8 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
                 "INSERT INTO ops.v5_release_revocations (record_type, record_id, decision_ref) "
                 "VALUES ('bundle_approval', 'approval-fixture', 'revoke-fixture')"
             )
-            with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
                 cur.execute("UPDATE ops.v5_release_revocations SET decision_ref = 'changed'")
             cur.execute("RESET ROLE")
+            with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
+                cur.execute("UPDATE ops.v5_release_revocations SET decision_ref = 'changed'")
