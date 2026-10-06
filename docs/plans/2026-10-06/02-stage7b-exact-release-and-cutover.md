@@ -1,12 +1,12 @@
 # Stage 7B: Exact Release and Cutover
 
-- **Status:** Approved (2026-10-06; approved by the user in this planning task)
+- **Status:** In Progress (2026-10-06; Amendment 1 approved; implementation of the Week 5 attestation route and remaining release gates pending)
 - **Created:** 2026-10-06
 - **Planner:** Sol planning workflow
-- **Authority:** Contract 04 Amendment 2 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence
+- **Authority:** Contract 04 Amendments 2 and 4 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence
 - **Predecessor:** [Stage 7A Release Foundations](01-stage7a-release-foundations.md)
 - **Commit policy:** Commit this plan separately before implementation; all Git operations are user-run
-- **Implementation log:** To be created by the fresh Stage 7B implementation task
+- **Implementation log:** `session_logs/2026-10-06/08-stage7b-exact-release-implementation.md`
 
 ## Goal
 
@@ -18,9 +18,9 @@ Stage 7B does not perform the Stage 8 2025 matchup backfill and does not by itse
 
 ## Current evidence and unresolved prerequisite
 
-The Stage 7A Preview read-only report found `current_week=(2026, 6)`, six active selections, and zero rows in `public.prospective_week_records`. Treat those as dated evidence only; refresh all state at implementation and packet time. The empty prospective table means the original Week 5 V5 freeze designation must be recovered from its authentic original run, signed freeze receipt, receipt timestamp, earliest kickoff, and original selection/freeze history before packet preparation.
+The Stage 7A Preview read-only report found `current_week=(2026, 6)`, six active selections, and zero rows in `public.prospective_week_records`. The Stage 7B preflight later captured environment-specific snapshots: Preview remains through migration 0024 with no prospective row; Production is through 0022 with the new table absent. Treat all these observations as dated evidence and refresh state at implementation and packet time.
 
-Historical prospective status must never be inferred from a reconstructed replay, current selection, grade, or database backfill. Use an existing contract-conformant registration route only if it validates the original immutable receipt and pre-kickoff evidence. If a narrowly scoped operator route is needed, it must verify those same exact source bytes, signatures, run identity, cutoff, and schedule evidence and retain a registration receipt. If the evidence or a valid route cannot be established, stop before authorization or serving selection and return for a Contract 04 amendment or further evidence. Never invent or backdate a freeze.
+Historical prospective status must never be inferred from a reconstructed replay, current selection, grade, or database backfill. First search for an authentic original Week 5 receipt. If absent, use only the narrow retrospective `v5_legacy_freeze_attestation_v1` route approved by Contract 04 Amendment 4: actual attestation creation time, explicit missing-receipt disclosure, exact environment-specific database and immutable R2 facts, independent source re-derivation, and a distinct user-run registration decision. The attestation is canonical-content-checksummed under repository convention, not cryptographically signed. Never invent or backdate a freeze. If its bound evidence cannot establish the original selection and freeze before kickoff, stop before registration, packet authorization, or serving selection and return to Contract 04.
 
 ## Scope and boundaries
 
@@ -57,9 +57,11 @@ Stop on stale/incomplete schedule or quote coverage, missing certified finals, a
 
 ### 2. Recover the original prospective Week 5 evidence
 
-Locate the original Week 5 production freeze, immutable run and manifest, signed receipt bytes, original pre-kickoff selection state, first kickoff evidence, and registration decision reference. Verify their hashes, signatures, environment, timestamps, and lineage against the actual Week 5 freeze. Determine whether a Stage 7A-supported route can register that historical freeze while satisfying `prospective_week_records` constraints.
+Locate the original Week 5 freeze, immutable run and manifest, any contemporaneous receipt, original pre-kickoff selection state, first kickoff evidence, and registration decision reference separately in Preview and Production. Verify their environment, timestamps, hashes and lineage. If an authentic receipt is absent, prepare the Amendment 4 legacy attestation from the complete retained records, prove it identifies the last valid publicly selected and frozen run before kickoff, and verify its actual creation time and source hashes independently.
 
-If registration is permitted, use a distinct user-run operation bound to the exact Week 5 run and receipt, retaining before/after reads and a signed audit receipt. Do not change the selected run, current week, grades, freeze, or original artifacts. Re-read the complete prospective record set afterward. If evidence or schema-compatible registration is not available, halt Stage 7B before authorizations and release packet execution.
+Implement the payload builder and independent verifier in `src/cks_picks_cfb/ops/prospective_records.py`, the guarded user-run entrypoint at `scripts/pipeline/register_v5_legacy_freeze_attestation.py`, and the packet verification branch in `src/cks_picks_cfb/ops/v5_batch_selection_v2.py`. Use a distinct immutable URI containing environment, season, week, run ID, and `legacy-attestation-v1`; include the canonical payload checksum in the JSON and store the raw-byte SHA in the database row. The payload fields and source re-derivation requirements are normative in Contract 04 Amendment 4 / Appendix B. Do not accept an attestation creation timestamp from CLI input. Stage7B and Performance provenance must render this as a legacy attestation based on the explicit URI kind and validated payload; unknown receipt kinds fail closed.
+
+Only after a separate exact user decision for that environment, use the guarded registration command to write the content-addressed attestation to R2 and insert the matching Week 5 row in `prospective_week_records`; retain before/after reads and the registration result. Exact retries must be idempotent. Do not change selected runs, current week, grades, freeze history, or original artifacts. Re-read the full prospective set and independently validate the attestation before packet preparation. If evidence is incomplete or conflicting, halt before registration, authorizations, and release packet execution.
 
 ### 3. Build and review exact release packets
 
@@ -122,4 +124,14 @@ Stop before the dependent operation and retain evidence if any of the following 
 
 ## Amendments
 
-No amendments at approval. Any scope or policy conflict is returned to Contract 04 before implementation.
+### Amendment 1 — Week 5 legacy freeze attestation (2026-10-06)
+
+Approved by the user in this planning task. Implements the narrow exception in Contract 04 Amendment 4 and Appendix B: when no authentic contemporaneous Week 5 receipt exists, verify environment-specific original records and register an explicit, current-time `v5_legacy_freeze_attestation_v1`. Preserve the non-null schema and identify this provenance as retrospective attestation. No migration, serving change, selection, authorization, freeze or release is authorized by this amendment. All other Stage 7B gates, including Production schema parity and fresh dynamic `N`, remain.
+
+Any further scope or policy conflict is returned to Contract 04 before implementation.
+
+## Execution record — 2026-10-06
+
+Fresh read-only Preview and Production snapshots verified exact restricted pipeline identities and applied migration checksums. Preview is through 0024 with zero prospective/revocation rows; Production is through 0022 with those tables absent, as anticipated by Stage 7A. Both have six selections and Week 6 with no active run. These observations do not select cutover `N` or update the serving-state authority.
+
+The original Week 5 selection/freeze ledger and kickoff are retained, but the checked immutable prefixes contain no contemporaneous receipt; the historical implementation did not persist one. The current receipt-generating helper cannot recover absent original bytes. The initial preflight hold stopped packet preparation and all writes. Contract 04 Amendment 4 and this plan's Amendment 1 now permit a narrowly scoped, clearly retrospective attestation after implementation, independent verification and a separate user-run registration decision. The preflight hold report remains the evidence snapshot and is not edited to imply that policy existed at capture time. No live registration or release operation has yet been authorized or performed. Production schema parity, full live preflight, dynamic `N`, and all Preview/Production release gates remain open.
