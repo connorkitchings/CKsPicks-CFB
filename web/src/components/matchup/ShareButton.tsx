@@ -87,7 +87,7 @@ const buttonClass =
  * Exports the matchup as one fixed-size image (see ShareCard). The card is only
  * mounted while an image is being made, so the page itself is unchanged.
  */
-export function ShareButton({ matchup }: { matchup: MatchupData }) {
+export function ShareButton({ matchup, disabled = false }: { matchup: MatchupData; disabled?: boolean }) {
   const [job, setJob] = useState<Action | null>(null);
   const [status, setStatus] = useState("");
   const [ready, setReady] = useState<File | null>(null);
@@ -169,7 +169,7 @@ export function ShareButton({ matchup }: { matchup: MatchupData }) {
           type="button"
           className={buttonClass}
           data-testid="share-button"
-          disabled={job !== null}
+          disabled={disabled || job !== null}
           onClick={() => (ready ? void shareReady() : void run("share"))}
         >
           Share
@@ -180,7 +180,7 @@ export function ShareButton({ matchup }: { matchup: MatchupData }) {
           type="button"
           className={buttonClass}
           data-testid="share-copy"
-          disabled={job !== null}
+          disabled={disabled || job !== null}
           onClick={() => void run("copy")}
         >
           Copy image
@@ -190,13 +190,13 @@ export function ShareButton({ matchup }: { matchup: MatchupData }) {
         type="button"
         className={buttonClass}
         data-testid="share-download"
-        disabled={job !== null}
+        disabled={disabled || job !== null}
         onClick={() => void run("download")}
       >
         Download PNG
       </button>
       <span role="status" aria-live="polite" className="text-[11px] text-ink-faint">
-        {status}
+        {status || (disabled ? "Sharing unavailable until matchup data lineage is verified" : "")}
       </span>
       {job && (
         <div aria-hidden style={{ position: "fixed", left: -100000, top: 0, pointerEvents: "none" }}>

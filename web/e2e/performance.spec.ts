@@ -5,6 +5,8 @@ test.describe("performance page is accuracy-only", () => {
   test("shows records, win rates and forecast accuracy with no financial copy", async ({ page }) => {
     await page.goto("/performance");
     await expect(page.getByRole("heading", { name: "Season record & performance" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Selected retrospective replay" })).toBeVisible();
+    await expect(page.getByText("No prospective V5 week has been explicitly designated.")).toBeVisible();
 
     const summary = page.getByRole("region", { name: "Forecast accuracy summary", exact: true });
     await expect(summary.getByText("1–0–0")).toBeVisible();

@@ -25,6 +25,8 @@ export const v5PerformanceFixture: Performance[] = [
 ];
 
 export const v5PerformanceDetailFixture: PerformanceDetail = {
+  classification: "replay",
+  selectedGames: 2,
   summary: {
     classification: "all",
     games: 2,
@@ -55,6 +57,7 @@ export const v5PerformanceDetailFixture: PerformanceDetail = {
   gradedGames: [
     {
       gameId: 401000001,
+      runId: "fixture-v5-run",
       week: 0,
       startDate: new Date("2026-08-29T19:30:00.000Z"),
       homeTeam: "Texas",

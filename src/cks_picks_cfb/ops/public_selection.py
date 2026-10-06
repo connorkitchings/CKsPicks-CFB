@@ -78,17 +78,29 @@ def select_week_run(
         except V5ReleaseError as exc:
             raise PublicSelectionError(str(exc)) from exc
         cur.execute(
-            "SELECT model_id, inference_bundle_sha256, first_live_season, first_live_week "
+            "SELECT CASE WHEN COUNT(*) = 1 THEN MIN(approval_id) ELSE NULL END, "
+            "MIN(model_id), MIN(inference_bundle_sha256), MIN(first_live_season), MIN(first_live_week) "
             "FROM v5_model_bundle_approvals "
             "WHERE model_id = %s AND inference_bundle_sha256 = %s",
             (model_id, bundle_sha),
         )
         policy = cur.fetchone()
-        if not policy or policy[0] != model_id or policy[1] != bundle_sha:
+        if not policy or policy[0] is None or policy[1] != model_id or policy[2] != bundle_sha:
             raise PublicSelectionError("V5 run differs from approved model bundle")
+        from cks_picks_cfb.ops.v5_revocations import (
+            V5RevocationError,
+            assert_release_records_active,
+        )
+
+        try:
+            assert_release_records_active(
+                cur, [("bundle_approval", str(policy[0]))]
+            )
+        except V5RevocationError as exc:
+            raise PublicSelectionError(str(exc)) from exc
         if evidence_class in {"pending", "live"} and (season, week) < (
-            policy[2],
             policy[3],
+            policy[4],
         ):
             raise PublicSelectionError(
                 "prospective V5 slate predates approved activation"

@@ -122,6 +122,31 @@ def test_cycle_descriptor_rejects_wrong_environment(tmp_path):
         v5_cycle.CycleSpec.load(path)
 
 
+def test_prospective_freeze_cycle_requires_and_binds_decision_reference(monkeypatch):
+    item = {
+        "run_id": "live-v5-week-5",
+        "as_of": "2026-10-06T12:00:00Z",
+        "decision_ref": "decision/week-5-freeze",
+        "parents": {},
+    }
+    spec = v5_cycle.CycleSpec(
+        "cycle-2026w5", 2026, 5, "preview", "a" * 40, {"freeze": item}
+    )
+    assert spec.component("freeze")["decision_ref"] == item["decision_ref"]
+
+    monkeypatch.setattr(v5_cycle, "_git_sha", lambda: "a" * 40)
+    monkeypatch.setattr(v5_cycle, "get_storage", lambda **_: Storage())
+    binding = v5_cycle._bound_inputs(spec, "freeze", item)
+    assert binding["decision_ref"] == item["decision_ref"]
+
+    no_decision = v5_cycle.CycleSpec(
+        "cycle-2026w5", 2026, 5, "preview", "a" * 40,
+        {"freeze": {key: value for key, value in item.items() if key != "decision_ref"}},
+    )
+    with pytest.raises(v5_cycle.V5CycleError, match="decision reference"):
+        no_decision.component("freeze")
+
+
 def test_runner_json_can_follow_progress_lines():
     output = 'progress: loading\n{\n  "status": "verified",\n  "rows": 157\n}\n'
     assert v5_cycle._read_json_output(output)["rows"] == 157

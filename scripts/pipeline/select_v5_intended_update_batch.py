@@ -34,6 +34,11 @@ def _selected(cur, season: int, weeks: list[int]) -> dict[int, str | None]:
 
 
 def run(*, packet: dict, apply: bool) -> dict:
+    if packet.get("schema_version") in {
+        "v5_intended_update_batch_selection_v2",
+        "v5_intended_update_batch_rollback_v2",
+    }:
+        return _run_v2(packet=packet, apply=apply)
     if packet.get("schema_version") != "v5_intended_update_batch_selection_v1":
         raise ValueError("unknown successor batch packet")
     season = int(packet["season"])
@@ -52,6 +57,10 @@ def run(*, packet: dict, apply: bool) -> dict:
     environment = packet["environment"]
     if environment not in {"preview", "production"}:
         raise ValueError("invalid batch environment")
+    if os.getenv("CFB_ARTIFACT_ENV") != environment:
+        raise ValueError("batch packet environment differs from active artifact context")
+    if os.getenv("CFB_STORAGE_BACKEND") != "r2":
+        raise ValueError("v2 batch selection requires immutable R2 storage")
     if (
         apply
         and environment == "production"
@@ -98,6 +107,38 @@ def run(*, packet: dict, apply: bool) -> dict:
         "prior_runs": changed,
         "selected_runs": after,
     }
+
+
+def _run_v2(*, packet: dict, apply: bool) -> dict:
+    from cks_picks_cfb.data.storage import get_storage
+    from cks_picks_cfb.ops.v5_batch_selection_v2 import (
+        apply_v2_packet,
+        preflight_v2_packet,
+    )
+
+    environment = packet.get("environment")
+    if environment not in {"preview", "production"}:
+        raise ValueError("invalid batch environment")
+    key = "PREVIEW_DATABASE_URL" if environment == "preview" else "DATABASE_URL"
+    url = os.getenv(key)
+    if not url:
+        raise ValueError(f"{key} is required")
+    storage = get_storage(environment=environment)
+    options = None if apply else "-c default_transaction_read_only=on"
+    with psycopg.connect(url, options=options) as conn:
+        with conn.cursor() as cur:
+            result = (
+                apply_v2_packet(
+                    cur, packet, environment=environment, storage=storage
+                )
+                if apply
+                else preflight_v2_packet(
+                    cur, packet, environment=environment, storage=storage
+                )
+            )
+        if apply:
+            conn.commit()
+    return result
 
 
 def main() -> None:

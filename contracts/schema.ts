@@ -205,6 +205,24 @@ export const v5IntendedUpdateReleaseAuthorizations = pgTable(
   (table) => [unique("uq_v5_intended_update_authorization_run").on(table.environment, table.season, table.week, table.predictionRunId)],
 );
 
+export const prospectiveWeekRecords = pgTable(
+  "prospective_week_records",
+  {
+    season: integer("season").notNull(),
+    week: integer("week").notNull(),
+    runId: text("run_id").notNull().references(() => predictionRuns.runId, { onDelete: "restrict" }),
+    freezeReceiptUri: text("freeze_receipt_uri").notNull(),
+    freezeReceiptSha256: text("freeze_receipt_sha256").notNull(),
+    frozenAt: timestamp("frozen_at", { withTimezone: true }).notNull(),
+    firstKickoffUtc: timestamp("first_kickoff_utc", { withTimezone: true }).notNull(),
+    decisionRef: text("decision_ref").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.season, table.week] }),
+    unique("prospective_week_records_run_id_key").on(table.runId),
+  ],
+);
+
 export const v5ServingAuthorizations = pgTable(
   "v5_serving_authorizations",
   {
@@ -708,4 +726,3 @@ export const teamRatingComponents = pgTable(
     check("team_rating_components_role_check", sql`${table.unitRole} IN ('offense', 'defense')`),
   ],
 );
-

@@ -249,8 +249,10 @@ def check_schema_sync() -> list[str]:
     sql_tables = {
         table
         for schema, table in sql_matches
-        if not schema and table != "schema_migrations"
+        if schema in (None, "", "public") and table != "schema_migrations"
     }
+    # Drizzle's unqualified pgTable declarations represent public tables. Ops
+    # and catalog tables intentionally remain outside this web-facing schema.
     ts_tables = set(re.findall(r'pgTable\(\s*"(\w+)"', ts_canonical))
 
     if sql_tables != ts_tables:

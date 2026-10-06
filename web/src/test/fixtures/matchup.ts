@@ -107,6 +107,8 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
     homeRating: rating(game.homeTeam, 30),
     stats: buildMatchupStats(rows, game.week, game.awayTeam, game.homeTeam),
     statsUnavailable: false,
+    lineageStatus: "ready",
+    lineageReason: "Fixture publication provenance agrees.",
   };
 }
 
@@ -115,8 +117,15 @@ export function fixtureMatchup(gameId: number): MatchupData | null {
  * the unavailable state, not the "not published" copy and not partial numbers.
  */
 export const STATS_CONTRACT_VIOLATION_GAME_ID = 987655;
+export const LINEAGE_MISMATCH_GAME_ID = 987656;
 
 export function fixtureMatchupForId(gameId: number): MatchupData | null {
+  if (gameId === LINEAGE_MISMATCH_GAME_ID) {
+    const base = fixtureMatchup(1);
+    return base
+      ? { ...base, gameId, stats: null, lineageStatus: "unavailable", lineageReason: "Fixture lineage mismatch." }
+      : null;
+  }
   if (gameId === STATS_CONTRACT_VIOLATION_GAME_ID) {
     const base = fixtureMatchup(1);
     return base ? { ...base, gameId, stats: null, statsUnavailable: true } : null;

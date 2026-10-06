@@ -12,6 +12,7 @@ function TeamBlock({
   rating,
   finalPoints,
   isFinal,
+  showRating,
 }: {
   name: string;
   side: "Away" | "Home";
@@ -19,6 +20,7 @@ function TeamBlock({
   rating: TeamRatingSummary;
   finalPoints: number | null;
   isFinal: boolean;
+  showRating: boolean;
 }) {
   return (
     <div className="flex items-center gap-4 sm:flex-col sm:text-center" data-side={side.toLowerCase()}>
@@ -42,7 +44,7 @@ function TeamBlock({
             <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Final Score</span>
             <span className="font-mono text-3xl font-bold text-ink">{finalPoints}</span>
           </div>
-        ) : (
+        ) : showRating ? (
           <div className="mt-3 flex flex-col items-center gap-1 text-xs">
             <span
               data-testid="model-rating"
@@ -53,7 +55,7 @@ function TeamBlock({
               <span className="font-mono">#{rating.rank ?? "—"}</span>
             </span>
           </div>
-        )}
+        ) : <p className="mt-3 text-xs text-ink-faint">Model ratings unavailable</p>}
       </div>
     </div>
   );
@@ -117,7 +119,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
           <span className="rounded bg-surface-inset px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">
             Game Breakdown
           </span>
-          {matchup.stats && <ShareButton matchup={matchup} />}
+          <ShareButton matchup={matchup} disabled={matchup.lineageStatus !== "ready"} />
         </div>
       </div>
 
@@ -130,6 +132,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             rating={matchup.awayRating}
             finalPoints={matchup.awayFinalPoints}
             isFinal={isFinal}
+            showRating={matchup.lineageStatus === "ready"}
           />
 
           {/* Center: market and model */}
@@ -148,7 +151,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
               <Cell value={matchup.marketSpread} />
               <Cell value={matchup.marketTotal ? matchup.marketTotal.toFixed(1) : "—"} />
 
-              {matchup.publicationMode === "predictions" && (
+              {matchup.publicationMode === "predictions" && matchup.lineageStatus === "ready" && (
                 <>
                   <span className="whitespace-nowrap pt-px text-left font-medium text-ink-muted">Model</span>
                   <Cell value={matchup.modelSpread} />
@@ -192,6 +195,7 @@ export function MatchupHero({ matchup }: { matchup: MatchupData }) {
             rating={matchup.homeRating}
             finalPoints={matchup.homeFinalPoints}
             isFinal={isFinal}
+            showRating={matchup.lineageStatus === "ready"}
           />
         </div>
       </div>

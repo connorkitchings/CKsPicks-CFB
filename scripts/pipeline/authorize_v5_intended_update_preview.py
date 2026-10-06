@@ -9,6 +9,8 @@ import json
 import os
 import re
 import subprocess
+import sys
+from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
@@ -54,13 +56,47 @@ def authorization_record(manifest: dict, *, decision_ref: str) -> dict:
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--week", type=int, choices=range(6), required=True)
-    parser.add_argument("--decision-ref", required=True)
+    parser.add_argument("--week", type=int, choices=range(6))
+    parser.add_argument("--decision-ref")
+    parser.add_argument("--packet", type=Path)
+    parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--expected-packet-sha256")
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--expected-record-sha")
     parser.add_argument("--expected-code-sha")
     parser.add_argument("--release-tag", default="20260929-p1")
     args = parser.parse_args()
+    if args.packet is not None:
+        if not all(
+            (args.receipt, args.expected_packet_sha256, args.expected_code_sha)
+        ):
+            parser.error(
+                "packet mode requires --receipt, --expected-packet-sha256, and --expected-code-sha"
+            )
+        os.environ["CKS_V5_AUTHORIZER_FORCED_ENV"] = "preview"
+        from scripts.pipeline.authorize_v5_intended_update_batch import (
+            main as batch_main,
+        )
+
+        sys.argv = [
+            sys.argv[0],
+            "--environment",
+            "preview",
+            "--packet",
+            str(args.packet),
+            "--receipt",
+            str(args.receipt),
+            "--expected-packet-sha256",
+            args.expected_packet_sha256,
+            "--expected-code-sha",
+            args.expected_code_sha,
+        ]
+        if args.apply:
+            sys.argv.append("--apply")
+        batch_main()
+        return
+    if args.week is None or not args.decision_ref:
+        parser.error("legacy single-run mode requires --week and --decision-ref")
     if not re.fullmatch(r"[a-z0-9-]+", args.release_tag):
         raise SystemExit("invalid successor release tag")
     if (

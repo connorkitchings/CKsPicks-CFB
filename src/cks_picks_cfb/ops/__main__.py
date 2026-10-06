@@ -2240,6 +2240,9 @@ def build_steps(
         )
         if waiver:
             argv.extend(["--waiver", waiver])
+        decision_ref = getattr(options, "decision_ref", None)
+        if decision_ref:
+            argv.extend(["--decision-ref", decision_ref])
         return [subprocess_step("freeze", argv)]
     if context.command == "close-week":
         assert week is not None and as_of is not None
@@ -2537,6 +2540,7 @@ def parse_args() -> argparse.Namespace:
         sub.add_argument("--crash-after-step", help=argparse.SUPPRESS)
         if command == "freeze-week":
             sub.add_argument("--waiver")
+            sub.add_argument("--decision-ref")
         if command == "close-week":
             sub.add_argument(
                 "--cancellation-waiver",

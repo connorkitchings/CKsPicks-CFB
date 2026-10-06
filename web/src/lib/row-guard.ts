@@ -185,6 +185,7 @@ export const PERFORMANCE_DETAIL_SPEC: RowSpec = {
   evidenceClass: { kind: { enum: ["replay", "live"] } },
   week: { kind: "int" },
   gameId: { kind: "int" },
+  runId: { kind: "string" },
   startDate: { kind: "date" },
   homeTeam: { kind: "string" },
   awayTeam: { kind: "string" },

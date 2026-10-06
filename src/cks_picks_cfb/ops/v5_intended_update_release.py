@@ -183,6 +183,30 @@ def require_intended_update_release_record(
             "exact successor release authorization is absent"
         )
     record = dict(zip(AUTH_COLUMNS, row, strict=True))
+    from cks_picks_cfb.ops.v5_revocations import (
+        V5RevocationError,
+        assert_release_records_active,
+    )
+
+    cur.execute(
+        "SELECT CASE WHEN COUNT(*) = 1 THEN MIN(approval_id) ELSE NULL END "
+        "FROM v5_model_bundle_approvals "
+        "WHERE model_id = %s AND inference_bundle_sha256 = %s",
+        (record["model_id"], record["inference_bundle_sha256"]),
+    )
+    approval = cur.fetchone()
+    if approval is None or approval[0] is None:
+        raise IntendedUpdateReleaseError("exact V5 bundle approval is absent")
+    try:
+        assert_release_records_active(
+            cur,
+            [
+                ("bundle_approval", str(approval[0])),
+                ("intended_update_authorization", str(record["authorization_id"])),
+            ],
+        )
+    except V5RevocationError as exc:
+        raise IntendedUpdateReleaseError(str(exc)) from exc
     validate_intended_update_release_record(
         record,
         manifest=manifest,

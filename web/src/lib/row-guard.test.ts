@@ -114,7 +114,7 @@ test("prediction and performance rows allow null leans and grades but not null i
   assert.equal(checkRows([{ ...game, gameId: null }], PREDICTION_GAME_SPEC).total, 1);
   assert.equal(checkRows([{ ...game, spreadLean: "push" }], PREDICTION_GAME_SPEC).total, 1);
   const detail = {
-    evidenceClass: "replay", week: 1, gameId: 1, startDate: new Date(), homeTeam: "A", awayTeam: "B",
+    evidenceClass: "replay", week: 1, gameId: 1, runId: "run-1", startDate: new Date(), homeTeam: "A", awayTeam: "B",
     predictedSpread: null, predictedTotal: null, predictedSpreadStdDev: null, predictedTotalStdDev: null,
     spreadLean: "away", totalLean: null, spreadResult: "win", totalResult: null, highConfidence: true,
   };
@@ -128,6 +128,7 @@ test("the UI-test fixtures satisfy the row contracts (CFB_UI_TEST_MODE=1 stays v
     evidenceClass: g.evidenceClass,
     week: g.week,
     gameId: g.gameId,
+    runId: g.runId,
     startDate: g.startDate,
     homeTeam: g.homeTeam,
     awayTeam: g.awayTeam,

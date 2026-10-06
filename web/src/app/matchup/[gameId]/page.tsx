@@ -57,7 +57,13 @@ export default async function MatchupPage({
         {/* Hero Section */}
         <MatchupHero matchup={matchup} />
 
-        {matchup.stats ? (
+        {matchup.lineageStatus !== "ready" ? (
+          <section aria-label="Team stats" role="status" className="rounded-2xl border border-line bg-surface-card p-6 text-sm text-ink-muted shadow-sm">
+            {matchup.lineageStatus === "updating"
+              ? "Matchup data is updating. Model-derived ratings and statistics are temporarily hidden."
+              : "Matchup data provenance is unavailable. Model-derived ratings and statistics are hidden."}
+          </section>
+        ) : matchup.stats ? (
           <section aria-label="Team stats" className="space-y-4">
             <div className="grid gap-4 lg:grid-cols-2">
               <UnitMatchupTable

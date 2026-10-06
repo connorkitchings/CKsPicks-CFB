@@ -6,21 +6,26 @@ import { PerformanceDashboard } from "@/components/PerformanceDashboard";
 export const dynamic = "force-dynamic";
 
 export default async function PerformancePage() {
-  let detail: PerformanceDetail | null = null;
+  let replay: PerformanceDetail | null = null;
+  let prospective: PerformanceDetail | null = null;
   let unavailable = false;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    detail = v5PerformanceDetailFixture;
+    replay = v5PerformanceDetailFixture;
+    prospective = { ...v5PerformanceDetailFixture, classification: "prospective", selectedGames: 0, gradedGames: [] };
   } else {
     try {
-      detail = await getV5PerformanceDetail(2026);
+      [replay, prospective] = await Promise.all([
+        getV5PerformanceDetail(2026, "replay"),
+        getV5PerformanceDetail(2026, "prospective"),
+      ]);
     } catch (error) {
       console.error("V5 performance query failed", error);
       unavailable = true;
     }
   }
 
-  const hasData = detail !== null && (detail.summary.games > 0 || detail.gradedGames.length > 0);
+  const hasData = replay !== null && prospective !== null;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
@@ -32,10 +37,10 @@ export default async function PerformancePage() {
           Season record & performance
         </h1>
         <p className="mt-1 text-xs text-ink-muted sm:text-sm">
-          Records, forecast accuracy, and calibration for every selected V5 forecast in 2026.
+          Separate performance records for selected retrospective replays and explicitly designated prospective V5 runs.
         </p>
         <p role="note" className="mt-1.5 text-xs text-ink-faint">
-          Weeks 0–4 use retrospective predictions and grades recalculated after the games with the repaired V5 ratings. They were not the picks originally published before kickoff.
+          Replays are recalculated after games and are not evidence of picks published before kickoff. Prospective records come only from the explicit freeze designation; no latest-run fallback is used.
         </p>
       </div>
 
@@ -46,8 +51,22 @@ export default async function PerformancePage() {
         >
           Performance data is temporarily unavailable.
         </p>
-      ) : hasData && detail ? (
-        <PerformanceDashboard data={detail} />
+      ) : hasData && replay && prospective ? (
+        <div className="space-y-8">
+          {replay.selectedGames === 0 ? (
+            <StatusCard title="Selected retrospective replay" message="No retrospective replay weeks are selected." />
+          ) : replay.gradedGames.length === 0 ? (
+            <StatusCard title="Selected retrospective replay" message="The selected replay has games, but no grades are available yet." />
+          ) : <PerformanceDashboard data={replay} title="Selected retrospective replay" />}
+          {prospective.gradedGames.length > 0 ? (
+            <PerformanceDashboard data={prospective} title="Designated prospective V5 performance" />
+          ) : (
+            <section aria-labelledby="prospective-empty" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">
+              <h2 id="prospective-empty" className="font-semibold text-ink">Designated prospective V5 performance</h2>
+              <p className="mt-1">{prospective.selectedGames > 0 ? "A prospective run is designated, but it has no graded results yet." : "No prospective V5 week has been explicitly designated."}</p>
+            </section>
+          )}
+        </div>
       ) : (
         <p
           role="status"
@@ -63,4 +82,10 @@ export default async function PerformancePage() {
       </p>
     </main>
   );
+}
+
+function StatusCard({ title, message }: { title: string; message: string }) {
+  return <section role="status" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">
+    <h2 className="font-semibold text-ink">{title}</h2><p className="mt-1">{message}</p>
+  </section>;
 }

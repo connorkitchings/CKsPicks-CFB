@@ -204,6 +204,9 @@ class CycleSpec:
         else:
             if not item.get("run_id") or not item.get("as_of"):
                 raise V5CycleError("ops component requires run_id and as_of")
+            if name == "freeze" and self.season == 2026 and self.week >= 5:
+                if not str(item.get("decision_ref") or "").strip():
+                    raise V5CycleError("prospective V5 freeze requires a decision reference")
             if name == "publish" and not item.get("config"):
                 raise V5CycleError("publish requires a serving config")
             if name == "close" and not item.get("outcomes_ref_uri"):
@@ -261,6 +264,7 @@ def _bound_inputs(
         "arguments": item.get("arguments") or {},
         "parents": parents,
         "outcomes_ref_uri": item.get("outcomes_ref_uri"),
+        "decision_ref": item.get("decision_ref"),
     }
 
 
@@ -581,6 +585,8 @@ def apply_component(
                 "--outcomes-ref-uri",
                 str(item["outcomes_ref_uri"]),
             ]
+        if component == "freeze":
+            argv += ["--decision-ref", str(item["decision_ref"])]
         subprocess.run(argv, check=True, env=_runner_env(spec))
         return context
 

@@ -941,6 +941,80 @@ CREATE TABLE IF NOT EXISTS ops.reconciliation_status (
     reconciled_at    TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS public.prospective_week_records (
+    season INTEGER NOT NULL CHECK (season = 2026),
+    week INTEGER NOT NULL CHECK (week >= 5),
+    run_id TEXT NOT NULL UNIQUE REFERENCES public.prediction_runs(run_id) ON DELETE RESTRICT,
+    freeze_receipt_uri TEXT NOT NULL CHECK (length(trim(freeze_receipt_uri)) > 0),
+    freeze_receipt_sha256 TEXT NOT NULL CHECK (freeze_receipt_sha256 ~ '^[0-9a-f]{64}$'),
+    frozen_at TIMESTAMPTZ NOT NULL,
+    first_kickoff_utc TIMESTAMPTZ NOT NULL,
+    decision_ref TEXT NOT NULL CHECK (length(trim(decision_ref)) > 0),
+    PRIMARY KEY (season, week),
+    CHECK (frozen_at < first_kickoff_utc)
+);
+CREATE OR REPLACE FUNCTION public.validate_prospective_week_record()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE run_row public.prediction_runs%ROWTYPE; schedule_kickoff TIMESTAMPTZ; freeze_recorded BOOLEAN;
+BEGIN
+    SELECT * INTO run_row FROM public.prediction_runs WHERE run_id = NEW.run_id;
+    IF NOT FOUND OR run_row.season <> NEW.season OR run_row.week <> NEW.week
+       OR run_row.model_id NOT LIKE 'v5-%' OR run_row.state NOT IN ('frozen', 'scored')
+       OR run_row.evidence_class <> 'live' OR run_row.frozen_at IS DISTINCT FROM NEW.frozen_at THEN
+        RAISE EXCEPTION 'prospective record must reference an authentic same-slate frozen V5 run';
+    END IF;
+    SELECT MIN(g.start_date) INTO schedule_kickoff
+      FROM public.predictions p JOIN public.games g ON g.game_id = p.game_id WHERE p.run_id = NEW.run_id;
+    IF schedule_kickoff IS NULL OR NEW.first_kickoff_utc IS DISTINCT FROM schedule_kickoff
+       OR NEW.frozen_at >= schedule_kickoff THEN
+        RAISE EXCEPTION 'prospective record cutoff does not match the current earliest slate kickoff';
+    END IF;
+    SELECT EXISTS (SELECT 1 FROM ops.activation_history ah WHERE ah.run_id = NEW.run_id
+        AND ah.action = 'freeze' AND ah.season = NEW.season AND ah.week = NEW.week) INTO freeze_recorded;
+    IF NOT freeze_recorded THEN RAISE EXCEPTION 'prospective record lacks retained freeze activation evidence'; END IF;
+    IF TG_OP = 'UPDATE' AND (NEW.season <> OLD.season OR NEW.week <> OLD.week
+        OR NEW.first_kickoff_utc <> OLD.first_kickoff_utc
+        OR clock_timestamp() >= LEAST(OLD.first_kickoff_utc, schedule_kickoff)
+        OR NEW.run_id = OLD.run_id) THEN
+        RAISE EXCEPTION 'prospective replacement is only allowed for the same slate before its earliest kickoff';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER prospective_week_records_validate BEFORE INSERT OR UPDATE ON public.prospective_week_records
+    FOR EACH ROW EXECUTE FUNCTION public.validate_prospective_week_record();
+CREATE OR REPLACE FUNCTION public.reject_prospective_week_record_delete()
+RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'prospective records are append-only'; END; $$;
+CREATE TRIGGER prospective_week_records_no_delete BEFORE DELETE ON public.prospective_week_records
+    FOR EACH ROW EXECUTE FUNCTION public.reject_prospective_week_record_delete();
+
+CREATE TABLE IF NOT EXISTS ops.v5_release_revocations (
+    record_type TEXT NOT NULL CHECK (record_type IN ('bundle_approval', 'intended_update_authorization')),
+    record_id TEXT NOT NULL CHECK (length(trim(record_id)) > 0),
+    decision_ref TEXT NOT NULL CHECK (length(trim(decision_ref)) > 0),
+    revoked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (record_type, record_id)
+);
+CREATE OR REPLACE FUNCTION ops.validate_v5_release_revocation()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, ops AS $$
+DECLARE exists_record BOOLEAN;
+BEGIN
+    IF NEW.record_type = 'bundle_approval' THEN
+        SELECT EXISTS (SELECT 1 FROM public.v5_model_bundle_approvals WHERE approval_id = NEW.record_id) INTO exists_record;
+    ELSE
+        SELECT EXISTS (SELECT 1 FROM public.v5_intended_update_release_authorizations WHERE authorization_id = NEW.record_id) INTO exists_record;
+    END IF;
+    IF NOT exists_record THEN RAISE EXCEPTION 'revocation references no matching V5 authorization record'; END IF;
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER v5_release_revocations_validate BEFORE INSERT ON ops.v5_release_revocations
+    FOR EACH ROW EXECUTE FUNCTION ops.validate_v5_release_revocation();
+CREATE OR REPLACE FUNCTION ops.reject_v5_release_revocation_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'V5 release revocations are append-only'; END; $$;
+CREATE TRIGGER v5_release_revocations_no_mutation BEFORE UPDATE OR DELETE ON ops.v5_release_revocations
+    FOR EACH ROW EXECUTE FUNCTION ops.reject_v5_release_revocation_mutation();
+
 -- Roles are NOLOGIN group roles; deployment-specific login roles inherit one.
 DO $$
 BEGIN
@@ -952,6 +1026,11 @@ BEGIN
     END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cks_migrator') THEN
         CREATE ROLE cks_migrator NOLOGIN;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cks_release_authorizer') THEN
+        CREATE ROLE cks_release_authorizer NOLOGIN;
+    ELSIF (SELECT rolcanlogin FROM pg_roles WHERE rolname = 'cks_release_authorizer') THEN
+        RAISE EXCEPTION 'cks_release_authorizer must remain a NOLOGIN group role';
     END IF;
 END $$;
 
@@ -991,6 +1070,13 @@ REVOKE ALL ON v5_replay_release_authorizations FROM PUBLIC;
 REVOKE ALL ON v5_replay_release_authorizations FROM cks_pipeline;
 REVOKE ALL ON v5_replay_release_authorizations FROM cks_web;
 GRANT SELECT ON v5_replay_release_authorizations TO cks_pipeline;
+REVOKE ALL ON public.prospective_week_records FROM PUBLIC, cks_pipeline, cks_web;
+GRANT SELECT, INSERT, UPDATE ON public.prospective_week_records TO cks_pipeline;
+GRANT SELECT ON public.prospective_week_records TO cks_web;
+REVOKE ALL ON ops.v5_release_revocations FROM PUBLIC, cks_pipeline, cks_web, cks_release_authorizer;
+GRANT USAGE ON SCHEMA ops TO cks_release_authorizer;
+GRANT SELECT, INSERT ON ops.v5_release_revocations TO cks_release_authorizer;
+GRANT SELECT ON ops.v5_release_revocations TO cks_pipeline;
 
 -- ---------------------------------------------------------------------------
 -- Views for convenience

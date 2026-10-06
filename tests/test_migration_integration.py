@@ -360,3 +360,102 @@ def test_matchup_data_v2_migration_tables_constraints_and_grants():
     assert {g[2] for g in grants if g[1] == "cks_web"} == {"SELECT"}
     assert {g[2] for g in grants if g[1] == "cks_pipeline"} == {"INSERT,SELECT,UPDATE"}
     assert apply_migrations(conn_url, Path("contracts/migrations")) == []
+
+
+@pytest.mark.skipif(
+    not os.getenv("TEST_DATABASE_URL"),
+    reason="requires disposable PostgreSQL via TEST_DATABASE_URL",
+)
+def test_stage7a_migrations_guard_prospective_and_revocation_records():
+    conn_url = os.environ["TEST_DATABASE_URL"]
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            for schema in ("ops", "catalog", "public"):
+                cur.execute(f"DROP SCHEMA IF EXISTS {schema} CASCADE")
+            cur.execute("CREATE SCHEMA public")
+    applied = apply_migrations(conn_url, Path("contracts/migrations"))
+    assert {"0023", "0024"} <= set(applied)
+
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT has_table_privilege('cks_pipeline', 'public.prospective_week_records', 'SELECT'), "
+                "has_table_privilege('cks_pipeline', 'public.prospective_week_records', 'INSERT'), "
+                "has_table_privilege('cks_pipeline', 'public.prospective_week_records', 'DELETE'), "
+                "has_table_privilege('cks_web', 'public.prospective_week_records', 'SELECT'), "
+                "has_table_privilege('cks_web', 'ops.v5_release_revocations', 'SELECT'), "
+                "has_table_privilege('cks_pipeline', 'ops.v5_release_revocations', 'SELECT'), "
+                "has_table_privilege('cks_pipeline', 'ops.v5_release_revocations', 'INSERT'), "
+                "has_table_privilege('cks_release_authorizer', 'ops.v5_release_revocations', 'INSERT')"
+            )
+            assert cur.fetchone() == (True, True, False, True, False, True, False, True)
+
+            future_kickoff = "2026-10-10 18:00:00+00"
+            historical_kickoff = "2026-09-10 18:00:00+00"
+            sha = "a" * 64
+            for week, run_id, kickoff, frozen_at in (
+                (5, "v5-prospective-5a", future_kickoff, "2026-10-06 12:00:00+00"),
+                (5, "v5-prospective-5b", future_kickoff, "2026-10-06 13:00:00+00"),
+                (6, "v5-prospective-6a", historical_kickoff, "2026-09-09 12:00:00+00"),
+                (6, "v5-prospective-6b", historical_kickoff, "2026-09-09 13:00:00+00"),
+            ):
+                cur.execute(
+                    "INSERT INTO games (game_id, season, week, start_date, home_team, away_team) "
+                    "VALUES (%s, 2026, %s, %s, 'Home', 'Away')",
+                    (100000 + week * 10 + ord(run_id[-1]), week, kickoff),
+                )
+                cur.execute(
+                    "INSERT INTO prediction_runs (run_id, season, week, state, expected_games, "
+                    "predicted_games, lined_games, data_as_of, model_id, rating_manifest_sha256, "
+                    "artifact_uri, artifact_sha256, frozen_at, evidence_class) "
+                    "VALUES (%s, 2026, %s, 'frozen', 1, 1, 1, %s, 'v5-fixture', %s, 'r2://fixture', %s, %s, 'live')",
+                    (run_id, week, frozen_at, sha, sha, frozen_at),
+                )
+                cur.execute(
+                    "INSERT INTO predictions (run_id, game_id, regime) VALUES (%s, %s, 'preseason')",
+                    (run_id, 100000 + week * 10 + ord(run_id[-1])),
+                )
+                cur.execute(
+                    "INSERT INTO ops.activation_history (environment, season, week, run_id, action) "
+                    "VALUES ('preview', 2026, %s, %s, 'freeze')",
+                    (week, run_id),
+                )
+
+            insert_record = (
+                "INSERT INTO public.prospective_week_records "
+                "(season, week, run_id, freeze_receipt_uri, freeze_receipt_sha256, "
+                "frozen_at, first_kickoff_utc, decision_ref) "
+                "VALUES (2026, %s, %s, 'r2://receipt', %s, %s, %s, 'fixture-decision')"
+            )
+            cur.execute(insert_record, (5, "v5-prospective-5a", sha, "2026-10-06 12:00:00+00", future_kickoff))
+            cur.execute(
+                "UPDATE public.prospective_week_records SET run_id = %s, frozen_at = %s "
+                "WHERE season = 2026 AND week = 5",
+                ("v5-prospective-5b", "2026-10-06 13:00:00+00"),
+            )
+            with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
+                cur.execute("DELETE FROM public.prospective_week_records WHERE season = 2026 AND week = 5")
+
+            cur.execute(insert_record, (6, "v5-prospective-6a", sha, "2026-09-09 12:00:00+00", historical_kickoff))
+            with pytest.raises(psycopg.errors.RaiseException, match="before its earliest kickoff"):
+                cur.execute(
+                    "UPDATE public.prospective_week_records SET run_id = %s, frozen_at = %s "
+                    "WHERE season = 2026 AND week = 6",
+                    ("v5-prospective-6b", "2026-09-09 13:00:00+00"),
+                )
+            with pytest.raises(psycopg.errors.CheckViolation):
+                cur.execute(insert_record, (4, "v5-prospective-6b", sha, "2026-09-09 13:00:00+00", historical_kickoff))
+
+            cur.execute(
+                "INSERT INTO v5_model_bundle_approvals (approval_id, model_id, inference_bundle_sha256, "
+                "first_live_season, first_live_week, decision_ref) VALUES ('approval-fixture', 'v5-fixture', %s, 2026, 5, 'approved')",
+                (sha,),
+            )
+            cur.execute("SET ROLE cks_release_authorizer")
+            cur.execute(
+                "INSERT INTO ops.v5_release_revocations (record_type, record_id, decision_ref) "
+                "VALUES ('bundle_approval', 'approval-fixture', 'revoke-fixture')"
+            )
+            with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
+                cur.execute("UPDATE ops.v5_release_revocations SET decision_ref = 'changed'")
+            cur.execute("RESET ROLE")

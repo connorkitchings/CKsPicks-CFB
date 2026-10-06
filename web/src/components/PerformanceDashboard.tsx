@@ -25,7 +25,7 @@ function recordFor(games: GradedGamePick[], pick: (g: GradedGamePick) => Accurac
   return accuracyRecord(games.map(pick));
 }
 
-export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
+export function PerformanceDashboard({ data, title }: { data: PerformanceDetail; title: string }) {
   const [targetFilter, setTargetFilter] = useState<TargetFilter>("all");
   const [confidenceOnly, setConfidenceOnly] = useState<boolean>(false);
 
@@ -77,6 +77,7 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-lg font-semibold text-ink">{title}</h2>
       {/* Accuracy KPI cards: mobile 2+1 grid, desktop 3-col */}
       <section aria-labelledby="kpi-heading" className="grid grid-cols-2 gap-2.5 sm:gap-4 md:grid-cols-3">
         <h2 id="kpi-heading" className="sr-only">Forecast accuracy summary</h2>
@@ -359,6 +360,8 @@ export function PerformanceDashboard({ data }: { data: PerformanceDetail }) {
               <p className="mt-1 text-[11px] text-ink-faint">
                 Week {game.week} · {game.evidenceClass === "replay" ? "Retrospective replay" : "Prospective"} · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
               </p>
+              <p className="text-[11px] text-ink-faint">Original run: <code>{game.runId}</code></p>
+              {game.freezeReceiptSha256 && <p className="text-[11px] text-ink-faint">Freeze receipt SHA-256: <code>{game.freezeReceiptSha256}</code></p>}
               <dl className="mt-2 space-y-2 text-xs">
                 {targetFilter !== "total" && game.spreadResult !== null && (
                   <div>

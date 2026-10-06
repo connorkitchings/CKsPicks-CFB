@@ -2,6 +2,16 @@ import { expect, test } from "@playwright/test";
 import sharp from "sharp";
 
 test.describe("matchup page (fixture mode)", () => {
+  test("mismatched publication lineage hides model sections and disables sharing", async ({ page }) => {
+    await page.goto("/matchup/987656");
+    await expect(page.getByRole("status", { name: "Team stats" })).toContainText("provenance is unavailable");
+    await expect(page.getByRole("table")).toHaveCount(0);
+    await expect(page.getByTestId("model-rating")).toHaveCount(0);
+    await expect(page.getByTestId("forecast-grid")).toContainText("Market");
+    await expect(page.getByTestId("forecast-grid")).not.toContainText("Model");
+    await expect(page.getByTestId("share-download")).toBeDisabled();
+  });
+
   test("shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes", async ({ page }) => {
     await page.goto("/matchup/1");
     await expect(page.getByRole("region", { name: "Team stats" })).toBeVisible();

@@ -46,6 +46,8 @@ class FakeCursor:
     def fetchone(self):
         if self.executed and "session_user" in self.executed[-1]:
             return self.identities
+        if self.executed and "ops.v5_release_revocations" in self.executed[-1]:
+            return None
         return self.results.pop(0) if self.results else None
 
 
@@ -168,7 +170,7 @@ def test_v5_selection_enforces_the_release_policy():
                 bundle_sha256=V5_BUNDLE,
                 state="scored",
             ),
-            (V5_MODEL, V5_BUNDLE, 2026, 5),
+            ("approval-1", V5_MODEL, V5_BUNDLE, 2026, 5),
             (8, 0),
             None,
         ]
@@ -206,6 +208,30 @@ def test_v5_selection_rejects_an_unapproved_bundle():
         )
 
 
+def test_v5_selection_rejects_ambiguous_bundle_approval():
+    cur = FakeCursor(
+        [
+            _candidate(
+                model_id=V5_MODEL,
+                evidence_class="replay",
+                bundle_sha256=V5_BUNDLE,
+                state="scored",
+            ),
+            (None, V5_MODEL, V5_BUNDLE, 2026, 5),
+        ]
+    )
+    with pytest.raises(PublicSelectionError, match="approved model bundle"):
+        select_week_run(
+            cur,
+            season=2026,
+            week=0,
+            run_id="ambiguous-v5",
+            reason="rehearsal",
+            environment="preview",
+        )
+    assert not any("INSERT INTO site_week_selections" in sql for sql in cur.executed)
+
+
 def test_preview_successor_selection_requires_exact_preview_authorization(monkeypatch):
     import cks_picks_cfb.artifacts as artifacts_module
     import cks_picks_cfb.data.storage as storage_module
@@ -225,7 +251,7 @@ def test_preview_successor_selection_requires_exact_preview_authorization(monkey
                 bundle_sha256=V5_BUNDLE,
                 state="scored",
             ),
-            (SUCCESSOR_MODEL, V5_BUNDLE, 2026, 5),
+            ("approval-1", SUCCESSOR_MODEL, V5_BUNDLE, 2026, 5),
             None,
         ]
     )
@@ -342,7 +368,7 @@ def test_production_replay_selection_requires_exact_authorization(monkeypatch):
                 artifact_sha256=artifact_sha,
                 state="published",
             ),
-            (V5_MODEL, V5_BUNDLE, 2026, 5),
+            ("approval-1", V5_MODEL, V5_BUNDLE, 2026, 5),
         ],
         identities=("cks_prod_pipeline", "cks_prod_pipeline"),
     )
