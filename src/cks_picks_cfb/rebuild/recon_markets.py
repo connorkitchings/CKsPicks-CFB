@@ -123,7 +123,15 @@ def build_markets(context: StageContext) -> StageOutput:
                 pred_row = w_preds.loc[(game_id, pred_target)]
                 pred_val = float(pred_row["mean"])
 
-                canon_line = snap.get(target)
+                # The published Silver market snapshot contract names the
+                # canonical lines ``spread_line`` and ``total_line``. The
+                # quote rows use ``spread``/``total`` and are mapped below.
+                line_column = "spread_line" if target == "spread" else "total_line"
+                if line_column not in snap.index:
+                    raise GateError(
+                        f"market snapshot lacks canonical {target} line column {line_column}"
+                    )
+                canon_line = snap[line_column]
                 if pd.isna(canon_line):
                     canon_line = None
                 else:

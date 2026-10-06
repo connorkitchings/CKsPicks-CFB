@@ -367,10 +367,10 @@ def corpus():
                     season=2026,
                     week=w,
                     game_id=r.game_id,
-                    spread=-3.0,
-                    total=None if gap else 10.0,
+                    spread_line=-3.0,
+                    total_line=None if gap else 10.0,
                     market_captured_at=WEEK_AS_OF[w],
-                    policy_version="model_side_best_quote_v2",
+                    market_policy_version="model_side_best_quote_v2",
                 )
             )
             row = {

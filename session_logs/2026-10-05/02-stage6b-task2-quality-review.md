@@ -2,16 +2,16 @@
 
 ## TL;DR
 - **Worked On:** Audited and repaired the committed Stage 6B implementation from `7b93608`.
-- **Outcome:** The full six-week fixture pipeline and persisted verification pass; Task 2 is ready for Task 3 preflight and sequential staged verification.
+- **Outcome:** Fixture checks pass. Task 3 preflight and stages through predictions passed on `4f09aef`; the markets gate found a real Preview schema mismatch, now repaired locally and covered by the fixture.
 - **Plan Contract:** [Stage 6B Task 2 quality review](../../docs/plans/2026-10-05/02-stage6b-task2-quality-review.md), user authorized 2026-10-05.
 - **Approval / Status:** User explicitly requested implementation. Quality review In Progress because strict MkDocs is blocked by existing repository link warnings. The governing Stage 6B contract remains In Progress.
-- **Blockers:** No fixture correctness or write-boundary blocker. Live Preview compatibility remains a Task 3 gate; fixture success does not prove it. Strict documentation build warnings remain unresolved.
-- **Next:** After user commits the reviewed changes, Task 3 captures the new HEAD, runs fresh preflight, then builds and verifies each stage sequentially, stopping at the first failure.
+- **Blockers:** Follow-up repair is uncommitted. Task 3 must restart from a fresh preflight after that commit. Strict documentation build warnings remain unresolved.
+- **Next:** User commits the market schema mapping; then archive this stopped local staging attempt and restart Task 3 with the new HEAD.
 
 ## Context and Decisions
 - Baseline: `7b93608`, branch `dev`. All Git staging and commits remain user-run.
 - Amendment 1 remains controlling: writes are limited to Preview R2 `rebuild/6b/<run_id>/` and registered `lake/gold/dataset=reconstruction_*`; no serving, selection, authorization, production R2, or production database writes.
-- No reconstruction or catalog publication was run. Preview R2 source metadata was read with hash checks for pins; the pipeline test uses fixture-backed R2 and a read-only Preview database response.
+- Preview R2 source metadata was read with hash checks for pins. After commit `4f09aef`, Task 3 preflight passed and local staged builds ran through `predictions`; the `markets` builder stopped at its 541-selection gate. No Preview R2, catalog, database, serving, authorization, or production writes occurred.
 - The 6A root, Task 4 root, receipt SHA and namespace behavior were preserved. No contract amendment was needed.
 
 ## Contract-to-Evidence Review
@@ -24,7 +24,8 @@
 | Finals and original grade reproduction did not prove complete, identity-safe equality across Preview rows and served `scored.csv`. | Critical | Finals require full Preview game coverage and zero score differences. Original grade reproduction checks full selection/grade keys, quote identity, result, profit and served artifacts before new grades can run. | Missing/duplicate/wrong-score finals cases; missing/duplicate/wrong-grade/wrong-quote/wrong-profit original-grade cases; full flow. | Fixture DB rows do not establish live Preview parity. |
 | Persisted verification could rely on stored summaries instead of independently re-deriving artifacts. | High | Persisted verifiers rerun the stage builder from hash-checked inputs and declared parents, then compare every artifact. Receipt requires the exact gate set, exact non-claims, hashes and canonical re-derived payload. | Fresh orchestrator verifies all persisted stages; tampered receipt/CSV tests; deterministic retry. | Signature is content-checksum signing, not signer authentication, as stated in receipt non-claims. |
 | Stage DAG parent reads and Gold lineage/schema compatibility needed stronger enforcement. | High | Added direct-parent read restrictions; fixed typed partition refs and parent lineage. The orchestrator writes five partitioned Gold datasets through schema validation. | Full stage flow, `collect_entries` catalog compatibility and parent checks, `test_rebuild_catalog_publish.py` rollback/idempotency tests, schema tests. | No Preview catalog registration was performed. |
-| Offset and state parity or bridge compatibility could fail without stopping downstream use. | Critical | Existing hard gates are exercised with injected offset-freeze disagreement, state identity disagreement, and incompatible bundle cases. Late state and offset evidence are rejected before predictions. | New three gate-injection tests plus late-evidence tests. | Live 6A bundle and 2026 parity are not established by fixture execution. |
+| Offset/state parity or bridge compatibility could fail without stopping downstream use. | Critical | Existing hard gates are exercised with injected offset-freeze disagreement, state identity disagreement, and incompatible bundle cases. Late state and offset evidence are rejected before predictions. | New three gate-injection tests plus late-evidence tests. Actual Task 3 runs verified offsets, states and bridge. | None for the stages run; live market selection stopped the sequence. |
+| Markets returned 0/541 on Preview because snapshots use `spread_line`/`total_line`, while the builder looked up `spread`/`total`. | Critical | Follow-up maps the canonical Silver columns explicitly and fails if either is absent. The fixture now uses the Preview schema. | Full 27-test fixture module passes with Preview-shaped market inputs. | The repaired market builder has not been run against Preview; commit and fresh preflight are required. |
 | Receipt’s in-memory re-derivation compared pre-JSON integer keys to parsed string keys. | Medium | Compare canonical serialized JSON so equality matches the persisted representation. | Full 12-stage flow and fresh persisted verification. | None. |
 
 ## Work Completed
@@ -33,6 +34,8 @@
 - Added fixture-backed 12-stage orchestration coverage with 271 games across Weeks 0–5, the single locked missing total, real measurement/rating/offset/forecast/market/grade/lake computations, fresh persisted verification, and deterministic retry.
 - Added failure injection for altered inputs/children, missing/duplicate finals and grades, late evidence, offset/state parity disagreement, incompatible bundle, tampered receipt/CSV, and undeclared parent reads.
 - Updated the Stage 6B implementation log and plan index to record this review.
+- Task 3 preflight passed on committed HEAD `4f09aef`; `foundation`, `scoring_events_2026`, `offsets_2026`, `states_at_cutoff`, `application_frames`, and `predictions` built and verified. The markets stage stopped at 0 versus 541 expected selections.
+- Repaired the market snapshot line-column mapping in the working tree and changed the fixture to match Preview Silver. No Task 3 stage was rerun after the repair.
 
 ## Files Modified
 - `conf/rebuild/6b_v1.yaml` and `conf/rebuild/6b_source_refs_v1.json` — source hashes and corrected stage dependencies.
@@ -42,9 +45,9 @@
 
 ## Validation
 - [x] Focused Stage 6B and namespace checks: 22 passed.
-- [x] Full Stage 6B fixture module before added failure-injection cases: 24 passed.
+- [x] Full Stage 6B fixture module before the Preview schema correction: 24 passed.
 - [x] Full Python suite before the final three gate-injection tests: 1,992 passed, 9 skipped.
-- [x] New offset/state/bundle injection tests: 3 passed.
+- [x] Stage 6B fixture module after the market schema correction: 27 passed.
 - [x] Full Ruff check: clean.
 - [x] Contracts validation: passed.
 - [x] Data-quality registry: 29 checks, no problems.
@@ -54,10 +57,10 @@
 ## Amendments and Blockers
 - No material change to cutoff policy, identities, model design, or write scope.
 - Strict MkDocs warning debt is documented and is unrelated to Stage 6B code. The Task 2 quality plan remains In Progress until required checks are resolved or dispositioned.
-- Fixture verification establishes internal stage flow and boundary behavior only. Task 3 must verify access, pins and real-data compatibility against Preview, stop at the first failing stage, and avoid publication.
+- Fixture verification establishes internal stage flow and boundary behavior only. The repaired market stage still needs a real Preview run. Publication remains separately gated.
 
 ## Handoff Notes
-- **Resume at:** Run final `git diff --check` and confirm status; then hand the review to the user for staging and commit.
-- **Watch out for:** User stages and commits. Task 3 must use the new committed HEAD and the Preview role wrapper for any database command.
+- **Resume at:** User commits the market schema mapping. Archive `artifacts/rebuild/6b-replay-20261005-r1/` from the stopped `4f09aef` run, capture the new HEAD and run fresh preflight before restarting stages sequentially.
+- **Watch out for:** User stages and commits. Task 3 must use the new committed HEAD and Preview role wrapper for database commands. Stop at the first failure and do not continue to finals or receipt while markets fails.
 
 **tags:** ["stage6b", "rebuild", "integrity", "fixture-verification", "preview"]

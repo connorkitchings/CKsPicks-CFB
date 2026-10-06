@@ -1,6 +1,6 @@
 # Stage 6B Task 2 Quality Review and Repair
 
-- **Status:** In Progress (implementation and fixture verification complete; strict docs warning gate unresolved)
+- **Status:** In Progress (Task 3 exposed a Preview market-schema defect; local repair and fixture verification complete, commit and fresh preflight pending)
 - **Approval:** User explicitly requested implementation of the complete review plan in this chat on 2026-10-05.
 - **Authority:** [6B contract](01-stage6b-completed-week-reconstruction.md), Amendment 1.
 - **Baseline:** `7b93608`; clean `dev`.
@@ -22,6 +22,8 @@ Audit all twelve committed stages, repair defects within the approved contract, 
 All confirmed defects repaired; full fixture pipeline/persisted verification and required checks pass; no unresolved correctness/provenance/boundary issue. Fixture success does not establish live parity. Material changes require amendment. Task 3 captures the new committed HEAD and runs fresh preflight then sequential build/verify; publication is separately gated.
 
 ## Review outcome
-The source and fixture review supports proceeding to Task 3 preflight and sequential stage execution. Live Preview compatibility remains a Task 3 hard gate. The task is not marked Implemented because strict MkDocs exits on five repository-relative link warnings documented in the implementation log.
+After commit `4f09aef`, fresh Preview preflight passed and stages `foundation` through `predictions` built and verified. Stage `markets` stopped at its 541-selection gate with zero selections. Hash-verified Preview snapshots use `spread_line` and `total_line`; the committed builder looked up `spread` and `total`, so every canonical line was treated as absent. The local follow-up maps the actual Silver fields and updates the fixture to the Preview schema; all 27 flow tests pass. The follow-up must be committed before Task 3 restarts with a fresh preflight. No later stage ran.
+
+The task remains In Progress because the live gate failure is not yet exercised against the repaired commit, and strict MkDocs exits on existing repository-relative link warnings documented in the implementation log.
 
 The final evidence table and unresolved provenance/compatibility limits are recorded in `session_logs/2026-10-05/02-stage6b-task2-quality-review.md`.
