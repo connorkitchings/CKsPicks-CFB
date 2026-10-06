@@ -376,6 +376,19 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
     applied = apply_migrations(conn_url, Path("contracts/migrations"))
     assert {"0023", "0024"} <= set(applied)
 
+    # Reconstruct the logical 0022 boundary and confirm the two additions
+    # apply incrementally without replaying any earlier migration.
+    with psycopg.connect(conn_url, autocommit=True) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DROP TABLE public.prospective_week_records CASCADE")
+            cur.execute("DROP TABLE ops.v5_release_revocations CASCADE")
+            cur.execute("DROP FUNCTION public.validate_prospective_week_record()")
+            cur.execute("DROP FUNCTION public.reject_prospective_week_record_delete()")
+            cur.execute("DROP FUNCTION ops.validate_v5_release_revocation()")
+            cur.execute("DROP FUNCTION ops.reject_v5_release_revocation_mutation()")
+            cur.execute("DELETE FROM schema_migrations WHERE version IN ('0023', '0024')")
+    assert apply_migrations(conn_url, Path("contracts/migrations")) == ["0023", "0024"]
+
     with psycopg.connect(conn_url, autocommit=True) as conn:
         with conn.cursor() as cur:
             cur.execute(

@@ -2,11 +2,11 @@
 
 ## TL;DR
 - **Worked On:** Implemented the approved Stage 7A schema, revocation guards, freeze/auth tooling, v2 selection controller, and web read-path changes.
-- **Outcome:** Local implementation, fixture/browser validation, and PostgreSQL migration integration checks are in place. Contract remains In Progress because database-backed v2 transaction tests and separately authorized Preview migration/readback are outstanding.
+- **Outcome:** Local implementation, fixture/browser validation, migration upgrade tests, and database-backed v2 transaction tests are in place. Contract remains In Progress pending separately authorized Preview migration/readback.
 - **Plan Contract:** `docs/plans/2026-10-06/01-stage7a-release-foundations.md`
 - **Approval / Status:** User explicitly authorized implementation of this contract in this task; Stage 7A remains In Progress.
-- **Blockers:** The migration suite passed on a disposable local PostgreSQL cluster, but v2 apply/rollback/failure/concurrency paths lack database-backed tests. Preview schema/grant/query verification is reserved for a separately authorized operator session. No Preview or Production database changes were made.
-- **Next:** Add and run v2 transaction tests against an isolated PostgreSQL database; after separate operator authorization, inspect Preview migration state and run read-only identity/effective-grant/web-query checks.
+- **Blockers:** Preview schema/grant/query verification is reserved for a separately authorized operator session. The database-backed controller tests isolate the external auth/finals evidence and exact login identity checks. No Preview or Production database changes were made.
+- **Next:** After separate operator authorization, inspect Preview migration state and run read-only identity/effective-grant/web-query checks.
 
 ## Context and Decisions
 - Work is on `dev`, starting from clean HEAD `63a62b6063e57d6d12614ad6a9321ad8779fff83`; the approved Stage 7A code baseline is Stage 6B close-out `320436f1d13b38068b9e21a2ea64d41a755c1551`.
@@ -21,6 +21,7 @@
 - Split selected replay and designated prospective Performance queries. Added class labels, separate status states, original run/receipt provenance, and push-excluding W-L-P rates. Added a fail-closed matchup lineage state that hides model-derived details and disables share controls when provenance is missing or mismatched.
 - Added focused Python regressions, migration integration coverage, lineage unit tests, fixture cases, and Performance/matchup Playwright assertions.
 - The real PostgreSQL run caught and repaired two migration-test assumptions: prospective Week 5+ scope now fails before run identity checks, and role-level UPDATE denial is tested separately from the table-owner append-only trigger.
+- Added database-backed v2 coverage for read-only preflight, atomic selection of Weeks 0–5, idempotent retry without duplicate history, a failure after several selection writes, a failure after selection/team-stat/current-week writes, compensating rollback, and a real advisory-lock wait between selection and revocation. The focused suite passed 49 tests against the disposable cluster; the controller test stubs external authorization/finals proof reads and the exact database login guard.
 
 ## Files Modified
 - `contracts/migrations/0023_prospective_week_records.sql`, `contracts/migrations/0024_v5_release_revocations.sql`, `contracts/schema.sql`, `contracts/schema.ts`, `web/src/lib/schema.ts`, `contracts/validation.py` - schema and synchronization.
@@ -32,18 +33,18 @@
 
 ## Validation
 - [x] Focused Stage 7A Python tests: 40 passed, 7 PostgreSQL-dependent tests skipped.
-- [x] Disposable PostgreSQL migration integration: 7 passed; combined focused Stage 7A suite with database configured: 47 passed.
-- [x] Full Python suite after final controller and weekly-cycle hardening: 2,017 passed, 10 skipped in 288.80 seconds.
+- [x] Disposable PostgreSQL migration and controller integration: combined focused Stage 7A suite with database configured: 49 passed.
+- [x] Full Python suite: 2,017 passed, 12 skipped in 292.35 seconds.
 - [x] Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed.
 - [x] Web lint, typecheck, 131 publication tests, production build, and 24 Performance/matchup Playwright tests passed.
 - [ ] Preview migration and read-only identity/grant/schema/query readback (separate operator authorization required).
 
 ## Amendments and Blockers
 - No plan amendment. `make contracts-check` could not run through `uv`: the configured cache first returned a filesystem permission error; a writable-cache retry hit a local uv runtime panic. Its underlying `contracts/validation.py` command passed directly.
-- PostgreSQL migration, fresh schema, trigger, and basic role-grant checks passed against a temporary UTF-8 cluster, which was stopped afterward. Database-backed controller transaction/concurrency tests are not present yet; the controller tests currently validate packet logic and fake-cursor lock behavior. Preview migration and live role readback remain separate authorization gates.
+- PostgreSQL migration, logical 0022 upgrade, trigger, basic role-grant, controller transaction, rollback, and advisory-lock serialization checks passed against a temporary UTF-8 cluster, which was stopped afterward. Controller integration stubs external authorization/finals proof reads and the exact DB identity guard; Preview migration and live role readback remain separate authorization gates.
 
 ## Handoff Notes
-- **Resume at:** Add/run database-backed v2 apply/rollback/failure/concurrency tests. Keep the contract In Progress until those tests and the separately authorized Preview readback pass.
+- **Resume at:** After separate operator authorization, run the Preview migration and read-only schema, real-login privilege, and web-query checks. Keep the contract In Progress until those checks pass.
 - **Watch out for:** Never run the Preview migration, authorization/revocation operation, freeze, serving selection, current-week movement, or rollback as part of this local implementation turn.
 
 **tags:** ["release", "schema", "authorization", "web"]
