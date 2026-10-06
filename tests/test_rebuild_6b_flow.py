@@ -365,6 +365,7 @@ def corpus():
             target_ordinal += 1
             total_exception = target_ordinal < 86
             target_ordinal += int(not gap)
+            week5_first_game = w == 5 and not csv
             snap = f"snap-{r.game_id}"
             snaps.append(
                 dict(
@@ -382,7 +383,13 @@ def corpus():
                 "market_snapshot_id": snap,
                 "game_id": r.game_id,
                 "Spread Prediction": 3.5 if spread_exception else 4.0,
-                "Total Prediction": 10.5 if total_exception else 12.0,
+                "Total Prediction": (
+                    10.5
+                    if total_exception
+                    else 11.070459498543329
+                    if week5_first_game
+                    else 12.0
+                ),
                 "Spread Bet": "No Bet" if spread_exception else "Home",
                 "Total Bet": None if gap else "No Bet" if total_exception else "Over",
                 "home_team_spread_line": -3.0,

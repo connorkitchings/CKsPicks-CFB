@@ -139,34 +139,36 @@ def _original_csvs(
                     if target == "spread"
                     else abs(prediction - line)
                 )
+                expected_graded = result in ("win", "loss", "push")
                 if target == "spread":
-                    expected_active = edge >= LEGACY_SPREAD_GRADE_THRESHOLD
+                    below_threshold = edge < LEGACY_SPREAD_GRADE_THRESHOLD
                     expected_side = "home" if prediction + line > 0 else "away"
                 else:
-                    expected_active = edge >= LEGACY_TOTAL_GRADE_THRESHOLD
+                    below_threshold = edge < LEGACY_TOTAL_GRADE_THRESHOLD
                     expected_side = "over" if prediction > line else "under"
                 valid_sides = (
                     ("home", "away") if target == "spread" else ("over", "under")
                 )
-                expected_csv_side = (
-                    expected_side
-                    if (target == "spread" and edge >= LEGACY_SPREAD_GRADE_THRESHOLD)
-                    or (target == "total" and edge >= LEGACY_TOTAL_LEAN_THRESHOLD)
-                    else "no bet"
-                )
-                if side != expected_csv_side:
-                    raise GateError(
-                        f"served CSV side violates September 29 threshold policy: {run} {gid} {target}"
-                    )
-                if expected_active:
-                    if side not in valid_sides or result not in ("win", "loss", "push"):
+                if expected_graded:
+                    if side not in valid_sides or side != expected_side:
                         raise GateError(
-                            "served CSV active selection has invalid side/result"
+                            f"served CSV graded side is invalid: {run} {gid} {target}"
                         )
-                elif result != "no bet":
-                    raise GateError(
-                        "served CSV sub-threshold row is not labeled No Bet"
+                else:
+                    if result != "no bet":
+                        raise GateError(
+                            f"served CSV has invalid grade label: {run} {gid} {target}"
+                        )
+                    expected_no_bet_side = (
+                        "no bet"
+                        if (target == "spread" and edge < LEGACY_SPREAD_GRADE_THRESHOLD)
+                        or (target == "total" and edge < LEGACY_TOTAL_LEAN_THRESHOLD)
+                        else expected_side
                     )
+                    if not below_threshold or side != expected_no_bet_side:
+                        raise GateError(
+                            f"served CSV No Bet row violates September 29 thresholds: {run} {gid} {target}"
+                        )
                 csv_rows.append(
                     dict(
                         run_id=run,
@@ -178,7 +180,7 @@ def _original_csvs(
                         price=price,
                         snapshot_id=str(row["market_snapshot_id"]),
                         quote_id=str(row[f"{target}_market_quote_id"]),
-                        expected_active=bool(expected_active),
+                        expected_active=bool(expected_graded),
                         edge=edge,
                         prediction=prediction,
                     )
