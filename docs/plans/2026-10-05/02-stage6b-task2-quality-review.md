@@ -1,8 +1,8 @@
 # Stage 6B Task 2 Quality Review and Repair
 
-- **Status:** In Progress (Task 3 stopped at the original-grade reproduction gate after finding 86 Preview/CSV mismatches)
+- **Status:** In Progress (Amendment 2 and dual-baseline Stage 9 repair implemented; focused fixture validation and fresh Task 3 rerun pending)
 - **Approval:** User explicitly requested implementation of the complete review plan in this chat on 2026-10-05.
-- **Authority:** [6B contract](01-stage6b-completed-week-reconstruction.md), Amendment 1.
+- **Authority:** [6B contract](01-stage6b-completed-week-reconstruction.md), Amendments 1–2.
 - **Baseline:** `7b93608`; clean `dev`.
 - **Commit policy:** User stages and commits.
 - **Implementation log:** `session_logs/2026-10-05/02-stage6b-task2-quality-review.md`
@@ -24,8 +24,8 @@ All confirmed defects repaired; full fixture pipeline/persisted verification and
 ## Review outcome
 After commit `4f09aef`, fresh preflight passed and stages through `predictions` passed, but `markets` failed with zero selections. The follow-up mapping repair was committed as `83b0de3`; its fresh preflight passed. On that commit, stages `foundation` through `finals` built and verified, including the expected 541 market selections. `old_grade_reproduction` then stopped because pinned served CSVs include `No Bet` rows while Preview has selections and grades for those same keys.
 
-Read-only comparison of hash-verified Preview artifacts and Preview database rows found 541 grade rows, 541 scored-CSV selection rows, and 86 side/result mismatches. Example: Week 0 game `401858202`, total is `No Bet`/`No Bet` in `scored.csv` but `over`/`loss` in Preview; the point, price, quote and snapshot match. No later stage ran. This violates the contract’s zero-mismatch hard gate. Resolving it requires correcting the authoritative source artifacts/records or explicitly amending Stage 9’s policy; the verifier must not discard these rows to force a pass.
+Read-only comparison of hash-verified Preview artifacts and Preview database rows found 541 grade rows and 541 scored-CSV target rows, with 86 differences. Example: Week 0 game `401858202`, total is `No Bet`/`No Bet` in `scored.csv` but `over`/`loss` in Preview; the point, price, quote and snapshot match. This is consistent with the approved 2026-10-02 Plan 04 transition from the constrained 2026-09-29 CSV baseline to unconstrained Preview selections/grades.
 
-The quality review remains In Progress pending that source/policy decision. Strict MkDocs also exits on existing repository-relative link warnings documented in the implementation log.
+The user directed Amendment 2 on 2026-10-06. Stage 9 now verifies Preview's 541 unconstrained grades independently, regrades all 455 active CSV rows, validates all 86 CSV exceptions against the archived September 29 thresholds, and reconciles the two populations without rewriting either source. Its persisted verifier rederives the evidence and compares the regenerated outputs to persisted artifacts. Focused fixture validation is in progress. No post-amendment live stage run has occurred; the 2026-10-05 run stopped at Stage 9 before the repair. The quality review remains In Progress until focused/full validation passes and a new committed HEAD completes fresh sequential Task 3 gates. Strict MkDocs also exits on existing repository-relative link warnings documented in the implementation log.
 
 The final evidence table and unresolved provenance/compatibility limits are recorded in `session_logs/2026-10-05/02-stage6b-task2-quality-review.md`.

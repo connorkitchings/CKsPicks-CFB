@@ -354,12 +354,17 @@ def corpus():
     )
     # Original CSVs have known lines/grades; fixture Preview returns these exact keys.
     db_grades = []
+    target_ordinal = 0
     for w in range(6):
         snaps = []
         quotes = []
         csv = []
         for r in schedule[schedule.week.eq(w)].itertuples():
             gap = int(r.game_id) == 401856811
+            spread_exception = target_ordinal < 86
+            target_ordinal += 1
+            total_exception = target_ordinal < 86
+            target_ordinal += int(not gap)
             snap = f"snap-{r.game_id}"
             snaps.append(
                 dict(
@@ -376,16 +381,16 @@ def corpus():
             row = {
                 "market_snapshot_id": snap,
                 "game_id": r.game_id,
-                "Spread Prediction": 4.0,
-                "Total Prediction": 10.0,
-                "Spread Bet": "Home",
-                "Total Bet": None if gap else "Under",
+                "Spread Prediction": 3.5 if spread_exception else 4.0,
+                "Total Prediction": 10.5 if total_exception else 12.0,
+                "Spread Bet": "No Bet" if spread_exception else "Home",
+                "Total Bet": None if gap else "No Bet" if total_exception else "Over",
                 "home_team_spread_line": -3.0,
                 "total_line": None if gap else 10.0,
             }
             for target, point, side in (
                 ("spread", -3.0, "home"),
-                ("total", 10.0, "under"),
+                ("total", 10.0, "over"),
             ):
                 if target == "total" and gap:
                     continue
@@ -411,7 +416,12 @@ def corpus():
                 res = (spread_result if target == "spread" else total_result)(
                     7.0, 3.0, point, side
                 )
-                row[f"{target.title()} Bet Result"] = res.title()
+                is_exception = (
+                    spread_exception if target == "spread" else total_exception
+                )
+                row[f"{target.title()} Bet Result"] = (
+                    "No Bet" if is_exception else res.title()
+                )
                 db_grades.append(
                     (
                         original_run_id(w),
@@ -723,6 +733,40 @@ def test_new_grading_requires_both_original_grade_checks(harness):
         h.runner.stages["retrospective_grades"].build(
             context(h, "retrospective_grades")
         )
+
+
+def test_old_grade_reproduction_records_both_historical_baselines(harness):
+    h = harness
+    key = h.corpus.plan.run_prefix() + "old_grade_reproduction/summary.json"
+    summary = json.loads(
+        context(h, "old_grade_reproduction").read_artifact(
+            "old_grade_reproduction", key
+        )
+    )
+    assert summary["total_grades_checked"] == 541
+    assert summary["csv_rows_checked"] == 541
+    assert summary["csv_grades_checked"] == 455
+    assert summary["csv_policy_exceptions"] == 86
+    assert summary["mismatches_count"] == 0
+    assert all(summary["gates"].values())
+
+
+def test_old_grade_persisted_verifier_rederives_stage_outputs(harness):
+    h = harness
+    key = h.corpus.plan.run_prefix() + "old_grade_reproduction/grades.parquet"
+
+    def tamper(raw):
+        frame = pd.read_parquet(io.BytesIO(raw))
+        frame.loc[0, "result"] = "tampered"
+        return parquet_data(frame)
+
+    alter_artifact(h, "old_grade_reproduction", key, tamper)
+    verdict = h.runner.verify(["old_grade_reproduction"])
+    assert not verdict["passed"]
+    assert any(
+        "rederived evidence" in p
+        for p in verdict["stages"]["old_grade_reproduction"]["problems"]
+    )
 
 
 def test_late_state_fails_before_predictions(harness):

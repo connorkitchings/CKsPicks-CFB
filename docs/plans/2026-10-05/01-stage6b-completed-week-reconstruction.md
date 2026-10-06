@@ -1,9 +1,10 @@
 # Stage 6B: Completed-Week Reconstruction (2026 Weeks 0–5)
 
-- **Status:** In Progress (approved by the user 2026-10-05, including Amendment 1; Task 1 implemented, Tasks 2-5 open)
+- **Status:** In Progress (approved by the user 2026-10-05, including Amendments 1–2; Stage 9 policy repaired, fresh Task 3 run pending commit)
 - **Created:** 2026-10-05
 - **Planner:** Claude Code (planning session on `dev`)
 - **Approval source:** The user approved the 6B plan in the planning chat on 2026-10-05 and chose four scope decisions (write boundary, weeks, 2026 offset rule, new execution contract). After reviewing the draft, the user approved this contract and Amendment 1 (write boundary) in the same chat and directed Task 1.
+- **Amendment 2 approval:** User direction in this task on 2026-10-06 adopted the dual-baseline Stage 9 rule below after review of the 86 historical differences.
 - **Governing authority:** [contract 04](../2026-10-03/04-data-integrity-two-window-implementation.md), Amendment 2 (Window 2 task table, row 6B); [Appendix A §6B](../2026-10-03/window2/data-contracts-and-certification.md); [Appendix B](../2026-10-03/window2/release-schema-and-web.md) quote policy. This is a bounded execution contract for 6B, not a competing release authority.
 - **Predecessor:** [contract 02](../2026-10-04/02-pre-stage6-integrity-and-rebuild.md) (6A), Implemented 2026-10-05. Its signed receipt is `rebuild/6a/6a-task4-r1/receipt/receipt.json`, checksum `efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e`.
 - **Implementation log:** `session_logs/2026-10-05/01-stage6b-implementation.md`
@@ -38,6 +39,18 @@ Include: 2026 scoring events and offsets, rating states at each original forecas
 - Immutable `lake/gold/` reconstruction datasets (`reconstruction_*`, partitioned by week) registered in the Preview catalog in one transaction as role `cks_preview_pipeline`.
 
 Everything else is excluded, whatever the reason: serving tables (`prediction_runs`, `predictions`, `prediction_market_selections`, `prediction_grades`, `game_results`, `current_week`), authorization and selection records, and any production R2 prefix or production Neon table. Preview database reads are read-only transactions. Every database command runs through `zsh scripts/ops/with_preview_env.sh`. The approval in contract 04 Amendment 3 covered 6A only; this amendment extends the same two write classes to 6B.
+
+### Amendment 2 (dual-baseline original-grade reproduction, user-directed 2026-10-06)
+
+The six immutable served `scored.csv` artifacts and the Preview database are distinct historical baselines. The CSVs preserve the 2026-09-29 constrained state; Plan 04 ([remove-edge-constraints-grade-all-games](../2026-10-02/04-remove-edge-constraints-grade-all-games.md)) later backfilled Preview selections and grades under the unconstrained policy. Neither source is rewritten or treated as a replacement for the other.
+
+Stage 9 verifies these layers independently:
+
+1. **Preview database baseline:** require the exact 541 selection/grade keys; validate selection, quote, point, price and snapshot identity; rederive each mathematical side and result from the pinned finals; compare every stored grade and profit with the recomputation. Any missing, duplicate, unexpected or mismatching row fails.
+2. **Served CSV baseline:** require the same 541 lined target keys. Recompute all 455 rows labeled as graded bets against pinned finals. Validate every other row against the September 29 thresholds: spread labels use edge 1.0; totals use lean threshold 1.0 and grade threshold 1.5. A sub-threshold or ungraded row must carry the expected side/result form (`No Bet` where the historical rule suppressed the lean or grade). Missing lines are excluded only for the one locked Week 3 total gap.
+3. **Reconciliation:** require exactly 86 threshold-policy exceptions and no unexplained disagreement. Active CSV rows must agree with Preview side/result. Each exception must be explained by the archived threshold classification, while Preview must independently agree with the unconstrained model side and recomputed grade. The source artifacts and database remain untouched.
+
+Stage 9's persisted verifier re-reads the pinned CSVs and finals, repeats the read-only Preview checks, and requires its rederived artifacts to match the persisted stage outputs. Stage 10 remains blocked unless the exact dual-baseline gate set passes. This amendment changes only interpretation of the historical grade evidence; it does not change 6B forecast cutoffs, identities, model design, selections, write scope, or publication authorization.
 
 Carried over: Seasons are 2015–2019, 2021–2025 and 2026; 2020 is excluded at every boundary. No 2026 outcome enters any coefficient, calibration or hyperparameter fit. The `ppp__rho_0_60__exposure` design, the alpha-10 Ridge recipe and the served calibration are unchanged. Neutral-site handling is not changed (known issue 9). A live publish needs the user's explicit confirmation at publish time.
 
@@ -82,7 +95,7 @@ Pins, each with a hash taken from a hash-checked read: the 6A main root manifest
 | 6 | `predictions` | Bridge predictions with the 6A `bundle.json` | Training seasons at most 2025; every state cutoff at most `as_of`; every usable offset game kicked off before `as_of`; bundle compatibility checked first |
 | 7 | `markets` | Selection from the original quote sets under rule v2 | Lock-recorded quote gaps match (Week 3 game 401856811 total). Reported: lean flips, selected-line changes (including the 34 issue 13 rows), coverage |
 | 8 | `finals` | Weeks 0–4 from the lock `games` rows, Week 5 from the pinned `game_outcomes` ref | Read-only cross-check against Preview `game_results` agrees |
-| 9 | `old_grade_reproduction` (`legacy_allowed`) | Recomputes the six originals' stored grades | 0 mismatches against stored Preview grades and the served `scored.csv`; the next stage does not run otherwise |
+| 9 | `old_grade_reproduction` (`legacy_allowed`) | Reproduces both historical grade baselines independently | 541 Preview grades reproduce exactly; 455 active CSV grades reproduce; exactly 86 CSV rows are justified by the September 29 thresholds; no unexplained disagreement; the next stage does not run otherwise |
 | 10 | `retrospective_grades` | Grades the new selections against `finals` | Every grade labelled `retrospective_reconstruction` with its finals refs |
 | 11 | `comparison` (`legacy_allowed`) | New against served, per week and season to date | Reported: prediction deltas, lean flips, grade changes, record against 52.4% (retrospective), attribution across priors, states, offsets and selection |
 | 12 | `receipt` | Signed `rebuild_6b_receipt_v1`, re-derived in verify | Per-week new and original run ids, `as_of`, quote-set refs and hashes, admitted input refs, finals refs, artifact hashes; served-format `predictions.csv`, `scored.csv` and manifests per week |
@@ -115,7 +128,7 @@ Signed receipt published; contract amendment with measured results, `docs/status
 - **Offset freeze.** The served replays used kickoff-order offsets. If frozen-at-cutoff offsets differ from them in this data, stop and bring the difference to the user; that is a replay cutoff policy question.
 - **Threshold config drift.** The lock pins `v5_replay_2026.yaml` at a hash that no longer matches the file. New runs pin the current all-zero config; the original grades are reproduced only from stored artifacts.
 - **Week 5 quotes.** Whether production's frozen p2 used the same quote set as Preview's is not verified; 6B makes no production claim.
-- **Stored grades.** Preview may hold grades from more than one selection policy version; the reproduction reads them version-agnostically.
+- **Stored grades.** Preview may hold grades from more than one selection policy version; the reproduction reads them version-agnostically and verifies them as the October 2 unconstrained baseline, separately from immutable September 29 CSVs.
 - **7B format.** 6B emits served-format artifacts inside `rebuild/6b/` so 7B can package them byte for byte; whether that suffices is 7B's decision.
 
 Stop the affected step on any material conflict with the approved population, scoring decisions, model recipe or write scope; retain the evidence and amend this contract before continuing. Any change to replay cutoff policy or data identities is material (contract 04, Amendment 2).

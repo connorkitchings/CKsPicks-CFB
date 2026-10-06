@@ -41,6 +41,11 @@ GRADES_DATASET = "reconstruction_grades"
 GRADES_SCHEMA_VERSION = "reconstruction_grades_v1"
 
 EXPECTED_TOTAL_GRADES = 541
+EXPECTED_CSV_ACTIVE_GRADES = 455
+EXPECTED_CSV_POLICY_EXCEPTIONS = 86
+LEGACY_SPREAD_GRADE_THRESHOLD = 1.0
+LEGACY_TOTAL_LEAN_THRESHOLD = 1.0
+LEGACY_TOTAL_GRADE_THRESHOLD = 1.5
 
 
 # ---------------------------------------------------------------------------
@@ -50,11 +55,11 @@ EXPECTED_TOTAL_GRADES = 541
 
 def _original_csvs(
     context: StageContext,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     from cks_picks_cfb.rebuild import common
 
     storage = common.preview_storage(context)
-    predictions, selections, grades = [], [], []
+    predictions, csv_rows = [], []
     for w in WEEKS:
         pred_manifest = json.loads(context.read_input(f"original_predictions_w{w}"))
         score_manifest = json.loads(context.read_input(f"original_scored_w{w}"))
@@ -100,6 +105,7 @@ def _original_csvs(
             )
             .assign(run_id=run)
         )
+        pred_by_game = pred.set_index("game_id")
         for row in scored.to_dict("records"):
             gid = int(row["game_id"])
             for target, side_col, line_col, price_col, result_col in (
@@ -118,40 +124,68 @@ def _original_csvs(
                     "Total Bet Result",
                 ),
             ):
-                if pd.isna(row[line_col]):
+                if line_col not in row or pd.isna(row[line_col]):
                     continue
-                side, result = str(row[side_col]).lower(), str(row[result_col]).lower()
+                line = float(row[line_col])
                 price = float(row[price_col])
-                if result not in ("win", "loss", "push") or side not in (
-                    ("home", "away") if target == "spread" else ("over", "under")
-                ):
-                    raise GateError("original CSV has ungradable selection")
-                selections.append(
-                    dict(
-                        run_id=run,
-                        game_id=gid,
-                        target=target,
-                        side=side,
-                        point=float(row[line_col]),
-                        price=price,
-                        snapshot_id=str(row["market_snapshot_id"]),
-                        quote_id=str(row[f"{target}_market_quote_id"]),
-                    )
+                side = str(row[side_col]).strip().lower()
+                result = str(row[result_col]).strip().lower()
+                pred_col = (
+                    "Spread Prediction" if target == "spread" else "Total Prediction"
                 )
-                grades.append(
+                prediction = float(pred_by_game.loc[gid, pred_col])
+                edge = (
+                    abs(prediction + line)
+                    if target == "spread"
+                    else abs(prediction - line)
+                )
+                if target == "spread":
+                    expected_active = edge >= LEGACY_SPREAD_GRADE_THRESHOLD
+                    expected_side = "home" if prediction + line > 0 else "away"
+                else:
+                    expected_active = edge >= LEGACY_TOTAL_GRADE_THRESHOLD
+                    expected_side = "over" if prediction > line else "under"
+                valid_sides = (
+                    ("home", "away") if target == "spread" else ("over", "under")
+                )
+                expected_csv_side = (
+                    expected_side
+                    if (target == "spread" and edge >= LEGACY_SPREAD_GRADE_THRESHOLD)
+                    or (target == "total" and edge >= LEGACY_TOTAL_LEAN_THRESHOLD)
+                    else "no bet"
+                )
+                if side != expected_csv_side:
+                    raise GateError(
+                        f"served CSV side violates September 29 threshold policy: {run} {gid} {target}"
+                    )
+                if expected_active:
+                    if side not in valid_sides or result not in ("win", "loss", "push"):
+                        raise GateError(
+                            "served CSV active selection has invalid side/result"
+                        )
+                elif result != "no bet":
+                    raise GateError(
+                        "served CSV sub-threshold row is not labeled No Bet"
+                    )
+                csv_rows.append(
                     dict(
                         run_id=run,
                         game_id=gid,
                         target=target,
                         side=side,
                         result=result,
-                        profit_units=round(_profit(result, price), 4),
+                        point=line,
+                        price=price,
+                        snapshot_id=str(row["market_snapshot_id"]),
+                        quote_id=str(row[f"{target}_market_quote_id"]),
+                        expected_active=bool(expected_active),
+                        edge=edge,
+                        prediction=prediction,
                     )
                 )
     return (
         pd.concat(predictions, ignore_index=True),
-        pd.DataFrame(selections),
-        pd.DataFrame(grades),
+        pd.DataFrame(csv_rows),
     )
 
 
@@ -161,7 +195,7 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
             "finals", FINALS_PARQUET.format(run_id=context.plan.run_id)
         )
     ).set_index("game_id")
-    predictions, selections, grades = _original_csvs(context)
+    predictions, csv_rows = _original_csvs(context)
     keys = ["run_id", "game_id", "target"]
     expected_keys = {
         (original_run_id(int(row.week)), int(gid), target)
@@ -169,12 +203,11 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
         for target in ("spread", "total")
         if not (int(row.week) == 3 and int(gid) == 401856811 and target == "total")
     }
-    for frame in (selections, grades):
-        if (
-            frame.duplicated(keys).any()
-            or set(frame[keys].itertuples(index=False, name=None)) != expected_keys
-        ):
-            raise GateError("original grade/selection key population changed")
+    if (
+        csv_rows.duplicated(keys).any()
+        or set(csv_rows[keys].itertuples(index=False, name=None)) != expected_keys
+    ):
+        raise GateError("served CSV target key population changed")
     if (
         set(predictions.game_id) != set(finals.index)
         or predictions.duplicated("game_id").any()
@@ -210,8 +243,10 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
         raise GateError(
             "Preview original grades have missing, duplicate or unexpected keys"
         )
-    sels = selections.set_index(keys)
-    csv_grades = grades.set_index(keys)
+    csv_by_key = csv_rows.set_index(keys)
+    db_selections, db_grades = [], []
+    csv_grade_checks = 0
+    policy_exceptions = []
     for (
         run,
         gid,
@@ -227,37 +262,100 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
         grade_quote,
         grade_side,
     ) in rows:
-        selected, csv_grade = (
-            sels.loc[(run, gid, target)],
-            csv_grades.loc[(run, gid, target)],
-        )
+        csv_row = csv_by_key.loc[(run, gid, target)]
         final = finals.loc[gid]
         result = (spread_result if target == "spread" else total_result)(
             float(final.home_points), float(final.away_points), float(point), str(side)
         )
         profit = round(_profit(result, float(price)), 4)
         if (
-            str(side) != selected.side
-            or float(point) != selected.point
-            or float(price) != selected.price
-            or str(snap) != selected.snapshot_id
-            or str(quote) != selected.quote_id
+            float(point) != float(csv_row.point)
+            or float(price) != float(csv_row.price)
+            or str(snap) != str(csv_row.snapshot_id)
+            or str(quote) != str(csv_row.quote_id)
             or grade_snap != snap
             or grade_quote != quote
             or grade_side != side
             or result != stored_result
-            or result != csv_grade.result
             or abs(profit - float(stored_profit)) > 1e-4
-            or abs(profit - csv_grade.profit_units) > 1e-4
         ):
             raise GateError(
-                f"old grade reproduction mismatch against Preview/scored CSV: {run} {gid} {target}"
+                f"Preview grade reproduction or source identity mismatch: {run} {gid} {target}"
             )
+        expected_db_side = (
+            ("home" if float(csv_row.prediction) + float(point) > 0 else "away")
+            if target == "spread"
+            else ("over" if float(csv_row.prediction) > float(point) else "under")
+        )
+        if str(side) != expected_db_side:
+            raise GateError(
+                f"Preview selection is not the unconstrained model side: {run} {gid} {target}"
+            )
+        if bool(csv_row.expected_active):
+            csv_result = (spread_result if target == "spread" else total_result)(
+                float(final.home_points),
+                float(final.away_points),
+                float(csv_row.point),
+                str(csv_row.side),
+            )
+            if (
+                csv_result != csv_row.result
+                or str(side) != str(csv_row.side)
+                or result != csv_result
+            ):
+                raise GateError(
+                    f"active served CSV grade reproduction mismatch: {run} {gid} {target}"
+                )
+            csv_grade_checks += 1
+        else:
+            policy_exceptions.append((run, gid, target))
+        db_selections.append(
+            dict(
+                run_id=run,
+                game_id=gid,
+                target=target,
+                side=str(side),
+                point=float(point),
+                price=float(price),
+                snapshot_id=str(snap),
+                quote_id=str(quote),
+            )
+        )
+        db_grades.append(
+            dict(
+                run_id=run,
+                game_id=gid,
+                target=target,
+                side=str(grade_side),
+                result=str(stored_result),
+                profit_units=float(stored_profit),
+            )
+        )
+
+    if csv_grade_checks != EXPECTED_CSV_ACTIVE_GRADES:
+        raise GateError(
+            f"served CSV active grades {csv_grade_checks} != {EXPECTED_CSV_ACTIVE_GRADES}"
+        )
+    if len(policy_exceptions) != EXPECTED_CSV_POLICY_EXCEPTIONS:
+        raise GateError(
+            f"served CSV threshold exceptions {len(policy_exceptions)} != {EXPECTED_CSV_POLICY_EXCEPTIONS}"
+        )
     summary = dict(
         status="passed",
         total_grades_checked=len(rows),
-        csv_grades_checked=len(grades),
+        csv_rows_checked=len(csv_rows),
+        csv_grades_checked=csv_grade_checks,
+        csv_policy_exceptions=len(policy_exceptions),
         mismatches_count=0,
+        gates={
+            "preview_db_recomputed": True,
+            "served_csv_active_grades_recomputed": True,
+            "served_csv_threshold_policy_validated": True,
+            "db_csv_differences_limited_to_threshold_exceptions": True,
+        },
+        exception_keys_digest=frame_digest(
+            pd.DataFrame(policy_exceptions, columns=keys)
+        ),
         verified_runs=[original_run_id(w) for w in WEEKS],
     )
     artifacts = [
@@ -265,8 +363,8 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
     ]
     for name, frame in (
         ("predictions", predictions),
-        ("selections", selections),
-        ("grades", grades),
+        ("selections", pd.DataFrame(db_selections)),
+        ("grades", pd.DataFrame(db_grades)),
     ):
         artifacts.append(
             (
@@ -293,6 +391,34 @@ def verify_old_grade_reproduction(context: StageContext) -> list[str]:
         problems.append(
             f"grades checked {summary.get('total_grades_checked')} != {EXPECTED_TOTAL_GRADES}"
         )
+    if summary.get("csv_rows_checked") != EXPECTED_TOTAL_GRADES:
+        problems.append("served CSV rows do not cover the complete target population")
+    if summary.get("csv_grades_checked") != EXPECTED_CSV_ACTIVE_GRADES:
+        problems.append(
+            "served CSV active grade count differs from the legacy baseline"
+        )
+    if summary.get("csv_policy_exceptions") != EXPECTED_CSV_POLICY_EXCEPTIONS:
+        problems.append(
+            "served CSV threshold exception count differs from the legacy baseline"
+        )
+    expected_gates = {
+        "preview_db_recomputed": True,
+        "served_csv_active_grades_recomputed": True,
+        "served_csv_threshold_policy_validated": True,
+        "db_csv_differences_limited_to_threshold_exceptions": True,
+    }
+    if summary.get("gates") != expected_gates:
+        problems.append("dual-baseline verification gates are missing or failed")
+    if not problems:
+        try:
+            derived = build_old_grade_reproduction(context)
+            for key, expected in derived.artifacts:
+                if context.read_artifact("old_grade_reproduction", key) != expected:
+                    problems.append(
+                        f"persisted old-grade artifact differs from rederived evidence: {key}"
+                    )
+        except Exception as exc:
+            problems.append(f"independent old-grade rederivation failed: {exc}")
     return problems
 
 
@@ -311,7 +437,13 @@ def build_retrospective_grades(context: StageContext) -> StageOutput:
     if (
         old_summary.get("mismatches_count") != 0
         or old_summary.get("total_grades_checked") != EXPECTED_TOTAL_GRADES
-        or old_summary.get("csv_grades_checked") != EXPECTED_TOTAL_GRADES
+        or old_summary.get("csv_rows_checked") != EXPECTED_TOTAL_GRADES
+        or old_summary.get("csv_grades_checked") != EXPECTED_CSV_ACTIVE_GRADES
+        or old_summary.get("csv_policy_exceptions") != EXPECTED_CSV_POLICY_EXCEPTIONS
+        or old_summary.get("gates", {}).get(
+            "db_csv_differences_limited_to_threshold_exceptions"
+        )
+        is not True
     ):
         raise GateError("new grades require complete original grade reproduction")
     sel_key = MARKETS_PARQUET.format(run_id=context.plan.run_id)
