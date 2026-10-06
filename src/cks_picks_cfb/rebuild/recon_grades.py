@@ -47,6 +47,32 @@ LEGACY_SPREAD_GRADE_THRESHOLD = 1.0
 LEGACY_TOTAL_LEAN_THRESHOLD = 1.0
 LEGACY_TOTAL_GRADE_THRESHOLD = 1.5
 
+# Known Issue 6: the frozen Week 5 publisher used home/over when a null lean
+# reached prediction_market_selections. The grades-only backfill used the
+# mathematical direction for these exact five targets.
+KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS = {
+    (original_run_id(5), 401858245, "spread"): ("home", "away"),
+    (original_run_id(5), 401858247, "total"): ("over", "under"),
+    (original_run_id(5), 401862788, "spread"): ("home", "away"),
+    (original_run_id(5), 401862788, "total"): ("over", "under"),
+    (original_run_id(5), 401864513, "spread"): ("home", "away"),
+}
+
+
+def _known_issue_6_exception_records() -> list[dict[str, Any]]:
+    return [
+        {
+            "run_id": run,
+            "game_id": game_id,
+            "target": target,
+            "selection_side": sides[0],
+            "grade_side": sides[1],
+        }
+        for (run, game_id, target), sides in sorted(
+            KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS.items()
+        )
+    ]
+
 
 # ---------------------------------------------------------------------------
 # Stage 9: Old Grade Reproduction
@@ -249,6 +275,7 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
     db_selections, db_grades = [], []
     csv_grade_checks = 0
     policy_exceptions = []
+    preview_side_exceptions = set()
     for (
         run,
         gid,
@@ -266,8 +293,36 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
     ) in rows:
         csv_row = csv_by_key.loc[(run, gid, target)]
         final = finals.loc[gid]
+        expected_db_side = (
+            ("home" if float(csv_row.prediction) + float(point) > 0 else "away")
+            if target == "spread"
+            else ("over" if float(csv_row.prediction) > float(point) else "under")
+        )
+        key = (str(run), int(gid), str(target))
+        known_exception = KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS.get(key)
+        if known_exception is not None:
+            if (str(side), str(grade_side)) != known_exception:
+                raise GateError(
+                    f"Known Issue 6 Preview side exception changed: {run} {gid} {target}"
+                )
+            if str(grade_side) != expected_db_side:
+                raise GateError(
+                    f"Known Issue 6 grade side is not the mathematical direction: {run} {gid} {target}"
+                )
+            preview_side_exceptions.add(key)
+        elif str(side) != str(grade_side):
+            raise GateError(
+                f"unexpected Preview selection/grade side mismatch: {run} {gid} {target}"
+            )
+        if str(grade_side) != expected_db_side:
+            raise GateError(
+                f"Preview grade side is not the unconstrained model side: {run} {gid} {target}"
+            )
         result = (spread_result if target == "spread" else total_result)(
-            float(final.home_points), float(final.away_points), float(point), str(side)
+            float(final.home_points),
+            float(final.away_points),
+            float(point),
+            str(grade_side),
         )
         profit = round(_profit(result, float(price)), 4)
         if (
@@ -277,21 +332,11 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
             or str(quote) != str(csv_row.quote_id)
             or grade_snap != snap
             or grade_quote != quote
-            or grade_side != side
             or result != stored_result
             or abs(profit - float(stored_profit)) > 1e-4
         ):
             raise GateError(
                 f"Preview grade reproduction or source identity mismatch: {run} {gid} {target}"
-            )
-        expected_db_side = (
-            ("home" if float(csv_row.prediction) + float(point) > 0 else "away")
-            if target == "spread"
-            else ("over" if float(csv_row.prediction) > float(point) else "under")
-        )
-        if str(side) != expected_db_side:
-            raise GateError(
-                f"Preview selection is not the unconstrained model side: {run} {gid} {target}"
             )
         if bool(csv_row.expected_active):
             csv_result = (spread_result if target == "spread" else total_result)(
@@ -302,7 +347,7 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
             )
             if (
                 csv_result != csv_row.result
-                or str(side) != str(csv_row.side)
+                or str(grade_side) != str(csv_row.side)
                 or result != csv_result
             ):
                 raise GateError(
@@ -334,6 +379,8 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
             )
         )
 
+    if preview_side_exceptions != set(KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS):
+        raise GateError("Known Issue 6 Preview side exception population changed")
     if csv_grade_checks != EXPECTED_CSV_ACTIVE_GRADES:
         raise GateError(
             f"served CSV active grades {csv_grade_checks} != {EXPECTED_CSV_ACTIVE_GRADES}"
@@ -348,12 +395,15 @@ def build_old_grade_reproduction(context: StageContext) -> StageOutput:
         csv_rows_checked=len(csv_rows),
         csv_grades_checked=csv_grade_checks,
         csv_policy_exceptions=len(policy_exceptions),
+        preview_side_exceptions_count=len(preview_side_exceptions),
+        preview_side_exceptions=_known_issue_6_exception_records(),
         mismatches_count=0,
         gates={
             "preview_db_recomputed": True,
             "served_csv_active_grades_recomputed": True,
             "served_csv_threshold_policy_validated": True,
             "db_csv_differences_limited_to_threshold_exceptions": True,
+            "known_issue_6_default_sides_reconciled": True,
         },
         exception_keys_digest=frame_digest(
             pd.DataFrame(policy_exceptions, columns=keys)
@@ -403,11 +453,20 @@ def verify_old_grade_reproduction(context: StageContext) -> list[str]:
         problems.append(
             "served CSV threshold exception count differs from the legacy baseline"
         )
+    if (
+        summary.get("preview_side_exceptions_count")
+        != len(KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS)
+        or summary.get("preview_side_exceptions") != _known_issue_6_exception_records()
+    ):
+        problems.append(
+            "Known Issue 6 Preview side exceptions differ from the exact allowlist"
+        )
     expected_gates = {
         "preview_db_recomputed": True,
         "served_csv_active_grades_recomputed": True,
         "served_csv_threshold_policy_validated": True,
         "db_csv_differences_limited_to_threshold_exceptions": True,
+        "known_issue_6_default_sides_reconciled": True,
     }
     if summary.get("gates") != expected_gates:
         problems.append("dual-baseline verification gates are missing or failed")
@@ -442,9 +501,15 @@ def build_retrospective_grades(context: StageContext) -> StageOutput:
         or old_summary.get("csv_rows_checked") != EXPECTED_TOTAL_GRADES
         or old_summary.get("csv_grades_checked") != EXPECTED_CSV_ACTIVE_GRADES
         or old_summary.get("csv_policy_exceptions") != EXPECTED_CSV_POLICY_EXCEPTIONS
+        or old_summary.get("preview_side_exceptions_count")
+        != len(KNOWN_ISSUE_6_PREVIEW_SIDE_EXCEPTIONS)
+        or old_summary.get("preview_side_exceptions")
+        != _known_issue_6_exception_records()
         or old_summary.get("gates", {}).get(
             "db_csv_differences_limited_to_threshold_exceptions"
         )
+        is not True
+        or old_summary.get("gates", {}).get("known_issue_6_default_sides_reconciled")
         is not True
     ):
         raise GateError("new grades require complete original grade reproduction")

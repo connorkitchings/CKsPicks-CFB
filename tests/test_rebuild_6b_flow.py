@@ -49,6 +49,9 @@ from cks_picks_cfb.rebuild.stages import get_stages
 from cks_picks_cfb.rebuild.targets import GuardedStore, InMemoryStore
 
 REPO = Path(__file__).resolve().parents[1]
+KNOWN_ISSUE_6_GAMES = (401858245, 401858247, 401862788, 401864513)
+KNOWN_ISSUE_6_SPREAD_GAMES = {401858245, 401862788, 401864513}
+KNOWN_ISSUE_6_TOTAL_GAMES = {401858247, 401862788}
 
 
 def sha(data):
@@ -114,7 +117,13 @@ def corpus():
     for w, count in EXPECTED_COUNTS.items():
         for i in range(count):
             gid += 1
-            game = 401856811 if w == 3 and i == 0 else gid
+            game = (
+                401856811
+                if w == 3 and i == 0
+                else KNOWN_ISSUE_6_GAMES[i]
+                if w == 5 and i < len(KNOWN_ISSUE_6_GAMES)
+                else gid
+            )
             home, away = f"Team{2 * i}", f"Team{2 * i + 1}"
             schedule_rows.append(
                 dict(
@@ -361,9 +370,11 @@ def corpus():
         csv = []
         for r in schedule[schedule.week.eq(w)].itertuples():
             gap = int(r.game_id) == 401856811
-            spread_exception = target_ordinal < 86
+            known_issue_spread = w == 5 and int(r.game_id) in KNOWN_ISSUE_6_SPREAD_GAMES
+            known_issue_total = w == 5 and int(r.game_id) in KNOWN_ISSUE_6_TOTAL_GAMES
+            spread_exception = target_ordinal < 81 or known_issue_spread
             target_ordinal += 1
-            total_exception = target_ordinal < 86
+            total_exception = target_ordinal < 81 or known_issue_total
             target_ordinal += int(not gap)
             week5_first_game = w == 5 and not csv
             snap = f"snap-{r.game_id}"
@@ -382,9 +393,13 @@ def corpus():
             row = {
                 "market_snapshot_id": snap,
                 "game_id": r.game_id,
-                "Spread Prediction": 3.5 if spread_exception else 4.0,
+                "Spread Prediction": (
+                    2.5 if known_issue_spread else 3.5 if spread_exception else 4.0
+                ),
                 "Total Prediction": (
-                    10.5
+                    9.5
+                    if known_issue_total
+                    else 10.5
                     if total_exception
                     else 11.070459498543329
                     if week5_first_game
@@ -420,8 +435,15 @@ def corpus():
                 row[f"{target}_market_snapshot_id"] = snap
                 row[f"{target}_market_quote_id"] = quote
                 row[f"{target}_market_quote_price"] = -110.0
+                grade_side = (
+                    "away"
+                    if target == "spread" and known_issue_spread
+                    else "under"
+                    if target == "total" and known_issue_total
+                    else side
+                )
                 res = (spread_result if target == "spread" else total_result)(
-                    7.0, 3.0, point, side
+                    7.0, 3.0, point, grade_side
                 )
                 is_exception = (
                     spread_exception if target == "spread" else total_exception
@@ -443,7 +465,7 @@ def corpus():
                         quote,
                         snap,
                         quote,
-                        side,
+                        grade_side,
                     )
                 )
             if gap:
@@ -726,6 +748,97 @@ def test_original_grade_population_and_identity_required(harness, fault):
         )
 
 
+def test_known_issue_6_preview_side_exceptions_are_exact_and_regraded(harness):
+    h = harness
+    prefix = h.corpus.plan.run_prefix() + "old_grade_reproduction/"
+    summary = json.loads(
+        context(h, "old_grade_reproduction").read_artifact(
+            "old_grade_reproduction", prefix + "summary.json"
+        )
+    )
+    assert summary["preview_side_exceptions_count"] == 5
+    assert {
+        (row["game_id"], row["target"], row["selection_side"], row["grade_side"])
+        for row in summary["preview_side_exceptions"]
+    } == {
+        (401858245, "spread", "home", "away"),
+        (401858247, "total", "over", "under"),
+        (401862788, "spread", "home", "away"),
+        (401862788, "total", "over", "under"),
+        (401864513, "spread", "home", "away"),
+    }
+    selections = pd.read_parquet(
+        io.BytesIO(
+            context(h, "old_grade_reproduction").read_artifact(
+                "old_grade_reproduction", prefix + "selections.parquet"
+            )
+        )
+    )
+    grades = pd.read_parquet(
+        io.BytesIO(
+            context(h, "old_grade_reproduction").read_artifact(
+                "old_grade_reproduction", prefix + "grades.parquet"
+            )
+        )
+    )
+    selection = selections.query("game_id == 401858245 and target == 'spread'")
+    grade = grades.query("game_id == 401858245 and target == 'spread'")
+    assert selection.side.tolist() == ["home"]
+    assert grade.side.tolist() == ["away"]
+    assert grade.result.tolist() == ["loss"]
+    assert summary["gates"]["known_issue_6_default_sides_reconciled"] is True
+
+
+def test_unlisted_preview_selection_grade_side_mismatch_fails_closed(harness):
+    h = harness
+    row = list(h.db.grades[0])
+    row[12] = "away"
+    h.db.grades[0] = tuple(row)
+    with pytest.raises(
+        GateError, match="unexpected Preview selection/grade side mismatch"
+    ):
+        h.runner.stages["old_grade_reproduction"].build(
+            context(h, "old_grade_reproduction")
+        )
+
+
+@pytest.mark.parametrize("column", [3, 12])
+def test_known_issue_6_preview_exception_sides_must_match_documented_values(
+    harness, column
+):
+    h = harness
+    index = next(
+        i
+        for i, row in enumerate(h.db.grades)
+        if row[1] == 401858245 and row[2] == "spread"
+    )
+    row = list(h.db.grades[index])
+    row[column] = "home" if column == 12 else "away"
+    h.db.grades[index] = tuple(row)
+    with pytest.raises(GateError, match="Known Issue 6 Preview side exception changed"):
+        h.runner.stages["old_grade_reproduction"].build(
+            context(h, "old_grade_reproduction")
+        )
+
+
+def test_old_grade_verifier_rejects_changed_known_issue_6_exception_keys(harness):
+    h = harness
+    key = h.corpus.plan.run_prefix() + "old_grade_reproduction/summary.json"
+
+    def alter(raw):
+        value = json.loads(raw)
+        value["preview_side_exceptions"][0]["game_id"] = 123
+        return json_data(value)
+
+    alter_artifact(h, "old_grade_reproduction", key, alter)
+    verdict = h.runner.verify(["old_grade_reproduction"])
+    assert not verdict["passed"]
+    assert any(
+        "Known Issue 6 Preview side exceptions" in problem
+        for problem in verdict["stages"]["old_grade_reproduction"]["problems"]
+    )
+
+
 def test_new_grading_requires_both_original_grade_checks(harness):
     h = harness
     key = h.corpus.plan.run_prefix() + "old_grade_reproduction/summary.json"
@@ -754,6 +867,7 @@ def test_old_grade_reproduction_records_both_historical_baselines(harness):
     assert summary["csv_rows_checked"] == 541
     assert summary["csv_grades_checked"] == 455
     assert summary["csv_policy_exceptions"] == 86
+    assert summary["preview_side_exceptions_count"] == 5
     assert summary["mismatches_count"] == 0
     assert all(summary["gates"].values())
 
