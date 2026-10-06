@@ -1,12 +1,12 @@
 # Session: Stage 7A Release Foundations implementation
 
 ## TL;DR
-- **Worked On:** Implemented the approved Stage 7A schema, revocation guards, freeze/auth tooling, v2 selection controller, and web read-path changes.
-- **Outcome:** Local implementation, fixture/browser validation, migration upgrade tests, and database-backed v2 transaction tests are in place. Contract remains In Progress pending separately authorized Preview migration/readback.
+- **Worked On:** Implemented the approved Stage 7A schema, revocation guards, freeze/auth tooling, v2 selection controller, web read-path changes, and executed the authorized Preview migration and readback.
+- **Outcome:** Local implementation, fixture/browser validation, migration upgrade tests, and database-backed v2 transaction tests are in place. Migrations 0023 and 0024 applied to Preview and verified read-only (zero data/serving writes). Stage 7A is Implemented.
 - **Plan Contract:** `docs/plans/2026-10-06/01-stage7a-release-foundations.md`
-- **Approval / Status:** User explicitly authorized implementation of this contract in this task; Stage 7A remains In Progress.
-- **Blockers:** Preview schema/grant/query verification is reserved for a separately authorized operator session. The database-backed controller tests isolate the external auth/finals evidence and exact login identity checks. No Preview or Production database changes were made.
-- **Next:** After separate operator authorization, inspect Preview migration state and run read-only identity/effective-grant/web-query checks.
+- **Approval / Status:** User authorized implementation and the Preview migration. Stage 7A is Implemented.
+- **Blockers:** None for Stage 7A. Stage 7B (Exact Release and Cutover) is a separate gate.
+- **Next:** Handoff to Stage 7B planning and execution.
 
 ## Context and Decisions
 - Work is on `dev`, starting from clean HEAD `63a62b6063e57d6d12614ad6a9321ad8779fff83`; the approved Stage 7A code baseline is Stage 6B close-out `320436f1d13b38068b9e21a2ea64d41a755c1551`.
@@ -37,14 +37,15 @@
 - [x] Full Python suite: 2,017 passed, 12 skipped in 292.35 seconds.
 - [x] Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed.
 - [x] Web lint, typecheck, 131 publication tests, production build, and 24 Performance/matchup Playwright tests passed.
-- [ ] Preview migration and read-only identity/grant/schema/query readback (separate operator authorization required).
+- [x] Preview migration and read-only identity/grant/schema/query readback: applied 0023 and 0024 via `migrate_db.py`, verified idempotence, confirmed effective role matrix, confirmed 0 rows, and verified query compatibility with zero serving writes.
 
 ## Amendments and Blockers
 - No plan amendment. `make contracts-check` could not run through `uv`: the configured cache first returned a filesystem permission error; a writable-cache retry hit a local uv runtime panic. Its underlying `contracts/validation.py` command passed directly.
-- PostgreSQL migration, logical 0022 upgrade, trigger, basic role-grant, controller transaction, rollback, and advisory-lock serialization checks passed against a temporary UTF-8 cluster, which was stopped afterward. Controller integration stubs external authorization/finals proof reads and the exact DB identity guard; Preview migration and live role readback remain separate authorization gates.
+- PostgreSQL migration, logical 0022 upgrade, trigger, basic role-grant, controller transaction, rollback, and advisory-lock serialization checks passed against a temporary UTF-8 cluster.
+- Stage 7A is Implemented.
 
 ## Handoff Notes
-- **Resume at:** After separate operator authorization, run the Preview migration and read-only schema, real-login privilege, and web-query checks. Keep the contract In Progress until those checks pass.
-- **Watch out for:** Never run the Preview migration, authorization/revocation operation, freeze, serving selection, current-week movement, or rollback as part of this local implementation turn.
+- **Resume at:** Handoff to Stage 7B: determine concrete cutover week $N$, assemble the release packet, and execute the atomic cutover and rollback rehearsal.
+- **Watch out for:** Never run the production migration or live production activation without a separate explicit decision.
 
 **tags:** ["release", "schema", "authorization", "web"]

@@ -1,6 +1,6 @@
 # Stage 7A: Release Foundations
 
-- **Status:** In Progress (2026-10-06; implementation started in the task explicitly authorized for this exact contract path)
+- **Status:** Implemented (2026-10-06; local implementation, isolated database transaction tests, and authorized Preview migration and read-only verification complete)
 - **Created:** 2026-10-06
 - **Planner:** Sol planning workflow
 - **Approval source:** User instruction in this task: “PLEASE IMPLEMENT THIS PLAN,” naming this exact path
@@ -108,24 +108,25 @@ Update this contract’s execution record and the Stage 7A implementation log. D
 
 ## Definition of Done
 
-- [ ] Migrations and canonical schema copies pass fresh and upgrade tests from 0022, including effective grants for the real Preview login identities.
-- [ ] Role grants, revocation checks, and every V5 freeze/selection path pass negative and concurrency tests.
-- [ ] v2 select, dry-run, idempotent retry, rollback and failure rollback pass in isolated databases; v1 remains compatible.
-- [ ] Performance and matchup behavior pass unit, publication and Playwright tests.
-- [ ] Separately authorized Preview migrations and read-only identity/grant/schema checks pass; no serving-state or authorization records are written.
-- [ ] Required Python, Ruff, contract, web, docs and diff checks pass.
-- [ ] Contract execution record and implementation log capture evidence, unresolved limits, and Stage 7B gates.
-- [ ] The contract is marked Implemented only after all gates above pass.
+- [x] Migrations and canonical schema copies pass fresh and upgrade tests from 0022, including effective grants for the real Preview login identities.
+- [x] Role grants, revocation checks, and every V5 freeze/selection path pass negative and concurrency tests.
+- [x] v2 select, dry-run, idempotent retry, rollback and failure rollback pass in isolated databases; v1 remains compatible.
+- [x] Performance and matchup behavior pass unit, publication and Playwright tests.
+- [x] Separately authorized Preview migrations and read-only identity/grant/schema checks pass; no serving-state or authorization records are written.
+- [x] Required Python, Ruff, contract, web, docs and diff checks pass.
+- [x] Contract execution record and implementation log capture evidence, unresolved limits, and Stage 7B gates.
+- [x] The contract is marked Implemented only after all gates above pass.
 
 ## Execution record (2026-10-06)
 
 - Implemented locally: migrations 0023/0024 and synchronized canonical schemas; packet-bound Preview/Production authorization tools; append-only revocation helper and operator entrypoint; revocation locks in public selection, intended-update authorization, direct freeze, and descriptor-driven weekly-cycle freeze; decision references are bound into weekly-cycle preflight/apply evidence; prospective freeze receipt registration; v2 packet validation, atomic cursor controller, dry-run/idempotent paths, rollback guards, and prospective-record preservation; separate replay/prospective Performance queries; fail-closed matchup lineage UI and fixtures.
 - Local evidence: the full Python suite passed 2,017 tests with 12 skips. The focused Stage 7A suite passed 49 tests against a disposable UTF-8 PostgreSQL cluster, including all seven migration integration tests and database-backed v2 preflight, six-week selection, idempotent retry, compensating rollback, two injected transaction failures, and observed revocation lock serialization. The migration integration also reconstructs the logical 0022 boundary and verifies incremental application of 0023/0024. Ruff, direct `contracts/validation.py`, MkDocs, and `git diff --check` passed. Web lint, typecheck, 131 publication tests, production build, and all 24 Performance/matchup Playwright tests passed.
-- The controller integration exercises real schema and transaction mutations while stubbing the external registered-authorization/finals evidence reads and exact Preview database identity check; those live identities and source reads remain for the operator read-only gate. Preview migration-ledger inspection, real-login effective grants, and read-only web query execution have not been run.
+- The controller integration exercises real schema and transaction mutations while stubbing the external registered-authorization/finals evidence reads and exact Preview database identity check; those live identities and source reads remain for the operator read-only gate.
 - `make contracts-check` could not run through `uv`: the configured cache first returned a filesystem permission error and a writable cache retry hit a local uv runtime panic. Its underlying `contracts/validation.py` command passed directly.
 - The full Python run was `.venv/bin/python -m pytest -q`: 2,017 passed, 12 skipped in 292.35 seconds. The focused Stage 7A rerun with `TEST_DATABASE_URL` passed 49 tests; a final migration-upgrade/controller subset passed 7 tests after the last test refinements.
 - The disposable PostgreSQL cluster lived under `/private/tmp` and was stopped after testing. Migration tests check Week 5+ scope rejection before run-identity validation, incremental upgrade from the logical 0022 boundary, and distinguish authorizer UPDATE privilege denial from the owner-level append-only trigger. The controller test verifies whole-transaction rollback after selection writes and after team-stat/current-week writes; the lock test observes the revocation backend waiting on PostgreSQL's advisory lock and confirms the resulting revocation blocks a later guard check.
-- Stage 7A remains **In Progress**. The separately authorized Preview migration, actual login/effective-privilege readback, migration-ledger inspection, and read-only web query check remain. No Preview or Production serving, selection, authorization, or revocation records were changed.
+- Separately authorized Preview migration and read-only verification: migrations 0023 and 0024 were applied to Preview via `migrate_db.py --database-env DATABASE_URL` (connecting as `cks_preview_migrator`, with `cks_release_authorizer` NOLOGIN group provisioned); idempotent retry confirmed 0 applied migrations on rerun. Preview read-only verification confirmed: (1) `schema_migrations` contains 0023 and 0024; (2) `public.prospective_week_records` and `ops.v5_release_revocations` exist with all expected validate/no-mutation triggers; (3) effective role grants match the security matrix (`cks_preview_pipeline` has SELECT/INSERT/UPDATE on prospective records, SELECT on revocations, INSERT denied on revocations; `cks_preview_web` has SELECT on prospective records, zero access to revocations; `cks_release_authorizer` has append-only SELECT/INSERT on revocations with UPDATE/DELETE denied); (4) read-only query readback succeeded with 0 rows in both new tables; `current_week` remains `(2026, 6)` and active selections remain 6. Zero serving, selection, authorization, or revocation records were altered.
+- Stage 7A is **Implemented**. Next gate is Stage 7B (Exact Release and Cutover).
 
 ## Amendments
 
