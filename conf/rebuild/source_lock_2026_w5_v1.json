@@ -74,8 +74,15 @@
       "uri": "lake/silver/dataset=game_outcomes/version=33134d76df0ec7a916faea47/data.parquet",
       "version_id": "33134d76df0ec7a916faea47"
     },
-    "game_rows_sha256": "03df58443eaf6f7552ae5722aa54930d865f3482b81e70341bf552e33c92654d",
+    "game_rows_sha256": "52f0018168dfad4c255692058e1fa92c21005f2e17f07df38ab98ee2e7866a17",
     "game_rows_sha256_method": "sha256(canonical_json(games.rows))",
+    "kickoff_revisions": [
+      {
+        "game_id": 401862787,
+        "new_start_date": "2026-10-03T15:00:00Z",
+        "old_start_date": "2026-10-03T19:30:00Z"
+      }
+    ],
     "newly_final_game_ids": [
       401856705,
       401856707,
@@ -133,7 +140,13 @@
       401871049,
       401871050,
       401871089
-    ]
+    ],
+    "schedule_ref": {
+      "content_sha": "6ed44e26df11f84a09c91aaac05ca5c93a0c79b6993a5ae64be75c90ce141492",
+      "dataset": "games",
+      "uri": "lake/silver/dataset=games/version=c2f7c20755fea27d6f7004c5/data.parquet",
+      "version_id": "c2f7c20755fea27d6f7004c5"
+    }
   },
   "game_rows_sha256": "41d602388a24b5c7b98dcdf151b517c4c68301aab801479e5e2df97cb21ebdb6",
   "games": {
@@ -2400,7 +2413,7 @@
       [
         5,
         401862787,
-        "2026-10-03T19:30:00Z",
+        "2026-10-03T15:00:00Z",
         "Charlotte",
         "Memphis",
         8,

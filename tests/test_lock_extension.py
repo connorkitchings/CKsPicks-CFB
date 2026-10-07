@@ -113,3 +113,70 @@ def test_games_without_a_final_stay_unrecorded():
     rows = {row[1]: row for row in result["games"]["rows"]}
     assert rows[4][5:] == [None, None]
     assert result["research_2026_prediction_keys"]["completed_games"] == 3
+
+
+def _schedule(kickoff_for_3="2026-10-03T16:00:00Z", week_for_3=2):
+    return pd.DataFrame(
+        {
+            "game_id": [1, 2, 3, 4],
+            "week": [0, 1, week_for_3, 2],
+            "kickoff_utc": [
+                "2026-08-29T16:00:00Z",
+                "2026-09-05T16:00:00Z",
+                kickoff_for_3,
+                "2026-10-03T23:00:00Z",
+            ],
+        }
+    )
+
+
+def _extend_with_schedule(schedule, accepted=()):
+    return le.extend_lock(
+        BASE,
+        base_sha256="a" * 64,
+        finals=_finals((3, 30, 3), (4, 17, 20)),
+        new_cutoff=CUTOFF,
+        outcomes_ref=OUTCOMES,
+        schedule=schedule,
+        schedule_ref={"version_id": "g1"},
+        accepted_kickoff_revisions=accepted,
+    )
+
+
+def test_a_matching_schedule_records_no_revisions():
+    result = _extend_with_schedule(_schedule())
+    assert result["extends"]["kickoff_revisions"] == []
+    assert result["extends"]["schedule_ref"] == {"version_id": "g1"}
+
+
+def test_an_unaccepted_kickoff_revision_is_refused():
+    with pytest.raises(le.LockExtensionError, match="not accepted"):
+        _extend_with_schedule(_schedule("2026-10-03T12:00:00Z"))
+
+
+def test_an_accepted_kickoff_revision_updates_the_row_and_is_recorded():
+    result = _extend_with_schedule(_schedule("2026-10-03T12:00:00Z"), accepted=[3])
+    row = next(r for r in result["games"]["rows"] if r[1] == 3)
+    assert row[2] == "2026-10-03T12:00:00Z"
+    assert result["extends"]["kickoff_revisions"] == [
+        {
+            "game_id": 3,
+            "old_start_date": "2026-10-03T16:00:00Z",
+            "new_start_date": "2026-10-03T12:00:00Z",
+        }
+    ]
+    assert result["extends"]["game_rows_sha256"] == le.rows_sha256(
+        result["games"]["rows"]
+    )
+    # The shared BASE fixture is not mutated by the revision.
+    assert BASE["games"]["rows"][2][2] == "2026-10-03T16:00:00Z"
+
+
+def test_a_changed_week_is_refused_even_if_the_game_is_accepted():
+    with pytest.raises(le.LockExtensionError, match="changed the week"):
+        _extend_with_schedule(_schedule(week_for_3=3), accepted=[3])
+
+
+def test_an_acceptance_without_a_change_is_refused():
+    with pytest.raises(le.LockExtensionError, match="without a change"):
+        _extend_with_schedule(_schedule(), accepted=[3])

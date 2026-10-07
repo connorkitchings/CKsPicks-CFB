@@ -40,6 +40,17 @@ def main() -> int:
     parser.add_argument("--base-sha256", default=BASE_SHA256)
     parser.add_argument("--outcomes-ref-uri", required=True)
     parser.add_argument("--new-cutoff", required=True)
+    parser.add_argument(
+        "--games-ref-uri",
+        help="games_ref.json of the new Silver games; every locked kickoff is checked",
+    )
+    parser.add_argument(
+        "--accept-kickoff-revision",
+        type=int,
+        action="append",
+        default=[],
+        help="game id whose provider-revised kickoff is recorded in the lock",
+    )
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if REPO_ROOT / "data" in [args.out.resolve(), *args.out.resolve().parents]:
@@ -56,6 +67,20 @@ def main() -> int:
     finals = outcomes[
         (outcomes["season"].astype(int) == 2026) & outcomes["completed"].astype(bool)
     ]
+    schedule = schedule_ref = None
+    if args.games_ref_uri:
+        games_ref = DatasetRef(**json.loads(storage.read_bytes(args.games_ref_uri)))
+        if games_ref.dataset != "games":
+            raise SystemExit(f"ref names {games_ref.dataset}, expected games")
+        schedule = read_dataset(storage, games_ref)
+        schedule_ref = {
+            "dataset": games_ref.dataset,
+            "version_id": games_ref.version_id,
+            "content_sha": games_ref.content_sha,
+            "uri": games_ref.uri,
+        }
+    elif args.accept_kickoff_revision:
+        raise SystemExit("--accept-kickoff-revision needs --games-ref-uri")
     lock = extend_lock(
         json.loads(raw),
         base_sha256=args.base_sha256,
@@ -67,6 +92,9 @@ def main() -> int:
             "content_sha": ref.content_sha,
             "uri": ref.uri,
         },
+        schedule=schedule,
+        schedule_ref=schedule_ref,
+        accepted_kickoff_revisions=args.accept_kickoff_revision,
     )
     args.out.write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n")
     print(json.dumps(lock["extends"], indent=2, sort_keys=True))

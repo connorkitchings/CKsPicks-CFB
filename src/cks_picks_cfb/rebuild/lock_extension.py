@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from typing import Any
 
 import pandas as pd
@@ -39,8 +39,18 @@ def extend_lock(
     finals: pd.DataFrame,
     new_cutoff: str,
     outcomes_ref: Mapping[str, Any],
+    schedule: pd.DataFrame | None = None,
+    schedule_ref: Mapping[str, Any] | None = None,
+    accepted_kickoff_revisions: Collection[int] = (),
 ) -> dict[str, Any]:
-    """Return a new lock that adds the next post-week cutoff and the newly final games."""
+    """Return a new lock that adds the next post-week cutoff and the newly final games.
+
+    When ``schedule`` (``game_id``, ``week``, ``kickoff_utc``) is given, every locked game
+    must still agree with it. A kickoff that the provider revised is refused unless its
+    game id is named in ``accepted_kickoff_revisions``; then the row takes the new kickoff
+    and the old/new pair is recorded under ``extends.kickoff_revisions``. A changed week,
+    or an acceptance for a game that did not change, is always an error.
+    """
     if EXTENSION_KEY in base:
         raise LockExtensionError("the base lock is already an extension")
     lock = copy.deepcopy(dict(base))
@@ -73,6 +83,9 @@ def extend_lock(
         )
 
     rows = lock["games"]["rows"]
+    revisions = _revise_kickoffs(
+        rows, position, schedule, {int(g) for g in accepted_kickoff_revisions}
+    )
     recorded_before = sum(1 for row in rows if row[position["home_points"]] is not None)
     newly_final: list[int] = []
     for row in rows:
@@ -118,4 +131,61 @@ def extend_lock(
         "game_outcomes_ref": dict(outcomes_ref),
         "availability_hours": AVAILABILITY_HOURS,
     }
+    if schedule is not None:
+        lock[EXTENSION_KEY]["kickoff_revisions"] = revisions
+        lock[EXTENSION_KEY]["schedule_ref"] = dict(schedule_ref or {})
     return lock
+
+
+def _utc(value: Any) -> pd.Timestamp:
+    stamp = pd.Timestamp(value)
+    return stamp.tz_localize("UTC") if stamp.tzinfo is None else stamp.tz_convert("UTC")
+
+
+def _revise_kickoffs(
+    rows: list[list[Any]],
+    position: Mapping[str, int],
+    schedule: pd.DataFrame | None,
+    accepted: set[int],
+) -> list[dict[str, Any]]:
+    """Apply accepted kickoff revisions in place; refuse any other disagreement."""
+    if schedule is None:
+        if accepted:
+            raise LockExtensionError("kickoff revisions need the schedule to check")
+        return []
+    if {"game_id", "week", "kickoff_utc"} - set(schedule.columns):
+        raise LockExtensionError("schedule frame lacks game_id, week or kickoff_utc")
+    current = schedule.set_index(schedule["game_id"].astype(int))
+    revisions: list[dict[str, Any]] = []
+    for row in rows:
+        game_id = int(row[position["game_id"]])
+        if game_id not in current.index:
+            raise LockExtensionError(
+                f"locked game {game_id} is missing from the schedule"
+            )
+        game = current.loc[game_id]
+        if int(game["week"]) != int(row[position["week"]]):
+            raise LockExtensionError(f"game {game_id}: the provider changed the week")
+        old = _utc(row[position["start_date"]])
+        new = _utc(game["kickoff_utc"])
+        if old == new:
+            continue
+        if game_id not in accepted:
+            raise LockExtensionError(
+                f"game {game_id}: kickoff {old.isoformat()} was revised to "
+                f"{new.isoformat()} and the revision is not accepted"
+            )
+        row[position["start_date"]] = new.strftime("%Y-%m-%dT%H:%M:%SZ")
+        revisions.append(
+            {
+                "game_id": game_id,
+                "old_start_date": old.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "new_start_date": row[position["start_date"]],
+            }
+        )
+    stale = accepted - {r["game_id"] for r in revisions}
+    if stale:
+        raise LockExtensionError(
+            f"accepted revisions without a change: {sorted(stale)}"
+        )
+    return revisions
