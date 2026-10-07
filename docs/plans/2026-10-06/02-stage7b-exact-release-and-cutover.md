@@ -128,6 +128,14 @@ Stop before the dependent operation and retain evidence if any of the following 
 
 Approved by the user in this planning task. Implements the narrow exception in Contract 04 Amendment 4 and Appendix B: when no authentic contemporaneous Week 5 receipt exists, verify environment-specific original records and register an explicit, current-time `v5_legacy_freeze_attestation_v1`. Preserve the non-null schema and identify this provenance as retrospective attestation. No migration, serving change, selection, authorization, freeze or release is authorized by this amendment. All other Stage 7B gates, including Production schema parity and fresh dynamic `N`, remain.
 
+### Amendment 2 — Preview staging environment legacy freeze pipeline ledger adjudication (2026-10-06)
+
+Approved by the user in this planning task per Contract 04 Amendment 5. Adjudicates the Preview pipeline ledger gap:
+1. For Preview (`environment == 'preview'`), when `ops.activation_history` contains the authentic freeze activation (`freeze_coverage_complete=true`), matching `prediction_runs` row, and valid pre-kickoff selection history, `freeze_pipeline` may be `null` in the Preview legacy attestation payload.
+2. The Preview attestation `limitations` list must explicitly include: `"In Preview staging, the original Week 5 freeze was executed directly via freeze_week.py and recorded in ops.activation_history without an enclosing ops.pipeline_runs harness record."`
+3. In Production (`environment == 'production'`), `freeze_pipeline` strictly requires the matching successful `freeze-week` pipeline run and `freeze` step (verified present in Production).
+4. No change is made to SQL migrations, table schemas, or Production requirements.
+
 Any further scope or policy conflict is returned to Contract 04 before implementation.
 
 ## Execution record — 2026-10-06

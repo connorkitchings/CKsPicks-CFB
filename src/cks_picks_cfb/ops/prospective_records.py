@@ -130,6 +130,19 @@ LEGACY_LIMITATIONS = [
     "This retrospective attestation was prepared after kickoff; it is not an original receipt.",
     "The canonical checksum establishes content integrity, not cryptographic signer authentication.",
 ]
+PREVIEW_PIPELINE_LIMITATION = (
+    "In Preview staging, the original Week 5 freeze was executed directly via "
+    "freeze_week.py and recorded in ops.activation_history without an enclosing "
+    "ops.pipeline_runs harness record."
+)
+
+
+def legacy_limitations_for_environment(
+    environment: str, *, has_pipeline: bool = True
+) -> list[str]:
+    if environment == "preview" and not has_pipeline:
+        return [*LEGACY_LIMITATIONS, PREVIEW_PIPELINE_LIMITATION]
+    return list(LEGACY_LIMITATIONS)
 
 
 def _utc(value: Any) -> datetime:
@@ -289,7 +302,20 @@ def _derive_legacy_evidence(
                     and "scripts/pipeline/freeze_week.py" in outputs[0].get("argv", [])
                 ):
                     candidates.append(dict(pipeline=pipeline, step=step))
-    if len(candidates) != 1:
+    freeze_week_pipelines = [
+        p
+        for p in sources["pipelines"]
+        if p.get("environment") == environment and p.get("command") == "freeze-week"
+    ]
+    if len(candidates) == 1:
+        freeze_pipeline = candidates[0]
+    elif (
+        environment == "preview"
+        and len(candidates) == 0
+        and len(freeze_week_pipelines) == 0
+    ):
+        freeze_pipeline = None
+    else:
         raise ProspectiveRecordError(
             "successful original freeze pipeline/step is missing or ambiguous"
         )
@@ -301,7 +327,7 @@ def _derive_legacy_evidence(
         later_selection_history=[
             r for r in history if _utc(r["selected_at"]) >= kickoff
         ],
-        freeze_pipeline=candidates[0],
+        freeze_pipeline=freeze_pipeline,
         current_schedule_check=schedule,
     )
 
@@ -351,7 +377,10 @@ def build_legacy_freeze_attestation(
                     contemporaneous_schedule_evidence
                 ),
                 source_snapshot_refs=source_snapshot_refs,
-                limitations=LEGACY_LIMITATIONS,
+                limitations=legacy_limitations_for_environment(
+                    environment,
+                    has_pipeline=(evidence.get("freeze_pipeline") is not None),
+                ),
                 **evidence,
             )
         )
@@ -371,13 +400,17 @@ def verify_legacy_freeze_attestation(
 ) -> None:
     """Verify content integrity and independently re-read DB and immutable source bytes."""
     verify_signed_payload(dict(payload), label="legacy freeze attestation")
+    expected_limitations = legacy_limitations_for_environment(
+        environment,
+        has_pipeline=(payload.get("freeze_pipeline") is not None),
+    )
     if (
         payload.get("schema_version") != LEGACY_SCHEMA
         or payload.get("evidence_class") != "legacy_attested_prospective"
         or payload.get("season") != 2026
         or payload.get("week") != 5
         or payload.get("environment") != environment
-        or payload.get("limitations") != LEGACY_LIMITATIONS
+        or payload.get("limitations") != expected_limitations
         or not str(payload.get("decision_ref") or "").strip()
     ):
         raise ProspectiveRecordError(

@@ -314,3 +314,13 @@ Registration is a distinct, exact, user-run operation for each environment, with
 **Acceptance:** focused tests prove environment separation, exact source re-derivation, timestamps, last-valid-freeze selection, immutable writes, idempotent registration and v2 packet verification. Altered source bytes, recomputed-but-inconsistent attestation hashes, wrong run/environment, later or ambiguous selection, missing kickoff evidence, nonzero pipeline return, conflicting activation, invalid time ordering, duplicate/conflicting registration and use outside Week 5 all fail closed. Production schema/grant parity, fresh schedule/quote certification, dynamic `N`, authorizations, Preview rehearsal, Production decision, freeze, repin and rollback remain separate Stage 7B gates.
 
 The [Stage 7B contract](../2026-10-06/02-stage7b-exact-release-and-cutover.md) records the implementation sequence. The prior preflight hold remains an accurate report of the evidence and policy at capture time; this amendment resolves its policy question but does not itself satisfy environment-specific registration or release gates.
+
+### Amendment 5 — Preview staging environment legacy freeze pipeline ledger adjudication (2026-10-06)
+
+**Status: Approved for contract persistence and Stage 7B execution.** Fresh read-only evidence verified that Production retains the matching successful `freeze-week` pipeline run (`816d7d02c2364547bb5ad569b3113f25`) and step, with matching freeze activation and pre-kickoff timeline. In Preview, the authentic freeze activation (`2026w5-v5repair-20260929-p2` at 2026-09-29 20:43:53Z with `freeze_coverage_complete=true`), matching `prediction_runs` row, and selection history are present, but the Preview staging environment executed `scripts/pipeline/freeze_week.py` directly without wrapping it in the `run_pipeline.py --command freeze-week` harness; therefore, no matching `ops.pipeline_runs` row exists in Preview.
+
+**Adjudication:**
+1. In `preview` only, when `ops.activation_history` contains the authentic freeze activation (`action='freeze'`, `freeze_coverage_complete=true`), matching `prediction_runs` state, and pre-kickoff selection history, `freeze_pipeline` may be `null` in the legacy attestation payload.
+2. The Preview attestation `limitations` list must explicitly include: `"In Preview staging, the original Week 5 freeze was executed directly via freeze_week.py and recorded in ops.activation_history without an enclosing ops.pipeline_runs harness record."`
+3. In `production`, `freeze_pipeline` strictly requires the matching successful `freeze-week` pipeline run and `freeze` step (verified present in Production).
+4. No change is made to SQL migrations, prospective table schemas, or Production requirements.

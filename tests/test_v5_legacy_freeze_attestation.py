@@ -174,6 +174,8 @@ def test_independent_source_and_raw_hash_verification(evidence):
 def test_builder_fails_closed_on_missing_or_conflicting_evidence(evidence, change):
     sources, _, kwargs = evidence
     if change == "pipeline":
+        sources["environment"] = "production"
+        kwargs["environment"] = "production"
         sources["pipelines"] = []
     if change == "selection":
         sources["selection_history"][0]["run_id"] = "another"
@@ -189,6 +191,21 @@ def test_builder_fails_closed_on_missing_or_conflicting_evidence(evidence, chang
         sources["environment"] = "production"
     with pytest.raises(records.ProspectiveRecordError):
         records.build_legacy_freeze_attestation(**kwargs)
+
+
+def test_preview_allows_null_freeze_pipeline_with_disclosure(evidence):
+    sources, storage, kwargs = evidence
+    sources["pipelines"] = []
+    sources["steps"] = []
+    kwargs["source_snapshot_refs"][0] = storage.ref(
+        "source-query.json", records.canonical_json(sources)
+    )
+    payload = records.build_legacy_freeze_attestation(**kwargs)
+    assert payload["freeze_pipeline"] is None
+    assert records.PREVIEW_PIPELINE_LIMITATION in payload["limitations"]
+    records.verify_legacy_freeze_attestation(
+        payload, cur=None, storage=storage, environment="preview"
+    )
 
 
 def test_rechecksum_does_not_hide_live_drift_or_bad_timestamp(evidence):
