@@ -1,0 +1,82 @@
+{
+ "environment": "production",
+ "identity": [
+  "cks_prod_pipeline",
+  "on"
+ ],
+ "row_count": 11506,
+ "payload_sha256": "1ee6c2a75ebfd25accfb1961dba59fc9c97348d7825502952cdbb49eb6a0f962",
+ "pinned_inputs": {
+  "games": [
+   {
+    "version_id": "31a337df6cf49f1578457ec6",
+    "state": "validated",
+    "tier": "silver",
+    "content_sha": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+    "as_of": "2026-09-27 14:15:00+00:00",
+    "partitions": {
+     "seasons": [
+      2026
+     ]
+    }
+   }
+  ],
+  "byplay": [
+   {
+    "version_id": "443019a9a7b6a2454a4af4ac",
+    "state": "validated",
+    "tier": "silver",
+    "content_sha": "08792c0db6cf7ed2c0fad7bae5d94b5bb26a2051b5c77bb91e5e910bced95c89",
+    "as_of": "2026-09-27 14:15:00+00:00",
+    "partitions": {
+     "seasons": [
+      2026
+     ]
+    }
+   }
+  ],
+  "drives": [
+   {
+    "version_id": "862815e2974a7fd6226841c1",
+    "state": "validated",
+    "tier": "silver",
+    "content_sha": "3c426d0c5ac937bec907ec5f2f1996aa9b3d0d7f9cacc8b1740fabe4b879bda7",
+    "as_of": "2026-09-27 14:15:00+00:00",
+    "partitions": {
+     "seasons": [
+      2026
+     ]
+    }
+   }
+  ],
+  "teams": [
+   {
+    "version_id": "590e986596436aa001ff77b7",
+    "state": "validated",
+    "tier": "silver",
+    "content_sha": "b02787de8cb46ddc42c9e008fd75a43b1174a95f79fd6a8b309d98d5381e12e1",
+    "as_of": "2026-08-09 23:59:59+00:00",
+    "partitions": {
+     "seasons": [
+      2026
+     ]
+    }
+   }
+  ],
+  "game_outcomes": [
+   {
+    "version_id": "d9a37cf473c63d2acc9f29cc",
+    "state": "validated",
+    "tier": "silver",
+    "content_sha": "17482907a735d07842908c21b284db28f377b1931cfe806a21ca8f9bec23a8d7",
+    "as_of": "2026-09-27 14:15:00+00:00",
+    "partitions": {
+     "seasons": [
+      2026
+     ]
+    }
+   }
+  ]
+ },
+ "all_pins_validated_exactly_once": true
+}
