@@ -1,0 +1,608 @@
+CK's Picks · V5 College Football Forecasts 
+Picks Results Ratings Performance 
+Skip to main content 
+CK’s Picks CFB 
+2026 ◐ 
+Blitzkrieg 
+Scored · Run published Sep 29, 4:42 PM ET 
+How the model is doing Season (215 games) 
+Week 5 this slate · small sample 
+Spread 
+28 – 27 – 1 
+50.9 % 
+Total 
+25 – 30 – 1 
+45.5 % 
+Season 215 games 
+Spread 
+100 – 112 – 3 
+47.2 % 
+Total 
+112 – 102 – 0 
+52.3 % 
+Highlights 
+Best calls (largest edge that won) 
+Win Boston College +21.0 ( 14.7 ) Boston College @ SMU Covered by 12.0 
+Win ▲ Over 42.5 ( 12.9 ) Bowling Green @ Miami (OH) Covered by 1.5 
+Win Nebraska -14.5 ( 12.5 ) Maryland @ Nebraska Covered by 10.5 
+Biggest misses (largest edge that lost) 
+← 
+Week Week 0 Week 1 Week 2 Week 3 Week 4 Week 5 → 
+Final scores, model picks, and graded results for completed Week 5 games. 
+Filter by team 
+Sort by Kickoff time Biggest edge Biggest hit Biggest miss 
+grid list 
+Showing 56 of 56 games 
+The number in parentheses after a pick is its edge: how many points the model differs from the market. 
+Thursday, Oct 1 · 2 games 
+Thu, Oct 1 · Las Cruces, NM 
+Matchup → Final 
+Western Kentucky ( 0-3 ) 13 
+New Mexico State ( 0-3 ) 34 
+Spread Win 
+New Mexico State -2.5 ( Bovada ) 
+Model: -7.6 Model: New Mexico State by 7.6 (+ 5.1 ) 
+Total Win 
+▼ Under 57.5 ( Bovada ) 
+Model: 54.1 (+ 3.4 ) 
+Thu, Oct 1 · Tulsa, OK 
+Matchup → Final 
+North Texas ( 1-2 ) 45 
+Tulsa ( 2-1 ) 44 
+Spread Loss 
+Tulsa -1.0 ( Bovada ) 
+Model: -4.5 Model: Tulsa by 4.5 (+ 3.5 ) 
+Total Loss 
+▼ Under 57.5 ( DraftKings ) 
+Model: 53.5 (+ 4.0 ) 
+Friday, Oct 2 · 3 games 
+Fri, Oct 2 · Blacksburg, VA 
+Matchup → Final 
+Pittsburgh ( 3-0 ) 35 
+Virginia Tech ( 3-0 ) 33 
+Spread Win 
+Pittsburgh +3.5 ( DraftKings ) 
+Model: +3.4 Model: Virginia Tech by 3.4 (+ 0.1 ) 
+Total Win 
+▲ Over 54.5 ( DraftKings ) 
+Model: 55.5 (+ 1.0 ) 
+Fri, Oct 2 · Newark, DE 
+Matchup → Final 
+Liberty ( 2-1 ) 30 
+Delaware ( 1-2 ) 14 
+Spread Loss 
+Delaware +7.0 ( DraftKings ) 
+Model: +2.7 Model: Liberty by 2.7 (+ 4.3 ) 
+Total Loss 
+▲ Over 50.0 ( Bovada ) 
+Model: 54.3 (+ 4.3 ) 
+Fri, Oct 2 · Evanston, IL 
+Matchup → Final 
+Penn State ( 3-1 ) 13 
+Northwestern ( 1-1 ) 34 
+Spread Win 
+Northwestern +3.0 ( Bovada ) 
+Model: +0.6 Model: Penn State by 0.6 (+ 2.4 ) 
+Total Win 
+▲ Over 45.5 ( DraftKings ) 
+Model: 54.5 (+ 9.0 ) 
+Saturday, Oct 3 · 51 games 
+Sat, Oct 3 · Starkville, MS 
+Matchup → Final 
+Alabama ( 4-0 ) 56 
+Mississippi State ( 4-0 ) 23 
+Spread Loss 
+Mississippi State +6.0 ( Bovada ) 
+Model: +3.2 Model: Alabama by 3.2 (+ 2.8 ) 
+Total Loss 
+▼ Under 60.0 ( Bovada ) 
+Model: 57.6 (+ 2.4 ) 
+Sat, Oct 3 · Lawrence, KS 
+Matchup → Final 
+Middle Tennessee ( 1-2 ) 0 
+Kansas ( 0-2 ) 55 
+Spread Loss 
+Middle Tennessee +18.5 ( DraftKings ) 
+Model: +12.8 Model: Kansas by 12.8 (+ 5.7 ) 
+Total Win 
+▲ Over 49.5 ( DraftKings ) 
+Model: 53.7 (+ 4.2 ) 
+Sat, Oct 3 · Houston, TX 
+Matchup → Final 
+UCF ( 2-1 ) 17 
+Houston ( 2-1 ) 27 
+Spread Win 
+UCF +12.0 ( Bovada ) 
+Model: +1.6 Model: Houston by 1.6 (+ 10.4 ) 
+Total Loss 
+▲ Over 51.5 ( Bovada ) 
+Model: 55.5 (+ 4.0 ) 
+Sat, Oct 3 · Ames, IA 
+Matchup → Final 
+West Virginia ( 2-1 ) 42 
+Iowa State ( 1-2 ) 45 
+Spread Loss 
+Iowa State -3.5 ( Bovada ) 
+Model: -11.8 Model: Iowa State by 11.8 (+ 8.3 ) 
+Total Win 
+▲ Over 52.5 ( DraftKings ) 
+Model: 55.1 (+ 2.6 ) 
+Sat, Oct 3 · University Park, TX 
+Matchup → Final 
+Boston College ( 1-2 ) 16 
+SMU ( 2-1 ) 25 
+Spread Win 
+Boston College +21.0 ( Bovada ) 
+Model: +6.3 Model: SMU by 6.3 (+ 14.7 ) 
+Total Win 
+▼ Under 55.5 ( Bovada ) 
+Model: 52.9 (+ 2.6 ) 
+Sat, Oct 3 · Chapel Hill, NC 
+Matchup → Final 
+Notre Dame ( 4-0 ) 37 
+North Carolina ( 1-1 ) 26 
+Spread Loss 
+Notre Dame -21.0 ( DraftKings ) 
+Model: -32.4 Model: Notre Dame by 32.4 (+ 11.4 ) 
+Total Win 
+▲ Over 47.0 ( Bovada ) 
+Model: 53.6 (+ 6.6 ) 
+Sat, Oct 3 · Winston-Salem, NC 
+Matchup → Final 
+Stanford ( 2-2 ) 3 
+Wake Forest ( 3-1 ) 57 
+Spread Win 
+Wake Forest -12.5 ( DraftKings ) 
+Model: -20.1 Model: Wake Forest by 20.1 (+ 7.6 ) 
+Total Win 
+▲ Over 53.5 ( Bovada ) 
+Model: 54.1 (+ 0.6 ) 
+Sat, Oct 3 · East Hartford, CT 
+Matchup → Final 
+Syracuse ( 0-2 ) 42 
+UConn ( 1-2 ) 41 
+Spread Win 
+UConn +6.5 ( DraftKings ) 
+Model: -3.9 Model: UConn by 3.9 (+ 10.4 ) 
+Total Win 
+▲ Over 50.5 ( DraftKings ) 
+Model: 53.5 (+ 3.0 ) 
+Sat, Oct 3 · Minneapolis, MN 
+Matchup → Final 
+Michigan ( 3-1 ) 14 
+Minnesota ( 2-1 ) 20 
+Spread Win 
+Minnesota +5.5 ( DraftKings ) 
+Model: +5.5 Model: Michigan by 5.5 (+ 0.0 ) 
+Total Loss 
+▲ Over 43.0 ( Bovada ) 
+Model: 52.5 (+ 9.5 ) 
+Sat, Oct 3 · Colorado Springs, CO 
+Matchup → Final 
+Navy ( 0-2 ) 9 
+Air Force ( 1-1 ) 14 
+Spread Win 
+Air Force -3.0 ( DraftKings ) 
+Model: -9.0 Model: Air Force by 9.0 (+ 6.0 ) 
+Total Loss 
+▲ Over 45.5 ( DraftKings ) 
+Model: 55.5 (+ 10.0 ) 
+Sat, Oct 3 · Madison, WI 
+Matchup → Final 
+Michigan State ( 2-2 ) 3 
+Wisconsin ( 2-1 ) 31 
+Spread Loss 
+Michigan State +10.0 ( Bovada ) 
+Model: +3.5 Model: Wisconsin by 3.5 (+ 6.5 ) 
+Total Loss 
+▲ Over 43.5 ( Bovada ) 
+Model: 53.6 (+ 10.1 ) 
+Sat, Oct 3 · Athens, GA 
+Matchup → Final 
+Vanderbilt ( 2-1 ) 14 
+Georgia ( 3-0 ) 38 
+Spread Win 
+Georgia -23.5 ( Bovada ) 
+Model: -29.6 Model: Georgia by 29.6 (+ 6.1 ) 
+Total Win 
+▲ Over 50.5 ( DraftKings ) 
+Model: 58.0 (+ 7.5 ) 
+Sat, Oct 3 · Amherst, NY 
+Matchup → Final 
+Western Michigan ( 1-2 ) 20 
+Buffalo ( 0-2 ) 17 
+Spread Win 
+Buffalo +13.5 ( DraftKings ) 
+Model: +6.1 Model: Western Michigan by 6.1 (+ 7.4 ) 
+Total Loss 
+▲ Over 46.5 ( DraftKings ) 
+Model: 52.1 (+ 5.6 ) 
+Sat, Oct 3 · Muncie, IN 
+Matchup → Final 
+Toledo ( 2-1 ) 39 
+Ball State ( 0-3 ) 24 
+Spread Loss 
+Toledo -19.5 ( DraftKings ) 
+Model: -26.0 Model: Toledo by 26.0 (+ 6.5 ) 
+Total Win 
+▲ Over 52.5 ( DraftKings ) 
+Model: 53.1 (+ 0.6 ) 
+Sat, Oct 3 · Columbia, MO 
+Matchup → Final 
+Florida ( 3-0 ) 17 
+Missouri ( 2-1 ) 45 
+Spread Loss 
+Florida -5.5 ( Bovada ) 
+Model: -13.0 Model: Florida by 13.0 (+ 7.5 ) 
+Total Loss 
+▼ Under 57.0 ( Bovada ) 
+Model: 55.3 (+ 1.7 ) 
+Sat, Oct 3 · Knoxville, TN 
+Matchup → Final 
+Auburn ( 3-1 ) 14 
+Tennessee ( 2-1 ) 24 
+Spread Win 
+Tennessee -7.0 ( DraftKings ) 
+Model: -8.1 Model: Tennessee by 8.1 (+ 1.1 ) 
+Total Loss 
+▲ Over 54.0 ( Bovada ) 
+Model: 56.0 (+ 2.0 ) 
+Sat, Oct 3 · Las Vegas, NV 
+Matchup → Final 
+California ( 1-2 ) 31 
+UNLV ( 2-2 ) 39 
+Spread Win 
+UNLV -2.5 ( DraftKings ) 
+Model: -5.1 Model: UNLV by 5.1 (+ 2.6 ) 
+Total Loss 
+▼ Under 53.5 ( DraftKings ) 
+Model: 53.1 (+ 0.4 ) 
+Sat, Oct 3 · Raleigh, NC 
+Matchup → Final 
+Louisville ( 1-2 ) 28 
+NC State ( 1-2 ) 31 
+Spread Win 
+NC State +4.0 ( DraftKings ) 
+Model: +3.6 Model: Louisville by 3.6 (+ 0.4 ) 
+Total Loss 
+▼ Under 58.5 ( DraftKings ) 
+Model: 54.7 (+ 3.8 ) 
+Sat, Oct 3 · Tallahassee, FL 
+Matchup → Final 
+Virginia ( 2-1 ) 7 
+Florida State ( 1-2 ) 38 
+Spread Win 
+Florida State +3.0 ( Bovada ) 
+Model: +2.5 Model: Virginia by 2.5 (+ 0.5 ) 
+Total Loss 
+▲ Over 51.5 ( Bovada ) 
+Model: 54.1 (+ 2.6 ) 
+Sat, Oct 3 · Iowa City, IA 
+Matchup → Final 
+Ohio State ( 3-1 ) 31 
+Iowa ( 3-0 ) 14 
+Spread Loss 
+Iowa +14.0 ( Bovada ) 
+Model: +8.6 Model: Ohio State by 8.6 (+ 5.4 ) 
+Total Loss 
+▲ Over 45.5 ( Bovada ) 
+Model: 52.5 (+ 7.0 ) 
+Sat, Oct 3 · Charlotte, NC 
+Matchup → Final 
+Memphis ( 2-1 ) 59 
+Charlotte ( 0-3 ) 8 
+Spread Loss 
+Charlotte +20.5 ( DraftKings ) 
+Model: +7.5 Model: Memphis by 7.5 (+ 13.0 ) 
+Total Win 
+▲ Over 52.5 ( DraftKings ) 
+Model: 54.4 (+ 1.9 ) 
+Sat, Oct 3 · Fargo, ND 
+Matchup → Final 
+Wyoming ( 1-2 ) 0 
+North Dakota State ( 3-0 ) 28 
+Spread Win 
+North Dakota State -18.0 ( Bovada ) 
+Model: -18.9 Model: North Dakota State by 18.9 (+ 0.9 ) 
+Total Loss 
+▲ Over 45.5 ( Bovada ) 
+Model: 51.8 (+ 6.3 ) 
+Sat, Oct 3 · Mount Pleasant, MI 
+Matchup → Final 
+Akron ( 0-3 ) 17 
+Central Michigan ( 1-2 ) 41 
+Spread Win 
+Central Michigan -6.5 ( DraftKings ) 
+Model: -15.9 Model: Central Michigan by 15.9 (+ 9.4 ) 
+Total Win 
+▲ Over 47.0 ( Bovada ) 
+Model: 54.2 (+ 7.2 ) 
+Sat, Oct 3 · Hadley, MA 
+Matchup → Final 
+Eastern Michigan ( 1-3 ) 38 
+Massachusetts ( 2-0 ) 14 
+Spread Loss 
+Massachusetts -6.5 ( Bovada ) 
+Model: -13.6 Model: Massachusetts by 13.6 (+ 7.1 ) 
+Total Win 
+▲ Over 48.5 ( Bovada ) 
+Model: 54.1 (+ 5.6 ) 
+Sat, Oct 3 · Kent, OH 
+Matchup → Final 
+Ohio ( 1-2 ) 13 
+Kent State ( 1-2 ) 10 
+Spread Push 
+Ohio -3.0 ( DraftKings ) 
+Model: -5.0 Model: Ohio by 5.0 (+ 2.0 ) 
+Total Loss 
+▲ Over 50.5 ( DraftKings ) 
+Model: 53.8 (+ 3.3 ) 
+Sat, Oct 3 · Oxford, OH 
+Matchup → Final 
+Bowling Green ( 0-3 ) 24 
+Miami (OH) ( 1-2 ) 20 
+Spread Loss 
+Miami (OH) -13.0 ( Bovada ) 
+Model: -15.9 Model: Miami (OH) by 15.9 (+ 2.9 ) 
+Total Win 
+▲ Over 42.5 ( DraftKings ) 
+Model: 55.4 (+ 12.9 ) 
+Sat, Oct 3 · Atlanta, GA 
+Matchup → Final 
+Old Dominion ( 0-3 ) 10 
+Georgia State ( 2-1 ) 42 
+Spread Win 
+Georgia State -1.5 ( DraftKings ) 
+Model: -5.2 Model: Georgia State by 5.2 (+ 3.7 ) 
+Total Push 
+▲ Over 52.0 ( Bovada ) 
+Model: 54.2 (+ 2.2 ) 
+Sat, Oct 3 · Harrisonburg, VA 
+Matchup → Final 
+Marshall ( 2-1 ) 17 
+James Madison ( 3-0 ) 45 
+Spread Win 
+James Madison -18.5 ( DraftKings ) 
+Model: -25.0 Model: James Madison by 25.0 (+ 6.5 ) 
+Total Loss 
+▼ Under 56.0 ( Bovada ) 
+Model: 53.8 (+ 2.2 ) 
+Sat, Oct 3 · Lincoln, NE 
+Matchup → Final 
+Maryland ( 1-2 ) 23 
+Nebraska ( 3-0 ) 48 
+Spread Win 
+Nebraska -14.5 ( DraftKings ) 
+Model: -27.0 Model: Nebraska by 27.0 (+ 12.5 ) 
+Total Win 
+▲ Over 52.5 ( DraftKings ) 
+Model: 55.7 (+ 3.2 ) 
+Sat, Oct 3 · Albuquerque, NM 
+Matchup → Final 
+UTEP ( 0-3 ) 7 
+New Mexico ( 2-1 ) 61 
+Spread Win 
+New Mexico -22.5 ( DraftKings ) 
+Model: -34.7 Model: New Mexico by 34.7 (+ 12.2 ) 
+Total Win 
+▲ Over 48.5 ( DraftKings ) 
+Model: 55.5 (+ 7.0 ) 
+Sat, Oct 3 · Columbia, SC 
+Matchup → Final 
+Kentucky ( 2-1 ) 35 
+South Carolina ( 1-2 ) 34 
+Spread Loss 
+South Carolina -2.5 ( DraftKings ) 
+Model: -7.9 Model: South Carolina by 7.9 (+ 5.4 ) 
+Total Win 
+▲ Over 53.5 ( DraftKings ) 
+Model: 55.5 (+ 2.0 ) 
+Sat, Oct 3 · Champaign, IL 
+Matchup → Final 
+Purdue ( 0-3 ) 24 
+Illinois ( 1-2 ) 17 
+Spread Loss 
+Illinois -10.0 ( DraftKings ) 
+Model: -18.0 Model: Illinois by 18.0 (+ 8.0 ) 
+Total Win 
+▼ Under 61.5 ( DraftKings ) 
+Model: 59.4 (+ 2.1 ) 
+Sat, Oct 3 · Fort Collins, CO 
+Matchup → Final 
+Oregon State ( 1-2 ) 56 
+Colorado State ( 1-2 ) 26 
+Spread Loss 
+Colorado State +6.5 ( Bovada ) 
+Model: -5.8 Model: Colorado State by 5.8 (+ 12.3 ) 
+Total Loss 
+▼ Under 62.5 ( DraftKings ) 
+Model: 55.0 (+ 7.5 ) 
+Sat, Oct 3 · College Station, TX 
+Matchup → Final 
+Arkansas ( 1-2 ) 7 
+Texas A&M ( 2-2 ) 34 
+Spread Loss 
+Arkansas +14.0 ( DraftKings ) 
+Model: +7.3 Model: Texas A&M by 7.3 (+ 6.7 ) 
+Total Loss 
+▲ Over 50.5 ( DraftKings ) 
+Model: 54.9 (+ 4.4 ) 
+Sat, Oct 3 · Fort Worth, TX 
+Matchup → Final 
+BYU ( 2-0 ) 17 
+TCU ( 1-2 ) 10 
+Spread Loss 
+TCU +6.5 ( DraftKings ) 
+Model: +1.0 Model: BYU by 1.0 (+ 5.5 ) 
+Total Loss 
+▲ Over 47.5 ( DraftKings ) 
+Model: 51.2 (+ 3.7 ) 
+Sat, Oct 3 · Houston, TX 
+Matchup → Final 
+UTSA ( 2-1 ) 16 
+Rice ( 0-3 ) 14 
+Spread Loss 
+UTSA -11.5 ( DraftKings ) 
+Model: -11.6 Model: UTSA by 11.6 (+ 0.1 ) 
+Total Win 
+▼ Under 56.0 ( Bovada ) 
+Model: 55.2 (+ 0.8 ) 
+Sat, Oct 3 · Conway, SC 
+Matchup → Final 
+Georgia Southern ( 0-3 ) 31 
+Coastal Carolina ( 0-3 ) 24 
+Spread Loss 
+Coastal Carolina +2.5 ( Bovada ) 
+Model: -5.9 Model: Coastal Carolina by 5.9 (+ 8.4 ) 
+Total Loss 
+▼ Under 54.5 ( DraftKings ) 
+Model: 52.5 (+ 2.0 ) 
+Sat, Oct 3 · Mobile, AL 
+Matchup → Final 
+UL Monroe ( 0-3 ) 35 
+South Alabama ( 1-2 ) 52 
+Spread Win 
+South Alabama -14.0 ( Bovada ) 
+Model: -21.4 Model: South Alabama by 21.4 (+ 7.4 ) 
+Total Loss 
+▼ Under 57.5 ( DraftKings ) 
+Model: 56.4 (+ 1.1 ) 
+Sat, Oct 3 · Boulder, CO 
+Matchup → Final 
+Texas Tech ( 3-0 ) 29 
+Colorado ( 1-2 ) 7 
+Spread Loss 
+Colorado +13.0 ( Bovada ) 
+Model: +7.6 Model: Texas Tech by 7.6 (+ 5.4 ) 
+Total Loss 
+▲ Over 50.0 ( Bovada ) 
+Model: 51.0 (+ 1.0 ) 
+Sat, Oct 3 · Clemson, SC 
+Matchup → Final 
+Miami ( 3-0 ) 41 
+Clemson ( 3-1 ) 13 
+Spread Loss 
+Clemson +16.5 ( Bovada ) 
+Model: +12.6 Model: Miami by 12.6 (+ 3.9 ) 
+Total Win 
+▲ Over 47.5 ( DraftKings ) 
+Model: 53.3 (+ 5.8 ) 
+Sat, Oct 3 · Los Angeles, CA 
+Matchup → Final 
+Washington ( 2-1 ) 21 
+USC ( 4-1 ) 25 
+Spread Loss 
+USC -9.5 ( Bovada ) 
+Model: -12.5 Model: USC by 12.5 (+ 3.0 ) 
+Total Win 
+▼ Under 58.5 ( DraftKings ) 
+Model: 56.1 (+ 2.4 ) 
+Sat, Oct 3 · Boise, ID 
+Matchup → Final 
+Utah State ( 1-2 ) 18 
+Boise State ( 2-1 ) 37 
+Spread Win 
+Utah State +20.5 ( DraftKings ) 
+Model: +16.0 Model: Boise State by 16.0 (+ 4.5 ) 
+Total Win 
+▲ Over 51.5 ( DraftKings ) 
+Model: 53.9 (+ 2.4 ) 
+Sat, Oct 3 · Tampa, FL 
+Matchup → Final 
+Temple ( 0-3 ) 17 
+South Florida ( 3-0 ) 13 
+Spread Loss 
+South Florida -6.5 ( Bovada ) 
+Model: -11.4 Model: South Florida by 11.4 (+ 4.9 ) 
+Total Loss 
+▲ Over 48.5 ( DraftKings ) 
+Model: 52.9 (+ 4.4 ) 
+Sat, Oct 3 · Ruston, LA 
+Matchup → Final 
+Army ( 1-1 ) 29 
+Louisiana Tech ( 0-2 ) 31 
+Spread Win 
+Louisiana Tech +2.5 ( Bovada ) 
+Model: -4.0 Model: Louisiana Tech by 4.0 (+ 6.5 ) 
+Total Win 
+▲ Over 46.0 ( Bovada ) 
+Model: 53.5 (+ 7.5 ) 
+Sat, Oct 3 · Piscataway, NJ 
+Matchup → Final 
+Indiana ( 3-0 ) 47 
+Rutgers ( 0-3 ) 15 
+Spread Loss 
+Rutgers +24.5 ( DraftKings ) 
+Model: +18.6 Model: Indiana by 18.6 (+ 5.9 ) 
+Total Loss 
+▼ Under 56.5 ( DraftKings ) 
+Model: 55.0 (+ 1.5 ) 
+Sat, Oct 3 · Lafayette, LA 
+Matchup → Final 
+Arkansas State ( 1-2 ) 20 
+Louisiana ( 2-1 ) 23 
+Spread Loss 
+Louisiana -6.5 ( DraftKings ) 
+Model: -18.8 Model: Louisiana by 18.8 (+ 12.3 ) 
+Total Loss 
+▲ Over 47.5 ( DraftKings ) 
+Model: 53.0 (+ 5.5 ) 
+Sat, Oct 3 · Pullman, WA 
+Matchup → Final 
+Fresno State ( 3-1 ) 26 
+Washington State ( 0-3 ) 6 
+Spread Win 
+Fresno State +2.5 ( DraftKings ) 
+Model: -5.8 Model: Fresno State by 5.8 (+ 8.3 ) 
+Total Loss 
+▲ Over 45.5 ( DraftKings ) 
+Model: 50.3 (+ 4.8 ) 
+Sat, Oct 3 · Tempe, AZ 
+Matchup → Final 
+Baylor ( 2-1 ) 55 
+Arizona State ( 1-1 ) 19 
+Spread Win 
+Baylor +4.0 ( DraftKings ) 
+Model: -5.3 Model: Baylor by 5.3 (+ 9.3 ) 
+Total Win 
+▲ Over 49.5 ( DraftKings ) 
+Model: 53.4 (+ 3.9 ) 
+Sat, Oct 3 · San Diego, CA 
+Matchup → Final 
+Texas State ( 1-2 ) 29 
+San Diego State ( 0-3 ) 31 
+Spread Win 
+San Diego State +4.5 ( DraftKings ) 
+Model: +1.6 Model: Texas State by 1.6 (+ 2.9 ) 
+Total Loss 
+▼ Under 59.5 ( DraftKings ) 
+Model: 53.4 (+ 6.1 ) 
+Sat, Oct 3 · Tucson, AZ 
+Matchup → Final 
+Cincinnati ( 3-0 ) 7 
+Arizona ( 2-1 ) 34 
+Spread Loss 
+Cincinnati +7.0 ( DraftKings ) 
+Model: +4.0 Model: Arizona by 4.0 (+ 3.0 ) 
+Total Loss 
+▲ Over 55.5 ( DraftKings ) 
+Model: 56.4 (+ 0.9 ) 
+Sat, Oct 3 · Honolulu, HI 
+Matchup → Final 
+San José State ( 1-2 ) 20 
+Hawai'i ( 1-3 ) 16 
+Spread Win 
+San José State +2.5 ( Bovada ) 
+Model: +1.5 Model: Hawai'i by 1.5 (+ 1.0 ) 
+Total Loss 
+▲ Over 51.5 ( Bovada ) 
+Model: 52.1 (+ 0.6 ) 
+Display only — not betting advice. CK’s Picks is a research project that shows model leans against market lines ; nothing here is a recommendation or guarantee. 
+Team names and logos are trademarks of their respective schools and owners, shown for identification only. 
+Loss 
+Charlotte +20.5 
+( 13.0 ) 
+Memphis @ Charlotte 
+Missed by 30.5 
+Loss Colorado State +6.5 ( 12.3 ) Oregon State @ Colorado State Missed by 23.5 
+Loss Louisiana -6.5 ( 12.3 ) Arkansas State @ Louisiana Missed by 3.5 
