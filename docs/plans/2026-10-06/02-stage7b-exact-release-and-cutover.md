@@ -159,3 +159,16 @@ facts for Preview facts or loosen Appendix B. Recover the Preview evidence or
 return to Contract 04 before registration and packet preparation. N remains
 unset. No live writes or executable release packets were produced, and no
 serving/status authority was changed.
+
+### Preview registration and Production migration execution — 2026-10-06
+
+Under explicit user authorization:
+1. **Preview registration applied:** `register_v5_legacy_freeze_attestation.py --environment preview --apply` was executed through `scripts/ops/with_preview_env.sh` (as restricted role `cks_preview_pipeline`). It wrote the immutable attestation JSON and snapshot objects to Preview R2, inserted the Week 5 prospective record into `public.prospective_week_records` in Preview, and read back the exact verified record:
+   - Run ID: `2026w5-v5repair-20260929-p2`
+   - Receipt URI: `artifacts/prospective/v5/environment=preview/season=2026/week=5/2026w5-v5repair-20260929-p2/legacy-attestation-v1-9b3d04f3c72448aa712b9814a0a1aadedcc709946108d15cf1622b17452d31f6.json`
+   - Raw SHA-256: `9b3d04f3c72448aa712b9814a0a1aadedcc709946108d15cf1622b17452d31f6`
+   - Frozen at: `2026-09-29 20:43:53.376950Z`, first kickoff: `2026-10-02 00:00:00Z`
+   - Idempotent retry verified 0 remote writes.
+2. **Production migrations applied:** Migrations 0023 and 0024 were applied to Production via `migrate_db.py --database-env DATABASE_URL` (connecting as administrative owner `neondb_owner`). Schema readback confirmed both `public.prospective_week_records` and `ops.v5_release_revocations` exist and are empty (0 rows). Checksums in `schema_migrations` match repository bytes. Idempotent rerun confirmed 0 applied migrations on retry. Zero serving state was altered (`current_week` remains `(2026, 6)`, active selections remain 6).
+3. **Production registration dry run verified:** Executed `register_v5_legacy_freeze_attestation.py --environment production` via `with_production_pipeline_env.sh` as `cks_prod_pipeline`. Successfully verified all live Production sources, historical code SHA `acbd9c67…`, prediction artifacts, schedule, and candidate generation with exit code 0 and zero writes.
+4. **Gates held:** Production registration apply remains a separate later gate. Cutover week $N$ remains unset.
