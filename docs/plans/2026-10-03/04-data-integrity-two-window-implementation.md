@@ -325,6 +325,16 @@ The [Stage 7B contract](../2026-10-06/02-stage7b-exact-release-and-cutover.md) r
 3. In `production`, `freeze_pipeline` strictly requires the matching successful `freeze-week` pipeline run and `freeze` step (verified present in Production).
 4. No change is made to SQL migrations, prospective table schemas, or Production requirements.
 
+### Amendment 6 — Team-stat provenance may change when the verifier binds it (2026-10-07)
+
+**Status: Approved by the user in session (2026-10-07); implemented in `src/cks_picks_cfb/ops/v5_batch_selection_v2.py` with tests.** Material change to atomic-release validation, recorded here because this contract treats release-controller behavior as material.
+
+**Finding.** The v2 controller rejected any packet whose team-stat `source_versions` differed between the before and after payloads ("team-stats provenance changed across the packet"). Corrected statistics are built from corrected Silver, so their `source_versions` necessarily differ, and Appendix B says to include the new versions there. As written, the controller would have rejected every legitimate corrected payload on every release path. Writing the old provenance into corrected rows to pass would falsify it and is not permitted.
+
+**Decision.** Provenance may change if and only if the independent team-stats verifier receipt (already required to be `verified`, bound to both payload raw hashes and the decision reference) carries a `provenance_change` object with `keys_changed` equal to the number of keys whose `source_versions` differ, and `before_provenance_sha256` and `after_provenance_sha256` equal to `stats_provenance_digest` of the before and after rows (a canonical hash of every key and its `source_versions`). Changed provenance must be a nonempty mapping. Complete key sets, scope equality, payload hashes and the database before-state check are unchanged; an unchanged-provenance packet validates exactly as before. Rollback packets use the same rule for the reversed payloads.
+
+**Tests.** Accepts bound changed provenance; rejects unbound changes, a tampered digest and an empty mapping; the digest is order independent and sensitive to every key. Five of the new tests fail on the previous controller.
+
 ### Track 1 Window 1 release preparation — 2026-10-07
 
 The [Track 1 preparation receipt](../2026-10-07/track1-release-packet.md) records fresh pinned Production venue dry-run coverage, exact before/proposed payloads, effective web grants, independently verified prospective designations and unchanged serving fingerprints. Local validation passes, including the explicitly authorized web SQL-shape repair. This is a HOLD receipt: rating-source binding is now repaired under the approved lineage contract, while exact-SHA CI/real Preview verification remain open. No Production venue publication, branch promotion, Window 2 activation or completed Window 1 production receipt is asserted.
