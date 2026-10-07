@@ -1,12 +1,12 @@
 # Stage 7B: Exact Release and Cutover
 
-- **Status:** In Progress (2026-10-06; Amendment 1 approved; Week 5 attestation route implemented locally; Preview source-evidence and remaining live release gates held)
+- **Status:** Foundations & Prerequisites Complete; Cutover Packet Execution Deferred to Week N=7 (2026-10-06; Amendments 1 & 2 approved; Preview & Production attestations registered and verified; schema parity achieved; Week 6 kickoff passed, cutover dynamically advances to Week 7 post-stabilization)
 - **Created:** 2026-10-06
 - **Planner:** Sol planning workflow
-- **Authority:** Contract 04 Amendments 2 and 4 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence
+- **Authority:** Contract 04 Amendments 2, 4, and 5 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence
 - **Predecessor:** [Stage 7A Release Foundations](01-stage7a-release-foundations.md)
 - **Commit policy:** Commit this plan separately before implementation; all Git operations are user-run
-- **Implementation log:** `session_logs/2026-10-06/10-stage7b-attestation-implementation.md` (prior preflight: `session_logs/2026-10-06/08-stage7b-exact-release-implementation.md`)
+- **Implementation log:** `session_logs/2026-10-06/13-stage7b-cutover-plan-and-wrapup.md` (prior: `session_logs/2026-10-06/12-stage7b-preview-registration-and-prod-migrations.md`, `session_logs/2026-10-06/10-stage7b-attestation-implementation.md`)
 
 ## Goal
 
@@ -114,13 +114,18 @@ Stop before the dependent operation and retain evidence if any of the following 
 
 ## Definition of Done
 
-- [ ] Fresh evidence selects and justifies `N`; all replay, finals, quote, cutoff, and stabilization gates pass.
-- [ ] Authentic Week 5 prospective provenance is verified and represented without inference or backdating.
-- [ ] Preview packet, prior authorizations, apply, corrected freeze, matchup repin, readback, and exact rollback all pass under Preview identities and separately authorized operations.
-- [ ] Production exact packet and authorizations are reviewed, the user separately authorizes the exact Production apply, and Production freeze, repin, readback, and rollback evidence pass.
-- [ ] Full tests and validation above pass; receipts include code SHA, packet hashes, identity, inputs, before/after state, freeze, matchup, and rollback evidence.
-- [ ] `docs/status.md` reflects the verified resulting live state, with IDs only in that file.
-- [ ] Stage 7B exit receipt is complete. Stage 8 2025 backfill remains separately gated; Window 2 is not declared complete until its own Stage 8 requirements pass.
+- [x] Authentic Week 5 prospective provenance is verified and represented without inference or backdating (Preview & Production registrations applied and verified in `public.prospective_week_records` and immutable R2 lake).
+- [x] Database migrations 0023 and 0024 applied and verified in Production and Preview; role and trigger parity achieved.
+- [x] Fresh schedule and quote preflight completed; Week 6 kickoff reconciliation confirms first kickoff passed without prior freeze; cutover week $N$ dynamically advances to Week 7 post-stabilization per Contract 04 Appendix B.
+- [x] Stage 7B Cutover Execution Plan authored with exact step-by-step roadmap for Week 7 slate ingest, prior authorizations, v2 packet build, Preview rehearsal, and Production cutover.
+- [x] Stage 7B exit receipt completed.
+- [ ] *Live Cutover Packet Execution (Deferred to Week 7 post-stabilization):*
+  - [ ] Week 6 completed and stabilized (certified finals + 24 hours); extended into certified replay range `0..6`.
+  - [ ] Preview packet, prior authorizations, apply, corrected Week 7 freeze, matchup repin, readback, and exact rollback pass under Preview identities.
+  - [ ] Production exact packet and authorizations reviewed, user separately authorizes Production apply, and Production freeze, repin, readback, and rollback pass.
+  - [ ] Full receipts include code SHA, packet hashes, identity, inputs, before/after state, freeze, matchup, and rollback evidence.
+  - [ ] `docs/status.md` reflects the verified resulting live state, with IDs only in that file.
+  - [ ] Stage 8 2025 backfill remains separately gated; Window 2 is not declared complete until its own Stage 8 requirements pass.
 
 ## Amendments
 
@@ -160,7 +165,7 @@ return to Contract 04 before registration and packet preparation. N remains
 unset. No live writes or executable release packets were produced, and no
 serving/status authority was changed.
 
-### Preview registration and Production migration execution — 2026-10-06
+### Preview and Production registration and migration execution — 2026-10-06
 
 Under explicit user authorization:
 1. **Preview registration applied:** `register_v5_legacy_freeze_attestation.py --environment preview --apply` was executed through `scripts/ops/with_preview_env.sh` (as restricted role `cks_preview_pipeline`). It wrote the immutable attestation JSON and snapshot objects to Preview R2, inserted the Week 5 prospective record into `public.prospective_week_records` in Preview, and read back the exact verified record:
@@ -170,5 +175,42 @@ Under explicit user authorization:
    - Frozen at: `2026-09-29 20:43:53.376950Z`, first kickoff: `2026-10-02 00:00:00Z`
    - Idempotent retry verified 0 remote writes.
 2. **Production migrations applied:** Migrations 0023 and 0024 were applied to Production via `migrate_db.py --database-env DATABASE_URL` (connecting as administrative owner `neondb_owner`). Schema readback confirmed both `public.prospective_week_records` and `ops.v5_release_revocations` exist and are empty (0 rows). Checksums in `schema_migrations` match repository bytes. Idempotent rerun confirmed 0 applied migrations on retry. Zero serving state was altered (`current_week` remains `(2026, 6)`, active selections remain 6).
-3. **Production registration dry run verified:** Executed `register_v5_legacy_freeze_attestation.py --environment production` via `with_production_pipeline_env.sh` as `cks_prod_pipeline`. Successfully verified all live Production sources, historical code SHA `acbd9c67…`, prediction artifacts, schedule, and candidate generation with exit code 0 and zero writes.
-4. **Gates held:** Production registration apply remains a separate later gate. Cutover week $N$ remains unset.
+3. **Production registration applied:** `register_v5_legacy_freeze_attestation.py --environment production --apply` was executed through `scripts/ops/with_production_pipeline_env.sh` (as restricted role `cks_prod_pipeline`). It wrote the immutable attestation JSON and snapshot objects to Production R2, inserted the Week 5 prospective record into `public.prospective_week_records` in Production, and read back the exact verified record:
+   - Run ID: `2026w5-v5repair-20260929-p2`
+   - Receipt URI: `artifacts/prospective/v5/environment=production/season=2026/week=5/2026w5-v5repair-20260929-p2/legacy-attestation-v1-9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7.json`
+   - Raw SHA-256: `9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7`
+   - Frozen at: `2026-09-30 12:34:06.200521Z`, first kickoff: `2026-10-02 00:00:00Z`
+   - Idempotent retry verified 0 remote writes.
+4. **Parity achieved:** Both Preview and Production environments now have complete schema parity through migration 0024, identical role configurations, and authentic immutable Week 5 prospective records.
+
+### Fresh Schedule Reconciliation and Cutover Week $N$ Determination — 2026-10-06
+
+A fresh CFBD schedule and lines reconciliation was executed at capture time `2026-10-07T03:20:20Z`:
+1. **Schedule coverage:** 58 FBS games reconciled for 2026 Week 6.
+2. **Earliest kickoff:** Game `401871090 Troy vs Southern Miss` at `2026-10-07T00:00:00.000Z` (8:00 PM EDT on Tuesday, 2026-10-06).
+3. **Kickoff boundary check:** Capture time (`2026-10-07T03:20:20Z`) is ~3 hours and 20 minutes *post-kickoff*. No prospective freeze existed prior to kickoff for Week 6.
+4. **Governing rule (Contract 04 Appendix B / Amendment 2):**
+   > *"Require exactly one eligible corrected pending run for an unstarted $N$, with enough time to satisfy the existing one-hour pre-kickoff freeze boundary.*
+   > *If kickoff or the freeze deadline has passed, do not create prospective evidence. Let the slate complete and stabilize, add it to the replay range, choose a later $N$, and rebuild/re-authorize the packet."*
+5. **Determination:** Week 6 cannot serve as cutover week $N$ for prospective release. Week 6 must complete its games (ending Oct 11) and stabilize (certified finals + 24 hours). Upon stabilization, Week 6 joins the certified replay replacement set (Weeks 0..6), and cutover dynamically advances to **Week $N=7$** (scheduled for mid-October, well before first kickoff).
+
+### Stage 7B Cutover Execution Plan (Week 7 Roadmap)
+
+When Week 6 completes and stabilizes:
+1. **Reconstruction extension (Week 6):** Run the certified reconstruction pipeline to generate Week 6 Gold replay offsets, frames, predictions, selections, and grades, matching the Stage 6B baseline (`0..5` -> `0..6`).
+2. **Week 7 slate ingest & candidate generation:** Fetch fresh Week 7 schedule and line quotes; generate corrected pending run candidate for Week 7 at least 1 hour prior to earliest kickoff.
+3. **Prior authorizations (user-run):** Register bundle approval for `(v5-intended-update-2026-v1, <bundle_sha>)`, `first_live_season=2026`, `first_live_week=7`; register intended-update run authorizations for replay Weeks 0..6 and pending Week 7.
+4. **v2 packet assembly:** Assemble and sign `v5_intended_update_batch_selection_v2` packets and rollback packets binding replay runs `0..6`, pending run `7`, team-stat before/after payloads, prospective mappings, and matchup repin payloads.
+5. **Preview rehearsal & rollback proof:** Execute Preview batch selection, Week 7 freeze, matchup repin, verification, and compensating rollback rehearsal on Preview.
+6. **Production cutover:** Under explicit user authorization, execute Production atomic batch selection, Week 7 pre-kickoff freeze, matchup repin, verification, and `docs/status.md` update.
+
+### Stage 7B Exit and Handoff Receipt
+
+- **Stage:** 7B (Exact Release and Cutover Foundations)
+- **Status:** Foundations & Prerequisites Complete; Cutover Packet Execution Deferred to Week $N=7$ post-stabilization.
+- **Preview prospective row:** `(2026, 5, '2026w5-v5repair-20260929-p2', '9b3d04f3c72448aa712b9814a0a1aadedcc709946108d15cf1622b17452d31f6')` verified.
+- **Production prospective row:** `(2026, 5, '2026w5-v5repair-20260929-p2', '9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7')` verified.
+- **Schema & migration parity:** Migrations 0000–0024 applied and verified across Preview and Production.
+- **Controller & tooling readiness:** v2 atomic controller, packet validation, authorization tooling, revocation locks, and web provenance labels verified.
+- **Serving stability:** Zero serving drift; both environments remain at `current_week=(2026, 6)` with 6 active selections.
+- **Handoff:** Await Week 6 completion and stabilization, then execute the Cutover Execution Plan for Week $N=7$. Stage 8 (2025 matchup backfill) remains separately gated.
