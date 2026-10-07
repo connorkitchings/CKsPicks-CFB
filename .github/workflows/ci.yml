@@ -54,6 +54,7 @@ jobs:
   pytest:
     name: Python tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -85,11 +86,44 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --frozen --extra dev
 
-      - name: Test with coverage and warnings as errors
-        # -n 4 matches the 4 vCPUs on ubuntu-latest; --dist loadfile keeps
-        # test_migration_integration.py (DROP/CREATEs shared schemas on the
-        # single service DB) on one worker.
-        run: PYTHONPATH=src:. uv run pytest tests/ -q -W error -n 4 --dist loadfile --cov=cks_picks_cfb --cov-report=term-missing:skip-covered
+      - name: Parallel Python tests
+        # The files below either reset the one service database or run a
+        # threaded rating publication. loadfile only serializes tests within
+        # a file; it does not isolate different files from one another.
+        run: >-
+          PYTHONPATH=src:. uv run pytest tests/ -q -W error
+          -n 4 --dist loadfile
+          --ignore=tests/test_data_first_possession_rating_runner.py
+          --ignore=tests/test_migration_integration.py
+          --ignore=tests/test_v5_batch_selection_v2.py
+          --ignore=tests/test_publish_matchup_data.py
+          --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
+          --durations=15 -o faulthandler_timeout=120
+        env:
+          CFBD_API_KEY: ci-placeholder
+
+      - name: Rating publication tests
+        run: >-
+          PYTHONPATH=src:. uv run pytest
+          tests/test_data_first_possession_rating_runner.py
+          -q -W error
+          --cov=cks_picks_cfb --cov-append --cov-report= --cov-fail-under=0
+          --durations=15 -o faulthandler_timeout=120
+        env:
+          CFBD_API_KEY: ci-placeholder
+
+      - name: PostgreSQL integration tests and total coverage
+        # All three files reset public/ops/catalog schemas. Run them in one
+        # process so a worker cannot drop another test's tables mid-query.
+        run: >-
+          PYTHONPATH=src:. uv run pytest
+          tests/test_migration_integration.py
+          tests/test_v5_batch_selection_v2.py
+          tests/test_publish_matchup_data.py
+          -q -W error
+          --cov=cks_picks_cfb --cov-append
+          --cov-report=term-missing:skip-covered
+          --durations=15 -o faulthandler_timeout=120
         env:
           CFBD_API_KEY: ci-placeholder
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cks_picks_test
