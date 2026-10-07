@@ -1,0 +1,67 @@
+{
+  "after": {
+    "file": "team-stats-after.json",
+    "manifest_sha256": "9642e52c3f6735537abcd3654e781f42f5aa8a083193260195eaf14bbca20842",
+    "raw_sha256": "3465c9044d2658131067ff822ae5cd07743c076014d39b4a64c8becc56028cfe",
+    "rows": 11506
+  },
+  "before": {
+    "file": "team-stats-before.json",
+    "manifest_sha256": "8042f5e692ec6046065defd499ea34ec7f1696522637cb4a3f5ad238310171b7",
+    "raw_sha256": "d92b427a41114ff5d716f739f8fb86c40cb284d4772576a15a01d46593716a01",
+    "rows": 11506
+  },
+  "comparison": {
+    "count_only_changed": {},
+    "only_after": 0,
+    "only_before": 0,
+    "provenance_changed_keys": 11506,
+    "rank_only_changed": {
+      "early_down_epa": 61,
+      "epa_pass": 59,
+      "epa_rush": 67,
+      "ppa_per_play": 76
+    },
+    "rows_after": 11506,
+    "rows_before": 11506,
+    "same_key_set": true,
+    "value_changed": {
+      "early_down_epa": 353,
+      "epa_pass": 211,
+      "epa_rush": 306,
+      "ppa_per_play": 458
+    }
+  },
+  "environment": "production",
+  "scope": [
+    {
+      "as_of_week": 1,
+      "season": 2026
+    },
+    {
+      "as_of_week": 2,
+      "season": 2026
+    },
+    {
+      "as_of_week": 3,
+      "season": 2026
+    },
+    {
+      "as_of_week": 4,
+      "season": 2026
+    },
+    {
+      "as_of_week": 5,
+      "season": 2026
+    }
+  ],
+  "source_versions_after": {
+    "byplay": "6fbe07906065e1e61d6194d3",
+    "drives": "edce8f07fad5f939654a1ffe",
+    "game_outcomes": "d9a37cf473c63d2acc9f29cc",
+    "games": "31a337df6cf49f1578457ec6",
+    "lineage": "corrected:6a-rebuild-20261004-r1",
+    "rebuild_root_sha256": "741d262f116a51db0d33ffc84efb22aa5ff4093e7da38535073343aee1fa85d0",
+    "teams": "590e986596436aa001ff77b7"
+  }
+}

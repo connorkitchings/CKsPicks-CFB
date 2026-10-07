@@ -259,6 +259,42 @@ def reconcile_completed_games(
     return pd.DataFrame.from_records(rows)
 
 
+AVAILABILITY_HOURS = 6
+
+
+def exclude_games_after_cutoff(
+    schedule: pd.DataFrame,
+    cutoff: pd.Timestamp | str,
+    *,
+    kickoff_column: str = "start_date",
+    availability_hours: int = AVAILABILITY_HOURS,
+) -> tuple[pd.DataFrame, list[int]]:
+    """Mark games not yet available at ``cutoff`` as not completed; never drop rows.
+
+    A game is available only when its kickoff plus the availability buffer is at or before
+    the cutoff (the same rule the rating states use). A provider that already reports a
+    later game as completed must not make the reconciliation demand plays for it: those
+    games are outside the point-in-time dataset. Games without a parseable kickoff are left
+    untouched. Returns the adjusted schedule and the excluded game ids.
+    """
+    limit = pd.Timestamp(cutoff)
+    if limit.tzinfo is None:
+        limit = limit.tz_localize("UTC")
+    result = schedule.copy()
+    if kickoff_column not in result.columns or "completed" not in result.columns:
+        return result, []
+    kickoff = pd.to_datetime(result[kickoff_column], utc=True, errors="coerce")
+    late = (
+        result["completed"].fillna(False).astype(bool)
+        & kickoff.notna()
+        & (kickoff + pd.Timedelta(hours=availability_hours) > limit)
+    )
+    id_column = _game_id_column(result)
+    excluded = sorted(int(game_id) for game_id in result.loc[late, id_column])
+    result["completed"] = result["completed"].fillna(False).astype(bool) & ~late
+    return result, excluded
+
+
 def require_reconciled(results: pd.DataFrame) -> None:
     blocking = results[results["blocking"].fillna(True).astype(bool)]
     if not blocking.empty:

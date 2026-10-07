@@ -1,0 +1,66 @@
+{
+  "game_outcomes": {
+    "content_sha": "f659b35abaa462807586d64e8e8e5d04585a23cb0e36e2a5f44000ab65151cf9",
+    "dataset": "game_outcomes",
+    "row_count": 761,
+    "schema_version": "game_outcomes_v1",
+    "uri": "lake/silver/dataset=game_outcomes/version=33134d76df0ec7a916faea47/data.parquet",
+    "version_id": "33134d76df0ec7a916faea47"
+  },
+  "legacy_byplay_as_of": "2026-10-05T00:00:00+00:00",
+  "legacy_byplay_code_sha": "e54a2e37c98e9b9dd3bbd822f811092f31614a00",
+  "legacy_comparison": {
+    "byplay": {
+      "content_sha": "6760e1f9b3e04fa2357cd58dbc6ef09d5e670a077ee2b058f9f3048fc5c43bdc",
+      "dataset": "byplay",
+      "row_count": 44635,
+      "schema_version": "byplay_v1",
+      "uri": "lake/silver/dataset=byplay/version=7ad61582a5205b31c5e3474d/data.parquet",
+      "version_id": "7ad61582a5205b31c5e3474d"
+    },
+    "reconciled_team_game": {
+      "content_sha": "752e7588472d647a9d415e30b63e58c0dc2f8b013aaf6e197d1b863464d50a4e",
+      "dataset": "reconciled_team_game",
+      "row_count": 542,
+      "schema_version": "team_game_v1",
+      "uri": "lake/silver/dataset=reconciled_team_game/version=a6f29a3f51905261d0516f83/data.parquet",
+      "version_id": "a6f29a3f51905261d0516f83"
+    }
+  },
+  "parents": [
+    {
+      "content_sha": "b5546bf8d1648bb72be6bc667a12ad2c7d1d67163dc99ca855f07c19f2908374",
+      "dataset": "plays",
+      "row_count": 48378,
+      "schema_version": "plays_v1",
+      "uri": "lake/silver/dataset=plays/version=51374ea11dcdc74d84924c08/data.parquet",
+      "version_id": "51374ea11dcdc74d84924c08"
+    },
+    {
+      "content_sha": "6ed44e26df11f84a09c91aaac05ca5c93a0c79b6993a5ae64be75c90ce141492",
+      "dataset": "games",
+      "row_count": 761,
+      "schema_version": "games_v2",
+      "uri": "lake/silver/dataset=games/version=c2f7c20755fea27d6f7004c5/data.parquet",
+      "version_id": "c2f7c20755fea27d6f7004c5"
+    },
+    {
+      "content_sha": "b02787de8cb46ddc42c9e008fd75a43b1174a95f79fd6a8b309d98d5381e12e1",
+      "dataset": "teams",
+      "row_count": 138,
+      "schema_version": "teams_v1",
+      "uri": "lake/silver/dataset=teams/version=590e986596436aa001ff77b7/data.parquet",
+      "version_id": "590e986596436aa001ff77b7"
+    },
+    {
+      "content_sha": "723def07e0490786f530ba46cff18fbcda7b3757d71857048b7c745ebd8a8517",
+      "dataset": "team_game_stats",
+      "row_count": 542,
+      "schema_version": "team_game_stats_v1",
+      "uri": "lake/silver/dataset=team_game_stats/version=3203f27739424ca2337a1c0c/data.parquet",
+      "version_id": "3203f27739424ca2337a1c0c"
+    }
+  ],
+  "schema_version": "rebuild_6a_silver_2026_parents_v1",
+  "source": "Preview prepare-week run stage1-w5-ingest-20261007-r2, as-of 2026-10-05T00:00:00Z (Week 5 complete); Option B adopt revised CFBD data"
+}

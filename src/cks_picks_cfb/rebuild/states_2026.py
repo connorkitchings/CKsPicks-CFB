@@ -1,4 +1,4 @@
-"""Stage: eligible 2026 rating states up to the plan's exact cutoff.
+"""Stage: eligible 2026 rating states up to the plan's exact cutoff (weeks per the lock).
 
 2026 scoring stays at baseline (no 2026 allocation has independent admission evidence), and
 no 2026 outcome reaches any fit or calibration: this stage only updates chronological
@@ -246,14 +246,14 @@ def verify(context: StageContext) -> list[str]:
     )
     if final_cutoff != {pd.Timestamp(summary["cutoff_utc"])}:
         problems.append("final states do not carry the selected cutoff")
-    # The selected cutoff only follows the Week 4 cutoff: states must be identical.
+    # The selected cutoff only follows the last lock cutoff: states must be identical.
     last = frames["current_teams"]
     week = int(last["week"].max())
     lock_week = last[last["week"].eq(week)].sort_values("team").reset_index(drop=True)
     final = frames["final_teams"].sort_values("team").reset_index(drop=True)
     columns = [c for c in final.columns if c != "cutoff_utc"]
     if len(lock_week) != len(final):
-        problems.append("post-week 4 state differs in size between the two cutoffs")
+        problems.append("last post-week state differs in size between the two cutoffs")
     else:
         try:
             pd.testing.assert_frame_equal(
@@ -261,7 +261,7 @@ def verify(context: StageContext) -> list[str]:
             )
         except AssertionError:
             problems.append(
-                "states at the selected cutoff differ from the Week 4 lock cutoff"
+                "states at the selected cutoff differ from the last lock cutoff"
             )
     for name in ("pregame_teams", "current_teams", "final_teams"):
         ratings = frames[name][["offense_rating", "defense_rating"]]

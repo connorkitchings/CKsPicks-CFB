@@ -26,6 +26,7 @@ from cks_picks_cfb.data.lake import (
     read_dataset,
 )
 from cks_picks_cfb.data.reconciliation import (
+    exclude_games_after_cutoff,
     reconcile_completed_games,
     require_reconciled,
     stream_points_by_team_game,
@@ -133,8 +134,16 @@ def main() -> None:
     reconciliation_input = team_game.merge(
         stream_points_by_team_game(byplay), on=["game_id", "team"], how="left"
     )
+    # Games the provider already marks completed but that kicked off after the cutoff are
+    # outside this point-in-time dataset (their plays are deliberately not ingested).
+    reconcile_games, after_cutoff = exclude_games_after_cutoff(games, cutoff)
+    if after_cutoff:
+        print(
+            f"Reconciliation excludes {len(after_cutoff)} game(s) not available at "
+            f"{cutoff.isoformat()}: {after_cutoff}"
+        )
     reconciliation = reconcile_completed_games(
-        games,
+        reconcile_games,
         reconciliation_input,
         frames.get("team_game_stats"),
         declared_incomplete_game_ids=declared_incomplete_game_ids,

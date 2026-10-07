@@ -97,13 +97,83 @@ def pin_2026(storage) -> dict:
     }
 
 
+def pin_2026_from_versions(
+    storage,
+    *,
+    byplay_version: str,
+    game_outcomes_version: str,
+    reconciled_team_game_version: str,
+    source: str,
+) -> dict:
+    """Parents of an explicitly named 2026 legacy byplay, without the approved-inputs table.
+
+    The parent set is read from that byplay's own manifest and must be exactly the four
+    normalized Silver datasets; nothing is chosen as "latest".
+    """
+    byplay = _entry(storage, "byplay", byplay_version)
+    manifest = json.loads(
+        storage.read_bytes(byplay["uri"].rsplit("/", 1)[0] + "/manifest.json")
+    )
+    found: dict[str, dict] = {}
+    for version_id in manifest["parent_versions"]:
+        for dataset in PARENTS_2026:
+            key = f"lake/silver/dataset={dataset}/version={version_id}/manifest.json"
+            if storage.exists(key):
+                found[dataset] = _entry(storage, dataset, version_id)
+    if set(found) != set(PARENTS_2026) or len(manifest["parent_versions"]) != len(
+        PARENTS_2026
+    ):
+        raise SystemExit(
+            f"2026 byplay {byplay_version} has an unexpected parent set: {sorted(found)}"
+        )
+    return {
+        "schema_version": "rebuild_6a_silver_2026_parents_v1",
+        "source": source,
+        "parents": [found[name] for name in PARENTS_2026],
+        "game_outcomes": _entry(storage, "game_outcomes", game_outcomes_version),
+        "legacy_comparison": {
+            "byplay": byplay,
+            "reconciled_team_game": _entry(
+                storage, "reconciled_team_game", reconciled_team_game_version
+            ),
+        },
+        "legacy_byplay_as_of": manifest["as_of"],
+        "legacy_byplay_code_sha": manifest["code_sha"],
+    }
+
+
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--season-2026", action="store_true")
+    parser.add_argument("--byplay-version", help="2026 legacy byplay version id")
+    parser.add_argument("--game-outcomes-version")
+    parser.add_argument("--reconciled-team-game-version")
+    parser.add_argument("--source", help="free-text provenance note for the pin file")
     args = parser.parse_args()
     storage = get_storage(environment="preview")
+    explicit = (
+        args.byplay_version,
+        args.game_outcomes_version,
+        args.reconciled_team_game_version,
+    )
+    if args.season_2026 and any(explicit):
+        if not all(explicit) or not args.source:
+            parser.error(
+                "explicit 2026 pins need --byplay-version, --game-outcomes-version, "
+                "--reconciled-team-game-version and --source"
+            )
+        payload = pin_2026_from_versions(
+            storage,
+            byplay_version=args.byplay_version,
+            game_outcomes_version=args.game_outcomes_version,
+            reconciled_team_game_version=args.reconciled_team_game_version,
+            source=args.source,
+        )
+        args.out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        print(f"wrote {args.out}: 2026 parents of byplay {args.byplay_version}")
+        return 0
     if args.season_2026:
         payload = pin_2026(storage)
         args.out.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

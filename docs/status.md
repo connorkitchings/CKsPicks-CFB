@@ -28,7 +28,7 @@
 |---|---|---|
 | 0–4 | Scored; **retrospective replay** (not prospective evidence) | `2026w{0..4}-v5repair-20260929-p1` |
 | 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total). First live V5 slate. | `2026w5-v5repair-20260929-p2` |
-| 6 | **Not opened; no prospective Week 6.** Its first kickoff (2026-10-07T00:00Z) passed with no run, the database has no Week 6 games, and `current_week` is (2026, 6) with no active run (hold screen). Publishing is skipped by user decision (2026-10-07) until the pre-Week-6 data audit is accepted. The release cutover moves to Week 7 ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). | — |
+| 6 | **Not opened; no prospective Week 6.** Its first kickoff (2026-10-07T00:00Z) passed with no run, the database has no Week 6 games, and `current_week` is (2026, 6) with no active run (hold screen). **Held by user decision (2026-10-07): no Week 6 display run will be published;** the hold screen stays until the Week 7 cutover. Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). A display-only attempt was planned and closed as Superseded ([contract](plans/2026-10-07/03-week6-display-run.md)): the successor chain's kickoff guards refuse a post-kickoff run. | — |
 
 **Rollback set (exact):** `2026w{0..4}-v5replay-bestquote-20260926-r3` and
 `2026w5-5d436e58c072`. An earlier Week 5 run, `2026w5-d6366e59fd43`, is
