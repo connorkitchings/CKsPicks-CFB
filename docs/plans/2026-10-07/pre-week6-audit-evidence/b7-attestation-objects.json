@@ -1,0 +1,29 @@
+{
+ "preview": {
+  "bucket_identity": "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview",
+  "raw_sha256": "9b3d04f3c72448aa712b9814a0a1aadedcc709946108d15cf1622b17452d31f6",
+  "filename_sha_matches": true,
+  "freeze_pipeline_null": true,
+  "limitations": [
+   "No contemporaneous freeze receipt exists in the bounded retained-source search.",
+   "This retrospective attestation was prepared after kickoff; it is not an original receipt.",
+   "The canonical checksum establishes content integrity, not cryptographic signer authentication.",
+   "In Preview staging, the original Week 5 freeze was executed directly via freeze_week.py and recorded in ops.activation_history without an enclosing ops.pipeline_runs harness record."
+  ],
+  "attested_at": "2026-10-07T03:10:09.208679+00:00",
+  "decision_ref": "contract-04-amendment-4-5-w5-legacy-freeze"
+ },
+ "production": {
+  "bucket_identity": "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview",
+  "raw_sha256": "9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7",
+  "filename_sha_matches": true,
+  "freeze_pipeline_null": false,
+  "limitations": [
+   "No contemporaneous freeze receipt exists in the bounded retained-source search.",
+   "This retrospective attestation was prepared after kickoff; it is not an original receipt.",
+   "The canonical checksum establishes content integrity, not cryptographic signer authentication."
+  ],
+  "attested_at": "2026-10-07T03:22:42.462034+00:00",
+  "decision_ref": "contract-04-amendment-4-5-w5-legacy-freeze"
+ }
+}

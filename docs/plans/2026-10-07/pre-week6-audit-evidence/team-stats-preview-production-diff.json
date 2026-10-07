@@ -1,0 +1,82 @@
+{
+ "captured_utc": "2026-10-07, after the 14:34Z B1-B4 capture (read-only, restricted roles; exact time not recorded)",
+ "script": "team_stats_rows.py",
+ "script_sha256": "df96d88970b18711d936ac249f577f5bf1533a249630321df2da9bcaeb4b8010",
+ "row_dump_sha256": {
+  "production": "d3fba9f4cd005e101436b95a01d45b6583fdc9a060cabb4d09a315d678f04ec2",
+  "preview": "8b8a16c366051573d883c602f1ddd8585e521d0d51062c516b62f3af8c098e3a"
+ },
+ "row_counts": {
+  "production": 10460,
+  "preview": 11506
+ },
+ "rows_by_week": {
+  "production": {
+   "1": 320,
+   "2": 1880,
+   "3": 2740,
+   "4": 2760,
+   "5": 2760
+  },
+  "preview": {
+   "1": 352,
+   "2": 2068,
+   "3": 3014,
+   "4": 3036,
+   "5": 3036
+  }
+ },
+ "rows_only_in_production": 0,
+ "rows_only_in_preview": 1046,
+ "rows_only_in_preview_by_metric_week": {
+  "ppa_per_play|wk1": 32,
+  "ppa_per_play|wk2": 188,
+  "ppa_per_play|wk3": 274,
+  "ppa_per_play|wk4": 276,
+  "ppa_per_play|wk5": 276
+ },
+ "shared_rows": 10460,
+ "shared_rows_differing_by_metric_week": {
+  "conv_rate_3rd_4th": {
+   "1": 27,
+   "2": 174,
+   "3": 264,
+   "4": 269,
+   "5": 274
+  },
+  "explosive_rate": {
+   "1": 25,
+   "2": 162,
+   "3": 261,
+   "4": 269,
+   "5": 272
+  },
+  "turnover_rate": {
+   "1": 23,
+   "2": 140,
+   "3": 235,
+   "4": 259,
+   "5": 269
+  }
+ },
+ "shared_rows_differing_total": 2923,
+ "metrics_identical_on_all_shared_rows": [
+  "avg_start_field_pos",
+  "early_down_epa",
+  "epa_pass",
+  "epa_rush",
+  "pts_per_scoring_opp",
+  "scoring_opp_rate",
+  "success_rate"
+ ],
+ "shared_rows_with_different_n": {
+  "preview_lower": 2454,
+  "preview_higher": 0
+ },
+ "published_utc": {
+  "production": "2026-10-02T15:25:17Z",
+  "preview": "2026-10-02T18:39:28Z"
+ },
+ "cause": "Preview was republished after the 2026-10-02 punt-return fix (known_issues #2 and 2026-10-02 entry; plan 2026-10-02/03); Production still serves the pre-fix stats until the Window 1 republish.",
+ "status_md_note": "status.md says both environments are at 10,460 rows; Preview is 11,506 (10,460 + 1,046 ppa_per_play)."
+}

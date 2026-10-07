@@ -1,0 +1,43 @@
+{
+ "env": "production",
+ "run": [
+  "scored",
+  "replay",
+  "2026-09-26 13:30:45.641939+00:00",
+  "None",
+  "2026-09-27 14:29:54.786100+00:00",
+  "4f1e843669bc5e51ae3da899be2ea4723ea684571b9d78bfb7808a537753e8d7"
+ ],
+ "predictions": 58,
+ "grades": [
+  [
+   "spread",
+   "win",
+   29
+  ],
+  [
+   "spread",
+   "loss",
+   27
+  ],
+  [
+   "total",
+   "win",
+   18
+  ],
+  [
+   "total",
+   "loss",
+   23
+  ]
+ ],
+ "w4_results_scored": 58,
+ "selected_in_site_week": 0,
+ "ops_history": [
+  [
+   "score",
+   "production",
+   "2026-09-27 14:29:54.786100+00:00"
+  ]
+ ]
+}

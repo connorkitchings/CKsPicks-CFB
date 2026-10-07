@@ -1,0 +1,13 @@
+{
+ "storage_identity": "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview",
+ "root_key": "rebuild/6b/6b-replay-20261005-r1/root-manifest.json",
+ "root_raw_sha256": "6fb59797e35c05a6657219e4e41e0b3834187f1ee88971b1d78045c96c78e6cf",
+ "root_signature_ok": true,
+ "root_manifest_sha256": "32105bbe8dbc97328557406347cbf5c55c727ad38d186a352089fe0d5aaf8d45",
+ "code_sha": "eca6871d727060adf8612bd7d8769c29d5243579",
+ "publisher_code_sha": "eca6871d727060adf8612bd7d8769c29d5243579",
+ "verify_sha": "e462ae05408999c4e7d7fa61519b134f97a074dc8acb4d714680d6048b525aaa",
+ "stages": 12,
+ "objects_listed": 112,
+ "objects_mismatched": []
+}
