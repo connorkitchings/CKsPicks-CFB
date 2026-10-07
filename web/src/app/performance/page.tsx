@@ -1,31 +1,28 @@
 import { getV5PerformanceDetail, type PerformanceDetail } from "@/lib/v5";
 import { v5PerformanceDetailFixture } from "@/test/fixtures/publication";
 import { PerformanceDashboard } from "@/components/PerformanceDashboard";
+import { loadPerformanceSections, type SectionResult } from "@/lib/performance-sections";
 
 // Selection changes must not serve a record baked into an earlier build.
 export const dynamic = "force-dynamic";
 
 export default async function PerformancePage() {
-  let replay: PerformanceDetail | null = null;
-  let prospective: PerformanceDetail | null = null;
-  let unavailable = false;
+  let replay: SectionResult<PerformanceDetail>;
+  let prospective: SectionResult<PerformanceDetail>;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
-    replay = v5PerformanceDetailFixture;
-    prospective = { ...v5PerformanceDetailFixture, classification: "prospective", selectedGames: 0, gradedGames: [] };
+    replay = { status: "ok", value: v5PerformanceDetailFixture };
+    prospective = {
+      status: "ok",
+      value: { ...v5PerformanceDetailFixture, classification: "prospective", selectedGames: 0, gradedGames: [] },
+    };
   } else {
-    try {
-      [replay, prospective] = await Promise.all([
-        getV5PerformanceDetail(2026, "replay"),
-        getV5PerformanceDetail(2026, "prospective"),
-      ]);
-    } catch (error) {
-      console.error("V5 performance query failed", error);
-      unavailable = true;
-    }
+    ({ replay, prospective } = await loadPerformanceSections(
+      () => getV5PerformanceDetail(2026, "replay"),
+      () => getV5PerformanceDetail(2026, "prospective"),
+      (section, error) => console.error(`V5 ${section} performance query failed`, error),
+    ));
   }
-
-  const hasData = replay !== null && prospective !== null;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 px-4 py-3 sm:py-6">
@@ -44,37 +41,25 @@ export default async function PerformancePage() {
         </p>
       </div>
 
-      {unavailable ? (
-        <p
-          role="status"
-          className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted"
-        >
-          Performance data is temporarily unavailable.
-        </p>
-      ) : hasData && replay && prospective ? (
-        <div className="space-y-8">
-          {replay.selectedGames === 0 ? (
-            <StatusCard title="Selected retrospective replay" message="No retrospective replay weeks are selected." />
-          ) : replay.gradedGames.length === 0 ? (
-            <StatusCard title="Selected retrospective replay" message="The selected replay has games, but no grades are available yet." />
-          ) : <PerformanceDashboard data={replay} title="Selected retrospective replay" />}
-          {prospective.gradedGames.length > 0 ? (
-            <PerformanceDashboard data={prospective} title="Designated prospective V5 performance" />
-          ) : (
-            <section aria-labelledby="prospective-empty" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">
-              <h2 id="prospective-empty" className="font-semibold text-ink">Designated prospective V5 performance</h2>
-              <p className="mt-1">{prospective.selectedGames > 0 ? "A prospective run is designated, but it has no graded results yet." : "No prospective V5 week has been explicitly designated."}</p>
-            </section>
-          )}
-        </div>
-      ) : (
-        <p
-          role="status"
-          className="rounded-xl border border-line bg-surface-card p-5 text-ink-muted"
-        >
-          No graded V5 results are available yet.
-        </p>
-      )}
+      <div className="space-y-8">
+        {replay.status === "unavailable" ? (
+          <StatusCard title="Selected retrospective replay" message="Performance data is temporarily unavailable." />
+        ) : replay.value.selectedGames === 0 ? (
+          <StatusCard title="Selected retrospective replay" message="No retrospective replay weeks are selected." />
+        ) : replay.value.gradedGames.length === 0 ? (
+          <StatusCard title="Selected retrospective replay" message="The selected replay has games, but no grades are available yet." />
+        ) : <PerformanceDashboard data={replay.value} title="Selected retrospective replay" />}
+        {prospective.status === "unavailable" ? (
+          <StatusCard title="Designated prospective V5 performance" message="Prospective performance data is temporarily unavailable." />
+        ) : prospective.value.gradedGames.length > 0 ? (
+          <PerformanceDashboard data={prospective.value} title="Designated prospective V5 performance" />
+        ) : (
+          <section aria-labelledby="prospective-empty" className="rounded-xl border border-line bg-surface-card p-5 text-sm text-ink-muted">
+            <h2 id="prospective-empty" className="font-semibold text-ink">Designated prospective V5 performance</h2>
+            <p className="mt-1">{prospective.value.selectedGames > 0 ? "A prospective run is designated, but it has no graded results yet." : "No prospective V5 week has been explicitly designated."}</p>
+          </section>
+        )}
+      </div>
 
       <p className="text-xs leading-relaxed text-ink-faint">
         Win rate excludes pushes. A game without an eligible market line does not
