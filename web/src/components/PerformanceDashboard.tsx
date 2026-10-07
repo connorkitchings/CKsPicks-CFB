@@ -1,5 +1,7 @@
 "use client";
 
+import { prospectiveEvidenceLabel } from "@/lib/prospective-provenance";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import clsx from "clsx";
@@ -358,10 +360,10 @@ export function PerformanceDashboard({ data, title }: { data: PerformanceDetail;
                 {game.awayTeam} @ {game.homeTeam}
               </Link>
               <p className="mt-1 text-[11px] text-ink-faint">
-                Week {game.week} · {game.evidenceClass === "replay" ? "Retrospective replay" : "Prospective"} · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
+                Week {game.week} · {game.evidenceClass === "replay" ? "Retrospective replay" : game.freezeReceiptUri && game.freezeReceiptSha256 ? prospectiveEvidenceLabel(game.freezeReceiptUri, 2026, game.week, game.runId, game.freezeReceiptSha256) : "Prospective"} · Final {game.awayPoints ?? "—"}–{game.homePoints ?? "—"}
               </p>
               <p className="text-[11px] text-ink-faint">Original run: <code>{game.runId}</code></p>
-              {game.freezeReceiptSha256 && <p className="text-[11px] text-ink-faint">Freeze receipt SHA-256: <code>{game.freezeReceiptSha256}</code></p>}
+              {game.freezeReceiptSha256 && <p className="text-[11px] text-ink-faint">Freeze evidence SHA-256: <code>{game.freezeReceiptSha256}</code></p>}
               <dl className="mt-2 space-y-2 text-xs">
                 {targetFilter !== "total" && game.spreadResult !== null && (
                   <div>

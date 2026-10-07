@@ -11,6 +11,7 @@ from typing import Any
 from cks_picks_cfb.data.data_first_phase2d import Phase2dError, verify_signed_payload
 from cks_picks_cfb.data.team_stats import UPSERT_TEAM_STAT_SQL
 from cks_picks_cfb.ops.lease import assert_active_pipeline_lease
+from cks_picks_cfb.ops.prospective_records import verify_prospective_record
 from cks_picks_cfb.ops.public_selection import select_week_run
 from cks_picks_cfb.ops.v5_intended_update_release import (
     AUTH_COLUMNS,
@@ -81,7 +82,7 @@ def _read_signed_ref(storage: Any, ref: Any, label: str) -> dict[str, Any]:
     return value
 
 
-def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any) -> dict[str, Any]:
+def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any, cur: Any = None) -> dict[str, Any]:
     if packet.get("schema_version") not in {
         "v5_intended_update_batch_selection_v2",
         "v5_intended_update_batch_rollback_v2",
@@ -215,6 +216,12 @@ def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any
     prospective_after_by_key = {_prospective_key(row): row for row in prospective_after["rows"]}
     if prospective_before_by_key != prospective_after_by_key:
         raise V5BatchSelectionError("selection and rollback packets must preserve prospective records exactly")
+    if not set(range(5, cutover)).issubset({row["week"] for row in prospective_before["rows"]}):
+        raise V5BatchSelectionError("completed prospective Week 5 onward evidence is missing")
+    for row in prospective_before["rows"]:
+        if "/legacy-attestation-v1-" in row["freeze_receipt_uri"] and cur is None:
+            raise V5BatchSelectionError("legacy attestation requires live source verification")
+        verify_prospective_record(row, cur=cur, storage=storage, environment=environment)
     if (
         verifier.get("state") != "verified"
         or verifier.get("before_sha256") != packet["team_stats_before"]["sha256"]
@@ -448,7 +455,7 @@ def _verify_week_evidence(cur: Any, packet: Mapping[str, Any], plan: Mapping[str
 
 def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, storage: Any) -> dict[str, Any]:
     """Apply signed select/rollback state in the caller's sole transaction."""
-    plan = validate_v2_packet(packet, environment=environment, storage=storage)
+    plan = validate_v2_packet(packet, environment=environment, storage=storage, cur=cur)
     assert_v5_database_environment(cur, environment)
     assert_active_pipeline_lease(cur)
     for table in (
@@ -464,6 +471,8 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
         cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", (2026, week))
     _verify_registered_authorizations(cur, plan, storage)
     _verify_week_evidence(cur, packet, plan, storage)
+    for row in plan["payloads"]["prospective_records_before"]["rows"]:
+        verify_prospective_record(row, cur=cur, storage=storage, environment=environment)
 
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = 2026 "
@@ -574,7 +583,7 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
 
 def preflight_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, storage: Any) -> dict[str, Any]:
     """Read-only preflight; apply repeats every comparison while holding locks."""
-    plan = validate_v2_packet(packet, environment=environment, storage=storage)
+    plan = validate_v2_packet(packet, environment=environment, storage=storage, cur=cur)
     assert_v5_database_environment(cur, environment)
     _verify_registered_authorizations(cur, plan, storage)
     _verify_week_evidence(cur, packet, plan, storage)

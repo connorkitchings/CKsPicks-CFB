@@ -1,3 +1,4 @@
+import { prospectiveEvidenceLabel } from "./prospective-provenance";
 import { and, asc, desc, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
@@ -610,9 +611,12 @@ export const getV5PerformanceDetail = cache(async (
       week: schema.prospectiveWeekRecords.week,
       runId: schema.prospectiveWeekRecords.runId,
       expectedGames: schema.predictionRuns.expectedGames,
+      receiptUri: schema.prospectiveWeekRecords.freezeReceiptUri,
+      receiptSha: schema.prospectiveWeekRecords.freezeReceiptSha256,
     }).from(schema.prospectiveWeekRecords)
       .innerJoin(schema.predictionRuns, eq(schema.prospectiveWeekRecords.runId, schema.predictionRuns.runId))
       .where(eq(schema.prospectiveWeekRecords.season, season));
+    for (const row of designations) prospectiveEvidenceLabel(row.receiptUri, season, row.week, row.runId, row.receiptSha);
     const weeks = new Set(designations.map((row) => row.week));
     if (weeks.size !== designations.length) {
       throw new Error("prospective week designation is duplicated");

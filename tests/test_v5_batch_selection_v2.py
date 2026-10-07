@@ -632,3 +632,36 @@ def test_v2_revocation_waits_for_selection_shared_advisory_lock():
     with psycopg.connect(conn_url) as conn, conn.cursor() as cur:
         with pytest.raises(V5RevocationError, match="has been revoked"):
             assert_release_records_active(cur, [("bundle_approval", "bundle-7a")])
+
+
+def test_moving_cutover_requires_completed_week5_prospective_evidence():
+    """A later N cannot silently drop authentic completed prospective history."""
+    import copy
+
+    from cks_picks_cfb.ops.v5_intended_update_release import AUTH_COLUMNS
+
+    packet, storage = _packet()
+    packet["cutover_week"] = 6
+    packet["certified_completed_weeks"] = list(range(6))
+    packet["expected_current_runs"]["6"] = "old-6"
+    packet["replacement_runs"]["6"] = "new-6"
+    packet["protected_runs"] = {"7": "protected-7"}
+    packet["expected_current_week"] = dict(season=2026, week=6, run_id="old-6")
+    packet["replacement_current_week"] = dict(season=2026, week=6, run_id="new-6")
+    bundle = packet["bundle_approval"]
+    bundle["first_live_week"] = 6
+    bundle.pop("record_sha256")
+    bundle["record_sha256"] = hashlib.sha256(canonical_json(bundle)).hexdigest()
+    last = packet["run_authorizations"][-1]
+    next_record = copy.deepcopy(last)
+    last["evidence_class"] = "replay"
+    next_record.update(week=6, prediction_run_id="new-6", authorization_id="auth-6")
+    packet["run_authorizations"].append(next_record)
+    for record in packet["run_authorizations"]:
+        record["record_sha256"] = hashlib.sha256(
+            canonical_json({key: record.get(key) for key in AUTH_COLUMNS})
+        ).hexdigest()
+    with pytest.raises(V5BatchSelectionError, match="completed prospective Week 5"):
+        validate_v2_packet(
+            signed_payload(packet), environment="preview", storage=storage
+        )

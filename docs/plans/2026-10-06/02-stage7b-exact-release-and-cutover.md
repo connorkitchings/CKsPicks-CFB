@@ -1,12 +1,12 @@
 # Stage 7B: Exact Release and Cutover
 
-- **Status:** In Progress (2026-10-06; Amendment 1 approved; implementation of the Week 5 attestation route and remaining release gates pending)
+- **Status:** In Progress (2026-10-06; Amendment 1 approved; Week 5 attestation route implemented locally; Preview source-evidence and remaining live release gates held)
 - **Created:** 2026-10-06
 - **Planner:** Sol planning workflow
 - **Authority:** Contract 04 Amendments 2 and 4 and its normative Appendices A and B; Stage 6B and Stage 7A are Implemented with Preview-only evidence
 - **Predecessor:** [Stage 7A Release Foundations](01-stage7a-release-foundations.md)
 - **Commit policy:** Commit this plan separately before implementation; all Git operations are user-run
-- **Implementation log:** `session_logs/2026-10-06/08-stage7b-exact-release-implementation.md`
+- **Implementation log:** `session_logs/2026-10-06/10-stage7b-attestation-implementation.md` (prior preflight: `session_logs/2026-10-06/08-stage7b-exact-release-implementation.md`)
 
 ## Goal
 
@@ -135,3 +135,19 @@ Any further scope or policy conflict is returned to Contract 04 before implement
 Fresh read-only Preview and Production snapshots verified exact restricted pipeline identities and applied migration checksums. Preview is through 0024 with zero prospective/revocation rows; Production is through 0022 with those tables absent, as anticipated by Stage 7A. Both have six selections and Week 6 with no active run. These observations do not select cutover `N` or update the serving-state authority.
 
 The original Week 5 selection/freeze ledger and kickoff are retained, but the checked immutable prefixes contain no contemporaneous receipt; the historical implementation did not persist one. The current receipt-generating helper cannot recover absent original bytes. The initial preflight hold stopped packet preparation and all writes. Contract 04 Amendment 4 and this plan's Amendment 1 now permit a narrowly scoped, clearly retrospective attestation after implementation, independent verification and a separate user-run registration decision. The preflight hold report remains the evidence snapshot and is not edited to imply that policy existed at capture time. No live registration or release operation has yet been authorized or performed. Production schema parity, full live preflight, dynamic `N`, and all Preview/Production release gates remain open.
+
+
+### Fresh implementation continuation — 2026-10-06
+
+The separately authorized fresh implementation task delivered the Amendment 4
+builder, source verifier, guarded registration command, v2 receipt verification
+and explicit web provenance label. See the [fresh evidence report](stage7b-attestation-implementation-evidence.md).
+The historical hold report is unchanged. Preview's real read-only dry run fails
+because its original freeze has no matching successful freeze pipeline/step in
+the retained Week 5 ledger. Production's full source re-derivation passes, but
+its prospective/revocation schema and separate registration decision remain
+pending. This is an evidence stop, not permission to substitute Production
+facts for Preview facts or loosen Appendix B. Recover the Preview evidence or
+return to Contract 04 before registration and packet preparation. N remains
+unset. No live writes or executable release packets were produced, and no
+serving/status authority was changed.
