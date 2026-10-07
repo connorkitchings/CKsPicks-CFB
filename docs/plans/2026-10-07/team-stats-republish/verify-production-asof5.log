@@ -1,0 +1,42 @@
+All teams (informational: CFBD includes FCS games we exclude):
+  offense  EPA/play                 rho=0.919 n=138
+  offense  success rate             rho=0.912 n=138
+  offense  explosiveness            rho=0.490 n=138
+  offense  points per scoring opp   rho=0.586 n=134
+  defense  EPA/play                 rho=0.946 n=138
+  defense  success rate             rho=0.933 n=138
+  defense  explosiveness            rho=0.567 n=138
+  defense  points per scoring opp   rho=0.616 n=131
+Like-for-like teams (CFBD plays within 5% of ours), gated:
+offense  EPA/play                 rho=0.990 n=21  [ok >= 0.85]
+    largest rank gap: Tulane ours=7 cfbd=9
+    largest rank gap: Auburn ours=10 cfbd=11
+    largest rank gap: Clemson ours=3 cfbd=2
+offense  success rate             rho=0.997 n=21  [ok >= 0.85]
+    largest rank gap: Auburn ours=9 cfbd=10
+    largest rank gap: Fresno State ours=4 cfbd=3
+    largest rank gap: Oklahoma ours=3 cfbd=4
+offense  explosiveness            rho=0.560 n=21
+    largest rank gap: Notre Dame ours=17 cfbd=2
+    largest rank gap: Tulane ours=10 cfbd=21
+    largest rank gap: Fresno State ours=11 cfbd=20
+offense  points per scoring opp   rho=0.697 n=21
+    largest rank gap: Stanford ours=20 cfbd=6
+    largest rank gap: Clemson ours=13 cfbd=4
+    largest rank gap: Oklahoma ours=2 cfbd=9
+defense  EPA/play                 rho=0.961 n=21  [ok >= 0.85]
+    largest rank gap: BYU ours=11 cfbd=5
+    largest rank gap: Mississippi State ours=10 cfbd=12
+    largest rank gap: Ohio State ours=8 cfbd=10
+defense  success rate             rho=0.956 n=21  [ok >= 0.85]
+    largest rank gap: Virginia Tech ours=16 cfbd=11
+    largest rank gap: BYU ours=11 cfbd=7
+    largest rank gap: Alabama ours=5 cfbd=8
+defense  explosiveness            rho=0.712 n=21
+    largest rank gap: Ole Miss ours=17 cfbd=6
+    largest rank gap: Ohio State ours=6 cfbd=15
+    largest rank gap: UCLA ours=13 cfbd=20
+defense  points per scoring opp   rho=0.510 n=21
+    largest rank gap: LSU ours=6 cfbd=18
+    largest rank gap: UNLV ours=1 cfbd=12
+    largest rank gap: UCLA ours=18 cfbd=8

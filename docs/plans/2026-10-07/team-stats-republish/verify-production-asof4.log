@@ -1,0 +1,42 @@
+All teams (informational: CFBD includes FCS games we exclude):
+  offense  EPA/play                 rho=0.888 n=138
+  offense  success rate             rho=0.842 n=138
+  offense  explosiveness            rho=0.516 n=138
+  offense  points per scoring opp   rho=0.600 n=122
+  defense  EPA/play                 rho=0.914 n=138
+  defense  success rate             rho=0.897 n=138
+  defense  explosiveness            rho=0.475 n=138
+  defense  points per scoring opp   rho=0.615 n=123
+Like-for-like teams (CFBD plays within 5% of ours), gated:
+offense  EPA/play                 rho=0.980 n=30  [ok >= 0.85]
+    largest rank gap: Alabama ours=23 cfbd=26
+    largest rank gap: Auburn ours=17 cfbd=14
+    largest rank gap: Fresno State ours=13 cfbd=10
+offense  success rate             rho=0.991 n=30  [ok >= 0.85]
+    largest rank gap: Marshall ours=16 cfbd=19
+    largest rank gap: Pittsburgh ours=20 cfbd=17
+    largest rank gap: UAB ours=18 cfbd=15
+offense  explosiveness            rho=0.689 n=30
+    largest rank gap: Notre Dame ours=19 cfbd=2
+    largest rank gap: Texas State ours=26 cfbd=14
+    largest rank gap: Ohio ours=4 cfbd=16
+offense  points per scoring opp   rho=0.635 n=28
+    largest rank gap: Stanford ours=28 cfbd=7
+    largest rank gap: Eastern Michigan ours=20 cfbd=5
+    largest rank gap: North Texas ours=8 cfbd=22
+defense  EPA/play                 rho=0.984 n=30  [ok >= 0.85]
+    largest rank gap: BYU ours=13 cfbd=7
+    largest rank gap: Duke ours=7 cfbd=10
+    largest rank gap: East Carolina ours=15 cfbd=17
+defense  success rate             rho=0.983 n=30  [ok >= 0.85]
+    largest rank gap: BYU ours=14 cfbd=8
+    largest rank gap: Texas ours=8 cfbd=11
+    largest rank gap: Texas A&M ours=11 cfbd=14
+defense  explosiveness            rho=0.568 n=30
+    largest rank gap: Marshall ours=30 cfbd=12
+    largest rank gap: North Texas ours=27 cfbd=9
+    largest rank gap: Oklahoma ours=8 cfbd=25
+defense  points per scoring opp   rho=0.660 n=28
+    largest rank gap: UNLV ours=1 cfbd=22
+    largest rank gap: Auburn ours=28 cfbd=17
+    largest rank gap: Mississippi State ours=2 cfbd=12

@@ -29,6 +29,7 @@
 - [x] Serving fingerprints unchanged except `team_season_stats`.
 - [x] Ruff, `git diff --check`, docs build (see below); evidence checksums verified.
 - [ ] Other matchup pages, browser rendering and phone width not checked.
+- **Evidence-commit gap found after the commit (`22dad6ab`):** `.gitignore` line 63 (`*.log`) kept the four log files in `team-stats-republish/` (both dry runs, both CFBD comparisons) out of the commit, although `checksums.txt` and `summary.md` reference them. The same rule also left `track1-recapture-0cd0a3c0/production-venue-dry-run.log` and the eleven `track1-evidence/*.log` files out of earlier commits. The files exist locally (16 files, 58 KB, scanned: no credentials). Fix: force-add them in a follow-up commit (commands in the session reply). The claim "evidence checksums verified" above holds for the working tree, not for a fresh clone until that commit lands.
 
 ## Amendments and Blockers
 - None. Rollback not needed. If ever required: upsert `before-production.json.gz` (restores the 10 older metrics); the 1,046 `ppa_per_play` rows would remain (pipeline role cannot DELETE).

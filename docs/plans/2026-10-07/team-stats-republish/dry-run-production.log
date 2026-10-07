@@ -1,0 +1,245 @@
+Source versions: {"byplay": "443019a9a7b6a2454a4af4ac", "drives": "862815e2974a7fd6226841c1", "games": "31a337df6cf49f1578457ec6", "game_outcomes": "d9a37cf473c63d2acc9f29cc", "teams": "590e986596436aa001ff77b7"}
+Silver byplay 443019a9a7b6a2454a4af4ac: columns ['TFL', 'adj_yd_line', 'big_play_40', 'close_game', 'completion', 'defense', 'defense_score', 'defense_timeouts', 'defensive_penalty', 'down', 'drive_id', 'drive_number', 'dropback', 'eckel', 'endofdrive', 'explosive', 'explosive_yards', 'field_position_bin', 'fourth_quarter', 'fourthdown_conversion', 'fumble_turnover', 'game_id', 'garbage', 'half', 'havoc', 'home_away', 'interception_turnover', 'is_fg_made', 'is_power_situation', 'kick_distance', 'kickoff_return', 'kickoff_touchback', 'line_yards', 'offense', 'offense_score', 'offense_timeouts', 'offensive_penalty', 'open_field_yards', 'pass_attempt', 'passing_down', 'penalty', 'play_number', 'play_text', 'play_type', 'power_success_converted', 'ppa', 'quarter', 'red_zone', 'relative_score', 'rush_attempt', 'rush_result', 'sack', 'scoring', 'season', 'second_level_yards', 'st', 'st_fg', 'st_kickoff', 'st_punt', 'stuff', 'success', 'success_yards', 'td_play', 'thirddown_conversion', 'turnover', 'twopoint', 'week', 'yard_line', 'yards_gained', 'yards_to_first', 'yards_to_goal']
+Silver drives 862815e2974a7fd6226841c1: columns ['defense', 'drive_end_period', 'drive_number', 'drive_plays', 'drive_start_period', 'drive_yards', 'end_yards_to_goal', 'game_id', 'had_scoring_opportunity', 'is_busted_drive', 'is_eckel_drive', 'is_explosive_drive', 'is_successful_drive', 'offense', 'points', 'points_on_opps', 'season', 'start_yards_to_goal', 'turnovers', 'week']
+Silver games 31a337df6cf49f1578457ec6: columns ['__capture_id', '__capture_provider', '__captured_at', 'attendance', 'away_classification', 'away_conference', 'away_id', 'away_line_scores', 'away_points', 'away_postgame_elo', 'away_postgame_win_probability', 'away_pregame_elo', 'away_team', 'completed', 'conference_game', 'excitement_index', 'game_id', 'highlights', 'home_classification', 'home_conference', 'home_id', 'home_line_scores', 'home_points', 'home_postgame_elo', 'home_postgame_win_probability', 'home_pregame_elo', 'home_team', 'kickoff_utc', 'neutral_site', 'notes', 'playoff', 'provider_week', 'season', 'season_type', 'start_time_tbd', 'venue', 'venue_id', 'week']
+Silver game_outcomes d9a37cf473c63d2acc9f29cc: columns ['away_points', 'completed', 'game_id', 'home_points', 'season']
+FBS teams: 138 (from silver.teams.classification)
+== as_of_week 1 ==
+{
+  "season": 2026,
+  "as_of_week": 1,
+  "missing_optional_columns": [],
+  "eligible_games": 8,
+  "punt_plays_excluded": 17,
+  "plays_missing_garbage_flag": 0,
+  "ppso_invalid_offenses": 7,
+  "teams": 16
+}
+Null values by metric:
+role     metric             
+defense  avg_start_field_pos    0
+         conv_rate_3rd_4th      0
+         early_down_epa         0
+         epa_pass               0
+         epa_rush               0
+         explosive_rate         0
+         ppa_per_play           0
+         pts_per_scoring_opp    7
+         scoring_opp_rate       0
+         success_rate           0
+         turnover_rate          0
+offense  avg_start_field_pos    0
+         conv_rate_3rd_4th      0
+         early_down_epa         0
+         epa_pass               0
+         epa_rush               0
+         explosive_rate         0
+         ppa_per_play           0
+         pts_per_scoring_opp    7
+         scoring_opp_rate       0
+         success_rate           0
+         turnover_rate          0
+   season  as_of_week              team     role             metric     value   n  games  rank  cohort_size
+0    2026           1  Eastern Michigan  offense       ppa_per_play  0.063431  68      1     9           16
+1    2026           1  Eastern Michigan  offense           epa_pass  0.284163  39      1     5           16
+2    2026           1  Eastern Michigan  offense           epa_rush  0.047951  28      1     9           16
+3    2026           1  Eastern Michigan  offense     early_down_epa  0.091149  53      1     8           16
+4    2026           1  Eastern Michigan  offense  conv_rate_3rd_4th  0.333333  15      1     9           16
+== as_of_week 2 ==
+{
+  "season": 2026,
+  "as_of_week": 2,
+  "missing_optional_columns": [],
+  "eligible_games": 51,
+  "punt_plays_excluded": 109,
+  "plays_missing_garbage_flag": 0,
+  "ppso_invalid_offenses": 36,
+  "teams": 94
+}
+Null values by metric:
+role     metric             
+defense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    36
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+offense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    36
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+   season  as_of_week   team     role             metric     value   n  games  rank  cohort_size
+0    2026           2  Akron  offense       ppa_per_play -0.101076  48      1    76           94
+1    2026           2  Akron  offense           epa_pass -0.007139  27      1    68           94
+2    2026           2  Akron  offense           epa_rush -0.221853  21      1    76           94
+3    2026           2  Akron  offense     early_down_epa -0.069398  36      1    63           94
+4    2026           2  Akron  offense  conv_rate_3rd_4th  0.333333  12      1    61           94
+== as_of_week 3 ==
+{
+  "season": 2026,
+  "as_of_week": 3,
+  "missing_optional_columns": [],
+  "eligible_games": 100,
+  "punt_plays_excluded": 221,
+  "plays_missing_garbage_flag": 0,
+  "ppso_invalid_offenses": 72,
+  "teams": 137
+}
+Null values by metric:
+role     metric             
+defense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    44
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+offense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    48
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+   season  as_of_week       team     role             metric     value   n  games  rank  cohort_size
+0    2026           3  Air Force  offense       ppa_per_play  0.243737  66      1    37          137
+1    2026           3  Air Force  offense           epa_pass  0.651445  16      1    11          137
+2    2026           3  Air Force  offense           epa_rush  0.113271  50      1    43          137
+3    2026           3  Air Force  offense     early_down_epa  0.098996  50      1    55          137
+4    2026           3  Air Force  offense  conv_rate_3rd_4th       0.5  16      1    33          137
+== as_of_week 4 ==
+{
+  "season": 2026,
+  "as_of_week": 4,
+  "missing_optional_columns": [],
+  "eligible_games": 157,
+  "punt_plays_excluded": 334,
+  "plays_missing_garbage_flag": 0,
+  "ppso_invalid_offenses": 98,
+  "teams": 138
+}
+Null values by metric:
+role     metric             
+defense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    15
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+offense  avg_start_field_pos     0
+         conv_rate_3rd_4th       0
+         early_down_epa          0
+         epa_pass                0
+         epa_rush                0
+         explosive_rate          0
+         ppa_per_play            0
+         pts_per_scoring_opp    16
+         scoring_opp_rate        0
+         success_rate            0
+         turnover_rate           0
+   season  as_of_week       team     role             metric     value   n  games  rank  cohort_size
+0    2026           4  Air Force  offense       ppa_per_play  0.243737  66      1    35          138
+1    2026           4  Air Force  offense           epa_pass  0.651445  16      1     8          138
+2    2026           4  Air Force  offense           epa_rush  0.113271  50      1    56          138
+3    2026           4  Air Force  offense     early_down_epa  0.098996  50      1    50          138
+4    2026           4  Air Force  offense  conv_rate_3rd_4th       0.5  16      1    29          138
+== as_of_week 5 ==
+{
+  "season": 2026,
+  "as_of_week": 5,
+  "missing_optional_columns": [],
+  "eligible_games": 215,
+  "punt_plays_excluded": 465,
+  "plays_missing_garbage_flag": 0,
+  "ppso_invalid_offenses": 133,
+  "teams": 138
+}
+Null values by metric:
+role     metric             
+defense  avg_start_field_pos    0
+         conv_rate_3rd_4th      0
+         early_down_epa         0
+         epa_pass               0
+         epa_rush               0
+         explosive_rate         0
+         ppa_per_play           0
+         pts_per_scoring_opp    7
+         scoring_opp_rate       0
+         success_rate           0
+         turnover_rate          0
+offense  avg_start_field_pos    0
+         conv_rate_3rd_4th      0
+         early_down_epa         0
+         epa_pass               0
+         epa_rush               0
+         explosive_rate         0
+         ppa_per_play           0
+         pts_per_scoring_opp    4
+         scoring_opp_rate       0
+         success_rate           0
+         turnover_rate          0
+   season  as_of_week       team     role             metric     value    n  games  rank  cohort_size
+0    2026           5  Air Force  offense       ppa_per_play  0.263313  139      2    24          138
+1    2026           5  Air Force  offense           epa_pass   0.41163   28      2    21          138
+2    2026           5  Air Force  offense           epa_rush  0.225899  111      2    17          138
+3    2026           5  Air Force  offense     early_down_epa  0.040344  103      2    73          138
+4    2026           5  Air Force  offense  conv_rate_3rd_4th  0.527778   36      2    15          138
+== diff vs published ==
+rows old 10460 new 11506; compared 10460, changed 2291, only old 0, only new 1046
+  defense  avg_start_field_pos  changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  conv_rate_3rd_4th    changed  406/523  mean|dv| 0.02458 max|dv| 0.10101 mean|drank| 4.55 max 30 >5: 172
+  defense  early_down_epa       changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  epa_pass             changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  epa_rush             changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  explosive_rate       changed  405/523  mean|dv| 0.00305 max|dv| 0.03783 mean|drank| 5.10 max 52 >5: 179
+  defense  pts_per_scoring_opp  changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  scoring_opp_rate     changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  success_rate         changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  defense  turnover_rate        changed  346/523  mean|dv| 0.00032 max|dv| 0.00478 mean|drank| 0.66 max 5 >5: 0
+  offense  avg_start_field_pos  changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  conv_rate_3rd_4th    changed  404/523  mean|dv| 0.02394 max|dv| 0.08974 mean|drank| 4.11 max 30 >5: 148
+  offense  early_down_epa       changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  epa_pass             changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  epa_rush             changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  explosive_rate       changed  398/523  mean|dv| 0.00333 max|dv| 0.03783 mean|drank| 5.05 max 49 >5: 164
+  offense  pts_per_scoring_opp  changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  scoring_opp_rate     changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  success_rate         changed    0/523  mean|dv| 0.00000 max|dv| 0.00000 mean|drank| 0.00 max 0 >5: 0
+  offense  turnover_rate        changed  332/523  mean|dv| 0.00038 max|dv| 0.01037 mean|drank| 0.79 max 8 >5: 3
+  top rank movers:
+    wk5 Navy defense explosive_rate: rank 84 -> 32 (value 0.072992700729927 -> 0.05263157894736842)
+    wk4 TCU defense explosive_rate: rank 109 -> 59 (value 0.08547008547008547 -> 0.06306306306306306)
+    wk3 Rice offense explosive_rate: rank 66 -> 115 (value 0.06451612903225806 -> 0.03571428571428571)
+    wk5 Buffalo offense explosive_rate: rank 31 -> 76 (value 0.08547008547008547 -> 0.06481481481481481)
+    wk4 Buffalo offense explosive_rate: rank 36 -> 73 (value 0.08547008547008547 -> 0.06481481481481481)
+    wk3 Louisiana Tech offense explosive_rate: rank 75 -> 111 (value 0.057692307692307696 -> 0.041666666666666664)
+    wk5 TCU defense explosive_rate: rank 59 -> 25 (value 0.06395348837209303 -> 0.048484848484848485)
+    wk5 Navy offense explosive_rate: rank 35 -> 66 (value 0.08461538461538462 -> 0.0703125)
+    wk4 Colorado State offense conv_rate_3rd_4th: rank 59 -> 29 (value 0.41025641025641024 -> 0.5)
+    wk4 Minnesota defense conv_rate_3rd_4th: rank 43 -> 73 (value 0.3333333333333333 -> 0.4090909090909091)
+Dry run: 11506 rows would be written; nothing written.

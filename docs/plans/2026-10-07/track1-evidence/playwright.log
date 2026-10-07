@@ -1,0 +1,35 @@
+
+> web@0.1.0 test:ui
+> NO_COLOR= FORCE_COLOR= playwright test e2e/performance.spec.ts e2e/matchup.spec.ts
+
+
+Running 24 tests using 2 workers
+
+  ✓   1 e2e/performance.spec.ts:5:3 › performance page is accuracy-only › shows records, win rates and forecast accuracy with no financial copy (481ms)
+  ✓   2 e2e/matchup.spec.ts:5:3 › matchup page (fixture mode) › mismatched publication lineage hides model sections and disables sharing (702ms)
+  ✓   3 e2e/performance.spec.ts:26:3 › performance page is accuracy-only › target filter narrows the weekly table and audit list (268ms)
+  ✓   5 e2e/performance.spec.ts:36:3 › performance page is accuracy-only › audit shows price provenance as an audit fact (383ms)
+  ✓   4 e2e/matchup.spec.ts:15:3 › matchup page (fixture mode) › shows both unit tables: 12 grouped metrics, ties, an unranked zero and unranked dashes (480ms)
+  ✓   6 e2e/performance.spec.ts:42:5 › performance page is accuracy-only › stays bounded at 375px (212ms)
+  ✓   7 e2e/matchup.spec.ts:39:3 › matchup page (fixture mode) › section headers are centered across the table (251ms)
+  ✓   8 e2e/performance.spec.ts:42:5 › performance page is accuracy-only › stays bounded at 420px (186ms)
+  ✓   9 e2e/matchup.spec.ts:56:3 › matchup page (fixture mode) › an exact zero shows its value but no rank (191ms)
+  ✓  10 e2e/matchup.spec.ts:66:3 › matchup page (fixture mode) › no edge bars, edge summaries or legend are drawn (kept in code for later) (194ms)
+  ✓  11 e2e/matchup.spec.ts:75:3 › matchup page (fixture mode) › table headers stack the logo above the name above Offense/Defense, centered (209ms)
+  ✓  12 e2e/matchup.spec.ts:94:3 › matchup page (fixture mode) › tables sit side by side on desktop with aligned rows, and stack on a phone (308ms)
+  ✓  13 e2e/matchup.spec.ts:117:3 › matchup page (fixture mode) › top of the page: records, venue, rating labels, a real Updated time, no duplicate system name (214ms)
+  ✓  14 e2e/matchup.spec.ts:166:3 › matchup page (fixture mode) › does not overflow at phone width (157ms)
+  ✓  15 e2e/matchup.spec.ts:173:3 › matchup page (fixture mode) › is noindex and unknown games show the not-found page (283ms)
+[WebServer] [browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+  ✓  16 e2e/matchup.spec.ts:184:3 › matchup page (fixture mode) › the /matchup index lists the week's games and links to each breakdown (355ms)
+  ✓  17 e2e/matchup.spec.ts:197:3 › matchup page (fixture mode) › the index is noindex and fits a phone (152ms)
+[WebServer] [browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+  ✓  18 e2e/matchup.spec.ts:204:3 › matchup page (fixture mode) › game cards carry a Matchup button that opens the breakdown, and team names are not links (875ms)
+  ✓  19 e2e/matchup.spec.ts:225:3 › matchup page (fixture mode) › slate cards also carry the Matchup button (212ms)
+  ✓  20 e2e/matchup.spec.ts:232:3 › matchup page (fixture mode) › no page footer shows a GitHub source link (495ms)
+  ✓  21 e2e/matchup.spec.ts:244:3 › matchup page (fixture mode) › share: download exports a fixed 1080x1350 card at 2x, and the card fits its canvas (498ms)
+  ✓  22 e2e/matchup.spec.ts:275:3 › matchup page (fixture mode) › share: the card is not part of the page until used, and the page tables are unchanged (174ms)
+  ✓  23 e2e/matchup.spec.ts:284:3 › stored stat rows that break their contract › show an explicit unavailable state, not 'not published' and not partial stats (154ms)
+  ✓  24 e2e/matchup.spec.ts:292:3 › stored stat rows that break their contract › a healthy matchup never shows the unavailable copy (173ms)
+
+  24 passed (7.9s)
