@@ -60,13 +60,23 @@ def validate_packet(packet: dict[str, Any], *, environment: str) -> dict[str, An
     cutover = packet.get("cutover_week")
     decision_ref = str(packet.get("decision_ref") or "")
     if not isinstance(cutover, int) or cutover < 5 or not decision_ref.strip():
-        raise AuthorizationPacketError("packet cutover week or decision reference is invalid")
+        raise AuthorizationPacketError(
+            "packet cutover week or decision reference is invalid"
+        )
 
     bundle = packet.get("bundle_approval")
     if not isinstance(bundle, dict):
         raise AuthorizationPacketError("packet bundle approval is missing")
     bundle_body = {key: bundle.get(key) for key in BUNDLE_COLUMNS}
-    if not all(str(bundle_body.get(key) or "").strip() for key in ("approval_id", "model_id", "inference_bundle_sha256", "decision_ref")):
+    if not all(
+        str(bundle_body.get(key) or "").strip()
+        for key in (
+            "approval_id",
+            "model_id",
+            "inference_bundle_sha256",
+            "decision_ref",
+        )
+    ):
         raise AuthorizationPacketError("bundle approval fields are incomplete")
     if (
         bundle_body["first_live_season"] != 2026
@@ -74,7 +84,9 @@ def validate_packet(packet: dict[str, Any], *, environment: str) -> dict[str, An
         or bundle_body["decision_ref"] != decision_ref
         or bundle.get("record_sha256") != _sha(canonical_json(bundle_body))
     ):
-        raise AuthorizationPacketError("bundle approval hash or cutover binding differs")
+        raise AuthorizationPacketError(
+            "bundle approval hash or cutover binding differs"
+        )
 
     records = packet.get("run_authorizations")
     if not isinstance(records, list) or not records:
@@ -86,23 +98,32 @@ def validate_packet(packet: dict[str, Any], *, environment: str) -> dict[str, An
         record = {key: item.get(key) for key in AUTH_COLUMNS}
         week = record.get("week")
         if not isinstance(week, int) or week in by_week:
-            raise AuthorizationPacketError("run authorization weeks are duplicate or invalid")
+            raise AuthorizationPacketError(
+                "run authorization weeks are duplicate or invalid"
+            )
         if (
             record.get("environment") != environment
             or record.get("season") != 2026
             or record.get("model_id") != bundle_body["model_id"]
-            or record.get("inference_bundle_sha256") != bundle_body["inference_bundle_sha256"]
+            or record.get("inference_bundle_sha256")
+            != bundle_body["inference_bundle_sha256"]
             or record.get("decision_ref") != decision_ref
             or item.get("record_sha256") != _sha(canonical_json(record))
         ):
-            raise AuthorizationPacketError("run authorization identity or canonical hash differs")
+            raise AuthorizationPacketError(
+                "run authorization identity or canonical hash differs"
+            )
         by_week[week] = record
     if sorted(by_week) != list(range(cutover + 1)):
-        raise AuthorizationPacketError("run authorizations must cover contiguous Weeks 0 through N")
+        raise AuthorizationPacketError(
+            "run authorizations must cover contiguous Weeks 0 through N"
+        )
     for week, record in by_week.items():
         expected_class = "pending" if week == cutover else "replay"
         if record.get("evidence_class") != expected_class:
-            raise AuthorizationPacketError("run authorization timing class differs from cutover")
+            raise AuthorizationPacketError(
+                "run authorization timing class differs from cutover"
+            )
     return {"bundle": bundle_body, "records": by_week, "cutover_week": cutover}
 
 
@@ -160,24 +181,30 @@ def apply_packet(
         tuple(bundle[key] for key in BUNDLE_COLUMNS),
     )
     cur.execute(
-        "SELECT " + ", ".join(BUNDLE_COLUMNS) +
-        " FROM v5_model_bundle_approvals WHERE approval_id = %s",
+        "SELECT "
+        + ", ".join(BUNDLE_COLUMNS)
+        + " FROM v5_model_bundle_approvals WHERE approval_id = %s",
         (bundle["approval_id"],),
     )
     if cur.fetchone() != tuple(bundle[key] for key in BUNDLE_COLUMNS):
-        raise AuthorizationPacketError("bundle approval ID conflicts with retained record")
+        raise AuthorizationPacketError(
+            "bundle approval ID conflicts with retained record"
+        )
 
     for week in sorted(validated["records"]):
         record = validated["records"][week]
         cur.execute(
-            "INSERT INTO v5_intended_update_release_authorizations (" + ", ".join(AUTH_COLUMNS) + ") "
+            "INSERT INTO v5_intended_update_release_authorizations ("
+            + ", ".join(AUTH_COLUMNS)
+            + ") "
             "VALUES (" + ", ".join(["%s"] * len(AUTH_COLUMNS)) + ") "
             "ON CONFLICT (authorization_id) DO NOTHING",
             tuple(record[key] for key in AUTH_COLUMNS),
         )
         cur.execute(
-            "SELECT " + ", ".join(AUTH_COLUMNS) +
-            " FROM v5_intended_update_release_authorizations WHERE authorization_id = %s",
+            "SELECT "
+            + ", ".join(AUTH_COLUMNS)
+            + " FROM v5_intended_update_release_authorizations WHERE authorization_id = %s",
             (record["authorization_id"],),
         )
         if cur.fetchone() != tuple(record[key] for key in AUTH_COLUMNS):
@@ -189,7 +216,9 @@ def apply_packet(
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment", choices=tuple(AUTHORIZER_BY_ENV), required=True)
+    parser.add_argument(
+        "--environment", choices=tuple(AUTHORIZER_BY_ENV), required=True
+    )
     parser.add_argument("--packet", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--expected-packet-sha256", required=True)
@@ -199,9 +228,13 @@ def main() -> None:
 
     forced_environment = os.getenv("CKS_V5_AUTHORIZER_FORCED_ENV")
     if forced_environment and args.environment != forced_environment:
-        raise SystemExit("authorization entrypoint is restricted to its named environment")
+        raise SystemExit(
+            "authorization entrypoint is restricted to its named environment"
+        )
     if os.getenv("CFB_ARTIFACT_ENV") != args.environment:
-        raise SystemExit("authorization environment does not match active operator context")
+        raise SystemExit(
+            "authorization environment does not match active operator context"
+        )
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
         raise SystemExit("packet authorization requires the immutable R2 backend")
     packet_raw = args.packet.read_bytes()
@@ -209,7 +242,9 @@ def main() -> None:
         raise SystemExit("authorization packet raw-byte checksum differs")
     packet = json.loads(packet_raw)
     storage = get_storage(environment=args.environment)
-    validated = _verify_packet_artifacts(packet, environment=args.environment, storage=storage)
+    validated = _verify_packet_artifacts(
+        packet, environment=args.environment, storage=storage
+    )
     record_hashes = {
         "bundle_approval": _sha(canonical_json(validated["bundle"])),
         "run_authorizations": {
@@ -218,11 +253,17 @@ def main() -> None:
         },
     }
     if not args.apply:
-        print(json.dumps({"state": "validated", "record_hashes": record_hashes}, sort_keys=True))
+        print(
+            json.dumps(
+                {"state": "validated", "record_hashes": record_hashes}, sort_keys=True
+            )
+        )
         return
 
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    dirty = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).strip()
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain=v1"], text=True
+    ).strip()
     if dirty or head != args.expected_code_sha:
         raise SystemExit("authorization requires reviewed clean committed code")
     url = os.getenv("DATABASE_URL")
@@ -254,7 +295,9 @@ def main() -> None:
                 args.receipt.parent.mkdir(parents=True, exist_ok=True)
                 if args.receipt.exists():
                     if args.receipt.read_bytes() != receipt_raw:
-                        raise AuthorizationPacketError("authorization receipt path contains conflicting bytes")
+                        raise AuthorizationPacketError(
+                            "authorization receipt path contains conflicting bytes"
+                        )
                 else:
                     with args.receipt.open("xb") as handle:
                         handle.write(receipt_raw)
@@ -266,7 +309,16 @@ def main() -> None:
         if created_receipt:
             args.receipt.unlink(missing_ok=True)
         raise
-    print(json.dumps({"state": "registered", "record_hashes": record_hashes, "receipt_uri": receipt_uri}, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "state": "registered",
+                "record_hashes": record_hashes,
+                "receipt_uri": receipt_uri,
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -58,7 +58,9 @@ def run(*, packet: dict, apply: bool) -> dict:
     if environment not in {"preview", "production"}:
         raise ValueError("invalid batch environment")
     if os.getenv("CFB_ARTIFACT_ENV") != environment:
-        raise ValueError("batch packet environment differs from active artifact context")
+        raise ValueError(
+            "batch packet environment differs from active artifact context"
+        )
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
         raise ValueError("v2 batch selection requires immutable R2 storage")
     if (
@@ -128,9 +130,7 @@ def _run_v2(*, packet: dict, apply: bool) -> dict:
     with psycopg.connect(url, options=options) as conn:
         with conn.cursor() as cur:
             result = (
-                apply_v2_packet(
-                    cur, packet, environment=environment, storage=storage
-                )
+                apply_v2_packet(cur, packet, environment=environment, storage=storage)
                 if apply
                 else preflight_v2_packet(
                     cur, packet, environment=environment, storage=storage

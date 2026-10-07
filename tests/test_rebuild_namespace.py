@@ -91,7 +91,9 @@ def test_guard_permits_only_its_own_run_namespace():
         run_namespace="rebuild/6b/",
     )
     six_b.create_once("rebuild/6b/run1/report.json", b"{}")
-    six_b.create_once("lake/gold/dataset=reconstruction_offsets_2026/data.parquet", b"1")
+    six_b.create_once(
+        "lake/gold/dataset=reconstruction_offsets_2026/data.parquet", b"1"
+    )
     with pytest.raises(TargetError, match="outside permitted"):
         six_b.create_once("rebuild/6a/run1/report.json", b"{}")
     with pytest.raises(TargetError, match="outside permitted"):

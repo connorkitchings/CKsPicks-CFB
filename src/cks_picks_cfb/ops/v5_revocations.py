@@ -29,7 +29,9 @@ def lock_release_records(
         if not record_id.strip():
             raise V5RevocationError("release record ID is empty")
         key = _lock_key(kind, record_id)
-        lock_fn = "pg_advisory_xact_lock" if exclusive else "pg_advisory_xact_lock_shared"
+        lock_fn = (
+            "pg_advisory_xact_lock" if exclusive else "pg_advisory_xact_lock_shared"
+        )
         cur.execute(f"SELECT {lock_fn}(%s)", (key,))
 
 

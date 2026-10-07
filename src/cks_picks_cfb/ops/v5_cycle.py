@@ -206,7 +206,9 @@ class CycleSpec:
                 raise V5CycleError("ops component requires run_id and as_of")
             if name == "freeze" and self.season == 2026 and self.week >= 5:
                 if not str(item.get("decision_ref") or "").strip():
-                    raise V5CycleError("prospective V5 freeze requires a decision reference")
+                    raise V5CycleError(
+                        "prospective V5 freeze requires a decision reference"
+                    )
             if name == "publish" and not item.get("config"):
                 raise V5CycleError("publish requires a serving config")
             if name == "close" and not item.get("outcomes_ref_uri"):

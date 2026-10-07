@@ -28,7 +28,9 @@ AUTHORIZER_BY_ENV = {
 def main() -> None:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--environment", choices=tuple(AUTHORIZER_BY_ENV), required=True)
+    parser.add_argument(
+        "--environment", choices=tuple(AUTHORIZER_BY_ENV), required=True
+    )
     parser.add_argument(
         "--record-type",
         choices=("bundle_approval", "intended_update_authorization"),
@@ -42,7 +44,9 @@ def main() -> None:
     args = parser.parse_args()
 
     if os.getenv("CFB_ARTIFACT_ENV") != args.environment:
-        raise SystemExit("revocation environment does not match the active operator context")
+        raise SystemExit(
+            "revocation environment does not match the active operator context"
+        )
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
         raise SystemExit("V5 revocation receipts require immutable R2 storage")
     if not args.record_id.strip() or not args.decision_ref.strip():
@@ -52,7 +56,9 @@ def main() -> None:
         return
 
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    dirty = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).strip()
+    dirty = subprocess.check_output(
+        ["git", "status", "--porcelain=v1"], text=True
+    ).strip()
     if dirty or head != args.expected_code_sha:
         raise SystemExit("revocation requires the reviewed clean committed code SHA")
     url = os.getenv("DATABASE_URL")

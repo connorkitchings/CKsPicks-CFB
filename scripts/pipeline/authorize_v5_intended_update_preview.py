@@ -67,9 +67,7 @@ def main() -> None:
     parser.add_argument("--release-tag", default="20260929-p1")
     args = parser.parse_args()
     if args.packet is not None:
-        if not all(
-            (args.receipt, args.expected_packet_sha256, args.expected_code_sha)
-        ):
+        if not all((args.receipt, args.expected_packet_sha256, args.expected_code_sha)):
             parser.error(
                 "packet mode requires --receipt, --expected-packet-sha256, and --expected-code-sha"
             )

@@ -186,7 +186,9 @@ def freeze_run(
                     register_prospective_freeze,
                 )
 
-                storage = get_storage(environment=os.getenv("CFB_ARTIFACT_ENV", "production"))
+                storage = get_storage(
+                    environment=os.getenv("CFB_ARTIFACT_ENV", "production")
+                )
                 manifest_uri = prediction_run_manifest_path(year, week, str(run_id))
                 manifest_raw = storage.read_bytes(manifest_uri)
                 prospective_record = register_prospective_freeze(

@@ -54,7 +54,9 @@ def _unimplemented(name: str) -> Callable[[StageContext], StageOutput]:
 
 
 def get_stages(plan: RebuildPlan) -> list[Stage]:
-    registry = SIX_B_STAGE_BUILDERS if plan.namespace == "rebuild/6b/" else STAGE_BUILDERS
+    registry = (
+        SIX_B_STAGE_BUILDERS if plan.namespace == "rebuild/6b/" else STAGE_BUILDERS
+    )
     stages = []
     for stage_plan in plan.stages:
         build, verify = registry.get(

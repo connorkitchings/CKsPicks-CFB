@@ -85,7 +85,12 @@ def select_week_run(
             (model_id, bundle_sha),
         )
         policy = cur.fetchone()
-        if not policy or policy[0] is None or policy[1] != model_id or policy[2] != bundle_sha:
+        if (
+            not policy
+            or policy[0] is None
+            or policy[1] != model_id
+            or policy[2] != bundle_sha
+        ):
             raise PublicSelectionError("V5 run differs from approved model bundle")
         from cks_picks_cfb.ops.v5_revocations import (
             V5RevocationError,
@@ -93,9 +98,7 @@ def select_week_run(
         )
 
         try:
-            assert_release_records_active(
-                cur, [("bundle_approval", str(policy[0]))]
-            )
+            assert_release_records_active(cur, [("bundle_approval", str(policy[0]))])
         except V5RevocationError as exc:
             raise PublicSelectionError(str(exc)) from exc
         if evidence_class in {"pending", "live"} and (season, week) < (

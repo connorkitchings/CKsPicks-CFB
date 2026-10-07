@@ -40,8 +40,14 @@ STAT_COLUMNS = (
 )
 STAT_KEY = ("season", "as_of_week", "team", "role", "metric")
 PROSPECTIVE_COLUMNS = (
-    "season", "week", "run_id", "freeze_receipt_uri", "freeze_receipt_sha256",
-    "frozen_at", "first_kickoff_utc", "decision_ref",
+    "season",
+    "week",
+    "run_id",
+    "freeze_receipt_uri",
+    "freeze_receipt_sha256",
+    "frozen_at",
+    "first_kickoff_utc",
+    "decision_ref",
 )
 
 
@@ -63,7 +69,9 @@ def _week_map(value: Any, label: str) -> dict[int, str]:
         except (TypeError, ValueError) as exc:
             raise V5BatchSelectionError(f"{label} has an invalid week") from exc
         if str(week) != str(raw_week) or week in result or not str(raw_run).strip():
-            raise V5BatchSelectionError(f"{label} has a duplicate or empty normalized entry")
+            raise V5BatchSelectionError(
+                f"{label} has a duplicate or empty normalized entry"
+            )
         result[week] = str(raw_run)
     return result
 
@@ -82,7 +90,9 @@ def _read_signed_ref(storage: Any, ref: Any, label: str) -> dict[str, Any]:
     return value
 
 
-def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any, cur: Any = None) -> dict[str, Any]:
+def validate_v2_packet(
+    packet: dict[str, Any], *, environment: str, storage: Any, cur: Any = None
+) -> dict[str, Any]:
     if packet.get("schema_version") not in {
         "v5_intended_update_batch_selection_v2",
         "v5_intended_update_batch_rollback_v2",
@@ -105,13 +115,19 @@ def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any
     after = _week_map(packet.get("replacement_runs"), "replacement_runs")
     expected_weeks = set(range(cutover + 1))
     if set(before) != expected_weeks or set(after) != expected_weeks:
-        raise V5BatchSelectionError("selection maps must cover Weeks 0 through N exactly")
+        raise V5BatchSelectionError(
+            "selection maps must cover Weeks 0 through N exactly"
+        )
     if set(before.values()) & set(after.values()):
         raise V5BatchSelectionError("replacement packet reuses a prior run")
     if packet.get("certified_completed_weeks") != list(range(cutover)):
-        raise V5BatchSelectionError("certified replay weeks must be contiguous 0 through N-1")
+        raise V5BatchSelectionError(
+            "certified replay weeks must be contiguous 0 through N-1"
+        )
     if set(_week_map(packet.get("protected_runs"), "protected_runs")) & expected_weeks:
-        raise V5BatchSelectionError("protected run scope overlaps the replacement slate")
+        raise V5BatchSelectionError(
+            "protected run scope overlaps the replacement slate"
+        )
 
     current_before = packet.get("expected_current_week")
     current_after = packet.get("replacement_current_week")
@@ -148,31 +164,45 @@ def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any
             raise V5BatchSelectionError("run authorization entry is malformed")
         week = int(record.get("week", -1))
         if week in auth_by_week or week not in expected_weeks:
-            raise V5BatchSelectionError("run authorization weeks are duplicate or out of range")
+            raise V5BatchSelectionError(
+                "run authorization weeks are duplicate or out of range"
+            )
         if (
             record.get("environment") != environment
             or record.get("season") != 2026
             or record.get("week") != week
             or record.get("prediction_run_id") != after[week]
-            or record.get("evidence_class") != ("pending" if week == cutover else "replay")
+            or record.get("evidence_class")
+            != ("pending" if week == cutover else "replay")
             or record.get("model_id") != bundle_body["model_id"]
-            or record.get("inference_bundle_sha256") != bundle_body["inference_bundle_sha256"]
+            or record.get("inference_bundle_sha256")
+            != bundle_body["inference_bundle_sha256"]
             or record.get("decision_ref") != decision_ref
         ):
-            raise V5BatchSelectionError("run authorization points to another replacement run")
+            raise V5BatchSelectionError(
+                "run authorization points to another replacement run"
+            )
         auth_body = {key: record.get(key) for key in AUTH_COLUMNS}
         if record.get("record_sha256") != _sha(canonical_json(auth_body)):
             raise V5BatchSelectionError("run authorization canonical hash differs")
         auth_by_week[week] = dict(record)
     if set(auth_by_week) != expected_weeks:
-        raise V5BatchSelectionError("packet lacks an exact authorization for every selected run")
-    if bundle.get("first_live_season") != 2026 or bundle.get("first_live_week") != cutover:
+        raise V5BatchSelectionError(
+            "packet lacks an exact authorization for every selected run"
+        )
+    if (
+        bundle.get("first_live_season") != 2026
+        or bundle.get("first_live_week") != cutover
+    ):
         raise V5BatchSelectionError("bundle approval is not bound to cutover N")
 
     payloads = {}
     for name in (
-        "team_stats_before", "team_stats_after", "team_stats_verifier",
-        "prospective_records_before", "prospective_records_after",
+        "team_stats_before",
+        "team_stats_after",
+        "team_stats_verifier",
+        "prospective_records_before",
+        "prospective_records_after",
     ):
         payloads[name] = _read_signed_ref(storage, packet.get(name), name)
     before_payload, after_payload, verifier = (
@@ -195,9 +225,12 @@ def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any
     before_by_key = {_stat_key(row): row for row in before_payload["rows"]}
     after_by_key = {_stat_key(row): row for row in after_payload["rows"]}
     if before_by_key.keys() != after_by_key.keys():
-        raise V5BatchSelectionError("team-stats payloads do not have identical complete keys")
+        raise V5BatchSelectionError(
+            "team-stats payloads do not have identical complete keys"
+        )
     if any(
-        before_by_key[key].get("source_versions") != after_by_key[key].get("source_versions")
+        before_by_key[key].get("source_versions")
+        != after_by_key[key].get("source_versions")
         for key in before_by_key
     ):
         raise V5BatchSelectionError("team-stats provenance changed across the packet")
@@ -210,18 +243,34 @@ def validate_v2_packet(packet: dict[str, Any], *, environment: str, storage: Any
             or payload.get("season") != 2026
             or not isinstance(payload.get("rows"), list)
         ):
-            raise V5BatchSelectionError("prospective-record payload schema or scope differs")
+            raise V5BatchSelectionError(
+                "prospective-record payload schema or scope differs"
+            )
         _validate_prospective_rows(payload["rows"])
-    prospective_before_by_key = {_prospective_key(row): row for row in prospective_before["rows"]}
-    prospective_after_by_key = {_prospective_key(row): row for row in prospective_after["rows"]}
+    prospective_before_by_key = {
+        _prospective_key(row): row for row in prospective_before["rows"]
+    }
+    prospective_after_by_key = {
+        _prospective_key(row): row for row in prospective_after["rows"]
+    }
     if prospective_before_by_key != prospective_after_by_key:
-        raise V5BatchSelectionError("selection and rollback packets must preserve prospective records exactly")
-    if not set(range(5, cutover)).issubset({row["week"] for row in prospective_before["rows"]}):
-        raise V5BatchSelectionError("completed prospective Week 5 onward evidence is missing")
+        raise V5BatchSelectionError(
+            "selection and rollback packets must preserve prospective records exactly"
+        )
+    if not set(range(5, cutover)).issubset(
+        {row["week"] for row in prospective_before["rows"]}
+    ):
+        raise V5BatchSelectionError(
+            "completed prospective Week 5 onward evidence is missing"
+        )
     for row in prospective_before["rows"]:
         if "/legacy-attestation-v1-" in row["freeze_receipt_uri"] and cur is None:
-            raise V5BatchSelectionError("legacy attestation requires live source verification")
-        verify_prospective_record(row, cur=cur, storage=storage, environment=environment)
+            raise V5BatchSelectionError(
+                "legacy attestation requires live source verification"
+            )
+        verify_prospective_record(
+            row, cur=cur, storage=storage, environment=environment
+        )
     if (
         verifier.get("state") != "verified"
         or verifier.get("before_sha256") != packet["team_stats_before"]["sha256"]
@@ -256,7 +305,9 @@ def _validate_prospective_rows(rows: list[Any]) -> None:
             raise V5BatchSelectionError("prospective-record row lacks required columns")
         key = _prospective_key(row)
         if key in seen or key[0] != 2026 or key[1] < 5:
-            raise V5BatchSelectionError("prospective-record payload has duplicate or out-of-scope keys")
+            raise V5BatchSelectionError(
+                "prospective-record payload has duplicate or out-of-scope keys"
+            )
         seen.add(key)
 
 
@@ -264,10 +315,14 @@ def _validate_stat_rows(rows: list[Any], label: str) -> None:
     seen = set()
     for row in rows:
         if not isinstance(row, Mapping) or set(STAT_COLUMNS) - set(row):
-            raise V5BatchSelectionError(f"team-stats {label} row lacks required columns")
+            raise V5BatchSelectionError(
+                f"team-stats {label} row lacks required columns"
+            )
         key = _stat_key(row)
         if key in seen:
-            raise V5BatchSelectionError(f"team-stats {label} payload has duplicate keys")
+            raise V5BatchSelectionError(
+                f"team-stats {label} payload has duplicate keys"
+            )
         seen.add(key)
 
 
@@ -297,13 +352,16 @@ def _assert_payload_rows(cur: Any, payload: Mapping[str, Any], label: str) -> No
     actual = _database_stats(cur, payload)
     expected = sorted(payload["rows"], key=_stat_key)
     if actual != expected:
-        raise V5BatchSelectionError(f"database team-stats {label} rows differ from retained payload")
+        raise V5BatchSelectionError(
+            f"database team-stats {label} rows differ from retained payload"
+        )
 
 
 def _assert_prospective_rows(cur: Any, payload: Mapping[str, Any], label: str) -> None:
     cur.execute(
-        "SELECT " + ", ".join(PROSPECTIVE_COLUMNS) +
-        " FROM public.prospective_week_records WHERE season = 2026 ORDER BY week"
+        "SELECT "
+        + ", ".join(PROSPECTIVE_COLUMNS)
+        + " FROM public.prospective_week_records WHERE season = 2026 ORDER BY week"
     )
     actual = []
     for db_row in cur.fetchall():
@@ -314,7 +372,9 @@ def _assert_prospective_rows(cur: Any, payload: Mapping[str, Any], label: str) -
         actual.append(record)
     expected = sorted(payload["rows"], key=_prospective_key)
     if actual != expected:
-        raise V5BatchSelectionError(f"database prospective {label} rows differ from retained payload")
+        raise V5BatchSelectionError(
+            f"database prospective {label} rows differ from retained payload"
+        )
 
 
 def _verify_registered_authorizations(
@@ -326,10 +386,17 @@ def _verify_registered_authorizations(
         "first_live_week, decision_ref FROM v5_model_bundle_approvals WHERE approval_id = %s",
         (bundle["approval_id"],),
     )
-    expected_bundle = tuple(bundle[key] for key in (
-        "approval_id", "model_id", "inference_bundle_sha256", "first_live_season",
-        "first_live_week", "decision_ref",
-    ))
+    expected_bundle = tuple(
+        bundle[key]
+        for key in (
+            "approval_id",
+            "model_id",
+            "inference_bundle_sha256",
+            "first_live_season",
+            "first_live_week",
+            "decision_ref",
+        )
+    )
     if cur.fetchone() != expected_bundle:
         raise V5BatchSelectionError("registered bundle approval differs from packet")
     from cks_picks_cfb.artifacts import prediction_run_manifest_path
@@ -338,12 +405,15 @@ def _verify_registered_authorizations(
     for week in sorted(plan["authorizations"]):
         record = plan["authorizations"][week]
         cur.execute(
-            "SELECT " + ", ".join(AUTH_COLUMNS) +
-            " FROM v5_intended_update_release_authorizations WHERE authorization_id = %s",
+            "SELECT "
+            + ", ".join(AUTH_COLUMNS)
+            + " FROM v5_intended_update_release_authorizations WHERE authorization_id = %s",
             (record["authorization_id"],),
         )
         if cur.fetchone() != tuple(record[key] for key in AUTH_COLUMNS):
-            raise V5BatchSelectionError(f"registered Week {week} authorization differs from packet")
+            raise V5BatchSelectionError(
+                f"registered Week {week} authorization differs from packet"
+            )
         manifest = json.loads(
             storage.read_bytes(
                 prediction_run_manifest_path(2026, week, record["prediction_run_id"])
@@ -360,14 +430,18 @@ def _verify_registered_authorizations(
             )
         except IntendedUpdateReleaseError as exc:
             raise V5BatchSelectionError(str(exc)) from exc
-        records.append(("intended_update_authorization", str(record["authorization_id"])))
+        records.append(
+            ("intended_update_authorization", str(record["authorization_id"]))
+        )
     try:
         assert_release_records_active(cur, records)
     except V5RevocationError as exc:
         raise V5BatchSelectionError(str(exc)) from exc
 
 
-def _verify_week_evidence(cur: Any, packet: Mapping[str, Any], plan: Mapping[str, Any], storage: Any) -> None:
+def _verify_week_evidence(
+    cur: Any, packet: Mapping[str, Any], plan: Mapping[str, Any], storage: Any
+) -> None:
     certifications = packet.get("completed_week_certifications")
     if not isinstance(certifications, list):
         raise V5BatchSelectionError("completed-week certification refs are missing")
@@ -386,17 +460,27 @@ def _verify_week_evidence(cur: Any, packet: Mapping[str, Any], plan: Mapping[str
             or receipt.get("run_id") != plan["after"][week]
             or receipt.get("finals_complete") is not True
         ):
-            raise V5BatchSelectionError(f"Week {week} certification does not bind complete finals")
+            raise V5BatchSelectionError(
+                f"Week {week} certification does not bind complete finals"
+            )
         stabilized = receipt.get("finals_stabilized_at")
         try:
-            stabilized_at = datetime.fromisoformat(str(stabilized).replace("Z", "+00:00"))
+            stabilized_at = datetime.fromisoformat(
+                str(stabilized).replace("Z", "+00:00")
+            )
         except ValueError as exc:
-            raise V5BatchSelectionError(f"Week {week} stabilization time is invalid") from exc
+            raise V5BatchSelectionError(
+                f"Week {week} stabilization time is invalid"
+            ) from exc
         if stabilized_at.tzinfo is None:
-            raise V5BatchSelectionError(f"Week {week} stabilization time lacks timezone")
+            raise V5BatchSelectionError(
+                f"Week {week} stabilization time lacks timezone"
+            )
         by_week[week] = stabilized_at
     if set(by_week) != set(range(plan["cutover_week"])):
-        raise V5BatchSelectionError("certification refs do not cover all completed replay weeks")
+        raise V5BatchSelectionError(
+            "certification refs do not cover all completed replay weeks"
+        )
     cur.execute("SELECT NOW()")
     db_now = cur.fetchone()[0]
 
@@ -425,7 +509,9 @@ def _verify_week_evidence(cur: Any, packet: Mapping[str, Any], plan: Mapping[str
             or row[6] != 0
             or row[7] != row[2]
         ):
-            raise V5BatchSelectionError(f"Week {week} is not a complete scored replay in Neon")
+            raise V5BatchSelectionError(
+                f"Week {week} is not a complete scored replay in Neon"
+            )
 
     pending = plan["after"][plan["cutover_week"]]
     cur.execute(
@@ -450,10 +536,14 @@ def _verify_week_evidence(cur: Any, packet: Mapping[str, Any], plan: Mapping[str
         or row[8] != 0
         or row[9] != row[2]
     ):
-        raise V5BatchSelectionError("cutover N run is not complete and safely pre-kickoff")
+        raise V5BatchSelectionError(
+            "cutover N run is not complete and safely pre-kickoff"
+        )
 
 
-def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, storage: Any) -> dict[str, Any]:
+def apply_v2_packet(
+    cur: Any, packet: dict[str, Any], *, environment: str, storage: Any
+) -> dict[str, Any]:
     """Apply signed select/rollback state in the caller's sole transaction."""
     plan = validate_v2_packet(packet, environment=environment, storage=storage, cur=cur)
     assert_v5_database_environment(cur, environment)
@@ -472,7 +562,9 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
     _verify_registered_authorizations(cur, plan, storage)
     _verify_week_evidence(cur, packet, plan, storage)
     for row in plan["payloads"]["prospective_records_before"]["rows"]:
-        verify_prospective_record(row, cur=cur, storage=storage, environment=environment)
+        verify_prospective_record(
+            row, cur=cur, storage=storage, environment=environment
+        )
 
     cur.execute(
         "SELECT week, run_id FROM site_week_selections WHERE season = 2026 "
@@ -490,15 +582,21 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
         raise V5BatchSelectionError("protected public selections changed")
     current_expected = packet["expected_current_week"]
     current_replacement = packet["replacement_current_week"]
-    cur.execute("SELECT season, week, active_run_id FROM current_week WHERE id = 1 FOR UPDATE")
+    cur.execute(
+        "SELECT season, week, active_run_id FROM current_week WHERE id = 1 FOR UPDATE"
+    )
     current = cur.fetchone()
     if actual_runs == plan["after"] and current == (
         current_replacement["season"],
         current_replacement["week"],
         current_replacement["run_id"],
     ):
-        _assert_payload_rows(cur, plan["payloads"]["team_stats_after"], "idempotent retry")
-        _assert_prospective_rows(cur, plan["payloads"]["prospective_records_after"], "idempotent retry")
+        _assert_payload_rows(
+            cur, plan["payloads"]["team_stats_after"], "idempotent retry"
+        )
+        _assert_prospective_rows(
+            cur, plan["payloads"]["prospective_records_after"], "idempotent retry"
+        )
         return {
             "state": "already_applied",
             "environment": environment,
@@ -507,22 +605,32 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
             "selected_runs": plan["after"],
         }
     if actual_runs != plan["before"]:
-        raise V5BatchSelectionError("live selected runs differ from exact packet prior state")
+        raise V5BatchSelectionError(
+            "live selected runs differ from exact packet prior state"
+        )
     if current != (
-        current_expected["season"], current_expected["week"], current_expected["run_id"]
+        current_expected["season"],
+        current_expected["week"],
+        current_expected["run_id"],
     ):
-        raise V5BatchSelectionError("current-week pointer differs from packet before-state")
+        raise V5BatchSelectionError(
+            "current-week pointer differs from packet before-state"
+        )
 
     before_payload = plan["payloads"]["team_stats_before"]
     after_payload = plan["payloads"]["team_stats_after"]
     _assert_payload_rows(cur, before_payload, "before")
-    _assert_prospective_rows(cur, plan["payloads"]["prospective_records_before"], "before")
+    _assert_prospective_rows(
+        cur, plan["payloads"]["prospective_records_before"], "before"
+    )
 
     target_runs = plan["after"]
     target_stats = after_payload
     target_current = current_replacement
     if plan["rollback"] and current != (
-        current_expected["season"], current_expected["week"], current_expected["run_id"]
+        current_expected["season"],
+        current_expected["week"],
+        current_expected["run_id"],
     ):
         raise V5BatchSelectionError("rollback current-week pointer is stale")
     if plan["rollback"]:
@@ -534,7 +642,9 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
         kickoff = cur.fetchone()[0]
         cur.execute("SELECT NOW()")
         if kickoff is None or cur.fetchone()[0] >= kickoff:
-            raise V5BatchSelectionError("rollback is unsafe after cutover week has started")
+            raise V5BatchSelectionError(
+                "rollback is unsafe after cutover week has started"
+            )
 
     prior = {}
     for week in weeks:
@@ -543,13 +653,19 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
             season=2026,
             week=week,
             run_id=target_runs[week],
-            reason=("V5 intended-update rollback: " if plan["rollback"] else "V5 intended-update batch: ")
+            reason=(
+                "V5 intended-update rollback: "
+                if plan["rollback"]
+                else "V5 intended-update batch: "
+            )
             + plan["decision_ref"],
             environment=environment,
         )
     for row in sorted(target_stats["rows"], key=_stat_key):
         record = dict(row)
-        record["source_versions"] = json.dumps(record["source_versions"], sort_keys=True)
+        record["source_versions"] = json.dumps(
+            record["source_versions"], sort_keys=True
+        )
         cur.execute(UPSERT_TEAM_STAT_SQL, record)
     cur.execute(
         "UPDATE current_week SET season = %s, week = %s, active_run_id = %s, updated_at = NOW() WHERE id = 1",
@@ -567,10 +683,18 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
     if readback_runs != target_runs:
         raise V5BatchSelectionError("selection readback differs after batch mutation")
     cur.execute("SELECT season, week, active_run_id FROM current_week WHERE id = 1")
-    if cur.fetchone() != (target_current["season"], target_current["week"], target_current["run_id"]):
-        raise V5BatchSelectionError("current-week readback differs after batch mutation")
+    if cur.fetchone() != (
+        target_current["season"],
+        target_current["week"],
+        target_current["run_id"],
+    ):
+        raise V5BatchSelectionError(
+            "current-week readback differs after batch mutation"
+        )
     _assert_payload_rows(cur, target_stats, "after")
-    _assert_prospective_rows(cur, plan["payloads"]["prospective_records_after"], "after")
+    _assert_prospective_rows(
+        cur, plan["payloads"]["prospective_records_after"], "after"
+    )
     return {
         "state": "rolled_back" if plan["rollback"] else "selected",
         "environment": environment,
@@ -581,7 +705,9 @@ def apply_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, stora
     }
 
 
-def preflight_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, storage: Any) -> dict[str, Any]:
+def preflight_v2_packet(
+    cur: Any, packet: dict[str, Any], *, environment: str, storage: Any
+) -> dict[str, Any]:
     """Read-only preflight; apply repeats every comparison while holding locks."""
     plan = validate_v2_packet(packet, environment=environment, storage=storage, cur=cur)
     assert_v5_database_environment(cur, environment)
@@ -607,14 +733,19 @@ def preflight_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, s
     if (
         current_runs == plan["after"]
         and protected_now == protected
-        and current_pointer == (
+        and current_pointer
+        == (
             packet["replacement_current_week"]["season"],
             packet["replacement_current_week"]["week"],
             packet["replacement_current_week"]["run_id"],
         )
     ):
-        _assert_payload_rows(cur, plan["payloads"]["team_stats_after"], "idempotent retry")
-        _assert_prospective_rows(cur, plan["payloads"]["prospective_records_after"], "idempotent retry")
+        _assert_payload_rows(
+            cur, plan["payloads"]["team_stats_after"], "idempotent retry"
+        )
+        _assert_prospective_rows(
+            cur, plan["payloads"]["prospective_records_after"], "idempotent retry"
+        )
         return {
             "state": "already_applied",
             "environment": environment,
@@ -625,13 +756,19 @@ def preflight_v2_packet(cur: Any, packet: dict[str, Any], *, environment: str, s
             "rollback": plan["rollback"],
         }
     if current_runs != plan["before"]:
-        raise V5BatchSelectionError("live selected runs differ from exact packet prior state")
+        raise V5BatchSelectionError(
+            "live selected runs differ from exact packet prior state"
+        )
     if protected_now != protected:
         raise V5BatchSelectionError("protected public selections changed")
     if current_pointer != (expected["season"], expected["week"], expected["run_id"]):
-        raise V5BatchSelectionError("current-week pointer differs from packet before-state")
+        raise V5BatchSelectionError(
+            "current-week pointer differs from packet before-state"
+        )
     _assert_payload_rows(cur, plan["payloads"]["team_stats_before"], "before")
-    _assert_prospective_rows(cur, plan["payloads"]["prospective_records_before"], "before")
+    _assert_prospective_rows(
+        cur, plan["payloads"]["prospective_records_before"], "before"
+    )
     return {
         "state": "preflight",
         "environment": environment,

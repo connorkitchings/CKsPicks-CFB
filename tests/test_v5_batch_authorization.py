@@ -31,7 +31,12 @@ def _record(week: int, evidence_class: str) -> dict:
         "prediction_artifact_sha256": "f" * 64,
         "decision_ref": "decision-7a",
     }
-    return {**record, "record_sha256": __import__("hashlib").sha256(canonical_json(record)).hexdigest()}
+    return {
+        **record,
+        "record_sha256": __import__("hashlib")
+        .sha256(canonical_json(record))
+        .hexdigest(),
+    }
 
 
 def _packet(cutover=5):
@@ -76,13 +81,17 @@ def test_authorization_packet_rejects_tampering_gaps_and_timing_mismatch():
 
     packet = _packet()
     packet["run_authorizations"].pop(2)
-    packet = signed_payload({key: value for key, value in packet.items() if key != "manifest_sha256"})
+    packet = signed_payload(
+        {key: value for key, value in packet.items() if key != "manifest_sha256"}
+    )
     with pytest.raises(AuthorizationPacketError, match="contiguous"):
         validate_packet(packet, environment="preview")
 
     packet = _packet()
     packet["run_authorizations"][5] = _record(5, "replay")
-    packet = signed_payload({key: value for key, value in packet.items() if key != "manifest_sha256"})
+    packet = signed_payload(
+        {key: value for key, value in packet.items() if key != "manifest_sha256"}
+    )
     with pytest.raises(AuthorizationPacketError, match="timing class"):
         validate_packet(packet, environment="preview")
 
@@ -91,10 +100,17 @@ class Cursor:
     def __init__(self, packet):
         validated = validate_packet(packet, environment="preview")
         self.rows = [
-            tuple(validated["bundle"][key] for key in (
-                "approval_id", "model_id", "inference_bundle_sha256",
-                "first_live_season", "first_live_week", "decision_ref",
-            )),
+            tuple(
+                validated["bundle"][key]
+                for key in (
+                    "approval_id",
+                    "model_id",
+                    "inference_bundle_sha256",
+                    "first_live_season",
+                    "first_live_week",
+                    "decision_ref",
+                )
+            ),
             *[
                 tuple(validated["records"][week][key] for key in AUTH_COLUMNS)
                 for week in sorted(validated["records"])

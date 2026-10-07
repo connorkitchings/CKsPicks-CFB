@@ -386,7 +386,9 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
             cur.execute("DROP FUNCTION public.reject_prospective_week_record_delete()")
             cur.execute("DROP FUNCTION ops.validate_v5_release_revocation()")
             cur.execute("DROP FUNCTION ops.reject_v5_release_revocation_mutation()")
-            cur.execute("DELETE FROM schema_migrations WHERE version IN ('0023', '0024')")
+            cur.execute(
+                "DELETE FROM schema_migrations WHERE version IN ('0023', '0024')"
+            )
     assert apply_migrations(conn_url, Path("contracts/migrations")) == ["0023", "0024"]
 
     with psycopg.connect(conn_url, autocommit=True) as conn:
@@ -440,24 +442,51 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
                 "frozen_at, first_kickoff_utc, decision_ref) "
                 "VALUES (2026, %s, %s, 'r2://receipt', %s, %s, %s, 'fixture-decision')"
             )
-            cur.execute(insert_record, (5, "v5-prospective-5a", sha, "2026-10-06 12:00:00+00", future_kickoff))
+            cur.execute(
+                insert_record,
+                (5, "v5-prospective-5a", sha, "2026-10-06 12:00:00+00", future_kickoff),
+            )
             cur.execute(
                 "UPDATE public.prospective_week_records SET run_id = %s, frozen_at = %s "
                 "WHERE season = 2026 AND week = 5",
                 ("v5-prospective-5b", "2026-10-06 13:00:00+00"),
             )
             with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
-                cur.execute("DELETE FROM public.prospective_week_records WHERE season = 2026 AND week = 5")
+                cur.execute(
+                    "DELETE FROM public.prospective_week_records WHERE season = 2026 AND week = 5"
+                )
 
-            cur.execute(insert_record, (6, "v5-prospective-6a", sha, "2026-09-09 12:00:00+00", historical_kickoff))
-            with pytest.raises(psycopg.errors.RaiseException, match="before its earliest kickoff"):
+            cur.execute(
+                insert_record,
+                (
+                    6,
+                    "v5-prospective-6a",
+                    sha,
+                    "2026-09-09 12:00:00+00",
+                    historical_kickoff,
+                ),
+            )
+            with pytest.raises(
+                psycopg.errors.RaiseException, match="before its earliest kickoff"
+            ):
                 cur.execute(
                     "UPDATE public.prospective_week_records SET run_id = %s, frozen_at = %s "
                     "WHERE season = 2026 AND week = 6",
                     ("v5-prospective-6b", "2026-09-09 13:00:00+00"),
                 )
-            with pytest.raises(psycopg.errors.RaiseException, match="restricted to 2026 Week 5"):
-                cur.execute(insert_record, (4, "v5-prospective-6b", sha, "2026-09-09 13:00:00+00", historical_kickoff))
+            with pytest.raises(
+                psycopg.errors.RaiseException, match="restricted to 2026 Week 5"
+            ):
+                cur.execute(
+                    insert_record,
+                    (
+                        4,
+                        "v5-prospective-6b",
+                        sha,
+                        "2026-09-09 13:00:00+00",
+                        historical_kickoff,
+                    ),
+                )
 
             cur.execute(
                 "INSERT INTO v5_model_bundle_approvals (approval_id, model_id, inference_bundle_sha256, "
@@ -470,7 +499,11 @@ def test_stage7a_migrations_guard_prospective_and_revocation_records():
                 "VALUES ('bundle_approval', 'approval-fixture', 'revoke-fixture')"
             )
             with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                cur.execute("UPDATE ops.v5_release_revocations SET decision_ref = 'changed'")
+                cur.execute(
+                    "UPDATE ops.v5_release_revocations SET decision_ref = 'changed'"
+                )
             cur.execute("RESET ROLE")
             with pytest.raises(psycopg.errors.RaiseException, match="append-only"):
-                cur.execute("UPDATE ops.v5_release_revocations SET decision_ref = 'changed'")
+                cur.execute(
+                    "UPDATE ops.v5_release_revocations SET decision_ref = 'changed'"
+                )

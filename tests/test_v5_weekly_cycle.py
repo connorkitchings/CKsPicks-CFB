@@ -140,8 +140,16 @@ def test_prospective_freeze_cycle_requires_and_binds_decision_reference(monkeypa
     assert binding["decision_ref"] == item["decision_ref"]
 
     no_decision = v5_cycle.CycleSpec(
-        "cycle-2026w5", 2026, 5, "preview", "a" * 40,
-        {"freeze": {key: value for key, value in item.items() if key != "decision_ref"}},
+        "cycle-2026w5",
+        2026,
+        5,
+        "preview",
+        "a" * 40,
+        {
+            "freeze": {
+                key: value for key, value in item.items() if key != "decision_ref"
+            }
+        },
     )
     with pytest.raises(v5_cycle.V5CycleError, match="decision reference"):
         no_decision.component("freeze")

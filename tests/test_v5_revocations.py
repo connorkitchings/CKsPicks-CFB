@@ -25,7 +25,9 @@ class Cursor:
 
     def fetchone(self):
         sql = self.executed[-1]
-        if "ops.v5_release_revocations" in sql and sql.startswith("SELECT decision_ref"):
+        if "ops.v5_release_revocations" in sql and sql.startswith(
+            "SELECT decision_ref"
+        ):
             return ("stop",) if self.params[:2] in self.revoked else None
         if "ops.v5_release_revocations" in sql and sql.startswith("SELECT record_type"):
             return self.retained
@@ -43,7 +45,9 @@ def test_shared_locks_are_deterministic_and_use_transaction_scope():
     lock_release_records(first, records)
     lock_release_records(second, list(reversed(records)))
     assert first.executed == second.executed
-    assert all("pg_advisory_xact_lock_shared" in statement for statement in first.executed)
+    assert all(
+        "pg_advisory_xact_lock_shared" in statement for statement in first.executed
+    )
     assert first.params_seen == second.params_seen
     assert len(first.params_seen) == 2
 
@@ -71,7 +75,9 @@ def test_revocation_retry_is_idempotent_and_conflicts_fail():
     )
     assert result["record_id"] == "bundle-1"
     assert any("pg_advisory_xact_lock(%s)" in sql for sql in cur.executed)
-    assert any("ON CONFLICT (record_type, record_id) DO NOTHING" in sql for sql in cur.executed)
+    assert any(
+        "ON CONFLICT (record_type, record_id) DO NOTHING" in sql for sql in cur.executed
+    )
 
     conflict = Cursor(retained=(*retained[:2], "another-decision", retained[3]))
     with pytest.raises(V5RevocationError, match="conflicts"):

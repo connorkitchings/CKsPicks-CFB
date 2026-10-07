@@ -116,11 +116,22 @@ def test_6b_write_boundary_guard():
 
     # Allowed: 6b run artifacts and reconstruction gold datasets
     guard.create_once("rebuild/6b/6b-replay-20261005-r1/foundation/summary.json", b"{}")
-    guard.create_once("rebuild/6b/6b-replay-20261005-r1/served/week=0/predictions.csv", b"a,b\n1,2")
-    guard.create_once("lake/gold/dataset=reconstruction_offsets_2026/version=v1/data.parquet", b"PAR1")
-    guard.create_once("lake/gold/dataset=reconstruction_predictions/version=v1/data.parquet", b"PAR1")
-    guard.create_once("lake/gold/dataset=reconstruction_market_selections/version=v1/data.parquet", b"PAR1")
-    guard.create_once("lake/gold/dataset=reconstruction_grades/version=v1/data.parquet", b"PAR1")
+    guard.create_once(
+        "rebuild/6b/6b-replay-20261005-r1/served/week=0/predictions.csv", b"a,b\n1,2"
+    )
+    guard.create_once(
+        "lake/gold/dataset=reconstruction_offsets_2026/version=v1/data.parquet", b"PAR1"
+    )
+    guard.create_once(
+        "lake/gold/dataset=reconstruction_predictions/version=v1/data.parquet", b"PAR1"
+    )
+    guard.create_once(
+        "lake/gold/dataset=reconstruction_market_selections/version=v1/data.parquet",
+        b"PAR1",
+    )
+    guard.create_once(
+        "lake/gold/dataset=reconstruction_grades/version=v1/data.parquet", b"PAR1"
+    )
 
     # Forbidden: 6a, silver, unrelated gold, serving, production
     with pytest.raises(TargetError, match="outside permitted"):
@@ -140,7 +151,6 @@ def test_6b_write_boundary_guard():
 
     with pytest.raises(TargetError, match="outside permitted"):
         guard.create_once("artifacts/production/predictions/2026w0.csv", b"{}")
-
 
 
 # ---------------------------------------------------------------------------
@@ -206,8 +216,16 @@ def test_legacy_score_bets():
     )
     scores = pd.DataFrame(
         [
-            {"id": 101, "home_points": 28, "away_points": 24},  # margin 4 > 3.5, total 52 > 50.5
-            {"id": 102, "home_points": 21, "away_points": 14},  # margin 7 == 7.0, total 35 < 45.0
+            {
+                "id": 101,
+                "home_points": 28,
+                "away_points": 24,
+            },  # margin 4 > 3.5, total 52 > 50.5
+            {
+                "id": 102,
+                "home_points": 21,
+                "away_points": 14,
+            },  # margin 7 == 7.0, total 35 < 45.0
         ]
     )
     scored = score_bets(bets, scores)
@@ -317,7 +335,6 @@ def test_quote_exact_ties_break_away_under():
     assert sel_total.side == "under"
 
 
-
 # ---------------------------------------------------------------------------
 # 5. Comparison Summary and Verification
 # ---------------------------------------------------------------------------
@@ -382,9 +399,18 @@ def _dummy_receipt() -> dict:
             "original_run_id": f"2026w{w}-orig",
             "game_count": 10,
             "artifacts": {
-                "predictions_csv": {"uri": f"rebuild/6b/run1/served/week={w}/predictions.csv", "raw_sha256": "a" * 64},
-                "scored_csv": {"uri": f"rebuild/6b/run1/served/week={w}/scored.csv", "raw_sha256": "b" * 64},
-                "manifest_json": {"uri": f"rebuild/6b/run1/served/week={w}/manifest.json", "raw_sha256": "c" * 64},
+                "predictions_csv": {
+                    "uri": f"rebuild/6b/run1/served/week={w}/predictions.csv",
+                    "raw_sha256": "a" * 64,
+                },
+                "scored_csv": {
+                    "uri": f"rebuild/6b/run1/served/week={w}/scored.csv",
+                    "raw_sha256": "b" * 64,
+                },
+                "manifest_json": {
+                    "uri": f"rebuild/6b/run1/served/week={w}/manifest.json",
+                    "raw_sha256": "c" * 64,
+                },
             },
         }
         for w in range(6)
@@ -419,9 +445,30 @@ def _dummy_receipt() -> dict:
                 "gold_datasets": [],
                 "comparison_summary": {
                     "retrospective_records": {
-                        "spread": {"wins": 10, "losses": 5, "pushes": 1, "win_pct": 0.667, "profit_units": 4.5, "vs_52_4": 0.143},
-                        "total": {"wins": 8, "losses": 7, "pushes": 0, "win_pct": 0.533, "profit_units": 0.3, "vs_52_4": 0.009},
-                        "overall": {"wins": 18, "losses": 12, "pushes": 1, "win_pct": 0.600, "profit_units": 4.8, "vs_52_4": 0.076},
+                        "spread": {
+                            "wins": 10,
+                            "losses": 5,
+                            "pushes": 1,
+                            "win_pct": 0.667,
+                            "profit_units": 4.5,
+                            "vs_52_4": 0.143,
+                        },
+                        "total": {
+                            "wins": 8,
+                            "losses": 7,
+                            "pushes": 0,
+                            "win_pct": 0.533,
+                            "profit_units": 0.3,
+                            "vs_52_4": 0.009,
+                        },
+                        "overall": {
+                            "wins": 18,
+                            "losses": 12,
+                            "pushes": 1,
+                            "win_pct": 0.600,
+                            "profit_units": 4.8,
+                            "vs_52_4": 0.076,
+                        },
                     }
                 },
             },

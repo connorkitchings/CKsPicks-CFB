@@ -64,7 +64,9 @@ def require_v5_freeze_authorization(
         or manifest.get("artifact_uri") != artifact_uri
         or manifest.get("artifact_sha256") != artifact_sha256
     ):
-        raise V5ReleaseError("V5 freeze manifest differs from the selected database run")
+        raise V5ReleaseError(
+            "V5 freeze manifest differs from the selected database run"
+        )
 
     if model_id == "v5-intended-update-2026-v1":
         from cks_picks_cfb.ops.v5_intended_update_release import (
