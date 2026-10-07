@@ -1,0 +1,22 @@
+{
+  "captured_at": "2026-10-07T12:44:32.035512+00:00",
+  "project": {
+    "id": "prj_qiaxsGtxwbunvXwH6sC8ya1clXFb",
+    "rootDirectory": "web",
+    "productionBranch": "main"
+  },
+  "production": {
+    "id": "dpl_FiycAhixbCrDsZK638CVXtdq9XNM",
+    "url": "c-ks-picks-32ixekgj0-connorkitchings-projects.vercel.app",
+    "target": "production",
+    "readyState": "READY",
+    "commit": "562319aaf0510d840d60806e11c4802ea0c80049"
+  },
+  "preview": {
+    "id": "dpl_Cd65Zx88XHHpX1B97G3guWPQijW1",
+    "url": "c-ks-picks-duz5xral1-connorkitchings-projects.vercel.app",
+    "target": null,
+    "readyState": "READY",
+    "commit": "eca6871d727060adf8612bd7d8769c29d5243579"
+  }
+}

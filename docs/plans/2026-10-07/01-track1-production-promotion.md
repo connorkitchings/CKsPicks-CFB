@@ -1,6 +1,6 @@
 # Track 1: Production Venues and Full `dev` Promotion
 
-- **Status:** Approved
+- **Status:** In Progress
 - **Created:** 2026-10-07
 - **Planner:** Sol
 - **Approval source:** User explicitly requested implementation of this exact Track 1 plan on 2026-10-07. Repository workflow requires the separate plan commit and a fresh implementation task before implementation work.
@@ -137,3 +137,18 @@ After deployment-specific authorization, the user fast-forwards `main` to the re
 ## Amendments
 
 Material changes to the candidate SHA, source identities, Production write scope, web behavior, or rollback approach require a reviewed amendment before release. The separate user authorization gates remain in force.
+
+### Implementation checkpoint — 2026-10-07
+
+Tasks 1–2 are delivered locally: backward-compatible games pin, exact source hashes in quality identity, source-duplicate rejection, focused no-write failure tests, fresh restricted-role Preview/Production capture and pinned Production dry run. Current database venue coverage is 271/271 cities with zero business-column changes; applying the existing upsert would still change timestamps. Both existing Week 5 designations were independently verified against live sources and immutable bytes. All serving fingerprints stayed unchanged.
+
+Task 3 local validation passed: full Python 2,039/12 skipped, disposable PostgreSQL 32, venue 19, publication 134, Performance/matchup Playwright 24, Ruff, contracts, lint/typecheck, fixture build and documentation. The reviewed web diff revealed a reproducible PostgreSQL 42P10 query defect. The user's follow-up explicitly authorized a localized SQL-shape repair; adding the ordering column to DISTINCT preserves selection semantics, and actual repaired Drizzle SQL passes in both environments. This is a mechanical repair within release preparation, not a serving selector redesign.
+
+The [release preparation packet](track1-release-packet.md) remains **HOLD**, not approval-ready. Multiple manifest sources share rating cutoffs; the provenance query can choose a source different from the rendered ratings. Resolving that selector meaning requires a reviewed decision. A final committed candidate, `dev`→`main` PR, green CI, restricted-role exact-SHA real Preview page verification, and the two separate Production authorizations are also outstanding. No Production venue apply, deployment, Git mutation, or Stage 7B serving write occurred. Plan remains In Progress; Tasks 5–6 and the release definition of done remain unchecked.
+
+
+### Reopened source-binding verification — 2026-10-07
+
+The user's explicit follow-up authorized resolving ambiguity when the source is derivable from Stage 7A. Inspection confirms the rendered `getRatingsAsOf` rows retain their owning manifest SHA, including source-pinned preseason backfills. Provenance is now filtered by the single source of the exact two rendered teams; missing/mixed/ambiguous sources remain fail closed. Forecast and published-stat source comparisons are unchanged. This is implementation of the approved lineage guard, not a new selector or serving decision.
+
+Three focused query regressions pass with disposable PostgreSQL, including competing manifests at the same cutoff executing actual Drizzle SQL. Re-derived rendered-source queries pass against both real environments (two competing cutoff sources; only the rendered source returned). Final lint/typecheck, fixture build, 135 publication tests (one separately passed DB test skipped without its URL), 24 browser tests, Ruff and serving fingerprint readback pass. The semantic hold is lifted; final candidate commit/PR, green CI and real restricted-web exact-SHA Preview verification still hold promotion. No live writes or Git mutations occurred.

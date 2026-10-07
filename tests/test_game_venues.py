@@ -178,13 +178,7 @@ def test_required_city_gate_allows_international_city_without_state():
 
 
 def test_latest_silver_ref_pins_an_exact_version():
-    import sys
-    from pathlib import Path
-
-    sys.path.insert(
-        0, str(Path(__file__).resolve().parents[1] / "scripts" / "pipeline")
-    )
-    import publish_game_venues as pgv
+    from scripts.pipeline import publish_game_venues as pgv
 
     class Cur:
         def execute(self, query, params):
@@ -199,3 +193,151 @@ def test_latest_silver_ref_pins_an_exact_version():
     assert "AND version_id = %s" in cur.query and "v-pinned" in cur.params
     pgv._latest_silver_ref(cur, "venues", None)
     assert "version_id = %s" not in cur.query
+
+
+@pytest.mark.parametrize("version", ["games-pinned", None])
+def test_games_catalog_lookup_keeps_season_and_validation_scope(version):
+    from scripts.pipeline import publish_game_venues as pgv
+
+    class Cur:
+        def execute(self, query, params):
+            self.query, self.params = query, params
+
+        def fetchone(self):
+            return ("games", "games-pinned", "games_v2", "sha", "uri")
+
+    cur = Cur()
+    ref = pgv._latest_silver_ref(cur, "games", 2026, version)
+    assert ref.version_id == "games-pinned"
+    assert "state = 'validated'" in cur.query
+    assert "partitions @> %s::jsonb" in cur.query
+    assert cur.params == [
+        "games",
+        *([version] if version else []),
+        '{"seasons": [2026]}',
+    ]
+    assert ("AND version_id = %s" in cur.query) == (version is not None)
+
+
+def test_missing_pinned_games_version_fails_closed():
+    from scripts.pipeline import publish_game_venues as pgv
+
+    class Cur:
+        def execute(self, query, params):
+            assert "version_id = %s" in query
+            assert "missing" in params
+
+        def fetchone(self):
+            return None
+
+    with pytest.raises(LookupError, match="No validated Silver games"):
+        pgv._latest_silver_ref(Cur(), "games", 2026, "missing")
+
+
+@pytest.mark.parametrize(
+    "problem",
+    [
+        "missing_game",
+        "unknown_venue",
+        "missing_city",
+        "duplicate_game",
+        "duplicate_venue",
+    ],
+)
+def test_pinned_publication_rejects_incomplete_or_ambiguous_sources_before_write(
+    monkeypatch, problem
+):
+    _run_pinned_publisher(monkeypatch, problem)
+
+
+def test_pinned_dry_run_reports_exact_versions_and_hashes(monkeypatch, capsys):
+    _run_pinned_publisher(monkeypatch)
+    output = capsys.readouterr().out
+    assert '"games": "games-pinned"' in output
+    assert '"venues": "venues-pinned"' in output
+    assert '"games": "games-sha"' in output
+    assert '"venues": "venues-sha"' in output
+    assert "Dry run: nothing written" in output
+
+
+def _run_pinned_publisher(monkeypatch, problem=None):
+    import sys
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    from scripts.pipeline import publish_game_venues as pgv
+
+    frame = games([{"game_id": 1, "venue_id": 12}])
+    venues = VENUES.copy()
+    if problem == "missing_game":
+        frame["game_id"] = 2
+    elif problem == "unknown_venue":
+        frame["venue_id"] = 999
+    elif problem == "missing_city":
+        venues.loc[venues.venue_id == 12, "city"] = " "
+    elif problem == "duplicate_game":
+        frame = pd.concat([frame, frame])
+    elif problem == "duplicate_venue":
+        venues = pd.concat([venues, venues[venues.venue_id == 12]])
+
+    class Cur:
+        def execute(self, query, params):
+            assert query.startswith("SELECT game_id FROM games")
+
+        def fetchall(self):
+            return [(1,)]
+
+        def executemany(self, *args):
+            pytest.fail("publication must not reach writes")
+
+    conn = SimpleNamespace(
+        cursor=lambda: nullcontext(Cur()),
+        commit=lambda: pytest.fail("unexpected commit"),
+    )
+    monkeypatch.setattr(pgv.psycopg, "connect", lambda url: nullcontext(conn))
+    monkeypatch.setattr(pgv, "load_dotenv", lambda: None)
+    monkeypatch.setattr(pgv, "get_storage", lambda **kwargs: object())
+    monkeypatch.setenv("DATABASE_URL", "test-only")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "publisher",
+            "--environment",
+            "production",
+            "--games-version",
+            "games-pinned",
+            "--venues-version",
+            "venues-pinned",
+            "--require-city",
+            *(["--dry-run"] if problem is None else []),
+        ],
+    )
+
+    def lookup(cur, dataset, season, version):
+        assert version == f"{dataset}-pinned"
+        assert season == (2026 if dataset == "games" else None)
+        return pgv.DatasetRef(dataset, version, "schema", f"{dataset}-sha", "uri")
+
+    monkeypatch.setattr(pgv, "_latest_silver_ref", lookup)
+    monkeypatch.setattr(
+        pgv,
+        "read_dataset",
+        lambda storage, ref: frame if ref.dataset == "games" else venues,
+    )
+    monkeypatch.setattr(
+        pgv, "finalize_quality", lambda run, identity: _quality_identity(identity)
+    )
+    if problem:
+        with pytest.raises(ValueError):
+            pgv.main()
+    else:
+        assert pgv.main() == 0
+
+
+def _quality_identity(identity):
+    assert identity["games_version"] == "games-pinned"
+    assert identity["venues_version"] == "venues-pinned"
+    assert identity["games_content_sha"] == "games-sha"
+    assert identity["venues_content_sha"] == "venues-sha"
+    return {"_path": "test-only"}

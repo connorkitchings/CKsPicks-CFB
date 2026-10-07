@@ -27,7 +27,10 @@ import psycopg
 from dotenv import load_dotenv
 
 from cks_picks_cfb.data.game_venues import (
+    GAME_ID,
+    GAME_VENUE_ID,
     UPSERT_GAME_VENUE_SQL,
+    VENUE_ID,
     MissingVenueColumnsError,
     build_game_venue_rows,
     require_venue_cities,
@@ -73,6 +76,21 @@ def _latest_silver_ref(
     return DatasetRef(str(row[0]), str(row[1]), str(row[2]), str(row[3]), str(row[4]))
 
 
+def _require_unique_sources(games, venues, game_ids):
+    """Reject ambiguous source joins before the legacy transform deduplicates."""
+    game_key = next((key for key in GAME_ID if key in games.columns), None)
+    game_venue = next((key for key in GAME_VENUE_ID if key in games.columns), None)
+    venue_key = next((key for key in VENUE_ID if key in venues.columns), None)
+    if game_key is None or game_venue is None or venue_key is None:
+        return  # The transform reports missing required columns.
+    selected = games[games[game_key].isin(game_ids)]
+    if selected[game_key].duplicated().any():
+        raise ValueError("duplicate Silver game IDs in publication slate")
+    selected_venues = venues[venues[venue_key].isin(selected[game_venue])]
+    if selected_venues[venue_key].duplicated().any():
+        raise ValueError("duplicate Silver venue IDs in publication slate")
+
+
 def main() -> int:
     load_dotenv()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -81,6 +99,10 @@ def main() -> int:
     parser.add_argument("--database-url", help="Override the environment's URL")
     parser.add_argument(
         "--dry-run", action="store_true", help="Report coverage; write nothing"
+    )
+    parser.add_argument(
+        "--games-version",
+        help="Pin the exact validated Silver games version_id (recommended)",
     )
     parser.add_argument(
         "--venues-version",
@@ -103,7 +125,9 @@ def main() -> int:
 
     with psycopg.connect(url) as conn:
         with conn.cursor() as cur:
-            games_ref = _latest_silver_ref(cur, "games", args.season)
+            games_ref = _latest_silver_ref(
+                cur, "games", args.season, args.games_version
+            )
             venues_ref = _latest_silver_ref(cur, "venues", None, args.venues_version)
             cur.execute("SELECT game_id FROM games WHERE season = %s", (args.season,))
             neon_ids = [int(r[0]) for r in cur.fetchall()]
@@ -114,6 +138,7 @@ def main() -> int:
             f"Silver venues {venues_ref.version_id}: columns {sorted(venues.columns)}"
         )
         try:
+            _require_unique_sources(games, venues, neon_ids)
             rows, report = build_game_venue_rows(games, venues, neon_ids)
         except MissingVenueColumnsError as exc:
             print(f"Cannot build venue rows: {exc}", file=sys.stderr)
@@ -126,6 +151,8 @@ def main() -> int:
             "environment": args.environment,
             "venues_version": venues_ref.version_id,
             "games_version": games_ref.version_id,
+            "games_content_sha": games_ref.content_sha,
+            "venues_content_sha": venues_ref.content_sha,
         }
         pre_receipt = finalize_quality(
             pre_run, identity={**identity, "phase": "pre-write"}

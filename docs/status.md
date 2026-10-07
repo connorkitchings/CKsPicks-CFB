@@ -77,3 +77,5 @@ lower error than V5 on both targets, and the docs do not claim V5 beats V4.
 - [V5 status](modeling/v5_status.md) · [Weekly operator](ops/v5_weekly_operator.md)
   · [Weekly pipeline](ops/weekly_pipeline.md) · [Production runbook](ops/production_runbook.md)
   · [Implementation contracts](plans/index.md)
+
+- **Track 1 preparation (2026-10-07):** [release packet](plans/2026-10-07/track1-release-packet.md) is HOLD. Fresh venue dry run has 271/271 cities and empty business diff; local validation and SQL-shape repair pass. The competing same-cutoff rating-source ambiguity was resolved by binding provenance to the rendered rows; exact-SHA CI and restricted-role Vercel Preview verification remain open. No venue apply, production deployment or serving-state change occurred.

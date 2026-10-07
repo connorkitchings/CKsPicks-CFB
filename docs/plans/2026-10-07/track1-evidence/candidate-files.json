@@ -1,0 +1,13 @@
+{
+  "base_head": "1405f33b4853f7ac15f6050068e5e21f8c0e9f85",
+  "candidate_commit": null,
+  "note": "Uncommitted implementation; rebind release packet after user commit and PR validation.",
+  "files": {
+    "scripts/pipeline/publish_game_venues.py": "a70eb3d1ef87cda9f72ec7ea788b29a8c4cb84ffd2f0d8eb762c26dce87fb24a",
+    "tests/test_game_venues.py": "564e231b60b9f2a00bf5cfdb81dde7d71cff0a24d1cee814555ca09a9e63dc34",
+    "web/package.json": "9feb58af48eb0509dffcdd7f8fc1483a88020140a9a80b4782c252ae89bc1ea0",
+    "web/src/lib/matchup.ts": "e731ead2a7cebfa596615fc4a433d350a2babc31324cb6f26fbad91ec72c1100",
+    "web/src/lib/matchup-rating-query.ts": "7ab74934f3cce52b79d600582640db14c9b892c2e80e9229e903e166d2afc5b1",
+    "web/src/lib/matchup-rating-query.test.ts": "4961a9e80a7bae2988c2ef939b3dfde437b4e47fe4babb24529fcf185973d61f"
+  }
+}

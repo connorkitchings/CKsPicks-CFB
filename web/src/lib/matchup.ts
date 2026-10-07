@@ -1,8 +1,9 @@
 import { cache } from "react";
-import { and, desc, eq, inArray, lte } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db, schema } from "./db.ts";
 import { getRatingsAsOf } from "./v5.ts";
 import { ratingName } from "./rating-names.ts";
+import { matchupRatingQuery, renderedRatingSource } from "./matchup-rating-query.ts";
 import {
   displaySystemName,
   isAllowedSeason,
@@ -148,15 +149,11 @@ export const getMatchupData = cache(async (gameId: number): Promise<MatchupData 
   // Ratings known before kickoff, matching the pre-game stats snapshot (never
   // post-game ratings that already include this result).
   const ratings = await getRatingsAsOf(season, game.startDate.getTime());
-  const ratingProvenanceRows = await db.selectDistinct({
-    team: schema.v5RatingSnapshots.team,
-    sourceManifestSha256: schema.v5RatingSnapshots.sourceManifestSha256,
-  }).from(schema.v5RatingSnapshots).where(and(
-    eq(schema.v5RatingSnapshots.season, season),
-    eq(schema.v5RatingSnapshots.snapshotClass, "current"),
-    lte(schema.v5RatingSnapshots.cutoffUtc, game.startDate),
-    inArray(schema.v5RatingSnapshots.team, [ratingName(game.homeTeam), ratingName(game.awayTeam)]),
-  )).orderBy(desc(schema.v5RatingSnapshots.cutoffUtc));
+  const ratingTeams = [ratingName(game.homeTeam), ratingName(game.awayTeam)];
+  const renderedSource = renderedRatingSource(ratings, ratingTeams);
+  const ratingProvenanceRows = renderedSource
+    ? await matchupRatingQuery(db, season, game.startDate, ratingTeams, renderedSource)
+    : [];
   const latestRatingManifestByTeam = new Map<string, string>();
   for (const row of ratingProvenanceRows) {
     if (!latestRatingManifestByTeam.has(row.team)) latestRatingManifestByTeam.set(row.team, row.sourceManifestSha256);

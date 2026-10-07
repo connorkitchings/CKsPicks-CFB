@@ -1,0 +1,84 @@
+{
+  "captured_at": "2026-10-07T12:56:28.337027+00:00",
+  "environment": "production",
+  "tables": {
+    "current_week": {
+      "count": 1,
+      "sha256": "c425ac286957b2e40bcd308463b6f928df86d93a137f8b75b9083b4b6cd38905",
+      "unchanged": true
+    },
+    "site_week_selections": {
+      "count": 6,
+      "sha256": "cb9d684fbf2263b78287486cccf83ae7d6e544b155b52d65ba4433c36e0a5f94",
+      "unchanged": true
+    },
+    "system_stats": {
+      "count": 1,
+      "sha256": "8e8dfc5d2f4013aff6def9a5d1538ff8af39dcd5ead63a85f096dbd356fade74",
+      "unchanged": true
+    },
+    "prospective_week_records": {
+      "count": 1,
+      "sha256": "daf5292fd1ac5f065f871115d476ddc658b705b335a72c61da95bb48fd106aba",
+      "unchanged": true
+    },
+    "game_venues": {
+      "count": 271,
+      "sha256": "f0b59b0a1bfda1e20445d0f9411642d4bf242ddd981711fe5adb4ee15880cc75",
+      "unchanged": true
+    },
+    "team_season_stats": {
+      "count": 10460,
+      "sha256": "efb92a281b4968d6cf3e23016e116133bc66eb74e7d90488ff31cfc8f79bdda2",
+      "unchanged": true
+    },
+    "predictions": {
+      "count": 3520,
+      "sha256": "e63a2c538beef6aa385fb5de02ceb39918d295793a15961bbb976937772d7171",
+      "unchanged": true
+    },
+    "prediction_grades": {
+      "count": 6124,
+      "sha256": "dec021e3f9c71f7f9f484bfc2141978072e11fe765569bf8445fcf5d19c6aa12",
+      "unchanged": true
+    },
+    "game_results": {
+      "count": 1065,
+      "sha256": "052e948005d66a22ffb625ebc3a28b0c9db2c96d7e8d303e308f1eb1347d5830",
+      "unchanged": true
+    }
+  },
+  "migration_checksums": {
+    "0003": true,
+    "0004": true,
+    "0006": true,
+    "0002": true,
+    "0008": true,
+    "0007": true,
+    "0005": true,
+    "0009": true,
+    "0010": true,
+    "0011": true,
+    "0012": true,
+    "0014": true,
+    "0013": true,
+    "0015": true,
+    "0016": true,
+    "0017": true,
+    "0018": true,
+    "0019": true,
+    "0020": true,
+    "0021": true,
+    "0022": true,
+    "0024": true,
+    "0023": true
+  },
+  "identity": [
+    "cks_prod_pipeline",
+    "cks_prod_pipeline"
+  ],
+  "web_schema_usage": [
+    true,
+    false
+  ]
+}

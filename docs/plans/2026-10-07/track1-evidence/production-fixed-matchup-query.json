@@ -1,0 +1,126 @@
+{
+  "captured_at": "2026-10-07T12:48:35.529813+00:00",
+  "environment": "production",
+  "identity": [
+    "cks_prod_pipeline",
+    "cks_prod_pipeline"
+  ],
+  "representative_game": [
+    401864513,
+    "Hawai'i",
+    "San Jos\u00e9 State",
+    "2026-10-04 03:59:00+00:00"
+  ],
+  "generated_query": {
+    "sql": "select distinct \"team\", \"source_manifest_sha256\", \"cutoff_utc\" from \"v5_rating_snapshots\" where (\"v5_rating_snapshots\".\"season\" = $1 and \"v5_rating_snapshots\".\"snapshot_class\" = $2 and \"v5_rating_snapshots\".\"cutoff_utc\" <= $3 and \"v5_rating_snapshots\".\"team\" in ($4, $5)) order by \"v5_rating_snapshots\".\"cutoff_utc\" desc",
+    "params": [
+      2026,
+      "current",
+      "2026-10-04T03:59:00.000Z",
+      "Hawai_i",
+      "San Jose State"
+    ]
+  },
+  "query_rows": [
+    [
+      "Hawai_i",
+      "75e016e1b9876c940cdc98d70aebcc01472b9b1fd160ca6e8e1358d87208cae0",
+      "2026-09-27 14:15:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-27 14:15:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "75e016e1b9876c940cdc98d70aebcc01472b9b1fd160ca6e8e1358d87208cae0",
+      "2026-09-27 14:15:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-27 14:15:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "0c7bca598dcf5a377b7c619edba7eca34bb31dd7c61d489d47c06a5bfc38e3f0",
+      "2026-09-22 14:58:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-22 14:58:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "0c7bca598dcf5a377b7c619edba7eca34bb31dd7c61d489d47c06a5bfc38e3f0",
+      "2026-09-22 14:58:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-22 14:58:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "c440a2b0ff77a2260153ab6955a007e93c316cb2beb7f4402127a419c646a700",
+      "2026-09-13 18:18:22+00:00"
+    ],
+    [
+      "Hawai_i",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-13 18:18:22+00:00"
+    ],
+    [
+      "San Jose State",
+      "c440a2b0ff77a2260153ab6955a007e93c316cb2beb7f4402127a419c646a700",
+      "2026-09-13 18:18:22+00:00"
+    ],
+    [
+      "San Jose State",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-13 18:18:22+00:00"
+    ],
+    [
+      "Hawai_i",
+      "bc1602cdbe2fd3b49da1d76511a7dbfc1152719576f8d859dc7899f3a90f9a04",
+      "2026-09-08 15:35:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-08 15:35:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "bc1602cdbe2fd3b49da1d76511a7dbfc1152719576f8d859dc7899f3a90f9a04",
+      "2026-09-08 15:35:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-08 15:35:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "a9f5408e534f132d5f4f714fe7dff30dfadc6e6f8f921ff95328b070a4f86b24",
+      "2026-09-03 04:00:00+00:00"
+    ],
+    [
+      "Hawai_i",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-03 04:00:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "a9f5408e534f132d5f4f714fe7dff30dfadc6e6f8f921ff95328b070a4f86b24",
+      "2026-09-03 04:00:00+00:00"
+    ],
+    [
+      "San Jose State",
+      "e80ae3473d88d0c458325c19343e7dae6447924d9abad29b15089bc19cacd26b",
+      "2026-09-03 04:00:00+00:00"
+    ]
+  ]
+}

@@ -324,3 +324,7 @@ The [Stage 7B contract](../2026-10-06/02-stage7b-exact-release-and-cutover.md) r
 2. The Preview attestation `limitations` list must explicitly include: `"In Preview staging, the original Week 5 freeze was executed directly via freeze_week.py and recorded in ops.activation_history without an enclosing ops.pipeline_runs harness record."`
 3. In `production`, `freeze_pipeline` strictly requires the matching successful `freeze-week` pipeline run and `freeze` step (verified present in Production).
 4. No change is made to SQL migrations, prospective table schemas, or Production requirements.
+
+### Track 1 Window 1 release preparation — 2026-10-07
+
+The [Track 1 preparation receipt](../2026-10-07/track1-release-packet.md) records fresh pinned Production venue dry-run coverage, exact before/proposed payloads, effective web grants, independently verified prospective designations and unchanged serving fingerprints. Local validation passes, including the explicitly authorized web SQL-shape repair. This is a HOLD receipt: rating-source binding is now repaired under the approved lineage contract, while exact-SHA CI/real Preview verification remain open. No Production venue publication, branch promotion, Window 2 activation or completed Window 1 production receipt is asserted.
