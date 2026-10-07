@@ -220,9 +220,9 @@ publish-week:
 
 freeze-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(ENV)" ]; then \
-		echo "Usage: make freeze-week YEAR=2026 WEEK=1 ENV=preview|production [WAIVER='reason']"; exit 1; \
+		echo "Usage: make freeze-week YEAR=2026 WEEK=1 ENV=preview|production [WAIVER='reason'] [DECISION_REF=ref (required for 2026 Week 5+ V5 freezes)]"; exit 1; \
 	fi
-	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(ENV) $(if $(WAIVER),--waiver "$(WAIVER)",)
+	PYTHONPATH=src uv run python -m cks_picks_cfb.ops freeze-week --year $(YEAR) --week $(WEEK) --environment $(ENV) $(if $(WAIVER),--waiver "$(WAIVER)",) $(if $(DECISION_REF),--decision-ref "$(DECISION_REF)",)
 
 close-week:
 	@if [ -z "$(YEAR)" ] || [ -z "$(WEEK)" ] || [ -z "$(AS_OF)" ] || [ -z "$(ENV)" ]; then \

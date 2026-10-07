@@ -62,7 +62,7 @@ def run(*, packet: dict, apply: bool) -> dict:
             "batch packet environment differs from active artifact context"
         )
     if os.getenv("CFB_STORAGE_BACKEND") != "r2":
-        raise ValueError("v2 batch selection requires immutable R2 storage")
+        raise ValueError("batch selection requires immutable R2 storage")
     if (
         apply
         and environment == "production"

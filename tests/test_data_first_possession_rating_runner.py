@@ -118,6 +118,27 @@ def _args(run_id: str = "rating-run-test") -> argparse.Namespace:
     )
 
 
+@pytest.fixture(autouse=True)
+def _close_progress_heartbeats(monkeypatch):
+    """Stop each apply's heartbeat thread when its test ends.
+
+    The runner only closes its progress thread via ``atexit``, so a finished
+    test would otherwise keep reprinting its last phase for the rest of the
+    pytest process and look like a hang in CI logs.
+    """
+    started: list[runner._Progress] = []
+    original_start = runner._Progress.start
+
+    def tracked_start(self) -> None:
+        started.append(self)
+        original_start(self)
+
+    monkeypatch.setattr(runner._Progress, "start", tracked_start)
+    yield
+    for progress in started:
+        progress.close()
+
+
 @pytest.fixture()
 def inputs() -> RatingTournamentInputs:
     return _fixture()

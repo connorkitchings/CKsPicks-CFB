@@ -66,6 +66,7 @@ def freeze_run(
                 db_now,
             ) = row
             freeze_manifest = None
+            needs_decision_ref = False
             if str(model_id or "").startswith("v5-"):
                 from cks_picks_cfb.ops.v5_freeze_guard import (
                     require_v5_freeze_authorization,
@@ -83,11 +84,9 @@ def freeze_run(
                     evidence_class=str(evidence_class),
                     environment=os.getenv("CFB_ARTIFACT_ENV", "production"),
                 )
-                if year == 2026 and week >= 5 and state not in {"frozen", "scored"}:
-                    if not decision_ref or not decision_ref.strip():
-                        raise RuntimeError(
-                            "a decision reference is required to retain a prospective V5 freeze"
-                        )
+                needs_decision_ref = (
+                    year == 2026 and week >= 5 and state not in {"frozen", "scored"}
+                )
             if state in {"frozen", "scored"}:
                 return {
                     "run_id": run_id,
@@ -126,6 +125,12 @@ def freeze_run(
                         "state": "missed",
                         "reason": "freeze deadline passed",
                     }
+            # Checked after the deadline branches so a run past its one-hour
+            # boundary is recorded as missed rather than failing on the ref.
+            if needs_decision_ref and (not decision_ref or not decision_ref.strip()):
+                raise RuntimeError(
+                    "a decision reference is required to retain a prospective V5 freeze"
+                )
             if predicted != expected:
                 raise RuntimeError(
                     f"Cannot freeze {run_id}: predicted {predicted}/{expected} games"
