@@ -59,6 +59,13 @@
 - The Python tests, 6B rebuild flow and Web jobs of that run were still in progress when I checked and are unproven. The next push cancels this run (`cancel-in-progress`).
 - **Proposed commit:** `style: format and lint audit evidence scripts`
 
+## CI Result on 0cd0a3c0 (run 37641359773)
+- **All four jobs succeeded (about 10m 21s end to end).** Lint and contracts 28s (format, lint, contracts, registry all green); Web 1m54s; Python tests 10m21s; Python 6B rebuild flow 9m52s.
+- **Python tests steps:** parallel 1,987 passed, 2 skipped (6m42s); rating publication 7 passed (2m27s, no heartbeat lines in the log against 26 in the stalled run); PostgreSQL integration 23 passed (22s); coverage "Required test coverage of 60.0% reached. Total coverage: 65.96%". The 12 attestation tests that errored before now pass under `fetch-depth: 0` (no errors in the step).
+- **6B rebuild flow:** 34 passed in its own job; slowest call 279s plus 170s fixture setup.
+- **Vercel Preview:** the PR check for head `0cd0a3c0` is `SUCCESS` ([inspect URL](https://vercel.com/connorkitchings-projects/c-ks-picks-cfb/4QA4B4HxvHmUSDrhUCtvbMV6XJFd)). Not opened; `dpl_` ID not captured; no route verification done.
+- The earlier `d100d15e` run (37641000610) failed at the formatting step as recorded above and is superseded. Release-packet update: `docs/plans/2026-10-07/track1-release-packet.md` ("Update after push"). The packet remains HOLD.
+
 ## Files Modified
 - `.github/workflows/ci.yml`, `Makefile`, `scripts/pipeline/freeze_week.py`, `scripts/pipeline/select_v5_intended_update_batch.py`
 - `tests/test_data_first_possession_rating_runner.py`; new `tests/test_freeze_week_deadline.py`
