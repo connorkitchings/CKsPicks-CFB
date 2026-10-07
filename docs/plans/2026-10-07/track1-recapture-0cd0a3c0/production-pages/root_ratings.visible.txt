@@ -1,0 +1,1398 @@
+CK's Picks · V5 College Football Forecasts 
+Picks Results Ratings Performance 
+2026 · Post-Week 4 · V5 
+Team ratings 
+Frozen ratings after Week 4 games finalized (215 games, weeks 0–4) (active model state). Higher is better for overall, offense, and defense. 
+ℹ About V5 possession ratings 
+Ratings represent expected scoring efficiency per possession (PPP) against an average FBS opponent under standard conditions. Both offense and defense are oriented so higher is better: positive offense scores more points per possession, while positive defense holds opponents to fewer. 
+Game margin forecasts are derived from possession ratings through a through-2025 Ridge regression bridge with earlier-only non-offense offsets. Uncertainty (±) is one rating standard deviation, narrowing smoothly as completed games provide evidence. Timeline: Post-Week 4 Post-Week 3 Post-Week 2 Post-Week 1 Post-Week 0 Preseason 
+Sort: 
+overall offense defense 
+1 Notre Dame 
++2.09 
+± 0.31 
+Off +2.23 Def +1.94 
+2 Utah 
++2.02 
+± 0.34 
+Off +2.42 Def +1.62 
+3 Georgia 
++1.89 
+± 0.32 
+Off +2.30 Def +1.47 
+4 Florida 
++1.53 
+± 0.30 
+Off +2.66 Def +0.40 
+5 Indiana 
++1.49 
+± 0.32 
+Off +1.68 Def +1.30 
+6 Alabama 
++1.49 
+± 0.27 
+Off +2.00 Def +0.98 
+7 Ohio State 
++1.47 
+± 0.31 
+Off +1.83 Def +1.11 
+8 Texas 
++1.40 
+± 0.27 
+Off +1.29 Def +1.51 
+9 LSU 
++1.35 
+± 0.27 
+Off +1.41 Def +1.29 
+10 Nebraska 
++1.32 
+± 0.34 
+Off +1.61 Def +1.04 
+11 Mississippi State 
++1.30 
+± 0.28 
+Off +1.74 Def +0.86 
+12 Miami 
++1.23 
+± 0.36 
+Off +1.42 Def +1.05 
+13 Penn State 
++1.20 
+± 0.28 
+Off +1.01 Def +1.38 
+14 Ole Miss 
++1.18 
+± 0.29 
+Off +1.67 Def +0.70 
+15 Northwestern 
++1.07 
+± 0.35 
+Off +1.52 Def +0.62 
+16 Tennessee 
++1.05 
+± 0.30 
+Off +1.29 Def +0.82 
+17 Oregon 
++0.99 
+± 0.31 
+Off +1.22 Def +0.76 
+18 USC 
++0.96 
+± 0.29 
+Off +1.85 Def +0.07 
+19 UCF 
++0.96 
+± 0.32 
+Off +0.98 Def +0.93 
+20 Boise State 
++0.93 
+± 0.38 
+Off +1.05 Def +0.81 
+21 Virginia 
++0.92 
+± 0.30 
+Off +0.77 Def +1.07 
+22 BYU 
++0.91 
+± 0.35 
+Off +0.92 Def +0.90 
+23 Wisconsin 
++0.90 
+± 0.32 
+Off +0.90 Def +0.90 
+24 Pittsburgh 
++0.89 
+± 0.33 
+Off +1.09 Def +0.69 
+25 South Carolina 
++0.88 
+± 0.31 
+Off +1.23 Def +0.54 
+26 Michigan State 
++0.88 
+± 0.30 
+Off +0.89 Def +0.87 
+27 Houston 
++0.88 
+± 0.30 
+Off +1.62 Def +0.13 
+28 Virginia Tech 
++0.87 
+± 0.30 
+Off +1.36 Def +0.38 
+29 Toledo 
++0.86 
+± 0.30 
+Off +1.41 Def +0.31 
+30 Kansas State 
++0.86 
+± 0.31 
+Off +1.36 Def +0.36 
+31 UCLA 
++0.85 
+± 0.26 
+Off +0.99 Def +0.70 
+32 Oklahoma 
++0.82 
+± 0.28 
+Off +0.32 Def +1.32 
+33 New Mexico 
++0.82 
+± 0.32 
+Off +0.67 Def +0.96 
+34 Michigan 
++0.81 
+± 0.28 
+Off +0.64 Def +0.97 
+35 Iowa State 
++0.80 
+± 0.33 
+Off +0.71 Def +0.89 
+36 Texas Tech 
++0.80 
+± 0.31 
+Off +0.55 Def +1.05 
+37 Auburn 
++0.80 
+± 0.27 
+Off +0.72 Def +0.88 
+38 Iowa 
++0.78 
+± 0.30 
+Off +0.38 Def +1.18 
+39 Duke 
++0.78 
+± 0.30 
+Off +0.56 Def +1.00 
+40 Wake Forest 
++0.74 
+± 0.30 
+Off +0.72 Def +0.76 
+41 UT San Antonio 
++0.74 
+± 0.29 
+Off +0.98 Def +0.50 
+42 Cincinnati 
++0.72 
+± 0.29 
+Off +0.89 Def +0.56 
+43 Arizona 
++0.72 
+± 0.31 
+Off +1.12 Def +0.32 
+44 Nevada 
++0.71 
+± 0.33 
+Off +0.78 Def +0.65 
+45 Louisville 
++0.71 
+± 0.31 
+Off +1.10 Def +0.32 
+46 Texas A&M 
++0.71 
+± 0.27 
+Off +0.99 Def +0.43 
+47 Illinois 
++0.70 
+± 0.32 
+Off +1.76 Def -0.36 
+48 Baylor 
++0.66 
+± 0.28 
+Off +0.57 Def +0.75 
+49 Missouri 
++0.66 
+± 0.28 
+Off +0.57 Def +0.74 
+50 Kentucky 
++0.66 
+± 0.29 
+Off +0.62 Def +0.69 
+51 James Madison 
++0.63 
+± 0.32 
+Off +0.39 Def +0.87 
+52 Vanderbilt 
++0.62 
+± 0.29 
+Off +0.60 Def +0.64 
+53 TCU 
++0.62 
+± 0.30 
+Off +0.15 Def +1.08 
+54 Arkansas 
++0.61 
+± 0.32 
+Off +0.77 Def +0.46 
+55 Oklahoma State 
++0.61 
+± 0.28 
+Off +0.63 Def +0.59 
+56 Florida State 
++0.61 
+± 0.29 
+Off +1.12 Def +0.09 
+57 Louisiana 
++0.56 
+± 0.31 
+Off +0.26 Def +0.87 
+58 West Virginia 
++0.52 
+± 0.28 
+Off +0.91 Def +0.13 
+59 Fresno State 
++0.51 
+± 0.28 
+Off +0.07 Def +0.96 
+60 Washington 
++0.51 
+± 0.29 
+Off +0.47 Def +0.56 
+61 North Texas 
++0.48 
+± 0.31 
+Off +1.42 Def -0.46 
+62 South Florida 
++0.48 
+± 0.33 
+Off +0.21 Def +0.75 
+63 SMU 
++0.47 
+± 0.29 
+Off +0.49 Def +0.45 
+64 Texas State 
++0.46 
+± 0.31 
+Off +1.12 Def -0.20 
+65 Liberty 
++0.43 
+± 0.31 
+Off +0.81 Def +0.06 
+66 Colorado State 
++0.43 
+± 0.29 
+Off +1.15 Def -0.29 
+67 UMass 
++0.43 
+± 0.35 
+Off +0.43 Def +0.43 
+68 Rutgers 
++0.42 
+± 0.30 
+Off +0.99 Def -0.14 
+69 Clemson 
++0.41 
+± 0.26 
+Off -0.19 Def +1.01 
+70 Memphis 
++0.40 
+± 0.31 
+Off +0.73 Def +0.06 
+71 Boston College 
++0.39 
+± 0.29 
+Off -0.06 Def +0.85 
+72 Air Force 
++0.39 
+± 0.43 
+Off +0.89 Def -0.12 
+73 Tulsa 
++0.39 
+± 0.30 
+Off +0.10 Def +0.68 
+74 North Carolina 
++0.35 
+± 0.34 
+Off +0.41 Def +0.29 
+75 North Dakota State 
++0.35 
+± 0.37 
+Off -0.09 Def +0.78 
+76 Old Dominion 
++0.34 
+± 0.33 
+Off +0.14 Def +0.54 
+77 Utah State 
++0.33 
+± 0.30 
+Off -0.11 Def +0.77 
+78 Oregon State 
++0.33 
+± 0.32 
+Off -0.10 Def +0.75 
+79 Florida Atlantic 
++0.29 
+± 0.32 
+Off +0.64 Def -0.06 
+80 Troy 
++0.28 
+± 0.28 
+Off -0.12 Def +0.68 
+81 Army 
++0.28 
+± 0.40 
+Off +0.40 Def +0.16 
+82 NC State 
++0.28 
+± 0.29 
+Off +0.58 Def -0.01 
+83 Western Michigan 
++0.26 
+± 0.31 
+Off -0.08 Def +0.60 
+84 Georgia State 
++0.26 
+± 0.29 
+Off +0.40 Def +0.11 
+85 Minnesota 
++0.24 
+± 0.30 
+Off +0.06 Def +0.42 
+86 Maryland 
++0.23 
+± 0.30 
+Off +0.11 Def +0.35 
+87 Temple 
++0.21 
+± 0.31 
+Off +0.62 Def -0.21 
+88 South Alabama 
++0.19 
+± 0.29 
+Off +0.81 Def -0.42 
+89 Syracuse 
++0.19 
+± 0.34 
+Off -0.19 Def +0.57 
+90 Colorado 
++0.19 
+± 0.29 
+Off -0.36 Def +0.73 
+91 Navy 
++0.18 
+± 0.38 
+Off +0.32 Def +0.04 
+92 Arizona State 
++0.16 
+± 0.32 
+Off -0.19 Def +0.52 
+93 Georgia Tech 
++0.16 
+± 0.30 
+Off +0.28 Def +0.04 
+94 Tulane 
++0.15 
+± 0.26 
+Off -0.15 Def +0.46 
+95 Louisiana Tech 
++0.15 
+± 0.32 
+Off +0.08 Def +0.22 
+96 Georgia Southern 
++0.13 
+± 0.30 
+Off +0.29 Def -0.02 
+97 Miami (OH) 
++0.11 
+± 0.32 
+Off +0.41 Def -0.18 
+98 UAB 
++0.10 
+± 0.27 
+Off +0.08 Def +0.12 
+99 Appalachian State 
++0.09 
+± 0.28 
+Off +0.24 Def -0.06 
+100 Jacksonville State 
++0.08 
+± 0.29 
+Off +0.21 Def -0.04 
+101 California 
++0.08 
+± 0.29 
+Off -0.10 Def +0.26 
+102 Coastal Carolina 
++0.07 
+± 0.29 
+Off -0.29 Def +0.44 
+103 Purdue 
++0.07 
+± 0.36 
+Off +0.78 Def -0.64 
+104 Ohio 
++0.07 
+± 0.31 
+Off +0.54 Def -0.41 
+105 Eastern Michigan 
++0.06 
+± 0.27 
+Off -0.11 Def +0.23 
+106 Kansas 
++0.05 
+± 0.32 
+Off -0.22 Def +0.32 
+107 East Carolina 
++0.04 
+± 0.31 
+Off -0.24 Def +0.32 
+108 San Diego State 
++0.04 
+± 0.29 
+Off -0.41 Def +0.49 
+109 Connecticut 
++0.03 
+± 0.33 
+Off +0.15 Def -0.09 
+110 Stanford 
++0.02 
+± 0.32 
+Off +0.32 Def -0.28 
+111 Sam Houston State 
+-0.00 
+± 0.29 
+Off -0.08 Def +0.08 
+112 Delaware 
+-0.01 
+± 0.30 
+Off +0.06 Def -0.09 
+113 UNLV 
+-0.03 
+± 0.27 
+Off -0.40 Def +0.35 
+114 San Jose State 
+-0.03 
+± 0.28 
+Off -0.27 Def +0.22 
+115 Rice 
+-0.06 
+± 0.33 
+Off +0.35 Def -0.47 
+116 Arkansas State 
+-0.12 
+± 0.30 
+Off -0.14 Def -0.10 
+117 Washington State 
+-0.15 
+± 0.30 
+Off -0.65 Def +0.35 
+118 Florida International 
+-0.16 
+± 0.32 
+Off -0.62 Def +0.31 
+119 Southern Mississippi 
+-0.18 
+± 0.30 
+Off -0.14 Def -0.23 
+120 Wyoming 
+-0.22 
+± 0.32 
+Off -0.57 Def +0.13 
+121 Central Michigan 
+-0.25 
+± 0.34 
+Off -0.18 Def -0.32 
+122 Middle Tennessee 
+-0.26 
+± 0.33 
+Off -0.63 Def +0.11 
+123 Marshall 
+-0.27 
+± 0.31 
+Off +0.07 Def -0.60 
+124 Kennesaw State 
+-0.27 
+± 0.31 
+Off -0.39 Def -0.14 
+125 Bowling Green 
+-0.28 
+± 0.32 
+Off -0.58 Def +0.01 
+126 Hawai_i 
+-0.32 
+± 0.28 
+Off -0.49 Def -0.15 
+127 Buffalo 
+-0.37 
+± 0.34 
+Off -0.24 Def -0.50 
+128 Charlotte 
+-0.37 
+± 0.30 
+Off -0.53 Def -0.20 
+129 Missouri State 
+-0.37 
+± 0.31 
+Off -0.28 Def -0.45 
+130 Western Kentucky 
+-0.37 
+± 0.31 
+Off -0.38 Def -0.37 
+131 New Mexico State 
+-0.42 
+± 0.31 
+Off -0.55 Def -0.30 
+132 Northern Illinois 
+-0.48 
+± 0.31 
+Off -0.69 Def -0.26 
+133 UTEP 
+-0.52 
+± 0.33 
+Off -0.17 Def -0.87 
+134 Louisiana Monroe 
+-0.54 
+± 0.32 
+Off -0.21 Def -0.86 
+135 Kent State 
+-0.54 
+± 0.40 
+Off -0.51 Def -0.58 
+136 Sacramento State 
+-0.65 
+± 0.28 
+Off -0.81 Def -0.49 
+137 Akron 
+-0.67 
+± 0.31 
+Off -0.70 Def -0.64 
+138 Ball State 
+-0.77 
+± 0.35 
+Off -0.78 Def -0.77 
+2026 Post-Week 4 V5 team ratings 
+# 
+Team 
+Overall 
+Offense 
+Defense 
+Uncertainty 
+1 
+Notre Dame 
++2.09 
++2.23 
++1.94 
+± 0.31 
+2 
+Utah 
++2.02 
++2.42 
++1.62 
+± 0.34 
+3 
+Georgia 
++1.89 
++2.30 
++1.47 
+± 0.32 
+4 
+Florida 
++1.53 
++2.66 
++0.40 
+± 0.30 
+5 
+Indiana 
++1.49 
++1.68 
++1.30 
+± 0.32 
+6 
+Alabama 
++1.49 
++2.00 
++0.98 
+± 0.27 
+7 
+Ohio State 
++1.47 
++1.83 
++1.11 
+± 0.31 
+8 
+Texas 
++1.40 
++1.29 
++1.51 
+± 0.27 
+9 
+LSU 
++1.35 
++1.41 
++1.29 
+± 0.27 
+10 
+Nebraska 
++1.32 
++1.61 
++1.04 
+± 0.34 
+11 
+Mississippi State 
++1.30 
++1.74 
++0.86 
+± 0.28 
+12 
+Miami 
++1.23 
++1.42 
++1.05 
+± 0.36 
+13 
+Penn State 
++1.20 
++1.01 
++1.38 
+± 0.28 
+14 
+Ole Miss 
++1.18 
++1.67 
++0.70 
+± 0.29 
+15 
+Northwestern 
++1.07 
++1.52 
++0.62 
+± 0.35 
+16 
+Tennessee 
++1.05 
++1.29 
++0.82 
+± 0.30 
+17 
+Oregon 
++0.99 
++1.22 
++0.76 
+± 0.31 
+18 
+USC 
++0.96 
++1.85 
++0.07 
+± 0.29 
+19 
+UCF 
++0.96 
++0.98 
++0.93 
+± 0.32 
+20 
+Boise State 
++0.93 
++1.05 
++0.81 
+± 0.38 
+21 
+Virginia 
++0.92 
++0.77 
++1.07 
+± 0.30 
+22 
+BYU 
++0.91 
++0.92 
++0.90 
+± 0.35 
+23 
+Wisconsin 
++0.90 
++0.90 
++0.90 
+± 0.32 
+24 
+Pittsburgh 
++0.89 
++1.09 
++0.69 
+± 0.33 
+25 
+South Carolina 
++0.88 
++1.23 
++0.54 
+± 0.31 
+26 
+Michigan State 
++0.88 
++0.89 
++0.87 
+± 0.30 
+27 
+Houston 
++0.88 
++1.62 
++0.13 
+± 0.30 
+28 
+Virginia Tech 
++0.87 
++1.36 
++0.38 
+± 0.30 
+29 
+Toledo 
++0.86 
++1.41 
++0.31 
+± 0.30 
+30 
+Kansas State 
++0.86 
++1.36 
++0.36 
+± 0.31 
+31 
+UCLA 
++0.85 
++0.99 
++0.70 
+± 0.26 
+32 
+Oklahoma 
++0.82 
++0.32 
++1.32 
+± 0.28 
+33 
+New Mexico 
++0.82 
++0.67 
++0.96 
+± 0.32 
+34 
+Michigan 
++0.81 
++0.64 
++0.97 
+± 0.28 
+35 
+Iowa State 
++0.80 
++0.71 
++0.89 
+± 0.33 
+36 
+Texas Tech 
++0.80 
++0.55 
++1.05 
+± 0.31 
+37 
+Auburn 
++0.80 
++0.72 
++0.88 
+± 0.27 
+38 
+Iowa 
++0.78 
++0.38 
++1.18 
+± 0.30 
+39 
+Duke 
++0.78 
++0.56 
++1.00 
+± 0.30 
+40 
+Wake Forest 
++0.74 
++0.72 
++0.76 
+± 0.30 
+41 
+UT San Antonio 
++0.74 
++0.98 
++0.50 
+± 0.29 
+42 
+Cincinnati 
++0.72 
++0.89 
++0.56 
+± 0.29 
+43 
+Arizona 
++0.72 
++1.12 
++0.32 
+± 0.31 
+44 
+Nevada 
++0.71 
++0.78 
++0.65 
+± 0.33 
+45 
+Louisville 
++0.71 
++1.10 
++0.32 
+± 0.31 
+46 
+Texas A&M 
++0.71 
++0.99 
++0.43 
+± 0.27 
+47 
+Illinois 
++0.70 
++1.76 
+-0.36 
+± 0.32 
+48 
+Baylor 
++0.66 
++0.57 
++0.75 
+± 0.28 
+49 
+Missouri 
++0.66 
++0.57 
++0.74 
+± 0.28 
+50 
+Kentucky 
++0.66 
++0.62 
++0.69 
+± 0.29 
+51 
+James Madison 
++0.63 
++0.39 
++0.87 
+± 0.32 
+52 
+Vanderbilt 
++0.62 
++0.60 
++0.64 
+± 0.29 
+53 
+TCU 
++0.62 
++0.15 
++1.08 
+± 0.30 
+54 
+Arkansas 
++0.61 
++0.77 
++0.46 
+± 0.32 
+55 
+Oklahoma State 
++0.61 
++0.63 
++0.59 
+± 0.28 
+56 
+Florida State 
++0.61 
++1.12 
++0.09 
+± 0.29 
+57 
+Louisiana 
++0.56 
++0.26 
++0.87 
+± 0.31 
+58 
+West Virginia 
++0.52 
++0.91 
++0.13 
+± 0.28 
+59 
+Fresno State 
++0.51 
++0.07 
++0.96 
+± 0.28 
+60 
+Washington 
++0.51 
++0.47 
++0.56 
+± 0.29 
+61 
+North Texas 
++0.48 
++1.42 
+-0.46 
+± 0.31 
+62 
+South Florida 
++0.48 
++0.21 
++0.75 
+± 0.33 
+63 
+SMU 
++0.47 
++0.49 
++0.45 
+± 0.29 
+64 
+Texas State 
++0.46 
++1.12 
+-0.20 
+± 0.31 
+65 
+Liberty 
++0.43 
++0.81 
++0.06 
+± 0.31 
+66 
+Colorado State 
++0.43 
++1.15 
+-0.29 
+± 0.29 
+67 
+UMass 
++0.43 
++0.43 
++0.43 
+± 0.35 
+68 
+Rutgers 
++0.42 
++0.99 
+-0.14 
+± 0.30 
+69 
+Clemson 
++0.41 
+-0.19 
++1.01 
+± 0.26 
+70 
+Memphis 
++0.40 
++0.73 
++0.06 
+± 0.31 
+71 
+Boston College 
++0.39 
+-0.06 
++0.85 
+± 0.29 
+72 
+Air Force 
++0.39 
++0.89 
+-0.12 
+± 0.43 
+73 
+Tulsa 
++0.39 
++0.10 
++0.68 
+± 0.30 
+74 
+North Carolina 
++0.35 
++0.41 
++0.29 
+± 0.34 
+75 
+North Dakota State 
++0.35 
+-0.09 
++0.78 
+± 0.37 
+76 
+Old Dominion 
++0.34 
++0.14 
++0.54 
+± 0.33 
+77 
+Utah State 
++0.33 
+-0.11 
++0.77 
+± 0.30 
+78 
+Oregon State 
++0.33 
+-0.10 
++0.75 
+± 0.32 
+79 
+Florida Atlantic 
++0.29 
++0.64 
+-0.06 
+± 0.32 
+80 
+Troy 
++0.28 
+-0.12 
++0.68 
+± 0.28 
+81 
+Army 
++0.28 
++0.40 
++0.16 
+± 0.40 
+82 
+NC State 
++0.28 
++0.58 
+-0.01 
+± 0.29 
+83 
+Western Michigan 
++0.26 
+-0.08 
++0.60 
+± 0.31 
+84 
+Georgia State 
++0.26 
++0.40 
++0.11 
+± 0.29 
+85 
+Minnesota 
++0.24 
++0.06 
++0.42 
+± 0.30 
+86 
+Maryland 
++0.23 
++0.11 
++0.35 
+± 0.30 
+87 
+Temple 
++0.21 
++0.62 
+-0.21 
+± 0.31 
+88 
+South Alabama 
++0.19 
++0.81 
+-0.42 
+± 0.29 
+89 
+Syracuse 
++0.19 
+-0.19 
++0.57 
+± 0.34 
+90 
+Colorado 
++0.19 
+-0.36 
++0.73 
+± 0.29 
+91 
+Navy 
++0.18 
++0.32 
++0.04 
+± 0.38 
+92 
+Arizona State 
++0.16 
+-0.19 
++0.52 
+± 0.32 
+93 
+Georgia Tech 
++0.16 
++0.28 
++0.04 
+± 0.30 
+94 
+Tulane 
++0.15 
+-0.15 
++0.46 
+± 0.26 
+95 
+Louisiana Tech 
++0.15 
++0.08 
++0.22 
+± 0.32 
+96 
+Georgia Southern 
++0.13 
++0.29 
+-0.02 
+± 0.30 
+97 
+Miami (OH) 
++0.11 
++0.41 
+-0.18 
+± 0.32 
+98 
+UAB 
++0.10 
++0.08 
++0.12 
+± 0.27 
+99 
+Appalachian State 
++0.09 
++0.24 
+-0.06 
+± 0.28 
+100 
+Jacksonville State 
++0.08 
++0.21 
+-0.04 
+± 0.29 
+101 
+California 
++0.08 
+-0.10 
++0.26 
+± 0.29 
+102 
+Coastal Carolina 
++0.07 
+-0.29 
++0.44 
+± 0.29 
+103 
+Purdue 
++0.07 
++0.78 
+-0.64 
+± 0.36 
+104 
+Ohio 
++0.07 
++0.54 
+-0.41 
+± 0.31 
+105 
+Eastern Michigan 
++0.06 
+-0.11 
++0.23 
+± 0.27 
+106 
+Kansas 
++0.05 
+-0.22 
++0.32 
+± 0.32 
+107 
+East Carolina 
++0.04 
+-0.24 
++0.32 
+± 0.31 
+108 
+San Diego State 
++0.04 
+-0.41 
++0.49 
+± 0.29 
+109 
+Connecticut 
++0.03 
++0.15 
+-0.09 
+± 0.33 
+110 
+Stanford 
++0.02 
++0.32 
+-0.28 
+± 0.32 
+111 
+Sam Houston State 
+-0.00 
+-0.08 
++0.08 
+± 0.29 
+112 
+Delaware 
+-0.01 
++0.06 
+-0.09 
+± 0.30 
+113 
+UNLV 
+-0.03 
+-0.40 
++0.35 
+± 0.27 
+114 
+San Jose State 
+-0.03 
+-0.27 
++0.22 
+± 0.28 
+115 
+Rice 
+-0.06 
++0.35 
+-0.47 
+± 0.33 
+116 
+Arkansas State 
+-0.12 
+-0.14 
+-0.10 
+± 0.30 
+117 
+Washington State 
+-0.15 
+-0.65 
++0.35 
+± 0.30 
+118 
+Florida International 
+-0.16 
+-0.62 
++0.31 
+± 0.32 
+119 
+Southern Mississippi 
+-0.18 
+-0.14 
+-0.23 
+± 0.30 
+120 
+Wyoming 
+-0.22 
+-0.57 
++0.13 
+± 0.32 
+121 
+Central Michigan 
+-0.25 
+-0.18 
+-0.32 
+± 0.34 
+122 
+Middle Tennessee 
+-0.26 
+-0.63 
++0.11 
+± 0.33 
+123 
+Marshall 
+-0.27 
++0.07 
+-0.60 
+± 0.31 
+124 
+Kennesaw State 
+-0.27 
+-0.39 
+-0.14 
+± 0.31 
+125 
+Bowling Green 
+-0.28 
+-0.58 
++0.01 
+± 0.32 
+126 
+Hawai_i 
+-0.32 
+-0.49 
+-0.15 
+± 0.28 
+127 
+Buffalo 
+-0.37 
+-0.24 
+-0.50 
+± 0.34 
+128 
+Charlotte 
+-0.37 
+-0.53 
+-0.20 
+± 0.30 
+129 
+Missouri State 
+-0.37 
+-0.28 
+-0.45 
+± 0.31 
+130 
+Western Kentucky 
+-0.37 
+-0.38 
+-0.37 
+± 0.31 
+131 
+New Mexico State 
+-0.42 
+-0.55 
+-0.30 
+± 0.31 
+132 
+Northern Illinois 
+-0.48 
+-0.69 
+-0.26 
+± 0.31 
+133 
+UTEP 
+-0.52 
+-0.17 
+-0.87 
+± 0.33 
+134 
+Louisiana Monroe 
+-0.54 
+-0.21 
+-0.86 
+± 0.32 
+135 
+Kent State 
+-0.54 
+-0.51 
+-0.58 
+± 0.40 
+136 
+Sacramento State 
+-0.65 
+-0.81 
+-0.49 
+± 0.28 
+137 
+Akron 
+-0.67 
+-0.70 
+-0.64 
+± 0.31 
+138 
+Ball State 
+-0.77 
+-0.78 
+-0.77 
+± 0.35 
+Evidence cutoff: Sep 27, 2026, 2:15 PM UTC. Uncertainty is one rating standard deviation. 

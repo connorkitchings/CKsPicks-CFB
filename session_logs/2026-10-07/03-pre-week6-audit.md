@@ -87,6 +87,13 @@
 - **Decision B: promote** by merging PR #2 on GitHub at head `0cd0a3c0`; local docs commits stay on `dev`. The agent did not merge or push anything. Execution notes (merge before pushing more commits; GitHub's merge button creates a new merge SHA, `git push origin 0cd0a3c0:main` keeps `main` at the exact verified commit; post-deploy checks and rollback target) are in the packet.
 - The earlier "Open" items for the registration operator are closed by this entry; the database-role item stays open as accepted-unverified.
 
+## Promotion and Production Verification
+- **User-run:** `git push origin 0cd0a3c0:main` (fast-forward), PR #2 MERGED, docs commit pushed to `dev`. The agent did not push or merge.
+- **Agent-verified, read-only:** `origin/main` = `0cd0a3c0`; `origin/dev` = `8271bbdd`; Production deployment `dpl_25cfxMwDLqXRkphiPQCvT9Db18sY` Ready (12:24:38 EDT); rollback target retained. Six live routes return 200. `/ratings` text is identical to the verified Preview; `/performance` has the same 270 graded-pick records (only list order and the freeze-evidence hash differ); the matchup page shows the documented pre-fix Production team stats.
+- **Pasted claims checked:** the user-supplied report matched the refs, PR state and deployment I re-read. Its claim that the matchup page rendered "with lineage guards intact" is not something I verified; I checked only that it loads and which cells differ.
+- `docs/status.md` updated (Release state, Track 1 line, Window 1 line). Evidence: `track1-recapture-0cd0a3c0/` sections 7, `production-pages/`.
+- **Proposed commit:** `docs(release): record Track 1 promotion and Production verification`
+
 ## Files Modified
 - `.github/workflows/ci.yml`, `Makefile`, `scripts/pipeline/freeze_week.py`, `scripts/pipeline/select_v5_intended_update_batch.py`
 - `tests/test_data_first_possession_rating_runner.py`; new `tests/test_freeze_week_deadline.py`

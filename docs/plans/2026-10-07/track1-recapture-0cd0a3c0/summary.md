@@ -44,3 +44,17 @@ R2 `LastModified` (`attestation-object-times.json`): Preview attestation 2026-10
 ## 6. Rollback target (agent-verified)
 
 `vercel inspect` of `c-ks-picks-32ixekgj0-connorkitchings-projects.vercel.app`: `dpl_FiycAhixbCrDsZK638CVXtdq9XNM`, target production, Ready, created 2026-10-04 11:25:13 EDT (`vercel-inspect-rollback-target.txt`). This is the packet's rollback target, and GitHub's latest Production deployment is for `562319aa`.
+
+## 7. Production after promotion (agent-verified, read-only, 16:25-16:40Z)
+
+The user pushed `0cd0a3c0:main`; the agent verified afterwards:
+
+- **Refs:** `origin/main` = `0cd0a3c02240b77e82cf71e63552143180d23805` exactly; PR #2 MERGED (merge commit `0cd0a3c0`); `origin/dev` = `8271bbdd` (two docs-only commits on top). GitHub Production deployment `6915148299` for sha `0cd0a3c0`.
+- **Vercel:** `dpl_25cfxMwDLqXRkphiPQCvT9Db18sY`, target production, Ready, created 2026-10-07 12:24:38 EDT; aliases `c-ks-picks-cfb.vercel.app` and two others (`vercel-inspect-production-after-promotion.txt`). Rollback target `dpl_FiycAhixbCrDsZK638CVXtdq9XNM` retained.
+- **Live routes** (`production-pages/`, GET only): `/api/health`, `/`, `/results`, `/performance`, `/ratings`, `/matchup/401856819` all return 200. Compared with the verified Preview text:
+  - `/ratings`: identical.
+  - `/`, `/results`, matchup header: only the "Run published" timestamps differ (different publish times for the same runs in the two databases).
+  - `/performance`: the same 270 graded-pick records (214 replay, 56 prospective; `compare_performance_records.py`); only the list order and the freeze-evidence hash differ (Production `9f022418…`, Preview `9b3d04f3…`, as expected). Headline numbers are identical (replay 100-112-3 and 112-102-0; prospective Week 5 28-27-1 and 25-30-1).
+  - `/matchup/401856819`: team-stat cells differ. PPA/play shows a dash on Production and some rates differ (for example explosive-play and 3rd/4th-down rates). This is the documented pre-fix Production team stats (no `ppa_per_play` metric; section 4 of the earlier audit), not a regression from the release.
+- **Observation (not a defect found in the release):** the order of the graded-pick audit list differs between the two databases, so it appears to have no stable tie-break.
+- **Not checked:** browser rendering, phone width, the share download, other matchups, a lineage-mismatch game.

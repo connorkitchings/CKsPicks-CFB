@@ -1,4 +1,4 @@
-# Track 1 release preparation packet — HOLD
+# Track 1 release preparation packet — PROMOTED 2026-10-07 (see the final section; earlier text below is the pre-promotion record)
 
 - **Contract:** [approved Track 1 plan](01-track1-production-promotion.md).
 - **Capture date:** 2026-10-07, 08:43–08:56 EDT (12:43–12:56 UTC).
@@ -114,6 +114,16 @@ Stated by the user in the first person; recorded here as the user's statements. 
 - **Decision B, promotion: PROMOTE via the GitHub PR #2 merge at head `0cd0a3c0`**, so that `main` receives the exact commit that passed CI run `37641359773`. The local unpushed docs commit(s) stay on `dev`. Checked at 16:30Z: PR #2 head `0cd0a3c0`, base `main`, state OPEN, mergeable, merge state CLEAN, all required-looking checks SUCCESS (Python lint and contracts, Python tests, 6B rebuild flow, Web, Vercel), `main` unprotected, `main` is an ancestor of `origin/dev`.
 - **Execution notes for the user (not performed by the agent):** (1) Merge on GitHub **before** pushing any further commit to `dev`; a push changes the PR head and starts a new CI run. (2) GitHub's merge button creates a merge commit on `main` (a new SHA with the same tree as `0cd0a3c0`), so Vercel's Production deployment will report that merge SHA, not `0cd0a3c0`; "Rebase and merge" would rewrite the commits instead. To make `main` equal `0cd0a3c0` exactly, a user-run `git push origin 0cd0a3c0:main` fast-forwards it (PR #2 then shows as merged); this matches the AGENTS.md rule to fast-forward when possible. (3) After the deploy, check that Vercel's Production deployment reports the expected SHA, then `/api/health`, Picks, Results, Performance and a representative matchup on Production, and keep the rollback target `dpl_FiycAhixbCrDsZK638CVXtdq9XNM` (commit `562319aa`). A deployment rollback does not restore database venues; no venue write is planned.
 - **Open after promotion:** the Preview database role remains unverified (accepted); the `dpl_` ID of the new Production deployment and post-deploy route results are to be recorded after the user promotes.
+
+## Promotion executed and verified (2026-10-07)
+
+User-run: `git push origin 0cd0a3c0:main` (fast-forward from `562319aa`); PR #2 shows MERGED. Verified afterwards by the agent, read-only (details and evidence in [`track1-recapture-0cd0a3c0/summary.md`](track1-recapture-0cd0a3c0/summary.md), section 7):
+
+- `origin/main` is exactly `0cd0a3c0`; `origin/dev` is `8271bbdd` (docs-only commits on top, not part of the release).
+- Production deployment `dpl_25cfxMwDLqXRkphiPQCvT9Db18sY`: target production, Ready, created 12:24:38 EDT, aliased `c-ks-picks-cfb.vercel.app`. Rollback target `dpl_FiycAhixbCrDsZK638CVXtdq9XNM` (`562319aa`) retained.
+- Live routes return 200 and match the audited Week 5 and replay numbers; the Performance page has the same 270 graded-pick records as the verified Preview. Production matchup pages show the documented pre-fix team stats (PPA/play dash; some rates differ).
+- Decision A (venue upsert) was skipped; no database, R2 or serving write took place in this release. The Preview database role stays an accepted unverified report.
+- No rollback was needed or performed. Status: this packet is no longer on HOLD; remaining items are the Production team-stats republish (Window 1, separate) and the unverified Preview role.
 
 ## Rollback procedure retained for later review
 

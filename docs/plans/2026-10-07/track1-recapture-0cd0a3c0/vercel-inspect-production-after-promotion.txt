@@ -1,0 +1,10 @@
+    id		dpl_25cfxMwDLqXRkphiPQCvT9Db18sY
+    name	c-ks-picks-cfb
+    target	production
+    status	● Ready
+    url		https://c-ks-picks-p3y656m3w-connorkitchings-projects.vercel.app
+    created	Wed Oct 07 2026 12:24:38 GMT-0400 (Eastern Daylight Time) [4m ago]
+  Aliases
+    ╶ https://c-ks-picks-cfb.vercel.app
+    ╶ https://c-ks-picks-cfb-connorkitchings-projects.vercel.app
+    ╶ https://c-ks-picks-cfb-git-main-connorkitchings-projects.vercel.app

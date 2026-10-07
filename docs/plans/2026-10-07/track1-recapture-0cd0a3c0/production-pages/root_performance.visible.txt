@@ -1,0 +1,1278 @@
+CK's Picks · V5 College Football Forecasts 
+Picks Results Ratings Performance 
+2026 · V5 
+Season record & performance 
+Separate performance records for selected retrospective replays and explicitly designated prospective V5 runs. 
+Replays are recalculated after games and are not evidence of picks published before kickoff. Prospective records come only from the explicit freeze designation; no latest-run fallback is used. 
+Selected retrospective replay 
+Forecast accuracy summary 
+Spread Spread Performance 
+100–112–3 
+Win Rate 47.2% 
+Graded 215 picks 
+Totals Totals Performance 
+112–102–0 
+Win Rate 52.3% 
+Graded 214 picks 
+Overall Accuracy 429 graded 
+49.8% 
+Record (W–L–P) 212–214–3 
+Pushes excluded from rate 
+Forecast accuracy 
+Forecast Accuracy · Spread MAE 14.5 pts · Total MAE 12.1 pts · Spread 95% interval 94.9% · Total 95% interval 96.7% 
+Forecasts compared with certified final scores 
+Dashboard filters 
+All Picks Spreads Totals ★ High Confidence Only 
+Weekly accuracy breakdown 
+Week 0 → 37.5% 
+Spread 
+4–4–0 50.0% 
+Totals 
+2–6–0 25.0% 
+Week 1 → 49.4% 
+Spread 
+17–25–1 40.5% 
+Totals 
+25–18–0 58.1% 
+Week 2 → 46.9% 
+Spread 
+20–29–0 40.8% 
+Totals 
+26–23–0 53.1% 
+Week 3 → 56.8% 
+Spread 
+29–26–2 52.7% 
+Totals 
+34–22–0 60.7% 
+Week 4 → 47.4% 
+Spread 
+30–28–0 51.7% 
+Totals 
+25–33–0 43.1% 
+Season Total 49.8% 
+Spread: 100–112–3 Total: 112–102–0 
+Week 
+Spread (W-L-P) 
+Spread Win Rate 
+Total (W-L-P) 
+Total Win Rate 
+Week 0 
+4–4–0 
+50.0% 
+2–6–0 
+25.0% 
+Week 1 
+17–25–1 
+40.5% 
+25–18–0 
+58.1% 
+Week 2 
+20–29–0 
+40.8% 
+26–23–0 
+53.1% 
+Week 3 
+29–26–2 
+52.7% 
+34–22–0 
+60.7% 
+Week 4 
+30–28–0 
+51.7% 
+25–33–0 
+43.1% 
+Season Total 
+100–112–3 
+47.2% 
+112–102–0 
+52.3% 
+Graded picks audit 
+Grades use the captured selected line. Replays are retrospective evidence. Price source is an audit fact; accuracy does not assume a payout. 
+Liberty @ Coastal Carolina 
+Week 4 · Retrospective replay · Final 34 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 1.5 Forecast 4.7 · home · loss Price: defaulted 
+Total · captured line 52.5 Forecast 52.9 · over · loss Price: defaulted Army @ Temple 
+Week 4 · Retrospective replay · Final 21 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast 6.5 · home · loss Price: defaulted 
+Total · captured line 50.5 Forecast 55.5 · over · loss Price: defaulted Navy @ UAB 
+Week 4 · Retrospective replay · Final 20 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 11.5 Forecast 2.3 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 54.5 · over · loss Price: defaulted Northwestern @ Indiana 
+Week 4 · Retrospective replay · Final 23 – 29 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -22.5 Forecast 14.0 · away · win Price: defaulted 
+Total · captured line 47.5 Forecast 55.2 · over · win Price: defaulted Clemson @ California 
+Week 4 · Retrospective replay · Final 24 – 10 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast 2.6 · home · loss Price: defaulted 
+Total · captured line 50.5 Forecast 52.8 · over · loss Price: defaulted Sam Houston @ Texas Tech 
+Week 4 · Retrospective replay · Final 14 – 49 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -37.5 Forecast 13.5 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 53.8 · under · loss Price: defaulted Texas @ Tennessee 
+Week 4 · Retrospective replay · Final 20 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 5.5 Forecast -1.7 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 57.3 · under · win Price: defaulted UNLV @ Akron 
+Week 4 · Retrospective replay · Final 38 – 10 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 14.0 Forecast -5.1 · home · loss Price: defaulted 
+Total · captured line 49.5 Forecast 50.6 · over · loss Price: defaulted Wake Forest @ Louisville 
+Week 4 · Retrospective replay · Final 30 – 27 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -13.5 Forecast 9.4 · away · win Price: defaulted 
+Total · captured line 58.5 Forecast 55.5 · under · win Price: defaulted Ball State @ Kent State 
+Week 4 · Retrospective replay · Final 13 – 26 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -4.5 Forecast 10.6 · home · win Price: defaulted 
+Total · captured line 51.5 Forecast 54.5 · over · loss Price: defaulted Colorado State @ UTSA 
+Week 4 · Retrospective replay · Final 45 – 59 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -11.5 Forecast 9.3 · away · loss Price: defaulted 
+Total · captured line 57.5 Forecast 53.5 · under · loss Price: defaulted San Diego State @ Toledo 
+Week 4 · Retrospective replay · Final 16 – 41 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast 14.5 · home · win Price: defaulted 
+Total · captured line 48.5 Forecast 54.3 · over · win Price: defaulted Virginia Tech @ Boston College 
+Week 4 · Retrospective replay · Final 21 – 14 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 14.0 Forecast -12.4 · home · win Price: defaulted 
+Total · captured line 54.5 Forecast 55.3 · over · loss Price: defaulted Colorado @ Baylor 
+Week 4 · Retrospective replay · Final 13 – 23 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast 12.8 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 52.7 · under · win Price: defaulted Illinois @ Ohio State 
+Week 4 · Retrospective replay · Final 19 – 42 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -27.5 Forecast 13.8 · away · win Price: defaulted 
+Total · captured line 53.5 Forecast 56.7 · over · win Price: defaulted South Alabama @ Kentucky 
+Week 4 · Retrospective replay · Final 21 – 45 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -19.5 Forecast 5.2 · away · loss Price: defaulted 
+Total · captured line 55.5 Forecast 55.5 · under · loss Price: defaulted UCLA @ Maryland 
+Week 4 · Retrospective replay · Final 54 – 3 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 2.5 Forecast 2.0 · home · loss Price: defaulted 
+Total · captured line 58.5 Forecast 54.4 · under · win Price: defaulted Northern Illinois @ Georgia State 
+Week 4 · Retrospective replay · Final 14 – 35 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast 27.2 · home · win Price: defaulted 
+Total · captured line 54.5 Forecast 56.9 · over · loss Price: defaulted Notre Dame @ Purdue 
+Week 4 · Retrospective replay · Final 49 – 10 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 27.5 Forecast -24.6 · home · loss Price: defaulted 
+Total · captured line 56.5 Forecast 55.3 · under · loss Price: defaulted Hawai'i @ Wyoming 
+Week 4 · Retrospective replay · Final 10 – 27 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 5.5 Forecast -1.1 · home · win Price: defaulted 
+Total · captured line 44.5 Forecast 50.9 · over · loss Price: defaulted Utah @ Iowa State 
+Week 4 · Retrospective replay · Final 31 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 10.5 Forecast -19.8 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 54.3 · over · loss Price: defaulted Oklahoma @ Georgia 
+Week 4 · Retrospective replay · Final 13 – 41 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 16.8 · home · win Price: defaulted 
+Total · captured line 45.5 Forecast 56.1 · over · win Price: defaulted TCU @ UCF 
+Week 4 · Retrospective replay · Final 13 – 21 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast 13.2 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 52.6 · over · loss Price: defaulted Iowa @ Michigan 
+Week 4 · Retrospective replay · Final 20 – 19 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -5.5 Forecast 4.2 · away · win Price: defaulted 
+Total · captured line 38.5 Forecast 51.7 · over · win Price: defaulted Boise State @ Western Michigan 
+Week 4 · Retrospective replay · Final 32 – 7 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 7.5 Forecast 4.4 · home · loss Price: defaulted 
+Total · captured line 47.5 Forecast 53.4 · over · loss Price: defaulted UConn @ Miami (OH) 
+Week 4 · Retrospective replay · Final 21 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast -2.1 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 56.0 · over · loss Price: defaulted New Mexico @ New Mexico State 
+Week 4 · Retrospective replay · Final 42 – 18 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 13.5 Forecast -15.6 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 52.1 · over · win Price: defaulted Ole Miss @ Florida 
+Week 4 · Retrospective replay · Final 28 – 52 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -2.5 Forecast -0.6 · away · loss Price: defaulted 
+Total · captured line 59.5 Forecast 59.4 · under · loss Price: defaulted Houston @ Georgia Southern 
+Week 4 · Retrospective replay · Final 42 – 28 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 19.5 Forecast -6.2 · home · win Price: defaulted 
+Total · captured line 55.5 Forecast 52.7 · under · loss Price: defaulted Vanderbilt @ Auburn 
+Week 4 · Retrospective replay · Final 15 – 21 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 8.9 · away · win Price: defaulted 
+Total · captured line 52.5 Forecast 55.0 · over · loss Price: defaulted Wisconsin @ Penn State 
+Week 4 · Retrospective replay · Final 24 – 20 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 24.0 · home · loss Price: defaulted 
+Total · captured line 44.5 Forecast 54.2 · over · loss Price: defaulted Nebraska @ Michigan State 
+Week 4 · Retrospective replay · Final 31 – 13 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 4.5 Forecast -2.2 · home · loss Price: defaulted 
+Total · captured line 48.5 Forecast 54.5 · over · loss Price: defaulted South Florida @ Bowling Green 
+Week 4 · Retrospective replay · Final 14 – 6 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 16.5 Forecast -18.6 · away · loss Price: defaulted 
+Total · captured line 51.5 Forecast 54.2 · over · loss Price: defaulted James Madison @ Old Dominion 
+Week 4 · Retrospective replay · Final 46 – 20 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 4.5 Forecast 1.3 · home · loss Price: defaulted 
+Total · captured line 50.5 Forecast 53.0 · over · win Price: defaulted Delaware @ Virginia 
+Week 4 · Retrospective replay · Final 3 – 42 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -21.0 Forecast 15.7 · away · loss Price: defaulted 
+Total · captured line 54.5 Forecast 53.9 · under · win Price: defaulted Louisiana @ Charlotte 
+Week 4 · Retrospective replay · Final 34 – 7 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 14.0 Forecast -7.2 · home · loss Price: defaulted 
+Total · captured line 51.5 Forecast 53.0 · over · loss Price: defaulted Central Michigan @ Miami 
+Week 4 · Retrospective replay · Final 3 – 52 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -42.5 Forecast 24.9 · away · loss Price: defaulted 
+Total · captured line 54.5 Forecast 54.3 · under · loss Price: defaulted Kansas State @ Cincinnati 
+Week 4 · Retrospective replay · Final 26 – 31 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 6.5 Forecast -9.9 · away · loss Price: defaulted 
+Total · captured line 52.5 Forecast 55.1 · over · win Price: defaulted Southern Miss @ Tulane 
+Week 4 · Retrospective replay · Final 21 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -18.5 Forecast 21.1 · home · loss Price: defaulted 
+Total · captured line 53.5 Forecast 54.3 · over · loss Price: defaulted Kennesaw State @ Arkansas State 
+Week 4 · Retrospective replay · Final 14 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -5.5 Forecast 4.0 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 52.6 · under · win Price: defaulted Middle Tennessee @ Jacksonville State 
+Week 4 · Retrospective replay · Final 13 – 23 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 9.0 · away · loss Price: defaulted 
+Total · captured line 54.5 Forecast 55.1 · over · loss Price: defaulted Oklahoma State @ West Virginia 
+Week 4 · Retrospective replay · Final 41 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast 10.1 · home · loss Price: defaulted 
+Total · captured line 59.5 Forecast 54.4 · under · loss Price: defaulted South Carolina @ Alabama 
+Week 4 · Retrospective replay · Final 18 – 49 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -11.5 Forecast 4.3 · away · loss Price: defaulted 
+Total · captured line 53.5 Forecast 57.5 · over · win Price: defaulted Arizona @ Washington State 
+Week 4 · Retrospective replay · Final 34 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 13.5 Forecast -17.7 · away · loss Price: defaulted 
+Total · captured line 48.5 Forecast 52.2 · over · win Price: defaulted Oregon @ USC 
+Week 4 · Retrospective replay · Final 41 – 27 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 1.5 Forecast 13.4 · home · loss Price: defaulted 
+Total · captured line 62.5 Forecast 57.4 · under · loss Price: defaulted Troy @ Utah State 
+Week 4 · Retrospective replay · Final 10 – 21 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -2.5 Forecast -4.4 · away · loss Price: defaulted 
+Total · captured line 52.5 Forecast 50.6 · under · win Price: defaulted Texas A&M @ LSU 
+Week 4 · Retrospective replay · Final 6 – 35 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast 8.6 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 56.0 · over · loss Price: defaulted App State @ NC State 
+Week 4 · Retrospective replay · Final 31 – 41 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 5.0 · away · win Price: defaulted 
+Total · captured line 55.5 Forecast 53.3 · under · loss Price: defaulted Missouri @ Mississippi State 
+Week 4 · Retrospective replay · Final 24 – 31 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast 17.6 · home · win Price: defaulted 
+Total · captured line 58.5 Forecast 57.3 · under · win Price: defaulted Tulsa @ Arkansas 
+Week 4 · Retrospective replay · Final 6 – 34 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast -11.0 · away · loss Price: defaulted 
+Total · captured line 52.5 Forecast 51.8 · under · win Price: defaulted Florida Atlantic @ UL Monroe 
+Week 4 · Retrospective replay · Final 45 – 17 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 13.5 Forecast 2.0 · home · loss Price: defaulted 
+Total · captured line 59.5 Forecast 54.0 · under · loss Price: defaulted Massachusetts @ Sacramento State 
+Week 4 · Retrospective replay · Final 35 – 6 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 6.5 Forecast -12.3 · away · win Price: defaulted 
+Total · captured line 50.5 Forecast 53.3 · over · loss Price: defaulted Oregon State @ UTEP 
+Week 4 · Retrospective replay · Final 33 – 7 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 12.5 Forecast -4.4 · home · loss Price: defaulted 
+Total · captured line 55.5 Forecast 55.4 · under · win Price: defaulted Missouri State @ SMU 
+Week 4 · Retrospective replay · Final 24 – 34 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -34.5 Forecast 28.0 · away · win Price: defaulted 
+Total · captured line 59.5 Forecast 54.1 · under · win Price: defaulted Rice @ Fresno State 
+Week 4 · Retrospective replay · Final 24 – 38 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -13.5 Forecast 20.1 · home · win Price: defaulted 
+Total · captured line 43.5 Forecast 51.6 · over · win Price: defaulted Georgia Tech @ Stanford 
+Week 4 · Retrospective replay · Final 27 – 34 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 4.5 Forecast -0.7 · home · win Price: defaulted 
+Total · captured line 47.5 Forecast 54.5 · over · win Price: defaulted Air Force @ Nevada 
+Week 4 · Retrospective replay · Final 36 – 33 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line 4.5 Forecast 15.5 · home · win Price: defaulted 
+Total · captured line 48.5 Forecast 55.3 · over · win Price: defaulted Minnesota @ Washington 
+Week 4 · Retrospective replay · Final 27 – 24 
+Original run: 2026w4-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 8.5 · away · win Price: defaulted 
+Total · captured line 45.5 Forecast 52.9 · over · win Price: defaulted Syracuse @ Pittsburgh 
+Week 3 · Retrospective replay · Final 13 – 27 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -10.5 Forecast 16.4 · home · win Price: defaulted 
+Total · captured line 51.5 Forecast 53.9 · over · loss Price: defaulted Miami @ Wake Forest 
+Week 3 · Retrospective replay · Final 33 – 20 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 22.5 Forecast 5.6 · home · win Price: defaulted 
+Total · captured line 55.5 Forecast 54.3 · under · win Price: defaulted Houston @ Texas Tech 
+Week 3 · Retrospective replay · Final 26 – 28 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast 5.9 · away · win Price: defaulted Coastal Carolina @ Delaware 
+Week 3 · Retrospective replay · Final 14 – 22 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -4.5 Forecast 4.1 · away · loss Price: defaulted 
+Total · captured line 58.5 Forecast 54.7 · under · win Price: defaulted Buffalo @ Penn State 
+Week 3 · Retrospective replay · Final 13 – 55 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -39.5 Forecast 34.5 · away · loss Price: defaulted 
+Total · captured line 48.5 Forecast 55.2 · over · win Price: defaulted Georgia @ Arkansas 
+Week 3 · Retrospective replay · Final 45 – 17 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 24.5 Forecast -37.5 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 56.2 · over · win Price: defaulted Tulane @ Kansas State 
+Week 3 · Retrospective replay · Final 20 – 31 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -19.5 Forecast 20.5 · home · loss Price: defaulted 
+Total · captured line 49.5 Forecast 53.9 · over · win Price: defaulted North Texas @ Texas State 
+Week 3 · Retrospective replay · Final 35 – 49 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast -23.0 · away · loss Price: defaulted 
+Total · captured line 62.5 Forecast 56.5 · under · loss Price: defaulted Bowling Green @ Iowa State 
+Week 3 · Retrospective replay · Final 7 – 55 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -22.5 Forecast 25.4 · home · win Price: defaulted 
+Total · captured line 45.5 Forecast 53.1 · over · win Price: defaulted Arizona State @ Kansas 
+Week 3 · Retrospective replay · Final 24 – 17 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 5.5 Forecast 6.3 · home · loss Price: defaulted 
+Total · captured line 53.5 Forecast 55.5 · over · loss Price: defaulted North Carolina @ Clemson 
+Week 3 · Retrospective replay · Final 20 – 28 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -4.5 Forecast -1.5 · away · loss Price: defaulted 
+Total · captured line 44.5 Forecast 51.6 · over · win Price: defaulted Akron @ Minnesota 
+Week 3 · Retrospective replay · Final 7 – 41 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -26.5 Forecast 17.0 · away · loss Price: defaulted 
+Total · captured line 49.5 Forecast 54.2 · over · loss Price: defaulted Kent State @ Ohio State 
+Week 3 · Retrospective replay · Final 3 – 59 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -51.5 Forecast 48.6 · away · loss Price: defaulted 
+Total · captured line 58.5 Forecast 55.9 · under · loss Price: defaulted Eastern Michigan @ Wisconsin 
+Week 3 · Retrospective replay · Final 10 – 54 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -24.5 Forecast 6.4 · away · loss Price: defaulted 
+Total · captured line 45.5 Forecast 53.2 · over · win Price: defaulted NC State @ Vanderbilt 
+Week 3 · Retrospective replay · Final 31 – 35 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -4.0 Forecast 21.8 · home · push Price: defaulted 
+Total · captured line 53.5 Forecast 55.7 · over · win Price: defaulted Wyoming @ Central Michigan 
+Week 3 · Retrospective replay · Final 10 – 24 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -2.5 Forecast 0.7 · away · loss Price: defaulted 
+Total · captured line 39.5 Forecast 52.3 · over · loss Price: defaulted Temple @ Toledo 
+Week 3 · Retrospective replay · Final 48 – 49 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -4.5 Forecast 15.2 · home · loss Price: defaulted 
+Total · captured line 52.5 Forecast 53.2 · over · win Price: defaulted UTEP @ Michigan 
+Week 3 · Retrospective replay · Final 17 – 52 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -36.5 Forecast 35.8 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 53.3 · over · win Price: defaulted SMU @ Louisville 
+Week 3 · Retrospective replay · Final 31 – 41 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast -1.7 · away · loss Price: defaulted 
+Total · captured line 59.5 Forecast 54.0 · under · loss Price: defaulted Florida State @ Alabama 
+Week 3 · Retrospective replay · Final 36 – 50 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -19.5 Forecast 17.7 · away · win Price: defaulted 
+Total · captured line 50.5 Forecast 57.2 · over · win Price: defaulted Miami (OH) @ Cincinnati 
+Week 3 · Retrospective replay · Final 31 – 35 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -15.5 Forecast 26.6 · home · loss Price: defaulted 
+Total · captured line 49.5 Forecast 56.0 · over · win Price: defaulted USC @ Rutgers 
+Week 3 · Retrospective replay · Final 42 – 35 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 24.5 Forecast -18.6 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 53.9 · under · loss Price: defaulted Utah State @ Utah 
+Week 3 · Retrospective replay · Final 0 – 33 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -27.5 Forecast 31.5 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 55.6 · under · win Price: defaulted Kentucky @ Texas A&M 
+Week 3 · Retrospective replay · Final 31 – 21 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -15.5 Forecast 31.2 · home · loss Price: defaulted 
+Total · captured line 48.5 Forecast 57.7 · over · win Price: defaulted Louisiana Tech @ Baylor 
+Week 3 · Retrospective replay · Final 19 – 36 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -17.5 Forecast 12.5 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 52.5 · under · loss Price: defaulted Ball State @ Liberty 
+Week 3 · Retrospective replay · Final 15 – 51 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -14.5 Forecast 19.3 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 53.9 · over · win Price: defaulted Stanford @ Duke 
+Week 3 · Retrospective replay · Final 7 – 35 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -10.0 Forecast 22.3 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 53.9 · over · loss Price: defaulted Western Kentucky @ Indiana 
+Week 3 · Retrospective replay · Final 0 – 38 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -44.5 Forecast 59.8 · home · loss Price: defaulted 
+Total · captured line 59.5 Forecast 59.6 · over · loss Price: defaulted Mississippi State @ South Carolina 
+Week 3 · Retrospective replay · Final 41 – 34 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast -2.2 · away · win Price: defaulted 
+Total · captured line 58.5 Forecast 56.1 · under · loss Price: defaulted Charlotte @ App State 
+Week 3 · Retrospective replay · Final 21 – 26 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -20.5 Forecast 22.3 · home · loss Price: defaulted 
+Total · captured line 51.5 Forecast 54.1 · over · loss Price: defaulted East Carolina @ Old Dominion 
+Week 3 · Retrospective replay · Final 20 – 17 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -2.5 Forecast 9.2 · home · loss Price: defaulted 
+Total · captured line 49.5 Forecast 55.2 · over · loss Price: defaulted Florida International @ Florida Atlantic 
+Week 3 · Retrospective replay · Final 10 – 16 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -7.5 Forecast -3.8 · away · win Price: defaulted 
+Total · captured line 62.5 Forecast 54.8 · under · win Price: defaulted Marshall @ Missouri State 
+Week 3 · Retrospective replay · Final 30 – 24 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 4.0 Forecast 6.8 · home · loss Price: defaulted 
+Total · captured line 51.5 Forecast 53.9 · over · win Price: defaulted Troy @ Missouri 
+Week 3 · Retrospective replay · Final 17 – 27 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -27.5 Forecast 15.7 · away · win Price: defaulted 
+Total · captured line 50.5 Forecast 53.8 · over · loss Price: defaulted Ohio @ South Alabama 
+Week 3 · Retrospective replay · Final 36 – 41 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -4.5 Forecast 9.7 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 57.0 · over · win Price: defaulted Florida @ Auburn 
+Week 3 · Retrospective replay · Final 44 – 39 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 2.5 Forecast -5.6 · away · win Price: defaulted 
+Total · captured line 53.5 Forecast 54.8 · over · win Price: defaulted Georgia Southern @ Jacksonville State 
+Week 3 · Retrospective replay · Final 27 – 31 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast 13.0 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 53.7 · over · win Price: defaulted Western Michigan @ Rice 
+Week 3 · Retrospective replay · Final 28 – 21 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 11.5 Forecast -14.9 · away · loss Price: defaulted 
+Total · captured line 45.5 Forecast 51.3 · over · win Price: defaulted Georgia State @ UCF 
+Week 3 · Retrospective replay · Final 30 – 44 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -21.0 Forecast 7.2 · away · win Price: defaulted 
+Total · captured line 50.5 Forecast 52.5 · over · win Price: defaulted UConn @ Southern Miss 
+Week 3 · Retrospective replay · Final 48 – 20 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 3.5 Forecast 2.4 · home · loss Price: defaulted 
+Total · captured line 55.5 Forecast 54.7 · under · loss Price: defaulted Nevada @ Middle Tennessee 
+Week 3 · Retrospective replay · Final 20 – 27 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 6.0 Forecast -13.9 · away · loss Price: defaulted 
+Total · captured line 49.5 Forecast 53.3 · over · loss Price: defaulted New Mexico @ Oklahoma 
+Week 3 · Retrospective replay · Final 6 – 14 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -23.5 Forecast -2.6 · away · win Price: defaulted 
+Total · captured line 48.5 Forecast 52.8 · over · loss Price: defaulted Colorado @ Northwestern 
+Week 3 · Retrospective replay · Final 7 – 41 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast 5.2 · home · win Price: defaulted 
+Total · captured line 47.5 Forecast 53.2 · over · win Price: defaulted BYU @ Colorado State 
+Week 3 · Retrospective replay · Final 41 – 23 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 20.5 Forecast 1.8 · home · win Price: defaulted 
+Total · captured line 52.5 Forecast 54.3 · over · win Price: defaulted LSU @ Ole Miss 
+Week 3 · Retrospective replay · Final 24 – 32 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 2.5 Forecast -0.7 · home · win Price: defaulted 
+Total · captured line 58.5 Forecast 56.2 · under · win Price: defaulted Michigan State @ Notre Dame 
+Week 3 · Retrospective replay · Final 10 – 27 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -29.5 Forecast 10.1 · away · win Price: defaulted 
+Total · captured line 53.5 Forecast 56.2 · over · loss Price: defaulted West Virginia @ Virginia 
+Week 3 · Retrospective replay · Final 38 – 27 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 18.3 · home · loss Price: defaulted 
+Total · captured line 54.5 Forecast 53.7 · under · loss Price: defaulted Virginia Tech @ Maryland 
+Week 3 · Retrospective replay · Final 35 – 26 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast 3.1 · home · loss Price: defaulted 
+Total · captured line 54.5 Forecast 55.3 · over · win Price: defaulted Kennesaw State @ Tennessee 
+Week 3 · Retrospective replay · Final 9 – 42 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -34.5 Forecast 23.1 · away · win Price: defaulted 
+Total · captured line 59.5 Forecast 57.2 · under · win Price: defaulted UTSA @ Texas 
+Week 3 · Retrospective replay · Final 6 – 30 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -29.5 Forecast 22.6 · away · win Price: defaulted 
+Total · captured line 57.5 Forecast 56.0 · under · win Price: defaulted UAB @ Louisiana 
+Week 3 · Retrospective replay · Final 14 – 21 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -10.0 Forecast 12.2 · home · loss Price: defaulted 
+Total · captured line 57.5 Forecast 56.2 · under · win Price: defaulted Arkansas State @ TCU 
+Week 3 · Retrospective replay · Final 7 – 31 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -20.5 Forecast 15.5 · away · loss Price: defaulted 
+Total · captured line 57.5 Forecast 52.9 · under · win Price: defaulted James Madison @ San Diego State 
+Week 3 · Retrospective replay · Final 26 – 13 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast -2.9 · away · win Price: defaulted 
+Total · captured line 46.5 Forecast 51.1 · over · loss Price: defaulted North Dakota State @ Sacramento State 
+Week 3 · Retrospective replay · Final 31 – 10 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 27.5 Forecast -18.8 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 52.6 · under · win Price: defaulted Northern Illinois @ Arizona 
+Week 3 · Retrospective replay · Final 17 – 42 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -35.5 Forecast 24.6 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 54.5 · over · win Price: defaulted Purdue @ UCLA 
+Week 3 · Retrospective replay · Final 38 – 52 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 16.7 · home · push Price: defaulted 
+Total · captured line 53.5 Forecast 54.3 · over · win Price: defaulted Fresno State @ San José State 
+Week 3 · Retrospective replay · Final 26 – 10 
+Original run: 2026w3-v5repair-20260929-p1 
+Spread · captured line 7.0 Forecast 1.5 · home · loss Price: defaulted 
+Total · captured line 51.5 Forecast 53.2 · over · loss Price: defaulted Rutgers @ Boston College 
+Week 2 · Retrospective replay · Final 21 – 28 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 5.0 · home · win Price: defaulted 
+Total · captured line 54.0 Forecast 54.7 · over · loss Price: defaulted Missouri @ Kansas 
+Week 2 · Retrospective replay · Final 38 – 21 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 5.5 Forecast 1.7 · home · loss Price: defaulted 
+Total · captured line 50.0 Forecast 55.1 · over · win Price: defaulted Oklahoma @ Michigan 
+Week 2 · Retrospective replay · Final 10 – 17 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 5.5 Forecast -16.2 · away · loss Price: defaulted 
+Total · captured line 43.5 Forecast 53.0 · over · loss Price: defaulted Old Dominion @ Virginia Tech 
+Week 2 · Retrospective replay · Final 21 – 44 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -18.5 Forecast -1.8 · away · loss Price: defaulted 
+Total · captured line 50.0 Forecast 54.0 · over · win Price: defaulted South Florida @ Army 
+Week 2 · Retrospective replay · Final 28 – 24 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -3.5 Forecast -4.6 · away · win Price: defaulted 
+Total · captured line 46.5 Forecast 54.0 · over · win Price: defaulted Arizona State @ Texas A&M 
+Week 2 · Retrospective replay · Final 20 – 48 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 25.8 · home · win Price: defaulted 
+Total · captured line 50.0 Forecast 55.7 · over · win Price: defaulted Wake Forest @ Purdue 
+Week 2 · Retrospective replay · Final 38 – 36 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast -11.6 · away · loss Price: defaulted 
+Total · captured line 49.5 Forecast 53.7 · over · win Price: defaulted Washington State @ Kansas State 
+Week 2 · Retrospective replay · Final 7 – 34 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -18.5 Forecast 11.2 · away · loss Price: defaulted 
+Total · captured line 48.5 Forecast 53.7 · over · loss Price: defaulted Oregon @ Oklahoma State 
+Week 2 · Retrospective replay · Final 31 – 39 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 22.5 Forecast -13.6 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 52.1 · under · loss Price: defaulted Penn State @ Temple 
+Week 2 · Retrospective replay · Final 27 – 9 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 24.0 Forecast -23.5 · home · win Price: defaulted 
+Total · captured line 49.5 Forecast 54.3 · over · loss Price: defaulted App State @ East Carolina 
+Week 2 · Retrospective replay · Final 27 – 24 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -7.5 Forecast 3.8 · away · win Price: defaulted 
+Total · captured line 56.5 Forecast 55.3 · under · win Price: defaulted Western Kentucky @ Georgia 
+Week 2 · Retrospective replay · Final 20 – 70 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -40.5 Forecast 31.3 · away · loss Price: defaulted 
+Total · captured line 55.5 Forecast 55.4 · under · loss Price: defaulted UL Monroe @ UAB 
+Week 2 · Retrospective replay · Final 20 – 26 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 23.0 · home · loss Price: defaulted 
+Total · captured line 55.5 Forecast 57.7 · over · loss Price: defaulted UCF @ Pittsburgh 
+Week 2 · Retrospective replay · Final 7 – 12 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -7.0 Forecast 23.2 · home · loss Price: defaulted 
+Total · captured line 57.5 Forecast 56.6 · under · win Price: defaulted Arizona @ BYU 
+Week 2 · Retrospective replay · Final 17 – 28 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -7.5 Forecast 4.0 · away · loss Price: defaulted 
+Total · captured line 48.0 Forecast 55.0 · over · loss Price: defaulted California @ Syracuse 
+Week 2 · Retrospective replay · Final 21 – 18 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 7.6 · home · loss Price: defaulted 
+Total · captured line 56.5 Forecast 53.7 · under · win Price: defaulted Duke @ Illinois 
+Week 2 · Retrospective replay · Final 31 – 27 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -5.5 Forecast 9.2 · home · loss Price: defaulted 
+Total · captured line 51.0 Forecast 56.2 · over · win Price: defaulted Alabama @ Kentucky 
+Week 2 · Retrospective replay · Final 45 – 17 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 10.5 Forecast -11.2 · away · win Price: defaulted 
+Total · captured line 49.0 Forecast 55.2 · over · win Price: defaulted Mississippi State @ Minnesota 
+Week 2 · Retrospective replay · Final 38 – 13 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 1.5 Forecast -17.5 · away · win Price: defaulted 
+Total · captured line 55.5 Forecast 54.3 · under · win Price: defaulted Maryland @ UConn 
+Week 2 · Retrospective replay · Final 38 – 14 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 12.5 Forecast 5.5 · home · loss Price: defaulted 
+Total · captured line 52.5 Forecast 55.0 · over · loss Price: defaulted Utah State @ Washington 
+Week 2 · Retrospective replay · Final 14 – 16 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -26.5 Forecast 14.0 · away · win Price: defaulted 
+Total · captured line 55.5 Forecast 54.0 · under · win Price: defaulted Rice @ Notre Dame 
+Week 2 · Retrospective replay · Final 0 – 52 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -44.5 Forecast 33.1 · away · loss Price: defaulted 
+Total · captured line 55.5 Forecast 56.7 · over · loss Price: defaulted UTSA @ Texas State 
+Week 2 · Retrospective replay · Final 31 – 26 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast -12.6 · away · win Price: defaulted 
+Total · captured line 67.0 Forecast 56.2 · under · win Price: defaulted Eastern Michigan @ Michigan State 
+Week 2 · Retrospective replay · Final 7 – 35 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -17.0 Forecast 8.7 · away · loss Price: defaulted 
+Total · captured line 49.0 Forecast 53.9 · over · loss Price: defaulted UNLV @ North Texas 
+Week 2 · Retrospective replay · Final 6 – 44 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 3.5 Forecast -4.3 · away · loss Price: defaulted 
+Total · captured line 57.0 Forecast 55.7 · under · win Price: defaulted Delaware @ Vanderbilt 
+Week 2 · Retrospective replay · Final 26 – 35 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -20.5 Forecast 21.7 · home · loss Price: defaulted 
+Total · captured line 54.5 Forecast 57.2 · over · win Price: defaulted Buffalo @ Florida International 
+Week 2 · Retrospective replay · Final 20 – 33 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -10.0 Forecast 6.7 · away · loss Price: defaulted 
+Total · captured line 47.5 Forecast 52.3 · over · win Price: defaulted Memphis @ Boise State 
+Week 2 · Retrospective replay · Final 20 – 38 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast -2.1 · away · loss Price: defaulted 
+Total · captured line 54.5 Forecast 53.4 · under · loss Price: defaulted Jacksonville State @ Ohio 
+Week 2 · Retrospective replay · Final 27 – 29 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -2.5 Forecast 5.2 · home · loss Price: defaulted 
+Total · captured line 50.5 Forecast 54.8 · over · win Price: defaulted Georgia State @ Kennesaw State 
+Week 2 · Retrospective replay · Final 31 – 17 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 13.7 · home · loss Price: defaulted 
+Total · captured line 54.5 Forecast 54.7 · over · loss Price: defaulted Tennessee @ Georgia Tech 
+Week 2 · Retrospective replay · Final 45 – 24 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 13.0 Forecast -0.9 · home · loss Price: defaulted 
+Total · captured line 55.5 Forecast 53.4 · under · loss Price: defaulted Bowling Green @ Nebraska 
+Week 2 · Retrospective replay · Final 7 – 56 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -28.5 Forecast 24.7 · away · loss Price: defaulted 
+Total · captured line 51.5 Forecast 56.5 · over · win Price: defaulted Middle Tennessee @ Marshall 
+Week 2 · Retrospective replay · Final 26 – 28 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -13.5 Forecast -5.6 · away · win Price: defaulted 
+Total · captured line 57.5 Forecast 53.2 · under · win Price: defaulted Tulsa @ Sam Houston 
+Week 2 · Retrospective replay · Final 23 – 17 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 14.0 Forecast -2.2 · home · win Price: defaulted 
+Total · captured line 51.5 Forecast 52.0 · over · loss Price: defaulted South Alabama @ Tulane 
+Week 2 · Retrospective replay · Final 24 – 28 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 9.6 · home · loss Price: defaulted 
+Total · captured line 49.5 Forecast 52.1 · over · win Price: defaulted San Diego State @ UCLA 
+Week 2 · Retrospective replay · Final 10 – 28 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -11.5 Forecast 9.9 · away · loss Price: defaulted 
+Total · captured line 55.0 Forecast 54.6 · under · win Price: defaulted Navy @ Florida Atlantic 
+Week 2 · Retrospective replay · Final 30 – 38 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 5.0 Forecast -12.0 · away · loss Price: defaulted 
+Total · captured line 59.5 Forecast 57.1 · under · loss Price: defaulted Georgia Southern @ Clemson 
+Week 2 · Retrospective replay · Final 7 – 22 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -20.5 Forecast 0.5 · away · win Price: defaulted 
+Total · captured line 56.0 Forecast 54.6 · under · win Price: defaulted Iowa State @ Iowa 
+Week 2 · Retrospective replay · Final 13 – 16 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 20.5 · home · loss Price: defaulted 
+Total · captured line 40.5 Forecast 54.6 · over · loss Price: defaulted Texas Tech @ Oregon State 
+Week 2 · Retrospective replay · Final 35 – 24 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 27.0 Forecast -14.5 · home · win Price: defaulted 
+Total · captured line 54.0 Forecast 53.0 · under · loss Price: defaulted Ohio State @ Texas 
+Week 2 · Retrospective replay · Final 23 – 24 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -1.5 Forecast -5.0 · away · win Price: defaulted 
+Total · captured line 48.5 Forecast 56.6 · over · loss Price: defaulted Louisiana Tech @ LSU 
+Week 2 · Retrospective replay · Final 14 – 45 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -35.0 Forecast 26.3 · away · win Price: defaulted 
+Total · captured line 56.0 Forecast 54.9 · under · loss Price: defaulted Charlotte @ Ole Miss 
+Week 2 · Retrospective replay · Final 9 – 41 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -47.5 Forecast 25.6 · away · win Price: defaulted 
+Total · captured line 61.5 Forecast 56.2 · under · win Price: defaulted Southern Miss @ Auburn 
+Week 2 · Retrospective replay · Final 8 – 43 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -33.5 Forecast 11.9 · away · loss Price: defaulted 
+Total · captured line 57.5 Forecast 52.5 · under · win Price: defaulted North Dakota State @ Air Force 
+Week 2 · Retrospective replay · Final 38 – 32 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line 2.5 Forecast -5.5 · away · win Price: defaulted 
+Total · captured line 47.5 Forecast 55.4 · over · win Price: defaulted Arkansas @ Utah 
+Week 2 · Retrospective replay · Final 10 – 43 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -12.0 Forecast 11.7 · away · loss Price: defaulted 
+Total · captured line 54.5 Forecast 56.7 · over · loss Price: defaulted Sacramento State @ Fresno State 
+Week 2 · Retrospective replay · Final 3 – 49 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -18.0 Forecast 8.4 · away · loss Price: defaulted 
+Total · captured line 45.0 Forecast 50.8 · over · win Price: defaulted Louisiana @ USC 
+Week 2 · Retrospective replay · Final 30 – 49 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -30.5 Forecast 30.4 · away · win Price: defaulted 
+Total · captured line 59.5 Forecast 57.0 · under · loss Price: defaulted New Mexico State @ Hawai'i 
+Week 2 · Retrospective replay · Final 19 – 29 
+Original run: 2026w2-v5repair-20260929-p1 
+Spread · captured line -8.0 Forecast 12.8 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 52.4 · over · loss Price: defaulted Massachusetts @ Rutgers 
+Week 1 · Retrospective replay · Final 37 – 21 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -29.0 Forecast 24.4 · away · win Price: defaulted 
+Total · captured line 51.5 Forecast 56.7 · over · win Price: defaulted Akron @ Wake Forest 
+Week 1 · Retrospective replay · Final 16 – 38 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -24.5 Forecast 16.2 · away · win Price: defaulted 
+Total · captured line 48.5 Forecast 53.4 · over · win Price: defaulted Colorado @ Georgia Tech 
+Week 1 · Retrospective replay · Final 14 – 13 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -6.5 Forecast 9.6 · home · loss Price: defaulted 
+Total · captured line 51.0 Forecast 55.3 · over · loss Price: defaulted UAB @ Illinois 
+Week 1 · Retrospective replay · Final 23 – 42 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -27.5 Forecast 18.6 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 55.8 · over · win Price: defaulted San José State @ Eastern Michigan 
+Week 1 · Retrospective replay · Final 27 – 21 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 19.1 · home · loss Price: defaulted 
+Total · captured line 56.5 Forecast 55.1 · under · win Price: defaulted UTEP @ Oklahoma 
+Week 1 · Retrospective replay · Final 0 – 51 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -41.5 Forecast 20.2 · away · loss Price: defaulted 
+Total · captured line 51.5 Forecast 53.7 · over · loss Price: defaulted Toledo @ Michigan State 
+Week 1 · Retrospective replay · Final 20 – 30 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -9.5 Forecast 2.7 · away · loss Price: defaulted 
+Total · captured line 46.5 Forecast 53.9 · over · win Price: defaulted Miami @ Stanford 
+Week 1 · Retrospective replay · Final 45 – 6 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 24.5 Forecast -9.7 · home · loss Price: defaulted 
+Total · captured line 48.5 Forecast 52.5 · over · win Price: defaulted Fresno State @ USC 
+Week 1 · Retrospective replay · Final 0 – 39 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -21.5 Forecast 20.8 · away · loss Price: defaulted 
+Total · captured line 51.5 Forecast 56.7 · over · loss Price: defaulted East Carolina @ Alabama 
+Week 1 · Retrospective replay · Final 10 – 48 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -28.0 Forecast 10.9 · away · loss Price: defaulted 
+Total · captured line 52.5 Forecast 55.0 · over · win Price: defaulted Oregon State @ Houston 
+Week 1 · Retrospective replay · Final 20 – 33 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -20.5 Forecast 14.1 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 54.8 · over · win Price: defaulted Coastal Carolina @ West Virginia 
+Week 1 · Retrospective replay · Final 24 – 31 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -21.0 Forecast 9.7 · away · win Price: defaulted 
+Total · captured line 56.5 Forecast 54.1 · under · win Price: defaulted North Texas @ Indiana 
+Week 1 · Retrospective replay · Final 16 – 52 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -40.0 Forecast 13.0 · away · win Price: defaulted 
+Total · captured line 55.5 Forecast 56.9 · over · win Price: defaulted Ohio @ Nebraska 
+Week 1 · Retrospective replay · Final 21 – 49 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -23.5 Forecast 9.0 · away · loss Price: defaulted 
+Total · captured line 46.0 Forecast 54.9 · over · win Price: defaulted Liberty @ James Madison 
+Week 1 · Retrospective replay · Final 13 – 20 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -6.0 Forecast 13.4 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 54.5 · over · loss Price: defaulted Miami (OH) @ Pittsburgh 
+Week 1 · Retrospective replay · Final 14 – 59 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -16.5 Forecast 11.9 · away · loss Price: defaulted 
+Total · captured line 48.5 Forecast 54.5 · over · win Price: defaulted Ball State @ Ohio State 
+Week 1 · Retrospective replay · Final 3 – 56 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -50.5 Forecast 30.1 · away · loss Price: defaulted 
+Total · captured line 56.5 Forecast 54.7 · under · loss Price: defaulted Kent State @ South Carolina 
+Week 1 · Retrospective replay · Final 0 – 57 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -35.5 Forecast 17.2 · away · loss Price: defaulted 
+Total · captured line 53.5 Forecast 54.4 · over · win Price: defaulted Boston College @ Cincinnati 
+Week 1 · Retrospective replay · Final 15 – 34 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -7.5 Forecast 10.8 · home · win Price: defaulted 
+Total · captured line 49.5 Forecast 55.5 · over · loss Price: defaulted Tulane @ Duke 
+Week 1 · Retrospective replay · Final 3 – 17 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -7.5 Forecast 7.3 · away · loss Price: defaulted 
+Total · captured line 51.0 Forecast 55.9 · over · loss Price: defaulted Texas State @ Texas 
+Week 1 · Retrospective replay · Final 7 – 59 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -29.5 Forecast 9.6 · away · loss Price: defaulted 
+Total · captured line 60.0 Forecast 55.1 · under · loss Price: defaulted Boise State @ Oregon 
+Week 1 · Retrospective replay · Final 27 – 34 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -24.5 Forecast 15.2 · away · win Price: defaulted 
+Total · captured line 51.5 Forecast 55.4 · over · win Price: defaulted Marshall @ Penn State 
+Week 1 · Retrospective replay · Final 0 – 45 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -24.0 Forecast 18.3 · away · loss Price: defaulted 
+Total · captured line 52.0 Forecast 55.4 · over · loss Price: defaulted Baylor @ Auburn 
+Week 1 · Retrospective replay · Final 16 – 17 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -7.0 Forecast 7.3 · home · loss Price: defaulted 
+Total · captured line 59.5 Forecast 54.5 · under · win Price: defaulted Oklahoma State @ Tulsa 
+Week 1 · Retrospective replay · Final 10 – 24 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 13.5 Forecast 6.1 · home · win Price: defaulted 
+Total · captured line 59.5 Forecast 53.8 · under · win Price: defaulted Northern Illinois @ Iowa 
+Week 1 · Retrospective replay · Final 0 – 40 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -31.0 Forecast 19.2 · away · loss Price: defaulted 
+Total · captured line 44.5 Forecast 54.2 · over · loss Price: defaulted Wyoming @ Colorado State 
+Week 1 · Retrospective replay · Final 13 – 35 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 5.5 · home · win Price: defaulted 
+Total · captured line 46.5 Forecast 53.7 · over · win Price: defaulted Missouri State @ Texas A&M 
+Week 1 · Retrospective replay · Final 0 – 50 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -40.5 Forecast 18.1 · away · loss Price: defaulted 
+Total · captured line 53.5 Forecast 55.7 · over · loss Price: defaulted Arkansas State @ Memphis 
+Week 1 · Retrospective replay · Final 24 – 42 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -11.0 Forecast 12.3 · home · win Price: defaulted 
+Total · captured line 52.0 Forecast 54.0 · over · win Price: defaulted Florida International @ South Florida 
+Week 1 · Retrospective replay · Final 9 – 19 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -14.0 Forecast 16.2 · home · loss Price: defaulted 
+Total · captured line 52.0 Forecast 55.5 · over · loss Price: defaulted Sam Houston @ Troy 
+Week 1 · Retrospective replay · Final 21 – 24 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -16.5 Forecast 13.0 · away · win Price: defaulted 
+Total · captured line 54.5 Forecast 53.4 · under · win Price: defaulted Clemson @ LSU 
+Week 1 · Retrospective replay · Final 10 – 51 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -10.0 Forecast 5.8 · away · loss Price: defaulted 
+Total · captured line 50.5 Forecast 53.6 · over · win Price: defaulted UL Monroe @ Mississippi State 
+Week 1 · Retrospective replay · Final 13 – 62 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -28.5 Forecast 19.5 · away · loss Price: defaulted 
+Total · captured line 55.5 Forecast 55.2 · under · loss Price: defaulted Western Michigan @ Michigan 
+Week 1 · Retrospective replay · Final 12 – 13 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -27.5 Forecast 10.8 · away · win Price: defaulted 
+Total · captured line 48.5 Forecast 54.7 · over · loss Price: defaulted Florida Atlantic @ Florida 
+Week 1 · Retrospective replay · Final 21 – 66 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -26.5 Forecast 14.7 · away · loss Price: defaulted 
+Total · captured line 59.5 Forecast 55.1 · under · loss Price: defaulted Central Michigan @ New Mexico 
+Week 1 · Retrospective replay · Final 7 – 38 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -10.5 Forecast 11.1 · home · win Price: defaulted 
+Total · captured line 46.5 Forecast 53.9 · over · loss Price: defaulted UNLV @ Hawai'i 
+Week 1 · Retrospective replay · Final 21 – 6 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast 7.5 · home · loss Price: defaulted 
+Total · captured line 56.5 Forecast 53.6 · under · win Price: defaulted UCLA @ California 
+Week 1 · Retrospective replay · Final 45 – 24 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 2.0 Forecast 8.5 · home · loss Price: defaulted 
+Total · captured line 53.5 Forecast 54.8 · over · win Price: defaulted Western Kentucky @ Nevada 
+Week 1 · Retrospective replay · Final 14 – 49 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 1.5 Forecast 1.3 · home · win Price: defaulted 
+Total · captured line 52.5 Forecast 53.4 · over · win Price: defaulted Washington State @ Washington 
+Week 1 · Retrospective replay · Final 10 – 24 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -23.0 Forecast 8.7 · away · win Price: defaulted 
+Total · captured line 50.5 Forecast 55.0 · over · loss Price: defaulted Louisville @ Ole Miss 
+Week 1 · Retrospective replay · Final 38 – 41 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -7.0 Forecast 10.4 · home · loss Price: defaulted 
+Total · captured line 55.5 Forecast 55.6 · over · win Price: defaulted Wisconsin @ Notre Dame 
+Week 1 · Retrospective replay · Final 13 – 41 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line -20.0 Forecast 19.9 · away · loss Price: defaulted 
+Total · captured line 47.5 Forecast 55.2 · over · win Price: defaulted SMU @ Florida State 
+Week 1 · Retrospective replay · Final 27 – 24 
+Original run: 2026w1-v5repair-20260929-p1 
+Spread · captured line 3.0 Forecast 12.2 · home · push Price: defaulted 
+Total · captured line 52.5 Forecast 55.4 · over · loss Price: defaulted North Carolina @ TCU 
+Week 0 · Retrospective replay · Final 15 – 10 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -6.5 Forecast 14.6 · home · loss Price: defaulted 
+Total · captured line 47.5 Forecast 54.7 · over · loss Price: defaulted San José State @ USC 
+Week 0 · Retrospective replay · Final 26 – 42 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -35.5 Forecast 23.7 · away · win Price: defaulted 
+Total · captured line 59.5 Forecast 56.3 · under · loss Price: defaulted NC State @ Virginia 
+Week 0 · Retrospective replay · Final 8 – 34 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 6.0 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 54.4 · over · loss Price: defaulted Jacksonville State @ North Dakota State 
+Week 0 · Retrospective replay · Final 7 – 33 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -7.0 Forecast 3.3 · away · loss Price: defaulted 
+Total · captured line 48.0 Forecast 54.3 · over · loss Price: defaulted Sacramento State @ Eastern Michigan 
+Week 0 · Retrospective replay · Final 17 – 28 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -8.5 Forecast 10.6 · home · win Price: defaulted 
+Total · captured line 52.5 Forecast 54.2 · over · loss Price: defaulted New Mexico State @ Florida State 
+Week 0 · Retrospective replay · Final 17 – 34 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -29.5 Forecast 16.9 · away · win Price: defaulted 
+Total · captured line 53.0 Forecast 55.1 · over · loss Price: defaulted Hawai'i @ Stanford 
+Week 0 · Retrospective replay · Final 27 – 37 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 1.3 · away · loss Price: defaulted 
+Total · captured line 49.5 Forecast 53.6 · over · win Price: defaulted Memphis @ UNLV 
+Week 0 · Retrospective replay · Final 27 – 21 
+Original run: 2026w0-v5repair-20260929-p1 
+Spread · captured line -3.0 Forecast 5.3 · home · loss Price: defaulted 
+Total · captured line 57.5 Forecast 55.4 · under · win Price: defaulted 
+Click any week above to view the full game-by-game results and graded picks on the Results tab. 
+Designated prospective V5 performance 
+Forecast accuracy summary 
+Spread Spread Performance 
+28–27–1 
+Win Rate 50.9% 
+Graded 56 picks 
+Totals Totals Performance 
+25–30–1 
+Win Rate 45.5% 
+Graded 56 picks 
+Overall Accuracy 112 graded 
+48.2% 
+Record (W–L–P) 53–57–2 
+Pushes excluded from rate 
+Forecast accuracy 
+Forecast Accuracy · Spread MAE 14.7 pts · Total MAE 14.1 pts · Spread 95% interval 91.1% · Total 95% interval 98.2% 
+Forecasts compared with certified final scores 
+Dashboard filters 
+All Picks Spreads Totals ★ High Confidence Only 
+Weekly accuracy breakdown 
+Week 5 → 48.2% 
+Spread 
+28–27–1 50.9% 
+Totals 
+25–30–1 45.5% 
+Season Total 48.2% 
+Spread: 28–27–1 Total: 25–30–1 
+Week 
+Spread (W-L-P) 
+Spread Win Rate 
+Total (W-L-P) 
+Total Win Rate 
+Week 5 
+28–27–1 
+50.9% 
+25–30–1 
+45.5% 
+Season Total 
+28–27–1 
+50.9% 
+25–30–1 
+45.5% 
+Graded picks audit 
+Grades use the captured selected line. Replays are retrospective evidence. Price source is an audit fact; accuracy does not assume a payout. 
+Western Kentucky @ New Mexico State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 13 – 34 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -2.5 Forecast 7.6 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 54.1 · under · win Price: defaulted North Texas @ Tulsa 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 45 – 44 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -1.0 Forecast 4.5 · home · loss Price: defaulted 
+Total · captured line 57.5 Forecast 53.5 · under · loss Price: defaulted Pittsburgh @ Virginia Tech 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 35 – 33 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -3.5 Forecast 3.4 · No stored lean · win Price: defaulted 
+Total · captured line 54.5 Forecast 55.5 · No stored lean · win Price: defaulted Liberty @ Delaware 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 30 – 14 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 7.0 Forecast -2.7 · home · loss Price: defaulted 
+Total · captured line 50.0 Forecast 54.3 · over · loss Price: defaulted Penn State @ Northwestern 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 13 – 34 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 3.0 Forecast -0.6 · home · win Price: defaulted 
+Total · captured line 45.5 Forecast 54.5 · over · win Price: defaulted Navy @ Air Force 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 9 – 14 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -3.0 Forecast 9.0 · home · win Price: defaulted 
+Total · captured line 45.5 Forecast 55.5 · over · loss Price: defaulted Notre Dame @ North Carolina 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 37 – 26 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 21.0 Forecast -32.4 · away · loss Price: defaulted 
+Total · captured line 47.0 Forecast 53.6 · over · win Price: defaulted Syracuse @ UConn 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 42 – 41 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 6.5 Forecast 3.9 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 53.5 · over · win Price: defaulted Michigan @ Minnesota 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 14 – 20 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 5.5 Forecast -5.5 · No stored lean · win Price: defaulted 
+Total · captured line 43.0 Forecast 52.5 · over · loss Price: defaulted Middle Tennessee @ Kansas 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 0 – 55 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -18.5 Forecast 12.8 · away · loss Price: defaulted 
+Total · captured line 49.5 Forecast 53.7 · over · win Price: defaulted UCF @ Houston 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 27 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -12.0 Forecast 1.6 · away · win Price: defaulted 
+Total · captured line 51.5 Forecast 55.5 · over · loss Price: defaulted West Virginia @ Iowa State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 42 – 45 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -3.5 Forecast 11.8 · home · loss Price: defaulted 
+Total · captured line 52.5 Forecast 55.1 · over · win Price: defaulted Boston College @ SMU 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 16 – 25 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -21.0 Forecast 6.3 · away · win Price: defaulted 
+Total · captured line 55.5 Forecast 52.9 · under · win Price: defaulted Alabama @ Mississippi State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 56 – 23 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 6.0 Forecast -3.2 · home · loss Price: defaulted 
+Total · captured line 60.0 Forecast 57.6 · under · loss Price: defaulted Stanford @ Wake Forest 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 3 – 57 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -12.5 Forecast 20.1 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 54.1 · No stored lean · win Price: defaulted Michigan State @ Wisconsin 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 3 – 31 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -10.0 Forecast 3.5 · away · loss Price: defaulted 
+Total · captured line 43.5 Forecast 53.6 · over · loss Price: defaulted Vanderbilt @ Georgia 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 14 – 38 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -23.5 Forecast 29.6 · home · win Price: defaulted 
+Total · captured line 50.5 Forecast 58.0 · over · win Price: defaulted Western Michigan @ Buffalo 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 20 – 17 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 13.5 Forecast -6.1 · home · win Price: defaulted 
+Total · captured line 46.5 Forecast 52.1 · over · loss Price: defaulted Toledo @ Ball State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 39 – 24 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 19.5 Forecast -26.0 · away · loss Price: defaulted 
+Total · captured line 52.5 Forecast 53.1 · No stored lean · win Price: defaulted Virginia @ Florida State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 7 – 38 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 3.0 Forecast -2.5 · No stored lean · win Price: defaulted 
+Total · captured line 51.5 Forecast 54.1 · over · loss Price: defaulted Florida @ Missouri 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 45 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 5.5 Forecast -13.0 · away · loss Price: defaulted 
+Total · captured line 57.0 Forecast 55.3 · under · loss Price: defaulted Auburn @ Tennessee 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 14 – 24 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -7.0 Forecast 8.1 · home · win Price: defaulted 
+Total · captured line 54.0 Forecast 56.0 · over · loss Price: defaulted California @ UNLV 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 31 – 39 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -2.5 Forecast 5.1 · home · win Price: defaulted 
+Total · captured line 53.5 Forecast 53.1 · No stored lean · loss Price: defaulted Louisville @ NC State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 28 – 31 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 4.0 Forecast -3.6 · No stored lean · win Price: defaulted 
+Total · captured line 58.5 Forecast 54.7 · under · loss Price: defaulted Ohio State @ Iowa 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 31 – 14 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 14.0 Forecast -8.6 · home · loss Price: defaulted 
+Total · captured line 45.5 Forecast 52.5 · over · loss Price: defaulted Memphis @ Charlotte 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 59 – 8 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 20.5 Forecast -7.5 · home · loss Price: defaulted 
+Total · captured line 52.5 Forecast 54.4 · over · win Price: defaulted Wyoming @ North Dakota State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 0 – 28 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -18.0 Forecast 18.9 · No stored lean · win Price: defaulted 
+Total · captured line 45.5 Forecast 51.8 · over · loss Price: defaulted Akron @ Central Michigan 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 41 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -6.5 Forecast 15.9 · home · win Price: defaulted 
+Total · captured line 47.0 Forecast 54.2 · over · win Price: defaulted Eastern Michigan @ Massachusetts 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 38 – 14 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -6.5 Forecast 13.6 · home · loss Price: defaulted 
+Total · captured line 48.5 Forecast 54.1 · over · win Price: defaulted Ohio @ Kent State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 13 – 10 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 3.0 Forecast -5.0 · away · push Price: defaulted 
+Total · captured line 50.5 Forecast 53.8 · over · loss Price: defaulted Bowling Green @ Miami (OH) 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 24 – 20 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -13.0 Forecast 15.9 · home · loss Price: defaulted 
+Total · captured line 42.5 Forecast 55.4 · over · win Price: defaulted Old Dominion @ Georgia State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 10 – 42 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -1.5 Forecast 5.2 · home · win Price: defaulted 
+Total · captured line 52.0 Forecast 54.2 · over · push Price: defaulted Marshall @ James Madison 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 45 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -18.5 Forecast 25.0 · home · win Price: defaulted 
+Total · captured line 56.0 Forecast 53.8 · under · loss Price: defaulted UTEP @ New Mexico 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 7 – 61 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -22.5 Forecast 34.7 · home · win Price: defaulted 
+Total · captured line 48.5 Forecast 55.5 · over · win Price: defaulted Maryland @ Nebraska 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 23 – 48 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -14.5 Forecast 27.0 · home · win Price: defaulted 
+Total · captured line 52.5 Forecast 55.7 · over · win Price: defaulted Purdue @ Illinois 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 24 – 17 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -10.0 Forecast 18.0 · home · loss Price: defaulted 
+Total · captured line 61.5 Forecast 59.4 · under · win Price: defaulted Kentucky @ South Carolina 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 35 – 34 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -2.5 Forecast 7.9 · home · loss Price: defaulted 
+Total · captured line 53.5 Forecast 55.5 · over · win Price: defaulted Oregon State @ Colorado State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 56 – 26 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 6.5 Forecast 5.8 · home · loss Price: defaulted 
+Total · captured line 62.5 Forecast 55.0 · under · loss Price: defaulted UL Monroe @ South Alabama 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 35 – 52 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -14.0 Forecast 21.4 · home · win Price: defaulted 
+Total · captured line 57.5 Forecast 56.4 · under · loss Price: defaulted Arkansas @ Texas A&M 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 7 – 34 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -14.0 Forecast 7.3 · away · loss Price: defaulted 
+Total · captured line 50.5 Forecast 54.9 · over · loss Price: defaulted UTSA @ Rice 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 16 – 14 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 11.5 Forecast -11.6 · No stored lean · loss Price: defaulted 
+Total · captured line 56.0 Forecast 55.2 · No stored lean · win Price: defaulted Georgia Southern @ Coastal Carolina 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 31 – 24 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 2.5 Forecast 5.9 · home · loss Price: defaulted 
+Total · captured line 54.5 Forecast 52.5 · under · loss Price: defaulted BYU @ TCU 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 10 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 6.5 Forecast -1.0 · home · loss Price: defaulted 
+Total · captured line 47.5 Forecast 51.2 · over · loss Price: defaulted Washington @ USC 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 21 – 25 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -9.5 Forecast 12.5 · home · loss Price: defaulted 
+Total · captured line 58.5 Forecast 56.1 · under · win Price: defaulted Miami @ Clemson 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 41 – 13 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 16.5 Forecast -12.6 · home · loss Price: defaulted 
+Total · captured line 47.5 Forecast 53.3 · over · win Price: defaulted Texas Tech @ Colorado 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 29 – 7 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 13.0 Forecast -7.6 · home · loss Price: defaulted 
+Total · captured line 50.0 Forecast 51.0 · No stored lean · loss Price: defaulted Temple @ South Florida 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 17 – 13 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -6.5 Forecast 11.4 · home · loss Price: defaulted 
+Total · captured line 48.5 Forecast 52.9 · over · loss Price: defaulted Utah State @ Boise State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 18 – 37 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -20.5 Forecast 16.0 · away · win Price: defaulted 
+Total · captured line 51.5 Forecast 53.9 · over · win Price: defaulted Army @ Louisiana Tech 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 29 – 31 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 2.5 Forecast 4.0 · home · win Price: defaulted 
+Total · captured line 46.0 Forecast 53.5 · over · win Price: defaulted Arkansas State @ Louisiana 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 20 – 23 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -6.5 Forecast 18.8 · home · loss Price: defaulted 
+Total · captured line 47.5 Forecast 53.0 · over · loss Price: defaulted Indiana @ Rutgers 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 47 – 15 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 24.5 Forecast -18.6 · home · loss Price: defaulted 
+Total · captured line 56.5 Forecast 55.0 · under · loss Price: defaulted Fresno State @ Washington State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 26 – 6 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -2.5 Forecast -5.8 · away · win Price: defaulted 
+Total · captured line 45.5 Forecast 50.3 · over · loss Price: defaulted Baylor @ Arizona State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 55 – 19 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -4.0 Forecast -5.3 · away · win Price: defaulted 
+Total · captured line 49.5 Forecast 53.4 · over · win Price: defaulted Texas State @ San Diego State 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 29 – 31 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line 4.5 Forecast -1.6 · home · win Price: defaulted 
+Total · captured line 59.5 Forecast 53.4 · under · loss Price: defaulted Cincinnati @ Arizona 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 7 – 34 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -7.0 Forecast 4.0 · away · loss Price: defaulted 
+Total · captured line 55.5 Forecast 56.4 · No stored lean · loss Price: defaulted San José State @ Hawai'i 
+Week 5 · Prospective · retrospectively attested (no contemporaneous receipt) · Final 20 – 16 
+Original run: 2026w5-v5repair-20260929-p2 
+Freeze evidence SHA-256: 9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7 
+Spread · captured line -2.5 Forecast 1.5 · No stored lean · win Price: defaulted 
+Total · captured line 51.5 Forecast 52.1 · No stored lean · loss Price: defaulted 
+Click any week above to view the full game-by-game results and graded picks on the Results tab. 
+Win rate excludes pushes. A game without an eligible market line does not count as a win or loss. Grades use captured selected lines; replays are retrospective evidence. 
