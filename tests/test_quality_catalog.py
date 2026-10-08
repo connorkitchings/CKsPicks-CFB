@@ -37,7 +37,8 @@ def test_catalog_sections_match_each_check_stage():
     text = CATALOG.read_text()
     sections = {
         "ingest": text.split("## Ingest")[1].split("## Silver")[0],
-        "silver": text.split("## Silver")[1].split("## Publish")[0],
+        "silver": text.split("## Silver")[1].split("## Gold")[0],
+        "gold": text.split("## Gold")[1].split("## Publish")[0],
         "publish": text.split("## Publish")[1].split("## Web")[0],
     }
     for check_id, spec in REGISTRY.items():

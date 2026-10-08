@@ -77,6 +77,10 @@ class Remote:
 
 @pytest.fixture(scope="module")
 def corpus():
+    return build_corpus()
+
+
+def build_corpus(*, extended=False):
     remote = Remote()
 
     def put(uri, data):
@@ -115,8 +119,10 @@ def corpus():
         "2026-09-19T12:00:00Z",
         "2026-09-26T12:00:00Z",
         "2026-10-02T12:00:00Z",
+        "2026-10-09T12:00:00Z",
     ]
-    for w, count in EXPECTED_COUNTS.items():
+    counts = {**EXPECTED_COUNTS, **({6: 58} if extended else {})}
+    for w, count in counts.items():
         for i in range(count):
             gid += 1
             game = (
@@ -135,11 +141,11 @@ def corpus():
                     kickoff_utc=pd.Timestamp(dates[w]),
                     home_team=home,
                     away_team=away,
-                    home_points=7 if w < 5 else None,
-                    away_points=3 if w < 5 else None,
+                    home_points=7 if w < 5 or extended else None,
+                    away_points=3 if w < 5 or extended else None,
                 )
             )
-            if w == 5:
+            if w == 5 and not extended:
                 continue
             for drive, offense, defense, a, d in (
                 (1, home, away, 7, 0),
@@ -170,7 +176,7 @@ def corpus():
     outcomes = schedule[["season", "game_id", "home_points", "away_points"]].copy()
     outcomes["completed"] = outcomes.home_points.notna()
     rec = schedule[["season", "game_id"]].assign(classification="exact")
-    completed = schedule[schedule.week.lt(5)].assign(completed=True)
+    completed = schedule[schedule.home_points.notna()].assign(completed=True)
     pop, _ = reconcile_population(
         schedule=completed,
         outcomes=outcomes,
@@ -180,7 +186,10 @@ def corpus():
         scope="season_2026",
     )
     population = build_population(
-        pop, scope="season_2026", expected_rows=215, expected_eligible=215
+        pop,
+        scope="season_2026",
+        expected_rows=len(completed),
+        expected_eligible=len(completed),
     )
     result = pm.build_measurements(
         byplay=pd.DataFrame(plays),
@@ -317,7 +326,9 @@ def corpus():
                     for k, v in root["objects"].items()
                     if k.startswith(root_prefix)
                 },
-                cutoff_2026="2026-09-30T12:34:06Z",
+                cutoff_2026="2026-10-12T12:00:00Z"
+                if extended
+                else "2026-09-30T12:34:06Z",
                 selected_design="ppp__rho_0_60__exposure",
             )
         )
@@ -355,7 +366,7 @@ def corpus():
     ]
     lock = dict(
         games=dict(columns=columns, rows=rows),
-        research_2026_prediction_keys=dict(completed_games=215),
+        research_2026_prediction_keys=dict(completed_games=len(completed)),
         market_sources={str(w): dict(as_of=WEEK_AS_OF[w]) for w in range(5)},
     )
     refs = dict(
@@ -528,6 +539,29 @@ def corpus():
         }
     )
     planvalue = yaml.safe_load((REPO / "conf/rebuild/6b_v1.yaml").read_text())
+    if extended:
+        planvalue["cutoff_2026"] = "2026-10-12T12:00:00Z"
+        planvalue["policies"].update(
+            {
+                "weeks": list(range(7)),
+                "expected_counts": {str(k): v for k, v in counts.items()},
+                "served_weeks": list(range(6)),
+                "unserved_week_as_of": {"6": "2026-10-05T12:00:00Z"},
+                "expected_6a_receipt_sha": receipt["manifest_sha256"],
+            }
+        )
+        planvalue["stages"] = [
+            stage
+            for stage in planvalue["stages"]
+            if stage["name"]
+            in (
+                "foundation",
+                "scoring_events_2026",
+                "offsets_2026",
+                "states_at_cutoff",
+                "application_frames",
+            )
+        ]
     planvalue["storage_identity"] = remote.identity
     planvalue["inputs"] = [
         dict(name=k, kind="r2_object", uri=k, sha256=sha(v)) for k, v in values.items()
@@ -1031,3 +1065,21 @@ def test_gold_rows_equal_stage_rows(harness):
             stage.sort_values(keys).reset_index(drop=True),
             check_dtype=False,
         )
+
+
+def test_seven_week_frame_integration_without_original_week6(monkeypatch):
+    corpus = build_corpus(extended=True)
+    assert not any("original_predictions_w6" in key for key in corpus.remote.objects)
+    h = make_harness(corpus, monkeypatch)
+    for stage in corpus.plan.stages:
+        h.runner.build([stage.name])
+    assert h.fresh().verify()["passed"]
+    frame = pd.read_parquet(
+        io.BytesIO(
+            context(h, "application_frames").read_artifact(
+                "application_frames",
+                corpus.plan.run_prefix() + "application_frames/frames.parquet",
+            )
+        )
+    )
+    assert frame.groupby("week").size().to_dict() == {**EXPECTED_COUNTS, 6: 58}

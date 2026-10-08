@@ -1,5 +1,7 @@
 # Pipeline Data-Quality Gates
 
+> **Current follow-through:** The [repair-track completion matrix](../2026-10-08/02-repair-track-certification-and-closure.md) records delivered gates and remaining enforcement work. The library and explicit CLI checks do not establish closure of all six follow-ups.
+
 - **Status:** Implemented (2026-10-04). Tasks 1-6 delivered; the six follow-up items in Amendment 3 are accepted by the user as tracked follow-ups, not part of this contract's completion
 - **Created:** 2026-10-04
 - **Planner:** Claude (planning chat, with the user)

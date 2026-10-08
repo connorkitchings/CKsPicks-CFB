@@ -102,6 +102,7 @@ jobs:
           --ignore=tests/test_migration_integration.py
           --ignore=tests/test_v5_batch_selection_v2.py
           --ignore=tests/test_publish_matchup_data.py
+          --ignore=tests/test_publish_null_lean_database.py
           --cov=cks_picks_cfb --cov-report= --cov-fail-under=0
           --durations=15 -o faulthandler_timeout=300
         env:
@@ -118,13 +119,14 @@ jobs:
           CFBD_API_KEY: ci-placeholder
 
       - name: PostgreSQL integration tests and total coverage
-        # All three files reset public/ops/catalog schemas. Run them in one
+        # These files reset public/ops/catalog schemas. Run them in one
         # process so a worker cannot drop another test's tables mid-query.
         run: >-
           PYTHONPATH=src:. uv run pytest
           tests/test_migration_integration.py
           tests/test_v5_batch_selection_v2.py
           tests/test_publish_matchup_data.py
+          tests/test_publish_null_lean_database.py
           -q -W error
           --cov=cks_picks_cfb --cov-append
           --cov-report=term-missing:skip-covered

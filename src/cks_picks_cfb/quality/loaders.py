@@ -70,13 +70,16 @@ def capture_requests(cur: Any, year: int) -> tuple[set[str], set[str]]:
     cur.execute(
         "SELECT state, request FROM catalog.ingestion_runs "
         "WHERE provider = 'cfbd' "
-        "AND request->'requests'->0->'parameters'->>'year' = %s",
+        "AND EXISTS (SELECT 1 FROM jsonb_array_elements(request->'requests') AS r "
+        "WHERE r->'parameters'->>'year' = %s)",
         (str(year),),
     )
     expected: set[str] = set()
     completed: set[str] = set()
     for state, request in cur.fetchall():
         for item in (request or {}).get("requests", []):
+            if str((item.get("parameters") or {}).get("year")) != str(year):
+                continue
             key = request_key(str(item.get("entity", "")), item.get("parameters") or {})
             expected.add(key)
             if state == "succeeded":
@@ -119,6 +122,7 @@ def build_ingest_context(
     *,
     year: int,
     pins: Mapping[str, str] | None = None,
+    request_inventory: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return the ingest-stage context for ``year``.
 
@@ -148,10 +152,23 @@ def build_ingest_context(
         except DatasetSchemaError as exc:
             # A catalog version with no active contract is a finding, not a crash.
             context["schema_errors"][name] = str(exc)
-    expected, completed = capture_requests(cur, year)
-    if expected:
-        context["expected_requests"] = expected
-        context["completed_requests"] = completed
+    attempted, completed = capture_requests(cur, year)
+    context["attempted_requests"] = attempted
+    context["completed_requests"] = completed
+    if request_inventory is not None:
+        from cks_picks_cfb.quality.request_inventory import expected_request_keys
+
+        context["expected_requests"] = expected_request_keys(request_inventory, year)
+        context["inputs"]["request_basis"] = "request_inventory"
+        context["inputs"]["request_inventory_schedule"] = dict(
+            request_inventory["schedule_ref"]
+        )
+    else:
+        # Attempts only: catches failed or unretried pulls, never a request that
+        # was not attempted. A warning signal, not proof of completeness.
+        if attempted:
+            context["expected_requests"] = attempted
+        context["inputs"]["request_basis"] = "attempt_ledger"
     odds = latest_odds_capture(cur, year)
     if odds is not None:
         context["odds_capture"] = odds
@@ -250,11 +267,48 @@ def load_silver_context(
     )
 
 
+def read_quality_dataset(storage, ref):
+    """Read either catalog representation, binding the root before using metadata."""
+    import hashlib
+
+    from cks_picks_cfb.data.lake import (
+        PARTITIONED_DATASET_KIND,
+        PartitionedDatasetRef,
+        iter_partitioned_dataset,
+        read_dataset,
+    )
+
+    if not ref.uri.endswith("partitioned-manifest.json"):
+        return read_dataset(storage, ref)
+    raw = storage.read_bytes(ref.uri)
+    if hashlib.sha256(raw).hexdigest() != ref.content_sha:
+        raise ValueError("Gold partitioned root checksum mismatch")
+    root = json.loads(raw)
+    if (
+        root.get("version_id") != ref.version_id
+        or root.get("artifact_kind") != PARTITIONED_DATASET_KIND
+    ):
+        raise ValueError("Gold partitioned root identity mismatch")
+    partitioned = PartitionedDatasetRef(
+        artifact_kind=PARTITIONED_DATASET_KIND,
+        dataset=ref.dataset,
+        version_id=ref.version_id,
+        schema_version=ref.schema_version,
+        content_sha=ref.content_sha,
+        uri=ref.uri,
+        records_sha=root["records_sha"],
+        row_count=root["row_count"],
+        partition_keys=tuple(root["partition_keys"]),
+    )
+    frames = list(iter_partitioned_dataset(storage, partitioned))
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 def _with_connection(environment: str, fn: Callable[[Any, Callable], Any]) -> Any:
     import psycopg
     from dotenv import load_dotenv
 
-    from cks_picks_cfb.data.lake import DatasetRef, read_dataset
+    from cks_picks_cfb.data.lake import DatasetRef
     from cks_picks_cfb.data.storage import get_storage
 
     load_dotenv()
@@ -266,7 +320,7 @@ def _with_connection(environment: str, fn: Callable[[Any, Callable], Any]) -> An
     storage = get_storage(environment=environment)
 
     def read(row: tuple) -> pd.DataFrame:
-        return read_dataset(storage, DatasetRef(*[str(x) for x in row]))
+        return read_quality_dataset(storage, DatasetRef(*[str(x) for x in row]))
 
     with psycopg.connect(url) as conn:
         conn.read_only = True
@@ -274,11 +328,49 @@ def _with_connection(environment: str, fn: Callable[[Any, Callable], Any]) -> An
             return fn(cur, read)
 
 
+def load_gold_context(environment: str, year: int, *, pins=None) -> dict[str, Any]:
+    """Gold reads require exact version identities, never a latest-version lookup."""
+    from cks_picks_cfb.quality.gold import DATASETS
+
+    pins = dict(pins or {})
+    if set(DATASETS) - pins.keys():
+        raise ValueError(
+            "Gold checks require explicit pins for all four measurement datasets"
+        )
+
+    def build(cur, read):
+        context = {"inputs": {}}
+        for dataset in DATASETS:
+            cur.execute(
+                "SELECT dataset, version_id, schema_version, content_sha, uri "
+                "FROM catalog.dataset_versions WHERE tier = 'gold' AND state = 'validated' "
+                "AND dataset = %s AND version_id = %s AND partitions @> %s::jsonb",
+                (dataset, pins[dataset], json.dumps({"seasons": [year]})),
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise ValueError(f"Gold pin not found for season {year}: {dataset}")
+            frame = read(row)
+            if "season" in frame:
+                frame = frame.loc[frame["season"].eq(year)].copy()
+            context[dataset] = frame
+            context["inputs"][dataset] = {"version_id": row[1], "content_sha": row[3]}
+        return context
+
+    return _with_connection(environment, build)
+
+
 def load_ingest_context(
-    environment: str, year: int, *, pins: Mapping[str, str] | None = None
+    environment: str,
+    year: int,
+    *,
+    pins: Mapping[str, str] | None = None,
+    request_inventory: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Open the environment's catalog read-only and build the ingest context."""
     return _with_connection(
         environment,
-        lambda cur, read: build_ingest_context(cur, read, year=year, pins=pins),
+        lambda cur, read: build_ingest_context(
+            cur, read, year=year, pins=pins, request_inventory=request_inventory
+        ),
     )

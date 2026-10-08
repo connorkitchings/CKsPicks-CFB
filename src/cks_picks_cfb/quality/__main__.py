@@ -7,6 +7,7 @@ directory) and exits 1 when any blocking check fails, 2 on usage errors.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -14,11 +15,16 @@ from pathlib import Path
 
 from cks_picks_cfb.quality.checks import REGISTRY, STAGES, registry_problems, run_stage
 from cks_picks_cfb.quality.loaders import (
+    load_gold_context,
     load_ingest_context,
     load_silver_context,
     parse_pins,
 )
-from cks_picks_cfb.quality.receipt import build_receipt, write_receipt_local
+from cks_picks_cfb.quality.receipt import (
+    build_receipt,
+    write_receipt_local,
+    write_receipt_storage,
+)
 
 
 def _code_sha() -> str:
@@ -36,6 +42,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--year", type=int)
     parser.add_argument("--environment", choices=("preview", "production"))
     parser.add_argument("--output", type=Path, default=Path("artifacts"))
+    parser.add_argument(
+        "--request-inventory",
+        type=Path,
+        help="Independent expected CFBD request manifest",
+    )
+    parser.add_argument(
+        "--require-check",
+        action="append",
+        default=[],
+        help="Fail closed on a failed or skipped check (repeatable)",
+    )
+    parser.add_argument(
+        "--upload-receipt",
+        action="store_true",
+        help="Copy the exact receipt to configured R2; never upload by default",
+    )
     parser.add_argument(
         "--pin",
         action="append",
@@ -63,13 +85,39 @@ def main(argv: list[str] | None = None) -> int:
 
     context: dict = {"year": args.year, "environment": args.environment}
     pins = parse_pins(args.pin)
-    if args.environment and args.year:
-        loader = {"ingest": load_ingest_context, "silver": load_silver_context}.get(
-            args.stage
+    inventory = None
+    if args.request_inventory:
+        if args.stage != "ingest":
+            parser.error("--request-inventory is for the ingest stage")
+        inventory_raw = args.request_inventory.read_bytes()
+        inventory = json.loads(inventory_raw)
+    if (
+        args.stage == "ingest"
+        and "ingest.capture_completeness" in args.require_check
+        and inventory is None
+    ):
+        parser.error(
+            "requiring ingest.capture_completeness needs --request-inventory; "
+            "the attempt ledger cannot establish completeness"
         )
+    if args.upload_receipt and not args.environment:
+        parser.error("--upload-receipt requires --environment")
+    if args.environment and args.year:
+        loader = {
+            "ingest": load_ingest_context,
+            "silver": load_silver_context,
+            "gold": load_gold_context,
+        }.get(args.stage)
         if loader is not None:
-            context.update(loader(args.environment, args.year, pins=pins))
-    run = run_stage(args.stage, context)
+            kwargs = {"pins": pins}
+            if args.stage == "ingest":
+                kwargs["request_inventory"] = inventory
+            context.update(loader(args.environment, args.year, **kwargs))
+    if inventory is not None:
+        context.setdefault("inputs", {})["request_inventory"] = {
+            "sha256": hashlib.sha256(inventory_raw).hexdigest()
+        }
+    run = run_stage(args.stage, context, required_checks=args.require_check)
     receipt = build_receipt(
         run,
         identity={"year": args.year, "environment": args.environment, "pins": pins},
@@ -77,6 +125,18 @@ def main(argv: list[str] | None = None) -> int:
         inputs=context.get("inputs"),
     )
     path = write_receipt_local(receipt, args.output)
+    remote_uri = None
+    if args.upload_receipt:
+        from cks_picks_cfb.data.storage import get_storage
+        from cks_picks_cfb.data.storage.base import StorageSettings
+
+        if StorageSettings.from_env(environment=args.environment).backend != "r2":
+            raise ValueError(
+                "durable quality receipts require explicit R2 configuration"
+            )
+        remote_uri = write_receipt_storage(
+            receipt, get_storage(environment=args.environment)
+        )
     print(
         json.dumps(
             {
@@ -86,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
                 "skipped": receipt["summary"]["skipped"],
                 "blocked": receipt["blocked"],
                 "receipt": str(path),
+                "durable_receipt": remote_uri,
             },
             indent=2,
         )

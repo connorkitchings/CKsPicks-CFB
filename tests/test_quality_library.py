@@ -148,7 +148,9 @@ def test_cli_exit_codes_and_receipt(registry, tmp_path, capsys, monkeypatch):
     monkeypatch.setattr("cks_picks_cfb.quality.__main__.REGISTRY", q.REGISTRY)
     monkeypatch.setattr(
         "cks_picks_cfb.quality.__main__.run_stage",
-        lambda stage, ctx: q.run_stage(stage, ctx, registry=q.REGISTRY),
+        lambda stage, ctx, **kwargs: q.run_stage(
+            stage, ctx, registry=q.REGISTRY, **kwargs
+        ),
     )
     assert cli_main(["--stage", "silver", "--output", str(tmp_path)]) == 1
     out = json.loads(capsys.readouterr().out)
@@ -173,3 +175,19 @@ def test_a_skipped_check_neither_fails_nor_blocks_and_is_counted(registry):
     receipt = build_receipt(run, identity={}, code_sha="abc")
     assert receipt["summary"]["skipped"] == 1 and receipt["summary"]["failed"] == 0
     assert receipt["checks"][0]["skipped"] is True
+
+
+def test_receipt_write_requires_matching_readback(registry):
+    class CorruptStore:
+        def exists(self, uri):
+            return False
+
+        def write_bytes(self, payload, uri):
+            pass
+
+        def read_bytes(self, uri):
+            return b"corrupted"
+
+    receipt = build_receipt(_run(), identity={}, code_sha="abc")
+    with pytest.raises(IOError, match="readback differs"):
+        write_receipt_storage(receipt, CorruptStore())

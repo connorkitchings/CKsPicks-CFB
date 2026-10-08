@@ -5,14 +5,14 @@ Every registered check, why it exists and the defect it prevents. The registry i
 CI if this table and the registry disagree (a check added, removed, or re-staged without
 updating this page).
 
-Run a stage: `make data-quality STAGE={ingest|silver|publish} YEAR=2026 ENV=preview`
+Run a stage: `make data-quality STAGE={ingest|silver|gold|publish} YEAR=2026 ENV=preview`
 (read-only; writes a receipt under `artifacts/quality/`, which is git-ignored).
 List the registry: `PYTHONPATH=src uv run python -m cks_picks_cfb.quality --list`.
 
 **Severity.** `block` stops a run before it can write or commit. `warn` records a failure
 in the receipt without stopping anything; new checks start at `warn` and are promoted to
 `block` only after a reviewed real receipt. A check whose input was not supplied reports
-`skipped`: neither passed nor failed, and never blocking.
+`skipped`: neither passed nor failed by default. Explicit `--require-check CHECK_ID` promotes failure or missing evidence to a blocking result; unknown or wrong-stage IDs are rejected.
 
 Contract: [pipeline data-quality gates](../plans/2026-10-04/01-pipeline-data-quality-gates.md).
 Definitions and evidence: [session log](../../session_logs/2026-10-04/04-data-quality-task1-library.md).
@@ -21,7 +21,7 @@ Definitions and evidence: [session log](../../session_logs/2026-10-04/04-data-qu
 
 | Check | Severity | Why it exists | Defect it prevents |
 |---|---|---|---|
-| `ingest.capture_completeness` | warn | Every requested entity, season and week needs a completed capture attempt | A silently missing pull that later reads as "no games" |
+| `ingest.capture_completeness` | warn | Every independently expected entity, season and week needs a completed capture attempt | A silently missing pull that later reads as "no games" |
 | `ingest.completed_games_have_scores` | warn | Completed games must carry both final scores | Null finals flowing into reconciliation and grading |
 | `ingest.games_vs_schedule` | warn | Every scheduled game was ingested exactly once (extra FBS-involved games are reported, not failed) | Missing or duplicated games |
 | `ingest.odds_unmatched_events` | warn | Odds API events that matched no scheduled game are counted | Quotes lost to a name or schedule mismatch |
@@ -44,6 +44,19 @@ Definitions and evidence: [session log](../../session_logs/2026-10-04/04-data-qu
 | `silver.stream_scores_match_finals` | warn | Each team's score from the play stream equals the certified final; the reconciliation records mismatches without blocking | Streams that stop short or overshoot the final (known issue 1) going unreported |
 | `silver.reconciliation_recorded` | warn | The persisted reconciliation has no blocking conflict (team identity and rows; scores only if the comparison can run) | A team or row conflict going unnoticed |
 | `silver.score_stream_monotone` | warn | Each team's running score never decreases in drive then play order | The non-monotonic score stream (known issue 1) |
+
+## Gold
+
+Gold runs require explicit version pins for all four measurement datasets. These
+checks verify contracts and cross-field consistency; they do not replace independent
+recomputation from source plays. They start at `warn` until a reviewed real receipt exists;
+release callers promote them with `--require-check`.
+
+| Check | Severity | Invariant | Defect prevented |
+|---|---|---|---|
+| `gold.schema_contract` | warn | All four measurement datasets satisfy their versioned schemas | Missing datasets, duplicate keys and incompatible schema versions |
+| `gold.metric_semantics` | warn | Ratios, coverage, missingness and offense/defense mirrors reconcile | Zero-filled missing values and inconsistent paired measurements |
+| `gold.ledger_semantics` | warn | Possessions, scoring admission and evidence satisfy shared contracts | Invalid scoring attribution and incompatible possession references |
 
 ## Publish boundary (before and after a Neon write)
 
@@ -68,3 +81,24 @@ The web app guards the database rows it renders with `web/src/lib/row-guard.ts`
 throws `RowContractError`; pages show their existing "temporarily unavailable" state, and the
 matchup page shows "Team stats are temporarily unavailable." instead of "not published".
 Values are never coerced to zero.
+
+## Repair-track enforcement
+
+Use `--request-inventory reviewed-inventory.json` for ingest completeness. The
+`cfbd_expected_requests_v1` document binds `season`, a `schedule_ref` containing
+`version_id` and `content_sha`, and a nonempty `requests` list of CFBD `provider`,
+`entity`, and exact `parameters`. Derive that list from the pinned schedule and
+endpoint policy, independently of ingestion attempts. Attempts alone cannot prove
+completeness: without an inventory the check falls back to the attempt ledger
+(`inputs.request_basis = "attempt_ledger"`), which catches failed or unretried pulls but
+never a request that was not attempted. An inventory is recorded as
+`request_basis = "request_inventory"`. Require `ingest.capture_completeness` to block missing inventory.
+This interface does not yet generate or independently validate the expected schedule
+population; that remains an open repair-track requirement.
+
+Gold accepts exact pins for all four measurement datasets and verifies ordinary or
+partitioned lake objects before schema and semantic checks. These checks enforce
+shared contracts; they do not replace independent source-to-metric recomputation.
+`--upload-receipt` explicitly enables immutable R2 receipt persistence with byte
+readback; default runs remain local. Automatic ingestion and Silver enforcement,
+reviewed production blocking policy, and legacy validator disposition remain open.

@@ -142,6 +142,7 @@ def run_stage(
     *,
     registry: Mapping[str, CheckSpec] | None = None,
     prefix: str | None = None,
+    required_checks: Sequence[str] = (),
 ) -> QualityRun:
     """Run every registered check for ``stage`` in check-id order.
 
@@ -159,6 +160,9 @@ def run_stage(
         key=lambda s: s.check_id,
     )
     results: list[CheckResult] = []
+    missing = set(required_checks) - {s.check_id for s in specs}
+    if missing:
+        raise ValueError(f"unknown or out-of-stage required checks: {sorted(missing)}")
     for spec in specs:
         try:
             produced = spec.fn(context)
@@ -172,4 +176,27 @@ def run_stage(
             continue
         outcomes = [produced] if isinstance(produced, Outcome) else list(produced)
         results.extend(_result(spec, o) for o in outcomes)
+    # Release callers must opt into an explicit reviewed gate list. A required
+    # check with missing inputs (or no outcomes) is a blocker, never a skip/pass.
+    from dataclasses import replace
+
+    results = [
+        replace(r, severity=BLOCK, skipped=False)
+        if r.check_id in required_checks
+        else r
+        for r in results
+    ]
+    for check_id in sorted(set(required_checks) - {r.check_id for r in results}):
+        results.append(
+            CheckResult(
+                check_id,
+                stage,
+                BLOCK,
+                False,
+                None,
+                None,
+                "required check returned no outcomes",
+                {},
+            )
+        )
     return QualityRun(stage, tuple(results))

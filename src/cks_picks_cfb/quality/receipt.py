@@ -95,4 +95,6 @@ def write_receipt_storage(receipt: Mapping[str, Any], storage: Any) -> str:
             raise FileExistsError(f"immutable receipt collision: {uri}")
         return uri
     storage.write_bytes(payload, uri)
+    if storage.read_bytes(uri) != payload:
+        raise IOError(f"quality receipt readback differs: {uri}")
     return uri

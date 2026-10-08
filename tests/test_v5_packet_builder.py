@@ -306,6 +306,73 @@ def test_display_only_week6_cannot_carry_a_prospective_record():
         validate_v2_packet(packet, environment="preview", storage=storage)
 
 
+def test_cutover7_accepts_signed_week5_evidence_and_preserves_it_exactly():
+    """Exercise the real receipt verifier, not a mock of prospective admission."""
+    import hashlib
+    import json
+
+    from cks_picks_cfb.ratings_lab.artifacts import canonical_json
+
+    row = _row(5)
+    body = signed_payload(
+        {
+            "schema_version": "v5_prospective_freeze_receipt_v1",
+            "state": "frozen",
+            "environment": "preview",
+            **{
+                k: row[k]
+                for k in (
+                    "season",
+                    "week",
+                    "run_id",
+                    "decision_ref",
+                    "frozen_at",
+                    "first_kickoff_utc",
+                )
+            },
+        }
+    )
+    raw = canonical_json(body)
+    digest = hashlib.sha256(raw).hexdigest()
+    row["freeze_receipt_sha256"] = digest
+    row["freeze_receipt_uri"] = (
+        f"artifacts/prospective/v5/season=2026/week=5/{row['run_id']}/freeze-{digest}.json"
+    )
+    packet, storage = _cutover7_packet([row])
+    storage.objects[row["freeze_receipt_uri"]] = raw
+    # _cutover7_packet's rejection fixtures use placeholder certification weeks.
+    # The positive path requires exact week/run identities for every replay.
+    certs = []
+    for week in range(7):
+        certs.append(
+            _ref(
+                storage,
+                f"r2://cert/positive/{week}",
+                {
+                    "state": "verified",
+                    "season": 2026,
+                    "week": week,
+                    "run_id": f"new-{week}",
+                    "finals_complete": True,
+                    "finals_stabilized_at": "2026-10-01T00:00:00+00:00",
+                },
+            )
+            | {"week": week}
+        )
+    packet["completed_week_certifications"] = certs
+    packet = signed_payload({k: v for k, v in packet.items() if k != "manifest_sha256"})
+    plan = validate_v2_packet(packet, environment="preview", storage=storage)
+    assert plan["cutover_week"] == 7
+    before = json.loads(storage.read_bytes(packet["prospective_records_before"]["uri"]))
+    after = json.loads(storage.read_bytes(packet["prospective_records_after"]["uri"]))
+    assert before["rows"] == after["rows"] == [row]
+    storage.objects[row["freeze_receipt_uri"]] = raw + b" "
+    from cks_picks_cfb.ops.prospective_records import ProspectiveRecordError
+
+    with pytest.raises(ProspectiveRecordError, match="checksum"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
 def test_cli_build_reads_manifests_and_matches_the_library(tmp_path):
     import json as _json
 

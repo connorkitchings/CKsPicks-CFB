@@ -66,7 +66,10 @@ def test_context_includes_found_datasets_and_omits_missing_ones():
     ctx = loaders.build_ingest_context(cur, read, year=2026)
     assert list(ctx["games"]["src"]) == ["g26"]
     assert "plays" not in ctx and "drives" not in ctx
-    assert ctx["inputs"] == {"games": {"version_id": "g26", "content_sha": "sha-g26"}}
+    assert ctx["inputs"] == {
+        "games": {"version_id": "g26", "content_sha": "sha-g26"},
+        "request_basis": "attempt_ledger",
+    }
     assert list(ctx["schedule"]["game_id"]) == [101, 102]
     assert set(ctx["catalog_versions"].columns) == {
         "dataset",
@@ -174,6 +177,49 @@ def test_the_capture_check_runs_on_loaded_requests_instead_of_skipping():
         "ingest.capture_completeness"
     ]
     assert not result.skipped and result.passed is False
+
+
+def _never_read(row):  # no dataset versions exist in these cursors
+    raise AssertionError("no dataset should be read")
+
+
+def test_without_an_inventory_the_attempt_ledger_is_used_and_labelled():
+    runs = [("failed", _request("plays", year=2026, week=2))]
+    ctx = loaders.build_ingest_context(RunsCursor(runs), _never_read, year=2026)
+    assert ctx["inputs"]["request_basis"] == "attempt_ledger"
+    result = {r.check_id: r for r in q.run_stage("ingest", ctx).results}[
+        "ingest.capture_completeness"
+    ]
+    assert not result.skipped and result.passed is False
+
+
+def test_an_inventory_catches_a_request_that_was_never_attempted():
+    runs = [("succeeded", _request("games", year=2026, week=1))]
+    inventory = {
+        "schema_version": "cfbd_expected_requests_v1",
+        "season": 2026,
+        "schedule_ref": {"version_id": "s1", "content_sha": "abc"},
+        "requests": [
+            {
+                "provider": "cfbd",
+                "entity": "games",
+                "parameters": {"year": 2026, "week": 1},
+            },
+            {
+                "provider": "cfbd",
+                "entity": "games",
+                "parameters": {"year": 2026, "week": 2},
+            },
+        ],
+    }
+    ctx = loaders.build_ingest_context(
+        RunsCursor(runs), _never_read, year=2026, request_inventory=inventory
+    )
+    assert ctx["inputs"]["request_basis"] == "request_inventory"
+    result = {r.check_id: r for r in q.run_stage("ingest", ctx).results}[
+        "ingest.capture_completeness"
+    ]
+    assert result.passed is False and result.observed["missing"] == 1
 
 
 def test_odds_capture_reports_the_unmatched_events_of_the_latest_capture():
