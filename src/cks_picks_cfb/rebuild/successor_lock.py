@@ -135,3 +135,72 @@ def derive_successor_lock(
         },
     }
     return lock
+
+
+def derive_live_lock(
+    replay_lock: Mapping[str, Any],
+    *,
+    week: int,
+    games: list[Mapping[str, Any]],
+    games_source: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Extend a corrected replay lock with one live (not yet replayed) week.
+
+    ``games`` are the live week's schedule rows (``game_id``, ``start_date``, ``home_team``,
+    ``away_team``; raw provider names, as the lock stores them). They enter without final
+    scores, the post-week cutoffs stay those of the replayed weeks, and ``active_week``
+    names the live week. Nothing already in the lock changes.
+    """
+    from cks_picks_cfb.rebuild.lock_extension import rows_sha256
+
+    if LINEAGE_KEY not in replay_lock:
+        raise SuccessorLockError("the base must be a corrected successor lock")
+    lock = copy.deepcopy(dict(replay_lock))
+    cutoffs = sorted(int(w) for w in lock["post_week_cutoffs"])
+    if week != cutoffs[-1] + 1 or lock["active_week"]["week"] != week:
+        raise SuccessorLockError(
+            f"the live week must follow the last replayed week ({cutoffs[-1]})"
+        )
+    columns = lock["games"]["columns"]
+    if columns != [
+        "week",
+        "game_id",
+        "start_date",
+        "home_team",
+        "away_team",
+        "home_points",
+        "away_points",
+    ]:
+        raise SuccessorLockError("unexpected lock game columns")
+    known = {int(row[1]) for row in lock["games"]["rows"]}
+    ids = [int(game["game_id"]) for game in games]
+    if not ids or len(set(ids)) != len(ids) or known & set(ids):
+        raise SuccessorLockError("live games are empty, duplicated or already locked")
+    rows = lock["games"]["rows"]
+    for game in sorted(games, key=lambda g: (str(g["start_date"]), int(g["game_id"]))):
+        rows.append(
+            [
+                week,
+                int(game["game_id"]),
+                str(game["start_date"]),
+                str(game["home_team"]),
+                str(game["away_team"]),
+                None,
+                None,
+            ]
+        )
+    lock["game_rows_sha256"] = rows_sha256(rows)
+    lock["active_week"] = {"active_run_id": None, "season": 2026, "week": week}
+    lock["research_2026_prediction_keys"] = {
+        "completed_games": sum(1 for row in rows if row[5] is not None),
+        f"week{week}_games": len(ids),
+    }
+    lock[LINEAGE_KEY] = {
+        **lock[LINEAGE_KEY],
+        "live_week": {
+            "week": week,
+            "games": len(ids),
+            "games_source": dict(games_source),
+        },
+    }
+    return lock

@@ -197,7 +197,7 @@ def build(
         "overall_rating",
         "overall_variance",
     ]
-    for week in range(6):
+    for week in sorted(set(pregame.team_states.week.astype(int))):
         part = pregame.team_states[pregame.team_states.week.eq(week)]
         if not part.empty:
             generations[f"pregame_w{week}"] = _generation_digest(part, team_columns)

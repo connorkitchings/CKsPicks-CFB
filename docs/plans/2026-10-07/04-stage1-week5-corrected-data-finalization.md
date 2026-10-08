@@ -153,3 +153,20 @@ For finding 2 an explicit rule is needed for games that completed after the cuto
 **Deferred, with reasons:** Task 7 (successor-format chain) and the week-parameterization of the successor scripts with a successor lock builder. Both are build tasks whose design depends on the release route, and Amendment 5 already said Task 7's design belongs in the decision brief. Neither changes any data product; both are prerequisites of releasing the corrected lineage. Two further Task 8 gaps: no end-to-end regression test for the D7f behavior, and the Week-4-specific literals in `recon_foundation.py`, `recon_markets.py` and `recon_grades.py` were not generalized (6B passes because the plan pins the same Weeks 0-5 population).
 
 **Definition of done:** the box "Production-namespace prediction artifacts verified against 6B" and "Code and pipeline tasks merged with CI green" stay open; the contract is not set to Implemented until Task 7 has an owner and the commits are pushed with CI green.
+
+## Amendment 9 (2026-10-08): labeled display-only Week 6 on the corrected lineage
+
+**Decision (user, 2026-10-08, choosing "Labeled display-only Week 6" over holding Week 6 until the Week 7 cutover):** Week 6 may be shown before the cutover as a display-only run built on the corrected successor chain. This supersedes the earlier hold-until-cutover decision for Week 6 only, and it amends the "keep the three kickoff guards exactly as they are" line of Task 8 in the way described here and no further.
+
+**What the facts allow (checked 2026-10-08 against the pinned Silver games):** Week 6 has 58 games; Southern Miss at Troy kicked off 2026-10-07T00:00Z and is final; two games kicked off on 2026-10-07 (23:00Z, 23:30Z) and more kick off every evening through 2026-10-11T02:30Z. `build_live_application_frame` already keeps only games whose kickoff is after the forecast `as_of`, so a forecast built now covers only games that have not kicked off; the already-played games cannot be added without giving the run a false `as_of`, which this amendment does not allow.
+
+**Rules for the display-only mode**
+1. **Partial slate by construction.** The run covers exactly the Week 6 games whose kickoff is after the run's real `as_of` (no earlier timestamp is ever used). Games already played are omitted and listed in the manifest (`omitted_kicked_off_game_ids`) with the count.
+2. **Never prospective evidence.** The run keeps `evidence_class = 'pending'`, state `published`, and is **never frozen or closed** (`freeze_week.py` and `close_week.py` must refuse it). A new evidence class would need a database migration of the `CHECK` in `0013`/`0018` and is not part of this decision. It cannot enter `prospective_week_records` (that requires `live` and a freeze attestation). The manifest carries `display_only: true`.
+3. **Explicit mode.** The kickoff checks are relaxed only behind a `--display-only` flag in the live serving builder, its verifier and the live packager; without the flag they behave exactly as before. The verifier checks that every included game kicks off after the run's `as_of` and that every omitted game has kicked off.
+4. **Lines.** Market quotes are captured fresh; a quote captured at or after a game's kickoff is not eligible (best-quote v2 already enforces this).
+5. **Visible label.** The site shows a notice on Week 6 that the picks were generated during the week, cover only games that had not started, and are not part of the prospective record. The notice text and its placement need the user's approval before any web change ships.
+6. **Release.** Preview rehearsal first. Production publication, selection and any database authorization insert are separate go-aheads.
+
+**Not changed:** the batch-selection controller, the cutover rules, `freeze_week.py` for any real prospective week, and the guards for Week 7 and later.
+

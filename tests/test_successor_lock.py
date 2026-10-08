@@ -147,3 +147,68 @@ def test_missing_per_week_inputs_and_a_changed_as_of_are_refused():
     changed["weeks"]["0"]["as_of"] = "other"
     with pytest.raises(SuccessorLockError, match="as_of"):
         _derive(refs=changed)
+
+
+# ---------------------------------------------------------------------------
+# A live week on top of a corrected replay lock
+# ---------------------------------------------------------------------------
+
+from cks_picks_cfb.rebuild.successor_lock import derive_live_lock  # noqa: E402
+
+
+def _replay_lock():
+    lock = _derive()
+    lock["extends"] = {"game_rows_sha256": "new-rows"}
+    return lock
+
+
+LIVE_GAMES = [
+    {
+        "game_id": 20,
+        "start_date": "2026-10-10T16:00:00Z",
+        "home_team": "E",
+        "away_team": "F",
+    },
+    {
+        "game_id": 21,
+        "start_date": "2026-10-07T00:00:00Z",
+        "home_team": "G",
+        "away_team": "H",
+    },
+]
+SOURCE = {"dataset": "games", "version_id": "v", "content_sha": "c", "uri": "u"}
+
+
+def test_a_live_week_is_appended_without_finals_and_the_rest_is_untouched():
+    base = _replay_lock()
+    live = derive_live_lock(base, week=2, games=LIVE_GAMES, games_source=SOURCE)
+    assert live["games"]["rows"][: len(base["games"]["rows"])] == base["games"]["rows"]
+    added = live["games"]["rows"][len(base["games"]["rows"]) :]
+    assert [row[1] for row in added] == [21, 20]  # kickoff order
+    assert all(row[0] == 2 and row[5] is None and row[6] is None for row in added)
+    assert live["post_week_cutoffs"] == base["post_week_cutoffs"]
+    assert live["market_sources"] == base["market_sources"]
+    assert live["active_week"] == {"active_run_id": None, "season": 2026, "week": 2}
+    assert live["game_rows_sha256"] != base["game_rows_sha256"]
+    assert live["corrected_lineage"]["live_week"]["games"] == 2
+    assert base["active_week"]["week"] == 2 and len(base["games"]["rows"]) == 2
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"week": 3},  # not the week after the last replayed one
+        {"games": []},
+        {"games": LIVE_GAMES + LIVE_GAMES[:1]},  # duplicate
+        {"games": [{**LIVE_GAMES[0], "game_id": 1}]},  # already locked
+    ],
+)
+def test_a_live_week_that_does_not_follow_cleanly_is_refused(kwargs):
+    arguments = {"week": 2, "games": LIVE_GAMES, "games_source": SOURCE, **kwargs}
+    with pytest.raises(SuccessorLockError):
+        derive_live_lock(_replay_lock(), **arguments)
+
+
+def test_only_a_corrected_lock_can_take_a_live_week():
+    with pytest.raises(SuccessorLockError):
+        derive_live_lock(dict(EXTENDED), week=2, games=LIVE_GAMES, games_source=SOURCE)
