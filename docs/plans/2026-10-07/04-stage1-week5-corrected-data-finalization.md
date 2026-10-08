@@ -170,3 +170,11 @@ For finding 2 an explicit rule is needed for games that completed after the cuto
 
 **Not changed:** the batch-selection controller, the cutover rules, `freeze_week.py` for any real prospective week, and the guards for Week 7 and later.
 
+
+## Amendment 10 (2026-10-08): display-only Week 6 is excluded from the completed-prospective check
+
+**Decision (user, 2026-10-08):** Amendment 9 forbids Week 6 from freezing or entering `prospective_week_records`. `validate_v2_packet` required a prospective record for every week in `range(5, cutover)`, so any cutover at N >= 7 was unreachable by construction. The requirement now excludes `DISPLAY_ONLY_WEEKS = {6}` (`src/cks_picks_cfb/ops/v5_batch_selection_v2.py`).
+
+**Scope of the waiver:** only Week 6, and only that exclusion. Week 5 and every other week from 5 to N-1 still need a verified prospective record. A packet carrying a prospective record for Week 6 is refused, so the exemption cannot be used to smuggle a display-only run into the record. The before/after payloads must still match exactly, and all other checks are unchanged. Tests: `tests/test_v5_packet_builder.py` (Week 5 still required at N=7; Week 6 record refused). **Not tested:** the positive path of a N=7 packet that passes the prospective check with a real Week 5 record (needs live receipt verification; covered by the Postgres integration job and the Preview rehearsal).
+
+**Tooling delivered with it (Preview-validated, no Production write):** `v5_packet_builder.py` and `scripts/pipeline/build_v5_cutover_packets.py` (authorization, selection, rollback packets), `v5_artifact_staging.py` and `scripts/pipeline/stage_v5_artifacts.py` (dry run by default; apply needs the reviewed receipt hash and clean committed code). Weeks 0-5 provider-name replay set `20261008-c2`: evidence in `stage1-evidence/task7-replay-chain-c2-provider-names.json`.

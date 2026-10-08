@@ -1,0 +1,70 @@
+{
+  "namespace": "preview",
+  "note": "Weeks 0-5 successor replay chain with provider team names; supersedes c1 (canonical names). Preview only.",
+  "release_tag": "20261008-c2",
+  "runs": {
+    "0": {
+      "games": 8,
+      "packet_sha256": "4ebbd022086cafb815d2cb097e72b2324d0d1e49c13d2e0af5560149b7b23cd0",
+      "release_record_sha256_dry_run": "0146826da7ccf959cb90de0242320d4ebd2ad002bf0ce1e62a60badd87b29065",
+      "run_id": "2026w0-v5repair-20261008-c2"
+    },
+    "1": {
+      "games": 43,
+      "packet_sha256": "3bd6d8dcef7e3ce5235e5e996f8e4499dd7b872acff12f9078fddc5cc94f894a",
+      "release_record_sha256_dry_run": "cc43b935aae8b0213b5c03194f6bb223988cb98da8404133040c40619875c311",
+      "run_id": "2026w1-v5repair-20261008-c2"
+    },
+    "2": {
+      "games": 49,
+      "packet_sha256": "0022a1ba059e95dd5ba0a7bf9519c60912f950ba94f16decfa27632863ca0909",
+      "release_record_sha256_dry_run": "eaf5b37a9c47715be8a00960e261cf979f489cde7b2fffaa3203515352bb05ee",
+      "run_id": "2026w2-v5repair-20261008-c2"
+    },
+    "3": {
+      "games": 57,
+      "packet_sha256": "435468c22d9f1f18f8999f7ec0c128d4f3e242b898bad12cf1e442eb8ce4c2c0",
+      "release_record_sha256_dry_run": "c19fd02cae42954a17d2b551e12a23feeb61cf95dd96b525bfd9e902fed55706",
+      "run_id": "2026w3-v5repair-20261008-c2"
+    },
+    "4": {
+      "games": 58,
+      "packet_sha256": "a0c315d5964aee6648cea0f313cf8984781bd2b81a6dfc3d5c14fcbed0fd682c",
+      "release_record_sha256_dry_run": "acb946e9131f98e46d4cfdb8326a97d349ff0b7259c5f7ef8d753f91612e7130",
+      "run_id": "2026w4-v5repair-20261008-c2"
+    },
+    "5": {
+      "games": 56,
+      "packet_sha256": "48d005f7206b5bfde306989113d58bed6a145066b04cfc6026ca30e3b25848b0",
+      "release_record_sha256_dry_run": "5da695d5bf063b98979bb3fa52786cd8097c93ea16d14e52cfd4a4a365b42e9c",
+      "run_id": "2026w5-v5repair-20261008-c2"
+    }
+  },
+  "serving_verifier": {
+    "0": {
+      "games": 8,
+      "verified": true
+    },
+    "1": {
+      "games": 43,
+      "verified": true
+    },
+    "2": {
+      "games": 49,
+      "verified": true
+    },
+    "3": {
+      "games": 57,
+      "verified": true
+    },
+    "4": {
+      "games": 58,
+      "verified": true
+    },
+    "5": {
+      "games": 56,
+      "verified": true
+    }
+  },
+  "status": "agent-reported from retained scratchpad outputs; release records validated by dry run, none registered"
+}

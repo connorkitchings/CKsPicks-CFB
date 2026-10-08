@@ -245,3 +245,97 @@ def test_tampering_a_built_packet_breaks_its_signature():
     }
     with pytest.raises(V5BatchSelectionError):
         validate_v2_packet(forged, environment="preview", storage=storage)
+
+
+def _cutover7_packet(prospective_rows):
+    storage = Storage()
+    refs = _refs(storage)
+    for name in ("prospective_records_before", "prospective_records_after"):
+        refs[name] = _ref(
+            storage,
+            f"r2://p/7/{name}",
+            {
+                "schema_version": "v5_prospective_records_release_payload_v1",
+                "environment": "preview",
+                "season": 2026,
+                "rows": prospective_rows,
+            },
+        )
+    manifests = {
+        w: {**_manifest(w), "evidence_class": "pending" if w == 7 else "replay"}
+        for w in range(8)
+    }
+    packet = builder.build_selection_packet(
+        manifests,
+        environment="preview",
+        cutover_week=7,
+        decision_ref="decision-x",
+        expected_current_runs={w: f"old-{w}" for w in range(8)},
+        protected_runs={8: "old-8"},
+        certifications=[
+            {**c, "week": w}
+            for w, c in enumerate(_certs(storage, "new") + _certs(storage, "new")[:2])
+        ],
+        payload_refs=refs,
+    )
+    return packet, storage
+
+
+def _row(week):
+    return {
+        "season": 2026,
+        "week": week,
+        "run_id": f"new-{week}",
+        "freeze_receipt_uri": "r2://f",
+        "freeze_receipt_sha256": "0" * 64,
+        "frozen_at": "2026-10-01T00:00:00+00:00",
+        "first_kickoff_utc": "2026-10-01T01:00:00+00:00",
+        "decision_ref": "d",
+    }
+
+
+def test_cutover7_still_requires_week5_record_but_not_week6():
+    packet, storage = _cutover7_packet([])
+    with pytest.raises(V5BatchSelectionError, match="completed prospective"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
+def test_display_only_week6_cannot_carry_a_prospective_record():
+    packet, storage = _cutover7_packet([_row(5), _row(6)])
+    with pytest.raises(V5BatchSelectionError, match="display-only"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
+def test_cli_build_reads_manifests_and_matches_the_library(tmp_path):
+    import json as _json
+
+    from cks_picks_cfb.artifacts import prediction_run_manifest_path
+    from cks_picks_cfb.ratings_lab.artifacts import canonical_json
+    from scripts.pipeline.build_v5_cutover_packets import build
+
+    storage = Storage()
+    manifests = _manifests()
+    for week, manifest in manifests.items():
+        storage.objects[
+            prediction_run_manifest_path(2026, week, manifest["run_id"]).replace(
+                "/production/", "/preview/"
+            )
+        ] = canonical_json(manifest)
+    storage.read_bytes = lambda uri, _o=storage.objects: _o[
+        uri.replace("/production/", "/preview/")
+    ]
+    spec = {
+        "environment": "preview",
+        "cutover_week": CUTOVER,
+        "decision_ref": "decision-x",
+        "runs": {str(w): m["run_id"] for w, m in manifests.items()},
+    }
+    built = build("authorization", spec, storage)
+    direct = builder.build_authorization_packet(
+        manifests,
+        environment="preview",
+        cutover_week=CUTOVER,
+        decision_ref="decision-x",
+    )
+    assert built == direct
+    assert _json.loads(canonical_json(built))["cutover_week"] == CUTOVER
