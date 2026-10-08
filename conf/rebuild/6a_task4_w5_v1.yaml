@@ -1,7 +1,7 @@
 # Stage 6A Task 4 for the Week 5 rebuild (contract 04-stage1, Amendment 8 of contract 02).
 # Pinned to the PUBLISHED root manifest of run 6a-rebuild-w5-20261007-r2; reads published objects
 # only through hash-checked access. Separate plan so the main plan's signed hash is untouched.
-run_id: 6a-task4-w5-r1
+run_id: 6a-task4-w5-r2
 storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"
 seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
 registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
@@ -25,6 +25,6 @@ inputs:
   - {name: source_lock_2026, kind: git_file, uri: conf/rebuild/source_lock_2026_w5_v1.json, sha256: d9086411be7604af05a8093beef9c21d8b1205ed6debdc13ac956876d6dd7477}
   - {name: main_plan, kind: git_file, uri: conf/rebuild/6a_w5_v1.yaml, sha256: 9a48cca4cf8f9e69d92c637912c5389246476d37f712a4523385423356396e80}  # the published run's plan: its pins and policies are cited in the receipt
 stages:
-  - {name: attribution, inputs: [root_manifest, phase2c_silver_parents, repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest, admission_decisions], outputs: [rebuild/6a/6a-task4-w5-r1/attribution/], legacy_allowed: true}
-  - {name: published_comparison, inputs: [root_manifest, silver_2026_parents, source_lock_2026, r9_measurement_manifest], parents: [attribution], outputs: [rebuild/6a/6a-task4-w5-r1/published_comparison/], legacy_allowed: true}
-  - {name: receipt, inputs: [root_manifest, main_plan], parents: [published_comparison], outputs: [rebuild/6a/6a-task4-w5-r1/receipt/]}
+  - {name: attribution, inputs: [root_manifest, phase2c_silver_parents, repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest, admission_decisions], outputs: [rebuild/6a/6a-task4-w5-r2/attribution/], legacy_allowed: true}
+  - {name: published_comparison, inputs: [root_manifest, silver_2026_parents, source_lock_2026, r9_measurement_manifest], parents: [attribution], outputs: [rebuild/6a/6a-task4-w5-r2/published_comparison/], legacy_allowed: true}
+  - {name: receipt, inputs: [root_manifest, main_plan], parents: [published_comparison], outputs: [rebuild/6a/6a-task4-w5-r2/receipt/]}
