@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 import numpy as np
@@ -184,11 +185,30 @@ def verify_application_frames(context: StageContext) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+INFERENCE_BUNDLE_INPUT = "inference_bundle"
+
+
+def prediction_bundle(context: StageContext, run_6a: PublishedRun) -> tuple[bytes, str]:
+    """The bundle the replay applies, and the reference recorded on each prediction.
+
+    A plan that names an ``inference_bundle`` input uses exactly those pinned bytes (the
+    successor bridge refit on the corrected frames, the recipe the site serves). A plan
+    without it keeps the 6A refit, which the first 6B run used and which is the accepted
+    forecast-v1 recipe, not the served one.
+    """
+    if any(pin.name == INFERENCE_BUNDLE_INPUT for pin in context.plan.inputs):
+        raw = context.read_input(INFERENCE_BUNDLE_INPUT)
+        return raw, f"{INFERENCE_BUNDLE_INPUT}#sha256={hashlib.sha256(raw).hexdigest()}"
+    key = run_6a.run_key("forecast/bundle.json")
+    raw = run_6a.read(key)
+    return raw, f"{key}#sha256={hashlib.sha256(raw).hexdigest()}"
+
+
 def build_predictions(context: StageContext) -> StageOutput:
     run_6a = PublishedRun(context, root_input="root_manifest_6a")
 
-    # Load 6A bundle
-    bundle_raw = run_6a.read(run_6a.run_key("forecast/bundle.json"))
+    # Load the bundle (the plan's pinned inference bundle, else the 6A refit)
+    bundle_raw, model_ref = prediction_bundle(context, run_6a)
     bundle = json.loads(bundle_raw)
 
     # Pre-check gate: verify bundle compatibility with apply_exported_bridge
@@ -274,7 +294,7 @@ def build_predictions(context: StageContext) -> StageOutput:
             bundle,
             w_frame,
             run_id=run_id_w,
-            model_ref=f"{run_6a.run_key('forecast/bundle.json')}#sha256={__import__('hashlib').sha256(bundle_raw).hexdigest()}",
+            model_ref=model_ref,
             state_refs=w_refs,
             source_ref=context.plan.run_id,
             timing_class="replay",

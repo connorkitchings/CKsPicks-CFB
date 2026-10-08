@@ -1,0 +1,245 @@
+# Stage 6B execution plan; exact Preview-only source metadata and original manifests.
+run_id: 6b-replay-w5-20261008-r2
+namespace: rebuild/6b/
+storage_identity: r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview
+seasons:
+- 2015
+- 2016
+- 2017
+- 2018
+- 2019
+- 2021
+- 2022
+- 2023
+- 2024
+- 2025
+registry_checksum: 2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281
+cutoff_2026: '2026-10-05T00:00:00Z'
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  selection_policy: model_side_best_quote_v2
+  offset_rule: unusable_team_games_unresolved
+  zero_threshold: true
+  expected_6a_receipt_sha: ecb783b1c099d63a29c1199b191f82164667c9713e6c4c81cf0bc80a24e8851c
+inputs:
+- name: root_manifest_6a
+  kind: r2_object
+  uri: rebuild/6a/6a-rebuild-w5-20261007-r2/root-manifest.json
+  sha256: 7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0
+- name: inference_bundle
+  kind: git_file
+  uri: conf/rebuild/bundle_b2_w5_v1.json
+  sha256: a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1
+- name: root_manifest_task4
+  kind: r2_object
+  uri: rebuild/6a/6a-task4-w5-r2/root-manifest.json
+  sha256: 3681c884952059bd14bd59c97b11b5afe35f4dbbdc2a7facf9379237e2a2c063
+- name: task4_receipt
+  kind: r2_object
+  uri: rebuild/6a/6a-task4-w5-r2/receipt/receipt.json
+  sha256: 1cd439defb14b886a3850102e0ad8ef44691a51287885dbc46e748e6d00ea3e3
+- name: source_lock_2026
+  kind: git_file
+  uri: conf/rebuild/source_lock_2026_w5_v1.json
+  sha256: d9086411be7604af05a8093beef9c21d8b1205ed6debdc13ac956876d6dd7477
+- name: bets_config
+  kind: git_file
+  uri: conf/weekly_bets/v5_intended_update_2026.yaml
+  sha256: 2ee4aec5d6a55cf9cdcb3733008cf11f5bfb66f184905d1f38182bc8b744f4ab
+- name: silver_2026_parents
+  kind: git_file
+  uri: conf/rebuild/silver_2026_parents_w5_v1.json
+  sha256: 66434185270f45ee9e07873c053535b2db0c4d1426470130a2c7fc0b52b9af12
+- name: reconstruction_source_refs
+  kind: git_file
+  uri: conf/rebuild/6b_source_refs_w5_v1.json
+  sha256: 9d733d4c1ef6b7c87eb2fc65e5fe407d14a4e74521e85e2458fbf999876305a3
+- name: original_predictions_w0
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=0/run_id=2026w0-v5repair-20260929-p1/manifest.json
+  sha256: 6976a432847bb3d2a848603c90ed88216934106e89d10e97e98716365e4ca86d
+- name: original_scored_w0
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=0/run_id=2026w0-v5repair-20260929-p1/manifest.json
+  sha256: 599cbbe1d4a064cdb2b29959ba753415141c8ba7031a098f8f0f792baa5baa5d
+- name: original_predictions_w1
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=1/run_id=2026w1-v5repair-20260929-p1/manifest.json
+  sha256: 24455da59b01d8bb87768972bd618be5389cda28d18f6909144664a4662d7dc9
+- name: original_scored_w1
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=1/run_id=2026w1-v5repair-20260929-p1/manifest.json
+  sha256: ac839c5260819ba108d9925cf173e4990a5a36ce4cfffc2df7bf2bb3cef3987e
+- name: original_predictions_w2
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=2/run_id=2026w2-v5repair-20260929-p1/manifest.json
+  sha256: 26a0d8bc5204f03eac9d7cf06a9a10e89031e49890d3a58f17bf52c8fd5a0f85
+- name: original_scored_w2
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=2/run_id=2026w2-v5repair-20260929-p1/manifest.json
+  sha256: d8271e964944f3ea043312e26ba1fdf6f4a364000c7a3de5599222ab3187073c
+- name: original_predictions_w3
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=3/run_id=2026w3-v5repair-20260929-p1/manifest.json
+  sha256: 3a7c9f0df1b7c35031ce6f0590982e1810226351a9ca321e913919db0083245a
+- name: original_scored_w3
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=3/run_id=2026w3-v5repair-20260929-p1/manifest.json
+  sha256: ede31cdad704e2691edd12d4363150d7bc9ce32bf00a2983442407389f7bfdfa
+- name: original_predictions_w4
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=4/run_id=2026w4-v5repair-20260929-p1/manifest.json
+  sha256: 912781a903b7eeeba9967ba33062de759f0c34cc9067323a1efd90e148f3cbd1
+- name: original_scored_w4
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=4/run_id=2026w4-v5repair-20260929-p1/manifest.json
+  sha256: 96421de210bde8d4095ffc174d163f3be5fa3cf7aed8bf3e0b888991af717609
+- name: original_predictions_w5
+  kind: r2_object
+  uri: artifacts/preview/predictions/year=2026/week=5/run_id=2026w5-v5repair-20260929-p2/manifest.json
+  sha256: d74262fe5a51d7510bcce80ab82f7f116730ac00d3765242c005d56aaf551c0f
+- name: original_scored_w5
+  kind: r2_object
+  uri: artifacts/preview/scored/year=2026/week=5/run_id=2026w5-v5repair-20260929-p2/manifest.json
+  sha256: cbae4a8bb5a190bb39c719b21ce14752f991ed457c2530618b8fdfd3d3dab964
+stages:
+- name: foundation
+  inputs:
+  - root_manifest_6a
+  - root_manifest_task4
+  - task4_receipt
+  - source_lock_2026
+  - reconstruction_source_refs
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/foundation/
+- name: scoring_events_2026
+  inputs:
+  - root_manifest_6a
+  - silver_2026_parents
+  - source_lock_2026
+  parents:
+  - foundation
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/scoring_events_2026/
+- name: offsets_2026
+  inputs:
+  - root_manifest_6a
+  parents:
+  - foundation
+  - scoring_events_2026
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/offsets_2026/
+  - lake/gold/dataset=reconstruction_offsets_2026/
+- name: states_at_cutoff
+  inputs:
+  - root_manifest_6a
+  parents:
+  - foundation
+  - scoring_events_2026
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/states_at_cutoff/
+- name: application_frames
+  parents:
+  - foundation
+  - offsets_2026
+  - states_at_cutoff
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/application_frames/
+  - lake/gold/dataset=reconstruction_application_frames/
+- name: predictions
+  inputs:
+  - root_manifest_6a
+  - inference_bundle
+  parents:
+  - foundation
+  - scoring_events_2026
+  - offsets_2026
+  - states_at_cutoff
+  - application_frames
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/predictions/
+  - lake/gold/dataset=reconstruction_predictions/
+- name: markets
+  inputs:
+  - source_lock_2026
+  - bets_config
+  - reconstruction_source_refs
+  parents:
+  - foundation
+  - predictions
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/markets/
+  - lake/gold/dataset=reconstruction_market_selections/
+- name: finals
+  parents:
+  - foundation
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/finals/
+  inputs:
+  - reconstruction_source_refs
+- name: old_grade_reproduction
+  parents:
+  - foundation
+  - finals
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/old_grade_reproduction/
+  legacy_allowed: true
+  inputs:
+  - original_predictions_w0
+  - original_scored_w0
+  - original_predictions_w1
+  - original_scored_w1
+  - original_predictions_w2
+  - original_scored_w2
+  - original_predictions_w3
+  - original_scored_w3
+  - original_predictions_w4
+  - original_scored_w4
+  - original_predictions_w5
+  - original_scored_w5
+- name: retrospective_grades
+  parents:
+  - markets
+  - finals
+  - old_grade_reproduction
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/retrospective_grades/
+  - lake/gold/dataset=reconstruction_grades/
+- name: comparison
+  parents:
+  - foundation
+  - old_grade_reproduction
+  - predictions
+  - markets
+  - retrospective_grades
+  - offsets_2026
+  - states_at_cutoff
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/comparison/
+  legacy_allowed: true
+- name: receipt
+  inputs:
+  - root_manifest_6a
+  - root_manifest_task4
+  - task4_receipt
+  - source_lock_2026
+  - reconstruction_source_refs
+  parents:
+  - foundation
+  - scoring_events_2026
+  - offsets_2026
+  - states_at_cutoff
+  - application_frames
+  - predictions
+  - markets
+  - finals
+  - old_grade_reproduction
+  - retrospective_grades
+  - comparison
+  outputs:
+  - rebuild/6b/6b-replay-w5-20261008-r2/receipt/
+  - rebuild/6b/6b-replay-w5-20261008-r2/served/

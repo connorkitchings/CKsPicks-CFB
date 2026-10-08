@@ -1,0 +1,13 @@
+{
+  "rating_manifest_vs_6a_states": {"max_abs_difference": 0.0, "independent_verifier": "verified", "verifier_max_mean_or_variance_difference": 8.881784197001252e-16},
+  "bundle_coefficients_max_abs_difference": {
+    "margin": {"accepted_forecast_v1_f80b63ef_vs_served_30c4f1eb": 1.1504, "accepted_vs_6A": 0.0449, "served_vs_6A": 1.1334, "served_vs_successor_refit_on_corrected": 0.0744},
+    "total": {"accepted_forecast_v1_f80b63ef_vs_served_30c4f1eb": 1.0724, "accepted_vs_6A": 0.1309, "served_vs_6A": 1.0453, "served_vs_successor_refit_on_corrected": 0.1309}
+  },
+  "forecast_builder_with_6A_bundle_vs_6B_predictions": {"rows": 542, "max_abs_difference_mean_variance_interval_offset": 0.0},
+  "predictions_vs_served": {
+    "6A_bundle_B1": {"margin_mean_abs_delta": 3.121, "margin_max": 15.157, "margin_games_over_1pt": 212, "total_mean_abs_delta": 0.743, "total_games_over_1pt": 77, "win_side_differs": 8},
+    "successor_refit_B2": {"margin_mean_abs_delta": 0.330, "margin_max": 1.510, "margin_games_over_1pt": 16, "total_mean_abs_delta": 0.168, "total_games_over_1pt": 1, "win_side_differs": 1}
+  },
+  "note": "B1 = bundle refit on selected-design states (6A offsets_refit, used by 6B); B2 = bundle from the existing successor bridge builder run on the corrected 6A historical frames."
+}
