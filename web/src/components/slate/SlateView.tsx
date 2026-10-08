@@ -28,6 +28,8 @@ export interface SlateViewProps {
   allowedSeasons: readonly number[];
   dbError?: string | null;
   retrospectiveRepair?: boolean;
+  /** Notice for a display-only run; null when the run is an ordinary one. */
+  displayOnlyNotice?: string | null;
   initialSort?: "kickoff" | "spreadEdge" | "totalEdge";
   emptyMessage?: string;
 }
@@ -55,6 +57,7 @@ export function SlateView({
   allowedSeasons,
   dbError = null,
   retrospectiveRepair = false,
+  displayOnlyNotice = null,
   initialSort = "kickoff",
   emptyMessage,
 }: SlateViewProps) {
@@ -115,6 +118,16 @@ export function SlateView({
               >
                 Retrospective replay: these predictions and grades were recalculated after the games
                 using the repaired V5 ratings. They were not the picks originally published before kickoff.
+              </p>
+            )}
+
+            {displayOnlyNotice && (
+              <p
+                role="note"
+                data-testid="display-only-notice"
+                className="rounded-xl border border-line bg-surface-card px-4 py-3 text-sm text-ink-muted"
+              >
+                {displayOnlyNotice}
               </p>
             )}
 

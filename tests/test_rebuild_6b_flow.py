@@ -28,10 +28,12 @@ from cks_picks_cfb.ratings.possession_intended_update import IntendedUpdate
 from cks_picks_cfb.rebuild import (
     common,
     recon_forecast,
-    recon_foundation,
     recon_offsets,
     recon_receipt,
     recon_states,
+)
+from cks_picks_cfb.rebuild import (
+    recon_common as recon_common_module,
 )
 from cks_picks_cfb.rebuild.catalog_publish import collect_entries
 from cks_picks_cfb.rebuild.errors import GateError
@@ -544,10 +546,7 @@ def make_harness(corpus, monkeypatch):
     remote = copy.deepcopy(corpus.remote)
     monkeypatch.setattr(common, "preview_storage", lambda context: remote)
     monkeypatch.setattr(
-        recon_foundation, "EXPECTED_6A_RECEIPT_SHA", corpus.receipt["manifest_sha256"]
-    )
-    monkeypatch.setattr(
-        recon_receipt, "EXPECTED_6A_RECEIPT_SHA", corpus.receipt["manifest_sha256"]
+        recon_common_module, "LEGACY_6A_RECEIPT_SHA", corpus.receipt["manifest_sha256"]
     )
     monkeypatch.setenv("PREVIEW_DATABASE_URL", "fixture://preview")
 

@@ -1,0 +1,44 @@
+{
+  "as_of": "2026-10-08T16:53:58Z",
+  "display_only": true,
+  "evidence_class": "pending",
+  "forecast_manifest_raw_sha256": "500dfa0f7f4389965684c651742f04181ca01d2d2111f39a910c007e0864ef68",
+  "games": {
+    "lined": 55,
+    "omitted_kicked_off": [
+      401871051,
+      401871066,
+      401871090
+    ],
+    "served": 55
+  },
+  "head": "c868f06ebfe7a2039306f2b50d459c3ae91e88b9",
+  "live_lock": {
+    "path": "conf/rebuild/successor_lock_w6live_v1.json",
+    "sha256": "ded1293f7f4c88d120cc9d329742492c10c4a48f73e7855700ede337e5f4f6e1"
+  },
+  "market_snapshot": {
+    "captured_at": "2026-10-08T16:19:27Z",
+    "content_sha": "532dd0e155133a8460445ebb004fb27c5233bc258a4d53e5a438d004385387e8",
+    "pipeline_run_id": "stage1-w6-market-20261008-r1",
+    "version_id": "271fc42949f5225d53bc2201"
+  },
+  "package_packet_sha256": "09a355a1e53c17da510f886cab7cba49b1701a625d3099e87dfe7c5f421194fc",
+  "preview_authorization_record_sha256": "951bd71ca9870a2a77621211b37b404cf4bc6b42b352ddf2df6411099d863535",
+  "preview_database": {
+    "games_seeded": 58,
+    "selected": true,
+    "site_notice_verified_locally_against_preview_db": true,
+    "state": "published",
+    "venues_upserted": 329
+  },
+  "rating": {
+    "manifest_raw_sha256": "c83b14236f9062850acccb720c517b31f12a2a62290330ca9a9734588011eadf",
+    "run_id": "v5-intended-update-2026-corrected-w6live-r1"
+  },
+  "release_tag": "20261008-d2",
+  "run_id": "2026w6-v5repair-20261008-d2",
+  "serving_manifest_raw_sha256": "d23172ac74dac06e6dec4b478808daf0c048f78fbce8b5945d5e0ae92f4698ce",
+  "serving_verifier_raw_sha256": "74c9945f7b66dd315222a56cc82d1d26a49353a6eb9b9efcda243fd92d2630d1",
+  "superseded": "run 2026w6-v5repair-20261008-d1 (canonical team names) was packaged and authorized in Preview but never published to the database"
+}

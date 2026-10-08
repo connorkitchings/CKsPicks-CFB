@@ -1,0 +1,544 @@
+{
+  "previous_equals_preview": {
+    "team_game_measurements": {
+      "identical": true,
+      "rows_preview": 6880,
+      "rows_production": 6880
+    },
+    "team_possession_adjusted": {
+      "identical": true,
+      "rows_preview": 2062,
+      "rows_production": 2062
+    },
+    "team_possession_stats": {
+      "identical": true,
+      "rows_preview": 6276,
+      "rows_production": 6276
+    },
+    "team_rating_components": {
+      "identical": true,
+      "rows_preview": 2740,
+      "rows_production": 2740
+    }
+  },
+  "summary": {
+    "added_scope_rows": {
+      "team_game_measurements": 1792,
+      "team_possession_adjusted": 549,
+      "team_possession_stats": 1656,
+      "team_rating_components": 276
+    },
+    "all_differences_explained": true,
+    "cells_compared": 261783,
+    "differing_cells_by_bucket": {
+      "history_correction": 9979,
+      "kickoff_revision": 4,
+      "missing_ppa": 18473,
+      "punt": 4572
+    },
+    "unexplained_tables": []
+  },
+  "tables": {
+    "team_game_measurements": {
+      "added_scope": {
+        "by_bucket": {
+          "missing_ppa": 448,
+          "possessions": 224,
+          "punt": 448,
+          "scoring": 672
+        },
+        "published_rows_in_scope": 0,
+        "rows": 1792
+      },
+      "cells_compared": 110080,
+      "differences_by_bucket": {
+        "missing_ppa": {
+          "coverage_status": 508,
+          "missing_reason": 508,
+          "numerator": 508,
+          "raw_value": 508,
+          "usable_exposure": 508
+        },
+        "punt": {
+          "numerator": 1044,
+          "raw_value": 1044
+        }
+      },
+      "population": {
+        "by_bucket": {
+          "only_built": {},
+          "only_published": {}
+        },
+        "only_built": 0,
+        "only_published": 0
+      },
+      "rows_built": 8672,
+      "rows_compared": 6880,
+      "rows_published": 6880,
+      "rows_with_a_difference": 1552,
+      "samples": {
+        "missing_ppa": [
+          {
+            "built": 0.0,
+            "column": "numerator",
+            "game_id": 401856660,
+            "measurement_id": "eligible_epa",
+            "published": 15.447056019728391,
+            "season": 2026,
+            "team": "Clemson",
+            "unit_role": "defense"
+          },
+          {
+            "built": 0.0,
+            "column": "numerator",
+            "game_id": 401856660,
+            "measurement_id": "epa_per_possession",
+            "published": 15.447056019728391,
+            "season": 2026,
+            "team": "Clemson",
+            "unit_role": "defense"
+          },
+          {
+            "built": 0.0,
+            "column": "numerator",
+            "game_id": 401856660,
+            "measurement_id": "eligible_epa",
+            "published": 15.447056019728391,
+            "season": 2026,
+            "team": "LSU",
+            "unit_role": "offense"
+          },
+          {
+            "built": 0.0,
+            "column": "numerator",
+            "game_id": 401856660,
+            "measurement_id": "epa_per_possession",
+            "published": 15.447056019728391,
+            "season": 2026,
+            "team": "LSU",
+            "unit_role": "offense"
+          },
+          {
+            "built": 0.0,
+            "column": "numerator",
+            "game_id": 401856661,
+            "measurement_id": "eligible_epa",
+            "published": 17.714428959528693,
+            "season": 2026,
+            "team": "Louisville",
+            "unit_role": "defense"
+          }
+        ],
+        "punt": [
+          {
+            "built": 98.0,
+            "column": "numerator",
+            "game_id": 401856636,
+            "measurement_id": "eligible_scrimmage_plays",
+            "published": 99.0,
+            "season": 2026,
+            "team": "Auburn",
+            "unit_role": "defense"
+          },
+          {
+            "built": 98.0,
+            "column": "numerator",
+            "game_id": 401856636,
+            "measurement_id": "plays_per_possession",
+            "published": 99.0,
+            "season": 2026,
+            "team": "Auburn",
+            "unit_role": "defense"
+          },
+          {
+            "built": 75.0,
+            "column": "numerator",
+            "game_id": 401856636,
+            "measurement_id": "eligible_scrimmage_plays",
+            "published": 76.0,
+            "season": 2026,
+            "team": "Auburn",
+            "unit_role": "offense"
+          },
+          {
+            "built": 75.0,
+            "column": "numerator",
+            "game_id": 401856636,
+            "measurement_id": "plays_per_possession",
+            "published": 76.0,
+            "season": 2026,
+            "team": "Auburn",
+            "unit_role": "offense"
+          },
+          {
+            "built": 75.0,
+            "column": "numerator",
+            "game_id": 401856636,
+            "measurement_id": "eligible_scrimmage_plays",
+            "published": 76.0,
+            "season": 2026,
+            "team": "Baylor",
+            "unit_role": "defense"
+          }
+        ]
+      },
+      "unexplained": false,
+      "unexplained_buckets": {},
+      "unexplained_population": {
+        "only_built": {},
+        "only_published": {}
+      }
+    },
+    "team_possession_adjusted": {
+      "added_scope": {
+        "by_bucket": {
+          "missing_ppa": 273,
+          "scoring": 276
+        },
+        "published_rows_in_scope": 0,
+        "rows": 549
+      },
+      "cells_compared": 17703,
+      "differences_by_bucket": {
+        "missing_ppa": {
+          "adjusted_rank": 892,
+          "adjusted_value": 641,
+          "cohort_size": 951,
+          "games": 363,
+          "opponent_adjustment": 630,
+          "primary_exposure": 363,
+          "raw_value": 363
+        }
+      },
+      "population": {
+        "by_bucket": {
+          "only_built": {},
+          "only_published": {
+            "missing_ppa": 95
+          }
+        },
+        "only_built": 0,
+        "only_published": 95
+      },
+      "rows_built": 2516,
+      "rows_compared": 1967,
+      "rows_published": 2062,
+      "rows_with_a_difference": 951,
+      "samples": {
+        "missing_ppa": [
+          {
+            "as_of_week": 2,
+            "built": 0.6416690892787172,
+            "column": "raw_value",
+            "measurement_id": "epa_per_possession",
+            "published": 0.7091479596418687,
+            "role": "offense",
+            "season": 2026,
+            "team": "San Jos\u00e9 State"
+          },
+          {
+            "as_of_week": 3,
+            "built": -0.6329620542254675,
+            "column": "raw_value",
+            "measurement_id": "epa_per_possession",
+            "published": -1.252446303910751,
+            "role": "defense",
+            "season": 2026,
+            "team": "Alabama"
+          },
+          {
+            "as_of_week": 3,
+            "built": 1.6517191379203588,
+            "column": "raw_value",
+            "measurement_id": "epa_per_possession",
+            "published": 1.0598004826888736,
+            "role": "offense",
+            "season": 2026,
+            "team": "Alabama"
+          },
+          {
+            "as_of_week": 3,
+            "built": -0.25174514494116546,
+            "column": "raw_value",
+            "measurement_id": "epa_per_possession",
+            "published": 0.9376413588245055,
+            "role": "offense",
+            "season": 2026,
+            "team": "Auburn"
+          },
+          {
+            "as_of_week": 3,
+            "built": 3.0997583432736793,
+            "column": "raw_value",
+            "measurement_id": "epa_per_possession",
+            "published": 1.5378649980371626,
+            "role": "offense",
+            "season": 2026,
+            "team": "Boise State"
+          }
+        ]
+      },
+      "unexplained": false,
+      "unexplained_buckets": {},
+      "unexplained_population": {
+        "only_built": {},
+        "only_published": {}
+      }
+    },
+    "team_possession_stats": {
+      "added_scope": {
+        "by_bucket": {
+          "missing_ppa": 552,
+          "possessions": 276,
+          "punt": 276,
+          "scoring": 552
+        },
+        "published_rows_in_scope": 0,
+        "rows": 1656
+      },
+      "cells_compared": 62760,
+      "differences_by_bucket": {
+        "missing_ppa": {
+          "cohort_size": 2092,
+          "denominator": 1331,
+          "excluded": 916,
+          "games": 916,
+          "games_excluded": 916,
+          "n": 1331,
+          "numerator": 916,
+          "rank": 1981,
+          "value": 1331
+        },
+        "punt": {
+          "numerator": 818,
+          "rank": 848,
+          "value": 818
+        }
+      },
+      "population": {
+        "by_bucket": {
+          "only_built": {},
+          "only_published": {}
+        },
+        "only_built": 0,
+        "only_published": 0
+      },
+      "rows_built": 7932,
+      "rows_compared": 6276,
+      "rows_published": 6276,
+      "rows_with_a_difference": 3091,
+      "samples": {
+        "missing_ppa": [
+          {
+            "as_of_week": 1,
+            "built": 0.13431907863598896,
+            "column": "value",
+            "metric": "epa_per_play",
+            "published": 0.13228394108089825,
+            "role": "defense",
+            "season": 2026,
+            "team": "Florida State"
+          },
+          {
+            "as_of_week": 1,
+            "built": 0.3007204350841615,
+            "column": "value",
+            "metric": "epa_per_play",
+            "published": 0.2924815190544585,
+            "role": "defense",
+            "season": 2026,
+            "team": "Hawai'i"
+          },
+          {
+            "as_of_week": 1,
+            "built": 0.05534647650805334,
+            "column": "value",
+            "metric": "epa_per_play",
+            "published": 0.0532177658731282,
+            "role": "offense",
+            "season": 2026,
+            "team": "Hawai'i"
+          },
+          {
+            "as_of_week": 1,
+            "built": NaN,
+            "column": "value",
+            "metric": "epa_per_play",
+            "published": 0.1502363415087475,
+            "role": "defense",
+            "season": 2026,
+            "team": "Jacksonville State"
+          },
+          {
+            "as_of_week": 1,
+            "built": NaN,
+            "column": "value",
+            "metric": "epa_per_possession",
+            "published": 0.942391596736689,
+            "role": "defense",
+            "season": 2026,
+            "team": "Jacksonville State"
+          }
+        ],
+        "punt": [
+          {
+            "as_of_week": 1,
+            "built": 6.5,
+            "column": "value",
+            "metric": "plays_per_possession",
+            "published": 6.6,
+            "role": "defense",
+            "season": 2026,
+            "team": "Florida State"
+          },
+          {
+            "as_of_week": 1,
+            "built": 5.461538461538462,
+            "column": "value",
+            "metric": "plays_per_possession",
+            "published": 5.615384615384615,
+            "role": "defense",
+            "season": 2026,
+            "team": "Hawai'i"
+          },
+          {
+            "as_of_week": 1,
+            "built": 5.357142857142857,
+            "column": "value",
+            "metric": "plays_per_possession",
+            "published": 5.571428571428571,
+            "role": "offense",
+            "season": 2026,
+            "team": "Hawai'i"
+          },
+          {
+            "as_of_week": 1,
+            "built": 6.181818181818182,
+            "column": "value",
+            "metric": "plays_per_possession",
+            "published": 6.2727272727272725,
+            "role": "defense",
+            "season": 2026,
+            "team": "Jacksonville State"
+          },
+          {
+            "as_of_week": 1,
+            "built": 6.0,
+            "column": "value",
+            "metric": "plays_per_possession",
+            "published": 6.153846153846154,
+            "role": "defense",
+            "season": 2026,
+            "team": "Memphis"
+          }
+        ]
+      },
+      "unexplained": false,
+      "unexplained_buckets": {},
+      "unexplained_population": {
+        "only_built": {},
+        "only_published": {}
+      }
+    },
+    "team_rating_components": {
+      "added_scope": {
+        "by_bucket": {
+          "history_correction": 276
+        },
+        "published_rows_in_scope": 0,
+        "rows": 276
+      },
+      "cells_compared": 71240,
+      "differences_by_bucket": {
+        "history_correction": {
+          "evidence": 1803,
+          "prior_contribution": 2720,
+          "prior_mean": 2720,
+          "rating_mean": 2736
+        },
+        "kickoff_revision": {
+          "cutoff_utc": 4
+        }
+      },
+      "population": {
+        "by_bucket": {
+          "only_built": {},
+          "only_published": {}
+        },
+        "only_built": 0,
+        "only_published": 0
+      },
+      "rows_built": 3016,
+      "rows_compared": 2740,
+      "rows_published": 2740,
+      "rows_with_a_difference": 2736,
+      "samples": {
+        "history_correction": [
+          {
+            "built": -0.13968587819196182,
+            "column": "rating_mean",
+            "component_id": "v5-intended-update-2026-ratings-v1:current:post-week-0:Air Force:defense",
+            "published": -0.1807592448059112
+          },
+          {
+            "built": 0.6330042045401929,
+            "column": "rating_mean",
+            "component_id": "v5-intended-update-2026-ratings-v1:current:post-week-0:Air Force:offense",
+            "published": 0.6721582114971785
+          },
+          {
+            "built": 0.21346801628880524,
+            "column": "rating_mean",
+            "component_id": "v5-intended-update-2026-ratings-v1:current:post-week-0:Akron:defense",
+            "published": 0.2036947782203151
+          },
+          {
+            "built": -0.4795827197930067,
+            "column": "rating_mean",
+            "component_id": "v5-intended-update-2026-ratings-v1:current:post-week-0:Akron:offense",
+            "published": -0.4369871161614089
+          },
+          {
+            "built": 0.6568082116553305,
+            "column": "rating_mean",
+            "component_id": "v5-intended-update-2026-ratings-v1:current:post-week-0:Alabama:defense",
+            "published": 0.6252807183361065
+          }
+        ],
+        "kickoff_revision": [
+          {
+            "built": "2026-10-03T15:00:00+00:00",
+            "column": "cutoff_utc",
+            "component_id": "v5-intended-update-2026-ratings-v1:pregame:Charlotte:401862787:defense",
+            "published": "2026-10-03T19:30:00+00:00"
+          },
+          {
+            "built": "2026-10-03T15:00:00+00:00",
+            "column": "cutoff_utc",
+            "component_id": "v5-intended-update-2026-ratings-v1:pregame:Charlotte:401862787:offense",
+            "published": "2026-10-03T19:30:00+00:00"
+          },
+          {
+            "built": "2026-10-03T15:00:00+00:00",
+            "column": "cutoff_utc",
+            "component_id": "v5-intended-update-2026-ratings-v1:pregame:Memphis:401862787:defense",
+            "published": "2026-10-03T19:30:00+00:00"
+          },
+          {
+            "built": "2026-10-03T15:00:00+00:00",
+            "column": "cutoff_utc",
+            "component_id": "v5-intended-update-2026-ratings-v1:pregame:Memphis:401862787:offense",
+            "published": "2026-10-03T19:30:00+00:00"
+          }
+        ]
+      },
+      "unexplained": false,
+      "unexplained_buckets": {},
+      "unexplained_population": {
+        "only_built": {},
+        "only_published": {}
+      }
+    }
+  },
+  "task4_control_matches_published": true
+}

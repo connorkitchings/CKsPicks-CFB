@@ -1,0 +1,383 @@
+{
+ "rows_differing": 71,
+ "games": [
+  401856660
+ ],
+ "cells_by_column": {
+  "distance": 2,
+  "down": 2,
+  "offense_timeouts": 1,
+  "play_text": 5,
+  "play_type": 4,
+  "ppa": 70,
+  "wallclock": 5,
+  "yardline": 2,
+  "yards_gained": 2,
+  "yards_to_goal": 2,
+  "clock_seconds": 3,
+  "play_id": 5
+ },
+ "week1_capture_old": [
+  "058e3d908f2249078b36c39c129c9d24"
+ ],
+ "week1_capture_new": [
+  "cb48168623b34e3abb57ee25d3abd6c7"
+ ],
+ "rows": [
+  {
+   "game_id": "401856660",
+   "drive_number": "2",
+   "play_number": "1"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "3",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "3",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "3",
+   "play_number": "8"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "8"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "9"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "10"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "11"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "5",
+   "play_number": "12"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "6",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "7",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "8",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "1"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "8"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "9"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "10",
+   "play_number": "10"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "12",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "12",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "13",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "1"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "8"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "9"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "14",
+   "play_number": "10"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "16",
+   "play_number": "2"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "16",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "17",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "17",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "17",
+   "play_number": "9"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "17",
+   "play_number": "10"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "18",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "19",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "19",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "19",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "19",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "20",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "10"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "11"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "13"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "21",
+   "play_number": "14"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "22",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "23",
+   "play_number": "1"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "23",
+   "play_number": "4"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "23",
+   "play_number": "5"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "23",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "24",
+   "play_number": "3"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "24",
+   "play_number": "7"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "24",
+   "play_number": "8"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "25",
+   "play_number": "6"
+  },
+  {
+   "game_id": "401856660",
+   "drive_number": "25",
+   "play_number": "7"
+  }
+ ]
+}

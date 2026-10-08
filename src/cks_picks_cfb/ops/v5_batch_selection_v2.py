@@ -228,12 +228,6 @@ def validate_v2_packet(
         raise V5BatchSelectionError(
             "team-stats payloads do not have identical complete keys"
         )
-    if any(
-        before_by_key[key].get("source_versions")
-        != after_by_key[key].get("source_versions")
-        for key in before_by_key
-    ):
-        raise V5BatchSelectionError("team-stats provenance changed across the packet")
     prospective_before = payloads["prospective_records_before"]
     prospective_after = payloads["prospective_records_after"]
     for payload in (prospective_before, prospective_after):
@@ -278,6 +272,7 @@ def validate_v2_packet(
         or verifier.get("decision_ref") != decision_ref
     ):
         raise V5BatchSelectionError("team-stats verifier is not bound to both payloads")
+    _assert_provenance_binding(before_payload, after_payload, verifier)
     return {
         "before": before,
         "after": after,
@@ -292,6 +287,56 @@ def validate_v2_packet(
 
 def _stat_key(row: Mapping[str, Any]) -> tuple[Any, ...]:
     return tuple(row[column] for column in STAT_KEY)
+
+
+def stats_provenance_digest(rows: list[Any]) -> str:
+    """Canonical digest of every row's key and ``source_versions``, in key order."""
+    items = [
+        [list(_stat_key(row)), row.get("source_versions")]
+        for row in sorted(rows, key=_stat_key)
+    ]
+    return _sha(canonical_json(items))
+
+
+def _assert_provenance_binding(
+    before_payload: Mapping[str, Any],
+    after_payload: Mapping[str, Any],
+    verifier: Mapping[str, Any],
+) -> None:
+    """Team-stat provenance may change only when the verified receipt binds it.
+
+    The corrected lineage is built from different Silver versions, so its rows carry new
+    ``source_versions``. That is accepted only when the independent verifier (already
+    checked above as ``verified`` and bound to both payload hashes) states how many keys
+    change and the digests of both provenance maps, and both digests match the payloads.
+    """
+    before = {_stat_key(row): row for row in before_payload["rows"]}
+    after = {_stat_key(row): row for row in after_payload["rows"]}
+    changed = [
+        key
+        for key in before
+        if before[key].get("source_versions") != after[key].get("source_versions")
+    ]
+    if not changed:
+        return
+    binding = verifier.get("provenance_change")
+    if (
+        not isinstance(binding, Mapping)
+        or binding.get("keys_changed") != len(changed)
+        or binding.get("before_provenance_sha256")
+        != stats_provenance_digest(before_payload["rows"])
+        or binding.get("after_provenance_sha256")
+        != stats_provenance_digest(after_payload["rows"])
+    ):
+        raise V5BatchSelectionError(
+            "team-stats provenance changed without a matching verifier binding"
+        )
+    for key in changed:
+        versions = after[key].get("source_versions")
+        if not isinstance(versions, Mapping) or not versions:
+            raise V5BatchSelectionError(
+                "changed team-stats provenance must be a nonempty mapping"
+            )
 
 
 def _prospective_key(row: Mapping[str, Any]) -> tuple[Any, ...]:

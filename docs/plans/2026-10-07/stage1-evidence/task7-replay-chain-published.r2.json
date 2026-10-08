@@ -1,0 +1,80 @@
+{
+  "bridge": {
+    "inference_bundle_raw_sha256": "a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1",
+    "manifest_raw_sha256": "52022234eb9e2c363ef8150bb864fa547fe503107a58972d4a4187d9f8f2464c",
+    "run_id": "v5-intended-update-corrected-w5-r1",
+    "verifier_raw_sha256": "dd144a2a89ee4861cb2c686b0afe97af3f46750f106288fd97adc111a4a6305e"
+  },
+  "head": "ff2e0df65f2191b99eeb74cd14d41fecd18a75da",
+  "notes": [
+    "all writes were Preview R2 create-once under artifacts/research/... and the Preview artifact namespace; no database write, no Production write",
+    "the release-record shas were produced by the validator's dry run (decision ref stage1-validation-not-an-authorization); nothing was authorized",
+    "the bridge verifier emitted 48 sklearn matmul RuntimeWarnings (divide by zero/overflow/invalid) in its independent refit, identical to the local run; its comparisons to the exported coefficients passed within 1e-10"
+  ],
+  "rating": {
+    "manifest_raw_sha256": "855f4dd717bef1c16c91cdca69b240e9bc8fce0336457cb592696ac14c632437",
+    "run_id": "v5-intended-update-2026-corrected-w5-r1",
+    "verifier_raw_sha256": "c55bd1cdc3dddaba76c2ef5d1ec3187d92b61c124b0923974a510b8ce0c979fc"
+  },
+  "release_tag": "20261008-c1",
+  "successor_lock": {
+    "path": "conf/rebuild/successor_lock_w5_v1.json",
+    "sha256": "1f51f3bbc3938fc5edeb4a9c592c5b478efc3974135284728bbb655160ab6d82"
+  },
+  "weeks": {
+    "0": {
+      "forecast_manifest_raw_sha256": "c2db80012b2121d8743e14365db5454aa92d924730de4e523f40316eb534adc8",
+      "games": 8,
+      "package_packet_sha256": "a51adee1ff18ec52dfc6f785b73e8a3f658796f2c59bcd987ab457d5ea2d66dc",
+      "preview_release_record_sha256_validation_only": "9dd5d4c0f15a75172b5b7ddd2e42fd1942eaaa4b638dcd867142512262f16ba4",
+      "run_id": "2026w0-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "26e6fce6c30b14ca78e5acb27b11ed89460c26f90b8989a20e67b328e1a65ff4",
+      "serving_verifier_raw_sha256": "c4853f4bcc7c4376f5a9771fb0cd80cc1449e3f7851ab7b359a7238b36aa388a"
+    },
+    "1": {
+      "forecast_manifest_raw_sha256": "9d34f93a890e7518e430416fd3312e76e4f49f0e4692505e4e3d460f93e667af",
+      "games": 43,
+      "package_packet_sha256": "40711abefa8761a5838ceb6132a836a502de8709b075d03452a7bb2fd0e09193",
+      "preview_release_record_sha256_validation_only": "91a691eb99b67fba3a49c90ebb15462014e7b1278c56fd39bec37331448d14ce",
+      "run_id": "2026w1-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "b6b134090ffae91d1e39b309e526c1cd547373db557cdd39254c018a495ede99",
+      "serving_verifier_raw_sha256": "3f6db9e43129ea14016d7929bebe4998d06b1d7edb5f8f8f2672b9a8cbe70587"
+    },
+    "2": {
+      "forecast_manifest_raw_sha256": "cfb804246d2c8647f11feacedd1978dece5436c4c1bf033b6887480d37792f50",
+      "games": 49,
+      "package_packet_sha256": "8c8a67b024f2433e6caa0ab6f1956490b9fb8d9b6cad20ae80672c0da365cdb4",
+      "preview_release_record_sha256_validation_only": "76b4ffecb144da6f9b00863e477271bc4db87d16a22554b13c1f8b7f78f4dd59",
+      "run_id": "2026w2-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "0ddcd8227b7c2544956503b8e6ccdc4beb466d5d82263a029c8657831f8509b1",
+      "serving_verifier_raw_sha256": "a64f71ef69bb4ae49f5f53b5ff168f2878ef6a6707a796772a339a1e90e9899c"
+    },
+    "3": {
+      "forecast_manifest_raw_sha256": "5fd8afddb3be68a2be149e62b21f4fa22f8e921c5d27894a5771d1d5ae4420be",
+      "games": 57,
+      "package_packet_sha256": "3211b85ddda5d8c4e86a03d0d5bae59552cf03432aa4b51031b25f661551624e",
+      "preview_release_record_sha256_validation_only": "5f17211448ae88cbdfa4b75358e130ab9c90d909d825815b0b967e7ddc292158",
+      "run_id": "2026w3-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "4838180212a6e0055e809819cd26f54cfd8708d08e1e3ea69cd1dbf4eba1553a",
+      "serving_verifier_raw_sha256": "bc2587048f653907d28b39702192d9c6621e42ee492582af9d27180eba17af96"
+    },
+    "4": {
+      "forecast_manifest_raw_sha256": "1fdb3ac49aab4cba6c15988f064f7647361598aee6053fe1ba3496124c612797",
+      "games": 58,
+      "package_packet_sha256": "4ea72da753698f45d38520a25866a0356e4787831d5f3ab102a0aee106743bc2",
+      "preview_release_record_sha256_validation_only": "658624f677b8dff12b4effcede7f17cc32af172038c6cee1ed11491c2ee9418e",
+      "run_id": "2026w4-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "4f8917d99a1a23db021e0d05963d728fba2b8e188efd28719467281e7ce8dbbc",
+      "serving_verifier_raw_sha256": "6c3d37043730648c0233f5d93d1e7a1a4596b6e9fae68d7596cbcbecc6516346"
+    },
+    "5": {
+      "forecast_manifest_raw_sha256": "cf74b28ab11a2c9fa389c9f82d6cacabc54d81e58802322b9e962bbf7d9366a7",
+      "games": 56,
+      "package_packet_sha256": "d5bc3e8db0168835087c5141ef856bcfedce8ce0c09d3e466acb1c20ddbd081e",
+      "preview_release_record_sha256_validation_only": "1e82ac5d4c670d90495fe2de9fa579c14d6f7ac1837a9ca6a2185235d14f9193",
+      "run_id": "2026w5-v5repair-20261008-c1",
+      "serving_manifest_raw_sha256": "a1e653f148c1eeaa8acd252193db3c7ed034eeeaf34e30139dc95d85f8701ddb",
+      "serving_verifier_raw_sha256": "493fbfdcce117ff4986d21e20ab254eaf456f4bf5a727b42d72dd3d6affcaeaa"
+    }
+  }
+}

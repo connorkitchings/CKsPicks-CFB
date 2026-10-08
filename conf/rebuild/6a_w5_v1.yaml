@@ -1,0 +1,56 @@
+# Stage 6A pinned rebuild plan (contract 02, Amendment 1). Every input is an explicit
+# uri + sha256. Hashes for R2 pins (Bronze capture sets, repair manifest) are added
+# only after a verified read-only readback; nothing here is "latest".
+run_id: 6a-rebuild-w5-20261007-r2
+storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"  # verified against CFB_R2_PREVIEW_*; same physical bucket as production, so the namespace allow-list is the isolation
+seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
+# Exact UTC cutoff for eligible 2026 states (user-selected).
+cutoff_2026: "2026-10-05T00:00:00Z"  # post-Week-5 cutoff (source_lock_2026_w5_v1 post_week_cutoffs[5]); Stage 1 extension, contract 2026-10-07/04
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  home_host: 1.0
+  venue_unknown: true
+  nullable_ppa: true
+  silver_2026_as_of: "2026-10-05T00:00:00Z"   # post-Week-5 as_of; games completed after it are excluded (availability = kickoff + 6h)
+  silver_as_of: "2026-08-31T23:46:49Z"   # as_of shared by all ten R1 byplay versions
+  corrections_ref:
+    version_id: 856e1bac8626b395e922464f
+    schema_version: data_corrections_v1
+    uri: lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet
+    content_sha: 1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f
+  website_population: regular_season_fbs_vs_fbs
+inputs:
+  - {name: admission_decisions, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_decisions.csv, sha256: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db}
+  - {name: admission_report, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_report.json, sha256: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609}
+  - {name: cfbd_drives_manifest, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/cfbd_drives_manifest.jsonl, sha256: 09a1cbaea9c740e7c550ce85012665ba3644878cf45e717e3c6665e309d8e819}
+  - {name: corroboration_group_status, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/corroboration_group_status.csv, sha256: bf255a84940f1ce6c417e02e22c8cdd2d64e11a8eca4553a65d81f069ef180f5}
+  - {name: step5_historical_groups, kind: git_file, uri: docs/plans/2026-10-03/window2/5a-data/historical_groups.csv, sha256: 3bd292e600adb447d9be9b6acadf1c8ed94758fcc1c8a2433138d25633eafe5a}
+  - {name: r1_source_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/source-set.json, sha256: 6389ad188164d45c012363d8699cd949619a29a3de91c7c9286684586f325fa9}  # embedded signed manifest_sha256 b26a74ab… verified
+  - {name: r1_derived_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/derived-ref-set.json, sha256: da3a8f45b5976272c1bff9cfaa9dbebe2e6849bac0036da5ebb171a00db44f9a}
+  - {name: r1_foundation_manifest, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/foundation/manifest.json, sha256: 5f242780d2bcd20e28f1ad1d7b086c30e26640fa4a1e4f824ae20ddce27e0da9}
+  - {name: r1_comparison_ref_set, kind: r2_object, uri: artifacts/research/rating-successor-v2/r1/r1-full-corpus-20260831-5f2a384/comparison-ref-set.json, sha256: 19a9cf2f5ec6b6cc4758128e361afb41597039b89528ea2be750dfdd666638e4}
+  - {name: repair_v2_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json, sha256: b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4}  # legacy baseline parent; baseline_reproduction only
+  - {name: data_corrections, kind: r2_object, uri: lake/silver/dataset=data_corrections/version=856e1bac8626b395e922464f/data.parquet, sha256: 1231e08087a1c9168d103a1740c91fc1b47f3c57c87327ec19bbd3e7bf47051f}  # 65 rows; parent of all ten R1 byplay versions
+  - {name: phase2c_silver_parents, kind: git_file, uri: conf/rebuild/phase2c_silver_parents_v1.json, sha256: c85daae49d1daf8ce441ffd7363152974fe9a50895bdc612dc6ee2c9c38c8b0b}  # exact Phase 2c normalized Silver behind the Step 5 byplay (8,936 games)
+  - {name: r9_measurement_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260921-r9/measurement-manifest.json, sha256: 10b380d69524d20ce694833821d0a309a60c532d4eca05d8e8129200461dbf56}  # served r9; parity stages only
+  - {name: r9cert_rating_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/possession-v1/ratings/runs/possession-v1-ratings-20260921-11d59ee-r9cert/retained-rating-manifest.json, sha256: 9d00e63564691c0323fa203b76b4ee49a9fff5aa945fdb8fa000142f640e4ba0}  # served r9cert; parity stages only
+  - {name: forecast_config, kind: git_file, uri: conf/research/data_first_football_v1/forecast_v1.yaml, sha256: bed580d05621757774850e84b25596709cec1e7855f627c01fe538c3576205cf}  # sealed forecast_v1 settings (alpha grid, outer seasons) for the diagnostic only
+  - {name: silver_2026_parents, kind: git_file, uri: conf/rebuild/silver_2026_parents_w5_v1.json, sha256: 66434185270f45ee9e07873c053535b2db0c4d1426470130a2c7fc0b52b9af12}  # parents of the Week 5 2026 byplay (Option B: revised CFBD data)
+  - {name: source_lock_2026, kind: git_file, uri: conf/rebuild/source_lock_2026_w5_v1.json, sha256: d9086411be7604af05a8093beef9c21d8b1205ed6debdc13ac956876d6dd7477}  # base lock extended with Week 5 finals/cutoff and one accepted kickoff revision (401862787) (extends: base sha eaecabec…)
+stages:
+  - {name: baseline_reproduction, inputs: [admission_decisions, admission_report, corroboration_group_status, cfbd_drives_manifest, repair_v2_manifest, r1_source_set, r1_derived_ref_set, r1_comparison_ref_set], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/baseline/], legacy_allowed: true}
+  - {name: silver, inputs: [r1_source_set, phase2c_silver_parents, data_corrections], parents: [baseline_reproduction], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w5-20261007-r2/silver/]}
+  - {name: eligibility, inputs: [phase2c_silver_parents, r1_source_set], parents: [silver], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/eligibility/]}
+  - {name: step5_comparison, inputs: [admission_decisions, corroboration_group_status, repair_v2_manifest, phase2c_silver_parents], parents: [baseline_reproduction, eligibility], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/comparison/], legacy_allowed: true}
+  - {name: gold, inputs: [phase2c_silver_parents, cfbd_drives_manifest], parents: [step5_comparison], outputs: [lake/gold/, rebuild/6a/6a-rebuild-w5-20261007-r2/gold/]}
+  - {name: measurements_parity, inputs: [repair_v2_manifest, r9_measurement_manifest], parents: [gold], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/measurements_parity/], legacy_allowed: true}
+  - {name: ratings_parity, inputs: [repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest], parents: [measurements_parity], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/ratings_parity/], legacy_allowed: true}
+  - {name: measurements_ratings, inputs: [phase2c_silver_parents], parents: [gold, ratings_parity], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/ratings/]}
+  - {name: offsets_refit, inputs: [phase2c_silver_parents, forecast_config], parents: [measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/forecast/]}
+  - {name: silver_2026, inputs: [silver_2026_parents], parents: [offsets_refit], outputs: [lake/silver/, rebuild/6a/6a-rebuild-w5-20261007-r2/silver_2026/]}
+  - {name: states_2026, inputs: [silver_2026_parents, source_lock_2026], parents: [silver_2026, measurements_ratings], outputs: [rebuild/6a/6a-rebuild-w5-20261007-r2/states_2026/]}

@@ -80,3 +80,11 @@ def test_refreshed_live_run_requires_new_market_refs_and_cutoff():
         build(object(), b"{}", release_tag="20260929-p2")
     with pytest.raises(ValueError, match="invalid live release tag"):
         run_uris("../production")
+
+
+def test_package_only_serves_weeks_before_the_locks_active_week(monkeypatch):
+    monkeypatch.setenv("CFB_ARTIFACT_ENV", "preview")
+    lock = {"active_week": {"week": 6}}
+    for week in (-1, 6, 7):
+        with pytest.raises(ValueError, match="before the lock's active week"):
+            package_week(object(), lock, "a" * 64, week)

@@ -1,0 +1,4 @@
+ name                       value               environments    created    
+ CFB_PUBLICATION_MODE       predictions         Preview         13d ago    
+ CFB_PUBLICATION_SEASON     Encrypted           Preview         54d ago    
+ DATABASE_URL               Encrypted           Preview         54d ago    

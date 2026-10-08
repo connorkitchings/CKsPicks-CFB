@@ -59,6 +59,41 @@
 - The Python tests, 6B rebuild flow and Web jobs of that run were still in progress when I checked and are unproven. The next push cancels this run (`cancel-in-progress`).
 - **Proposed commit:** `style: format and lint audit evidence scripts`
 
+## CI Result on 0cd0a3c0 (run 37641359773)
+- **All four jobs succeeded (about 10m 21s end to end).** Lint and contracts 28s (format, lint, contracts, registry all green); Web 1m54s; Python tests 10m21s; Python 6B rebuild flow 9m52s.
+- **Python tests steps:** parallel 1,987 passed, 2 skipped (6m42s); rating publication 7 passed (2m27s, no heartbeat lines in the log against 26 in the stalled run); PostgreSQL integration 23 passed (22s); coverage "Required test coverage of 60.0% reached. Total coverage: 65.96%". The 12 attestation tests that errored before now pass under `fetch-depth: 0` (no errors in the step).
+- **6B rebuild flow:** 34 passed in its own job; slowest call 279s plus 170s fixture setup.
+- **Vercel Preview:** the PR check for head `0cd0a3c0` is `SUCCESS` ([inspect URL](https://vercel.com/connorkitchings-projects/c-ks-picks-cfb/4QA4B4HxvHmUSDrhUCtvbMV6XJFd)). Not opened; `dpl_` ID not captured; no route verification done.
+- The earlier `d100d15e` run (37641000610) failed at the formatting step as recorded above and is superseded. Release-packet update: `docs/plans/2026-10-07/track1-release-packet.md` ("Update after push"). The packet remains HOLD.
+
+## Track 1 Preview Verification and Recapture (16:06-16:15Z)
+- Done read-only; evidence and checksums in `docs/plans/2026-10-07/track1-recapture-0cd0a3c0/` (see its `summary.md`). Packet updated ("Update after Preview verification and recapture").
+- **Preview bound to the SHA:** deployment `6913424276` (sha `0cd0a3c0`, success), no deployment protection. `dpl_` ID not captured.
+- **Routes:** six routes return 200 and match the audit numbers (Week 5 28-27-1 / 25-30-1, 56 graded; replay 100-112-3 / 112-102-0; prospective section Week 5 only, labeled retrospectively attested). Fixture mode is off. The restricted `cks_preview_web` login is **not** verified (identical data in both databases).
+- **Recapture:** candidate hashes for `0cd0a3c0` regenerated; serving fingerprints unchanged since 14:34Z; pinned Production venue dry run 271/271 and the business diff is still empty; `main` unchanged at `562319aa`.
+- **Production registration:** the R2 object was written at 2026-10-07T03:22:45Z, about 2.5 minutes after commit `491774c1`; the operator is still unrecorded.
+- **Same mistake as before, caught earlier:** the new helper scripts failed `ruff check` on first run; fixed and the full lint job (format, lint, contracts, registry) passes locally before any commit.
+- **Proposed commit:** `docs(release): record Preview verification and recapture for Track 1 candidate 0cd0a3c0`
+
+## Vercel Inspection and Reported Items
+- **Verified by the agent (Vercel CLI, read-only):** Preview deployment `dpl_4QA4B4HxvHmUSDrhUCtvbMV6XJFd` (preview, Ready, `0cd0a3c0`); no `CFB_UI_TEST_MODE` in the Preview environment; rollback target `dpl_FiycAhixbCrDsZK638CVXtdq9XNM` Ready (production, 2026-10-04).
+- **Reported in the user's message, not verified:** the Preview `DATABASE_URL` is bound to `cks_preview_web` (`vercel env ls` cannot show this), and the Week 5 Production registration was a manual run by the repository owner after the Stage 7A validation pass. The message text is third-person and looks reviewer-drafted; the user should confirm both in their own words.
+- Evidence files added under `track1-recapture-0cd0a3c0/` (`vercel-*.txt`); checksums regenerated.
+
+## User Confirmations and Decisions
+- **Registration operator (closes the provenance item):** the user confirmed in the first person that they manually executed the Week 5 Production prospective registration on 2026-10-06 at about 23:22 EDT after the Stage 7A validation pass, and asked for it to be recorded as verified and authorized by them. Recorded as the user's own statement; the agent did not independently verify the operator (the R2 write time of 23:22:45 EDT is consistent).
+- **Preview database role:** accepted as an unverified report; no secrets pulled to disk.
+- **Decision A: skip** the Production venue upsert (business diff empty; it would only rewrite `updated_at` on 271 rows).
+- **Decision B: promote** by merging PR #2 on GitHub at head `0cd0a3c0`; local docs commits stay on `dev`. The agent did not merge or push anything. Execution notes (merge before pushing more commits; GitHub's merge button creates a new merge SHA, `git push origin 0cd0a3c0:main` keeps `main` at the exact verified commit; post-deploy checks and rollback target) are in the packet.
+- The earlier "Open" items for the registration operator are closed by this entry; the database-role item stays open as accepted-unverified.
+
+## Promotion and Production Verification
+- **User-run:** `git push origin 0cd0a3c0:main` (fast-forward), PR #2 MERGED, docs commit pushed to `dev`. The agent did not push or merge.
+- **Agent-verified, read-only:** `origin/main` = `0cd0a3c0`; `origin/dev` = `8271bbdd`; Production deployment `dpl_25cfxMwDLqXRkphiPQCvT9Db18sY` Ready (12:24:38 EDT); rollback target retained. Six live routes return 200. `/ratings` text is identical to the verified Preview; `/performance` has the same 270 graded-pick records (only list order and the freeze-evidence hash differ); the matchup page shows the documented pre-fix Production team stats.
+- **Pasted claims checked:** the user-supplied report matched the refs, PR state and deployment I re-read. Its claim that the matchup page rendered "with lineage guards intact" is not something I verified; I checked only that it loads and which cells differ.
+- `docs/status.md` updated (Release state, Track 1 line, Window 1 line). Evidence: `track1-recapture-0cd0a3c0/` sections 7, `production-pages/`.
+- **Proposed commit:** `docs(release): record Track 1 promotion and Production verification`
+
 ## Files Modified
 - `.github/workflows/ci.yml`, `Makefile`, `scripts/pipeline/freeze_week.py`, `scripts/pipeline/select_v5_intended_update_batch.py`
 - `tests/test_data_first_possession_rating_runner.py`; new `tests/test_freeze_week_deadline.py`

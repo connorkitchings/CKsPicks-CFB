@@ -102,8 +102,34 @@ def diff_frames(
     tolerance: float = 1e-9,
     sample: int = 5,
     expected: set[str] | None = None,
+    added_scope: Callable[[pd.DataFrame], pd.Series] | None = None,
+    bucket_override: Callable[[pd.Series, str], str | None] | None = None,
 ) -> dict[str, Any]:
-    """Compare ``built`` with ``published`` on ``keys``; attribute every difference."""
+    """Compare ``built`` with ``published`` on ``keys``; attribute every difference.
+
+    ``added_scope`` marks built rows that belong to scope added after the published rows
+    were written (for example a newly completed week). Those rows are set aside and counted
+    under ``added_scope``; a published row inside that scope is itself a finding. Everything
+    else is compared as before. ``bucket_override`` may name a bucket for one differing
+    cell (given the merged row and the column), for a cause proven independently.
+    """
+    full_built_rows = int(len(built))
+    scope_report: dict[str, Any] | None = None
+    scope_finding = False
+    if added_scope is not None:
+        in_built = added_scope(built).astype(bool)
+        in_published = added_scope(published).astype(bool)
+        by_metric: Counter = Counter(
+            bucket_of(metric_of(row)) for _, row in built[in_built].iterrows()
+        )
+        scope_report = {
+            "rows": int(in_built.sum()),
+            "by_bucket": dict(sorted(by_metric.items())),
+            "published_rows_in_scope": int(in_published.sum()),
+        }
+        scope_finding = bool(in_published.any())
+        built = built[~in_built]
+        published = published[~in_published]
     merged = built[[*keys, *columns]].merge(
         published[[*keys, *columns]],
         on=list(keys),
@@ -130,7 +156,9 @@ def diff_frames(
         bad_rows |= bad
         for index in both.index[bad]:
             row = both.loc[index]
-            bucket = bucket_of(metric_of(row))
+            bucket = (
+                bucket_override(row, column) if bucket_override is not None else None
+            ) or bucket_of(metric_of(row))
             differing.setdefault(bucket, Counter())[column] += 1
             records = samples.setdefault(bucket, [])
             if len(records) < sample:
@@ -165,7 +193,7 @@ def diff_frames(
         for label, buckets in population_buckets.items()
     }
     return {
-        "rows_built": int(len(built)),
+        "rows_built": full_built_rows,
         "rows_published": int(len(published)),
         "rows_compared": int(len(both)),
         "cells_compared": int(cells),
@@ -175,7 +203,10 @@ def diff_frames(
         "population": population,
         "unexplained_buckets": unexplained,
         "unexplained_population": unexplained_population,
-        "unexplained": bool(unexplained) or any(unexplained_population.values()),
+        "unexplained": bool(unexplained)
+        or any(unexplained_population.values())
+        or scope_finding,
+        **({"added_scope": scope_report} if scope_report is not None else {}),
     }
 
 
@@ -197,6 +228,9 @@ def summarize(tables: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
     return {
         "cells_compared": int(sum(t["cells_compared"] for t in tables.values())),
         "differing_cells_by_bucket": dict(sorted(buckets.items())),
+        "added_scope_rows": {
+            n: t["added_scope"]["rows"] for n, t in tables.items() if "added_scope" in t
+        },
         "unexplained_tables": sorted(n for n, t in tables.items() if t["unexplained"]),
         "all_differences_explained": not any(t["unexplained"] for t in tables.values()),
     }

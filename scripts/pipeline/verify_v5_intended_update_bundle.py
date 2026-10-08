@@ -28,6 +28,11 @@ from cks_picks_cfb.ratings_lab.artifacts import (
     canonical_json,
 )
 from cks_picks_cfb.ratings_lab.corpus import PINS, load_v5_corpus
+from cks_picks_cfb.rebuild.successor_sources import (
+    corrected_parents,
+    historical_frames,
+    rebuild_run,
+)
 
 SEASONS = (2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025)
 
@@ -258,6 +263,7 @@ def verify(
     state_raw: bytes,
     bundle_raw: bytes,
     cache: Path | None = None,
+    corrected_lock: Path | None = None,
 ) -> dict[str, Any]:
     manifest = json.loads(manifest_raw)
     verify_signed_payload(manifest, label="intended-update bridge")
@@ -268,9 +274,14 @@ def verify(
         raise ValueError("unknown or incomplete intended-update bridge manifest")
     if manifest.get("production_activation_authorized") is not False:
         raise ValueError("bridge artifact cannot authorize a production release")
-    for name, (uri, digest) in PINS.items():
-        if manifest["parents"].get(name) != {"uri": uri, "raw_sha256": digest}:
-            raise ValueError("certified historical parent changed")
+    if corrected_lock is None:
+        for name, (uri, digest) in PINS.items():
+            if manifest["parents"].get(name) != {"uri": uri, "raw_sha256": digest}:
+                raise ValueError("certified historical parent changed")
+    else:
+        lock_raw = corrected_lock.read_bytes()
+        if manifest["parents"] != corrected_parents(json.loads(lock_raw), lock_raw):
+            raise ValueError("corrected bridge parents differ from the source lock")
     refs = manifest["output_refs"]
     if (
         _sha(state_raw) != refs["historical_states"]["raw_sha256"]
@@ -279,7 +290,17 @@ def verify(
         raise ValueError("stored bridge child checksum differs")
     states = pd.read_parquet(io.BytesIO(state_raw))
     bundle = json.loads(bundle_raw)
-    population, observations, accepted = _historical_features_from_sources(cache)
+    if corrected_lock is not None:
+        frames = historical_frames(
+            rebuild_run(get_storage(environment="preview"), json.loads(lock_raw))
+        )
+        population, observations, accepted = (
+            frames["population"],
+            frames["observations"],
+            frames["v5_features"],
+        )
+    else:
+        population, observations, accepted = _historical_features_from_sources(cache)
     state_checks = _verify_states(states, population, observations)
     calibration = _verify_bundle(bundle, accepted, states)
     if state_checks["states"] != int(refs["historical_states"]["rows"]):
@@ -306,6 +327,11 @@ def main() -> None:
     parser.add_argument("--manifest-uri")
     parser.add_argument("--local-output", type=Path)
     parser.add_argument("--historical-cache", type=Path)
+    parser.add_argument(
+        "--corrected-lock",
+        type=Path,
+        help="verify against the published corrected rebuild named by this lock",
+    )
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
     if bool(args.manifest_uri) == bool(args.local_output):
@@ -331,6 +357,7 @@ def main() -> None:
         state_raw=state_raw,
         bundle_raw=bundle_raw,
         cache=args.historical_cache,
+        corrected_lock=args.corrected_lock,
     )
     if args.apply:
         dirty = subprocess.check_output(

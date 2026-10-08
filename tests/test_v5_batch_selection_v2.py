@@ -233,6 +233,90 @@ def test_v2_packet_fails_closed_on_tampered_bytes_normalized_duplicate_or_key_dr
         validate_v2_packet(packet, environment="preview", storage=storage)
 
 
+def _packet_with_changed_provenance(*, bind: bool, tamper: bool = False, versions=None):
+    """A packet whose after-payload carries new ``source_versions`` (corrected lineage)."""
+    packet, storage = _packet()
+    before_rows = json.loads(storage.objects["r2://stats/before"])["rows"]
+    corrected = versions if versions is not None else {"silver": "silver-corrected-v2"}
+    after_rows = [
+        {**row, "source_versions": corrected}
+        for row in json.loads(storage.objects["r2://stats/after"])["rows"]
+    ]
+    after_ref = _ref(
+        storage,
+        "r2://stats/after-corrected",
+        {
+            "schema_version": "v5_team_stats_release_payload_v1",
+            "environment": "preview",
+            "season": 2026,
+            "scope": [{"season": 2026, "as_of_week": 5}],
+            "rows": after_rows,
+        },
+    )
+    body = {
+        "schema_version": "v5_team_stats_release_verification_v1",
+        "state": "verified",
+        "before_sha256": packet["team_stats_before"]["sha256"],
+        "after_sha256": after_ref["sha256"],
+        "decision_ref": "decision-7a",
+    }
+    if bind:
+        body["provenance_change"] = {
+            "keys_changed": len(after_rows),
+            "before_provenance_sha256": batch_v2.stats_provenance_digest(before_rows),
+            "after_provenance_sha256": (
+                "0" * 64 if tamper else batch_v2.stats_provenance_digest(after_rows)
+            ),
+        }
+    packet["team_stats_after"] = after_ref
+    packet["team_stats_verifier"] = _ref(storage, "r2://stats/verify-corrected", body)
+    packet = signed_payload(
+        {key: value for key, value in packet.items() if key != "manifest_sha256"}
+    )
+    return packet, storage
+
+
+def test_v2_packet_accepts_changed_provenance_only_when_the_verifier_binds_it():
+    packet, storage = _packet_with_changed_provenance(bind=True)
+    result = validate_v2_packet(packet, environment="preview", storage=storage)
+    after = result["payloads"]["team_stats_after"]["rows"][0]
+    assert after["source_versions"] == {"silver": "silver-corrected-v2"}
+
+
+def test_v2_packet_rejects_changed_provenance_without_a_verifier_binding():
+    packet, storage = _packet_with_changed_provenance(bind=False)
+    with pytest.raises(V5BatchSelectionError, match="without a matching verifier"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
+def test_v2_packet_rejects_a_tampered_provenance_digest():
+    packet, storage = _packet_with_changed_provenance(bind=True, tamper=True)
+    with pytest.raises(V5BatchSelectionError, match="without a matching verifier"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
+def test_v2_packet_rejects_changed_provenance_that_is_not_a_nonempty_mapping():
+    packet, storage = _packet_with_changed_provenance(bind=True, versions={})
+    with pytest.raises(V5BatchSelectionError, match="nonempty mapping"):
+        validate_v2_packet(packet, environment="preview", storage=storage)
+
+
+def test_provenance_digest_is_order_independent_and_sensitive_to_every_key():
+    base = {
+        "season": 2026,
+        "as_of_week": 5,
+        "team": "A",
+        "role": "offense",
+        "metric": "m",
+        "source_versions": {"silver": "v1"},
+    }
+    other = {**base, "team": "B"}
+    one = batch_v2.stats_provenance_digest([base, other])
+    assert one == batch_v2.stats_provenance_digest([other, base])
+    changed = {**other, "source_versions": {"silver": "v2"}}
+    assert one != batch_v2.stats_provenance_digest([base, changed])
+
+
 def test_v2_packet_rejects_prospective_record_drift():
     packet, storage = _packet()
     packet["prospective_records_after"] = _ref(

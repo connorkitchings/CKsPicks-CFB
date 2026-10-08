@@ -145,3 +145,77 @@ def test_expected_buckets_can_be_widened_for_a_proven_cause():
         expected={"missing_ppa", "punt", "history_correction"},
     )
     assert not widened["unexplained"]
+
+
+def _games(game_ids, **overrides):
+    return pd.DataFrame(
+        {
+            "game_id": game_ids,
+            "metric": ["ppp"] * len(game_ids),
+            "value": [1.0] * len(game_ids),
+        }
+    ).assign(**overrides)
+
+
+def _diff_games(built, published, **kw):
+    return pd_.diff_frames(
+        built,
+        published,
+        keys=["game_id", "metric"],
+        columns=["value"],
+        metric_of=lambda row: row["metric"],
+        **kw,
+    )
+
+
+def _in_new_games(frame):
+    return frame["game_id"].isin([3, 4])
+
+
+def test_rows_of_added_scope_are_counted_not_compared():
+    report = _diff_games(
+        _games([1, 2, 3, 4]), _games([1, 2]), added_scope=_in_new_games
+    )
+    assert not report["unexplained"]
+    assert report["added_scope"]["rows"] == 2
+    assert report["population"]["only_built"] == 0
+    assert report["rows_built"] == 4 and report["rows_compared"] == 2
+
+
+def test_without_the_scope_the_same_extra_rows_are_findings():
+    report = _diff_games(_games([1, 2, 3, 4]), _games([1, 2]))
+    assert report["unexplained"] and report["population"]["only_built"] == 2
+
+
+def test_a_published_row_inside_the_added_scope_is_a_finding():
+    report = _diff_games(
+        _games([1, 2, 3]), _games([1, 2, 3]), added_scope=_in_new_games
+    )
+    assert report["unexplained"]
+    assert report["added_scope"]["published_rows_in_scope"] == 1
+
+
+def test_a_difference_outside_the_added_scope_is_still_found():
+    built = _games([1, 2, 3, 4], value=[1.0, 9.0, 1.0, 1.0])
+    report = _diff_games(built, _games([1, 2]), added_scope=_in_new_games)
+    assert report["unexplained"] and "scoring" in report["unexplained_buckets"]
+
+
+def test_a_bucket_override_names_only_the_cells_it_matches():
+    built = _games([1, 2], value=[5.0, 7.0])
+    published = _games([1, 2])
+    report = _diff_games(
+        built,
+        published,
+        expected={"proven"},
+        bucket_override=lambda row, column: "proven" if row["game_id"] == 1 else None,
+    )
+    assert report["differences_by_bucket"]["proven"] == {"value": 1}
+    assert "scoring" in report["unexplained_buckets"]
+
+
+def test_summary_reports_added_scope_rows_per_table():
+    report = _diff_games(_games([1, 3]), _games([1]), added_scope=_in_new_games)
+    summary = pd_.summarize({"t": report})
+    assert summary["added_scope_rows"] == {"t": 1}
+    assert summary["all_differences_explained"]

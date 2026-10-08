@@ -1,0 +1,273 @@
+{
+  "environment": "production",
+  "captured_at": "2026-10-07T17:07:03.598657+00:00",
+  "identity": {
+    "user": "cks_prod_pipeline",
+    "read_only": "on"
+  },
+  "current_week": [
+    [
+      2026,
+      6,
+      null
+    ]
+  ],
+  "site_week_selections": [
+    [
+      2026,
+      0,
+      "2026w0-v5repair-20260929-p1"
+    ],
+    [
+      2026,
+      1,
+      "2026w1-v5repair-20260929-p1"
+    ],
+    [
+      2026,
+      2,
+      "2026w2-v5repair-20260929-p1"
+    ],
+    [
+      2026,
+      3,
+      "2026w3-v5repair-20260929-p1"
+    ],
+    [
+      2026,
+      4,
+      "2026w4-v5repair-20260929-p1"
+    ],
+    [
+      2026,
+      5,
+      "2026w5-v5repair-20260929-p2"
+    ]
+  ],
+  "site_week_selections_sha256": "daa887c478e17cc4b8939a27589fedc0e3c8eb2d8f76de63a5e13b0d52756d1c",
+  "rollback_and_w5_runs": [
+    [
+      "2026w0-v5replay-bestquote-20260926-r3",
+      "scored",
+      "replay",
+      8,
+      8,
+      8,
+      null,
+      "2026-09-26 13:26:37.312171+00:00"
+    ],
+    [
+      "2026w1-v5replay-bestquote-20260926-r3",
+      "scored",
+      "replay",
+      43,
+      43,
+      43,
+      null,
+      "2026-09-26 13:28:02.862399+00:00"
+    ],
+    [
+      "2026w2-v5replay-bestquote-20260926-r3",
+      "scored",
+      "replay",
+      49,
+      49,
+      49,
+      null,
+      "2026-09-26 13:29:14.065278+00:00"
+    ],
+    [
+      "2026w3-v5replay-bestquote-20260926-r3",
+      "scored",
+      "replay",
+      57,
+      57,
+      56,
+      null,
+      "2026-09-26 13:30:11.348087+00:00"
+    ],
+    [
+      "2026w4-v5replay-bestquote-20260926-r3",
+      "scored",
+      "replay",
+      58,
+      58,
+      58,
+      null,
+      "2026-09-27 14:29:54.786100+00:00"
+    ],
+    [
+      "2026w5-5d436e58c072",
+      "published",
+      "pending",
+      56,
+      56,
+      56,
+      null,
+      null
+    ],
+    [
+      "2026w5-v5repair-20260929-p2",
+      "scored",
+      "live",
+      56,
+      56,
+      56,
+      "2026-09-30 12:34:06.200521+00:00",
+      "2026-10-04 15:04:23.436372+00:00"
+    ]
+  ],
+  "rollback_present": true,
+  "games_by_week_2026": [
+    [
+      0,
+      8,
+      "2026-08-29 16:00:00+00:00",
+      "2026-08-30 02:00:00+00:00"
+    ],
+    [
+      1,
+      43,
+      "2026-09-03 22:00:00+00:00",
+      "2026-09-07 23:30:00+00:00"
+    ],
+    [
+      2,
+      49,
+      "2026-09-11 23:30:00+00:00",
+      "2026-09-13 03:59:00+00:00"
+    ],
+    [
+      3,
+      57,
+      "2026-09-17 23:30:00+00:00",
+      "2026-09-20 03:00:00+00:00"
+    ],
+    [
+      4,
+      58,
+      "2026-09-24 23:30:00+00:00",
+      "2026-09-27 03:00:00+00:00"
+    ],
+    [
+      5,
+      56,
+      "2026-10-02 00:00:00+00:00",
+      "2026-10-04 03:59:00+00:00"
+    ]
+  ],
+  "w5_grades_by_target_result": [
+    [
+      "spread",
+      "win",
+      28
+    ],
+    [
+      "spread",
+      "loss",
+      27
+    ],
+    [
+      "spread",
+      "push",
+      1
+    ],
+    [
+      "total",
+      "win",
+      25
+    ],
+    [
+      "total",
+      "loss",
+      30
+    ],
+    [
+      "total",
+      "push",
+      1
+    ]
+  ],
+  "w5_grade_rows": 112,
+  "w5_grade_rows_sha256": "6602f2349e4c1da2202f3b8f70772d7c9866fbada372b7347b296842d9fc1ce3",
+  "w5_predictions": 56,
+  "w5_predictions_sha256": "996fa20258f9d491c644921d25d3493c55cf98f4822b3659db190f0313606bd3",
+  "w5_results_scored": 56,
+  "prospective_week_records": [
+    [
+      "2026",
+      "5",
+      "2026w5-v5repair-20260929-p2",
+      "artifacts/prospective/v5/environment=production/season=2026/week=5/2026w5-v5repair-20260929-p2/legacy-attestation-v1-9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7.json",
+      "9f0224181c02865e125ef8a00cbcf518ae7f1bcb194365564bd5d90b5dd472d7",
+      "2026-09-30 12:34:06.200521+00:00",
+      "2026-10-02 00:00:00+00:00",
+      "contract-04-amendment-4-5-w5-legacy-freeze"
+    ]
+  ],
+  "migration_tables": [
+    [
+      "public",
+      "schema_migrations"
+    ]
+  ],
+  "roles": [
+    "cks_migrator",
+    "cks_pipeline",
+    "cks_prod_pipeline",
+    "cks_prod_web",
+    "cks_release_authorizer",
+    "cks_web",
+    "neon_service",
+    "neon_superuser",
+    "neondb_owner"
+  ],
+  "grants": {
+    "cks_migrator": {
+      "public.prospective_week_records:SELECT": false,
+      "public.prospective_week_records:INSERT": false,
+      "public.market_quotes:SELECT": true,
+      "ops.v5_release_revocations:SELECT": false,
+      "ops.v5_release_revocations:INSERT": false
+    },
+    "cks_pipeline": {
+      "public.prospective_week_records:SELECT": true,
+      "public.prospective_week_records:INSERT": true,
+      "public.market_quotes:SELECT": true,
+      "ops.v5_release_revocations:SELECT": true,
+      "ops.v5_release_revocations:INSERT": false
+    },
+    "cks_prod_pipeline": {
+      "public.prospective_week_records:SELECT": true,
+      "public.prospective_week_records:INSERT": true,
+      "public.market_quotes:SELECT": true,
+      "ops.v5_release_revocations:SELECT": true,
+      "ops.v5_release_revocations:INSERT": false
+    },
+    "cks_prod_web": {
+      "public.prospective_week_records:SELECT": true,
+      "public.prospective_week_records:INSERT": false,
+      "public.market_quotes:SELECT": true,
+      "ops.v5_release_revocations:SELECT": false,
+      "ops.v5_release_revocations:INSERT": false
+    },
+    "cks_release_authorizer": {
+      "public.prospective_week_records:SELECT": false,
+      "public.prospective_week_records:INSERT": false,
+      "public.market_quotes:SELECT": false,
+      "ops.v5_release_revocations:SELECT": true,
+      "ops.v5_release_revocations:INSERT": true
+    },
+    "cks_web": {
+      "public.prospective_week_records:SELECT": true,
+      "public.prospective_week_records:INSERT": false,
+      "public.market_quotes:SELECT": true,
+      "ops.v5_release_revocations:SELECT": false,
+      "ops.v5_release_revocations:INSERT": false
+    }
+  },
+  "triggers_prospective": [
+    "prospective_week_records_validate",
+    "prospective_week_records_no_delete"
+  ]
+}

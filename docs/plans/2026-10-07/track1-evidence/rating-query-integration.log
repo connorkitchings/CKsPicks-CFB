@@ -1,0 +1,11 @@
+✔ rating provenance DISTINCT selects its ordering column and preserves pregame scope (2.607625ms)
+✔ competing same-cutoff manifests cannot replace the rendered rating source (0.325875ms)
+✔ PostgreSQL selects only the rendered manifest when cutoffs tie (83.553ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 318.041792

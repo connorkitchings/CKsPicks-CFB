@@ -1,0 +1,27 @@
+Silver games  31a337df6cf49f1578457ec6: columns ['__capture_id', '__capture_provider', '__captured_at', 'attendance', 'away_classification', 'away_conference', 'away_id', 'away_line_scores', 'away_points', 'away_postgame_elo', 'away_postgame_win_probability', 'away_pregame_elo', 'away_team', 'completed', 'conference_game', 'excitement_index', 'game_id', 'highlights', 'home_classification', 'home_conference', 'home_id', 'home_line_scores', 'home_points', 'home_postgame_elo', 'home_postgame_win_probability', 'home_pregame_elo', 'home_team', 'kickoff_utc', 'neutral_site', 'notes', 'playoff', 'provider_week', 'season', 'season_type', 'start_time_tbd', 'venue', 'venue_id', 'week']
+Silver venues b569d242e8c4c53b416bfe14: columns ['__capture_id', '__capture_provider', '__captured_at', '__source_sha256', '__source_uri', 'capacity', 'city', 'construction_year', 'country_code', 'dome', 'elevation', 'grass', 'latitude', 'longitude', 'name', 'state', 'timezone', 'venue_id', 'year', 'zip']
+quality pre-write receipt: artifacts/quality/receipts/publish/a0ea67e2c999fe236c01f2d3a21deab97ef37e5c623c6cb0651972ef3b7aeace.json
+{
+  "games_in_neon": 271,
+  "rows": 271,
+  "with_city": 271,
+  "with_city_and_state": 269,
+  "missing_venue_id": 0,
+  "venue_not_found": 0,
+  "games_absent_from_silver": 0,
+  "games_absent_sample": [],
+  "source_versions": {
+    "games": "31a337df6cf49f1578457ec6",
+    "venues": "b569d242e8c4c53b416bfe14"
+  },
+  "source_hashes": {
+    "games": "f2cdccedbc81c99841c5841151af83ba35ca988adbecc15bc05a2e07868ef788",
+    "venues": "bee1f3c7b731cb24265bd7fa86233e8232f83dfd6235dfbbfe1d51dfeaf7c856"
+  }
+}
+{"game_id": 401856766, "venue_id": 3504, "venue_name": "Aviva Stadium", "city": "Dublin", "state": null, "country_code": "IE", "timezone": "Europe/Dublin", "neutral_site": true}
+{"game_id": 401864494, "venue_id": 477, "venue_name": "Los Angeles Memorial Coliseum", "city": "Los Angeles", "state": "CA", "country_code": "US", "timezone": "America/Los_Angeles", "neutral_site": false}
+{"game_id": 401858202, "venue_id": 3923, "venue_name": "Scott Stadium", "city": "Charlottesville", "state": "VA", "country_code": "US", "timezone": "America/New_York", "neutral_site": false}
+{"game_id": 401864577, "venue_id": 3714, "venue_name": "Fargodome", "city": "Fargo", "state": "ND", "country_code": "US", "timezone": "America/Chicago", "neutral_site": false}
+{"game_id": 401866408, "venue_id": 3912, "venue_name": "Rynearson Stadium", "city": "Ypsilanti", "state": "MI", "country_code": "US", "timezone": "America/Detroit", "neutral_site": false}
+Dry run: nothing written.

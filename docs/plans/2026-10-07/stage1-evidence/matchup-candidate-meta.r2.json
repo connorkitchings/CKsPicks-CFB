@@ -1,0 +1,72 @@
+{
+  "as_of_weeks": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "not_run": [
+    "database gates (need a successor-format rating manifest and its v5 snapshots; the corrected lineage has none yet)"
+  ],
+  "published_root_raw_sha256": "7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0",
+  "published_run_id": "6a-rebuild-w5-20261007-r2",
+  "static_gates": [
+    {
+      "detail": "",
+      "name": "game log is row-for-row with possession_observation",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "rating = prior + evidence; weights and precision reconcile",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "evidence + excluded games = PPP observations in the window",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "raw PPP games/value equal the rating evidence",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "recomputed adjusted PPP equals the exposure-weighted rating evidence",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "non-offense points: offense row = opponent's defense row",
+      "ok": true
+    },
+    {
+      "detail": "",
+      "name": "every stats/adjusted/component team is a game team",
+      "ok": true
+    }
+  ],
+  "static_gates_passed": true,
+  "tables": {
+    "team_game_measurements": {
+      "rows": 8672,
+      "sha256": "ea967bc46eaf29d1f687c3a665fe1215f5398b75afb34de440aca4c10a0e9d82"
+    },
+    "team_possession_adjusted": {
+      "rows": 2516,
+      "sha256": "ddec5ce7323b2c0269083f47fb97d1dc42ff6e391f3786da54eb758e5026d66e"
+    },
+    "team_possession_stats": {
+      "rows": 7932,
+      "sha256": "dd288d87c8c6a3a6832c2be51876aa81ea10645591438a38ebb89eebd490eb47"
+    },
+    "team_rating_components": {
+      "rows": 3016,
+      "sha256": "f8b97c40dfc2c81f04ec78bc8033552b04db2e6abd52c167590582e1d2738105"
+    }
+  }
+}

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any
 
 import pandas as pd
@@ -40,8 +40,15 @@ def fetch_table(cur, table: str, columns, jsonb, where: str, params) -> pd.DataF
     return pd.DataFrame(cur.fetchall(), columns=list(columns))
 
 
+STATS_WEEKS = tuple(range(1, 6))
+
+
 def season_stats_frame(
-    run: PublishedRun, storage, pin_file: dict[str, Any], fallback_names: set[str]
+    run: PublishedRun,
+    storage,
+    pin_file: dict[str, Any],
+    fallback_names: set[str],
+    weeks: Iterable[int] = STATS_WEEKS,
 ) -> tuple[pd.DataFrame, str]:
     """The website table rebuilt from the corrected 2026 Silver, week by week."""
     from cks_picks_cfb.data.lake import read_dataset
@@ -63,7 +70,7 @@ def season_stats_frame(
     else:
         fbs, source = set(fallback_names), "neon.games (fallback)"
     frames = []
-    for week in range(1, 6):
+    for week in weeks:
         result = build_team_season_stats(
             byplay=byplay,
             drives=drives,
@@ -78,6 +85,61 @@ def season_stats_frame(
     return pd.concat(frames, ignore_index=True), source
 
 
+def lock_scope(lock: dict[str, Any]) -> dict[str, Any]:
+    """What a lock extension adds to the published scope (empty for an unextended lock)."""
+    extension = lock.get("extends")
+    if not extension:
+        return {"games": frozenset(), "first_as_of_week": None, "revisions": {}}
+    revisions = {
+        int(r["game_id"]): (
+            pd.Timestamp(r["old_start_date"]),
+            pd.Timestamp(r["new_start_date"]),
+        )
+        for r in extension.get("kickoff_revisions", [])
+    }
+    return {
+        "games": frozenset(int(g) for g in extension["newly_final_game_ids"]),
+        # Post-week W is published as as_of_week W + 1.
+        "first_as_of_week": int(extension["added_post_week"]) + 1,
+        "revisions": revisions,
+    }
+
+
+def game_scope(scope: dict[str, Any]):
+    """Rows of games completed after the published rows were written."""
+    if not scope["games"]:
+        return None
+    return lambda frame: frame["game_id"].astype(int).isin(scope["games"])
+
+
+def week_scope(scope: dict[str, Any]):
+    """Rows of as-of weeks that did not exist when the published rows were written."""
+    if scope["first_as_of_week"] is None:
+        return None
+    return lambda frame: frame["as_of_week"].astype(int) >= scope["first_as_of_week"]
+
+
+def kickoff_revision(scope: dict[str, Any]):
+    """Name a ``cutoff_utc`` difference only when it is a recorded kickoff revision."""
+
+    def override(row: pd.Series, column: str) -> str | None:
+        if column != "cutoff_utc" or not scope["revisions"]:
+            return None
+        game = row.get("game_id_built")
+        if pd.isna(game) or int(game) not in scope["revisions"]:
+            return None
+        old, new = scope["revisions"][int(game)]
+        built, published = (
+            pd.Timestamp(row["cutoff_utc_built"]),
+            pd.Timestamp(row["cutoff_utc_pub"]),
+        )
+        if built.tzinfo is None or published.tzinfo is None:
+            return None
+        return "kickoff_revision" if (built, published) == (new, old) else None
+
+    return override
+
+
 def baseline_history_control(
     context,
     run,
@@ -90,6 +152,7 @@ def baseline_history_control(
     published,
     mp,
     md,
+    scope: dict[str, Any],
 ) -> dict[str, Any]:
     """2026 states rebuilt from the SERVED terminal: must equal the published components."""
     from cks_picks_cfb.data.lake import read_dataset
@@ -137,13 +200,15 @@ def baseline_history_control(
         columns=values,
         metric_of=lambda row: None,
         jsonb=[c for c in jsonb if c in values],
-        expected=set(),
+        expected={"kickoff_revision"},
+        added_scope=week_scope(scope),
+        bucket_override=kickoff_revision(scope),
     )
     return {
         "method": "priors and scale from the served r9 terminal; same 2026 observations",
         "team_rating_components": report,
-        "matches_published": not report["unexplained"]
-        and report["rows_with_a_difference"] == 0,
+        # Only recorded kickoff revisions may differ; the diff already refuses anything else.
+        "matches_published": not report["unexplained"],
     }
 
 
@@ -163,6 +228,7 @@ def build(context: StageContext) -> StageOutput:
     states = {name: run.frame(f"states_2026/{name}.parquet") for name in STATE_FILES}
     cutoffs = {int(w): pd.Timestamp(c) for w, c in lock["post_week_cutoffs"].items()}
     root_sha = run.root["manifest_sha256"]
+    scope = lock_scope(lock)
 
     url = resolve_runtime_target("preview").database_url
     published: dict[str, pd.DataFrame] = {}
@@ -241,10 +307,19 @@ def build(context: StageContext) -> StageOutput:
         published,
         mp,
         md,
+        scope,
     )
-    components_expected = published_diff.EXPECTED_TO_DIFFER | (
-        {"history_correction"} if control["matches_published"] else set()
+    components_expected = (
+        published_diff.EXPECTED_TO_DIFFER
+        | {"kickoff_revision"}
+        | ({"history_correction"} if control["matches_published"] else set())
     )
+    added = {
+        "team_game_measurements": game_scope(scope),
+        "team_possession_stats": week_scope(scope),
+        "team_possession_adjusted": week_scope(scope),
+        "team_rating_components": week_scope(scope),
+    }
     metric_column = {
         "team_game_measurements": "measurement_id",
         "team_possession_stats": "metric",
@@ -267,6 +342,8 @@ def build(context: StageContext) -> StageOutput:
             ),
             jsonb=[c for c in jsonb if c in values],
             expected=components_expected if components else None,
+            added_scope=added[table],
+            bucket_override=kickoff_revision(scope) if components else None,
         )
     stats, fbs_source = season_stats_frame(run, storage, pin_file, game_names)
     tables["team_season_stats"] = published_diff.diff_frames(
@@ -283,12 +360,28 @@ def build(context: StageContext) -> StageOutput:
         "publication": publication,
         "fbs_source": fbs_source,
         "tables": tables,
+        "scope": {
+            "added_games": len(scope["games"]),
+            "first_added_as_of_week": scope["first_as_of_week"],
+            "kickoff_revisions": {
+                str(g): [old.isoformat(), new.isoformat()]
+                for g, (old, new) in sorted(scope["revisions"].items())
+            },
+        },
         "control_baseline_history": control,
         "summary": published_diff.summarize(tables),
         "explanations": {
             "missing_ppa": "nullable PPA no longer fills missing provider values with zero",
             "punt": "returned punts are tagged special teams (documented punt fix)",
             "scoring": "2026 scoring is unchanged, so no difference is expected",
+            "added_scope": (
+                "rows of games completed, or as-of weeks added, after the published rows "
+                "were written (the lock extension); set aside and counted, never compared"
+            ),
+            "kickoff_revision": (
+                "a provider kickoff revision recorded in the lock extension; only a "
+                "cutoff_utc difference on a listed game, from the old to the new kickoff"
+            ),
             "history_correction": (
                 "2026 priors and the rating scale come from the corrected 2025 terminal; "
                 "proven by the control below, which reproduces the published components "

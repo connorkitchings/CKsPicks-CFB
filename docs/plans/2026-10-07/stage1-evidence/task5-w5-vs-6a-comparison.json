@@ -1,0 +1,160 @@
+{
+  "lsu_game": {
+    "game_id": 401856660,
+    "teams": [
+      "Clemson",
+      "LSU"
+    ],
+    "week": 1
+  },
+  "observations": {
+    "changes_outside_lsu_game": 0,
+    "common_rows": 6880,
+    "common_rows_with_value_change": 0,
+    "games_with_value_change": [],
+    "left_only_games": [],
+    "r1_rows": 6880,
+    "r2_rows": 8672,
+    "right_only_games": 56
+  },
+  "population": {
+    "added_in_r2": 56,
+    "r1_games": 215,
+    "r1_not_in_r2": [],
+    "r2_games": 271
+  },
+  "population_changes_on_common_games": {
+    "kickoff_utc": 0,
+    "measurement_disposition": 0,
+    "population_disposition": 0,
+    "timing_class": 0,
+    "week": 0
+  },
+  "priors": {
+    "mean_changed": 0,
+    "rows": 276,
+    "variance_changed": 0
+  },
+  "ratings": {
+    "current_roles": {
+      "exposure_changed_rows": 0,
+      "joined": 1380,
+      "lsu_game_teams_changed": [],
+      "max_abs_delta": 0.0,
+      "mean_abs_delta_changed": 0.0,
+      "rows_changed": 0,
+      "rows_material": 0,
+      "same_cutoff_rows": 1380,
+      "teams_changed": 0,
+      "top_deltas": [
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "Air Force"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Iowa State"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Kansas State"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "Kansas State"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Kansas"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "Kansas"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "James Madison"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "James Madison"
+        }
+      ],
+      "variance_changed_rows": 0
+    },
+    "final_roles": {
+      "exposure_changed_rows": 0,
+      "joined": 276,
+      "lsu_game_teams_changed": [],
+      "max_abs_delta": null,
+      "mean_abs_delta_changed": 0.0,
+      "rows_changed": 0,
+      "rows_material": 0,
+      "same_cutoff_rows": 0,
+      "teams_changed": 0,
+      "variance_changed_rows": 0
+    },
+    "pregame_roles": {
+      "exposure_changed_rows": 0,
+      "joined": 1084,
+      "lsu_game_teams_changed": [],
+      "max_abs_delta": 0.0,
+      "mean_abs_delta_changed": 0.0,
+      "rows_changed": 0,
+      "rows_material": 0,
+      "same_cutoff_rows": 1080,
+      "teams_changed": 0,
+      "top_deltas": [
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "TCU"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Michigan"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Ole Miss"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "Georgia"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Georgia"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "Oklahoma"
+        },
+        {
+          "delta": 0.0,
+          "role": "defense",
+          "team": "Oklahoma"
+        },
+        {
+          "delta": 0.0,
+          "role": "offense",
+          "team": "UCF"
+        }
+      ],
+      "variance_changed_rows": 0
+    }
+  }
+}

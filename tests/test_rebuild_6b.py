@@ -22,6 +22,7 @@ from cks_picks_cfb.rebuild.legacy import (
     total_result,
 )
 from cks_picks_cfb.rebuild.plan import RebuildPlan
+from cks_picks_cfb.rebuild.recon_common import LEGACY_6A_RECEIPT_SHA
 from cks_picks_cfb.rebuild.recon_stages import SIX_B_STAGE_BUILDERS
 from cks_picks_cfb.rebuild.stages import STAGE_BUILDERS, get_stages
 from cks_picks_cfb.rebuild.targets import GuardedStore, InMemoryStore
@@ -429,7 +430,7 @@ def _dummy_receipt() -> dict:
                     "main_run_id": "6a-rebuild-20261004-r1",
                     "main_root_raw_sha256": "741d262f116a51db0d33ffc84efb22aa5ff4093e7da38535073343aee1fa85d0",
                     "task4_root_raw_sha256": "3431a5fccd7465e872b526109f3262b3563f0d950f337b413c11aa8571f86b65",
-                    "receipt_sha256": recon_receipt.EXPECTED_6A_RECEIPT_SHA,
+                    "receipt_sha256": LEGACY_6A_RECEIPT_SHA,
                 },
             },
             "coverage": {

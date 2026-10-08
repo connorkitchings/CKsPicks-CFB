@@ -1,4 +1,4 @@
-"""Stage: re-derive the certified Week 4 2026 Silver with nullable PPA.
+"""Stage: re-derive the certified 2026 Silver (through the plan's cutoff week) with nullable PPA.
 
 The pinned 2026 byplay was built from four parents (plays, games, teams, team game stats;
 no corrections or venues). They are re-derived here exactly like the historical seasons and
@@ -59,6 +59,7 @@ def derive(
         read_dataset,
     )
     from cks_picks_cfb.data.reconciliation import (
+        exclude_games_after_cutoff,
         reconcile_completed_games,
         stream_points_by_team_game,
     )
@@ -78,8 +79,13 @@ def derive(
         corrections_df=None,
         nullable_ppa=True,
     )
+    # Games the provider already reports as completed but that were not yet available at the
+    # plan's cutoff are outside this point-in-time dataset (their plays are not ingested).
+    reconcile_games, _ = exclude_games_after_cutoff(
+        games, context.plan.policies["silver_2026_as_of"]
+    )
     reconciliation = reconcile_completed_games(
-        games,
+        reconcile_games,
         team_game.merge(
             stream_points_by_team_game(byplay), on=["game_id", "team"], how="left"
         ),
@@ -201,7 +207,7 @@ def verify(context: StageContext) -> list[str]:
     if summary["reconciliation"]["blocking"]:
         problems.append("blocking reconciliation rows")
     if not summary["ppa"]["rows_equal"]:
-        problems.append("byplay rows differ from the legacy Week 4 byplay")
+        problems.append("byplay rows differ from the legacy byplay")
     differences, fix = summary["value_differences"], summary["punt_return_fix"]
     if unexplained := set(differences) - {"ppa", *silver.PUNT_FIX_COLUMNS}:
         problems.append(f"unexplained byplay value changes {sorted(unexplained)}")

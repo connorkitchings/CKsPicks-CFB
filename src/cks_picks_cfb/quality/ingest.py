@@ -321,12 +321,15 @@ def _price_presence(ctx: Mapping[str, Any]) -> Outcome:
     description="Frames satisfy their dataset contract (the hard write gate, recorded in the receipt)",
 )
 def _schema_contract(ctx: Mapping[str, Any]) -> list[Outcome] | Outcome:
-    if not ctx.get("schemas"):
+    if not ctx.get("schemas") and not ctx.get("schema_errors"):
         return skipped("schemas not provided")
     from cks_picks_cfb.data.schema_contracts import DatasetSchemaError, validate_frame
 
-    outcomes = []
-    for name, (frame, schema) in sorted(ctx["schemas"].items()):
+    outcomes = [
+        Outcome(False, detail=message, scope={"dataset": name})
+        for name, message in sorted((ctx.get("schema_errors") or {}).items())
+    ]
+    for name, (frame, schema) in sorted((ctx.get("schemas") or {}).items()):
         try:
             validate_frame(frame, schema)
             outcomes.append(Outcome(True, scope={"dataset": name}))

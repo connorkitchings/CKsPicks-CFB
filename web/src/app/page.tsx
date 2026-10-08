@@ -1,3 +1,4 @@
+import { displayOnlyNotice } from "@/lib/display-only";
 import { redirect } from "next/navigation";
 import {
   getCurrentWeek,
@@ -149,6 +150,7 @@ export default async function Home({
   let dbError: string | null = targetError ? "Weekly data is temporarily unavailable." : null;
   let systemName: string | null = null;
   let retrospectiveRepair = false;
+  let displayOnlyText: string | null = null;
   let topLeansSeason: Tally | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
@@ -172,6 +174,9 @@ export default async function Home({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
+          displayOnlyText = selectedRun?.displayOnly
+            ? displayOnlyNotice(week, selectedRun.createdAt)
+            : null;
           const isV5 = selectsV5(selectedRun?.modelId) || (season === 2026 && selectedRun === null);
           [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
@@ -238,6 +243,7 @@ export default async function Home({
       allowedSeasons={publicationScope.allowedSeasons}
       dbError={dbError}
       retrospectiveRepair={retrospectiveRepair}
+      displayOnlyNotice={displayOnlyText}
       initialSort={initialSort}
     />
   );

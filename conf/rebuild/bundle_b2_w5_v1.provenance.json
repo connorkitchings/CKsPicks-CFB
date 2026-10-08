@@ -1,0 +1,35 @@
+{
+  "schema_version": "inference_bundle_provenance_v1",
+  "bundle_file": "conf/rebuild/bundle_b2_w5_v1.json",
+  "bundle_raw_sha256": "a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1",
+  "what_it_is": "The successor intended-update bridge (fixed alpha-10 Ridge, earlier-only calibration) refit on the corrected historical frames of published 6A run 6a-rebuild-w5-20261007-r2. This is the recipe the site serves (bundle 30c4f1eb...), not the 6A offsets_refit bundle, which follows the accepted forecast-v1 recipe.",
+  "inputs": {
+    "published_6a_run": "6a-rebuild-w5-20261007-r2",
+    "published_6a_root_raw_sha256": "7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0",
+    "historical_frames": "cks_picks_cfb.rebuild.successor_sources.historical_frames (written by scripts/pipeline/write_corrected_historical_cache.py)",
+    "frame_rows": {"population": 8936, "observations": 285952, "terminal": 8694, "outcomes": 8936, "v5_features": 8935, "snapshots": 142960, "priors": 4537, "rating_states": 35740}
+  },
+  "built_with": {
+    "script": "scripts/pipeline/build_v5_intended_update_bundle.py (unmodified)",
+    "arguments": "--run-id v5-intended-update-corrected-w5-local --historical-cache <cache> --local-output <dir>",
+    "code_sha_at_run": "a10048b4058b12578baaa718e89c12c93420ea9a",
+    "note": "successor_sources.py and the cache script were uncommitted at that moment and are committed with this file"
+  },
+  "builder_checks": {
+    "control_fidelity": {"max_abs_rating_mean": 8.881784197001252e-16, "max_abs_rating_variance": 2.220446049250313e-16, "max_abs_usable_exposure": 0.0},
+    "training_rows": 8935,
+    "calibration_counts": {"margin": 7192, "total": 7192}
+  },
+  "independent_verifier": {
+    "script": "scripts/pipeline/verify_v5_intended_update_bundle.py (unmodified, --historical-cache)",
+    "state": "verified",
+    "states": 35740,
+    "fcs_fallback_states": 377,
+    "source_game_role_contributions": 170379,
+    "historical_states_raw_sha256": "8df690ce3d35ece3ae0bf9f68d7c6953e5907a8a7ef63f8e36fc35aa279ddaec",
+    "bridge_manifest_raw_sha256_local_only": "dbbc602761fee4e6c0f4e85dbb46fa56758d85ea182da383eadcfc690d1ec53e",
+    "limit": "The local bridge manifest records the old pinned parents (the builder writes them unconditionally), so it is not committed or published; the corrected-parents manifest belongs to the release chain (Task 7)."
+  },
+  "distance_to_served_bundle_30c4f1eb": {"margin_max_abs_coefficient_difference": 0.0744, "total_max_abs_coefficient_difference": 0.1309},
+  "distance_to_6a_refit_bundle": {"margin_max_abs_coefficient_difference": 1.1334, "total_max_abs_coefficient_difference": 1.0453}
+}
