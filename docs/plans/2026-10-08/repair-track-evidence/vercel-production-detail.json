@@ -1,0 +1,33 @@
+{
+  "id": "dpl_C32BiQq3o5cmSixia4iBrLB5WLVr",
+  "url": "c-ks-picks-b4sssc5dh-connorkitchings-projects.vercel.app",
+  "readyState": "READY",
+  "target": "production",
+  "createdAt": 1791485532611,
+  "gitSource": {
+    "ref": "main",
+    "repoId": 1030912446,
+    "sha": "04cd53ce3dc23f7b971c30a296454a140625f507",
+    "type": "github",
+    "prId": null
+  },
+  "meta": {
+    "githubCommitAuthorName": "Connor Kitchings",
+    "githubCommitAuthorEmail": "164044444+connorkitchings@users.noreply.github.com",
+    "githubCommitMessage": "Merge pull request #4 from connorkitchings/dev\n\nfeat(release): cutover tools, 6B generalization, Stage 1 closure",
+    "githubCommitOrg": "connorkitchings",
+    "githubCommitRef": "main",
+    "githubCommitRepo": "CKsPicks-CFB",
+    "githubCommitSha": "04cd53ce3dc23f7b971c30a296454a140625f507",
+    "githubDeployment": "1",
+    "githubOrg": "connorkitchings",
+    "githubRepo": "CKsPicks-CFB",
+    "githubRepoOwnerType": "User",
+    "githubCommitRepoId": "1030912446",
+    "githubRepoId": "1030912446",
+    "githubRepoVisibility": "public",
+    "githubHost": "github.com",
+    "githubCommitAuthorLogin": "connorkitchings",
+    "githubCommitVerification": "verified"
+  }
+}

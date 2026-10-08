@@ -1,0 +1,17 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "b2-independent-verifier.json": "969547e77db442304b00a0da22439ccc64162e840a6f592c60e357ab19ba271d",
+    "c2-direct-readback.json": "db37457ecb8e6003372062a3cf8aaa60a0155c5c7300e89e901a3cc9048aedae",
+    "c2-serving/week=0/verification/verifier-manifest.json": "0cacaa1a02928189f9c5fc2c2f63aede56a965dee1499c76443ce2405494be32",
+    "c2-serving/week=1/verification/verifier-manifest.json": "65c22b556bf96695c55183aca3fa0c2ce1753615d2e66b6365d71fae2cffff1e",
+    "c2-serving/week=2/verification/verifier-manifest.json": "ca7617b27a07a4d120c0bd74bd6fb98067e26b2e5ac7f16a7ccdf02407f09aec",
+    "c2-serving/week=3/verification/verifier-manifest.json": "68869d2035837135039bb8e74300fc3727ea6181846b74a4b0ba19ea7491af4a",
+    "c2-serving/week=4/verification/verifier-manifest.json": "c91c746448d406d0799e8e644e68f45c92de825a0d0615f746b04eb5e7601fab",
+    "c2-serving/week=5/verification/verifier-manifest.json": "f165290dae025997824ec702b62ca480a7c6c4a706d7172d6311e1451fc26862",
+    "ci-04cd53ce.json": "f4a6d646844a3ea37472d8c6398dfb29b3beba2f31d261a77426b2fc47bcb83d",
+    "staging-production-dry-run.json": "fbd894af61dfd57ebe9f16b861a9a1606099bcb913d0429d8b56827ace87a4c3",
+    "vercel-production-detail.json": "4539a9e13d750818bb5d693cb92e2c8bb4b75f7765bc0415196b0b56e8cecb00",
+    "vercel-production.json": "2d4626c0db1074680ecee8d297914d8a9c73361d12620f36239c7fe0b69ccbe9"
+  }
+}
