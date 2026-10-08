@@ -56,8 +56,7 @@ def _validate_derived_outputs(
         validate_frame(frame, schema_for(dataset, schema_version))
 
 
-def main() -> None:
-    load_dotenv()
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plays-ref-uri", required=True)
     parser.add_argument("--games-ref-uri", required=True)
@@ -69,8 +68,12 @@ def main() -> None:
     parser.add_argument("--corrections-ref-uri", required=True)
     parser.add_argument(
         "--nullable-ppa",
-        action="store_true",
-        help="Keep provider-missing PPA null (Window 2 Silver version) instead of zero-filling it",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Keep provider-missing PPA null (the corrected Silver version, the default); "
+            "--no-nullable-ppa zero-fills it to reproduce a pre-correction build"
+        ),
     )
     parser.add_argument("--as-of", required=True)
     parser.add_argument("--output-ref-uri", required=True)
@@ -80,7 +83,12 @@ def main() -> None:
         choices=["production", "preview"],
         required=True,
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    load_dotenv()
+    args = build_parser().parse_args()
     conn_url = resolve_runtime_target(args.environment).database_url
     storage = get_storage(environment=args.environment)
     if storage.exists(args.output_ref_uri) and not args.output_ref_set_uri:

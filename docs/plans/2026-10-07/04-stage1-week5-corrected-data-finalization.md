@@ -1,6 +1,6 @@
 # Stage 1: Week 5 corrected data finalization (Preview only)
 
-- **Status:** Approved
+- **Status:** Approved; Tasks 1-6, 8 (part) and 9 delivered 2026-10-08; Task 7 and two Task 8 items deferred to the release route (see Amendment 8)
 - **Created:** 2026-10-07
 - **Planner:** Sol
 - **Approval source:** User approved this exact scope (Stage 1 only, release path decided afterwards) in the 2026-10-07 planning session; each Preview write step still needs the user's explicit go-ahead when reached.
@@ -143,3 +143,13 @@ For finding 2 an explicit rule is needed for games that completed after the cuto
 - **Task 2 replacement delivered:** `scripts/pipeline/pin_6a_silver_parents.py --season-2026 --byplay-version … --game-outcomes-version … --reconciled-team-game-version … --source …` reads the parent set from the named byplay's manifest (exactly four datasets, never "latest"). The approved-inputs table is untouched. Three tests.
 - **Task 3 delivered for the 2026 stages:** `silver_2026.py` now applies the same cutoff exclusion before its reconciliation (identical behavior for the original Week 4 pins, since no game after that cutoff was flagged complete or 6A would have blocked), and the Week-4-specific wording in `silver_2026.py` and `states_2026.py` is generic. The remaining Week-4 literals (`recon_foundation.py:118`, `recon_markets.py:283`, `recon_grades.py:232`) belong to the 6B reconstruction, which still covers Weeks 0-5, so they stay as they are.
 - **Plan config:** `conf/rebuild/6a_w5_v1.yaml` (run `6a-rebuild-w5-20261007-r1`) is a copy of the pinned 6A plan with new run ID, cutoffs and two new pins (the Week 5 Silver parents file and the extended lock). It is generated once the re-run of `prepare-week` has produced the Silver versions.
+
+## Amendment 8 (2026-10-08): delivery summary, and what was deferred on purpose
+
+**Delivered (all Preview-only; Production untouched):** Task 1 (Week 5 ingest; Weeks 0-4 parents differ only in game 401856660); Tasks 2, 3, 3B (explicit-version pin, cutoff-aware reconciliation, lock extension with recorded kickoff revisions); Task 4 (6A `6a-rebuild-w5-20261007-r2`, Task 4 `6a-task4-w5-r2`, 6B `6b-replay-w5-20261008-r1`, all published create-once with 0-write retries); Task 5 (corrected team stats as-of 1-5 verified, as-of 6 candidate checked); Task 6 (matchup candidate and previous payloads, static gates 7/7, 0 unexplained differences); Task 9 (`docs/plans/2026-10-08/01-stage1-decision-brief.md`).
+
+**Task 8, delivered:** nullable PPA is now the default of `build_team_game_dataset.py` (`--no-nullable-ppa` to reproduce a zero-filled build); the three skipped ingest checks now receive inputs from the loader (`capture_completeness` from `catalog.ingestion_runs`, `odds_unmatched_events` from the newest Odds API capture, `schema_contract` from the loaded datasets' contracts; a version with no active contract is a finding, not a crash); the unpinned-dataset review found 14 datasets (the five reviewed in 2026-10-04 plus nine whose newest `as_of` now has several 2026 versions because of the corrected publishes). **D7f needed no change:** commit `850ca383` (2026-10-04) already stops the publisher writing a selection for a null lean; the contract's line numbers were stale. Decisions for #8 and #11 are recorded in the brief, nothing built.
+
+**Deferred, with reasons:** Task 7 (successor-format chain) and the week-parameterization of the successor scripts with a successor lock builder. Both are build tasks whose design depends on the release route, and Amendment 5 already said Task 7's design belongs in the decision brief. Neither changes any data product; both are prerequisites of releasing the corrected lineage. Two further Task 8 gaps: no end-to-end regression test for the D7f behavior, and the Week-4-specific literals in `recon_foundation.py`, `recon_markets.py` and `recon_grades.py` were not generalized (6B passes because the plan pins the same Weeks 0-5 population).
+
+**Definition of done:** the box "Production-namespace prediction artifacts verified against 6B" and "Code and pipeline tasks merged with CI green" stay open; the contract is not set to Implemented until Task 7 has an owner and the commits are pushed with CI green.

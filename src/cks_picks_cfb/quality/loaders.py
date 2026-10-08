@@ -56,6 +56,53 @@ def catalog_versions(cur: Any) -> pd.DataFrame:
     return frame.drop(columns="partitions")
 
 
+def request_key(entity: str, parameters: Mapping[str, Any]) -> str:
+    """Stable identity of one provider request: entity plus canonical parameters."""
+    return f"{entity}:{json.dumps(dict(parameters), sort_keys=True, default=str)}"
+
+
+def capture_requests(cur: Any, year: int) -> tuple[set[str], set[str]]:
+    """(requested, completed) CFBD request keys for ``year`` from the ingestion runs.
+
+    Every request ever begun is expected; a request is completed when some run that
+    carried it succeeded. A request that failed and was never retried is the gap.
+    """
+    cur.execute(
+        "SELECT state, request FROM catalog.ingestion_runs "
+        "WHERE provider = 'cfbd' "
+        "AND request->'requests'->0->'parameters'->>'year' = %s",
+        (str(year),),
+    )
+    expected: set[str] = set()
+    completed: set[str] = set()
+    for state, request in cur.fetchall():
+        for item in (request or {}).get("requests", []):
+            key = request_key(str(item.get("entity", "")), item.get("parameters") or {})
+            expected.add(key)
+            if state == "succeeded":
+                completed.add(key)
+    return expected, completed
+
+
+def latest_odds_capture(cur: Any, year: int) -> dict[str, Any] | None:
+    """The newest Odds API quote capture of ``year`` and its unmatched-event count."""
+    cur.execute(
+        "SELECT capture_id, response_metadata FROM catalog.source_captures "
+        "WHERE provider = 'the_odds_api' AND entity = 'market_quotes' "
+        "AND captured_at >= %s ORDER BY captured_at DESC LIMIT 1",
+        (f"{year}-01-01T00:00:00Z",),
+    )
+    row = cur.fetchone()
+    if row is None:
+        return None
+    metadata = row[1] or {}
+    return {
+        "capture_id": row[0],
+        "unmatched_events": int(metadata.get("unmatched_events", 0)),
+        "matched_events": int(metadata.get("matched_events", 0)),
+    }
+
+
 def parse_pins(values: list[str] | None) -> dict[str, str]:
     pins: dict[str, str] = {}
     for item in values or []:
@@ -81,10 +128,14 @@ def build_ingest_context(
     what users see.
     """
     pins = dict(pins or {})
+    from cks_picks_cfb.data.schema_contracts import DatasetSchemaError, schema_for
+
     context: dict[str, Any] = {
         "catalog_versions": catalog_versions(cur),
         "pins": pins,
         "inputs": {},
+        "schemas": {},
+        "schema_errors": {},
     }
     for name, dataset in SEASON_DATASETS.items():
         row = _ref_row(cur, dataset, year, pins.get(dataset))
@@ -92,6 +143,18 @@ def build_ingest_context(
             continue
         context[name] = read(row)
         context["inputs"][name] = {"version_id": row[1], "content_sha": row[3]}
+        try:
+            context["schemas"][name] = (context[name], schema_for(dataset, str(row[2])))
+        except DatasetSchemaError as exc:
+            # A catalog version with no active contract is a finding, not a crash.
+            context["schema_errors"][name] = str(exc)
+    expected, completed = capture_requests(cur, year)
+    if expected:
+        context["expected_requests"] = expected
+        context["completed_requests"] = completed
+    odds = latest_odds_capture(cur, year)
+    if odds is not None:
+        context["odds_capture"] = odds
     cur.execute("SELECT season, week, game_id FROM games WHERE season = %s", (year,))
     context["schedule"] = pd.DataFrame(
         cur.fetchall(), columns=["season", "week", "game_id"]

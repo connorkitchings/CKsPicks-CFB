@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-07 (after the Track 1 promotion) · **Verified from:**
+> **Last updated:** 2026-10-08 (Stage 1 corrected data finalization delivered in Preview; Production unchanged since the Track 1 promotion) · **Verified from:**
 > [`session_logs/2026-10-07/03-pre-week6-audit.md`](../session_logs/2026-10-07/03-pre-week6-audit.md) (read-only audit of Preview and Production),
 > `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`,
 > the Step 5 close-out and pre-6A planning records (2026-10-04; no new cloud-state verification), and the [repaired-V5 release packet](plans/2026-09-29/v5-intended-update-production-release-packet.md).
@@ -21,6 +21,10 @@
   (frozen V4 runs) and the prior V5 best-quote replay runs.
 - **V6 ratings lab:** closed 2026-09-30, `RETAINED_AS_BENCHMARK`; does not
   affect production.
+
+## Corrected foundation (Preview only, 2026-10-08)
+
+The corrected lineage through Week 5 is published in Preview R2/catalog and not served: 6A `6a-rebuild-w5-20261007-r2` (root raw sha `7865d353…`), Task 4 `6a-task4-w5-r2` (receipt `1cd439de…`), 6B `6b-replay-w5-20261008-r1` (root `0b3308df…`). Corrected team stats (as-of 1-5, plus an as-of 6 candidate) and matchup candidate payloads exist locally and are verified, not applied. The release route is undecided: see the [decision brief](plans/2026-10-08/01-stage1-decision-brief.md). Production still serves the uncorrected Weeks 0-4 replays and the frozen Week 5.
 
 ## Week state (2026 season)
 
