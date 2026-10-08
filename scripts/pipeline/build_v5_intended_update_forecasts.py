@@ -69,6 +69,7 @@ def _sources(
     cache: Path | None,
     bridge: Path | str,
     ratings: Path | str,
+    live_as_of: str | None = None,
 ) -> tuple[
     pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any], str, str
 ]:
@@ -136,7 +137,16 @@ def _sources(
             raise ValueError("successor rating state checksum differs")
         states = pd.read_parquet(io.BytesIO(state_raw))
         if is_corrected(lock):
-            schedule, replay_features, live_features = forecast_inputs(storage, lock)
+            current_teams = None
+            if lock["corrected_lineage"].get("live_week"):
+                ref = rating_manifest["output_refs"]["current_teams"]
+                current_raw = storage.read_bytes(ref["uri"])
+                if _sha(current_raw) != ref["raw_sha256"]:
+                    raise ValueError("successor current-team states differ")
+                current_teams = pd.read_parquet(io.BytesIO(current_raw))
+            schedule, replay_features, live_features = forecast_inputs(
+                storage, lock, current_teams=current_teams, live_as_of=live_as_of
+            )
             return (
                 schedule,
                 replay_features,
@@ -183,6 +193,31 @@ def _sources(
     )
 
 
+def forecast_population(
+    expected: set[int],
+    replay_ids: set[int],
+    live_ids: set[int],
+    omitted: set[int],
+    *,
+    display_only: bool,
+) -> set[int]:
+    """The game ids the forecast must cover, given games that already kicked off.
+
+    A live week with kicked-off games is forecast only in display-only mode, and then the
+    omitted ids must be exactly the locked games that have no feature row.
+    """
+    if omitted and not display_only:
+        raise ValueError(
+            "live week has kicked-off games; only a display-only run may omit them"
+        )
+    if omitted - expected:
+        raise ValueError("omitted games are not in the locked population")
+    required = expected - omitted
+    if replay_ids | live_ids != required or replay_ids & live_ids:
+        raise ValueError("successor forecast game keys differ from locked population")
+    return required
+
+
 def build(
     *,
     release_tag: str,
@@ -192,6 +227,9 @@ def build(
     bridge: Path | str,
     ratings: Path | str,
     cache: Path | None = None,
+    live_as_of: str | None = None,
+    display_only: bool = False,
+    weeks: set[int] | None = None,
 ) -> dict[str, Any]:
     if not re.fullmatch(r"[a-z0-9-]+", release_tag):
         raise ValueError("invalid successor release tag")
@@ -201,18 +239,25 @@ def build(
     lock_raw = source_lock.read_bytes()
     lock = json.loads(lock_raw)
     schedule, replay_features, live_features, states, bundle, bridge_sha, rating_sha = (
-        _sources(lock, cache=cache, bridge=bridge, ratings=ratings)
+        _sources(
+            lock, cache=cache, bridge=bridge, ratings=ratings, live_as_of=live_as_of
+        )
     )
     game_columns = lock["games"]["columns"]
     locked_games = [
         dict(zip(game_columns, row, strict=True)) for row in lock["games"]["rows"]
     ]
     expected = {int(row["game_id"]) for row in locked_games}
-    actual = set(replay_features.game_id.astype(int)) | set(
-        live_features.game_id.astype(int)
+    omitted = {
+        int(g) for g in live_features.attrs.get("omitted_kicked_off_game_ids", [])
+    }
+    forecast_population(
+        expected,
+        set(replay_features.game_id.astype(int)),
+        set(live_features.game_id.astype(int)),
+        omitted,
+        display_only=display_only,
     )
-    if actual != expected or set(replay_features.game_id) & set(live_features.game_id):
-        raise ValueError("successor forecast game keys differ from locked population")
     if len(states) != 2 * len(expected):
         raise ValueError("successor rating states do not cover every game")
     output.mkdir(parents=True, exist_ok=True)
@@ -223,6 +268,8 @@ def build(
         adjusted = replace_2026_ratings(base, schedule, states)
         for week, features in adjusted.groupby("week", sort=True):
             week = int(week)
+            if weeks is not None and week not in weeks:
+                continue
             run_id = f"2026w{week}-v5repair-{release_tag}"
             refs = {
                 int(game_id): f"rating:{rating_sha}#pregame:{int(game_id)}"
@@ -241,6 +288,8 @@ def build(
             locked_week = {
                 int(row["game_id"]) for row in locked_games if int(row["week"]) == week
             }
+            if timing == "live":
+                locked_week -= omitted
             if set(predictions.game_id.astype(int)) != locked_week or len(
                 predictions
             ) != 2 * len(locked_week):
@@ -284,6 +333,17 @@ def build(
                     },
                     "game_count": len(locked_week),
                     "timing_class": timing,
+                    **(
+                        {
+                            "live": {
+                                "as_of": live_features.attrs["as_of"],
+                                "display_only": True,
+                                "omitted_kicked_off_game_ids": sorted(omitted),
+                            }
+                        }
+                        if timing == "live" and display_only
+                        else {}
+                    ),
                     "production_activation_authorized": False,
                 }
             )
@@ -291,7 +351,12 @@ def build(
                 canonical_json(manifest)
             )
             manifests[str(week)] = manifest
-    if sorted(map(int, manifests)) != sorted(set(row["week"] for row in locked_games)):
+    wanted_weeks = {
+        int(row["week"])
+        for row in locked_games
+        if weeks is None or int(row["week"]) in weeks
+    }
+    if sorted(map(int, manifests)) != sorted(wanted_weeks):
         raise ValueError("successor forecast is missing a locked week")
     return manifests
 
@@ -316,6 +381,18 @@ def main() -> None:
     parser.add_argument("--rating-source", required=True)
     parser.add_argument("--apply", action="store_true")
     parser.add_argument("--preflight-evidence", type=Path)
+    parser.add_argument(
+        "--live-as-of",
+        help="real forecast time for a lock with a live week (games after it are forecast)",
+    )
+    parser.add_argument(
+        "--display-only",
+        action="store_true",
+        help="allow a live week that omits games already kicked off (never prospective)",
+    )
+    parser.add_argument(
+        "--weeks", type=int, nargs="+", help="build only these weeks (default: all)"
+    )
     args = parser.parse_args()
     if args.apply and args.local_cache:
         raise ValueError("forecast publication must re-read certified R2 parents")
@@ -329,6 +406,9 @@ def main() -> None:
         bridge=bridge,
         ratings=ratings,
         cache=args.local_cache,
+        live_as_of=args.live_as_of,
+        display_only=args.display_only,
+        weeks=set(args.weeks) if args.weeks else None,
     )
     if not args.apply:
         print(json.dumps(manifests, sort_keys=True))

@@ -1,3 +1,4 @@
+import { isDisplayOnly } from "./display-only";
 import { eq, asc, and, inArray, lte, sql, notLike } from "drizzle-orm";
 import { cache } from "react";
 import { db, schema } from "./db";
@@ -142,6 +143,8 @@ export type RunSummary = {
   expectedGames: number;
   predictedGames: number;
   linedGames: number;
+  /** Generated during its week, partial slate, never prospective (Contract 04, Amendment 9). */
+  displayOnly: boolean;
 };
 
 /**
@@ -159,6 +162,7 @@ export const getRunForWeek = cache(async (season: number, week: number): Promise
     expectedGames: schema.predictionRuns.expectedGames,
     predictedGames: schema.predictionRuns.predictedGames,
     linedGames: schema.predictionRuns.linedGames,
+    validation: schema.predictionRuns.validation,
   })
     .from(schema.siteWeekSelections)
     .innerJoin(schema.predictionRuns, eq(schema.siteWeekSelections.runId, schema.predictionRuns.runId))
@@ -180,6 +184,7 @@ export const getRunForWeek = cache(async (season: number, week: number): Promise
     expectedGames: row.expectedGames,
     predictedGames: row.predictedGames,
     linedGames: row.linedGames,
+    displayOnly: isDisplayOnly(row.validation),
   };
 });
 

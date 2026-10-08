@@ -40,7 +40,7 @@ def freeze_run(
                        pr.model_bundle_sha256,
                        (SELECT MIN(g.start_date) FROM predictions p
                         JOIN games g ON g.game_id = p.game_id
-                        WHERE p.run_id = pr.run_id), NOW()
+                        WHERE p.run_id = pr.run_id), NOW(), pr.validation
                 FROM current_week cw
                 JOIN prediction_runs pr ON pr.run_id = cw.active_run_id
                 WHERE cw.id = 1 AND cw.season = %s AND cw.week = %s
@@ -64,7 +64,12 @@ def freeze_run(
                 bundle_sha256,
                 first_kickoff,
                 db_now,
+                validation,
             ) = row
+            if (validation or {}).get("display_only"):
+                # Contract 04, Amendment 9: a display-only run is never prospective
+                # evidence, so it is never frozen, never marked missed, never closed.
+                raise RuntimeError("a display-only run cannot be frozen")
             freeze_manifest = None
             needs_decision_ref = False
             if str(model_id or "").startswith("v5-"):

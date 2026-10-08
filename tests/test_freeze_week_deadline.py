@@ -54,7 +54,7 @@ class _Connection:
 
 def _row(first_kickoff: datetime) -> tuple:
     # run_id, state, expected, predicted, lined, artifact_uri, artifact_sha,
-    # evidence_class, model_id, bundle_sha256, first_kickoff, db_now
+    # evidence_class, model_id, bundle_sha256, first_kickoff, db_now, validation
     return (
         "2026w6-v5-test",
         "published",
@@ -68,6 +68,7 @@ def _row(first_kickoff: datetime) -> tuple:
         "b" * 64,
         first_kickoff,
         _NOW,
+        {},
     )
 
 
@@ -104,3 +105,16 @@ def test_open_window_run_still_requires_a_decision_ref(monkeypatch):
 
     assert conn.commits == 0
     assert not any("state = 'frozen'" in sql for sql in conn._cursor.statements)
+
+
+def test_a_display_only_run_is_never_frozen_or_marked_missed(monkeypatch):
+    # Even past the one-hour boundary, which would otherwise mark a pending run missed.
+    row = _row(_NOW - timedelta(hours=3))[:-1] + ({"display_only": True},)
+    conn = _patch(monkeypatch, row)
+    with pytest.raises(RuntimeError, match="display-only"):
+        freeze_week.freeze_run("postgres://x", year=2026, week=6)
+    assert conn.commits == 0
+    assert not any(
+        statement.startswith("UPDATE prediction_runs")
+        for statement in conn._cursor.statements
+    )

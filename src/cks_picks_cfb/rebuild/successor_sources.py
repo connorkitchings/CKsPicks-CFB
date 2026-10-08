@@ -128,15 +128,37 @@ def rating_inputs(
 
 
 def forecast_inputs(
-    storage: Any, lock: dict[str, Any]
+    storage: Any,
+    lock: dict[str, Any],
+    *,
+    current_teams: pd.DataFrame | None = None,
+    live_as_of: str | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """(schedule, replay features, live features) for the forecast builder.
 
-    Every locked week is a replay week; the 6B application frames are the 2026 feature rows
-    (the four rating means are replaced from the pregame states by the builder).
+    Weeks before the lock's active week are replay weeks: the 6B application frames are
+    their 2026 feature rows (the four rating means are replaced from the pregame states by
+    the builder). A lock with a live week also needs the post-week team states and a real
+    ``live_as_of``; its feature rows cover only games that have not kicked off, and the
+    omitted game ids travel on ``features.attrs``.
     """
+    active = int(lock["active_week"]["week"])
     frames = replay_run(storage, lock).frame("application_frames/frames.parquet")
-    return lock_schedule(storage, lock), frames, frames.iloc[0:0].copy()
+    replay = frames[frames["week"].astype(int).lt(active)].reset_index(drop=True)
+    schedule = lock_schedule(storage, lock)
+    if not lineage(lock).get("live_week"):
+        return schedule, replay, frames.iloc[0:0].copy()
+    if current_teams is None or not live_as_of:
+        raise GateError("a live week needs the current team states and a live as_of")
+    from cks_picks_cfb.rebuild.live_week import live_week_features
+
+    live = live_week_features(
+        storage, lock, as_of=live_as_of, current_teams=current_teams
+    )
+    features = live.features.reset_index(drop=True)
+    features.attrs["omitted_kicked_off_game_ids"] = live.omitted_kicked_off_game_ids
+    features.attrs["as_of"] = live.as_of
+    return schedule, replay, features
 
 
 def corrected_parents(

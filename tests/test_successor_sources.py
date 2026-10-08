@@ -153,3 +153,37 @@ def test_a_pinned_run_refuses_a_different_root_or_run_id():
     storage = _Storage({"rebuild/6a/run-x/root-manifest.json": other})
     with pytest.raises(GateError, match="not the published rebuild root"):
         open_pinned_run(storage, "run-x", hashlib.sha256(other).hexdigest())
+
+
+def test_a_lock_without_a_live_week_returns_only_replay_features(monkeypatch):
+    frames = pd.DataFrame({"week": [0, 1, 5], "game_id": [1, 2, 3]})
+
+    class _Replay:
+        def frame(self, relative):
+            assert relative == "application_frames/frames.parquet"
+            return frames
+
+    monkeypatch.setattr(ss, "replay_run", lambda storage, lock: _Replay())
+    monkeypatch.setattr(
+        ss, "lock_schedule", lambda storage, lock: pd.DataFrame({"x": [1]})
+    )
+    lock = {"active_week": {"week": 6}, "corrected_lineage": LINEAGE}
+    schedule, replay, live = ss.forecast_inputs(object(), lock)
+    assert replay["game_id"].tolist() == [1, 2, 3] and live.empty and len(schedule) == 1
+
+
+def test_a_live_week_needs_current_states_and_a_real_as_of(monkeypatch):
+    class _Replay:
+        def frame(self, relative):
+            return pd.DataFrame({"week": [0, 5], "game_id": [1, 2]})
+
+    monkeypatch.setattr(ss, "replay_run", lambda storage, lock: _Replay())
+    monkeypatch.setattr(ss, "lock_schedule", lambda storage, lock: pd.DataFrame())
+    lock = {
+        "active_week": {"week": 6},
+        "corrected_lineage": {**LINEAGE, "live_week": {"week": 6}},
+    }
+    with pytest.raises(GateError, match="live as_of"):
+        ss.forecast_inputs(object(), lock)
+    with pytest.raises(GateError, match="live as_of"):
+        ss.forecast_inputs(object(), lock, current_teams=pd.DataFrame())

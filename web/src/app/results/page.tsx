@@ -1,3 +1,4 @@
+import { displayOnlyNotice } from "@/lib/display-only";
 import { redirect } from "next/navigation";
 import {
   getGamesForWeek,
@@ -56,6 +57,7 @@ export default async function ResultsPage({
   let performance: Performance[] = [];
   let systemName: string | null = null;
   let retrospectiveRepair = false;
+  let displayOnlyText: string | null = null;
   let dbError: string | null = null;
 
   if (process.env.CFB_UI_TEST_MODE === "1") {
@@ -80,6 +82,9 @@ export default async function ResultsPage({
           const selectedRun = await getRunForWeek(season, week);
           retrospectiveRepair = selectedRun?.modelId === "v5-intended-update-2026-v1"
             && selectedRun.evidenceClass === "replay";
+          displayOnlyText = selectedRun?.displayOnly
+            ? displayOnlyNotice(week, selectedRun.createdAt)
+            : null;
           [games, performance] = await Promise.all([
             getGamesForWeek(season, week),
             selectsV5(selectedRun?.modelId)
@@ -130,6 +135,7 @@ export default async function ResultsPage({
       allowedSeasons={publicationScope.allowedSeasons}
       dbError={dbError}
       retrospectiveRepair={retrospectiveRepair}
+      displayOnlyNotice={displayOnlyText}
       initialSort={initialSort}
       emptyMessage={
         scoredWeeks.length === 0
