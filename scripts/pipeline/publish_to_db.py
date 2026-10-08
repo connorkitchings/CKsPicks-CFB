@@ -163,6 +163,23 @@ def _label_present_but_null(row: pd.Series, column: str) -> bool:
     return bool(pd.isna(value)) or str(value).strip() == ""
 
 
+_SELECTION_SIDES = {
+    "spread": ("spread_lean", {"home", "away"}),
+    "total": ("total_lean", {"over", "under"}),
+}
+
+
+def _selection_side(record: dict, target: str) -> str | None:
+    """The side a selection row may carry, or ``None`` for a null or unknown lean.
+
+    A null lean must never be given a default side (the frozen Week 5 publisher wrote
+    home/over there; Known Issue 6), so callers skip the selection when this is ``None``.
+    """
+    column, allowed = _SELECTION_SIDES[target]
+    lean = record.get(column)
+    return lean if isinstance(lean, str) and lean in allowed else None
+
+
 def _derive_total_lean(row: pd.Series) -> tuple[str | None, float | None]:
     """Return (total_lean, edge_total), honoring the "Total Bet" label."""
     label = str(row.get("Total Bet", "")).strip().lower()
@@ -976,7 +993,7 @@ def publish_week(
                     if (
                         record.get("spread_market_quote_id")
                         and record.get("home_team_spread_line") is not None
-                        and record.get("spread_lean") in {"home", "away"}
+                        and _selection_side(record, "spread") is not None
                     ):
                         sq_id = str(record["spread_market_quote_id"])
                         if sq_id in quote_by_id:
@@ -1013,7 +1030,7 @@ def publish_week(
                                     "target": "spread",
                                     "snapshot_id": record["market_snapshot_id"],
                                     "quote_id": sq_id,
-                                    "side": record["spread_lean"],
+                                    "side": _selection_side(record, "spread"),
                                     "point": record["home_team_spread_line"],
                                     "price": float(sq_price),
                                     "edge": float(record.get("edge_spread") or 0.0),
@@ -1034,7 +1051,7 @@ def publish_week(
                     if (
                         record.get("total_market_quote_id")
                         and record.get("total_line") is not None
-                        and record.get("total_lean") in {"over", "under"}
+                        and _selection_side(record, "total") is not None
                     ):
                         tq_id = str(record["total_market_quote_id"])
                         if tq_id in quote_by_id:
@@ -1068,7 +1085,7 @@ def publish_week(
                                     "target": "total",
                                     "snapshot_id": record["market_snapshot_id"],
                                     "quote_id": tq_id,
-                                    "side": record["total_lean"],
+                                    "side": _selection_side(record, "total"),
                                     "point": record["total_line"],
                                     "price": float(tq_price),
                                     "edge": float(record.get("edge_total") or 0.0),

@@ -30,6 +30,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     original_run_id,
     read_parquet_data,
     recon_run_id,
+    require_served_population,
     source_refs,
     weekly_as_of,
 )
@@ -471,6 +472,7 @@ def render_markdown(receipt: dict[str, Any]) -> str:
 
 
 def build_receipt(context: StageContext) -> StageOutput:
+    require_served_population(context, "receipt")
     weeks_info, served_artifacts = _build_weekly_served_artifacts(context)
     receipt = derive_receipt(context, weekly_served_info=weeks_info)
 

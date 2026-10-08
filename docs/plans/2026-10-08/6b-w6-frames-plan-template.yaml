@@ -1,0 +1,48 @@
+# TEMPLATE (not loadable, deliberately outside conf/): Weeks 0-6 frames-only 6B plan.
+#
+# Purpose: the Week 6 replay run takes its features from this run's
+# application_frames/frames.parquet (successor_sources.forecast_inputs).
+# Fill every <PLACEHOLDER> on the day, after the Week 6 ingest:
+#   - a 6A rebuild + Task 4 through Week 6 comes first; foundation requires the Task 4
+#     receipt's cutoff_2026 to equal this plan's cutoff_2026;
+#   - source_lock_2026 and silver_2026_parents must be the Week 6 extensions (329 games);
+#   - unserved_week_as_of for Week 6 must be timezone-aware, after Week 5's last kickoff and
+#     before Week 6's first kickoff (foundation enforces both).
+# Only the five frame stages are planned. markets, finals, old_grade_reproduction,
+# retrospective_grades, comparison and receipt reconcile the original served Weeks 0-5 runs
+# and refuse this population by design (require_served_population).
+run_id: 6b-replay-w6-<DATE>-r1
+namespace: rebuild/6b/
+storage_identity: r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview
+seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+registry_checksum: 2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281
+cutoff_2026: '<ISO cutoff after Week 6 finals>'
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  selection_policy: model_side_best_quote_v2
+  offset_rule: unusable_team_games_unresolved
+  zero_threshold: true
+  expected_6a_receipt_sha: <w6 Task 4 receipt manifest_sha256>
+  weeks: [0, 1, 2, 3, 4, 5, 6]
+  expected_counts: {'0': 8, '1': 43, '2': 49, '3': 57, '4': 58, '5': 56, '6': 58}
+  served_weeks: [0, 1, 2, 3, 4, 5]
+  unserved_week_as_of: {'6': '<ISO, tz-aware>'}
+inputs:
+- {name: root_manifest_6a, kind: r2_object, uri: rebuild/6a/<w6 6A run>/root-manifest.json, sha256: <sha>}
+- {name: inference_bundle, kind: git_file, uri: conf/rebuild/bundle_b2_w5_v1.json, sha256: a507d0c7cba5419868eac5c0955853d3e2855fc857aabf36f5cd192d5e7a90f1}
+- {name: root_manifest_task4, kind: r2_object, uri: rebuild/6a/<w6 task4 run>/root-manifest.json, sha256: <sha>}
+- {name: task4_receipt, kind: r2_object, uri: rebuild/6a/<w6 task4 run>/receipt/receipt.json, sha256: <sha>}
+- {name: source_lock_2026, kind: git_file, uri: conf/rebuild/source_lock_2026_w6_v1.json, sha256: <sha>}
+- {name: silver_2026_parents, kind: git_file, uri: conf/rebuild/silver_2026_parents_w6_v1.json, sha256: <sha>}
+# Served Weeks 0-5 identities are still checked by foundation; the w5 refs file covers them.
+- {name: reconstruction_source_refs, kind: git_file, uri: conf/rebuild/6b_source_refs_w5_v1.json, sha256: 9d733d4c1ef6b7c87eb2fc65e5fe407d14a4e74521e85e2458fbf999876305a3}
+stages:
+- {name: foundation, inputs: [root_manifest_6a, root_manifest_task4, task4_receipt, source_lock_2026, reconstruction_source_refs], outputs: [rebuild/6b/6b-replay-w6-<DATE>-r1/foundation/]}
+- {name: scoring_events_2026, inputs: [root_manifest_6a, silver_2026_parents, source_lock_2026], parents: [foundation], outputs: [rebuild/6b/6b-replay-w6-<DATE>-r1/scoring_events_2026/]}
+- {name: offsets_2026, inputs: [root_manifest_6a], parents: [foundation, scoring_events_2026], outputs: [rebuild/6b/6b-replay-w6-<DATE>-r1/offsets_2026/, lake/gold/dataset=reconstruction_offsets_2026/]}
+- {name: states_at_cutoff, inputs: [root_manifest_6a], parents: [foundation, scoring_events_2026], outputs: [rebuild/6b/6b-replay-w6-<DATE>-r1/states_at_cutoff/]}
+- {name: application_frames, parents: [foundation, offsets_2026, states_at_cutoff], outputs: [rebuild/6b/6b-replay-w6-<DATE>-r1/application_frames/, lake/gold/dataset=reconstruction_application_frames/]}

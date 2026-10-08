@@ -53,6 +53,83 @@ SERVED_RUN_ID_TEMPLATE = "2026w{week}-v5repair-20260929-p1"
 SERVED_WEEK5_RUN_ID = "2026w5-v5repair-20260929-p2"
 
 
+def plan_weeks(context: StageContext) -> tuple[int, ...]:
+    """The weeks this plan reconstructs (policy ``weeks``; default Weeks 0-5)."""
+    value = context.plan.policies.get("weeks", list(WEEKS))
+    if (
+        not isinstance(value, list)
+        or not value
+        or any(isinstance(w, bool) or not isinstance(w, int) for w in value)
+        or value != list(range(len(value)))
+    ):
+        raise GateError("policy weeks must be a contiguous list of weeks from 0")
+    return tuple(value)
+
+
+def plan_counts(context: StageContext) -> dict[int, int]:
+    """Games per planned week (policy ``expected_counts``; default Weeks 0-5)."""
+    weeks = plan_weeks(context)
+    if "expected_counts" not in context.plan.policies:
+        if weeks != WEEKS:
+            raise GateError("policy expected_counts is required with a custom weeks")
+        return dict(EXPECTED_COUNTS)
+    raw = context.plan.policies["expected_counts"]
+    if not isinstance(raw, Mapping):
+        raise GateError("policy expected_counts must be a week map")
+    try:
+        counts = {int(w): int(n) for w, n in raw.items()}
+    except (TypeError, ValueError) as exc:
+        raise GateError("policy expected_counts has an invalid entry") from exc
+    if set(counts) != set(weeks) or any(n <= 0 for n in counts.values()):
+        raise GateError("policy expected_counts must cover exactly the planned weeks")
+    return counts
+
+
+def plan_total(context: StageContext) -> int:
+    return sum(plan_counts(context).values())
+
+
+def served_weeks(context: StageContext) -> tuple[int, ...]:
+    """Planned weeks that had an original served run (policy ``served_weeks``)."""
+    value = context.plan.policies.get("served_weeks", list(WEEKS))
+    weeks = plan_weeks(context)
+    if (
+        not isinstance(value, list)
+        or any(isinstance(w, bool) or not isinstance(w, int) for w in value)
+        or not set(value) <= set(weeks)
+        or value != sorted(value)
+    ):
+        raise GateError("policy served_weeks must be a sorted subset of the weeks")
+    return tuple(value)
+
+
+def unserved_as_of(context: StageContext) -> dict[int, str]:
+    """Declared forecast ``as_of`` for each planned week without a served run."""
+    unserved = [w for w in plan_weeks(context) if w not in served_weeks(context)]
+    raw = context.plan.policies.get("unserved_week_as_of", {})
+    if not isinstance(raw, Mapping) or {str(w) for w in unserved} != {
+        str(k) for k in raw
+    }:
+        raise GateError(
+            "policy unserved_week_as_of must name exactly the weeks without a served run"
+        )
+    values = {int(w): str(v) for w, v in raw.items()}
+    for week, value in values.items():
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise GateError(f"week {week} as_of is not an ISO timestamp") from exc
+        if parsed.tzinfo is None:
+            raise GateError(f"week {week} as_of must carry a timezone")
+    return values
+
+
+def require_served_population(context: StageContext, stage: str) -> None:
+    """Reconciliation stages compare the original served Weeks 0-5 runs only."""
+    if plan_weeks(context) != WEEKS or served_weeks(context) != WEEKS:
+        raise GateError(f"{stage} reconciles the original served Weeks 0-5 runs only")
+
+
 def original_run_id(week: int) -> str:
     return (
         SERVED_WEEK5_RUN_ID if week == 5 else SERVED_RUN_ID_TEMPLATE.format(week=week)
@@ -208,7 +285,7 @@ def load_partitioned_gold(
     manifest = json.loads(StagedLakeStorage(context, stage).read_bytes(ref.uri))
     if manifest["partition_keys"] != ["week"] or {
         int(p["partition"]["week"]) for p in manifest["parts"]
-    } != set(WEEKS):
+    } != set(plan_weeks(context)):
         raise GateError("Gold week partition coverage changed")
     frames = list(iter_partitioned_dataset(StagedLakeStorage(context, stage), ref))
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
@@ -230,7 +307,7 @@ def source_refs(context: StageContext) -> dict[str, Any]:
     value = json.loads(context.read_input("reconstruction_source_refs"))
     if value["schema_version"] != "reconstruction_source_refs_v1" or set(
         value["weeks"]
-    ) != {str(w) for w in WEEKS}:
+    ) != {str(w) for w in served_weeks(context)}:
         raise GateError("reconstruction source metadata coverage changed")
     return value
 
@@ -242,7 +319,7 @@ def weekly_as_of(context: StageContext) -> dict[int, str]:
         )
     )
     values = summary["weekly_as_of"]
-    if set(values) != {str(w) for w in WEEKS}:
+    if set(values) != {str(w) for w in plan_weeks(context)}:
         raise GateError("forecast cutoff coverage changed")
     return {int(w): value for w, value in values.items()}
 

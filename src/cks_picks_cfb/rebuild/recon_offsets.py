@@ -13,12 +13,12 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
-    TOTAL_2026_GAMES,
-    WEEKS,
     frame_digest,
     json_data,
     load_partitioned_gold,
     parquet_data,
+    plan_total,
+    plan_weeks,
     read_parquet_data,
     weekly_as_of,
     write_partitioned_gold,
@@ -85,7 +85,7 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
     freeze_mismatches: list[dict[str, Any]] = []
     duplicate_appearances: list[dict[str, Any]] = []
 
-    for w in WEEKS:
+    for w in plan_weeks(context):
         as_of_dt = pd.Timestamp(weekly_as_of(context)[w])
         # Games in earlier weeks are completed evidence if kicked off before as_of
         earlier_games = schedule[
@@ -188,10 +188,12 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
         raise GateError("historical offsets differ from 6A forecast/offsets.parquet")
 
     # Combine 2026 offsets
-    all_2026_offsets = pd.concat([weekly_offsets[w] for w in WEEKS], ignore_index=True)
-    if len(all_2026_offsets) != TOTAL_2026_GAMES:
+    all_2026_offsets = pd.concat(
+        [weekly_offsets[w] for w in plan_weeks(context)], ignore_index=True
+    )
+    if len(all_2026_offsets) != plan_total(context):
         raise GateError(
-            f"2026 offsets has {len(all_2026_offsets)} rows, expected {TOTAL_2026_GAMES}"
+            f"2026 offsets has {len(all_2026_offsets)} rows, expected {plan_total(context)}"
         )
 
     # Lake Gold dataset persistence
@@ -216,7 +218,7 @@ def build_offsets_2026(context: StageContext) -> StageOutput:
     summary = {
         "status": "passed",
         "total_offsets": len(all_2026_offsets),
-        "weekly_counts": {str(w): len(weekly_offsets[w]) for w in WEEKS},
+        "weekly_counts": {str(w): len(weekly_offsets[w]) for w in plan_weeks(context)},
         "freeze_mismatches_count": len(freeze_mismatches),
         "offset_freeze_gate": "passed",
         "duplicate_weekly_appearances": duplicate_appearances,
@@ -257,8 +259,8 @@ def verify_offsets_2026(context: StageContext) -> list[str]:
         or summary.get("offset_freeze_gate") != "passed"
     ):
         problems.append("offset freeze gate reported mismatches")
-    if len(offsets) != TOTAL_2026_GAMES:
-        problems.append(f"total offsets {len(offsets)} != {TOTAL_2026_GAMES}")
+    if len(offsets) != plan_total(context):
+        problems.append(f"total offsets {len(offsets)} != {plan_total(context)}")
     if frame_digest(offsets) != summary["offsets_digest"]:
         problems.append("offsets frame digest mismatch")
 
@@ -267,9 +269,9 @@ def verify_offsets_2026(context: StageContext) -> list[str]:
         lake_offsets = load_partitioned_gold(
             context, "offsets_2026", summary["lake_gold"]
         )
-        if len(lake_offsets) != TOTAL_2026_GAMES:
+        if len(lake_offsets) != plan_total(context):
             problems.append(
-                f"lake offsets count {len(lake_offsets)} != {TOTAL_2026_GAMES}"
+                f"lake offsets count {len(lake_offsets)} != {plan_total(context)}"
             )
     except Exception as exc:
         problems.append(f"failed to load partitioned lake offsets: {exc}")

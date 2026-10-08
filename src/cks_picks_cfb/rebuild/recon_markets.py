@@ -25,6 +25,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     parquet_data,
     read_parquet_data,
     recon_run_id,
+    require_served_population,
     source_refs,
     weekly_as_of,
     write_partitioned_gold,
@@ -66,6 +67,7 @@ def _load_market_data(
 
 
 def build_markets(context: StageContext) -> StageOutput:
+    require_served_population(context, "markets")
     import yaml
 
     if context.stage.name == "markets":
@@ -264,6 +266,7 @@ def verify_markets(context: StageContext) -> list[str]:
 
 
 def build_finals(context: StageContext) -> StageOutput:
+    require_served_population(context, "finals")
     storage = common.preview_storage(context)
     sched_key = FOUNDATION_SCHEDULE.format(run_id=context.plan.run_id)
     schedule = read_parquet_data(context.read_artifact("foundation", sched_key))

@@ -4,7 +4,7 @@
 > Other docs link here instead of naming runs. Update this page (and only this
 > page) when a week opens, freezes, closes, or a release changes the selected run.
 >
-> **Last updated:** 2026-10-08 (Stage 1 corrected data finalization delivered in Preview; Production unchanged since the Track 1 promotion) · **Verified from:**
+> **Last updated:** 2026-10-08 (Stage 1 closed: corrected data and cutover tooling delivered in Preview; Production unchanged since the Track 1 promotion) · **Verified from:**
 > [`session_logs/2026-10-07/03-pre-week6-audit.md`](../session_logs/2026-10-07/03-pre-week6-audit.md) (read-only audit of Preview and Production),
 > `session_logs/2026-09-30/01-verify-deploy-freeze-week5-close-contract.md`,
 > the Step 5 close-out and pre-6A planning records (2026-10-04; no new cloud-state verification), and the [repaired-V5 release packet](plans/2026-09-29/v5-intended-update-production-release-packet.md).
@@ -24,7 +24,7 @@
 
 ## Corrected foundation (Preview only, 2026-10-08)
 
-The corrected lineage through Week 5 is published in Preview R2/catalog and not served: 6A `6a-rebuild-w5-20261007-r2` (root raw sha `7865d353…`), Task 4 `6a-task4-w5-r2` (receipt `1cd439de…`), 6B `6b-replay-w5-20261008-r1` (root `0b3308df…`). Corrected team stats (as-of 1-5, plus an as-of 6 candidate) and matchup candidate payloads exist locally and are verified, not applied. The release route is undecided: see the [decision brief](plans/2026-10-08/01-stage1-decision-brief.md). Production still serves the uncorrected Weeks 0-4 replays and the frozen Week 5.
+The corrected lineage through Week 5 is published in Preview R2/catalog and not served: 6A `6a-rebuild-w5-20261007-r2` (root raw sha `7865d353…`), Task 4 `6a-task4-w5-r2` (receipt `1cd439de…`), and 6B `6b-replay-w5-20261008-r2` (root `c253022a…`; it uses the successor bundle B2, which supersedes `-r1`). On that lineage the successor chain produced the Weeks 0-5 replay set `2026w{0..5}-v5repair-20261008-c2` with provider team names (packaged in the Preview namespace; release records validated by dry run, none registered) and the display-only Week 6 run `2026w6-v5repair-20261008-d2` (selected in Preview). Corrected team stats (as-of 1-5, plus an as-of 6 candidate) and matchup candidate payloads exist locally and are verified, not applied. Production still serves the uncorrected Weeks 0-4 replays and the frozen Week 5. **Route chosen:** Week 6 is display-only in Preview and stays on the hold screen in Production; the corrected lineage reaches Production at the Week 7 cutover using the packet builder and staging tool (Amendments 10 and 11 of the [Stage 1 contract](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md); [decision brief](plans/2026-10-08/01-stage1-decision-brief.md)).
 
 ## Week state (2026 season)
 
@@ -32,7 +32,7 @@ The corrected lineage through Week 5 is published in Preview R2/catalog and not 
 |---|---|---|
 | 0–4 | Scored; **retrospective replay** (not prospective evidence) | `2026w{0..4}-v5repair-20260929-p1` |
 | 5 | **Scored** 2026-10-04, 56/56/56, 112 grades (56 spread, 56 total). First live V5 slate. | `2026w5-v5repair-20260929-p2` |
-| 6 | **Not opened; no prospective Week 6.** Its first kickoff (2026-10-07T00:00Z) passed with no run, the database has no Week 6 games, and `current_week` is (2026, 6) with no active run (hold screen). **Held by user decision (2026-10-07): no Week 6 display run will be published;** the hold screen stays until the Week 7 cutover. Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)). A display-only attempt was planned and closed as Superseded ([contract](plans/2026-10-07/03-week6-display-run.md)): the successor chain's kickoff guards refuse a post-kickoff run. | — |
+| 6 | **Production: not opened; no prospective Week 6.** Its first kickoff (2026-10-07T00:00Z) passed with no run, the database has no Week 6 games, and `current_week` is (2026, 6) with no active run (hold screen); the hold screen stays until the Week 7 cutover (user decision, Option A, 2026-10-08). **Preview: labeled display-only run** covering only games that had not started when it was built; evidence class `pending`, never frozen and excluded from the prospective record ([Amendment 9](plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md)). Week 6 joins the corrected replay set after its finals stabilize ([Stage 7B plan](plans/2026-10-06/02-stage7b-exact-release-and-cutover.md)); Amendment 10 excludes it from the completed-prospective check. | Preview: `2026w6-v5repair-20261008-d2` (Production: none) |
 
 **Rollback set (exact):** `2026w{0..4}-v5replay-bestquote-20260926-r3` and
 `2026w5-5d436e58c072`. An earlier Week 5 run, `2026w5-d6366e59fd43`, is
