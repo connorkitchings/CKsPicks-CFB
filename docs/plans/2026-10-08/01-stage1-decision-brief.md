@@ -1,6 +1,6 @@
 # Stage 1 decision brief: what the corrected data work produced and how to release it
 
-- **Status:** For decision
+- **Status:** Decided (see Outcome); original analysis below
 - **Created:** 2026-10-08
 - **Contract:** [`2026-10-07/04-stage1-week5-corrected-data-finalization.md`](../2026-10-07/04-stage1-week5-corrected-data-finalization.md) (Task 9)
 - **Evidence:** `docs/plans/2026-10-07/stage1-evidence/` (checksummed) and `session_logs/2026-10-08/01-stage1-completion.md`
@@ -10,6 +10,13 @@
 > **Correction, 2026-10-08 (after the first Task 7 spike; verified, see `stage1-evidence/task7-findings.r2.json`).** The prediction-change figures in section 2, item 4 (mean margin change 3.12, 27 spread and 13 total flips, 38 grade changes, record 130-136-5) are **mostly not an effect of the data corrections.** The 6B replay applies the bundle refit by the 6A `offsets_refit` stage (call it B1: trained on the selected-design team states, 0.04-0.13 from the accepted forecast-v1 bundle `f80b63ef`). Production serves a different bundle (`30c4f1eb`, B2: the successor bridge refit on repaired game-at-cutoff states), which is 1.07-1.15 away from B1 in coefficient terms. Running the existing successor bridge builder unchanged on the corrected 6A frames gives a bundle within 0.07 (margin) and 0.13 (total) of the served one, and predictions from it differ from the **served** predictions by a mean of **0.33** margin points (max 1.51; 16 of 271 games over 1 point; the win side differs in 1 game) and 0.17 total points, versus 3.12 and 0.74 for B1. So the corrected data move predictions little; the large 6B deltas come from using a bundle that is not the one the site serves. The 6B outputs in Preview are internally consistent but are **not** a release candidate; the grade and record figures in this brief are not what a corrected successor release would show. Section 3's Task 7 estimate and section 5's route table stand, with this addition: the corrected bridge must come from the successor builder (B2), and the 6B replay must be rerun with it before any prediction, selection or grade figure is quoted.
 
 > **Update, 2026-10-08 (6B rerun with the successor bundle, run `6b-replay-w5-20261008-r2`, built and verified, not yet published).** With the bundle the site serves (B2) the corrected Weeks 0-5 replay differs from the served predictions by a mean of **0.33** margin points (max 1.51) and 0.17 total points (max 1.09): **4 spread-lean flips and 1 total-lean flip**, 36 selection line changes (33 of them the issue-13 away-spread fixes), **5 selection sides and 5 grade results changed**. Retrospective record: spread **129-137-5** (served 128-139-4), total **138-131-1** (served 137-132-1), overall **267-268-6** (served 265-271-5), profit -25.27 units versus -30.09. The earlier figures in this brief (27 and 13 flips, 38 grade changes, 130-136-5) belong to the superseded `-r1` run and should not be quoted. Offsets, application frames, states and finals are identical between `-r1` and `-r2`; only predictions, selections and grades changed.
+
+## Outcome (2026-10-08, added after the decisions)
+
+- **Route:** labeled display-only Week 6 in Preview (Amendment 9); Week 6 stays on the hold screen in Production (Option A: no Production path exists for a single display-only run); the corrected lineage reaches Production at the Week 7 cutover.
+- **Task 7:** the successor chain was built on the corrected lineage with the B2 bundle, not B1 (see the corrections above); the Weeks 0-5 set `20261008-c2` uses provider team names.
+- **Cutover tooling:** signed packet builder and artifact staging tool; Amendment 10 waives the display-only Week 6 from the completed-prospective check so a Week 7 cutover can validate.
+- **Stage 1 closed** by Amendment 11. Section 7's questions are answered: route chosen; Task 7 designed and delivered; commits made by the user; the as-of 6 stats and Week 6 matchup tables stay as cutover candidates.
 
 ## 1. What now exists (Preview only; Production is unchanged)
 

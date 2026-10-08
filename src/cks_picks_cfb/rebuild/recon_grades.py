@@ -29,6 +29,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     parquet_data,
     read_parquet_data,
     recon_run_id,
+    require_served_population,
     write_partitioned_gold,
 )
 from cks_picks_cfb.rebuild.recon_markets import FINALS_PARQUET, MARKETS_PARQUET
@@ -218,6 +219,7 @@ def _original_csvs(
 
 
 def build_old_grade_reproduction(context: StageContext) -> StageOutput:
+    require_served_population(context, "old_grade_reproduction")
     finals = read_parquet_data(
         context.read_artifact(
             "finals", FINALS_PARQUET.format(run_id=context.plan.run_id)
@@ -489,6 +491,7 @@ def verify_old_grade_reproduction(context: StageContext) -> list[str]:
 
 
 def build_retrospective_grades(context: StageContext) -> StageOutput:
+    require_served_population(context, "retrospective_grades")
     old_summary = json.loads(
         context.read_artifact(
             "old_grade_reproduction",

@@ -13,10 +13,10 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
-    WEEKS,
     frame_digest,
     json_data,
     parquet_data,
+    plan_weeks,
     read_parquet_data,
     weekly_as_of,
 )
@@ -54,7 +54,7 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
 
     # Evaluate rating engine at each original week's as_of
     weekly_states: list[pd.DataFrame] = []
-    for w in WEEKS:
+    for w in plan_weeks(context):
         as_of_str = weekly_as_of(context)[w]
         as_of_dt = _time(as_of_str)
         if w == 0:
@@ -135,7 +135,7 @@ def build_states_at_cutoff(context: StageContext) -> StageOutput:
     summary = {
         "status": "passed",
         "total_team_states": len(combined_states),
-        "evaluated_weeks": list(WEEKS),
+        "evaluated_weeks": list(plan_weeks(context)),
         "teams_count": len(engine.teams),
         "rating_mismatches_count": len(rating_mismatches),
         "pregame_teams_identity_gate": "passed",

@@ -51,6 +51,11 @@ PROSPECTIVE_COLUMNS = (
 )
 
 
+# Amendment 10: Week 6 was published display-only (never frozen), so it has no
+# prospective record and is excluded from the completed-evidence requirement.
+DISPLAY_ONLY_WEEKS = frozenset({6})
+
+
 class V5BatchSelectionError(ValueError):
     """A signed release packet cannot safely select or roll back its run set."""
 
@@ -241,6 +246,10 @@ def validate_v2_packet(
                 "prospective-record payload schema or scope differs"
             )
         _validate_prospective_rows(payload["rows"])
+    if DISPLAY_ONLY_WEEKS & {row["week"] for row in prospective_before["rows"]}:
+        raise V5BatchSelectionError(
+            "display-only weeks cannot carry a prospective record"
+        )
     prospective_before_by_key = {
         _prospective_key(row): row for row in prospective_before["rows"]
     }
@@ -251,7 +260,7 @@ def validate_v2_packet(
         raise V5BatchSelectionError(
             "selection and rollback packets must preserve prospective records exactly"
         )
-    if not set(range(5, cutover)).issubset(
+    if not (set(range(5, cutover)) - DISPLAY_ONLY_WEEKS).issubset(
         {row["week"] for row in prospective_before["rows"]}
     ):
         raise V5BatchSelectionError(

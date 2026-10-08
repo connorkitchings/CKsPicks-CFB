@@ -901,3 +901,30 @@ def test_validate_selection_lineage_ignores_unquoted_legacy_rows():
         ]
     )
     publish_to_db._validate_selection_lineage(df, {})
+
+
+@pytest.mark.parametrize("lean", [None, float("nan"), "", "none", "HOME", "push"])
+def test_selection_side_never_defaults_a_null_or_unknown_lean(lean):
+    """D7f: a null lean must not become a home/over selection (Known Issue 6)."""
+    record = {"spread_lean": lean, "total_lean": lean}
+    assert publish_to_db._selection_side(record, "spread") is None
+    assert publish_to_db._selection_side(record, "total") is None
+    assert publish_to_db._selection_side({}, "spread") is None
+
+
+def test_selection_side_passes_valid_leans_and_keeps_targets_apart():
+    record = {"spread_lean": "away", "total_lean": "under"}
+    assert publish_to_db._selection_side(record, "spread") == "away"
+    assert publish_to_db._selection_side(record, "total") == "under"
+    assert publish_to_db._selection_side({"spread_lean": "over"}, "spread") is None
+    assert publish_to_db._selection_side({"total_lean": "home"}, "total") is None
+
+
+def test_publish_week_builds_selection_sides_only_through_the_helper():
+    source = (Path(publish_to_db.__file__)).read_text()
+    assert source.count('_selection_side(record, "spread")') == 2
+    assert source.count('_selection_side(record, "total")') == 2
+    assert 'record.get("spread_lean") or "home"' not in source
+    assert 'record.get("total_lean") or "over"' not in source
+    assert '"side": record["spread_lean"]' not in source
+    assert '"side": record["total_lean"]' not in source

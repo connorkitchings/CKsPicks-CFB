@@ -15,17 +15,19 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
-    EXPECTED_COUNTS,
-    TOTAL_2026_GAMES,
-    WEEKS,
     checked_read,
     expected_6a_receipt_sha,
     frame_digest,
     json_data,
     original_run_id,
     parquet_data,
+    plan_counts,
+    plan_total,
+    plan_weeks,
     read_parquet_data,
+    served_weeks,
     source_refs,
+    unserved_as_of,
 )
 
 FOUNDATION_SUMMARY = "rebuild/6b/{run_id}/foundation/summary.json"
@@ -81,9 +83,9 @@ def build_foundation(context: StageContext) -> StageOutput:
     cols = lock["games"]["columns"]
     records = [dict(zip(cols, row, strict=True)) for row in lock["games"]["rows"]]
     schedule = pd.DataFrame.from_records(records)
-    if len(schedule) != TOTAL_2026_GAMES:
+    if len(schedule) != plan_total(context):
         raise GateError(
-            f"locked schedule has {len(schedule)} games, expected {TOTAL_2026_GAMES}"
+            f"locked schedule has {len(schedule)} games, expected {plan_total(context)}"
         )
 
     schedule["game_id"] = schedule["game_id"].astype(int)
@@ -106,7 +108,12 @@ def build_foundation(context: StageContext) -> StageOutput:
     storage = common.preview_storage(context)
     refs = source_refs(context)
     cutoffs = {}
-    for w in WEEKS:
+    served = served_weeks(context)
+    declared = unserved_as_of(context)
+    for w in plan_weeks(context):
+        if w not in served:
+            cutoffs[w] = declared[w]
+            continue
         metadata = refs["weeks"][str(w)]
         manifest = json.loads(checked_read(storage, metadata["source_manifest"]))
         if manifest["run_id"] != original_run_id(w):
@@ -125,10 +132,10 @@ def build_foundation(context: StageContext) -> StageOutput:
 
     # 4. Check week counts and as_of chronology
     week_counts = schedule["week"].value_counts().to_dict()
-    for w in WEEKS:
-        if week_counts.get(w, 0) != EXPECTED_COUNTS[w]:
+    for w in plan_weeks(context):
+        if week_counts.get(w, 0) != plan_counts(context)[w]:
             raise GateError(
-                f"week {w} count {week_counts.get(w, 0)} != {EXPECTED_COUNTS[w]}"
+                f"week {w} count {week_counts.get(w, 0)} != {plan_counts(context)[w]}"
             )
         as_of_dt = datetime.fromisoformat(cutoffs[w].replace("Z", "+00:00"))
         first_kickoff = (
@@ -150,7 +157,7 @@ def build_foundation(context: StageContext) -> StageOutput:
     summary = {
         "status": "passed",
         "total_games": len(schedule),
-        "weekly_counts": {str(w): EXPECTED_COUNTS[w] for w in WEEKS},
+        "weekly_counts": {str(w): plan_counts(context)[w] for w in plan_weeks(context)},
         "weekly_as_of": cutoffs,
         "receipt_sha": expected_receipt,
         "schedule_digest": frame_digest(schedule),
@@ -176,8 +183,10 @@ def verify_foundation(context: StageContext) -> list[str]:
     except Exception as exc:
         return [f"failed to read foundation artifacts: {exc}"]
 
-    if summary["total_games"] != TOTAL_2026_GAMES or len(schedule) != TOTAL_2026_GAMES:
-        problems.append(f"total games != {TOTAL_2026_GAMES}")
+    if summary["total_games"] != plan_total(context) or len(schedule) != plan_total(
+        context
+    ):
+        problems.append(f"total games != {plan_total(context)}")
     if frame_digest(schedule) != summary["schedule_digest"]:
         problems.append("schedule digest mismatch")
     return problems

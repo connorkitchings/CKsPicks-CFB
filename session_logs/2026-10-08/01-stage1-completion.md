@@ -1,6 +1,6 @@
 # 2026-10-08 Stage 1 completion (continuation of 2026-10-07/07)
 
-Contract: `docs/plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md` (Amendment 8). Decision brief: `docs/plans/2026-10-08/01-stage1-decision-brief.md`. Everything below is Preview-only; no Production write.
+Contract: `docs/plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md` (Amendment 8). Decision brief: `docs/plans/2026-10-08/01-stage1-decision-brief.md`. Everything below is Preview-only; no Production write. (Sections 1-8 were written before the later work; the "Later work" section at the end covers the rest of the day.)
 
 ## Sequence and results (verified unless marked)
 
@@ -25,3 +25,21 @@ Contract: `docs/plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md`
 ## Commits to make (by path; user-run)
 
 Everything under: `src/cks_picks_cfb/quality/`, `scripts/pipeline/build_team_game_dataset.py`, `tests/test_build_team_game_defaults.py`, `tests/test_quality_loaders.py`, `docs/plans/2026-10-08/`, `docs/plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md`, `docs/data/known_issues.md`, `docs/status.md`, `session_logs/2026-10-08/`.
+
+## Later work (same day; Preview only, no Production write)
+
+9. **6B rerun with the successor bundle.** Replaying with the 6A refit bundle (B1) gave prediction changes that were mostly a bundle difference, not a data effect (brief, correction block). B2 came from the successor bridge builder run on the corrected frames (`conf/rebuild/bundle_b2_w5_v1.json`); `6b-replay-w5-20261008-r2` was built, verified and published. **Corrected earlier claims:** 27 flips and 130-136-5 belong to the superseded `-r1`.
+10. **Task 7 (successor chain).** Lock builders, week-parameterized builders and verifiers, best-quote v2 serving verifier (the old one encoded the retired September policy), corrected parents for the bridge manifest. Replay set `20261008-c1` used canonical team names; Neon and the site use provider names, so it was superseded by **`20261008-c2`** (six runs, 271 games, nine provider-named teams present, release records dry-run validated, none registered).
+11. **Week 6 display-only run.** First publication (`-d1`) was blocked by the venue gate, the schedule-coverage gate and canonical names; fixes were `locked_schedule(..., canonical=False)`, `seed_week_schedule.py`, and venues after the preview-state publish. `-d2` is published and selected in Preview; the site notice text was approved and verified locally. Production stays on the hold screen (user chose Option A).
+12. **Cutover tooling.** Packet builder, staging tool (both with tests), Amendment 10 (Week 6 waiver in `validate_v2_packet`), packet-builder CLI, c2 evidence file.
+13. **Stage 1 close-out.** 6B week generalization (policies `weeks`, `expected_counts`, `served_weeks`, `unserved_week_as_of`; reconciliation stages refuse other populations), D7f helper and tests, Amendment 11, status and brief updates.
+
+## Corrections and caveats (later work)
+
+- **Not exercised:** no Week 6 6B run; the 6B flow tests were not extended to a seventh week (new policy logic is unit tested). The positive path of a Week 7 packet with a real Week 5 prospective record is untested locally.
+- **Agent-reported, not re-opened:** the c2 evidence file was built from retained scratchpad outputs, not re-read from R2.
+- Several scripted edits needed a second pass (zsh glob, wrong interpreter, an import block rewritten before names were fixed); each was caught by ruff or the tests before it was reported.
+
+## Commits (user-run), in order
+
+`6cb7e871` cutover tools; `f4b2ce2b` Amendment 10, packet CLI, c2 evidence; the close-out commit lists: `src/cks_picks_cfb/rebuild/recon_*.py`, `scripts/pipeline/publish_to_db.py`, `tests/test_recon_week_policies.py`, `tests/test_publish_to_db.py`, `docs/plans/2026-10-08/`, `docs/plans/2026-10-07/04-stage1-week5-corrected-data-finalization.md`, `docs/status.md`, `session_logs/2026-10-08/`.

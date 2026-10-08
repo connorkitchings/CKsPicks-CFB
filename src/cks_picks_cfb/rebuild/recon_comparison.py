@@ -21,6 +21,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     WEEKS,
     json_data,
     read_parquet_data,
+    require_served_population,
 )
 from cks_picks_cfb.rebuild.recon_forecast import PREDICTIONS_PARQUET
 from cks_picks_cfb.rebuild.recon_foundation import FOUNDATION_SCHEDULE
@@ -69,6 +70,7 @@ def _load_served_data(
 
 
 def build_comparison(context: StageContext) -> StageOutput:
+    require_served_population(context, "comparison")
     # 1. Load reconstruction artifacts
     sched_key = FOUNDATION_SCHEDULE.format(run_id=context.plan.run_id)
     schedule = read_parquet_data(context.read_artifact("foundation", sched_key))

@@ -1,6 +1,6 @@
 # Stage 1: Week 5 corrected data finalization (Preview only)
 
-- **Status:** Approved; Tasks 1-6, 8 (part) and 9 delivered 2026-10-08; Task 7 and two Task 8 items deferred to the release route (see Amendment 8)
+- **Status:** Implemented (2026-10-08, Amendment 11); the CI result on the final pushed commit and the Production-namespace artifact check are recorded there as open cutover items
 - **Created:** 2026-10-07
 - **Planner:** Sol
 - **Approval source:** User approved this exact scope (Stage 1 only, release path decided afterwards) in the 2026-10-07 planning session; each Preview write step still needs the user's explicit go-ahead when reached.
@@ -71,14 +71,14 @@ Per task as written; plus Ruff, `make contracts-check`, the full Python suite an
 
 ## Definition of done
 
-- [ ] Task 0 evidence recorded; no false assumption left.
-- [ ] Week 5 ingested; Weeks 0-4 stability proven; `w5` set approved and repair verified.
-- [ ] Corrected rebuild parameterized with byte-parity on Weeks 0-4.
-- [ ] Corrected Silver, measurements, ratings through Week 5 published to Preview and verified; earlier digests unchanged.
-- [ ] Corrected team stats and matchup candidate payloads built and verified.
-- [ ] Production-namespace prediction artifacts verified against 6B.
-- [ ] Code and pipeline tasks merged with CI green.
-- [ ] Decision brief delivered; `docs/status.md` and the issue register updated; contract set to Implemented.
+- [x] Task 0 evidence recorded; no false assumption left.
+- [x] Week 5 ingested; Weeks 0-4 stability proven; `w5` set approved and repair verified.
+- [x] Corrected rebuild parameterized with byte-parity on Weeks 0-4.
+- [x] Corrected Silver, measurements, ratings through Week 5 published to Preview and verified; earlier digests unchanged.
+- [x] Corrected team stats and matchup candidate payloads built and verified.
+- [ ] Production-namespace prediction artifacts verified against 6B. **Moved to the cutover** (Amendment 11): the staging tool's dry run against Production does this check byte for byte.
+- [x] Code and pipeline tasks committed and pushed (`f4b2ce2b` plus the Amendment 11 commit). **CI result on the final commit: to be confirmed by the user.**
+- [x] Decision brief delivered; `docs/status.md` and the issue register updated; contract set to Implemented.
 
 ---
 
@@ -170,3 +170,23 @@ For finding 2 an explicit rule is needed for games that completed after the cuto
 
 **Not changed:** the batch-selection controller, the cutover rules, `freeze_week.py` for any real prospective week, and the guards for Week 7 and later.
 
+
+## Amendment 10 (2026-10-08): display-only Week 6 is excluded from the completed-prospective check
+
+**Decision (user, 2026-10-08):** Amendment 9 forbids Week 6 from freezing or entering `prospective_week_records`. `validate_v2_packet` required a prospective record for every week in `range(5, cutover)`, so any cutover at N >= 7 was unreachable by construction. The requirement now excludes `DISPLAY_ONLY_WEEKS = {6}` (`src/cks_picks_cfb/ops/v5_batch_selection_v2.py`).
+
+**Scope of the waiver:** only Week 6, and only that exclusion. Week 5 and every other week from 5 to N-1 still need a verified prospective record. A packet carrying a prospective record for Week 6 is refused, so the exemption cannot be used to smuggle a display-only run into the record. The before/after payloads must still match exactly, and all other checks are unchanged. Tests: `tests/test_v5_packet_builder.py` (Week 5 still required at N=7; Week 6 record refused). **Not tested:** the positive path of a N=7 packet that passes the prospective check with a real Week 5 record (needs live receipt verification; covered by the Postgres integration job and the Preview rehearsal).
+
+**Tooling delivered with it (Preview-validated, no Production write):** `v5_packet_builder.py` and `scripts/pipeline/build_v5_cutover_packets.py` (authorization, selection, rollback packets), `v5_artifact_staging.py` and `scripts/pipeline/stage_v5_artifacts.py` (dry run by default; apply needs the reviewed receipt hash and clean committed code). Weeks 0-5 provider-name replay set `20261008-c2`: evidence in `stage1-evidence/task7-replay-chain-c2-provider-names.json`.
+
+## Amendment 11 (2026-10-08): Task 7 delivered; Stage 1 closed
+
+**Delivered since Amendment 8 (all Preview-only; Production untouched).**
+- **Task 7, the successor chain on the corrected lineage:** successor lock builders (`successor_lock.py`, `build_corrected_successor_lock.py`, `build_corrected_live_lock.py`); week-parameterized successor builders and verifiers (rating, bridge, forecast, serving, serving verifier, packaging) with the best-quote v2 verifier; 6B rerun with the successor bundle B2 (`6b-replay-w5-20261008-r2`, which supersedes `-r1`); the Weeks 0-5 replay set `20261008-c2` with provider team names (`2026w{0..5}-v5repair-20261008-c2`, evidence `stage1-evidence/task7-replay-chain-c2-provider-names.json`); the display-only Week 6 run `2026w6-v5repair-20261008-d2` (Amendment 9), published and selected in Preview with the site notice.
+- **Cutover tooling:** signed packet builder (`ops/v5_packet_builder.py`, `scripts/pipeline/build_v5_cutover_packets.py`: authorization, selection, rollback) and artifact staging (`ops/v5_artifact_staging.py`, `scripts/pipeline/stage_v5_artifacts.py`: dry run by default, write-once with byte readback, signed receipt). Amendment 10 excludes display-only Week 6 from the completed-prospective check.
+- **6B week generalization.** The five frame stages (foundation, scoring_events_2026, offsets_2026, states_at_cutoff, application_frames) and `predictions` now take the week list, per-week game counts and total from plan policies `weeks`, `expected_counts`, `served_weeks` and `unserved_week_as_of` (helpers `plan_weeks`, `plan_counts`, `plan_total`, `served_weeks`, `unserved_as_of` in `recon_common.py`). The defaults are the old Weeks 0-5 values, so existing plans behave identically (the 6B flow tests pass unchanged). An unserved week's forecast `as_of` is declared in the plan and foundation still enforces that it is after the previous week's last kickoff and before its own first kickoff. `markets`, `finals`, `old_grade_reproduction`, `retrospective_grades`, `comparison` and `receipt` reconcile the original served Weeks 0-5 runs, so they now refuse any other population (`require_served_population`) instead of silently running on it. A frames-only Week 6 plan template is `docs/plans/2026-10-08/6b-w6-frames-plan-template.yaml`. **Not exercised:** no Week 6 6B run exists; the flow tests were not extended with a seventh week because the synthetic corpus is built from the Weeks 0-5 counts. The new policy logic and the refusals are unit tested (`tests/test_recon_week_policies.py`); the first real Week 6 run is the end-to-end test.
+- **D7f regression test.** The publisher's null-lean guard is now the pure helper `_selection_side` in `publish_to_db.py` (behaviour unchanged), with tests that a null, NaN, empty or unknown lean gets no side and that `publish_week` builds sides only through the helper.
+
+**Open, by decision, for the cutover:** the Production-namespace artifact check (staging dry run against Production); the CI result on the final commit; the Postgres integration job for the v2 validator path; the Week 6 replay run, the pending Week 7 run and the Production publication, scoring, certification, authorization and selection steps (user-run); a 6A rebuild through Week 6 and a Week 6 market-sources lock before the Week 6 6B frames run.
+
+**Still deferred:** matchup database gates; #8 and #11 (decisions recorded in the brief, nothing built); #9 neutral-site model.

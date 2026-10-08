@@ -17,13 +17,13 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext, StageOutput
 from cks_picks_cfb.rebuild.published import PublishedRun
 from cks_picks_cfb.rebuild.recon_common import (
-    EXPECTED_COUNTS,
-    TOTAL_2026_GAMES,
-    WEEKS,
     frame_digest,
     json_data,
     load_partitioned_gold,
     parquet_data,
+    plan_counts,
+    plan_total,
+    plan_weeks,
     read_parquet_data,
     recon_run_id,
     weekly_as_of,
@@ -60,7 +60,7 @@ def build_application_frames(context: StageContext) -> StageOutput:
     weekly_frames: dict[int, pd.DataFrame] = {}
     weekly_state_refs: dict[int, dict[int, str]] = {}
 
-    for w in WEEKS:
+    for w in plan_weeks(context):
         as_of_str = weekly_as_of(context)[w]
         as_of_dt = pd.Timestamp(as_of_str)
 
@@ -87,9 +87,9 @@ def build_application_frames(context: StageContext) -> StageOutput:
             target_week=w,
         )
 
-        if len(frame) != EXPECTED_COUNTS[w]:
+        if len(frame) != plan_counts(context)[w]:
             raise GateError(
-                f"week {w} application frame has {len(frame)} rows, expected {EXPECTED_COUNTS[w]}"
+                f"week {w} application frame has {len(frame)} rows, expected {plan_counts(context)[w]}"
             )
         if not (frame["home_host"] == 1.0).all():
             raise GateError(f"week {w} application frame home_host is not 1.0")
@@ -108,10 +108,12 @@ def build_application_frames(context: StageContext) -> StageOutput:
             for game in games.itertuples(index=False)
         }
 
-    all_frames = pd.concat([weekly_frames[w] for w in WEEKS], ignore_index=True)
-    if len(all_frames) != TOTAL_2026_GAMES:
+    all_frames = pd.concat(
+        [weekly_frames[w] for w in plan_weeks(context)], ignore_index=True
+    )
+    if len(all_frames) != plan_total(context):
         raise GateError(
-            f"total application frames {len(all_frames)} != {TOTAL_2026_GAMES}"
+            f"total application frames {len(all_frames)} != {plan_total(context)}"
         )
 
     lake_summary, lake_files = write_partitioned_gold(
@@ -128,10 +130,11 @@ def build_application_frames(context: StageContext) -> StageOutput:
     summary = {
         "status": "passed",
         "total_games": len(all_frames),
-        "weekly_counts": {str(w): len(weekly_frames[w]) for w in WEEKS},
+        "weekly_counts": {str(w): len(weekly_frames[w]) for w in plan_weeks(context)},
         "frames_digest": frame_digest(all_frames),
         "state_refs_by_week": {
-            str(w): {str(g): r for g, r in weekly_state_refs[w].items()} for w in WEEKS
+            str(w): {str(g): r for g, r in weekly_state_refs[w].items()}
+            for w in plan_weeks(context)
         },
         "lake_gold": lake_summary,
     }
@@ -161,8 +164,10 @@ def verify_application_frames(context: StageContext) -> list[str]:
     except Exception as exc:
         return [f"failed to read application frames artifacts: {exc}"]
 
-    if len(frames) != TOTAL_2026_GAMES:
-        problems.append(f"application frames count {len(frames)} != {TOTAL_2026_GAMES}")
+    if len(frames) != plan_total(context):
+        problems.append(
+            f"application frames count {len(frames)} != {plan_total(context)}"
+        )
     if frame_digest(frames) != summary["frames_digest"]:
         problems.append("application frames digest mismatch")
 
@@ -170,9 +175,9 @@ def verify_application_frames(context: StageContext) -> list[str]:
         lake_frames = load_partitioned_gold(
             context, "application_frames", summary["lake_gold"]
         )
-        if len(lake_frames) != TOTAL_2026_GAMES:
+        if len(lake_frames) != plan_total(context):
             problems.append(
-                f"lake application frames count {len(lake_frames)} != {TOTAL_2026_GAMES}"
+                f"lake application frames count {len(lake_frames)} != {plan_total(context)}"
             )
     except Exception as exc:
         problems.append(f"failed to load partitioned lake application frames: {exc}")
@@ -285,7 +290,7 @@ def build_predictions(context: StageContext) -> StageOutput:
         raise GateError(f"bundle compatibility check failed: {exc}") from exc
 
     weekly_preds: dict[int, pd.DataFrame] = {}
-    for w in WEEKS:
+    for w in plan_weeks(context):
         w_frame = all_frames[all_frames["week"].eq(w)].copy()
         w_refs = {int(g): r for g, r in state_refs_by_week[str(w)].items()}
         run_id_w = recon_run_id(w)
@@ -308,10 +313,12 @@ def build_predictions(context: StageContext) -> StageOutput:
 
         weekly_preds[w] = preds.reset_index(drop=True)
 
-    all_preds = pd.concat([weekly_preds[w] for w in WEEKS], ignore_index=True)
-    if len(all_preds) != TOTAL_2026_GAMES * 2:
+    all_preds = pd.concat(
+        [weekly_preds[w] for w in plan_weeks(context)], ignore_index=True
+    )
+    if len(all_preds) != plan_total(context) * 2:
         raise GateError(
-            f"total predictions count {len(all_preds)} != {TOTAL_2026_GAMES * 2}"
+            f"total predictions count {len(all_preds)} != {plan_total(context) * 2}"
         )
 
     lake_summary, lake_files = write_partitioned_gold(
@@ -330,7 +337,7 @@ def build_predictions(context: StageContext) -> StageOutput:
         "bundle_compatibility": "passed",
         "state_cutoff_gate": "passed",
         "offset_evidence_cutoff_gate": "passed",
-        "weekly_counts": {str(w): len(weekly_preds[w]) for w in WEEKS},
+        "weekly_counts": {str(w): len(weekly_preds[w]) for w in plan_weeks(context)},
         "predictions_digest": frame_digest(all_preds),
         "lake_gold": lake_summary,
     }
@@ -356,16 +363,16 @@ def verify_predictions(context: StageContext) -> list[str]:
     except Exception as exc:
         return [f"failed to read predictions artifacts: {exc}"]
 
-    if len(preds) != TOTAL_2026_GAMES * 2:
-        problems.append(f"predictions count {len(preds)} != {TOTAL_2026_GAMES * 2}")
+    if len(preds) != plan_total(context) * 2:
+        problems.append(f"predictions count {len(preds)} != {plan_total(context) * 2}")
     if frame_digest(preds) != summary["predictions_digest"]:
         problems.append("predictions frame digest mismatch")
 
     try:
         lake_preds = load_partitioned_gold(context, "predictions", summary["lake_gold"])
-        if len(lake_preds) != TOTAL_2026_GAMES * 2:
+        if len(lake_preds) != plan_total(context) * 2:
             problems.append(
-                f"lake predictions count {len(lake_preds)} != {TOTAL_2026_GAMES * 2}"
+                f"lake predictions count {len(lake_preds)} != {plan_total(context) * 2}"
             )
     except Exception as exc:
         problems.append(f"failed to load partitioned lake predictions: {exc}")
