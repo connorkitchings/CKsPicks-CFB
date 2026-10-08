@@ -103,15 +103,24 @@ def replay_run(storage: Any, lock: dict[str, Any]) -> PublishedRun:
     )
 
 
-def lock_schedule(storage: Any, lock: dict[str, Any]) -> pd.DataFrame:
-    """The locked 2026 schedule (canonical team names) from the pinned Silver games."""
+def lock_schedule(
+    storage: Any, lock: dict[str, Any], *, canonical: bool = True
+) -> pd.DataFrame:
+    """The locked 2026 schedule from the pinned Silver games.
+
+    Canonical team names (the default) are what ratings, observations and features use.
+    Serving and the database use the provider's names, so serving builders pass
+    ``canonical=False``.
+    """
     from cks_picks_cfb.rebuild import states_2026
 
     parent = lock["research_source_import"]["replay_parents"]
     raw = storage.read_bytes(parent["schedule_uri"])
     if hashlib.sha256(raw).hexdigest() != parent["schedule_content_sha256"]:
         raise GateError("pinned schedule dataset changed")
-    return states_2026.locked_schedule(pd.read_parquet(io.BytesIO(raw)), lock)
+    return states_2026.locked_schedule(
+        pd.read_parquet(io.BytesIO(raw)), lock, canonical=canonical
+    )
 
 
 def rating_inputs(

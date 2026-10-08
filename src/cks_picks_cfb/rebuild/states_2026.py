@@ -41,7 +41,9 @@ def _parquet(frame: pd.DataFrame) -> bytes:
     return buffer.getvalue()
 
 
-def locked_schedule(games: pd.DataFrame, lock: dict[str, Any]) -> pd.DataFrame:
+def locked_schedule(
+    games: pd.DataFrame, lock: dict[str, Any], *, canonical: bool = True
+) -> pd.DataFrame:
     """The locked 2026 games (weeks 0-5), checked against the lock's week and kickoff."""
     names = lock["games"]["columns"]
     rows = [dict(zip(names, row, strict=True)) for row in lock["games"]["rows"]]
@@ -57,6 +59,9 @@ def locked_schedule(games: pd.DataFrame, lock: dict[str, Any]) -> pd.DataFrame:
             game["kickoff_utc"]
         ) != pd.Timestamp(row["start_date"]):
             raise GateError(f"2026 game {row['game_id']} differs from the lock")
+    if not canonical:
+        # Serving and the database keep the provider's names (for example "UTSA").
+        return schedule
     # Observations and priors use canonical team names; the lock check above used raw ones.
     from cks_picks_cfb.preseason_features import canonical_team
 

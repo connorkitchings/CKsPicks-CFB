@@ -172,7 +172,7 @@ def build(
     refs = market_refs(storage, market_ref_uri)
     markets = _frame(storage, refs["market_snapshots"]["ref"])
     quotes = _frame(storage, refs["market_quotes"]["ref"])
-    schedule = lock_schedule(storage, lock)
+    schedule = lock_schedule(storage, lock, canonical=False)
     schedule = schedule[
         schedule["home_classification"].eq("fbs")
         & schedule["away_classification"].eq("fbs")

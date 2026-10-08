@@ -105,7 +105,7 @@ def build(
         else None
     )
     if schedule_cache is None and is_corrected(lock):
-        schedule = lock_schedule(storage, lock)
+        schedule = lock_schedule(storage, lock, canonical=False)
     elif schedule_cache is None:
         parent = lock["research_source_import"]["replay_parents"]
         raw = storage.read_bytes(parent["schedule_uri"])

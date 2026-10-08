@@ -105,7 +105,7 @@ def verify(
     cutoff = pd.Timestamp(manifest["data_as_of"])
     if cutoff.tzinfo is None or cutoff > pd.Timestamp.now(tz="UTC"):
         raise ValueError("the serving cutoff is not a past, timezone-aware time")
-    schedule = lock_schedule(storage, lock)
+    schedule = lock_schedule(storage, lock, canonical=False)
     schedule = schedule[
         schedule["home_classification"].eq("fbs")
         & schedule["away_classification"].eq("fbs")
@@ -187,8 +187,14 @@ def verify(
     config_raw = CONFIG.read_bytes()
     thresholds = label_thresholds(yaml.safe_load(config_raw))
     lined = 0
+    names = week_games.set_index(week_games["game_id"].astype(int))
     for _, item in rows.iterrows():
         game_id = int(item["game_id"])
+        scheduled = names.loc[game_id]
+        if str(item["home_team"]) != str(scheduled["home_team"]) or str(
+            item["away_team"]
+        ) != str(scheduled["away_team"]):
+            raise ValueError("serving team names differ from the provider schedule")
         if game_id not in snapshots.index:
             if pd.notna(item["canonical_spread_line"]) or pd.notna(
                 item["spread_market_quote_id"]
