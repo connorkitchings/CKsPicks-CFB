@@ -19,6 +19,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     TOTAL_2026_GAMES,
     WEEKS,
     checked_read,
+    expected_6a_receipt_sha,
     frame_digest,
     json_data,
     original_run_id,
@@ -34,10 +35,6 @@ EVENTS_SUMMARY = "rebuild/6b/{run_id}/scoring_events_2026/summary.json"
 EVENTS_PARQUET = "rebuild/6b/{run_id}/scoring_events_2026/events.parquet"
 OBSERVATIONS_PARQUET = "rebuild/6b/{run_id}/scoring_events_2026/observations.parquet"
 
-EXPECTED_6A_RECEIPT_SHA = (
-    "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
-)
-
 
 # ---------------------------------------------------------------------------
 # Stage 1: Foundation
@@ -47,6 +44,7 @@ EXPECTED_6A_RECEIPT_SHA = (
 def build_foundation(context: StageContext) -> StageOutput:
     run_6a = PublishedRun(context, root_input="root_manifest_6a")
     run_task4 = PublishedRun(context, root_input="root_manifest_task4")
+    expected_receipt = expected_6a_receipt_sha(context)
 
     # 1. Verify Task 4 signed receipt and checksum
     raw_receipt = context.read_input("task4_receipt")
@@ -57,9 +55,9 @@ def build_foundation(context: StageContext) -> StageOutput:
         raise GateError("Task 4 receipt differs from published root")
     receipt = json.loads(raw_receipt)
     verify_signed_payload(receipt, label="Task 4 signed receipt")
-    if receipt.get("manifest_sha256") != EXPECTED_6A_RECEIPT_SHA:
+    if receipt.get("manifest_sha256") != expected_receipt:
         raise GateError(
-            f"task4 receipt checksum {receipt.get('manifest_sha256')} != expected {EXPECTED_6A_RECEIPT_SHA}"
+            f"task4 receipt checksum {receipt.get('manifest_sha256')} != expected {expected_receipt}"
         )
 
     # 2. Verify inputs_for_6b
@@ -154,7 +152,7 @@ def build_foundation(context: StageContext) -> StageOutput:
         "total_games": len(schedule),
         "weekly_counts": {str(w): EXPECTED_COUNTS[w] for w in WEEKS},
         "weekly_as_of": cutoffs,
-        "receipt_sha": EXPECTED_6A_RECEIPT_SHA,
+        "receipt_sha": expected_receipt,
         "schedule_digest": frame_digest(schedule),
     }
 

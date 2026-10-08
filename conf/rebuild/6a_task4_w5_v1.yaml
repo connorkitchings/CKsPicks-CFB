@@ -1,0 +1,30 @@
+# Stage 6A Task 4 for the Week 5 rebuild (contract 04-stage1, Amendment 8 of contract 02).
+# Pinned to the PUBLISHED root manifest of run 6a-rebuild-w5-20261007-r2; reads published objects
+# only through hash-checked access. Separate plan so the main plan's signed hash is untouched.
+run_id: 6a-task4-w5-r1
+storage_identity: "r2:bfea6d113b8173c1f28a7d528825c924:cks-picks-cfb-preview"
+seasons: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025]
+registry_checksum: "2651261479d378b1e372a8b5481d51d1009700e60110dba5dcb299c1c198b281"
+cutoff_2026: "2026-10-05T00:00:00Z"
+decisions:
+  admission_decisions_csv: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db
+  admission_report_json: ba1a1c03c263431287770e4e54f8246430bc6b5b6988644be107f55d65e27609
+policies:
+  design: ppp__rho_0_60__exposure
+  ridge_alpha: 10.0
+  published_run_id: 6a-rebuild-w5-20261007-r2
+  materiality_threshold: 0.05
+inputs:
+  - {name: root_manifest, kind: r2_object, uri: rebuild/6a/6a-rebuild-w5-20261007-r2/root-manifest.json, sha256: 7865d35336b039f8983ee235c6855d2795a9b35233a779a7a67a959aee89d9b0}  # raw sha256 of the published -r2 root manifest
+  - {name: phase2c_silver_parents, kind: git_file, uri: conf/rebuild/phase2c_silver_parents_v1.json, sha256: c85daae49d1daf8ce441ffd7363152974fe9a50895bdc612dc6ee2c9c38c8b0b}
+  - {name: repair_v2_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/repair/v2/runs/repair-v2-20260909T1417Z/repair-manifest.json, sha256: b55af0dd7952a4b5e0d663b82182b351ec5496a292246a934a857c354058e0b4}
+  - {name: r9_measurement_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/possession-v1/measurements/runs/possession-v1-measurements-20260921-r9/measurement-manifest.json, sha256: 10b380d69524d20ce694833821d0a309a60c532d4eca05d8e8129200461dbf56}
+  - {name: r9cert_rating_manifest, kind: r2_object, uri: artifacts/research/data-first-football-v1/possession-v1/ratings/runs/possession-v1-ratings-20260921-11d59ee-r9cert/retained-rating-manifest.json, sha256: 9d00e63564691c0323fa203b76b4ee49a9fff5aa945fdb8fa000142f640e4ba0}
+  - {name: admission_decisions, kind: git_file, uri: docs/plans/2026-10-03/window2/5c-data/admission_decisions.csv, sha256: dcabd4e61117239eb72523ff30debdceed3de83f69d8a0c8790c37fed97294db}
+  - {name: silver_2026_parents, kind: git_file, uri: conf/rebuild/silver_2026_parents_w5_v1.json, sha256: 66434185270f45ee9e07873c053535b2db0c4d1426470130a2c7fc0b52b9af12}
+  - {name: source_lock_2026, kind: git_file, uri: conf/rebuild/source_lock_2026_w5_v1.json, sha256: d9086411be7604af05a8093beef9c21d8b1205ed6debdc13ac956876d6dd7477}
+  - {name: main_plan, kind: git_file, uri: conf/rebuild/6a_w5_v1.yaml, sha256: 9a48cca4cf8f9e69d92c637912c5389246476d37f712a4523385423356396e80}  # the published run's plan: its pins and policies are cited in the receipt
+stages:
+  - {name: attribution, inputs: [root_manifest, phase2c_silver_parents, repair_v2_manifest, r9_measurement_manifest, r9cert_rating_manifest, admission_decisions], outputs: [rebuild/6a/6a-task4-w5-r1/attribution/], legacy_allowed: true}
+  - {name: published_comparison, inputs: [root_manifest, silver_2026_parents, source_lock_2026, r9_measurement_manifest], parents: [attribution], outputs: [rebuild/6a/6a-task4-w5-r1/published_comparison/], legacy_allowed: true}
+  - {name: receipt, inputs: [root_manifest, main_plan], parents: [published_comparison], outputs: [rebuild/6a/6a-task4-w5-r1/receipt/]}

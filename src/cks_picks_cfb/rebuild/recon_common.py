@@ -28,6 +28,11 @@ from cks_picks_cfb.rebuild.errors import GateError
 from cks_picks_cfb.rebuild.orchestrator import StageContext
 
 WEEKS = (0, 1, 2, 3, 4, 5)
+# Signed checksum of the Task 4 receipt of the first published 6A run. A plan replaying a
+# different 6A run names its receipt in the ``expected_6a_receipt_sha`` policy instead.
+LEGACY_6A_RECEIPT_SHA = (
+    "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
+)
 EXPECTED_COUNTS = {0: 8, 1: 43, 2: 49, 3: 57, 4: 58, 5: 56}
 TOTAL_2026_GAMES = 271
 
@@ -313,3 +318,11 @@ def verify_rederived(context: StageContext, build, verify) -> list[str]:
         return problems
     except Exception as exc:
         return [f"{context.stage.name} persisted re-derivation failed: {exc}"]
+
+
+def expected_6a_receipt_sha(context: StageContext) -> str:
+    """The signed Task 4 receipt checksum this plan expects (plan policy, else the legacy)."""
+    value = context.plan.policies.get("expected_6a_receipt_sha", LEGACY_6A_RECEIPT_SHA)
+    if not isinstance(value, str) or len(value) != 64:
+        raise GateError("policy expected_6a_receipt_sha must be a 64-hex checksum")
+    return value

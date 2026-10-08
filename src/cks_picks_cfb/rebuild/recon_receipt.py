@@ -25,6 +25,7 @@ from cks_picks_cfb.rebuild.recon_common import (
     EXPECTED_COUNTS,
     TOTAL_2026_GAMES,
     WEEKS,
+    expected_6a_receipt_sha,
     json_data,
     original_run_id,
     read_parquet_data,
@@ -67,10 +68,6 @@ REQUIRED_GATES = frozenset(
         "retrospective_grades_passed",
         "comparison_passed",
     )
-)
-
-EXPECTED_6A_RECEIPT_SHA = (
-    "efcedf3e67dd85055782474b5022bf73d7f53d80c630264ca7c491699309d15e"
 )
 
 
@@ -270,13 +267,14 @@ def derive_receipt(
 ) -> dict[str, Any]:
     """Derive the complete Stage 6B signed receipt payload."""
     plan = context.plan
+    expected_receipt = expected_6a_receipt_sha(context)
 
     # Predecessor 6A info
     run_6a = PublishedRun(context, root_input="root_manifest_6a")
     raw_task4_receipt = context.read_input("task4_receipt")
     task4_receipt = json.loads(raw_task4_receipt)
     verify_signed_payload(task4_receipt, label="Task 4 signed receipt")
-    if task4_receipt.get("manifest_sha256") != EXPECTED_6A_RECEIPT_SHA:
+    if task4_receipt.get("manifest_sha256") != expected_receipt:
         raise GateError(
             f"6A receipt checksum mismatch: {task4_receipt.get('manifest_sha256')}"
         )
@@ -369,7 +367,7 @@ def derive_receipt(
                 "task4_root_raw_sha256": _sha(
                     context.read_input("root_manifest_task4")
                 ),
-                "receipt_sha256": EXPECTED_6A_RECEIPT_SHA,
+                "receipt_sha256": expected_receipt,
             },
         },
         "inputs": {
